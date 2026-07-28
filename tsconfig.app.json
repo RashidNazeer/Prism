@@ -1,0 +1,42 @@
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "esnext",
+    "types": ["vite/client"],
+    "allowArbitraryExtensions": true,
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Path alias: "@/lib/foo" instead of "../../lib/foo".
+       No "baseUrl" — it is deprecated in TypeScript 6; paths now resolve
+       relative to this file. */
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
+    /* Strict mode — locked decision, do not relax these to make an error go away.
+       Note: "noPropertyAccessFromIndexSignature" is deliberately NOT enabled.
+       It forces import.meta.env['VITE_X'] bracket syntax, and Vite only
+       statically replaces the dot form at build time — the bracket form would
+       silently become undefined in production. */
+    "strict": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"]
+}

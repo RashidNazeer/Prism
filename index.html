@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <title>WurxMediaHub — Your numbers. Finally yours.</title>
+    <meta
+      name="description"
+      content="The creator platform behind Wurx Media's TikTok Shop brands. Real GMV, real commission, real leaderboards — one login for every brand you work with."
+    />
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="robots" content="noindex" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="WurxMediaHub — Your numbers. Finally yours." />
+    <meta
+      property="og:description"
+      content="The creator platform behind Wurx Media's TikTok Shop brands."
+    />
+
+    <!--
+      Anti-flash theme script.
+
+      This runs BEFORE the first paint and before React loads, so the page is
+      already the right colour when it appears. Without it, a user on light mode
+      would see a black page for a few hundred milliseconds, or vice versa.
+      It must stay in sync with src/components/theme/ThemeProvider.tsx —
+      same storage key, same fallback.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('wurxmediahub-theme');
+          var mode =
+            stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
+          var resolved =
+            mode === 'system'
+              ? window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+              : mode;
+          document.documentElement.dataset.theme = resolved;
+          document
+            .querySelector('meta[name="theme-color"]')
+            .setAttribute('content', resolved === 'dark' ? '#0a0a0a' : '#faf8f3');
+        } catch (e) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

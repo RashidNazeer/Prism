@@ -1,0 +1,51 @@
+# ============================================================================
+# Secrets — nothing matching these may EVER be committed.
+# The only env file that belongs in Git is .env.example, which holds names
+# and placeholder values but no real keys.
+# ============================================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies & build output
+node_modules
+dist
+dist-ssr
+*.local
+.vite
+
+# Tooling caches
+.turbo
+.eslintcache
+coverage
+
+# Vercel — .vercel holds the local project link, not secrets, but it is
+# machine-specific so it does not belong in the repo.
+.vercel
+
+# Supabase CLI local state (the migrations themselves ARE committed)
+supabase/.branches
+supabase/.temp
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+Thumbs.db

@@ -1,0 +1,17 @@
+# Normalise line endings: LF in the repository, native in the working copy.
+# Rashid develops on Windows; Vercel builds on Linux. Without this, every file
+# would look "changed" depending on which machine touched it last.
+* text=auto eol=lf
+
+# Binary assets — never touch these.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+
+# Lockfile: generated, keep diffs collapsed in review.
+pnpm-lock.yaml linguist-generated=true -diff
