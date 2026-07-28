@@ -98,6 +98,31 @@ Dated one-liners. Why, not just what. Newest at the bottom.
 - 2026-07-29: `MotionConfig reducedMotion="user"` wraps the app. The
   prefers-reduced-motion media query in global.css only governs CSS
   transitions; Motion animates in JavaScript and would otherwise ignore it.
+- 2026-07-29: The hero right column is the application form, not the example
+  dashboard card. Rashid's call — the form is the conversion point, so it goes
+  above the fold. `NumbersPreview.tsx` was deleted; it is in git history and can
+  come back into the Platform section if wanted.
+- 2026-07-29: Hero now has ONE secondary button ("See how it works", size xl).
+  "Apply to join" was removed because the form is right there; every other Apply
+  CTA on the page scrolls to `#apply` instead of routing away.
+- 2026-07-29: `/apply` still exists as a standalone route rendering the SAME
+  `<ApplyForm />`, so a direct link from a DM or email lands somewhere focused.
+  One form component, two placements — never two copies.
+- 2026-07-29: Container widened to `max-w-7xl` with `px-5 sm:px-8`. At Rashid's
+  ~1280px viewport the old `max-w-6xl` left a thin strip of dead margin.
+- 2026-07-29: The application Zod schema lives in
+  `src/lib/schemas/application.ts`, deliberately separate from the component,
+  because Step 3's Edge Function will import the same file and re-validate
+  server-side. Client validation is convenience; the server is the boundary.
+- 2026-07-29: **Form is not wired to a database.** Submitting validates and
+  shows a success panel that says so explicitly. It must keep saying so until
+  Step 3 lands — a success message for an application nobody received would be
+  a lie to a real creator.
+- 2026-07-29: Landing page weight noted at ~182 KB gzip JS/CSS + ~102 KB fonts.
+  The single biggest item is Zod at roughly 60 KB gzip inside the ApplyForm
+  chunk. Not acted on yet. Fix at Step 3, when the schema is final: either
+  switch to `zod/mini` or dynamic-import the schema so it is off the landing
+  page's critical path.
 - 2026-07-28: Content-Security-Policy deferred. The anti-flash theme script is
   inline and Motion injects inline styles, so a correct CSP needs script hashes
   and careful testing. Other security headers (HSTS, nosniff, frame-deny,

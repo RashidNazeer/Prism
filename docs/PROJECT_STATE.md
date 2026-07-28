@@ -36,7 +36,11 @@ because he wants the homepage designed first. Step 1 comes after this.
 - Sections built: nav (with mobile menu), hero with an example "My Numbers"
   dashboard card, trusted-by brand row, headline stats, three-step how-it-works,
   six-card platform grid, closing CTA, footer.
-- `/apply` placeholder route so no call to action is a dead link.
+- **Application form in the hero** (Rashid's revision): TikTok handle, email,
+  niche with a conditional "Other" follow-up, worked-with-Wurx-before, and best
+  1–3 video links. Real Zod validation, accessible errors. **Not connected to a
+  database** — the success panel says so explicitly.
+- `/apply` renders the same form standalone for direct links.
 - `scripts/shots.mjs` added for retina design-review screenshots.
 - `scripts/verify-page.mjs` now scrolls the page before asserting, and fails if
   any section is still invisible — scroll-reveal sections were silently blank.

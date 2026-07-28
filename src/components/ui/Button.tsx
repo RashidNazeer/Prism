@@ -27,6 +27,7 @@ const button = cva(
         sm: 'h-9 rounded-lg px-3.5 text-[13px]',
         md: 'h-11 rounded-xl px-5 text-sm',
         lg: 'h-13 rounded-xl px-7 text-[15px]',
+        xl: 'h-15 rounded-2xl px-9 text-base font-semibold',
       },
     },
     defaultVariants: { variant: 'primary', size: 'md' },

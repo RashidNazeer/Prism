@@ -101,6 +101,32 @@ override `--wx-*` at the hub level.
   detects a leading `#` and renders a plain `<a>`. A `<Link to="#how">` is
   treated as a route change and never scrolls.
 
+## Application form
+
+**Files:** `src/components/landing/ApplyForm.tsx`,
+`src/lib/schemas/application.ts`, `src/components/ui/Field.tsx`,
+`src/routes/Apply.tsx`
+**Tables:** none yet. Step 3 adds `applications` (status defaults to `pending`).
+
+**Depends on:** Design tokens, Button/Field primitives
+**Depended on by:** Admin review (Step 4), Creator profiles (Step 1/4)
+
+**Change rules**
+
+- **The form is not connected to anything.** `onSubmit` fakes a delay and shows
+  a success panel that states submissions are not stored. That disclosure stays
+  until Step 3 is live.
+- Fields are defined once, in `src/lib/schemas/application.ts`. Adding a field
+  means updating: the Zod schema, `emptyApplication`, the form JSX, the
+  `applications` table migration, the Edge Function, and the admin review screen
+  (Step 4). All six, or the field silently goes nowhere.
+- Step 3 must import this exact schema inside the Edge Function and re-validate.
+  Never trust the client's copy.
+- `ApplyForm` is rendered in two places (hero + `/apply`). It must stay
+  self-contained — no props that only one placement passes.
+- `tiktokHandle` is stored WITHOUT the leading `@` (the schema strips it). Any
+  identity mapping in Step 7 must assume that.
+
 ## Brand mark
 
 **Files:** `src/components/brand/WurxMark.tsx`, `public/favicon.svg`

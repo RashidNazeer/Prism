@@ -1,4 +1,3 @@
-import { Link } from 'react-router';
 import { WurxMark } from '@/components/brand/WurxMark';
 import { Container } from '@/components/layout/Section';
 
@@ -31,9 +30,9 @@ export function SiteFooter() {
                   </a>
                 </li>
                 <li>
-                  <Link to="/apply" className="text-muted transition-colors hover:text-accent">
+                  <a href="#apply" className="text-muted transition-colors hover:text-accent">
                     Apply
-                  </Link>
+                  </a>
                 </li>
               </ul>
             </div>

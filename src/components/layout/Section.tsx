@@ -10,7 +10,9 @@ export function Container({
   className?: string;
   children: ReactNode;
 }) {
-  return <div className={cn('mx-auto w-full max-w-6xl px-6', className)}>{children}</div>;
+  // max-w-7xl (1280px): on a ~1280px viewport the content fills the width and
+  // the awkward sliver of side margin disappears.
+  return <div className={cn('mx-auto w-full max-w-7xl px-5 sm:px-8', className)}>{children}</div>;
 }
 
 /** Vertical rhythm for a page section. */

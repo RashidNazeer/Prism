@@ -73,7 +73,7 @@ export function SiteNav() {
 
           <div className="flex items-center gap-2.5">
             <ThemeToggle />
-            <ButtonLink to="/apply" size="sm" className="hidden sm:inline-flex">
+            <ButtonLink to="#apply" size="sm" className="hidden sm:inline-flex">
               Apply
             </ButtonLink>
             <button
@@ -115,7 +115,7 @@ export function SiteNav() {
                 ))}
                 <li className="pt-2">
                   <ButtonLink
-                    to="/apply"
+                    to="#apply"
                     className="w-full"
                     onClick={() => setOpen(false)}
                   >

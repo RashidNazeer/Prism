@@ -228,6 +228,55 @@ console.log('\n[5] Unknown route renders the 404 page');
   await ctx.close();
 }
 
+/* ------------------------------------------------- 6. application form -- */
+console.log('\n[6] Application form');
+{
+  const { ctx, page, found } = await openPage({ viewport: { width: 1440, height: 1000 } });
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+
+  // Submitting an empty form must surface errors, not silently do nothing.
+  await page.getByRole('button', { name: /takes 60 seconds/i }).click();
+  await page.waitForTimeout(300);
+  const errorCount = await page.locator('[role="alert"]').count();
+  if (errorCount < 4) bad(`empty submit showed only ${errorCount} errors, expected 5`);
+  else note(`OK    empty submit blocked with ${errorCount} field errors`);
+
+  // Choosing "Other" must reveal the follow-up question.
+  await page.selectOption('select[name="niche"]', 'Other');
+  await page.waitForTimeout(420);
+  const otherVisible = await page.locator('input[name="nicheOther"]').isVisible();
+  if (!otherVisible) bad('choosing "Other" did not reveal the extra niche input');
+  else note('OK    "Other" reveals the follow-up input');
+
+  // A bad email must be rejected.
+  await page.fill('input[name="tiktokHandle"]', '@wurxcreator');
+  await page.fill('input[name="email"]', 'not-an-email');
+  await page.fill('input[name="nicheOther"]', 'Home fragrance');
+  await page.selectOption('select[name="workedWithWurx"]', 'yes');
+  await page.fill('textarea[name="videoLinks"]', 'https://tiktok.com/@wurxcreator/video/123');
+  await page.waitForTimeout(250);
+  const emailInvalid = await page.locator('input[name="email"][aria-invalid="true"]').count();
+  if (emailInvalid !== 1) bad('an invalid email was not flagged');
+  else note('OK    invalid email rejected');
+
+  // Fixing it must allow submission.
+  await page.fill('input[name="email"]', 'creator@example.com');
+  await page.waitForTimeout(250);
+  await page.getByRole('button', { name: /takes 60 seconds/i }).click();
+  await page.waitForTimeout(1400);
+  const success = await page.getByText(/Everything checks out/i).count();
+  if (!success) bad('valid submit did not reach the success state');
+  else note('OK    valid submit reaches the success state');
+
+  // The success state must be honest that nothing is stored yet.
+  const honest = await page.getByText(/not being stored yet/i).count();
+  if (!honest) bad('success state does not disclose that submissions are not saved');
+  else note('OK    success state discloses it is not wired to a database');
+
+  found.forEach(bad);
+  await ctx.close();
+}
+
 await browser.close();
 
 console.log(`\n${'='.repeat(70)}`);

@@ -39,7 +39,7 @@ export function WurxMark({
         />
       </svg>
       {showWordmark && (
-        <span className="font-display text-[15px] leading-none tracking-tight">
+        <span className="font-display text-[15px] leading-none font-bold tracking-tight">
           WURX<span className="text-accent">.</span>
         </span>
       )}

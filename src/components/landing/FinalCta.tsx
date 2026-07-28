@@ -17,7 +17,7 @@ export function FinalCta() {
               reads every one.
             </p>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-              <ButtonLink to="/apply" size="lg" className="group">
+              <ButtonLink to="#apply" size="lg" className="group">
                 Apply to join
                 <ArrowRight
                   size={17}
