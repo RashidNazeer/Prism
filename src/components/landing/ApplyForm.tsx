@@ -122,6 +122,10 @@ export function ApplyForm() {
     <form
       onSubmit={onSubmit}
       noValidate
+      // Warm the lazily-loaded validator the moment someone touches the form.
+      // Without this, the first submit on a slow connection waits on a network
+      // round trip before any error appears.
+      onFocus={() => void loadValidator()}
       className="rounded-2xl border border-line bg-surface-1 p-6 shadow-lg sm:p-7"
     >
       <div className="flex items-center gap-4">

@@ -235,9 +235,19 @@ console.log('\n[6] Application form');
   await page.goto(BASE, { waitUntil: 'networkidle' });
 
   // Submitting an empty form must surface errors, not silently do nothing.
+  // The validator is a lazily-loaded chunk, so wait for the result rather than
+  // guessing a timeout: over a real network that download is not instant.
   await page.getByRole('button', { name: /takes 60 seconds/i }).click();
-  await page.waitForTimeout(300);
-  const errorCount = await page.locator('[role="alert"]').count();
+  let errorCount = 0;
+  try {
+    await page.waitForFunction(
+      () => document.querySelectorAll('[role="alert"]').length >= 4,
+      { timeout: 8000 }
+    );
+    errorCount = await page.locator('[role="alert"]').count();
+  } catch {
+    errorCount = await page.locator('[role="alert"]').count();
+  }
   if (errorCount < 4) bad(`empty submit showed only ${errorCount} errors, expected 5`);
   else note(`OK    empty submit blocked with ${errorCount} field errors`);
 
