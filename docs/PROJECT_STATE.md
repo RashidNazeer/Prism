@@ -34,29 +34,30 @@ piece and is blocked on a token from Rashid.
 - Both branches pushed. Git auth locked to the scoped token (negative-tested).
 - Memory docs created (this file, FEATURE_MAP, DECISIONS, CLAUDE.md).
 
-## In progress
-
-- Vercel: both projects need to be imported from the repo by Rashid, then
-  configured via CLI (production branch, env vars, first deploy).
+- Vercel wired up: both projects connected to the repo, framework `vite`,
+  per-project Ignored Build Step so each builds only its own branch, env vars
+  set (dev project -> dev database, prod project -> prod database),
+  `wurxmediahubdev.vercel.app` pinned to the `dev` branch, and Vercel
+  Authentication disabled so both URLs are publicly reachable.
 
 ## Known bugs
 
-None.
+None outstanding. One resolved during setup: every Vercel deploy came back
+`BLOCKED` because commits were authored with Rashid's personal email, which
+GitHub maps to a different account (`TSRashid`) than the repo owner
+(`RashidNazeer`). Fixed by switching the commit identity to the GitHub no-reply
+address — see DECISIONS.
 
 ## Blocked on Rashid
 
-1. `VERCEL_TOKEN` in the secrets file (still empty).
-2. Import the repo twice at vercel.com/new as `wurxmediahub` and
-   `wurxmediahubdev` — the GitHub App approval cannot be done from a CLI.
-3. The real Wurx logo file. A typographic placeholder mark is in use
-   (`src/components/brand/WurxMark.tsx`); swapping it touches only that file.
+1. The real Wurx logo file. A typographic placeholder mark is in use
+   (`src/components/brand/WurxMark.tsx`); swapping it touches only that file
+   plus `public/favicon.svg`.
 
 ## Next action
 
-Once the Vercel token lands: set the dev project's production branch to `dev`,
-push the Supabase URL + anon key into each project's env vars, deploy both, and
-report the two URLs with a test checklist. Then wait for approval before
-starting **Step 1 — Auth and roles foundation**.
+Confirm both URLs serve the shell, then hand Rashid the test checklist and wait
+for approval before starting **Step 1 — Auth and roles foundation**.
 
 ## Open product decisions (ask when the step needs them, not before)
 

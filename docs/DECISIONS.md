@@ -49,6 +49,25 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   console, so "zero console errors" has to be machine-verified; section 11's
   auth-stability tests (idle refresh, two tabs, refresh mid-form) will need it
   too.
+- 2026-07-29: Git commit identity is
+  `286085480+RashidNazeer@users.noreply.github.com`, not Rashid's personal
+  email. GitHub maps that personal email to a *different* account (`TSRashid`),
+  and Vercel's Hobby plan BLOCKS any deployment whose commit author it cannot
+  match to the connected account — every deploy failed with state `BLOCKED`
+  until this was corrected. Do not change `user.email` in this repo.
+- 2026-07-29: Both Vercel projects build from the one repo, so each has an
+  Ignored Build Step so it only builds its own branch (`wurxmediahub` -> `main`,
+  `wurxmediahubdev` -> `dev`). Without it every push built twice.
+- 2026-07-29: `wurxmediahubdev.vercel.app` is pinned to the `dev` git branch via
+  the domains API. Vercel's public API does not expose the "Production Branch"
+  setting, so this is the CLI-drivable equivalent and avoids sending Rashid back
+  to the dashboard.
+- 2026-07-29: Vercel Authentication (`ssoProtection`) turned OFF on both
+  projects. It defaulted to `all_except_custom_domains`, which would have put
+  both `.vercel.app` URLs behind a Vercel login — Rashid could not have tested
+  them, and the public landing page must be reachable. The shell ships with
+  `<meta name="robots" content="noindex">`. Say the word and dev goes back
+  behind protection.
 - 2026-07-28: Content-Security-Policy deferred. The anti-flash theme script is
   inline and Motion injects inline styles, so a correct CSP needs script hashes
   and careful testing. Other security headers (HSTS, nosniff, frame-deny,
