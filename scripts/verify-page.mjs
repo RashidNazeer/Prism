@@ -1,0 +1,191 @@
+#!/usr/bin/env node
+/**
+ * Browser smoke test.
+ *
+ * Rashid tests in the browser but cannot read a console, so "zero console
+ * errors" has to be proven mechanically. This loads the built site in real
+ * Chromium and fails if anything is wrong.
+ *
+ * Checks:
+ *   - no console errors / warnings, no uncaught page errors, no failed requests
+ *   - renders in dark AND light, with the theme toggle actually switching
+ *   - no horizontal overflow at phone, tablet and desktop widths
+ *   - the 404 route renders
+ *   - screenshots written to .playwright/ for eyeballing
+ *
+ * Usage: node scripts/verify-page.mjs [baseUrl]
+ */
+
+import { chromium } from 'playwright';
+import { mkdirSync } from 'node:fs';
+
+const BASE = process.argv[2] ?? 'http://localhost:4173';
+const SHOTS = '.playwright';
+mkdirSync(SHOTS, { recursive: true });
+
+const problems = [];
+const note = (m) => console.log(`  ${m}`);
+const bad = (m) => {
+  console.error(`  FAIL  ${m}`);
+  problems.push(m);
+};
+
+/** Noise that is not our code's fault and would make the check useless. */
+const IGNORE = [
+  /favicon\.ico/i,
+  /fonts\.googleapis\.com|fonts\.gstatic\.com/i, // network flakiness, not a bug
+  /Download the React DevTools/i,
+];
+const ignorable = (t) => IGNORE.some((re) => re.test(t));
+
+const browser = await chromium.launch();
+
+/** Open a page with console/error/request listeners attached. */
+async function openPage(ctxOpts = {}) {
+  const ctx = await browser.newContext(ctxOpts);
+  const page = await ctx.newPage();
+  const found = [];
+  page.on('console', (msg) => {
+    const type = msg.type();
+    if ((type === 'error' || type === 'warning') && !ignorable(msg.text())) {
+      found.push(`console.${type}: ${msg.text()}`);
+    }
+  });
+  page.on('pageerror', (e) => found.push(`pageerror: ${e.message}`));
+  page.on('requestfailed', (r) => {
+    if (!ignorable(r.url())) found.push(`requestfailed: ${r.url()} — ${r.failure()?.errorText}`);
+  });
+  return { ctx, page, found };
+}
+
+console.log(`\nBrowser verification against ${BASE}\n${'='.repeat(70)}`);
+
+/* -------------------------------------------------- 1. dark mode, desktop -- */
+console.log('\n[1] Dark mode, 1440x900');
+{
+  const { ctx, page, found } = await openPage({
+    viewport: { width: 1440, height: 900 },
+    colorScheme: 'dark',
+  });
+  const res = await page.goto(BASE, { waitUntil: 'networkidle' });
+  if (!res || res.status() !== 200) bad(`page returned HTTP ${res?.status()}`);
+
+  const theme = await page.getAttribute('html', 'data-theme');
+  if (theme !== 'dark') bad(`expected data-theme="dark", got "${theme}"`);
+  else note(`OK    data-theme=dark`);
+
+  const h1 = await page.textContent('h1');
+  if (!h1?.includes('Your numbers')) bad(`headline missing, got "${h1}"`);
+  else note(`OK    headline renders`);
+
+  // The real test of the token system: is the page actually dark?
+  const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  if (bg !== 'rgb(10, 10, 10)') bad(`dark background should be rgb(10,10,10), got ${bg}`);
+  else note(`OK    background ${bg}`);
+
+  await page.screenshot({ path: `${SHOTS}/01-dark-desktop.png`, fullPage: true });
+  found.forEach(bad);
+  await ctx.close();
+}
+
+/* ------------------------------------------------- 2. light mode, desktop -- */
+console.log('\n[2] Light mode, 1440x900 (OS preference)');
+{
+  const { ctx, page, found } = await openPage({
+    viewport: { width: 1440, height: 900 },
+    colorScheme: 'light',
+  });
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+
+  const theme = await page.getAttribute('html', 'data-theme');
+  if (theme !== 'light') bad(`expected data-theme="light", got "${theme}"`);
+  else note(`OK    data-theme=light (followed the OS setting)`);
+
+  const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  if (bg !== 'rgb(250, 248, 243)') bad(`light background should be rgb(250,248,243), got ${bg}`);
+  else note(`OK    background ${bg}`);
+
+  const color = await page.evaluate(() => getComputedStyle(document.body).color);
+  if (color !== 'rgb(20, 18, 14)') bad(`light text should be rgb(20,18,14), got ${color}`);
+  else note(`OK    text ${color}`);
+
+  await page.screenshot({ path: `${SHOTS}/02-light-desktop.png`, fullPage: true });
+  found.forEach(bad);
+  await ctx.close();
+}
+
+/* ----------------------------------------------------- 3. the theme toggle -- */
+console.log('\n[3] Theme toggle cycles light -> dark -> system');
+{
+  const { ctx, page, found } = await openPage({
+    viewport: { width: 1440, height: 900 },
+    colorScheme: 'dark',
+  });
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+
+  const toggle = page.getByRole('button', { name: /theme/i });
+  if ((await toggle.count()) === 0) bad('theme toggle button not found');
+  else {
+    const seen = [await page.getAttribute('html', 'data-theme')];
+    for (let i = 0; i < 3; i++) {
+      await toggle.click();
+      await page.waitForTimeout(320);
+      seen.push(await page.getAttribute('html', 'data-theme'));
+    }
+    if (!seen.includes('light') || !seen.includes('dark')) {
+      bad(`toggle never reached both themes: ${seen.join(' -> ')}`);
+    } else {
+      note(`OK    ${seen.join(' -> ')}`);
+    }
+
+    // The choice must survive a reload — that is the whole point of storing it.
+    const before = await page.getAttribute('html', 'data-theme');
+    await page.reload({ waitUntil: 'networkidle' });
+    const after = await page.getAttribute('html', 'data-theme');
+    if (before !== after) bad(`theme not persisted across reload: ${before} -> ${after}`);
+    else note(`OK    persisted "${after}" across reload`);
+  }
+  found.forEach(bad);
+  await ctx.close();
+}
+
+/* ------------------------------------------------ 4. responsive, no overflow -- */
+console.log('\n[4] Responsive — no horizontal scroll');
+for (const [label, width, height] of [
+  ['iPhone SE', 375, 667],
+  ['iPhone 15', 393, 852],
+  ['iPad', 768, 1024],
+  ['Desktop', 1440, 900],
+]) {
+  const { ctx, page, found } = await openPage({ viewport: { width, height } });
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth
+  );
+  if (overflow > 0) bad(`${label} (${width}px): page scrolls horizontally by ${overflow}px`);
+  else note(`OK    ${label} (${width}px)`);
+  if (width === 393) await page.screenshot({ path: `${SHOTS}/03-mobile-dark.png`, fullPage: true });
+  found.forEach(bad);
+  await ctx.close();
+}
+
+/* ---------------------------------------------------------- 5. 404 route -- */
+console.log('\n[5] Unknown route renders the 404 page');
+{
+  const { ctx, page, found } = await openPage({ viewport: { width: 1440, height: 900 } });
+  await page.goto(`${BASE}/this-does-not-exist`, { waitUntil: 'networkidle' });
+  const text = await page.textContent('body');
+  if (!text?.includes('404')) bad('404 page did not render');
+  else note('OK    404 renders');
+  found.forEach(bad);
+  await ctx.close();
+}
+
+await browser.close();
+
+console.log(`\n${'='.repeat(70)}`);
+if (problems.length) {
+  console.error(`${problems.length} problem(s) found.\n`);
+  process.exit(1);
+}
+console.log(`All browser checks passed. Screenshots in ${SHOTS}/\n`);

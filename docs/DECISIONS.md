@@ -35,6 +35,16 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   despite otherwise-strict TypeScript. It forces `import.meta.env['VITE_X']`,
   and Vite only statically replaces the dot form — the bracket form would
   silently be `undefined` in production.
+- 2026-07-28: Use Supabase's new **publishable** key (`sb_publishable_...`) via
+  `VITE_SUPABASE_PUBLISHABLE_KEY`, not the legacy `eyJ...` anon JWT. Both were
+  tested live against `/auth/v1/settings` and both return 200, but the legacy
+  keys are on Supabase's deprecation path and this product is meant to run for
+  years. Swapping back is a one-line env change if anything ever needs it.
+- 2026-07-28: Git in this repo uses a local credential helper that reads
+  `GH_TOKEN` from the environment, with an empty helper entry ahead of it to
+  reset the inherited Windows Credential Manager. Verified by negative test: an
+  invalid token now fails the push instead of silently falling back to Rashid's
+  stored GitHub login.
 - 2026-07-28: Playwright added as a dev dependency. Rashid cannot debug in a
   console, so "zero console errors" has to be machine-verified; section 11's
   auth-stability tests (idle refresh, two tabs, refresh mid-form) will need it

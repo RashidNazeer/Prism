@@ -13,7 +13,15 @@ import { z } from 'zod';
  */
 const schema = z.object({
   VITE_SUPABASE_URL: z.string().url('VITE_SUPABASE_URL must be a full https:// URL'),
-  VITE_SUPABASE_ANON_KEY: z.string().min(20, 'VITE_SUPABASE_ANON_KEY looks empty or truncated'),
+  /**
+   * The `sb_publishable_...` key, not the legacy `eyJ...` anon JWT. Both work
+   * today, but Supabase is phasing the legacy keys out and this project is
+   * meant to run for years. Safe to ship publicly: it grants nothing on its
+   * own, because every table is behind Row Level Security.
+   */
+  VITE_SUPABASE_PUBLISHABLE_KEY: z
+    .string()
+    .min(20, 'VITE_SUPABASE_PUBLISHABLE_KEY looks empty or truncated'),
 });
 
 export type Env = z.infer<typeof schema>;
@@ -25,7 +33,7 @@ export function getEnv(): Env {
 
   const parsed = schema.safeParse({
     VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
-    VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY,
+    VITE_SUPABASE_PUBLISHABLE_KEY: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
   });
 
   if (!parsed.success) {

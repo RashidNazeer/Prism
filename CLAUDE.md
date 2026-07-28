@@ -38,7 +38,12 @@ pnpm typecheck        # tsc -b
 pnpm lint             # oxlint
 pnpm format           # prettier --write
 pnpm check:contrast   # dark/light token parity + WCAG guard
+pnpm verify:browser   # real Chromium: console errors, both themes, responsive
 ```
+
+`verify:browser` needs a server running — `pnpm build` then `pnpm preview` in
+another shell, then point it at http://localhost:4173. Rashid cannot read a
+console, so this is how "zero console errors" gets proven.
 
 Supabase (always pass the token via env, never `supabase login`):
 

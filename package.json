@@ -12,7 +12,8 @@
     "lint": "oxlint",
     "format": "prettier --write \"**/*.{ts,tsx,css,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,css,json,md}\"",
-    "check:contrast": "node scripts/check-contrast.mjs"
+    "check:contrast": "node scripts/check-contrast.mjs",
+    "verify:browser": "node scripts/verify-page.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",
