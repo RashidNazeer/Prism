@@ -1,67 +1,68 @@
 # Project state
 
-**Last updated:** 2026-07-28
-**Current step:** Step 0 — Setup
-**Status:** Built and awaiting Rashid's approval
+**Last updated:** 2026-07-29
+**Current step:** Step 2 — Public landing page
+**Status:** Built and deployed to dev, awaiting Rashid's approval
 
 ---
 
 ## Where we are
 
-Step 0 of the Phase 1 roadmap. The repo, both Supabase projects, the app
-scaffold and the public "coming soon" shell exist. Vercel wiring is the last
-piece and is blocked on a token from Rashid.
+Step 0 (setup) is approved and live on both URLs. Rashid then reordered the
+roadmap: the **landing page (Step 2) is being built before auth (Step 1)**,
+because he wants the homepage designed first. Step 1 comes after this.
+
+**Prod is frozen.** Rashid's instruction on 2026-07-29: everything pushes to
+`dev` only from now on. `main` stays where it is until he says "make it live".
 
 ## Done
 
-- Toolchain verified on Rashid's Windows machine; installed `gh` 2.96 and
-  `pnpm` 11.17 (git, node 24, supabase 2.105, vercel 54.9 were already present).
-- Token-based CLI access set up so no existing browser login is disturbed.
-  Secrets live in `C:\Users\RA_shid\.wurx\cli-secrets.env`, outside the repo.
-- GitHub repo `RashidNazeer/WurxMediaHub` (private) with `main` and `dev`.
-- Supabase projects `wurxmediahub-dev` and `wurxmediahub-prod` created in the
-  Wurx Media org, us-east-1, with automatic RLS ON and auto-expose OFF.
-- App scaffolded: React 19, Vite 8, TypeScript 6 strict, Tailwind v4,
-  TanStack Query, React Router (lazy routes), Motion, Zod, Supabase client.
-- Design tokens built from the wurxmedia.com palette, dark + light, with
-  `scripts/check-contrast.mjs` enforcing parity and WCAG AA inside `pnpm build`.
-- Coming-soon shell with anti-flash theme switching and a working theme toggle.
-- Local project linked to `wurxmediahub-dev`; `.env.local` holds the dev URL and
-  publishable key (gitignored).
-- Browser-verified in real Chromium: zero console errors, correct colours in
-  both themes, toggle persists across reload, no horizontal scroll at 375 /
-  393 / 768 / 1440, 404 route renders.
-- Both branches pushed. Git auth locked to the scoped token (negative-tested).
-- Memory docs created (this file, FEATURE_MAP, DECISIONS, CLAUDE.md).
+### Step 0 — Setup (approved)
 
-- Vercel wired up: both projects connected to the repo, framework `vite`,
-  per-project Ignored Build Step so each builds only its own branch, env vars
-  set (dev project -> dev database, prod project -> prod database),
-  `wurxmediahubdev.vercel.app` pinned to the `dev` branch, and Vercel
-  Authentication disabled so both URLs are publicly reachable.
+- Toolchain, tokens and CLI access set up without touching Rashid's other
+  project logins. Secrets in `C:\Users\RA_shid\.wurx\cli-secrets.env`.
+- GitHub `RashidNazeer/WurxMediaHub` (private), `main` + `dev`.
+- Supabase `wurxmediahub-dev` / `wurxmediahub-prod`, automatic RLS on,
+  auto-expose off. Local project linked to dev.
+- Vercel: both projects wired, env vars split per environment, each builds only
+  its own branch, both URLs public.
+- Design token system with `pnpm check:contrast` enforcing dark/light parity and
+  WCAG AA inside the build.
+
+### Step 2 — Landing page (this step)
+
+- Typography replaced: **Fustat** (display) + **Inter** (body). Archivo Black
+  was rejected by Rashid as looking template-generated.
+- Sections built: nav (with mobile menu), hero with an example "My Numbers"
+  dashboard card, trusted-by brand row, headline stats, three-step how-it-works,
+  six-card platform grid, closing CTA, footer.
+- `/apply` placeholder route so no call to action is a dead link.
+- `scripts/shots.mjs` added for retina design-review screenshots.
+- `scripts/verify-page.mjs` now scrolls the page before asserting, and fails if
+  any section is still invisible — scroll-reveal sections were silently blank.
 
 ## Known bugs
 
-None outstanding. One resolved during setup: every Vercel deploy came back
-`BLOCKED` because commits were authored with Rashid's personal email, which
-GitHub maps to a different account (`TSRashid`) than the repo owner
-(`RashidNazeer`). Fixed by switching the commit identity to the GitHub no-reply
-address — see DECISIONS.
+None outstanding. Fixed this step: Fustat's tabular figures rendered
+`$48,920` as `$48 , 920`; large display numbers now use `.wx-lining`.
 
 ## Blocked on Rashid
 
-1. The real Wurx logo file. A typographic placeholder mark is in use
-   (`src/components/brand/WurxMark.tsx`); swapping it touches only that file
-   plus `public/favicon.svg`.
+1. **Real brand list for the "Trusted by" row.** `src/content/site.ts` currently
+   holds six obvious placeholders (`Brand One`…`Brand Six`). Needs real names,
+   and ideally SVG logos.
+2. **The real Wurx logo.** Placeholder mark in
+   `src/components/brand/WurxMark.tsx` + `public/favicon.svg`.
 
 ## Next action
 
-Confirm both URLs serve the shell, then hand Rashid the test checklist and wait
-for approval before starting **Step 1 — Auth and roles foundation**.
+Wait for Rashid's review of the landing page. Then either iterate on it, or
+start **Step 1 — Auth and roles foundation**.
 
-## Open product decisions (ask when the step needs them, not before)
+## Open product decisions
 
 - Flagship brand for the first Brand Hub (needed at Step 6).
-- Whether the public landing page shows real platform stats (Step 2).
 - Leaderboard privacy default: opt-in or opt-out (Step 9).
 - How payments/commission are displayed to creators (Step 8).
+- When to drop `<meta name="robots" content="noindex">` and let the landing page
+  be indexed.

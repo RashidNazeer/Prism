@@ -40,6 +40,44 @@ const ignorable = (t) => IGNORE.some((re) => re.test(t));
 
 const browser = await chromium.launch();
 
+/**
+ * Scroll the whole page, then return to the top.
+ *
+ * Sections fade in with `whileInView`, so anything below the fold is still at
+ * opacity 0 until it has been scrolled past. Without this, a full-page
+ * screenshot is mostly blank and every check below the fold is meaningless.
+ */
+async function scrollThrough(page) {
+  await page.evaluate(async () => {
+    const step = window.innerHeight * 0.75;
+    for (let y = 0; y < document.body.scrollHeight; y += step) {
+      window.scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 120));
+    }
+    window.scrollTo(0, document.body.scrollHeight);
+    await new Promise((r) => setTimeout(r, 400));
+    window.scrollTo(0, 0);
+    await new Promise((r) => setTimeout(r, 200));
+  });
+  await page.waitForTimeout(500);
+}
+
+/** Fail if any section is still invisible after the page has been scrolled. */
+async function assertNothingInvisible(page) {
+  const hidden = await page.evaluate(() =>
+    [...document.querySelectorAll('section, main > div, footer')]
+      .filter((el) => {
+        const s = getComputedStyle(el);
+        return (
+          el.getBoundingClientRect().height > 40 &&
+          (parseFloat(s.opacity) < 0.9 || s.visibility === 'hidden')
+        );
+      })
+      .map((el) => el.tagName + (el.id ? '#' + el.id : '') + ' opacity=' + getComputedStyle(el).opacity)
+  );
+  return hidden;
+}
+
 /** Open a page with console/error/request listeners attached. */
 async function openPage(ctxOpts = {}) {
   const ctx = await browser.newContext(ctxOpts);
@@ -83,6 +121,11 @@ console.log('\n[1] Dark mode, 1440x900');
   if (bg !== 'rgb(10, 10, 10)') bad(`dark background should be rgb(10,10,10), got ${bg}`);
   else note(`OK    background ${bg}`);
 
+  await scrollThrough(page);
+  const hidden = await assertNothingInvisible(page);
+  if (hidden.length) hidden.forEach((h) => bad(`still invisible after scrolling: ${h}`));
+  else note(`OK    every section revealed after scrolling`);
+
   await page.screenshot({ path: `${SHOTS}/01-dark-desktop.png`, fullPage: true });
   found.forEach(bad);
   await ctx.close();
@@ -109,6 +152,7 @@ console.log('\n[2] Light mode, 1440x900 (OS preference)');
   if (color !== 'rgb(20, 18, 14)') bad(`light text should be rgb(20,18,14), got ${color}`);
   else note(`OK    text ${color}`);
 
+  await scrollThrough(page);
   await page.screenshot({ path: `${SHOTS}/02-light-desktop.png`, fullPage: true });
   found.forEach(bad);
   await ctx.close();
@@ -164,7 +208,10 @@ for (const [label, width, height] of [
   );
   if (overflow > 0) bad(`${label} (${width}px): page scrolls horizontally by ${overflow}px`);
   else note(`OK    ${label} (${width}px)`);
-  if (width === 393) await page.screenshot({ path: `${SHOTS}/03-mobile-dark.png`, fullPage: true });
+  if (width === 393) {
+    await scrollThrough(page);
+    await page.screenshot({ path: `${SHOTS}/03-mobile-dark.png`, fullPage: true });
+  }
   found.forEach(bad);
   await ctx.close();
 }

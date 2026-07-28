@@ -80,6 +80,35 @@
       color var(--wx-dur-base) var(--wx-ease);
   }
 
+  /* Headings, once, everywhere. Tight tracking and tight leading are what stop
+     large type reading like a default template — set here so no component has
+     to remember. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--wx-font-display);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.08;
+    text-wrap: balance;
+  }
+
+  /* Tabular figures for columns of numbers — leaderboards, data tables — where
+     digits must line up vertically between rows.
+     NOT for large display figures: Fustat renders the tabular comma at full
+     digit width, so "$48,920" comes out as "$48 , 920". Use `.wx-lining` for
+     those instead. */
+  .wx-numeric {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Proportional figures with a fixed width reserved by the browser. Keeps
+     large animated counters from re-flowing without breaking the comma. */
+  .wx-lining {
+    font-variant-numeric: lining-nums proportional-nums;
+  }
+
   /* One consistent, always-visible focus ring across the whole product. */
   :focus-visible {
     outline: 2px solid var(--wx-accent);

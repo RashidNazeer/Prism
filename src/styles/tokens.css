@@ -116,9 +116,14 @@
    Non-colour tokens — identical in both modes.
    --------------------------------------------------------------------------- */
 :root {
+  /* Fustat for headings, Inter for everything else.
+     Archivo Black was the first attempt — it is a poster face, and at display
+     sizes it reads as a template rather than a product. Fustat is a modern
+     geometric sans that stays sharp and expensive-looking at 5rem and still
+     works at 1rem. Headings use 700/800 with tight tracking (see global.css). */
   --wx-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     Helvetica, Arial, sans-serif;
-  --wx-font-display: 'Archivo Black', 'Inter', -apple-system, BlinkMacSystemFont,
+  --wx-font-display: 'Fustat', 'Inter', -apple-system, BlinkMacSystemFont,
     'Segoe UI', sans-serif;
   --wx-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas,
     monospace;

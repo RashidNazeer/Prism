@@ -73,6 +73,34 @@ override `--wx-*` at the hub level.
 - Only `VITE_`-prefixed public values belong in `env.ts`. Secrets go to Edge
   Function secrets.
 
+## Landing page (public)
+
+**Files:** `src/routes/Landing.tsx`, `src/components/landing/*`,
+`src/components/layout/Section.tsx`, `src/components/ui/Button.tsx`,
+`src/content/site.ts`, `src/routes/Apply.tsx`
+**Tables:** none. Stats are hardcoded marketing copy, not database reads.
+
+**Depends on:** Design tokens, Routing, Brand mark
+**Depended on by:** Applications (Step 3) — every CTA points at `/apply`
+
+**Change rules**
+
+- All marketing copy, stats, brand names and the three steps live in
+  `src/content/site.ts`. Never hardcode that text in a component.
+- The brand list there is PLACEHOLDER. It must be replaced with real partners
+  before this page is shown publicly. Do not invent brand names.
+- The hero dashboard card (`NumbersPreview.tsx`) shows invented figures and is
+  labelled "Example". If it ever shows real data it must come from the fact
+  table and carry a real "Updated" timestamp — see My Numbers (Step 8).
+- `/apply` is a placeholder page. Step 3 replaces its body with the real form;
+  the route itself must keep working so no CTA breaks.
+- Adding a section: wrap it in `<Section>` for rhythm, use `<Reveal>` for the
+  scroll-in, and give it a `scroll-mt` if it is an anchor target — the header is
+  fixed and will otherwise cover the heading.
+- Anchor links (`#how`) must not use react-router `<Link>`; `ButtonLink`
+  detects a leading `#` and renders a plain `<a>`. A `<Link to="#how">` is
+  treated as a route change and never scrolls.
+
 ## Brand mark
 
 **Files:** `src/components/brand/WurxMark.tsx`, `public/favicon.svg`

@@ -1,4 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query';
+import { MotionConfig } from 'motion/react';
 import type { ReactNode } from 'react';
 import { queryClient } from '@/lib/query-client';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
@@ -11,11 +12,18 @@ import { ThemeProvider } from '@/components/theme/ThemeProvider';
  * refreshes the access token roughly every hour; if a provider is keyed on it,
  * that refresh remounts the entire React tree — wiping half-filled forms and
  * flashing the UI. Providers mount once, for the life of the tab.
+ *
+ * MotionConfig reducedMotion="user" makes every animation in the product honour
+ * the operating system's "reduce motion" setting. The CSS media query in
+ * global.css only covers CSS transitions; Motion animates in JavaScript and
+ * would otherwise ignore it entirely.
  */
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <MotionConfig reducedMotion="user">
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      </MotionConfig>
     </ThemeProvider>
   );
 }

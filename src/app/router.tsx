@@ -13,8 +13,16 @@ export const router = createBrowserRouter([
     path: '/',
     HydrateFallback: RouteFallback,
     lazy: async () => {
-      const { ComingSoon } = await import('@/routes/ComingSoon');
-      return { Component: ComingSoon };
+      const { Landing } = await import('@/routes/Landing');
+      return { Component: Landing };
+    },
+  },
+  {
+    path: '/apply',
+    HydrateFallback: RouteFallback,
+    lazy: async () => {
+      const { Apply } = await import('@/routes/Apply');
+      return { Component: Apply };
     },
   },
   {

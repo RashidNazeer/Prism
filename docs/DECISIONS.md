@@ -68,6 +68,36 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   them, and the public landing page must be reachable. The shell ships with
   `<meta name="robots" content="noindex">`. Say the word and dev goes back
   behind protection.
+- 2026-07-29: Roadmap reordered by Rashid — the public landing page (Step 2) is
+  built before auth (Step 1). Auth follows.
+- 2026-07-29: Prod frozen. Everything pushes to `dev` only until Rashid says
+  "make it live". `main` is not to be touched.
+- 2026-07-29: Display font changed from **Archivo Black** to **Fustat**. Rashid
+  rejected Archivo Black as looking AI-generated. He pointed at medialabs-co.com
+  as the reference; their stylesheet was read directly and uses
+  `h1..h4 { font-family: Fustat; font-weight: 700; letter-spacing: -0.02em;
+  line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
+  once in global.css rather than per component. Archivo Black is a poster face —
+  at 5rem it reads as a template, which is exactly what Rashid objected to.
+- 2026-07-29: The hero carries an example "My Numbers" dashboard card. A hero
+  that is text-only with a large empty right side is the clearest tell of a
+  generated page, and the product's whole pitch is "you get a dashboard, not a
+  screenshot" — so showing it beats describing it. The card is labelled
+  **Example** and uses invented figures; it must never be presented as a real
+  creator's data.
+- 2026-07-29: Landing page marketing numbers (100M+ revenue, 5K+ creators,
+  2B+ views) supplied and confirmed by Rashid. The "Official TikTok Partner"
+  claim from the MediaLabs reference was deliberately NOT copied — Rashid
+  confirmed Wurx is not one.
+- 2026-07-29: Brand logos in `src/content/site.ts` are placeholders and flagged
+  as such in the file. Real partner names were not invented.
+- 2026-07-29: Large display numbers use `.wx-lining`, not `.wx-numeric`. Fustat
+  renders the tabular comma at full digit width, so tabular figures turned
+  `$48,920` into `$48 , 920`. Tabular is still correct for leaderboards and data
+  tables where digits must align between rows.
+- 2026-07-29: `MotionConfig reducedMotion="user"` wraps the app. The
+  prefers-reduced-motion media query in global.css only governs CSS
+  transitions; Motion animates in JavaScript and would otherwise ignore it.
 - 2026-07-28: Content-Security-Policy deferred. The anti-flash theme script is
   inline and Motion injects inline styles, so a correct CSP needs script hashes
   and careful testing. Other security headers (HSTS, nosniff, frame-deny,
