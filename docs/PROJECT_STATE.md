@@ -26,6 +26,12 @@ piece and is blocked on a token from Rashid.
 - Design tokens built from the wurxmedia.com palette, dark + light, with
   `scripts/check-contrast.mjs` enforcing parity and WCAG AA inside `pnpm build`.
 - Coming-soon shell with anti-flash theme switching and a working theme toggle.
+- Local project linked to `wurxmediahub-dev`; `.env.local` holds the dev URL and
+  publishable key (gitignored).
+- Browser-verified in real Chromium: zero console errors, correct colours in
+  both themes, toggle persists across reload, no horizontal scroll at 375 /
+  393 / 768 / 1440, 404 route renders.
+- Both branches pushed. Git auth locked to the scoped token (negative-tested).
 - Memory docs created (this file, FEATURE_MAP, DECISIONS, CLAUDE.md).
 
 ## In progress
