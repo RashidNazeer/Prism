@@ -91,7 +91,7 @@ async function openPage(ctxOpts = {}) {
   });
   page.on('pageerror', (e) => found.push(`pageerror: ${e.message}`));
   page.on('requestfailed', (r) => {
-    if (!ignorable(r.url())) found.push(`requestfailed: ${r.url()} — ${r.failure()?.errorText}`);
+    if (!ignorable(r.url())) found.push(`requestfailed: ${r.url()}, ${r.failure()?.errorText}`);
   });
   return { ctx, page, found };
 }
@@ -182,7 +182,7 @@ console.log('\n[3] Theme toggle cycles light -> dark -> system');
       note(`OK    ${seen.join(' -> ')}`);
     }
 
-    // The choice must survive a reload — that is the whole point of storing it.
+    // The choice must survive a reload, that is the whole point of storing it.
     const before = await page.getAttribute('html', 'data-theme');
     await page.reload({ waitUntil: 'networkidle' });
     const after = await page.getAttribute('html', 'data-theme');
@@ -194,7 +194,7 @@ console.log('\n[3] Theme toggle cycles light -> dark -> system');
 }
 
 /* ------------------------------------------------ 4. responsive, no overflow -- */
-console.log('\n[4] Responsive — no horizontal scroll');
+console.log('\n[4] Responsive, no horizontal scroll');
 for (const [label, width, height] of [
   ['iPhone SE', 375, 667],
   ['iPhone 15', 393, 852],

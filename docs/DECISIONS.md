@@ -4,27 +4,27 @@ Dated one-liners. Why, not just what. Newest at the bottom.
 
 ---
 
-- 2026-07-28: Stack locked by Rashid — React + Vite + TS strict, Tailwind +
+- 2026-07-28: Stack locked by Rashid, React + Vite + TS strict, Tailwind +
   shadcn/ui, TanStack Query, React Router, Supabase only, Vercel, pnpm. No
   Next.js (his previous Next builds felt slow).
 - 2026-07-28: Claude drives all CLIs with scoped tokens from
-  `C:\Users\RA_shid\.wurx\cli-secrets.env`, never `*/login` commands — Rashid
+  `C:\Users\RA_shid\.wurx\cli-secrets.env`, never `*/login` commands, Rashid
   has another project signed in on GitHub/Supabase/Vercel and it must not be
   disturbed. GitHub uses a fine-grained token locked to this one repo; Vercel
   and Supabase tokens are account-wide because neither offers per-project
   tokens (Rashid accepted this, both set to expire in 90 days).
 - 2026-07-28: Two Supabase projects in a dedicated "Wurx Media" org rather than
-  one project with two schemas — "prod is sacred" is only real if prod is a
+  one project with two schemas, "prod is sacred" is only real if prod is a
   separate database.
-- 2026-07-28: Supabase project settings — `Enable automatic RLS` ON (forces RLS
+- 2026-07-28: Supabase project settings, `Enable automatic RLS` ON (forces RLS
   on every new table, matching our deny-by-default rule) and `Automatically
   expose new tables` OFF (grants are explicit per table, in the migration).
   Both projects configured identically.
 - 2026-07-28: Brand palette taken from wurxmedia.com's own stylesheet rather
-  than invented — near-black `#0a0a0a`, gold `#c8924b`, cream `#f5efe1`,
+  than invented, near-black `#0a0a0a`, gold `#c8924b`, cream `#f5efe1`,
   Archivo Black / Inter / JetBrains Mono.
 - 2026-07-28: Light mode uses a darkened gold `#8a5f1f` instead of the brand
-  `#c8924b`. The brand gold is only 2.58:1 on a light background — it would
+  `#c8924b`. The brand gold is only 2.58:1 on a light background, it would
   have been unreadable. Dark mode keeps the true brand gold at 7.23:1.
 - 2026-07-28: `scripts/check-contrast.mjs` runs inside `pnpm build` and fails
   the build on (a) a token defined in one theme but not the other, or (b) any
@@ -33,7 +33,7 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   memory.
 - 2026-07-28: `noPropertyAccessFromIndexSignature` deliberately NOT enabled
   despite otherwise-strict TypeScript. It forces `import.meta.env['VITE_X']`,
-  and Vite only statically replaces the dot form — the bracket form would
+  and Vite only statically replaces the dot form, the bracket form would
   silently be `undefined` in production.
 - 2026-07-28: Use Supabase's new **publishable** key (`sb_publishable_...`) via
   `VITE_SUPABASE_PUBLISHABLE_KEY`, not the legacy `eyJ...` anon JWT. Both were
@@ -53,7 +53,7 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   `286085480+RashidNazeer@users.noreply.github.com`, not Rashid's personal
   email. GitHub maps that personal email to a *different* account (`TSRashid`),
   and Vercel's Hobby plan BLOCKS any deployment whose commit author it cannot
-  match to the connected account — every deploy failed with state `BLOCKED`
+  match to the connected account, every deploy failed with state `BLOCKED`
   until this was corrected. Do not change `user.email` in this repo.
 - 2026-07-29: Both Vercel projects build from the one repo, so each has an
   Ignored Build Step so it only builds its own branch (`wurxmediahub` -> `main`,
@@ -64,11 +64,11 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   to the dashboard.
 - 2026-07-29: Vercel Authentication (`ssoProtection`) turned OFF on both
   projects. It defaulted to `all_except_custom_domains`, which would have put
-  both `.vercel.app` URLs behind a Vercel login — Rashid could not have tested
+  both `.vercel.app` URLs behind a Vercel login, Rashid could not have tested
   them, and the public landing page must be reachable. The shell ships with
   `<meta name="robots" content="noindex">`. Say the word and dev goes back
   behind protection.
-- 2026-07-29: Roadmap reordered by Rashid — the public landing page (Step 2) is
+- 2026-07-29: Roadmap reordered by Rashid, the public landing page (Step 2) is
   built before auth (Step 1). Auth follows.
 - 2026-07-29: Prod frozen. Everything pushes to `dev` only until Rashid says
   "make it live". `main` is not to be touched.
@@ -77,17 +77,16 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   as the reference; their stylesheet was read directly and uses
   `h1..h4 { font-family: Fustat; font-weight: 700; letter-spacing: -0.02em;
   line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
-  once in global.css rather than per component. Archivo Black is a poster face —
-  at 5rem it reads as a template, which is exactly what Rashid objected to.
+  once in global.css rather than per component. Archivo Black is a poster face, at 5rem it reads as a template, which is exactly what Rashid objected to.
 - 2026-07-29: The hero carries an example "My Numbers" dashboard card. A hero
   that is text-only with a large empty right side is the clearest tell of a
   generated page, and the product's whole pitch is "you get a dashboard, not a
-  screenshot" — so showing it beats describing it. The card is labelled
+  screenshot", so showing it beats describing it. The card is labelled
   **Example** and uses invented figures; it must never be presented as a real
   creator's data.
 - 2026-07-29: Landing page marketing numbers (100M+ revenue, 5K+ creators,
   2B+ views) supplied and confirmed by Rashid. The "Official TikTok Partner"
-  claim from the MediaLabs reference was deliberately NOT copied — Rashid
+  claim from the MediaLabs reference was deliberately NOT copied, Rashid
   confirmed Wurx is not one.
 - 2026-07-29: Brand logos in `src/content/site.ts` are placeholders and flagged
   as such in the file. Real partner names were not invented.
@@ -99,7 +98,7 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   prefers-reduced-motion media query in global.css only governs CSS
   transitions; Motion animates in JavaScript and would otherwise ignore it.
 - 2026-07-29: The hero right column is the application form, not the example
-  dashboard card. Rashid's call — the form is the conversion point, so it goes
+  dashboard card. Rashid's call, the form is the conversion point, so it goes
   above the fold. `NumbersPreview.tsx` was deleted; it is in git history and can
   come back into the Platform section if wanted.
 - 2026-07-29: Hero now has ONE secondary button ("See how it works", size xl).
@@ -107,7 +106,7 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   CTA on the page scrolls to `#apply` instead of routing away.
 - 2026-07-29: `/apply` still exists as a standalone route rendering the SAME
   `<ApplyForm />`, so a direct link from a DM or email lands somewhere focused.
-  One form component, two placements — never two copies.
+  One form component, two placements, never two copies.
 - 2026-07-29: Container widened to `max-w-7xl` with `px-5 sm:px-8`. At Rashid's
   ~1280px viewport the old `max-w-6xl` left a thin strip of dead margin.
 - 2026-07-29: The application Zod schema lives in
@@ -116,19 +115,58 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   server-side. Client validation is convenience; the server is the boundary.
 - 2026-07-29: **Form is not wired to a database.** Submitting validates and
   shows a success panel that says so explicitly. It must keep saying so until
-  Step 3 lands — a success message for an application nobody received would be
+  Step 3 lands, a success message for an application nobody received would be
   a lie to a real creator.
 - 2026-07-29: Landing page weight noted at ~182 KB gzip JS/CSS + ~102 KB fonts.
   The single biggest item is Zod at roughly 60 KB gzip inside the ApplyForm
   chunk. Not acted on yet. Fix at Step 3, when the schema is final: either
   switch to `zod/mini` or dynamic-import the schema so it is off the landing
   page's critical path.
+- 2026-07-29: **No web fonts.** Rashid asked for lower page weight and said he
+  never meant to copy a specific typeface, only to have something professional.
+  Fustat + Inter + JetBrains Mono cost 102 KB and a render-blocking round trip
+  to Google. Replaced with system stacks that resolve to Segoe UI Variable
+  Display / SF Pro Display / Roboto. Zero bytes, and they are the faces Windows
+  and macOS use for their own interfaces.
+- 2026-07-29: Zod moved off the landing page's critical path. The schema file
+  is now split: `application-fields.ts` (option lists and types, Zod-free) is
+  imported normally, `application.ts` (the Zod schema) is dynamically imported
+  on first submit. Saves ~16 KB gzipped on initial load and costs nothing,
+  because nobody needs a validator before they press the button.
+- 2026-07-29: Motion switched to `LazyMotion` + `domAnimation` with `strict`,
+  and every `motion.x` became `m.x`. Cut the form chunk from 44 KB to 8 KB
+  gzipped. `strict` makes the heavy `motion.x` throw, so it cannot creep back
+  in. Verified `whileInView` still works via the existing browser test.
+- 2026-07-29: Landing page initial download went from roughly 284 KB (182 KB
+  JS/CSS + 102 KB fonts) to roughly 159 KB, a 44% cut.
+- 2026-07-29: Real partner logos, taken from the marquee on wurxmedia.com.
+  The originals were PNGs wrapped in SVG, 315 KB in total including a 2048x2048
+  bitmap for a 38px slot. They were unwrapped, cropped to their artwork and
+  downscaled to roughly 50 KB, all with Node and Windows' built-in imaging, so
+  no image-processing dependency was added.
+- 2026-07-29: Partner logos are white artwork on OPAQUE BLACK, so they cannot
+  simply be drawn on a light page. `.wx-logo` blends instead: `screen` in dark
+  (the black drops out), `invert(1)` then `multiply` in light (the white drops
+  out). `.wx-marquee` paints its own background because `mask-image` creates a
+  stacking context that would otherwise isolate the blend.
+- 2026-07-29: The marquee is pure CSS: the logo list is rendered twice and the
+  track slides exactly -50%. No animation library, no scroll listener. It pauses
+  on hover and is disabled entirely under prefers-reduced-motion.
+- 2026-07-29: Now using the real Wurx Media logo (mascot + wordmark) from
+  wurxmedia.com, downscaled from 1641x460 / 125 KB to 228x64 / 11 KB. It is
+  cream artwork drawn for dark backgrounds, so light mode darkens it via
+  `--wx-mark-filter: brightness(0.32)`; brightness multiplies each channel, so
+  the mascot keeps its internal contrast instead of flattening to a silhouette.
+  `public/favicon.svg` still shows the older geometric "W" and does not match.
+- 2026-07-29: **No em dashes or en dashes anywhere.** Rashid's standing
+  instruction. Swept from every source, doc and config file. Watch for this when
+  writing new copy.
 - 2026-07-28: Content-Security-Policy deferred. The anti-flash theme script is
   inline and Motion injects inline styles, so a correct CSP needs script hashes
   and careful testing. Other security headers (HSTS, nosniff, frame-deny,
   referrer, permissions policy) ship now in `vercel.json`. **Revisit before the
   first prod launch.**
-- 2026-07-28: Flagged to Rashid but not acted on — (a) a Vite SPA has no
+- 2026-07-28: Flagged to Rashid but not acted on, (a) a Vite SPA has no
   server-rendering, so the public landing page will be weak for SEO and link
   previews until we add a build-time prerender; (b) the Supabase free tier
   pauses inactive projects and has no daily backups, so prod needs a paid plan

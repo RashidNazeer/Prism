@@ -1,7 +1,7 @@
 # Project state
 
 **Last updated:** 2026-07-29
-**Current step:** Step 2 — Public landing page
+**Current step:** Step 2, Public landing page
 **Status:** Built and deployed to dev, awaiting Rashid's approval
 
 ---
@@ -17,7 +17,7 @@ because he wants the homepage designed first. Step 1 comes after this.
 
 ## Done
 
-### Step 0 — Setup (approved)
+### Step 0, Setup (approved)
 
 - Toolchain, tokens and CLI access set up without touching Rashid's other
   project logins. Secrets in `C:\Users\RA_shid\.wurx\cli-secrets.env`.
@@ -29,7 +29,7 @@ because he wants the homepage designed first. Step 1 comes after this.
 - Design token system with `pnpm check:contrast` enforcing dark/light parity and
   WCAG AA inside the build.
 
-### Step 2 — Landing page (this step)
+### Step 2, Landing page (this step)
 
 - Typography replaced: **Fustat** (display) + **Inter** (body). Archivo Black
   was rejected by Rashid as looking template-generated.
@@ -38,12 +38,22 @@ because he wants the homepage designed first. Step 1 comes after this.
   six-card platform grid, closing CTA, footer.
 - **Application form in the hero** (Rashid's revision): TikTok handle, email,
   niche with a conditional "Other" follow-up, worked-with-Wurx-before, and best
-  1–3 video links. Real Zod validation, accessible errors. **Not connected to a
-  database** — the success panel says so explicitly.
+  1-3 video links. Real Zod validation, accessible errors. **Not connected to a
+  database**, the success panel says so explicitly.
 - `/apply` renders the same form standalone for direct links.
 - `scripts/shots.mjs` added for retina design-review screenshots.
 - `scripts/verify-page.mjs` now scrolls the page before asserting, and fails if
-  any section is still invisible — scroll-reveal sections were silently blank.
+  any section is still invisible, scroll-reveal sections were silently blank.
+
+### Landing page, revision 2 (weight and brand)
+
+- Web fonts removed entirely; system font stacks instead. Saved 102 KB.
+- Zod split out and lazily imported on first submit. Motion switched to
+  `LazyMotion` + `domAnimation`. Initial download roughly 284 KB to 159 KB.
+- Real partner logos in a pure-CSS marquee, unwrapped and downscaled from
+  315 KB to roughly 50 KB. Theme-safe through blend modes, not edited images.
+- Real Wurx logo in the header and footer, darkened in light mode by filter.
+- Every em dash and en dash removed from the codebase, per standing instruction.
 
 ## Known bugs
 
@@ -52,16 +62,16 @@ None outstanding. Fixed this step: Fustat's tabular figures rendered
 
 ## Blocked on Rashid
 
-1. **Real brand list for the "Trusted by" row.** `src/content/site.ts` currently
-   holds six obvious placeholders (`Brand One`…`Brand Six`). Needs real names,
-   and ideally SVG logos.
-2. **The real Wurx logo.** Placeholder mark in
-   `src/components/brand/WurxMark.tsx` + `public/favicon.svg`.
+1. **A square icon crop of the Wurx logo** for `public/favicon.svg`, which still
+   shows the older geometric gold "W" and no longer matches the header.
+2. **Confirmation of the partner list.** Eight brands were taken from the
+   marquee on wurxmedia.com. Rashid should confirm they are all still current
+   and that none are missing.
 
 ## Next action
 
 Wait for Rashid's review of the landing page. Then either iterate on it, or
-start **Step 1 — Auth and roles foundation**.
+start **Step 1, Auth and roles foundation**.
 
 ## Open product decisions
 

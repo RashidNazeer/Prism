@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * MARKETING COPY AND NUMBERS — the only file to edit for landing page content.
+ * MARKETING COPY AND NUMBERS, the only file to edit for landing page content.
  * ============================================================================
  * Everything a non-developer would want to change lives here: the headline
  * stats, the brand list, the three steps. No component hardcodes this text.
@@ -17,31 +17,46 @@ export const STATS = [
 
 /* --------------------------------------------------------------- brands --- */
 
-/**
- * ⚠️ PLACEHOLDER DATA — replace before this page is shown to anyone.
- *
- * These are NOT real partners. Rashid needs to supply the actual brand list.
- * Two ways to fill this in:
- *   1. Names only  -> set `name`, leave `logo` undefined. Renders as a clean
- *                     uppercase wordmark, which is how half of real logo rows
- *                     look anyway.
- *   2. Real logos  -> drop an SVG in src/assets/brands/ and set `logo` to the
- *                     imported URL. Monochrome SVGs theme themselves.
- */
-export const BRAND_PLACEHOLDERS_NEED_REPLACING = true;
+import bentgo from '@/assets/brands/bentgo.png';
+import bioschwartz from '@/assets/brands/bioshwartz.png';
+import brumate from '@/assets/brands/brumate.png';
+import cutler from '@/assets/brands/cutler.png';
+import m3 from '@/assets/brands/m3.png';
+import physiciansChoice from '@/assets/brands/physicians-choice.png';
+import pureDailyCare from '@/assets/brands/puredailycare.png';
+import vitauthority from '@/assets/brands/vitauthority.png';
 
 export interface BrandLogo {
   name: string;
-  logo?: string;
+  logo: string;
+  /** Rendered height in px. Square marks need less than wide wordmarks. */
+  h?: number;
 }
 
+/**
+ * Partner logos, taken from the marquee on wurxmedia.com.
+ *
+ * The originals were PNGs wrapped in SVG (315 KB total, one of them a
+ * 2048x2048 bitmap for a 38px slot). They were unwrapped and downscaled to
+ * 37 KB total. All are white artwork on an OPAQUE BLACK background, which is
+ * why the marquee blends rather than just drawing them - see `--wx-logo-blend`.
+ *
+ * To add a brand: drop the file in src/assets/brands/, import it, add a row.
+ */
+/**
+ * Heights are tuned per logo so each one carries roughly the same optical
+ * weight. A wide wordmark needs less height than a stacked or square mark, or
+ * it dominates the row.
+ */
 export const BRANDS: BrandLogo[] = [
-  { name: 'Brand One' },
-  { name: 'Brand Two' },
-  { name: 'Brand Three' },
-  { name: 'Brand Four' },
-  { name: 'Brand Five' },
-  { name: 'Brand Six' },
+  { name: "Physician's Choice", logo: physiciansChoice, h: 22 },
+  { name: 'Pure Daily Care', logo: pureDailyCare, h: 44 },
+  { name: 'BruMate', logo: brumate, h: 30 },
+  { name: 'Cutler', logo: cutler, h: 24 },
+  { name: 'Bentgo', logo: bentgo, h: 34 },
+  { name: 'M3 Naturals', logo: m3, h: 44 },
+  { name: 'BioSchwartz', logo: bioschwartz, h: 34 },
+  { name: 'Vitauthority', logo: vitauthority, h: 24 },
 ];
 
 /* ----------------------------------------------------------- how it works -- */
@@ -50,7 +65,7 @@ export const STEPS = [
   {
     n: '01',
     title: 'Apply',
-    body: 'Tell us your handles, your niche and your best videos. Every application is read by a human — we keep the roster intentional, so this is not a sign-up button.',
+    body: 'Tell us your handles, your niche and your best videos. Every application is read by a human. We keep the roster intentional, so this is not a sign-up button.',
   },
   {
     n: '02',
@@ -70,7 +85,7 @@ export const FEATURES = [
   {
     icon: 'chart' as const,
     title: 'My Numbers',
-    body: 'GMV, orders, commission earned and the ad spend sitting behind your own videos — per brand, updated daily, with the timestamp shown.',
+    body: 'GMV, orders, commission earned and the ad spend sitting behind your own videos, per brand, updated daily, with the timestamp shown.',
   },
   {
     icon: 'trophy' as const,
@@ -85,7 +100,7 @@ export const FEATURES = [
   {
     icon: 'wallet' as const,
     title: 'Retainers and offers',
-    body: 'Boosted commission tiers, pay-per-video slots and retainer openings — unlocked as your tier goes up.',
+    body: 'Boosted commission tiers, pay-per-video slots and retainer openings, unlocked as your tier goes up.',
   },
   {
     icon: 'file' as const,

@@ -1,4 +1,4 @@
-# WurxMediaHub — agent working notes
+# WurxMediaHub, agent working notes
 
 Creator platform for Wurx Media's TikTok Shop brands. Creators apply once, get
 approved, and enter branded **Brand Hubs** where they see their real numbers
@@ -13,14 +13,14 @@ or the terminal). Claude runs the entire toolchain via CLI.
 
 ## Read this first, every session
 
-1. `docs/PROJECT_STATE.md` — where we are, what's next. **Always.**
-2. `docs/FEATURE_MAP.md` — only the entries you are about to touch.
-3. `docs/DECISIONS.md` — only when a decision is in question.
+1. `docs/PROJECT_STATE.md`, where we are, what's next. **Always.**
+2. `docs/FEATURE_MAP.md`, only the entries you are about to touch.
+3. `docs/DECISIONS.md`, only when a decision is in question.
 
 Chunked memory, not everything at once. If reality and the docs disagree, fix
 the docs in the same commit.
 
-## Stack (locked — change only with Rashid's approval)
+## Stack (locked, change only with Rashid's approval)
 
 React 19 + Vite + TypeScript strict · Tailwind v4 + shadcn/ui (heavily themed) ·
 TanStack Query for all server state · React Router (code-split routes) ·
@@ -41,7 +41,7 @@ pnpm check:contrast   # dark/light token parity + WCAG guard
 pnpm verify:browser   # real Chromium: console errors, both themes, responsive
 ```
 
-`verify:browser` needs a server running — `pnpm build` then `pnpm preview` in
+`verify:browser` needs a server running, `pnpm build` then `pnpm preview` in
 another shell, then point it at http://localhost:4173. Rashid cannot read a
 console, so this is how "zero console errors" gets proven.
 
@@ -71,7 +71,7 @@ docs/         PROJECT_STATE.md FEATURE_MAP.md DECISIONS.md
 
 One roadmap step per approval. Never build two steps at once.
 
-Read state → plan in 5–10 lines → build → report in plain English with a
+Read state → plan in 5-10 lines → build → report in plain English with a
 click-by-click test checklist → **stop** and wait for "approved" / "next".
 A bug report becomes the current step.
 
@@ -85,7 +85,7 @@ asking. On prod, ask twice.
 
 - RLS on every table from creation, deny by default. No table ships without
   policies. The `automatic RLS` event trigger is enabled on both projects.
-- `Automatically expose new tables` is OFF — grants are explicit, per table, in
+- `Automatically expose new tables` is OFF, grants are explicit, per table, in
   the migration.
 - Never trust a role, tier or `creator_id` from the client. Derive identity from
   `auth.uid()` and JWT claims (custom access token hook).
@@ -104,7 +104,7 @@ asking. On prod, ask twice.
 - `persistSession` + `autoRefreshToken` + PKCE, default token lifetimes.
 - `onAuthStateChange` may only set state. Never reload or navigate on
   `TOKEN_REFRESHED` / `USER_UPDATED`. Redirect only on real sign-in/sign-out.
-- Nothing in the provider tree may be keyed on the session — a token refresh
+- Nothing in the provider tree may be keyed on the session, a token refresh
   must not remount React or wipe a half-filled form.
 
 ## Design rules
@@ -112,7 +112,7 @@ asking. On prod, ask twice.
 - **Every colour is a `var(--wx-*)` token in `src/styles/tokens.css`.** No
   hardcoded hex in components, ever.
 - Dark and light are equal citizens. A token added to one mode MUST be added to
-  the other — `pnpm check:contrast` enforces parity and WCAG AA in both and
+  the other, `pnpm check:contrast` enforces parity and WCAG AA in both and
   fails the build otherwise.
 - Palette from wurxmedia.com: near-black `#0a0a0a`, gold `#c8924b`, cream
   `#f5efe1`. Light mode darkens the gold to `#8a5f1f` for readability.

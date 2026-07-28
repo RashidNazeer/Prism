@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 /** Page gutter + max width. Every section uses this so nothing drifts. */
@@ -35,7 +35,7 @@ export function Section({
 
 /**
  * Small uppercase label above a section heading. Monospace and letter-spaced,
- * with a live gold dot — the one recurring motif across the marketing page.
+ * with a live gold dot, the one recurring motif across the marketing page.
  */
 export function Eyebrow({ children }: { children: ReactNode }) {
   return (
@@ -48,7 +48,7 @@ export function Eyebrow({ children }: { children: ReactNode }) {
 
 /**
  * Fades content up as it scrolls into view. `once` so a section never
- * re-animates when the user scrolls back — that reads as jittery, not polished.
+ * re-animates when the user scrolls back, that reads as jittery, not polished.
  */
 export function Reveal({
   children,
@@ -60,7 +60,7 @@ export function Reveal({
   className?: string;
 }) {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-80px' }}
@@ -68,6 +68,6 @@ export function Reveal({
       className={className}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }

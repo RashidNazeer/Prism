@@ -3,8 +3,8 @@
 The creator platform behind Wurx Media's TikTok Shop brands.
 
 Creators apply once, get approved, and enter branded **Brand Hubs** where they
-see their real numbers — GMV, commission earned, and the ad spend sitting behind
-their own videos — alongside leaderboards, contests, briefs and retainer offers.
+see their real numbers, GMV, commission earned, and the ad spend sitting behind
+their own videos, alongside leaderboards, contests, briefs and retainer offers.
 
 Transparency is the product.
 
@@ -54,10 +54,10 @@ instruction from the product owner.
 
 ## Documentation
 
-- [`CLAUDE.md`](CLAUDE.md) — conventions, security rules, auth rules, working protocol
-- [`docs/PROJECT_STATE.md`](docs/PROJECT_STATE.md) — current step, what's done, what's next
-- [`docs/FEATURE_MAP.md`](docs/FEATURE_MAP.md) — how features depend on each other
-- [`docs/DECISIONS.md`](docs/DECISIONS.md) — dated decisions and why
+- [`CLAUDE.md`](CLAUDE.md), conventions, security rules, auth rules, working protocol
+- [`docs/PROJECT_STATE.md`](docs/PROJECT_STATE.md), current step, what's done, what's next
+- [`docs/FEATURE_MAP.md`](docs/FEATURE_MAP.md), how features depend on each other
+- [`docs/DECISIONS.md`](docs/DECISIONS.md), dated decisions and why
 
 ---
 

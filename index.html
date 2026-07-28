@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
-    <title>WurxMediaHub — Your numbers. Finally yours.</title>
+    <title>WurxMediaHub | Your numbers. Finally yours.</title>
     <meta
       name="description"
-      content="The creator platform behind Wurx Media's TikTok Shop brands. Real GMV, real commission, real leaderboards — one login for every brand you work with."
+      content="The creator platform behind Wurx Media's TikTok Shop brands. Real GMV, real commission and real leaderboards, with one login for every brand you work with."
     />
     <meta name="theme-color" content="#0a0a0a" />
     <meta name="robots" content="noindex" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="WurxMediaHub — Your numbers. Finally yours." />
+    <meta property="og:title" content="WurxMediaHub | Your numbers. Finally yours." />
     <meta
       property="og:description"
       content="The creator platform behind Wurx Media's TikTok Shop brands."
@@ -26,8 +26,7 @@
       This runs BEFORE the first paint and before React loads, so the page is
       already the right colour when it appears. Without it, a user on light mode
       would see a black page for a few hundred milliseconds, or vice versa.
-      It must stay in sync with src/components/theme/ThemeProvider.tsx —
-      same storage key, same fallback.
+      It must stay in sync with src/components/theme/ThemeProvider.tsx, same storage key, same fallback.
     -->
     <script>
       (function () {
@@ -51,12 +50,11 @@
       })();
     </script>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Fustat:wght@700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
+    <!--
+      No web fonts on purpose. Google Fonts cost 102 KB and a render-blocking
+      round trip to a third party. The type stacks in src/styles/tokens.css use
+      the faces already installed on the device.
+    -->
   </head>
   <body>
     <div id="root"></div>

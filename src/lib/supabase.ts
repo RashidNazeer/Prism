@@ -5,8 +5,7 @@ import { getEnv } from './env';
  * THE Supabase client. There is exactly one, for the whole application.
  *
  * This is deliberate and non-negotiable (see CLAUDE.md "Auth rules"). Creating
- * a second client — inside a component, a hook, a route loader, anywhere —
- * gives you two things racing to refresh the same refresh token. One of them
+ * a second client, inside a component, a hook, a route loader, anywhere, * gives you two things racing to refresh the same refresh token. One of them
  * loses, the token is revoked, and the user gets logged out at random. That is
  * the exact bug we are engineering against.
  *

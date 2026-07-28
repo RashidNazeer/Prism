@@ -1,7 +1,7 @@
 /**
  * Shown while a lazy route chunk is downloading.
  *
- * Deliberately a skeleton, not a spinner — a spinner says "something is
+ * Deliberately a skeleton, not a spinner, a spinner says "something is
  * happening", a skeleton says "your content is arriving and it looks like
  * this". Every loading state in this product follows that rule.
  */

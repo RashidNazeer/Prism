@@ -81,7 +81,7 @@
   }
 
   /* Headings, once, everywhere. Tight tracking and tight leading are what stop
-     large type reading like a default template — set here so no component has
+     large type reading like a default template, set here so no component has
      to remember. */
   h1,
   h2,
@@ -94,7 +94,7 @@
     text-wrap: balance;
   }
 
-  /* Tabular figures for columns of numbers — leaderboards, data tables — where
+  /* Tabular figures for columns of numbers, leaderboards, data tables, where
      digits must line up vertically between rows.
      NOT for large display figures: Fustat renders the tabular comma at full
      digit width, so "$48,920" comes out as "$48 , 920". Use `.wx-lining` for
@@ -121,11 +121,64 @@
     color: var(--wx-on-accent);
   }
 
-  /* Scrollbars themed in both modes — an easy place for light/dark to mismatch. */
+  /* Scrollbars themed in both modes, an easy place for light/dark to mismatch. */
   * {
     scrollbar-color: var(--wx-border-strong) transparent;
     scrollbar-width: thin;
   }
+}
+
+/* ============================================================================
+   Logo marquee. Pure CSS, no JavaScript and no library.
+
+   The track holds the logo list twice and slides exactly -50%, so the second
+   copy lands where the first started and the loop is seamless.
+   ============================================================================ */
+@keyframes wx-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.wx-marquee {
+  overflow: hidden;
+  /* mask-image creates a stacking context, which isolates the logos' blending.
+     They would then blend against nothing and the black backgrounds would stay
+     black. Painting the band's colour HERE gives them a backdrop to blend with,
+     so this must match the section's background. */
+  background-color: var(--wx-surface-1);
+  /* Fade both edges so logos slide in and out instead of being chopped off. */
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 7%,
+    #000 93%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%);
+}
+
+/* Monochrome partner logo: white-on-black artwork made to sit on either theme. */
+.wx-logo {
+  mix-blend-mode: var(--wx-logo-blend);
+  filter: var(--wx-logo-filter);
+}
+
+.wx-marquee-track {
+  display: flex;
+  width: max-content;
+  align-items: center;
+  animation: wx-marquee var(--wx-marquee-duration, 46s) linear infinite;
+  will-change: transform;
+}
+
+/* Let people stop it to actually read a logo. */
+.wx-marquee:hover .wx-marquee-track,
+.wx-marquee:focus-within .wx-marquee-track {
+  animation-play-state: paused;
 }
 
 /* ============================================================================
@@ -139,6 +192,13 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  /* The blanket rule above would snap the marquee straight to its end state,
+     leaving the row visibly shifted. Stop it where it started instead. */
+  .wx-marquee-track {
+    animation: none !important;
+    transform: none !important;
   }
 }
 

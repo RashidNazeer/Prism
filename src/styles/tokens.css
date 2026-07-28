@@ -1,40 +1,40 @@
 /* ============================================================================
-   WurxMediaHub — Design Tokens
+   WurxMediaHub, Design Tokens
    ----------------------------------------------------------------------------
    THE RULE: no component may ever hardcode a colour. Every colour in this app
    references a var(--wx-*) token defined below. That is the only way dark and
-   light mode stay in lockstep — if a value exists in one mode it MUST exist in
+   light mode stay in lockstep, if a value exists in one mode it MUST exist in
    the other, and every text/background pair below is contrast-checked by
    `pnpm check:contrast` (scripts/check-contrast.mjs), which runs in the build.
 
-   Palette source: wurxmedia.com — near-black base, warm gold accent (#c8924b),
+   Palette source: wurxmedia.com, near-black base, warm gold accent (#c8924b),
    cream text (#f5efe1). Light mode is the same brand language on warm paper,
    with the gold darkened to #8a5f1f so it stays readable (the raw brand gold is
-   only 2.58:1 on paper — it would have been unreadable).
+   only 2.58:1 on paper, it would have been unreadable).
    ============================================================================ */
 
 :root,
 [data-theme='dark'] {
   color-scheme: dark;
 
-  /* Surfaces — layered from the page up */
+  /* Surfaces, layered from the page up */
   --wx-bg: #0a0a0a;           /* page background */
   --wx-surface-1: #141414;    /* cards, panels */
   --wx-surface-2: #1a1a1a;    /* hover, nested cards */
   --wx-surface-3: #232320;    /* wells, inputs */
 
-  /* Text — all verified >= 4.5:1 on --wx-bg AND --wx-surface-2 */
+  /* Text, all verified >= 4.5:1 on --wx-bg AND --wx-surface-2 */
   --wx-text: #f5efe1;         /* 17.27:1 */
   --wx-text-muted: #a59c8a;   /*  7.28:1 */
   --wx-text-faint: #8a8478;   /*  5.33:1 */
   --wx-text-inverse: #0a0a0a;
 
-  /* Borders — subtle is decorative only; interactive is for inputs/buttons */
+  /* Borders, subtle is decorative only; interactive is for inputs/buttons */
   --wx-border: #2a2825;
   --wx-border-strong: #3d3a34;
   --wx-border-interactive: #6e675c;  /* >= 3:1 on bg, for focusable controls */
 
-  /* Brand accent — the Wurx gold reads beautifully on near-black */
+  /* Brand accent, the Wurx gold reads beautifully on near-black */
   --wx-accent: #c8924b;              /* 7.23:1 on bg */
   --wx-accent-hover: #d8a35e;        /* 8.79:1 */
   --wx-accent-active: #b8823b;
@@ -42,7 +42,7 @@
   --wx-accent-ring: rgba(200, 146, 75, 0.45);
   --wx-on-accent: #0a0a0a;           /* 7.23:1 sitting on the gold fill */
 
-  /* Semantic — all >= 4.5:1 on bg */
+  /* Semantic, all >= 4.5:1 on bg */
   --wx-success: #3ecf8e;
   --wx-success-soft: rgba(62, 207, 142, 0.14);
   --wx-danger: #f06a6a;
@@ -52,7 +52,7 @@
   --wx-info: #5cb8e8;
   --wx-info-soft: rgba(92, 184, 232, 0.14);
 
-  /* Elevation — deep shadows on black read as glow, so keep them tight */
+  /* Elevation, deep shadows on black read as glow, so keep them tight */
   --wx-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.6);
   --wx-shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.7);
   --wx-shadow-lg: 0 16px 40px -12px rgb(0 0 0 / 0.85);
@@ -64,6 +64,15 @@
       transparent 70%
     );
   --wx-grid-line: rgba(245, 239, 225, 0.04);
+
+  /* Partner logos are white artwork on an OPAQUE BLACK background.
+     `screen` blending drops the black away against a dark page and leaves the
+     white artwork. See the light block for the inverse trick. */
+  --wx-logo-blend: screen;
+  --wx-logo-filter: none;
+
+  /* The Wurx logo is cream artwork, drawn for a dark background. */
+  --wx-mark-filter: none;
 }
 
 [data-theme='light'] {
@@ -110,23 +119,39 @@
       transparent 70%
     );
   --wx-grid-line: rgba(20, 18, 14, 0.05);
+
+  /* Invert first (white artwork on black becomes black artwork on white), then
+     `multiply` drops the white away against the pale page. Without this the
+     logos render as solid black tiles on a cream background. */
+  --wx-logo-blend: multiply;
+  --wx-logo-filter: invert(1);
+
+  /* Darken the cream Wurx artwork so it reads on a pale page. brightness()
+     multiplies each channel, so the contrast between the mascot's face and its
+     eyes survives instead of flattening to a silhouette. */
+  --wx-mark-filter: brightness(0.32);
 }
 
 /* ---------------------------------------------------------------------------
-   Non-colour tokens — identical in both modes.
+   Non-colour tokens, identical in both modes.
    --------------------------------------------------------------------------- */
 :root {
-  /* Fustat for headings, Inter for everything else.
-     Archivo Black was the first attempt — it is a poster face, and at display
-     sizes it reads as a template rather than a product. Fustat is a modern
-     geometric sans that stays sharp and expensive-looking at 5rem and still
-     works at 1rem. Headings use 700/800 with tight tracking (see global.css). */
-  --wx-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    Helvetica, Arial, sans-serif;
-  --wx-font-display: 'Fustat', 'Inter', -apple-system, BlinkMacSystemFont,
-    'Segoe UI', sans-serif;
-  --wx-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas,
-    monospace;
+  /* System fonts only. NOTHING is downloaded.
+     Web fonts cost 102 KB plus a render-blocking request to a third party.
+     These stacks resolve to the best face already installed on the device:
+     Segoe UI Variable Display on Windows 11, SF Pro Display on Mac, Roboto on
+     Android. They look professional because they are the faces Windows and
+     macOS use for their own interfaces. Character comes from weight, size and
+     tracking, not from a novelty typeface. */
+  --wx-font-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --wx-font-display:
+    'Segoe UI Variable Display', 'SF Pro Display', system-ui, -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --wx-font-mono:
+    ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', SFMono-Regular, 'SF Mono',
+    Menlo, Consolas, monospace;
 
   --wx-radius-sm: 6px;
   --wx-radius-md: 10px;
@@ -137,7 +162,7 @@
   --wx-container: 1280px;
   --wx-gutter: 1.5rem;
 
-  /* Motion — one easing curve for the whole product (matches wurxmedia.com) */
+  /* Motion, one easing curve for the whole product (matches wurxmedia.com) */
   --wx-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --wx-dur-fast: 140ms;
   --wx-dur-base: 240ms;

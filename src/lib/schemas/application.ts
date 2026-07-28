@@ -1,31 +1,14 @@
 import { z } from 'zod';
+import { NICHES, type ApplicationErrors, type ApplicationInput } from './application-fields';
 
 /**
  * Creator application contract.
  *
- * Lives in its own file because Step 3 will import this exact schema inside the
- * Supabase Edge Function that stores the application. Client-side validation is
- * a convenience; the server re-validates with the same rules so a crafted
- * request cannot bypass them.
+ * This module is loaded LAZILY by the form, on the first submit, so Zod stays
+ * off the landing page's initial download. Step 3's Supabase Edge Function will
+ * import this same file and re-validate server side: client validation is a
+ * convenience, the server is the security boundary.
  */
-
-export const NICHES = [
-  'Beauty & skincare',
-  'Health & wellness',
-  'Fitness & recovery',
-  'Home & kitchen',
-  'Fashion & accessories',
-  'Food & beverage',
-  'Baby & kids',
-  'Pets',
-  'Tech & gadgets',
-  'Other',
-] as const;
-
-export const WORKED_WITH_WURX = [
-  { value: 'no', label: 'No — this is my first time' },
-  { value: 'yes', label: 'Yes — I know my contact by name' },
-] as const;
 
 export const applicationSchema = z
   .object({
@@ -54,9 +37,9 @@ export const applicationSchema = z
       .string()
       .trim()
       .min(8, 'Paste at least one video link')
-      .max(1000, 'That is a lot of links — keep it to your best three')
+      .max(1000, 'That is a lot of links, keep it to your best three')
       .refine((v) => /https?:\/\/|tiktok\.com/i.test(v), {
-        message: 'Include at least one full link, e.g. https://tiktok.com/@you/video/...',
+        message: 'Include at least one full link, like https://tiktok.com/@you/video/...',
       }),
   })
   .refine((data) => data.niche !== 'Other' || (data.nicheOther?.length ?? 0) >= 2, {
@@ -64,15 +47,20 @@ export const applicationSchema = z
     path: ['nicheOther'],
   });
 
-export type ApplicationInput = z.input<typeof applicationSchema>;
 export type Application = z.output<typeof applicationSchema>;
 
-/** Empty form state. */
-export const emptyApplication: ApplicationInput = {
-  tiktokHandle: '',
-  email: '',
-  niche: '' as ApplicationInput['niche'],
-  nicheOther: '',
-  workedWithWurx: '' as ApplicationInput['workedWithWurx'],
-  videoLinks: '',
-};
+/**
+ * Validate raw form state and return one message per bad field.
+ * Returns an empty object when everything passes.
+ */
+export function validateApplication(input: ApplicationInput): ApplicationErrors {
+  const result = applicationSchema.safeParse(input);
+  if (result.success) return {};
+
+  const errors: ApplicationErrors = {};
+  for (const issue of result.error.issues) {
+    const key = issue.path[0] as keyof ApplicationInput | undefined;
+    if (key && !errors[key]) errors[key] = issue.message;
+  }
+  return errors;
+}

@@ -71,7 +71,7 @@ export function ButtonLink({
     );
   }
 
-  // Same-page anchors must NOT go through the router — <Link to="#how"> is
+  // Same-page anchors must NOT go through the router, <Link to="#how"> is
   // treated as a route change and never scrolls.
   if (to.startsWith('#')) {
     return (

@@ -13,7 +13,7 @@ written record of those links so nothing drifts.
   the same commit as the code.
 - A feature without an entry here is not done.
 
-Structure carries the load first — foreign keys with a consciously chosen
+Structure carries the load first, foreign keys with a consciously chosen
 `ON DELETE`, constraints, and shared SQL views so every screen reads the same
 truth. This map is the second layer, not the only one.
 
@@ -31,13 +31,13 @@ override `--wx-*` at the hub level.
 **Change rules**
 
 - Every colour in the app is a `var(--wx-*)` token. No hardcoded hex in
-  components — that is what breaks light mode.
+  components, that is what breaks light mode.
 - A token added to `[data-theme='dark']` MUST also be added to
   `[data-theme='light']` and vice versa. `pnpm build` fails otherwise.
 - Adding a new text/background combination means adding it to the `PAIRS` list
   in `scripts/check-contrast.mjs` so it is contrast-checked in both themes.
 - The anti-flash script in `index.html` duplicates the theme-resolution logic in
-  `ThemeProvider.tsx`. Change one, change the other — same storage key
+  `ThemeProvider.tsx`. Change one, change the other, same storage key
   (`wurxmediahub-theme`), same fallback.
 
 ## Routing & shell
@@ -51,7 +51,7 @@ override `--wx-*` at the hub level.
 
 - Every route is lazy (`lazy: async () => ...`) so screens ship as separate
   chunks. A new route without lazy loading is a regression.
-- Every route gets `HydrateFallback: RouteFallback` — skeleton, never a spinner.
+- Every route gets `HydrateFallback: RouteFallback`, skeleton, never a spinner.
 - `Providers` mounts once per tab. Nothing inside it may take a `key` derived
   from the session, user id, or access token. See CLAUDE.md "Auth rules".
 
@@ -65,7 +65,7 @@ override `--wx-*` at the hub level.
 **Change rules**
 
 - There is exactly one Supabase client, created lazily by `getSupabase()`.
-  Never call `createClient` anywhere else — two clients race on the refresh
+  Never call `createClient` anywhere else, two clients race on the refresh
   token and log users out at random.
 - Any new browser env var must be added to the Zod schema in `env.ts`, to
   `.env.example`, AND to both Vercel projects. Missing one of the three is the
@@ -81,21 +81,26 @@ override `--wx-*` at the hub level.
 **Tables:** none. Stats are hardcoded marketing copy, not database reads.
 
 **Depends on:** Design tokens, Routing, Brand mark
-**Depended on by:** Applications (Step 3) — every CTA points at `/apply`
+**Depended on by:** Applications (Step 3), every CTA points at `/apply`
 
 **Change rules**
 
 - All marketing copy, stats, brand names and the three steps live in
   `src/content/site.ts`. Never hardcode that text in a component.
-- The brand list there is PLACEHOLDER. It must be replaced with real partners
-  before this page is shown publicly. Do not invent brand names.
-- The hero dashboard card (`NumbersPreview.tsx`) shows invented figures and is
-  labelled "Example". If it ever shows real data it must come from the fact
-  table and carry a real "Updated" timestamp — see My Numbers (Step 8).
-- `/apply` is a placeholder page. Step 3 replaces its body with the real form;
-  the route itself must keep working so no CTA breaks.
+- Partner logos are real, taken from the marquee on wurxmedia.com and stored in
+  `src/assets/brands/`. Never invent a brand name or add a partner Rashid has
+  not confirmed.
+- Those logos are white artwork on OPAQUE BLACK. They are made theme-safe by
+  `.wx-logo` (`--wx-logo-blend` / `--wx-logo-filter`), not by editing the
+  images. A new logo must follow the same convention, or it will appear as a
+  black rectangle in light mode.
+- `.wx-marquee` paints its own background because `mask-image` creates a
+  stacking context. That background MUST match the section behind it, or the
+  blend breaks.
+- `/apply` renders the same `<ApplyForm />` as the hero. Step 3 fills in the
+  submit handler; the route must keep working so no CTA breaks.
 - Adding a section: wrap it in `<Section>` for rhythm, use `<Reveal>` for the
-  scroll-in, and give it a `scroll-mt` if it is an anchor target — the header is
+  scroll-in, and give it a `scroll-mt` if it is an anchor target, the header is
   fixed and will otherwise cover the heading.
 - Anchor links (`#how`) must not use react-router `<Link>`; `ButtonLink`
   detects a leading `#` and renders a plain `<a>`. A `<Link to="#how">` is
@@ -104,8 +109,8 @@ override `--wx-*` at the hub level.
 ## Application form
 
 **Files:** `src/components/landing/ApplyForm.tsx`,
-`src/lib/schemas/application.ts`, `src/components/ui/Field.tsx`,
-`src/routes/Apply.tsx`
+`src/lib/schemas/application-fields.ts`, `src/lib/schemas/application.ts`,
+`src/components/ui/Field.tsx`, `src/routes/Apply.tsx`
 **Tables:** none yet. Step 3 adds `applications` (status defaults to `pending`).
 
 **Depends on:** Design tokens, Button/Field primitives
@@ -116,26 +121,35 @@ override `--wx-*` at the hub level.
 - **The form is not connected to anything.** `onSubmit` fakes a delay and shows
   a success panel that states submissions are not stored. That disclosure stays
   until Step 3 is live.
-- Fields are defined once, in `src/lib/schemas/application.ts`. Adding a field
-  means updating: the Zod schema, `emptyApplication`, the form JSX, the
-  `applications` table migration, the Edge Function, and the admin review screen
-  (Step 4). All six, or the field silently goes nowhere.
+- The schema is split in two ON PURPOSE. `application-fields.ts` holds the
+  option lists and types and is Zod-free, so the form can render without
+  pulling Zod (~60 KB gzipped) onto the landing page. `application.ts` holds the
+  Zod schema and is imported lazily, on first submit. Do not import
+  `application.ts` at the top of a component.
+- Adding a field means updating: `application-fields.ts`, the Zod schema, the
+  form JSX, the `applications` table migration, the Edge Function, and the admin
+  review screen (Step 4). All six, or the field silently goes nowhere.
 - Step 3 must import this exact schema inside the Edge Function and re-validate.
   Never trust the client's copy.
 - `ApplyForm` is rendered in two places (hero + `/apply`). It must stay
-  self-contained — no props that only one placement passes.
+  self-contained, no props that only one placement passes.
 - `tiktokHandle` is stored WITHOUT the leading `@` (the schema strips it). Any
   identity mapping in Step 7 must assume that.
 
 ## Brand mark
 
-**Files:** `src/components/brand/WurxMark.tsx`, `public/favicon.svg`
+**Files:** `src/components/brand/WurxMark.tsx`, `src/assets/wurx-logo.png`,
+`public/favicon.svg`
 
 **Change rules**
 
-- Currently a placeholder. Every usage goes through `<WurxMark />`, so replacing
-  the real logo is a one-file change — plus `public/favicon.svg`, which is a
-  hand-copy of the same shape and must be updated with it.
+- The real Wurx Media logo, taken from wurxmedia.com and downscaled from
+  1641x460 (125 KB) to 228x64 (11 KB). Every usage goes through `<WurxMark />`.
+- The artwork is cream and drawn for a dark background. Light mode darkens it
+  with `--wx-mark-filter`, which uses `brightness()` so the mascot keeps its
+  internal contrast. A plain `invert()` would flatten it to a blob.
+- `public/favicon.svg` is still the older geometric gold "W" and does NOT match
+  the logo. Replace it when a square icon crop is available.
 
 ---
 
@@ -150,9 +164,9 @@ early.
 | Landing page | Step 2 | Design tokens | Applications |
 | Applications | Step 3 | Auth, profiles | Admin review |
 | Admin review | Step 4 | Applications, roles | Creators, Realtime |
-| Home | Step 5 | Facts, brands, announcements | — |
+| Home | Step 5 | Facts, brands, announcements | none |
 | Brand Hubs + theming | Step 6 | Brands, design tokens | My Numbers, Leaderboards |
 | Data pipeline + facts | Step 7 | Creators, brands, identity map | My Numbers, Leaderboards, Home |
-| My Numbers | Step 8 | Facts, Brand Hubs | — |
+| My Numbers | Step 8 | Facts, Brand Hubs | none |
 | Leaderboards | Step 9 | Facts, privacy flag | Brand Hubs |
-| Offers + Discord | Step 10 | Tiers, Brand Hubs | — |
+| Offers + Discord | Step 10 | Tiers, Brand Hubs | none |

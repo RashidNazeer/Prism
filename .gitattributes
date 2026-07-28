@@ -3,7 +3,7 @@
 # would look "changed" depending on which machine touched it last.
 * text=auto eol=lf
 
-# Binary assets — never touch these.
+# Binary assets, never touch these.
 *.png binary
 *.jpg binary
 *.jpeg binary

@@ -1,78 +1,86 @@
-import { useState, type FormEvent } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { useCallback, useRef, useState, type FormEvent } from 'react';
+import { AnimatePresence, m } from 'motion/react';
 import { ArrowRight, Check } from 'lucide-react';
 import { Field, Input, Select, Textarea } from '@/components/ui/Field';
 import { Button } from '@/components/ui/Button';
 import {
   NICHES,
   WORKED_WITH_WURX,
-  applicationSchema,
   emptyApplication,
+  type ApplicationErrors,
   type ApplicationInput,
-} from '@/lib/schemas/application';
-
-type Errors = Partial<Record<keyof ApplicationInput, string>>;
+} from '@/lib/schemas/application-fields';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
+
+type Validator = (input: ApplicationInput) => ApplicationErrors;
 
 /**
  * Creator application form.
  *
- * FRONT END ONLY. Nothing is persisted yet — the Supabase table, the Edge
+ * FRONT END ONLY. Nothing is persisted yet: the Supabase table, the Edge
  * Function and the RLS policies are roadmap Step 3. Validation is real and uses
- * the same Zod schema the server will use, so wiring it up later is a matter of
- * replacing the submit handler.
+ * the same Zod schema the server will use, so wiring it up later means
+ * replacing one submit handler.
+ *
+ * Zod is imported lazily on the first submit rather than at module load, which
+ * keeps roughly 60 KB gzipped off the landing page's initial download. Nobody
+ * needs a validation engine until they press the button.
  *
  * Until it is wired, the success state says so rather than pretending an
  * application was received.
  */
 export function ApplyForm() {
   const [values, setValues] = useState<ApplicationInput>(emptyApplication);
-  const [errors, setErrors] = useState<Errors>({});
+  const [errors, setErrors] = useState<ApplicationErrors>({});
   const [submitted, setSubmitted] = useState(false);
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState(false);
 
-  const set = <K extends keyof ApplicationInput>(key: K, value: ApplicationInput[K]) => {
-    setValues((v) => ({ ...v, [key]: value }));
-    // Only re-validate live once the user has tried to submit — nagging before
-    // that is hostile.
-    if (submitted) setErrors(validate({ ...values, [key]: value }));
-  };
+  // Cached once loaded, so live re-validation after a failed submit is instant.
+  const validator = useRef<Validator | null>(null);
 
-  function validate(input: ApplicationInput): Errors {
-    const result = applicationSchema.safeParse(input);
-    if (result.success) return {};
-    const next: Errors = {};
-    for (const issue of result.error.issues) {
-      const key = issue.path[0] as keyof ApplicationInput | undefined;
-      if (key && !next[key]) next[key] = issue.message;
-    }
-    return next;
-  }
+  const loadValidator = useCallback(async (): Promise<Validator> => {
+    if (validator.current) return validator.current;
+    const { validateApplication } = await import('@/lib/schemas/application');
+    validator.current = validateApplication;
+    return validateApplication;
+  }, []);
+
+  const set = <K extends keyof ApplicationInput>(key: K, value: ApplicationInput[K]) => {
+    const next = { ...values, [key]: value };
+    setValues(next);
+    // Only re-validate live once the user has tried to submit. Nagging before
+    // that is hostile, and the validator will already be loaded by then.
+    if (submitted && validator.current) setErrors(validator.current(next));
+  };
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitted(true);
+    setPending(true);
+
+    const validate = await loadValidator();
     const next = validate(values);
     setErrors(next);
+
     if (Object.keys(next).length > 0) {
-      // Move focus to the first problem so keyboard and screen-reader users
-      // are not left guessing.
+      setPending(false);
+      // Move focus to the first problem so keyboard and screen reader users are
+      // not left guessing.
       document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
       return;
     }
 
-    setPending(true);
     // TODO(Step 3): POST to the submit-application Edge Function.
-    await new Promise((r) => setTimeout(r, 700));
+    await new Promise((r) => setTimeout(r, 500));
     setPending(false);
     setDone(true);
   }
 
   if (done) {
     return (
-      <motion.div
+      <m.div
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4, ease: EASE }}
@@ -106,7 +114,7 @@ export function ApplyForm() {
         >
           Fill it in again
         </Button>
-      </motion.div>
+      </m.div>
     );
   }
 
@@ -181,7 +189,7 @@ export function ApplyForm() {
 
         <AnimatePresence initial={false}>
           {values.niche === 'Other' && (
-            <motion.div
+            <m.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -203,7 +211,7 @@ export function ApplyForm() {
                   )}
                 </Field>
               </div>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
 
@@ -232,7 +240,7 @@ export function ApplyForm() {
         </Field>
 
         <Field
-          label="Your best 1–3 videos (links)"
+          label="Your best 1-3 videos (links)"
           error={errors.videoLinks}
           hint="One per line. TikTok links are best."
         >
@@ -252,10 +260,10 @@ export function ApplyForm() {
 
       <Button type="submit" size="lg" disabled={pending} className="group mt-7 w-full">
         {pending ? (
-          'Checking your details…'
+          'Checking your details...'
         ) : (
           <>
-            Apply — takes 60 seconds
+            Apply, takes 60 seconds
             <ArrowRight
               size={17}
               className="transition-transform duration-200 ease-brand group-hover:translate-x-0.5"

@@ -21,8 +21,8 @@ export function Platform() {
         </h2>
         <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted text-pretty">
           Every brand you work with gets its own hub, themed as itself, with your
-          real performance inside. Transparency is not a feature here &mdash; it is
-          the whole product.
+          real performance inside. Transparency is not a feature here. It is the
+          whole product.
         </p>
       </Reveal>
 

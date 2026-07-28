@@ -4,7 +4,7 @@ import { RouteFallback } from '@/components/layout/RouteFallback';
 /**
  * Route table.
  *
- * Every route is lazy so each screen ships as its own chunk — a creator opening
+ * Every route is lazy so each screen ships as its own chunk, a creator opening
  * the landing page should not download the admin dashboard. `HydrateFallback`
  * renders the skeleton while a chunk is in flight (never a bare spinner).
  */

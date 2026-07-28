@@ -17,7 +17,7 @@ function storedMode(): ThemeMode {
     const raw = localStorage.getItem(THEME_STORAGE_KEY);
     if (raw === 'light' || raw === 'dark' || raw === 'system') return raw;
   } catch {
-    // Private browsing / storage disabled — fall through to the default.
+    // Private browsing / storage disabled, fall through to the default.
   }
   return 'system';
 }
@@ -27,7 +27,7 @@ function storedMode(): ThemeMode {
  * OS setting while the user is on "system".
  *
  * The very first paint is handled by a tiny inline script in index.html, not by
- * this component — otherwise React would mount, then flip the theme, and the
+ * this component, otherwise React would mount, then flip the theme, and the
  * user would see a white flash on a dark page. This provider takes over after
  * hydration and must agree with that script (same storage key, same logic).
  */
@@ -70,7 +70,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem(THEME_STORAGE_KEY, next);
     } catch {
-      // Not fatal — the choice just won't survive a reload.
+      // Not fatal, the choice just won't survive a reload.
     }
   }, []);
 

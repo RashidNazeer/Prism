@@ -5,11 +5,11 @@
  * Two jobs, both aimed at the same promise: dark mode and light mode never
  * drift apart.
  *
- *   1. PARITY  — every colour token defined in one theme must also be defined
+ *   1. PARITY, every colour token defined in one theme must also be defined
  *                in the other. This is what actually causes "colour mismatch"
  *                bugs: someone adds --wx-thing to dark, forgets light, and the
  *                token silently falls back to the dark value on a white page.
- *   2. CONTRAST — every text/background pair listed below must clear WCAG AA
+ *   2. CONTRAST, every text/background pair listed below must clear WCAG AA
  *                in BOTH themes.
  *
  * Exits non-zero on failure, so a bad palette can never reach a deploy.
@@ -42,7 +42,7 @@ function block(needle) {
 const dark = block("data-theme='dark'");
 const light = block("data-theme='light'");
 
-/** Colour tokens only — shadows, fonts, gradients and sizes aren't comparable. */
+/** Colour tokens only, shadows, fonts, gradients and sizes aren't comparable. */
 const isColour = (v) => /^(#[0-9a-f]{3,8}|rgba?\(|hsla?\()/i.test(v.trim());
 
 /* --------------------------------------------------------------- contrast -- */

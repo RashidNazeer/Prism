@@ -17,16 +17,16 @@
     "jsx": "react-jsx",
 
     /* Path alias: "@/lib/foo" instead of "../../lib/foo".
-       No "baseUrl" — it is deprecated in TypeScript 6; paths now resolve
+       No "baseUrl", it is deprecated in TypeScript 6; paths now resolve
        relative to this file. */
     "paths": {
       "@/*": ["./src/*"]
     },
 
-    /* Strict mode — locked decision, do not relax these to make an error go away.
+    /* Strict mode, locked decision, do not relax these to make an error go away.
        Note: "noPropertyAccessFromIndexSignature" is deliberately NOT enabled.
        It forces import.meta.env['VITE_X'] bracket syntax, and Vite only
-       statically replaces the dot form at build time — the bracket form would
+       statically replaces the dot form at build time, the bracket form would
        silently become undefined in production. */
     "strict": true,
     "noImplicitOverride": true,
