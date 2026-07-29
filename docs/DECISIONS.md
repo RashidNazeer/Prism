@@ -161,6 +161,37 @@ Dated one-liners. Why, not just what. Newest at the bottom.
 - 2026-07-29: **No em dashes or en dashes anywhere.** Rashid's standing
   instruction. Swept from every source, doc and config file. Watch for this when
   writing new copy.
+- 2026-07-29: Auth is email and password only for now. Rashid chose it to keep
+  moving; email-code sign-in is PARKED, not rejected.
+- 2026-07-29: Applying will create an account. An anonymous application form
+  cannot show status, cannot update live when a decision is made (which Step 4
+  requires), and has to be matched back to an account by email later, which
+  breaks the moment someone signs up with a different address.
+- 2026-07-29: Role and tier live in `profiles` and are copied into the JWT by
+  `custom_access_token_hook`. Policies read a claim instead of querying the
+  table on every request. The trade-off, written down so it is not forgotten: a
+  token is only reissued about once an hour, so a role change does not reach the
+  claim immediately. Anything that must apply instantly, like suspending an
+  account, has to read the table.
+- 2026-07-29: Self-promotion to admin is blocked three separate ways: no INSERT
+  grant, a column-level UPDATE grant covering `display_name` only, and a
+  BEFORE UPDATE trigger. Belt, braces and a second pair of braces, because this
+  is the one bug that would be catastrophic and silent.
+- 2026-07-29: Found while writing `check-rls.mjs`: turning off "automatically
+  expose new tables" also disables Supabase's default grants to `service_role`,
+  not just to `anon` and `authenticated`. Every Edge Function in Steps 3 and 4
+  would have silently read nothing. Fixed by an explicit grant plus a default
+  privilege for future tables.
+- 2026-07-29: `password_min_length` raised from Supabase's default 6 to 10, and
+  the client schema matches it. Length beats forced symbols.
+- 2026-07-29: `AuthProvider` imports the Supabase client dynamically. A static
+  import put the whole client (~55 KB gzipped) into the entry chunk, so someone
+  reading the marketing page downloaded a database client they never used. Vite
+  `manualChunks` also splits Supabase away from TanStack Query, because Query is
+  on the critical path and bundling them together silently undid the fix.
+- 2026-07-29: Password reset deliberately shows the same confirmation whether or
+  not the email exists. Saying "no account found" would let anyone test which of
+  our creators are registered.
 - 2026-07-28: Content-Security-Policy deferred. The anti-flash theme script is
   inline and Motion injects inline styles, so a correct CSP needs script hashes
   and careful testing. Other security headers (HSTS, nosniff, frame-deny,

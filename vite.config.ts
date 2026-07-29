@@ -25,8 +25,16 @@ export default defineConfig({
           if (/[\\/]node_modules[\\/](react|react-dom|react-router|scheduler)[\\/]/.test(id)) {
             return 'react-vendor';
           }
-          if (/[\\/]node_modules[\\/](@tanstack|@supabase)[\\/]/.test(id)) {
-            return 'data-vendor';
+          // Supabase and TanStack Query must NOT share a chunk. Query is
+          // imported by the providers and so is on the critical path; the
+          // Supabase client is loaded lazily so the public landing page never
+          // downloads a database client it has no use for. Bundling them
+          // together silently undoes that.
+          if (/[\\/]node_modules[\\/]@supabase[\\/]/.test(id)) {
+            return 'supabase-vendor';
+          }
+          if (/[\\/]node_modules[\\/]@tanstack[\\/]/.test(id)) {
+            return 'query-vendor';
           }
           return;
         },

@@ -43,7 +43,13 @@ pnpm lint             # oxlint
 pnpm format           # prettier --write
 pnpm check:contrast   # dark/light token parity + WCAG guard
 pnpm verify:browser   # real Chromium: console errors, both themes, responsive
+pnpm verify:rls       # attacks the database as a real user, proves RLS holds
+pnpm verify:session   # section 11: refresh, two tabs, reopen, form survival
+pnpm shots            # retina screenshots for design review
 ```
+
+`verify:rls` and `verify:session` need `SUPABASE_SERVICE_KEY` in the
+environment. Fetch it from the CLI at run time; never write it to a file.
 
 `verify:browser` needs a server running, `pnpm build` then `pnpm preview` in
 another shell, then point it at http://localhost:4173. Rashid cannot read a
@@ -90,7 +96,11 @@ asking. On prod, ask twice.
 - RLS on every table from creation, deny by default. No table ships without
   policies. The `automatic RLS` event trigger is enabled on both projects.
 - `Automatically expose new tables` is OFF, grants are explicit, per table, in
-  the migration.
+  the migration. **This also switches off the default grants to `service_role`**,
+  so every new table needs `grant all privileges on table X to service_role;`
+  or the Edge Functions that use it will silently see nothing.
+- Never `grant` a column to `authenticated` for convenience. Column-level
+  UPDATE grants are how we stop users editing their own role and tier.
 - Never trust a role, tier or `creator_id` from the client. Derive identity from
   `auth.uid()` and JWT claims (custom access token hook).
 - Browser bundle may contain only the Supabase URL and anon key. Service-role

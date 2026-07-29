@@ -136,6 +136,39 @@ override `--wx-*` at the hub level.
 - `tiktokHandle` is stored WITHOUT the leading `@` (the schema strips it). Any
   identity mapping in Step 7 must assume that.
 
+## Auth, profiles, roles and tiers
+
+**Files:** `src/lib/auth/*`, `src/components/auth/*`, `src/routes/auth/*`,
+`src/app/router.tsx`, `src/app/providers.tsx`,
+`supabase/migrations/*_auth_profiles_roles_tiers.sql`
+**Tables:** `profiles` (id -> auth.users.id, ON DELETE CASCADE)
+**Enums:** `app_role`, `creator_tier`
+
+**Depends on:** Supabase client
+**Depended on by:** everything behind a login, from Step 3 onward
+
+**Change rules**
+
+- **Role and tier live only in `profiles`.** Nothing else may store them. The
+  JWT copy is a cache for choosing screens, never a permission.
+- A user cannot change their own role, tier or active status. That is enforced
+  by three separate things and all three must survive any refactor: no INSERT
+  grant, a column-level UPDATE grant on `display_name` only, and the
+  `profiles_guard_privileged_columns` trigger. `pnpm verify:rls` proves it.
+- Adding a column users may edit means adding it to the column grant AND
+  deciding whether the guard trigger should protect it.
+- `AuthProvider` must never navigate, reload, or be given a `key` tied to the
+  session. Redirects belong in `RequireAuth`. This is the whole defence against
+  the random-logout problem, and `pnpm verify:session` will catch a regression.
+- `@/lib/supabase` is imported **dynamically** in `AuthProvider`, so the public
+  landing page does not download the database client. A static import there
+  quietly adds ~55 KB gzipped to every visitor. Vite's `manualChunks` also keeps
+  Supabase and TanStack Query in separate chunks for the same reason.
+- Deleting an auth user cascades to `profiles`. Any future table that hangs off
+  a creator needs its own consciously chosen ON DELETE behaviour.
+- Role gates in `router.tsx` decide which screen shows. They are not security.
+  Every new table still needs its own policies.
+
 ## Brand mark
 
 **Files:** `src/components/brand/WurxMark.tsx`, `src/assets/wurx-logo.png`,
