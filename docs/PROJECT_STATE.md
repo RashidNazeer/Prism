@@ -68,9 +68,25 @@ list here.
 
 ## Next action
 
-Wait for Rashid's review of Step 1. Then **Step 3, the application flow**: wire
-the existing landing form to a real `applications` table so applying creates the
-account and the applicant can see their status.
+**Step 4, the admin panel.** Approved by Rashid on 2026-07-29. Build:
+
+1. A review queue at `/admin`: paginated list of applications, newest or oldest
+   first, filterable by status and by `worked_with_wurx` (Rashid cares about
+   fast-tracking people Wurx already knows).
+2. An application detail view showing everything they submitted.
+3. Approve and reject actions. Approving sets `profiles.role = 'creator'`,
+   assigns a tier, and sets `applications.status`. Rejecting records an optional
+   note.
+4. These run through a **Supabase Edge Function** that re-checks the caller is
+   admin or ops server side. RLS already blocks the applicant; the Edge Function
+   is the defence in depth the brief asks for on anything touching approvals.
+5. An `audit_log` table: who did what, to whom, when. Required by the brief for
+   sensitive admin actions.
+6. The applicant's screen must update **live** when a decision is made. The
+   realtime plumbing already exists and is tested (`useApplication`).
+7. Pagination and indexes from the start. Never load every application.
+
+Admin account for testing already exists: `rashid@wurxmedia.com`.
 
 ## Open product decisions
 

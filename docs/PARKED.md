@@ -100,6 +100,19 @@ promotion into a written checklist so the real launch is boring.
 
 ---
 
+## 4b. Prod admin account, and rotating the dev one
+
+**Status:** BEFORE LAUNCH
+**Owner:** Claude to run, Rashid to choose the password
+
+`rashid@wurxmedia.com` exists on **dev only**. Prod needs its own, created the
+same way with `scripts/create-admin.mjs`. Public sign up can never produce a
+staff account, so this is the only route in.
+
+Also: the current dev password was typed into a chat message. Rotate it before
+that account controls anything real. One command:
+`node scripts/create-admin.mjs rashid@wurxmedia.com <new password> admin`.
+
 ## 5. Supabase paid plan for prod
 
 **Status:** BEFORE LAUNCH
