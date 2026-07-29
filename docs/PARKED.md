@@ -50,13 +50,19 @@ Full step-by-step instructions were given in chat on 2026-07-29.
 
 ---
 
-## 2. Email confirmation and password reset delivery
+## 2. Email confirmation, password reset, and approval notifications
 
-**Status:** PAUSED, depends on item 1
+**Status:** PAUSED, depends on item 1. **Severity raised twice.**
 **Owner:** Claude, once item 1 is done
-**Severity: raised 2026-07-29.** Applying now creates a real account, so this is
-no longer theoretical. Until it is fixed, anyone can apply using an email
-address they do not own.
+
+- **2026-07-29 (a):** applying now creates a real account, so this stopped being
+  theoretical. Until it is fixed, anyone can apply with an address they do not
+  own.
+- **2026-07-29 (b), after Step 4:** approvals now happen. The applicant's
+  dashboard updates live, which is good, but only if they happen to be looking
+  at it. Nobody is told they got in. This is the single most important email in
+  the product and it does not exist yet. Raised with Rashid in the Step 4
+  report.
 
 While email is parked:
 
@@ -85,10 +91,11 @@ forgot-password support burden, and creators forget passwords constantly.
 
 ## 4. Prod promotion rehearsal
 
-**Status:** PAUSED, 2026-07-29, Rashid deferred and asked to be reminded
+**Status:** RAISED 2026-07-29, waiting on Rashid's go-ahead
 **Owner:** Claude to run, Rashid to approve
-**Trigger to raise again:** **Step 4**, once auth and at least one real table
-exist.
+**Trigger:** Step 4. **This has now arrived.** Raised with Rashid in the Step 4
+report; there are three tables, a database function, an Edge Function and a real
+admin flow to promote, and prod has none of it.
 
 Do a full dry-run promotion to prod while it is still empty: merge dev to main,
 replay migrations against the prod database, set the prod-only settings that

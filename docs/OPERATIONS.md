@@ -84,9 +84,12 @@ pnpm verify:browser [url]   # landing page: console, both themes, responsive
 pnpm verify:rls             # attacks the database as a real user
 pnpm verify:session [url]   # section 11: refresh, two tabs, reopen, form survival
 pnpm verify:apply  [url]    # sign up to stored application, end to end
+pnpm verify:review [url]    # admin review pipeline + attacks. Needs ADMIN_EMAIL
+                            # and ADMIN_PASSWORD too
 pnpm shots [url] [path]     # retina screenshots for design review
 node scripts/check-admin.mjs <url> <email> <password> [role] [path]
 node scripts/create-admin.mjs <email> <password> [role]
+node scripts/seed-applications.mjs [--clean]   # demo queue data, DEV ONLY
 ```
 
 Every suite creates real accounts and **deletes them afterwards**. Run against
@@ -114,6 +117,31 @@ grant select on public.x to authenticated;              -- plus column-scoped gr
 grant all privileges on table public.x to service_role;
 ```
 
+## 4b. Edge Functions
+
+```powershell
+supabase functions deploy <name> --project-ref $env:SUPABASE_PROJECT_REF_DEV
+```
+
+Docker is **not** required; the CLI uploads the source and bundles server side.
+It prints a Docker warning anyway, which is harmless.
+
+`SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are injected
+automatically. Never add them as secrets by hand.
+
+Two things that have already cost time:
+
+- **CORS must echo the requested headers.** Our Supabase client sends a custom
+  `x-application-name` header on every request. A hand-written allow-list did
+  not include it, so the browser's preflight failed, the function was never
+  reached, and clicking Approve silently did nothing. Use
+  `supabase/functions/_shared/cors.ts`.
+- **Every response needs the CORS headers, including errors.** A 403 without
+  them arrives in the browser as an opaque network failure.
+- A freshly deployed function is cold and its first call can take several
+  seconds while Deno pulls its npm dependencies. Tests must wait for the
+  outcome, not sleep for a guessed number of milliseconds.
+
 ## 5. Deploying
 
 Push to `dev`. Vercel builds automatically, roughly 25 seconds. Each project has
@@ -136,6 +164,10 @@ Invoke-RestMethod -Headers $h -Uri "https://api.vercel.com/v6/deployments?app=wu
 | Account | Role | Notes |
 | --- | --- | --- |
 | `rashid@wurxmedia.com` | admin | Dev only. Created 2026-07-29 via `scripts/create-admin.mjs` |
+| `*@wurxmediahub.demo` | applicant | Seven demo applications on dev, password `demo-password-for-dev-only-1`. Remove with `node scripts/seed-applications.mjs --clean` |
+
+Test suites create `@wurxmediahub.test` accounts and delete them again. If a run
+is interrupted, check for leftovers with that suffix.
 
 Staff accounts are **never** created through the website. Public sign up always
 produces an `applicant`, and nobody can change their own role. Prod will need

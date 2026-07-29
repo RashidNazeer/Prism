@@ -223,6 +223,37 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   and careful testing. Other security headers (HSTS, nosniff, frame-deny,
   referrer, permissions policy) ship now in `vercel.json`. **Revisit before the
   first prod launch.**
+- 2026-07-29: Approvals go through an Edge Function that re-reads the caller's
+  role from `profiles` rather than trusting the `user_role` JWT claim. A claim
+  is only refreshed with the token, so an admin suspended five minutes ago is
+  still carrying an admin claim. The table is the truth for anything
+  privileged; the claim is only for deciding which screen to draw.
+- 2026-07-29: The whole decision lives in one `security definer` Postgres
+  function, `review_application()`, granted to `service_role` only. Status,
+  role, tier and the audit row commit together or not at all. Three REST calls
+  from the Edge Function could leave someone approved on one screen and an
+  applicant on another, and the `profiles_tier_only_for_creators` constraint
+  would reject the half-way state anyway.
+- 2026-07-29: `audit_log` gets a staff SELECT policy and **no** insert, update
+  or delete grant to `authenticated`. Only security definer functions running as
+  `service_role` write it. An audit trail an admin can edit is not an audit
+  trail. A blocked review attempt is logged too, with the caller's name on it.
+- 2026-07-29: A rejection leaves the account exactly as it is (still an
+  applicant, nothing deleted) rather than disabling it, so a decision can be
+  revisited by hand and the history survives.
+- 2026-07-29: Edge Function CORS echoes `Access-Control-Request-Headers` instead
+  of naming a fixed list. Found the hard way: our Supabase client sends a custom
+  `x-application-name` header, the static list did not mention it, the preflight
+  failed, and approving an application silently did nothing. Preflight decides
+  which headers a browser may send, not who is allowed in, so echoing costs no
+  security.
+- 2026-07-29: Admin queue filters live in the URL, not component state, so a
+  reviewer can send a colleague a link to the same view and the back button
+  behaves after opening an application.
+- 2026-07-29: `AppShell` and `Dashboard` now prefer `profile.role` over
+  `claims.role` for display. Otherwise a creator approved a minute ago keeps
+  being shown as an applicant until their token refreshes, up to an hour later,
+  while their status card already says approved.
 - 2026-07-28: Flagged to Rashid but not acted on, (a) a Vite SPA has no
   server-rendering, so the public landing page will be weak for SEO and link
   previews until we add a build-time prerender; (b) the Supabase free tier

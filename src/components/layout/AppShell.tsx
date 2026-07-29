@@ -29,6 +29,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { data: profile } = useProfile();
   const [signingOut, setSigningOut] = useState(false);
 
+  // The profile row wins over the JWT claim wherever both exist. Claims are
+  // only refreshed with the token, roughly hourly, so a creator approved a
+  // minute ago would otherwise still be badged "Applicant" up here while their
+  // dashboard already says otherwise.
+  const role: AppRole | undefined = profile?.role ?? claims?.role;
+  const tier: CreatorTier | null = profile ? profile.tier : (claims?.tier ?? null);
+
   return (
     <div className="min-h-dvh bg-bg">
       <header className="border-b border-line bg-surface-1">
@@ -39,15 +46,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
 
             <div className="flex items-center gap-2.5">
-              {claims ? (
+              {role ? (
                 <span className="hidden items-center gap-2 rounded-full border border-line px-3 py-1.5 font-mono text-[11px] tracking-[0.14em] text-muted uppercase sm:inline-flex">
-                  {ROLE_LABEL[claims.role]}
-                  {claims.tier ? (
+                  {ROLE_LABEL[role]}
+                  {tier ? (
                     <>
                       <span aria-hidden className="text-accent">
                         &middot;
                       </span>
-                      <span className="text-accent">{TIER_LABEL[claims.tier]}</span>
+                      <span className="text-accent">{TIER_LABEL[tier]}</span>
                     </>
                   ) : null}
                 </span>

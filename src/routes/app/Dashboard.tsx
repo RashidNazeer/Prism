@@ -41,7 +41,13 @@ export function Dashboard() {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: application, isLoading: appLoading } = useApplication();
 
-  const isApplicant = claims?.role === 'applicant';
+  // Prefer the profile row over the JWT claim. A token only refreshes about
+  // once an hour, so an applicant approved thirty seconds ago is still carrying
+  // `applicant` in their claims. The realtime subscription refetches the
+  // profile the moment a decision lands, which is what makes this whole screen
+  // change while they are looking at it.
+  const role = profile?.role ?? claims?.role;
+  const isApplicant = role === 'applicant';
   const status = application?.status;
   const ui = status ? STATUS_UI[status] : null;
 

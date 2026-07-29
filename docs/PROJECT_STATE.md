@@ -1,8 +1,7 @@
 # Project state
 
 **Last updated:** 2026-07-29
-**Current step:** Step 3, application flow (Steps 1 and 3 now merged, since
-applying creates the account)
+**Current step:** Step 4, admin panel
 **Status:** Built and deployed to dev, awaiting Rashid's approval
 
 ---
@@ -56,6 +55,29 @@ until Rashid says "make it live".
 - `pnpm verify:apply`: 15 checks end to end, including an applicant trying to
   approve their own application straight against the REST API.
 
+### Step 4, admin panel (this step)
+
+- Review queue at `/admin`: paginated in the database, status tabs, a
+  "worked with Wurx" filter, handle search (trigram indexed), newest/oldest
+  sort. Filters live in the URL so a view is shareable.
+- Detail screen at `/admin/applications/:id` with everything they submitted,
+  their account, and the decision controls behind a confirmation step.
+- Approve sets role to `creator` and assigns a tier. Reject leaves the account
+  untouched so it can be revisited.
+- Both go through the `review-application` **Edge Function**, which verifies the
+  token with the auth server and re-reads the caller's role from `profiles`
+  rather than trusting the JWT claim.
+- One `security definer` function, `review_application()`, does the whole thing
+  in a single transaction: application status, profile role and tier, and the
+  audit row.
+- `audit_log` table: staff can read it, nobody can write it from a browser.
+  Blocked review attempts are logged too.
+- The applicant's dashboard changes live, no refresh and no new token.
+- `pnpm verify:review`: 34 checks, including seven attacks run as a real
+  signed-in applicant, and a double-decision race.
+- `node scripts/seed-applications.mjs` puts seven demo applications on dev
+  (`--clean` removes them).
+
 ## Known bugs
 
 None outstanding.
@@ -68,23 +90,18 @@ list here.
 
 ## Next action
 
-**Step 4, the admin panel.** Approved by Rashid on 2026-07-29. Build:
+**Waiting on Rashid to test Step 4 and say "approved" or "next".**
 
-1. A review queue at `/admin`: paginated list of applications, newest or oldest
-   first, filterable by status and by `worked_with_wurx` (Rashid cares about
-   fast-tracking people Wurx already knows).
-2. An application detail view showing everything they submitted.
-3. Approve and reject actions. Approving sets `profiles.role = 'creator'`,
-   assigns a tier, and sets `applications.status`. Rejecting records an optional
-   note.
-4. These run through a **Supabase Edge Function** that re-checks the caller is
-   admin or ops server side. RLS already blocks the applicant; the Edge Function
-   is the defence in depth the brief asks for on anything touching approvals.
-5. An `audit_log` table: who did what, to whom, when. Required by the brief for
-   sensitive admin actions.
-6. The applicant's screen must update **live** when a decision is made. The
-   realtime plumbing already exists and is tested (`useApplication`).
-7. Pagination and indexes from the start. Never load every application.
+Two parked items have hit their trigger and were raised with him on 2026-07-29:
+
+- **Prod promotion rehearsal** (PARKED item 4). Its trigger was Step 4, and it
+  has arrived: there are now three tables, a function, an Edge Function and a
+  real admin flow to promote.
+- **Email** (PARKED items 1 and 2). Approvals exist now, but an approved
+  creator who is not sitting on the page finds out nothing. The live dashboard
+  is not a substitute for a notification.
+
+After that, Step 5 (Home) per the roadmap, unless Rashid reorders again.
 
 Admin account for testing already exists: `rashid@wurxmedia.com`.
 

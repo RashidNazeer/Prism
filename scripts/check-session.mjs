@@ -93,15 +93,24 @@ try {
   await page.fill('textarea[name="videoLinks"]', 'https://tiktok.com/@sessiontester/video/1');
   await page.getByRole('button', { name: /takes 60 seconds/i }).click();
 
-  await page.waitForURL('**/app', { timeout: 20000 }).catch(() => {});
+  await page.waitForURL('**/app', { timeout: 30000 }).catch(() => {});
   check(new URL(page.url()).pathname === '/app', `applicant lands on /app (got ${new URL(page.url()).pathname})`);
-  await page.waitForTimeout(1200);
+
+  // Wait for the screen to actually say it, rather than sleeping for a
+  // guessed number of milliseconds. Signing up is two round trips followed by
+  // a query, and a fixed delay turns a slow network into a fake failure.
+  const roleShown = await page
+    .getByText(/Pending review/i)
+    .first()
+    .waitFor({ state: 'visible', timeout: 20000 })
+    .then(() => true)
+    .catch(() => false);
+
   const stored = await readStored(page);
   check(Boolean(stored?.access_token), 'session persisted to storage');
   userId = stored?.user?.id ?? null;
 
-  const roleShown = await page.getByText(/Pending review/i).count();
-  check(roleShown > 0, 'applicant sees the pending application screen');
+  check(roleShown, 'applicant sees the pending application screen');
 
   /* -------------------------------------------------------- 2. reload --- */
   console.log('\n[2] Reload keeps you signed in');
@@ -229,10 +238,26 @@ try {
 } finally {
   await browser.close();
   if (userId) {
-    const { error } = await admin.auth.admin.deleteUser(userId);
-    if (error) fail(`could not delete the test user: ${error.message}`);
-    else console.log('\n[cleanup] test user deleted');
+    // Retry: this one call has intermittently failed at the socket level right
+    // after Playwright shuts down. Leaving a stray account behind on dev is
+    // worse than waiting a second.
+    let deleted = null;
+    for (let i = 0; i < 3; i++) {
+      const { error } = await admin.auth.admin.deleteUser(userId);
+      if (!error) {
+        deleted = true;
+        break;
+      }
+      deleted = error.message;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    if (deleted === true) console.log('\n[cleanup] test user deleted');
+    else fail(`could not delete the test user: ${deleted}`);
   }
+  // Let Playwright's pipe finish closing. Calling process.exit() while it is
+  // still tearing down trips a libuv assertion on Windows, which crashes the
+  // process with exit code 9 and replaces the real pass or fail signal.
+  await new Promise((r) => setTimeout(r, 400));
 }
 
 console.log(`\n${'='.repeat(70)}`);

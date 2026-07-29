@@ -208,6 +208,51 @@ override `--wx-*` at the hub level.
 - `public/favicon.svg` is still the older geometric gold "W" and does NOT match
   the logo. Replace it when a square icon crop is available.
 
+## Admin review & audit log
+
+**Files:** `src/routes/admin/AdminHome.tsx`,
+`src/routes/admin/ApplicationDetail.tsx`, `src/components/admin/*`,
+`src/lib/admin/*`, `src/lib/schemas/review.ts`,
+`supabase/functions/review-application/`, `supabase/functions/_shared/cors.ts`,
+`supabase/migrations/*_admin_review_audit_log.sql`,
+`scripts/check-review.mjs`, `scripts/seed-applications.mjs`
+**Tables:** `audit_log` (new), reads and writes `applications` and `profiles`
+
+**Depends on:** Applications, Auth/profiles/roles, Realtime.
+**Depended on by:** every future admin surface. Brands (Step 6), data upload
+(Step 7) and money (Step 8) all reuse this shape: Edge Function re-checks the
+role, one `security definer` function does the work in a transaction, audit row
+written inside that same transaction.
+
+**Change rules**
+
+- A decision is **never** a table update from the browser. `applications.status`
+  is not in the column grant, a trigger blocks it, and
+  `public.review_application()` is granted to `service_role` only. The Edge
+  Function is the only door and it re-reads the caller's role from `profiles`
+  rather than trusting the JWT claim, which can be an hour stale.
+- Status, role, tier and the audit row move in ONE transaction. Splitting them
+  into separate REST calls reintroduces the half-approved state that
+  `profiles_tier_only_for_creators` exists to prevent.
+- `audit_log` has a select policy for staff and **no insert, update or delete
+  grant to `authenticated` at all**. Never add one. An audit trail an admin can
+  edit is not an audit trail.
+- Any new browser-invoked Edge Function must reuse `_shared/cors.ts`, which
+  echoes `Access-Control-Request-Headers`. Our Supabase client sends a custom
+  `x-application-name` header, and a hand-written allow-list silently fails the
+  preflight so the action appears to do nothing.
+- Every response from an Edge Function needs the CORS headers, including the
+  error ones. A 403 without them reaches the browser as an opaque network
+  failure and the user sees the wrong message.
+- The queue is paginated in the database and its filters live in the URL. Never
+  fetch every application and filter in the browser.
+- Approving relies on `useApplication`'s realtime subscription to update the
+  applicant. `AppShell` and `Dashboard` therefore prefer `profile.role` over
+  `claims.role`; going back to the claim would make the change invisible for up
+  to an hour.
+- `pnpm verify:review` must pass after any change here. It approves, rejects,
+  and then attacks the API as a signed-in applicant.
+
 ---
 
 ## Not built yet
@@ -219,8 +264,6 @@ early.
 | --- | --- | --- | --- |
 | Auth, profiles, roles, tiers | Step 1 | Supabase client | everything |
 | Landing page | Step 2 | Design tokens | Applications |
-| Applications | Step 3 | Auth, profiles | Admin review |
-| Admin review | Step 4 | Applications, roles | Creators, Realtime |
 | Home | Step 5 | Facts, brands, announcements | none |
 | Brand Hubs + theming | Step 6 | Brands, design tokens | My Numbers, Leaderboards |
 | Data pipeline + facts | Step 7 | Creators, brands, identity map | My Numbers, Leaderboards, Home |

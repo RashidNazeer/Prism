@@ -17,6 +17,7 @@
     "verify:rls": "node scripts/check-rls.mjs",
     "verify:session": "node scripts/check-session.mjs",
     "verify:apply": "node scripts/check-apply.mjs",
+    "verify:review": "node scripts/check-review.mjs",
     "shots": "node scripts/shots.mjs"
   },
   "dependencies": {
