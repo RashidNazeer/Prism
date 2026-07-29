@@ -6,7 +6,6 @@ import { StatusBadge } from '@/components/admin/StatusBadge';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/lib/auth/auth-context';
 import {
   PAGE_SIZE,
   useApplicationCounts,
@@ -15,7 +14,6 @@ import {
   type SortOrder,
   type StatusFilter,
 } from '@/lib/admin/useApplications';
-import { useAuditLog } from '@/lib/admin/useApplicationDetail';
 
 const STATUS_TABS: { value: StatusFilter; label: string }[] = [
   { value: 'pending', label: 'Pending' },
@@ -36,7 +34,6 @@ const isStatus = (v: string | null): v is StatusFilter =>
  * application and coming back.
  */
 export function AdminHome() {
-  const { claims } = useAuth();
   const [params, setParams] = useSearchParams();
 
   const statusParam = params.get('status');
@@ -70,7 +67,6 @@ export function AdminHome() {
 
   const { data, isLoading, isError, error, isPlaceholderData } = useApplications(filters);
   const { data: counts } = useApplicationCounts();
-  const { data: activity } = useAuditLog({ limit: 6 });
 
   const total = data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -80,24 +76,14 @@ export function AdminHome() {
 
   return (
     <AppShell>
-      <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-[clamp(1.875rem,4vw,2.75rem)] font-extrabold">Applications</h1>
-          <p className="mt-2 text-[15px] text-muted">
-            Every creator who has applied. Approve one and their dashboard changes while
-            they are looking at it.
-          </p>
-        </div>
-        {/* The header carries this badge from `sm` up, so showing it again on a
-            wide screen is just noise. On a phone the header hides it and this
-            is the only place a reviewer can see which hat they are wearing. */}
-        <span className="rounded-full border border-line px-3 py-1.5 font-mono text-[11px] tracking-[0.14em] text-muted uppercase sm:hidden">
-          {claims?.role === 'admin' ? 'Admin' : 'Ops'}
-        </span>
-      </div>
+      <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold">Applications</h1>
+      <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
+        Every creator who has applied. Approve one and their dashboard changes while
+        they are looking at it.
+      </p>
 
       {/* ------------------------------------------------------------ counts */}
-      <ul className="mt-8 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-3">
+      <ul className="mt-7 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-3">
         {(
           [
             { key: 'pending', label: 'Awaiting review', tone: 'text-warning' },
@@ -326,48 +312,6 @@ export function AdminHome() {
         </div>
       ) : null}
 
-      {/* ---------------------------------------------------------- activity */}
-      {activity && activity.length > 0 ? (
-        <section className="mt-12">
-          <h2 className="font-mono text-[11px] tracking-[0.16em] text-faint uppercase">
-            Recent activity
-          </h2>
-          <ul className="mt-3 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface-1">
-            {activity.map((entry) => (
-              <li
-                key={entry.id}
-                className="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-5 py-3 text-[13px]"
-              >
-                <span className="font-medium">
-                  {entry.actor_email ?? 'A removed account'}
-                </span>
-                <span className="text-muted">{describeAction(entry.action)}</span>
-                {typeof entry.detail.tiktok_handle === 'string' ? (
-                  <span className="font-medium">@{entry.detail.tiktok_handle}</span>
-                ) : null}
-                {typeof entry.detail.tier === 'string' ? (
-                  <span className="text-accent capitalize">as {entry.detail.tier}</span>
-                ) : null}
-                <span className="wx-numeric ml-auto text-faint">
-                  {new Date(entry.created_at).toLocaleString(undefined, {
-                    day: 'numeric',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
     </AppShell>
   );
-}
-
-function describeAction(action: string): string {
-  if (action === 'application.approved') return 'approved';
-  if (action === 'application.rejected') return 'rejected';
-  if (action === 'application.review_denied') return 'was blocked trying to review';
-  return action;
 }

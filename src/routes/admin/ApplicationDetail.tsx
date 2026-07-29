@@ -6,9 +6,9 @@ import { ReviewPanel } from '@/components/admin/ReviewPanel';
 import { ButtonLink } from '@/components/ui/Button';
 import {
   useApplicationDetail,
-  useAuditLog,
   type ApplicationDetail as Detail,
 } from '@/lib/admin/useApplicationDetail';
+import { useAuditLog } from '@/lib/admin/useAuditLog';
 
 /**
  * One application, in full, with the decision controls.
@@ -209,7 +209,10 @@ function Loaded({
                     <p className="font-medium">
                       {entry.action.replace('application.', '').replace('_', ' ')}
                       {typeof entry.detail.tier === 'string' ? (
-                        <span className="text-accent capitalize"> as {entry.detail.tier}</span>
+                        <span className="text-accent">
+                          {' '}
+                          as <span className="capitalize">{entry.detail.tier}</span>
+                        </span>
                       ) : null}
                     </p>
                     <p className="wx-numeric mt-0.5 text-faint">

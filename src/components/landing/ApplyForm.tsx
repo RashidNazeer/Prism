@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, m } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
 import { Field, Input, PasswordInput, Select, Textarea } from '@/components/ui/Field';
@@ -49,8 +50,29 @@ export function ApplyForm() {
   const [pending, setPending] = useState(false);
 
   const validator = useRef<Validator | null>(null);
+  const queryClient = useQueryClient();
 
   const alreadySignedIn = authStatus === 'signedIn' && Boolean(user);
+
+  /**
+   * Drop anything already cached about this person's application before we send
+   * them to their dashboard.
+   *
+   * Signing up fires the auth listener, which enables the "do I have an
+   * application?" query. That can run BEFORE the insert below has landed, and
+   * `null` then sits in the cache for the full staleTime. The dashboard would
+   * greet somebody who has just applied with "Finish your application", which
+   * is alarming and untrue.
+   *
+   * Removing rather than invalidating matters: an invalidated query still hands
+   * the dashboard the stale `null` for one render while it refetches, so the
+   * wrong message flashes up anyway. Removed, the dashboard opens on its
+   * skeleton and then shows the truth.
+   */
+  const forgetCachedApplication = (id: string) => {
+    queryClient.removeQueries({ queryKey: ['application', id] });
+    void queryClient.invalidateQueries({ queryKey: ['profile', id] });
+  };
 
   const warm = useCallback(async (): Promise<Validator> => {
     if (validator.current) return validator.current;
@@ -129,6 +151,7 @@ export function ApplyForm() {
     if (insertError) {
       // 23505 is a duplicate key: they already have an application on file.
       if (insertError.code === '23505') {
+        forgetCachedApplication(userId);
         navigate('/app', { replace: true });
         return;
       }
@@ -138,6 +161,7 @@ export function ApplyForm() {
       return;
     }
 
+    forgetCachedApplication(userId);
     navigate('/app', { replace: true });
   }
 

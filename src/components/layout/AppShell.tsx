@@ -1,97 +1,133 @@
-import { useState, type ReactNode } from 'react';
-import { Link } from 'react-router';
-import { LogOut } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Link, useLocation } from 'react-router';
+import { AnimatePresence, m } from 'motion/react';
+import { Menu } from 'lucide-react';
 import { WurxMark } from '@/components/brand/WurxMark';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
-import { Button } from '@/components/ui/Button';
-import { Container } from '@/components/layout/Section';
-import { useAuth, type AppRole, type CreatorTier } from '@/lib/auth/auth-context';
+import { AppSidebar } from '@/components/layout/AppSidebar';
+import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 
-const ROLE_LABEL: Record<AppRole, string> = {
-  applicant: 'Applicant',
-  creator: 'Creator',
-  creative_strategist: 'Creative strategist',
-  ops: 'Ops',
-  admin: 'Admin',
-};
-
-const TIER_LABEL: Record<CreatorTier, string> = {
-  creator: 'Creator',
-  rising: 'Rising',
-  pro: 'Pro',
-  elite: 'Elite',
-};
-
-/** Frame for every signed-in screen. */
+/**
+ * Frame for every signed-in screen.
+ *
+ * A fixed rail on desktop, a drawer on mobile. The product is going to grow a
+ * lot of sections (brand hubs, numbers, leaderboards, offers, uploads), and a
+ * top bar has nowhere to put them, so navigation is vertical from the start
+ * rather than being retrofitted once it hurts.
+ *
+ * The shell is mounted once and is never keyed on the session. A token refresh
+ * must not remount it, or a half-typed form disappears. See CLAUDE.md
+ * "Auth rules".
+ */
 export function AppShell({ children }: { children: ReactNode }) {
   const { claims, signOut } = useAuth();
   const { data: profile } = useProfile();
   const [signingOut, setSigningOut] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const { pathname } = useLocation();
 
   // The profile row wins over the JWT claim wherever both exist. Claims are
   // only refreshed with the token, roughly hourly, so a creator approved a
-  // minute ago would otherwise still be badged "Applicant" up here while their
+  // minute ago would otherwise still be shown as an applicant here while their
   // dashboard already says otherwise.
-  const role: AppRole | undefined = profile?.role ?? claims?.role;
-  const tier: CreatorTier | null = profile ? profile.tier : (claims?.tier ?? null);
+  const role = profile?.role ?? claims?.role;
+  const tier = profile ? profile.tier : (claims?.tier ?? null);
+
+  // Changing screen closes the drawer. Without this it stays open over the
+  // page you just asked for.
+  useEffect(() => setDrawerOpen(false), [pathname]);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setDrawerOpen(false);
+    };
+    const onResize = () => {
+      if (window.innerWidth >= 1024) setDrawerOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [drawerOpen]);
+
+  const handleSignOut = () => {
+    setSigningOut(true);
+    void signOut();
+  };
+
+  const sidebar = (inDrawer = false) => (
+    <AppSidebar
+      role={role}
+      tier={tier}
+      name={profile?.display_name ?? null}
+      email={profile?.email}
+      signingOut={signingOut}
+      onSignOut={handleSignOut}
+      {...(inDrawer
+        ? { onNavigate: () => setDrawerOpen(false), onClose: () => setDrawerOpen(false) }
+        : {})}
+    />
+  );
 
   return (
-    <div className="min-h-dvh bg-bg">
-      <header className="border-b border-line bg-surface-1">
-        <Container>
-          <div className="flex h-16 items-center justify-between gap-4">
-            <Link to="/" aria-label="WurxMediaHub home">
-              <WurxMark />
-            </Link>
+    <div className="min-h-dvh bg-bg lg:grid lg:grid-cols-[264px_minmax(0,1fr)]">
+      {/* ------------------------------------------------- desktop rail --- */}
+      <aside className="sticky top-0 hidden h-dvh border-r border-line lg:block">
+        {sidebar()}
+      </aside>
 
-            <div className="flex items-center gap-2.5">
-              {role ? (
-                <span className="hidden items-center gap-2 rounded-full border border-line px-3 py-1.5 font-mono text-[11px] tracking-[0.14em] text-muted uppercase sm:inline-flex">
-                  {ROLE_LABEL[role]}
-                  {tier ? (
-                    <>
-                      <span aria-hidden className="text-accent">
-                        &middot;
-                      </span>
-                      <span className="text-accent">{TIER_LABEL[tier]}</span>
-                    </>
-                  ) : null}
-                </span>
-              ) : null}
-
-              <ThemeToggle />
-
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={signingOut}
-                onClick={() => {
-                  setSigningOut(true);
-                  void signOut();
-                }}
-              >
-                <LogOut size={15} aria-hidden />
-                <span className="hidden sm:inline">
-                  {signingOut ? 'Signing out...' : 'Sign out'}
-                </span>
-              </Button>
-            </div>
-          </div>
-        </Container>
+      {/* --------------------------------------------------- mobile bar --- */}
+      <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-3 border-b border-line bg-surface-1 px-5 lg:hidden">
+        <Link to="/" aria-label="WurxMediaHub home">
+          <WurxMark />
+        </Link>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Open menu"
+            aria-expanded={drawerOpen}
+            className="grid size-10 place-items-center rounded-full border border-line text-muted transition-colors duration-200 hover:border-accent hover:text-accent"
+          >
+            <Menu size={18} aria-hidden />
+          </button>
+        </div>
       </header>
 
-      <main>
-        <Container className="py-10 sm:py-14">
-          {profile ? (
-            <p className="font-mono text-[11px] tracking-[0.16em] text-faint uppercase">
-              Signed in as {profile.display_name || profile.email}
-            </p>
-          ) : (
-            <div className="h-4 w-48 animate-pulse rounded bg-surface-2" />
-          )}
-          {children}
-        </Container>
+      <AnimatePresence>
+        {drawerOpen && (
+          <>
+            <m.div
+              key="scrim"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setDrawerOpen(false)}
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm lg:hidden"
+            />
+            <m.aside
+              key="drawer"
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+              className="fixed inset-y-0 left-0 z-50 w-[min(300px,86vw)] border-r border-line shadow-lg lg:hidden"
+            >
+              {sidebar(true)}
+            </m.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ------------------------------------------------------ content --- */}
+      <main className="min-w-0">
+        <div className="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-10">{children}</div>
       </main>
     </div>
   );

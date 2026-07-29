@@ -38,6 +38,18 @@ export function useApplication() {
     queryKey: ['application', user?.id],
     enabled,
     staleTime: 30_000,
+    /**
+     * "You have no application" is a surprising answer for somebody sitting on
+     * their own dashboard, and it is the one answer that can be a lie: a read
+     * that overtakes the insert during sign up returns an empty list, which
+     * would then sit in the cache telling them to start again.
+     *
+     * So a null is never treated as settled. It is re-checked every few seconds
+     * until a row appears, and stops the moment one does. A genuine absence
+     * costs a tiny poll on one screen; a false one heals itself in seconds
+     * instead of persisting.
+     */
+    refetchInterval: (q) => (q.state.data === null ? 3_000 : false),
     queryFn: async (): Promise<Application | null> => {
       const { data, error } = await getSupabase()
         .from('applications')

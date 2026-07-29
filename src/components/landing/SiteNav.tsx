@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, m } from 'motion/react';
+import { Link } from 'react-router';
 import { Menu, X } from 'lucide-react';
 import { WurxMark } from '@/components/brand/WurxMark';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
@@ -73,6 +74,19 @@ export function SiteNav() {
           </ul>
 
           <div className="flex items-center gap-2.5">
+            {/* Existing partners had no way in from a desktop: "Sign in" only
+                existed inside the mobile menu. This is the return path for
+                everyone who has already applied. */}
+            <Link
+              to="/login"
+              className="hidden items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm whitespace-nowrap text-muted transition-colors duration-200 ease-brand hover:text-accent sm:inline-flex"
+            >
+              <span className="hidden lg:inline">Already a partner?</span>
+              <span className="font-medium text-text underline-offset-4 hover:text-accent hover:underline">
+                Sign in
+              </span>
+            </Link>
+
             <ThemeToggle />
             <Button
               size="sm"
@@ -132,7 +146,7 @@ export function SiteNav() {
                 </li>
                 <li className="pt-1 text-center">
                   <ButtonLink to="/login" variant="ghost" className="w-full">
-                    Sign in
+                    Already a partner? Sign in
                   </ButtonLink>
                 </li>
               </ul>

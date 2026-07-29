@@ -78,6 +78,21 @@ until Rashid says "make it live".
 - `node scripts/seed-applications.mjs` puts seven demo applications on dev
   (`--clean` removes them).
 
+### Step 4 revision, after Rashid's review on 2026-07-30
+
+- **Vertical sidebar** for every signed-in screen, creator and staff, replacing
+  the top bar. Rashid's call: a lot of sections are still to come and they need
+  somewhere to live. Sections not built yet are listed and tagged with the step
+  that brings them, and are not links.
+- Audit log moved off the queue page onto its own `/admin/activity` screen.
+- `/` now sends a signed-in visitor to their own home.
+- **"Already a partner? Sign in"** added to the desktop header. It previously
+  existed only inside the mobile menu, so on a desktop there was no way back in
+  at all.
+- Fixed a real race: a new applicant could land on their dashboard and be told
+  "Finish your application" when they had just submitted one. See DECISIONS and
+  the "Sign up timing" entry in FEATURE_MAP.
+
 ## Known bugs
 
 None outstanding.

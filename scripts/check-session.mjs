@@ -82,6 +82,26 @@ try {
   });
   page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e.message}`));
 
+  // Every call about this person's application, kept so a failure below can
+  // show what the browser actually asked for and what came back, rather than
+  // just "the text was not there".
+  const t0 = Date.now();
+  const appCalls = [];
+  page.on('response', async (r) => {
+    if (!/\/rest\/v1\/applications/.test(r.url())) return;
+    let body = '';
+    try {
+      body = (await r.text()).slice(0, 80);
+    } catch {
+      body = '(unavailable)';
+    }
+    const auth = r.request().headers()['authorization'] ?? '';
+    appCalls.push(
+      `${String(Date.now() - t0).padStart(6)}ms ${r.request().method()} ${r.status()} ` +
+        `token=${auth ? 'yes' : 'NONE'} ${r.url().slice(-60)} -> ${body}`
+    );
+  });
+
   // Applying IS signing up, so the account is created through the real
   // application form rather than a separate account-only screen.
   await page.goto(`${BASE}/signup`, { waitUntil: 'networkidle' });
@@ -104,13 +124,32 @@ try {
     .first()
     .waitFor({ state: 'visible', timeout: 20000 })
     .then(() => true)
-    .catch(() => false);
+    .catch((e) => {
+      console.error(`        waitFor: ${e.message.split('\n')[0]}`);
+      return false;
+    });
 
   const stored = await readStored(page);
   check(Boolean(stored?.access_token), 'session persisted to storage');
   userId = stored?.user?.id ?? null;
 
   check(roleShown, 'applicant sees the pending application screen');
+
+  // A bare "not found" is not a diagnosis. Say whether the row is missing (the
+  // sign up landed but the application insert did not) or merely slow.
+  if (!roleShown) {
+    const { data: row } = userId
+      ? await admin.from('applications').select('id, status').eq('user_id', userId).maybeSingle()
+      : { data: null };
+    console.error(`        application row in the database: ${JSON.stringify(row)}`);
+    const shown = await page
+      .locator('main')
+      .innerText()
+      .catch(() => '(could not read)');
+    console.error(`        screen said: ${shown.replace(/\s+/g, ' ').slice(0, 220)}`);
+    console.error('        calls to /applications:');
+    appCalls.forEach((c) => console.error(`          ${c}`));
+  }
 
   /* -------------------------------------------------------- 2. reload --- */
   console.log('\n[2] Reload keeps you signed in');
@@ -190,10 +229,12 @@ try {
   );
 
   console.log('\n[6] The refreshed session still works against the database');
-  const stillWorks = await page2.evaluate(async () => {
-    const el = document.body.textContent ?? '';
-    return el.includes('Signed in as');
-  });
+  // The sidebar renders the email straight off the profile row, so seeing it
+  // proves the query ran with the refreshed token, not just that a page drew.
+  const stillWorks = await page2.evaluate(
+    (email) => (document.body.textContent ?? '').includes(email),
+    EMAIL
+  );
   check(stillWorks, 'profile query still succeeds with the new token');
 
   /* --------------------------------------------- 7. protected routes ----- */

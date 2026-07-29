@@ -254,6 +254,25 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   `claims.role` for display. Otherwise a creator approved a minute ago keeps
   being shown as an applicant until their token refreshes, up to an hour later,
   while their status card already says approved.
+- 2026-07-30: Signed-in screens moved from a top bar to a **vertical sidebar**,
+  Rashid's call. The product has a lot of sections still to come (brand hubs,
+  numbers, leaderboards, offers, uploads) and a top bar has nowhere to put them.
+  Sections that do not exist yet are listed, tagged with the step that brings
+  them, and deliberately are not links.
+- 2026-07-30: `/` redirects a signed-in visitor to their own home, but only if
+  they were ALREADY signed in when the page opened. Redirecting on "signed in
+  right now" fires during sign up, before the application row is written.
+- 2026-07-30: `/signup` moved OUT of the `RedirectIfSignedIn` guard and is now a
+  plain alias of `/apply`. That guard fired the moment sign up returned, which
+  is before the application insert lands. The dashboard mounted, asked whether
+  an application existed, was correctly told no, and cached it for 30 seconds,
+  so someone who had just applied was told to "Finish your application".
+  Reproduced 3 times in 8 runs and caught on the wire: the GET went out 19ms
+  before the POST.
+- 2026-07-30: `useApplication` never treats `null` as settled. It re-checks
+  every 3 seconds until a row appears. "You have no application" is the one
+  answer that can be a lie, and a stale one strands a new creator on a screen
+  telling them to start again.
 - 2026-07-28: Flagged to Rashid but not acted on, (a) a Vite SPA has no
   server-rendering, so the public landing page will be weak for SEO and link
   previews until we add a build-time prerender; (b) the Supabase free tier

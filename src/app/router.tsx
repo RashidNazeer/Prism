@@ -30,6 +30,20 @@ export const router = createBrowserRouter([
     HydrateFallback: RouteFallback,
     lazy: lazyRoute(() => import('@/routes/Apply'), 'Apply'),
   },
+  // /signup is the same screen, and deliberately NOT behind the
+  // "already signed in? go home" guard.
+  //
+  // Applying creates the account, so that guard used to fire the instant sign
+  // up returned, which is BEFORE the application row is written. The dashboard
+  // then mounted, asked whether an application existed, was truthfully told no,
+  // and cached that answer, greeting somebody who had just applied with
+  // "Finish your application". The form navigates people itself once its work
+  // has actually finished.
+  {
+    path: '/signup',
+    HydrateFallback: RouteFallback,
+    lazy: lazyRoute(() => import('@/routes/Apply'), 'Apply'),
+  },
 
   /* ------------------------------------------ signed out only (auth) ----- */
   {
@@ -39,13 +53,6 @@ export const router = createBrowserRouter([
         path: '/login',
         HydrateFallback: RouteFallback,
         lazy: lazyRoute(() => import('@/routes/auth/SignIn'), 'SignIn'),
-      },
-      // /signup is the application form. Applying IS signing up, so there is no
-      // separate "create an account" screen that collects less information.
-      {
-        path: '/signup',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/Apply'), 'Apply'),
       },
       {
         path: '/forgot-password',
@@ -90,6 +97,11 @@ export const router = createBrowserRouter([
           () => import('@/routes/admin/ApplicationDetail'),
           'ApplicationDetail'
         ),
+      },
+      {
+        path: '/admin/activity',
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/routes/admin/Activity'), 'Activity'),
       },
     ],
   },

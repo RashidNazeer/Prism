@@ -208,6 +208,48 @@ override `--wx-*` at the hub level.
 - `public/favicon.svg` is still the older geometric gold "W" and does NOT match
   the logo. Replace it when a square icon crop is available.
 
+## App shell & sidebar navigation
+
+**Files:** `src/components/layout/AppShell.tsx`,
+`src/components/layout/AppSidebar.tsx`, `src/lib/nav.ts`
+
+**Depended on by:** every signed-in screen, for both creators and staff.
+
+**Change rules**
+
+- The navigation lives in `src/lib/nav.ts` and nowhere else. Shipping a screen
+  means moving one item from `soon` to `to`, in that file.
+- Items without a `to` render as plain text, never as links. A nav item that
+  lands somebody on an empty page is worse than one that says "Step 6".
+- The shell mounts once and is never keyed on the session. A token refresh must
+  not remount it or a half-typed form is lost. `pnpm verify:session` covers it.
+- Role and tier in the sidebar come from the profile row, falling back to the
+  JWT claim. Claims are up to an hour stale, so a freshly approved creator would
+  otherwise still be badged "Applicant".
+- The desktop rail and the mobile drawer are the same component. Do not fork it.
+
+## Sign up timing (the one that keeps biting)
+
+**Files:** `src/routes/Landing.tsx`, `src/app/router.tsx`,
+`src/components/landing/ApplyForm.tsx`, `src/lib/auth/useApplication.ts`
+
+Applying creates the account and then writes the application, as two writes.
+Between those two moments the user IS signed in but has NO application, and
+anything that reacts to "signed in" during that window will race the insert.
+
+**Change rules**
+
+- Never put a screen that can create an account behind a guard that redirects on
+  sign-in. `/signup` and `/apply` are outside `RedirectIfSignedIn` for exactly
+  this reason.
+- `/` only redirects people who were already signed in when the page opened, not
+  whoever becomes signed in while on it.
+- `ApplyForm` clears the cached application query before navigating.
+- `useApplication` re-checks while the answer is `null`.
+- All four exist to stop one symptom: a new applicant being told "Finish your
+  application" when they just did. If you touch any of them, run
+  `pnpm verify:session` several times, not once. It failed roughly 3 runs in 8.
+
 ## Admin review & audit log
 
 **Files:** `src/routes/admin/AdminHome.tsx`,

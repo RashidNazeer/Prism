@@ -52,44 +52,4 @@ export function useApplicationDetail(id: string | undefined) {
   });
 }
 
-export interface AuditEntry {
-  id: number;
-  actor_email: string | null;
-  actor_role: AppRole | null;
-  action: string;
-  subject_id: string | null;
-  detail: Record<string, unknown>;
-  created_at: string;
-}
-
-const AUDIT_COLUMNS =
-  'id, actor_email, actor_role, action, subject_id, detail, created_at';
-
-/**
- * The audit trail.
- *
- * Pass a `subjectId` for one application's history, or leave it out for the
- * most recent activity across the whole panel. Nothing here is writable from a
- * browser: the table has a select policy and no insert grant at all, so this
- * hook can only ever read what the database wrote for itself.
- */
-export function useAuditLog({
-  subjectId,
-  limit = 10,
-}: { subjectId?: string; limit?: number } = {}) {
-  return useQuery({
-    queryKey: ['admin', 'audit', subjectId ?? 'recent', limit],
-    staleTime: 15_000,
-    queryFn: async (): Promise<AuditEntry[]> => {
-      let q = getSupabase().from('audit_log').select(AUDIT_COLUMNS);
-      if (subjectId) q = q.eq('subject_id', subjectId);
-
-      const { data, error } = await q
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (error) throw error;
-      return (data ?? []) as unknown as AuditEntry[];
-    },
-  });
-}
+// The audit log hooks live in `useAuditLog.ts`. They are read only by design.
