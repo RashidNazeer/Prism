@@ -244,18 +244,26 @@ try {
 
   // Each area sends people to its own door: the team gets the staff screen,
   // creators get the one that can also offer them a way to apply.
-  await anonPage.goto(`${BASE}/admin`, { waitUntil: 'networkidle' });
-  await anonPage.waitForTimeout(1200);
+  //
+  // Waiting for the URL, not sleeping for a guessed number of milliseconds. The
+  // guard has to read the stored session before it can decide anything, and
+  // over a real network that takes longer than any fixed delay we would pick.
+  const doorFor = async (path, expected) => {
+    await anonPage.goto(`${BASE}${path}`, { waitUntil: 'networkidle' });
+    await anonPage.waitForURL(`**${expected}`, { timeout: 15000 }).catch(() => {});
+    return new URL(anonPage.url()).pathname;
+  };
+
+  const adminDoor = await doorFor('/admin', '/admin/login');
   check(
-    new URL(anonPage.url()).pathname === '/admin/login',
-    `visiting /admin signed out offers the staff door (got ${new URL(anonPage.url()).pathname})`
+    adminDoor === '/admin/login',
+    `visiting /admin signed out offers the staff door (got ${adminDoor})`
   );
 
-  await anonPage.goto(`${BASE}/app`, { waitUntil: 'networkidle' });
-  await anonPage.waitForTimeout(1200);
+  const creatorDoor = await doorFor('/app', '/login');
   check(
-    new URL(anonPage.url()).pathname === '/login',
-    `visiting /app signed out offers the creator door (got ${new URL(anonPage.url()).pathname})`
+    creatorDoor === '/login',
+    `visiting /app signed out offers the creator door (got ${creatorDoor})`
   );
   await anonCtx.close();
 
