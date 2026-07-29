@@ -73,6 +73,12 @@ None outstanding. Fixed this step: Fustat's tabular figures rendered
 Wait for Rashid's review of the landing page. Then either iterate on it, or
 start **Step 1, Auth and roles foundation**.
 
+## Parked work
+
+Everything we have consciously deferred lives in **[PARKED.md](PARKED.md)**.
+When Rashid asks "what's pending?", answer from that file. Do not duplicate the
+list here.
+
 ## Open product decisions
 
 - Flagship brand for the first Brand Hub (needed at Step 6).

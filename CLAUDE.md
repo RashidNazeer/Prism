@@ -14,8 +14,12 @@ or the terminal). Claude runs the entire toolchain via CLI.
 ## Read this first, every session
 
 1. `docs/PROJECT_STATE.md`, where we are, what's next. **Always.**
-2. `docs/FEATURE_MAP.md`, only the entries you are about to touch.
-3. `docs/DECISIONS.md`, only when a decision is in question.
+2. `docs/PARKED.md`, work we deliberately deferred. **Always.** Each item names
+   the trigger that should bring it back up. Raise it yourself when that trigger
+   arrives rather than waiting to be asked. When Rashid asks "what's pending?",
+   answer from this file.
+3. `docs/FEATURE_MAP.md`, only the entries you are about to touch.
+4. `docs/DECISIONS.md`, only when a decision is in question.
 
 Chunked memory, not everything at once. If reality and the docs disagree, fix
 the docs in the same commit.
