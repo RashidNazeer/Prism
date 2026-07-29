@@ -1,7 +1,8 @@
 # Project state
 
 **Last updated:** 2026-07-29
-**Current step:** Step 1, auth and roles foundation
+**Current step:** Step 3, application flow (Steps 1 and 3 now merged, since
+applying creates the account)
 **Status:** Built and deployed to dev, awaiting Rashid's approval
 
 ---
@@ -42,6 +43,18 @@ until Rashid says "make it live".
   creative strategist. Suspended-account screen.
 - `pnpm verify:rls`: 18 checks, including three privilege escalation attempts.
 - `pnpm verify:session`: 18 checks covering every scenario in section 11.
+
+### Step 3, application flow (this step)
+
+- The hero form IS the sign up. One password field added; `/signup` and
+  `/apply` render the same form. The old account-only signup page is gone.
+- `applications` table with RLS, staff-only review columns, and realtime.
+- Submitting creates the account, stores the application, and lands the person
+  on a live status screen. If the insert fails the dashboard offers to finish.
+- "Apply" in the header now scrolls to the form and focuses it. It previously
+  appeared to do nothing on desktop, where the form is already on screen.
+- `pnpm verify:apply`: 15 checks end to end, including an applicant trying to
+  approve their own application straight against the REST API.
 
 ## Known bugs
 

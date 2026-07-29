@@ -1,10 +1,15 @@
 import { useCallback, useRef, useState, type FormEvent } from 'react';
+import { useNavigate, Link } from 'react-router';
 import { AnimatePresence, m } from 'motion/react';
-import { ArrowRight, Check } from 'lucide-react';
-import { Field, Input, Select, Textarea } from '@/components/ui/Field';
+import { ArrowRight } from 'lucide-react';
+import { Field, Input, PasswordInput, Select, Textarea } from '@/components/ui/Field';
 import { Button } from '@/components/ui/Button';
+import { FormError } from '@/components/auth/AuthShell';
+import { friendlyAuthError } from '@/lib/auth/auth-errors';
+import { useAuth } from '@/lib/auth/auth-context';
 import {
   NICHES,
+  PASSWORD_MIN,
   WORKED_WITH_WURX,
   emptyApplication,
   type ApplicationErrors,
@@ -15,34 +20,41 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 
 type Validator = (input: ApplicationInput) => ApplicationErrors;
 
+// Loaded lazily so Zod and the Supabase client stay off the landing page's
+// critical path. Both are warmed the moment someone focuses a field, long
+// before they can press the button.
+const loadSchema = () => import('@/lib/schemas/application');
+const loadSupabase = () => import('@/lib/supabase').then((m) => m.getSupabase());
+
 /**
- * Creator application form.
+ * Creator application form. This IS the sign up.
  *
- * FRONT END ONLY. Nothing is persisted yet: the Supabase table, the Edge
- * Function and the RLS policies are roadmap Step 3. Validation is real and uses
- * the same Zod schema the server will use, so wiring it up later means
- * replacing one submit handler.
+ * Applying creates the account, because an anonymous application cannot show
+ * its own status, cannot update live when a decision is made, and would have to
+ * be matched back to a login by email later, which breaks the moment someone
+ * signs up with a different address.
  *
- * Zod is imported lazily on the first submit rather than at module load, which
- * keeps roughly 60 KB gzipped off the landing page's initial download. Nobody
- * needs a validation engine until they press the button.
- *
- * Until it is wired, the success state says so rather than pretending an
- * application was received.
+ * Two writes happen: create the auth user, then insert the application. If the
+ * second fails the account still exists, and the dashboard offers to finish the
+ * application, so nobody is ever stranded.
  */
 export function ApplyForm() {
+  const navigate = useNavigate();
+  const { status: authStatus, user } = useAuth();
+
   const [values, setValues] = useState<ApplicationInput>(emptyApplication);
   const [errors, setErrors] = useState<ApplicationErrors>({});
+  const [formError, setFormError] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [pending, setPending] = useState(false);
-  const [done, setDone] = useState(false);
 
-  // Cached once loaded, so live re-validation after a failed submit is instant.
   const validator = useRef<Validator | null>(null);
 
-  const loadValidator = useCallback(async (): Promise<Validator> => {
+  const alreadySignedIn = authStatus === 'signedIn' && Boolean(user);
+
+  const warm = useCallback(async (): Promise<Validator> => {
     if (validator.current) return validator.current;
-    const { validateApplication } = await import('@/lib/schemas/application');
+    const [{ validateApplication }] = await Promise.all([loadSchema(), loadSupabase()]);
     validator.current = validateApplication;
     return validateApplication;
   }, []);
@@ -50,90 +62,103 @@ export function ApplyForm() {
   const set = <K extends keyof ApplicationInput>(key: K, value: ApplicationInput[K]) => {
     const next = { ...values, [key]: value };
     setValues(next);
-    // Only re-validate live once the user has tried to submit. Nagging before
-    // that is hostile, and the validator will already be loaded by then.
+    // Only nag once they have tried to submit.
     if (submitted && validator.current) setErrors(validator.current(next));
   };
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitted(true);
+    setFormError('');
     setPending(true);
 
-    const validate = await loadValidator();
-    const next = validate(values);
+    const validate = await warm();
+    // A signed-in user is only filling in the application half, so the password
+    // rule does not apply to them.
+    const toCheck = alreadySignedIn
+      ? { ...values, password: 'x'.repeat(PASSWORD_MIN) }
+      : values;
+    const next = validate(toCheck);
     setErrors(next);
 
     if (Object.keys(next).length > 0) {
       setPending(false);
-      // Move focus to the first problem so keyboard and screen reader users are
-      // not left guessing.
       document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
       return;
     }
 
-    // TODO(Step 3): POST to the submit-application Edge Function.
-    await new Promise((r) => setTimeout(r, 500));
-    setPending(false);
-    setDone(true);
-  }
+    const supabase = await loadSupabase();
+    let userId = user?.id ?? null;
 
-  if (done) {
-    return (
-      <m.div
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4, ease: EASE }}
-        className="rounded-2xl border border-line bg-surface-1 p-8 text-center shadow-lg"
-      >
-        <span className="mx-auto grid size-12 place-items-center rounded-full bg-success-soft text-success">
-          <Check size={22} aria-hidden />
-        </span>
-        <h3 className="mt-5 text-xl font-bold">Everything checks out</h3>
-        <p className="mx-auto mt-3 max-w-xs text-[15px] leading-relaxed text-muted">
-          The form validated your details correctly.
-        </p>
-        <p className="mx-auto mt-5 max-w-xs rounded-xl border border-line bg-surface-2 px-4 py-3 text-[13px] leading-relaxed text-faint">
-          <span className="font-mono text-[10px] tracking-[0.14em] text-accent uppercase">
-            Preview
-          </span>
-          <br />
-          Applications are not being stored yet. Connecting this to the database is
-          the next step.
-        </p>
-        <Button
-          type="button"
-          variant="ghost"
-          className="mt-6"
-          onClick={() => {
-            setValues(emptyApplication);
-            setErrors({});
-            setSubmitted(false);
-            setDone(false);
-          }}
-        >
-          Fill it in again
-        </Button>
-      </m.div>
-    );
+    if (!alreadySignedIn) {
+      const { data, error } = await supabase.auth.signUp({
+        email: values.email.trim(),
+        password: values.password,
+        options: {
+          // Read by the handle_new_user trigger. Nothing here can set a role:
+          // that is decided by the database and defaults to 'applicant'.
+          data: { display_name: values.tiktokHandle.trim().replace(/^@/, '') },
+        },
+      });
+
+      if (error) {
+        setPending(false);
+        setFormError(friendlyAuthError(error.message));
+        return;
+      }
+      userId = data.user?.id ?? null;
+    }
+
+    if (!userId) {
+      setPending(false);
+      setFormError('Your account was created but we could not read it back. Try signing in.');
+      return;
+    }
+
+    const { error: insertError } = await supabase.from('applications').insert({
+      user_id: userId,
+      tiktok_handle: values.tiktokHandle.trim().replace(/^@/, ''),
+      niche: values.niche,
+      niche_other: values.niche === 'Other' ? (values.nicheOther?.trim() ?? null) : null,
+      worked_with_wurx: values.workedWithWurx === 'yes',
+      video_links: values.videoLinks.trim(),
+    });
+
+    setPending(false);
+
+    if (insertError) {
+      // 23505 is a duplicate key: they already have an application on file.
+      if (insertError.code === '23505') {
+        navigate('/app', { replace: true });
+        return;
+      }
+      setFormError(
+        'Your account is ready, but we could not save your application. Sign in and finish it from your dashboard.'
+      );
+      return;
+    }
+
+    navigate('/app', { replace: true });
   }
 
   return (
     <form
+      id="apply-form"
       onSubmit={onSubmit}
       noValidate
-      // Warm the lazily-loaded validator the moment someone touches the form.
-      // Without this, the first submit on a slow connection waits on a network
-      // round trip before any error appears.
-      onFocus={() => void loadValidator()}
+      // Warm the lazily loaded validator and database client as soon as anyone
+      // touches the form, so the first submit never waits on a download.
+      onFocus={() => void warm()}
       className="rounded-2xl border border-line bg-surface-1 p-6 shadow-lg sm:p-7"
     >
       <div className="flex items-center gap-4">
         <h2 className="font-mono text-[11px] font-medium tracking-[0.16em] text-muted uppercase">
-          Apply to join
+          {alreadySignedIn ? 'Finish your application' : 'Apply to join'}
         </h2>
         <span className="h-px flex-1 bg-line" aria-hidden />
       </div>
+
+      <FormError>{formError}</FormError>
 
       <div className="mt-6 space-y-5">
         <Field label="TikTok handle" error={errors.tiktokHandle}>
@@ -152,22 +177,45 @@ export function ApplyForm() {
           )}
         </Field>
 
-        <Field label="Email" error={errors.email}>
-          {({ id, describedBy, invalid }) => (
-            <Input
-              id={id}
-              name="email"
-              type="email"
-              inputMode="email"
-              placeholder="you@email.com"
-              autoComplete="email"
-              value={values.email}
-              onChange={(e) => set('email', e.target.value)}
-              aria-describedby={describedBy}
-              invalid={invalid}
-            />
-          )}
-        </Field>
+        {!alreadySignedIn && (
+          <>
+            <Field label="Email" error={errors.email}>
+              {({ id, describedBy, invalid }) => (
+                <Input
+                  id={id}
+                  name="email"
+                  type="email"
+                  inputMode="email"
+                  placeholder="you@email.com"
+                  autoComplete="email"
+                  value={values.email}
+                  onChange={(e) => set('email', e.target.value)}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                />
+              )}
+            </Field>
+
+            <Field
+              label="Create a password"
+              error={errors.password}
+              hint={`At least ${PASSWORD_MIN} characters. Longer beats complicated.`}
+            >
+              {({ id, describedBy, invalid }) => (
+                <PasswordInput
+                  id={id}
+                  name="password"
+                  autoComplete="new-password"
+                  placeholder="Something you will remember"
+                  value={values.password}
+                  onChange={(e) => set('password', e.target.value)}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                />
+              )}
+            </Field>
+          </>
+        )}
 
         <Field label="Niche" error={errors.niche}>
           {({ id, describedBy, invalid }) => (
@@ -264,10 +312,10 @@ export function ApplyForm() {
 
       <Button type="submit" size="lg" disabled={pending} className="group mt-7 w-full">
         {pending ? (
-          'Checking your details...'
+          'Sending your application...'
         ) : (
           <>
-            Apply, takes 60 seconds
+            {alreadySignedIn ? 'Submit application' : 'Apply, takes 60 seconds'}
             <ArrowRight
               size={17}
               className="transition-transform duration-200 ease-brand group-hover:translate-x-0.5"
@@ -277,9 +325,14 @@ export function ApplyForm() {
         )}
       </Button>
 
-      <p className="mt-4 text-center text-[13px] text-faint">
-        Free to join. No follower minimum.
-      </p>
+      {!alreadySignedIn && (
+        <p className="mt-4 text-center text-[13px] text-faint">
+          Already applied?{' '}
+          <Link to="/login" className="font-medium text-accent hover:underline">
+            Sign in
+          </Link>
+        </p>
+      )}
     </form>
   );
 }

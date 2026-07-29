@@ -3,8 +3,9 @@ import { AnimatePresence, m } from 'motion/react';
 import { Menu, X } from 'lucide-react';
 import { WurxMark } from '@/components/brand/WurxMark';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
-import { ButtonLink } from '@/components/ui/Button';
+import { Button, ButtonLink } from '@/components/ui/Button';
 import { Container } from '@/components/layout/Section';
+import { focusApplyForm } from '@/lib/focus-apply';
 import { cn } from '@/lib/utils';
 
 const LINKS = [
@@ -73,9 +74,13 @@ export function SiteNav() {
 
           <div className="flex items-center gap-2.5">
             <ThemeToggle />
-            <ButtonLink to="#apply" size="sm" className="hidden sm:inline-flex">
+            <Button
+              size="sm"
+              className="hidden sm:inline-flex"
+              onClick={() => focusApplyForm()}
+            >
               Apply
-            </ButtonLink>
+            </Button>
             <button
               type="button"
               onClick={() => setOpen((v) => !v)}
@@ -114,12 +119,20 @@ export function SiteNav() {
                   </li>
                 ))}
                 <li className="pt-2">
-                  <ButtonLink
-                    to="#apply"
+                  <Button
                     className="w-full"
-                    onClick={() => setOpen(false)}
+                    onClick={() => {
+                      setOpen(false);
+                      // Let the menu finish collapsing before scrolling.
+                      window.setTimeout(focusApplyForm, 300);
+                    }}
                   >
                     Apply to join
+                  </Button>
+                </li>
+                <li className="pt-1 text-center">
+                  <ButtonLink to="/login" variant="ghost" className="w-full">
+                    Sign in
                   </ButtonLink>
                 </li>
               </ul>

@@ -29,6 +29,13 @@ export const WORKED_WITH_WURX = [
 
 export type WorkedWithWurx = (typeof WORKED_WITH_WURX)[number]['value'];
 
+/**
+ * Must match `password_min_length` on the Supabase projects. If one changes,
+ * change the other, or people pass the form and get rejected by the server,
+ * which is a maddening bug to report.
+ */
+export const PASSWORD_MIN = 10;
+
 /** Raw form state. Empty strings are the "nothing picked yet" case. */
 export interface ApplicationInput {
   tiktokHandle: string;
@@ -37,6 +44,8 @@ export interface ApplicationInput {
   nicheOther?: string;
   workedWithWurx: WorkedWithWurx | '';
   videoLinks: string;
+  /** Applying creates the account, so the password is collected here. */
+  password: string;
 }
 
 export const emptyApplication: ApplicationInput = {
@@ -46,6 +55,7 @@ export const emptyApplication: ApplicationInput = {
   nicheOther: '',
   workedWithWurx: '',
   videoLinks: '',
+  password: '',
 };
 
 export type ApplicationErrors = Partial<Record<keyof ApplicationInput, string>>;

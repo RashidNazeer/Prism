@@ -269,20 +269,23 @@ console.log('\n[6] Application form');
   if (emailInvalid !== 1) bad('an invalid email was not flagged');
   else note('OK    invalid email rejected');
 
-  // Fixing it must allow submission.
-  await page.fill('input[name="email"]', 'creator@example.com');
-  await page.waitForTimeout(250);
-  await page.getByRole('button', { name: /takes 60 seconds/i }).click();
-  await page.waitForTimeout(1400);
-  const success = await page.getByText(/Everything checks out/i).count();
-  if (!success) bad('valid submit did not reach the success state');
-  else note('OK    valid submit reaches the success state');
+  // A password is required, because applying creates the account.
+  const pwCount = await page.locator('input[name="password"]').count();
+  if (pwCount !== 1) bad('the application form has no password field');
+  else note('OK    password field present (applying creates the account)');
 
-  // The success state must be honest that nothing is stored yet.
-  const honest = await page.getByText(/not being stored yet/i).count();
-  if (!honest) bad('success state does not disclose that submissions are not saved');
-  else note('OK    success state discloses it is not wired to a database');
+  const shortPw = await page.locator('input[name="password"][aria-invalid="true"]').count();
+  if (shortPw !== 1) bad('a missing password was not flagged');
+  else note('OK    missing password rejected');
 
+  // Signing in must be reachable from the form.
+  const signInLink = await page.locator('a[href="/login"]').count();
+  if (signInLink < 1) bad('no way to reach sign in from the application form');
+  else note('OK    existing users can get to sign in');
+
+  // Submitting for real is covered end to end by scripts/check-apply.mjs,
+  // which also verifies the row landed in the database and cleans up after
+  // itself. Doing it here would leave junk accounts behind on every run.
   found.forEach(bad);
   await ctx.close();
 }

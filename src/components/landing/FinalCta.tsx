@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import { Section, Reveal } from '@/components/layout/Section';
-import { ButtonLink } from '@/components/ui/Button';
+import { Button, ButtonLink } from '@/components/ui/Button';
+import { focusApplyForm } from '@/lib/focus-apply';
 
 export function FinalCta() {
   return (
@@ -17,16 +18,16 @@ export function FinalCta() {
               reads every one.
             </p>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-              <ButtonLink to="#apply" size="lg" className="group">
+              <Button size="lg" className="group" onClick={() => focusApplyForm()}>
                 Apply to join
                 <ArrowRight
                   size={17}
                   className="transition-transform duration-200 ease-brand group-hover:translate-x-0.5"
                   aria-hidden
                 />
-              </ButtonLink>
-              <ButtonLink to="https://wurxmedia.com" external variant="secondary" size="lg">
-                About Wurx Media
+              </Button>
+              <ButtonLink to="/login" variant="secondary" size="lg">
+                Sign in
               </ButtonLink>
             </div>
           </div>

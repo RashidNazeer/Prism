@@ -82,12 +82,16 @@ try {
   });
   page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e.message}`));
 
+  // Applying IS signing up, so the account is created through the real
+  // application form rather than a separate account-only screen.
   await page.goto(`${BASE}/signup`, { waitUntil: 'networkidle' });
-  await page.fill('input[name="displayName"]', 'Session Tester');
+  await page.fill('input[name="tiktokHandle"]', `sessiontester${stamp}`);
   await page.fill('input[name="email"]', EMAIL);
   await page.fill('input[name="password"]', PASSWORD);
-  await page.fill('input[name="confirmPassword"]', PASSWORD);
-  await page.getByRole('button', { name: /create account/i }).click();
+  await page.selectOption('select[name="niche"]', 'Health & wellness');
+  await page.selectOption('select[name="workedWithWurx"]', 'no');
+  await page.fill('textarea[name="videoLinks"]', 'https://tiktok.com/@sessiontester/video/1');
+  await page.getByRole('button', { name: /takes 60 seconds/i }).click();
 
   await page.waitForURL('**/app', { timeout: 20000 }).catch(() => {});
   check(new URL(page.url()).pathname === '/app', `applicant lands on /app (got ${new URL(page.url()).pathname})`);
@@ -96,7 +100,7 @@ try {
   check(Boolean(stored?.access_token), 'session persisted to storage');
   userId = stored?.user?.id ?? null;
 
-  const roleShown = await page.getByText(/Application received/i).count();
+  const roleShown = await page.getByText(/Pending review/i).count();
   check(roleShown > 0, 'applicant sees the pending application screen');
 
   /* -------------------------------------------------------- 2. reload --- */
@@ -105,7 +109,7 @@ try {
   await page.waitForTimeout(900);
   check(new URL(page.url()).pathname === '/app', 'still on /app after reload');
   check(
-    (await page.getByText(/Application received/i).count()) > 0,
+    (await page.getByText(/Pending review/i).count()) > 0,
     'still signed in after reload'
   );
 
@@ -172,7 +176,7 @@ try {
     'text typed before the refresh is still there afterwards'
   );
   check(
-    (await page2.getByText(/Application received/i).count()) > 0,
+    (await page2.getByText(/Pending review/i).count()) > 0,
     'still signed in after the refresh'
   );
 

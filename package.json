@@ -16,6 +16,7 @@
     "verify:browser": "node scripts/verify-page.mjs",
     "verify:rls": "node scripts/check-rls.mjs",
     "verify:session": "node scripts/check-session.mjs",
+    "verify:apply": "node scripts/check-apply.mjs",
     "shots": "node scripts/shots.mjs"
   },
   "dependencies": {

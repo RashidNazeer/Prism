@@ -192,6 +192,32 @@ Dated one-liners. Why, not just what. Newest at the bottom.
 - 2026-07-29: Password reset deliberately shows the same confirmation whether or
   not the email exists. Saying "no account found" would let anyone test which of
   our creators are registered.
+- 2026-07-29: **The hero form on the landing page IS the sign up.** Rashid asked
+  what the point of the form was if people still had to go to a separate signup
+  page. He offered two options: add a password to the hero form, or replace the
+  form with the steps and move it to its own page. Took the first: the design was
+  already approved, it is one extra field, and it keeps the pitch and the
+  conversion point together. `/signup` and `/apply` now render that same form.
+  The old account-only SignUp page was deleted; it collected less information
+  and would have created accounts with no application.
+- 2026-07-29: One password field with a show/hide toggle, no "confirm password".
+  Letting someone check what they typed solves the same problem with one field
+  instead of two, which matters in an already long form.
+- 2026-07-29: "Apply" in the header now scrolls to the form AND focuses its
+  first input. Rashid reported it doing nothing: on a desktop the form is
+  already on screen, so scrolling to it was invisible.
+- 2026-07-29: Sign up and application insert are two separate writes rather than
+  one atomic transaction. If the second fails the account still exists, and the
+  dashboard offers to finish the application, so nobody is stranded. Doing it
+  atomically would mean stuffing the whole application into auth user metadata,
+  which is worse: it lives in the auth schema forever and is harder to query.
+- 2026-07-29: `applications.worked_with_wurx` is its own indexed boolean column
+  rather than being buried in a notes field, because Rashid flagged it as
+  important for fast-tracking existing Wurx creators during review.
+- 2026-07-29: Realtime enabled on `applications` with `replica identity full`,
+  scoped per user. Row level security still applies to realtime, so an applicant
+  only ever receives events for their own row. This is what makes Step 4's live
+  status change work.
 - 2026-07-28: Content-Security-Policy deferred. The anti-flash theme script is
   inline and Motion injects inline styles, so a correct CSP needs script hashes
   and careful testing. Other security headers (HSTS, nosniff, frame-deny,

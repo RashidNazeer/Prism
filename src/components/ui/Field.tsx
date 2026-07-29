@@ -1,5 +1,5 @@
-import { ChevronDown } from 'lucide-react';
-import { useId, type ComponentProps, type ReactNode } from 'react';
+import { ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { useId, useState, type ComponentProps, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -79,6 +79,39 @@ export function Input({
       aria-invalid={invalid || undefined}
       className={cn(controlBase, controlState(invalid), 'h-12', className)}
     />
+  );
+}
+
+/**
+ * Password box with a show/hide toggle.
+ *
+ * The toggle is why there is no "confirm password" field: letting someone check
+ * what they typed solves the same problem with one field instead of two, which
+ * matters when this sits inside an already long application form.
+ */
+export function PasswordInput({
+  className,
+  invalid,
+  ...props
+}: Omit<ComponentProps<'input'>, 'type'> & { invalid?: boolean }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="relative">
+      <input
+        {...props}
+        type={visible ? 'text' : 'password'}
+        aria-invalid={invalid || undefined}
+        className={cn(controlBase, controlState(invalid), 'h-12 pr-12', className)}
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        aria-label={visible ? 'Hide password' : 'Show password'}
+        className="absolute top-1/2 right-2 grid size-9 -translate-y-1/2 place-items-center rounded-lg text-muted transition-colors hover:text-accent"
+      >
+        {visible ? <EyeOff size={17} aria-hidden /> : <Eye size={17} aria-hidden />}
+      </button>
+    </div>
   );
 }
 

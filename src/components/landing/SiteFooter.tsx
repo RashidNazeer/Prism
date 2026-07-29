@@ -1,5 +1,7 @@
+import { Link } from 'react-router';
 import { WurxMark } from '@/components/brand/WurxMark';
 import { Container } from '@/components/layout/Section';
+import { focusApplyForm } from '@/lib/focus-apply';
 
 export function SiteFooter() {
   return (
@@ -30,9 +32,18 @@ export function SiteFooter() {
                   </a>
                 </li>
                 <li>
-                  <a href="#apply" className="text-muted transition-colors hover:text-accent">
+                  <button
+                    type="button"
+                    onClick={() => focusApplyForm()}
+                    className="text-muted transition-colors hover:text-accent"
+                  >
                     Apply
-                  </a>
+                  </button>
+                </li>
+                <li>
+                  <Link to="/login" className="text-muted transition-colors hover:text-accent">
+                    Sign in
+                  </Link>
                 </li>
               </ul>
             </div>

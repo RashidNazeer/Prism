@@ -106,6 +106,30 @@ override `--wx-*` at the hub level.
   detects a leading `#` and renders a plain `<a>`. A `<Link to="#how">` is
   treated as a route change and never scrolls.
 
+## Applications (data)
+
+**Files:** `supabase/migrations/*_applications.sql`,
+`src/lib/auth/useApplication.ts`, `src/routes/app/Dashboard.tsx`
+**Tables:** `applications` (user_id -> profiles.id, ON DELETE CASCADE, UNIQUE)
+
+**Depends on:** Auth and profiles
+**Depended on by:** Admin review (Step 4), Creator activation, Home (Step 5)
+
+**Change rules**
+
+- One application per account, enforced by a unique index on `user_id`. Code
+  that inserts must handle error code `23505` as "they already applied".
+- `status`, `reviewed_by`, `reviewed_at` and `review_note` are staff only,
+  enforced by column grants AND the `applications_guard_review_columns`
+  trigger. `pnpm verify:apply` proves an applicant cannot approve themselves.
+- An applicant may edit their own application only while it is `pending`.
+- `tiktok_handle` is stored WITHOUT the leading `@`. Step 7's identity mapping
+  depends on that.
+- The table is in the realtime publication with `replica identity full`. Any
+  new column is therefore visible to realtime subscribers who can read the row.
+  Do not put staff-private notes anywhere an applicant can read.
+- Deleting an auth user cascades: profile, then application.
+
 ## Application form
 
 **Files:** `src/components/landing/ApplyForm.tsx`,

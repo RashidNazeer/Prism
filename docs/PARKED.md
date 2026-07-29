@@ -54,12 +54,16 @@ Full step-by-step instructions were given in chat on 2026-07-29.
 
 **Status:** PAUSED, depends on item 1
 **Owner:** Claude, once item 1 is done
+**Severity: raised 2026-07-29.** Applying now creates a real account, so this is
+no longer theoretical. Until it is fixed, anyone can apply using an email
+address they do not own.
 
 While email is parked:
 
 - Email confirmation is OFF on the dev Supabase project, so test accounts can be
   created instantly. It must be ON before prod takes real signups, or anyone can
-  register with an address they do not own.
+  register with an address they do not own. A wrong address also means the
+  approval notification never reaches them.
 - Password reset is built and works, but delivery uses Supabase's built-in
   sender, which is rate limited to a handful per hour and is explicitly not for
   production. Good enough to test the flow, not good enough for creators.

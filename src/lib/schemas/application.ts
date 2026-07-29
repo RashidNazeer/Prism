@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { NICHES, type ApplicationErrors, type ApplicationInput } from './application-fields';
+import {
+  NICHES,
+  PASSWORD_MIN,
+  type ApplicationErrors,
+  type ApplicationInput,
+} from './application-fields';
 
 /**
  * Creator application contract.
@@ -41,6 +46,11 @@ export const applicationSchema = z
       .refine((v) => /https?:\/\/|tiktok\.com/i.test(v), {
         message: 'Include at least one full link, like https://tiktok.com/@you/video/...',
       }),
+
+    password: z
+      .string()
+      .min(PASSWORD_MIN, `Use at least ${PASSWORD_MIN} characters`)
+      .max(72, 'Passwords are limited to 72 characters'),
   })
   .refine((data) => data.niche !== 'Other' || (data.nicheOther?.length ?? 0) >= 2, {
     message: 'Tell us which niche',

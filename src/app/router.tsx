@@ -40,10 +40,12 @@ export const router = createBrowserRouter([
         HydrateFallback: RouteFallback,
         lazy: lazyRoute(() => import('@/routes/auth/SignIn'), 'SignIn'),
       },
+      // /signup is the application form. Applying IS signing up, so there is no
+      // separate "create an account" screen that collects less information.
       {
         path: '/signup',
         HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/auth/SignUp'), 'SignUp'),
+        lazy: lazyRoute(() => import('@/routes/Apply'), 'Apply'),
       },
       {
         path: '/forgot-password',
