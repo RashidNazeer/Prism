@@ -66,7 +66,7 @@ const appIds = [];
 const browser = await chromium.launch();
 
 /** Sign in through the real login screen, the way a person would. */
-async function signIn(ctx, email, password, expectPath) {
+async function signIn(ctx, email, password, expectPath, door = '/login') {
   const page = await ctx.newPage();
   const errors = [];
   page.on('console', (m) => {
@@ -74,7 +74,7 @@ async function signIn(ctx, email, password, expectPath) {
   });
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 
-  await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
+  await page.goto(`${BASE}${door}`, { waitUntil: 'networkidle' });
   await page.fill('input[name="email"]', email);
   await page.fill('input[name="password"]', password);
   await page.getByRole('button', { name: /^sign in$/i }).click();
@@ -157,18 +157,41 @@ try {
   }
   pass(`two applicants seeded (${PEOPLE.map((p) => p.handle).join(', ')})`);
 
-  /* -------------------------------------------------- [1] the queue loads */
-  console.log('\n[1] The admin queue');
+  /* ------------------------------------------------- [1] the staff door -- */
+  console.log('\n[1] The staff door');
+  const doorCtx = await browser.newContext({ viewport: { width: 1440, height: 1100 } });
+  const doorPage = await doorCtx.newPage();
+
+  // A bookmarked admin link, opened signed out, should offer the staff screen
+  // rather than a page inviting you to apply.
+  await doorPage.goto(`${BASE}/admin`, { waitUntil: 'networkidle' });
+  await doorPage.waitForTimeout(1500);
+  check(
+    new global.URL(doorPage.url()).pathname === '/admin/login',
+    `signed out, /admin offers the staff door (got ${new global.URL(doorPage.url()).pathname})`
+  );
+  check(
+    (await doorPage.getByText(/staff access/i).count()) > 0,
+    'the staff screen says it is for staff'
+  );
+  check(
+    (await doorPage.getByRole('link', { name: /apply|sign up|join/i }).count()) === 0,
+    'it offers no way to sign up, because staff accounts are never self-serve'
+  );
+  await doorCtx.close();
+
   const adminCtx = await browser.newContext({ viewport: { width: 1440, height: 1100 } });
   const { page: adminPage, errors: adminErrors } = await signIn(
     adminCtx,
     ADMIN_EMAIL,
     ADMIN_PASSWORD,
-    '/admin'
+    '/admin',
+    '/admin/login'
   );
+  console.log('\n[1b] The admin queue');
   check(
     new global.URL(adminPage.url()).pathname === '/admin',
-    `admin lands on /admin (got ${new global.URL(adminPage.url()).pathname})`
+    `admin signs in at the staff door and lands on /admin (got ${new global.URL(adminPage.url()).pathname})`
   );
 
   const rowLink = (handle) => adminPage.locator(`a[href^="/admin/applications/"]`, { hasText: `@${handle}` });

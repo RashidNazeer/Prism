@@ -22,9 +22,13 @@ export function RequireAuth({ allow }: { allow?: readonly AppRole[] }) {
   if (status === 'loading') return <RouteFallback />;
 
   if (status === 'signedOut') {
+    // Send people to the door that matches where they were heading. Someone
+    // signing out of the admin panel, or opening a bookmarked admin link, gets
+    // the staff screen rather than a page inviting them to apply.
+    const door = location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
     return (
       <Navigate
-        to="/login"
+        to={door}
         replace
         // Remember where they were going so sign-in can send them back.
         state={{ from: location.pathname + location.search }}

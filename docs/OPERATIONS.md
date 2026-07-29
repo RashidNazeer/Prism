@@ -173,6 +173,12 @@ Staff accounts are **never** created through the website. Public sign up always
 produces an `applicant`, and nobody can change their own role. Prod will need
 its own admin account created the same way.
 
+**Staff sign in is `/admin/login`**, a separate screen with no sign up link.
+Creators use `/login`. Signed-out visits to any `/admin` route are sent to the
+staff door. It is a different screen, not a different lock: signing in there
+grants nothing extra, and permission is still decided by row level security and
+the Edge Function. Never treat the URL as a security boundary.
+
 ## 7. Windows and PowerShell quirks that have already cost time
 
 - `&&` does not work in Windows PowerShell 5.1. Use `;` or separate calls.

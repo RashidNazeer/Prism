@@ -9,11 +9,14 @@ export function AuthShell({
   subtitle,
   children,
   footer,
+  eyebrow,
 }: {
   title: string;
   subtitle?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
+  /** Small label above the heading. Used to mark the staff door as staff. */
+  eyebrow?: ReactNode;
 }) {
   return (
     <div className="relative grid min-h-dvh place-items-center overflow-hidden px-5 py-10 sm:px-8">
@@ -31,7 +34,13 @@ export function AuthShell({
           <WurxMark />
         </Link>
 
-        <h1 className="mt-9 text-[clamp(1.75rem,4vw,2.25rem)] font-extrabold">{title}</h1>
+        {eyebrow ? <div className="mt-9">{eyebrow}</div> : null}
+
+        <h1
+          className={`${eyebrow ? 'mt-4' : 'mt-9'} text-[clamp(1.75rem,4vw,2.25rem)] font-extrabold`}
+        >
+          {title}
+        </h1>
         {subtitle ? (
           <p className="mt-3 leading-relaxed text-muted text-pretty">{subtitle}</p>
         ) : null}

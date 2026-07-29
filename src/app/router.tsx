@@ -54,6 +54,15 @@ export const router = createBrowserRouter([
         HydrateFallback: RouteFallback,
         lazy: lazyRoute(() => import('@/routes/auth/SignIn'), 'SignIn'),
       },
+      // The staff door. A separate SCREEN, not a separate lock: it exists so
+      // the team is not greeted by a page selling them on applying, and so no
+      // sign up route sits anywhere near it. Permission is still decided by row
+      // level security and the Edge Function, never by which URL you used.
+      {
+        path: '/admin/login',
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/routes/auth/StaffSignIn'), 'StaffSignIn'),
+      },
       {
         path: '/forgot-password',
         HydrateFallback: RouteFallback,

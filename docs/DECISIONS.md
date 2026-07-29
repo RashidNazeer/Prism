@@ -273,6 +273,15 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   every 3 seconds until a row appears. "You have no application" is the one
   answer that can be a lie, and a stale one strands a new creator on a screen
   telling them to start again.
+- 2026-07-30: Staff sign in at `/admin/login`, their own screen, Rashid's call.
+  The team should not be greeted by a page selling them on applying, and no sign
+  up link belongs anywhere near it. Signed-out visits to any `/admin` route land
+  there instead of `/login`, so signing out of the panel returns you to the
+  right door. It is a different DOOR, not a different LOCK: both screens call
+  the same sign in, and permission is still decided by row level security and
+  the Edge Function's server-side role check. A creator who signs in there is
+  simply sent to their own dashboard rather than told off. Nothing about which
+  URL was used is ever treated as a security boundary.
 - 2026-07-28: Flagged to Rashid but not acted on, (a) a Vite SPA has no
   server-rendering, so the public landing page will be weak for SEO and link
   previews until we add a build-time prerender; (b) the Supabase free tier

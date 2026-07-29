@@ -92,6 +92,9 @@ until Rashid says "make it live".
 - Fixed a real race: a new applicant could land on their dashboard and be told
   "Finish your application" when they had just submitted one. See DECISIONS and
   the "Sign up timing" entry in FEATURE_MAP.
+- **Staff sign in moved to its own screen at `/admin/login`**, badged "Staff
+  access", with no sign up link. Signed-out visits to any `/admin` route go
+  there. A different door, not a different lock.
 
 ## Known bugs
 

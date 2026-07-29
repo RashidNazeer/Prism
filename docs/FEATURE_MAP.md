@@ -228,6 +228,24 @@ override `--wx-*` at the hub level.
   otherwise still be badged "Applicant".
 - The desktop rail and the mobile drawer are the same component. Do not fork it.
 
+## Staff sign in
+
+**Files:** `src/routes/auth/StaffSignIn.tsx`, `src/components/auth/RequireAuth.tsx`,
+`src/app/router.tsx`
+
+**Change rules**
+
+- `/admin/login` is the staff screen; `/login` is the creator one. Both call the
+  same sign in. This is a different DOOR, not a different LOCK, and must never
+  be described or relied on as a security control.
+- No sign up link may ever appear on the staff screen. Staff accounts come from
+  `scripts/create-admin.mjs` and nowhere else.
+- `RequireAuth` picks the door from the path being attempted, so signing out of
+  the admin panel returns you to the staff screen. Adding a new staff area means
+  extending that check.
+- A creator who signs in at the staff door is sent to their own dashboard. Do
+  not turn that into an error: it strands people who followed a stale bookmark.
+
 ## Sign up timing (the one that keeps biting)
 
 **Files:** `src/routes/Landing.tsx`, `src/app/router.tsx`,

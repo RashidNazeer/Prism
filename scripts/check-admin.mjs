@@ -9,6 +9,10 @@
 import { chromium } from 'playwright';
 
 const [BASE, EMAIL, PASSWORD, ROLE = 'admin', EXPECT = '/admin'] = process.argv.slice(2);
+
+// Staff sign in at their own door. It is a separate screen, not a separate
+// lock: permission is still decided by row level security, never by the URL.
+const DOOR = EXPECT.startsWith('/admin') ? '/admin/login' : '/login';
 if (!BASE || !EMAIL || !PASSWORD) {
   console.error('Usage: node scripts/check-admin.mjs <baseUrl> <email> <password> [role] [path]');
   process.exit(1);
@@ -30,7 +34,7 @@ page.on('pageerror', (e) => errors.push(e.message));
 
 console.log(`\nStaff sign in against ${BASE}\n${'='.repeat(70)}\n`);
 
-await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
+await page.goto(`${BASE}${DOOR}`, { waitUntil: 'networkidle' });
 await page.fill('input[name="email"]', EMAIL);
 await page.fill('input[name="password"]', PASSWORD);
 await page.getByRole('button', { name: /^sign in$/i }).click();

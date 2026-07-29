@@ -241,9 +241,22 @@ try {
   console.log('\n[7] Signed out visitors cannot reach protected screens');
   const anonCtx = await browser.newContext();
   const anonPage = await anonCtx.newPage();
+
+  // Each area sends people to its own door: the team gets the staff screen,
+  // creators get the one that can also offer them a way to apply.
   await anonPage.goto(`${BASE}/admin`, { waitUntil: 'networkidle' });
   await anonPage.waitForTimeout(1200);
-  check(new URL(anonPage.url()).pathname === '/login', 'visiting /admin signed out redirects to /login');
+  check(
+    new URL(anonPage.url()).pathname === '/admin/login',
+    `visiting /admin signed out offers the staff door (got ${new URL(anonPage.url()).pathname})`
+  );
+
+  await anonPage.goto(`${BASE}/app`, { waitUntil: 'networkidle' });
+  await anonPage.waitForTimeout(1200);
+  check(
+    new URL(anonPage.url()).pathname === '/login',
+    `visiting /app signed out offers the creator door (got ${new URL(anonPage.url()).pathname})`
+  );
   await anonCtx.close();
 
   /* ------------------------------------------------------ 8. role gate --- */
