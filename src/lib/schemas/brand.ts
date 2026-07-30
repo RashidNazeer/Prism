@@ -91,6 +91,62 @@ export const offerSchema = z
 export type OfferInput = z.input<typeof offerSchema>;
 export type OfferParsed = z.output<typeof offerSchema>;
 
+/**
+ * The brand's story, as creators read it.
+ *
+ * Everything is optional. A brand is useful the moment it has a name, and
+ * demanding a tagline before an admin can save a logo would only get a
+ * placeholder typed in that nobody ever comes back to fix.
+ */
+export const brandAboutSchema = z.object({
+  logoUrl: z
+    .string()
+    .trim()
+    .max(500, 'That image address is too long')
+    .transform((v) => (v === '' ? null : v)),
+  tagline: z.string().trim().max(160, 'Keep the tagline to one line'),
+  description: z.string().trim().max(4000, 'That description is too long'),
+});
+
+export type BrandAboutInput = z.input<typeof brandAboutSchema>;
+
+/** A percentage, from a text box. Empty means "not set yet". */
+const optionalPercent = z
+  .string()
+  .trim()
+  .transform((v) => (v === '' ? null : v.replace(/%$/, '').trim()))
+  .refine((v) => v === null || /^\d+(\.\d{1,2})?$/.test(v), {
+    message: 'Use a number, for example 25',
+  })
+  .transform((v) => (v === null ? null : Number(v)))
+  .refine((n) => n === null || (n >= 0 && n <= 100), {
+    message: 'A commission is between 0 and 100',
+  });
+
+export const productSchema = z.object({
+  name: z.string().trim().min(1, 'Give the product a name').max(160, 'That name is too long'),
+  externalProductId: z
+    .string()
+    .trim()
+    .min(1, 'The TikTok Shop product id is required')
+    .max(64, 'That product id is too long'),
+  imageUrl: z
+    .string()
+    .trim()
+    .max(500, 'That image address is too long')
+    .transform((v) => (v === '' ? null : v)),
+  // Price and commission are optional on purpose. A product can be listed
+  // before its numbers are confirmed, and the card says so rather than
+  // printing a zero somebody would read as real.
+  price: optionalMoney,
+  currency: z.enum(CURRENCIES),
+  commissionRate: optionalPercent,
+  badgeTitle: z.string().trim().max(32, 'Keep the badge under 32 characters'),
+  isActive: z.boolean(),
+});
+
+export type ProductInput = z.input<typeof productSchema>;
+
 /** First error per field, in the shape the form components expect. */
 export function collectFieldErrors<T extends z.ZodType>(
   schema: T,

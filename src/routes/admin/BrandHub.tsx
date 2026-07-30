@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router';
 import {
   ArrowLeft,
   Gift,
+  Info,
   LayoutDashboard,
   Megaphone,
   Pencil,
@@ -15,12 +16,20 @@ import {
   Users,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
+import { BrandAbout } from '@/components/admin/BrandAbout';
 import { BrandDialog } from '@/components/admin/BrandDialog';
 import { OfferDialog } from '@/components/admin/OfferDialog';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { useManageBrand } from '@/lib/admin/useManageBrand';
-import { money, useBrand, useOffers, type Brand, type Offer } from '@/lib/admin/useBrands';
+import {
+  money,
+  useBrand,
+  useOffers,
+  useProducts,
+  type Brand,
+  type Offer,
+} from '@/lib/admin/useBrands';
 
 /**
  * The Brand Hub.
@@ -35,6 +44,7 @@ import { money, useBrand, useOffers, type Brand, type Offer } from '@/lib/admin/
 const SECTIONS = [
   { key: 'overview', label: 'Overview', icon: LayoutDashboard },
   { key: 'offers', label: 'Offers', icon: Tag },
+  { key: 'about', label: 'About', icon: Info },
   { key: 'campaigns', label: 'Campaigns', icon: Megaphone, soon: 'Next' },
   { key: 'contests', label: 'Contests', icon: Trophy, soon: 'Next' },
   { key: 'promotions', label: 'Promotions', icon: Gift, soon: 'Later' },
@@ -42,7 +52,7 @@ const SECTIONS = [
   { key: 'creators', label: 'Creators', icon: Users, soon: 'Later' },
 ] as const;
 
-const BUILT = new Set(['overview', 'offers']);
+const BUILT = new Set(['overview', 'offers', 'about']);
 
 export function BrandHub() {
   const { id } = useParams<{ id: string }>();
@@ -106,6 +116,14 @@ export function BrandHub() {
         >
           <ArrowLeft size={15} aria-hidden />
         </Link>
+
+        {brand.logo_url ? (
+          <img
+            src={brand.logo_url}
+            alt=""
+            className="size-8 shrink-0 rounded-full border border-line object-cover"
+          />
+        ) : null}
 
         <h1 className="min-w-0 text-[clamp(1.35rem,3vw,1.75rem)] font-extrabold break-words">
           {brand.name}
@@ -171,6 +189,8 @@ export function BrandHub() {
       {/* -------------------------------------------------------- content -- */}
       {section === 'overview' ? (
         <Overview brand={brand} offers={offers ?? []} loading={offersLoading} />
+      ) : section === 'about' ? (
+        <BrandAbout brand={brand} />
       ) : (
         <Offers
           offers={offers ?? []}
@@ -214,6 +234,7 @@ function Overview({
   offers: Offer[];
   loading: boolean;
 }) {
+  const { data: products } = useProducts(brand.id);
   const live = offers.filter((o) => o.status === 'active').length;
   const openToAll = offers.filter(
     (o) => o.status === 'active' && !o.needs_application
@@ -241,6 +262,14 @@ function Overview({
         <Fact
           label="Open without applying"
           value={loading ? '...' : String(openToAll)}
+        />
+        <Fact
+          label="Products"
+          value={
+            products === undefined
+              ? '...'
+              : `${products.filter((p) => p.is_active).length} shown of ${products.length}`
+          }
         />
         <Fact
           label="Added"

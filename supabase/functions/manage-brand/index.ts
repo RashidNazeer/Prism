@@ -1,7 +1,8 @@
 /**
  * manage-brand
  * ---------------------------------------------------------------------------
- * Create and edit brands, and the offers inside their Brand Hub.
+ * Create and edit brands, their story, their products, and the offers inside
+ * their Brand Hub.
  *
  * CLAUDE.md names brand edits as a privileged action, so this follows the same
  * shape as `review-application`:
@@ -14,9 +15,9 @@
  *   4. Hand the work to one security definer function, so the row and its
  *      audit entry commit together or not at all.
  *
- * There are no insert, update or delete policies on `brands` or `offers`, and
- * the database functions are granted to `service_role` alone. This function is
- * the only door.
+ * There are no insert, update or delete policies on `brands`, `offers`,
+ * `brand_products` or `brand_commercials`, and the database functions are
+ * granted to `service_role` alone. This function is the only door.
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2.110.9';
@@ -72,7 +73,63 @@ const DeleteOfferBody = z.object({
   offerId: z.uuid(),
 });
 
-const Body = z.discriminatedUnion('action', [BrandBody, OfferBody, DeleteOfferBody]);
+/**
+ * The brand's own story: logo, tagline, description.
+ *
+ * A separate action rather than three more fields on `brand.save`, so the
+ * About form cannot touch the name, the store id or the budget even by
+ * sending a stale copy of them back with its own edit.
+ */
+const BrandAboutBody = z.object({
+  action: z.literal('brand.about'),
+  brandId: z.uuid(),
+  logoUrl: z.url('That logo address is not a URL').max(500).nullish(),
+  tagline: z.string().trim().max(160).nullish(),
+  description: z.string().trim().max(4000).nullish(),
+});
+
+const percent = z
+  .number()
+  .finite()
+  .min(0)
+  .max(100, 'A commission cannot be more than 100%')
+  // numeric(5,2). Round rather than letting Postgres truncate a third decimal.
+  .transform((n) => Math.round(n * 100) / 100);
+
+const ProductBody = z.object({
+  action: z.literal('product.save'),
+  productId: z.uuid().nullish(),
+  brandId: z.uuid('A product must belong to a brand'),
+  name: z.string().trim().min(1, 'A product needs a name').max(160),
+  externalProductId: z
+    .string()
+    .trim()
+    .min(1, 'A product needs its TikTok Shop product id')
+    .max(64),
+  imageUrl: z.url('That image address is not a URL').max(500).nullish(),
+  // Price and commission are both optional: a product can be listed before its
+  // numbers are confirmed, and an empty field is honest where a made up one is
+  // not. The cards handle the gap.
+  price: money.nullish(),
+  currency: currency.default('USD'),
+  commissionRate: percent.nullish(),
+  badgeTitle: z.string().trim().max(32).nullish(),
+  isActive: z.boolean().default(true),
+});
+
+const DeleteProductBody = z.object({
+  action: z.literal('product.delete'),
+  productId: z.uuid(),
+});
+
+const Body = z.discriminatedUnion('action', [
+  BrandBody,
+  BrandAboutBody,
+  OfferBody,
+  DeleteOfferBody,
+  ProductBody,
+  DeleteProductBody,
+]);
 
 /** SQLSTATE from the database functions to something HTTP shaped. */
 const STATUS_FOR_PG: Record<string, number> = {
@@ -86,6 +143,9 @@ const STATUS_FOR_PG: Record<string, number> = {
 /** Turn a raw Postgres complaint into something a human can act on. */
 function humanise(message: string, code: string | undefined): string {
   if (code === '23505') {
+    if (message.includes('external_product_id')) {
+      return 'This brand already has a product with that product id';
+    }
     if (message.includes('store_id')) return 'Another brand already uses that store id';
     if (message.includes('slug')) return 'A brand with a very similar name already exists';
     return 'That already exists';
@@ -196,6 +256,33 @@ Deno.serve(async (req) => {
       p_budget: input.budget ?? null,
       p_currency: input.currency,
       p_is_active: input.isActive,
+    });
+  } else if (input.action === 'brand.about') {
+    rpc = await admin.rpc('save_brand_about', {
+      p_actor_id: actor.id,
+      p_brand_id: input.brandId,
+      p_logo_url: input.logoUrl ?? null,
+      p_tagline: input.tagline ?? null,
+      p_description: input.description ?? null,
+    });
+  } else if (input.action === 'product.save') {
+    rpc = await admin.rpc('save_product', {
+      p_actor_id: actor.id,
+      p_brand_id: input.brandId,
+      p_name: input.name,
+      p_external_product_id: input.externalProductId,
+      p_product_id: input.productId ?? null,
+      p_image_url: input.imageUrl ?? null,
+      p_price: input.price ?? null,
+      p_currency: input.currency,
+      p_commission_rate: input.commissionRate ?? null,
+      p_badge_title: input.badgeTitle ?? null,
+      p_is_active: input.isActive,
+    });
+  } else if (input.action === 'product.delete') {
+    rpc = await admin.rpc('delete_product', {
+      p_actor_id: actor.id,
+      p_product_id: input.productId,
     });
   } else if (input.action === 'offer.save') {
     rpc = await admin.rpc('save_offer', {

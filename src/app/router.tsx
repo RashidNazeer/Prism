@@ -94,6 +94,24 @@ export const router = createBrowserRouter([
         HydrateFallback: RouteFallback,
         lazy: lazyRoute(() => import('@/routes/app/Profile'), 'Profile'),
       },
+      // Applicants are allowed onto these routes on purpose, and are shown a
+      // "this opens when you are approved" panel instead of the hub.
+      //
+      // Guarding them with allow={['creator']} would read the role from the
+      // JWT, which lags approval by up to an hour, so somebody who had just
+      // watched the confetti would be bounced back to their dashboard. The
+      // screens read the profile row, which is current, and the database
+      // refuses the rows either way.
+      {
+        path: '/app/brands',
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/routes/app/Brands'), 'Brands'),
+      },
+      {
+        path: '/app/brands/:slug',
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/routes/app/BrandHub'), 'BrandHub'),
+      },
     ],
   },
   {

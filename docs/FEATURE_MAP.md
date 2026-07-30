@@ -268,55 +268,111 @@ anything that reacts to "signed in" during that window will race the insert.
   application" when they just did. If you touch any of them, run
   `pnpm verify:session` several times, not once. It failed roughly 3 runs in 8.
 
-## Brand Hub (brands and offers)
+## Brand Hub (brands, products and offers)
 
 **Files:** `src/routes/admin/Brands.tsx`, `src/routes/admin/BrandHub.tsx`,
 `src/components/admin/BrandDialog.tsx`, `src/components/admin/OfferDialog.tsx`,
-`src/lib/admin/useBrands.ts`, `src/lib/admin/useManageBrand.ts`,
+`src/components/admin/BrandAbout.tsx`, `src/components/admin/ProductDialog.tsx`,
+`src/components/admin/ImageUploadField.tsx`, `src/lib/admin/useBrands.ts`,
+`src/lib/admin/useManageBrand.ts`, `src/lib/admin/useImageUpload.ts`,
 `src/lib/schemas/brand.ts`, `supabase/functions/manage-brand/`,
-`supabase/migrations/*_brands_and_offers.sql`, `scripts/check-brands.mjs`,
+`supabase/migrations/*_brands_and_offers.sql`,
+`supabase/migrations/*_brand_about_products_and_creator_access.sql`,
+`supabase/migrations/*_brand_assets_storage.sql`, `scripts/check-brands.mjs`,
 `scripts/seed-brands.mjs`
-**Tables:** `brands`, `offers`
+**Tables:** `brands`, `brand_commercials`, `brand_products`, `offers`
+**Storage:** `brand-assets` bucket
 
 **The domain, so nobody has to guess.** A BRAND is a seller's store on TikTok
-Shop. A BRAND HUB is everything that hangs off that brand. An OFFER is what the
-brand pays a creator for content ("five videos, $300"), and always belongs to
-exactly one brand.
+Shop. A BRAND HUB is everything that hangs off that brand. A PRODUCT is
+something the brand sells, carrying the commission we offer creators on it. An
+OFFER is what the brand pays a creator for content ("five videos, $300"), and
+always belongs to exactly one brand.
 
-**Depended on by:** campaigns, contests, promotions, discounts, creator
-enrolments and creator-proposed custom offers, none of which exist yet.
+**Depended on by:** the creator Brand Hub (see the next entry), campaigns,
+contests, promotions, discounts, creator enrolments and creator-proposed custom
+offers.
 
 **Change rules**
 
-- **Creators cannot read `brands` at all, and that is deliberate.** The table
-  carries the allocated budget and the client's name. Column level SELECT
-  grants cannot help, because staff and creators are both `authenticated`. When
-  the creator hub is built it gets a column-limited view; do NOT simply add a
-  creator SELECT policy to this table.
-- No insert, update or delete policy exists on either table. Every write goes
-  through `manage-brand`, which re-reads the caller's role from `profiles`,
-  then calls `save_brand`, `save_offer` or `delete_offer`. Those are granted to
-  `service_role` alone. Adding a write policy would open a second door.
+- **The client name and the allocated budget are NOT on `brands`.** They live
+  in `brand_commercials`, one row per brand, staff only. That split is what
+  makes it safe to show a brand to a creator: the budget is not a column they
+  are filtered away from, it is a column that does not exist on anything they
+  can read. Column level SELECT grants cannot do this job, because staff and
+  creators are both `authenticated`.
+  **Never move a commercial column back onto `brands`, and never add a creator
+  policy to `brand_commercials`.**
+- `useBrands.ts` flattens the two halves back together for admin screens, so a
+  brand still reads as one object. `src/lib/creator/useCreatorBrands.ts` is a
+  separate file for exactly this reason and must never import from the admin one.
+- No insert, update or delete policy exists on any of these tables. Every write
+  goes through `manage-brand`, which re-reads the caller's role from `profiles`,
+  then calls `save_brand`, `save_brand_about`, `save_offer`, `delete_offer`,
+  `save_product` or `delete_product`. Those are granted to `service_role` alone.
+  Adding a write policy would open a second door.
 - Each write function starts with `assert_active_staff()`, so "who may change a
   brand" is answered in exactly one place. New write functions must use it too.
-- The row and its audit entry commit together, in one transaction.
-  `delete_offer` writes the audit row BEFORE the delete, so the record of what
-  was removed survives the removal.
+- The row and its audit entry commit together, in one transaction. The delete
+  functions write the audit row BEFORE the delete, so the record of what was
+  removed survives the removal.
 - **The slug is generated once, on creation, and never regenerated on rename.**
-  Creators will hold brand hub links.
-- **Money is `numeric`, never a float, and PostgREST returns it as a STRING.**
-  Parse only at the point of display (`money()` in `useBrands.ts`). Never parse
-  it to store or send back, or a penny will go missing.
-- `offers.brand_id` is not updatable. Moving an offer between brands would
-  silently change who is paying for it.
-- When creator enrolments arrive they hang off `offers` with
-  `on delete restrict`, so a brand with real creator commitments cannot be
-  deleted out from under them. `offers.brand_id` cascades today only because
-  nothing depends on an offer yet.
+  Creators hold brand hub links, and the creator route is keyed on the slug.
+- **Money is `numeric`, never a float. PostgREST hands it back as a JSON
+  NUMBER, while the Edge Function can return the same value as a string.** Take
+  either (`money()` in `useBrands.ts`), and coerce with `String()` before it
+  reaches a text input. A number where a string was assumed is what crashed the
+  offer dialog on 2026-07-30.
+- `offers.brand_id` and `brand_products.brand_id` are not updatable. Moving one
+  between brands would silently change who is paying for it.
+- A product's `external_product_id` is unique per brand. Two rows for one TikTok
+  Shop product would split a creator's numbers in half.
+- Product `price` and `commission_rate` are both optional, like an offer's
+  terms. A product gets added before its numbers are confirmed, and the cards
+  say "not set" rather than printing a zero somebody reads as real.
 - `needs_application` defaults to true. An offer that pays out without anybody
   signing it off has to be chosen on purpose.
-- `pnpm verify:brands` must pass after any change here. It attacks both tables
-  and the Edge Function as a signed-in creator.
+- Images go straight to the `brand-assets` bucket from the browser, not through
+  the Edge Function. Public read, staff-only write, 2 MB, PNG/JPG/WebP.
+  **SVG is excluded on purpose:** it can carry script. Uploads are named with a
+  random uuid, never the file the admin picked.
+- `pnpm verify:brands` must pass after any change here. It attacks every table
+  and the Edge Function as a signed-in creator, and then opens the hub that
+  creator is meant to see.
+
+## Brand Hub, creator side
+
+**Files:** `src/routes/app/Brands.tsx`, `src/routes/app/BrandHub.tsx`,
+`src/lib/creator/useCreatorBrands.ts`,
+`src/components/creator/LockedUntilApproved.tsx`
+**Reads:** `brands`, `brand_products`, `offers`. Nothing else.
+
+**Depends on:** the admin side above for everything it shows.
+
+**Change rules**
+
+- **Who may browse is decided by `is_approved_creator()`, which reads the
+  `profiles` table, NOT `is_staff()`, which reads the JWT.** A token refreshes
+  about once an hour, so gating on the claim would mean somebody watches their
+  approval land, clicks through, and finds an empty hub until their session
+  catches up. Any future creator-facing policy must use the same function.
+- Row level security decides which ROWS arrive: retired brands, inactive offers
+  and hidden products never reach the browser. There is deliberately no
+  `status` filter in the client queries, because adding one would disguise
+  which layer is doing the work.
+- These screens sit under the same guard as `/app`, so applicants can reach
+  them, and are shown `LockedUntilApproved` instead. Guarding on
+  `allow={['creator']}` would read the stale JWT and bounce a freshly approved
+  creator. The screens read the profile row, which is current.
+- The creator hub opens on **Overview**, the opposite of the admin hub. An
+  admin arrives at a brand to do a job; a creator arrives to decide whether they
+  want the brand at all, and decides on the brand and its products.
+- Applying for an offer, and creator-proposed custom offers, are NOT built. The
+  buttons exist, are disabled, and say "Opens next". A control that looks live
+  and does nothing is worse than one that admits it is not ready.
+- Realtime is deliberately absent here. Offers change while an admin is editing
+  them, and the mutation already refreshes both sides; a websocket per creator
+  per hub would buy nothing and widen the surface.
 
 ## Creator onboarding moments
 

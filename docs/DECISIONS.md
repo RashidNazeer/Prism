@@ -391,6 +391,42 @@ Dated one-liners. Why, not just what. Newest at the bottom.
 - 2026-07-30: The brand slug is no longer shown in the hub header. An admin has
   no use for a route, and it was taking a line to say nothing. It is still
   generated and stored for the creator-facing URLs.
+- 2026-07-30: **The client name and the allocated budget moved off `brands`
+  into their own staff-only table, `brand_commercials`.** Opening brands to
+  creators needed one of two things: a column-limited view over `brands`, or
+  splitting the commercial columns out. The split won because it removes the
+  failure mode rather than guarding it. With a view, the budget is still one
+  careless policy away from a creator, and every future creator-facing read has
+  to remember to use the view. With the split there is no budget column on
+  anything a creator can reach, RLS on `brands` stays real row security instead
+  of a definer view bypassing it, and a mistake has to be deliberate: somebody
+  would have to grant access to a table called "commercials". Cost was one data
+  migration and a flatten in `useBrands.ts`.
+- 2026-07-30: Creator read access is gated by `is_approved_creator()`, which
+  reads the `profiles` table, not by `is_staff()`, which reads the JWT claim.
+  Approval happens live and often; a token is up to an hour stale. Gating on
+  the claim would mean a creator watches the approval confetti, clicks into
+  brand hubs, and finds them empty. Staff roles effectively never change, so
+  `is_staff()` staying claim-based is fine.
+- 2026-07-30: Brand logos and product images upload to a public Supabase
+  Storage bucket rather than being pasted in as URLs. An admin has a file, not
+  a link, so a URL field would have been a dead end. Public read because these
+  pictures are already on a public TikTok Shop listing and signed URLs would
+  make every card wait on a token. **SVG is excluded from the allowed types:**
+  it can carry script, and a logo does not need it.
+- 2026-07-30: The brand's About tab writes through its own `brand.about`
+  action, not through `brand.save` with three extra fields. The About form owns
+  three fields and should not be able to overwrite the name, the store id or
+  the budget by posting a stale copy of them back alongside its own edit.
+- 2026-07-30: The creator Brand Hub opens on **Overview**, the opposite of the
+  admin hub's default. Deliberate, not an inconsistency: an admin opens a brand
+  to work on it, a creator opens it to decide whether they want it, and that
+  decision is made on the brand and its products.
+- 2026-07-30: Applying for an offer was left out of this step and its buttons
+  ship visibly disabled, saying "Opens next". Applying needs its own table, a
+  creator form and an admin approve/reject queue, which is a step in itself.
+  Shipping a live-looking button that silently does nothing would be worse than
+  admitting it is not ready.
 - 2026-07-28: Flagged to Rashid but not acted on, (a) a Vite SPA has no
   server-rendering, so the public landing page will be weak for SEO and link
   previews until we add a build-time prerender; (b) the Supabase free tier

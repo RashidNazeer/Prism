@@ -225,8 +225,8 @@ function InReview({
 
 const COMING = [
   'Your numbers, straight from the brands you sell for',
-  'Brand hubs with briefs and products',
-  'Leaderboards, and retainer offers as you grow',
+  'Briefs, contests and leaderboards inside each hub',
+  'Retainer offers as you grow',
 ];
 
 function Approved({ name, handle }: { name: string; handle: string | undefined }) {
@@ -248,6 +248,12 @@ function Approved({ name, handle }: { name: string; handle: string | undefined }
           {handle ? `@${handle} is` : 'You are'} part of the roster. Your hub is being
           switched on section by section, and each one appears here as it lands.
         </p>
+
+        {/* The first real thing they can do. It belongs above the list of what
+            is still coming, not below it. */}
+        <ButtonLink to="/app/brands" className="mt-6">
+          Open your brand hubs
+        </ButtonLink>
       </m.div>
 
       <m.ul

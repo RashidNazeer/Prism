@@ -33,7 +33,10 @@ export function BrandDialog({
     name: brand?.name ?? '',
     storeId: brand?.store_id ?? '',
     clientName: brand?.client_name ?? '',
-    budget: brand?.budget_allocated ?? '',
+    // String() on purpose. This backs a text input, and PostgREST hands
+    // `numeric` back as a JSON number: a number in here is what crashed the
+    // offer dialog the moment something called `.trim()` on it.
+    budget: brand?.budget_allocated != null ? String(brand.budget_allocated) : '',
     currency: (brand?.currency ?? 'USD') as BrandInput['currency'],
     isActive: brand?.is_active ?? true,
   });

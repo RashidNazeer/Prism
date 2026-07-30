@@ -3,26 +3,53 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 import { getSupabase } from '@/lib/supabase';
 
 /**
- * Brands, and the offers inside one brand's hub.
+ * Brands, and everything inside one brand's hub, as STAFF see it.
  *
  * Reads only. Every write goes through `useManageBrand`, which calls the
- * `manage-brand` Edge Function, because there are no write policies on either
- * table at all.
+ * `manage-brand` Edge Function, because there are no write policies on any of
+ * these tables at all.
+ *
+ * The creator's view of the same data is a separate file on purpose
+ * (`src/lib/creator/useCreatorBrands.ts`). It reads fewer columns from fewer
+ * tables, and keeping the two apart is what stops a creator screen quietly
+ * inheriting a query that reaches for a budget.
  */
 
 export const BRAND_PAGE_SIZE = 24;
+
+/** The commercial half of a brand. Staff only, and its own table. */
+interface Commercials {
+  client_name: string | null;
+  budget_allocated: string | number | null;
+  currency: string;
+}
 
 export interface Brand {
   id: string;
   name: string;
   slug: string;
   store_id: string;
-  client_name: string | null;
-  budget_allocated: string | null;
-  currency: string;
+  /** Creator facing: the brand's own story. */
+  logo_url: string | null;
+  tagline: string | null;
+  description: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
+
+  /*
+   * These three live in `brand_commercials`, not in `brands`, and are flattened
+   * onto the object here so admin screens can carry on treating a brand as one
+   * thing.
+   *
+   * The split is the whole reason creators can be shown a brand at all: the
+   * budget is not a column they are filtered away from, it is a column that
+   * does not exist on anything they can read. Never add these fields to a
+   * creator facing query or type.
+   */
+  client_name: string | null;
+  budget_allocated: string | number | null;
+  currency: string;
 }
 
 export type OfferStatus = 'active' | 'inactive';
@@ -51,16 +78,59 @@ export interface Offer {
   updated_at: string;
 }
 
+export interface BrandProduct {
+  id: string;
+  brand_id: string;
+  name: string;
+  external_product_id: string;
+  image_url: string | null;
+  /** Both optional: a product can be listed before its numbers are confirmed. */
+  price: string | number | null;
+  currency: string;
+  commission_rate: string | number | null;
+  badge_title: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 const BRAND_COLUMNS =
-  'id, name, slug, store_id, client_name, budget_allocated, currency, is_active, created_at, updated_at';
+  'id, name, slug, store_id, logo_url, tagline, description, is_active, created_at, updated_at, ' +
+  'brand_commercials(client_name, budget_allocated, currency)';
 
 const OFFER_COLUMNS =
   'id, brand_id, badge_title, title, description, video_count, reward_amount, currency, status, needs_application, created_at, updated_at';
 
+export const PRODUCT_COLUMNS =
+  'id, brand_id, name, external_product_id, image_url, price, currency, commission_rate, badge_title, is_active, created_at, updated_at';
+
+type BrandRow = Omit<Brand, keyof Commercials> & {
+  brand_commercials: Commercials | Commercials[] | null;
+};
+
 /**
- * numeric comes back from PostgREST as a STRING, on purpose: JavaScript numbers
- * cannot hold every value a numeric(14,2) can. Parse only at the point of
- * display, never to store or send back.
+ * Fold the commercial row into the brand.
+ *
+ * The array check is not paranoia: PostgREST returns an embedded resource as an
+ * object when it can prove the relationship is one to one and as an array when
+ * it cannot, and that proof depends on the constraints it finds. Handling both
+ * costs a line and removes a whole class of "it worked locally" failure.
+ */
+function flatten(row: BrandRow): Brand {
+  const { brand_commercials: embedded, ...brand } = row;
+  const c = (Array.isArray(embedded) ? embedded[0] : embedded) ?? null;
+  return {
+    ...brand,
+    client_name: c?.client_name ?? null,
+    budget_allocated: c?.budget_allocated ?? null,
+    currency: c?.currency ?? 'USD',
+  };
+}
+
+/**
+ * numeric arrives from PostgREST as a JSON number and from an Edge Function as
+ * a string, so this takes either. Parse only at the point of display, never to
+ * store or send back, or a penny goes missing on the way.
  */
 export const money = (value: string | number | null, currency = 'USD'): string => {
   if (value === null || value === '') return 'Not set';
@@ -76,6 +146,14 @@ export const money = (value: string | number | null, currency = 'USD'): string =
     // An unknown currency code should not blank the screen.
     return `${currency} ${n.toLocaleString()}`;
   }
+};
+
+/** "25%", from whatever numeric shape arrived. Empty string when unset. */
+export const percent = (value: string | number | null): string => {
+  if (value === null || value === '') return '';
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n)) return '';
+  return `${n % 1 === 0 ? n : n.toFixed(2).replace(/0$/, '')}%`;
 };
 
 export interface BrandFilters {
@@ -107,7 +185,10 @@ export function useBrands(filters: BrandFilters) {
         .range(from, from + BRAND_PAGE_SIZE - 1);
 
       if (error) throw error;
-      return { rows: (data ?? []) as unknown as Brand[], total: count ?? 0 };
+      return {
+        rows: ((data ?? []) as unknown as BrandRow[]).map(flatten),
+        total: count ?? 0,
+      };
     },
   });
 }
@@ -125,7 +206,7 @@ export function useBrand(id: string | undefined) {
         .eq('id', id!)
         .maybeSingle();
       if (error) throw error;
-      return (data as unknown as Brand | null) ?? null;
+      return data ? flatten(data as unknown as BrandRow) : null;
     },
   });
 }
@@ -181,6 +262,30 @@ export function useOffers(brandId: string | undefined) {
   }, [brandId, queryClient]);
 
   return query;
+}
+
+/**
+ * Every product on one brand, in the order they were added.
+ *
+ * Deliberately not live. Products change when somebody is sitting in this
+ * screen editing them, and the mutation already refreshes the list, so a
+ * websocket per hub would buy nothing.
+ */
+export function useProducts(brandId: string | undefined) {
+  return useQuery({
+    queryKey: ['admin', 'products', brandId],
+    enabled: Boolean(brandId),
+    staleTime: 15_000,
+    queryFn: async (): Promise<BrandProduct[]> => {
+      const { data, error } = await getSupabase()
+        .from('brand_products')
+        .select(PRODUCT_COLUMNS)
+        .eq('brand_id', brandId!)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as unknown as BrandProduct[];
+    },
+  });
 }
 
 /** How many offers each brand has, for the list. One grouped read, not N. */

@@ -1,14 +1,20 @@
 #!/usr/bin/env node
 /**
- * End to end test of the Brand Hub, admin side.
+ * End to end test of the Brand Hub, both sides.
  *
- * Brands hold commercial data (an allocated budget, the client's name) and
- * offers decide what creators get paid, so this suite spends most of its time
- * trying to break in rather than admiring the happy path.
+ * Offers decide what creators get paid, and a brand's budget and client are
+ * things creators must never see, so this suite spends most of its time trying
+ * to break in rather than admiring the happy path.
  *
- * It creates a brand and offers through the real UI, checks the database, then
- * attacks the tables and the Edge Function as a signed-in creator, and cleans
- * up after itself. Run against DEV only.
+ * It creates a brand, its story, a product and offers through the real admin
+ * UI, checks the database, then signs in as a real creator and does two things:
+ * attacks the tables and the Edge Function, and opens the hub they are actually
+ * meant to see. The second half is the one that matters most. Creators read
+ * brands now, which they never used to, and the assertions that used to say
+ * "a creator sees nothing" were REPLACED rather than deleted, because deleting
+ * them would have removed the only guard on a client's budget.
+ *
+ * Cleans up after itself. Run against DEV only.
  *
  * Usage:
  *   ADMIN_EMAIL=... ADMIN_PASSWORD=... SUPABASE_SERVICE_KEY=...
@@ -83,7 +89,14 @@ async function waitFor(read, ok, label, timeoutMs = 30000) {
   }
 }
 
-/** Fire a request from inside the browser, carrying that user's real token. */
+/**
+ * Fire a request from inside the browser, carrying that user's real token.
+ *
+ * `body` is trimmed for readable failure messages, but `json` is parsed from
+ * the WHOLE response. Parsing the trimmed copy silently turned every long list
+ * into "0 rows", which reads exactly like row level security refusing the
+ * request, and is the opposite of what was happening.
+ */
 const asUser = (page, path, init) =>
   page.evaluate(
     async ({ url, key, path, init }) => {
@@ -97,10 +110,20 @@ const asUser = (page, path, init) =>
           ...(init?.headers ?? {}),
         },
       });
-      return { status: res.status, body: (await res.text()).slice(0, 300) };
+      const text = await res.text();
+      let json = null;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        json = null;
+      }
+      return { status: res.status, body: text.slice(0, 300), json };
     },
     { url: URL_BASE, key: ANON, path, init: init ?? {} }
   );
+
+/** Rows from a REST response, or an empty list if it was refused. */
+const rows = (r) => (Array.isArray(r?.json) ? r.json : []);
 
 try {
   console.log(`\nBrand Hub against ${BASE}\n${'='.repeat(70)}`);
@@ -141,7 +164,7 @@ try {
       (
         await admin
           .from('brands')
-          .select('id, name, slug, store_id, client_name, budget_allocated, currency, is_active')
+          .select('id, name, slug, store_id, is_active')
           .eq('store_id', STORE_ID)
           .maybeSingle()
       ).data,
@@ -156,13 +179,30 @@ try {
     brand?.slug?.startsWith('wurx-test-brand-'),
     `a URL safe slug was generated (got ${brand?.slug})`
   );
-  check(brand?.client_name === 'Test Client Ltd', 'client name stored');
-  check(
-    Number(brand?.budget_allocated) === Number(BUDGET),
-    `budget stored exactly (got ${brand?.budget_allocated})`
-  );
-  check(brand?.currency === 'USD', 'currency defaults to USD');
   check(brand?.is_active === true, 'a new brand is active');
+
+  // The client and the budget are NOT on the brand. They live in their own
+  // staff-only table, which is what makes it safe to show a brand to a creator
+  // at all. One save writes both halves in one transaction.
+  const { data: commercials } = await admin
+    .from('brand_commercials')
+    .select('client_name, budget_allocated, currency')
+    .eq('brand_id', brandId)
+    .maybeSingle();
+
+  check(Boolean(commercials), 'a commercial record was written alongside it');
+  check(commercials?.client_name === 'Test Client Ltd', 'client name stored, in that table');
+  check(
+    Number(commercials?.budget_allocated) === Number(BUDGET),
+    `budget stored exactly (got ${commercials?.budget_allocated})`
+  );
+  check(commercials?.currency === 'USD', 'currency defaults to USD');
+
+  const brandColumns = Object.keys(brand ?? {});
+  check(
+    !brandColumns.includes('budget_allocated') && !brandColumns.includes('client_name'),
+    `and the brands table itself carries neither (${brandColumns.join(', ')})`
+  );
 
   const { data: brandLog } = await admin
     .from('audit_log')
@@ -403,6 +443,94 @@ try {
   );
 
 
+  /* --------------------------------------------- [4b] the brand's story -- */
+  console.log("\n[4b] The About tab, and products");
+  await page.getByRole('tab', { name: /^about$/i }).click();
+  await page.waitForSelector('input[name="tagline"]', { state: 'visible', timeout: 20000 });
+
+  await page.fill('input[name="tagline"]', 'Recovery, Simplified');
+  await page.fill(
+    'textarea[name="description"]',
+    'A test brand used to prove creators can read a brand without reading its budget.'
+  );
+  await page.getByRole('button', { name: /^save details$/i }).click();
+
+  const about = await waitFor(
+    async () =>
+      (
+        await admin
+          .from('brands')
+          .select('tagline, description')
+          .eq('id', brandId)
+          .single()
+      ).data,
+    (r) => r?.tagline === 'Recovery, Simplified',
+    "the brand's story to save"
+  );
+  check(about?.tagline === 'Recovery, Simplified', 'the tagline saves');
+  check(
+    (about?.description ?? '').startsWith('A test brand'),
+    'and so does the description'
+  );
+
+  const { data: aboutLog } = await admin
+    .from('audit_log')
+    .select('action')
+    .eq('subject_id', brandId)
+    .eq('action', 'brand.about_updated');
+  check((aboutLog ?? []).length > 0, 'and the edit is audited like every other write');
+
+  await page.getByRole('button', { name: /add product|add the first product/i }).first().click();
+  await page.waitForSelector('input[name="externalProductId"]', {
+    state: 'visible',
+    timeout: 20000,
+  });
+
+  await page.fill('input[name="name"]', 'Recovery Cream, 2 oz');
+  await page.fill('input[name="externalProductId"]', `prod-${stamp}`);
+  await page.fill('input[name="price"]', '16.98');
+  await page.fill('input[name="commissionRate"]', '25');
+  await page.fill('input[name="badgeTitle"]', 'HERO');
+  // `.last()`: the section's own "Add product" button is still on the page
+  // behind the dialog, so an unqualified locator matches two things.
+  await page.getByRole('button', { name: /^add product$/i }).last().click();
+
+  const product = await waitFor(
+    async () =>
+      (
+        await admin
+          .from('brand_products')
+          .select('id, name, price, commission_rate, badge_title, currency, is_active')
+          .eq('brand_id', brandId)
+          .maybeSingle()
+      ).data,
+    (r) => Boolean(r?.id),
+    'the product to be created'
+  );
+  check(Boolean(product), 'the product reached the database');
+  check(Number(product?.price) === 16.98, `price stored exactly (got ${product?.price})`);
+  check(
+    Number(product?.commission_rate) === 25,
+    `commission stored (got ${product?.commission_rate})`
+  );
+  check(product?.badge_title === 'HERO', 'badge stored');
+
+  // Two rows for one TikTok Shop product would split a creator's numbers in
+  // half, so the same id cannot be used twice on one brand.
+  const duplicateProduct = await asUser(page, '/functions/v1/manage-brand', {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'product.save',
+      brandId,
+      name: 'Duplicate',
+      externalProductId: `prod-${stamp}`,
+    }),
+  });
+  check(
+    duplicateProduct.status === 409 && /already has a product/i.test(duplicateProduct.body),
+    `a repeated product id is refused, in plain English (HTTP ${duplicateProduct.status})`
+  );
+
   /* ---------------------------------------------------- [5] the attacks -- */
   console.log('\n[5] Attacks, run as a real signed-in creator');
   const { data: spy } = await admin.auth.admin.createUser({
@@ -415,6 +543,13 @@ try {
 
   const spyCtx = await browser.newContext();
   const spyPage = await spyCtx.newPage();
+  const spyErrors = [];
+  spyPage.on('console', (m) => {
+    if (m.type() === 'error' && !/favicon|DevTools/i.test(m.text())) {
+      spyErrors.push(m.text());
+    }
+  });
+  spyPage.on('pageerror', (e) => spyErrors.push(`pageerror: ${e.message}`));
   await spyPage.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
   await spyPage.fill('input[name="email"]', CREATOR_EMAIL);
   await spyPage.fill('input[name="password"]', CREATOR_PASSWORD);
@@ -422,30 +557,119 @@ try {
   await spyPage.waitForURL('**/app', { timeout: 25000 }).catch(() => {});
   await spyPage.waitForTimeout(1800);
 
-  // a. Read the brands table, budget and all.
-  const readBrands = await asUser(spyPage, '/rest/v1/brands?select=id,name,budget_allocated');
-  let seenBrands = [];
-  try {
-    seenBrands = JSON.parse(readBrands.body);
-  } catch {
-    seenBrands = [];
-  }
+  /*
+   * a. Brands.
+   *
+   * This pair replaced the old "a creator sees zero brands" assertion when the
+   * creator hub was built. Deleting it instead would have quietly removed the
+   * only thing standing between a creator and a client's budget. A creator is
+   * SUPPOSED to read brands now. What they must never reach is the money.
+   */
+  const readBrands = await asUser(spyPage, '/rest/v1/brands?select=id,name,slug,tagline');
   check(
-    Array.isArray(seenBrands) && seenBrands.length === 0,
-    `a creator cannot read brands, so budgets stay internal (${Array.isArray(seenBrands) ? seenBrands.length : readBrands.status})`
+    rows(readBrands).length > 0,
+    `a creator can read brands (${rows(readBrands).length} rows, HTTP ${readBrands.status})`
   );
 
-  // b. Read the offers table.
-  const readOffers = await asUser(spyPage, '/rest/v1/offers?select=id,title,reward_amount');
-  let seenOffers = [];
-  try {
-    seenOffers = JSON.parse(readOffers.body);
-  } catch {
-    seenOffers = [];
-  }
+  // Asking for the budget by name. It is not a column on this table any more,
+  // so PostgREST cannot even parse the request, and the refusal carries no
+  // number with it.
+  const reachForBudget = await asUser(
+    spyPage,
+    '/rest/v1/brands?select=id,budget_allocated,client_name'
+  );
   check(
-    Array.isArray(seenOffers) && seenOffers.length === 0,
-    `and cannot read offers yet either (${Array.isArray(seenOffers) ? seenOffers.length : readOffers.status})`
+    reachForBudget.status >= 400 &&
+      !reachForBudget.body.includes(BUDGET) &&
+      !reachForBudget.body.includes('Test Client'),
+    `but a budget is not a column they can ask for (HTTP ${reachForBudget.status})`
+  );
+
+  // And the table it did move to is closed to them.
+  const reachForCommercials = await asUser(
+    spyPage,
+    '/rest/v1/brand_commercials?select=brand_id,budget_allocated,client_name'
+  );
+  check(
+    rows(reachForCommercials).length === 0,
+    `nor read the table it lives in (${rows(reachForCommercials).length} rows, HTTP ${reachForCommercials.status})`
+  );
+
+  // b. Offers. Live ones yes, switched-off ones no.
+  const readOffers = await asUser(
+    spyPage,
+    '/rest/v1/offers?select=id,title,reward_amount,status'
+  );
+  check(
+    rows(readOffers).length > 0,
+    `a creator can read live offers (${rows(readOffers).length} rows, HTTP ${readOffers.status})`
+  );
+  check(
+    rows(readOffers).every((o) => o.status === 'active'),
+    'and every one of them is active, because row level security filtered the rest'
+  );
+
+  // b2. A retired brand takes its offers and products with it.
+  await admin.from('brands').update({ is_active: false }).eq('id', brandId);
+  const whileRetired = await asUser(spyPage, `/rest/v1/offers?brand_id=eq.${brandId}&select=id`);
+  const retiredProducts = await asUser(
+    spyPage,
+    `/rest/v1/brand_products?brand_id=eq.${brandId}&select=id`
+  );
+  await admin.from('brands').update({ is_active: true }).eq('id', brandId);
+  check(
+    rows(whileRetired).length === 0 && rows(retiredProducts).length === 0,
+    `retiring a brand hides its offers and products immediately (${rows(whileRetired).length}, ${rows(retiredProducts).length})`
+  );
+
+  // b3. Products carry the commission, which is exactly what they came for.
+  const readProducts = await asUser(
+    spyPage,
+    '/rest/v1/brand_products?select=id,name,price,commission_rate'
+  );
+  check(
+    rows(readProducts).some((p) => Number(p.commission_rate) === 25),
+    `a creator can read products and their commission (${rows(readProducts).length} rows, HTTP ${readProducts.status})`
+  );
+
+  // b4. An applicant still in review gets none of it. The gate is the profiles
+  // table, not the token, so this takes effect the moment a role changes.
+  await admin.from('profiles').update({ role: 'applicant', tier: null }).eq('id', spy.user.id);
+  const asApplicant = await asUser(spyPage, '/rest/v1/brands?select=id');
+  const applicantOffers = await asUser(spyPage, '/rest/v1/offers?select=id');
+  await admin.from('profiles').update({ role: 'creator', tier: 'pro' }).eq('id', spy.user.id);
+  check(
+    rows(asApplicant).length === 0 && rows(applicantOffers).length === 0,
+    `somebody still in review sees nothing, on the same token (${rows(asApplicant).length}, ${rows(applicantOffers).length})`
+  );
+
+  // c0. Writing a product is refused the same way everything else is.
+  const insertProduct = await asUser(spyPage, '/rest/v1/brand_products', {
+    method: 'POST',
+    body: JSON.stringify({
+      brand_id: brandId,
+      name: 'Mine',
+      external_product_id: `stolen-${stamp}`,
+    }),
+  });
+  check(
+    insertProduct.status >= 400,
+    `inserting a product is refused (HTTP ${insertProduct.status})`
+  );
+
+  const raiseCommission = await asUser(
+    spyPage,
+    `/rest/v1/brand_products?id=eq.${product.id}`,
+    { method: 'PATCH', body: JSON.stringify({ commission_rate: 99 }) }
+  );
+  const { data: afterCommission } = await admin
+    .from('brand_products')
+    .select('commission_rate')
+    .eq('id', product.id)
+    .single();
+  check(
+    raiseCommission.status >= 400 || Number(afterCommission?.commission_rate) === 25,
+    `cannot raise their own commission (HTTP ${raiseCommission.status}, still ${afterCommission?.commission_rate})`
   );
 
   // c. Write a brand straight to the table.
@@ -523,10 +747,88 @@ try {
     .eq('store_id', STORE_ID);
   check(stillOne === 1, 'after all of that, nothing was created or changed');
 
+  /* ------------------------------------------- [5b] the creator's own hub -- */
+  // The attacks above prove the database holds. This proves the screen a real
+  // creator actually looks at is built on that, and that nothing internal
+  // leaked into the markup on the way.
+  console.log("\n[5b] The hub, as the creator sees it");
+
+  await spyPage.goto(`${BASE}/app/brands`, { waitUntil: 'domcontentloaded' });
+  await spyPage.waitForTimeout(2500);
+  check(
+    (await spyPage.getByText(BRAND_NAME).count()) > 0,
+    'the brand is listed for them'
+  );
+
+  await spyPage.goto(`${BASE}/app/brands/${brand.slug}`, { waitUntil: 'domcontentloaded' });
+  await spyPage.waitForTimeout(2500);
+  check(
+    (await spyPage.getByRole('heading', { name: BRAND_NAME }).count()) > 0,
+    'and its hub opens on the brand itself'
+  );
+  check(
+    (await spyPage.getByText('Recovery, Simplified').count()) > 0,
+    'the tagline the admin wrote is there'
+  );
+  check(
+    (await spyPage.getByText('Recovery Cream, 2 oz').count()) > 0,
+    'so is the product'
+  );
+  check((await spyPage.getByText('25%').count()) > 0, 'with the commission on it');
+
+  // The whole point of the split, checked on the rendered page rather than only
+  // on the wire.
+  const hubText = await spyPage.evaluate(() => document.body.innerText);
+  check(
+    !hubText.includes('25,000') && !hubText.includes('Test Client'),
+    'and neither the budget nor the client appears anywhere on the page'
+  );
+
+  await spyPage.getByRole('tab', { name: /^offers$/i }).click();
+  await spyPage.waitForTimeout(1200);
+  check(
+    (await spyPage.getByText('Starter bundle').count()) > 0,
+    'the offers tab shows the live offer'
+  );
+  check(
+    (await spyPage.getByText(/yours to take/i).count()) > 0,
+    'and says it needs no application, because that is how it was saved'
+  );
+
+  const offersText = await spyPage.evaluate(() => document.body.innerText);
+  check(
+    !offersText.includes('25,000') && !offersText.includes('Test Client'),
+    'still nothing internal on the offers tab'
+  );
+
+  // An applicant reaching the same address is told what it is waiting on,
+  // rather than being shown an empty page that reads like a bug.
+  await admin.from('profiles').update({ role: 'applicant', tier: null }).eq('id', spy.user.id);
+  await spyPage.goto(`${BASE}/app/brands`, { waitUntil: 'domcontentloaded' });
+  await spyPage.waitForTimeout(2500);
+  check(
+    (await spyPage.getByText(/opens when you are approved/i).count()) > 0,
+    'somebody still in review is told what they are waiting for'
+  );
+  check(
+    (await spyPage.getByText(BRAND_NAME).count()) === 0,
+    'and sees no brand names at all'
+  );
+  await admin.from('profiles').update({ role: 'creator', tier: 'pro' }).eq('id', spy.user.id);
+
+  const spyReal = spyErrors.filter(
+    (e) => !/Failed to load resource.*(400|401|403|409)/i.test(e)
+  );
+  check(spyReal.length === 0, `the creator's screens log nothing (${spyReal.length})`);
+  spyReal.slice(0, 3).forEach((e) => console.error(`        ${e}`));
+
   /* ------------------------------------------------------- [6] deleting -- */
   console.log('\n[6] Deleting an offer keeps the record');
-  await page.reload({ waitUntil: 'networkidle' });
-  await page.waitForTimeout(2000);
+  // Back to the Offers tab explicitly. The admin page was last left on About,
+  // which has its own "Delete <product>" buttons, so a first-match locator
+  // there deletes a product and then reports that the offer survived.
+  await page.goto(`${BASE}/admin/brands/${brandId}`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(2500);
   // The button is labelled "Delete Starter bundle", not just "Delete": with
   // several offers on screen, "Delete" alone tells a screen reader nothing.
   await page.getByRole('button', { name: /^delete\s+\S/i }).first().click();
@@ -656,6 +958,14 @@ try {
     for (const o of offerIds ?? []) {
       await admin.from('audit_log').delete().eq('subject_id', o.id);
     }
+    const { data: productIds } = await admin
+      .from('brand_products')
+      .select('id')
+      .eq('brand_id', brandId);
+    for (const p of productIds ?? []) {
+      await admin.from('audit_log').delete().eq('subject_id', p.id);
+    }
+    // Offers, products and the commercial row all cascade off the brand.
     await admin.from('brands').delete().eq('id', brandId);
   }
   for (const id of made) {

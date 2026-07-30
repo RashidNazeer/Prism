@@ -100,6 +100,15 @@ node scripts/seed-brands.mjs [--clean]         # demo brands and offers, DEV ONL
 Every suite creates real accounts and **deletes them afterwards**. Run against
 dev only.
 
+The suites that need `ADMIN_EMAIL` and `ADMIN_PASSWORD` should NOT be pointed at
+Rashid's account. Make a throwaway one for the run, then remove it:
+
+```powershell
+node scripts/create-admin.mjs suite-runner@wurxmediahub.test "<a password>" admin
+# ... run the suite ...
+# then delete the auth user and its audit rows with the service key
+```
+
 ## 4. Database changes
 
 ```powershell
@@ -121,6 +130,20 @@ alter table public.x enable row level security;
 grant select on public.x to authenticated;              -- plus column-scoped grants
 grant all privileges on table public.x to service_role;
 ```
+
+**Column-level SELECT grants cannot hide anything from a creator**, because
+staff and creators are both the `authenticated` role. Anything creators must
+never see goes in its OWN table with its own policy. That is why the brand
+budget lives in `brand_commercials` and not in `brands`.
+
+## 4c. Storage
+
+One bucket, `brand-assets`: brand logos and product images. Public read,
+staff-only write, 2 MB, `image/png`, `image/jpeg`, `image/webp`. Created and
+policed by `supabase/migrations/*_brand_assets_storage.sql`, not by hand in the
+dashboard, so prod gets it from the same migration.
+
+SVG is deliberately not allowed: it can carry script.
 
 ## 4b. Edge Functions
 
@@ -168,7 +191,7 @@ Invoke-RestMethod -Headers $h -Uri "https://api.vercel.com/v6/deployments?app=wu
 
 | Account | Role | Notes |
 | --- | --- | --- |
-| `rashid@wurxmedia.com` | admin | Dev only. Created 2026-07-29 via `scripts/create-admin.mjs` |
+| `rashid@wurxmedia.com` | admin | Dev only. Created 2026-07-29 via `scripts/create-admin.mjs`. **The password is not stored anywhere, by design.** It is Rashid's to type |
 | `*@wurxmediahub.demo` | applicant | Seven demo applications on dev, password `demo-password-for-dev-only-1`. Remove with `node scripts/seed-applications.mjs --clean` |
 
 Test suites create `@wurxmediahub.test` accounts and delete them again. If a run

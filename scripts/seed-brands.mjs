@@ -38,6 +38,30 @@ const BRANDS = [
     storeId: `${PREFIX}vitauthority`,
     client: 'Vitauthority LLC',
     budget: 48000,
+    tagline: 'Wellness & Weight Support',
+    about:
+      'Clean, science-backed supplements with a loyal repeat customer base. Creators do best here with honest before-and-after storytelling rather than hard selling.',
+    products: [
+      {
+        name: 'Multi Collagen Burn, 30 servings',
+        externalId: `${PREFIX}vit-collagen-burn`,
+        price: 49.99,
+        commission: 25,
+        badge: 'HERO',
+      },
+      {
+        name: 'Lean Bliss Greens, 30 servings',
+        externalId: `${PREFIX}vit-greens`,
+        price: 39.99,
+        commission: 22,
+      },
+      {
+        name: 'Daily Multivitamin, 60 count',
+        externalId: `${PREFIX}vit-multi`,
+        price: 24.99,
+        commission: 20,
+      },
+    ],
     offers: [
       {
         badge: 'TOP PICK',
@@ -73,6 +97,24 @@ const BRANDS = [
     storeId: `${PREFIX}brumate`,
     client: 'BruMate Inc',
     budget: 32000,
+    tagline: 'Drinkware That Keeps Up',
+    about:
+      'Insulated drinkware with a strong outdoor and tailgate audience. Product in use beats product on a shelf every single time.',
+    products: [
+      {
+        name: 'Hopsulator Trio, 16 oz',
+        externalId: `${PREFIX}bru-hopsulator`,
+        price: 29.99,
+        commission: 18,
+        badge: 'HERO',
+      },
+      {
+        name: 'Era Tumbler, 25 oz',
+        externalId: `${PREFIX}bru-era`,
+        price: 34.99,
+        commission: 18,
+      },
+    ],
     offers: [
       {
         badge: 'SEASONAL',
@@ -96,6 +138,31 @@ const BRANDS = [
     storeId: `${PREFIX}physicians-choice`,
     client: 'Physicians Choice',
     budget: 60000,
+    tagline: 'Gut Health, Backed by Research',
+    about:
+      'Probiotics and digestive health, sold on evidence. Claims are checked before anything goes live, so scripts are approved in advance here.',
+    products: [
+      {
+        name: 'Probiotic 60 Billion CFU, 30 count',
+        externalId: `${PREFIX}pc-probiotic-60`,
+        price: 27.95,
+        commission: 24,
+        badge: 'HERO',
+      },
+      {
+        name: 'Prebiotic Fiber, 30 servings',
+        externalId: `${PREFIX}pc-prebiotic`,
+        price: 21.95,
+        commission: 20,
+      },
+      {
+        // No price and no commission on purpose: this is the "numbers are not
+        // in yet" case, and the cards have to handle it without printing a
+        // zero somebody would read as real.
+        name: 'Digestive Enzymes, 60 count',
+        externalId: `${PREFIX}pc-enzymes`,
+      },
+    ],
     offers: [
       {
         badge: 'HIGHEST PAYING',
@@ -142,8 +209,16 @@ if (clean) {
     for (const o of offers ?? []) {
       await admin.from('audit_log').delete().eq('subject_id', o.id);
     }
+    const { data: products } = await admin
+      .from('brand_products')
+      .select('id')
+      .eq('brand_id', b.id);
+    for (const p of products ?? []) {
+      await admin.from('audit_log').delete().eq('subject_id', p.id);
+    }
     await admin.from('audit_log').delete().eq('subject_id', b.id);
-    // Offers go with the brand: the foreign key cascades.
+    // Offers, products and the commercial row all go with the brand: every one
+    // of those foreign keys cascades.
     await admin.from('brands').delete().eq('id', b.id);
     console.log(`  removed  ${b.name}`);
   }
@@ -179,6 +254,46 @@ for (const b of BRANDS) {
 
   const brandId = saved.id;
   let added = 0;
+  let productsAdded = 0;
+
+  if (b.tagline || b.about) {
+    const { error: aboutErr } = await admin.rpc('save_brand_about', {
+      p_actor_id: staff.id,
+      p_brand_id: brandId,
+      // No logo: seeding one would mean shipping image files, and an empty
+      // logo is a state the screens have to handle anyway.
+      p_logo_url: null,
+      p_tagline: b.tagline ?? null,
+      p_description: b.about ?? null,
+    });
+    if (aboutErr) console.log(`    FAILED about: ${aboutErr.message}`);
+  }
+
+  for (const p of b.products ?? []) {
+    const { data: alreadyProduct } = await admin
+      .from('brand_products')
+      .select('id')
+      .eq('brand_id', brandId)
+      .eq('external_product_id', p.externalId)
+      .maybeSingle();
+
+    const { error: productErr } = await admin.rpc('save_product', {
+      p_actor_id: staff.id,
+      p_brand_id: brandId,
+      p_name: p.name,
+      p_external_product_id: p.externalId,
+      p_product_id: alreadyProduct?.id ?? null,
+      p_image_url: null,
+      p_price: p.price ?? null,
+      p_currency: 'USD',
+      p_commission_rate: p.commission ?? null,
+      p_badge_title: p.badge ?? null,
+      p_is_active: true,
+    });
+
+    if (productErr) console.log(`    FAILED product "${p.name}": ${productErr.message}`);
+    else productsAdded += 1;
+  }
 
   for (const o of b.offers) {
     const { data: already } = await admin
@@ -206,7 +321,9 @@ for (const b of BRANDS) {
     else added += 1;
   }
 
-  console.log(`  ready    ${b.name.padEnd(20)} ${added} offer(s)`);
+  console.log(
+    `  ready    ${b.name.padEnd(20)} ${added} offer(s), ${productsAdded} product(s)`
+  );
 }
 
 console.log('\nRemove them again with: node scripts/seed-brands.mjs --clean\n');

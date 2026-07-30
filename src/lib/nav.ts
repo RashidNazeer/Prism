@@ -99,7 +99,12 @@ const CREATOR: NavGroup[] = [
     label: 'Your work',
     items: [
       { label: 'My numbers', icon: TrendingUp, soon: 'Step 8' },
-      { label: 'Brand hubs', icon: Store, soon: 'Step 6' },
+      {
+        label: 'Brand hubs',
+        icon: Store,
+        to: '/app/brands',
+        activePrefixes: ['/app/brands'],
+      },
       { label: 'Leaderboards', icon: Trophy, soon: 'Step 9' },
       { label: 'Offers', icon: Gift, soon: 'Step 10' },
     ],
@@ -109,6 +114,22 @@ const CREATOR: NavGroup[] = [
     items: [{ label: 'My profile', icon: UserRound, to: '/app/profile' }],
   },
 ];
+
+/*
+ * Somebody still in review sees the same shape, with the hub not yet a link.
+ *
+ * They CAN reach the screen by typing the address, and it tells them plainly
+ * that it opens on approval. What we will not do is put a live-looking link in
+ * front of somebody it does not work for yet.
+ */
+const APPLICANT: NavGroup[] = CREATOR.map((group) => ({
+  ...group,
+  items: group.items.map((item) =>
+    item.to === '/app/brands'
+      ? { label: item.label, icon: item.icon, soon: 'Once approved' }
+      : item
+  ),
+}));
 
 const STUDIO: NavGroup[] = [
   {
@@ -127,7 +148,8 @@ const STUDIO: NavGroup[] = [
 export function navForRole(role: AppRole | undefined): NavGroup[] {
   if (role === 'admin' || role === 'ops') return ADMIN;
   if (role === 'creative_strategist') return STUDIO;
-  return CREATOR;
+  if (role === 'creator') return CREATOR;
+  return APPLICANT;
 }
 
 /** True when this item is the screen currently on show. */

@@ -48,6 +48,18 @@ const SCREENS = [
   { path: '/admin/brands', name: 'Brands', expect: /^brands$/i },
   { path: '/app', name: 'Creator home', expect: /joining|welcome to wurx|not this time/i, as: 'creator' },
   { path: '/app/profile', name: 'Creator profile', expect: /my profile/i, as: 'creator' },
+  { path: '/app/brands', name: 'Creator brand hubs', expect: /brand hubs/i, as: 'creator' },
+  // The expectation covers both states on purpose. This suite has no service
+  // key, so it cannot promote its own account, and the demo creator may be
+  // approved or still in review depending on what was last seeded. Either way
+  // the screen has to render and must not scroll sideways, which is what is
+  // being measured here.
+  {
+    path: '/app/brands/vitauthority',
+    name: 'Creator brand hub',
+    expect: /vitauthority|opens when you are approved/i,
+    as: 'creator',
+  },
   { path: '/admin/login', name: 'Staff sign in', expect: /staff access/i, anon: true },
   { path: '/login', name: 'Creator sign in', expect: /welcome back/i, anon: true },
 ];
