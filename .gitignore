@@ -41,6 +41,10 @@ coverage
 supabase/.branches
 supabase/.temp
 
+# Claude Code local state. Permission grants are machine-specific and embed
+# absolute paths from whoever approved them, so they are noise in the repo.
+.claude
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
