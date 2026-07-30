@@ -130,7 +130,7 @@ export function Brands() {
       {/* ------------------------------------------------------------- grid */}
       <div className={cn('mt-5 transition-opacity duration-200', isPlaceholderData && 'opacity-60')}>
         {isLoading ? (
-          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <li key={i} className="h-40 animate-pulse rounded-2xl bg-surface-1" />
             ))}
@@ -163,7 +163,7 @@ export function Brands() {
             ) : null}
           </div>
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {rows.map((brand) => {
               const c = counts?.[brand.id];
               return (

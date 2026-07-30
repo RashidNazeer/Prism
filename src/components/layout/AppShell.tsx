@@ -148,8 +148,13 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
 
         {/* ----------------------------------------------------- content --- */}
+        {/* Left aligned against the rail, NOT centred. Centring looks fine on a
+            laptop and falls apart the moment somebody zooms out or opens this
+            on a wide monitor: the content drifts into the middle and leaves a
+            dead gap beside the sidebar, so the two halves stop looking like one
+            page. Capped width, hugging the left, behaves at every size. */}
         <main className="min-w-0 flex-1">
-          <div className="mx-auto w-full max-w-6xl px-4 py-7 sm:px-6 sm:py-9 lg:px-8">
+          <div className="w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
             {children}
           </div>
         </main>

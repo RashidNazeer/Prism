@@ -136,6 +136,13 @@ asking. On prod, ask twice.
 - Brand Hub theming overrides `--wx-*` at the hub level from the database, so a
   hub feels like the brand, not like Wurx.
 - Skeletons, never bare spinners. Designed empty and error states.
+- **Layout of every admin screen** (Rashid's rules, apply to new features too):
+  the working content starts high, headers stay compact, and reference data
+  (ids, client, budget, counts) goes in its own **Overview** tab rather than
+  stacked above the work. On a record with tabs the default tab is the job, not
+  the summary. Never show slugs, ids or routes to an admin. The main area is
+  left aligned against the sidebar with a max width, never centred, or zooming
+  out leaves a gap that makes the page look broken.
 - **Responsive on every device, not just mobile first.** Wurx targets US and UK
   TikTok Shop creators, who are mostly on phones and tablets, while the team
   works on laptops and desktops. Every screen, **including the admin panel**, is

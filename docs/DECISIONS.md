@@ -378,6 +378,19 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   security surface is covered instead by `scripts/check-brands.mjs`, which
   attacks both tables, both database functions and the Edge Function as a real
   signed-in creator, and keeps doing so on every run.
+- 2026-07-30: Admin content is left aligned against the sidebar, not centred.
+  Rashid saw it zoomed out: centred content leaves a wide gap next to the rail
+  and the two halves stop looking like one page. Capped width hugging the left
+  behaves at every size, which is also how every dashboard people already use
+  behaves.
+- 2026-07-30: The Brand Hub opens on **Offers**, and the brand's facts moved to
+  their own **Overview** tab. Somebody opening a brand is there to manage its
+  offers; landing them on a summary they already know, then making them scroll
+  past it, was the wrong order. Overview is listed first because that is the
+  conventional place for it, but it is not where you land.
+- 2026-07-30: The brand slug is no longer shown in the hub header. An admin has
+  no use for a route, and it was taking a line to say nothing. It is still
+  generated and stored for the creator-facing URLs.
 - 2026-07-28: Flagged to Rashid but not acted on, (a) a Vite SPA has no
   server-rendering, so the public landing page will be weak for SEO and link
   previews until we add a build-time prerender; (b) the Supabase free tier

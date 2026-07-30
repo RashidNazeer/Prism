@@ -207,10 +207,35 @@ try {
     (await page.getByRole('heading', { name: BRAND_NAME }).count()) > 0,
     'the brand hub opens on the right brand'
   );
+
+  // The hub lands on Offers, not on a summary, because that is what somebody
+  // came to a brand to do. The facts live one tab across.
+  check(
+    (await page.getByText(/what this brand pays creators/i).count()) > 0,
+    'it opens straight onto offers, not onto a wall of facts'
+  );
+  check(
+    (await page.getByText(/\$25,000/).count()) === 0,
+    'and the brand facts are not stacked above the work'
+  );
+  check(
+    (await page.getByText(/\/wurx-test-brand/i).count()) === 0,
+    'the slug is not shown to an admin, it is plumbing'
+  );
+
+  await page.getByRole('tab', { name: /overview/i }).click();
+  await page.waitForTimeout(800);
   check(
     (await page.getByText(/\$25,000/).count()) > 0,
-    'the budget is shown as money, not a raw number'
+    'Overview carries the budget, as money rather than a raw number'
   );
+  check(
+    (await page.getByText(STORE_ID).count()) > 0,
+    'and the store id'
+  );
+
+  await page.getByRole('tab', { name: /^offers$/i }).click();
+  await page.waitForTimeout(800);
 
   await page.getByRole('button', { name: /new offer|create the first offer/i }).first().click();
   await page.waitForTimeout(700);

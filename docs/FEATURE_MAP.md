@@ -351,6 +351,29 @@ enrolments and creator-proposed custom offers, none of which exist yet.
 - Every suite that signs somebody up has to walk through the welcome, because a
   real creator does. They each have a `dismissWelcome`-style step.
 
+## Admin screen layout
+
+**Files:** `src/components/layout/AppShell.tsx`, every admin route.
+
+Rashid's rules, recorded in CLAUDE.md and binding on new features.
+
+**Change rules**
+
+- **The main area is left aligned against the rail**, capped at `max-w-7xl`, and
+  is NOT centred. Centring looks fine on a laptop and falls apart when somebody
+  zooms out or opens a wide monitor: the content drifts to the middle and leaves
+  a dead gap beside the sidebar, so the page stops reading as one thing.
+- **Working content starts high.** Compact headers: a back control, the name, a
+  status chip if it earns its place, and the primary action, on one row.
+- **Reference data lives under an Overview tab**, not stacked above the work. On
+  a record with tabs the DEFAULT tab is the job. The Brand Hub opens on Offers,
+  with the brand's facts one tab across.
+- **Never show slugs, ids or routes to an admin.** They are plumbing.
+- The `gap-px` on a `bg-line` wrapper trick paints gaps with the border colour,
+  so a grid whose last row does not divide evenly shows an empty block. Use it
+  only for grids with a fixed, evenly dividing item count; anything that grows
+  gets separate bordered cards.
+
 ## Responsiveness
 
 **Files:** `scripts/check-responsive.mjs`, every screen.
