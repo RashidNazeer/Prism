@@ -1,15 +1,21 @@
 # Project state
 
-**Last updated:** 2026-07-29
-**Current step:** Step 4, admin panel
-**Status:** Built and deployed to dev, awaiting Rashid's approval
+**Last updated:** 2026-07-30
+**Current step:** Step 6, Brand Hub. Admin side done and approved by Rashid.
+**Next:** the CREATOR side of the Brand Hub.
+**Status:** Everything below is built, tested, on `dev`, and Rashid has tested it.
 
 ---
 
 ## Where we are
 
-Step 0 (setup) approved. Step 2 (landing page) built and revised twice. Rashid
-reordered the roadmap so the landing page came before auth; auth is now done.
+Built and approved, in the order it happened: setup, landing page, auth and
+roles, the application flow, the admin review panel, creator onboarding, and
+the admin side of the Brand Hub. Rashid reorders the roadmap freely, so treat
+the step numbers as labels rather than a sequence.
+
+Read **FEATURE_MAP.md** before touching any of it. Several rules there are
+non-obvious and were learned the hard way.
 
 **Prod is frozen.** Everything pushes to `dev` only. `main` stays where it is
 until Rashid says "make it live".
@@ -180,20 +186,67 @@ list here.
 
 ## Next action
 
-**Waiting on Rashid to test Step 4 and say "approved" or "next".**
+**The CREATOR side of the Brand Hub.** Rashid approved the admin side on
+2026-07-30 and this is the next feature. He will supply the detailed brief; the
+notes below are the things that must not be rediscovered.
 
-Two parked items have hit their trigger and were raised with him on 2026-07-29:
+### The one constraint that matters most
 
-- **Prod promotion rehearsal** (PARKED item 4). Its trigger was Step 4, and it
-  has arrived: there are now three tables, a function, an Edge Function and a
-  real admin flow to promote.
-- **Email** (PARKED items 1 and 2). Approvals exist now, but an approved
-  creator who is not sitting on the page finds out nothing. The live dashboard
-  is not a substitute for a notification.
+**Creators currently have NO read access to `brands` or `offers`. That is
+deliberate, and undoing it carelessly leaks money.**
 
-After that, Step 5 (Home) per the roadmap, unless Rashid reorders again.
+`brands` holds `budget_allocated` and `client_name`. Both are internal and must
+never reach a creator. Column-level SELECT grants cannot separate them, because
+staff and creators are both the `authenticated` role. So the creator read path
+has to be one of:
 
-Admin account for testing already exists: `rashid@wurxmedia.com`.
+- a column-limited **view** over `brands` exposing only creator-safe columns, or
+- splitting the commercial columns into their own staff-only table.
+
+Pick one deliberately and write an attack test for it. `offers` is different:
+every column on it is creator-facing by nature, so a plain RLS policy for
+creators (active offers of active brands) is enough there.
+
+`scripts/check-brands.mjs` already asserts a creator sees zero brands and zero
+offers. Those two assertions must be REPLACED, not deleted, with ones proving a
+creator sees the safe columns and still cannot see a budget.
+
+### What the creator side is meant to do
+
+From Rashid's brief on 2026-07-30, for context, not as a spec:
+
+- Creators browse all brands, and open each Brand Hub.
+- They see the metadata an admin configured.
+- They browse offers and can accept one.
+- If `needs_application` is true they must apply and be approved; if false the
+  offer is theirs to take.
+- They can also propose a **custom offer**, which needs only a video count and
+  the amount they want. An admin then approves or rejects it. That approval
+  workflow is a later phase; design for it, do not build it yet.
+
+### Shapes already in place to reuse
+
+- **Realtime** on `brands` and `offers`, with `replica identity full`. Follow
+  the `useOffers` pattern: a narrow per-brand channel, never a firehose.
+- **Writes go through an Edge Function**, never a table write. `manage-brand`
+  and its `assert_active_staff` gate are the template. Anything a creator
+  writes (applying for an offer, proposing a custom one) needs its own
+  server-side check of who they are, and an `audit_log` row in the same
+  transaction.
+- **One-time moments** (a welcome, a celebration) are recorded as timestamps on
+  `profiles`, never in localStorage. See `useOnboarding`.
+- **Money** is `numeric`, and PostgREST hands it back as a NUMBER. Always run it
+  through `money()` or `Number()`, never `.trim()`.
+- Offers may have a null `video_count` and null `reward_amount`. Any creator
+  card must handle that, the way the admin card does.
+
+Admin account for testing: `rashid@wurxmedia.com`. Demo data:
+`node scripts/seed-brands.mjs` and `node scripts/seed-applications.mjs`.
+
+### Still parked, at Rashid's request
+
+Prod promotion rehearsal, and email. Both raised, both deliberately deferred.
+Do not start either without him asking. See PARKED.md.
 
 ## Open product decisions
 
