@@ -75,6 +75,11 @@ const PAIRS = [
   ['--wx-text-muted', '--wx-surface-2', 4.5, 'muted text on nested card'],
   ['--wx-text-faint', '--wx-bg', 4.5, 'faint text on page'],
   ['--wx-text-faint', '--wx-surface-1', 4.5, 'faint text on card'],
+  // KNOWN BAD, deliberately not listed as a pair because it would fail:
+  //   --wx-text-faint on --wx-surface-2 is 4.31:1 in light mode.
+  // `text-faint` is fine on the page and on a card, but NOT on a nested card.
+  // Use `text-muted` there instead; that combination is checked above and
+  // passes in both themes. This slipped into the queue's tab counters once.
   ['--wx-accent', '--wx-bg', 4.5, 'accent text on page'],
   ['--wx-accent', '--wx-surface-1', 4.5, 'accent text on card'],
   ['--wx-accent', '--wx-surface-2', 4.5, 'accent text on nested card'],

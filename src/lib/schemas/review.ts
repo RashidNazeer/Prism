@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { TIERS } from '@/lib/auth/auth-context';
 
+/** Matches the cap the Edge Function enforces, so the browser fails first. */
+export const MAX_BATCH = 100;
+
 /**
  * The reviewer's decision, validated in the browser.
  *
@@ -11,7 +14,10 @@ import { TIERS } from '@/lib/auth/auth-context';
  */
 export const reviewSchema = z
   .object({
-    applicationId: z.uuid(),
+    applicationIds: z
+      .array(z.uuid())
+      .min(1, 'Select at least one application')
+      .max(MAX_BATCH, `No more than ${MAX_BATCH} at a time`),
     decision: z.enum(['approved', 'rejected']),
     tier: z.enum(TIERS).nullable(),
     note: z

@@ -96,6 +96,30 @@ until Rashid says "make it live".
   access", with no sign up link. Signed-out visits to any `/admin` route go
   there. A different door, not a different lock.
 
+### Step 4 revision two, after Rashid's review on 2026-07-30
+
+- **Dashboard** at `/admin` with the counts, the fast-track pile and recent
+  activity. The queue moved to `/admin/applications` and now opens straight onto
+  the list, with counts on its tabs instead of a block of tiles above it.
+- **Row actions** on pending applications: view their TikTok profile, approve,
+  reject, without opening the application.
+- **Bulk approve and reject.** Select some or all pending rows on the page and
+  decide in one action. Server-side loop, one transaction and one audit row per
+  person, capped at 100.
+- Rows show the handle only. The email moved to the detail screen, so rows are
+  shorter and more fit on a phone.
+- **The sidebar collapses on desktop**, remembered between visits, and the theme
+  toggle moved to the top right.
+- `pnpm verify:responsive`: every screen at 375, 768, 1024 and 1440px, asserting
+  no sideways scroll and a clean console, plus the review dialog on short
+  screens. Responsiveness is now a rule in CLAUDE.md, not a hope.
+- A multi-agent adversarial review of this work found eight real defects, all
+  fixed: an unreachable dialog heading on short phones, 16px tap targets on the
+  queue, no keyboard route into the row menu, no focus handling on the drawer or
+  the dialog, a WCAG AA failure on the tab counters in light mode, a dashboard
+  that claimed the queue was clear before it knew, and a transparent sticky top
+  bar. Select-all was also desktop-only and is now on phones too.
+
 ## Known bugs
 
 None outstanding.

@@ -86,6 +86,8 @@ pnpm verify:session [url]   # section 11: refresh, two tabs, reopen, form surviv
 pnpm verify:apply  [url]    # sign up to stored application, end to end
 pnpm verify:review [url]    # admin review pipeline + attacks. Needs ADMIN_EMAIL
                             # and ADMIN_PASSWORD too
+pnpm verify:responsive [url] # every screen at 375, 768, 1024 and 1440px.
+                            # Needs ADMIN_EMAIL and ADMIN_PASSWORD, no service key
 pnpm shots [url] [path]     # retina screenshots for design review
 node scripts/check-admin.mjs <url> <email> <password> [role] [path]
 node scripts/create-admin.mjs <email> <password> [role]

@@ -1,20 +1,24 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
 import { AnimatePresence, m } from 'motion/react';
-import { Menu } from 'lucide-react';
+import { Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { WurxMark } from '@/components/brand/WurxMark';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { AppSidebar } from '@/components/layout/AppSidebar';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
+import { useFocusTrap } from '@/lib/use-focus-trap';
+
+const COLLAPSE_KEY = 'wurxmediahub-sidebar-collapsed';
 
 /**
  * Frame for every signed-in screen.
  *
- * A fixed rail on desktop, a drawer on mobile. The product is going to grow a
- * lot of sections (brand hubs, numbers, leaderboards, offers, uploads), and a
- * top bar has nowhere to put them, so navigation is vertical from the start
- * rather than being retrofitted once it hurts.
+ * A rail on desktop that collapses to icons, a drawer on mobile. The product is
+ * going to grow a lot of sections (brand hubs, numbers, leaderboards, offers,
+ * uploads), and a top bar has nowhere to put them, so navigation is vertical
+ * from the start rather than being retrofitted once it hurts.
  *
  * The shell is mounted once and is never keyed on the session. A token refresh
  * must not remount it, or a half-typed form disappears. See CLAUDE.md
@@ -26,6 +30,23 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [signingOut, setSigningOut] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { pathname } = useLocation();
+  const drawerRef = useRef<HTMLElement>(null);
+
+  // The drawer covers the page, so Tab must not walk out of it into content
+  // the user cannot see. Focus lands on the first nav link, not the close
+  // button, and returns to the menu trigger when it shuts.
+  useFocusTrap(drawerRef, { active: drawerOpen, initialSelector: 'a[href]' });
+
+  // Read once, synchronously, so the rail does not flash open then snap shut
+  // on every navigation for someone who prefers it collapsed.
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(COLLAPSE_KEY) === '1';
+  });
+
+  useEffect(() => {
+    window.localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0');
+  }, [collapsed]);
 
   // The profile row wins over the JWT claim wherever both exist. Claims are
   // only refreshed with the token, roughly hourly, so a creator approved a
@@ -59,7 +80,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     void signOut();
   };
 
-  const sidebar = (inDrawer = false) => (
+  const sidebar = (mode: 'rail' | 'drawer') => (
     <AppSidebar
       role={role}
       tier={tier}
@@ -67,37 +88,74 @@ export function AppShell({ children }: { children: ReactNode }) {
       email={profile?.email}
       signingOut={signingOut}
       onSignOut={handleSignOut}
-      {...(inDrawer
+      collapsed={mode === 'rail' && collapsed}
+      {...(mode === 'drawer'
         ? { onNavigate: () => setDrawerOpen(false), onClose: () => setDrawerOpen(false) }
         : {})}
     />
   );
 
   return (
-    <div className="min-h-dvh bg-bg lg:grid lg:grid-cols-[264px_minmax(0,1fr)]">
+    <div
+      className={cn(
+        'min-h-dvh bg-bg lg:grid',
+        collapsed ? 'lg:grid-cols-[4.5rem_minmax(0,1fr)]' : 'lg:grid-cols-[16rem_minmax(0,1fr)]'
+      )}
+    >
       {/* ------------------------------------------------- desktop rail --- */}
       <aside className="sticky top-0 hidden h-dvh border-r border-line lg:block">
-        {sidebar()}
+        {sidebar('rail')}
       </aside>
 
-      {/* --------------------------------------------------- mobile bar --- */}
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-3 border-b border-line bg-surface-1 px-5 lg:hidden">
-        <Link to="/" aria-label="WurxMediaHub home">
-          <WurxMark />
-        </Link>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <button
-            type="button"
-            onClick={() => setDrawerOpen(true)}
-            aria-label="Open menu"
-            aria-expanded={drawerOpen}
-            className="grid size-10 place-items-center rounded-full border border-line text-muted transition-colors duration-200 hover:border-accent hover:text-accent"
-          >
-            <Menu size={18} aria-hidden />
-          </button>
-        </div>
-      </header>
+      <div className="flex min-w-0 flex-col">
+        {/* --------------------------------------------------------- top --- */}
+        {/* Opaque at every width. It is sticky, so a transparent band on
+            desktop meant page content scrolled visibly underneath it. */}
+        <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-line bg-surface-1/90 px-4 backdrop-blur-xl sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            {/* Collapse lives here, not in the rail: at 72px wide the rail has
+                no room for a control, and it would vanish exactly when you
+                need it to bring the labels back. */}
+            <button
+              type="button"
+              onClick={() => setCollapsed((v) => !v)}
+              aria-label={collapsed ? 'Expand the menu' : 'Collapse the menu'}
+              aria-pressed={collapsed}
+              className="hidden size-9 place-items-center rounded-lg border border-line text-muted transition-colors duration-200 hover:border-accent hover:text-accent lg:grid"
+            >
+              {collapsed ? (
+                <PanelLeftOpen size={17} aria-hidden />
+              ) : (
+                <PanelLeftClose size={17} aria-hidden />
+              )}
+            </button>
+
+            <Link to="/" aria-label="WurxMediaHub home" className="lg:hidden">
+              <WurxMark />
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Open menu"
+              aria-expanded={drawerOpen}
+              className="grid size-10 place-items-center rounded-full border border-line text-muted transition-colors duration-200 hover:border-accent hover:text-accent lg:hidden"
+            >
+              <Menu size={18} aria-hidden />
+            </button>
+          </div>
+        </header>
+
+        {/* ----------------------------------------------------- content --- */}
+        <main className="min-w-0 flex-1">
+          <div className="mx-auto w-full max-w-6xl px-4 py-7 sm:px-6 sm:py-9 lg:px-8">
+            {children}
+          </div>
+        </main>
+      </div>
 
       <AnimatePresence>
         {drawerOpen && (
@@ -113,22 +171,21 @@ export function AppShell({ children }: { children: ReactNode }) {
             />
             <m.aside
               key="drawer"
+              ref={drawerRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menu"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
               className="fixed inset-y-0 left-0 z-50 w-[min(300px,86vw)] border-r border-line shadow-lg lg:hidden"
             >
-              {sidebar(true)}
+              {sidebar('drawer')}
             </m.aside>
           </>
         )}
       </AnimatePresence>
-
-      {/* ------------------------------------------------------ content --- */}
-      <main className="min-w-0">
-        <div className="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-10">{children}</div>
-      </main>
     </div>
   );
 }

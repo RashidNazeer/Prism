@@ -13,8 +13,16 @@ export interface ReviewResult {
   reviewed_at: string;
 }
 
+export interface ReviewOutcome {
+  /** How many actually went through. */
+  reviewed: number;
+  /** Per application, so a partial batch can be explained rather than hidden. */
+  failures: { applicationId: string; error: string }[];
+  first: ReviewResult | null;
+}
+
 /**
- * Approve or reject an application.
+ * Approve or reject one application, or a whole selection of them.
  *
  * Deliberately NOT a table update. The browser could not do this one even if it
  * tried: `applications.status` is not in the column grant, a trigger blocks it,
@@ -22,44 +30,55 @@ export interface ReviewResult {
  * role alone. The Edge Function is the only door, and it re-reads the caller's
  * role from the profiles table before it opens.
  *
- * That also buys atomicity. Status, role, tier and the audit row all commit
- * together, so there is no window where someone is approved on one screen and
- * still an applicant on another.
+ * A batch is one request, and the server loops. Each application is still its
+ * own transaction with its own audit row, so a bad item cannot roll back the
+ * good ones and cannot slip through unlogged.
  */
 export function useReviewApplication() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: ReviewInput): Promise<ReviewResult> => {
+    mutationFn: async (input: ReviewInput): Promise<ReviewOutcome> => {
       const parsed = reviewSchema.safeParse(input);
       if (!parsed.success) {
         throw new Error(parsed.error.issues[0]?.message ?? 'That decision was not valid');
       }
-      const { applicationId, decision, tier, note } = parsed.data;
+      const { applicationIds, decision, tier, note } = parsed.data;
 
       const { data, error } = await getSupabase().functions.invoke('review-application', {
         body: {
-          applicationId,
+          applicationIds,
           decision,
           tier: decision === 'approved' ? tier : null,
           note: note || null,
         },
       });
 
-      if (error) {
-        throw new Error(await messageFrom(error));
-      }
-      return (data as { result: ReviewResult }).result;
+      if (error) throw new Error(await messageFrom(error));
+
+      const body = data as {
+        result?: ReviewResult | null;
+        results?: { applicationId: string; ok: boolean; error?: string }[];
+      };
+      const results = body.results ?? [];
+      const failures = results
+        .filter((r) => !r.ok)
+        .map((r) => ({ applicationId: r.applicationId, error: r.error ?? 'Refused' }));
+
+      return {
+        reviewed: results.filter((r) => r.ok).length || (body.result ? 1 : 0),
+        failures,
+        first: body.result ?? null,
+      };
     },
 
-    onSuccess: (result) => {
+    onSuccess: () => {
       // Everything that could now be stale. Cheap, and much safer than trying
-      // to patch four caches by hand.
+      // to patch four caches by hand. Invalidating the whole `application`
+      // branch covers every id in a batch without listing them.
       void queryClient.invalidateQueries({ queryKey: ['admin', 'applications'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'application-counts'] });
-      void queryClient.invalidateQueries({
-        queryKey: ['admin', 'application', result.application_id],
-      });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'application'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
     },
   });

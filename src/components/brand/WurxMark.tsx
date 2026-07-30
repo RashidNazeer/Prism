@@ -13,11 +13,40 @@ import logo from '@/assets/wurx-logo.png';
 export function WurxMark({
   className,
   height = 26,
+  markOnly = false,
 }: {
   className?: string;
   /** Rendered height in px. The source is 2x this by default, so it stays crisp. */
   height?: number;
+  /**
+   * Just the mascot, no wordmark. For the collapsed sidebar rail, where there
+   * is no room for the words and simply clipping the full logo leaves a
+   * half-cut "WURX" that reads as a broken image rather than a mark.
+   */
+  markOnly?: boolean;
 }) {
+  if (markOnly) {
+    // A square window on the left of the artwork, which is where the mascot
+    // sits. `cover` scales it to fill that square rather than squashing it.
+    return (
+      <span className={cn('inline-flex items-center', className)}>
+        <img
+          src={logo}
+          alt="Wurx Media"
+          style={{
+            height,
+            width: height,
+            objectFit: 'cover',
+            objectPosition: 'left center',
+            filter: 'var(--wx-mark-filter)',
+          }}
+          className="select-none"
+          draggable={false}
+        />
+      </span>
+    );
+  }
+
   return (
     <span className={cn('inline-flex items-center', className)}>
       <img

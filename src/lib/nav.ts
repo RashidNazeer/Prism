@@ -49,12 +49,16 @@ export interface NavGroup {
 
 const ADMIN: NavGroup[] = [
   {
+    label: 'Overview',
+    items: [{ label: 'Dashboard', icon: LayoutDashboard, to: '/admin' }],
+  },
+  {
     label: 'Review',
     items: [
       {
         label: 'Applications',
         icon: Inbox,
-        to: '/admin',
+        to: '/admin/applications',
         activePrefixes: ['/admin/applications'],
       },
       { label: 'Activity', icon: History, to: '/admin/activity' },

@@ -135,7 +135,14 @@ asking. On prod, ask twice.
 - Fonts: Archivo Black (display), Inter (UI), JetBrains Mono (numbers/labels).
 - Brand Hub theming overrides `--wx-*` at the hub level from the database, so a
   hub feels like the brand, not like Wurx.
-- Skeletons, never bare spinners. Designed empty and error states. Mobile first.
+- Skeletons, never bare spinners. Designed empty and error states.
+- **Responsive on every device, not just mobile first.** Wurx targets US and UK
+  TikTok Shop creators, who are mostly on phones and tablets, while the team
+  works on laptops and desktops. Every screen, **including the admin panel**, is
+  checked at roughly 375px, 768px, 1024px and 1440px before it is called done.
+  No horizontal page scroll at any width: wide things scroll inside their own
+  container, and tables become stacked cards on narrow screens. Anything only
+  reachable by hover needs a tap equivalent.
 
 ## Performance habits (from step 1, not "later")
 

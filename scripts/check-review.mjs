@@ -51,6 +51,11 @@ const PASSWORD = 'a-long-enough-test-password-1';
 const PEOPLE = [
   { key: 'known', handle: `wurxrev${stamp}known`, worked: true },
   { key: 'fresh', handle: `wurxrev${stamp}fresh`, worked: false },
+  // Three more, only ever touched by the bulk step. Deliberately not "known",
+  // so they cannot disturb the fast-track filter assertions above.
+  { key: 'bulk1', handle: `wurxrev${stamp}bulka`, worked: false, bulk: true },
+  { key: 'bulk2', handle: `wurxrev${stamp}bulkb`, worked: false, bulk: true },
+  { key: 'bulk3', handle: `wurxrev${stamp}bulkc`, worked: false, bulk: true },
 ];
 
 let failures = 0;
@@ -188,17 +193,34 @@ try {
     '/admin',
     '/admin/login'
   );
-  console.log('\n[1b] The admin queue');
+  console.log('\n[1b] The dashboard, then the queue');
   check(
     new global.URL(adminPage.url()).pathname === '/admin',
-    `admin signs in at the staff door and lands on /admin (got ${new global.URL(adminPage.url()).pathname})`
+    `signing in lands on the dashboard (got ${new global.URL(adminPage.url()).pathname})`
+  );
+  await adminPage.waitForTimeout(2500);
+  check(
+    (await adminPage.getByText(/awaiting review/i).count()) > 0,
+    'the dashboard carries the counts, so the queue does not have to'
   );
 
-  const rowLink = (handle) => adminPage.locator(`a[href^="/admin/applications/"]`, { hasText: `@${handle}` });
+  await adminPage.getByRole('link', { name: /^applications$/i }).first().click();
+  await adminPage.waitForURL('**/admin/applications', { timeout: 20000 }).catch(() => {});
+  check(
+    new global.URL(adminPage.url()).pathname === '/admin/applications',
+    `the sidebar reaches the queue (got ${new global.URL(adminPage.url()).pathname})`
+  );
+
+  const rowLink = (handle) =>
+    adminPage.locator(`a[aria-label="Open the application from @${handle}"]`);
 
   await adminPage.waitForSelector('a[href^="/admin/applications/"]', { timeout: 20000 });
   check(await rowLink(PEOPLE[0].handle).first().isVisible(), 'the seeded applicant appears in the queue');
   check(await rowLink(PEOPLE[1].handle).first().isVisible(), 'the second applicant appears too');
+  check(
+    (await adminPage.getByText(/@wurxmediahub\.test/i).count()) === 0,
+    'rows show the handle only, not the email, so they stay compact'
+  );
 
   /* ----------------------------------------------------------- [2] filters */
   console.log('\n[2] Filters and search');
@@ -255,14 +277,14 @@ try {
     'it flags that Wurx has worked with them before'
   );
 
-  await adminPage.selectOption('select[name="tier"]', 'pro');
-  await adminPage.fill('textarea[name="note"]', 'Great skincare content, welcome in.');
   await adminPage.getByRole('button', { name: /^approve$/i }).click();
-  await adminPage.waitForTimeout(400);
+  await adminPage.waitForTimeout(600);
   check(
-    (await adminPage.getByText(/their account becomes a creator immediately/i).count()) > 0,
+    (await adminPage.getByRole('dialog').count()) > 0,
     'a confirmation step stands between a click and a real account change'
   );
+  await adminPage.selectOption('select[name="tier"]', 'pro');
+  await adminPage.fill('textarea[name="note"]', 'Great skincare content, welcome in.');
   await adminPage.getByRole('button', { name: /yes, approve/i }).click();
 
   const approved = await waitFor(
@@ -330,7 +352,7 @@ try {
   });
   await adminPage.waitForTimeout(1000);
   await adminPage.getByRole('button', { name: /^reject$/i }).click();
-  await adminPage.waitForTimeout(400);
+  await adminPage.waitForTimeout(700);
   await adminPage.getByRole('button', { name: /yes, reject/i }).click();
 
   const rejected = await waitFor(
@@ -352,6 +374,106 @@ try {
     .select('role, tier')
     .eq('id', PEOPLE[1].userId)
     .single();
+  /* ------------------------------------------------- [6b] the row menu ---- */
+  console.log('\n[6b] The row menu and bulk review');
+  await adminPage.goto(`${BASE}/admin/applications?q=${stamp}bulk`, {
+    waitUntil: 'networkidle',
+  });
+  await adminPage.waitForSelector('a[href^="/admin/applications/"]', { timeout: 20000 });
+
+  const bulk = PEOPLE.filter((p) => p.bulk);
+  check(
+    (await adminPage.locator('a[href^="/admin/applications/"]').count()) === bulk.length,
+    `the search narrowed to the ${bulk.length} bulk applicants`
+  );
+
+  // The menu replaces the "pending" badge, so the row offers actions instead of
+  // just telling you a status you already filtered by.
+  await adminPage
+    .getByRole('button', { name: new RegExp(`actions for @${bulk[0].handle}`, 'i') })
+    .first()
+    .click();
+  await adminPage.waitForTimeout(500);
+  const tiktokLink = adminPage.getByRole('menuitem', { name: /view tiktok profile/i });
+  check((await tiktokLink.count()) > 0, 'the row menu offers their TikTok profile');
+  check(
+    (await tiktokLink.first().getAttribute('href')) ===
+      `https://www.tiktok.com/@${bulk[0].handle}`,
+    'and it points at the right profile'
+  );
+  check(
+    (await adminPage.getByRole('menuitem', { name: /^approve$/i }).count()) > 0 &&
+      (await adminPage.getByRole('menuitem', { name: /^reject$/i }).count()) > 0,
+    'the row menu can approve and reject without opening the application'
+  );
+  await adminPage.keyboard.press('Escape');
+  await adminPage.waitForTimeout(300);
+
+  // Select all pending on the page, then approve the lot in one go.
+  await adminPage
+    .getByRole('checkbox', { name: /select every pending application/i })
+    .first()
+    .check();
+  await adminPage.waitForTimeout(400);
+  check(
+    (await adminPage.getByText(new RegExp(`${bulk.length} selected`, 'i')).count()) > 0,
+    `selecting all ticks ${bulk.length} of them`
+  );
+
+  await adminPage.getByRole('button', { name: /^approve$/i }).first().click();
+  await adminPage.waitForTimeout(700);
+  check(
+    (await adminPage.getByRole('dialog').count()) > 0,
+    'bulk approval asks for confirmation too'
+  );
+  await adminPage.selectOption('select[name="tier"]', 'rising');
+  await adminPage.getByRole('button', { name: /yes, approve all/i }).click();
+
+  const bulkDone = await waitFor(
+    async () =>
+      (
+        await admin
+          .from('applications')
+          .select('id, status')
+          .in(
+            'id',
+            bulk.map((p) => p.applicationId)
+          )
+      ).data,
+    (rows) => Array.isArray(rows) && rows.every((r) => r.status === 'approved'),
+    'the bulk approval to land'
+  );
+  check(
+    Array.isArray(bulkDone) && bulkDone.every((r) => r.status === 'approved'),
+    `all ${bulk.length} were approved in one action`
+  );
+
+  const { data: bulkProfiles } = await admin
+    .from('profiles')
+    .select('role, tier')
+    .in(
+      'id',
+      bulk.map((p) => p.userId)
+    );
+  check(
+    (bulkProfiles ?? []).every((p) => p.role === 'creator' && p.tier === 'rising'),
+    'each of them became a creator on the tier that was chosen'
+  );
+
+  // Each application is its own transaction with its own audit row, so a batch
+  // must never collapse into a single log entry.
+  const { data: bulkLog } = await admin
+    .from('audit_log')
+    .select('id, action')
+    .in(
+      'subject_id',
+      bulk.map((p) => p.applicationId)
+    );
+  check(
+    (bulkLog ?? []).filter((r) => r.action === 'application.approved').length === bulk.length,
+    `the audit log has one row per person, not one for the batch (${(bulkLog ?? []).length})`
+  );
+
   check(
     stillApplicant?.role === 'applicant' && stillApplicant?.tier === null,
     'a rejection does not touch their role or tier'

@@ -97,7 +97,12 @@ export const router = createBrowserRouter([
       {
         path: '/admin',
         HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/admin/AdminHome'), 'AdminHome'),
+        lazy: lazyRoute(() => import('@/routes/admin/AdminDashboard'), 'AdminDashboard'),
+      },
+      {
+        path: '/admin/applications',
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/routes/admin/Applications'), 'Applications'),
       },
       {
         path: '/admin/applications/:id',

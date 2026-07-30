@@ -268,9 +268,41 @@ anything that reacts to "signed in" during that window will race the insert.
   application" when they just did. If you touch any of them, run
   `pnpm verify:session` several times, not once. It failed roughly 3 runs in 8.
 
+## Responsiveness
+
+**Files:** `scripts/check-responsive.mjs`, every screen.
+
+CLAUDE.md makes "works on phone, tablet, laptop and desktop" a binding rule,
+because Wurx targets US and UK creators who are mostly on phones. This suite
+makes it checkable: every screen is opened at 375, 768, 1024 and 1440px and must
+render its content, log nothing, and not scroll sideways. When it fails it names
+the element that is too wide.
+
+**Change rules**
+
+- A new signed-in screen goes in the `SCREENS` list in that script. A screen
+  nobody checks is a screen that breaks on a phone.
+- Assertions must be scoped to `<main>`. The desktop rail is rendered at every
+  width and merely hidden by CSS, so an unscoped text match finds the sidebar's
+  copy of a label and waits forever on something deliberately invisible.
+- **Dialogs need their own check.** A page can pass at every width while a modal
+  opened on it does not: the review dialog once pushed its heading above the top
+  of a short viewport with no way to scroll back to it, and no page-level
+  assertion could see that because the page itself was fine. Any new modal gets
+  a case in the "modals" section, asserting its heading and its confirm button
+  are actually reachable.
+- A modal must scroll INSIDE ITSELF (`max-h` plus `overflow-y-auto` on the
+  panel). Putting the scroll on a `fixed inset-0 flex items-center` wrapper
+  looks right and is not: overflow past the container's top edge is not part of
+  the scrollable region, so the top of a tall dialog becomes unreachable.
+- Anything selectable on desktop must be selectable on a phone. Select-all lived
+  only in the `md`-and-up column header once, which quietly made bulk review a
+  desktop-only feature.
+
 ## Admin review & audit log
 
-**Files:** `src/routes/admin/AdminHome.tsx`,
+**Files:** `src/routes/admin/AdminDashboard.tsx`,
+`src/routes/admin/Applications.tsx`, `src/routes/admin/Activity.tsx`,
 `src/routes/admin/ApplicationDetail.tsx`, `src/components/admin/*`,
 `src/lib/admin/*`, `src/lib/schemas/review.ts`,
 `supabase/functions/review-application/`, `supabase/functions/_shared/cors.ts`,
@@ -286,6 +318,22 @@ written inside that same transaction.
 
 **Change rules**
 
+- Routes: `/admin` is the dashboard (counts and recent activity),
+  `/admin/applications` is the queue, `/admin/applications/:id` the detail,
+  `/admin/activity` the full audit log. The counts deliberately live on the
+  dashboard so the queue opens straight onto the list.
+- One decision flow: `ReviewDialog` is used by the row menu, the bulk bar and
+  the detail screen. Approving one person and approving forty must not drift
+  apart. Do not add a second confirm path.
+- Bulk is a server-side LOOP over `review_application`, never a bulk SQL
+  statement. Each application keeps its own transaction and its own audit row,
+  so one bad item cannot roll back the others or slip through unlogged. The
+  batch is capped at 100 in both the schema and the Edge Function.
+- A single-item request still returns a real HTTP status (409 for "already
+  reviewed"). A batch returns 200 with per-item results, because "nine worked,
+  one did not" is not one status code.
+- Only `pending` rows are selectable and only they get the action menu. Reviewed
+  rows show their status badge instead.
 - A decision is **never** a table update from the browser. `applications.status`
   is not in the column grant, a trigger blocks it, and
   `public.review_application()` is granted to `service_role` only. The Edge

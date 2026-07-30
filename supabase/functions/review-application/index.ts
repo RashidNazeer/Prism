@@ -1,7 +1,7 @@
 /**
  * review-application
  * ---------------------------------------------------------------------------
- * Approve or reject a creator application.
+ * Approve or reject creator applications, one or many.
  *
  * This is the only route to a decision. Row level security already stops an
  * applicant editing their own status, and the database function is granted to
@@ -18,8 +18,13 @@
  *      suspended five minutes ago is still carrying an admin claim right now.
  *      The table is the truth.
  *   3. Validate the body with Zod, again, even though the browser already did.
- *   4. Hand the whole decision to one Postgres function so status, role, tier
- *      and the audit row commit together or not at all.
+ *   4. Hand each decision to one Postgres function so status, role, tier and
+ *      the audit row commit together or not at all.
+ *
+ * Bulk is a loop over that same function, NOT a bulk SQL statement. Each
+ * application is still its own transaction with its own audit row, so one bad
+ * item cannot roll back nine good ones and cannot slip through unlogged. The
+ * role check happens once, before any of them.
  *
  * A signed-in user who is not staff and tries anyway gets a 403 and a row in
  * audit_log with their name on it.
@@ -31,12 +36,24 @@ import { corsHeaders, json } from '../_shared/cors.ts';
 
 const TIERS = ['creator', 'rising', 'pro', 'elite'] as const;
 
+/** Bounded so one request can never become an unbounded pile of work. */
+const MAX_BATCH = 100;
+
 const ReviewBody = z
   .object({
-    applicationId: z.uuid('applicationId must be a UUID'),
+    applicationId: z.uuid('applicationId must be a UUID').optional(),
+    applicationIds: z
+      .array(z.uuid('applicationIds must all be UUIDs'))
+      .min(1, 'Select at least one application')
+      .max(MAX_BATCH, `No more than ${MAX_BATCH} at a time`)
+      .optional(),
     decision: z.enum(['approved', 'rejected']),
     tier: z.enum(TIERS).nullish(),
     note: z.string().trim().max(1000, 'Keep the note under 1000 characters').nullish(),
+  })
+  .refine((v) => Boolean(v.applicationId) || Boolean(v.applicationIds?.length), {
+    message: 'Name at least one application',
+    path: ['applicationIds'],
   })
   .refine((v) => v.decision !== 'approved' || Boolean(v.tier), {
     message: 'A tier is required when approving',
@@ -54,6 +71,9 @@ const STATUS_FOR_PG: Record<string, number> = {
   '55006': 409, // object in use, our "already reviewed"
   '22023': 400, // invalid parameter value
 };
+
+const cleanMessage = (m: string | undefined) =>
+  (m ?? 'Something went wrong').replace(/^review_application:\s*/, '');
 
 Deno.serve(async (req) => {
   // Every response below carries the CORS headers. Miss one and the browser
@@ -132,29 +152,69 @@ Deno.serve(async (req) => {
       400
     );
   }
-  const { applicationId, decision, tier, note } = parsed.data;
+  const { applicationId, applicationIds, decision, tier, note } = parsed.data;
+
+  // Duplicates in a selection are a UI slip, not an instruction to review the
+  // same person twice; the second attempt would fail as "already reviewed" and
+  // read as a real error.
+  const ids = [...new Set(applicationIds ?? [applicationId!])];
+  const single = ids.length === 1;
 
   // ------------------------------------------------------------ do it -----
-  const { data, error } = await admin.rpc('review_application', {
-    p_application_id: applicationId,
-    p_decision: decision,
-    p_actor_id: actor.id,
-    p_tier: decision === 'approved' ? tier : null,
-    p_note: note ?? null,
-  });
+  // Sequential on purpose. These take row locks, and a burst of parallel calls
+  // against the same table buys nothing at this size except lock contention.
+  const results: Array<{
+    applicationId: string;
+    ok: boolean;
+    result?: unknown;
+    error?: string;
+    status?: number;
+  }> = [];
 
-  if (error) {
-    const status = STATUS_FOR_PG[error.code ?? ''] ?? 500;
-    // The database messages are prefixed and safe to show a staff member; they
-    // describe the state of the application, never anything secret.
-    const message = (error.message ?? 'Something went wrong').replace(
-      /^review_application:\s*/,
-      ''
-    );
-    if (status === 500) console.error('review_application failed', error);
-    return reply({ error: message }, status);
+  for (const id of ids) {
+    const { data, error } = await admin.rpc('review_application', {
+      p_application_id: id,
+      p_decision: decision,
+      p_actor_id: actor.id,
+      p_tier: decision === 'approved' ? tier : null,
+      p_note: note ?? null,
+    });
+
+    if (error) {
+      const status = STATUS_FOR_PG[error.code ?? ''] ?? 500;
+      if (status === 500) console.error('review_application failed', id, error);
+      results.push({
+        applicationId: id,
+        ok: false,
+        error: cleanMessage(error.message),
+        status,
+      });
+    } else {
+      results.push({ applicationId: id, ok: true, result: data });
+    }
   }
 
-  return reply({ ok: true, result: data }, 200);
-});
+  const succeeded = results.filter((r) => r.ok);
+  const failed = results.filter((r) => !r.ok);
 
+  // One application behaves exactly as it always has, so a caller reviewing a
+  // single person still gets a real HTTP status: 409 for "already reviewed",
+  // 404 for a missing row. A batch answers 200 and reports per item, because
+  // "nine worked, one did not" is not a single status code.
+  if (single) {
+    const only = results[0]!;
+    if (!only.ok) return reply({ error: only.error }, only.status ?? 500);
+    return reply({ ok: true, result: only.result, results }, 200);
+  }
+
+  return reply(
+    {
+      ok: failed.length === 0,
+      reviewed: succeeded.length,
+      failed: failed.length,
+      result: succeeded[0]?.result ?? null,
+      results,
+    },
+    200
+  );
+});

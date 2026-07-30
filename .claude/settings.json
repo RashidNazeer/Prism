@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Set-Location \"d:\\\\Milestone\\\\WurxMediaHub\"; $p = \"supabase\\\\functions\\\\review-application\\\\index.ts\"; $b = [System.IO.File]::ReadAllBytes\\($p\\); \"first bytes: $\\($b[0..2] -join ','\\)\"; . \"C:\\\\Users\\\\RA_shid\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Milestone-WurxMediaHub\\\\0fad4a79-eca1-4d32-a808-655b9612d00d\\\\scratchpad\\\\wurx-env.ps1\"; supabase functions deploy review-application --project-ref $env:SUPABASE_PROJECT_REF_DEV 2>&1 | Select-String -Pattern \"Deployed|Error|error\")"
+    ]
+  }
+}

@@ -282,6 +282,48 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   the Edge Function's server-side role check. A creator who signs in there is
   simply sent to their own dashboard rather than told off. Nothing about which
   URL was used is ever treated as a security boundary.
+- 2026-07-30: Counts moved off the queue onto a Dashboard screen at `/admin`,
+  Rashid's call. The queue is for working through applications, so it should
+  open on the list rather than push it below a row of tiles. The queue is now
+  `/admin/applications` and the tabs carry their own small counts.
+- 2026-07-30: Pending rows show an action menu (view TikTok, approve, reject)
+  instead of a "pending" badge. On the Pending tab that badge told you something
+  you had already filtered by, so the space was better spent on the decision.
+- 2026-07-30: Bulk approve and reject added, as a server-side loop over
+  `review_application` rather than a bulk SQL statement. Each application keeps
+  its own transaction and its own audit row, so one failure cannot roll back
+  nine successes and nothing can slip through unlogged. Capped at 100.
+- 2026-07-30: The email came out of the queue row. The handle identifies a
+  creator; the email is on the detail screen where it is actually needed, and
+  dropping it made every row shorter, which is the point of a queue.
+- 2026-07-30: The desktop sidebar collapses to icons, remembered in
+  localStorage, and the theme toggle moved to the top bar on the right. The
+  collapse control lives in the top bar rather than the rail, because at 72px
+  the rail has no room for it and it would disappear exactly when you needed it
+  to bring the labels back.
+- 2026-07-30: `scripts/check-responsive.mjs` checks every screen at 375, 768,
+  1024 and 1440px. Rashid's creators are mostly on phones and tablets, so this
+  is enforced mechanically rather than by remembering to look.
+- 2026-07-30: Modals scroll inside themselves rather than inside a
+  `fixed inset-0 flex items-center` wrapper. Found by review and reproduced in
+  Chromium: with the scroll on the wrapper, a dialog taller than the viewport
+  overflowed past the container's top edge, which is not part of the scrollable
+  region, so on a 375x554 phone the heading sat 114px above the screen with a
+  maximum scroll offset of zero. The confirm button stayed visible, so nothing
+  hinted that anything was missing.
+- 2026-07-30: Tap targets on the queue are padded to roughly 40px with a
+  wrapping `<label>` while the drawn checkbox stays 16px. A 16px target sitting
+  on top of a full-row navigation link is a coin flip on a phone, and losing it
+  opens the application instead of ticking it.
+- 2026-07-30: `useFocusTrap` is shared by the review dialog and the mobile
+  drawer. Both cover the page, and both previously let Tab walk into content
+  behind the scrim. Initial focus goes to the first real control, not the close
+  button, so a keyboard user does not open a form parked on the exit.
+- 2026-07-30: `text-faint` is banned on `bg-surface-2` (4.31:1 in light mode,
+  under AA). It is not added to the contrast guard's PAIRS list, because adding
+  a knowingly failing pair would just break the build; it is recorded as a
+  comment there instead, and the guard already checks the `text-muted`
+  replacement.
 - 2026-07-28: Flagged to Rashid but not acted on, (a) a Vite SPA has no
   server-rendering, so the public landing page will be weak for SEO and link
   previews until we add a build-time prerender; (b) the Supabase free tier

@@ -101,29 +101,55 @@ export function useApplications(filters: QueueFilters) {
   });
 }
 
-/** Counts for the three status cards. Head requests, so no rows travel. */
+export interface ApplicationCounts extends Record<ApplicationStatus, number> {
+  /** Pending AND previously worked with Wurx, the fast-track pile. */
+  pendingKnown: number;
+}
+
+/**
+ * Counts for the dashboard tiles and the queue's tabs.
+ *
+ * `head: true` means PostgREST returns the count in a header and no rows at
+ * all, so this stays cheap however many applications exist. Counting in the
+ * browser would mean downloading the table.
+ */
 export function useApplicationCounts() {
   return useQuery({
     queryKey: ['admin', 'application-counts'],
     staleTime: 30_000,
-    queryFn: async (): Promise<Record<ApplicationStatus, number>> => {
+    queryFn: async (): Promise<ApplicationCounts> => {
       const supabase = getSupabase();
       const statuses: ApplicationStatus[] = ['pending', 'approved', 'rejected'];
 
-      const results = await Promise.all(
-        statuses.map((s) =>
-          supabase
-            .from('applications')
-            .select('id', { count: 'exact', head: true })
-            .eq('status', s)
-        )
-      );
+      const [statusResults, known] = await Promise.all([
+        Promise.all(
+          statuses.map((s) =>
+            supabase
+              .from('applications')
+              .select('id', { count: 'exact', head: true })
+              .eq('status', s)
+          )
+        ),
+        supabase
+          .from('applications')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'pending')
+          .eq('worked_with_wurx', true),
+      ]);
 
-      const counts = { pending: 0, approved: 0, rejected: 0 };
-      results.forEach((r, i) => {
+      const counts: ApplicationCounts = {
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+        pendingKnown: 0,
+      };
+      statusResults.forEach((r, i) => {
         if (r.error) throw r.error;
         counts[statuses[i]!] = r.count ?? 0;
       });
+      if (known.error) throw known.error;
+      counts.pendingKnown = known.count ?? 0;
+
       return counts;
     },
   });

@@ -25,7 +25,7 @@ export function ApplicationDetail() {
   return (
     <AppShell>
       <Link
-        to="/admin"
+        to="/admin/applications"
         className="mt-4 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.14em] text-muted uppercase transition-colors hover:text-accent"
       >
         <ArrowLeft size={14} aria-hidden />
@@ -269,7 +269,7 @@ function Empty({ title, body }: { title: string; body: string }) {
     <div className="mt-8 max-w-lg rounded-2xl border border-line bg-surface-1 p-8 text-center">
       <p className="font-semibold">{title}</p>
       <p className="mt-2 text-[14px] leading-relaxed text-muted">{body}</p>
-      <ButtonLink to="/admin" variant="secondary" size="sm" className="mt-5">
+      <ButtonLink to="/admin/applications" variant="secondary" size="sm" className="mt-5">
         Back to queue
       </ButtonLink>
     </div>
