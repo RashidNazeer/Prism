@@ -268,6 +268,56 @@ anything that reacts to "signed in" during that window will race the insert.
   application" when they just did. If you touch any of them, run
   `pnpm verify:session` several times, not once. It failed roughly 3 runs in 8.
 
+## Brand Hub (brands and offers)
+
+**Files:** `src/routes/admin/Brands.tsx`, `src/routes/admin/BrandHub.tsx`,
+`src/components/admin/BrandDialog.tsx`, `src/components/admin/OfferDialog.tsx`,
+`src/lib/admin/useBrands.ts`, `src/lib/admin/useManageBrand.ts`,
+`src/lib/schemas/brand.ts`, `supabase/functions/manage-brand/`,
+`supabase/migrations/*_brands_and_offers.sql`, `scripts/check-brands.mjs`,
+`scripts/seed-brands.mjs`
+**Tables:** `brands`, `offers`
+
+**The domain, so nobody has to guess.** A BRAND is a seller's store on TikTok
+Shop. A BRAND HUB is everything that hangs off that brand. An OFFER is what the
+brand pays a creator for content ("five videos, $300"), and always belongs to
+exactly one brand.
+
+**Depended on by:** campaigns, contests, promotions, discounts, creator
+enrolments and creator-proposed custom offers, none of which exist yet.
+
+**Change rules**
+
+- **Creators cannot read `brands` at all, and that is deliberate.** The table
+  carries the allocated budget and the client's name. Column level SELECT
+  grants cannot help, because staff and creators are both `authenticated`. When
+  the creator hub is built it gets a column-limited view; do NOT simply add a
+  creator SELECT policy to this table.
+- No insert, update or delete policy exists on either table. Every write goes
+  through `manage-brand`, which re-reads the caller's role from `profiles`,
+  then calls `save_brand`, `save_offer` or `delete_offer`. Those are granted to
+  `service_role` alone. Adding a write policy would open a second door.
+- Each write function starts with `assert_active_staff()`, so "who may change a
+  brand" is answered in exactly one place. New write functions must use it too.
+- The row and its audit entry commit together, in one transaction.
+  `delete_offer` writes the audit row BEFORE the delete, so the record of what
+  was removed survives the removal.
+- **The slug is generated once, on creation, and never regenerated on rename.**
+  Creators will hold brand hub links.
+- **Money is `numeric`, never a float, and PostgREST returns it as a STRING.**
+  Parse only at the point of display (`money()` in `useBrands.ts`). Never parse
+  it to store or send back, or a penny will go missing.
+- `offers.brand_id` is not updatable. Moving an offer between brands would
+  silently change who is paying for it.
+- When creator enrolments arrive they hang off `offers` with
+  `on delete restrict`, so a brand with real creator commitments cannot be
+  deleted out from under them. `offers.brand_id` cascades today only because
+  nothing depends on an offer yet.
+- `needs_application` defaults to true. An offer that pays out without anybody
+  signing it off has to be chosen on purpose.
+- `pnpm verify:brands` must pass after any change here. It attacks both tables
+  and the Edge Function as a signed-in creator.
+
 ## Creator onboarding moments
 
 **Files:** `src/lib/creator/useOnboarding.ts`, `src/components/creator/*`,

@@ -141,6 +141,33 @@ Approved by Rashid on 2026-07-30, ahead of the original Step 5.
 - Sidebar user block compacted to avatar, name, email and a sign out icon.
 - `pnpm verify:responsive` now covers the creator screens too.
 
+### Step 6, Brand Hub phase one (this step)
+
+Admin side only. The creator experience comes later, built on what admins
+configure here.
+
+- **Brands** at `/admin/brands`: name, TikTok Shop store id, client name and
+  allocated budget. Searchable, paginated, active or retired. A brand is
+  retired with a switch, never deleted.
+- **Brand Hub** at `/admin/brands/:id`, with tabs for Offers, Campaigns,
+  Contests, Promotions, Discounts and Creators. Only Offers is built; the rest
+  are listed and marked, the same honesty the sidebar uses.
+- **Offers**: badge, title, description, video count, reward, currency, status,
+  and needs-application. The dialog summarises the deal ("5 videos for $300,
+  $60 per video") before it is saved.
+- Every write goes through the `manage-brand` Edge Function and one of three
+  security definer functions, each audited in the same transaction.
+- Offers are live: two admins in one hub see each other's edits.
+- `pnpm verify:brands`: 38 checks, ten of which are attacks run as a signed-in
+  creator.
+- `node scripts/seed-brands.mjs` puts four demo brands and six offers on dev
+  (`--clean` removes them).
+
+**Not built, by design:** creator-facing browsing of brands and offers, applying
+for an offer, and creator-proposed custom offers with an admin approve or reject
+step. The schema is shaped for all of it; see FEATURE_MAP for the rules that
+protect the budget when that read path is added.
+
 ## Known bugs
 
 None outstanding.

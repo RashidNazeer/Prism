@@ -75,8 +75,13 @@ const ADMIN: NavGroup[] = [
   {
     label: 'Brands',
     items: [
-      { label: 'Brand hubs', icon: Store, soon: 'Step 6' },
-      { label: 'Campaigns', icon: Megaphone, soon: 'Step 6' },
+      {
+        label: 'Brand hubs',
+        icon: Store,
+        to: '/admin/brands',
+        activePrefixes: ['/admin/brands'],
+      },
+      { label: 'Campaigns', icon: Megaphone, soon: 'Next' },
     ],
   },
   {

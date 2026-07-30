@@ -347,6 +347,37 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   out icon on one row. It previously stacked a role chip and a tier chip, which
   on a new creator read "CREATOR CREATOR" because the role and the starting tier
   share a word. Role and tier belong on the profile screen.
+- 2026-07-30: Brand Hub, phase one. `brands` and `offers`, admin side only.
+  Creators get NO read access to either yet, on purpose: `brands` holds the
+  allocated budget and the client's name, and column level SELECT grants cannot
+  separate staff from creators because both are `authenticated`. The creator
+  read path will be a column-limited view written against the real
+  requirements. Shipping a guess at it today would be shipping an untested way
+  to leak a budget.
+- 2026-07-30: All brand and offer writes go through the `manage-brand` Edge
+  Function into `save_brand` / `save_offer` / `delete_offer`. Neither table has
+  any write policy at all, so there is exactly one door. CLAUDE.md names brand
+  edits as a privileged action; this is that.
+- 2026-07-30: Money is `numeric(14,2)`, never a float, and PostgREST hands it
+  back as a string. `money()` parses only for display. A float cannot hold 0.10
+  exactly, and these columns decide what people are paid.
+- 2026-07-30: A brand's slug is generated from its name once, at creation, and
+  never regenerated on rename. Creators will hold brand hub links and a rename
+  must not break every one of them.
+- 2026-07-30: `store_id` is unique. Two brands sharing one TikTok Shop store is
+  always a mistake, and the Edge Function turns the constraint violation into
+  "Another brand already uses that store id" rather than a Postgres error.
+- 2026-07-30: `offers.needs_application` defaults to true, so an offer that pays
+  out with nobody signing it off has to be chosen deliberately.
+- 2026-07-30: Brands are retired with `is_active`, not deleted. Offers can be
+  deleted, and `delete_offer` writes the audit row before the delete so the
+  record outlives the row.
+- 2026-07-30: No adversarial multi-agent review on this feature. Rashid asked
+  that expensive review runs be reserved for where they add something, and the
+  project rules it would re-check are already established and followed. The new
+  security surface is covered instead by `scripts/check-brands.mjs`, which
+  attacks both tables, both database functions and the Edge Function as a real
+  signed-in creator, and keeps doing so on every run.
 - 2026-07-28: Flagged to Rashid but not acted on, (a) a Vite SPA has no
   server-rendering, so the public landing page will be weak for SEO and link
   previews until we add a build-time prerender; (b) the Supabase free tier

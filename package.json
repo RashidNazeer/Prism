@@ -18,6 +18,7 @@
     "verify:session": "node scripts/check-session.mjs",
     "verify:apply": "node scripts/check-apply.mjs",
     "verify:review": "node scripts/check-review.mjs",
+    "verify:brands": "node scripts/check-brands.mjs",
     "verify:responsive": "node scripts/check-responsive.mjs",
     "shots": "node scripts/shots.mjs"
   },

@@ -45,6 +45,7 @@ const SCREENS = [
   { path: '/admin', name: 'Dashboard', expect: /welcome back/i },
   { path: '/admin/applications', name: 'Applications', expect: /^applications$/i },
   { path: '/admin/activity', name: 'Activity', expect: /^activity$/i },
+  { path: '/admin/brands', name: 'Brands', expect: /^brands$/i },
   { path: '/app', name: 'Creator home', expect: /joining|welcome to wurx|not this time/i, as: 'creator' },
   { path: '/app/profile', name: 'Creator profile', expect: /my profile/i, as: 'creator' },
   { path: '/admin/login', name: 'Staff sign in', expect: /staff access/i, anon: true },
