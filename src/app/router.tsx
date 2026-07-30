@@ -89,6 +89,11 @@ export const router = createBrowserRouter([
         HydrateFallback: RouteFallback,
         lazy: lazyRoute(() => import('@/routes/app/Dashboard'), 'Dashboard'),
       },
+      {
+        path: '/app/profile',
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/routes/app/Profile'), 'Profile'),
+      },
     ],
   },
   {

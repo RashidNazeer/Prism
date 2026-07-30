@@ -53,7 +53,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   // minute ago would otherwise still be shown as an applicant here while their
   // dashboard already says otherwise.
   const role = profile?.role ?? claims?.role;
-  const tier = profile ? profile.tier : (claims?.tier ?? null);
 
   // Changing screen closes the drawer. Without this it stays open over the
   // page you just asked for.
@@ -83,7 +82,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const sidebar = (mode: 'rail' | 'drawer') => (
     <AppSidebar
       role={role}
-      tier={tier}
       name={profile?.display_name ?? null}
       email={profile?.email}
       signingOut={signingOut}

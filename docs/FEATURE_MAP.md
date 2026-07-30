@@ -268,6 +268,39 @@ anything that reacts to "signed in" during that window will race the insert.
   application" when they just did. If you touch any of them, run
   `pnpm verify:session` several times, not once. It failed roughly 3 runs in 8.
 
+## Creator onboarding moments
+
+**Files:** `src/lib/creator/useOnboarding.ts`, `src/components/creator/*`,
+`src/routes/app/Dashboard.tsx`, `src/routes/app/Profile.tsx`,
+`supabase/migrations/*_creator_onboarding_moments.sql`
+**Tables:** `profiles.welcomed_at`, `profiles.approval_celebrated_at`
+
+**Depends on:** applications (for the live status), profiles, realtime.
+
+**Change rules**
+
+- "Once" lives in the DATABASE, never in localStorage. A creator applies on a
+  phone and signs in on a laptop; browser storage would replay the welcome as
+  if they were new, and would replay the approval celebration on every cache
+  clear. Any future one-time moment gets a column here, not a local flag.
+- `momentFor()` decides from the profile row alone. Approval wins over the
+  welcome, and dismissing approval settles both, or somebody approved before
+  they ever opened the hub gets congratulated and then welcomed as a fresh
+  applicant.
+- The overlays cannot be dismissed by Escape, backdrop click or a close cross.
+  The button IS the acknowledgement, and these appear exactly once in a
+  creator's life, so a stray tap must not burn them.
+- If the acknowledging write fails the moment still closes locally. Nagging
+  somebody because a network blip lost the acknowledgement is worse than the
+  flag being late.
+- The dashboard carries NO account details. They live on `/app/profile`, so the
+  home screen is only ever about where the creator stands with us.
+- `display_name` is the only column a creator may edit, and that is a database
+  fact (the column grant), not a UI choice. Do not add fields to the profile
+  form without a matching grant.
+- Every suite that signs somebody up has to walk through the welcome, because a
+  real creator does. They each have a `dismissWelcome`-style step.
+
 ## Responsiveness
 
 **Files:** `scripts/check-responsive.mjs`, every screen.

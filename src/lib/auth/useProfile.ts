@@ -10,6 +10,10 @@ export interface Profile {
   tier: CreatorTier | null;
   is_active: boolean;
   created_at: string;
+  /** Null until they have dismissed the welcome. See `useOnboarding`. */
+  welcomed_at: string | null;
+  /** Null until they have been shown the approval moment. */
+  approval_celebrated_at: string | null;
 }
 
 /**
@@ -35,7 +39,9 @@ export function useProfile() {
     queryFn: async (): Promise<Profile> => {
       const { data, error } = await getSupabase()
         .from('profiles')
-        .select('id, email, display_name, role, tier, is_active, created_at')
+        .select(
+          'id, email, display_name, role, tier, is_active, created_at, welcomed_at, approval_celebrated_at'
+        )
         .eq('id', user!.id)
         .single();
 

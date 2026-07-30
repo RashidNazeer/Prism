@@ -35,10 +35,18 @@ const WIDTHS = [
   { name: 'Laptop', width: 1440, height: 900 },
 ];
 
+// A creator account to check the screens creators actually use. These are the
+// ones most likely to be opened on a phone, so leaving them out would miss the
+// point of this suite. Falls back to the demo seed from seed-applications.mjs.
+const CREATOR_EMAIL = process.env.CREATOR_EMAIL ?? 'skinbyamara@wurxmediahub.demo';
+const CREATOR_PASSWORD = process.env.CREATOR_PASSWORD ?? 'demo-password-for-dev-only-1';
+
 const SCREENS = [
   { path: '/admin', name: 'Dashboard', expect: /welcome back/i },
   { path: '/admin/applications', name: 'Applications', expect: /^applications$/i },
   { path: '/admin/activity', name: 'Activity', expect: /^activity$/i },
+  { path: '/app', name: 'Creator home', expect: /joining|welcome to wurx|not this time/i, as: 'creator' },
+  { path: '/app/profile', name: 'Creator profile', expect: /my profile/i, as: 'creator' },
   { path: '/admin/login', name: 'Staff sign in', expect: /staff access/i, anon: true },
   { path: '/login', name: 'Creator sign in', expect: /welcome back/i, anon: true },
 ];
@@ -57,15 +65,39 @@ try {
   console.log(`\nResponsiveness against ${BASE}\n${'='.repeat(70)}`);
 
   // Sign in once at a wide size, then reuse the session at every width.
-  const setup = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-  const setupPage = await setup.newPage();
-  await setupPage.goto(`${BASE}/admin/login`, { waitUntil: 'networkidle' });
-  await setupPage.fill('input[name="email"]', ADMIN_EMAIL);
-  await setupPage.fill('input[name="password"]', ADMIN_PASSWORD);
-  await setupPage.getByRole('button', { name: /^sign in$/i }).click();
-  await setupPage.waitForURL('**/admin', { timeout: 25000 }).catch(() => {});
-  const session = await setup.storageState();
-  await setup.close();
+  const signInOnce = async (door, email, password, landing) => {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await ctx.newPage();
+    await page.goto(`${BASE}${door}`, { waitUntil: 'networkidle' });
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', password);
+    await page.getByRole('button', { name: /^sign in$/i }).click();
+    await page.waitForURL(`**${landing}`, { timeout: 25000 }).catch(() => {});
+    // Clear the one-time welcome if this account has never seen it, so the
+    // screens underneath are what actually gets measured.
+    const hello = page.getByRole('button', { name: /let.s go/i });
+    if (
+      await hello
+        .first()
+        .waitFor({ state: 'visible', timeout: 6000 })
+        .then(() => true)
+        .catch(() => false)
+    ) {
+      await hello.first().click();
+      await page.waitForTimeout(1500);
+    }
+    const state = await ctx.storageState();
+    await ctx.close();
+    return state;
+  };
+
+  const session = await signInOnce('/admin/login', ADMIN_EMAIL, ADMIN_PASSWORD, '/admin');
+  const creatorSession = await signInOnce(
+    '/login',
+    CREATOR_EMAIL,
+    CREATOR_PASSWORD,
+    '/app'
+  );
 
   for (const size of WIDTHS) {
     console.log(`\n[${size.name}] ${size.width}x${size.height}`);
@@ -73,7 +105,9 @@ try {
     for (const screen of SCREENS) {
       const ctx = await browser.newContext({
         viewport: { width: size.width, height: size.height },
-        ...(screen.anon ? {} : { storageState: session }),
+        ...(screen.anon
+          ? {}
+          : { storageState: screen.as === 'creator' ? creatorSession : session }),
       });
       const page = await ctx.newPage();
       const errors = [];

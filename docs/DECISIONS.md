@@ -324,6 +324,29 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   a knowingly failing pair would just break the build; it is recorded as a
   comment there instead, and the guard already checks the `text-muted`
   replacement.
+- 2026-07-30: The one-time creator moments (welcome on joining, congratulations
+  on approval) are recorded as timestamps on `profiles`, not in localStorage.
+  Rashid asked specifically that these fire once and never again, and browser
+  storage cannot promise that: a creator applies on a phone and signs in on a
+  laptop, and a cache clear would replay the celebration. Timestamps rather than
+  booleans, because "how long between applying and being told" is worth being
+  able to answer later.
+- 2026-07-30: Those two columns are granted to `authenticated` at column level.
+  The worst a tampered value does is skip or repeat an animation on the
+  attacker's own screen, nothing reads them for a permission decision, and
+  `pnpm verify:rls` now proves the grant did not open a side door to role.
+- 2026-07-30: The onboarding overlays have no Escape, no backdrop dismiss and no
+  close cross. The button is the acknowledgement, and the moment happens once in
+  a creator's life, so an accidental tap outside must not spend it.
+- 2026-07-30: Account details moved off the creator dashboard to `/app/profile`.
+  The home screen should be about where they stand with us, not about an email
+  address they already know. The scratch note used by the session test is gone;
+  that test now types into the real display-name field instead, which proves the
+  same thing about a form creators actually use.
+- 2026-07-30: The sidebar user block is an avatar, a name, an email and a sign
+  out icon on one row. It previously stacked a role chip and a tier chip, which
+  on a new creator read "CREATOR CREATOR" because the role and the starting tier
+  share a word. Role and tier belong on the profile screen.
 - 2026-07-28: Flagged to Rashid but not acted on, (a) a Vite SPA has no
   server-rendering, so the public landing page will be weak for SEO and link
   previews until we add a build-time prerender; (b) the Supabase free tier

@@ -120,6 +120,27 @@ until Rashid says "make it live".
   that claimed the queue was clear before it knew, and a transparent sticky top
   bar. Select-all was also desktop-only and is now on phones too.
 
+### Step 5, creator onboarding (this step)
+
+Approved by Rashid on 2026-07-30, ahead of the original Step 5.
+
+- **Welcome moment**, once, the first time a creator lands in the hub: branded
+  card, staggered entrance, what the hub gives them (deliberately not a repeat
+  of the landing page), and a gold outline button that fills on hover.
+- **In review screen**: centred, with a living clock, a three step tracker
+  (Applied, In review, Approved) and their handle. Replaces the old row of
+  cards. No account details, no scratch note.
+- **Approval moment**, once: confetti built from `--wx-*` tokens, a springing
+  tick, their tier named, and the reviewer's note. It arrives live, so an admin
+  approving someone triggers it under their hands.
+- **Once is enforced by the database**, `profiles.welcomed_at` and
+  `profiles.approval_celebrated_at`. Not localStorage, so a new device or a
+  cleared cache cannot replay either.
+- **`/app/profile`**, a real profile screen: display name is editable (the only
+  column granted to a creator), plus account and application details.
+- Sidebar user block compacted to avatar, name, email and a sign out icon.
+- `pnpm verify:responsive` now covers the creator screens too.
+
 ## Known bugs
 
 None outstanding.

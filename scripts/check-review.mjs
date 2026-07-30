@@ -256,10 +256,21 @@ try {
     PASSWORD,
     '/app'
   );
-  await applicantPage.waitForTimeout(2000);
+  // Clear the one-time welcome first, the way a real creator does.
+  const hello = applicantPage.getByRole('button', { name: /let.s go/i });
+  if (
+    await hello
+      .first()
+      .waitFor({ state: 'visible', timeout: 20000 })
+      .then(() => true)
+      .catch(() => false)
+  ) {
+    await hello.first().click();
+  }
+  await applicantPage.waitForTimeout(1500);
   check(
-    (await applicantPage.getByText(/pending review/i).count()) > 0,
-    'they currently see "pending review"'
+    (await applicantPage.getByText(/thank you for joining/i).count()) > 0,
+    'they are currently waiting on a decision'
   );
 
   /* ------------------------------------------------------- [4] approve --- */
@@ -329,20 +340,47 @@ try {
 
   /* ------------------------------------ [5] the applicant's screen moved -- */
   console.log('\n[5] The applicant sees it without touching anything');
+  // The congratulations arrives on its own, while they are sitting there. This
+  // is the moment the whole product is selling, so it is worth asserting hard.
   const sawIt = await applicantPage
-    .getByText(/^approved$/i)
+    .getByText(/you are in/i)
     .first()
-    .waitFor({ state: 'visible', timeout: 20000 })
+    .waitFor({ state: 'visible', timeout: 25000 })
     .then(() => true)
     .catch(() => false);
-  check(sawIt, 'their dashboard flipped to "Approved" with no refresh');
+  check(sawIt, 'they are congratulated live, with no refresh');
   check(
-    (await applicantPage.getByText(/your dashboard/i).count()) > 0,
-    'the page stopped calling them an applicant, without a new token'
+    (await applicantPage.getByText(/pro tier/i).count()) > 0,
+    'the tier they were given is named'
   );
   check(
     (await applicantPage.getByText(/great skincare content/i).count()) > 0,
     'the reviewer note reached them'
+  );
+
+  await applicantPage.getByRole('button', { name: /see my hub/i }).click();
+  await applicantPage.waitForTimeout(2000);
+  check(
+    (await applicantPage.getByText(/welcome to wurx/i).count()) > 0,
+    'dismissing it leaves them on their creator home'
+  );
+
+  // The whole point of recording this in the database: it must never come back.
+  await applicantPage.reload({ waitUntil: 'networkidle' });
+  await applicantPage.waitForTimeout(2500);
+  check(
+    (await applicantPage.getByText(/you are in/i).count()) === 0,
+    'and it does not fire again on reload'
+  );
+
+  const { data: celebrated } = await admin
+    .from('profiles')
+    .select('approval_celebrated_at, welcomed_at')
+    .eq('id', PEOPLE[0].userId)
+    .single();
+  check(
+    Boolean(celebrated?.approval_celebrated_at),
+    'the moment was recorded against the account, not the browser'
   );
 
   /* ---------------------------------------------------------- [6] reject -- */

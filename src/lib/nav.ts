@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Trophy,
   Upload,
+  UserRound,
   Users,
 } from 'lucide-react';
 import type { AppRole } from '@/lib/auth/auth-context';
@@ -97,6 +98,10 @@ const CREATOR: NavGroup[] = [
       { label: 'Leaderboards', icon: Trophy, soon: 'Step 9' },
       { label: 'Offers', icon: Gift, soon: 'Step 10' },
     ],
+  },
+  {
+    label: 'Account',
+    items: [{ label: 'My profile', icon: UserRound, to: '/app/profile' }],
   },
 ];
 

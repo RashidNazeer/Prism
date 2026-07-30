@@ -80,14 +80,25 @@ try {
 
   await page.waitForURL('**/app', { timeout: 25000 }).catch(() => {});
   check(new URL(page.url()).pathname === '/app', `lands on the dashboard (got ${new URL(page.url()).pathname})`);
-  await page.waitForTimeout(1800);
+
+  // The one-time welcome, which a real new creator meets before anything else.
+  const welcome = page.getByRole('button', { name: /let.s go/i });
+  const sawWelcome = await welcome
+    .first()
+    .waitFor({ state: 'visible', timeout: 20000 })
+    .then(() => true)
+    .catch(() => false);
+  check(sawWelcome, 'a brand new creator is welcomed');
+  if (sawWelcome) await welcome.first().click();
+  await page.waitForTimeout(1500);
+
   check(
-    (await page.getByText(/Pending review/i).count()) > 0,
-    'the applicant sees their application marked pending'
+    (await page.getByText(/thank you for joining/i).count()) > 0,
+    'and then told their application is with the team'
   );
   check(
     (await page.getByText(new RegExp(`@${HANDLE}`, 'i')).count()) > 0,
-    'the dashboard shows the handle they submitted'
+    'the screen shows the handle they submitted'
   );
 
   console.log('\n[3] It really is in the database');

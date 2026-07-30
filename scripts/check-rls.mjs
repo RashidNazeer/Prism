@@ -153,6 +153,44 @@ try {
     .eq('id', a.user.id);
   check(!nameErr, `updating your own display name works (${nameErr?.message ?? 'ok'})`);
 
+  // The onboarding flags are the only other columns a user may set on
+  // themselves. They decide whether a welcome animation plays and nothing else,
+  // but the grant is still a grant, so it gets attacked like one.
+  const { error: seenErr } = await a.client
+    .from('profiles')
+    .update({ welcomed_at: new Date().toISOString() })
+    .eq('id', a.user.id);
+  check(!seenErr, `marking your own welcome as seen works (${seenErr?.message ?? 'ok'})`);
+
+  const { error: otherSeenErr } = await a.client
+    .from('profiles')
+    .update({ approval_celebrated_at: new Date().toISOString() })
+    .eq('id', b.user.id);
+  const { data: victim } = await admin
+    .from('profiles')
+    .select('approval_celebrated_at')
+    .eq('id', b.user.id)
+    .single();
+  check(
+    victim?.approval_celebrated_at === null,
+    `cannot mark someone else's moments as seen (${otherSeenErr?.code ?? 'no rows matched'})`
+  );
+
+  // The new grant must not have opened a side door to the guarded columns.
+  const { error: mixedErr } = await a.client
+    .from('profiles')
+    .update({ welcomed_at: new Date().toISOString(), role: 'admin' })
+    .eq('id', a.user.id);
+  const { data: afterMixed } = await admin
+    .from('profiles')
+    .select('role')
+    .eq('id', a.user.id)
+    .single();
+  check(
+    afterMixed?.role === 'applicant',
+    `smuggling a role change alongside an allowed column is blocked (${mixedErr?.code ?? 'no error'})`
+  );
+
   console.log('\n[6] Inserting a profile by hand is refused');
   const { error: insErr } = await a.client
     .from('profiles')

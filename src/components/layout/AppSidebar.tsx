@@ -3,22 +3,7 @@ import { LogOut, X } from 'lucide-react';
 import { WurxMark } from '@/components/brand/WurxMark';
 import { cn } from '@/lib/utils';
 import { isNavItemActive, navForRole, type NavItem } from '@/lib/nav';
-import type { AppRole, CreatorTier } from '@/lib/auth/auth-context';
-
-const ROLE_LABEL: Record<AppRole, string> = {
-  applicant: 'Applicant',
-  creator: 'Creator',
-  creative_strategist: 'Creative strategist',
-  ops: 'Ops',
-  admin: 'Admin',
-};
-
-const TIER_LABEL: Record<CreatorTier, string> = {
-  creator: 'Creator',
-  rising: 'Rising',
-  pro: 'Pro',
-  elite: 'Elite',
-};
+import type { AppRole } from '@/lib/auth/auth-context';
 
 /**
  * The product's navigation.
@@ -30,7 +15,6 @@ const TIER_LABEL: Record<CreatorTier, string> = {
  */
 export function AppSidebar({
   role,
-  tier,
   name,
   email,
   signingOut,
@@ -40,7 +24,6 @@ export function AppSidebar({
   collapsed = false,
 }: {
   role: AppRole | undefined;
-  tier: CreatorTier | null;
   name: string | null;
   email: string | undefined;
   signingOut: boolean;
@@ -52,6 +35,7 @@ export function AppSidebar({
 }) {
   const { pathname } = useLocation();
   const groups = navForRole(role);
+  const initial = (name || email || '?').trim().charAt(0) || '?';
 
   return (
     <div className="flex h-full flex-col bg-surface-1">
@@ -115,50 +99,58 @@ export function AppSidebar({
       </nav>
 
       {/* ----------------------------------------------------------- user -- */}
+      {/* One line: avatar, who you are, and the way out. This used to be a card
+          with the name, the email and two chips stacked under it, which on a
+          creator read "CREATOR  CREATOR" because the role and the starting tier
+          share a word. Role and tier belong on the profile screen, not here. */}
       <div className={cn('shrink-0 border-t border-line', collapsed ? 'p-2' : 'p-3')}>
         {collapsed ? (
-          <p
-            title={email}
-            className="mx-auto grid size-9 place-items-center rounded-lg bg-surface-2 font-mono text-[12px] font-semibold text-accent uppercase"
-          >
-            {(name || email || '?').charAt(0)}
-          </p>
-        ) : (
-          <div className="rounded-xl bg-surface-2 px-3.5 py-3">
-            <p className="truncate text-[13px] font-semibold">
-              {name || email || 'Signed in'}
+          <div className="grid gap-1.5">
+            <p
+              title={`${name || 'Signed in'}${email ? ` (${email})` : ''}`}
+              className="mx-auto grid size-9 place-items-center rounded-full bg-accent-soft font-mono text-[13px] font-bold text-accent uppercase"
+            >
+              {initial}
             </p>
-            <p className="mt-0.5 truncate text-[11px] text-faint">{email}</p>
-            {role ? (
-              <p className="mt-2 flex flex-wrap items-center gap-1.5 font-mono text-[10px] tracking-[0.12em] uppercase">
-                <span className="rounded-full border border-line px-2 py-0.5 text-muted">
-                  {ROLE_LABEL[role]}
-                </span>
-                {tier ? (
-                  <span className="rounded-full bg-accent-soft px-2 py-0.5 text-accent">
-                    {TIER_LABEL[tier]}
-                  </span>
-                ) : null}
-              </p>
-            ) : null}
+            <button
+              type="button"
+              disabled={signingOut}
+              onClick={onSignOut}
+              title="Sign out"
+              className="mx-auto grid size-9 place-items-center rounded-lg text-muted transition-colors duration-200 hover:bg-surface-2 hover:text-accent disabled:opacity-50"
+            >
+              <LogOut size={15} aria-hidden />
+              <span className="sr-only">Sign out</span>
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2.5 rounded-xl bg-surface-2 py-2 pr-1.5 pl-2.5">
+            <span
+              aria-hidden
+              className="grid size-9 shrink-0 place-items-center rounded-full bg-accent-soft font-mono text-[13px] font-bold text-accent uppercase"
+            >
+              {initial}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[13px] font-semibold">
+                {name || 'Signed in'}
+              </span>
+              <span className="block truncate text-[11px] text-faint">{email}</span>
+            </span>
+            <button
+              type="button"
+              disabled={signingOut}
+              onClick={onSignOut}
+              title="Sign out"
+              className="grid size-9 shrink-0 place-items-center rounded-lg text-muted transition-colors duration-200 hover:bg-surface-1 hover:text-accent disabled:opacity-50"
+            >
+              <LogOut size={15} aria-hidden />
+              <span className="sr-only">
+                {signingOut ? 'Signing out' : 'Sign out'}
+              </span>
+            </button>
           </div>
         )}
-
-        <button
-          type="button"
-          disabled={signingOut}
-          onClick={onSignOut}
-          title={collapsed ? 'Sign out' : undefined}
-          className={cn(
-            'mt-1.5 flex w-full items-center gap-2.5 rounded-xl py-2.5 text-[13px] font-medium text-muted transition-colors duration-200 hover:bg-surface-2 hover:text-accent disabled:opacity-50',
-            collapsed ? 'justify-center px-0' : 'px-3.5'
-          )}
-        >
-          <LogOut size={15} aria-hidden />
-          <span className={collapsed ? 'sr-only' : undefined}>
-            {signingOut ? 'Signing out...' : 'Sign out'}
-          </span>
-        </button>
       </div>
     </div>
   );

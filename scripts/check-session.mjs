@@ -66,6 +66,25 @@ const readStored = (page) =>
     return raw ? JSON.parse(raw) : null;
   }, STORAGE_KEY);
 
+/**
+ * Close the one-time welcome, the way a new creator does.
+ *
+ * It is shown exactly once per account, recorded in the database, so every
+ * suite that signs somebody up has to walk through it rather than around it.
+ */
+async function dismissWelcome(page) {
+  const button = page.getByRole('button', { name: /let.s go/i });
+  const there = await button
+    .first()
+    .waitFor({ state: 'visible', timeout: 15000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!there) return false;
+  await button.first().click();
+  await page.waitForTimeout(1200);
+  return true;
+}
+
 const browser = await chromium.launch();
 let userId = null;
 
@@ -116,11 +135,13 @@ try {
   await page.waitForURL('**/app', { timeout: 30000 }).catch(() => {});
   check(new URL(page.url()).pathname === '/app', `applicant lands on /app (got ${new URL(page.url()).pathname})`);
 
+  check(await dismissWelcome(page), 'the one-time welcome is shown to a new creator');
+
   // Wait for the screen to actually say it, rather than sleeping for a
   // guessed number of milliseconds. Signing up is two round trips followed by
   // a query, and a fixed delay turns a slow network into a fake failure.
   const roleShown = await page
-    .getByText(/Pending review/i)
+    .getByText(/thank you for joining/i)
     .first()
     .waitFor({ state: 'visible', timeout: 20000 })
     .then(() => true)
@@ -157,7 +178,7 @@ try {
   await page.waitForTimeout(900);
   check(new URL(page.url()).pathname === '/app', 'still on /app after reload');
   check(
-    (await page.getByText(/Pending review/i).count()) > 0,
+    (await page.getByText(/thank you for joining/i).count()) > 0,
     'still signed in after reload'
   );
 
@@ -187,8 +208,14 @@ try {
 
   /* --------------------------------- 5 + 6. refresh under a live form ---- */
   console.log('\n[5] Token refresh underneath a half-filled form');
-  const TYPED = 'half written note that must survive a token refresh';
-  await page2.fill('textarea[name="scratchNote"]', TYPED);
+  // A REAL form now, on the profile screen. The old test typed into a scratch
+  // box that existed only for this check; using the actual display-name field
+  // proves the same thing about something a creator will genuinely be typing
+  // into when their token happens to expire.
+  const TYPED = 'half written name that must survive a token refresh';
+  await page2.goto(`${BASE}/app/profile`, { waitUntil: 'networkidle' });
+  await page2.waitForSelector('input[name="displayName"]', { timeout: 20000 });
+  await page2.fill('input[name="displayName"]', TYPED);
 
   const before = await readStored(page2);
   const urlBefore = page2.url();
@@ -220,11 +247,11 @@ try {
   check(refreshed, 'expired token was refreshed in the background, not signed out');
   check(page2.url() === urlBefore, 'the refresh did not navigate anywhere');
   check(
-    (await page2.inputValue('textarea[name="scratchNote"]')) === TYPED,
+    (await page2.inputValue('input[name="displayName"]')) === TYPED,
     'text typed before the refresh is still there afterwards'
   );
   check(
-    (await page2.getByText(/Pending review/i).count()) > 0,
+    (await page2.getByRole('heading', { name: /my profile/i }).count()) > 0,
     'still signed in after the refresh'
   );
 

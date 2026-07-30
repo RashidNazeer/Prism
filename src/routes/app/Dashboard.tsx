@@ -1,178 +1,323 @@
-import { Check, Clock, X } from 'lucide-react';
+import { m } from 'motion/react';
+import { Check, Clock, Sparkles, X } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { ButtonLink } from '@/components/ui/Button';
+import { WelcomeMoment } from '@/components/creator/WelcomeMoment';
+import { ApprovedMoment } from '@/components/creator/ApprovedMoment';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
-import { useApplication, type ApplicationStatus } from '@/lib/auth/useApplication';
-
-const STATUS_UI: Record<
-  ApplicationStatus,
-  { icon: typeof Clock; label: string; className: string; body: string }
-> = {
-  pending: {
-    icon: Clock,
-    label: 'Pending review',
-    className: 'bg-warning-soft text-warning',
-    body: 'A human reads every application. When the team makes a decision this page updates on its own, so there is no need to refresh or email anyone.',
-  },
-  approved: {
-    icon: Check,
-    label: 'Approved',
-    className: 'bg-success-soft text-success',
-    body: 'You are in. Your brand hubs and your numbers will appear here as they are switched on.',
-  },
-  rejected: {
-    icon: X,
-    label: 'Not this time',
-    className: 'bg-danger-soft text-danger',
-    body: 'We are not able to take you on right now. This is usually about fit rather than quality, and it is not permanent.',
-  },
-};
+import { useApplication } from '@/lib/auth/useApplication';
+import { useOnboarding } from '@/lib/creator/useOnboarding';
 
 /**
  * Home for applicants and creators.
  *
- * The application status here is live: `useApplication` subscribes to this
- * user's own row, so an approval in the admin queue changes this screen while
- * they are looking at it.
+ * Three states, one screen:
+ *   waiting   a centred, living "we have you" panel
+ *   in        approved, with what is coming next
+ *   not now   a rejection written like a human wrote it
+ *
+ * Account details are NOT here. They live on the profile screen, so this page
+ * is only ever about where the creator stands with us.
+ *
+ * The status is live. `useApplication` subscribes to this person's own row, so
+ * an approval in the admin queue lands here while they are looking at it, and
+ * the one-time congratulations fires on top of it.
  */
 export function Dashboard() {
   const { claims } = useAuth();
-  const { data: profile, isLoading: profileLoading } = useProfile();
+  const { data: profile } = useProfile();
   const { data: application, isLoading: appLoading } = useApplication();
+  const { moment, dismiss, dismissing } = useOnboarding();
 
   // Prefer the profile row over the JWT claim. A token only refreshes about
-  // once an hour, so an applicant approved thirty seconds ago is still carrying
-  // `applicant` in their claims. The realtime subscription refetches the
-  // profile the moment a decision lands, which is what makes this whole screen
-  // change while they are looking at it.
+  // once an hour, so a creator approved thirty seconds ago is still carrying
+  // `applicant` in their claims.
   const role = profile?.role ?? claims?.role;
-  const isApplicant = role === 'applicant';
+  const firstName = (profile?.display_name || profile?.email?.split('@')[0] || '').split(
+    ' '
+  )[0];
   const status = application?.status;
-  const ui = status ? STATUS_UI[status] : null;
 
   return (
     <AppShell>
-      <h1 className="mt-4 text-[clamp(1.875rem,4vw,2.75rem)] font-extrabold">
-        {isApplicant ? 'Your application' : 'Your dashboard'}
-      </h1>
-
-      {/* ------------------------------------------------ application state */}
-      {appLoading ? (
-        <div className="mt-8 max-w-xl space-y-3 rounded-2xl border border-line bg-surface-1 p-6">
-          <div className="h-6 w-32 animate-pulse rounded-full bg-surface-2" />
-          <div className="h-4 w-full animate-pulse rounded bg-surface-2" />
-          <div className="h-4 w-4/5 animate-pulse rounded bg-surface-2" />
-        </div>
-      ) : application && ui ? (
-        <div className="mt-8 max-w-xl rounded-2xl border border-line bg-surface-1 p-6">
-          <span
-            className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-mono text-[11px] tracking-[0.14em] uppercase ${ui.className}`}
-          >
-            <ui.icon size={13} aria-hidden />
-            {ui.label}
-          </span>
-          <p className="mt-5 leading-relaxed text-muted">{ui.body}</p>
-          {application.review_note ? (
-            <p className="mt-4 rounded-xl border border-line bg-surface-2 px-4 py-3 text-[14px] leading-relaxed text-muted">
-              {application.review_note}
-            </p>
-          ) : null}
-
-          <dl className="mt-6 grid gap-3 border-t border-line pt-5 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-faint">TikTok handle</dt>
-              <dd className="mt-0.5 font-medium">@{application.tiktok_handle}</dd>
-            </div>
-            <div>
-              <dt className="text-faint">Niche</dt>
-              <dd className="mt-0.5 font-medium">
-                {application.niche === 'Other'
-                  ? (application.niche_other ?? 'Other')
-                  : application.niche}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-faint">Worked with Wurx before</dt>
-              <dd className="mt-0.5 font-medium">
-                {application.worked_with_wurx ? 'Yes' : 'No'}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-faint">Applied</dt>
-              <dd className="mt-0.5 font-medium">
-                {new Date(application.created_at).toLocaleDateString()}
-              </dd>
-            </div>
-          </dl>
-        </div>
-      ) : (
-        // Account exists but the application insert did not land. Recoverable,
-        // rather than leaving someone stuck with no way forward.
-        <div className="mt-8 max-w-xl rounded-2xl border border-line bg-surface-1 p-6">
-          <h2 className="text-lg font-bold">Finish your application</h2>
-          <p className="mt-3 leading-relaxed text-muted">
-            Your account is ready, but we do not have your application details yet. It
-            takes about a minute.
-          </p>
-          <ButtonLink to="/apply" className="mt-5">
-            Complete it now
-          </ButtonLink>
-        </div>
-      )}
-
-      {/* ------------------------------------------------------- account */}
-      <section className="mt-8 max-w-xl rounded-2xl border border-line bg-surface-1 p-6">
-        <h2 className="text-sm font-semibold">Your account</h2>
-        {profileLoading ? (
-          <div className="mt-4 space-y-2.5">
-            <div className="h-4 w-3/4 animate-pulse rounded bg-surface-2" />
-            <div className="h-4 w-1/2 animate-pulse rounded bg-surface-2" />
-          </div>
-        ) : (
-          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-faint">Email</dt>
-              <dd className="mt-0.5 font-medium break-all">{profile?.email}</dd>
-            </div>
-            <div>
-              <dt className="text-faint">Role</dt>
-              <dd className="mt-0.5 font-medium capitalize">
-                {profile?.role.replace('_', ' ')}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-faint">Tier</dt>
-              <dd className="mt-0.5 font-medium capitalize">
-                {profile?.tier ?? 'Not assigned'}
-              </dd>
-            </div>
-          </dl>
-        )}
-      </section>
-
-      {/* Scratch field used by the session stability test. It is never saved;
-          it exists to prove a background token refresh does not wipe what
-          someone was in the middle of typing. */}
-      <section className="mt-6 max-w-xl rounded-2xl border border-line bg-surface-1 p-6">
-        <label
-          htmlFor="scratch-note"
-          className="block font-mono text-[11px] tracking-[0.14em] text-muted uppercase"
-        >
-          Scratch note
-        </label>
-        <p className="mt-2 text-[13px] leading-relaxed text-faint">
-          Nothing typed here is saved. It exists so we can prove that a background
-          token refresh does not wipe what you were writing.
-        </p>
-        <textarea
-          id="scratch-note"
-          name="scratchNote"
-          rows={3}
-          className="mt-3 w-full resize-y rounded-xl border border-line-interactive bg-surface-3 px-4 py-3 text-[15px] placeholder:text-faint focus:border-accent focus:outline-none"
-          placeholder="Type something and leave the tab open..."
+      {moment === 'welcome' ? (
+        <WelcomeMoment
+          name={firstName ?? ''}
+          busy={dismissing}
+          onDone={() => dismiss('welcome')}
         />
-      </section>
+      ) : null}
+
+      {moment === 'approved' ? (
+        <ApprovedMoment
+          name={firstName ?? ''}
+          tier={profile?.tier ?? null}
+          note={application?.review_note ?? null}
+          busy={dismissing}
+          onDone={() => dismiss('approved')}
+        />
+      ) : null}
+
+      {appLoading ? (
+        <Skeleton />
+      ) : role === 'creator' ? (
+        <Approved name={firstName ?? ''} handle={application?.tiktok_handle} />
+      ) : status === 'rejected' ? (
+        <Rejected note={application?.review_note ?? null} />
+      ) : application ? (
+        <InReview
+          name={firstName ?? ''}
+          handle={application.tiktok_handle}
+          appliedAt={application.created_at}
+        />
+      ) : (
+        <Unfinished />
+      )}
     </AppShell>
+  );
+}
+
+/* -------------------------------------------------------------- waiting -- */
+
+const STEPS = [
+  { label: 'Applied', state: 'done' as const },
+  { label: 'In review', state: 'now' as const },
+  { label: 'Approved', state: 'next' as const },
+];
+
+function InReview({
+  name,
+  handle,
+  appliedAt,
+}: {
+  name: string;
+  handle: string;
+  appliedAt: string;
+}) {
+  return (
+    <div className="mx-auto flex max-w-xl flex-col items-center py-6 text-center sm:py-12">
+      {/* A slow double ring around a clock. It never stops, so the screen
+          always looks alive rather than like a page that failed to load. */}
+      <div className="relative grid size-28 place-items-center">
+        {[0, 1].map((i) => (
+          <m.span
+            key={i}
+            aria-hidden
+            initial={{ scale: 0.6, opacity: 0.5 }}
+            animate={{ scale: 1.6, opacity: 0 }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              delay: i * 1.5,
+              ease: 'easeOut',
+            }}
+            className="absolute inset-0 rounded-full border border-accent"
+          />
+        ))}
+        <m.span
+          animate={{ y: [0, -5, 0] }}
+          transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut' }}
+          className="relative grid size-20 place-items-center rounded-full bg-accent-soft text-accent"
+        >
+          <Clock size={30} aria-hidden />
+        </m.span>
+      </div>
+
+      <m.h1
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="mt-8 text-[clamp(1.6rem,5vw,2.25rem)] font-extrabold text-balance"
+      >
+        Thank you for joining{name ? `, ${name}` : ''}
+      </m.h1>
+
+      <m.p
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+        className="mt-4 max-w-md leading-relaxed text-muted text-pretty"
+      >
+        Your application is with our team. A real person reads every one, so it takes a
+        little time rather than a moment.
+      </m.p>
+
+      {/* Where they are, at a glance. */}
+      <m.ol
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="mt-9 flex w-full max-w-sm items-start justify-between gap-2"
+      >
+        {STEPS.map((s, i) => (
+          <li key={s.label} className="relative flex flex-1 flex-col items-center gap-2">
+            {i > 0 ? (
+              <span
+                aria-hidden
+                className={`absolute top-4 right-1/2 left-[-50%] h-px ${
+                  s.state === 'next' ? 'bg-line' : 'bg-accent'
+                }`}
+              />
+            ) : null}
+
+            <span
+              className={`relative grid size-8 place-items-center rounded-full border text-[11px] ${
+                s.state === 'done'
+                  ? 'border-accent bg-accent text-on-accent'
+                  : s.state === 'now'
+                    ? 'border-accent bg-accent-soft text-accent'
+                    : 'border-line bg-surface-1 text-faint'
+              }`}
+            >
+              {s.state === 'done' ? (
+                <Check size={14} aria-hidden />
+              ) : s.state === 'now' ? (
+                <m.span
+                  aria-hidden
+                  animate={{ opacity: [1, 0.25, 1] }}
+                  transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                  className="size-2 rounded-full bg-accent"
+                />
+              ) : (
+                <span aria-hidden className="size-2 rounded-full bg-line-strong" />
+              )}
+            </span>
+            <span
+              className={`font-mono text-[10px] tracking-[0.12em] uppercase ${
+                s.state === 'next' ? 'text-faint' : 'text-muted'
+              }`}
+            >
+              {s.label}
+            </span>
+          </li>
+        ))}
+      </m.ol>
+
+      <m.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        className="mt-10 w-full rounded-2xl border border-line bg-surface-1 px-6 py-5 text-left shadow-sm"
+      >
+        <p className="font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+          Under review
+        </p>
+        <p className="mt-2 text-lg font-bold break-all">@{handle}</p>
+        <p className="mt-1 text-[13px] text-muted">
+          Applied {new Date(appliedAt).toLocaleDateString(undefined, {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })}
+        </p>
+        <p className="mt-4 flex items-start gap-2 border-t border-line pt-4 text-[13px] leading-relaxed text-muted">
+          <Sparkles size={15} aria-hidden className="mt-0.5 shrink-0 text-accent" />
+          Keep this page open if you like. The moment a decision is made it changes here
+          on its own, with no refresh and no email needed.
+        </p>
+      </m.div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------- approved -- */
+
+const COMING = [
+  'Your numbers, straight from the brands you sell for',
+  'Brand hubs with briefs and products',
+  'Leaderboards, and retainer offers as you grow',
+];
+
+function Approved({ name, handle }: { name: string; handle: string | undefined }) {
+  return (
+    <div className="mx-auto max-w-2xl py-4 sm:py-8">
+      <m.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <span className="inline-flex items-center gap-2 rounded-full bg-success-soft px-3 py-1.5 font-mono text-[11px] tracking-[0.14em] text-success uppercase">
+          <Check size={13} aria-hidden />
+          Approved
+        </span>
+        <h1 className="mt-5 text-[clamp(1.6rem,5vw,2.25rem)] font-extrabold text-balance">
+          Welcome to Wurx{name ? `, ${name}` : ''}
+        </h1>
+        <p className="mt-3 max-w-lg leading-relaxed text-muted text-pretty">
+          {handle ? `@${handle} is` : 'You are'} part of the roster. Your hub is being
+          switched on section by section, and each one appears here as it lands.
+        </p>
+      </m.div>
+
+      <m.ul
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
+        className="mt-8 grid gap-px overflow-hidden rounded-2xl border border-line bg-line"
+      >
+        {COMING.map((c) => (
+          <li key={c} className="flex items-center gap-3 bg-surface-1 px-5 py-4">
+            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
+              <Sparkles size={14} aria-hidden />
+            </span>
+            <span className="text-[14px] text-muted">{c}</span>
+          </li>
+        ))}
+      </m.ul>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------- rejected -- */
+
+function Rejected({ note }: { note: string | null }) {
+  return (
+    <div className="mx-auto max-w-lg py-8 text-center sm:py-14">
+      <span className="mx-auto grid size-16 place-items-center rounded-full bg-danger-soft text-danger">
+        <X size={26} aria-hidden />
+      </span>
+      <h1 className="mt-6 text-[clamp(1.5rem,5vw,2rem)] font-extrabold">Not this time</h1>
+      <p className="mt-4 leading-relaxed text-muted text-pretty">
+        We are not able to take you on right now. This is usually about fit with the
+        brands we are running, rather than the quality of your work, and it is not
+        permanent.
+      </p>
+      {note ? (
+        <p className="mt-6 rounded-2xl border border-line bg-surface-1 px-5 py-4 text-left text-[14px] leading-relaxed text-muted">
+          {note}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/* ----------------------------------------------------------- unfinished -- */
+
+function Unfinished() {
+  return (
+    <div className="mx-auto max-w-lg py-8 text-center sm:py-14">
+      <h1 className="text-[clamp(1.5rem,5vw,2rem)] font-extrabold">
+        Finish your application
+      </h1>
+      <p className="mt-4 leading-relaxed text-muted text-pretty">
+        Your account is ready, but we do not have your application details yet. It takes
+        about a minute.
+      </p>
+      <ButtonLink to="/apply" className="mt-6">
+        Complete it now
+      </ButtonLink>
+    </div>
+  );
+}
+
+function Skeleton() {
+  return (
+    <div className="mx-auto flex max-w-xl flex-col items-center py-10 text-center">
+      <div className="size-20 animate-pulse rounded-full bg-surface-2" />
+      <div className="mt-8 h-8 w-64 max-w-full animate-pulse rounded bg-surface-2" />
+      <div className="mt-4 h-4 w-80 max-w-full animate-pulse rounded bg-surface-2" />
+      <div className="mt-10 h-32 w-full animate-pulse rounded-2xl bg-surface-1" />
+    </div>
   );
 }
