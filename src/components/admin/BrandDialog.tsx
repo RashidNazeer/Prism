@@ -38,15 +38,22 @@ export function BrandDialog({
     isActive: brand?.is_active ?? true,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
 
   const save = useManageBrand();
   const busy = save.isPending;
 
-  const set = <K extends keyof BrandInput>(key: K, value: BrandInput[K]) =>
-    setValues((prev) => ({ ...prev, [key]: value }));
+  // Once they have tried to submit, re-check on every keystroke, so a
+  // corrected field clears its error instead of staying red.
+  const set = <K extends keyof BrandInput>(key: K, value: BrandInput[K]) => {
+    const next = { ...values, [key]: value };
+    setValues(next);
+    if (submitted) setErrors(collectFieldErrors(brandSchema, next));
+  };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitted(true);
     const next = collectFieldErrors(brandSchema, values);
     setErrors(next);
     if (Object.keys(next).length > 0) return;

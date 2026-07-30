@@ -50,22 +50,31 @@ export const brandSchema = z.object({
 export type BrandInput = z.input<typeof brandSchema>;
 export type BrandParsed = z.output<typeof brandSchema>;
 
-export const offerSchema = z.object({
-  badgeTitle: z.string().trim().max(32, 'Keep the badge under 32 characters'),
-  title: z.string().trim().min(1, 'Give the offer a title').max(120, 'That title is too long'),
-  description: z.string().trim().max(2000, 'That description is too long'),
-  videoCount: z
-    .string()
-    .trim()
-    .min(1, 'How many videos?')
-    .refine((v) => /^\d+$/.test(v), { message: 'Use a whole number' })
-    .transform((v) => Number(v))
-    .refine((n) => n >= 1 && n <= 1000, { message: 'Between 1 and 1000 videos' }),
-  rewardAmount: requiredMoney,
-  currency: z.enum(CURRENCIES),
-  status: z.enum(['active', 'inactive']),
-  needsApplication: z.boolean(),
-});
+export const offerSchema = z
+  .object({
+    badgeTitle: z.string().trim().max(32, 'Keep the badge under 32 characters'),
+    title: z.string().trim().min(1, 'Give the offer a title').max(120, 'That title is too long'),
+    description: z.string().trim().max(2000, 'That description is too long'),
+    videoCount: z
+      .string()
+      .trim()
+      .min(1, 'How many videos?')
+      .refine((v) => /^\d+$/.test(v), { message: 'Use a whole number' })
+      .transform((v) => Number(v))
+      .refine((n) => n >= 1 && n <= 1000, { message: 'Between 1 and 1000 videos' }),
+    rewardAmount: requiredMoney,
+    currency: z.enum(CURRENCIES),
+    status: z.enum(['active', 'inactive']),
+    needsApplication: z.boolean(),
+  })
+  // A description is optional on an open offer and required on one a creator
+  // has to apply for. If somebody has to make a case for being given this, they
+  // need to know what they are making a case for; "Starter bundle" alone is not
+  // something you can apply against.
+  .refine((v) => !v.needsApplication || v.description.trim().length > 0, {
+    message: 'An offer creators apply for needs a description of what to deliver',
+    path: ['description'],
+  });
 
 export type OfferInput = z.input<typeof offerSchema>;
 export type OfferParsed = z.output<typeof offerSchema>;

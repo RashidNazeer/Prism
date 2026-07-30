@@ -43,15 +43,27 @@ export function OfferDialog({
     needsApplication: offer?.needs_application ?? true,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
 
   const save = useManageBrand();
   const busy = save.isPending;
 
-  const set = <K extends keyof OfferInput>(key: K, value: OfferInput[K]) =>
-    setValues((prev) => ({ ...prev, [key]: value }));
+  /**
+   * Once they have tried to submit, re-check on every keystroke.
+   *
+   * Without this an error sticks until the next submit: type 0, get "between 1
+   * and 1000", correct it to 1, and the red stays. People then assume the
+   * corrected value is still wrong.
+   */
+  const set = <K extends keyof OfferInput>(key: K, value: OfferInput[K]) => {
+    const next = { ...values, [key]: value };
+    setValues(next);
+    if (submitted) setErrors(collectFieldErrors(offerSchema, next));
+  };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitted(true);
     const next = collectFieldErrors(offerSchema, values);
     setErrors(next);
     if (Object.keys(next).length > 0) return;
@@ -159,7 +171,17 @@ export function OfferDialog({
               )}
             </Field>
 
-            <Field label="Description" error={errors.description} hint="Optional. What the creator has to deliver.">
+            {/* Required or optional depending on the checkbox at the bottom,
+                so the hint has to say which one it is right now. */}
+            <Field
+              label={values.needsApplication ? 'Description' : 'Description (optional)'}
+              error={errors.description}
+              hint={
+                values.needsApplication
+                  ? 'Required, because a creator has to apply for this. Tell them what they would be delivering.'
+                  : 'Optional. Anyone can take this offer without asking.'
+              }
+            >
               {({ id, describedBy, invalid }) => (
                 <Textarea
                   id={id}

@@ -157,6 +157,22 @@ Deno.serve(async (req) => {
   }
   const input = parsed.data;
 
+  // Checked after the union rather than inside it: a `.refine()` on a member
+  // stops it being a plain object, and `discriminatedUnion` needs plain
+  // objects. A description is optional on an open offer and required on one a
+  // creator has to apply for, because nobody can make a case for being given
+  // something that never says what it involves.
+  if (
+    input.action === 'offer.save' &&
+    input.needsApplication &&
+    !input.description?.trim()
+  ) {
+    return reply(
+      { error: 'An offer creators apply for needs a description of what to deliver' },
+      400
+    );
+  }
+
   // ------------------------------------------------------------- do it ----
   let rpc: { data: unknown; error: { message?: string; code?: string } | null };
 

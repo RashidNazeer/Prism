@@ -214,6 +214,41 @@ try {
 
   await page.getByRole('button', { name: /new offer|create the first offer/i }).first().click();
   await page.waitForTimeout(700);
+
+  // A corrected field must clear its own error. It used to stay red until the
+  // next submit, so somebody who typed 0, was told "between 1 and 1000", then
+  // fixed it to 1 still saw the complaint and assumed they were still wrong.
+  await page.fill('input[name="title"]', 'Draft');
+  await page.fill('input[name="videoCount"]', '0');
+  await page.fill('input[name="rewardAmount"]', '10');
+  await page.getByRole('button', { name: /^create offer$/i }).click();
+  await page.waitForTimeout(600);
+  check(
+    (await page.getByText(/between 1 and 1000 videos/i).count()) > 0,
+    'zero videos is refused'
+  );
+  await page.fill('input[name="videoCount"]', '1');
+  await page.waitForTimeout(400);
+  check(
+    (await page.getByText(/between 1 and 1000 videos/i).count()) === 0,
+    'and correcting it clears the error, without another submit'
+  );
+
+  // Description is optional on an open offer and required on one creators must
+  // apply for.
+  check(
+    (await page.getByText(/needs a description of what to deliver/i).count()) > 0,
+    'an offer creators apply for demands a description'
+  );
+  await page.locator('input[name="needsApplication"]').uncheck();
+  await page.waitForTimeout(400);
+  check(
+    (await page.getByText(/needs a description of what to deliver/i).count()) === 0,
+    'and unticking "needs application" makes it optional again'
+  );
+  await page.locator('input[name="needsApplication"]').check();
+  await page.waitForTimeout(300);
+
   await page.fill('input[name="title"]', 'Starter bundle');
   await page.fill('input[name="badgeTitle"]', 'TOP PICK');
   await page.fill('textarea[name="description"]', 'Five in-feed videos, posted within 30 days.');
