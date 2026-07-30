@@ -141,7 +141,7 @@ export function OfferDialog({
                 <Input
                   id={id}
                   name="title"
-                  placeholder="Starter bundle"
+                  placeholder="e.g. Starter bundle"
                   value={values.title}
                   disabled={busy}
                   onChange={(e) => set('title', e.target.value)}
@@ -161,7 +161,7 @@ export function OfferDialog({
                   id={id}
                   name="badgeTitle"
                   maxLength={32}
-                  placeholder="TOP PICK"
+                  placeholder="e.g. TOP PICK"
                   value={values.badgeTitle}
                   disabled={busy}
                   onChange={(e) => set('badgeTitle', e.target.value)}
@@ -187,7 +187,7 @@ export function OfferDialog({
                   id={id}
                   name="description"
                   maxLength={2000}
-                  placeholder="Five in-feed videos featuring the hero product, posted within 30 days."
+                  placeholder="e.g. Five in-feed videos featuring the hero product, posted within 30 days."
                   value={values.description}
                   disabled={busy}
                   onChange={(e) => set('description', e.target.value)}
@@ -205,7 +205,11 @@ export function OfferDialog({
                     id={id}
                     name="videoCount"
                     inputMode="numeric"
-                    placeholder="5"
+                    // "e.g." on purpose. A bare "5" sitting in an empty box is
+                    // indistinguishable from a 5 somebody typed, so the form
+                    // looks filled in when it is not, and the errors under it
+                    // look like a bug rather than an instruction.
+                    placeholder="e.g. 5"
                     value={values.videoCount}
                     disabled={busy}
                     onChange={(e) => set('videoCount', e.target.value)}
@@ -221,7 +225,7 @@ export function OfferDialog({
                     id={id}
                     name="rewardAmount"
                     inputMode="decimal"
-                    placeholder="300"
+                    placeholder="e.g. 300"
                     value={values.rewardAmount}
                     disabled={busy}
                     onChange={(e) => set('rewardAmount', e.target.value)}

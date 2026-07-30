@@ -240,6 +240,27 @@ try {
   await page.getByRole('button', { name: /new offer|create the first offer/i }).first().click();
   await page.waitForTimeout(700);
 
+  // An empty field must LOOK empty. These started life as "5" and "300", which
+  // are indistinguishable from typed values, so the form appeared filled in and
+  // the errors under it read as a bug rather than an instruction.
+  const hints = await page.evaluate(() =>
+    ['videoCount', 'rewardAmount', 'title'].map((n) => ({
+      name: n,
+      value: document.querySelector(`[name="${n}"]`)?.value,
+      placeholder: document.querySelector(`[name="${n}"]`)?.placeholder,
+    }))
+  );
+  check(
+    hints.every((h) => h.value === ''),
+    'a new offer form starts genuinely empty'
+  );
+  check(
+    hints.every((h) => /^e\.g\. /.test(h.placeholder ?? '')),
+    `every example is prefixed so it cannot be mistaken for a value (${hints
+      .map((h) => h.placeholder)
+      .join(' | ')})`
+  );
+
   // A corrected field must clear its own error. It used to stay red until the
   // next submit, so somebody who typed 0, was told "between 1 and 1000", then
   // fixed it to 1 still saw the complaint and assumed they were still wrong.

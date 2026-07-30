@@ -128,7 +128,7 @@ export function BrandDialog({
                 <Input
                   id={id}
                   name="name"
-                  placeholder="Vitauthority"
+                  placeholder="e.g. Vitauthority"
                   value={values.name}
                   disabled={busy}
                   onChange={(e) => set('name', e.target.value)}
@@ -147,7 +147,7 @@ export function BrandDialog({
                 <Input
                   id={id}
                   name="storeId"
-                  placeholder="7495012345678901234"
+                  placeholder="e.g. 7495012345678901234"
                   value={values.storeId}
                   disabled={busy}
                   onChange={(e) => set('storeId', e.target.value)}
@@ -179,7 +179,9 @@ export function BrandDialog({
                     id={id}
                     name="budget"
                     inputMode="decimal"
-                    placeholder="25000"
+                    // "e.g." on purpose: a bare number in an empty box reads as
+                    // a value somebody typed.
+                    placeholder="e.g. 25000"
                     value={values.budget ?? ''}
                     disabled={busy}
                     onChange={(e) => set('budget', e.target.value)}
