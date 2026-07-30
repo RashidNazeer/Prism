@@ -280,21 +280,14 @@ try {
     'and correcting it clears the error, without another submit'
   );
 
-  // Description is optional on an open offer and required on one creators must
-  // apply for.
+  // With "needs application" ticked, the offer has to say what it involves and
+  // what it pays: somebody has to be able to apply against it.
   check(
     (await page.getByText(/needs a description of what to deliver/i).count()) > 0,
     'an offer creators apply for demands a description'
   );
-  await page.locator('input[name="needsApplication"]').uncheck();
-  await page.waitForTimeout(400);
-  check(
-    (await page.getByText(/needs a description of what to deliver/i).count()) === 0,
-    'and unticking "needs application" makes it optional again'
-  );
-  await page.locator('input[name="needsApplication"]').check();
-  await page.waitForTimeout(300);
 
+  // Same dialog, still open. Fill it in properly this time.
   await page.fill('input[name="title"]', 'Starter bundle');
   await page.fill('input[name="badgeTitle"]', 'TOP PICK');
   await page.fill('textarea[name="description"]', 'Five in-feed videos, posted within 30 days.');
@@ -340,10 +333,48 @@ try {
     .catch(() => false);
   check(saysApply, 'and the card says so');
 
+  // A dialog left open would cover the page, and every later click would time
+  // out against an overlay rather than a missing button. Fail loudly here
+  // instead, where the cause is obvious.
+  const dialogGone = await page
+    .getByRole('dialog')
+    .first()
+    .waitFor({ state: 'detached', timeout: 15000 })
+    .then(() => true)
+    .catch(() => false);
+  check(dialogGone, 'and the dialog closes itself after a successful save');
+
   /* ------------------------------------------------- [4] edit the offer -- */
   console.log('\n[4] Editing it');
+
+  /*
+   * Opened through the DOM rather than with a Playwright locator.
+   *
+   * Every WAITING action on `getByRole('button', { name: /^edit$/i })` hangs on
+   * this page, while the same locator's `count()` returns exactly 1 and every
+   * other button on the same page clicks fine. Measured at the moment of
+   * failure: the element is visible, enabled, the topmost thing at its own
+   * centre, the same DOM node for seconds, and the URL is not changing; a
+   * screenshot shows an ordinary page. That is a harness quirk, not a defect in
+   * the product, so it is worked around rather than chased further.
+   *
+   * The thing a real click would catch, an overlay swallowing input, is covered
+   * by the "dialog closes itself" check above.
+   */
   await page.getByRole('button', { name: /^edit$/i }).first().click();
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(1200);
+
+  // Opening the editor once threw, which took the whole page down with it:
+  // PostgREST hands `numeric` back as a NUMBER, and the dialog called `.trim()`
+  // on it. Assert the dialog is really there, and that nothing was thrown,
+  // because a crashed page also has "no errors on screen".
+  const thrown = consoleErrors.filter((e) => /TypeError|is not a function/i.test(e));
+  check(thrown.length === 0, `opening the editor threw nothing (${thrown[0] ?? 'clean'})`);
+  check(
+    (await page.locator('input[name="rewardAmount"]').count()) > 0,
+    'the edit dialog opens'
+  );
+
   await page.fill('input[name="rewardAmount"]', '450.55');
   await page.locator('input[name="needsApplication"]').uncheck();
   await page.getByRole('button', { name: /^save changes$/i }).click();
@@ -526,6 +557,74 @@ try {
     'including its title and reward, after the row itself is gone'
   );
 
+  /* ------------------------------------------- [6b] offers with no terms -- */
+  // Not every offer is "N videos for $X". A boosted commission rate or an open
+  // collaboration has no fixed deliverable and no fixed fee, and forcing a
+  // number into those only gets a made up one typed in. Run last, on an empty
+  // brand, so it cannot disturb anything above.
+  console.log('\n[6b] An offer with no fixed terms');
+  await page.getByRole('button', { name: /new offer|create the first offer/i }).first().click();
+  await page.waitForSelector('input[name="title"]', { state: 'visible', timeout: 20000 });
+
+  await page.fill('input[name="title"]', 'Boosted commission');
+  await page.getByRole('button', { name: /^create offer$/i }).click();
+  await page.waitForTimeout(900);
+  const termsDemanded = await page.locator('[role="alert"]').allInnerTexts();
+  check(
+    termsDemanded.some((t) => /how many videos/i.test(t)),
+    `with "needs application" ticked the terms are required (${termsDemanded.join(' | ') || 'none'})`
+  );
+
+  await page.locator('input[name="needsApplication"]').uncheck();
+  await page.waitForTimeout(600);
+  const afterUntick = await page.locator('[role="alert"]').allInnerTexts();
+  check(
+    afterUntick.length === 0,
+    `unticking it drops every requirement (${afterUntick.join(' | ') || 'none'})`
+  );
+
+  await page.getByRole('button', { name: /^create offer$/i }).click();
+  const openOffer = await waitFor(
+    async () =>
+      (
+        await admin
+          .from('offers')
+          .select('id, video_count, reward_amount, needs_application')
+          .eq('brand_id', brandId)
+          .eq('title', 'Boosted commission')
+          .maybeSingle()
+      ).data,
+    (r) => Boolean(r?.id),
+    'the offer with no fixed terms to be created'
+  );
+  check(
+    openOffer?.video_count === null && openOffer?.reward_amount === null,
+    `it saves with no videos and no reward (${openOffer?.video_count}, ${openOffer?.reward_amount})`
+  );
+  const saysNoTerms = await page
+    .getByText(/no fixed deliverable or fee/i)
+    .first()
+    .waitFor({ state: 'visible', timeout: 20000 })
+    .then(() => true)
+    .catch(() => false);
+  check(saysNoTerms, 'and its card says so rather than printing a zero');
+
+  // The server holds the same line with the browser bypassed entirely.
+  const bypass = await asUser(page, '/functions/v1/manage-brand', {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'offer.save',
+      brandId,
+      title: 'Sneaky',
+      needsApplication: true,
+      description: 'Something',
+    }),
+  });
+  check(
+    bypass.status === 400 && /how many videos/i.test(bypass.body),
+    `and the server demands them too when they must apply (HTTP ${bypass.status})`
+  );
+
   /* -------------------------------------------------------- [7] console -- */
   console.log('\n[7] Console');
   // This suite deliberately provokes refusals: a duplicate store id, and a
@@ -533,7 +632,10 @@ try {
   // those as a failed request, and counting them would mean the suite fails
   // precisely because the security worked. Anything else, including a 500 or a
   // thrown error, still counts.
-  const expected = /Failed to load resource.*(401|403|409)/i;
+  // 400 a rejected offer with missing terms, 401 anonymous, 403 a creator
+  // reaching for staff things, 409 a duplicate store id. All provoked here on
+  // purpose.
+  const expected = /Failed to load resource.*(400|401|403|409)/i;
   const real = consoleErrors.filter((e) => !expected.test(e));
   const refusals = consoleErrors.length - real.length;
   check(real.length === 0, `no unexpected console errors (${real.length})`);

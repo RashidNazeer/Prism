@@ -30,8 +30,9 @@ export type OfferSavePayload = {
   badgeTitle: string | null;
   title: string;
   description: string | null;
-  videoCount: number;
-  rewardAmount: number;
+  /** Null is legitimate: an offer can have no fixed deliverable or fee. */
+  videoCount: number | null;
+  rewardAmount: number | null;
   currency: string;
   status: 'active' | 'inactive';
   needsApplication: boolean;

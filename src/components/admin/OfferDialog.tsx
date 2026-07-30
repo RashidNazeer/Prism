@@ -36,8 +36,12 @@ export function OfferDialog({
     badgeTitle: offer?.badge_title ?? '',
     title: offer?.title ?? '',
     description: offer?.description ?? '',
-    videoCount: offer ? String(offer.video_count) : '',
-    rewardAmount: offer?.reward_amount ?? '',
+    // Coerced to strings, because these back text inputs. PostgREST hands
+    // `numeric` back as a number, not the string the column suggests, and a
+    // number here crashed the dialog the moment anything called `.trim()` on
+    // it. Null stays empty rather than becoming the text "null".
+    videoCount: offer?.video_count != null ? String(offer.video_count) : '',
+    rewardAmount: offer?.reward_amount != null ? String(offer.reward_amount) : '',
     currency: (offer?.currency ?? 'USD') as OfferInput['currency'],
     status: offer?.status ?? 'active',
     needsApplication: offer?.needs_application ?? true,
@@ -79,6 +83,8 @@ export function OfferDialog({
         description: parsed.description || null,
         videoCount: parsed.videoCount,
         rewardAmount: parsed.rewardAmount,
+        // Both may legitimately be null: an offer with no fixed deliverable
+        // and no fixed fee, such as a boosted commission rate.
         currency: parsed.currency,
         status: parsed.status,
         needsApplication: parsed.needsApplication,
@@ -88,10 +94,20 @@ export function OfferDialog({
   };
 
   // A plain preview of the deal, from whatever is in the boxes right now.
-  const videos = Number(values.videoCount);
-  const reward = Number(values.rewardAmount);
-  const previewable = Number.isFinite(videos) && videos > 0 && Number.isFinite(reward);
-  const perVideo = previewable && videos > 0 ? reward / videos : 0;
+  // Only shown when both halves are there; "0 videos for $NaN" helps nobody.
+  // String() first: these are always strings in state now, but a stray number
+  // arriving from anywhere must never be able to crash the dialog again.
+  const rawVideos = String(values.videoCount ?? '').trim();
+  const rawReward = String(values.rewardAmount ?? '').trim();
+  const videos = Number(rawVideos);
+  const reward = Number(rawReward);
+  const previewable =
+    rawVideos !== '' &&
+    rawReward !== '' &&
+    Number.isFinite(videos) &&
+    videos > 0 &&
+    Number.isFinite(reward);
+  const perVideo = previewable ? reward / videos : 0;
 
   return (
     <div
@@ -199,7 +215,13 @@ export function OfferDialog({
 
             {/* The deal itself. */}
             <div className="grid gap-5 sm:grid-cols-[1fr_1fr_7.5rem]">
-              <Field label="Videos" error={errors.videoCount}>
+              {/* Required only when they have to apply. An offer with no fixed
+                  deliverable, like a boosted commission rate, leaves both
+                  empty rather than carrying a made up number. */}
+              <Field
+                label={values.needsApplication ? 'Videos' : 'Videos (optional)'}
+                error={errors.videoCount}
+              >
                 {({ id, describedBy, invalid }) => (
                   <Input
                     id={id}
@@ -219,7 +241,10 @@ export function OfferDialog({
                 )}
               </Field>
 
-              <Field label="Reward" error={errors.rewardAmount}>
+              <Field
+                label={values.needsApplication ? 'Reward' : 'Reward (optional)'}
+                error={errors.rewardAmount}
+              >
                 {({ id, describedBy, invalid }) => (
                   <Input
                     id={id}

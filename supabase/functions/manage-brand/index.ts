@@ -57,8 +57,11 @@ const OfferBody = z.object({
   badgeTitle: z.string().trim().max(32).nullish(),
   title: z.string().trim().min(1, 'An offer needs a title').max(120),
   description: z.string().trim().max(2000).nullish(),
-  videoCount: z.number().int().min(1, 'At least one video').max(1000),
-  rewardAmount: money,
+  // Both nullable: an offer can have no fixed deliverable and no fixed fee, for
+  // example a boosted commission rate. Which offers MUST carry terms is decided
+  // just below, because it depends on needsApplication.
+  videoCount: z.number().int().min(1, 'At least one video').max(1000).nullish(),
+  rewardAmount: money.nullish(),
   currency: currency.default('USD'),
   status: z.enum(['active', 'inactive']).default('active'),
   needsApplication: z.boolean().default(true),
@@ -159,18 +162,25 @@ Deno.serve(async (req) => {
 
   // Checked after the union rather than inside it: a `.refine()` on a member
   // stops it being a plain object, and `discriminatedUnion` needs plain
-  // objects. A description is optional on an open offer and required on one a
-  // creator has to apply for, because nobody can make a case for being given
-  // something that never says what it involves.
-  if (
-    input.action === 'offer.save' &&
-    input.needsApplication &&
-    !input.description?.trim()
-  ) {
-    return reply(
-      { error: 'An offer creators apply for needs a description of what to deliver' },
-      400
-    );
+  // objects.
+  //
+  // The terms are required only when the creator has to apply. Not every offer
+  // is "N videos for $X": a boosted commission rate has no fixed deliverable
+  // and no fixed fee, and demanding one only gets a made up number. But an
+  // offer somebody applies FOR has to say what they are applying for.
+  if (input.action === 'offer.save' && input.needsApplication) {
+    if (!input.description?.trim()) {
+      return reply(
+        { error: 'An offer creators apply for needs a description of what to deliver' },
+        400
+      );
+    }
+    if (input.videoCount === null || input.videoCount === undefined) {
+      return reply({ error: 'How many videos would they deliver?' }, 400);
+    }
+    if (input.rewardAmount === null || input.rewardAmount === undefined) {
+      return reply({ error: 'What does this offer pay?' }, 400);
+    }
   }
 
   // ------------------------------------------------------------- do it ----
@@ -192,8 +202,8 @@ Deno.serve(async (req) => {
       p_actor_id: actor.id,
       p_brand_id: input.brandId,
       p_title: input.title,
-      p_video_count: input.videoCount,
-      p_reward_amount: input.rewardAmount,
+      p_video_count: input.videoCount ?? null,
+      p_reward_amount: input.rewardAmount ?? null,
       p_offer_id: input.offerId ?? null,
       p_badge_title: input.badgeTitle ?? null,
       p_description: input.description ?? null,

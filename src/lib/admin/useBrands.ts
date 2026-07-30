@@ -33,8 +33,17 @@ export interface Offer {
   badge_title: string | null;
   title: string;
   description: string | null;
-  video_count: number;
-  reward_amount: string;
+  /** Null when the offer has no fixed deliverable, e.g. a commission boost. */
+  video_count: number | null;
+  /**
+   * Null when there is no fixed fee.
+   *
+   * Typed as string OR number on purpose: PostgREST hands `numeric` back as a
+   * JSON number, while the same value arriving from the Edge Function can be a
+   * string. Pretending it is only one of those is how a `.trim()` ends up
+   * crashing a dialog. Always run it through `money()` or `Number()`.
+   */
+  reward_amount: string | number | null;
   currency: string;
   status: OfferStatus;
   needs_application: boolean;

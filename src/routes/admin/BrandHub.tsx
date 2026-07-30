@@ -352,7 +352,16 @@ function Offers({
 function OfferCard({ offer, onEdit }: { offer: Offer; onEdit: () => void }) {
   const [confirming, setConfirming] = useState(false);
   const manage = useManageBrand();
-  const perVideo = Number(offer.reward_amount) / offer.video_count;
+
+  // An offer need not have either. A boosted commission rate has no fixed
+  // deliverable and no fixed fee, so the terms row is left out rather than
+  // printing "0 videos" and "$NaN".
+  const hasVideos = offer.video_count !== null;
+  const hasReward = offer.reward_amount !== null;
+  const perVideo =
+    hasVideos && hasReward && offer.video_count! > 0
+      ? Number(offer.reward_amount) / offer.video_count!
+      : null;
 
   return (
     <div
@@ -391,27 +400,39 @@ function OfferCard({ offer, onEdit }: { offer: Offer; onEdit: () => void }) {
         </p>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-2 border-t border-line pt-4">
-        <span>
-          <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
-            Videos
-          </span>
-          <span className="wx-numeric mt-1 block text-lg font-bold">
-            {offer.video_count}
-          </span>
-        </span>
-        <span>
-          <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
-            Reward
-          </span>
-          <span className="wx-numeric mt-1 block text-lg font-bold text-accent">
-            {money(offer.reward_amount, offer.currency)}
-          </span>
-        </span>
-        <span className="text-[12px] text-faint">
-          {money(perVideo, offer.currency)} per video
-        </span>
-      </div>
+      {hasVideos || hasReward ? (
+        <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-2 border-t border-line pt-4">
+          {hasVideos ? (
+            <span>
+              <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+                Videos
+              </span>
+              <span className="wx-numeric mt-1 block text-lg font-bold">
+                {offer.video_count}
+              </span>
+            </span>
+          ) : null}
+          {hasReward ? (
+            <span>
+              <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+                Reward
+              </span>
+              <span className="wx-numeric mt-1 block text-lg font-bold text-accent">
+                {money(offer.reward_amount, offer.currency)}
+              </span>
+            </span>
+          ) : null}
+          {perVideo !== null ? (
+            <span className="text-[12px] text-faint">
+              {money(perVideo, offer.currency)} per video
+            </span>
+          ) : null}
+        </div>
+      ) : (
+        <p className="mt-4 border-t border-line pt-4 text-[12px] text-faint">
+          No fixed deliverable or fee on this one.
+        </p>
+      )}
 
       {confirming ? (
         <div className="mt-4 rounded-xl border border-danger/40 bg-danger-soft p-4">
