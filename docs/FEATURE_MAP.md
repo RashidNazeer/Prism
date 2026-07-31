@@ -394,11 +394,16 @@ offers.
 `scripts/check-offer-requests.mjs`
 **Tables:** `offer_applications`
 
-A creator can take an offer as written, or counter it with their own video
-count and their own price. Both are the same row, which is why there is one
-table and not two. An offer with no fixed terms can only be countered, because
-there is nothing to accept. An offer that needs no application is not in here
-at all: it is already theirs.
+A creator asks for the offer as it is written. An offer that needs no
+application is not in here at all: it is already theirs.
+
+**Countering an offer with your own video count and your own price shipped on
+2026-07-31 and was withdrawn the same day, at Rashid's call.** The two
+`proposed_*` columns and the admin queue's rendering of them were KEPT, because
+requests made during that window carry real numbers and the queue must not
+later claim they were taken as written. Nothing can write them again:
+`apply_for_offer` no longer takes them. If countering returns, it returns as
+parameters on that function, a field in the dialog, and a line in the schema.
 
 **Change rules**
 
@@ -412,12 +417,15 @@ at all: it is already theirs.
 - `withdraw_offer_application` matches on `creator_id` as well as the row id,
   so a creator cannot aim it at somebody else's request. `check-offer-requests`
   proves that with a second, rival creator.
-- **`proposed_video_count` and `proposed_amount` are null when they took the
-  offer as written.** Copying the offer's numbers in would look identical today
-  and become a lie the moment an admin edits the offer. Null means "whatever
-  the offer says".
-- Both proposed columns move together. Half a counter offer is not one, and the
-  Edge Function refuses it before the database sees it.
+- **`proposed_video_count` and `proposed_amount` are null on everything written
+  since 2026-07-31.** Null means "whatever the offer says". Even while
+  countering existed they were never filled with the offer's own numbers, since
+  those look identical on the day and stop being the same fact the moment an
+  admin edits the offer.
+- A create request arriving WITH those numbers is refused out loud, not
+  stripped. It can only be a browser tab left open across the change, and
+  silently agreeing somebody to the brand's price when they typed their own is
+  the worst available outcome.
 - The unique index is PARTIAL, covering `pending` and `approved` only. A
   rejected creator can ask again with a different number, which is the entire
   point of letting them name a price. A plain unique constraint would have

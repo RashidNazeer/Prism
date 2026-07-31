@@ -567,10 +567,16 @@ function OfferAction({
   );
 }
 
-/** What they actually asked for, when it was not simply the offer as written. */
+/**
+ * Only ever shown on a request made while creators could counter an offer.
+ *
+ * Everything since is the offer exactly as written, and the card already prints
+ * those numbers a few lines above. Repeating them under "With the team" would
+ * be a second copy of a fact nobody is unsure about.
+ */
 function Terms({ application }: { application: MyOfferApplication }) {
   if (application.proposed_video_count === null || application.proposed_amount === null) {
-    return <span className="block text-[13px] text-muted">You took it as offered.</span>;
+    return null;
   }
   return (
     <span className="block text-[13px] text-muted">

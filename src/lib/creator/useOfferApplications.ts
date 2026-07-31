@@ -19,7 +19,11 @@ export interface MyOfferApplication {
   offer_id: string;
   brand_id: string;
   status: OfferApplicationStatus;
-  /** Null on both means they took the offer as written. */
+  /**
+   * Historical. Only requests made on 2026-07-31, while creators could counter
+   * an offer, carry numbers here. Everything since is null, because an offer is
+   * taken as written.
+   */
   proposed_video_count: number | null;
   proposed_amount: string | number | null;
   currency: string;
@@ -93,9 +97,6 @@ export function useMyOfferApplications(brandId: string | undefined) {
 export type ApplyPayload = {
   action: 'application.create';
   offerId: string;
-  /** Null on both means "as offered". Both must be present to counter. */
-  videoCount: number | null;
-  amount: number | null;
   note: string | null;
 };
 

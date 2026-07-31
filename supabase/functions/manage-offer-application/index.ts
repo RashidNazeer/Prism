@@ -3,6 +3,9 @@
  * ---------------------------------------------------------------------------
  * A creator asking for an offer, and staff deciding.
  *
+ * A creator takes an offer as it is written. They cannot name their own terms:
+ * that shipped on 2026-07-31 and was withdrawn the same day.
+ *
  * The first door in this product that BOTH sides use, so the role check is per
  * action rather than one gate at the top:
  *
@@ -24,22 +27,22 @@ import { createClient } from 'npm:@supabase/supabase-js@2.110.9';
 import { z } from 'npm:zod@4.4.3';
 import { corsHeaders, json } from '../_shared/cors.ts';
 
-const money = z
-  .number()
-  .finite()
-  .nonnegative()
-  .max(99_999_999)
-  // Stored as numeric(12,2). Round here rather than letting Postgres silently
-  // truncate a third decimal place somebody pasted in.
-  .transform((n) => Math.round(n * 100) / 100);
-
 const CreateBody = z.object({
   action: z.literal('application.create'),
   offerId: z.uuid('Which offer?'),
-  // Null on both means "as offered". Present on both means they are countering.
-  videoCount: z.number().int().min(1, 'At least one video').max(1000).nullish(),
-  amount: money.nullish(),
   note: z.string().trim().max(1000).nullish(),
+  /*
+   * Countering an offer was shipped and then withdrawn on 2026-07-31. A
+   * creator takes the deal as written.
+   *
+   * These two are still accepted by the schema ONLY so a request carrying them
+   * can be refused with a sentence a person understands. Stripping them
+   * silently would be worse: a stale browser tab would send "24 videos for
+   * $1,800", get back a cheerful success, and have quietly agreed to the
+   * brand's number instead of their own.
+   */
+  videoCount: z.number().nullish(),
+  amount: z.number().nullish(),
 });
 
 const WithdrawBody = z.object({
@@ -144,14 +147,19 @@ Deno.serve(async (req) => {
     return reply({ error: 'Not allowed' }, 403);
   }
 
-  // Countering means naming BOTH numbers. Half a counter offer is not one, and
-  // "5 videos for nothing" is not what anybody meant to send.
+  // An offer is taken as it is written. Anything arriving with its own numbers
+  // is an old browser tab, and it is told so rather than being quietly agreed
+  // to something it did not send.
   if (input.action === 'application.create') {
-    const hasVideos = input.videoCount !== null && input.videoCount !== undefined;
-    const hasAmount = input.amount !== null && input.amount !== undefined;
-    if (hasVideos !== hasAmount) {
+    const sentTerms =
+      (input.videoCount !== null && input.videoCount !== undefined) ||
+      (input.amount !== null && input.amount !== undefined);
+    if (sentTerms) {
       return reply(
-        { error: 'To change the terms, give both the number of videos and your price' },
+        {
+          error:
+            'An offer is taken as it stands. Refresh the page and apply again.',
+        },
         400
       );
     }
@@ -164,8 +172,6 @@ Deno.serve(async (req) => {
     rpc = await admin.rpc('apply_for_offer', {
       p_actor_id: actor.id,
       p_offer_id: input.offerId,
-      p_video_count: input.videoCount ?? null,
-      p_amount: input.amount ?? null,
       p_note: input.note ?? null,
     });
   } else if (input.action === 'application.withdraw') {

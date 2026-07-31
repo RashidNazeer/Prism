@@ -2,10 +2,13 @@
 /**
  * End to end test of creators asking for offers, and staff deciding.
  *
+ * A creator takes an offer as it is written. Naming their own price shipped on
+ * 2026-07-31 and was withdrawn the same day, and section [4f] holds that line.
+ *
  * This is the first thing in the product a CREATOR can write, so most of this
  * suite is spent trying to make that write do something it should not: aim it
  * at somebody else's row, decide their own request, take an offer that was
- * never open, or ask twice.
+ * never open, ask twice, or set their own terms.
  *
  * It drives the real browser on both sides, checks the database between steps,
  * and cleans up after itself. Run against DEV only.
@@ -282,9 +285,15 @@ try {
     .click();
   await page.waitForSelector('[role="dialog"]', { state: 'visible', timeout: 20000 });
 
+  // An offer is taken as it stands. There is nothing to choose and nothing to
+  // type, so the dialog must not present either.
   check(
-    (await page.getByRole('radio', { name: /take it as offered/i }).count()) > 0,
-    'the dialog offers both taking it and countering it'
+    (await page.locator('input[name="videoCount"], input[name="amount"]').count()) === 0,
+    'the dialog has no way to change the terms'
+  );
+  check(
+    (await page.getByText(/5 videos for \$300/i).count()) > 0,
+    'and restates exactly what they are asking for'
   );
   await page.getByRole('button', { name: /^send request$/i }).click();
 
@@ -304,7 +313,7 @@ try {
   check(asOffered?.status === 'pending', 'it lands as pending');
   check(
     asOffered?.proposed_video_count === null && asOffered?.proposed_amount === null,
-    'taking it as offered stores no counter terms, rather than copying theirs'
+    'no terms of their own are stored, because there are none to give'
   );
   check(
     asOffered?.creator_handle === HANDLE,
@@ -318,34 +327,24 @@ try {
     .catch(() => false);
   check(withTeam, 'and the card says it is with the team');
 
-  /* ----------------------------------------------------- [3] naming a price */
-  console.log('\n[3] Countering with their own terms');
+  /* ------------------------------------------------ [3] an offer with no terms */
+  console.log('\n[3] An offer whose terms have not been written down');
   await offerCard('Name your price')
     .getByRole('button', { name: /apply for this/i })
     .first()
     .click();
   await page.waitForSelector('[role="dialog"]', { state: 'visible', timeout: 20000 });
 
-  // An offer with no set terms has nothing to accept, so there is no choice to
-  // make and the numbers are compulsory.
+  // A creator is not punished for an admin leaving a field empty. They can
+  // still ask; the team confirms what it involves.
   check(
-    (await page.getByRole('radio', { name: /take it as offered/i }).count()) === 0,
-    'an offer with no set terms does not offer to be taken as written'
+    (await page.getByText(/confirm what this one involves/i).count()) > 0,
+    'they can still ask, and are told the team will confirm the detail'
   );
-  await page.getByRole('button', { name: /^send request$/i }).click();
-  await page.waitForTimeout(800);
-  const demanded = await page.locator('[role="alert"]').allInnerTexts();
-  check(
-    demanded.some((t) => /how many videos/i.test(t)),
-    `it demands the videos and the price (${demanded.join(' | ') || 'none'})`
-  );
-
-  await page.fill('input[name="videoCount"]', '8');
-  await page.fill('input[name="amount"]', '640');
   await page.fill('textarea[name="note"]', 'I already use this every day.');
   await page.getByRole('button', { name: /^send request$/i }).click();
 
-  const counter = await waitFor(
+  const openRequest = await waitFor(
     async () =>
       (
         await admin
@@ -356,14 +355,13 @@ try {
           .maybeSingle()
       ).data,
     (r) => Boolean(r?.id),
-    'the counter offer to be stored'
+    'the request to be stored'
   );
-  check(counter?.proposed_video_count === 8, `videos stored (${counter?.proposed_video_count})`);
   check(
-    Number(counter?.proposed_amount) === 640,
-    `their price stored exactly (${counter?.proposed_amount})`
+    openRequest?.proposed_video_count === null && openRequest?.proposed_amount === null,
+    'it carries no terms of its own either'
   );
-  check(counter?.note?.startsWith('I already use'), 'and the note they wrote');
+  check(openRequest?.note?.startsWith('I already use'), 'and the note they wrote');
 
   /* --------------------------------------------------------- [4] the attacks */
   console.log('\n[4] Attacks, run as a real signed-in creator');
@@ -436,19 +434,33 @@ try {
     `applying for an open offer is refused, in plain English (HTTP ${pointless.status})`
   );
 
-  // f. Half a counter offer.
-  const halfCounter = await asUser(page, '/functions/v1/manage-offer-application', {
+  /*
+   * f. Naming their own terms anyway.
+   *
+   * Countering shipped and was withdrawn the same day, so this is exactly what
+   * a browser tab left open across the change would send. It has to be refused
+   * out loud rather than quietly stripped, or somebody who typed "12 videos for
+   * $900" gets a cheerful success and finds they agreed to the brand's number.
+   */
+  const ownPrice = await asUser(page, '/functions/v1/manage-offer-application', {
     method: 'POST',
     body: JSON.stringify({
       action: 'application.create',
-      offerId: takeIt.id,
-      videoCount: 3,
+      offerId: fixed.id,
+      videoCount: 12,
+      amount: 900,
     }),
   });
   check(
-    halfCounter.status === 400 && /both/i.test(halfCounter.body),
-    `naming videos without a price is refused (HTTP ${halfCounter.status})`
+    ownPrice.status === 400 && /as it stands/i.test(ownPrice.body),
+    `naming their own price is refused, in plain English (HTTP ${ownPrice.status})`
   );
+  const { count: noSneak } = await admin
+    .from('offer_applications')
+    .select('id', { count: 'exact', head: true })
+    .eq('offer_id', fixed.id)
+    .not('proposed_amount', 'is', null);
+  check(noSneak === 0, `and nothing was written with a price on it (${noSneak})`);
 
   // g. Read somebody else's request.
   const rivalCtx = await browser.newContext();
@@ -504,8 +516,8 @@ try {
     'the request is in the queue, under the creator handle'
   );
   check(
-    (await adminPage.getByText(/8 videos for \$640/i).count()) > 0,
-    'and the counter offer is spelled out as numbers, not buried in a note'
+    (await adminPage.getByText(/5 videos for \$300/i).count()) > 0,
+    'with the deal spelled out as numbers, so the decision needs no second screen'
   );
 
   // Search narrows to one creator.
@@ -644,8 +656,7 @@ try {
   const reapply = await admin.rpc('apply_for_offer', {
     p_actor_id: creatorId,
     p_offer_id: openEnded.id,
-    p_video_count: 4,
-    p_amount: 260,
+    p_note: 'Trying again.',
   });
   check(!reapply.error, `a rejected creator can ask again (${reapply.error?.message ?? 'ok'})`);
 

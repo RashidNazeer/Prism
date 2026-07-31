@@ -208,9 +208,10 @@ The brand's own story, its products, and the creator side.
 
 Creators ask for offers. Staff decide.
 
-- **A creator can take an offer as written, or counter it** with their own
-  video count and their own price. Same row either way. An offer with no fixed
-  terms can only be countered, because there is nothing to accept.
+- **A creator asks for an offer exactly as it is written.** Countering it with
+  their own price shipped and was withdrawn the same day on Rashid's call. See
+  DECISIONS; nothing can write the two proposal columns any more, and they were
+  kept only so requests made during that window still read truthfully.
 - An offer that needs no application shows a tick and "You are already on this
   one" instead of a button. There is nothing to ask for, so there is nothing to
   click.

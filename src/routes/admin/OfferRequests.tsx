@@ -354,7 +354,10 @@ function RequestRow({
         </div>
 
         {/* The numbers being agreed to. The largest thing on the row, because
-            it is the only thing the decision actually turns on. */}
+            it is the only thing the decision actually turns on.
+            `countered` is only ever true for requests made on 2026-07-31, the
+            day creators could name their own price. Kept so those rows still
+            say what was really asked for rather than claiming otherwise. */}
         <div className="shrink-0">
           <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
             {countered ? 'They want' : 'As offered'}

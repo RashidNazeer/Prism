@@ -433,6 +433,19 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   say so inside the product instead of leaving to send a DM. It also collapses
   what would otherwise be two features: the "custom offer" Rashid described is
   just a counter against an offer with no fixed terms.
+- 2026-07-31, later the same day: **REVERSED by Rashid. A creator takes an offer
+  as it is written and cannot name their own price.** Commercially his call, not
+  a technical one. `apply_for_offer` no longer accepts the two numbers, so
+  nothing can write them; the columns and the admin rendering were kept, because
+  requests made during the window carry real figures and the queue must not
+  later claim they were taken as written. A create request that still carries
+  its own numbers is refused with a sentence rather than quietly stripped: it
+  can only be a stale browser tab, and the alternative is agreeing somebody to a
+  price they did not type.
+- 2026-07-31: An offer that needs an application but has no written terms can
+  still be applied for. Requiring terms on such an offer is a rule enforced on
+  the admin's side, and refusing a creator because an admin left a field empty
+  punishes the wrong person.
 - 2026-07-31: `proposed_video_count` and `proposed_amount` stay NULL when a
   creator takes an offer as written, rather than being filled with the offer's
   own numbers. The two look identical on the day and diverge the moment an admin

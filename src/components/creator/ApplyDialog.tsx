@@ -1,10 +1,9 @@
 import { useRef, useState } from 'react';
 import { m } from 'motion/react';
-import { Check, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Field, Input, Textarea } from '@/components/ui/Field';
+import { Field, Textarea } from '@/components/ui/Field';
 import { FormError } from '@/components/auth/AuthShell';
-import { cn } from '@/lib/utils';
 import { useFocusTrap } from '@/lib/use-focus-trap';
 import { collectFieldErrors } from '@/lib/schemas/brand';
 import {
@@ -18,14 +17,13 @@ import type { CreatorOffer } from '@/lib/creator/useCreatorBrands';
 /**
  * Asking for an offer.
  *
- * A creator can take the brand's terms as written, or say what they will
- * actually do and what they want for it. The second is the whole point: an
- * offer is an opening position, not a contract, and a creator with an audience
- * worth more than the sticker price should be able to say so without leaving
- * the product to send a DM.
+ * A creator takes the deal on the table. There is nothing to negotiate here,
+ * so this restates exactly what they are asking for and gives them one place to
+ * say something alongside it.
  *
- * An offer with no fixed terms skips the choice entirely. There is nothing to
- * accept, so the only way in is to name your own numbers.
+ * The confirmation step earns its keep even with nothing to fill in: this is a
+ * commitment about money, and a single unguarded click is how somebody ends up
+ * on a deal they were only reading about.
  */
 export function ApplyDialog({
   offer,
@@ -37,30 +35,19 @@ export function ApplyDialog({
   onClose: () => void;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
-  useFocusTrap(panelRef, { initialSelector: 'button, input' });
+  useFocusTrap(panelRef, { initialSelector: 'textarea' });
 
-  const hasFixedTerms = offer.video_count !== null && offer.reward_amount !== null;
-
-  const [values, setValues] = useState<OfferApplicationInput>({
-    mode: hasFixedTerms ? 'asOffered' : 'own',
-    // Prefilled from the offer so countering starts from their numbers rather
-    // than from an empty box. Strings, because these back text inputs and
-    // PostgREST hands `numeric` back as a JSON number.
-    videoCount: offer.video_count != null ? String(offer.video_count) : '',
-    amount: offer.reward_amount != null ? String(offer.reward_amount) : '',
-    note: '',
-  });
+  const [values, setValues] = useState<OfferApplicationInput>({ note: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
 
   const apply = useApplyForOffer();
   const busy = apply.isPending;
 
-  const set = <K extends keyof OfferApplicationInput>(
-    key: K,
-    value: OfferApplicationInput[K]
-  ) => {
-    const next = { ...values, [key]: value };
+  const hasTerms = offer.video_count !== null && offer.reward_amount !== null;
+
+  const set = (note: string) => {
+    const next = { note };
     setValues(next);
     if (submitted) setErrors(collectFieldErrors(offerApplicationSchema, next));
   };
@@ -74,16 +61,7 @@ export function ApplyDialog({
 
     const parsed = offerApplicationSchema.parse(values);
     apply.mutate(
-      {
-        action: 'application.create',
-        offerId: offer.id,
-        // Null on both is what tells the server "as offered". Sending their
-        // numbers here when they picked the brand's terms would record a
-        // counter offer that nobody made.
-        videoCount: parsed.mode === 'own' ? parsed.videoCount : null,
-        amount: parsed.mode === 'own' ? parsed.amount : null,
-        note: parsed.note || null,
-      },
+      { action: 'application.create', offerId: offer.id, note: parsed.note || null },
       { onSuccess: onClose }
     );
   };
@@ -128,68 +106,31 @@ export function ApplyDialog({
         <form onSubmit={submit} noValidate className="mt-6">
           <FormError>{apply.error ? (apply.error as Error).message : ''}</FormError>
 
-          {hasFixedTerms ? (
-            <div className="grid gap-2.5">
-              <Choice
-                selected={values.mode === 'asOffered'}
-                disabled={busy}
-                onSelect={() => set('mode', 'asOffered')}
-                title="Take it as offered"
-                detail={`${offer.video_count} ${offer.video_count === 1 ? 'video' : 'videos'} for ${money(offer.reward_amount, offer.currency)}`}
-              />
-              <Choice
-                selected={values.mode === 'own'}
-                disabled={busy}
-                onSelect={() => set('mode', 'own')}
-                title="Suggest your own terms"
-                detail="Say what you will do, and what you want for it."
-              />
-            </div>
-          ) : (
-            <p className="rounded-xl border border-line bg-surface-2 px-4 py-3 text-[14px] leading-relaxed text-muted">
-              This one has no set deliverable or fee, so tell them what you would do and
-              what you would want for it.
-            </p>
-          )}
-
-          {values.mode === 'own' ? (
-            <div className="mt-5 grid gap-5 sm:grid-cols-2">
-              <Field label="Videos" error={errors.videoCount}>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    name="videoCount"
-                    inputMode="numeric"
-                    placeholder="e.g. 5"
-                    value={values.videoCount ?? ''}
-                    disabled={busy}
-                    onChange={(e) => set('videoCount', e.target.value)}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                  />
-                )}
-              </Field>
-
-              <Field
-                label={`Your price (${offer.currency})`}
-                error={errors.amount}
-              >
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    name="amount"
-                    inputMode="decimal"
-                    placeholder="e.g. 400"
-                    value={values.amount ?? ''}
-                    disabled={busy}
-                    onChange={(e) => set('amount', e.target.value)}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                  />
-                )}
-              </Field>
-            </div>
-          ) : null}
+          {/* Exactly what they are agreeing to, restated. */}
+          <div className="rounded-xl border border-line bg-surface-2 px-4 py-3.5">
+            {hasTerms ? (
+              <>
+                <span className="font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+                  You would be asking for
+                </span>
+                <span className="wx-numeric mt-1 block text-[15px] font-semibold">
+                  {offer.video_count} {offer.video_count === 1 ? 'video' : 'videos'} for{' '}
+                  <span className="text-accent">
+                    {money(offer.reward_amount, offer.currency)}
+                  </span>
+                </span>
+              </>
+            ) : (
+              <span className="text-[14px] leading-relaxed text-muted">
+                The team will confirm what this one involves with you directly.
+              </span>
+            )}
+            {offer.description ? (
+              <span className="mt-3 block border-t border-line pt-3 text-[13px] leading-relaxed text-muted">
+                {offer.description}
+              </span>
+            ) : null}
+          </div>
 
           <div className="mt-5">
             <Field
@@ -206,7 +147,7 @@ export function ApplyDialog({
                   placeholder="e.g. I already use this product, so I can post within a week."
                   value={values.note}
                   disabled={busy}
-                  onChange={(e) => set('note', e.target.value)}
+                  onChange={(e) => set(e.target.value)}
                   aria-describedby={describedBy}
                   invalid={invalid}
                 />
@@ -225,52 +166,5 @@ export function ApplyDialog({
         </form>
       </m.div>
     </div>
-  );
-}
-
-/** A big tappable card rather than a radio dot. This is read on a phone. */
-function Choice({
-  selected,
-  disabled,
-  onSelect,
-  title,
-  detail,
-}: {
-  selected: boolean;
-  disabled?: boolean;
-  onSelect: () => void;
-  title: string;
-  detail: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={selected}
-      disabled={disabled}
-      onClick={onSelect}
-      className={cn(
-        'flex w-full items-start gap-3 rounded-xl border px-4 py-3.5 text-left transition-colors duration-200 disabled:opacity-60',
-        selected
-          ? 'border-accent bg-accent-soft'
-          : 'border-line-interactive bg-surface-2 hover:border-accent/60'
-      )}
-    >
-      <span
-        aria-hidden
-        className={cn(
-          'mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border',
-          selected ? 'border-accent bg-accent text-on-accent' : 'border-line-strong'
-        )}
-      >
-        {selected ? <Check size={13} /> : null}
-      </span>
-      <span className="min-w-0">
-        <span className={cn('block text-[14px] font-semibold', selected && 'text-accent')}>
-          {title}
-        </span>
-        <span className="mt-0.5 block text-[13px] leading-relaxed text-muted">{detail}</span>
-      </span>
-    </button>
   );
 }
