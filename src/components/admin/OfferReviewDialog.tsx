@@ -1,0 +1,195 @@
+import { useEffect, useRef, useState } from 'react';
+import { m } from 'motion/react';
+import { Check, X } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Field, Textarea } from '@/components/ui/Field';
+import { useFocusTrap } from '@/lib/use-focus-trap';
+import { money } from '@/lib/admin/useBrands';
+import {
+  useReviewOfferApplication,
+  type OfferQueueRow,
+} from '@/lib/admin/useOfferApplications';
+
+/**
+ * Approve or reject one request.
+ *
+ * The confirmation step is deliberate: this is a decision about money, and the
+ * creator is told the moment it lands. The panel restates exactly what is being
+ * agreed to, because the row behind it may have been read a minute ago and the
+ * numbers are the whole point.
+ */
+export function OfferReviewDialog({
+  row,
+  decision,
+  onClose,
+}: {
+  row: OfferQueueRow;
+  decision: 'approved' | 'rejected';
+  onClose: () => void;
+}) {
+  const [note, setNote] = useState('');
+  const panelRef = useRef<HTMLDivElement>(null);
+  const review = useReviewOfferApplication();
+  const busy = review.isPending;
+
+  useFocusTrap(panelRef, { initialSelector: 'textarea' });
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !busy) onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [busy, onClose]);
+
+  // The page behind must not scroll while a modal is open, which is very
+  // obvious on a phone.
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, []);
+
+  const who = row.creator_handle ? `@${row.creator_handle}` : (row.creator_name ?? 'this creator');
+  const countered =
+    row.proposed_video_count !== null && row.proposed_amount !== null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${decision === 'approved' ? 'Approve' : 'Reject'} ${who}`}
+    >
+      <button
+        type="button"
+        aria-hidden
+        tabIndex={-1}
+        onClick={() => !busy && onClose()}
+        className="fixed inset-0 cursor-default bg-black/60 backdrop-blur-sm"
+      />
+
+      {/* The PANEL scrolls, not the wrapper. Block-start overflow is not part
+          of a scroll container's scrollable area, so a tall panel centred in a
+          short viewport puts its own heading permanently out of reach. */}
+      <m.div
+        ref={panelRef}
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+        className="relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-line bg-surface-1 p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <h2 className="text-lg font-bold">
+            {decision === 'approved' ? 'Approve' : 'Reject'} {who}
+          </h2>
+          <button
+            type="button"
+            onClick={() => !busy && onClose()}
+            aria-label="Close"
+            className="-mt-1 -mr-1 grid size-9 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:text-accent"
+          >
+            <X size={17} aria-hidden />
+          </button>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-line bg-surface-2 px-4 py-3.5">
+          <p className="text-[14px] font-semibold">{row.offer?.title ?? 'That offer'}</p>
+          <p className="mt-0.5 text-[13px] text-muted">{row.brand?.name}</p>
+          <p className="mt-3 border-t border-line pt-3 text-[14px]">
+            {countered ? (
+              <>
+                <span className="font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+                  They are asking for
+                </span>
+                <span className="wx-numeric mt-1 block font-semibold">
+                  {row.proposed_video_count}{' '}
+                  {row.proposed_video_count === 1 ? 'video' : 'videos'} for{' '}
+                  {money(row.proposed_amount, row.currency)}
+                </span>
+                {row.offer?.video_count !== null && row.offer?.reward_amount != null ? (
+                  <span className="mt-1 block text-[13px] text-muted">
+                    The offer says {row.offer.video_count} for{' '}
+                    {money(row.offer.reward_amount, row.offer.currency)}.
+                  </span>
+                ) : null}
+              </>
+            ) : (
+              <span className="text-muted">
+                They are taking it exactly as offered.
+              </span>
+            )}
+          </p>
+          {row.note ? (
+            <p className="mt-3 border-t border-line pt-3 text-[13px] leading-relaxed text-muted">
+              {row.note}
+            </p>
+          ) : null}
+        </div>
+
+        <p className="mt-4 text-[14px] leading-relaxed text-muted">
+          {decision === 'approved'
+            ? 'They are told straight away, on the terms above, and the offer shows as theirs.'
+            : 'Nothing is deleted. They can ask again, so a note here saves them guessing.'}
+        </p>
+
+        <div className="mt-5">
+          <Field label="Note" hint="Optional. The creator reads this.">
+            {({ id, describedBy }) => (
+              <Textarea
+                id={id}
+                name="note"
+                aria-describedby={describedBy}
+                value={note}
+                maxLength={1000}
+                disabled={busy}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={
+                  decision === 'approved'
+                    ? 'Happy with that, go ahead.'
+                    : 'Not on those terms right now, but keep an eye out.'
+                }
+              />
+            )}
+          </Field>
+        </div>
+
+        {review.error ? (
+          <p role="alert" className="mt-4 text-[13px] text-danger">
+            {(review.error as Error).message}
+          </p>
+        ) : null}
+
+        <div className="mt-6 flex flex-wrap gap-2.5">
+          <Button
+            disabled={busy}
+            onClick={() =>
+              review.mutate(
+                { applicationId: row.id, decision, note: note.trim() || null },
+                { onSuccess: onClose }
+              )
+            }
+          >
+            {busy ? (
+              'Saving...'
+            ) : (
+              <>
+                {decision === 'approved' ? (
+                  <Check size={16} aria-hidden />
+                ) : (
+                  <X size={16} aria-hidden />
+                )}
+                Yes, {decision === 'approved' ? 'approve' : 'reject'}
+              </>
+            )}
+          </Button>
+          <Button variant="ghost" disabled={busy} onClick={onClose}>
+            Cancel
+          </Button>
+        </div>
+      </m.div>
+    </div>
+  );
+}

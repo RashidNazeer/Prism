@@ -1,12 +1,9 @@
+import { useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
-import {
-  ArrowLeft,
-  Package,
-  Store,
-  Ticket,
-} from 'lucide-react';
+import { ArrowLeft, Check, Clock, Package, Store, Ticket, X } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
+import { ApplyDialog } from '@/components/creator/ApplyDialog';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
@@ -20,6 +17,11 @@ import {
   type CreatorOffer,
   type CreatorProduct,
 } from '@/lib/creator/useCreatorBrands';
+import {
+  useApplyForOffer,
+  useMyOfferApplications,
+  type MyOfferApplication,
+} from '@/lib/creator/useOfferApplications';
 import { money, percent } from '@/lib/admin/useBrands';
 
 /**
@@ -61,6 +63,7 @@ export function BrandHub() {
   const { data: brand, isLoading, isError } = useCreatorBrand(slug);
   const { data: offers, isLoading: offersLoading } = useCreatorOffers(brand?.id);
   const { data: products, isLoading: productsLoading } = useCreatorProducts(brand?.id);
+  const { data: mine } = useMyOfferApplications(brand?.id);
 
   const go = (key: string) => {
     const p = new URLSearchParams();
@@ -80,7 +83,7 @@ export function BrandHub() {
     return (
       <AppShell>
         <div className="max-w-3xl space-y-4">
-          <div className="h-32 animate-pulse rounded-2xl bg-surface-1" />
+          <div className="h-10 w-64 animate-pulse rounded bg-surface-2" />
           <div className="h-10 w-full animate-pulse rounded bg-surface-2" />
           <div className="h-40 animate-pulse rounded-2xl bg-surface-1" />
         </div>
@@ -107,23 +110,11 @@ export function BrandHub() {
 
   return (
     <AppShell>
-      <Link
-        to="/app/brands"
-        className="inline-flex items-center gap-2 text-[13px] text-muted transition-colors duration-200 hover:text-accent"
-      >
-        <ArrowLeft size={15} aria-hidden />
-        All brand hubs
-      </Link>
-
       <Header brand={brand} />
 
       {/* ------------------------------------------------------------ tabs -- */}
-      <div className="mt-5 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-        <div
-          role="tablist"
-          aria-label="Brand hub sections"
-          className="flex min-w-max gap-2"
-        >
+      <div className="mt-4 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <div role="tablist" aria-label="Brand hub sections" className="flex min-w-max gap-2">
           {SECTIONS.map((s) => {
             const active = s.key === section;
             const built = BUILT.has(s.key);
@@ -135,11 +126,7 @@ export function BrandHub() {
                 aria-selected={active}
                 disabled={!built}
                 onClick={() => go(s.key)}
-                title={
-                  built || !('soon' in s)
-                    ? undefined
-                    : `${s.label} arrives with ${s.soon}`
-                }
+                title={built || !('soon' in s) ? undefined : `${s.label} arrives with ${s.soon}`}
                 className={cn(
                   'shrink-0 rounded-full border px-4 py-2 text-[13.5px] font-medium transition-colors duration-200',
                   active
@@ -157,7 +144,12 @@ export function BrandHub() {
       </div>
 
       {section === 'offers' ? (
-        <Offers offers={offers ?? []} loading={offersLoading} brandName={brand.name} />
+        <Offers
+          offers={offers ?? []}
+          mine={mine ?? []}
+          loading={offersLoading}
+          brandName={brand.name}
+        />
       ) : (
         <Overview
           brand={brand}
@@ -173,43 +165,41 @@ export function BrandHub() {
 
 /* --------------------------------------------------------------- header -- */
 
+/**
+ * One compact row: back, mark, name, tagline.
+ *
+ * This used to be a tall card with the name set large, which said nothing the
+ * Overview tab does not say better and pushed the actual content off the first
+ * screen. All a creator needs up here is which hub they are standing in.
+ */
 function Header({ brand }: { brand: CreatorBrand }) {
   return (
-    <m.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="relative mt-4 overflow-hidden rounded-2xl border border-line bg-surface-1 p-6 sm:p-7"
-    >
-      {/* A single gold hairline along the top. The hub belongs to the brand,
-          but it is still ours, and this is the one place that says so. */}
-      <span
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent to-transparent"
-      />
+    <div className="flex items-center gap-3">
+      <Link
+        to="/app/brands"
+        aria-label="Back to all brand hubs"
+        className="grid size-8 shrink-0 place-items-center rounded-lg border border-line text-muted transition-colors duration-200 hover:border-accent hover:text-accent"
+      >
+        <ArrowLeft size={15} aria-hidden />
+      </Link>
 
-      <div className="flex flex-wrap items-center gap-4">
-        <span className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-full border border-line bg-surface-2">
-          {brand.logo_url ? (
-            <img src={brand.logo_url} alt="" className="size-full object-cover" />
-          ) : (
-            <Store size={24} aria-hidden className="text-faint" />
-          )}
-        </span>
+      <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full border border-line bg-surface-2">
+        {brand.logo_url ? (
+          <img src={brand.logo_url} alt="" className="size-full object-cover" />
+        ) : (
+          <Store size={16} aria-hidden className="text-faint" />
+        )}
+      </span>
 
-        <div className="min-w-0">
-          <span className="inline-block rounded-full bg-accent-soft px-2.5 py-1 font-mono text-[10px] tracking-[0.14em] text-accent uppercase">
-            Brand hub
-          </span>
-          <h1 className="mt-2 text-[clamp(1.5rem,4.5vw,2.25rem)] leading-tight font-extrabold break-words">
-            {brand.name}
-          </h1>
-          {brand.tagline ? (
-            <p className="mt-1 text-[15px] text-muted">{brand.tagline}</p>
-          ) : null}
-        </div>
+      <div className="min-w-0">
+        <h1 className="truncate text-[clamp(1.15rem,2.6vw,1.4rem)] font-extrabold">
+          {brand.name}
+        </h1>
+        {brand.tagline ? (
+          <p className="truncate text-[13px] text-muted">{brand.tagline}</p>
+        ) : null}
       </div>
-    </m.div>
+    </div>
   );
 }
 
@@ -336,13 +326,17 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 function Offers({
   offers,
+  mine,
   loading,
   brandName,
 }: {
   offers: CreatorOffer[];
+  mine: MyOfferApplication[];
   loading: boolean;
   brandName: string;
 }) {
+  const [applyingTo, setApplyingTo] = useState<CreatorOffer | null>(null);
+
   if (loading) {
     return (
       <ul className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -366,6 +360,15 @@ function Offers({
     );
   }
 
+  /*
+   * The newest request per offer wins.
+   *
+   * A creator can be rejected and ask again, so an offer can carry several
+   * rows. `mine` arrives newest first, so the first match is the one that
+   * describes where they stand today.
+   */
+  const latestFor = (offerId: string) => mine.find((a) => a.offer_id === offerId) ?? null;
+
   return (
     <>
       <ul className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -376,23 +379,39 @@ function Offers({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: Math.min(i, 6) * 0.05 }}
           >
-            <OfferCard offer={offer} />
+            <OfferCard
+              offer={offer}
+              application={latestFor(offer.id)}
+              onApply={() => setApplyingTo(offer)}
+            />
           </m.li>
         ))}
       </ul>
 
-      <p className="mt-5 max-w-2xl text-[13px] leading-relaxed text-faint">
-        Taking an offer from this screen is the next thing being built, along with
-        proposing your own. Until then your manager sets these up with you.
-      </p>
+      {applyingTo ? (
+        <ApplyDialog
+          offer={applyingTo}
+          brandName={brandName}
+          onClose={() => setApplyingTo(null)}
+        />
+      ) : null}
     </>
   );
 }
 
-function OfferCard({ offer }: { offer: CreatorOffer }) {
+function OfferCard({
+  offer,
+  application,
+  onApply,
+}: {
+  offer: CreatorOffer;
+  application: MyOfferApplication | null;
+  onApply: () => void;
+}) {
   // An offer need not have either. A boosted commission rate has no fixed
-  // deliverable and no fixed fee, so the terms row is left out rather than
-  // printing "0 videos" and "$NaN".
+  // deliverable and no fixed fee, so the terms row is simply left out. It used
+  // to say "no fixed deliverable or fee on this one", which spent a line
+  // telling a creator about the absence of something they never asked about.
   const hasVideos = offer.video_count !== null;
   const hasReward = offer.reward_amount !== null;
   const perVideo =
@@ -402,25 +421,13 @@ function OfferCard({ offer }: { offer: CreatorOffer }) {
 
   return (
     <div className="flex h-full flex-col rounded-2xl border border-line bg-surface-1 p-5">
-      <div className="flex flex-wrap items-center gap-2">
-        {offer.badge_title ? (
-          <span className="rounded-full bg-accent-soft px-2.5 py-0.5 font-mono text-[10px] tracking-[0.12em] text-accent uppercase">
-            {offer.badge_title}
-          </span>
-        ) : null}
-        <span
-          className={cn(
-            'rounded-full px-2.5 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase',
-            offer.needs_application
-              ? 'bg-warning-soft text-warning'
-              : 'bg-success-soft text-success'
-          )}
-        >
-          {offer.needs_application ? 'Apply to join' : 'Yours to take'}
+      {offer.badge_title ? (
+        <span className="mb-3 self-start rounded-full bg-accent-soft px-2.5 py-0.5 font-mono text-[10px] tracking-[0.12em] text-accent uppercase">
+          {offer.badge_title}
         </span>
-      </div>
+      ) : null}
 
-      <h3 className="mt-3 text-lg font-bold">{offer.title}</h3>
+      <h3 className="text-lg font-bold">{offer.title}</h3>
       {offer.description ? (
         <p className="mt-2 text-[14px] leading-relaxed text-muted">{offer.description}</p>
       ) : null}
@@ -453,20 +460,147 @@ function OfferCard({ offer }: { offer: CreatorOffer }) {
             </span>
           ) : null}
         </div>
-      ) : (
-        <p className="mt-4 border-t border-line pt-4 text-[12px] text-faint">
-          No fixed deliverable or fee on this one.
-        </p>
-      )}
+      ) : null}
 
-      {/* The button is here, and it is honest. A control that looks live and
-          does nothing is worse than one that says it is not ready. */}
       <div className="mt-auto pt-5">
-        <Button size="sm" disabled className="w-full sm:w-auto">
-          {offer.needs_application ? 'Apply' : 'Take this offer'}
-        </Button>
-        <p className="mt-2 text-[12px] text-faint">Opens next</p>
+        <OfferAction offer={offer} application={application} onApply={onApply} />
       </div>
     </div>
+  );
+}
+
+/**
+ * The bottom of every offer card, and the only thing that differs between them.
+ *
+ * There is no status chip at the top any more. It said the same thing twice,
+ * and the second time was the one that mattered.
+ */
+function OfferAction({
+  offer,
+  application,
+  onApply,
+}: {
+  offer: CreatorOffer;
+  application: MyOfferApplication | null;
+  onApply: () => void;
+}) {
+  const withdraw = useApplyForOffer();
+
+  // Already theirs. Nothing to ask for, so nothing to click.
+  if (!offer.needs_application) {
+    return (
+      <Note tone="success" icon={<Check size={15} aria-hidden />}>
+        <span className="font-semibold">You are already on this one</span>
+        <span className="block text-[13px] text-muted">
+          No application needed. Start posting whenever you are ready.
+        </span>
+      </Note>
+    );
+  }
+
+  if (application?.status === 'approved') {
+    return (
+      <Note tone="success" icon={<Check size={15} aria-hidden />}>
+        <span className="font-semibold">You are in</span>
+        <Terms application={application} />
+        {application.decision_note ? (
+          <span className="mt-1 block text-[13px] text-muted">
+            {application.decision_note}
+          </span>
+        ) : null}
+      </Note>
+    );
+  }
+
+  if (application?.status === 'pending') {
+    return (
+      <div>
+        <Note tone="pending" icon={<Clock size={15} aria-hidden />}>
+          <span className="font-semibold">With the team</span>
+          <Terms application={application} />
+        </Note>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mt-2"
+          disabled={withdraw.isPending}
+          onClick={() =>
+            withdraw.mutate({
+              action: 'application.withdraw',
+              applicationId: application.id,
+            })
+          }
+        >
+          {withdraw.isPending ? 'Withdrawing...' : 'Withdraw'}
+        </Button>
+        {withdraw.error ? (
+          <p role="alert" className="mt-2 text-[12px] text-danger">
+            {(withdraw.error as Error).message}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (application?.status === 'rejected') {
+    return (
+      <div>
+        <Note tone="danger" icon={<X size={15} aria-hidden />}>
+          <span className="font-semibold">Not this time</span>
+          {application.decision_note ? (
+            <span className="mt-0.5 block text-[13px] text-muted">
+              {application.decision_note}
+            </span>
+          ) : null}
+        </Note>
+        <Button variant="secondary" size="sm" className="mt-2" onClick={onApply}>
+          Ask again
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <Button size="sm" className="w-full sm:w-auto" onClick={onApply}>
+      Apply for this
+    </Button>
+  );
+}
+
+/** What they actually asked for, when it was not simply the offer as written. */
+function Terms({ application }: { application: MyOfferApplication }) {
+  if (application.proposed_video_count === null || application.proposed_amount === null) {
+    return <span className="block text-[13px] text-muted">You took it as offered.</span>;
+  }
+  return (
+    <span className="block text-[13px] text-muted">
+      You asked for {application.proposed_video_count}{' '}
+      {application.proposed_video_count === 1 ? 'video' : 'videos'} at{' '}
+      {money(application.proposed_amount, application.currency)}.
+    </span>
+  );
+}
+
+function Note({
+  tone,
+  icon,
+  children,
+}: {
+  tone: 'success' | 'pending' | 'danger';
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <p
+      className={cn(
+        'flex items-start gap-2.5 rounded-xl px-3.5 py-3 text-[14px]',
+        tone === 'success' && 'bg-success-soft text-success',
+        tone === 'pending' && 'bg-warning-soft text-warning',
+        tone === 'danger' && 'bg-danger-soft text-danger'
+      )}
+    >
+      <span className="mt-0.5 shrink-0">{icon}</span>
+      <span className="min-w-0">{children}</span>
+    </p>
   );
 }

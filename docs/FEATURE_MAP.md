@@ -367,12 +367,78 @@ offers.
 - The creator hub opens on **Overview**, the opposite of the admin hub. An
   admin arrives at a brand to do a job; a creator arrives to decide whether they
   want the brand at all, and decides on the brand and its products.
-- Applying for an offer, and creator-proposed custom offers, are NOT built. The
-  buttons exist, are disabled, and say "Opens next". A control that looks live
-  and does nothing is worse than one that admits it is not ready.
-- Realtime is deliberately absent here. Offers change while an admin is editing
-  them, and the mutation already refreshes both sides; a websocket per creator
-  per hub would buy nothing and widen the surface.
+- **The hub header is one compact row**, not a card. It was a tall panel with
+  the brand name set large, which repeated what the Overview tab says better and
+  pushed the actual content off the first screen. All it has to do is say which
+  hub you are standing in. `check-offer-requests.mjs` asserts the tabs start
+  above 220px, so it cannot grow back by accident.
+- The offer card carries no status chip. The action at the bottom of it says
+  what state the offer is in, and saying it twice made the second one look like
+  a different fact.
+- The card never says "no fixed deliverable or fee on this one". Spending a line
+  on the absence of something a creator never asked about is worse than silence.
+- Brands, products and offers are NOT live here (see the offer requests entry
+  for what is). The mutation on the admin side refreshes both, and a websocket
+  per creator per hub would buy nothing.
+
+## Offer requests (creators asking, staff deciding)
+
+**Files:** `src/routes/admin/OfferRequests.tsx`,
+`src/components/admin/OfferReviewDialog.tsx`,
+`src/components/creator/ApplyDialog.tsx`,
+`src/lib/admin/useOfferApplications.ts`,
+`src/lib/creator/useOfferApplications.ts`,
+`src/lib/schemas/offer-application.ts`,
+`supabase/functions/manage-offer-application/`,
+`supabase/migrations/*_offer_applications.sql`,
+`scripts/check-offer-requests.mjs`
+**Tables:** `offer_applications`
+
+A creator can take an offer as written, or counter it with their own video
+count and their own price. Both are the same row, which is why there is one
+table and not two. An offer with no fixed terms can only be countered, because
+there is nothing to accept. An offer that needs no application is not in here
+at all: it is already theirs.
+
+**Change rules**
+
+- **This is the first thing in the product a creator can write.** Every rule
+  below exists because of that.
+- No insert, update or delete policy on `offer_applications`. `manage-offer-
+  application` is the only door, and it checks the role PER ACTION: create and
+  withdraw need an active creator, review needs active staff. It is the first
+  Edge Function both sides call, so a single gate at the top would have been
+  wrong.
+- `withdraw_offer_application` matches on `creator_id` as well as the row id,
+  so a creator cannot aim it at somebody else's request. `check-offer-requests`
+  proves that with a second, rival creator.
+- **`proposed_video_count` and `proposed_amount` are null when they took the
+  offer as written.** Copying the offer's numbers in would look identical today
+  and become a lie the moment an admin edits the offer. Null means "whatever
+  the offer says".
+- Both proposed columns move together. Half a counter offer is not one, and the
+  Edge Function refuses it before the database sees it.
+- The unique index is PARTIAL, covering `pending` and `approved` only. A
+  rejected creator can ask again with a different number, which is the entire
+  point of letting them name a price. A plain unique constraint would have
+  banned them from that offer for life.
+- `creator_handle`, `creator_name` and `creator_email` are SNAPSHOTTED onto the
+  row, the same way `audit_log` snapshots its actor. It keeps queue search to
+  one trigram index on one table, and the queue still reads correctly after a
+  creator renames themselves or closes their account. The live profile is not
+  joined.
+- `review_offer_application` takes `for update` and refuses a second decision
+  with `55006`, so two admins clicking at once cannot both decide.
+- **`delete_offer` refuses while any request is pending or approved.** Settled
+  ones cascade with the offer and the audit log keeps them. Deleting an offer
+  somebody is waiting on is how you lose a creator.
+- The creator's own requests ARE live (`replica identity full`, filtered to
+  their own rows). A decision has to land while they are looking at it, for the
+  same reason approval does on the dashboard.
+- Every write puts `target_user_id` on its audit row, so "everything that has
+  happened to this creator" stays answerable with one index.
+- `pnpm verify:offer-requests` must pass after any change here. It runs both
+  sides in real browsers and spends most of its time attacking the creator write.
 
 ## Creator onboarding moments
 

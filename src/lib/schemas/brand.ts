@@ -10,7 +10,7 @@ import { z } from 'zod';
  */
 
 /** Money arrives from an <input> as a string. Empty means "not set". */
-const optionalMoney = z
+export const optionalMoney = z
   .string()
   .trim()
   .transform((v) => (v === '' ? null : v))
@@ -23,7 +23,7 @@ const optionalMoney = z
   .transform((v) => (v === null ? null : Number(v)));
 
 /** Whole number, or null when the box is left empty. */
-const optionalCount = z
+export const optionalCount = z
   .string()
   .trim()
   .transform((v) => (v === '' ? null : v))

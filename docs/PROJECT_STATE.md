@@ -1,9 +1,10 @@
 # Project state
 
 **Last updated:** 2026-07-30
-**Current step:** Step 6, Brand Hub. Admin side approved. Creator side built and
-waiting on Rashid's test.
-**Next:** applying for an offer, and creator-proposed custom offers.
+**Current step:** Step 6, Brand Hub. Admin side approved. Creator side and offer
+requests built, waiting on Rashid's test.
+**Next:** his call. Campaigns and briefs, or contests, are the natural next
+sections of the hub.
 **Status:** Everything below is built, tested and on `dev`. Everything except
 the creator Brand Hub has also been tested by Rashid.
 
@@ -203,9 +204,37 @@ The brand's own story, its products, and the creator side.
 - `node scripts/seed-brands.mjs` now seeds taglines, descriptions and eight
   products alongside the brands and offers.
 
-**Not built, by design:** applying for an offer, and creator-proposed custom
-offers with an admin approve or reject step. The buttons are on the cards,
-visibly disabled, saying "Opens next".
+### Step 6, Brand Hub phase three (this step)
+
+Creators ask for offers. Staff decide.
+
+- **A creator can take an offer as written, or counter it** with their own
+  video count and their own price. Same row either way. An offer with no fixed
+  terms can only be countered, because there is nothing to accept.
+- An offer that needs no application shows a tick and "You are already on this
+  one" instead of a button. There is nothing to ask for, so there is nothing to
+  click.
+- The creator's card then tracks the request: with the team, you are in, or not
+  this time with the reason. **A decision arrives live**, no refresh.
+  They can withdraw while it is still pending, and ask again after a rejection.
+- **New admin screen at `/admin/offers`**, under Applications in the sidebar.
+  Status tabs with counts, brand filter, search by handle, name or email, sort,
+  server-side pagination. Every filter lives in the URL. The numbers being
+  agreed to are the largest thing on each row, and a counter offer is shown
+  against what the offer actually said.
+- Approve or reject with a note the creator reads. One decision only: a second
+  one is refused even if two admins click at once.
+- **An offer somebody is waiting on cannot be deleted.**
+- The creator hub header was cut from a tall card to one compact row, and the
+  offer cards lost their status chip and the "no fixed deliverable" line.
+  Rashid's note: the main content area should carry what matters.
+- `pnpm verify:offer-requests`: 42 checks across two real browsers, nine of
+  which are attacks run as a signed-in creator, including a second creator
+  trying to read and withdraw the first one's requests.
+
+**Not built, by design:** what happens after approval. An approved request says
+a creator is on that deal; tracking their videos and paying them out is Step 7
+and Step 8 work.
 
 ## Known bugs
 
@@ -219,25 +248,22 @@ list here.
 
 ## Next action
 
-**Applying for an offer, and creator-proposed custom offers.** The buttons are
-already on the creator's offer cards, disabled, saying "Opens next". Waiting on
-Rashid's approval and his brief.
+**Rashid's call.** The Brand Hub now has brands, products, offers, and creators
+asking for them. The remaining hub sections are Campaigns and briefs, Contests,
+Promotions, Discounts and Creators, and none of them have data behind them yet.
 
-What it needs, from his original description:
-
-- A creator takes an offer. If `needs_application` is false it is theirs; if
-  true they apply and wait for a decision.
-- A creator can also propose a **custom offer**: only a video count and the
-  amount they want. An admin approves or rejects it.
-- So: a new table for the request, a creator-facing form, and an admin
-  approve/reject queue that looks like the application review panel.
+The thing that unlocks the most is **Step 7, data upload**: real GMV,
+commission and ad spend per creator per brand. That is what makes My numbers
+and Leaderboards possible, and it is the moment the product's whole promise
+lands. Worth raising with him.
 
 ### Shapes to reuse when it is built
 
 - **Writes go through an Edge Function**, never a table write. `manage-brand`
-  and its `assert_active_staff()` gate are the template. A creator writing
-  something needs its own server-side check of who they are, and an `audit_log`
-  row in the same transaction.
+  and its `assert_active_staff()` gate are the template for staff work;
+  `manage-offer-application` is the template for anything a CREATOR writes,
+  where the role is checked per action and the row is matched on `creator_id`
+  as well as its id.
 - **Creator read access is gated by `is_approved_creator()`**, which reads the
   `profiles` table. Never `is_staff()`, which reads the JWT and lags approval by
   up to an hour.

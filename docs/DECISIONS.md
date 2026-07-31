@@ -427,6 +427,36 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   creator form and an admin approve/reject queue, which is a step in itself.
   Shipping a live-looking button that silently does nothing would be worse than
   admitting it is not ready.
+- 2026-07-31: A creator can counter an offer, not just accept it, and both are
+  one row in `offer_applications`. An offer is an opening position rather than a
+  contract, and a creator worth more than the sticker price should be able to
+  say so inside the product instead of leaving to send a DM. It also collapses
+  what would otherwise be two features: the "custom offer" Rashid described is
+  just a counter against an offer with no fixed terms.
+- 2026-07-31: `proposed_video_count` and `proposed_amount` stay NULL when a
+  creator takes an offer as written, rather than being filled with the offer's
+  own numbers. The two look identical on the day and diverge the moment an admin
+  edits the offer, and only one of them is true afterwards.
+- 2026-07-31: The unique index on (offer, creator) is partial, covering pending
+  and approved only. A plain unique constraint would have banned a rejected
+  creator from that offer permanently, which defeats the point of letting them
+  name a price.
+- 2026-07-31: `manage-offer-application` checks the caller's role PER ACTION
+  rather than once at the top. It is the first door both creators and staff use,
+  and a single gate would have had to be the loosest of the two.
+- 2026-07-31: The creator's identity is snapshotted onto each request
+  (handle, name, email), the same way `audit_log` snapshots its actor. Search
+  becomes one trigram index on one table instead of a join across three, and the
+  queue still reads correctly after a rename or a closed account.
+- 2026-07-31: An offer with pending or approved requests cannot be deleted.
+  Settled ones cascade and the audit log keeps them. Deleting an offer somebody
+  is waiting on is how you lose a creator.
+- 2026-07-31: The creator hub header was cut from a tall card to one compact
+  row, and the offer cards lost their status chip and their "no fixed
+  deliverable or fee" line. Rashid's note, and he is right: the header repeated
+  what Overview says better while pushing the real content off the first screen,
+  the chip said the same thing as the button under it, and a line explaining the
+  absence of something nobody asked about is worse than silence.
 - 2026-07-28: Flagged to Rashid but not acted on, (a) a Vite SPA has no
   server-rendering, so the public landing page will be weak for SEO and link
   previews until we add a build-time prerender; (b) the Supabase free tier

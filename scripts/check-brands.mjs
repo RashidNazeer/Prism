@@ -791,8 +791,8 @@ try {
     'the offers tab shows the live offer'
   );
   check(
-    (await spyPage.getByText(/yours to take/i).count()) > 0,
-    'and says it needs no application, because that is how it was saved'
+    (await spyPage.getByText(/already on this one/i).count()) > 0,
+    'and says it is already theirs, because it was saved needing no application'
   );
 
   const offersText = await spyPage.evaluate(() => document.body.innerText);

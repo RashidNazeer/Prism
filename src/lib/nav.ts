@@ -1,6 +1,7 @@
 import {
   Building2,
   Gift,
+  Handshake,
   History,
   Inbox,
   LayoutDashboard,
@@ -62,6 +63,9 @@ const ADMIN: NavGroup[] = [
         to: '/admin/applications',
         activePrefixes: ['/admin/applications'],
       },
+      // Creators asking for an offer. Under Applications on purpose: both are
+      // queues of people waiting on a decision, and they are worked the same way.
+      { label: 'Offers', icon: Handshake, to: '/admin/offers' },
       { label: 'Activity', icon: History, to: '/admin/activity' },
     ],
   },

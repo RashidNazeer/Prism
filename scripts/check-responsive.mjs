@@ -44,6 +44,7 @@ const CREATOR_PASSWORD = process.env.CREATOR_PASSWORD ?? 'demo-password-for-dev-
 const SCREENS = [
   { path: '/admin', name: 'Dashboard', expect: /welcome back/i },
   { path: '/admin/applications', name: 'Applications', expect: /^applications$/i },
+  { path: '/admin/offers', name: 'Offer requests', expect: /offer requests/i },
   { path: '/admin/activity', name: 'Activity', expect: /^activity$/i },
   { path: '/admin/brands', name: 'Brands', expect: /^brands$/i },
   { path: '/app', name: 'Creator home', expect: /joining|welcome to wurx|not this time/i, as: 'creator' },
