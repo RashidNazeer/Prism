@@ -304,7 +304,6 @@ function RequestRow({
   row: OfferQueueRow;
   onDecide: (decision: 'approved' | 'rejected') => void;
 }) {
-  const countered = row.proposed_video_count !== null && row.proposed_amount !== null;
   const chip = STATUS_CHIP[row.status];
   const who = row.creator_handle ? `@${row.creator_handle}` : (row.creator_name ?? 'A creator');
 
@@ -353,38 +352,26 @@ function RequestRow({
           </p>
         </div>
 
-        {/* The numbers being agreed to. The largest thing on the row, because
-            it is the only thing the decision actually turns on.
-            `countered` is only ever true for requests made on 2026-07-31, the
-            day creators could name their own price. Kept so those rows still
-            say what was really asked for rather than claiming otherwise. */}
+        {/* The deal being agreed to. The largest thing on the row, because it
+            is the only thing the decision actually turns on. It is always the
+            offer's own terms: a creator takes an offer as it is written. */}
         <div className="shrink-0">
           <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
-            {countered ? 'They want' : 'As offered'}
+            They are asking for
           </span>
-          {countered ? (
-            <>
-              <span className="wx-numeric mt-1 block text-[17px] font-bold">
-                {row.proposed_video_count}{' '}
-                {row.proposed_video_count === 1 ? 'video' : 'videos'} for{' '}
-                <span className="text-accent">
-                  {money(row.proposed_amount, row.currency)}
-                </span>
-              </span>
-              {row.offer && row.offer.video_count !== null && row.offer.reward_amount != null ? (
-                <span className="mt-0.5 block text-[12px] text-faint">
-                  offer says {row.offer.video_count} for{' '}
-                  {money(row.offer.reward_amount, row.offer.currency)}
-                </span>
-              ) : null}
-            </>
-          ) : (
+          {row.offer?.video_count !== null && row.offer?.reward_amount != null ? (
             <span className="wx-numeric mt-1 block text-[17px] font-bold">
-              {row.offer?.video_count ?? '?'}{' '}
-              {row.offer?.video_count === 1 ? 'video' : 'videos'} for{' '}
+              {row.offer.video_count}{' '}
+              {row.offer.video_count === 1 ? 'video' : 'videos'} for{' '}
               <span className="text-accent">
-                {money(row.offer?.reward_amount ?? null, row.offer?.currency ?? row.currency)}
+                {money(row.offer.reward_amount, row.offer.currency)}
               </span>
+            </span>
+          ) : (
+            // The admin never wrote the terms down. Say so, rather than
+            // printing a zero somebody reads as a real number.
+            <span className="mt-1 block text-[14px] text-muted">
+              Terms not set on the offer
             </span>
           )}
         </div>

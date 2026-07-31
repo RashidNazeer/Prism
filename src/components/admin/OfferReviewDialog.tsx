@@ -53,8 +53,7 @@ export function OfferReviewDialog({
   }, []);
 
   const who = row.creator_handle ? `@${row.creator_handle}` : (row.creator_name ?? 'this creator');
-  const countered =
-    row.proposed_video_count !== null && row.proposed_amount !== null;
+  const hasTerms = row.offer?.video_count !== null && row.offer?.reward_amount != null;
 
   return (
     <div
@@ -99,26 +98,19 @@ export function OfferReviewDialog({
           <p className="text-[14px] font-semibold">{row.offer?.title ?? 'That offer'}</p>
           <p className="mt-0.5 text-[13px] text-muted">{row.brand?.name}</p>
           <p className="mt-3 border-t border-line pt-3 text-[14px]">
-            {countered ? (
-              <>
-                <span className="font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
-                  They are asking for
-                </span>
-                <span className="wx-numeric mt-1 block font-semibold">
-                  {row.proposed_video_count}{' '}
-                  {row.proposed_video_count === 1 ? 'video' : 'videos'} for{' '}
-                  {money(row.proposed_amount, row.currency)}
-                </span>
-                {row.offer?.video_count !== null && row.offer?.reward_amount != null ? (
-                  <span className="mt-1 block text-[13px] text-muted">
-                    The offer says {row.offer.video_count} for{' '}
-                    {money(row.offer.reward_amount, row.offer.currency)}.
-                  </span>
-                ) : null}
-              </>
+            <span className="font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+              They are asking for
+            </span>
+            {hasTerms ? (
+              <span className="wx-numeric mt-1 block font-semibold">
+                {row.offer!.video_count}{' '}
+                {row.offer!.video_count === 1 ? 'video' : 'videos'} for{' '}
+                {money(row.offer!.reward_amount, row.offer!.currency)}
+              </span>
             ) : (
-              <span className="text-muted">
-                They are taking it exactly as offered.
+              <span className="mt-1 block text-muted">
+                This offer has no terms written on it, so agree them with the creator
+                before you approve.
               </span>
             )}
           </p>
@@ -131,7 +123,7 @@ export function OfferReviewDialog({
 
         <p className="mt-4 text-[14px] leading-relaxed text-muted">
           {decision === 'approved'
-            ? 'They are told straight away, on the terms above, and the offer shows as theirs.'
+            ? 'They are told straight away, and the offer shows as theirs.'
             : 'Nothing is deleted. They can ask again, so a note here saves them guessing.'}
         </p>
 

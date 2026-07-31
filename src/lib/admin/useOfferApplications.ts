@@ -46,8 +46,7 @@ export interface OfferQueueRow {
   creator_name: string | null;
   creator_email: string | null;
   status: OfferApplicationStatus;
-  proposed_video_count: number | null;
-  proposed_amount: string | number | null;
+  /** The currency the offer was quoted in when they asked. */
   currency: string;
   note: string | null;
   decision_note: string | null;
@@ -74,8 +73,7 @@ export const sanitiseOfferSearch = (raw: string) =>
 
 const COLUMNS =
   'id, offer_id, brand_id, creator_id, creator_handle, creator_name, creator_email, ' +
-  'status, proposed_video_count, proposed_amount, currency, note, decision_note, ' +
-  'decided_at, created_at, ' +
+  'status, currency, note, decision_note, decided_at, created_at, ' +
   'offer:offers (id, title, video_count, reward_amount, currency), ' +
   'brand:brands (id, name)';
 

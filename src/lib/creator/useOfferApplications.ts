@@ -19,13 +19,7 @@ export interface MyOfferApplication {
   offer_id: string;
   brand_id: string;
   status: OfferApplicationStatus;
-  /**
-   * Historical. Only requests made on 2026-07-31, while creators could counter
-   * an offer, carry numbers here. Everything since is null, because an offer is
-   * taken as written.
-   */
-  proposed_video_count: number | null;
-  proposed_amount: string | number | null;
+  /** The currency the offer was quoted in when they asked. */
   currency: string;
   note: string | null;
   decision_note: string | null;
@@ -34,7 +28,7 @@ export interface MyOfferApplication {
 }
 
 const COLUMNS =
-  'id, offer_id, brand_id, status, proposed_video_count, proposed_amount, currency, note, decision_note, decided_at, created_at';
+  'id, offer_id, brand_id, status, currency, note, decision_note, decided_at, created_at';
 
 /**
  * Every request this creator has made inside one brand's hub, newest first.

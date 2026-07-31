@@ -6,7 +6,7 @@
  * Usage: node scripts/check-admin.mjs <baseUrl> <email> <password> [expectedRole] [expectedPath]
  */
 
-import { chromium } from 'playwright';
+import { launchBrowser } from './browser.mjs';
 
 const [BASE, EMAIL, PASSWORD, ROLE = 'admin', EXPECT = '/admin'] = process.argv.slice(2);
 
@@ -24,7 +24,7 @@ const check = (c, m) => {
   if (!c) failures++;
 };
 
-const browser = await chromium.launch();
+const browser = await launchBrowser();
 const page = await (await browser.newContext()).newPage();
 const errors = [];
 page.on('console', (m) => {

@@ -21,7 +21,7 @@
  *   node scripts/check-brands.mjs [baseUrl]
  */
 
-import { chromium } from 'playwright';
+import { launchBrowser } from './browser.mjs';
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 
@@ -66,7 +66,7 @@ const check = (c, m) => (c ? pass(m) : fail(m));
 
 const made = [];
 let brandId = null;
-const browser = await chromium.launch();
+const browser = await launchBrowser();
 
 /**
  * Poll until the database says what we are waiting for, or give up.

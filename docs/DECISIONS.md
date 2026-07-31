@@ -442,6 +442,19 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   its own numbers is refused with a sentence rather than quietly stripped: it
   can only be a stale browser tab, and the alternative is agreeing somebody to a
   price they did not type.
+- 2026-07-31: The two counter offer columns were dropped rather than kept, once
+  Rashid confirmed everything is on dev and a count found zero rows carrying a
+  creator-set price. The reason for keeping them was to avoid restating what
+  somebody had really asked for; with no such rows, all that was left was dead
+  columns and dead screen code on a table payments will hang off. The drop then
+  broke `review_offer_application`, silently, because plpgsql resolves field
+  names at run time: worth remembering before the next one.
+- 2026-07-31: Every Playwright suite launches through `scripts/browser.mjs`
+  rather than `chromium.launch()`. Not a test-quality decision, a machine one:
+  7.4 GB of RAM with VS Code already on most of it meant a default launch was
+  getting the editor's extension host killed mid-run, which looked like Claude
+  hanging. Suites are also run detached with their output to a file, so a dead
+  editor cannot lose a run or strand test accounts.
 - 2026-07-31: An offer that needs an application but has no written terms can
   still be applied for. Requiring terms on such an offer is a rule enforced on
   the admin's side, and refusing a creator because an admin left a field empty

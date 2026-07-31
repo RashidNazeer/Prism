@@ -8,9 +8,9 @@ import { z } from 'zod';
  * they want to say alongside it.
  *
  * Countering an offer with your own video count and your own price shipped on
- * 2026-07-31 and was withdrawn the same day. If it returns, it returns here
- * first, then in the dialog, then as parameters on `apply_for_offer`; the
- * columns behind it were kept.
+ * 2026-07-31 and was withdrawn the same day, columns and all. If it ever
+ * returns it returns here first, then in the dialog, then as parameters on
+ * `apply_for_offer` and two columns on `offer_applications`.
  */
 export const offerApplicationSchema = z.object({
   note: z.string().trim().max(1000, 'Keep it under 1000 characters'),

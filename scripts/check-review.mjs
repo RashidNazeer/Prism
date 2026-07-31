@@ -15,7 +15,7 @@
  *   node scripts/check-review.mjs [baseUrl]
  */
 
-import { chromium } from 'playwright';
+import { launchBrowser } from './browser.mjs';
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 
@@ -68,7 +68,7 @@ const check = (c, m) => (c ? pass(m) : fail(m));
 
 const made = [];
 const appIds = [];
-const browser = await chromium.launch();
+const browser = await launchBrowser();
 
 /** Sign in through the real login screen, the way a person would. */
 async function signIn(ctx, email, password, expectPath, door = '/login') {

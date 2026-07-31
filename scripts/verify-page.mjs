@@ -16,7 +16,7 @@
  * Usage: node scripts/verify-page.mjs [baseUrl]
  */
 
-import { chromium } from 'playwright';
+import { launchBrowser } from './browser.mjs';
 import { mkdirSync } from 'node:fs';
 
 const BASE = process.argv[2] ?? 'http://localhost:4173';
@@ -38,7 +38,7 @@ const IGNORE = [
 ];
 const ignorable = (t) => IGNORE.some((re) => re.test(t));
 
-const browser = await chromium.launch();
+const browser = await launchBrowser();
 
 /**
  * Scroll the whole page, then return to the top.

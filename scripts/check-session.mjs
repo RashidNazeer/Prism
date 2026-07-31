@@ -27,7 +27,7 @@
  * Usage: node scripts/check-session.mjs [baseUrl]
  */
 
-import { chromium } from 'playwright';
+import { launchBrowser } from './browser.mjs';
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 
@@ -85,7 +85,7 @@ async function dismissWelcome(page) {
   return true;
 }
 
-const browser = await chromium.launch();
+const browser = await launchBrowser();
 let userId = null;
 
 try {

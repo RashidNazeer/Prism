@@ -12,7 +12,7 @@
  *   node scripts/shots.mjs http://localhost:4173 /apply
  */
 
-import { chromium } from 'playwright';
+import { launchBrowser } from './browser.mjs';
 import { mkdirSync } from 'node:fs';
 
 const BASE = process.argv[2] ?? 'http://localhost:4173';
@@ -40,7 +40,7 @@ async function scrollThrough(page) {
   await page.waitForTimeout(600);
 }
 
-const browser = await chromium.launch();
+const browser = await launchBrowser();
 
 for (const scheme of ['dark', 'light']) {
   for (const view of VIEWS) {

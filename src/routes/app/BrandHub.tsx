@@ -502,7 +502,6 @@ function OfferAction({
     return (
       <Note tone="success" icon={<Check size={15} aria-hidden />}>
         <span className="font-semibold">You are in</span>
-        <Terms application={application} />
         {application.decision_note ? (
           <span className="mt-1 block text-[13px] text-muted">
             {application.decision_note}
@@ -515,9 +514,11 @@ function OfferAction({
   if (application?.status === 'pending') {
     return (
       <div>
+        {/* The card already prints the offer's numbers a few lines above, and
+            those are exactly what was asked for, so there is nothing to repeat
+            here. */}
         <Note tone="pending" icon={<Clock size={15} aria-hidden />}>
           <span className="font-semibold">With the team</span>
-          <Terms application={application} />
         </Note>
         <Button
           variant="ghost"
@@ -564,26 +565,6 @@ function OfferAction({
     <Button size="sm" className="w-full sm:w-auto" onClick={onApply}>
       Apply for this
     </Button>
-  );
-}
-
-/**
- * Only ever shown on a request made while creators could counter an offer.
- *
- * Everything since is the offer exactly as written, and the card already prints
- * those numbers a few lines above. Repeating them under "With the team" would
- * be a second copy of a fact nobody is unsure about.
- */
-function Terms({ application }: { application: MyOfferApplication }) {
-  if (application.proposed_video_count === null || application.proposed_amount === null) {
-    return null;
-  }
-  return (
-    <span className="block text-[13px] text-muted">
-      You asked for {application.proposed_video_count}{' '}
-      {application.proposed_video_count === 1 ? 'video' : 'videos'} at{' '}
-      {money(application.proposed_amount, application.currency)}.
-    </span>
   );
 }
 

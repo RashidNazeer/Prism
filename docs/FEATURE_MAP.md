@@ -399,11 +399,16 @@ application is not in here at all: it is already theirs.
 
 **Countering an offer with your own video count and your own price shipped on
 2026-07-31 and was withdrawn the same day, at Rashid's call.** The two
-`proposed_*` columns and the admin queue's rendering of them were KEPT, because
-requests made during that window carry real numbers and the queue must not
-later claim they were taken as written. Nothing can write them again:
-`apply_for_offer` no longer takes them. If countering returns, it returns as
-parameters on that function, a field in the dialog, and a line in the schema.
+`proposed_*` columns went with it once he confirmed there was no data to
+protect. If countering ever returns it needs: two columns, two parameters on
+`apply_for_offer`, two fields in the dialog, and a branch in the queue.
+
+**When dropping a column, grep the function bodies.** Removing those two broke
+`review_offer_application`, which still named them in its audit row, and the
+migration applied without a murmur: plpgsql resolves field names when a
+function RUNS, so it stayed valid-looking SQL until an admin clicked Approve
+and got a 500. Only `check-offer-requests.mjs` found it, because it approves a
+real request through the real screen.
 
 **Change rules**
 

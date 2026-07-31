@@ -18,9 +18,9 @@
  *   node scripts/check-offer-requests.mjs [baseUrl]
  */
 
-import { chromium } from 'playwright';
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
+import { launchBrowser } from './browser.mjs';
 
 const BASE = process.argv[2] ?? 'http://localhost:4173';
 
@@ -64,7 +64,7 @@ const check = (c, m) => (c ? pass(m) : fail(m));
 
 const made = [];
 let brandId = null;
-const browser = await chromium.launch();
+const browser = await launchBrowser();
 
 /** Poll until the database says what we are waiting for, or give up. */
 async function waitFor(read, ok, label, timeoutMs = 30000) {
@@ -302,7 +302,7 @@ try {
       (
         await admin
           .from('offer_applications')
-          .select('id, status, proposed_video_count, proposed_amount, creator_handle')
+          .select('id, status, currency, creator_handle')
           .eq('offer_id', fixed.id)
           .eq('creator_id', creatorId)
           .maybeSingle()
@@ -312,8 +312,8 @@ try {
   );
   check(asOffered?.status === 'pending', 'it lands as pending');
   check(
-    asOffered?.proposed_video_count === null && asOffered?.proposed_amount === null,
-    'no terms of their own are stored, because there are none to give'
+    asOffered?.currency === 'USD',
+    `the currency the offer was quoted in is recorded (${asOffered?.currency})`
   );
   check(
     asOffered?.creator_handle === HANDLE,
@@ -349,7 +349,7 @@ try {
       (
         await admin
           .from('offer_applications')
-          .select('id, proposed_video_count, proposed_amount, note, currency')
+          .select('id, note, currency')
           .eq('offer_id', openEnded.id)
           .eq('creator_id', creatorId)
           .maybeSingle()
@@ -357,11 +357,8 @@ try {
     (r) => Boolean(r?.id),
     'the request to be stored'
   );
-  check(
-    openRequest?.proposed_video_count === null && openRequest?.proposed_amount === null,
-    'it carries no terms of its own either'
-  );
-  check(openRequest?.note?.startsWith('I already use'), 'and the note they wrote');
+  check(Boolean(openRequest?.id), 'the request is stored');
+  check(openRequest?.note?.startsWith('I already use'), 'along with the note they wrote');
 
   /* --------------------------------------------------------- [4] the attacks */
   console.log('\n[4] Attacks, run as a real signed-in creator');
@@ -455,12 +452,14 @@ try {
     ownPrice.status === 400 && /as it stands/i.test(ownPrice.body),
     `naming their own price is refused, in plain English (HTTP ${ownPrice.status})`
   );
-  const { count: noSneak } = await admin
+  // The refusal has to be the whole story. An error message is not proof that
+  // nothing was written, so count the rows rather than trust the status code.
+  const { count: stillOne } = await admin
     .from('offer_applications')
     .select('id', { count: 'exact', head: true })
     .eq('offer_id', fixed.id)
-    .not('proposed_amount', 'is', null);
-  check(noSneak === 0, `and nothing was written with a price on it (${noSneak})`);
+    .eq('creator_id', creatorId);
+  check(stillOne === 1, `and no second request was created by it (${stillOne})`);
 
   // g. Read somebody else's request.
   const rivalCtx = await browser.newContext();

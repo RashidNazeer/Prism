@@ -16,7 +16,7 @@
  *   ADMIN_EMAIL=... ADMIN_PASSWORD=... node scripts/check-responsive.mjs [baseUrl]
  */
 
-import { chromium } from 'playwright';
+import { launchBrowser } from './browser.mjs';
 
 const BASE = process.argv[2] ?? 'http://localhost:4173';
 
@@ -73,7 +73,7 @@ const fail = (m) => {
 };
 const check = (c, m) => (c ? pass(m) : fail(m));
 
-const browser = await chromium.launch();
+const browser = await launchBrowser();
 
 try {
   console.log(`\nResponsiveness against ${BASE}\n${'='.repeat(70)}`);

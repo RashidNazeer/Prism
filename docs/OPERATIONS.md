@@ -102,6 +102,32 @@ node scripts/seed-brands.mjs [--clean]         # demo brands and offers, DEV ONL
 Every suite creates real accounts and **deletes them afterwards**. Run against
 dev only.
 
+**Run them detached, never in the foreground.** Rashid's machine has 7.4 GB of
+RAM and VS Code alone holds well over a gigabyte of it. A suite launching
+Chromium on top of that pushed the machine into its page file far enough that
+Windows killed the VS Code extension host mid-run ("the host unexpectedly
+terminated"), which looks exactly like Claude hanging and cannot be stopped,
+because there is nothing left running to stop. It also strands the test
+accounts, since the cleanup step never gets to run.
+
+```powershell
+Start-Process -FilePath "node" -ArgumentList "scripts/check-brands.mjs","http://localhost:4173" `
+  -WorkingDirectory "d:\Milestone\WurxMediaHub" `
+  -RedirectStandardOutput "<scratchpad>\suite.log" `
+  -RedirectStandardError "<scratchpad>\suite.log.err" -WindowStyle Hidden
+```
+
+Then poll the log. **Failures go to stderr**, so read the `.err` file too; a
+green-looking stdout with missing PASS lines means the failures are in the
+other file.
+
+All suites launch Chromium through `scripts/browser.mjs`, which strips the GPU
+process, extensions and background networking and caps the renderer heap. Add
+new suites through it, not through `chromium.launch()` directly.
+
+Shut the preview server down when finished. Orphaned `vite preview` processes
+hold port 4173 and accumulate one per interrupted session.
+
 The suites that need `ADMIN_EMAIL` and `ADMIN_PASSWORD` should NOT be pointed at
 Rashid's account. Make a throwaway one for the run, then remove it:
 
