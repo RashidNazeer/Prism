@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Megaphone,
   Store,
+  Tag,
   TrendingUp,
   Trophy,
   Upload,
@@ -63,10 +64,17 @@ const ADMIN: NavGroup[] = [
         to: '/admin/applications',
         activePrefixes: ['/admin/applications'],
       },
-      // Creators asking for an offer. Under Applications on purpose: both are
-      // queues of people waiting on a decision, and they are worked the same way.
-      { label: 'Offers', icon: Handshake, to: '/admin/offers' },
       { label: 'Activity', icon: History, to: '/admin/activity' },
+    ],
+  },
+  {
+    // Its own group, with the catalogue first and the queue under it. They are
+    // different jobs: one is "what are we running", the other is "who is
+    // waiting on me".
+    label: 'Offers',
+    items: [
+      { label: 'All offers', icon: Tag, to: '/admin/offers' },
+      { label: 'Requests', icon: Handshake, to: '/admin/offers/requests' },
     ],
   },
   {
@@ -110,7 +118,7 @@ const CREATOR: NavGroup[] = [
         activePrefixes: ['/app/brands'],
       },
       { label: 'Leaderboards', icon: Trophy, soon: 'Step 9' },
-      { label: 'Offers', icon: Gift, soon: 'Step 10' },
+      { label: 'Offers', icon: Gift, to: '/app/offers' },
     ],
   },
   {
@@ -126,10 +134,12 @@ const CREATOR: NavGroup[] = [
  * that it opens on approval. What we will not do is put a live-looking link in
  * front of somebody it does not work for yet.
  */
+const LOCKED_UNTIL_APPROVED = ['/app/brands', '/app/offers'];
+
 const APPLICANT: NavGroup[] = CREATOR.map((group) => ({
   ...group,
   items: group.items.map((item) =>
-    item.to === '/app/brands'
+    item.to && LOCKED_UNTIL_APPROVED.includes(item.to)
       ? { label: item.label, icon: item.icon, soon: 'Once approved' }
       : item
   ),

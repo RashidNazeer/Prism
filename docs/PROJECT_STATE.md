@@ -233,6 +233,26 @@ Creators ask for offers. Staff decide.
   which are attacks run as a signed-in creator, including a second creator
   trying to read and withdraw the first one's requests.
 
+### Step 6, Brand Hub phase four (this step)
+
+Two dashboards that cut across brands, one each side.
+
+- **`/admin/offers`, every offer we run.** Live or switched off, which brand,
+  the deal, how many creators are on it and how many are waiting. Search,
+  filter by brand, filter by whether it needs applying for, sort by newest,
+  oldest or highest paying, paginated in the database. The waiting count links
+  straight into the request queue for that brand.
+- An offer nobody has to apply for says **"Open to everyone"** instead of a
+  creator count. It belongs to the whole roster and there is no row to count,
+  so a zero there would read as nobody wanting it.
+- **The request queue moved to `/admin/offers/requests`.** The sidebar now has
+  an Offers group holding both, because they are different jobs.
+- **`/app/offers`, every offer open to a creator**, from every brand they work
+  with. Tabs for everything, you are in, waiting, and not asked yet, each with
+  a count. Search across offer, brand and description, and a brand filter. They
+  can apply straight from here, using the same dialog as the hub.
+- `pnpm verify:offer-requests`: 50 checks, now including both dashboards.
+
 **Not built, by design:** what happens after approval. An approved request says
 a creator is on that deal; tracking their videos and paying them out is Step 7
 and Step 8 work.

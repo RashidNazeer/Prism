@@ -507,7 +507,7 @@ try {
   await adminPage.getByRole('button', { name: /^sign in$/i }).click();
   await adminPage.waitForURL('**/admin', { timeout: 30000 }).catch(() => {});
 
-  await adminPage.goto(`${BASE}/admin/offers`, { waitUntil: 'domcontentloaded' });
+  await adminPage.goto(`${BASE}/admin/offers/requests`, { waitUntil: 'domcontentloaded' });
   await adminPage.waitForTimeout(3000);
 
   check(
@@ -658,6 +658,70 @@ try {
     p_note: 'Trying again.',
   });
   check(!reapply.error, `a rejected creator can ask again (${reapply.error?.message ?? 'ok'})`);
+
+  /* ------------------------------------------------- [7b] the dashboards */
+  // Both sides gained a screen that crosses brands. Before these, seeing an
+  // offer meant remembering which brand it belonged to and going in through
+  // the hub.
+  console.log('\n[7b] The two offer dashboards');
+
+  await adminPage.goto(`${BASE}/admin/offers`, { waitUntil: 'domcontentloaded' });
+  await adminPage.waitForTimeout(2500);
+  check(
+    (await adminPage.getByText('Fixed terms deal').count()) > 0,
+    'the admin sees offers from every brand in one list'
+  );
+  check(
+    (await adminPage.getByText(/open to everyone/i).count()) > 0,
+    'an offer nobody has to apply for says so, rather than showing nobody on it'
+  );
+
+  // Searching narrows to one offer, and the brand filter to one brand.
+  await adminPage.fill('input[name="search"]', 'Fixed terms');
+  await adminPage.press('input[name="search"]', 'Enter');
+  await adminPage.waitForTimeout(2000);
+  check(
+    (await adminPage.getByText('Already yours').count()) === 0,
+    'searching drops the offers that do not match'
+  );
+  await adminPage.fill('input[name="search"]', '');
+  await adminPage.press('input[name="search"]', 'Enter');
+  await adminPage.waitForTimeout(1500);
+
+  await adminPage.selectOption('select[name="kind"]', 'open');
+  await adminPage.waitForTimeout(2000);
+  check(
+    (await adminPage.getByText('Fixed terms deal').count()) === 0 &&
+      (await adminPage.getByText('Already yours').count()) > 0,
+    'and filtering to open offers hides the ones that need applying for'
+  );
+
+  // The creator's own dashboard, with the approval from [6] on it.
+  await page.goto(`${BASE}/app/offers`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(3000);
+  check(
+    (await page.getByText('Fixed terms deal').count()) > 0,
+    'the creator sees offers from every brand in one list'
+  );
+  check(
+    (await page.getByText(/you are in/i).count()) > 0,
+    'the one they were approved for says they are in'
+  );
+
+  await page.getByRole('tab', { name: /you are in/i }).click();
+  await page.waitForTimeout(1200);
+  const inOnly = await page.evaluate(() => document.body.innerText);
+  check(
+    inOnly.includes('Fixed terms deal') && !inOnly.includes('Name your price'),
+    'and the "you are in" tab shows only those'
+  );
+
+  await page.fill('input[name="search"]', 'nothing matches this');
+  await page.waitForTimeout(900);
+  check(
+    (await page.getByText(/nothing matches that/i).count()) > 0,
+    'a search with no results says so rather than showing an empty page'
+  );
 
   /* -------------------------------------------- [8] offers people rely on */
   console.log('\n[8] An offer somebody is waiting on');

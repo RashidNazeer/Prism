@@ -381,6 +381,39 @@ offers.
   for what is). The mutation on the admin side refreshes both, and a websocket
   per creator per hub would buy nothing.
 
+## Offer dashboards (both sides, across every brand)
+
+**Files:** `src/routes/admin/AllOffers.tsx`, `src/lib/admin/useAllOffers.ts`,
+`src/routes/app/Offers.tsx`, `src/lib/creator/useAllOffers.ts`
+**Routes:** `/admin/offers` (catalogue), `/admin/offers/requests` (queue),
+`/app/offers` (creator)
+
+The Brand Hub answers "what is this brand offering". These answer what cuts
+across brands. Before them, seeing an offer meant remembering which brand owned
+it and going in through the hub.
+
+**Change rules**
+
+- `/admin/offers` is the catalogue and `/admin/offers/requests` is the queue.
+  They are separate screens because they are separate jobs, done at different
+  times. The sidebar has an **Offers** group holding both.
+- **An open offer cannot report how many creators are on it.** It belongs to
+  every approved creator and there is no row to count, so the admin list says
+  "Open to everyone" rather than showing a zero that reads as nobody wanting it.
+  Any future count over offers has to keep that distinction.
+- Admin counts come from ONE grouped read over the offers on the page
+  (`useOfferPeople`), never one query per row.
+- **The creator dashboard filters in the browser, and that is a deliberate
+  exception** to the project's server-side-filtering rule. The filters that
+  matter (in, waiting, not asked) live in `offer_applications`, not `offers`,
+  so paging the offers table would page a list whose useful order is in another
+  table. It fetches both once, capped at 200 offers. If a creator ever has more,
+  that cap is the thing to notice, and the fix is a view.
+- The creator's requests are live here too, so an approval lands on this screen
+  as well as inside the hub.
+- Applying uses the SAME `ApplyDialog` as the brand hub. Two apply paths that
+  drift apart is how one of them ends up sending something different.
+
 ## Offer requests (creators asking, staff deciding)
 
 **Files:** `src/routes/admin/OfferRequests.tsx`,

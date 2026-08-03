@@ -112,6 +112,11 @@ export const router = createBrowserRouter([
         HydrateFallback: RouteFallback,
         lazy: lazyRoute(() => import('@/routes/app/BrandHub'), 'BrandHub'),
       },
+      {
+        path: '/app/offers',
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/routes/app/Offers'), 'Offers'),
+      },
     ],
   },
   {
@@ -135,8 +140,16 @@ export const router = createBrowserRouter([
           'ApplicationDetail'
         ),
       },
+      // Offers is a section with two screens: the catalogue of everything we
+      // run, and the queue of creators waiting on a decision. They answer
+      // different questions and are worked at different times.
       {
         path: '/admin/offers',
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/routes/admin/AllOffers'), 'AllOffers'),
+      },
+      {
+        path: '/admin/offers/requests',
         HydrateFallback: RouteFallback,
         lazy: lazyRoute(() => import('@/routes/admin/OfferRequests'), 'OfferRequests'),
       },

@@ -118,7 +118,11 @@ export function useApplyForOffer() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['creator', 'my-offer-applications'] });
+      // The offers dashboard reads the same rows through its own query, and a
+      // creator who applies from one screen must not see the other disagree.
+      void queryClient.invalidateQueries({ queryKey: ['creator', 'all-my-requests'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'offer-applications'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'offer-people'] });
     },
   });
 }
