@@ -21,6 +21,10 @@ export const BRAND_PAGE_SIZE = 24;
 interface Commercials {
   client_name: string | null;
   budget_allocated: string | number | null;
+  /** Committed to creators: the sum of every approved request on this brand. */
+  budget_used: string | number | null;
+  /** Generated in the database. Null when there is no budget to measure. */
+  budget_used_percent: string | number | null;
   currency: string;
 }
 
@@ -49,6 +53,8 @@ export interface Brand {
    */
   client_name: string | null;
   budget_allocated: string | number | null;
+  budget_used: string | number | null;
+  budget_used_percent: string | number | null;
   currency: string;
 }
 
@@ -94,9 +100,21 @@ export interface BrandProduct {
   updated_at: string;
 }
 
+const COMMERCIAL_COLUMNS =
+  'client_name, budget_allocated, budget_used, budget_used_percent, currency';
+
 const BRAND_COLUMNS =
   'id, name, slug, store_id, logo_url, tagline, description, is_active, created_at, updated_at, ' +
-  'brand_commercials(client_name, budget_allocated, currency)';
+  `brand_commercials(${COMMERCIAL_COLUMNS})`;
+
+/**
+ * The same read, but forcing an inner join so a filter on the commercial half
+ * can be applied. Only used when the budget filter is on, because `!inner`
+ * would otherwise silently drop any brand missing its commercial row.
+ */
+const BRAND_COLUMNS_INNER =
+  'id, name, slug, store_id, logo_url, tagline, description, is_active, created_at, updated_at, ' +
+  `brand_commercials!inner(${COMMERCIAL_COLUMNS})`;
 
 const OFFER_COLUMNS =
   'id, brand_id, badge_title, title, description, video_count, reward_amount, currency, status, needs_application, created_at, updated_at';
@@ -123,7 +141,42 @@ function flatten(row: BrandRow): Brand {
     ...brand,
     client_name: c?.client_name ?? null,
     budget_allocated: c?.budget_allocated ?? null,
+    budget_used: c?.budget_used ?? 0,
+    budget_used_percent: c?.budget_used_percent ?? null,
     currency: c?.currency ?? 'USD',
+  };
+}
+
+/**
+ * What is left of a brand's budget, as numbers a screen can use.
+ *
+ * `percent` is null when there is nothing to measure against. A brand with no
+ * allocation has not used "0%" of anything, and drawing an empty bar for it
+ * would invent a fact.
+ */
+export function budgetOf(brand: Brand): {
+  allocated: number | null;
+  used: number;
+  left: number | null;
+  percent: number | null;
+  over: boolean;
+} {
+  const allocated =
+    brand.budget_allocated === null || brand.budget_allocated === ''
+      ? null
+      : Number(brand.budget_allocated);
+  const used = Number(brand.budget_used ?? 0) || 0;
+  const percent =
+    brand.budget_used_percent === null || brand.budget_used_percent === ''
+      ? null
+      : Number(brand.budget_used_percent);
+
+  return {
+    allocated: allocated !== null && Number.isFinite(allocated) ? allocated : null,
+    used,
+    left: allocated !== null && Number.isFinite(allocated) ? allocated - used : null,
+    percent: percent !== null && Number.isFinite(percent) ? percent : null,
+    over: percent !== null && percent > 100,
   };
 }
 
@@ -156,10 +209,27 @@ export const percent = (value: string | number | null): string => {
   return `${n % 1 === 0 ? n : n.toFixed(2).replace(/0$/, '')}%`;
 };
 
+/**
+ * Bands rather than a free number, because these are the questions actually
+ * asked: what is nearly spent, what has barely been touched, what has gone
+ * over. `none` finds brands nobody has given a budget to yet.
+ */
+export type BudgetBand = 'any' | 'under50' | '50to80' | 'over80' | 'over100' | 'none';
+
+export const BUDGET_BANDS: { value: BudgetBand; label: string }[] = [
+  { value: 'any', label: 'Any budget' },
+  { value: 'under50', label: 'Under 50% used' },
+  { value: '50to80', label: '50 to 80% used' },
+  { value: 'over80', label: 'Over 80% used' },
+  { value: 'over100', label: 'Over budget' },
+  { value: 'none', label: 'No budget set' },
+];
+
 export interface BrandFilters {
   search: string;
   /** 'all' keeps switched-off brands visible; the list defaults to active. */
   active: 'all' | 'active' | 'inactive';
+  budget: BudgetBand;
   page: number;
 }
 
@@ -175,10 +245,27 @@ export function useBrands(filters: BrandFilters) {
     staleTime: 15_000,
     queryFn: async (): Promise<{ rows: Brand[]; total: number }> => {
       const from = (filters.page - 1) * BRAND_PAGE_SIZE;
-      let q = getSupabase().from('brands').select(BRAND_COLUMNS, { count: 'exact' });
+      const band = filters.budget;
+
+      let q = getSupabase()
+        .from('brands')
+        .select(band === 'any' ? BRAND_COLUMNS : BRAND_COLUMNS_INNER, { count: 'exact' });
 
       if (filters.active !== 'all') q = q.eq('is_active', filters.active === 'active');
       if (search) q = q.ilike('name', `%${search}%`);
+
+      /*
+       * Filtered in the database, on the generated percentage column, through
+       * the inner join above. Fetching every brand and doing the arithmetic in
+       * the browser would break pagination the moment there are more brands
+       * than fit on a page.
+       */
+      const pct = 'brand_commercials.budget_used_percent';
+      if (band === 'under50') q = q.lt(pct, 50);
+      else if (band === '50to80') q = q.gte(pct, 50).lte(pct, 80);
+      else if (band === 'over80') q = q.gt(pct, 80);
+      else if (band === 'over100') q = q.gt(pct, 100);
+      else if (band === 'none') q = q.is(pct, null);
 
       const { data, error, count } = await q
         .order('name', { ascending: true })

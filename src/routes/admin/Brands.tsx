@@ -3,14 +3,18 @@ import { Link, useSearchParams } from 'react-router';
 import { ChevronLeft, ChevronRight, Plus, Search, Store, Tag } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { BrandDialog } from '@/components/admin/BrandDialog';
+import { BudgetBar } from '@/components/admin/BudgetBar';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
 import {
   BRAND_PAGE_SIZE,
+  BUDGET_BANDS,
   money,
   useBrands,
   useOfferCounts,
   type BrandFilters,
+  type BudgetBand,
 } from '@/lib/admin/useBrands';
 
 const TABS: { value: BrandFilters['active']; label: string }[] = [
@@ -21,6 +25,9 @@ const TABS: { value: BrandFilters['active']; label: string }[] = [
 
 const isActiveFilter = (v: string | null): v is BrandFilters['active'] =>
   v === 'active' || v === 'inactive' || v === 'all';
+
+const isBudgetBand = (v: string | null): v is BudgetBand =>
+  BUDGET_BANDS.some((b) => b.value === v);
 
 /**
  * Every brand we run.
@@ -34,8 +41,10 @@ export function Brands() {
   const [creating, setCreating] = useState(false);
 
   const activeParam = params.get('active');
+  const budgetParam = params.get('budget');
   const filters: BrandFilters = {
     active: isActiveFilter(activeParam) ? activeParam : 'active',
+    budget: isBudgetBand(budgetParam) ? budgetParam : 'any',
     search: params.get('q') ?? '',
     page: Math.max(1, Number(params.get('page') ?? '1') || 1),
   };
@@ -49,6 +58,7 @@ export function Brands() {
 
     const p = new URLSearchParams();
     if (merged.active !== 'active') p.set('active', merged.active);
+    if (merged.budget !== 'any') p.set('budget', merged.budget);
     if (merged.search) p.set('q', merged.search);
     if (merged.page > 1) p.set('page', String(merged.page));
     setParams(p, { replace: true });
@@ -103,6 +113,25 @@ export function Brands() {
           ))}
         </div>
 
+        {/* Budget is a first-class filter, not a detail. "Which brands are
+            nearly spent" is the question this list gets asked most. */}
+        <label className="sr-only" htmlFor="budget-filter">
+          Filter by budget used
+        </label>
+        <Select
+          id="budget-filter"
+          name="budget"
+          value={filters.budget}
+          onChange={(e) => setFilters({ budget: e.target.value as BudgetBand })}
+          className="h-9 basis-44 text-[13px]"
+        >
+          {BUDGET_BANDS.map((b) => (
+            <option key={b.value} value={b.value}>
+              {b.label}
+            </option>
+          ))}
+        </Select>
+
         <form
           className="relative min-w-0 flex-1 basis-48"
           onSubmit={(e) => {
@@ -146,16 +175,16 @@ export function Brands() {
           <div className="rounded-2xl border border-line bg-surface-1 px-6 py-16 text-center">
             <Store size={26} aria-hidden className="mx-auto text-faint" />
             <p className="mt-4 font-semibold">
-              {filters.search || filters.active !== 'active'
+              {filters.search || filters.active !== 'active' || filters.budget !== 'any'
                 ? 'No brands match that'
                 : 'No brands yet'}
             </p>
             <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
-              {filters.search || filters.active !== 'active'
-                ? 'Try a different search, or switch to All.'
+              {filters.search || filters.active !== 'active' || filters.budget !== 'any'
+                ? 'Try a different search, budget band, or switch to All.'
                 : 'Add the first seller store and its hub is ready to fill.'}
             </p>
-            {!filters.search && filters.active === 'active' ? (
+            {!filters.search && filters.active === 'active' && filters.budget === 'any' ? (
               <Button className="mt-6" onClick={() => setCreating(true)}>
                 <Plus size={16} aria-hidden />
                 Add brand
@@ -192,22 +221,28 @@ export function Brands() {
                       </p>
                     ) : null}
 
-                    <div className="mt-auto flex flex-wrap items-end justify-between gap-3 pt-5">
-                      <span>
-                        <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
-                          Budget
+                    <div className="mt-auto pt-5">
+                      <div className="flex flex-wrap items-end justify-between gap-3">
+                        <span>
+                          <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+                            Budget
+                          </span>
+                          <span className="wx-numeric mt-1 block text-[15px] font-semibold">
+                            {money(brand.budget_allocated, brand.currency)}
+                          </span>
                         </span>
-                        <span className="wx-numeric mt-1 block text-[15px] font-semibold">
-                          {money(brand.budget_allocated, brand.currency)}
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-[12px] text-muted">
+                          <Tag size={12} aria-hidden />
+                          <span className="wx-numeric">{c ? c.active : 0}</span> live
+                          {c && c.total > c.active ? (
+                            <span className="text-faint">of {c.total}</span>
+                          ) : null}
                         </span>
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-[12px] text-muted">
-                        <Tag size={12} aria-hidden />
-                        <span className="wx-numeric">{c ? c.active : 0}</span> live
-                        {c && c.total > c.active ? (
-                          <span className="text-faint">of {c.total}</span>
-                        ) : null}
-                      </span>
+                      </div>
+
+                      <div className="mt-3">
+                        <BudgetBar brand={brand} />
+                      </div>
                     </div>
                   </Link>
                 </li>

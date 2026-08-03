@@ -64,6 +64,7 @@ const check = (c, m) => (c ? pass(m) : fail(m));
 
 const made = [];
 let brandId = null;
+let otherBrandId = null;
 const browser = await launchBrowser();
 
 /** Poll until the database says what we are waiting for, or give up. */
@@ -227,6 +228,21 @@ try {
     Boolean(fixed?.id && openEnded?.id && takeIt?.id),
     'three offers: fixed terms, open ended, and one nobody has to ask for'
   );
+
+  // A second brand, with its own budget, used for one thing only: proving that
+  // approving somebody on the first brand does not touch the second.
+  const { data: otherBrand } = await admin.rpc('save_brand', {
+    p_actor_id: staff.id,
+    p_name: `${BRAND_NAME} neighbour`,
+    p_store_id: `${STORE_ID}-b`,
+    p_brand_id: null,
+    p_client_name: 'Neighbour Ltd',
+    p_budget: 5000,
+    p_currency: 'USD',
+    p_is_active: true,
+  });
+  otherBrandId = otherBrand?.id ?? null;
+  check(Boolean(otherBrandId), 'a second brand exists, to prove budgets do not leak sideways');
 
   const creatorId = await makeCreator(CREATOR_EMAIL, HANDLE);
   const rivalId = await makeCreator(RIVAL_EMAIL, `rival${stamp}`);
@@ -612,6 +628,84 @@ try {
     .catch(() => false);
   check(toldLive, 'and it reaches the creator without a reload');
 
+  /* ------------------------------------------------------ [6b] the budget */
+  // Approving is the moment money stops being a plan and becomes a promise.
+  console.log('\n[6b] What approving does to the budget');
+
+  const readBudget = async (id) =>
+    (
+      await admin
+        .from('brand_commercials')
+        .select('budget_allocated, budget_used, budget_used_percent')
+        .eq('brand_id', id)
+        .single()
+    ).data;
+
+  const spent = await readBudget(brandId);
+  check(
+    Number(spent?.budget_used) === 300,
+    `the offer's price is charged to the brand (used ${spent?.budget_used} of ${spent?.budget_allocated})`
+  );
+  check(
+    Number(spent?.budget_used_percent) === Number((300 / 41000 * 100).toFixed(2)),
+    `and the percentage is worked out in the database (${spent?.budget_used_percent}%)`
+  );
+
+  const untouched = await readBudget(otherBrandId);
+  check(
+    Number(untouched?.budget_used) === 0,
+    `the other brand's budget did not move (${untouched?.budget_used})`
+  );
+
+  const { data: committed } = await admin
+    .from('offer_applications')
+    .select('committed_amount')
+    .eq('id', asOffered.id)
+    .single();
+  check(
+    Number(committed?.committed_amount) === 300,
+    `what was promised is written on the request itself (${committed?.committed_amount})`
+  );
+
+  /*
+   * Re-pricing the offer afterwards must not rewrite history. The creator was
+   * promised 300 and the budget was charged 300, and neither changes because
+   * somebody edited the offer next month.
+   */
+  await admin.rpc('save_offer', {
+    p_actor_id: staff.id,
+    p_brand_id: brandId,
+    p_title: 'Fixed terms deal',
+    p_video_count: 5,
+    p_reward_amount: 999,
+    p_offer_id: fixed.id,
+    p_description: 'Something to make.',
+    p_currency: 'USD',
+    p_status: 'active',
+    p_needs_application: true,
+  });
+  const afterRepricing = await readBudget(brandId);
+  const { data: stillCommitted } = await admin
+    .from('offer_applications')
+    .select('committed_amount')
+    .eq('id', asOffered.id)
+    .single();
+  check(
+    Number(afterRepricing?.budget_used) === 300 &&
+      Number(stillCommitted?.committed_amount) === 300,
+    `re-pricing the offer does not rewrite a promise already made (used ${afterRepricing?.budget_used}, committed ${stillCommitted?.committed_amount})`
+  );
+
+  // A creator must never see any of this.
+  const peeking = await asUser(
+    page,
+    '/rest/v1/brand_commercials?select=brand_id,budget_used,budget_used_percent'
+  );
+  check(
+    rows(peeking).length === 0,
+    `a creator cannot read what a brand has spent (${rows(peeking).length} rows, HTTP ${peeking.status})`
+  );
+
   // Deciding twice is refused, whichever admin gets there second.
   const again = await asUser(adminPage, '/functions/v1/manage-offer-application', {
     method: 'POST',
@@ -649,6 +743,12 @@ try {
     'the rejection to land'
   );
   check(Boolean(rejected), 'the other request is rejected');
+
+  const afterRejection = await readBudget(brandId);
+  check(
+    Number(afterRejection?.budget_used) === 300,
+    `rejecting somebody costs nothing (${afterRejection?.budget_used})`
+  );
 
   // A rejection is not a ban. The partial unique index only covers pending and
   // approved rows, so they can come back with a different number.
@@ -723,6 +823,31 @@ try {
     'a search with no results says so rather than showing an empty page'
   );
 
+  // The brand list carries the budget, and can be filtered by how much of it is
+  // gone. 300 of 41,000 is under 1%, so this brand belongs in "under 50".
+  await adminPage.goto(`${BASE}/admin/brands?q=${encodeURIComponent(BRAND_NAME)}`, {
+    waitUntil: 'domcontentloaded',
+  });
+  await adminPage.waitForTimeout(2500);
+  check(
+    (await adminPage.getByText(/committed/i).count()) > 0,
+    'the brand card shows how much of the budget is committed'
+  );
+
+  await adminPage.selectOption('select[name="budget"]', 'under50');
+  await adminPage.waitForTimeout(2500);
+  check(
+    (await adminPage.getByText(BRAND_NAME).count()) > 0,
+    'filtering to brands under 50% used keeps this one'
+  );
+
+  await adminPage.selectOption('select[name="budget"]', 'over80');
+  await adminPage.waitForTimeout(2500);
+  check(
+    (await adminPage.getByText(BRAND_NAME).count()) === 0,
+    'and filtering to over 80% used drops it, in the database rather than the browser'
+  );
+
   /* -------------------------------------------- [8] offers people rely on */
   console.log('\n[8] An offer somebody is waiting on');
   const blocked = await admin.rpc('delete_offer', {
@@ -756,22 +881,22 @@ try {
 } finally {
   await browser.close();
 
-  if (brandId) {
-    const { data: offerIds } = await admin.from('offers').select('id').eq('brand_id', brandId);
+  for (const id of [brandId, otherBrandId].filter(Boolean)) {
+    const { data: offerIds } = await admin.from('offers').select('id').eq('brand_id', id);
     const { data: requestIds } = await admin
       .from('offer_applications')
       .select('id')
-      .eq('brand_id', brandId);
+      .eq('brand_id', id);
     for (const r of requestIds ?? []) {
       await admin.from('audit_log').delete().eq('subject_id', r.id);
     }
     // Requests cascade with the offer, but the audit rows above do not.
-    await admin.from('offer_applications').delete().eq('brand_id', brandId);
+    await admin.from('offer_applications').delete().eq('brand_id', id);
     for (const o of offerIds ?? []) {
       await admin.from('audit_log').delete().eq('subject_id', o.id);
     }
-    await admin.from('audit_log').delete().eq('subject_id', brandId);
-    await admin.from('brands').delete().eq('id', brandId);
+    await admin.from('audit_log').delete().eq('subject_id', id);
+    await admin.from('brands').delete().eq('id', id);
   }
   for (const id of made) {
     await admin.from('audit_log').delete().eq('actor_id', id);

@@ -60,6 +60,38 @@ export interface OfferQueueRow {
     currency: string;
   } | null;
   brand: { id: string; name: string } | null;
+  /**
+   * What this brand has left to promise. Staff only, and the reason the approve
+   * dialog can say what a decision costs before it is made. Flattened out of
+   * the nested embed by `flattenBudget` below.
+   */
+  budget: {
+    budget_allocated: string | number | null;
+    budget_used: string | number | null;
+    currency: string;
+  } | null;
+}
+
+type QueueRowRaw = Omit<OfferQueueRow, 'brand' | 'budget'> & {
+  brand:
+    | (OfferQueueRow['brand'] & {
+        brand_commercials: OfferQueueRow['budget'] | OfferQueueRow['budget'][] | null;
+      })
+    | null;
+};
+
+/**
+ * Lift the brand's budget up to the top of the row.
+ *
+ * The array check is not paranoia: PostgREST returns an embedded resource as an
+ * object when it can prove the relationship is one to one and as an array when
+ * it cannot, and that proof depends on the constraints it finds.
+ */
+function flattenBudget(row: QueueRowRaw): OfferQueueRow {
+  const nested = row.brand?.brand_commercials ?? null;
+  const budget = (Array.isArray(nested) ? nested[0] : nested) ?? null;
+  const brand = row.brand ? { id: row.brand.id, name: row.brand.name } : null;
+  return { ...row, brand, budget };
 }
 
 /**
@@ -75,7 +107,17 @@ const COLUMNS =
   'id, offer_id, brand_id, creator_id, creator_handle, creator_name, creator_email, ' +
   'status, currency, note, decision_note, decided_at, created_at, ' +
   'offer:offers (id, title, video_count, reward_amount, currency), ' +
-  'brand:brands (id, name)';
+  /*
+   * The budget is reached THROUGH the brand, not beside it.
+   *
+   * `offer_applications.brand_id` points at `brands`, and `brand_commercials`
+   * points at `brands` too. PostgREST will not invent a path between two tables
+   * that only share a third, so asking for `brand_commercials` at the top level
+   * fails. Nesting it inside the brand embed follows a real foreign key both
+   * ways. Row level security still applies: a creator running this gets nothing
+   * for it.
+   */
+  'brand:brands (id, name, brand_commercials (budget_allocated, budget_used, currency))';
 
 export function useOfferApplications(filters: OfferQueueFilters) {
   const search = sanitiseOfferSearch(filters.search);
@@ -106,7 +148,10 @@ export function useOfferApplications(filters: OfferQueueFilters) {
         .range(from, from + OFFER_QUEUE_PAGE_SIZE - 1);
 
       if (error) throw error;
-      return { rows: (data ?? []) as unknown as OfferQueueRow[], total: count ?? 0 };
+      return {
+        rows: ((data ?? []) as unknown as QueueRowRaw[]).map(flattenBudget),
+        total: count ?? 0,
+      };
     },
   });
 }

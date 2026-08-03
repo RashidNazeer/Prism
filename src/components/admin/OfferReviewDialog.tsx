@@ -3,6 +3,7 @@ import { m } from 'motion/react';
 import { Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Field, Textarea } from '@/components/ui/Field';
+import { cn } from '@/lib/utils';
 import { useFocusTrap } from '@/lib/use-focus-trap';
 import { money } from '@/lib/admin/useBrands';
 import {
@@ -121,6 +122,14 @@ export function OfferReviewDialog({
           ) : null}
         </div>
 
+        {/* What this costs, before it is spent. Approving is the moment the
+            money stops being available to promise to anybody else, so the
+            number belongs here rather than being discovered later on the brand
+            list. */}
+        {decision === 'approved' && row.budget ? (
+          <BudgetImpact row={row} />
+        ) : null}
+
         <p className="mt-4 text-[14px] leading-relaxed text-muted">
           {decision === 'approved'
             ? 'They are told straight away, and the offer shows as theirs.'
@@ -182,6 +191,57 @@ export function OfferReviewDialog({
           </Button>
         </div>
       </m.div>
+    </div>
+  );
+}
+
+/**
+ * What approving does to this brand's budget, and only this brand's.
+ *
+ * Deliberately does not block an approval that goes over. Whether to overspend
+ * is a commercial decision, not a rule the software should be making at eleven
+ * at night, so it says so plainly and leaves the choice where it belongs.
+ */
+function BudgetImpact({ row }: { row: OfferQueueRow }) {
+  const currency = row.budget?.currency ?? row.currency;
+  const allocated =
+    row.budget?.budget_allocated == null ? null : Number(row.budget.budget_allocated);
+  const used = Number(row.budget?.budget_used ?? 0) || 0;
+  const cost = row.offer?.reward_amount == null ? 0 : Number(row.offer.reward_amount);
+
+  if (allocated === null || !Number.isFinite(allocated)) {
+    return (
+      <p className="mt-4 rounded-xl border border-line bg-surface-2 px-4 py-3 text-[13px] leading-relaxed text-muted">
+        {row.brand?.name} has no budget set, so there is nothing to count this against.
+      </p>
+    );
+  }
+
+  const after = used + cost;
+  const left = allocated - after;
+  const over = after > allocated;
+
+  return (
+    <div
+      className={cn(
+        'mt-4 rounded-xl border px-4 py-3',
+        over ? 'border-danger/40 bg-danger-soft' : 'border-line bg-surface-2'
+      )}
+    >
+      <p className="font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+        {row.brand?.name} budget
+      </p>
+      <p className="wx-numeric mt-1 text-[14px]">
+        <span className="font-semibold">{money(after, currency)}</span> of{' '}
+        {money(allocated, currency)} committed after this
+      </p>
+      <p className={cn('mt-1 text-[13px]', over ? 'font-medium text-danger' : 'text-muted')}>
+        {over ? (
+          <>Over budget by {money(-left, currency)}. You can still approve it.</>
+        ) : (
+          <>{money(left, currency)} would be left</>
+        )}
+      </p>
     </div>
   );
 }

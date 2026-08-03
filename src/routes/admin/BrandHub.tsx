@@ -22,7 +22,9 @@ import { OfferDialog } from '@/components/admin/OfferDialog';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { useManageBrand } from '@/lib/admin/useManageBrand';
+import { BudgetBar } from '@/components/admin/BudgetBar';
 import {
+  budgetOf,
   money,
   useBrand,
   useOffers,
@@ -240,8 +242,33 @@ function Overview({
     (o) => o.status === 'active' && !o.needs_application
   ).length;
 
+  const budget = budgetOf(brand);
+
   return (
     <div className="mt-6 grid max-w-4xl gap-6">
+      {/* Budget first, because it is the only fact here that changes on its own
+          and the only one with a consequence. Everything below is reference. */}
+      <div className="rounded-2xl border border-line bg-surface-1 px-5 py-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <dt className="font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+            Budget committed to creators
+          </dt>
+          <dd className="wx-numeric text-[15px] font-semibold">
+            {money(brand.budget_used, brand.currency)} of{' '}
+            {money(brand.budget_allocated, brand.currency)}
+          </dd>
+        </div>
+        <div className="mt-3">
+          <BudgetBar brand={brand} size="lg" />
+        </div>
+        {budget.over ? (
+          <p className="mt-3 border-t border-line pt-3 text-[13px] leading-relaxed text-danger">
+            More has been promised than this brand was allocated. Nothing is blocked,
+            but the next approval makes it worse.
+          </p>
+        ) : null}
+      </div>
+
       {/* Separate bordered cards rather than the one-pixel-gap trick used
           elsewhere. That trick paints the gaps with the border colour, so a row
           that does not divide evenly leaves a visible empty block at the end.
@@ -253,6 +280,12 @@ function Overview({
           label="Budget allocated"
           value={money(brand.budget_allocated, brand.currency)}
           accent
+        />
+        <Fact
+          label="Still available"
+          value={
+            budget.left === null ? 'Not set' : money(budget.left, brand.currency)
+          }
         />
         <Fact label="Currency" value={brand.currency} />
         <Fact

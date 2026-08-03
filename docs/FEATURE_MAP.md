@@ -295,8 +295,20 @@ offers.
 
 **Change rules**
 
-- **The client name and the allocated budget are NOT on `brands`.** They live
-  in `brand_commercials`, one row per brand, staff only. That split is what
+- **The client name, the allocated budget and what has been committed of it are
+  NOT on `brands`.** They live in `brand_commercials`, one row per brand, staff
+  only.
+- **`budget_used` is what has been PROMISED, not paid.** It is the sum of every
+  approved offer request on that brand, maintained by
+  `review_offer_application` in the same transaction as the approval, so the
+  request and the total can never disagree. `budget_used_percent` is a stored
+  generated column so the brand list can filter on "over 80% used" in the
+  database rather than fetching every brand and doing arithmetic in a browser.
+  It is null when there is no allocation: a brand with no budget has not used
+  0% of anything.
+- **Approving is never blocked for going over budget.** Whether to overspend is
+  a commercial decision, so the approve dialog says what it will cost and what
+  will be left, colours the bar red past 100%, and leaves the choice to a human. That split is what
   makes it safe to show a brand to a creator: the budget is not a column they
   are filtered away from, it is a column that does not exist on anything they
   can read. Column level SELECT grants cannot do this job, because staff and
@@ -474,7 +486,15 @@ real request through the real screen.
   creator renames themselves or closes their account. The live profile is not
   joined.
 - `review_offer_application` takes `for update` and refuses a second decision
-  with `55006`, so two admins clicking at once cannot both decide.
+  with `55006`, so two admins clicking at once cannot both decide, and cannot
+  both spend the same budget.
+- **`committed_amount` is a snapshot taken at approval, never read live from
+  the offer.** Re-pricing an offer next month must not rewrite what a creator
+  was already promised, nor a budget that has already been reported on. The
+  suite proves it by re-pricing an approved offer and checking neither moved.
+- An approved request against an offer with no fixed fee commits nothing
+  measurable, so it adds nothing to the budget rather than a guessed number. It
+  still counts as a creator on the offer.
 - **`delete_offer` refuses while any request is pending or approved.** Settled
   ones cascade with the offer and the audit log keeps them. Deleting an offer
   somebody is waiting on is how you lose a creator.

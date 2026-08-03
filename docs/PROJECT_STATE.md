@@ -253,6 +253,29 @@ Two dashboards that cut across brands, one each side.
   can apply straight from here, using the same dialog as the hub.
 - `pnpm verify:offer-requests`: 50 checks, now including both dashboards.
 
+### Step 6, Brand Hub phase five (this step)
+
+Budgets that move when you approve somebody.
+
+- **Approving a creator charges the offer's price to that brand's budget**, and
+  only that brand's. Rashid's example: Bentgo allocated $1,000, two creators
+  approved on a $100 and a $200 offer, so $300 used and $700 left.
+- What was promised is **snapshotted onto the request** (`committed_amount`), so
+  re-pricing the offer later does not rewrite a promise already made, or a
+  budget already reported on.
+- **Every brand card carries a budget bar**: how much is committed, how much is
+  left, gold under 80%, amber over it, red past 100%.
+- **The brand list can be filtered by how much is gone**: under 50%, 50 to 80%,
+  over 80%, over budget, or no budget set. Filtered in the database on a stored
+  generated column, so it works with pagination.
+- The brand's own Overview leads with the same bar, and the approve dialog says
+  what a decision will cost and what will be left **before** it is made.
+- **Going over budget is allowed and shown, never blocked.** That is a
+  commercial call, not one for the software to make at eleven at night.
+- All of it is staff only. It lives in `brand_commercials`, which no creator
+  can read, and the suite proves that on the wire.
+- `pnpm verify:offer-requests`: 61 checks.
+
 **Not built, by design:** what happens after approval. An approved request says
 a creator is on that deal; tracking their videos and paying them out is Step 7
 and Step 8 work.
