@@ -308,7 +308,14 @@ offers.
   0% of anything.
 - **Approving is never blocked for going over budget.** Whether to overspend is
   a commercial decision, so the approve dialog says what it will cost and what
-  will be left, colours the bar red past 100%, and leaves the choice to a human. That split is what
+  will be left, colours the bar red past 100%, and leaves the choice to a human.
+- **Deleting approved requests with the service key leaves `budget_used`
+  stale**, because the running total is only ever moved by
+  `review_offer_application`. Nothing a browser can reach does that, so it
+  cannot happen in normal use, but a cleanup script did it on 2026-08-01 and
+  left three brands claiming money nobody had promised.
+  `node scripts/reconcile-budgets.mjs` puts it right, and `--dry-run` reports
+  without writing. Run it after any hand cleanup that touches requests. That split is what
   makes it safe to show a brand to a creator: the budget is not a column they
   are filtered away from, it is a column that does not exist on anything they
   can read. Column level SELECT grants cannot do this job, because staff and

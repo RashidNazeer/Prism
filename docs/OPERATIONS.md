@@ -97,6 +97,8 @@ node scripts/check-admin.mjs <url> <email> <password> [role] [path]
 node scripts/create-admin.mjs <email> <password> [role]
 node scripts/seed-applications.mjs [--clean]   # demo queue data, DEV ONLY
 node scripts/seed-brands.mjs [--clean]         # demo brands and offers, DEV ONLY
+node scripts/reconcile-budgets.mjs [--dry-run] # put brand budgets back in step
+                                               # with their approved requests
 ```
 
 Every suite creates real accounts and **deletes them afterwards**. Run against
