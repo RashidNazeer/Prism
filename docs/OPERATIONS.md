@@ -123,6 +123,13 @@ Then poll the log. **Failures go to stderr**, so read the `.err` file too; a
 green-looking stdout with missing PASS lines means the failures are in the
 other file.
 
+**Never put `2>&1` after the `node` call inside a runner script.** PowerShell
+5.1 wraps each stderr line from a native exe in an ErrorRecord, which then does
+not reach `-RedirectStandardOutput` at all. The result is a log that ends
+mid-suite with no failures in it and no error either, which reads exactly like
+a passing run that stopped early. Redirect the two streams separately and read
+both.
+
 All suites launch Chromium through `scripts/browser.mjs`, which strips the GPU
 process, extensions and background networking and caps the renderer heap. Add
 new suites through it, not through `chromium.launch()` directly.

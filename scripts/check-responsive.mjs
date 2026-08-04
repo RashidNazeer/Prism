@@ -132,7 +132,17 @@ try {
       });
       page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 
-      await page.goto(`${BASE}${screen.path}`, { waitUntil: 'networkidle' });
+      /*
+       * `domcontentloaded`, not `networkidle`.
+       *
+       * Several screens hold an open realtime websocket, which means the
+       * network is never idle and the wait can only ever time out. Even on the
+       * screens that do not, waiting for silence on a live deployment from a
+       * busy laptop times out often enough to look like a layout bug. What this
+       * suite actually needs is below: the expected content visible, and the
+       * page measured once it is.
+       */
+      await page.goto(`${BASE}${screen.path}`, { waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(1800);
 
       // Scoped to <main> on purpose. The desktop rail is rendered at every

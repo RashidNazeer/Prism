@@ -264,12 +264,18 @@ try {
   await page.goto(`${BASE}/app/brands/${brand.slug}?section=offers`, {
     waitUntil: 'domcontentloaded',
   });
-  await page.waitForTimeout(3000);
 
-  check(
-    (await page.getByText('Fixed terms deal').count()) > 0,
-    'the offers are on screen'
-  );
+  // Waited for, not slept on. A fixed pause is a guess about how fast the
+  // machine and the network are today, and this suite runs against a live
+  // deployment on a laptop that is also running everything else.
+  const offersOnScreen = await page
+    .getByText('Fixed terms deal')
+    .first()
+    .waitFor({ state: 'visible', timeout: 25000 })
+    .then(() => true)
+    .catch(() => false);
+
+  check(offersOnScreen, 'the offers are on screen');
   check(
     (await page.getByText(/already on this one/i).count()) > 0,
     'an offer nobody has to apply for says it is already theirs'
@@ -728,13 +734,23 @@ try {
     `with a first event that came from nowhere (${JSON.stringify(firstEvent)})`
   );
 
-  // The creator is watching their dashboard. Nothing below tells them to look.
+  /*
+   * The creator is watching their dashboard. Nothing below tells them to look.
+   *
+   * Waiting for the stage to appear also proves the page has finished loading
+   * and its realtime channel has had time to attach, which is what the check
+   * further down actually depends on. Acting before that races the socket and
+   * blames the product for it.
+   */
   await page.goto(`${BASE}/app`, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(3000);
-  check(
-    (await page.getByText(/pending request/i).count()) > 0,
-    'the creator dashboard shows the stage they are at'
-  );
+  const stageOnBoard = await page
+    .getByText(/pending request/i)
+    .first()
+    .waitFor({ state: 'visible', timeout: 25000 })
+    .then(() => true)
+    .catch(() => false);
+  check(stageOnBoard, 'the creator dashboard shows the stage they are at');
+  await page.waitForTimeout(1500);
 
   // Admin moves it along, through the real control on the real screen.
   await adminPage.goto(`${BASE}/admin/offers/requests?status=approved`, {
@@ -781,10 +797,17 @@ try {
     p_note: 'Sent this morning.',
   });
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(3500);
+  // Waited for rather than slept on. The headline counts up, and a fixed pause
+  // is a guess about how fast somebody else's machine is.
+  const countedAsPaid = await page
+    .getByText('$300')
+    .first()
+    .waitFor({ state: 'visible', timeout: 25000 })
+    .then(() => true)
+    .catch(() => false);
   const board = await page.evaluate(() => document.body.innerText);
   check(
-    /paid to you so far/i.test(board) && board.includes('$300'),
+    countedAsPaid && /paid to you so far/i.test(board),
     'once it is marked paid the creator dashboard counts it as money received'
   );
 
@@ -842,7 +865,10 @@ try {
 
   /* ------------------------------------------------------ [7] the refusal */
   console.log('\n[7] Rejecting, and asking again');
-  await adminPage.reload({ waitUntil: 'domcontentloaded' });
+  // Back to the pending list explicitly. Section [6c] leaves this page filtered
+  // to approved work, and a reload would keep that filter, hide the request
+  // about to be rejected, and time out looking for a button that is not there.
+  await adminPage.goto(`${BASE}/admin/offers/requests`, { waitUntil: 'domcontentloaded' });
   await adminPage.waitForTimeout(2500);
   await rowFor('Name your price')
     .getByRole('button', { name: /^reject$/i })
