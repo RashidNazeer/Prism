@@ -198,10 +198,19 @@ function Money({ summary }: { summary: WorkSummary }) {
               aria-label={`${fmt(paid)} paid, ${fmt(due)} awaiting payment, ${fmt(working)} in progress`}
               className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full bg-surface-2"
             >
+              {/*
+               * Green, gold, grey. NOT success/warning/accent, which is the
+               * obvious choice and unreadable: in light mode `--wx-warning`
+               * (#8a6410) and `--wx-accent` (#8a5f1f) are within a hair of each
+               * other, so two thirds of the bar looked like one segment.
+               *
+               * This ramp also says something true. Green is in your account,
+               * gold is about to be, grey is not yet.
+               */}
               {[
                 { key: 'paid', value: paid, className: 'bg-success' },
-                { key: 'due', value: due, className: 'bg-warning' },
-                { key: 'working', value: working, className: 'bg-accent' },
+                { key: 'due', value: due, className: 'bg-accent' },
+                { key: 'working', value: working, className: 'bg-line-strong' },
               ]
                 .filter((s) => s.value > 0)
                 .map((s, i) => (
@@ -226,19 +235,21 @@ function Money({ summary }: { summary: WorkSummary }) {
           icon={<Check size={14} aria-hidden />}
           tone="success"
         />
+        {/* The icon tones match the bar above, in the same order, so the bar
+            needs no legend of its own. */}
         <MoneyCell
           label="Awaiting payment"
           value={fmt(due)}
           hint="Work done, payment approved"
           icon={<Wallet size={14} aria-hidden />}
-          tone="warning"
+          tone="accent"
         />
         <MoneyCell
           label="In progress"
           value={fmt(working)}
           hint="Agreed, still being worked"
           icon={<Clock size={14} aria-hidden />}
-          tone="accent"
+          tone="muted"
         />
       </dl>
     </m.section>
@@ -256,7 +267,7 @@ function MoneyCell({
   value: string;
   hint: string;
   icon: React.ReactNode;
-  tone: 'success' | 'warning' | 'accent';
+  tone: 'success' | 'accent' | 'muted';
 }) {
   return (
     <div className="border-t border-line px-5 py-4 sm:border-t-0 sm:px-6 sm:py-5">
@@ -265,8 +276,8 @@ function MoneyCell({
           className={cn(
             'grid size-6 shrink-0 place-items-center rounded-full',
             tone === 'success' && 'bg-success-soft text-success',
-            tone === 'warning' && 'bg-warning-soft text-warning',
-            tone === 'accent' && 'bg-accent-soft text-accent'
+            tone === 'accent' && 'bg-accent-soft text-accent',
+            tone === 'muted' && 'bg-surface-2 text-muted'
           )}
         >
           {icon}
