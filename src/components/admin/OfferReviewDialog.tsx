@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { m } from 'motion/react';
 import { Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Field, Textarea } from '@/components/ui/Field';
+import { Field, Select, Textarea } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
 import { useFocusTrap } from '@/lib/use-focus-trap';
-import { money } from '@/lib/admin/useBrands';
+import { money } from '@/lib/money';
+import { OFFER_STAGES, STAGE_META, type OfferStage } from '@/lib/offer-stages';
 import {
   useReviewOfferApplication,
   type OfferQueueRow,
@@ -29,6 +30,10 @@ export function OfferReviewDialog({
   onClose: () => void;
 }) {
   const [note, setNote] = useState('');
+  // Where the work starts. Usually the beginning, but a sample already in the
+  // post is a real situation and making somebody approve then immediately
+  // correct it is busywork.
+  const [stage, setStage] = useState<OfferStage>('pending_request');
   const panelRef = useRef<HTMLDivElement>(null);
   const review = useReviewOfferApplication();
   const busy = review.isPending;
@@ -136,7 +141,31 @@ export function OfferReviewDialog({
             : 'Nothing is deleted. They can ask again, so a note here saves them guessing.'}
         </p>
 
-        <div className="mt-5">
+        <div className="mt-5 grid gap-5">
+          {decision === 'approved' ? (
+            <Field
+              label="Starting stage"
+              hint={STAGE_META[stage].creatorHint}
+            >
+              {({ id, describedBy }) => (
+                <Select
+                  id={id}
+                  name="stage"
+                  aria-describedby={describedBy}
+                  value={stage}
+                  disabled={busy}
+                  onChange={(e) => setStage(e.target.value as OfferStage)}
+                >
+                  {OFFER_STAGES.map((s) => (
+                    <option key={s} value={s}>
+                      {STAGE_META[s].label}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+          ) : null}
+
           <Field label="Note" hint="Optional. The creator reads this.">
             {({ id, describedBy }) => (
               <Textarea
@@ -168,7 +197,12 @@ export function OfferReviewDialog({
             disabled={busy}
             onClick={() =>
               review.mutate(
-                { applicationId: row.id, decision, note: note.trim() || null },
+                {
+                  applicationId: row.id,
+                  decision,
+                  note: note.trim() || null,
+                  ...(decision === 'approved' ? { stage } : {}),
+                },
                 { onSuccess: onClose }
               )
             }

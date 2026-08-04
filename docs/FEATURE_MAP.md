@@ -433,6 +433,48 @@ it and going in through the hub.
 - Applying uses the SAME `ApplyDialog` as the brand hub. Two apply paths that
   drift apart is how one of them ends up sending something different.
 
+## The pipeline, and the creator's dashboard
+
+**Files:** `src/lib/offer-stages.ts`, `src/lib/creator/useMyWork.ts`,
+`src/routes/app/Dashboard.tsx`, `src/components/creator/StageTracker.tsx`,
+`src/components/creator/CountUp.tsx`, `src/lib/money.ts`,
+`supabase/migrations/*_offer_pipeline.sql`,
+`supabase/migrations/*_read_offers_you_asked_for.sql`
+**Tables:** `offer_applications.stage`, `offer_stage_events`
+
+Approving somebody is the start of the work, not the end of it. Seven stages,
+from Pending request to Paid, moved by staff and watched by the creator.
+
+**Change rules**
+
+- **`src/lib/offer-stages.ts` is the single source of the vocabulary**, the
+  order, the icons, and which money bucket each stage belongs to. Nothing
+  hard-codes a sequence of its own. The SAME labels are used on both sides on
+  purpose: an admin and a creator on the phone must mean the same box when they
+  say "sample shipped".
+- Only an APPROVED request has a stage. Pending has not started and rejected
+  never will, so theirs is null rather than a first step nobody is standing on.
+- **Money is bucketed by STAGE, never by status.** "Approved" says nothing about
+  whether anybody has been paid. Each stage belongs to exactly one bucket, so
+  paid plus due plus working always equals the total agreed and a creator can
+  add the three cards up and get the big number. Adding a stage means choosing
+  its bucket, or that stops being true.
+- Moving a request **backwards is allowed**. A sample marked shipped that was
+  not shipped has to be correctable, and refusing would only teach people to
+  work around the product.
+- The stage control on the admin queue applies on change with no confirmation.
+  Seven stages across every creator is a lot of clicking, none of it
+  destructive, all of it audited, all of it reversible.
+- `offer_stage_events` is the creator-readable history, which `audit_log` can
+  never be because that is staff only. Anything a creator should be able to see
+  about their own work goes here.
+- **A creator can always read the offer and brand behind their own request**,
+  even after either is switched off. Without that policy, retiring a brand at
+  the end of a campaign would blank the name of the thing somebody is still
+  being paid for.
+- `src/lib/money.ts` holds the formatters. Creator screens must not import from
+  `src/lib/admin/*` for them, which is what they used to do.
+
 ## Offer requests (creators asking, staff deciding)
 
 **Files:** `src/routes/admin/OfferRequests.tsx`,

@@ -13,13 +13,15 @@ import { OfferReviewDialog } from '@/components/admin/OfferReviewDialog';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
-import { money } from '@/lib/admin/useBrands';
+import { money } from '@/lib/money';
+import { isStage, OFFER_STAGES, STAGE_META, type OfferStage } from '@/lib/offer-stages';
 import {
   DEFAULT_OFFER_FILTERS,
   OFFER_QUEUE_PAGE_SIZE,
   useBrandsWithRequests,
   useOfferApplicationCounts,
   useOfferApplications,
+  useSetOfferStage,
   type OfferQueueFilters,
   type OfferQueueRow,
   type OfferStatusFilter,
@@ -56,9 +58,11 @@ export function OfferRequests() {
   } | null>(null);
 
   const statusParam = params.get('status');
+  const stageParam = params.get('stage');
   const filters: OfferQueueFilters = {
     status: isStatus(statusParam) ? statusParam : DEFAULT_OFFER_FILTERS.status,
     brandId: params.get('brand') ?? '',
+    stage: isStage(stageParam) ? stageParam : '',
     search: params.get('q') ?? '',
     sort: params.get('sort') === 'oldest' ? 'oldest' : 'newest',
     page: Math.max(1, Number(params.get('page') ?? '1') || 1),
@@ -75,6 +79,7 @@ export function OfferRequests() {
     const p = new URLSearchParams();
     if (merged.status !== DEFAULT_OFFER_FILTERS.status) p.set('status', merged.status);
     if (merged.brandId) p.set('brand', merged.brandId);
+    if (merged.stage) p.set('stage', merged.stage);
     if (merged.search) p.set('q', merged.search);
     if (merged.sort !== 'newest') p.set('sort', merged.sort);
     if (merged.page > 1) p.set('page', String(merged.page));
@@ -183,6 +188,30 @@ export function OfferRequests() {
             </option>
           ))}
         </Select>
+
+        {/* Only meaningful on approved work: nothing else has a stage. Hidden
+            elsewhere rather than shown doing nothing. */}
+        {filters.status === 'approved' || filters.status === 'all' ? (
+          <>
+            <label className="sr-only" htmlFor="stage-filter">
+              Filter by stage
+            </label>
+            <Select
+              id="stage-filter"
+              name="stage"
+              value={filters.stage}
+              onChange={(e) => setFilters({ stage: (e.target.value || '') as OfferStage | '' })}
+              className="h-9 basis-48 text-[13px]"
+            >
+              <option value="">Any stage</option>
+              {OFFER_STAGES.map((s) => (
+                <option key={s} value={s}>
+                  {STAGE_META[s].label}
+                </option>
+              ))}
+            </Select>
+          </>
+        ) : null}
 
         <label className="sr-only" htmlFor="sort-filter">
           Sort
@@ -387,6 +416,8 @@ function RequestRow({
               Reject
             </Button>
           </div>
+        ) : row.stage ? (
+          <StageControl row={row} />
         ) : null}
       </div>
 
@@ -402,6 +433,68 @@ function RequestRow({
             You said
           </span>{' '}
           {row.decision_note}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Where an approved request has got to, and how to move it.
+ *
+ * Applies on change with no confirmation step. Seven stages across every
+ * creator on every brand is a great deal of clicking, none of it destructive,
+ * all of it audited, and every one of them reversible by picking a different
+ * stage. A dialog per move would get worked around within a week.
+ *
+ * The creator is told immediately. That is the point of the whole thing.
+ */
+function StageControl({ row }: { row: OfferQueueRow }) {
+  const setStage = useSetOfferStage();
+  const current = row.stage!;
+  const meta = STAGE_META[current];
+  const Icon = meta.icon;
+
+  return (
+    <div className="min-w-0 shrink-0">
+      <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+        Stage
+      </span>
+      <div className="mt-1 flex items-center gap-2">
+        <span
+          className={cn(
+            'grid size-7 shrink-0 place-items-center rounded-full',
+            current === 'paid' ? 'bg-success-soft text-success' : 'bg-accent-soft text-accent'
+          )}
+        >
+          <Icon size={14} aria-hidden />
+        </span>
+        <label className="sr-only" htmlFor={`stage-${row.id}`}>
+          Stage for {row.creator_handle ?? 'this creator'}
+        </label>
+        <Select
+          id={`stage-${row.id}`}
+          name="stage"
+          value={current}
+          disabled={setStage.isPending}
+          onChange={(e) =>
+            setStage.mutate({
+              applicationId: row.id,
+              stage: e.target.value as OfferStage,
+            })
+          }
+          className="h-9 w-48 text-[13px]"
+        >
+          {OFFER_STAGES.map((s) => (
+            <option key={s} value={s}>
+              {STAGE_META[s].label}
+            </option>
+          ))}
+        </Select>
+      </div>
+      {setStage.error ? (
+        <p role="alert" className="mt-1 text-[12px] text-danger">
+          {(setStage.error as Error).message}
         </p>
       ) : null}
     </div>

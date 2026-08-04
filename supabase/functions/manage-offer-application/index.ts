@@ -50,14 +50,40 @@ const WithdrawBody = z.object({
   applicationId: z.uuid(),
 });
 
+/** Rashid's words, and deliberately the same ones on both sides. */
+const STAGES = [
+  'pending_request',
+  'sample_requested',
+  'sample_shipped',
+  'content_pending',
+  'content_completed',
+  'payment_pending',
+  'paid',
+] as const;
+
 const ReviewBody = z.object({
   action: z.literal('application.review'),
   applicationId: z.uuid(),
   decision: z.enum(['approved', 'rejected']),
   note: z.string().trim().max(1000).nullish(),
+  // Where the work starts. Usually the first stage, but a sample already in
+  // the post is a real situation.
+  stage: z.enum(STAGES).default('pending_request'),
 });
 
-const Body = z.discriminatedUnion('action', [CreateBody, WithdrawBody, ReviewBody]);
+const StageBody = z.object({
+  action: z.literal('application.stage'),
+  applicationId: z.uuid(),
+  stage: z.enum(STAGES),
+  note: z.string().trim().max(500).nullish(),
+});
+
+const Body = z.discriminatedUnion('action', [
+  CreateBody,
+  WithdrawBody,
+  ReviewBody,
+  StageBody,
+]);
 
 /** SQLSTATE from the database functions to something HTTP shaped. */
 const STATUS_FOR_PG: Record<string, number> = {
@@ -132,7 +158,8 @@ Deno.serve(async (req) => {
   // ------------------------------------------------------------- the gate --
   const isStaff = actor.role === 'admin' || actor.role === 'ops';
   const isCreator = actor.role === 'creator';
-  const needsStaff = input.action === 'application.review';
+  const needsStaff =
+    input.action === 'application.review' || input.action === 'application.stage';
 
   if ((needsStaff && !isStaff) || (!needsStaff && !isCreator)) {
     // A real account reaching for something it is not entitled to. Kept.
@@ -179,11 +206,19 @@ Deno.serve(async (req) => {
       p_actor_id: actor.id,
       p_application_id: input.applicationId,
     });
-  } else {
+  } else if (input.action === 'application.review') {
     rpc = await admin.rpc('review_offer_application', {
       p_actor_id: actor.id,
       p_application_id: input.applicationId,
       p_decision: input.decision,
+      p_note: input.note ?? null,
+      p_stage: input.stage,
+    });
+  } else {
+    rpc = await admin.rpc('set_offer_stage', {
+      p_actor_id: actor.id,
+      p_application_id: input.applicationId,
+      p_stage: input.stage,
       p_note: input.note ?? null,
     });
   }

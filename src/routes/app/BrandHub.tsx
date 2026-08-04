@@ -22,7 +22,7 @@ import {
   useMyOfferApplications,
   type MyOfferApplication,
 } from '@/lib/creator/useOfferApplications';
-import { money, percent } from '@/lib/admin/useBrands';
+import { money, percent } from '@/lib/money';
 
 /**
  * A Brand Hub, as a creator sees it.

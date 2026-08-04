@@ -1,5 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
+import type { OfferStage } from '@/lib/offer-stages';
 import type { OfferApplicationStatus } from '@/lib/creator/useOfferApplications';
 
 /**
@@ -24,6 +25,8 @@ export interface OfferQueueFilters {
   status: OfferStatusFilter;
   /** Empty means every brand. */
   brandId: string;
+  /** Empty means every stage. Only meaningful alongside the approved tab. */
+  stage: OfferStage | '';
   search: string;
   sort: OfferSortOrder;
   page: number;
@@ -32,6 +35,7 @@ export interface OfferQueueFilters {
 export const DEFAULT_OFFER_FILTERS: OfferQueueFilters = {
   status: 'pending',
   brandId: '',
+  stage: '',
   search: '',
   sort: 'newest',
   page: 1,
@@ -46,6 +50,11 @@ export interface OfferQueueRow {
   creator_name: string | null;
   creator_email: string | null;
   status: OfferApplicationStatus;
+  /** Where an approved request has got to. Null on anything not approved. */
+  stage: OfferStage | null;
+  stage_updated_at: string | null;
+  /** What we agreed to pay, snapshotted at approval. */
+  committed_amount: string | number | null;
   /** The currency the offer was quoted in when they asked. */
   currency: string;
   note: string | null;
@@ -105,7 +114,8 @@ export const sanitiseOfferSearch = (raw: string) =>
 
 const COLUMNS =
   'id, offer_id, brand_id, creator_id, creator_handle, creator_name, creator_email, ' +
-  'status, currency, note, decision_note, decided_at, created_at, ' +
+  'status, stage, stage_updated_at, committed_amount, currency, note, ' +
+  'decision_note, decided_at, created_at, ' +
   'offer:offers (id, title, video_count, reward_amount, currency), ' +
   /*
    * The budget is reached THROUGH the brand, not beside it.
@@ -137,6 +147,7 @@ export function useOfferApplications(filters: OfferQueueFilters) {
 
       if (filters.status !== 'all') q = q.eq('status', filters.status);
       if (filters.brandId) q = q.eq('brand_id', filters.brandId);
+      if (filters.stage) q = q.eq('stage', filters.stage);
       if (search) {
         q = q.or(
           `creator_handle.ilike.*${search}*,creator_name.ilike.*${search}*,creator_email.ilike.*${search}*`
@@ -223,6 +234,18 @@ export function useBrandsWithRequests() {
   });
 }
 
+/** Everything a decision touches, in one place so the two hooks agree. */
+function refreshAfterDecision(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({ queryKey: ['admin', 'offer-applications'] });
+  void queryClient.invalidateQueries({ queryKey: ['admin', 'offer-application-counts'] });
+  void queryClient.invalidateQueries({ queryKey: ['admin', 'offer-people'] });
+  void queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
+  // Approving spends budget, so the brand list and hub are now wrong too.
+  void queryClient.invalidateQueries({ queryKey: ['admin', 'brands'] });
+  void queryClient.invalidateQueries({ queryKey: ['admin', 'brand'] });
+  void queryClient.invalidateQueries({ queryKey: ['creator'] });
+}
+
 export function useReviewOfferApplication() {
   const queryClient = useQueryClient();
 
@@ -231,6 +254,8 @@ export function useReviewOfferApplication() {
       applicationId: string;
       decision: 'approved' | 'rejected';
       note: string | null;
+      /** Where the work starts. Ignored on a rejection. */
+      stage?: OfferStage;
     }): Promise<OfferQueueRow> => {
       const { data, error } = await getSupabase().functions.invoke(
         'manage-offer-application',
@@ -239,14 +264,34 @@ export function useReviewOfferApplication() {
       if (error) throw new Error(await messageFrom(error));
       return (data as { result: OfferQueueRow }).result;
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['admin', 'offer-applications'] });
-      void queryClient.invalidateQueries({
-        queryKey: ['admin', 'offer-application-counts'],
-      });
-      void queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
-      void queryClient.invalidateQueries({ queryKey: ['creator', 'my-offer-applications'] });
+    onSuccess: () => refreshAfterDecision(queryClient),
+  });
+}
+
+/**
+ * Moving a request along the pipeline.
+ *
+ * Applies immediately rather than behind a confirmation. Seven stages times
+ * every creator on every brand is a lot of clicking, none of it destructive,
+ * all of it audited and reversible by picking a different stage.
+ */
+export function useSetOfferStage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      applicationId: string;
+      stage: OfferStage;
+      note?: string | null;
+    }): Promise<OfferQueueRow> => {
+      const { data, error } = await getSupabase().functions.invoke(
+        'manage-offer-application',
+        { body: { action: 'application.stage', ...input } }
+      );
+      if (error) throw new Error(await messageFrom(error));
+      return (data as { result: OfferQueueRow }).result;
     },
+    onSuccess: () => refreshAfterDecision(queryClient),
   });
 }
 

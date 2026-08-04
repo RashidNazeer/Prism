@@ -10,7 +10,7 @@ import {
   offerApplicationSchema,
   type OfferApplicationInput,
 } from '@/lib/schemas/offer-application';
-import { money } from '@/lib/admin/useBrands';
+import { money } from '@/lib/money';
 import { useApplyForOffer } from '@/lib/creator/useOfferApplications';
 import type { CreatorOffer } from '@/lib/creator/useCreatorBrands';
 

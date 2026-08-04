@@ -276,9 +276,35 @@ Budgets that move when you approve somebody.
   can read, and the suite proves that on the wire.
 - `pnpm verify:offer-requests`: 61 checks.
 
-**Not built, by design:** what happens after approval. An approved request says
-a creator is on that deal; tracking their videos and paying them out is Step 7
-and Step 8 work.
+### Step 6, Brand Hub phase six (this step)
+
+The pipeline, and the creator's real dashboard.
+
+- **Seven stages on every approved offer**, in Rashid's own words: Pending
+  request, Sample requested, Sample shipped, Content pending, Content
+  completed, Payment pending, Paid. The same labels on both sides, so a phone
+  call between an admin and a creator uses one vocabulary.
+- Staff move a request along from the queue, with a stage filter alongside.
+  Approving picks the starting stage, because a sample already in the post is a
+  real situation.
+- **Every move is recorded and the creator can read their own history.** That is
+  a separate table from `audit_log`, which is staff only.
+- **`/app` is now a real dashboard.** Paid to you so far as the headline, a
+  flow bar splitting every agreed pound into paid, awaiting payment and in
+  progress, four counts, every piece of work with a seven-step tracker and what
+  it pays, and a timeline of the latest moves.
+- **Money is bucketed by stage, not status**, so the three cards always add up
+  to the total agreed.
+- All of it is live. An admin marking a sample shipped or a payment made lands
+  on the creator's screen with no refresh.
+- A creator can now always read the offer and brand behind their own work, even
+  after either is switched off. Without that, retiring a brand would blank the
+  name of the thing somebody is still owed for.
+- `pnpm verify:offer-requests`: 73 checks.
+
+**Not built, by design:** the actual videos. An approved request at "content
+completed" says a creator delivered; which posts those were, and what they
+earned in GMV, is Step 7 and Step 8 work.
 
 ## Known bugs
 

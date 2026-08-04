@@ -10,7 +10,7 @@ import { Select } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
-import { money } from '@/lib/admin/useBrands';
+import { money } from '@/lib/money';
 import {
   stateFor,
   useAllCreatorOffers,

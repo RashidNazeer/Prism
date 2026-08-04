@@ -706,6 +706,129 @@ try {
     `a creator cannot read what a brand has spent (${rows(peeking).length} rows, HTTP ${peeking.status})`
   );
 
+  /* ---------------------------------------------------- [6c] the pipeline */
+  // Approving is the start of the work, not the end of it. Seven stages, the
+  // same words on both sides, and the creator told at every step.
+  console.log('\n[6c] Moving through the pipeline');
+
+  const { data: started } = await admin
+    .from('offer_applications')
+    .select('stage, stage_updated_at')
+    .eq('id', asOffered.id)
+    .single();
+  check(started?.stage === 'pending_request', `approving starts the pipeline (${started?.stage})`);
+  check(Boolean(started?.stage_updated_at), 'and stamps when it started');
+
+  const { data: firstEvent } = await admin
+    .from('offer_stage_events')
+    .select('from_stage, to_stage')
+    .eq('application_id', asOffered.id);
+  check(
+    (firstEvent ?? []).length === 1 && firstEvent[0].from_stage === null,
+    `with a first event that came from nowhere (${JSON.stringify(firstEvent)})`
+  );
+
+  // The creator is watching their dashboard. Nothing below tells them to look.
+  await page.goto(`${BASE}/app`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(3000);
+  check(
+    (await page.getByText(/pending request/i).count()) > 0,
+    'the creator dashboard shows the stage they are at'
+  );
+
+  // Admin moves it along, through the real control on the real screen.
+  await adminPage.goto(`${BASE}/admin/offers/requests?status=approved`, {
+    waitUntil: 'domcontentloaded',
+  });
+  await adminPage.waitForTimeout(2500);
+  await rowFor('Fixed terms deal').locator('select[name="stage"]').first()
+    .selectOption('sample_shipped');
+
+  const shipped = await waitFor(
+    async () =>
+      (await admin.from('offer_applications').select('stage').eq('id', asOffered.id).single())
+        .data,
+    (r) => r?.stage === 'sample_shipped',
+    'the stage to change'
+  );
+  check(shipped?.stage === 'sample_shipped', 'an admin can move it along');
+
+  const { data: events } = await admin
+    .from('offer_stage_events')
+    .select('from_stage, to_stage')
+    .eq('application_id', asOffered.id)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  check(
+    events?.[0]?.from_stage === 'pending_request' && events?.[0]?.to_stage === 'sample_shipped',
+    `and the move is recorded both ends (${JSON.stringify(events?.[0])})`
+  );
+
+  // Live, with no reload, the same way an approval arrives.
+  const toldLiveAboutStage = await page
+    .getByText(/sample shipped/i)
+    .first()
+    .waitFor({ state: 'visible', timeout: 25000 })
+    .then(() => true)
+    .catch(() => false);
+  check(toldLiveAboutStage, 'and it reaches the creator without a reload');
+
+  // Money follows the stage, not the status.
+  await admin.rpc('set_offer_stage', {
+    p_actor_id: staff.id,
+    p_application_id: asOffered.id,
+    p_stage: 'paid',
+    p_note: 'Sent this morning.',
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(3500);
+  const board = await page.evaluate(() => document.body.innerText);
+  check(
+    /paid to you so far/i.test(board) && board.includes('$300'),
+    'once it is marked paid the creator dashboard counts it as money received'
+  );
+
+  // A creator cannot move their own work along, however much they would like to.
+  const selfAdvance = await asUser(page, '/functions/v1/manage-offer-application', {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'application.stage',
+      applicationId: asOffered.id,
+      stage: 'paid',
+    }),
+  });
+  check(
+    selfAdvance.status === 403,
+    `a creator cannot set their own stage (HTTP ${selfAdvance.status})`
+  );
+
+  // They can read their own history, and nobody else's.
+  const ownEvents = await asUser(page, '/rest/v1/offer_stage_events?select=id,creator_id');
+  check(
+    rows(ownEvents).length > 0,
+    `a creator can read their own pipeline history (${rows(ownEvents).length} rows)`
+  );
+  const rivalCtx2 = await browser.newContext();
+  const rivalPage2 = await rivalCtx2.newPage();
+  await signIn(rivalPage2, RIVAL_EMAIL);
+  const otherEvents = await asUser(rivalPage2, '/rest/v1/offer_stage_events?select=id');
+  check(
+    rows(otherEvents).length === 0,
+    `and another creator sees none of it (${rows(otherEvents).length} rows)`
+  );
+  await rivalCtx2.close();
+
+  // A stage only exists on approved work.
+  const stageOnPending = await admin.rpc('set_offer_stage', {
+    p_actor_id: staff.id,
+    p_application_id: openRequest.id,
+    p_stage: 'paid',
+  });
+  check(
+    Boolean(stageOnPending.error) && /only an approved request/i.test(stageOnPending.error.message),
+    `a pending request has no stage to set (${stageOnPending.error?.message ?? 'it was allowed'})`
+  );
+
   // Deciding twice is refused, whichever admin gets there second.
   const again = await asUser(adminPage, '/functions/v1/manage-offer-application', {
     method: 'POST',
