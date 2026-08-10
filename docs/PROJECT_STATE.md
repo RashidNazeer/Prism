@@ -353,6 +353,19 @@ Studio: `/studio` placeholder only.
   the build fails if they drift.
 - Skeletons, never bare spinners. Designed empty and error states.
 
+### The creator side is going out to a UI agent first
+
+**`docs/UI_BRIEF_CREATOR.md`** is a complete, self-contained brief for an
+external UI generator: the tokens, every creator screen and state, the seven
+stage labels, the animation direction, and a sample dataset whose money adds up.
+Rashid's call on 2026-08-10, because the creator screens are what a paying user
+sees. When designs come back, they are ported into our components and our
+tokens; nothing in that brief may add a feature, a field or a dependency.
+
+Creator screens in scope: `/app` (home), `/app/offers`, `/app/brands`,
+`/app/brands/:slug`, `/app/profile`, and the apply dialog. Application and
+review screens are deliberately out of scope, Rashid is happy with those.
+
 ### How to work through it
 
 Screen by screen, smallest surface first, with `pnpm shots` or a Playwright
