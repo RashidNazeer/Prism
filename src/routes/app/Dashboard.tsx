@@ -1,11 +1,12 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
 import { Check, Clock, Sparkles, X } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { ButtonLink } from '@/components/ui/Button';
 import { WelcomeMoment } from '@/components/creator/WelcomeMoment';
 import { ApprovedMoment } from '@/components/creator/ApprovedMoment';
+import { MoneySplit, PipelineBoard } from '@/components/creator/PipelineBoard';
 import { cn } from '@/lib/utils';
 import { money } from '@/lib/money';
 import { OFFER_STAGES, STAGE_META, stageIndex, type OfferStage } from '@/lib/offer-stages';
@@ -196,6 +197,14 @@ function CreatorHome({
   const summary = useWorkSummary(rows);
   const moved = useJustMoved(rows);
 
+  const [params, setParams] = useSearchParams();
+  const view: View = params.get('view') === 'pipeline' ? 'pipeline' : 'overview';
+  const setView = (next: View) => {
+    const p = new URLSearchParams();
+    if (next !== 'overview') p.set('view', next);
+    setParams(p, { replace: true });
+  };
+
   /** Earliest in the pipeline first, so the thing needing attention leads. */
   const work = useMemo(() => {
     const approved = (rows ?? []).filter((r) => r.status === 'approved');
@@ -224,18 +233,79 @@ function CreatorHome({
         </Suspense>
       ) : (
         <>
-          <Money summary={summary} moved={moved} />
+          <ViewSwitch view={view} onChange={setView} />
 
-          <div className="grid [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))] items-start gap-[14px]">
-            <Work rows={work} pending={pending} moved={moved} />
+          {view === 'pipeline' ? (
+            <>
+              <PipelineBoard summary={summary} rows={work} moved={moved} />
 
-            <div className="flex flex-col gap-[14px]">
-              <Activity rows={rows ?? []} events={events ?? []} moved={moved} />
-              <Counts summary={summary} />
-            </div>
-          </div>
+              <div className="grid [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))] items-start gap-[14px]">
+                <MoneySplit summary={summary} moved={moved} />
+                <Activity rows={rows ?? []} events={events ?? []} moved={moved} compact />
+              </div>
+            </>
+          ) : (
+            <>
+              <Money summary={summary} moved={moved} />
+
+              <div className="grid [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))] items-start gap-[14px]">
+                <Work rows={work} pending={pending} moved={moved} />
+
+                <div className="flex flex-col gap-[14px]">
+                  <Activity rows={rows ?? []} events={events ?? []} moved={moved} />
+                  <Counts summary={summary} />
+                </div>
+              </div>
+            </>
+          )}
         </>
       )}
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------- views --- */
+
+/**
+ * Two ways to read the same money.
+ *
+ * Overview answers "have I been paid and what is coming". Pipeline answers
+ * "what is sitting where", which is the question once three jobs are in flight
+ * and one has gone quiet. Both were designed; picking one for everybody would
+ * have thrown away half of what the design says.
+ *
+ * The choice lives in the URL so a refresh keeps it, matching how every filter
+ * in this product behaves.
+ */
+const VIEWS = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'pipeline', label: 'Pipeline' },
+] as const;
+
+type View = (typeof VIEWS)[number]['key'];
+
+function ViewSwitch({ view, onChange }: { view: View; onChange: (v: View) => void }) {
+  return (
+    <div
+      role="tablist"
+      aria-label="How to read your work"
+      className="bg-surface-2 flex gap-1 self-start rounded-xl p-[3px]"
+    >
+      {VIEWS.map((v) => (
+        <button
+          key={v.key}
+          role="tab"
+          type="button"
+          aria-selected={view === v.key}
+          onClick={() => onChange(v.key)}
+          className={cn(
+            'rounded-[9px] px-[11px] py-1.5 text-[13px] font-medium transition-colors duration-200',
+            view === v.key ? 'bg-text text-inverse' : 'text-muted hover:text-text'
+          )}
+        >
+          {v.label}
+        </button>
+      ))}
     </div>
   );
 }
@@ -541,10 +611,17 @@ function Activity({
   rows,
   events,
   moved,
+  compact = false,
 }: {
   rows: MyWorkRow[];
   events: StageEvent[];
   moved: Moved;
+  /**
+   * Pipeline drops the coloured dot column. The board beside it already says
+   * which bucket everything is in, in colour, seven times over, so repeating it
+   * per row is noise rather than information.
+   */
+  compact?: boolean;
 }) {
   const byId = new Map(rows.map((r) => [r.id, r]));
 
@@ -578,13 +655,18 @@ function Activity({
               <li
                 key={`${event.id}-${moved.key}`}
                 className={cn(
-                  'border-line grid grid-cols-[14px_1fr_auto] gap-3 border-b py-[11px]',
+                  'border-line grid gap-3 border-b',
+                  compact
+                    ? 'grid-cols-[1fr_auto] py-2.5'
+                    : 'grid-cols-[14px_1fr_auto] py-[11px]',
                   fresh && 'wx-pop'
                 )}
               >
-                <span className="flex justify-center pt-1">
-                  <span aria-hidden className={cn('size-2 rounded-full', tone.dot)} />
-                </span>
+                {compact ? null : (
+                  <span className="flex justify-center pt-1">
+                    <span aria-hidden className={cn('size-2 rounded-full', tone.dot)} />
+                  </span>
+                )}
 
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <p className="text-[14px] leading-[1.3] font-semibold">

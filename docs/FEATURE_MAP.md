@@ -506,6 +506,14 @@ from Pending request to Paid, moved by staff and watched by the creator.
   schema chunk behind it. Imported directly, that weight lands on the home
   screen of every creator who already has work. `verify:responsive` caught it as
   a 375px timeout, which is the only reason it did not ship.
+- **Two views, both from the design, switched in the URL (`?view=pipeline`).**
+  Overview answers "have I been paid and what is coming". Pipeline answers
+  "what is sitting where", which is what somebody asks when three jobs are in
+  flight and one has gone quiet. `PipelineBoard` is the only thing that reads
+  `summary.byStage`, which `summarise()` had always computed and nothing used.
+- `STAGE_META.short` exists for the places a stage is a COLUMN rather than a
+  sentence: the seven-card board and the first-day grid. `creatorHint` wraps to
+  three lines in a 142px column. Adding a stage means writing both.
 - `pnpm shots:creator` photographs this screen with a full pipeline in it, both
   themes, four widths. It writes `offer_applications` directly rather than
   through `review_offer_application`, deliberately: the real function charges

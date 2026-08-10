@@ -169,19 +169,20 @@ async function addWork(creatorId, offer, { status, stage, amount, daysAgo, note 
     note: to === 'sample_shipped' ? 'Tracking sent to your email.' : null,
     created_at: new Date(Date.now() - (daysAgo - i * 2) * 864e5).toISOString(),
   }));
-  await step('record the stage history', () =>
-    admin.from('offer_stage_events').insert(events)
-  );
+  await step('record the stage history', () => admin.from('offer_stage_events').insert(events));
 }
 
 /* ------------------------------------------------------------------ shots -- */
 
-async function signIn(page, email) {
+async function signIn(page, email, view = '') {
   await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' });
   await page.fill('input[name="email"]', email);
   await page.fill('input[name="password"]', PASSWORD);
   await page.getByRole('button', { name: /^sign in$/i }).click();
   await page.waitForURL('**/app', { timeout: 30000 }).catch(() => {});
+  if (view) {
+    await page.goto(`${BASE}/app?view=${view}`, { waitUntil: 'domcontentloaded' });
+  }
   const hello = page.getByRole('button', { name: /let.s go/i });
   if (
     await hello
@@ -196,14 +197,14 @@ async function signIn(page, email) {
   // skeletons and photographing those defeats the point.
   await page
     .locator('main')
-    .getByText(/agreed with you so far|nothing taken yet/i)
+    .getByText(/agreed with you so far|nothing taken yet|stage by stage/i)
     .first()
     .waitFor({ timeout: 20000 })
     .catch(() => {});
   await page.waitForTimeout(1500);
 }
 
-async function shoot(browser, email, label) {
+async function shoot(browser, email, label, appView = '') {
   for (const scheme of ['dark', 'light']) {
     for (const view of VIEWS) {
       const ctx = await browser.newContext({
@@ -216,7 +217,7 @@ async function shoot(browser, email, label) {
       page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
       page.on('pageerror', (e) => errors.push(String(e)));
 
-      await signIn(page, email);
+      await signIn(page, email, appView);
 
       const wide = await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth + 1
@@ -295,6 +296,8 @@ try {
   const browser = await launchBrowser();
   console.log('\nWorking dashboard');
   await shoot(browser, WORKING, 'working');
+  console.log('\nPipeline view');
+  await shoot(browser, WORKING, 'pipeline', 'pipeline');
   console.log('\nFirst day');
   await shoot(browser, FIRSTDAY, 'firstday');
   await browser.close();

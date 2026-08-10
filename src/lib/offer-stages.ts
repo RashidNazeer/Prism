@@ -35,6 +35,14 @@ export interface StageMeta {
   label: string;
   /** What it means, in the creator's terms. */
   creatorHint: string;
+  /**
+   * The same thing in three or four words.
+   *
+   * For the places a stage is a COLUMN rather than a sentence: the pipeline
+   * board and the seven cards on a creator's first day. `creatorHint` wraps to
+   * three lines in a 142px column and turns a board into a wall of text.
+   */
+  short: string;
   icon: typeof Truck;
   /**
    * Which money bucket a request in this stage belongs to.
@@ -50,42 +58,49 @@ export const STAGE_META: Record<OfferStage, StageMeta> = {
   pending_request: {
     label: 'Pending request',
     creatorHint: 'You are on this one. The team is getting it set up.',
+    short: 'we are getting it set up',
     icon: BadgeCheck,
     bucket: 'working',
   },
   sample_requested: {
     label: 'Sample requested',
     creatorHint: 'Your sample has been asked for from the brand.',
+    short: 'from the brand',
     icon: PackageOpen,
     bucket: 'working',
   },
   sample_shipped: {
     label: 'Sample shipped',
     creatorHint: 'It is on its way to you.',
+    short: 'on its way to you',
     icon: Truck,
     bucket: 'working',
   },
   content_pending: {
     label: 'Content pending',
     creatorHint: 'Over to you. Film it and send it in.',
+    short: 'over to you to film',
     icon: Clapperboard,
     bucket: 'working',
   },
   content_completed: {
     label: 'Content completed',
     creatorHint: 'Your content is in and being checked.',
+    short: 'filmed and being checked',
     icon: PackageCheck,
     bucket: 'working',
   },
   payment_pending: {
     label: 'Payment pending',
     creatorHint: 'Approved for payment. The money is on its way.',
+    short: 'approved for payment',
     icon: Wallet,
     bucket: 'due',
   },
   paid: {
     label: 'Paid',
     creatorHint: 'Paid out. Nothing left to do on this one.',
+    short: 'the money has landed',
     icon: Banknote,
     bucket: 'paid',
   },

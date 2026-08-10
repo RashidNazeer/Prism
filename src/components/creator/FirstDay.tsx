@@ -54,8 +54,10 @@ export default function FirstDay() {
               <span className="text-[13px] leading-[1.25] font-semibold">
                 {STAGE_META[stage].label}
               </span>
+              {/* The short clause, not the full hint. Seven sentences across
+                  seven 132px columns is a wall of text, not a diagram. */}
               <span className="text-muted text-[11px] leading-[1.35]">
-                {STAGE_META[stage].creatorHint}
+                {STAGE_META[stage].short}
               </span>
             </li>
           ))}
