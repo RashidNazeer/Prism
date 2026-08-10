@@ -86,6 +86,19 @@ const PAIRS = [
   ['--wx-accent-hover', '--wx-bg', 4.5, 'accent hover on page'],
   ['--wx-on-accent', '--wx-accent', 4.5, 'label on accent button'],
   ['--wx-on-accent', '--wx-accent-hover', 4.5, 'label on hovered accent button'],
+  // The three money states. Each is checked on a NESTED card as well, because
+  // that is where they actually live (the tinted cells on the creator home) and
+  // it is the tightest surface of the three. The design's brighter amber was
+  // 3.48:1 there and had to come down.
+  ['--wx-stage-live', '--wx-bg', 4.5, 'in-progress money on page'],
+  ['--wx-stage-live', '--wx-surface-1', 4.5, 'in-progress money on card'],
+  ['--wx-stage-live', '--wx-surface-2', 4.5, 'in-progress money on nested card'],
+  ['--wx-stage-due', '--wx-bg', 4.5, 'awaiting-payment money on page'],
+  ['--wx-stage-due', '--wx-surface-1', 4.5, 'awaiting-payment money on card'],
+  ['--wx-stage-due', '--wx-surface-2', 4.5, 'awaiting-payment money on nested card'],
+  ['--wx-stage-paid', '--wx-bg', 4.5, 'paid money on page'],
+  ['--wx-stage-paid', '--wx-surface-1', 4.5, 'paid money on card'],
+  ['--wx-stage-paid', '--wx-surface-2', 4.5, 'paid money on nested card'],
   ['--wx-success', '--wx-bg', 4.5, 'success text on page'],
   ['--wx-success', '--wx-surface-1', 4.5, 'success text on card'],
   ['--wx-danger', '--wx-bg', 4.5, 'danger text on page'],

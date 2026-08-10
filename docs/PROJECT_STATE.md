@@ -1,10 +1,10 @@
 # Project state
 
-**Last updated:** 2026-08-01
-**Current step:** Step 6, Brand Hub, finished through six phases: brands and
-offers, products and the creator hub, offer requests, the two offer dashboards,
-budgets, and the pipeline with the creator's dashboard.
-**Next:** **polishing the UI across the whole product.** See "Next action".
+**Last updated:** 2026-08-11
+**Current step:** UI polish, creator side. The creator HOME is rebuilt from a
+design Rashid approved and asked for pixel for pixel.
+**Next:** carry the same language onto the other four creator screens. See
+"Next action".
 **Status:** Everything below is built, tested and on `dev`.
 
 ---
@@ -305,6 +305,34 @@ The pipeline, and the creator's real dashboard.
 completed" says a creator delivered; which posts those were, and what they
 earned in GMV, is Step 7 and Step 8 work.
 
+### UI polish, phase one: the creator home (this step)
+
+Built from a standalone design Rashid approved and asked for pixel for pixel.
+
+- **The whole screen is new**: an eyebrow that says the connection is live, a
+  greeting, one money card carrying the total agreed, what has landed, a flow
+  bar and three tinted cells, then the work list and the timeline side by side
+  with the four counters under them.
+- **The pipeline is finally felt.** An admin moving somebody's work now flashes
+  that card, bumps the figures it changed and pops a new "just now" line into
+  the timeline. It always arrived live; nothing on screen ever said so.
+- **Three money colours of their own**, indigo, amber and green, replacing the
+  borrowed accent/warning/success that collide in light mode. All three were
+  darkened from the design until they clear WCAG AA on the tightest surface
+  they sit on, and `check-contrast` now enforces exactly that.
+- **The surfaces were retuned** to the design's warmer near-black and paper,
+  globally, because the sidebar sits against these cards. The brand gold, the
+  landing page and the admin panel are otherwise untouched.
+- **Two self-hosted variable fonts**, Instrument Sans and Sora, scoped to
+  signed-in screens so the public page still downloads nothing.
+- **A real first-day screen**: approved, nothing taken, with all seven stages
+  laid out and the first few offers to take. Lazily loaded, because it pulls
+  the apply dialog and the Zod chunk behind it.
+- `pnpm shots:creator` builds a creator with a full pipeline, photographs the
+  home in both themes at 375/768/1024/1440, and removes the account again.
+- `pnpm verify:responsive`: 162 checks, all green. It earned its keep here: the
+  first-day import cost was a real 375px regression and this suite found it.
+
 ## Known bugs
 
 None outstanding.
@@ -316,6 +344,26 @@ When Rashid asks "what's pending?", answer from that file. Do not duplicate the
 list here.
 
 ## Next action
+
+**Carry the new language onto the other four creator screens.** The home screen
+sets it; `/app/offers`, `/app/brands`, `/app/brands/:slug` and `/app/profile`
+still use the old type scale, the mono eyebrows and the old card radii, so they
+now look a generation behind the screen next to them.
+
+What "the new language" means, concretely, all of it already in the code: Sora
+for figures and headings with Instrument Sans for everything else, sans eyebrows
+at 11px / `tracking-[0.14em]` / semibold rather than `font-mono`, cards at
+`rounded-[20px]` with `shadow-md`, and the three `--wx-stage-*` colours wherever
+a stage or an amount appears. `StageTracker` is the obvious first job: the home
+screen draws its own seven-segment row and the other two screens still use the
+old component.
+
+Also worth doing on its own, NOT mixed into a feature commit: the repo is not
+prettier-clean. `pnpm format` rewrites about eighty files it has never been run
+against, mostly Tailwind class ordering. That should be one commit that changes
+nothing else.
+
+Then, still outstanding from the original list:
 
 **Polishing the UI, across everything already built.** Rashid's call on
 2026-08-01. No new features; make what exists feel finished.

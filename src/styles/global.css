@@ -2,6 +2,77 @@
 @import './tokens.css';
 
 /* ============================================================================
+   Type, for signed-in screens only.
+
+   Two variable faces, SELF-HOSTED from /public/fonts, never fetched from a
+   third party: Instrument Sans for the interface and Sora for display figures
+   and headings. Together the latin subsets are 23 KB, and the latin-ext files
+   are only pulled if an accented character actually appears.
+
+   Declaring a face costs nothing. A browser downloads it the first time
+   something on screen is set in it, which is why these are safe to declare
+   here and scope to `.wx-app` below: the public landing page never asks for
+   them, so its measured payload is unchanged.
+   ============================================================================ */
+@font-face {
+  font-family: 'Instrument Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/fonts/instrument-sans-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Instrument Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/fonts/instrument-sans-latin-ext.woff2') format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sora';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/sora-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Sora';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/sora-latin-ext.woff2') format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* The shell every signed-in screen sits in. Overriding the tokens HERE rather
+   than in tokens.css is what keeps the two faces off the public page. */
+.wx-app {
+  --wx-font-sans:
+    'Instrument Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --wx-font-display:
+    'Sora', 'Instrument Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+
+  font-family: var(--wx-font-sans);
+}
+
+/* ============================================================================
    Bridge the design tokens into Tailwind utilities.
    `inline` matters: it makes Tailwind emit var(--wx-*) rather than the resolved
    value, so `bg-surface-1` follows the active theme instead of freezing the
@@ -27,6 +98,15 @@
   --color-accent-active: var(--wx-accent-active);
   --color-accent-soft: var(--wx-accent-soft);
   --color-on-accent: var(--wx-on-accent);
+
+  /* Where a creator's money has got to. See tokens.css for why these are not
+     accent/warning/success. */
+  --color-stage-live: var(--wx-stage-live);
+  --color-stage-live-soft: var(--wx-stage-live-soft);
+  --color-stage-due: var(--wx-stage-due);
+  --color-stage-due-soft: var(--wx-stage-due-soft);
+  --color-stage-paid: var(--wx-stage-paid);
+  --color-stage-paid-soft: var(--wx-stage-paid-soft);
 
   --color-success: var(--wx-success);
   --color-success-soft: var(--wx-success-soft);
@@ -215,4 +295,100 @@
     linear-gradient(to right, var(--wx-grid-line) 1px, transparent 1px),
     linear-gradient(to bottom, var(--wx-grid-line) 1px, transparent 1px);
   background-size: 64px 64px;
+}
+
+/* ============================================================================
+   Live motion.
+
+   These four exist because an admin moving somebody's work along has to be
+   FELT on the creator's screen, not just quietly redrawn. That behaviour is the
+   product's whole promise and until now it happened invisibly.
+
+   All of them are switched off by the reduced-motion block above.
+   ============================================================================ */
+
+/* A row that just arrived. */
+@keyframes wx-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A figure that just changed. Deliberately not a count-up: the number is
+   already correct, what it needs to say is "look, this moved". */
+@keyframes wx-bump {
+  from {
+    opacity: 0.4;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Twice around the card that changed, then gone. */
+@keyframes wx-flash {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--wx-stage-live-soft);
+  }
+  50% {
+    box-shadow: 0 0 0 8px var(--wx-stage-live-soft);
+  }
+}
+
+/* The one thing on the page allowed to move forever: the connection is open. */
+@keyframes wx-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@keyframes wx-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@utility wx-pop {
+  animation: wx-pop 560ms var(--wx-ease) both;
+}
+
+@utility wx-bump {
+  animation: wx-bump 620ms var(--wx-ease) both;
+}
+
+@utility wx-flash {
+  animation: wx-flash 1.6s ease-in-out 2;
+}
+
+@utility wx-blink {
+  animation: wx-blink 2.4s ease-in-out infinite;
+}
+
+/* Skeletons, never a bare spinner. A sweep rather than a pulse, because a
+   pulse on a dark card reads as a slow flash. */
+@utility wx-skeleton {
+  background-image: linear-gradient(
+    90deg,
+    var(--wx-surface-2) 0%,
+    var(--wx-border) 40%,
+    var(--wx-surface-2) 80%
+  );
+  background-size: 300% 100%;
+  animation: wx-shimmer 1.4s linear infinite;
+  border-radius: var(--wx-radius-md);
 }

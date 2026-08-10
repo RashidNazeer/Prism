@@ -96,7 +96,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div
       className={cn(
-        'min-h-dvh bg-bg lg:grid',
+        // `wx-app` switches the type tokens over to the two self-hosted faces.
+        // It lives here so the public landing page never asks for them.
+        'wx-app min-h-dvh bg-bg lg:grid',
         collapsed ? 'lg:grid-cols-[4.5rem_minmax(0,1fr)]' : 'lg:grid-cols-[16rem_minmax(0,1fr)]'
       )}
     >

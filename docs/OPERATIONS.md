@@ -92,7 +92,10 @@ pnpm verify:offer-requests [url]  # creators asking for offers, staff deciding,
                             # and nine attacks. Needs ADMIN_EMAIL/ADMIN_PASSWORD
 pnpm verify:responsive [url] # every screen at 375, 768, 1024 and 1440px.
                             # Needs ADMIN_EMAIL and ADMIN_PASSWORD, no service key
-pnpm shots [url] [path]     # retina screenshots for design review
+pnpm shots [url] [path]     # retina screenshots of a PUBLIC page
+pnpm shots:creator [url]    # the creator home WITH a full pipeline in it, both
+                            # themes, four widths. Builds a throwaway creator
+                            # and removes it again. Needs SUPABASE_SERVICE_KEY
 node scripts/check-admin.mjs <url> <email> <password> [role] [path]
 node scripts/create-admin.mjs <email> <password> [role]
 node scripts/seed-applications.mjs [--clean]   # demo queue data, DEV ONLY

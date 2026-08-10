@@ -11,6 +11,10 @@
    cream text (#f5efe1). Light mode is the same brand language on warm paper,
    with the gold darkened to #8a5f1f so it stays readable (the raw brand gold is
    only 2.58:1 on paper, it would have been unreadable).
+
+   The surfaces were retuned on 2026-08-10 to the values in the creator home
+   design: the same warm cream and near-black, a shade softer on paper and a
+   shade warmer in the dark, so the greys never read as blue next to the gold.
    ============================================================================ */
 
 :root,
@@ -18,29 +22,48 @@
   color-scheme: dark;
 
   /* Surfaces, layered from the page up */
-  --wx-bg: #0a0a0a;           /* page background */
-  --wx-surface-1: #141414;    /* cards, panels */
-  --wx-surface-2: #1a1a1a;    /* hover, nested cards */
-  --wx-surface-3: #232320;    /* wells, inputs */
+  --wx-bg: #100e0c; /* page background */
+  --wx-surface-1: #1a1714; /* cards, panels */
+  --wx-surface-2: #221e1a; /* hover, nested cards */
+  --wx-surface-3: #2a251f; /* wells, inputs */
 
   /* Text, all verified >= 4.5:1 on --wx-bg AND --wx-surface-2 */
-  --wx-text: #f5efe1;         /* 17.27:1 */
-  --wx-text-muted: #a59c8a;   /*  7.28:1 */
-  --wx-text-faint: #8a8478;   /*  5.33:1 */
-  --wx-text-inverse: #0a0a0a;
+  --wx-text: #f4f0ea; /* 16.97:1 */
+  --wx-text-muted: #9d9387; /*  6.38:1 */
+  --wx-text-faint: #8a8175; /*  4.96:1 */
+  --wx-text-inverse: #100e0c;
 
   /* Borders, subtle is decorative only; interactive is for inputs/buttons */
-  --wx-border: #2a2825;
-  --wx-border-strong: #3d3a34;
-  --wx-border-interactive: #6e675c;  /* >= 3:1 on bg, for focusable controls */
+  --wx-border: #2c2721;
+  --wx-border-strong: #3d3730;
+  --wx-border-interactive: #6e675c; /* >= 3:1 on bg, for focusable controls */
 
   /* Brand accent, the Wurx gold reads beautifully on near-black */
-  --wx-accent: #c8924b;              /* 7.23:1 on bg */
-  --wx-accent-hover: #d8a35e;        /* 8.79:1 */
+  --wx-accent: #c8924b; /* 6.87:1 on bg */
+  --wx-accent-hover: #d8a35e; /* 8.35:1 */
   --wx-accent-active: #b8823b;
   --wx-accent-soft: rgba(200, 146, 75, 0.14);
   --wx-accent-ring: rgba(200, 146, 75, 0.45);
-  --wx-on-accent: #0a0a0a;           /* 7.23:1 sitting on the gold fill */
+  --wx-on-accent: #100e0c; /* 6.87:1 sitting on the gold fill */
+
+  /*
+   * The three money states, and the only colours allowed to encode where a
+   * creator's work has got to. Every one of the seven pipeline stages belongs
+   * to exactly one of them (see src/lib/offer-stages.ts), so a creator can add
+   * the three up and get the headline figure.
+   *
+   * Indigo, amber, green. NOT accent/warning/success, which is the obvious
+   * choice and unreadable: in light mode the brand gold (#8a5f1f) and the
+   * warning amber (#8a6410) are within a hair of each other, so two thirds of
+   * the money bar looked like one block. This ramp also says something true.
+   * Green is in your account, amber is about to be, indigo is still moving.
+   */
+  --wx-stage-live: #8ea0ff;
+  --wx-stage-live-soft: rgba(142, 160, 255, 0.16);
+  --wx-stage-due: #f5ae4b;
+  --wx-stage-due-soft: rgba(245, 174, 75, 0.16);
+  --wx-stage-paid: #5bcc80;
+  --wx-stage-paid-soft: rgba(91, 204, 128, 0.16);
 
   /* Semantic, all >= 4.5:1 on bg */
   --wx-success: #3ecf8e;
@@ -53,17 +76,17 @@
   --wx-info-soft: rgba(92, 184, 232, 0.14);
 
   /* Elevation, deep shadows on black read as glow, so keep them tight */
-  --wx-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.6);
-  --wx-shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.7);
-  --wx-shadow-lg: 0 16px 40px -12px rgb(0 0 0 / 0.85);
+  --wx-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --wx-shadow-md: 0 1px 2px 0 rgb(0 0 0 / 0.4), 0 10px 30px -14px rgb(0 0 0 / 0.6);
+  --wx-shadow-lg: 0 1px 2px 0 rgb(0 0 0 / 0.5), 0 24px 54px -20px rgb(0 0 0 / 0.75);
 
   /* Ambient brand glow used behind hero content */
   --wx-glow: radial-gradient(
-      ellipse 80% 60% at 50% 0%,
-      rgba(200, 146, 75, 0.16) 0%,
-      transparent 70%
-    );
-  --wx-grid-line: rgba(245, 239, 225, 0.04);
+    ellipse 80% 60% at 50% 0%,
+    rgba(200, 146, 75, 0.16) 0%,
+    transparent 70%
+  );
+  --wx-grid-line: rgba(244, 240, 234, 0.04);
 
   /* Partner logos are white artwork on an OPAQUE BLACK background.
      `screen` blending drops the black away against a dark page and leaves the
@@ -78,47 +101,58 @@
 [data-theme='light'] {
   color-scheme: light;
 
-  --wx-bg: #faf8f3;
+  --wx-bg: #f6f4f1;
   --wx-surface-1: #ffffff;
-  --wx-surface-2: #f5efe1;
-  --wx-surface-3: #efe8d8;
+  --wx-surface-2: #f0ede8;
+  --wx-surface-3: #e8e3da;
 
-  --wx-text: #14120e;         /* 17.63:1 */
-  --wx-text-muted: #5f574c;   /*  6.70:1 */
-  --wx-text-faint: #786f62;   /*  4.66:1 */
-  --wx-text-inverse: #faf8f3;
+  --wx-text: #191512; /* 16.53:1 */
+  --wx-text-muted: #736a61; /*  4.83:1 */
+  --wx-text-faint: #766d63; /*  4.58:1 */
+  --wx-text-inverse: #f6f4f1;
 
-  --wx-border: #e5ded0;
-  --wx-border-strong: #d3c9b5;
-  --wx-border-interactive: #948771;  /* >= 3:1 on bg */
+  --wx-border: #e3ded6;
+  --wx-border-strong: #d2ccc1;
+  --wx-border-interactive: #8f8474; /* >= 3:1 on bg */
 
   /* Brand gold, darkened so it survives a light background */
-  --wx-accent: #8a5f1f;              /* 5.29:1 on bg */
-  --wx-accent-hover: #6f4c18;        /* 7.27:1 */
+  --wx-accent: #8a5f1f; /* 5.13:1 on bg */
+  --wx-accent-hover: #6f4c18; /* 7.05:1 */
   --wx-accent-active: #5c3f14;
-  --wx-accent-soft: rgba(138, 95, 31, 0.10);
-  --wx-accent-ring: rgba(138, 95, 31, 0.40);
-  --wx-on-accent: #ffffff;           /* 5.62:1 on the gold fill */
+  --wx-accent-soft: rgba(138, 95, 31, 0.1);
+  --wx-accent-ring: rgba(138, 95, 31, 0.4);
+  --wx-on-accent: #ffffff; /* 5.45:1 on the gold fill */
+
+  /* The three money states. Each one is darkened from the design's value by
+     just enough to clear WCAG AA on a nested card, which is the tightest
+     surface any of them sits on. Amber is the one that needed it most: the
+     brighter #b46e00 is only 3.48:1 there and nobody could read the label. */
+  --wx-stage-live: #4e56d3;
+  --wx-stage-live-soft: rgba(78, 86, 211, 0.1);
+  --wx-stage-due: #9f5b00;
+  --wx-stage-due-soft: rgba(159, 91, 0, 0.14);
+  --wx-stage-paid: #007c3a;
+  --wx-stage-paid-soft: rgba(0, 124, 58, 0.12);
 
   --wx-success: #0f7a43;
-  --wx-success-soft: rgba(15, 122, 67, 0.10);
+  --wx-success-soft: rgba(15, 122, 67, 0.1);
   --wx-danger: #b02424;
-  --wx-danger-soft: rgba(176, 36, 36, 0.10);
+  --wx-danger-soft: rgba(176, 36, 36, 0.1);
   --wx-warning: #8a6410;
-  --wx-warning-soft: rgba(138, 100, 16, 0.10);
+  --wx-warning-soft: rgba(138, 100, 16, 0.1);
   --wx-info: #186d92;
-  --wx-info-soft: rgba(24, 109, 146, 0.10);
+  --wx-info-soft: rgba(24, 109, 146, 0.1);
 
-  --wx-shadow-sm: 0 1px 2px 0 rgb(20 18 14 / 0.06);
-  --wx-shadow-md: 0 4px 12px -2px rgb(20 18 14 / 0.10);
-  --wx-shadow-lg: 0 16px 40px -12px rgb(20 18 14 / 0.18);
+  --wx-shadow-sm: 0 1px 2px 0 rgb(25 21 18 / 0.05);
+  --wx-shadow-md: 0 1px 2px 0 rgb(25 21 18 / 0.05), 0 8px 24px -12px rgb(25 21 18 / 0.16);
+  --wx-shadow-lg: 0 1px 2px 0 rgb(25 21 18 / 0.06), 0 20px 46px -18px rgb(25 21 18 / 0.22);
 
   --wx-glow: radial-gradient(
-      ellipse 80% 60% at 50% 0%,
-      rgba(138, 95, 31, 0.10) 0%,
-      transparent 70%
-    );
-  --wx-grid-line: rgba(20, 18, 14, 0.05);
+    ellipse 80% 60% at 50% 0%,
+    rgba(138, 95, 31, 0.1) 0%,
+    transparent 70%
+  );
+  --wx-grid-line: rgba(25, 21, 18, 0.05);
 
   /* Invert first (white artwork on black becomes black artwork on white), then
      `multiply` drops the white away against the pale page. Without this the
@@ -136,22 +170,23 @@
    Non-colour tokens, identical in both modes.
    --------------------------------------------------------------------------- */
 :root {
-  /* System fonts only. NOTHING is downloaded.
-     Web fonts cost 102 KB plus a render-blocking request to a third party.
+  /* The PUBLIC side downloads nothing. Web fonts cost a render-blocking
+     request, and the landing page is the one screen where that is measured.
      These stacks resolve to the best face already installed on the device:
      Segoe UI Variable Display on Windows 11, SF Pro Display on Mac, Roboto on
-     Android. They look professional because they are the faces Windows and
-     macOS use for their own interfaces. Character comes from weight, size and
-     tracking, not from a novelty typeface. */
+     Android.
+
+     Signed-in screens override the two below with real self-hosted faces, see
+     `.wx-app` in global.css. */
   --wx-font-sans:
-    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
   --wx-font-display:
-    'Segoe UI Variable Display', 'SF Pro Display', system-ui, -apple-system,
-    BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    'Segoe UI Variable Display', 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --wx-font-mono:
-    ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', SFMono-Regular, 'SF Mono',
-    Menlo, Consolas, monospace;
+    ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', SFMono-Regular, 'SF Mono', Menlo, Consolas,
+    monospace;
 
   --wx-radius-sm: 6px;
   --wx-radius-md: 10px;

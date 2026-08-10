@@ -36,6 +36,21 @@ override `--wx-*` at the hub level.
   `[data-theme='light']` and vice versa. `pnpm build` fails otherwise.
 - Adding a new text/background combination means adding it to the `PAIRS` list
   in `scripts/check-contrast.mjs` so it is contrast-checked in both themes.
+- **`--wx-stage-live`, `--wx-stage-due` and `--wx-stage-paid` are the only
+  colours allowed to say where money has got to**, and each of the seven
+  pipeline stages maps to exactly one of them through `STAGE_META.bucket`.
+  Nothing else may use them and the pipeline may not use anything else. They
+  exist because accent/warning/success collide in light mode; see DECISIONS.
+- **Type is scoped, not global.** `@font-face` for Instrument Sans and Sora
+  lives in `global.css` and costs nothing on its own; `.wx-app`, on the
+  `AppShell` root, is what actually points `--wx-font-sans` and
+  `--wx-font-display` at them. Declaring a face does not download it, so the
+  public landing page still ships system fonts and its measured payload is
+  unchanged. Moving those two overrides into `tokens.css` would silently put
+  two font downloads on the landing page.
+- The font files are OURS, in `public/fonts`, not a Google Fonts link. Both are
+  variable (`font-weight: 400 700`), so there is one file per subset rather than
+  one per weight, and `unicode-range` keeps latin-ext off most sessions.
 - The anti-flash script in `index.html` duplicates the theme-resolution logic in
   `ThemeProvider.tsx`. Change one, change the other, same storage key
   (`wurxmediahub-theme`), same fallback.
@@ -436,8 +451,9 @@ it and going in through the hub.
 ## The pipeline, and the creator's dashboard
 
 **Files:** `src/lib/offer-stages.ts`, `src/lib/creator/useMyWork.ts`,
-`src/routes/app/Dashboard.tsx`, `src/components/creator/StageTracker.tsx`,
-`src/components/creator/CountUp.tsx`, `src/lib/money.ts`,
+`src/routes/app/Dashboard.tsx`, `src/components/creator/FirstDay.tsx`,
+`src/components/creator/StageTracker.tsx`, `scripts/shots-creator.mjs`,
+`src/lib/money.ts`,
 `supabase/migrations/*_offer_pipeline.sql`,
 `supabase/migrations/*_read_offers_you_asked_for.sql`
 **Tables:** `offer_applications.stage`, `offer_stage_events`
@@ -474,6 +490,27 @@ from Pending request to Paid, moved by staff and watched by the creator.
   being paid for.
 - `src/lib/money.ts` holds the formatters. Creator screens must not import from
   `src/lib/admin/*` for them, which is what they used to do.
+
+**The home screen, rebuilt on 2026-08-11 from a design Rashid approved**
+
+- **The only motion on it is a change.** `useJustMoved` diffs the stages between
+  renders and flashes the card, bumps the figures and pops the new timeline row
+  for 2.6 seconds. The FIRST load is deliberately not a change: everything would
+  qualify, the whole board would flash, and people would learn to ignore it.
+  There is no count-up on mount for the same reason.
+- The timeline is capped at **eight** events. Four jobs walking seven stages
+  generate roughly thirty, and a right column taller than the work list beside
+  it turns into a wall nobody reads to the bottom of.
+- **`FirstDay` is lazily loaded and must stay that way.** It reaches for the
+  offers list, the brands list and `ApplyDialog`, and the dialog drags the Zod
+  schema chunk behind it. Imported directly, that weight lands on the home
+  screen of every creator who already has work. `verify:responsive` caught it as
+  a 375px timeout, which is the only reason it did not ship.
+- `pnpm shots:creator` photographs this screen with a full pipeline in it, both
+  themes, four widths. It writes `offer_applications` directly rather than
+  through `review_offer_application`, deliberately: the real function charges
+  the brand's budget, and a throwaway creator must never move a number an admin
+  is reading.
 
 ## Offer requests (creators asking, staff deciding)
 

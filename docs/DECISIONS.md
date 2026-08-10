@@ -483,6 +483,29 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   what Overview says better while pushing the real content off the first screen,
   the chip said the same thing as the button under it, and a line explaining the
   absence of something nobody asked about is worse than silence.
+- 2026-08-11: The creator home was rebuilt from a design Rashid approved and
+  asked for pixel for pixel. Four things came with it, each changing a rule
+  written earlier in this file.
+- 2026-08-11: The surfaces moved. Near-black `#0a0a0a` became `#100e0c` and the
+  paper `#faf8f3` became `#f6f4f1`, with the greys warmed to match, because the
+  old ones drifted blue next to the gold. The brand gold itself is UNCHANGED and
+  so is the landing page's identity. Adopted globally rather than only on the
+  dashboard: the sidebar sits against these cards, and a card a different colour
+  from the rail beside it reads as a bug, not a redesign.
+- 2026-08-11: Money state has its own three colours, `--wx-stage-live` (indigo),
+  `--wx-stage-due` (amber) and `--wx-stage-paid` (green), instead of borrowing
+  accent/warning/success. The borrowed set collides in light mode, which is the
+  bug this file already records once. The design's amber was 3.48:1 on a nested
+  card, so all three were darkened until they clear AA on the tightest surface
+  they sit on, and the guard now enforces it.
+- 2026-08-11: Two self-hosted variable fonts, Instrument Sans and Sora, scoped
+  to `.wx-app` so only signed-in screens pull them. 23 KB for both latin
+  subsets, from our own origin, no third party. The "system fonts only" rule
+  stays true where it was actually measured, the public landing page.
+- 2026-08-11: The first-day empty state is a lazily loaded chunk. Imported
+  directly it dragged the apply dialog and the whole Zod schema chunk onto the
+  home screen of every creator who already has work, and `verify:responsive`
+  caught it as a 375px timeout before it shipped.
 - 2026-07-28: Flagged to Rashid but not acted on, (a) a Vite SPA has no
   server-rendering, so the public landing page will be weak for SEO and link
   previews until we add a build-time prerender; (b) the Supabase free tier
