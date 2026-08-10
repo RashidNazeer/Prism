@@ -563,12 +563,24 @@ try {
 
   /* ------------------------------------------------------ [6] the decision */
   console.log('\n[6] Approving, and the creator being told');
-  // Bring the creator's screen back to the offers tab and leave it there, so
-  // the decision has to arrive on its own.
+  /*
+   * Bring the creator's screen back to the offers tab and leave it there, so
+   * the decision has to arrive on its own.
+   *
+   * Waiting for the card proves the page has loaded AND gives its realtime
+   * channel time to attach, which is what the check at the end of this section
+   * depends on. Sleeping 2.5 seconds and hoping races the socket on a live
+   * deployment, and then blames the product for losing the message.
+   */
   await page.goto(`${BASE}/app/brands/${brand.slug}?section=offers`, {
     waitUntil: 'domcontentloaded',
   });
-  await page.waitForTimeout(2500);
+  await page
+    .getByText(/with the team/i)
+    .first()
+    .waitFor({ state: 'visible', timeout: 25000 })
+    .catch(() => {});
+  await page.waitForTimeout(1500);
 
   /*
    * Scoped to the row, not "the first Approve button on the page".
