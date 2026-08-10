@@ -952,9 +952,26 @@ try {
     (await page.getByText('Fixed terms deal').count()) > 0,
     'the creator sees offers from every brand in one list'
   );
+  /*
+   * The offers screen shows the PIPELINE, not just "you are in".
+   *
+   * It used to say only that, while the dashboard for the same offer said
+   * "paid". Two screens giving two answers about one offer is worse than
+   * either answer being missing, and it is what Rashid found.
+   *
+   * By this point [6c] has walked this one all the way to paid.
+   */
   check(
-    (await page.getByText(/you are in/i).count()) > 0,
-    'the one they were approved for says they are in'
+    (await page.getByText(/paid out/i).count()) > 0,
+    'an approved offer shows where it has actually got to, not just "you are in"'
+  );
+  check(
+    (await page.getByText(/7 of 7/).count()) > 0,
+    'with the same seven step tracker the dashboard uses'
+  );
+  check(
+    (await page.getByText('$300').count()) > 0,
+    'and what it paid'
   );
 
   await page.getByRole('tab', { name: /you are in/i }).click();
@@ -965,12 +982,27 @@ try {
     'and the "you are in" tab shows only those'
   );
 
+
   await page.fill('input[name="search"]', 'nothing matches this');
   await page.waitForTimeout(900);
   check(
     (await page.getByText(/nothing matches that/i).count()) > 0,
     'a search with no results says so rather than showing an empty page'
   );
+
+  // The brand hub is the third screen that can show the same offer, and all
+  // three have to agree. Left until last on purpose: it navigates away, and
+  // everything above still needs the offers screen underneath it.
+  await page.goto(`${BASE}/app/brands/${brand.slug}?section=offers`, {
+    waitUntil: 'domcontentloaded',
+  });
+  const hubAgrees = await page
+    .getByText(/paid out/i)
+    .first()
+    .waitFor({ state: 'visible', timeout: 25000 })
+    .then(() => true)
+    .catch(() => false);
+  check(hubAgrees, 'and the brand hub says the same thing about the same offer');
 
   // The brand list carries the budget, and can be filtered by how much of it is
   // gone. 300 of 41,000 is under 1%, so this brand belongs in "under 50".

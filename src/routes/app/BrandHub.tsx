@@ -5,6 +5,7 @@ import { ArrowLeft, Check, Clock, Package, Store, Ticket, X } from 'lucide-react
 import { AppShell } from '@/components/layout/AppShell';
 import { ApplyDialog } from '@/components/creator/ApplyDialog';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
+import { StageTracker } from '@/components/creator/StageTracker';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -23,6 +24,7 @@ import {
   type MyOfferApplication,
 } from '@/lib/creator/useOfferApplications';
 import { money, percent } from '@/lib/money';
+import { STAGE_META } from '@/lib/offer-stages';
 
 /**
  * A Brand Hub, as a creator sees it.
@@ -498,16 +500,44 @@ function OfferAction({
     );
   }
 
+  // Approved work shows the pipeline here too. Three creator screens can show
+  // the same offer, and they must not give three different answers about it.
   if (application?.status === 'approved') {
+    const stage = application.stage ?? 'pending_request';
     return (
-      <Note tone="success" icon={<Check size={15} aria-hidden />}>
-        <span className="font-semibold">You are in</span>
+      <div>
+        <div
+          className={cn(
+            'rounded-xl px-3.5 py-3',
+            stage === 'paid' ? 'bg-success-soft' : 'bg-surface-2'
+          )}
+        >
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <span className={cn('text-[14px] font-semibold', stage === 'paid' && 'text-success')}>
+              {stage === 'paid' ? 'Paid out' : 'You are in'}
+            </span>
+            {application.committed_amount != null ? (
+              <span
+                className={cn(
+                  'wx-numeric text-[14px] font-bold',
+                  stage === 'paid' ? 'text-success' : 'text-accent'
+                )}
+              >
+                {money(application.committed_amount, application.currency)}
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-1 text-[13px] leading-relaxed text-muted">
+            {STAGE_META[stage].creatorHint}
+          </p>
+        </div>
+
+        <StageTracker stage={stage} className="mt-3" />
+
         {application.decision_note ? (
-          <span className="mt-1 block text-[13px] text-muted">
-            {application.decision_note}
-          </span>
+          <p className="mt-2 text-[13px] text-muted">{application.decision_note}</p>
         ) : null}
-      </Note>
+      </div>
     );
   }
 

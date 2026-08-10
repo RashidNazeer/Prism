@@ -5,12 +5,14 @@ import { Check, Clock, Search, Store, Ticket, X } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { ApplyDialog } from '@/components/creator/ApplyDialog';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
+import { StageTracker } from '@/components/creator/StageTracker';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import { money } from '@/lib/money';
+import { STAGE_META } from '@/lib/offer-stages';
 import {
   stateFor,
   useAllCreatorOffers,
@@ -351,14 +353,48 @@ function Action({
     );
   }
 
+  /*
+   * Approved work shows the PIPELINE, not just "you are in".
+   *
+   * That was the whole complaint: this screen said one thing and the dashboard
+   * said another about the same offer. A creator should be able to see where
+   * their sample is and what they are owed wherever they happen to be standing.
+   */
   if (state === 'in') {
+    const stage = request?.stage ?? 'pending_request';
+    const meta = STAGE_META[stage];
     return (
-      <Note tone="success" icon={<Check size={15} aria-hidden />}>
-        <span className="font-semibold">You are in</span>
+      <div>
+        <div
+          className={cn(
+            'rounded-xl px-3.5 py-3',
+            stage === 'paid' ? 'bg-success-soft' : 'bg-surface-2'
+          )}
+        >
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <span className={cn('text-[14px] font-semibold', stage === 'paid' && 'text-success')}>
+              {stage === 'paid' ? 'Paid out' : "You are in"}
+            </span>
+            {request?.committed_amount != null ? (
+              <span
+                className={cn(
+                  'wx-numeric text-[14px] font-bold',
+                  stage === 'paid' ? 'text-success' : 'text-accent'
+                )}
+              >
+                {money(request.committed_amount, request.currency)}
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-1 text-[13px] leading-relaxed text-muted">{meta.creatorHint}</p>
+        </div>
+
+        <StageTracker stage={stage} className="mt-3" />
+
         {request?.decision_note ? (
-          <span className="mt-0.5 block text-[13px] text-muted">{request.decision_note}</span>
+          <p className="mt-2 text-[13px] text-muted">{request.decision_note}</p>
         ) : null}
-      </Note>
+      </div>
     );
   }
 

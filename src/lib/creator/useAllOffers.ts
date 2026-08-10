@@ -80,7 +80,8 @@ export function useAllMyRequests() {
       const { data, error } = await getSupabase()
         .from('offer_applications')
         .select(
-          'id, offer_id, brand_id, status, currency, note, decision_note, decided_at, created_at'
+          'id, offer_id, brand_id, status, stage, committed_amount, currency, note, ' +
+            'decision_note, decided_at, created_at'
         )
         .order('created_at', { ascending: false });
       if (error) throw error;

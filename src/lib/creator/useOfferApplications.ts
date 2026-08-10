@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth/auth-context';
+import type { OfferStage } from '@/lib/offer-stages';
 
 /**
  * What this creator has asked for, and what came back.
@@ -19,6 +20,15 @@ export interface MyOfferApplication {
   offer_id: string;
   brand_id: string;
   status: OfferApplicationStatus;
+  /**
+   * Where approved work has got to. Carried here as well as on the dashboard
+   * so every screen that shows an approved offer can say the same thing. "You
+   * are in" on one screen and "sample shipped" on another is two answers to
+   * one question.
+   */
+  stage: OfferStage | null;
+  /** What we agreed to pay. Null on anything not approved. */
+  committed_amount: string | number | null;
   /** The currency the offer was quoted in when they asked. */
   currency: string;
   note: string | null;
@@ -28,7 +38,8 @@ export interface MyOfferApplication {
 }
 
 const COLUMNS =
-  'id, offer_id, brand_id, status, currency, note, decision_note, decided_at, created_at';
+  'id, offer_id, brand_id, status, stage, committed_amount, currency, note, ' +
+  'decision_note, decided_at, created_at';
 
 /**
  * Every request this creator has made inside one brand's hub, newest first.
