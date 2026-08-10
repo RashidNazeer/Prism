@@ -1,12 +1,11 @@
 # Project state
 
-**Last updated:** 2026-07-30
-**Current step:** Step 6, Brand Hub. Admin side approved. Creator side and offer
-requests built, waiting on Rashid's test.
-**Next:** his call. Campaigns and briefs, or contests, are the natural next
-sections of the hub.
-**Status:** Everything below is built, tested and on `dev`. Everything except
-the creator Brand Hub has also been tested by Rashid.
+**Last updated:** 2026-08-01
+**Current step:** Step 6, Brand Hub, finished through six phases: brands and
+offers, products and the creator hub, offer requests, the two offer dashboards,
+budgets, and the pipeline with the creator's dashboard.
+**Next:** **polishing the UI across the whole product.** See "Next action".
+**Status:** Everything below is built, tested and on `dev`.
 
 ---
 
@@ -318,14 +317,51 @@ list here.
 
 ## Next action
 
-**Rashid's call.** The Brand Hub now has brands, products, offers, and creators
-asking for them. The remaining hub sections are Campaigns and briefs, Contests,
-Promotions, Discounts and Creators, and none of them have data behind them yet.
+**Polishing the UI, across everything already built.** Rashid's call on
+2026-08-01. No new features; make what exists feel finished.
 
-The thing that unlocks the most is **Step 7, data upload**: real GMV,
-commission and ad spend per creator per brand. That is what makes My numbers
-and Leaderboards possible, and it is the moment the product's whole promise
-lands. Worth raising with him.
+### Every screen that exists, and who sees it
+
+Public: `/` landing, `/apply` and `/signup` (same screen), `/login`,
+`/admin/login`, `/forgot-password`, `/reset-password`, `/suspended`, 404.
+
+Admin: `/admin` dashboard, `/admin/applications` and `/admin/applications/:id`,
+`/admin/activity`, `/admin/offers` (all offers), `/admin/offers/requests`,
+`/admin/brands`, `/admin/brands/:id` (tabs: Overview, Offers, About, plus four
+marked as coming).
+
+Creator: `/app` dashboard, `/app/offers`, `/app/brands`,
+`/app/brands/:slug` (tabs: Overview, Offers, plus five marked as coming),
+`/app/profile`.
+
+Studio: `/studio` placeholder only.
+
+### Read this before touching a pixel
+
+- **`docs/FEATURE_MAP.md` "Admin screen layout" and "Responsiveness"** are
+  binding, and so is the design section of CLAUDE.md.
+- **The corrections Rashid makes over and over**, worth applying before he has
+  to: fill the main area with what matters, no tall hero panels, never say the
+  same thing twice on one card, do not explain the absence of something, left
+  aligned not centred, never show slugs or ids to an admin.
+- **`--wx-accent` (#8a5f1f) and `--wx-warning` (#8a6410) are nearly identical
+  in light mode.** Anything encoding meaning in colour must be looked at in
+  light mode; `pnpm check:contrast` only checks text against backgrounds and
+  will pass a chart nobody can read. The creator money bar uses green, gold,
+  grey for exactly this reason.
+- Every colour is a `var(--wx-*)` token. Dark and light are equal citizens and
+  the build fails if they drift.
+- Skeletons, never bare spinners. Designed empty and error states.
+
+### How to work through it
+
+Screen by screen, smallest surface first, with `pnpm shots` or a Playwright
+screenshot to look at each one in BOTH themes before and after. Do not
+restructure data or add features under the name of polish; if something needs
+new behaviour, raise it rather than slipping it in.
+
+`pnpm verify:responsive` must still pass, and it is the guard against a polish
+pass quietly breaking a phone layout.
 
 ### Shapes to reuse when it is built
 
