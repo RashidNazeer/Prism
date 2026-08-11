@@ -40,14 +40,14 @@ export function BudgetBar({
         role="img"
         aria-label={`${percent ?? 0}% of the budget committed, ${money(left, brand.currency)} left`}
         className={cn(
-          'w-full overflow-hidden rounded-full bg-surface-2',
+          'bg-surface-2 w-full overflow-hidden rounded-full',
           size === 'lg' ? 'h-2.5' : 'h-1.5'
         )}
       >
         <div
           style={{ width: `${width}%` }}
           className={cn(
-            'h-full rounded-full transition-[width] duration-500 ease-brand',
+            'ease-brand h-full rounded-full transition-[width] duration-500',
             over ? 'bg-danger' : (percent ?? 0) > 80 ? 'bg-warning' : 'bg-accent'
           )}
         />

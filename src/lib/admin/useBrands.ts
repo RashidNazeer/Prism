@@ -213,7 +213,10 @@ export interface BrandFilters {
 }
 
 const sanitise = (raw: string) =>
-  raw.trim().replace(/[^a-zA-Z0-9 &._-]/g, '').slice(0, 64);
+  raw
+    .trim()
+    .replace(/[^a-zA-Z0-9 &._-]/g, '')
+    .slice(0, 64);
 
 export function useBrands(filters: BrandFilters) {
   const search = sanitise(filters.search);
@@ -277,27 +280,58 @@ export function useBrand(id: string | undefined) {
   });
 }
 
+export const BRAND_OFFERS_PAGE_SIZE = 12;
+
+export type BrandOfferStatusFilter = 'all' | OfferStatus;
+
+export interface BrandOfferFilters {
+  status: BrandOfferStatusFilter;
+  search: string;
+  page: number;
+}
+
+export const DEFAULT_BRAND_OFFER_FILTERS: BrandOfferFilters = {
+  status: 'all',
+  search: '',
+  page: 1,
+};
+
 /**
- * Every offer in one brand's hub, kept live.
+ * Every offer in one brand's hub, kept live, and PAGED IN THE DATABASE.
  *
- * Two admins can be in the same hub at once. Without this, one of them edits a
- * reward and the other keeps quoting the old number to a creator.
+ * It used to fetch every offer a brand owns in one unbounded read, which was
+ * also what the Overview counted from. Both are fixed here: this pages, and
+ * Overview asks the database for its counts instead of measuring an array that
+ * no longer holds everything.
+ *
+ * Two admins can be in the same hub at once. Without the subscription below,
+ * one of them edits a reward and the other keeps quoting the old number to a
+ * creator.
  */
-export function useOffers(brandId: string | undefined) {
+export function useOffers(brandId: string | undefined, filters: BrandOfferFilters) {
   const queryClient = useQueryClient();
+  const search = sanitise(filters.search);
 
   const query = useQuery({
-    queryKey: ['admin', 'offers', brandId],
+    queryKey: ['admin', 'offers', brandId, { ...filters, search }],
     enabled: Boolean(brandId),
+    placeholderData: keepPreviousData,
     staleTime: 15_000,
-    queryFn: async (): Promise<Offer[]> => {
-      const { data, error } = await getSupabase()
+    queryFn: async (): Promise<{ rows: Offer[]; total: number }> => {
+      const from = (filters.page - 1) * BRAND_OFFERS_PAGE_SIZE;
+      let q = getSupabase()
         .from('offers')
-        .select(OFFER_COLUMNS)
-        .eq('brand_id', brandId!)
-        .order('created_at', { ascending: false });
+        .select(OFFER_COLUMNS, { count: 'exact' })
+        .eq('brand_id', brandId!);
+
+      if (filters.status !== 'all') q = q.eq('status', filters.status);
+      if (search) q = q.ilike('title', `*${search}*`);
+
+      const { data, error, count } = await q
+        .order('created_at', { ascending: false })
+        .range(from, from + BRAND_OFFERS_PAGE_SIZE - 1);
       if (error) throw error;
-      return (data ?? []) as unknown as Offer[];
+      return { rows: (data ?? []) as unknown as Offer[], total: count ?? 0 };
     },
   });
 
@@ -317,7 +351,16 @@ export function useOffers(brandId: string | undefined) {
           filter: `brand_id=eq.${brandId}`,
         },
         () => {
+          /*
+           * The key gained a filters object when this list started paging, so
+           * the exact key no longer matches. TanStack matches by PREFIX, so
+           * this still invalidates every page and every filter combination of
+           * this brand's offers, and only this brand's.
+           */
           void queryClient.invalidateQueries({ queryKey: ['admin', 'offers', brandId] });
+          void queryClient.invalidateQueries({
+            queryKey: ['admin', 'brand-offer-counts', brandId],
+          });
         }
       )
       .subscribe();
@@ -328,6 +371,85 @@ export function useOffers(brandId: string | undefined) {
   }, [brandId, queryClient]);
 
   return query;
+}
+
+/**
+ * How many creators are waiting on a decision, per brand on this page.
+ *
+ * ONE grouped read over the brands actually shown, the same shape
+ * `useOfferCounts` beside it uses. It rides `offer_applications_brand_idx`,
+ * which is `(brand_id, status)` and therefore exactly this query.
+ */
+export function useBrandsWaiting(brandIds: string[]) {
+  const key = [...brandIds].sort().join(',');
+
+  return useQuery({
+    queryKey: ['admin', 'brands-waiting', key],
+    enabled: brandIds.length > 0,
+    staleTime: 15_000,
+    queryFn: async (): Promise<Record<string, number>> => {
+      const { data, error } = await getSupabase()
+        .from('offer_applications')
+        .select('brand_id')
+        .in('brand_id', brandIds)
+        .eq('status', 'pending');
+      if (error) throw error;
+
+      const out: Record<string, number> = {};
+      for (const row of (data ?? []) as { brand_id: string }[]) {
+        out[row.brand_id] = (out[row.brand_id] ?? 0) + 1;
+      }
+      return out;
+    },
+  });
+}
+
+/**
+ * How many offers this brand has, by kind.
+ *
+ * Overview used to count these by filtering the full offers array in the
+ * browser. That array is one page now, so these had to become real counts or
+ * the facts would have quietly started describing the first twelve rows.
+ *
+ * Four head-only reads: PostgREST returns a count header and no rows at all.
+ */
+export function useBrandOfferCounts(brandId: string | undefined) {
+  return useQuery({
+    queryKey: ['admin', 'brand-offer-counts', brandId],
+    enabled: Boolean(brandId),
+    staleTime: 30_000,
+    queryFn: async (): Promise<{
+      total: number;
+      live: number;
+      openToAll: number;
+      products: number;
+    }> => {
+      const supabase = getSupabase();
+      const offers = () =>
+        supabase
+          .from('offers')
+          .select('id', { count: 'exact', head: true })
+          .eq('brand_id', brandId!);
+
+      const [total, live, openToAll, products] = await Promise.all([
+        offers(),
+        offers().eq('status', 'active'),
+        offers().eq('status', 'active').eq('needs_application', false),
+        supabase
+          .from('brand_products')
+          .select('id', { count: 'exact', head: true })
+          .eq('brand_id', brandId!),
+      ]);
+      for (const r of [total, live, openToAll, products]) if (r.error) throw r.error;
+
+      return {
+        total: total.count ?? 0,
+        live: live.count ?? 0,
+        openToAll: openToAll.count ?? 0,
+        products: products.count ?? 0,
+      };
+    },
+  });
 }
 
 /**

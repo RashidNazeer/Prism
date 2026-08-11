@@ -5,24 +5,13 @@ import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
 import { getSupabase } from '@/lib/supabase';
-import { useAuth, type AppRole, type CreatorTier } from '@/lib/auth/auth-context';
+import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import { useApplication } from '@/lib/auth/useApplication';
+import { ROLE_LABEL, TIER_LABEL } from '@/lib/tiers';
 
-const ROLE_LABEL: Record<AppRole, string> = {
-  applicant: 'Applicant',
-  creator: 'Creator',
-  creative_strategist: 'Creative strategist',
-  ops: 'Ops',
-  admin: 'Admin',
-};
-
-const TIER_LABEL: Record<CreatorTier, string> = {
-  creator: 'Creator',
-  rising: 'Rising',
-  pro: 'Pro',
-  elite: 'Elite',
-};
+// Moved to src/lib/tiers.ts on 2026-08-11, because the admin creator screens
+// print the same words and two copies of a label is how they drift.
 
 /**
  * The creator's own account.

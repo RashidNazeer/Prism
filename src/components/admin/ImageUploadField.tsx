@@ -64,7 +64,7 @@ export function ImageUploadField({
       <div className="mt-2 flex flex-wrap items-center gap-4">
         <span
           className={cn(
-            'grid size-20 shrink-0 place-items-center overflow-hidden border border-line bg-surface-2',
+            'border-line bg-surface-2 grid size-20 shrink-0 place-items-center overflow-hidden border',
             shape === 'round' ? 'rounded-full' : 'rounded-xl'
           )}
         >
@@ -89,7 +89,7 @@ export function ImageUploadField({
             id={id}
             disabled={busy}
             onClick={() => inputRef.current?.click()}
-            className="inline-flex h-10 items-center gap-2 rounded-xl border border-line-interactive bg-surface-2 px-4 text-[13px] font-medium transition-colors duration-200 hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"
+            className="border-line-interactive bg-surface-2 hover:border-accent hover:text-accent inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-[13px] font-medium transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Upload size={15} aria-hidden />
             {upload.isPending ? 'Uploading...' : value ? 'Replace' : 'Choose image'}
@@ -103,7 +103,7 @@ export function ImageUploadField({
                 setProblem(null);
                 onChange(null);
               }}
-              className="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-[13px] text-muted transition-colors duration-200 hover:text-danger disabled:opacity-60"
+              className="text-muted hover:text-danger inline-flex h-10 items-center gap-2 rounded-xl px-3 text-[13px] transition-colors duration-200 disabled:opacity-60"
             >
               <Trash2 size={15} aria-hidden />
               Remove
@@ -123,11 +123,11 @@ export function ImageUploadField({
       </div>
 
       {problem ? (
-        <p role="alert" className="mt-2 text-[13px] text-danger">
+        <p role="alert" className="text-danger mt-2 text-[13px]">
           {problem}
         </p>
       ) : hint ? (
-        <p className="mt-2 text-[13px] text-faint">{hint}</p>
+        <p className="text-faint mt-2 text-[13px]">{hint}</p>
       ) : null}
     </div>
   );

@@ -85,7 +85,12 @@ const ADMIN: NavGroup[] = [
   {
     label: 'People',
     items: [
-      { label: 'Creators', icon: Users, soon: 'Step 5' },
+      {
+        label: 'Creators',
+        icon: Users,
+        to: '/admin/creators',
+        activePrefixes: ['/admin/creators'],
+      },
       { label: 'Team', icon: Building2, soon: 'Later' },
     ],
   },
@@ -103,7 +108,10 @@ const ADMIN: NavGroup[] = [
   },
   {
     label: 'Data',
-    items: [{ label: 'Uploads', icon: Upload, soon: 'Step 7' }],
+    // Not "Step 7": that step shipped on 2026-08-11 and was the creator
+    // screens. A badge naming a step that has already landed reads as a broken
+    // promise, so unbuilt items say when rather than which number.
+    items: [{ label: 'Uploads', icon: Upload, soon: 'Later' }],
   },
 ];
 

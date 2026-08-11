@@ -119,7 +119,11 @@ function flattenBudget(row: QueueRowRaw): OfferQueueRow {
  * plain search character is dropped before it can get near one.
  */
 export const sanitiseOfferSearch = (raw: string) =>
-  raw.trim().replace(/^@+/, '').replace(/[^a-zA-Z0-9._@ -]/g, '').slice(0, 64);
+  raw
+    .trim()
+    .replace(/^@+/, '')
+    .replace(/[^a-zA-Z0-9._@ -]/g, '')
+    .slice(0, 64);
 
 const COLUMNS =
   'id, offer_id, brand_id, creator_id, creator_handle, creator_name, creator_email, ' +
@@ -150,9 +154,7 @@ export function useOfferApplications(filters: OfferQueueFilters) {
     queryFn: async (): Promise<{ rows: OfferQueueRow[]; total: number }> => {
       const from = (filters.page - 1) * OFFER_QUEUE_PAGE_SIZE;
 
-      let q = getSupabase()
-        .from('offer_applications')
-        .select(COLUMNS, { count: 'exact' });
+      let q = getSupabase().from('offer_applications').select(COLUMNS, { count: 'exact' });
 
       if (filters.status !== 'all') q = q.eq('status', filters.status);
       if (filters.brandId) q = q.eq('brand_id', filters.brandId);
@@ -266,10 +268,9 @@ export function useReviewOfferApplication() {
       /** Where the work starts. Ignored on a rejection. */
       stage?: OfferStage;
     }): Promise<OfferQueueRow> => {
-      const { data, error } = await getSupabase().functions.invoke(
-        'manage-offer-application',
-        { body: { action: 'application.review', ...input } }
-      );
+      const { data, error } = await getSupabase().functions.invoke('manage-offer-application', {
+        body: { action: 'application.review', ...input },
+      });
       if (error) throw new Error(await messageFrom(error));
       return (data as { result: OfferQueueRow }).result;
     },
@@ -293,10 +294,9 @@ export function useSetOfferStage() {
       stage: OfferStage;
       note?: string | null;
     }): Promise<OfferQueueRow> => {
-      const { data, error } = await getSupabase().functions.invoke(
-        'manage-offer-application',
-        { body: { action: 'application.stage', ...input } }
-      );
+      const { data, error } = await getSupabase().functions.invoke('manage-offer-application', {
+        body: { action: 'application.stage', ...input },
+      });
       if (error) throw new Error(await messageFrom(error));
       return (data as { result: OfferQueueRow }).result;
     },

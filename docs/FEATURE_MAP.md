@@ -126,6 +126,66 @@ Files: `src/lib/work/stage-moves.ts`, `src/routes/admin/OfferRequests.tsx`,
   rather than warning/success, which is the light-mode collision those tokens
   exist to end.
 
+## Brand rollups, the roster and the creator directory
+
+**Files:** `src/lib/admin/useBrandRollups.ts`, `src/lib/admin/useCreators.ts`,
+`src/lib/admin/useOpsHome.ts`, `src/components/admin/BrandCreators.tsx`,
+`src/routes/admin/Creators.tsx`, `src/routes/admin/CreatorDetail.tsx`,
+`src/routes/admin/AdminDashboard.tsx`, `src/lib/tiers.ts`,
+`supabase/migrations/*_brand_rollups.sql`,
+`supabase/migrations/*_creator_directory.sql`
+**Views:** `brand_stage_totals`, `brand_content_totals`, `brand_creator_roster`,
+`creator_directory`
+
+Steps 5 to 8 of `UI_CONNECTIONS_PLAN.md`, built 2026-08-11.
+
+**Change rules**
+
+- **All four are `security_invoker` AND carry `is_staff()` IN THE VIEW BODY.**
+  That second guard is the difference between these and `job_progress`.
+  `job_progress` is shared with creators and is safe because a job belongs to
+  exactly ONE creator, so its count is complete. These group by BRAND or list
+  every PERSON, where a creator would get a well formed object built from their
+  own rows with no error at all. Silently narrowed is worse than refused.
+- **`is_service_role()` is in that gate and must stay.** service_role carries no
+  `user_role` claim, so `jwt_role()` coalesces to 'applicant' and `is_staff()`
+  is FALSE for the service key. Drop it and every Edge Function and every line
+  of `verify:rls` reads zero rows despite the grants, which looks like a policy
+  working rather than a bug.
+- **Not one of them references `brand_commercials`.** No client, no allocation,
+  no spend. So a careless grant in a year cannot turn one into a way to read a
+  budget. `verify:brands` asserts all four are closed to a signed-in creator and
+  that none will answer a question about money.
+- **Currency is a dimension, never a rounding detail.** `brand_stage_totals`
+  groups by (brand, stage, CURRENCY) and every screen renders one block per
+  currency. `brand_creator_roster` names a currency only when the creator has
+  exactly one on that brand, and the card says so rather than adding two.
+- **The views group by STAGE, not by paid/due/working.** `STAGE_META` stays the
+  single source of that mapping; a bucket column in SQL would be a second copy.
+- The roster uses a LATERAL for its video counts, not a left join. Postgres does
+  not form equivalence classes across an outer join, so `where brand_id = $1`
+  would not reach the nullable side and the whole content table would aggregate
+  before the brand filter applied.
+- **`creator_directory` exists because identity is split across two tables.**
+  The account is `profiles`; the handle everybody types is
+  `applications.tiktok_handle`. `applications.user_id` is NOT NULL UNIQUE, so
+  the join cannot fan out and `count: 'exact'` stays honest.
+- The brand hub's Offers tab is paged, so **Overview's counts had to move into
+  the database in the same step**. Counting a paged array would have quietly
+  turned "12 live of 40" into a description of the first twelve rows.
+- The admin home will not say the day is clear until ALL THREE inboxes are
+  empty, and it will not say anything until every count has come back. An empty
+  cache and an empty queue look identical from a browser.
+- `audit_log` reads must pass `subject_type` as well as `subject_id`. The index
+  is `(subject_type, subject_id)` and a btree cannot serve a predicate that
+  skips its leading column.
+- `/admin/brands/:id`, `/admin/creators`, `/admin/creators/:id` and
+  `/admin/applications/:id` are all in `check-responsive.mjs` now. Adding the
+  last of those immediately found a real 375px overflow that had been there
+  since the screen was built: a grid item's min-width is `auto`, so one
+  unbreakable link made the page 529px wide in a 375px viewport. Any new
+  two-column admin layout needs `min-w-0`.
+
 ## Content (video links and ad codes)
 
 **Files:** `src/lib/content.ts`, `src/lib/creator/useMyContent.ts`,
@@ -835,6 +895,17 @@ the element that is too wide.
 - Assertions must be scoped to `<main>`. The desktop rail is rendered at every
   width and merely hidden by CSS, so an unscoped text match finds the sidebar's
   copy of a label and waits forever on something deliberately invisible.
+- **A screen behind an id needs a `via` entry**, which opens the list and
+  follows the first row. `/admin/brands/:id`, `/admin/creators/:id` and
+  `/admin/applications/:id` were all invisible to this suite until 2026-08-11,
+  and the very first run of the new coverage found a real 375px overflow on the
+  application detail screen that had been there since it was built.
+- **`min-w-0` is the fix for almost every sideways scroll, and it goes on the
+  ITEM, not the container.** A flex or grid item's min-width is `auto`, so one
+  unbreakable string (a URL, an email) sets a minimum for its own box and every
+  box above it. `truncate` does NOT save you: it needs a definite width to
+  truncate against. The application detail screen needed it in five places
+  before it fitted on a phone.
 - **Dialogs need their own check.** A page can pass at every width while a modal
   opened on it does not: the review dialog once pushed its heading above the top
   of a short viewport with no way to scroll back to it, and no page-level

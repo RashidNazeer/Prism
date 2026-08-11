@@ -447,6 +447,39 @@ offer. A 12-agent audit of every screen produced
 - No migration needed: every new read rides an index that already existed, two
   of which had never been used by a query.
 
+### Joining the product up, steps 5 to 8: the rest of the admin side (2026-08-11)
+
+- **A brand's Overview says where its money and its content have got to.** The
+  committed figure splits into paid, awaiting payment and in progress, one block
+  PER CURRENCY, and a card says how many videos have landed, are waiting to be
+  watched, and were sent back.
+- **The Offers tab is paged, searchable and filterable.** It used to fetch every
+  offer a brand owns in one unbounded read, which was also what Overview counted
+  from, so those counts moved into the database in the same step or they would
+  have quietly started describing the first twelve rows.
+- **The Creators tab is built**, after weeks of being advertised as "Later".
+  One card per person who has ever asked for one of that brand's offers: where
+  they stand, what was agreed, what has been paid, what they have delivered.
+  Tabs, search and paging all in the database.
+- **`/admin/creators` and `/admin/creators/:id` exist.** There was a screen for
+  every entity in the product except a person. It opens on their WORK, with
+  tabs for history and account, and the application screen gains a link across
+  rather than pretending to be the person.
+- **The admin home reads all three queues.** It could say "the queue is clear"
+  while nine creators sat unanswered and forty videos sat unwatched. It now
+  leads with what is waiting on us, then what is waiting on creators, then money
+  across every brand, then what is at risk, and every number is a link into the
+  screen already filtered for it.
+- **Three defects in the activity log fixed:** it never selected `subject_type`,
+  so every row linked to the applications screen whatever it was about; its
+  filter skipped the leading column of its own index, so a per-record history
+  was a sequential scan; and its label regex could not strip a namespace with an
+  underscore, so eleven actions printed as "offer application.stage changed".
+- **Four new views**, all `security_invoker` AND gated on `is_staff()` in the
+  body. `job_progress` is safe to share with creators because a job belongs to
+  one person; these group by brand or list every person, where a creator would
+  get a plausible narrowed answer instead of an error.
+
 ## Known bugs
 
 None outstanding.

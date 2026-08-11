@@ -58,7 +58,9 @@ export function OfferReviewDialog({
     };
   }, []);
 
-  const who = row.creator_handle ? `@${row.creator_handle}` : (row.creator_name ?? 'this creator');
+  const who = row.creator_handle
+    ? `@${row.creator_handle}`
+    : (row.creator_name ?? 'this creator');
   const hasTerms = row.offer?.video_count !== null && row.offer?.reward_amount != null;
 
   return (
@@ -84,7 +86,7 @@ export function OfferReviewDialog({
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        className="relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-line bg-surface-1 p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
+        className="border-line bg-surface-1 relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <h2 className="text-lg font-bold">
@@ -94,34 +96,33 @@ export function OfferReviewDialog({
             type="button"
             onClick={() => !busy && onClose()}
             aria-label="Close"
-            className="-mt-1 -mr-1 grid size-9 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:text-accent"
+            className="text-muted hover:text-accent -mt-1 -mr-1 grid size-9 shrink-0 place-items-center rounded-lg transition-colors"
           >
             <X size={17} aria-hidden />
           </button>
         </div>
 
-        <div className="mt-4 rounded-xl border border-line bg-surface-2 px-4 py-3.5">
+        <div className="border-line bg-surface-2 mt-4 rounded-xl border px-4 py-3.5">
           <p className="text-[14px] font-semibold">{row.offer?.title ?? 'That offer'}</p>
-          <p className="mt-0.5 text-[13px] text-muted">{row.brand?.name}</p>
-          <p className="mt-3 border-t border-line pt-3 text-[14px]">
-            <span className="font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+          <p className="text-muted mt-0.5 text-[13px]">{row.brand?.name}</p>
+          <p className="border-line mt-3 border-t pt-3 text-[14px]">
+            <span className="text-faint font-mono text-[10px] tracking-[0.14em] uppercase">
               They are asking for
             </span>
             {hasTerms ? (
               <span className="wx-numeric mt-1 block font-semibold">
-                {row.offer!.video_count}{' '}
-                {row.offer!.video_count === 1 ? 'video' : 'videos'} for{' '}
+                {row.offer!.video_count} {row.offer!.video_count === 1 ? 'video' : 'videos'} for{' '}
                 {money(row.offer!.reward_amount, row.offer!.currency)}
               </span>
             ) : (
-              <span className="mt-1 block text-muted">
-                This offer has no terms written on it, so agree them with the creator
-                before you approve.
+              <span className="text-muted mt-1 block">
+                This offer has no terms written on it, so agree them with the creator before you
+                approve.
               </span>
             )}
           </p>
           {row.note ? (
-            <p className="mt-3 border-t border-line pt-3 text-[13px] leading-relaxed text-muted">
+            <p className="border-line text-muted mt-3 border-t pt-3 text-[13px] leading-relaxed">
               {row.note}
             </p>
           ) : null}
@@ -131,11 +132,9 @@ export function OfferReviewDialog({
             money stops being available to promise to anybody else, so the
             number belongs here rather than being discovered later on the brand
             list. */}
-        {decision === 'approved' && row.budget ? (
-          <BudgetImpact row={row} />
-        ) : null}
+        {decision === 'approved' && row.budget ? <BudgetImpact row={row} /> : null}
 
-        <p className="mt-4 text-[14px] leading-relaxed text-muted">
+        <p className="text-muted mt-4 text-[14px] leading-relaxed">
           {decision === 'approved'
             ? 'They are told straight away, and the offer shows as theirs.'
             : 'Nothing is deleted. They can ask again, so a note here saves them guessing.'}
@@ -143,10 +142,7 @@ export function OfferReviewDialog({
 
         <div className="mt-5 grid gap-5">
           {decision === 'approved' ? (
-            <Field
-              label="Starting stage"
-              hint={STAGE_META[stage].creatorHint}
-            >
+            <Field label="Starting stage" hint={STAGE_META[stage].creatorHint}>
               {({ id, describedBy }) => (
                 <Select
                   id={id}
@@ -187,7 +183,7 @@ export function OfferReviewDialog({
         </div>
 
         {review.error ? (
-          <p role="alert" className="mt-4 text-[13px] text-danger">
+          <p role="alert" className="text-danger mt-4 text-[13px]">
             {(review.error as Error).message}
           </p>
         ) : null}
@@ -245,7 +241,7 @@ function BudgetImpact({ row }: { row: OfferQueueRow }) {
 
   if (allocated === null || !Number.isFinite(allocated)) {
     return (
-      <p className="mt-4 rounded-xl border border-line bg-surface-2 px-4 py-3 text-[13px] leading-relaxed text-muted">
+      <p className="border-line bg-surface-2 text-muted mt-4 rounded-xl border px-4 py-3 text-[13px] leading-relaxed">
         {row.brand?.name} has no budget set, so there is nothing to count this against.
       </p>
     );
@@ -262,14 +258,14 @@ function BudgetImpact({ row }: { row: OfferQueueRow }) {
         over ? 'border-danger/40 bg-danger-soft' : 'border-line bg-surface-2'
       )}
     >
-      <p className="font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+      <p className="text-faint font-mono text-[10px] tracking-[0.14em] uppercase">
         {row.brand?.name} budget
       </p>
       <p className="wx-numeric mt-1 text-[14px]">
         <span className="font-semibold">{money(after, currency)}</span> of{' '}
         {money(allocated, currency)} committed after this
       </p>
-      <p className={cn('mt-1 text-[13px]', over ? 'font-medium text-danger' : 'text-muted')}>
+      <p className={cn('mt-1 text-[13px]', over ? 'text-danger font-medium' : 'text-muted')}>
         {over ? (
           <>Over budget by {money(-left, currency)}. You can still approve it.</>
         ) : (

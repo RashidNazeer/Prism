@@ -70,7 +70,10 @@ const COLUMNS =
  * a bracket changes what the filter means rather than being matched literally.
  */
 const sanitise = (raw: string) =>
-  raw.trim().replace(/[^a-zA-Z0-9 &._-]/g, '').slice(0, 64);
+  raw
+    .trim()
+    .replace(/[^a-zA-Z0-9 &._-]/g, '')
+    .slice(0, 64);
 
 export function useAllOffers(filters: AllOffersFilters) {
   const search = sanitise(filters.search);
@@ -94,10 +97,7 @@ export function useAllOffers(filters: AllOffersFilters) {
           ? q.order('reward_amount', { ascending: false, nullsFirst: false })
           : q.order('created_at', { ascending: filters.sort === 'oldest' });
 
-      const { data, error, count } = await order.range(
-        from,
-        from + ALL_OFFERS_PAGE_SIZE - 1
-      );
+      const { data, error, count } = await order.range(from, from + ALL_OFFERS_PAGE_SIZE - 1);
 
       if (error) throw error;
       return { rows: (data ?? []) as unknown as AllOffersRow[], total: count ?? 0 };
@@ -188,7 +188,10 @@ export function useOfferStatusCounts() {
     queryFn: async (): Promise<{ active: number; inactive: number }> => {
       const supabase = getSupabase();
       const [active, inactive] = await Promise.all([
-        supabase.from('offers').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+        supabase
+          .from('offers')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'active'),
         supabase
           .from('offers')
           .select('id', { count: 'exact', head: true })

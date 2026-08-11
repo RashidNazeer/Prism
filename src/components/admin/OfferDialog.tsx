@@ -6,7 +6,12 @@ import { Field, Input, Select, Textarea } from '@/components/ui/Field';
 import { FormError } from '@/components/auth/AuthShell';
 import { useFocusTrap } from '@/lib/use-focus-trap';
 import { useManageBrand } from '@/lib/admin/useManageBrand';
-import { collectFieldErrors, CURRENCIES, offerSchema, type OfferInput } from '@/lib/schemas/brand';
+import {
+  collectFieldErrors,
+  CURRENCIES,
+  offerSchema,
+  type OfferInput,
+} from '@/lib/schemas/brand';
 import { money, type Offer } from '@/lib/admin/useBrands';
 
 /**
@@ -129,12 +134,12 @@ export function OfferDialog({
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        className="relative max-h-[100dvh] w-full max-w-xl overflow-y-auto rounded-t-2xl border border-line bg-surface-1 p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
+        className="border-line bg-surface-1 relative max-h-[100dvh] w-full max-w-xl overflow-y-auto rounded-t-2xl border p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold">{offer ? 'Edit offer' : 'New offer'}</h2>
-            <p className="mt-1 text-[14px] leading-relaxed text-muted">
+            <p className="text-muted mt-1 text-[14px] leading-relaxed">
               What {brandName} will pay a creator, and what they get for it.
             </p>
           </div>
@@ -142,7 +147,7 @@ export function OfferDialog({
             type="button"
             onClick={() => !busy && onClose()}
             aria-label="Close"
-            className="-mt-1 -mr-1 grid size-9 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:text-accent"
+            className="text-muted hover:text-accent -mt-1 -mr-1 grid size-9 shrink-0 place-items-center rounded-lg transition-colors"
           >
             <X size={17} aria-hidden />
           </button>
@@ -283,13 +288,13 @@ export function OfferDialog({
             {previewable ? (
               <p
                 role="status"
-                className="rounded-xl border border-line bg-surface-2 px-4 py-3 text-[14px] text-muted"
+                className="border-line bg-surface-2 text-muted rounded-xl border px-4 py-3 text-[14px]"
               >
-                <span className="font-semibold text-text">
+                <span className="text-text font-semibold">
                   {videos} {videos === 1 ? 'video' : 'videos'} for{' '}
                   {money(reward, values.currency)}
                 </span>
-                <span className="block text-[13px] text-faint">
+                <span className="text-faint block text-[13px]">
                   {money(perVideo, values.currency)} per video
                 </span>
               </p>
@@ -313,7 +318,7 @@ export function OfferDialog({
               </Field>
             </div>
 
-            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line-interactive bg-surface-2 p-4">
+            <label className="border-line-interactive bg-surface-2 flex cursor-pointer items-start gap-3 rounded-xl border p-4">
               <input
                 type="checkbox"
                 name="needsApplication"
@@ -324,7 +329,7 @@ export function OfferDialog({
               />
               <span>
                 <span className="block text-[14px] font-medium">Needs application</span>
-                <span className="mt-0.5 block text-[13px] leading-relaxed text-muted">
+                <span className="text-muted mt-0.5 block text-[13px] leading-relaxed">
                   {values.needsApplication
                     ? 'A creator has to apply and be approved before they get this.'
                     : 'Any approved creator can take this without asking. Nobody signs it off.'}

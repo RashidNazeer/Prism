@@ -63,7 +63,11 @@ export interface QueueRow {
  * is dropped before it can become part of the query.
  */
 export const sanitiseSearch = (raw: string) =>
-  raw.trim().replace(/^@+/, '').replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 64);
+  raw
+    .trim()
+    .replace(/^@+/, '')
+    .replace(/[^a-zA-Z0-9._-]/g, '')
+    .slice(0, 64);
 
 const COLUMNS =
   'id, tiktok_handle, niche, niche_other, worked_with_wurx, status, created_at, reviewed_at, ' +
@@ -83,9 +87,7 @@ export function useApplications(filters: QueueFilters) {
     queryFn: async (): Promise<{ rows: QueueRow[]; total: number }> => {
       const from = (filters.page - 1) * PAGE_SIZE;
 
-      let q = getSupabase()
-        .from('applications')
-        .select(COLUMNS, { count: 'exact' });
+      let q = getSupabase().from('applications').select(COLUMNS, { count: 'exact' });
 
       if (filters.status !== 'all') q = q.eq('status', filters.status);
       if (filters.workedWithWurx) q = q.eq('worked_with_wurx', true);

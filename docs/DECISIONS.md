@@ -576,3 +576,47 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   current design rather than deleted. The lesson is in OPERATIONS: a redesign
   re-runs every suite that asserts copy, not just the ones for the screens that
   were obviously touched.
+- 2026-08-11: **A view that groups by BRAND or lists every PERSON needs an
+  `is_staff()` gate in its body, not just `security_invoker`.** `job_progress`
+  is deliberately shared with creators and is safe because a job belongs to
+  exactly one creator, so the count it returns is complete. `brand_stage_totals`,
+  `brand_content_totals`, `brand_creator_roster` and `creator_directory` do not
+  have that property: a creator reading them would get a well formed brand
+  shaped object built from their own rows, with no error at all, and a number
+  that has been silently narrowed is worse than one that refuses.
+- 2026-08-11: **`is_service_role()` belongs in that gate too.** service_role
+  carries no `user_role` claim, so `jwt_role()` coalesces to 'applicant' and
+  `is_staff()` is FALSE for the service key. Without it every Edge Function and
+  every line of `verify:rls` would read zero rows from a gated view despite the
+  grants, and it would look like a policy working rather than a bug.
+- 2026-08-11: **The brand Offers tab is paged, and Overview's counts moved into
+  the database in the same step.** Overview counted by filtering the offers
+  array, so paging that array alone would have turned "12 live of 40" into a
+  description of the first twelve rows without anything looking wrong.
+- 2026-08-11: **`/admin/creators` is a new screen rather than a promotion of the
+  application detail screen.** Everything downstream keys on the account, a
+  creator can exist with no application at all, and that screen's own copy says
+  its decision is final, which is the right posture for a review artefact and
+  the wrong one for a living record. It gains a link across instead.
+- 2026-08-11: **`creator_directory` is a view because a person's identity is
+  split across two tables.** The account is `profiles`; the handle everybody
+  actually types is `applications.tiktok_handle`. `user_id` is NOT NULL UNIQUE
+  so the join cannot fan out, which is what keeps `count: 'exact'` honest.
+- 2026-08-11: **A brand roster row shows money only when the creator has ONE
+  currency on that brand.** `offer_applications.currency` is per row, so two is
+  possible; the view names the currency only when there is one and the card says
+  "more than one currency" rather than printing a total that crossed them.
+- 2026-08-11: **Three more stale assertions found, all the same shape**, on top
+  of the two in `verify:offer-requests` earlier the same day: a suite that
+  checks CREATOR copy from inside an ADMIN flow, left behind when the creator
+  home was rebuilt. `verify:review` was asserting the literal text "welcome to
+  wurx", which nothing renders; that string is the overlay's `aria-label` and
+  `getByText` matches text nodes. Its visible heading is "Welcome, <name>". Also
+  fixed: an unscoped search for `@wurxmediahub.test` on the applications queue,
+  which found the RUNNER'S OWN email in the sidebar and reported the queue was
+  leaking applicants' addresses. Scoping to `<main>` was already the written
+  rule and that line did not follow it.
+- 2026-08-11: Removed a duplicate trigram index I had added hours earlier.
+  `applications.tiktok_handle` has been indexed since July; a second index on
+  the same column is accepted silently by Postgres and then maintained on every
+  write forever.

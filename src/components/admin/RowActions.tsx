@@ -134,7 +134,7 @@ export function RowActions({
           e.stopPropagation();
           setOpen((v) => !v);
         }}
-        className="pointer-events-auto grid size-10 place-items-center rounded-lg border border-line-interactive text-muted transition-colors duration-200 hover:border-accent hover:text-accent"
+        className="border-line-interactive text-muted hover:border-accent hover:text-accent pointer-events-auto grid size-10 place-items-center rounded-lg border transition-colors duration-200"
       >
         <MoreVertical size={16} aria-hidden />
       </button>
@@ -146,7 +146,7 @@ export function RowActions({
               role="menu"
               aria-label={`Actions for @${handle}`}
               style={{ top: pos.top, right: pos.right }}
-              className="fixed z-50 w-56 overflow-hidden rounded-xl border border-line bg-surface-1 py-1 shadow-lg"
+              className="border-line bg-surface-1 fixed z-50 w-56 overflow-hidden rounded-xl border py-1 shadow-lg"
             >
               <a
                 role="menuitem"
@@ -160,7 +160,7 @@ export function RowActions({
                 View TikTok profile
               </a>
 
-              <div role="separator" className="my-1 h-px bg-line" />
+              <div role="separator" className="bg-line my-1 h-px" />
 
               <button
                 role="menuitem"

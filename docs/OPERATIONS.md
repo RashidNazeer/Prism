@@ -144,6 +144,13 @@ Then poll the log. **Failures go to stderr**, so read the `.err` file too; a
 green-looking stdout with missing PASS lines means the failures are in the
 other file.
 
+**Use a fresh log filename per run, and read with `grep -a`.** Re-running a
+suite onto the same redirect target while the previous run's handle is still
+open leaves the file NULL PADDED: the failure line is silently replaced with
+zero bytes and only the summary survives, so the suite reports "1 check FAILED"
+and the file cannot say which. `grep` also treats a file containing nulls as
+binary and stops counting, which makes a full run look half finished.
+
 **Never put `2>&1` after the `node` call inside a runner script.** PowerShell
 5.1 wraps each stderr line from a native exe in an ErrorRecord, which then does
 not reach `-RedirectStandardOutput` at all. The result is a log that ends

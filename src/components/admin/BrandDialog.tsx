@@ -6,7 +6,12 @@ import { Field, Input, Select } from '@/components/ui/Field';
 import { FormError } from '@/components/auth/AuthShell';
 import { useFocusTrap } from '@/lib/use-focus-trap';
 import { useManageBrand } from '@/lib/admin/useManageBrand';
-import { brandSchema, collectFieldErrors, CURRENCIES, type BrandInput } from '@/lib/schemas/brand';
+import {
+  brandSchema,
+  collectFieldErrors,
+  CURRENCIES,
+  type BrandInput,
+} from '@/lib/schemas/brand';
 import type { Brand } from '@/lib/admin/useBrands';
 
 /**
@@ -102,21 +107,21 @@ export function BrandDialog({
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        className="relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-line bg-surface-1 p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
+        className="border-line bg-surface-1 relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold">{brand ? 'Edit brand' : 'Add a brand'}</h2>
-            <p className="mt-1 text-[14px] leading-relaxed text-muted">
-              A brand is a seller store on TikTok Shop. Everything else in its hub hangs
-              off this.
+            <p className="text-muted mt-1 text-[14px] leading-relaxed">
+              A brand is a seller store on TikTok Shop. Everything else in its hub hangs off
+              this.
             </p>
           </div>
           <button
             type="button"
             onClick={() => !busy && onClose()}
             aria-label="Close"
-            className="-mt-1 -mr-1 grid size-9 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:text-accent"
+            className="text-muted hover:text-accent -mt-1 -mr-1 grid size-9 shrink-0 place-items-center rounded-lg transition-colors"
           >
             <X size={17} aria-hidden />
           </button>
@@ -160,7 +165,11 @@ export function BrandDialog({
               )}
             </Field>
 
-            <Field label="Client name" error={errors.clientName} hint="Internal. Creators never see this.">
+            <Field
+              label="Client name"
+              error={errors.clientName}
+              hint="Internal. Creators never see this."
+            >
               {({ id, describedBy, invalid }) => (
                 <Input
                   id={id}
@@ -214,7 +223,7 @@ export function BrandDialog({
               </Field>
             </div>
 
-            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line-interactive bg-surface-2 p-4">
+            <label className="border-line-interactive bg-surface-2 flex cursor-pointer items-start gap-3 rounded-xl border p-4">
               <input
                 type="checkbox"
                 name="isActive"
@@ -225,7 +234,7 @@ export function BrandDialog({
               />
               <span>
                 <span className="block text-[14px] font-medium">Active</span>
-                <span className="mt-0.5 block text-[13px] leading-relaxed text-muted">
+                <span className="text-muted mt-0.5 block text-[13px] leading-relaxed">
                   Switch this off to retire a brand without deleting it or its history.
                 </span>
               </span>

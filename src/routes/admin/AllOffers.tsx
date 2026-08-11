@@ -107,17 +107,15 @@ export function AllOffers() {
     <AppShell>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h1 className="text-[clamp(1.4rem,3.5vw,1.9rem)] font-extrabold">Offers</h1>
-        <p className="text-[14px] text-muted">
-          Every deal on the table, across every brand.
-        </p>
+        <p className="text-muted text-[14px]">Every deal on the table, across every brand.</p>
       </div>
 
       {/* ------------------------------------------------------------ tabs -- */}
-      <div className="mt-5 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      <div className="-mx-4 mt-5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         <div
           role="tablist"
           aria-label="Filter offers"
-          className="inline-flex min-w-max rounded-xl border border-line bg-surface-1 p-1"
+          className="border-line bg-surface-1 inline-flex min-w-max rounded-xl border p-1"
         >
           {STATUS_TABS.map((t) => {
             const n =
@@ -169,7 +167,7 @@ export function AllOffers() {
           <Search
             size={15}
             aria-hidden
-            className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-faint"
+            className="text-faint pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
           />
           <input
             type="search"
@@ -178,7 +176,7 @@ export function AllOffers() {
             onChange={(e) => setSearchDraft(e.target.value)}
             placeholder="Search offers"
             aria-label="Search offers by title"
-            className="h-9 w-full rounded-xl border border-line-interactive bg-surface-1 pr-3 pl-9 text-[13px] placeholder:text-faint hover:border-accent/60 focus:border-accent focus:outline-none"
+            className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[13px] focus:outline-none"
           />
         </form>
 
@@ -232,7 +230,12 @@ export function AllOffers() {
       </div>
 
       {/* ------------------------------------------------------------ list -- */}
-      <div className={cn('mt-4 transition-opacity duration-200', isPlaceholderData && 'opacity-60')}>
+      <div
+        className={cn(
+          'mt-4 transition-opacity duration-200',
+          isPlaceholderData && 'opacity-60'
+        )}
+      >
         {isLoading ? (
           <ul className="grid gap-2.5">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -242,17 +245,16 @@ export function AllOffers() {
         ) : isError ? (
           <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-14 text-center shadow-md">
             <p className="font-semibold">That list would not load</p>
-            <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
           <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-16 text-center shadow-md">
-            <Tag size={26} aria-hidden className="mx-auto text-faint" />
+            <Tag size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">No offers match that</p>
-            <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
-              Offers are created inside a brand hub. Try a different search, brand or
-              status.
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+              Offers are created inside a brand hub. Try a different search, brand or status.
             </p>
           </div>
         ) : (
@@ -273,7 +275,7 @@ export function AllOffers() {
       {/* ------------------------------------------------------ pagination -- */}
       {total > ALL_OFFERS_PAGE_SIZE ? (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="wx-numeric text-[13px] text-muted">
+          <p className="wx-numeric text-muted text-[13px]">
             {(filters.page - 1) * ALL_OFFERS_PAGE_SIZE + 1} to{' '}
             {Math.min(filters.page * ALL_OFFERS_PAGE_SIZE, total)} of {total}
           </p>
@@ -287,7 +289,7 @@ export function AllOffers() {
               <ChevronLeft size={15} aria-hidden />
               Previous
             </Button>
-            <span className="wx-numeric px-1 font-mono text-[12px] text-muted">
+            <span className="wx-numeric text-muted px-1 font-mono text-[12px]">
               {filters.page} / {pages}
             </span>
             <Button
@@ -328,27 +330,27 @@ function OfferRow({
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-semibold break-words">{offer.title}</p>
             {offer.badge_title ? (
-              <span className="rounded-full bg-accent-soft px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] text-accent uppercase">
+              <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
                 {offer.badge_title}
               </span>
             ) : null}
             {offer.status === 'inactive' ? (
-              <span className="rounded-full bg-surface-2 px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] text-muted uppercase">
+              <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
                 Switched off
               </span>
             ) : null}
             {offer.brand && !offer.brand.is_active ? (
-              <span className="rounded-full bg-surface-2 px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] text-muted uppercase">
+              <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
                 Brand retired
               </span>
             ) : null}
           </div>
 
-          <p className="mt-1 text-[14px] text-muted">
+          <p className="text-muted mt-1 text-[14px]">
             {offer.brand ? (
               <Link
                 to={`/admin/brands/${offer.brand.id}`}
-                className="underline decoration-line underline-offset-2 transition-colors hover:text-accent"
+                className="decoration-line hover:text-accent underline underline-offset-2 transition-colors"
               >
                 {offer.brand.name}
               </Link>
@@ -369,7 +371,7 @@ function OfferRow({
               <span className="text-accent">{money(offer.reward_amount, offer.currency)}</span>
             </span>
           ) : (
-            <span className="mt-1 block text-[14px] text-muted">No fixed terms</span>
+            <span className="text-muted mt-1 block text-[14px]">No fixed terms</span>
           )}
         </div>
 

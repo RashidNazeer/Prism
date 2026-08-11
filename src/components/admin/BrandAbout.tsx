@@ -7,8 +7,18 @@ import { ImageUploadField } from '@/components/admin/ImageUploadField';
 import { ProductDialog } from '@/components/admin/ProductDialog';
 import { cn } from '@/lib/utils';
 import { useManageBrand } from '@/lib/admin/useManageBrand';
-import { money, percent, useProducts, type Brand, type BrandProduct } from '@/lib/admin/useBrands';
-import { brandAboutSchema, collectFieldErrors, type BrandAboutInput } from '@/lib/schemas/brand';
+import {
+  money,
+  percent,
+  useProducts,
+  type Brand,
+  type BrandProduct,
+} from '@/lib/admin/useBrands';
+import {
+  brandAboutSchema,
+  collectFieldErrors,
+  type BrandAboutInput,
+} from '@/lib/schemas/brand';
 
 /**
  * The About tab: who this brand is, and what it sells.
@@ -77,7 +87,7 @@ function Story({ brand }: { brand: Brand }) {
 
   return (
     <section>
-      <p className="text-[14px] leading-relaxed text-muted">
+      <p className="text-muted text-[14px] leading-relaxed">
         How this brand introduces itself in the creator hub.
       </p>
 
@@ -94,11 +104,7 @@ function Story({ brand }: { brand: Brand }) {
           onChange={(url) => set('logoUrl', url ?? '')}
         />
 
-        <Field
-          label="Tagline"
-          error={errors.tagline}
-          hint="One line under the name. Optional."
-        >
+        <Field label="Tagline" error={errors.tagline} hint="One line under the name. Optional.">
           {({ id, describedBy, invalid }) => (
             <Input
               id={id}
@@ -142,7 +148,7 @@ function Story({ brand }: { brand: Brand }) {
           {saved && !busy ? (
             <span
               role="status"
-              className="inline-flex items-center gap-1.5 text-[13px] font-medium text-success"
+              className="text-success inline-flex items-center gap-1.5 text-[13px] font-medium"
             >
               <Check size={15} aria-hidden />
               Saved
@@ -163,11 +169,11 @@ function Products({ brandId, brandName }: { brandId: string; brandName: string }
   const rows = products ?? [];
 
   return (
-    <section className="border-t border-line pt-8">
+    <section className="border-line border-t pt-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-semibold">Products</h2>
-          <p className="mt-1 text-[14px] leading-relaxed text-muted">
+          <p className="text-muted mt-1 text-[14px] leading-relaxed">
             What the brand sells, and the commission we offer on each one.
           </p>
         </div>
@@ -180,14 +186,14 @@ function Products({ brandId, brandName }: { brandId: string; brandName: string }
       {isLoading ? (
         <ul className="mt-4 grid gap-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <li key={i} className="h-20 animate-pulse rounded-2xl bg-surface-1" />
+            <li key={i} className="wx-skeleton h-20 rounded-[20px]" />
           ))}
         </ul>
       ) : rows.length === 0 ? (
-        <div className="mt-4 rounded-2xl border border-line bg-surface-1 px-6 py-12 text-center">
-          <Package size={24} aria-hidden className="mx-auto text-faint" />
+        <div className="border-line bg-surface-1 mt-4 rounded-[20px] border px-6 py-12 text-center shadow-md">
+          <Package size={24} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">No products yet</p>
-          <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
+          <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
             Creators see these when they open the hub, with the commission on each.
           </p>
           <Button className="mt-6" onClick={() => setDialog({})}>
@@ -199,10 +205,7 @@ function Products({ brandId, brandName }: { brandId: string; brandName: string }
         <ul className="mt-4 grid gap-3">
           {rows.map((product) => (
             <li key={product.id}>
-              <ProductRow
-                product={product}
-                onEdit={() => setDialog({ product })}
-              />
+              <ProductRow product={product} onEdit={() => setDialog({ product })} />
             </li>
           ))}
         </ul>
@@ -229,14 +232,14 @@ function ProductRow({ product, onEdit }: { product: BrandProduct; onEdit: () => 
   return (
     <div
       className={cn(
-        'rounded-2xl border bg-surface-1 p-4',
-        product.is_active ? 'border-line' : 'border-dashed border-line'
+        'bg-surface-1 rounded-[20px] border p-4',
+        product.is_active ? 'border-line' : 'border-line border-dashed'
       )}
     >
       {/* Stacks on a phone, one row from small up. Nothing here is allowed to
           push the page sideways. */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-        <span className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl border border-line bg-surface-2">
+        <span className="border-line bg-surface-2 grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl border">
           {product.image_url ? (
             <img src={product.image_url} alt="" className="size-full object-cover" />
           ) : (
@@ -248,24 +251,24 @@ function ProductRow({ product, onEdit }: { product: BrandProduct; onEdit: () => 
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-semibold break-words">{product.name}</p>
             {product.badge_title ? (
-              <span className="rounded-full bg-accent-soft px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] text-accent uppercase">
+              <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
                 {product.badge_title}
               </span>
             ) : null}
             {!product.is_active ? (
-              <span className="rounded-full bg-surface-2 px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] text-muted uppercase">
+              <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
                 Hidden
               </span>
             ) : null}
           </div>
-          <p className="mt-1 font-mono text-[11px] break-all text-faint">
+          <p className="text-faint mt-1 font-mono text-[11px] break-all">
             {product.external_product_id}
           </p>
         </div>
 
         <div className="flex items-center gap-5">
           <span>
-            <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+            <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
               Price
             </span>
             <span className="wx-numeric mt-0.5 block text-[15px] font-semibold">
@@ -273,10 +276,10 @@ function ProductRow({ product, onEdit }: { product: BrandProduct; onEdit: () => 
             </span>
           </span>
           <span>
-            <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+            <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
               Commission
             </span>
-            <span className="wx-numeric mt-0.5 block text-[15px] font-bold text-accent">
+            <span className="wx-numeric text-accent mt-0.5 block text-[15px] font-bold">
               {rate || 'Not set'}
             </span>
           </span>
@@ -287,7 +290,7 @@ function ProductRow({ product, onEdit }: { product: BrandProduct; onEdit: () => 
             type="button"
             onClick={onEdit}
             aria-label={`Edit ${product.name}`}
-            className="grid size-9 place-items-center rounded-lg text-muted transition-colors duration-200 hover:bg-surface-2 hover:text-accent"
+            className="text-muted hover:bg-surface-2 hover:text-accent grid size-9 place-items-center rounded-lg transition-colors duration-200"
           >
             <Pencil size={15} aria-hidden />
           </button>
@@ -295,7 +298,7 @@ function ProductRow({ product, onEdit }: { product: BrandProduct; onEdit: () => 
             type="button"
             onClick={() => setConfirming(true)}
             aria-label={`Delete ${product.name}`}
-            className="grid size-9 place-items-center rounded-lg text-muted transition-colors duration-200 hover:bg-surface-2 hover:text-danger"
+            className="text-muted hover:bg-surface-2 hover:text-danger grid size-9 place-items-center rounded-lg transition-colors duration-200"
           >
             <Trash2 size={15} aria-hidden />
           </button>
@@ -303,13 +306,13 @@ function ProductRow({ product, onEdit }: { product: BrandProduct; onEdit: () => 
       </div>
 
       {confirming ? (
-        <div className="mt-4 rounded-xl border border-danger/40 bg-danger-soft p-4">
-          <p className="text-[13px] leading-relaxed font-medium text-danger">
-            Delete {product.name}? It goes for good, though the audit log keeps a record
-            of what it was.
+        <div className="border-danger/40 bg-danger-soft mt-4 rounded-xl border p-4">
+          <p className="text-danger text-[13px] leading-relaxed font-medium">
+            Delete {product.name}? It goes for good, though the audit log keeps a record of what
+            it was.
           </p>
           {manage.error ? (
-            <p role="alert" className="mt-2 text-[12px] text-danger">
+            <p role="alert" className="text-danger mt-2 text-[12px]">
               {(manage.error as Error).message}
             </p>
           ) : null}
@@ -317,9 +320,7 @@ function ProductRow({ product, onEdit }: { product: BrandProduct; onEdit: () => 
             <Button
               size="sm"
               disabled={manage.isPending}
-              onClick={() =>
-                manage.mutate({ action: 'product.delete', productId: product.id })
-              }
+              onClick={() => manage.mutate({ action: 'product.delete', productId: product.id })}
             >
               {manage.isPending ? 'Deleting...' : 'Yes, delete'}
             </Button>

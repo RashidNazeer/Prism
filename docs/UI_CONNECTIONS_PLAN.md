@@ -131,7 +131,14 @@ history behind a tap. Then everything becomes clickable, filters move into the
 address bar so a shared link lands where it says, and the activity log stops
 pointing every row at the applications screen whatever it was about.
 
-### Step 5. A brand's overview says where its money and its content have got to
+### Step 5. A brand's overview says where its money and its content have got to  **BUILT 2026-08-11**
+
+Shipped, plus the thing it forced: paging the Offers tab meant Overview could no
+longer count by filtering that array, so those counts moved into the database in
+the same step. The per-offer comparison table was NOT built; the Overview shows
+brand totals and the offer counts, and comparing offers against each other is
+still only possible on `/admin/offers`. Saying so rather than half-doing it.
+
 
 The committed figure splits into paid, awaiting payment and in progress. Beside
 it, how many videos have landed for this brand, how many are waiting to be
@@ -139,21 +146,34 @@ watched, how many were sent back. Then a comparison of the brand's own offers,
 so you can see which one is pulling creators and which live offer nobody has
 taken. The offers tab gets search, filter and real paging.
 
-### Step 6. A brand knows who is working on it
+### Step 6. A brand knows who is working on it  **BUILT 2026-08-11**
+
 
 The Creators tab, which the hub has advertised as coming for weeks, gets built.
 One card per creator who has ever asked for one of this brand's offers, with
 where they stand, what they were promised, what they have delivered and what has
 been paid. Searchable and paged in the database.
 
-### Step 7. A creator is a thing you can open
+### Step 7. A creator is a thing you can open  **BUILT 2026-08-11**
+
+Built as its own screen, not as a promotion of the application detail. Two holes
+are NAMED on the screen rather than papered over: the history is what STAFF did,
+because posting a video writes no audit row, and a tier can still only be set
+once at approval. Changing a tier is not built.
+
 
 A creators list and a creator screen. Opening one lands on their work, not a
 summary: every offer across every brand, the stage of each, what was agreed, how
 much is filmed. Tabs for their videos and their history. The application screen
 keeps its job as the record of a decision and gains a link across to the person.
 
-### Step 8. The admin home tells you what today is
+### Step 8. The admin home tells you what today is  **BUILT 2026-08-11**
+
+Also fixed three real defects in the activity log while in there: it never
+selected subject_type so every row linked to the applications screen, its filter
+skipped the leading column of its own index, and its label regex could not strip
+a namespace containing an underscore.
+
 
 Leads with what is waiting on us across all three queues, and will not say the
 day is clear until all three are. Then what is waiting on creators, then money

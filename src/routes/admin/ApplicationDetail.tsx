@@ -20,13 +20,20 @@ import { useAuditLog } from '@/lib/admin/useAuditLog';
 export function ApplicationDetail() {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, isError, error } = useApplicationDetail(id);
-  const { data: history } = useAuditLog({ subjectId: id, limit: 20 });
+  // The kind is passed as well as the id. The index is (subject_type,
+  // subject_id) and a btree cannot serve a predicate that skips its leading
+  // column, so this was a sequential scan of a table that only ever grows.
+  const { data: history } = useAuditLog({
+    subjectId: id,
+    subjectType: 'application',
+    limit: 20,
+  });
 
   return (
     <AppShell>
       <Link
         to="/admin/applications"
-        className="mt-4 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.14em] text-muted uppercase transition-colors hover:text-accent"
+        className="text-muted hover:text-accent mt-4 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.14em] uppercase transition-colors"
       >
         <ArrowLeft size={14} aria-hidden />
         Back to queue
@@ -34,8 +41,8 @@ export function ApplicationDetail() {
 
       {isLoading ? (
         <div className="mt-6 max-w-3xl space-y-4">
-          <div className="h-10 w-64 animate-pulse rounded bg-surface-2" />
-          <div className="h-48 animate-pulse rounded-2xl bg-surface-1" />
+          <div className="wx-skeleton h-10 w-64 rounded" />
+          <div className="wx-skeleton h-48 rounded-[20px]" />
         </div>
       ) : isError ? (
         <Empty
@@ -73,17 +80,27 @@ function Loaded({
         </h1>
         <StatusBadge status={application.status} />
         {application.worked_with_wurx ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-2.5 py-1 font-mono text-[10px] tracking-[0.12em] text-accent uppercase">
+          <span className="bg-accent-soft text-accent inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[10px] tracking-[0.12em] uppercase">
             <Star size={11} aria-hidden />
             Worked with Wurx
           </span>
         ) : null}
       </div>
 
-      <div className="mt-8 grid max-w-5xl gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
+      <div className="mt-8 grid max-w-5xl min-w-0 gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
         {/* ------------------------------------------------- what they sent */}
-        <div className="grid gap-6">
-          <section className="rounded-2xl border border-line bg-surface-1 p-6">
+        {/*
+          `min-w-0` is load bearing, not tidiness.
+
+          A grid item's min-width is `auto`, so a single unbreakable string
+          inside it (a video link, a long email) makes the whole column wider
+          than its container and the page scrolls sideways. This screen was
+          529px wide in a 375px viewport, and nothing caught it because
+          /admin/applications/:id had never been in the responsive suite. It is
+          now, which is how this was found.
+        */}
+        <div className="grid min-w-0 gap-6">
+          <section className="border-line bg-surface-1 min-w-0 rounded-[20px] border p-6 shadow-md">
             <h2 className="text-lg font-bold">Application</h2>
             <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
               <Row label="Niche" value={niche} />
@@ -92,27 +109,35 @@ function Loaded({
                 value={application.worked_with_wurx ? 'Yes' : 'No'}
               />
               <Row label="Applied" value={formatDateTime(application.created_at)} />
-              <Row
-                label="Last updated"
-                value={formatDateTime(application.updated_at)}
-              />
+              <Row label="Last updated" value={formatDateTime(application.updated_at)} />
             </dl>
 
-            <div className="mt-6 border-t border-line pt-5">
-              <p className="font-mono text-[11px] tracking-[0.14em] text-faint uppercase">
+            <div className="border-line mt-6 border-t pt-5">
+              <p className="text-faint font-mono text-[11px] tracking-[0.14em] uppercase">
                 Videos
               </p>
               {links.length > 0 ? (
                 <ul className="mt-3 grid gap-2">
                   {links.map((link) => (
-                    <li key={link}>
+                    /*
+                      `min-w-0` three times, and every one is needed.
+
+                      `truncate` cannot shrink a flex item on its own: a flex
+                      or grid item's min-width is `auto`, so an unbreakable URL
+                      sets the minimum for the span, the anchor and the list
+                      item in turn, and the whole page ends up wider than the
+                      phone. This screen was 504px in a 375px viewport and
+                      nothing caught it, because /admin/applications/:id had
+                      never been in the responsive suite until today.
+                    */
+                    <li key={link} className="min-w-0">
                       <a
                         href={link}
                         target="_blank"
                         rel="noreferrer noopener"
-                        className="inline-flex max-w-full items-center gap-2 text-[14px] text-accent underline-offset-4 hover:underline"
+                        className="text-accent inline-flex max-w-full min-w-0 items-center gap-2 text-[14px] underline-offset-4 hover:underline"
                       >
-                        <span className="truncate">{link}</span>
+                        <span className="min-w-0 truncate">{link}</span>
                         <ExternalLink size={13} aria-hidden className="shrink-0" />
                       </a>
                     </li>
@@ -122,14 +147,14 @@ function Loaded({
                 // Anything that is not an http(s) URL is shown as plain text and
                 // never as a link. A stored `javascript:` string must not become
                 // something a reviewer can click.
-                <p className="mt-3 text-[14px] leading-relaxed break-words whitespace-pre-wrap text-muted">
+                <p className="text-muted mt-3 text-[14px] leading-relaxed break-words whitespace-pre-wrap">
                   {application.video_links}
                 </p>
               )}
             </div>
           </section>
 
-          <section className="rounded-2xl border border-line bg-surface-1 p-6">
+          <section className="border-line bg-surface-1 min-w-0 rounded-[20px] border p-6 shadow-md">
             <h2 className="text-lg font-bold">Account</h2>
             {application.applicant ? (
               <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
@@ -149,13 +174,10 @@ function Loaded({
                   label="Account status"
                   value={application.applicant.is_active ? 'Active' : 'Suspended'}
                 />
-                <Row
-                  label="Joined"
-                  value={formatDateTime(application.applicant.created_at)}
-                />
+                <Row label="Joined" value={formatDateTime(application.applicant.created_at)} />
               </dl>
             ) : (
-              <p className="mt-4 text-[14px] text-muted">
+              <p className="text-muted mt-4 text-[14px]">
                 This account has been deleted. The application is kept for the record.
               </p>
             )}
@@ -163,11 +185,21 @@ function Loaded({
         </div>
 
         {/* ------------------------------------------------------ decision -- */}
-        <div className="grid gap-6">
+        {/*
+          `min-w-0` is load bearing, not tidiness.
+
+          A grid item's min-width is `auto`, so a single unbreakable string
+          inside it (a video link, a long email) makes the whole column wider
+          than its container and the page scrolls sideways. This screen was
+          529px wide in a 375px viewport, and nothing caught it because
+          /admin/applications/:id had never been in the responsive suite. It is
+          now, which is how this was found.
+        */}
+        <div className="grid min-w-0 gap-6">
           {application.status === 'pending' ? (
             <ReviewPanel application={application} />
           ) : (
-            <section className="rounded-2xl border border-line bg-surface-1 p-6">
+            <section className="border-line bg-surface-1 min-w-0 rounded-[20px] border p-6 shadow-md">
               <h2 className="text-lg font-bold">Decision</h2>
               <div className="mt-4">
                 <StatusBadge status={application.status} />
@@ -188,24 +220,24 @@ function Loaded({
                 />
               </dl>
               {application.review_note ? (
-                <p className="mt-5 rounded-xl border border-line bg-surface-2 px-4 py-3 text-[14px] leading-relaxed text-muted">
+                <p className="border-line bg-surface-2 text-muted mt-5 rounded-xl border px-4 py-3 text-[14px] leading-relaxed">
                   {application.review_note}
                 </p>
               ) : null}
-              <p className="mt-5 text-[13px] leading-relaxed text-faint">
-                A decision is final from this screen. Changing it means editing the
-                account directly, which is deliberate: it keeps the audit trail honest.
+              <p className="text-faint mt-5 text-[13px] leading-relaxed">
+                A decision is final from this screen. Changing it means editing the account
+                directly, which is deliberate: it keeps the audit trail honest.
               </p>
             </section>
           )}
 
           {/* --------------------------------------------------- audit trail */}
-          <section className="rounded-2xl border border-line bg-surface-1 p-6">
+          <section className="border-line bg-surface-1 min-w-0 rounded-[20px] border p-6 shadow-md">
             <h2 className="text-sm font-semibold">History</h2>
             {history && history.length > 0 ? (
               <ul className="mt-4 grid gap-3 text-[13px]">
                 {history.map((entry) => (
-                  <li key={entry.id} className="border-l-2 border-line pl-3">
+                  <li key={entry.id} className="border-line border-l-2 pl-3">
                     <p className="font-medium">
                       {entry.action.replace('application.', '').replace('_', ' ')}
                       {typeof entry.detail.tier === 'string' ? (
@@ -215,7 +247,7 @@ function Loaded({
                         </span>
                       ) : null}
                     </p>
-                    <p className="wx-numeric mt-0.5 text-faint">
+                    <p className="wx-numeric text-faint mt-0.5">
                       {entry.actor_email ?? 'A removed account'} &middot;{' '}
                       {formatDateTime(entry.created_at)}
                     </p>
@@ -223,9 +255,9 @@ function Loaded({
                 ))}
               </ul>
             ) : (
-              <p className="mt-3 text-[13px] leading-relaxed text-faint">
-                Nothing yet. Every approval and rejection is recorded here, and the
-                record cannot be edited from the browser by anyone, including an admin.
+              <p className="text-faint mt-3 text-[13px] leading-relaxed">
+                Nothing yet. Every approval and rejection is recorded here, and the record
+                cannot be edited from the browser by anyone, including an admin.
               </p>
             )}
           </section>
@@ -247,11 +279,15 @@ function Row({
   capitalize?: boolean;
 }) {
   return (
-    <div>
+    // `min-w-0` because this is a grid item, and a grid item's min-width is
+    // `auto`: without it one long value pushes the whole column wider than the
+    // phone it is on. `break-words` for the same reason, on every value rather
+    // than only the ones flagged `breakAll`.
+    <div className="min-w-0">
       <dt className="text-faint">{label}</dt>
       <dd
         className={[
-          'mt-0.5 font-medium',
+          'mt-0.5 font-medium break-words',
           breakAll ? 'break-all' : '',
           capitalize ? 'capitalize' : '',
         ]
@@ -266,9 +302,9 @@ function Row({
 
 function Empty({ title, body }: { title: string; body: string }) {
   return (
-    <div className="mt-8 max-w-lg rounded-2xl border border-line bg-surface-1 p-8 text-center">
+    <div className="border-line bg-surface-1 mt-8 max-w-lg rounded-[20px] border p-8 text-center shadow-md">
       <p className="font-semibold">{title}</p>
-      <p className="mt-2 text-[14px] leading-relaxed text-muted">{body}</p>
+      <p className="text-muted mt-2 text-[14px] leading-relaxed">{body}</p>
       <ButtonLink to="/admin/applications" variant="secondary" size="sm" className="mt-5">
         Back to queue
       </ButtonLink>

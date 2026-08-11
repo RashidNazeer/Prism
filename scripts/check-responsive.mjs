@@ -42,13 +42,43 @@ const CREATOR_EMAIL = process.env.CREATOR_EMAIL ?? 'skinbyamara@wurxmediahub.dem
 const CREATOR_PASSWORD = process.env.CREATOR_PASSWORD ?? 'demo-password-for-dev-only-1';
 
 const SCREENS = [
-  { path: '/admin', name: 'Dashboard', expect: /welcome back/i },
+  // Copy changed 2026-08-11 when the home stopped being about one queue.
+  { path: '/admin', name: 'Dashboard', expect: /good to see you/i },
   { path: '/admin/applications', name: 'Applications', expect: /^applications$/i },
   { path: '/admin/offers', name: 'All offers', expect: /every deal on the table/i },
   { path: '/admin/offers/requests', name: 'Offer requests', expect: /offer requests/i },
   { path: '/admin/activity', name: 'Activity', expect: /^activity$/i },
   { path: '/admin/content', name: 'Content', expect: /every video the roster/i },
   { path: '/admin/brands', name: 'Brands', expect: /^brands$/i },
+  { path: '/admin/creators', name: 'Creators', expect: /^creators$/i },
+  /*
+   * SCREENS BEHIND AN ID.
+   *
+   * These have never been width-checked, and the brand hub is the screen with
+   * the most on it in the whole admin panel: eight tabs, a money split, a
+   * content card and a paged roster. The suite has no service key so it cannot
+   * invent an id; `via` makes it open the list and follow the first row, the
+   * way a person would. A list with nothing in it is reported and skipped
+   * rather than failed, because an empty dev database is not a layout bug.
+   */
+  {
+    path: '/admin/brands',
+    via: 'a[href^="/admin/brands/"]',
+    name: 'Brand hub',
+    expect: /what this brand pays creators/i,
+  },
+  {
+    path: '/admin/creators',
+    via: 'a[href^="/admin/creators/"]',
+    name: 'Creator detail',
+    expect: /agreed|nothing taken yet/i,
+  },
+  {
+    path: '/admin/applications',
+    via: 'a[href^="/admin/applications/"]',
+    name: 'Application detail',
+    expect: /^application$/i,
+  },
   { path: '/app', name: 'Creator home', expect: /joining|welcome to wurx|not this time/i, as: 'creator' },
   { path: '/app/profile', name: 'Creator profile', expect: /my profile/i, as: 'creator' },
   { path: '/app/brands', name: 'Creator brand hubs', expect: /brand hubs/i, as: 'creator' },
@@ -151,6 +181,23 @@ try {
        */
       await page.goto(`${BASE}${screen.path}`, { waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(1800);
+
+      // Follow the first row into the screen behind it, for anything that
+      // lives at an id this suite cannot know.
+      if (screen.via) {
+        const link = page.locator(`main ${screen.via}`).first();
+        const there = await link
+          .waitFor({ state: 'visible', timeout: 8000 })
+          .then(() => true)
+          .catch(() => false);
+        if (!there) {
+          console.log(`  SKIP  ${screen.name}: nothing in ${screen.path} to open`);
+          await ctx.close();
+          continue;
+        }
+        await link.click();
+        await page.waitForTimeout(1800);
+      }
 
       // Scoped to <main> on purpose. The desktop rail is rendered at every
       // width and merely hidden by CSS below `lg`, so an unscoped search finds

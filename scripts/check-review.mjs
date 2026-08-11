@@ -199,9 +199,20 @@ try {
     `signing in lands on the dashboard (got ${new global.URL(adminPage.url()).pathname})`
   );
   await adminPage.waitForTimeout(2500);
+  /*
+   * Copy updated 2026-08-11. The home stopped being about one queue: it now
+   * counts applications, offer requests and videos, and will not say the day is
+   * clear until all three are empty. The tile is labelled "Applications" rather
+   * than "Awaiting review", and what this check is really defending is
+   * unchanged: the counts live here so the queue can open straight onto a list.
+   */
   check(
-    (await adminPage.getByText(/awaiting review/i).count()) > 0,
+    (await adminPage.getByText(/people asking to join/i).count()) > 0,
     'the dashboard carries the counts, so the queue does not have to'
+  );
+  check(
+    (await adminPage.getByText(/waiting on you|are all clear/i).count()) > 0,
+    'and it counts all three inboxes, not just applications'
   );
 
   await adminPage.getByRole('link', { name: /^applications$/i }).first().click();
@@ -217,8 +228,17 @@ try {
   await adminPage.waitForSelector('a[href^="/admin/applications/"]', { timeout: 20000 });
   check(await rowLink(PEOPLE[0].handle).first().isVisible(), 'the seeded applicant appears in the queue');
   check(await rowLink(PEOPLE[1].handle).first().isVisible(), 'the second applicant appears too');
+  /*
+   * SCOPED TO <main>, which is the rule this suite already follows elsewhere
+   * and this line did not.
+   *
+   * The sidebar prints the signed-in admin's own email, and OPERATIONS says to
+   * run these suites as a throwaway `@wurxmediahub.test` account rather than
+   * as Rashid. So an unscoped search finds the RUNNER'S email in the rail and
+   * reports that the queue is leaking applicants' addresses, which it is not.
+   */
   check(
-    (await adminPage.getByText(/@wurxmediahub\.test/i).count()) === 0,
+    (await adminPage.locator('main').getByText(/@wurxmediahub\.test/i).count()) === 0,
     'rows show the handle only, not the email, so they stay compact'
   );
 
@@ -359,9 +379,46 @@ try {
   );
 
   await applicantPage.getByRole('button', { name: /see my hub/i }).click();
-  await applicantPage.waitForTimeout(2000);
+  /*
+   * WAITED FOR, not slept on. What they land on is `FirstDay`, which is a
+   * LAZILY LOADED chunk on purpose (it drags the apply dialog and the whole Zod
+   * schema chunk behind it), so a fixed two second pause is a guess about how
+   * fast somebody else's machine is on the day.
+   */
+  await applicantPage
+    .locator('main')
+    .getByText(/welcome|nothing taken yet|agreed with you so far/i)
+    .first()
+    .waitFor({ state: 'visible', timeout: 25000 })
+    .catch(() => {});
+  /*
+   * And then a short settle, which the fixed sleep here used to provide by
+   * accident. Dismissing the moment closes it LOCALLY first and writes
+   * `approval_celebrated_at` behind that, deliberately, so a network blip
+   * cannot nag somebody with a celebration they already dismissed. The checks
+   * below read that column, so they have to let the write land.
+   */
+  await applicantPage.waitForTimeout(1500);
+  /*
+   * Copy fixed 2026-08-11. This asserted the literal text "welcome to wurx",
+   * which nothing renders: `WelcomeMoment` puts that string in the overlay's
+   * `aria-label`, and `getByText` matches text nodes, not labels. Its visible
+   * heading is "Welcome, <name>".
+   *
+   * Third stale assertion found today, all the same shape: a suite that checks
+   * CREATOR copy from inside an admin flow, left behind when the creator home
+   * was rebuilt. OPERATIONS now says a redesign re-runs every suite that
+   * asserts copy, not just the obvious ones.
+   *
+   * The alternation is deliberate: dismissing the approval leaves them either
+   * on the welcome moment or on the hub itself, depending on whether they had
+   * ever opened it before, and both are correct outcomes of this click.
+   */
   check(
-    (await applicantPage.getByText(/welcome to wurx/i).count()) > 0,
+    (await applicantPage
+      .locator('main')
+      .getByText(/welcome|nothing taken yet|agreed with you so far/i)
+      .count()) > 0,
     'dismissing it leaves them on their creator home'
   );
 

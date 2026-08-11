@@ -28,8 +28,7 @@ const STATUS_TABS: { value: StatusFilter; label: string }[] = [
 const isStatus = (v: string | null): v is StatusFilter =>
   v === 'pending' || v === 'approved' || v === 'rejected' || v === 'all';
 
-const COLUMNS =
-  'md:grid-cols-[1.75rem_minmax(0,2fr)_minmax(0,1.3fr)_6rem_7rem_2.25rem]';
+const COLUMNS = 'md:grid-cols-[1.75rem_minmax(0,2fr)_minmax(0,1.3fr)_6rem_7rem_2.25rem]';
 
 const niceDate = (iso: string) =>
   new Date(iso).toLocaleDateString(undefined, {
@@ -127,7 +126,7 @@ export function Applications() {
   return (
     <AppShell>
       <h1 className="text-[clamp(1.6rem,4vw,2.25rem)] font-extrabold">Applications</h1>
-      <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
+      <p className="text-muted mt-2 max-w-2xl text-[15px] leading-relaxed">
         Approve one and their dashboard changes while they are looking at it.
       </p>
 
@@ -136,7 +135,7 @@ export function Applications() {
         <div
           role="tablist"
           aria-label="Filter by status"
-          className="inline-flex max-w-full overflow-x-auto rounded-xl border border-line bg-surface-1 p-1"
+          className="border-line bg-surface-1 inline-flex max-w-full overflow-x-auto rounded-xl border p-1"
         >
           {STATUS_TABS.map((t) => {
             const count =
@@ -166,7 +165,7 @@ export function Applications() {
                       // `text-muted`, not `text-faint`: faint on surface-2 is
                       // only 4.31:1 in light mode, under WCAG AA. Registered in
                       // scripts/check-contrast.mjs so it cannot come back.
-                      active ? 'bg-black/15 text-on-accent' : 'bg-surface-2 text-muted'
+                      active ? 'text-on-accent bg-black/15' : 'bg-surface-2 text-muted'
                     )}
                   >
                     {count}
@@ -202,7 +201,7 @@ export function Applications() {
           <Search
             size={15}
             aria-hidden
-            className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-faint"
+            className="text-faint pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
           />
           <input
             type="search"
@@ -211,7 +210,7 @@ export function Applications() {
             onChange={(e) => setSearchDraft(e.target.value)}
             placeholder="Search by handle"
             aria-label="Search by TikTok handle"
-            className="h-9 w-full rounded-xl border border-line-interactive bg-surface-1 pr-3 pl-9 text-[13px] placeholder:text-faint hover:border-accent/60 focus:border-accent focus:outline-none"
+            className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[13px] focus:outline-none"
           />
         </form>
 
@@ -228,7 +227,7 @@ export function Applications() {
 
       {/* --------------------------------------------------------- bulk bar */}
       {selected.size > 0 ? (
-        <div className="mt-4 flex flex-wrap items-center gap-2.5 rounded-xl border border-accent bg-accent-soft px-4 py-3">
+        <div className="border-accent bg-accent-soft mt-4 flex flex-wrap items-center gap-2.5 rounded-xl border px-4 py-3">
           <p className="text-[14px] font-medium">
             <span className="wx-numeric">{selected.size}</span> selected
           </p>
@@ -258,34 +257,34 @@ export function Applications() {
       {/* ------------------------------------------------------------- table */}
       <div
         className={cn(
-          'mt-4 overflow-hidden rounded-2xl border border-line bg-surface-1 transition-opacity duration-200',
+          'border-line bg-surface-1 mt-4 overflow-hidden rounded-[20px] border shadow-md transition-opacity duration-200',
           isPlaceholderData && 'opacity-60'
         )}
       >
         {isLoading ? (
-          <ul className="divide-y divide-line">
+          <ul className="divide-line divide-y">
             {Array.from({ length: 6 }).map((_, i) => (
               <li key={i} className="flex items-center gap-4 px-4 py-3.5 sm:px-5">
-                <div className="h-4 w-36 animate-pulse rounded bg-surface-2" />
-                <div className="hidden h-4 w-24 animate-pulse rounded bg-surface-2 sm:block" />
-                <div className="ml-auto h-7 w-7 animate-pulse rounded-lg bg-surface-2" />
+                <div className="wx-skeleton h-4 w-36 rounded" />
+                <div className="wx-skeleton hidden h-4 w-24 rounded sm:block" />
+                <div className="wx-skeleton ml-auto h-7 w-7 rounded-lg" />
               </li>
             ))}
           </ul>
         ) : isError ? (
           <div className="px-6 py-14 text-center">
             <p className="font-semibold">That list would not load</p>
-            <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
           <div className="px-6 py-16 text-center">
-            <Inbox size={26} aria-hidden className="mx-auto text-faint" />
+            <Inbox size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">
               {filtered ? 'Nothing matches those filters' : 'No applications waiting'}
             </p>
-            <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
               {filtered
                 ? 'Try widening the search, or switch to All.'
                 : 'When someone applies from the landing page they appear here straight away.'}
@@ -298,7 +297,7 @@ export function Applications() {
                 screens, which would have left bulk review as a desktop-only
                 feature on a product whose reviewers are often on a phone. */}
             {selectable.length > 0 ? (
-              <div className="flex items-center gap-3 border-b border-line px-4 py-2.5 md:hidden">
+              <div className="border-line flex items-center gap-3 border-b px-4 py-2.5 md:hidden">
                 <label className="-m-2 flex cursor-pointer items-center gap-2.5 p-2">
                   <input
                     type="checkbox"
@@ -307,7 +306,7 @@ export function Applications() {
                     aria-label="Select every pending application on this page"
                     className="size-4 cursor-pointer accent-[var(--wx-accent)]"
                   />
-                  <span className="text-[13px] text-muted">
+                  <span className="text-muted text-[13px]">
                     {allSelected ? 'Clear selection' : `Select all ${selectable.length}`}
                   </span>
                 </label>
@@ -318,7 +317,7 @@ export function Applications() {
                 stacked card, where headings would just be noise. */}
             <div
               className={cn(
-                'hidden border-b border-line px-5 py-2.5 font-mono text-[10px] tracking-[0.14em] text-faint uppercase md:grid md:items-center md:gap-4',
+                'border-line text-muted hidden border-b px-5 py-2.5 text-[11px] font-semibold tracking-[0.14em] uppercase md:grid md:items-center md:gap-4',
                 COLUMNS
               )}
             >
@@ -342,7 +341,7 @@ export function Applications() {
               <span className="sr-only">Actions</span>
             </div>
 
-            <ul className="divide-y divide-line">
+            <ul className="divide-line divide-y">
               {rows.map((row) => (
                 <Row
                   key={row.id}
@@ -365,9 +364,9 @@ export function Applications() {
       {/* -------------------------------------------------------- pagination */}
       {total > 0 ? (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="wx-numeric text-[13px] text-muted">
-            {(filters.page - 1) * PAGE_SIZE + 1} to{' '}
-            {Math.min(filters.page * PAGE_SIZE, total)} of {total}
+          <p className="wx-numeric text-muted text-[13px]">
+            {(filters.page - 1) * PAGE_SIZE + 1} to {Math.min(filters.page * PAGE_SIZE, total)}{' '}
+            of {total}
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -379,7 +378,7 @@ export function Applications() {
               <ChevronLeft size={15} aria-hidden />
               Previous
             </Button>
-            <span className="wx-numeric px-1 font-mono text-[12px] text-muted">
+            <span className="wx-numeric text-muted px-1 font-mono text-[12px]">
               {filters.page} / {pages}
             </span>
             <Button
@@ -432,7 +431,7 @@ function Row({
   const niche = row.niche === 'Other' ? (row.niche_other ?? 'Other') : row.niche;
 
   const known = (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] text-accent uppercase">
+    <span className="bg-accent-soft text-accent inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
       <Star size={10} aria-hidden />
       Known
     </span>
@@ -462,7 +461,7 @@ function Row({
   );
 
   return (
-    <li className={cn('relative transition-colors duration-200 hover:bg-surface-2')}>
+    <li className={cn('hover:bg-surface-2 relative transition-colors duration-200')}>
       <Link
         to={`/admin/applications/${row.id}`}
         aria-label={`Open the application from @${row.tiktok_handle}`}
@@ -474,7 +473,7 @@ function Row({
         {box}
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">@{row.tiktok_handle}</p>
-          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted">
+          <p className="text-muted mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
             <span className="truncate">{niche}</span>
             <span aria-hidden className="text-faint">
               &middot;
@@ -495,7 +494,7 @@ function Row({
       >
         <span>{box}</span>
         <span className="min-w-0 truncate font-semibold">@{row.tiktok_handle}</span>
-        <span className="truncate text-[14px] text-muted">{niche}</span>
+        <span className="text-muted truncate text-[14px]">{niche}</span>
         <span className="text-center">
           {row.worked_with_wurx ? (
             known
@@ -505,7 +504,7 @@ function Row({
             </span>
           )}
         </span>
-        <span className="wx-numeric text-[13px] whitespace-nowrap text-muted">
+        <span className="wx-numeric text-muted text-[13px] whitespace-nowrap">
           {niceDate(row.created_at)}
         </span>
         <span className="flex justify-end">{actions}</span>

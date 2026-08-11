@@ -18,31 +18,46 @@ export interface AuditEntry {
   actor_email: string | null;
   actor_role: AppRole | null;
   action: string;
+  /**
+   * WHAT KIND of record this was about: 'application', 'brand', 'offer',
+   * 'offer_application', 'content_submission', 'product'.
+   *
+   * Stored and indexed since day one and never once selected, which is why
+   * every row in the activity feed used to link to the applications screen
+   * whatever it was actually about. Most of those links were dead and looked
+   * alive.
+   */
+  subject_type: string | null;
   subject_id: string | null;
   detail: Record<string, unknown>;
   created_at: string;
 }
 
-const COLUMNS = 'id, actor_email, actor_role, action, subject_id, detail, created_at';
+const COLUMNS =
+  'id, actor_email, actor_role, action, subject_type, subject_id, detail, created_at';
 
 /**
  * A short list, either for one subject or the most recent activity overall.
- * Used inline on the application detail screen.
+ *
+ * `subjectType` is not optional flavour. The index is `(subject_type,
+ * subject_id)` and a btree cannot serve a predicate that skips its leading
+ * column, so filtering on the id alone made this a sequential scan of a table
+ * that only ever grows. Every caller already knows the kind.
  */
 export function useAuditLog({
   subjectId,
+  subjectType,
   limit = 10,
-}: { subjectId?: string; limit?: number } = {}) {
+}: { subjectId?: string; subjectType?: string; limit?: number } = {}) {
   return useQuery({
-    queryKey: ['admin', 'audit', subjectId ?? 'recent', limit],
+    queryKey: ['admin', 'audit', subjectId ?? 'recent', subjectType ?? 'any', limit],
     staleTime: 15_000,
     queryFn: async (): Promise<AuditEntry[]> => {
       let q = getSupabase().from('audit_log').select(COLUMNS);
+      if (subjectType) q = q.eq('subject_type', subjectType);
       if (subjectId) q = q.eq('subject_id', subjectId);
 
-      const { data, error } = await q
-        .order('created_at', { ascending: false })
-        .limit(limit);
+      const { data, error } = await q.order('created_at', { ascending: false }).limit(limit);
 
       if (error) throw error;
       return (data ?? []) as unknown as AuditEntry[];
@@ -70,10 +85,57 @@ export function useAuditPage(page: number) {
   });
 }
 
-/** Plain English for a dotted action verb. */
+/**
+ * Plain English for a dotted action verb.
+ *
+ * The fallback used to strip the namespace with `/^[a-z]+\./`, which cannot
+ * match a namespace containing an underscore. Every one of the eleven
+ * `offer_application.*` actions therefore rendered with its raw dotted verb
+ * still in it: the feed printed "offer application.stage changed".
+ */
+const ACTIONS: Record<string, string> = {
+  'application.approved': 'approved',
+  'application.rejected': 'rejected',
+  'application.review_denied': 'was blocked trying to review',
+  'offer_application.approved': 'put a creator on an offer',
+  'offer_application.rejected': 'turned a creator down for an offer',
+  'offer_application.stage_changed': 'moved a job along',
+  'offer_application.created': 'a creator asked for an offer',
+  'offer_application.withdrawn': 'a creator withdrew',
+  'content.reviewed': 'reviewed a video',
+  'brand.saved': 'saved a brand',
+  'brand.about': 'edited a brand story',
+  'offer.saved': 'saved an offer',
+  'offer.deleted': 'deleted an offer',
+  'product.saved': 'saved a product',
+  'product.deleted': 'deleted a product',
+};
+
 export function describeAction(action: string): string {
-  if (action === 'application.approved') return 'approved';
-  if (action === 'application.rejected') return 'rejected';
-  if (action === 'application.review_denied') return 'was blocked trying to review';
-  return action.replace(/^[a-z]+\./, '').replace(/_/g, ' ');
+  const known = ACTIONS[action];
+  if (known) return known;
+  // `[^.]+` rather than `[a-z]+`, so a namespace with an underscore in it is
+  // actually stripped.
+  return action.replace(/^[^.]+\./, '').replace(/_/g, ' ');
+}
+
+/**
+ * Where an entry actually happened, so a row links to the record it is about.
+ *
+ * Everything used to point at `/admin/applications/<id>` whatever the id was,
+ * which meant a brand edit, a stage move and a content decision were all dead
+ * links that looked alive.
+ *
+ * Null means there is nowhere honest to send somebody. A content submission has
+ * no screen of its own, and a request lives inside a filtered queue rather than
+ * at an address, so those stay as plain text rather than pretending.
+ */
+export function linkForSubject(
+  subjectType: string | null,
+  subjectId: string | null
+): string | null {
+  if (!subjectId || !subjectType) return null;
+  if (subjectType === 'application') return `/admin/applications/${subjectId}`;
+  if (subjectType === 'brand') return `/admin/brands/${subjectId}`;
+  return null;
 }

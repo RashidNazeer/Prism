@@ -595,6 +595,45 @@ try {
     `nor read the table it lives in (${rows(reachForCommercials).length} rows, HTTP ${reachForCommercials.status})`
   );
 
+  /*
+   * a2. THE FOUR STAFF VIEWS, added 2026-08-11.
+   *
+   * `job_progress` is deliberately shared with creators and is safe because a
+   * job belongs to exactly ONE creator, so a job level count is complete rather
+   * than narrowed. These four group by BRAND or list every PERSON, where that
+   * property does not hold: a creator reading them would get a well formed
+   * brand-shaped object built from their own rows, with no error at all.
+   *
+   * So they carry an `is_staff()` gate in the view body as well as
+   * security_invoker, and must return NOTHING here. A number that has been
+   * silently narrowed is worse than one that refuses.
+   */
+  for (const view of [
+    'brand_stage_totals?select=brand_id,stage,currency,jobs,committed',
+    'brand_content_totals?select=brand_id,status,videos,creators',
+    'brand_creator_roster?select=brand_id,creator_id,creator_handle,committed,paid',
+    'creator_directory?select=id,email,display_name,tiktok_handle',
+  ]) {
+    const name = view.split('?')[0];
+    const got = await asUser(spyPage, `/rest/v1/${view}`);
+    check(
+      rows(got).length === 0,
+      `a creator gets nothing from ${name} (${rows(got).length} rows, HTTP ${got.status})`
+    );
+  }
+
+  // And none of the four can be asked about a brand's money by name.
+  for (const view of ['brand_stage_totals', 'brand_creator_roster', 'creator_directory']) {
+    const got = await asUser(
+      spyPage,
+      `/rest/v1/${view}?select=budget_allocated,budget_used,client_name`
+    );
+    check(
+      got.status >= 400 && !got.body.includes(BUDGET) && !got.body.includes('Test Client'),
+      `and ${view} has no budget or client column to ask for (HTTP ${got.status})`
+    );
+  }
+
   // b. Offers. Live ones yes, switched-off ones no.
   const readOffers = await asUser(
     spyPage,

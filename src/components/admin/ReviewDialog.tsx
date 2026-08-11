@@ -122,7 +122,7 @@ export function ReviewDialog({
         // Bottom sheet on a phone, centred card from `sm` up. Capped to the
         // viewport and scrolling inside itself, so every part of it stays
         // reachable however short the screen is.
-        className="relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-line bg-surface-1 p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
+        className="border-line bg-surface-1 relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <h2 className="text-lg font-bold">
@@ -132,23 +132,23 @@ export function ReviewDialog({
             type="button"
             onClick={() => !busy && onClose()}
             aria-label="Close"
-            className="-mt-1 -mr-1 grid size-9 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:text-accent"
+            className="text-muted hover:text-accent -mt-1 -mr-1 grid size-9 shrink-0 place-items-center rounded-lg transition-colors"
           >
             <X size={17} aria-hidden />
           </button>
         </div>
 
-        <p className="mt-2 text-[14px] leading-relaxed text-muted">
+        <p className="text-muted mt-2 text-[14px] leading-relaxed">
           {decision === 'approved' ? (
             <>
-              {many ? 'They all become creators' : 'They become a creator'} straight away,
-              on the tier you pick, and {many ? 'their dashboards' : 'their dashboard'}{' '}
+              {many ? 'They all become creators' : 'They become a creator'} straight away, on
+              the tier you pick, and {many ? 'their dashboards' : 'their dashboard'}{' '}
               {many ? 'change' : 'changes'} while they are looking.
             </>
           ) : (
             <>
-              Nothing is deleted. {many ? 'The accounts stay' : 'The account stays'} in
-              place so the decision can be revisited by hand.
+              Nothing is deleted. {many ? 'The accounts stay' : 'The account stays'} in place so
+              the decision can be revisited by hand.
             </>
           )}
         </p>
@@ -158,7 +158,7 @@ export function ReviewDialog({
             {targets.map((t) => (
               <li
                 key={t.id}
-                className="rounded-full bg-surface-2 px-2.5 py-1 text-[12px] text-muted"
+                className="bg-surface-2 text-muted rounded-full px-2.5 py-1 text-[12px]"
               >
                 @{t.handle}
               </li>
@@ -212,18 +212,18 @@ export function ReviewDialog({
         </div>
 
         {review.error ? (
-          <p role="alert" className="mt-4 text-[13px] text-danger">
+          <p role="alert" className="text-danger mt-4 text-[13px]">
             {(review.error as Error).message}
           </p>
         ) : null}
 
         {failures.length > 0 ? (
-          <div className="mt-4 rounded-xl border border-danger/40 bg-danger-soft px-4 py-3">
-            <p className="flex items-center gap-2 text-[13px] font-medium text-danger">
+          <div className="border-danger/40 bg-danger-soft mt-4 rounded-xl border px-4 py-3">
+            <p className="text-danger flex items-center gap-2 text-[13px] font-medium">
               <AlertTriangle size={15} aria-hidden />
               {review.data!.reviewed} went through, {failures.length} did not
             </p>
-            <ul className="mt-2 grid gap-1 text-[12px] text-danger">
+            <ul className="text-danger mt-2 grid gap-1 text-[12px]">
               {failures.slice(0, 5).map((f) => {
                 const target = targets.find((t) => t.id === f.applicationId);
                 return (

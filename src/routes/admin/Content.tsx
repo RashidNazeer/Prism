@@ -101,9 +101,7 @@ export function AdminContent() {
    * videos usually share a job, so the ids are deduplicated first: twenty cards
    * is often only five or six jobs.
    */
-  const { data: progress } = useJobProgressFor([
-    ...new Set(rows.map((r) => r.application_id)),
-  ]);
+  const { data: progress } = useJobProgressFor([...new Set(rows.map((r) => r.application_id))]);
 
   return (
     <AppShell>
@@ -533,8 +531,7 @@ function Review({ row, progress }: { row: ContentRow; progress: JobProgress | un
         </p>
         {wouldReopen ? (
           <p className="text-faint text-[11.5px] leading-relaxed">
-            This job is finished on the strength of this video. Sending it back would
-            reopen it.
+            This job is finished on the strength of this video. Sending it back would reopen it.
           </p>
         ) : null}
       </div>

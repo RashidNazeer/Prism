@@ -1,14 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Check,
-  Handshake,
-  Search,
-  Video,
-  X,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Handshake, Search, Video, X } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { OfferReviewDialog } from '@/components/admin/OfferReviewDialog';
 import { Button } from '@/components/ui/Button';
@@ -30,7 +22,12 @@ import {
 import type { OfferApplicationStatus } from '@/lib/offer-stages';
 import { JobProgressBar } from '@/components/work/JobProgress';
 import { useJobProgressFor, type JobProgress } from '@/lib/work/job-progress';
-import { isStale, standingFor, useLatestStageMoves, type StageMove } from '@/lib/work/stage-moves';
+import {
+  isStale,
+  standingFor,
+  useLatestStageMoves,
+  type StageMove,
+} from '@/lib/work/stage-moves';
 
 /**
  * Every creator asking for an offer, in one queue.
@@ -111,23 +108,21 @@ export function OfferRequests() {
     <AppShell>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h1 className="text-[clamp(1.4rem,3.5vw,1.9rem)] font-extrabold">Offer requests</h1>
-        <p className="text-[14px] text-muted">
+        <p className="text-muted text-[14px]">
           Creators asking to take an offer, or offering their own terms.
         </p>
       </div>
 
       {/* ------------------------------------------------------------ tabs -- */}
-      <div className="mt-5 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      <div className="-mx-4 mt-5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         <div
           role="tablist"
           aria-label="Filter requests"
-          className="inline-flex min-w-max rounded-xl border border-line bg-surface-1 p-1"
+          className="border-line bg-surface-1 inline-flex min-w-max rounded-xl border p-1"
         >
           {TABS.map((t) => {
             const n =
-              t.value === 'all'
-                ? undefined
-                : counts?.[t.value as OfferApplicationStatus];
+              t.value === 'all' ? undefined : counts?.[t.value as OfferApplicationStatus];
             return (
               <button
                 key={t.value}
@@ -171,7 +166,7 @@ export function OfferRequests() {
           <Search
             size={15}
             aria-hidden
-            className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-faint"
+            className="text-faint pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
           />
           <input
             type="search"
@@ -180,7 +175,7 @@ export function OfferRequests() {
             onChange={(e) => setSearchDraft(e.target.value)}
             placeholder="Search creators"
             aria-label="Search by handle, name or email"
-            className="h-9 w-full rounded-xl border border-line-interactive bg-surface-1 pr-3 pl-9 text-[13px] placeholder:text-faint hover:border-accent/60 focus:border-accent focus:outline-none"
+            className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[13px] focus:outline-none"
           />
         </form>
 
@@ -244,7 +239,12 @@ export function OfferRequests() {
       </div>
 
       {/* ------------------------------------------------------------ list -- */}
-      <div className={cn('mt-4 transition-opacity duration-200', isPlaceholderData && 'opacity-60')}>
+      <div
+        className={cn(
+          'mt-4 transition-opacity duration-200',
+          isPlaceholderData && 'opacity-60'
+        )}
+      >
         {isLoading ? (
           <ul className="grid gap-2.5">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -254,19 +254,19 @@ export function OfferRequests() {
         ) : isError ? (
           <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-14 text-center shadow-md">
             <p className="font-semibold">That queue would not load</p>
-            <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
           <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-16 text-center shadow-md">
-            <Handshake size={26} aria-hidden className="mx-auto text-faint" />
+            <Handshake size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">
               {filters.status === 'pending' && !filters.search && !filters.brandId
                 ? 'Nothing waiting on you'
                 : 'Nothing matches that'}
             </p>
-            <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
               {filters.status === 'pending' && !filters.search && !filters.brandId
                 ? 'Requests land here the moment a creator asks for an offer.'
                 : 'Try a different search, brand or status.'}
@@ -291,7 +291,7 @@ export function OfferRequests() {
       {/* ------------------------------------------------------ pagination -- */}
       {total > OFFER_QUEUE_PAGE_SIZE ? (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="wx-numeric text-[13px] text-muted">
+          <p className="wx-numeric text-muted text-[13px]">
             {(filters.page - 1) * OFFER_QUEUE_PAGE_SIZE + 1} to{' '}
             {Math.min(filters.page * OFFER_QUEUE_PAGE_SIZE, total)} of {total}
           </p>
@@ -305,7 +305,7 @@ export function OfferRequests() {
               <ChevronLeft size={15} aria-hidden />
               Previous
             </Button>
-            <span className="wx-numeric px-1 font-mono text-[12px] text-muted">
+            <span className="wx-numeric text-muted px-1 font-mono text-[12px]">
               {filters.page} / {pages}
             </span>
             <Button
@@ -390,15 +390,15 @@ function RequestRow({
             ) : null}
           </div>
 
-          <p className="mt-1 text-[14px] text-muted">
-            <span className="font-medium text-text">{row.offer?.title ?? 'An offer'}</span>
+          <p className="text-muted mt-1 text-[14px]">
+            <span className="text-text font-medium">{row.offer?.title ?? 'An offer'}</span>
             {row.brand ? (
               <>
                 {' '}
                 at{' '}
                 <Link
                   to={`/admin/brands/${row.brand.id}`}
-                  className="underline decoration-line underline-offset-2 transition-colors hover:text-accent"
+                  className="decoration-line hover:text-accent underline underline-offset-2 transition-colors"
                 >
                   {row.brand.name}
                 </Link>
@@ -406,7 +406,7 @@ function RequestRow({
             ) : null}
           </p>
 
-          <p className="mt-1 font-mono text-[11px] text-faint">
+          <p className="text-faint mt-1 font-mono text-[11px]">
             {new Date(row.created_at).toLocaleString(undefined, {
               day: 'numeric',
               month: 'short',
@@ -518,7 +518,7 @@ function RequestRow({
       ) : null}
 
       {row.decision_note ? (
-        <p className="mt-3 border-t border-line pt-3 text-[13px] leading-relaxed text-faint">
+        <p className="border-line text-faint mt-3 border-t pt-3 text-[13px] leading-relaxed">
           <span className="text-[11px] font-semibold tracking-[0.14em] uppercase">
             You said
           </span>{' '}
@@ -583,7 +583,7 @@ function StageControl({ row }: { row: OfferQueueRow }) {
         </Select>
       </div>
       {setStage.error ? (
-        <p role="alert" className="mt-1 text-[12px] text-danger">
+        <p role="alert" className="text-danger mt-1 text-[12px]">
           {(setStage.error as Error).message}
         </p>
       ) : null}

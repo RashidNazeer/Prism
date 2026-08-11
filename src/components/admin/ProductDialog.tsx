@@ -111,12 +111,12 @@ export function ProductDialog({
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        className="relative max-h-[100dvh] w-full max-w-xl overflow-y-auto rounded-t-2xl border border-line bg-surface-1 p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
+        className="border-line bg-surface-1 relative max-h-[100dvh] w-full max-w-xl overflow-y-auto rounded-t-2xl border p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold">{product ? 'Edit product' : 'Add a product'}</h2>
-            <p className="mt-1 text-[14px] leading-relaxed text-muted">
+            <p className="text-muted mt-1 text-[14px] leading-relaxed">
               What {brandName} sells, and what a creator earns on it.
             </p>
           </div>
@@ -124,7 +124,7 @@ export function ProductDialog({
             type="button"
             onClick={() => !busy && onClose()}
             aria-label="Close"
-            className="-mt-1 -mr-1 grid size-9 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:text-accent"
+            className="text-muted hover:text-accent -mt-1 -mr-1 grid size-9 shrink-0 place-items-center rounded-lg transition-colors"
           >
             <X size={17} aria-hidden />
           </button>
@@ -204,7 +204,9 @@ export function ProductDialog({
                     name="currency"
                     value={values.currency}
                     disabled={busy}
-                    onChange={(e) => set('currency', e.target.value as ProductInput['currency'])}
+                    onChange={(e) =>
+                      set('currency', e.target.value as ProductInput['currency'])
+                    }
                     aria-describedby={describedBy}
                   >
                     {CURRENCIES.map((c) => (
@@ -259,7 +261,7 @@ export function ProductDialog({
               </Field>
             </div>
 
-            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line-interactive bg-surface-2 p-4">
+            <label className="border-line-interactive bg-surface-2 flex cursor-pointer items-start gap-3 rounded-xl border p-4">
               <input
                 type="checkbox"
                 name="isActive"
@@ -270,9 +272,9 @@ export function ProductDialog({
               />
               <span>
                 <span className="block text-[14px] font-medium">Show to creators</span>
-                <span className="mt-0.5 block text-[13px] leading-relaxed text-muted">
-                  Switch this off to keep a product on file without it appearing in the
-                  brand hub.
+                <span className="text-muted mt-0.5 block text-[13px] leading-relaxed">
+                  Switch this off to keep a product on file without it appearing in the brand
+                  hub.
                 </span>
               </span>
             </label>

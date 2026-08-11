@@ -175,6 +175,16 @@ export const router = createBrowserRouter([
         HydrateFallback: RouteFallback,
         lazy: lazyRoute(() => import('@/routes/admin/BrandHub'), 'BrandHub'),
       },
+      {
+        path: '/admin/creators',
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/routes/admin/Creators'), 'Creators'),
+      },
+      {
+        path: '/admin/creators/:id',
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/routes/admin/CreatorDetail'), 'CreatorDetail'),
+      },
     ],
   },
   {

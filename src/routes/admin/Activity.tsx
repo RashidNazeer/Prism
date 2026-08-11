@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import {
   AUDIT_PAGE_SIZE,
   describeAction,
+  linkForSubject,
   useAuditPage,
   type AuditEntry,
 } from '@/lib/admin/useAuditLog';
@@ -35,44 +36,43 @@ export function Activity() {
   return (
     <AppShell>
       <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold">Activity</h1>
-      <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
-        Every approval, rejection and blocked attempt, with who did it and when.
-        Nobody can edit or delete this from the browser, including an admin. That is
-        the point of keeping it.
+      <p className="text-muted mt-2 max-w-2xl text-[15px] leading-relaxed">
+        Every approval, rejection and blocked attempt, with who did it and when. Nobody can edit
+        or delete this from the browser, including an admin. That is the point of keeping it.
       </p>
 
       <div
         className={cn(
-          'mt-8 overflow-hidden rounded-2xl border border-line bg-surface-1 transition-opacity duration-200',
+          'border-line bg-surface-1 mt-8 overflow-hidden rounded-[20px] border shadow-md transition-opacity duration-200',
           isPlaceholderData && 'opacity-60'
         )}
       >
         {isLoading ? (
-          <ul className="divide-y divide-line">
+          <ul className="divide-line divide-y">
             {Array.from({ length: 6 }).map((_, i) => (
               <li key={i} className="flex items-center gap-4 px-5 py-4">
-                <div className="h-4 w-56 animate-pulse rounded bg-surface-2" />
-                <div className="ml-auto h-4 w-28 animate-pulse rounded bg-surface-2" />
+                <div className="wx-skeleton h-4 w-56 rounded" />
+                <div className="wx-skeleton ml-auto h-4 w-28 rounded" />
               </li>
             ))}
           </ul>
         ) : isError ? (
           <div className="px-6 py-14 text-center">
             <p className="font-semibold">The log would not load</p>
-            <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
           <div className="px-6 py-16 text-center">
-            <History size={26} aria-hidden className="mx-auto text-faint" />
+            <History size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">Nothing has happened yet</p>
-            <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
               The first approval or rejection will appear here.
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-line">
+          <ul className="divide-line divide-y">
             {rows.map((entry) => (
               <li key={entry.id}>
                 <Row entry={entry} />
@@ -84,16 +84,21 @@ export function Activity() {
 
       {total > 0 ? (
         <div className="mt-4 flex items-center justify-between gap-4">
-          <p className="wx-numeric text-[13px] text-muted">
+          <p className="wx-numeric text-muted text-[13px]">
             {(page - 1) * AUDIT_PAGE_SIZE + 1} to {Math.min(page * AUDIT_PAGE_SIZE, total)} of{' '}
             {total}
           </p>
           <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => goTo(page - 1)}>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => goTo(page - 1)}
+            >
               <ChevronLeft size={15} aria-hidden />
               Previous
             </Button>
-            <span className="wx-numeric px-1 font-mono text-[12px] text-muted">
+            <span className="wx-numeric text-muted px-1 font-mono text-[12px]">
               {page} / {pages}
             </span>
             <Button
@@ -122,7 +127,7 @@ function Row({ entry }: { entry: AuditEntry }) {
   const body = (
     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-5 py-4">
       {denied ? (
-        <ShieldAlert size={15} aria-hidden className="mt-0.5 shrink-0 text-danger" />
+        <ShieldAlert size={15} aria-hidden className="text-danger mt-0.5 shrink-0" />
       ) : null}
       <span className="font-medium break-all">{entry.actor_email ?? 'A removed account'}</span>
       <span className={denied ? 'text-danger' : 'text-muted'}>
@@ -134,7 +139,7 @@ function Row({ entry }: { entry: AuditEntry }) {
           as <span className="capitalize">{tier}</span>
         </span>
       ) : null}
-      <span className="wx-numeric ml-auto shrink-0 text-[13px] text-faint">
+      <span className="wx-numeric text-faint ml-auto shrink-0 text-[13px]">
         {new Date(entry.created_at).toLocaleString(undefined, {
           day: 'numeric',
           month: 'short',
@@ -144,19 +149,27 @@ function Row({ entry }: { entry: AuditEntry }) {
         })}
       </span>
       {note ? (
-        <p className="w-full text-[13px] leading-relaxed text-muted">&ldquo;{note}&rdquo;</p>
+        <p className="text-muted w-full text-[13px] leading-relaxed">&ldquo;{note}&rdquo;</p>
       ) : null}
     </div>
   );
 
-  // A denied attempt has no application worth opening; everything else does.
-  if (denied || !entry.subject_id) return body;
+  /*
+   * Link to the record this was ACTUALLY about.
+   *
+   * Every row used to point at `/admin/applications/<subject_id>` whatever the
+   * subject was, so a brand edit, a stage move and a content decision were all
+   * dead links that looked alive. `subject_type` has been stored and indexed
+   * since day one and was never selected until now.
+   *
+   * Null means there is nowhere honest to send somebody, and the row stays as
+   * plain text rather than pretending it goes somewhere.
+   */
+  const to = denied ? null : linkForSubject(entry.subject_type, entry.subject_id);
+  if (!to) return body;
 
   return (
-    <Link
-      to={`/admin/applications/${entry.subject_id}`}
-      className="block transition-colors duration-200 hover:bg-surface-2"
-    >
+    <Link to={to} className="hover:bg-surface-2 block transition-colors duration-200">
       {body}
     </Link>
   );

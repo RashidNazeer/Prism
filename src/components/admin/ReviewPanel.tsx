@@ -15,11 +15,11 @@ export function ReviewPanel({ application }: { application: ApplicationDetail })
   const [decision, setDecision] = useState<'approved' | 'rejected' | null>(null);
 
   return (
-    <section className="rounded-2xl border border-line bg-surface-1 p-6">
+    <section className="border-line bg-surface-1 min-w-0 rounded-[20px] border p-6 shadow-md">
       <h2 className="text-lg font-bold">Decision</h2>
-      <p className="mt-2 text-[14px] leading-relaxed text-muted">
-        Approving makes @{application.tiktok_handle} a creator straight away and assigns
-        their tier. Rejecting leaves the account in place so the decision can be revisited.
+      <p className="text-muted mt-2 text-[14px] leading-relaxed">
+        Approving makes @{application.tiktok_handle} a creator straight away and assigns their
+        tier. Rejecting leaves the account in place so the decision can be revisited.
       </p>
 
       <div className="mt-6 flex flex-wrap gap-2.5">

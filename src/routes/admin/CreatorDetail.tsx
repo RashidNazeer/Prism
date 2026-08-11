@@ -1,0 +1,427 @@
+import { Link, useParams, useSearchParams } from 'react-router';
+import { ArrowLeft, FileText, History, Video } from 'lucide-react';
+import { AppShell } from '@/components/layout/AppShell';
+import { ButtonLink } from '@/components/ui/Button';
+import { JobProgressBar } from '@/components/work/JobProgress';
+import { cn } from '@/lib/utils';
+import { money } from '@/lib/money';
+import { ROLE_LABEL, TIER_LABEL } from '@/lib/tiers';
+import { STAGE_META, stageIndex } from '@/lib/offer-stages';
+import { useJobProgressFor } from '@/lib/work/job-progress';
+import { standingFor } from '@/lib/work/stage-moves';
+import {
+  useCreator,
+  useCreatorHistory,
+  useCreatorJobs,
+  useCreatorWork,
+  type CreatorJob,
+} from '@/lib/admin/useCreators';
+
+/**
+ * One creator, end to end.
+ *
+ * IT OPENS ON THEIR WORK, not on a summary. Same rule the brand hub and both
+ * content screens follow: the default tab is the job. Somebody arrives here
+ * because of something that is happening, and their account details are
+ * reference they already half know.
+ *
+ * This is deliberately NOT the application screen with more on it. Everything
+ * downstream keys on the account rather than on the application, a creator can
+ * exist with no application at all, and that screen's whole argument is that
+ * its decision is final. It gains a link across instead.
+ */
+
+const SECTIONS = [
+  { key: 'work', label: 'Work' },
+  { key: 'history', label: 'History' },
+  { key: 'account', label: 'Account' },
+] as const;
+
+export function CreatorDetail() {
+  const { id } = useParams<{ id: string }>();
+  const [params, setParams] = useSearchParams();
+  const requested = params.get('section') ?? 'work';
+  const section = SECTIONS.some((s) => s.key === requested) ? requested : 'work';
+
+  const { data: creator, isLoading, isError } = useCreator(id);
+  const { data: jobs, isLoading: jobsLoading } = useCreatorJobs(id);
+  const { data: work } = useCreatorWork(id ? [id] : []);
+  const mine = id ? work?.get(id) : undefined;
+
+  const go = (key: string) => {
+    const p = new URLSearchParams();
+    if (key !== 'work') p.set('section', key);
+    setParams(p, { replace: true });
+  };
+
+  if (isLoading) {
+    return (
+      <AppShell>
+        <div className="max-w-3xl space-y-4">
+          <div className="wx-skeleton h-9 w-64 rounded-lg" />
+          <div className="wx-skeleton h-10 w-full rounded-lg" />
+          <div className="wx-skeleton h-40 rounded-[20px]" />
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (isError || !creator) {
+    return (
+      <AppShell>
+        <div className="border-line bg-surface-1 max-w-lg rounded-[20px] border p-8 text-center shadow-md">
+          <p className="font-semibold">No such creator</p>
+          <p className="text-muted mt-2 text-[14px] leading-relaxed">
+            The account may have been closed. Nothing else is affected.
+          </p>
+          <ButtonLink to="/admin/creators" variant="secondary" size="sm" className="mt-5">
+            Back to creators
+          </ButtonLink>
+        </div>
+      </AppShell>
+    );
+  }
+
+  const who = creator.tiktok_handle
+    ? `@${creator.tiktok_handle}`
+    : (creator.display_name ?? 'A creator');
+  const mixed = (mine?.currencies ?? 0) > 1;
+  const cur = mine?.currency ?? 'USD';
+
+  return (
+    <AppShell>
+      {/* Compact header: back, who, and the chips that earn their place. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <Link
+          to="/admin/creators"
+          aria-label="Back to all creators"
+          className="border-line text-muted hover:border-accent hover:text-accent grid size-8 shrink-0 place-items-center rounded-lg border transition-colors duration-200"
+        >
+          <ArrowLeft size={15} aria-hidden />
+        </Link>
+
+        <h1 className="font-display min-w-0 text-[clamp(1.35rem,3vw,1.75rem)] font-semibold break-words">
+          {who}
+        </h1>
+
+        {creator.tier ? (
+          <span className="bg-accent-soft text-accent rounded-full px-2.5 py-1 font-mono text-[10px] tracking-[0.12em] uppercase">
+            {TIER_LABEL[creator.tier]} tier
+          </span>
+        ) : null}
+        {!creator.is_active ? (
+          <span className="bg-surface-2 text-muted rounded-full px-2.5 py-1 font-mono text-[10px] tracking-[0.12em] uppercase">
+            Suspended
+          </span>
+        ) : null}
+      </div>
+
+      {/* One money row, agreed / awaiting / paid, which add up. */}
+      <dl className="mt-4 grid gap-3 sm:grid-cols-3">
+        {[
+          { label: 'Agreed', value: mine?.committed ?? 0, text: 'text-text' },
+          { label: 'Awaiting payment', value: mine?.due ?? 0, text: 'text-stage-due' },
+          { label: 'Paid', value: mine?.paid ?? 0, text: 'text-stage-paid' },
+        ].map((c) => (
+          <div
+            key={c.label}
+            className="border-line bg-surface-1 rounded-[20px] border px-5 py-4 shadow-md"
+          >
+            <dt className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+              {c.label}
+            </dt>
+            <dd className={cn('font-display mt-1 text-[19px] font-semibold', c.text)}>
+              {mine === undefined ? '...' : mixed ? 'Mixed currencies' : money(c.value, cur)}
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      {/* ------------------------------------------------------------ tabs -- */}
+      <div className="-mx-4 mt-5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <div role="tablist" aria-label="Creator sections" className="flex min-w-max gap-2">
+          {SECTIONS.map((s) => (
+            <button
+              key={s.key}
+              role="tab"
+              type="button"
+              aria-selected={s.key === section}
+              onClick={() => go(s.key)}
+              className={cn(
+                'shrink-0 rounded-full border px-4 py-2 text-[13.5px] font-medium transition-colors duration-200',
+                s.key === section
+                  ? 'border-text bg-text text-inverse'
+                  : 'border-line bg-surface-1 text-muted hover:border-text hover:text-text'
+              )}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {section === 'history' ? (
+        <HistoryTab creatorId={creator.id} />
+      ) : section === 'account' ? (
+        <AccountTab creator={creator} />
+      ) : (
+        <WorkTab jobs={jobs ?? []} loading={jobsLoading} />
+      )}
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ work -- */
+
+function WorkTab({ jobs, loading }: { jobs: CreatorJob[]; loading: boolean }) {
+  const approved = jobs.filter((j) => j.status === 'approved');
+  const { data: progress } = useJobProgressFor(approved.map((j) => j.id));
+
+  if (loading) {
+    return (
+      <ul className="mt-5 grid gap-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <li key={i} className="wx-skeleton h-28 rounded-[20px]" />
+        ))}
+      </ul>
+    );
+  }
+
+  if (jobs.length === 0) {
+    return (
+      <div className="border-line bg-surface-1 mt-5 rounded-[20px] border px-6 py-16 text-center shadow-md">
+        <Video size={26} aria-hidden className="text-faint mx-auto" />
+        <p className="mt-4 font-semibold">Nothing taken yet</p>
+        <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+          This creator is approved but has not asked for an offer. Offers that are open to
+          everyone need no asking, so they leave no trace here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <ul className="mt-5 grid gap-3">
+      {jobs.map((job) => {
+        const stage = job.stage;
+        const p = progress?.get(job.id);
+        const standing = standingFor(job.stage_updated_at);
+
+        return (
+          <li
+            key={job.id}
+            className="border-line bg-surface-1 rounded-[20px] border p-4 shadow-md sm:p-5"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-x-5 gap-y-2">
+              <div className="min-w-0 flex-1 basis-52">
+                <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+                  <Link
+                    to={`/admin/brands/${job.brand_id}`}
+                    className="hover:text-accent transition-colors"
+                  >
+                    {job.brand?.name ?? 'A brand'}
+                  </Link>
+                </p>
+                <p className="mt-0.5 text-[15px] font-semibold break-words">
+                  {job.offer?.title ?? 'An offer'}
+                </p>
+                {job.status !== 'approved' ? (
+                  <p className="text-muted mt-1 text-[12.5px]">
+                    {job.status === 'pending'
+                      ? 'Waiting on a decision'
+                      : job.status === 'rejected'
+                        ? `Turned down${job.decision_note ? `: ${job.decision_note}` : ''}`
+                        : 'Withdrawn'}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="shrink-0 text-right">
+                <p className="font-display text-[16px] font-semibold">
+                  {job.committed_amount == null
+                    ? 'No fixed fee'
+                    : money(job.committed_amount, job.currency)}
+                </p>
+                {job.committed_video_count ? (
+                  <p className="text-faint text-[12px]">
+                    {job.committed_video_count} videos agreed
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
+            {stage ? (
+              <div className="border-line mt-3 border-t pt-3">
+                <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                  <span className="text-[12.5px] font-semibold">
+                    {stageIndex(stage) + 1}. {STAGE_META[stage].label}
+                  </span>
+                  {standing ? (
+                    <span className="text-muted text-[12.5px]">standing here {standing}</span>
+                  ) : null}
+                </p>
+                {p ? <JobProgressBar progress={p} className="mt-2.5" compact /> : null}
+              </div>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/* --------------------------------------------------------------- history -- */
+
+/**
+ * Everything staff have done to this person.
+ *
+ * `audit_log.target_user_id` was added on day one with its own index for
+ * exactly this question and no query had ever used it.
+ */
+function HistoryTab({ creatorId }: { creatorId: string }) {
+  const { data: rows, isLoading } = useCreatorHistory(creatorId);
+
+  if (isLoading) {
+    return (
+      <ul className="mt-5 grid gap-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <li key={i} className="wx-skeleton h-14 rounded-[14px]" />
+        ))}
+      </ul>
+    );
+  }
+
+  return (
+    <div className="mt-5">
+      {(rows ?? []).length === 0 ? (
+        <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-14 text-center shadow-md">
+          <History size={26} aria-hidden className="text-faint mx-auto" />
+          <p className="mt-4 font-semibold">Nothing recorded yet</p>
+        </div>
+      ) : (
+        <ul className="border-line bg-surface-1 divide-line divide-y rounded-[20px] border shadow-md">
+          {(rows ?? []).map((row) => (
+            <li
+              key={row.id}
+              className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-5 py-3"
+            >
+              <span className="text-[13.5px] font-medium">{describe(row.action)}</span>
+              <span className="text-muted min-w-0 flex-1 truncate text-[12.5px]">
+                {detailLine(row.detail)}
+              </span>
+              <time
+                dateTime={row.created_at}
+                className="text-faint shrink-0 text-[12px]"
+                title={row.actor_email ?? undefined}
+              >
+                {new Date(row.created_at).toLocaleDateString(undefined, {
+                  day: 'numeric',
+                  month: 'short',
+                })}
+              </time>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/*
+        Named rather than papered over. Posting a video writes no audit row, so
+        this list is only ever what WE did. Pretending otherwise would make a
+        busy creator look idle.
+      */}
+      <p className="text-faint mt-3 text-[12.5px] leading-relaxed">
+        This is the record of decisions the team made. What the creator did, including every
+        video they posted, is on the Work tab and the content screen.
+      </p>
+    </div>
+  );
+}
+
+/** Plain English for the action strings the audit log stores. */
+function describe(action: string): string {
+  const map: Record<string, string> = {
+    'application.approved': 'Application approved',
+    'application.rejected': 'Application rejected',
+    'offer_application.approved': 'Put on an offer',
+    'offer_application.rejected': 'Turned down for an offer',
+    'offer_application.stage_changed': 'Moved along the pipeline',
+    'content.reviewed': 'A video was reviewed',
+  };
+  return map[action] ?? action.replace(/[._]/g, ' ');
+}
+
+function detailLine(detail: Record<string, unknown> | null): string {
+  if (!detail) return '';
+  const bits: string[] = [];
+  if (typeof detail.brand === 'string') bits.push(detail.brand);
+  if (typeof detail.offer === 'string') bits.push(detail.offer);
+  if (typeof detail.to === 'string') bits.push(String(detail.to).replace(/_/g, ' '));
+  if (typeof detail.status === 'string') bits.push(detail.status);
+  if (typeof detail.note === 'string') bits.push(detail.note);
+  return bits.join(', ');
+}
+
+/* --------------------------------------------------------------- account -- */
+
+function AccountTab({
+  creator,
+}: {
+  creator: NonNullable<ReturnType<typeof useCreator>['data']>;
+}) {
+  const facts: { label: string; value: string }[] = [
+    { label: 'Name', value: creator.display_name || 'Not set' },
+    { label: 'Email', value: creator.email },
+    { label: 'Role', value: ROLE_LABEL[creator.role] },
+    // Labelled as a tier, never stacked under "Role", or a starting creator
+    // reads as "Creator / Creator" and looks like a bug.
+    {
+      label: 'Tier',
+      value: creator.tier ? `${TIER_LABEL[creator.tier]} tier` : 'Not assigned',
+    },
+    { label: 'Account', value: creator.is_active ? 'Active' : 'Suspended' },
+    {
+      label: 'Joined',
+      value: new Date(creator.created_at).toLocaleDateString(undefined, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }),
+    },
+    { label: 'Niche', value: creator.niche || 'Not given' },
+  ];
+
+  return (
+    <div className="mt-5 grid max-w-3xl gap-4">
+      <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {facts.map((f) => (
+          <div
+            key={f.label}
+            className="border-line bg-surface-1 rounded-[14px] border px-5 py-4"
+          >
+            <dt className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+              {f.label}
+            </dt>
+            <dd className="mt-1.5 font-semibold break-words">{f.value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      {creator.application_id ? (
+        <ButtonLink
+          to={`/admin/applications/${creator.application_id}`}
+          variant="secondary"
+          size="sm"
+          className="self-start"
+        >
+          <FileText size={15} aria-hidden />
+          The application they sent
+        </ButtonLink>
+      ) : (
+        <p className="text-faint text-[12.5px] leading-relaxed">
+          This creator has no application on file. That is possible: an account can be made for
+          somebody directly.
+        </p>
+      )}
+    </div>
+  );
+}
