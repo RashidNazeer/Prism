@@ -86,28 +86,61 @@ export function useAdminContent(filters: ContentFilters) {
  * One grouped read rather than one query per status. Only the status column
  * comes back, because a number is all this needs.
  */
+export type ContentTotals = Record<ContentStatus | 'all', number>;
+
+export interface BrandContentRow extends ContentTotals {
+  id: string;
+  name: string;
+}
+
 export function useContentCounts() {
   return useQuery({
     queryKey: ['admin', 'content-counts'],
     staleTime: 10_000,
-    queryFn: async (): Promise<Record<ContentStatus | 'all', number>> => {
+    queryFn: async (): Promise<{ totals: ContentTotals; byBrand: BrandContentRow[] }> => {
+      // Still ONE read. The brand comes back on the same row, so the split by
+      // brand costs nothing beyond a slightly wider select.
       const { data, error } = await getSupabase()
         .from('content_submissions')
-        .select('status')
+        .select('status, brand_id, brand:brands (id, name)')
         .limit(5000);
       if (error) throw error;
 
-      const counts = {
+      const blank = (): ContentTotals => ({
         all: 0,
         submitted: 0,
         approved: 0,
         needs_another_take: 0,
-      } as Record<ContentStatus | 'all', number>;
-      for (const row of (data ?? []) as { status: ContentStatus }[]) {
-        counts.all += 1;
-        counts[row.status] += 1;
+      });
+
+      const totals = blank();
+      const brands = new Map<string, BrandContentRow>();
+
+      for (const row of (data ?? []) as unknown as {
+        status: ContentStatus;
+        brand_id: string;
+        brand: { id: string; name: string } | null;
+      }[]) {
+        totals.all += 1;
+        totals[row.status] += 1;
+
+        const id = row.brand?.id ?? row.brand_id;
+        const existing = brands.get(id) ?? {
+          id,
+          name: row.brand?.name ?? 'A brand',
+          ...blank(),
+        };
+        existing.all += 1;
+        existing[row.status] += 1;
+        brands.set(id, existing);
       }
-      return counts;
+
+      return {
+        totals,
+        // Busiest first: the brand with the most videos is the one a team is
+        // most likely to be looking for.
+        byBrand: [...brands.values()].sort((a, b) => b.all - a.all),
+      };
     },
   });
 }

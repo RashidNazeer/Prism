@@ -459,6 +459,17 @@ try {
   if (seen) ok('the creator sees their own videos and ad codes on My content');
   else bad('My content did not show the creator their submissions');
 
+  // The job board moved behind its own section on 2026-08-11: My content lands
+  // on Submissions now, because the summary was taller than a viewport and you
+  // had to scroll past it every time to reach the work.
+  await page.goto(`${BASE}/app/content?view=dashboard`, { waitUntil: 'domcontentloaded' });
+  await page
+    .locator('main')
+    .getByText('What each job still needs')
+    .first()
+    .waitFor({ timeout: 20000 })
+    .catch(() => {});
+
   const covered = await page
     .locator('main')
     .getByText('All in and approved')
