@@ -13,7 +13,15 @@ import { CONTENT_COLUMNS, type ContentRow } from '@/lib/content';
  * query somebody could forget.
  *
  * Kept live, because the decision on a video is the thing they are waiting for.
+ *
+ * The ceiling is deliberate and it matters more than it looks. PostgREST
+ * truncates at its own row cap with no signal at all, and now that the counts
+ * come from `job_progress` in the database rather than from these rows, the
+ * counts would stay right past the cap while the LIST quietly stopped. That is
+ * a screen saying "5 of 5 approved" above a grid holding four of them.
  */
+const MY_CONTENT_CAP = 500;
+
 export function useMyContent() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -25,7 +33,8 @@ export function useMyContent() {
       const { data, error } = await getSupabase()
         .from('content_submissions')
         .select(CONTENT_COLUMNS)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(MY_CONTENT_CAP);
       if (error) throw error;
       return (data ?? []) as unknown as ContentRow[];
     },

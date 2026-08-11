@@ -1,7 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
-import type { OfferStage } from '@/lib/offer-stages';
-import type { OfferApplicationStatus } from '@/lib/creator/useOfferApplications';
+import type { OfferApplicationStatus, OfferStage } from '@/lib/offer-stages';
 
 /**
  * The offer queue: every creator asking for an offer, and what they asked for.

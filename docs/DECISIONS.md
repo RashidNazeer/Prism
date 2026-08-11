@@ -511,3 +511,46 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   previews until we add a build-time prerender; (b) the Supabase free tier
   pauses inactive projects and has no daily backups, so prod needs a paid plan
   before real creators use it.
+- 2026-08-11: **The deal freezes at approval, both halves of it.** The reward
+  already snapshotted onto the request; the number of videos now does too
+  (`committed_video_count`). Rashid's words: once we have approved, an admin
+  should never be able to edit the number of deliverables. Re-scoping or
+  re-pricing an offer therefore applies to whoever is approved next, and
+  everybody already filming keeps the deal they agreed. He clarified the word
+  himself when it looked too broad: the BRAND'S BUDGET is not frozen and nothing
+  here touches it, approvals carry on adding to it exactly as before.
+- 2026-08-11: **An offer nobody has to apply for is never counted towards an
+  offer.** Rashid's rule. It has no job behind it, so it can take no video and
+  shows no progress, and the brand hub's "No application needed. Start posting
+  whenever you are ready" was deleted because it was simply false. Rejected the
+  alternative, making open offers create a job row automatically: it would start
+  spending a brand's budget with no staff decision in front of it, which is a
+  commercial change and not one for the software to make.
+- 2026-08-11: **Progress is decided by whether a JOB exists, never by the
+  `needs_application` flag.** Same rule `stateFor` already followed from the
+  other side after an admin flipping that flag once hid the stage, tracker and
+  money of somebody already working. The draft plan had it the other way round
+  and an adversarial reviewer caught it before it was built.
+- 2026-08-11: **`job_progress` is the project's first database view, and it is
+  `security_invoker`.** Every cross-table number until now was assembled in a
+  browser, which is why two screens could disagree. A view runs as its owner by
+  default and would have bypassed row security on both tables underneath. It is
+  safe to share between both sides only because a job belongs to exactly one
+  creator, so the count is complete rather than silently narrowed; an offer
+  level count over the same tables returns a creator their own row and calls it
+  the total, with no error at all. Job level only, forever.
+- 2026-08-11: **A job can no longer be stranded at "all filmed".**
+  `review_content` advanced only from `sample_shipped` and `content_pending`, so
+  approving the last video of a job still sitting at "sample requested" left it
+  finished-but-not-finished with nothing left that could ever fix it. It now
+  advances from any stage before content completed, `set_offer_stage` re-checks
+  on arrival, and taking an approval back walks the job out of content completed
+  again. It stops there and never drags a job back from payment or paid, because
+  those are decisions a person made.
+- 2026-08-11: **The creator/admin import boundary is a build failure, not a
+  convention.** `no-restricted-imports` in `.oxlintrc.json` bans creator code
+  from importing admin code and vice versa. The admin hooks carry
+  `brand_commercials` on their rows, and staff and creators are both the
+  `authenticated` database role, so the import graph was the last thing standing
+  between a commercial column and a creator's screen. It caught three real
+  violations the hour it was added.

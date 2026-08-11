@@ -1,9 +1,10 @@
 # Project state
 
 **Last updated:** 2026-08-11
-**Current step:** the creator side is rebuilt to an approved design and the
-CONTENT feature is live on both sides.
-**Next:** more UI updates. Rashid will say which screens.
+**Current step:** joining the product up, step 1 of 8. A job now says how much
+of it has been filmed, everywhere the job appears.
+**Next:** step 2 of `UI_CONNECTIONS_PLAN.md`, the admin side of the same join,
+which also fixes the queue quoting the wrong money. Await Rashid's approval.
 **Status:** Everything below is built, tested and on `dev`.
 
 ---
@@ -381,6 +382,41 @@ Built from a standalone design Rashid approved and asked for pixel for pixel.
   best effort. Every card is designed to look right without one and playback
   never depends on it, the video id is read out of the link.
 - `pnpm verify:content`: 26 checks, nine of them attacks.
+
+### Joining the product up, step 1: a job says how much of it has been filmed (2026-08-11)
+
+Rashid's brief: the menu items each have their own data and there is no close
+connection between them, a creator who posts content should see it against the
+offer. A 12-agent audit of every screen produced
+**[UI_CONNECTIONS_PLAN.md](UI_CONNECTIONS_PLAN.md)**, eight steps. This is one.
+
+- **The number was already being computed and shown on one screen out of nine.**
+  `progressFor()` lived in the browser and two files imported it. It is now the
+  `job_progress` VIEW, the project's first, and five screens read it: the home
+  screen in both views, the offers list, the brand hub, My content and the add
+  a video dialog.
+- **The deal freezes at approval.** `committed_video_count` joins
+  `committed_amount`. Re-scoping an offer no longer moves the goalposts on
+  somebody already filming, and the offer card shows the deal THEY were given.
+- **Every screen that says "one still to film" now has an Add a video button**,
+  which lands on `/app/content?job=<id>` with the dialog already open on that
+  job. Before this the number would have been a dead end.
+- **Two ways a job could get stuck, both fixed and both proven on real data.**
+  Approving the last video only finished a job from two of the seven stages, so
+  one already on dev was sitting at 3 of 3 approved and "pending request" with
+  nothing that could ever fix it. And un-approving a video left a job marked
+  finished with a video missing; it now walks back and tells the creator why.
+- **The false line is gone.** The brand hub told creators of an open offer to
+  "start posting whenever you are ready" when there was nowhere to post.
+- **The offer card was written out twice** and had drifted. One card now.
+- **Creator code can no longer import admin code, or the reverse.** It is a
+  build failure, not a convention, and it caught three real violations the hour
+  it went in, including the admin content screen importing a creator screen.
+- `node scripts/seed-pipeline.mjs` fills dev's approved jobs with videos in five
+  states, through the real review function.
+- `pnpm verify:content`: 33 checks, up from 26. The new ones prove a rival
+  creator gets nothing from the view, that it carries no budget column, that
+  re-scoping does not move an agreed job, and both stuck-job fixes.
 
 ## Known bugs
 

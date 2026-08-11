@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { Plus, Search, Video } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
@@ -7,18 +7,14 @@ import { Select } from '@/components/ui/Field';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
 import { PostContentDialog } from '@/components/creator/PostContentDialog';
 import { VideoPlayer } from '@/components/content/VideoPlayer';
-import { VideoThumb } from '@/components/content/VideoThumb';
+import { ContentCard } from '@/components/content/ContentCard';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
-import {
-  CONTENT_STATUS,
-  progressFor,
-  type ContentRow,
-  type ContentStatus,
-} from '@/lib/content';
+import { type ContentRow, type ContentStatus } from '@/lib/content';
 import { useMyContent } from '@/lib/creator/useMyContent';
 import { useMyWork } from '@/lib/creator/useMyWork';
+import { useMyJobProgress, type JobProgress } from '@/lib/work/job-progress';
 
 /**
  * My Content: everything a creator has filmed, and what is still owed.
@@ -60,6 +56,9 @@ export function Content() {
 
   const { data: work, isLoading: workLoading } = useMyWork();
   const { data: content, isLoading, isError, error } = useMyContent();
+  // The one source for "how much of this job is done", shared with the home
+  // screen, the offers list and the brand hub.
+  const { data: progress } = useMyJobProgress();
 
   /*
    * Submissions first, deliberately.
@@ -86,6 +85,30 @@ export function Content() {
   const [editing, setEditing] = useState<ContentRow | null>(null);
   const [playing, setPlaying] = useState<ContentRow | null>(null);
 
+  /*
+   * `?job=<id>` opens the dialog straight onto that job.
+   *
+   * Every screen that now says "one still to film" links here. Without this the
+   * link would land somebody on a list with the dialog shut, which turns an
+   * action back into a signpost, and the whole point of putting the number on
+   * those screens was that there was nowhere to act on it.
+   *
+   * The parameter is consumed rather than kept: it describes an arrival, not a
+   * state of the screen, so leaving it in the address bar would reopen the
+   * dialog on every back button.
+   */
+  const job = params.get('job');
+  useEffect(() => {
+    if (!job) return;
+    setPosting({ applicationId: job });
+    const p = new URLSearchParams(params);
+    p.delete('job');
+    setParams(p, { replace: true });
+    // `params` is a fresh object every render, so it cannot be a dependency
+    // without re-running this immediately after it clears itself.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job]);
+
   const jobs = useMemo(() => (work ?? []).filter((r) => r.status === 'approved'), [work]);
   // A fresh [] every render would defeat every memo below it.
   const rows = useMemo(() => content ?? [], [content]);
@@ -101,14 +124,17 @@ export function Content() {
     return c;
   }, [rows]);
 
-  /** How much filming is left, across everything they are on. */
+  /**
+   * How much filming is left, across everything they are on.
+   *
+   * From the view, and therefore measured against the count FROZEN on each job
+   * rather than whatever the offer says today. Working it out from the content
+   * rows meant re-scoping an offer silently changed how much somebody already
+   * filming still owed.
+   */
   const outstanding = useMemo(
-    () =>
-      jobs.reduce((total, job) => {
-        const p = progressFor(rows, job.id, job.offer?.video_count ?? null);
-        return total + (p.remaining ?? 0);
-      }, 0),
-    [jobs, rows]
+    () => jobs.reduce((total, job) => total + (progress?.get(job.id)?.remaining ?? 0), 0),
+    [jobs, progress]
   );
 
   const brands = useMemo(() => {
@@ -182,7 +208,7 @@ export function Content() {
                 <Summary counts={counts} outstanding={outstanding} jobs={jobs.length} />
                 <Jobs
                   jobs={jobs}
-                  rows={rows}
+                  progress={progress}
                   onAdd={(applicationId) => setPosting({ applicationId })}
                 />
               </>
@@ -295,19 +321,13 @@ export function Content() {
       {posting ? (
         <PostContentDialog
           jobs={jobs}
-          content={rows}
           presetApplicationId={posting.applicationId ?? null}
           onClose={() => setPosting(null)}
         />
       ) : null}
 
       {editing ? (
-        <PostContentDialog
-          jobs={jobs}
-          content={rows}
-          editing={editing}
-          onClose={() => setEditing(null)}
-        />
+        <PostContentDialog jobs={jobs} editing={editing} onClose={() => setEditing(null)} />
       ) : null}
 
       {playing ? <VideoPlayer row={playing} onClose={() => setPlaying(null)} /> : null}
@@ -412,15 +432,15 @@ function Summary({
 
 function Jobs({
   jobs,
-  rows,
+  progress,
   onAdd,
 }: {
   jobs: {
     id: string;
     brand: { name: string } | null;
-    offer: { title: string; video_count: number | null } | null;
+    offer: { title: string } | null;
   }[];
-  rows: ContentRow[];
+  progress: Map<string, JobProgress> | undefined;
   onAdd: (applicationId: string) => void;
 }) {
   return (
@@ -431,7 +451,8 @@ function Jobs({
 
       <ul className="grid [grid-template-columns:repeat(auto-fit,minmax(260px,1fr))] gap-2.5">
         {jobs.map((job) => {
-          const p = progressFor(rows, job.id, job.offer?.video_count ?? null);
+          const p = progress?.get(job.id);
+          if (!p) return null;
           return (
             <li
               key={job.id}
@@ -490,79 +511,6 @@ function Jobs({
         })}
       </ul>
     </section>
-  );
-}
-
-/* ---------------------------------------------------------------- card --- */
-
-export function ContentCard({
-  row,
-  onPlay,
-  onEdit,
-  children,
-}: {
-  row: ContentRow;
-  onPlay: () => void;
-  onEdit?: () => void;
-  /** The admin card slots its decision controls in here. */
-  children?: React.ReactNode;
-}) {
-  const meta = CONTENT_STATUS[row.status];
-  const tone = TONE[meta.tone];
-
-  return (
-    <article className="border-line bg-surface-1 flex h-full flex-col gap-3 rounded-[20px] border p-3 shadow-md transition-shadow duration-300 hover:shadow-lg">
-      <VideoThumb row={row} onPlay={onPlay} />
-
-      <div className="flex min-w-0 flex-1 flex-col gap-2 px-1 pb-1">
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-muted min-w-0 truncate text-[11px] font-semibold tracking-[0.08em] uppercase">
-            {row.brand?.name ?? 'A brand'}
-          </p>
-          <span
-            className={cn(
-              'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold',
-              tone.soft,
-              tone.text
-            )}
-          >
-            {meta.label}
-          </span>
-        </div>
-
-        <p className="text-[14px] leading-[1.3] font-semibold break-words">
-          {row.offer?.title ?? 'An offer'}
-        </p>
-
-        <p className="text-muted font-mono text-[11.5px] break-all">{row.ad_code}</p>
-
-        {row.ad_authorized ? null : (
-          <p className="text-stage-due text-[12px] font-medium">Not marked authorised</p>
-        )}
-
-        {row.decision_note ? (
-          <p className="text-muted border-line border-t pt-2 text-[12.5px] leading-relaxed">
-            {row.decision_note}
-          </p>
-        ) : null}
-
-        <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-          <time dateTime={row.created_at} className="text-faint text-[11.5px]">
-            {new Date(row.created_at).toLocaleDateString(undefined, {
-              day: 'numeric',
-              month: 'short',
-            })}
-          </time>
-          {onEdit ? (
-            <Button variant="ghost" size="sm" onClick={onEdit}>
-              Edit
-            </Button>
-          ) : null}
-        </div>
-
-        {children}
-      </div>
-    </article>
   );
 }
 

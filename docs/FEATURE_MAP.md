@@ -19,6 +19,75 @@ truth. This map is the second layer, not the only one.
 
 ---
 
+## How much of a job has been filmed (job_progress)
+
+**Files:** `src/lib/work/job-progress.ts`, `src/components/work/JobProgress.tsx`,
+`src/components/creator/OfferCard.tsx`, `src/components/content/ContentCard.tsx`,
+`.oxlintrc.json`,
+`supabase/migrations/*_deliverables_freeze_and_job_progress.sql`,
+`scripts/seed-pipeline.mjs`
+**Tables:** `offer_applications.committed_video_count` (new),
+**View:** `job_progress` (the project's FIRST view)
+
+Built 2026-08-11, the first step of joining the product up (see
+`UI_CONNECTIONS_PLAN.md`). Rashid: "he has offers page where he should be seen
+how much content he has posted maybe a progress bar".
+
+**Change rules**
+
+- **The deliverable count freezes at approval**, exactly as `committed_amount`
+  already did. Rashid's words: once we have approved, an admin should never be
+  able to edit the number of deliverables. Nothing may read `offers.video_count`
+  for a job already under way; read `committed_video_count` on the request.
+  Editing the offer stays allowed and applies to whoever is approved next.
+  What does NOT freeze is the brand's budget, which carries on moving on every
+  approval exactly as before.
+- **`security_invoker = true` on the view is not optional.** A Postgres view
+  runs as its OWNER by default, which would bypass row security on both tables
+  underneath and hand every creator every other creator's counts.
+- **Job level counts only, forever.** This is safe to share between both sides
+  because a job belongs to exactly ONE creator, so the count is complete rather
+  than silently narrowed. That property does not hold one level up: a creator
+  counting the people on an offer gets back 1, their own row, WITH NO ERROR.
+  Never build an offer level or brand level count this way.
+- **Progress follows the JOB, never the `needs_application` flag.** An offer
+  with no job behind it shows no progress. This is the same rule `stateFor` in
+  `useAllOffers.ts` already documents from the other side, and breaking it is
+  how an admin flipping that flag once hid somebody's live work.
+- Only APPROVED submissions count, matching the database's own rule.
+- **`review_content` advances a job from ANY stage before content completed**,
+  not the two it used to. Approving the last video while a job sat at "sample
+  requested" used to strand it forever. `set_offer_stage` re-checks on arrival
+  for the same reason, and `job_is_filmed()` is the single answer both use.
+- **Taking an approval back walks the job out of content completed**, back to
+  content pending, with a stage event the creator reads. It stops at
+  content_completed and never drags a job back from payment or paid: those are
+  decisions a person made.
+- **`src/lib/work/` and `src/components/work/` are NEUTRAL.** Creator code may
+  not import admin code and admin code may not import creator code, and that is
+  now a build failure via `no-restricted-imports` in `.oxlintrc.json`, not a
+  convention. It caught three real violations the day it was added, including
+  the admin content screen importing `ContentCard` out of `routes/app/Content`.
+  Anything both sides read goes in a neutral file.
+- Shared components take everything staff-only as a PROP and contain no role
+  check. A card that decides for itself whether the viewer is staff is one
+  wrong boolean from being the leak.
+- The creator subscription to `content_submissions` MUST pin
+  `creator_id=eq.<uid>`. `postgres_changes` does not apply row security to
+  DELETE events and the table has `replica identity full`, so the whole old row
+  of somebody else's deleted submission would otherwise arrive.
+- `node scripts/seed-pipeline.mjs` puts videos against dev's approved jobs in
+  five states (`--clean` removes them). It approves through the REAL
+  `review_content` rather than setting stages by hand, so it cannot drift from
+  the rule and it exercises the finish path on every run.
+- Any script that writes `offer_applications` directly (`check-content`,
+  `check-live`, `shots-creator`) must set `committed_video_count` itself, the
+  way `review_offer_application` would. A job with no agreed count can never be
+  "all filmed", so forgetting it silently stops every job from finishing.
+- `pnpm verify:content` must pass. It now proves the view is closed to a rival
+  creator, that re-scoping an offer does not move an agreed job, and both
+  stuck-job fixes.
+
 ## Content (video links and ad codes)
 
 **Files:** `src/lib/content.ts`, `src/lib/creator/useMyContent.ts`,
@@ -33,6 +102,10 @@ told to film and had nowhere to put the result.
 
 **Change rules**
 
+- **How much is left is now answered by the `job_progress` view**, not by
+  `progressFor()` in the browser, which was deleted on 2026-08-11. See the entry
+  above. It counts against the number frozen on the JOB at approval, never
+  `offers.video_count`.
 - **A link is a claim until somebody has watched it.** Only APPROVED
   submissions count towards an offer, and `review_content` is the ONLY thing
   that can carry a job to `content_completed`. It does that in the same
@@ -449,9 +522,18 @@ offers.
   pushed the actual content off the first screen. All it has to do is say which
   hub you are standing in. `check-offer-requests.mjs` asserts the tabs start
   above 220px, so it cannot grow back by accident.
+- **There is now ONE offer card**, `src/components/creator/OfferCard.tsx`, used
+  by this screen and by `/app/offers`. It was written out twice and had already
+  drifted: only one showed the per video rate, and only one carried a sentence
+  about posting that was not true. Never fork it again.
 - The offer card carries no status chip. The action at the bottom of it says
   what state the offer is in, and saying it twice made the second one look like
   a different fact.
+- **The open offer note no longer says "start posting whenever you are ready".**
+  Content attaches to a job, an open offer has no job behind it, and there was
+  nowhere for that creator to post. Rashid's rule of 2026-08-11 is that an offer
+  nobody applies for is never counted towards an offer, so the card says it is
+  open to every approved creator and stops.
 - The card never says "no fixed deliverable or fee on this one". Spending a line
   on the absence of something a creator never asked about is worse than silence.
 - **Brands, products and offers ARE live here, as of 2026-08-11.** They were
@@ -622,6 +704,12 @@ application` is the only door, and it checks the role PER ACTION: create and
   the offer.** Re-pricing an offer next month must not rewrite what a creator
   was already promised, nor a budget that has already been reported on. The
   suite proves it by re-pricing an approved offer and checking neither moved.
+- **`committed_video_count` is the other half of that snapshot**, added
+  2026-08-11 at Rashid's call: once approved, an admin may never change the
+  number of deliverables on a job already agreed. Both are set in one place, in
+  `review_offer_application`. Anything that writes an approved request directly
+  (three scripts do) must stamp BOTH, or that job can never be "all filmed".
+  The brand's budget is unaffected and keeps moving on every approval.
 - An approved request against an offer with no fixed fee commits nothing
   measurable, so it adds nothing to the budget rather than a guessed number. It
   still counts as a creator on the offer.

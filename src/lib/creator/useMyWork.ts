@@ -2,8 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth/auth-context';
-import { STAGE_META, type OfferStage } from '@/lib/offer-stages';
-import type { OfferApplicationStatus } from '@/lib/creator/useOfferApplications';
+import { STAGE_META, type OfferApplicationStatus, type OfferStage } from '@/lib/offer-stages';
 
 /**
  * Everything this creator has asked for, and where each one has got to.
@@ -27,6 +26,12 @@ export interface MyWorkRow {
   stage_updated_at: string | null;
   /** What we agreed to pay. Null on anything not approved. */
   committed_amount: string | number | null;
+  /**
+   * How many videos were agreed, frozen at approval beside the amount. Null
+   * when no number was agreed. Never use `offer.video_count` for a job that is
+   * already under way: re-scoping the offer does not change the deal.
+   */
+  committed_video_count: number | null;
   currency: string;
   note: string | null;
   decision_note: string | null;
@@ -53,9 +58,12 @@ export interface StageEvent {
 
 const COLUMNS =
   'id, offer_id, brand_id, status, stage, stage_updated_at, committed_amount, ' +
-  'currency, note, decision_note, decided_at, created_at, ' +
+  'committed_video_count, currency, note, decision_note, decided_at, created_at, ' +
   'offer:offers (id, title, video_count, reward_amount, currency), ' +
   'brand:brands (id, name, slug, logo_url)';
+
+/** One creator's own jobs. Generous, but never unbounded. */
+const MY_WORK_CAP = 200;
 
 export function useMyWork() {
   const { user } = useAuth();
@@ -68,7 +76,12 @@ export function useMyWork() {
       const { data, error } = await getSupabase()
         .from('offer_applications')
         .select(COLUMNS)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        // Explicit, like the offers list. Every growable read in this product
+        // states its own ceiling rather than inheriting PostgREST's, which
+        // truncates silently and would leave the money on this screen quietly
+        // short of the truth.
+        .limit(MY_WORK_CAP);
       if (error) throw error;
       return (data ?? []) as unknown as MyWorkRow[];
     },

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
-import { ArrowLeft, Check, Clock, Package, Store, Ticket, X } from 'lucide-react';
+import { ArrowLeft, Package, Store, Ticket } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { ApplyDialog } from '@/components/creator/ApplyDialog';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
-import { StageTracker } from '@/components/creator/StageTracker';
+import { OfferCard } from '@/components/creator/OfferCard';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -19,13 +19,12 @@ import {
   type CreatorProduct,
 } from '@/lib/creator/useCreatorBrands';
 import {
-  useApplyForOffer,
   useMyOfferApplications,
   type MyOfferApplication,
 } from '@/lib/creator/useOfferApplications';
 import { money, percent } from '@/lib/money';
-import { STAGE_META, stageTextTone } from '@/lib/offer-stages';
 import { useCatalogueLive } from '@/lib/creator/useCatalogueLive';
+import { useMyJobProgress } from '@/lib/work/job-progress';
 
 /**
  * A Brand Hub, as a creator sees it.
@@ -343,6 +342,9 @@ function Offers({
   brandName: string;
 }) {
   const [applyingTo, setApplyingTo] = useState<CreatorOffer | null>(null);
+  // How much of each job here has been filmed. Cached by TanStack Query, so
+  // this is the same read the offers list and the home screen already made.
+  const { data: progress } = useMyJobProgress();
 
   if (loading) {
     return (
@@ -388,7 +390,8 @@ function Offers({
           >
             <OfferCard
               offer={offer}
-              application={latestFor(offer.id)}
+              request={latestFor(offer.id) ?? undefined}
+              progress={progress?.get(latestFor(offer.id)?.id ?? '')}
               onApply={() => setApplyingTo(offer)}
             />
           </m.li>
@@ -403,233 +406,5 @@ function Offers({
         />
       ) : null}
     </>
-  );
-}
-
-function OfferCard({
-  offer,
-  application,
-  onApply,
-}: {
-  offer: CreatorOffer;
-  application: MyOfferApplication | null;
-  onApply: () => void;
-}) {
-  // An offer need not have either. A boosted commission rate has no fixed
-  // deliverable and no fixed fee, so the terms row is simply left out. It used
-  // to say "no fixed deliverable or fee on this one", which spent a line
-  // telling a creator about the absence of something they never asked about.
-  const hasVideos = offer.video_count !== null;
-  const hasReward = offer.reward_amount !== null;
-  const perVideo =
-    hasVideos && hasReward && offer.video_count! > 0
-      ? Number(offer.reward_amount) / offer.video_count!
-      : null;
-
-  return (
-    <div className="border-line bg-surface-1 flex h-full flex-col rounded-[20px] border p-5 shadow-md">
-      {offer.badge_title ? (
-        <span className="bg-accent-soft text-accent mb-3 self-start rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-[0.12em] uppercase">
-          {offer.badge_title}
-        </span>
-      ) : null}
-
-      <h3 className="text-lg font-bold">{offer.title}</h3>
-      {offer.description ? (
-        <p className="text-muted mt-2 text-[14px] leading-relaxed">{offer.description}</p>
-      ) : null}
-
-      {hasVideos || hasReward ? (
-        <div className="border-line mt-4 flex flex-wrap items-end gap-x-6 gap-y-2 border-t pt-4">
-          {hasVideos ? (
-            <span>
-              <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
-                Videos
-              </span>
-              <span className="font-display mt-1 block text-[19px] font-semibold">
-                {offer.video_count}
-              </span>
-            </span>
-          ) : null}
-          {hasReward ? (
-            <span>
-              <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
-                You get
-              </span>
-              <span className="font-display text-accent mt-1 block text-[19px] font-semibold">
-                {money(offer.reward_amount, offer.currency)}
-              </span>
-            </span>
-          ) : null}
-          {perVideo !== null ? (
-            <span className="text-faint text-[12px]">
-              {money(perVideo, offer.currency)} per video
-            </span>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div className="mt-auto pt-5">
-        <OfferAction offer={offer} application={application} onApply={onApply} />
-      </div>
-    </div>
-  );
-}
-
-/**
- * The bottom of every offer card, and the only thing that differs between them.
- *
- * There is no status chip at the top any more. It said the same thing twice,
- * and the second time was the one that mattered.
- */
-function OfferAction({
-  offer,
-  application,
-  onApply,
-}: {
-  offer: CreatorOffer;
-  application: MyOfferApplication | null;
-  onApply: () => void;
-}) {
-  const withdraw = useApplyForOffer();
-
-  /*
-   * Approved work is decided FIRST, before anything the offer says about
-   * itself. See `stateFor` in useAllOffers for the whole story: checking
-   * `needs_application` first meant an admin switching it off hid the stage,
-   * the tracker and the money of somebody already working on it.
-   *
-   * Three creator screens can show the same offer, and they must not give
-   * three different answers about it.
-   */
-  if (application?.status === 'approved') {
-    const stage = application.stage ?? 'pending_request';
-    return (
-      <div>
-        <div
-          className={cn(
-            'rounded-xl px-3.5 py-3',
-            stage === 'paid' ? 'bg-stage-paid-soft' : 'bg-surface-2'
-          )}
-        >
-          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <span
-              className={cn('text-[14px] font-semibold', stage === 'paid' && 'text-stage-paid')}
-            >
-              {stage === 'paid' ? 'Paid out' : 'You are in'}
-            </span>
-            {application.committed_amount != null ? (
-              <span
-                className={cn('font-display text-[15px] font-semibold', stageTextTone(stage))}
-              >
-                {money(application.committed_amount, application.currency)}
-              </span>
-            ) : null}
-          </div>
-          <p className="text-muted mt-1 text-[13px] leading-relaxed">
-            {STAGE_META[stage].creatorHint}
-          </p>
-        </div>
-
-        <StageTracker stage={stage} className="mt-3" />
-
-        {application.decision_note ? (
-          <p className="text-muted mt-2 text-[13px]">{application.decision_note}</p>
-        ) : null}
-      </div>
-    );
-  }
-
-  if (application?.status === 'pending') {
-    return (
-      <div>
-        {/* The card already prints the offer's numbers a few lines above, and
-            those are exactly what was asked for, so there is nothing to repeat
-            here. */}
-        <Note tone="pending" icon={<Clock size={15} aria-hidden />}>
-          <span className="font-semibold">With the team</span>
-        </Note>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mt-2"
-          disabled={withdraw.isPending}
-          onClick={() =>
-            withdraw.mutate({
-              action: 'application.withdraw',
-              applicationId: application.id,
-            })
-          }
-        >
-          {withdraw.isPending ? 'Withdrawing...' : 'Withdraw'}
-        </Button>
-        {withdraw.error ? (
-          <p role="alert" className="text-danger mt-2 text-[12px]">
-            {(withdraw.error as Error).message}
-          </p>
-        ) : null}
-      </div>
-    );
-  }
-
-  // Already theirs, and nothing under way on it. Nothing to ask for, so
-  // nothing to click.
-  if (!offer.needs_application) {
-    return (
-      <Note tone="success" icon={<Check size={15} aria-hidden />}>
-        <span className="font-semibold">You are already on this one</span>
-        <span className="text-muted block text-[13px]">
-          No application needed. Start posting whenever you are ready.
-        </span>
-      </Note>
-    );
-  }
-
-  if (application?.status === 'rejected') {
-    return (
-      <div>
-        <Note tone="danger" icon={<X size={15} aria-hidden />}>
-          <span className="font-semibold">Not this time</span>
-          {application.decision_note ? (
-            <span className="text-muted mt-0.5 block text-[13px]">
-              {application.decision_note}
-            </span>
-          ) : null}
-        </Note>
-        <Button variant="secondary" size="sm" className="mt-2" onClick={onApply}>
-          Ask again
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <Button size="sm" className="w-full sm:w-auto" onClick={onApply}>
-      Apply for this
-    </Button>
-  );
-}
-
-function Note({
-  tone,
-  icon,
-  children,
-}: {
-  tone: 'success' | 'pending' | 'danger';
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <p
-      className={cn(
-        'flex items-start gap-2.5 rounded-xl px-3.5 py-3 text-[14px]',
-        tone === 'success' && 'bg-stage-paid-soft text-stage-paid',
-        tone === 'pending' && 'bg-stage-due-soft text-stage-due',
-        tone === 'danger' && 'bg-danger-soft text-danger'
-      )}
-    >
-      <span className="mt-0.5 shrink-0">{icon}</span>
-      <span className="min-w-0">{children}</span>
-    </p>
   );
 }

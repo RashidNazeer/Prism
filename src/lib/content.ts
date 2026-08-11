@@ -71,43 +71,18 @@ export function videoIdFrom(row: Pick<ContentRow, 'embed_id' | 'video_url'>): st
   return row.video_url.match(/\/video\/(\d+)/)?.[1] ?? null;
 }
 
-/**
- * How one job is going: what was asked for, what has landed, what counts.
+/*
+ * HOW MUCH OF A JOB HAS BEEN FILMED NOW LIVES IN THE DATABASE.
  *
- * Only APPROVED submissions count towards the offer. Rashid's rule, and the
- * database enforces the same one: a link pasted into a form is a claim until
- * somebody has watched it, so it cannot be what finishes a job.
+ * `progressFor()` used to work it out here, from whatever content rows the
+ * calling screen happened to be holding, against whatever the offer said at
+ * that moment. It was correct and it was only ever imported by two files out of
+ * the nine that show a job, so seven screens showed the work and said nothing
+ * about it.
+ *
+ * It is now the `job_progress` view, read through `src/lib/work/job-progress.ts`,
+ * for two reasons beyond reach. It counts against the number FROZEN on the job
+ * at approval rather than the offer's current one, so re-scoping an offer
+ * cannot change what somebody already filming still owes. And it is one
+ * question asked one way, so two screens cannot answer it differently.
  */
-export interface JobProgress {
-  required: number | null;
-  approved: number;
-  waiting: number;
-  needsAnotherTake: number;
-  /** Everything posted, whatever came of it. */
-  posted: number;
-  /** Null when the offer names no number, so there is nothing to be short of. */
-  remaining: number | null;
-  done: boolean;
-}
-
-export function progressFor(
-  rows: ContentRow[],
-  applicationId: string,
-  required: number | null
-): JobProgress {
-  const mine = rows.filter((r) => r.application_id === applicationId);
-  const approved = mine.filter((r) => r.status === 'approved').length;
-  const waiting = mine.filter((r) => r.status === 'submitted').length;
-  const needsAnotherTake = mine.filter((r) => r.status === 'needs_another_take').length;
-  const remaining = required === null ? null : Math.max(0, required - approved);
-
-  return {
-    required,
-    approved,
-    waiting,
-    needsAnotherTake,
-    posted: mine.length,
-    remaining,
-    done: required !== null && approved >= required,
-  };
-}

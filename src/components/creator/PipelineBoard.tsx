@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { money } from '@/lib/money';
 import { OFFER_STAGES, STAGE_META, type OfferStage } from '@/lib/offer-stages';
 import type { MyWorkRow, WorkSummary } from '@/lib/creator/useMyWork';
+import type { JobProgress } from '@/lib/work/job-progress';
 
 /**
  * The second view of the same money: where every job is standing right now.
@@ -30,10 +31,12 @@ export function PipelineBoard({
   summary,
   rows,
   moved,
+  progress,
 }: {
   summary: WorkSummary;
   rows: MyWorkRow[];
   moved: Moved;
+  progress?: Map<string, JobProgress>;
 }) {
   const { paid, due, working, currency } = summary.money;
   const fmt = (n: number) => money(Math.round(n * 100) / 100, currency);
@@ -107,18 +110,33 @@ export function PipelineBoard({
                   {here.length === 0 ? 'Nothing here' : fmt(amount)}
                 </p>
 
-                {here.map((row) => (
-                  <p
-                    key={row.id}
-                    className={cn(
-                      'border-line bg-surface-1 rounded-lg border px-[7px] py-[5px] text-[11.5px] leading-[1.25]',
-                      moved.ids.has(row.id) && 'wx-pop'
-                    )}
-                  >
-                    {row.brand?.name ? `${row.brand.name}, ` : ''}
-                    {row.offer?.title ?? 'an offer'}
-                  </p>
-                ))}
+                {here.map((row) => {
+                  const p = progress?.get(row.id);
+                  return (
+                    <p
+                      key={row.id}
+                      className={cn(
+                        'border-line bg-surface-1 rounded-lg border px-[7px] py-[5px] text-[11.5px] leading-[1.25]',
+                        moved.ids.has(row.id) && 'wx-pop'
+                      )}
+                    >
+                      {row.brand?.name ? `${row.brand.name}, ` : ''}
+                      {row.offer?.title ?? 'an offer'}
+                      {/* Just the count. This column is 142px wide on a phone
+                          and a bar in here would be four pixels of nothing. */}
+                      {p && p.required !== null ? (
+                        <span
+                          className={cn(
+                            'font-display mt-0.5 block text-[11px] font-semibold',
+                            p.done ? 'text-stage-paid' : 'text-muted'
+                          )}
+                        >
+                          {p.approved}/{p.required} filmed
+                        </span>
+                      ) : null}
+                    </p>
+                  );
+                })}
               </div>
             </li>
           );

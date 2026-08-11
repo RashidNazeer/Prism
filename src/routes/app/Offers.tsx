@@ -1,18 +1,14 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router';
 import { m } from 'motion/react';
-import { Check, Clock, Search, Store, Ticket, X } from 'lucide-react';
+import { Search, Ticket } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { ApplyDialog } from '@/components/creator/ApplyDialog';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
-import { StageTracker } from '@/components/creator/StageTracker';
-import { Button } from '@/components/ui/Button';
+import { OfferCard } from '@/components/creator/OfferCard';
 import { Select } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
-import { money } from '@/lib/money';
-import { STAGE_META, stageTextTone } from '@/lib/offer-stages';
 import {
   stateFor,
   useAllCreatorOffers,
@@ -20,8 +16,9 @@ import {
   type CreatorOfferRow,
   type CreatorOfferState,
 } from '@/lib/creator/useAllOffers';
-import { useApplyForOffer, type MyOfferApplication } from '@/lib/creator/useOfferApplications';
+import type { MyOfferApplication } from '@/lib/creator/useOfferApplications';
 import { useCatalogueLive } from '@/lib/creator/useCatalogueLive';
+import { useMyJobProgress } from '@/lib/work/job-progress';
 
 /**
  * Every offer open to this creator, across every brand.
@@ -70,6 +67,9 @@ export function Offers() {
 
   const { data: offers, isLoading, isError, error } = useAllCreatorOffers();
   const { data: requests } = useAllMyRequests();
+  // How much of each job has been filmed. Keyed by REQUEST, not by offer: five
+  // videos for three hundred is a promise made to one creator on one request.
+  const { data: progress } = useMyJobProgress();
 
   /** The newest request per offer. A rejected creator can ask again, so an
    *  offer can carry several rows and only the newest describes today. */
@@ -239,6 +239,8 @@ export function Offers() {
                   <OfferCard
                     offer={offer}
                     request={latest.get(offer.id)}
+                    progress={progress?.get(latest.get(offer.id)?.id ?? '')}
+                    showBrand
                     onApply={() => setApplyingTo(offer)}
                   />
                 </m.li>
@@ -256,217 +258,5 @@ export function Offers() {
         />
       ) : null}
     </AppShell>
-  );
-}
-
-/* ----------------------------------------------------------------- card -- */
-
-function OfferCard({
-  offer,
-  request,
-  onApply,
-}: {
-  offer: CreatorOfferRow;
-  request: MyOfferApplication | undefined;
-  onApply: () => void;
-}) {
-  const state = stateFor(offer, request);
-  const hasVideos = offer.video_count !== null;
-  const hasReward = offer.reward_amount !== null;
-
-  return (
-    <div className="border-line bg-surface-1 flex h-full flex-col rounded-[20px] border p-5 shadow-md">
-      {/* The brand, first. On this screen it is the thing that tells a creator
-          what they are looking at; inside a hub it would be noise. */}
-      <Link
-        to={`/app/brands/${offer.brand?.slug ?? ''}`}
-        className="text-muted hover:text-accent flex items-center gap-2.5 transition-colors"
-      >
-        <span className="border-line bg-surface-2 grid size-7 shrink-0 place-items-center overflow-hidden rounded-full border">
-          {offer.brand?.logo_url ? (
-            <img src={offer.brand.logo_url} alt="" className="size-full object-cover" />
-          ) : (
-            <Store size={13} aria-hidden className="text-faint" />
-          )}
-        </span>
-        <span className="truncate text-[13px] font-medium">{offer.brand?.name}</span>
-      </Link>
-
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        {offer.badge_title ? (
-          <span className="bg-accent-soft text-accent rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-[0.12em] uppercase">
-            {offer.badge_title}
-          </span>
-        ) : null}
-      </div>
-
-      <h3 className="mt-1 text-lg font-bold">{offer.title}</h3>
-      {offer.description ? (
-        <p className="text-muted mt-2 line-clamp-3 text-[14px] leading-relaxed">
-          {offer.description}
-        </p>
-      ) : null}
-
-      {hasVideos || hasReward ? (
-        <div className="border-line mt-4 flex flex-wrap items-end gap-x-6 gap-y-2 border-t pt-4">
-          {hasVideos ? (
-            <span>
-              <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
-                Videos
-              </span>
-              <span className="font-display mt-1 block text-[19px] font-semibold">
-                {offer.video_count}
-              </span>
-            </span>
-          ) : null}
-          {hasReward ? (
-            <span>
-              <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
-                You get
-              </span>
-              <span className="font-display text-accent mt-1 block text-[19px] font-semibold">
-                {money(offer.reward_amount, offer.currency)}
-              </span>
-            </span>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div className="mt-auto pt-5">
-        <Action state={state} request={request} onApply={onApply} />
-      </div>
-    </div>
-  );
-}
-
-function Action({
-  state,
-  request,
-  onApply,
-}: {
-  state: CreatorOfferState;
-  request: MyOfferApplication | undefined;
-  onApply: () => void;
-}) {
-  const withdraw = useApplyForOffer();
-
-  if (state === 'open') {
-    return (
-      <Note tone="success" icon={<Check size={15} aria-hidden />}>
-        <span className="font-semibold">You are already on this one</span>
-      </Note>
-    );
-  }
-
-  /*
-   * Approved work shows the PIPELINE, not just "you are in".
-   *
-   * That was the whole complaint: this screen said one thing and the dashboard
-   * said another about the same offer. A creator should be able to see where
-   * their sample is and what they are owed wherever they happen to be standing.
-   */
-  if (state === 'in') {
-    const stage = request?.stage ?? 'pending_request';
-    const meta = STAGE_META[stage];
-    return (
-      <div>
-        <div
-          className={cn(
-            'rounded-xl px-3.5 py-3',
-            stage === 'paid' ? 'bg-stage-paid-soft' : 'bg-surface-2'
-          )}
-        >
-          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <span
-              className={cn('text-[14px] font-semibold', stage === 'paid' && 'text-stage-paid')}
-            >
-              {stage === 'paid' ? 'Paid out' : 'You are in'}
-            </span>
-            {request?.committed_amount != null ? (
-              <span
-                className={cn('font-display text-[15px] font-semibold', stageTextTone(stage))}
-              >
-                {money(request.committed_amount, request.currency)}
-              </span>
-            ) : null}
-          </div>
-          <p className="text-muted mt-1 text-[13px] leading-relaxed">{meta.creatorHint}</p>
-        </div>
-
-        <StageTracker stage={stage} className="mt-3" />
-
-        {request?.decision_note ? (
-          <p className="text-muted mt-2 text-[13px]">{request.decision_note}</p>
-        ) : null}
-      </div>
-    );
-  }
-
-  if (state === 'waiting') {
-    return (
-      <div>
-        <Note tone="pending" icon={<Clock size={15} aria-hidden />}>
-          <span className="font-semibold">With the team</span>
-        </Note>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mt-2"
-          disabled={withdraw.isPending}
-          onClick={() =>
-            request &&
-            withdraw.mutate({ action: 'application.withdraw', applicationId: request.id })
-          }
-        >
-          {withdraw.isPending ? 'Withdrawing...' : 'Withdraw'}
-        </Button>
-      </div>
-    );
-  }
-
-  if (state === 'declined') {
-    return (
-      <div>
-        <Note tone="danger" icon={<X size={15} aria-hidden />}>
-          <span className="font-semibold">Not this time</span>
-          {request?.decision_note ? (
-            <span className="text-muted mt-0.5 block text-[13px]">{request.decision_note}</span>
-          ) : null}
-        </Note>
-        <Button variant="secondary" size="sm" className="mt-2" onClick={onApply}>
-          Ask again
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <Button size="sm" className="w-full sm:w-auto" onClick={onApply}>
-      Apply for this
-    </Button>
-  );
-}
-
-function Note({
-  tone,
-  icon,
-  children,
-}: {
-  tone: 'success' | 'pending' | 'danger';
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <p
-      className={cn(
-        'flex items-start gap-2.5 rounded-xl px-3.5 py-3 text-[14px]',
-        tone === 'success' && 'bg-stage-paid-soft text-stage-paid',
-        tone === 'pending' && 'bg-stage-due-soft text-stage-due',
-        tone === 'danger' && 'bg-danger-soft text-danger'
-      )}
-    >
-      <span className="mt-0.5 shrink-0">{icon}</span>
-      <span className="min-w-0">{children}</span>
-    </p>
   );
 }

@@ -7,6 +7,7 @@ import { ButtonLink } from '@/components/ui/Button';
 import { WelcomeMoment } from '@/components/creator/WelcomeMoment';
 import { ApprovedMoment } from '@/components/creator/ApprovedMoment';
 import { MoneySplit, PipelineBoard } from '@/components/creator/PipelineBoard';
+import { JobProgressBar } from '@/components/work/JobProgress';
 import { cn } from '@/lib/utils';
 import { money } from '@/lib/money';
 import { OFFER_STAGES, STAGE_META, stageIndex, type OfferStage } from '@/lib/offer-stages';
@@ -22,6 +23,7 @@ import {
   type StageEvent,
   type WorkSummary,
 } from '@/lib/creator/useMyWork';
+import { useMyJobProgress, type JobProgress } from '@/lib/work/job-progress';
 
 /**
  * The empty board, split off into its own chunk.
@@ -194,6 +196,9 @@ function CreatorHome({
   // history, and a timeline long enough to outrun the work list beside it
   // turns the whole right column into a wall nobody reads to the bottom of.
   const { data: events } = useMyStageEvents(8);
+  // How much of each job has actually been filmed. The stage says where the
+  // work stands with US; this says where it stands with THEM.
+  const { data: progress } = useMyJobProgress();
   const summary = useWorkSummary(rows);
   const moved = useJustMoved(rows);
 
@@ -237,7 +242,7 @@ function CreatorHome({
 
           {view === 'pipeline' ? (
             <>
-              <PipelineBoard summary={summary} rows={work} moved={moved} />
+              <PipelineBoard summary={summary} rows={work} moved={moved} progress={progress} />
 
               <div className="grid [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))] items-start gap-[14px]">
                 <MoneySplit summary={summary} moved={moved} />
@@ -249,7 +254,7 @@ function CreatorHome({
               <Money summary={summary} moved={moved} />
 
               <div className="grid [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))] items-start gap-[14px]">
-                <Work rows={work} pending={pending} moved={moved} />
+                <Work rows={work} pending={pending} moved={moved} progress={progress} />
 
                 <div className="flex flex-col gap-[14px]">
                   <Activity rows={rows ?? []} events={events ?? []} moved={moved} />
@@ -498,10 +503,12 @@ function Work({
   rows,
   pending,
   moved,
+  progress,
 }: {
   rows: MyWorkRow[];
   pending: MyWorkRow[];
   moved: Moved;
+  progress: Map<string, JobProgress> | undefined;
 }) {
   return (
     <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-[20px] border p-5 shadow-md">
@@ -573,6 +580,18 @@ function Work({
                   <span className="text-stage-live text-[11px] font-semibold">just now</span>
                 ) : null}
               </p>
+
+              {/* What the stage cannot say: how much of it they have filmed.
+                  "Content pending" told them to go and shoot; it never told
+                  them how many were left, or gave them anywhere to put one. */}
+              {progress?.get(row.id) ? (
+                <JobProgressBar
+                  progress={progress.get(row.id)!}
+                  addVideoHref={`/app/content?job=${row.id}`}
+                  className="border-line border-t pt-[11px]"
+                  compact
+                />
+              ) : null}
             </li>
           );
         })}

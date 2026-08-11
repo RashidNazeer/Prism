@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth/auth-context';
-import type { OfferStage } from '@/lib/offer-stages';
+import type { OfferApplicationStatus, OfferStage } from '@/lib/offer-stages';
 
 /**
  * What this creator has asked for, and what came back.
@@ -12,8 +12,6 @@ import type { OfferStage } from '@/lib/offer-stages';
  * for an offer or what anybody else was offered, and that is a policy in the
  * database rather than a filter here.
  */
-
-export type OfferApplicationStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn';
 
 export interface MyOfferApplication {
   id: string;
@@ -29,6 +27,16 @@ export interface MyOfferApplication {
   stage: OfferStage | null;
   /** What we agreed to pay. Null on anything not approved. */
   committed_amount: string | number | null;
+  /**
+   * How many videos were agreed, snapshotted at approval alongside the amount.
+   * Null when no number was agreed, or on anything not approved.
+   *
+   * Read this, never `offers.video_count`, anywhere a creator is already on the
+   * offer. Re-scoping an offer must not change the deal somebody is already
+   * working to, so the two numbers legitimately differ and the frozen one is
+   * the true one.
+   */
+  committed_video_count: number | null;
   /** The currency the offer was quoted in when they asked. */
   currency: string;
   note: string | null;
@@ -38,8 +46,8 @@ export interface MyOfferApplication {
 }
 
 const COLUMNS =
-  'id, offer_id, brand_id, status, stage, committed_amount, currency, note, ' +
-  'decision_note, decided_at, created_at';
+  'id, offer_id, brand_id, status, stage, committed_amount, committed_video_count, ' +
+  'currency, note, decision_note, decided_at, created_at';
 
 /**
  * Every request this creator has made inside one brand's hub, newest first.

@@ -4,5 +4,47 @@
   "rules": {
     "react/rules-of-hooks": "error",
     "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/lib/creator/**", "src/routes/app/**", "src/components/creator/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/lib/admin/*", "@/lib/admin", "**/lib/admin/*"],
+                "message": "Creator code must never import admin code. The admin hooks flatten brand_commercials (client name, allocated budget, spend) onto their rows so the approve dialog can price a decision, and staff and creators are both the `authenticated` database role, so one import here is all it takes to put a commercial column on a creator's screen. Anything genuinely shared belongs in a neutral file: src/lib/work/, src/lib/content.ts, src/lib/money.ts or src/lib/offer-stages.ts."
+              },
+              {
+                "group": ["@/routes/admin/*", "**/routes/admin/*"],
+                "message": "Creator code must never import an admin screen. Move the shared piece into src/components/work/ and pass anything staff-only in as a prop."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/lib/admin/**", "src/routes/admin/**", "src/components/admin/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/routes/app/*", "**/routes/app/*"],
+                "message": "Admin code must never import a creator screen: it drags creator code into the admin bundle, which is exactly what the admin content screen used to do with ContentCard. Move the shared piece into src/components/work/, where it takes everything staff-only as a prop and decides nothing about who is looking."
+              },
+              {
+                "group": ["@/lib/creator/*", "@/lib/creator", "**/lib/creator/*"],
+                "message": "Admin code must never import creator hooks. Anything shared belongs in a neutral file such as src/lib/work/."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

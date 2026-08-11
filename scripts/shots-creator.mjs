@@ -139,6 +139,10 @@ async function addWork(creatorId, offer, { status, stage, amount, daysAgo, note 
         status,
         stage,
         committed_amount: status === 'approved' ? amount : null,
+        // The other half of the deal, snapshotted the same way the real
+        // approval does it, so the photographed screens draw a real bar
+        // rather than an empty one.
+        committed_video_count: status === 'approved' ? (offer.video_count ?? null) : null,
         currency: offer.currency ?? 'USD',
         decision_note: note ?? null,
         decided_at: status === 'pending' ? null : created,
@@ -247,7 +251,9 @@ try {
   const offers = await step('read the live offers', () =>
     admin
       .from('offers')
-      .select('id, brand_id, title, reward_amount, currency, needs_application, status')
+      .select(
+        'id, brand_id, title, video_count, reward_amount, currency, needs_application, status'
+      )
       .eq('status', 'active')
       .order('reward_amount', { ascending: false })
   );

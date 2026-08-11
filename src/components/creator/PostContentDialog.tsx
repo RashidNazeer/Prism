@@ -6,9 +6,10 @@ import { Field, Input, Select } from '@/components/ui/Field';
 import { FormError } from '@/components/auth/AuthShell';
 import { useFocusTrap } from '@/lib/use-focus-trap';
 import { cn } from '@/lib/utils';
-import { progressFor, type ContentRow } from '@/lib/content';
+import { type ContentRow } from '@/lib/content';
 import { useMyContentMutation } from '@/lib/creator/useMyContent';
 import type { MyWorkRow } from '@/lib/creator/useMyWork';
+import { useMyJobProgress, type JobProgress } from '@/lib/work/job-progress';
 
 /**
  * Posting a video against a job, and fixing one already posted.
@@ -23,16 +24,22 @@ import type { MyWorkRow } from '@/lib/creator/useMyWork';
  * database, which matches on `creator_id` as well as the id, so a doctored
  * request cannot post onto somebody else's work.
  */
+/** The tail of an option label: what this job is still short of. */
+function needLabel(p: JobProgress | undefined): string {
+  if (!p || p.required === null) return '';
+  if (p.done) return ' (covered)';
+  if (p.remaining === 1) return ' (1 to go)';
+  return ` (${p.remaining} to go)`;
+}
+
 export function PostContentDialog({
   jobs,
-  content,
   editing,
   presetApplicationId,
   onClose,
 }: {
   /** Their approved work, which is the only thing content can attach to. */
   jobs: MyWorkRow[];
-  content: ContentRow[];
   editing?: ContentRow | null;
   presetApplicationId?: string | null;
   onClose: () => void;
@@ -42,10 +49,34 @@ export function PostContentDialog({
 
   const mutate = useMyContentMutation();
   const busy = mutate.isPending;
+  const { data: progressByJob } = useMyJobProgress();
 
+  /**
+   * A job is SHORT when a number was agreed and it has not been reached.
+   *
+   * A job with no fixed count can never be short, so it neither wins the guess
+   * below nor blocks it. Without that rule a commission-only job would either
+   * be picked at random or would suppress the guess for somebody with exactly
+   * one real job to film.
+   */
+  const short = (id: string) => {
+    const p = progressByJob?.get(id);
+    return Boolean(p && p.required !== null && !p.done);
+  };
+
+  /*
+   * Where the dialog opens.
+   *
+   * Editing pins it to that video's job. A link from a card pins it to that
+   * card's job. Otherwise, if exactly one job is short, that is the one they
+   * came here for and guessing it saves two taps on a phone. Two or more and
+   * we ask, because picking the wrong job posts a video against the wrong deal.
+   */
+  const guess = jobs.filter((j) => short(j.id));
   const startingJob = editing
     ? (jobs.find((j) => j.id === editing.application_id) ?? null)
-    : (jobs.find((j) => j.id === presetApplicationId) ?? null);
+    : (jobs.find((j) => j.id === presetApplicationId) ??
+      (guess.length === 1 ? guess[0] : null));
 
   const [brandId, setBrandId] = useState(startingJob?.brand_id ?? '');
   const [applicationId, setApplicationId] = useState(startingJob?.id ?? '');
@@ -68,7 +99,13 @@ export function PostContentDialog({
   );
 
   const job = jobs.find((j) => j.id === applicationId) ?? null;
-  const progress = job ? progressFor(content, job.id, job.offer?.video_count ?? null) : null;
+  /*
+   * From the view, not from arithmetic in here, and measured against the count
+   * FROZEN ON THE JOB rather than whatever the offer says today. This used to
+   * read `job.offer.video_count`, which meant re-scoping an offer silently
+   * changed how many videos somebody already filming still owed.
+   */
+  const progress: JobProgress | null = job ? (progressByJob?.get(job.id) ?? null) : null;
 
   const validate = () => {
     const next: Record<string, string> = {};
@@ -191,9 +228,13 @@ export function PostContentDialog({
                     onChange={(e) => setApplicationId(e.target.value)}
                   >
                     <option value="">{brandId ? 'Pick an offer' : 'Brand first'}</option>
+                    {/* Each one says what it still needs, so the choice can be
+                        made from the list rather than by picking one and
+                        reading the panel underneath. */}
                     {jobsForBrand.map((j) => (
                       <option key={j.id} value={j.id}>
                         {j.offer?.title ?? 'An offer'}
+                        {needLabel(progressByJob?.get(j.id))}
                       </option>
                     ))}
                   </Select>

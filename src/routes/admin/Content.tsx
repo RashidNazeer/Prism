@@ -5,7 +5,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Field';
 import { VideoPlayer } from '@/components/content/VideoPlayer';
-import { ContentCard } from '@/routes/app/Content';
+import { ContentCard } from '@/components/content/ContentCard';
 import { cn } from '@/lib/utils';
 import type { ContentRow, ContentStatus } from '@/lib/content';
 import { useBrandsWithRequests } from '@/lib/admin/useOfferApplications';

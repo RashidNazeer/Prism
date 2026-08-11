@@ -189,6 +189,18 @@ try {
         status: 'approved',
         stage: 'content_pending',
         committed_amount: 200,
+        /*
+         * The terms, snapshotted, exactly as `review_offer_application` does.
+         *
+         * This suite writes the job directly rather than approving it through
+         * the real function, because that one charges the brand's budget and a
+         * throwaway creator must never move a number an admin is reading. The
+         * price of that shortcut is that anything the real function stamps has
+         * to be stamped here too: a job with no agreed count can never be "all
+         * filmed", so leaving this out would silently stop every job in the
+         * suite from ever finishing.
+         */
+        committed_video_count: 2,
         currency: 'USD',
       })
       .select('id')
@@ -432,8 +444,123 @@ try {
     ok('the decision is in the audit log');
   } else bad('the decision was not audited');
 
+  /* ----------------------------------------------------- job_progress ---- */
+  console.log('\n[5] How much of the job has been filmed, and who may ask');
+
+  const mineProgress = await creator
+    .from('job_progress')
+    .select('application_id, required, approved, waiting, posted')
+    .eq('application_id', job);
+  const mine = mineProgress.data?.[0];
+  if (mine && mine.required === 2 && mine.approved === 2) {
+    ok('a creator reads their own job from job_progress, 2 of 2 approved');
+  } else bad(`job_progress gave the creator ${JSON.stringify(mineProgress.data)}`);
+
+  /*
+   * THE ONE THAT MATTERS. The view is `security_invoker`, so the policies on
+   * the tables underneath still decide the rows. Without that word a view runs
+   * as its OWNER and hands every creator every other creator's counts.
+   */
+  const rivalProgress = await rival
+    .from('job_progress')
+    .select('application_id, required, approved')
+    .eq('application_id', job);
+  if ((rivalProgress.data ?? []).length === 0) {
+    ok('a rival creator gets NOTHING from job_progress for a job that is not theirs');
+  } else bad(`a rival read another creator's progress: ${JSON.stringify(rivalProgress.data)}`);
+
+  // It carries no commercial column at all, so even a careless grant later
+  // cannot turn it into a way to read a brand's budget.
+  const commercial = await creator
+    .from('job_progress')
+    .select('budget_allocated, budget_used, client_name');
+  if (commercial.error) {
+    ok('job_progress has no budget or client column to ask for');
+  } else bad('job_progress answered a question about a brand’s money');
+
+  /* ------------------------------------------------- the terms are frozen -- */
+  console.log('\n[6] The deal is frozen at approval');
+
+  // Re-scope the offer underneath somebody already working it. This is exactly
+  // what Rashid asked for on 2026-08-11: once approved, an admin must never be
+  // able to change the number of deliverables on a job already agreed.
+  await admin.from('offers').update({ video_count: 9, reward_amount: 999 }).eq('id', offer.id);
+
+  const { data: frozenRow } = await admin
+    .from('offer_applications')
+    .select('committed_video_count, committed_amount')
+    .eq('id', job)
+    .single();
+  const rescoped = await creator
+    .from('job_progress')
+    .select('required, approved')
+    .eq('application_id', job);
+  if (frozenRow?.committed_video_count === 2 && rescoped.data?.[0]?.required === 2) {
+    ok('re-scoping the offer to 9 videos does NOT move an agreed job off 2');
+  } else {
+    bad(
+      `the agreed count moved: job says ${frozenRow?.committed_video_count}, ` +
+        `progress says ${rescoped.data?.[0]?.required}`
+    );
+  }
+  if (Number(frozenRow?.committed_amount) !== 999) {
+    ok('and re-pricing it does not move the money either');
+  } else bad('re-pricing the offer rewrote what the creator was promised');
+
+  await admin.from('offers').update({ video_count: 2, reward_amount: 200 }).eq('id', offer.id);
+
+  /* -------------------------------------------- a job cannot get stuck ---- */
+  console.log('\n[7] A job cannot be stranded at "all filmed"');
+
+  const unApprove = await callFn(staff, {
+    action: 'content.review',
+    contentId: secondId,
+    status: 'needs_another_take',
+    note: 'On reflection the product is out of frame.',
+  });
+  const { data: reopened } = await admin
+    .from('offer_applications')
+    .select('stage')
+    .eq('id', job)
+    .single();
+  if (unApprove.ok && reopened?.stage === 'content_pending') {
+    ok('taking an approval back walks the job out of content completed');
+  } else {
+    bad(`un-approving left the job at ${reopened?.stage} with a video missing`);
+  }
+
+  /*
+   * Now strand it on purpose.
+   *
+   * `review_content` used to advance only from `sample_shipped` and
+   * `content_pending`. A creator whose sample was never marked shipped still
+   * filmed the videos, and approving the last one left the job at "sample
+   * requested" forever, with nothing left to approve that could ever fix it.
+   */
+  await admin
+    .from('offer_applications')
+    .update({ stage: 'sample_requested' })
+    .eq('id', job);
+
+  const lastOne = await callFn(staff, {
+    action: 'content.review',
+    contentId: secondId,
+    status: 'approved',
+    note: null,
+  });
+  const { data: rescued } = await admin
+    .from('offer_applications')
+    .select('stage')
+    .eq('id', job)
+    .single();
+  if (lastOne.ok && rescued?.stage === 'content_completed') {
+    ok('the last approval finishes the job from ANY stage, not just two of seven');
+  } else {
+    bad(`a fully filmed job was stranded at ${rescued?.stage}`);
+  }
+
   /* ------------------------------------------------------------ browser -- */
-  console.log('\n[5] The screens, in a real browser');
+  console.log('\n[8] The screens, in a real browser');
 
   const browser = await launchBrowser();
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 } });

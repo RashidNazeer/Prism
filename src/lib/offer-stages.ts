@@ -19,6 +19,20 @@ import {
  * or works out where money has got to reads it from this array rather than
  * hard-coding a sequence of its own.
  */
+
+/**
+ * Where a request stands before it has a stage at all.
+ *
+ * Lives HERE, in the neutral vocabulary file, rather than in either side's
+ * hooks. It used to live in `lib/creator/`, which meant the admin queue
+ * imported a creator module to name a database enum, and creator modules are
+ * exactly what admin code must never reach into. See `.oxlintrc.json`.
+ *
+ * Only an APPROVED request has a stage: a pending one has not started and a
+ * rejected one never will.
+ */
+export type OfferApplicationStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn';
+
 export const OFFER_STAGES = [
   'pending_request',
   'sample_requested',

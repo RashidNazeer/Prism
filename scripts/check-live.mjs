@@ -97,7 +97,7 @@ try {
 
   const { data: offers } = await admin
     .from('offers')
-    .select('id, brand_id, title, currency, brands!inner(slug)')
+    .select('id, brand_id, title, video_count, currency, brands!inner(slug)')
     .eq('status', 'active')
     // Deterministic, and one that needs applying for: picking any active offer
     // meant a different one each run and a suite that changed its answer.
@@ -120,6 +120,9 @@ try {
       status: 'approved',
       stage: 'sample_requested',
       committed_amount: 250,
+      // Snapshotted like the real approval does. A job with no agreed count
+      // can never report progress, so leaving it null would draw an empty bar.
+      committed_video_count: offer.video_count ?? null,
       currency: offer.currency ?? 'USD',
     })
     .select('id')

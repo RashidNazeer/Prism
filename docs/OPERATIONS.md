@@ -106,6 +106,11 @@ node scripts/check-admin.mjs <url> <email> <password> [role] [path]
 node scripts/create-admin.mjs <email> <password> [role]
 node scripts/seed-applications.mjs [--clean]   # demo queue data, DEV ONLY
 node scripts/seed-brands.mjs [--clean]         # demo brands and offers, DEV ONLY
+node scripts/seed-pipeline.mjs [--clean]       # videos against the approved jobs,
+                                               # in five states, so every progress
+                                               # bar has something to draw. Approves
+                                               # through the REAL review_content.
+                                               # DEV ONLY. Needs SUPABASE_SERVICE_KEY
 node scripts/reconcile-budgets.mjs [--dry-run] # put brand budgets back in step
                                                # with their approved requests
 ```
@@ -181,6 +186,23 @@ grant all privileges on table public.x to service_role;
 staff and creators are both the `authenticated` role. Anything creators must
 never see goes in its OWN table with its own policy. That is why the brand
 budget lives in `brand_commercials` and not in `brands`.
+
+**Every VIEW needs `with (security_invoker = true)` and its own grants.** A
+Postgres view runs as its OWNER by default, which bypasses row level security on
+everything underneath it. A view over a creator-facing table without that word
+hands every creator every other creator's rows, and no policy will stop it:
+
+```sql
+create view public.x with (security_invoker = true) as select ...;
+grant select on public.x to authenticated;
+grant all privileges on table public.x to service_role;   -- auto-expose is off
+```
+
+And a rule that no `security_invoker` can enforce: only build a view whose
+grouping key belongs to exactly ONE person. A creator counting rows they cannot
+all see gets a plausible small number back rather than an error, so
+`job_progress` is safe (one job, one creator) while a per-offer headcount over
+the same tables would silently render "12 creators" as "1".
 
 ## 4c. Storage
 

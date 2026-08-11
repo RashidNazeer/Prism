@@ -26,7 +26,7 @@ import {
   type OfferQueueRow,
   type OfferStatusFilter,
 } from '@/lib/admin/useOfferApplications';
-import type { OfferApplicationStatus } from '@/lib/creator/useOfferApplications';
+import type { OfferApplicationStatus } from '@/lib/offer-stages';
 
 /**
  * Every creator asking for an offer, in one queue.

@@ -80,10 +80,14 @@ export function useAllMyRequests() {
       const { data, error } = await getSupabase()
         .from('offer_applications')
         .select(
-          'id, offer_id, brand_id, status, stage, committed_amount, currency, note, ' +
-            'decision_note, decided_at, created_at'
+          'id, offer_id, brand_id, status, stage, committed_amount, committed_video_count, ' +
+            'currency, note, decision_note, decided_at, created_at'
         )
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        // Matches the 200 on the offers read above. A request list quietly
+        // shorter than the offer list would leave cards claiming "not asked
+        // yet" for offers this creator is already working on.
+        .limit(200);
       if (error) throw error;
       return (data ?? []) as unknown as MyOfferApplication[];
     },
