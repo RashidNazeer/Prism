@@ -13,6 +13,7 @@ import {
   Upload,
   UserRound,
   Users,
+  Video,
 } from 'lucide-react';
 import type { AppRole } from '@/lib/auth/auth-context';
 
@@ -78,6 +79,10 @@ const ADMIN: NavGroup[] = [
     ],
   },
   {
+    label: 'Content',
+    items: [{ label: 'Content', icon: Video, to: '/admin/content' }],
+  },
+  {
     label: 'People',
     items: [
       { label: 'Creators', icon: Users, soon: 'Step 5' },
@@ -119,6 +124,7 @@ const CREATOR: NavGroup[] = [
       },
       { label: 'Leaderboards', icon: Trophy, soon: 'Step 9' },
       { label: 'Offers', icon: Gift, to: '/app/offers' },
+      { label: 'My content', icon: Video, to: '/app/content' },
     ],
   },
   {
@@ -134,7 +140,7 @@ const CREATOR: NavGroup[] = [
  * that it opens on approval. What we will not do is put a live-looking link in
  * front of somebody it does not work for yet.
  */
-const LOCKED_UNTIL_APPROVED = ['/app/brands', '/app/offers'];
+const LOCKED_UNTIL_APPROVED = ['/app/brands', '/app/offers', '/app/content'];
 
 const APPLICANT: NavGroup[] = CREATOR.map((group) => ({
   ...group,

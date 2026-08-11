@@ -28,13 +28,13 @@ Most of them are on a phone.
 
 Five screens, for a creator who has already been approved.
 
-| Screen | The only question it has to answer |
-| --- | --- |
-| **Home** | Have I been paid, what is still coming, and what is happening with the work I took |
-| **Offers** | What can I take right now |
-| **Brands** | Who can I work with |
+| Screen        | The only question it has to answer                                                 |
+| ------------- | ---------------------------------------------------------------------------------- |
+| **Home**      | Have I been paid, what is still coming, and what is happening with the work I took |
+| **Offers**    | What can I take right now                                                          |
+| **Brands**    | Who can I work with                                                                |
 | **One brand** | What do they sell, what do they pay me on each product, and what are they offering |
-| **Profile** | My account details |
+| **Profile**   | My account details                                                                 |
 
 Plus a small dialog for applying to an offer.
 
@@ -96,7 +96,7 @@ export const creator = {
   displayName: 'Maya Ellison',
   email: 'maya@example.com',
   tiktokHandle: 'mayaonmain',
-  tier: 'Rising',            // Creator, Rising, Pro, Elite
+  tier: 'Rising', // Creator, Rising, Pro, Elite
   joined: '2026-03-14',
   niche: 'Beauty & skincare',
 };
@@ -109,29 +109,53 @@ export const summary = {
   money: { paid: 460, awaitingPayment: 240, inProgress: 2300, total: 3000 },
   // how many jobs sit at each stage right now, and how much money is parked there
   byStage: {
-    pending_request:   { count: 0, amount: 0 },
-    sample_requested:  { count: 0, amount: 0 },
-    sample_shipped:    { count: 1, amount: 900 },
-    content_pending:   { count: 1, amount: 1400 },
+    pending_request: { count: 0, amount: 0 },
+    sample_requested: { count: 0, amount: 0 },
+    sample_shipped: { count: 1, amount: 900 },
+    content_pending: { count: 1, amount: 1400 },
     content_completed: { count: 0, amount: 0 },
-    payment_pending:   { count: 1, amount: 240 },
-    paid:              { count: 2, amount: 460 },
+    payment_pending: { count: 1, amount: 240 },
+    paid: { count: 2, amount: 460 },
   },
 };
 
 export const brands = [
-  { id: 'b1', name: 'Vitauthority', tagline: 'Wellness & Weight Support',
-    description: 'Clean, science-backed supplements with a loyal repeat customer base. Creators do best here with honest before-and-after storytelling rather than hard selling.',
-    logo: null, offerCount: 3 },
-  { id: 'b2', name: 'BruMate', tagline: 'Drinkware That Keeps Up',
-    description: 'Insulated drinkware with a strong outdoor and tailgate audience. Product in use beats product on a shelf every single time.',
-    logo: null, offerCount: 4 },
-  { id: 'b3', name: 'Physicians Choice', tagline: 'Gut Health, Backed by Research',
-    description: 'Probiotics and digestive health, sold on evidence. Claims are checked before anything goes live, so scripts are approved in advance here.',
-    logo: null, offerCount: 1 },
-  { id: 'b4', name: 'Bentgo', tagline: 'Lunch, Sorted',
-    description: 'Leakproof lunchboxes with a huge back-to-school season. Parents buy on convenience, kids buy on colour.',
-    logo: null, offerCount: 2 },
+  {
+    id: 'b1',
+    name: 'Vitauthority',
+    tagline: 'Wellness & Weight Support',
+    description:
+      'Clean, science-backed supplements with a loyal repeat customer base. Creators do best here with honest before-and-after storytelling rather than hard selling.',
+    logo: null,
+    offerCount: 3,
+  },
+  {
+    id: 'b2',
+    name: 'BruMate',
+    tagline: 'Drinkware That Keeps Up',
+    description:
+      'Insulated drinkware with a strong outdoor and tailgate audience. Product in use beats product on a shelf every single time.',
+    logo: null,
+    offerCount: 4,
+  },
+  {
+    id: 'b3',
+    name: 'Physicians Choice',
+    tagline: 'Gut Health, Backed by Research',
+    description:
+      'Probiotics and digestive health, sold on evidence. Claims are checked before anything goes live, so scripts are approved in advance here.',
+    logo: null,
+    offerCount: 1,
+  },
+  {
+    id: 'b4',
+    name: 'Bentgo',
+    tagline: 'Lunch, Sorted',
+    description:
+      'Leakproof lunchboxes with a huge back-to-school season. Parents buy on convenience, kids buy on colour.',
+    logo: null,
+    offerCount: 2,
+  },
 ];
 
 // What each brand sells. `commission` is the percentage the creator earns on a
@@ -139,19 +163,19 @@ export const brands = [
 export const products = {
   b1: [
     { name: 'Multi Collagen Burn, 30 servings', price: 49.99, commission: 25, badge: 'HERO' },
-    { name: 'Lean Bliss Greens, 30 servings',   price: 39.99, commission: 22, badge: null },
-    { name: 'Daily Multivitamin, 60 count',     price: 24.99, commission: 20, badge: null },
+    { name: 'Lean Bliss Greens, 30 servings', price: 39.99, commission: 22, badge: null },
+    { name: 'Daily Multivitamin, 60 count', price: 24.99, commission: 20, badge: null },
   ],
   b2: [
     { name: 'Hopsulator Trio, 16 oz', price: 29.99, commission: 18, badge: 'HERO' },
-    { name: 'Era Tumbler, 25 oz',     price: 34.99, commission: 18, badge: null },
+    { name: 'Era Tumbler, 25 oz', price: 34.99, commission: 18, badge: null },
   ],
   b3: [
     { name: 'Probiotic 60 Billion CFU, 30 count', price: 27.95, commission: 24, badge: 'HERO' },
-    { name: 'Prebiotic Fiber, 30 servings',       price: 21.95, commission: 20, badge: null },
-    { name: 'Digestive Enzymes, 60 count',        price: null,  commission: null, badge: null },
+    { name: 'Prebiotic Fiber, 30 servings', price: 21.95, commission: 20, badge: null },
+    { name: 'Digestive Enzymes, 60 count', price: null, commission: null, badge: null },
   ],
-  b4: [],   // this brand has listed nothing yet
+  b4: [], // this brand has listed nothing yet
 };
 
 // state:
@@ -161,50 +185,131 @@ export const products = {
 //   'open'     no application needed, it is already theirs
 //   'canApply' never asked
 export const offers = [
-  { id: 'o1', brandId: 'b1', badge: 'TOP PICK', title: 'Starter bundle',
-    description: 'Five in-feed videos featuring the hero product, posted within 30 days. Hook in the first two seconds.',
-    videos: 5, pays: 300, state: 'in', stage: 'paid' },
-  { id: 'o2', brandId: 'b1', badge: 'QUICK START', title: 'Single video test',
+  {
+    id: 'o1',
+    brandId: 'b1',
+    badge: 'TOP PICK',
+    title: 'Starter bundle',
+    description:
+      'Five in-feed videos featuring the hero product, posted within 30 days. Hook in the first two seconds.',
+    videos: 5,
+    pays: 300,
+    state: 'in',
+    stage: 'paid',
+  },
+  {
+    id: 'o2',
+    brandId: 'b1',
+    badge: 'QUICK START',
+    title: 'Single video test',
     description: 'One video, no commitment. A good way to see if we fit.',
-    videos: 1, pays: 75, state: 'open' },
-  { id: 'o3', brandId: 'b1', badge: null, title: 'Volume deal',
+    videos: 1,
+    pays: 75,
+    state: 'open',
+  },
+  {
+    id: 'o3',
+    brandId: 'b1',
+    badge: null,
+    title: 'Volume deal',
     description: 'Twenty videos across the quarter, paid monthly.',
-    videos: 20, pays: 1400, state: 'in', stage: 'content_pending' },
-  { id: 'o4', brandId: 'b2', badge: 'SEASONAL', title: 'Summer drinkware push',
+    videos: 20,
+    pays: 1400,
+    state: 'in',
+    stage: 'content_pending',
+  },
+  {
+    id: 'o4',
+    brandId: 'b2',
+    badge: 'SEASONAL',
+    title: 'Summer drinkware push',
     description: 'Three videos with the tumbler range, outdoors, before the end of August.',
-    videos: 3, pays: 240, state: 'in', stage: 'payment_pending' },
-  { id: 'o5', brandId: 'b2', badge: null, title: 'Unboxing only',
+    videos: 3,
+    pays: 240,
+    state: 'in',
+    stage: 'payment_pending',
+  },
+  {
+    id: 'o5',
+    brandId: 'b2',
+    badge: null,
+    title: 'Unboxing only',
     description: 'One unboxing video. Open to anyone on the roster.',
-    videos: 1, pays: 60, state: 'open' },
-  { id: 'o6', brandId: 'b2', badge: null, title: 'Autumn restock',
+    videos: 1,
+    pays: 60,
+    state: 'open',
+  },
+  {
+    id: 'o6',
+    brandId: 'b2',
+    badge: null,
+    title: 'Autumn restock',
     description: 'Two videos for the autumn colourways.',
-    videos: 2, pays: 160, state: 'in', stage: 'paid' },
-  { id: 'o7', brandId: 'b2', badge: null, title: 'Holiday gifting hero',
+    videos: 2,
+    pays: 160,
+    state: 'in',
+    stage: 'paid',
+  },
+  {
+    id: 'o7',
+    brandId: 'b2',
+    badge: null,
+    title: 'Holiday gifting hero',
     description: 'Six videos through November, gifting angle.',
-    videos: 6, pays: 520, state: 'declined',
-    teamNote: 'We have filled this one for now. Come back for the winter push.' },
-  { id: 'o8', brandId: 'b3', badge: 'HIGHEST PAYING', title: 'Gut health series',
+    videos: 6,
+    pays: 520,
+    state: 'declined',
+    teamNote: 'We have filled this one for now. Come back for the winter push.',
+  },
+  {
+    id: 'o8',
+    brandId: 'b3',
+    badge: 'HIGHEST PAYING',
+    title: 'Gut health series',
     description: 'Ten videos telling one story across the month. Script approval required.',
-    videos: 10, pays: 900, state: 'in', stage: 'sample_shipped' },
-  { id: 'o9', brandId: 'b4', badge: null, title: 'Back to school lunchbox push',
+    videos: 10,
+    pays: 900,
+    state: 'in',
+    stage: 'sample_shipped',
+  },
+  {
+    id: 'o9',
+    brandId: 'b4',
+    badge: null,
+    title: 'Back to school lunchbox push',
     description: 'Four videos before the end of August, parent-facing.',
-    videos: 4, pays: 320, state: 'waiting' },
-  { id: 'o10', brandId: 'b4', badge: 'BOOSTED', title: 'Lunchbox commission boost',
+    videos: 4,
+    pays: 320,
+    state: 'waiting',
+  },
+  {
+    id: 'o10',
+    brandId: 'b4',
+    badge: 'BOOSTED',
+    title: 'Lunchbox commission boost',
     description: 'Raised commission on the whole range for the season.',
-    videos: null, pays: null, state: 'canApply' },   // no set deliverable, no set fee
+    videos: null,
+    pays: null,
+    state: 'canApply',
+  }, // no set deliverable, no set fee
 ];
 
 // The creator's own history, newest first. This is what "something happened"
 // looks like to them.
 export const activity = [
-  { offerId: 'o4', stage: 'payment_pending',   note: null, at: '2026-08-08' },
+  { offerId: 'o4', stage: 'payment_pending', note: null, at: '2026-08-08' },
   { offerId: 'o4', stage: 'content_completed', note: null, at: '2026-08-06' },
-  { offerId: 'o8', stage: 'sample_shipped',    note: 'Tracking sent to your email.', at: '2026-08-04' },
-  { offerId: 'o3', stage: 'content_pending',   note: null, at: '2026-08-02' },
-  { offerId: 'o6', stage: 'paid',              note: null, at: '2026-07-29' },
-  { offerId: 'o8', stage: 'sample_requested',  note: null, at: '2026-07-24' },
-  { offerId: 'o3', stage: 'pending_request',   note: null, at: '2026-07-19' },
-  { offerId: 'o1', stage: 'paid',              note: null, at: '2026-06-12' },
+  {
+    offerId: 'o8',
+    stage: 'sample_shipped',
+    note: 'Tracking sent to your email.',
+    at: '2026-08-04',
+  },
+  { offerId: 'o3', stage: 'content_pending', note: null, at: '2026-08-02' },
+  { offerId: 'o6', stage: 'paid', note: null, at: '2026-07-29' },
+  { offerId: 'o8', stage: 'sample_requested', note: null, at: '2026-07-24' },
+  { offerId: 'o3', stage: 'pending_request', note: null, at: '2026-07-19' },
+  { offerId: 'o1', stage: 'paid', note: null, at: '2026-06-12' },
 ];
 ```
 

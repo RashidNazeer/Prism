@@ -410,7 +410,7 @@ colours doing all the work that success/warning used to do badly.
 
 Home carries both directions from the design (Overview and Pipeline, switched
 in the URL). Offers, Brand hubs, a Brand Hub and Profile were brought onto the
-same language in one pass.  draws the same seven bars the home
+same language in one pass. draws the same seven bars the home
 screen does, so one job never looks like two different facts on two screens.
 
 **Next: the ADMIN side, which has had none of this.** It is still on mono

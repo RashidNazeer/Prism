@@ -117,6 +117,11 @@ export const router = createBrowserRouter([
         HydrateFallback: RouteFallback,
         lazy: lazyRoute(() => import('@/routes/app/Offers'), 'Offers'),
       },
+      {
+        path: '/app/content',
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/routes/app/Content'), 'Content'),
+      },
     ],
   },
   {
@@ -135,10 +140,7 @@ export const router = createBrowserRouter([
       {
         path: '/admin/applications/:id',
         HydrateFallback: RouteFallback,
-        lazy: lazyRoute(
-          () => import('@/routes/admin/ApplicationDetail'),
-          'ApplicationDetail'
-        ),
+        lazy: lazyRoute(() => import('@/routes/admin/ApplicationDetail'), 'ApplicationDetail'),
       },
       // Offers is a section with two screens: the catalogue of everything we
       // run, and the queue of creators waiting on a decision. They answer
@@ -152,6 +154,11 @@ export const router = createBrowserRouter([
         path: '/admin/offers/requests',
         HydrateFallback: RouteFallback,
         lazy: lazyRoute(() => import('@/routes/admin/OfferRequests'), 'OfferRequests'),
+      },
+      {
+        path: '/admin/content',
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/routes/admin/Content'), 'AdminContent'),
       },
       {
         path: '/admin/activity',

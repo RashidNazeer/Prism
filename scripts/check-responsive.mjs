@@ -47,11 +47,18 @@ const SCREENS = [
   { path: '/admin/offers', name: 'All offers', expect: /every deal on the table/i },
   { path: '/admin/offers/requests', name: 'Offer requests', expect: /offer requests/i },
   { path: '/admin/activity', name: 'Activity', expect: /^activity$/i },
+  { path: '/admin/content', name: 'Content', expect: /every video the roster/i },
   { path: '/admin/brands', name: 'Brands', expect: /^brands$/i },
   { path: '/app', name: 'Creator home', expect: /joining|welcome to wurx|not this time/i, as: 'creator' },
   { path: '/app/profile', name: 'Creator profile', expect: /my profile/i, as: 'creator' },
   { path: '/app/brands', name: 'Creator brand hubs', expect: /brand hubs/i, as: 'creator' },
   { path: '/app/offers', name: 'Creator offers', expect: /everything on the table/i, as: 'creator' },
+  {
+    path: '/app/content',
+    name: 'Creator content',
+    expect: /every video you have filmed|nothing to film yet/i,
+    as: 'creator',
+  },
   // The expectation covers both states on purpose. This suite has no service
   // key, so it cannot promote its own account, and the demo creator may be
   // approved or still in review depending on what was last seeded. Either way

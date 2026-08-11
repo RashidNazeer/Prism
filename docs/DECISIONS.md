@@ -18,7 +18,7 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   separate database.
 - 2026-07-28: Supabase project settings, `Enable automatic RLS` ON (forces RLS
   on every new table, matching our deny-by-default rule) and `Automatically
-  expose new tables` OFF (grants are explicit per table, in the migration).
+expose new tables` OFF (grants are explicit per table, in the migration).
   Both projects configured identically.
 - 2026-07-28: Brand palette taken from wurxmedia.com's own stylesheet rather
   than invented, near-black `#0a0a0a`, gold `#c8924b`, cream `#f5efe1`,
@@ -51,7 +51,7 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   too.
 - 2026-07-29: Git commit identity is
   `286085480+RashidNazeer@users.noreply.github.com`, not Rashid's personal
-  email. GitHub maps that personal email to a *different* account (`TSRashid`),
+  email. GitHub maps that personal email to a _different_ account (`TSRashid`),
   and Vercel's Hobby plan BLOCKS any deployment whose commit author it cannot
   match to the connected account, every deploy failed with state `BLOCKED`
   until this was corrected. Do not change `user.email` in this repo.
@@ -76,7 +76,7 @@ Dated one-liners. Why, not just what. Newest at the bottom.
   rejected Archivo Black as looking AI-generated. He pointed at medialabs-co.com
   as the reference; their stylesheet was read directly and uses
   `h1..h4 { font-family: Fustat; font-weight: 700; letter-spacing: -0.02em;
-  line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
+line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   once in global.css rather than per component. Archivo Black is a poster face, at 5rem it reads as a template, which is exactly what Rashid objected to.
 - 2026-07-29: The hero carries an example "My Numbers" dashboard card. A hero
   that is text-only with a large empty right side is the clearest tell of a

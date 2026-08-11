@@ -19,6 +19,49 @@ truth. This map is the second layer, not the only one.
 
 ---
 
+## Content (video links and ad codes)
+
+**Files:** `src/lib/content.ts`, `src/lib/creator/useMyContent.ts`,
+`src/lib/admin/useAdminContent.ts`, `src/routes/app/Content.tsx`,
+`src/routes/admin/Content.tsx`, `src/components/content/*`,
+`src/components/creator/PostContentDialog.tsx`,
+`supabase/functions/manage-content/`, `scripts/check-content.mjs`
+**Tables:** `content_submissions`
+
+"Content pending" was the one stage with nothing to do in it. A creator was
+told to film and had nowhere to put the result.
+
+**Change rules**
+
+- **A link is a claim until somebody has watched it.** Only APPROVED
+  submissions count towards an offer, and `review_content` is the ONLY thing
+  that can carry a job to `content_completed`. It does that in the same
+  transaction as the approval, so a job can never be short a video and marked
+  done. Rashid's call, and the reason uploading does not advance anything.
+- Content attaches to the **offer_application**, not the offer. "Five videos
+  for $300" is a promise to one creator, so "how many are left" is only
+  answerable against that request.
+- No insert, update or delete policy on `content_submissions`.
+  `manage-content` is the only door and it checks the role PER ACTION, like
+  `manage-offer-application`. `submit_content` matches on `creator_id` as well
+  as the id so nobody can post onto somebody else's job.
+- **We store a LINK, never a file.** The thumbnail comes from TikTok's oEmbed,
+  fetched SERVER side. Never from the browser: that endpoint omits its CORS
+  headers on error responses, so a deleted post logs a CORS violation, and this
+  product does not ship console errors.
+- **The thumbnail URL expires.** It is signed with about two days on it, so
+  `VideoThumb` asks `content.refresh` (same origin) once when the image breaks
+  or was never stored. Playback does NOT depend on any of that:
+  `videoIdFrom` falls back to reading the id out of the link.
+- oEmbed is unauthenticated and rate limited, so a thumbnail is best effort and
+  every card is designed to look right without one. Do not make anything
+  depend on it.
+- Editing is locked once a video is approved, or the thing we checked and the
+  thing on the record could be different videos.
+- `pnpm verify:content`: 26 checks, nine of them attacks run as real
+  signed-in accounts, including a rival creator and a creator trying to approve
+  their own work.
+
 ## Design tokens & theming
 
 **Files:** `src/styles/tokens.css`, `src/styles/global.css`,
@@ -547,7 +590,7 @@ real request through the real screen.
 - **This is the first thing in the product a creator can write.** Every rule
   below exists because of that.
 - No insert, update or delete policy on `offer_applications`. `manage-offer-
-  application` is the only door, and it checks the role PER ACTION: create and
+application` is the only door, and it checks the role PER ACTION: create and
   withdraw need an active creator, review needs active staff. It is the first
   Edge Function both sides call, so a single gate at the top would have been
   wrong.
@@ -749,13 +792,13 @@ written inside that same transaction.
 These get entries as they are built. Listed so the dependency shape is visible
 early.
 
-| Feature | Arrives | Will depend on | Will be depended on by |
-| --- | --- | --- | --- |
-| Auth, profiles, roles, tiers | Step 1 | Supabase client | everything |
-| Landing page | Step 2 | Design tokens | Applications |
-| Home | Step 5 | Facts, brands, announcements | none |
-| Brand Hubs + theming | Step 6 | Brands, design tokens | My Numbers, Leaderboards |
-| Data pipeline + facts | Step 7 | Creators, brands, identity map | My Numbers, Leaderboards, Home |
-| My Numbers | Step 8 | Facts, Brand Hubs | none |
-| Leaderboards | Step 9 | Facts, privacy flag | Brand Hubs |
-| Offers + Discord | Step 10 | Tiers, Brand Hubs | none |
+| Feature                      | Arrives | Will depend on                 | Will be depended on by         |
+| ---------------------------- | ------- | ------------------------------ | ------------------------------ |
+| Auth, profiles, roles, tiers | Step 1  | Supabase client                | everything                     |
+| Landing page                 | Step 2  | Design tokens                  | Applications                   |
+| Home                         | Step 5  | Facts, brands, announcements   | none                           |
+| Brand Hubs + theming         | Step 6  | Brands, design tokens          | My Numbers, Leaderboards       |
+| Data pipeline + facts        | Step 7  | Creators, brands, identity map | My Numbers, Leaderboards, Home |
+| My Numbers                   | Step 8  | Facts, Brand Hubs              | none                           |
+| Leaderboards                 | Step 9  | Facts, privacy flag            | Brand Hubs                     |
+| Offers + Discord             | Step 10 | Tiers, Brand Hubs              | none                           |

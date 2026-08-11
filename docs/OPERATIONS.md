@@ -7,18 +7,18 @@ previous sessions. If something here is wrong, fix it here first.
 
 ## 1. Identifiers
 
-| What | Value |
-| --- | --- |
-| GitHub repo | `RashidNazeer/WurxMediaHub` (private) |
-| Branches | `main` = prod, `dev` = daily work. **Everything goes to `dev` only** until Rashid says "make it live" |
-| Vercel team id | `team_OL5SlbHFgyYvmXYyScEUmDo0` |
-| Vercel projects | `wurxmediahub` (main), `wurxmediahubdev` (dev) |
-| Dev URL | https://wurxmediahubdev.vercel.app |
-| Prod URL | https://wurxmediahub.vercel.app |
-| Supabase dev ref | `npznoiotslruqovorrec` |
-| Supabase prod ref | `isqepjioowzqoyhlusqo` |
-| Supabase org | `ivvtjbvjviwqotlwrqeh` ("Wurx Media") |
-| Commit identity | `Rashid Nazeer <286085480+RashidNazeer@users.noreply.github.com>` |
+| What              | Value                                                                                                 |
+| ----------------- | ----------------------------------------------------------------------------------------------------- |
+| GitHub repo       | `RashidNazeer/WurxMediaHub` (private)                                                                 |
+| Branches          | `main` = prod, `dev` = daily work. **Everything goes to `dev` only** until Rashid says "make it live" |
+| Vercel team id    | `team_OL5SlbHFgyYvmXYyScEUmDo0`                                                                       |
+| Vercel projects   | `wurxmediahub` (main), `wurxmediahubdev` (dev)                                                        |
+| Dev URL           | https://wurxmediahubdev.vercel.app                                                                    |
+| Prod URL          | https://wurxmediahub.vercel.app                                                                       |
+| Supabase dev ref  | `npznoiotslruqovorrec`                                                                                |
+| Supabase prod ref | `isqepjioowzqoyhlusqo`                                                                                |
+| Supabase org      | `ivvtjbvjviwqotlwrqeh` ("Wurx Media")                                                                 |
+| Commit identity   | `Rashid Nazeer <286085480+RashidNazeer@users.noreply.github.com>`                                     |
 
 **Do not change the commit identity.** Rashid's personal email maps to a
 different GitHub account (`TSRashid`), and Vercel's Hobby plan refuses to build
@@ -90,6 +90,9 @@ pnpm verify:brands [url]    # brands and offers, end to end plus attacks.
                             # Needs ADMIN_EMAIL and ADMIN_PASSWORD too
 pnpm verify:offer-requests [url]  # creators asking for offers, staff deciding,
                             # and nine attacks. Needs ADMIN_EMAIL/ADMIN_PASSWORD
+pnpm verify:content [url]   # a creator posts a video, the team decides, and
+                            # approving the last one finishes the job. Nine
+                            # attacks. Needs SUPABASE_SERVICE_KEY
 pnpm verify:live [url]      # admin moves a stage on the REAL admin screen,
                             # creator sees it on all three of their screens
                             # with no reload. Needs SUPABASE_SERVICE_KEY
@@ -232,10 +235,10 @@ Invoke-RestMethod -Headers $h -Uri "https://api.vercel.com/v6/deployments?app=wu
 
 ## 6. Accounts
 
-| Account | Role | Notes |
-| --- | --- | --- |
-| `rashid@wurxmedia.com` | admin | Dev only. Created 2026-07-29 via `scripts/create-admin.mjs`. **The password is not stored anywhere, by design.** It is Rashid's to type |
-| `*@wurxmediahub.demo` | applicant | Seven demo applications on dev, password `demo-password-for-dev-only-1`. Remove with `node scripts/seed-applications.mjs --clean` |
+| Account                | Role      | Notes                                                                                                                                   |
+| ---------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `rashid@wurxmedia.com` | admin     | Dev only. Created 2026-07-29 via `scripts/create-admin.mjs`. **The password is not stored anywhere, by design.** It is Rashid's to type |
+| `*@wurxmediahub.demo`  | applicant | Seven demo applications on dev, password `demo-password-for-dev-only-1`. Remove with `node scripts/seed-applications.mjs --clean`       |
 
 Test suites create `@wurxmediahub.test` accounts and delete them again. If a run
 is interrupted, check for leftovers with that suffix.
