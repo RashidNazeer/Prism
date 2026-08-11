@@ -1,10 +1,9 @@
 # Project state
 
 **Last updated:** 2026-08-11
-**Current step:** UI polish, creator side. The creator HOME is rebuilt from a
-design Rashid approved and asked for pixel for pixel.
-**Next:** carry the same language onto the other four creator screens. See
-"Next action".
+**Current step:** the creator side is rebuilt to an approved design and the
+CONTENT feature is live on both sides.
+**Next:** more UI updates. Rashid will say which screens.
 **Status:** Everything below is built, tested and on `dev`.
 
 ---
@@ -333,6 +332,56 @@ Built from a standalone design Rashid approved and asked for pixel for pixel.
 - `pnpm verify:responsive`: 162 checks, all green. It earned its keep here: the
   first-day import cost was a real 375px regression and this suite found it.
 
+### Creator UI rebuilt from an approved design (2026-08-10 to 11)
+
+- A UI agent brief (`docs/UI_BRIEF_CREATOR.md`) went out, came back, and the
+  design was approved pixel for pixel. The SECOND brief is the one that worked:
+  the first described our own screens in such detail the agent just repainted
+  them.
+- **Surfaces retuned, type replaced.** Instrument Sans and Sora, self hosted,
+  scoped to `.wx-app` so the landing page payload is unchanged. Three new stage
+  colour tokens. New motion utilities. All of it passes the contrast guard in
+  both themes.
+- **`/app` has two views**, Overview and Pipeline, both from the design, chosen
+  in the URL. Pipeline is the first thing to read `summary.byStage`, which had
+  been computed since the pipeline shipped with nothing using it.
+- Offers, Brand hubs, a Brand Hub and Profile brought onto the same language.
+  `StageTracker` now draws the same seven bars the home screen does, so one job
+  cannot look like two different facts on two screens.
+- **Bug found and fixed:** `stateFor` checked `needs_application` before the
+  creator's own request, so an admin switching that off hid the stage, the
+  tracker and the money of somebody already working on it. Live work wins now.
+- `scripts/shots-creator.mjs` photographs a logged-in creator with a full
+  pipeline. `pnpm verify:responsive` is at 186 checks.
+
+### The catalogue is live too (2026-08-11)
+
+- A creator's own requests were always live; the things an ADMIN edits were
+  not. Renaming an offer, re-pricing it, retiring a brand or adding a product
+  left every creator on the old version. `useCatalogueLive` fixes it with one
+  channel over brands, offers and `brand_products`.
+- **`pnpm verify:live`**, 13 checks, and the first suite to drive the ADMIN
+  SCREEN rather than the database: staff move a stage, all three creator screens
+  must follow with no reload.
+
+### Step 7, Content (2026-08-11)
+
+- `content_submissions`: a creator posts a video LINK and its ad code against
+  one approved job. We never hold a file.
+- **Approval is what counts.** Only approved submissions count towards an offer,
+  and `review_content` is the only thing in the product that can carry a job to
+  `content_completed`, in the same transaction. Uploading advances nothing.
+  Rashid's call.
+- `manage-content` Edge Function, role checked per action, no insert/update/
+  delete policy on the table at all. Creators can edit until it is approved.
+- **`/app/content`** and **`/admin/content`**, both split into Submissions and
+  Dashboard, both landing on Submissions. Thumbnails and an in-page player from
+  TikTok oEmbed, fetched server side.
+- **Known limit:** oEmbed is unauthenticated and rate limited, so a thumbnail is
+  best effort. Every card is designed to look right without one and playback
+  never depends on it, the video id is read out of the link.
+- `pnpm verify:content`: 26 checks, nine of them attacks.
+
 ## Known bugs
 
 None outstanding.
@@ -345,28 +394,44 @@ list here.
 
 ## Next action
 
-**Carry the new language onto the other four creator screens.** The home screen
-sets it; `/app/offers`, `/app/brands`, `/app/brands/:slug` and `/app/profile`
-still use the old type scale, the mono eyebrows and the old card radii, so they
-now look a generation behind the screen next to them.
+**More UI updates. Rashid will say which screens.** Nothing is blocked and
+there is no half-finished work: every screen below is built, tested and
+deployed.
 
-What "the new language" means, concretely, all of it already in the code: Sora
-for figures and headings with Instrument Sans for everything else, sans eyebrows
-at 11px / `tracking-[0.14em]` / semibold rather than `font-mono`, cards at
-`rounded-[20px]` with `shadow-md`, and the three `--wx-stage-*` colours wherever
-a stage or an amount appears. `StageTracker` is the obvious first job: the home
-screen draws its own seven-segment row and the other two screens still use the
-old component.
+The obvious candidate, unprompted, is the **ADMIN side**. The creator screens
+and the two Content screens are on the new design language; the older admin
+screens (dashboard, applications, the queue, brands, activity) are not. They
+still use mono eyebrows, the old radii and no shadow, so they sit visibly a
+generation behind. Raise it, do not start it.
 
-Also worth doing on its own, NOT mixed into a feature commit: the repo is not
-prettier-clean. `pnpm format` rewrites about eighty files it has never been run
-against, mostly Tailwind class ordering. That should be one commit that changes
-nothing else.
+### The design language, which is now settled
 
-Then, still outstanding from the original list:
+It came from a UI agent brief Rashid approved (`docs/UI_BRIEF_CREATOR.md`) and
+is all in the code already. Copy an existing creator screen rather than
+inventing:
 
-**Polishing the UI, across everything already built.** Rashid's call on
-2026-08-01. No new features; make what exists feel finished.
+- **Type:** Sora (`font-display`) for headings and every figure, Instrument
+  Sans for the rest. Both self hosted in `public/fonts`, switched on by
+  `.wx-app` on the AppShell so the landing page still ships system fonts.
+- **Eyebrows** are sans, `text-[11px] font-semibold tracking-[0.14em] uppercase`
+  in `text-muted`. NOT `font-mono`, which is what the old screens use.
+- **Cards** are `rounded-[20px]` (or `[22px]` for a hero block) with
+  `shadow-md`. Skeletons are `wx-skeleton`, never `animate-pulse`.
+- **The three stage colours** `--wx-stage-live` / `-due` / `-paid` are the only
+  things allowed to say where money or work has got to. See tokens.css for why
+  they are not accent/warning/success.
+- **Live motion:** `wx-pop`, `wx-bump`, `wx-flash`, `wx-blink`. A stage moving
+  under somebody has to be felt, not just redrawn.
+
+### Two habits Rashid has now asked for twice
+
+- **The default section is the JOB, not the summary.** Both Content screens and
+  the creator home land on the work, with the dashboard one click across in a
+  segmented switch whose choice lives in the URL. Do this for any new screen
+  that grows a summary.
+- **When a design has more than one direction or state, build them all**, or
+  say plainly which one was skipped. Direction B of the home screen was left out
+  and not mentioned, and he found it himself. That cost trust, not just time.
 
 ### Every screen that exists, and who sees it
 
@@ -374,101 +439,21 @@ Public: `/` landing, `/apply` and `/signup` (same screen), `/login`,
 `/admin/login`, `/forgot-password`, `/reset-password`, `/suspended`, 404.
 
 Admin: `/admin` dashboard, `/admin/applications` and `/admin/applications/:id`,
-`/admin/activity`, `/admin/offers` (all offers), `/admin/offers/requests`,
-`/admin/brands`, `/admin/brands/:id` (tabs: Overview, Offers, About, plus four
-marked as coming).
+`/admin/activity`, `/admin/offers`, `/admin/offers/requests`,
+**`/admin/content`**, `/admin/brands`, `/admin/brands/:id`.
 
-Creator: `/app` dashboard, `/app/offers`, `/app/brands`,
-`/app/brands/:slug` (tabs: Overview, Offers, plus five marked as coming),
-`/app/profile`.
+Creator: `/app` (Overview and Pipeline views), `/app/offers`, `/app/brands`,
+`/app/brands/:slug`, **`/app/content`**, `/app/profile`.
 
 Studio: `/studio` placeholder only.
 
-### Read this before touching a pixel
+### Housekeeping worth one commit of its own
 
-- **`docs/FEATURE_MAP.md` "Admin screen layout" and "Responsiveness"** are
-  binding, and so is the design section of CLAUDE.md.
-- **The corrections Rashid makes over and over**, worth applying before he has
-  to: fill the main area with what matters, no tall hero panels, never say the
-  same thing twice on one card, do not explain the absence of something, left
-  aligned not centred, never show slugs or ids to an admin.
-- **`--wx-accent` (#8a5f1f) and `--wx-warning` (#8a6410) are nearly identical
-  in light mode.** Anything encoding meaning in colour must be looked at in
-  light mode; `pnpm check:contrast` only checks text against backgrounds and
-  will pass a chart nobody can read. The creator money bar uses green, gold,
-  grey for exactly this reason.
-- Every colour is a `var(--wx-*)` token. Dark and light are equal citizens and
-  the build fails if they drift.
-- Skeletons, never bare spinners. Designed empty and error states.
-
-### Creator UI polish: DONE
-
-All five creator screens now share one design language: Instrument Sans and
-Sora, the retuned surfaces, 20px cards with a real shadow, sans eyebrows
-instead of mono, figures in Sora, shimmer skeletons, and the three stage
-colours doing all the work that success/warning used to do badly.
-
-Home carries both directions from the design (Overview and Pipeline, switched
-in the URL). Offers, Brand hubs, a Brand Hub and Profile were brought onto the
-same language in one pass. draws the same seven bars the home
-screen does, so one job never looks like two different facts on two screens.
-
-**Next: the ADMIN side, which has had none of this.** It is still on mono
-eyebrows, 2xl radii, no shadows and the old palette, and it now sits visibly a
-generation behind the creator screens.
-
-### The creator side is going out to a UI agent first
-
-**`docs/UI_BRIEF_CREATOR.md`** is a complete, self-contained brief for an
-external UI generator: the tokens, every creator screen and state, the seven
-stage labels, the animation direction, and a sample dataset whose money adds up.
-Rashid's call on 2026-08-10, because the creator screens are what a paying user
-sees. When designs come back, they are ported into our components and our
-tokens; nothing in that brief may add a feature, a field or a dependency.
-
-Creator screens in scope: `/app` (home), `/app/offers`, `/app/brands`,
-`/app/brands/:slug`, `/app/profile`, and the apply dialog. Application and
-review screens are deliberately out of scope, Rashid is happy with those.
-
-### How to work through it
-
-Screen by screen, smallest surface first, with `pnpm shots` or a Playwright
-screenshot to look at each one in BOTH themes before and after. Do not
-restructure data or add features under the name of polish; if something needs
-new behaviour, raise it rather than slipping it in.
-
-`pnpm verify:responsive` must still pass, and it is the guard against a polish
-pass quietly breaking a phone layout.
-
-### Shapes to reuse when it is built
-
-- **Writes go through an Edge Function**, never a table write. `manage-brand`
-  and its `assert_active_staff()` gate are the template for staff work;
-  `manage-offer-application` is the template for anything a CREATOR writes,
-  where the role is checked per action and the row is matched on `creator_id`
-  as well as its id.
-- **Creator read access is gated by `is_approved_creator()`**, which reads the
-  `profiles` table. Never `is_staff()`, which reads the JWT and lags approval by
-  up to an hour.
-- **The commercial columns stay off `brands`.** `brand_commercials` exists so a
-  creator read path cannot reach a budget. Nothing creator-facing may read it.
-- **Realtime** on `brands` and `offers`, with `replica identity full`. Follow
-  the `useOffers` pattern: a narrow per-brand channel, never a firehose. The
-  creator screens deliberately do not use it.
-- **One-time moments** (a welcome, a celebration) are recorded as timestamps on
-  `profiles`, never in localStorage. See `useOnboarding`.
-- **Money** is `numeric`. PostgREST hands it back as a NUMBER and the Edge
-  Function can return a string, so run it through `money()` or `Number()`, and
-  `String()` it before it reaches a text input. Never `.trim()`.
-- Offers may have a null `video_count` and null `reward_amount`, and products a
-  null `price` and `commission_rate`. Every card must handle that.
-
-Demo data: `node scripts/seed-brands.mjs` and `node scripts/seed-applications.mjs`.
-
-**Running the suites needs a staff account.** Rashid's dev password is not
-stored anywhere on disk, and it is his to type. Create a throwaway one for the
-run and delete it afterwards:
-`node scripts/create-admin.mjs suite-runner@wurxmediahub.test <password> admin`.
+- The repo is not prettier-clean: `pnpm format` rewrites files it has never run
+  against, mostly Tailwind class ordering. One commit, nothing else in it.
+- Dev carries junk test data Rashid made: an offer titled `55` with badge
+  `55555`, and a Pay-per-video offer whose description says $50 a video while
+  its reward is $12. His to clean, not mine.
 
 ### Still parked, at Rashid's request
 
