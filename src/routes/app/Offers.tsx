@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import { money } from '@/lib/money';
-import { STAGE_META } from '@/lib/offer-stages';
+import { STAGE_META, stageTextTone } from '@/lib/offer-stages';
 import {
   stateFor,
   useAllCreatorOffers,
@@ -20,10 +20,7 @@ import {
   type CreatorOfferRow,
   type CreatorOfferState,
 } from '@/lib/creator/useAllOffers';
-import {
-  useApplyForOffer,
-  type MyOfferApplication,
-} from '@/lib/creator/useOfferApplications';
+import { useApplyForOffer, type MyOfferApplication } from '@/lib/creator/useOfferApplications';
 
 /**
  * Every offer open to this creator, across every brand.
@@ -114,9 +111,11 @@ export function Offers() {
 
   return (
     <AppShell>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h1 className="text-[clamp(1.4rem,3.5vw,1.9rem)] font-extrabold">Offers</h1>
-        <p className="text-[14px] text-muted">
+      <div className="flex flex-col gap-1.5 px-0.5 py-1">
+        <h1 className="font-display text-[clamp(26px,4.4vw,40px)] leading-[1.05] font-semibold tracking-[-0.02em]">
+          Offers
+        </h1>
+        <p className="text-muted text-[15px]">
           Everything on the table, from every brand you work with.
         </p>
       </div>
@@ -126,8 +125,12 @@ export function Offers() {
       ) : (
         <>
           {/* ------------------------------------------------------- tabs -- */}
-          <div className="mt-5 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-            <div role="tablist" aria-label="Filter offers" className="flex min-w-max gap-2">
+          <div className="-mx-4 mt-5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            <div
+              role="tablist"
+              aria-label="Filter offers"
+              className="bg-surface-2 flex min-w-max gap-1 rounded-xl p-[3px]"
+            >
               {TABS.map((t) => (
                 <button
                   key={t.value}
@@ -136,18 +139,16 @@ export function Offers() {
                   aria-selected={tab === t.value}
                   onClick={() => setTab(t.value)}
                   className={cn(
-                    'shrink-0 rounded-full border px-4 py-2 text-[13.5px] font-medium transition-colors duration-200',
-                    tab === t.value
-                      ? 'border-accent bg-accent text-on-accent'
-                      : 'border-line bg-surface-1 text-muted hover:border-accent hover:text-accent'
+                    'shrink-0 rounded-[9px] px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-200',
+                    tab === t.value ? 'bg-text text-inverse' : 'text-muted hover:text-text'
                   )}
                 >
                   {t.label}
                   {counts[t.value] > 0 ? (
                     <span
                       className={cn(
-                        'wx-numeric ml-1.5 text-[12px]',
-                        tab === t.value ? 'text-on-accent/80' : 'text-faint'
+                        'ml-1.5 text-[12px]',
+                        tab === t.value ? 'text-inverse/70' : 'text-muted'
                       )}
                     >
                       {counts[t.value]}
@@ -164,7 +165,7 @@ export function Offers() {
               <Search
                 size={15}
                 aria-hidden
-                className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-faint"
+                className="text-faint pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
               />
               <input
                 type="search"
@@ -173,7 +174,7 @@ export function Offers() {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search offers or brands"
                 aria-label="Search offers or brands"
-                className="h-9 w-full rounded-xl border border-line-interactive bg-surface-1 pr-3 pl-9 text-[13px] placeholder:text-faint hover:border-accent/60 focus:border-accent focus:outline-none"
+                className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[13px] focus:outline-none"
               />
             </div>
 
@@ -200,23 +201,23 @@ export function Offers() {
           {isLoading ? (
             <ul className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
-                <li key={i} className="h-52 animate-pulse rounded-2xl bg-surface-1" />
+                <li key={i} className="wx-skeleton h-52 rounded-[20px]" />
               ))}
             </ul>
           ) : isError ? (
-            <div className="mt-4 rounded-2xl border border-line bg-surface-1 px-6 py-14 text-center">
+            <div className="border-line bg-surface-1 mt-4 rounded-[20px] border px-6 py-14 text-center shadow-md">
               <p className="font-semibold">That list would not load</p>
-              <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
+              <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
                 {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
               </p>
             </div>
           ) : shown.length === 0 ? (
-            <div className="mt-4 rounded-2xl border border-line bg-surface-1 px-6 py-16 text-center">
-              <Ticket size={26} aria-hidden className="mx-auto text-faint" />
+            <div className="border-line bg-surface-1 mt-4 rounded-[20px] border px-6 py-16 text-center shadow-md">
+              <Ticket size={26} aria-hidden className="text-faint mx-auto" />
               <p className="mt-4 font-semibold">
                 {(offers ?? []).length === 0 ? 'No offers yet' : 'Nothing matches that'}
               </p>
-              <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
+              <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
                 {(offers ?? []).length === 0
                   ? 'New offers land here as soon as a brand puts one up.'
                   : 'Try a different search, brand or tab.'}
@@ -270,14 +271,14 @@ function OfferCard({
   const hasReward = offer.reward_amount !== null;
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-line bg-surface-1 p-5">
+    <div className="border-line bg-surface-1 flex h-full flex-col rounded-[20px] border p-5 shadow-md">
       {/* The brand, first. On this screen it is the thing that tells a creator
           what they are looking at; inside a hub it would be noise. */}
       <Link
         to={`/app/brands/${offer.brand?.slug ?? ''}`}
-        className="flex items-center gap-2.5 text-muted transition-colors hover:text-accent"
+        className="text-muted hover:text-accent flex items-center gap-2.5 transition-colors"
       >
-        <span className="grid size-7 shrink-0 place-items-center overflow-hidden rounded-full border border-line bg-surface-2">
+        <span className="border-line bg-surface-2 grid size-7 shrink-0 place-items-center overflow-hidden rounded-full border">
           {offer.brand?.logo_url ? (
             <img src={offer.brand.logo_url} alt="" className="size-full object-cover" />
           ) : (
@@ -289,7 +290,7 @@ function OfferCard({
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {offer.badge_title ? (
-          <span className="rounded-full bg-accent-soft px-2.5 py-0.5 font-mono text-[10px] tracking-[0.12em] text-accent uppercase">
+          <span className="bg-accent-soft text-accent rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-[0.12em] uppercase">
             {offer.badge_title}
           </span>
         ) : null}
@@ -297,29 +298,29 @@ function OfferCard({
 
       <h3 className="mt-1 text-lg font-bold">{offer.title}</h3>
       {offer.description ? (
-        <p className="mt-2 line-clamp-3 text-[14px] leading-relaxed text-muted">
+        <p className="text-muted mt-2 line-clamp-3 text-[14px] leading-relaxed">
           {offer.description}
         </p>
       ) : null}
 
       {hasVideos || hasReward ? (
-        <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-2 border-t border-line pt-4">
+        <div className="border-line mt-4 flex flex-wrap items-end gap-x-6 gap-y-2 border-t pt-4">
           {hasVideos ? (
             <span>
-              <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+              <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
                 Videos
               </span>
-              <span className="wx-numeric mt-1 block text-lg font-bold">
+              <span className="font-display mt-1 block text-[19px] font-semibold">
                 {offer.video_count}
               </span>
             </span>
           ) : null}
           {hasReward ? (
             <span>
-              <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+              <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
                 You get
               </span>
-              <span className="wx-numeric mt-1 block text-lg font-bold text-accent">
+              <span className="font-display text-accent mt-1 block text-[19px] font-semibold">
                 {money(offer.reward_amount, offer.currency)}
               </span>
             </span>
@@ -368,31 +369,30 @@ function Action({
         <div
           className={cn(
             'rounded-xl px-3.5 py-3',
-            stage === 'paid' ? 'bg-success-soft' : 'bg-surface-2'
+            stage === 'paid' ? 'bg-stage-paid-soft' : 'bg-surface-2'
           )}
         >
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <span className={cn('text-[14px] font-semibold', stage === 'paid' && 'text-success')}>
-              {stage === 'paid' ? 'Paid out' : "You are in"}
+            <span
+              className={cn('text-[14px] font-semibold', stage === 'paid' && 'text-stage-paid')}
+            >
+              {stage === 'paid' ? 'Paid out' : 'You are in'}
             </span>
             {request?.committed_amount != null ? (
               <span
-                className={cn(
-                  'wx-numeric text-[14px] font-bold',
-                  stage === 'paid' ? 'text-success' : 'text-accent'
-                )}
+                className={cn('font-display text-[15px] font-semibold', stageTextTone(stage))}
               >
                 {money(request.committed_amount, request.currency)}
               </span>
             ) : null}
           </div>
-          <p className="mt-1 text-[13px] leading-relaxed text-muted">{meta.creatorHint}</p>
+          <p className="text-muted mt-1 text-[13px] leading-relaxed">{meta.creatorHint}</p>
         </div>
 
         <StageTracker stage={stage} className="mt-3" />
 
         {request?.decision_note ? (
-          <p className="mt-2 text-[13px] text-muted">{request.decision_note}</p>
+          <p className="text-muted mt-2 text-[13px]">{request.decision_note}</p>
         ) : null}
       </div>
     );
@@ -426,7 +426,7 @@ function Action({
         <Note tone="danger" icon={<X size={15} aria-hidden />}>
           <span className="font-semibold">Not this time</span>
           {request?.decision_note ? (
-            <span className="mt-0.5 block text-[13px] text-muted">{request.decision_note}</span>
+            <span className="text-muted mt-0.5 block text-[13px]">{request.decision_note}</span>
           ) : null}
         </Note>
         <Button variant="secondary" size="sm" className="mt-2" onClick={onApply}>
@@ -456,8 +456,8 @@ function Note({
     <p
       className={cn(
         'flex items-start gap-2.5 rounded-xl px-3.5 py-3 text-[14px]',
-        tone === 'success' && 'bg-success-soft text-success',
-        tone === 'pending' && 'bg-warning-soft text-warning',
+        tone === 'success' && 'bg-stage-paid-soft text-stage-paid',
+        tone === 'pending' && 'bg-stage-due-soft text-stage-due',
         tone === 'danger' && 'bg-danger-soft text-danger'
       )}
     >

@@ -31,10 +31,12 @@ export function Brands() {
 
   return (
     <AppShell>
-      <h1 className="text-[clamp(1.6rem,4vw,2.25rem)] font-extrabold">Brand hubs</h1>
-      <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
-        The brands you can work with. Open one to see what it sells, what it pays, and
-        the offers you can take.
+      <h1 className="font-display text-[clamp(26px,4.4vw,40px)] leading-[1.05] font-semibold tracking-[-0.02em]">
+        Brand hubs
+      </h1>
+      <p className="text-muted mt-2 max-w-2xl text-[15px] leading-relaxed">
+        The brands you can work with. Open one to see what it sells, what it pays, and the
+        offers you can take.
       </p>
 
       {!approved ? (
@@ -42,23 +44,23 @@ export function Brands() {
       ) : isLoading ? (
         <ul className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <li key={i} className="h-40 animate-pulse rounded-2xl bg-surface-1" />
+            <li key={i} className="wx-skeleton h-40 rounded-[20px]" />
           ))}
         </ul>
       ) : isError ? (
-        <div className="mt-6 rounded-2xl border border-line bg-surface-1 px-6 py-14 text-center">
+        <div className="border-line bg-surface-1 mt-6 rounded-[20px] border px-6 py-14 text-center shadow-md">
           <p className="font-semibold">That list would not load</p>
-          <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
+          <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
             {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
           </p>
         </div>
       ) : rows.length === 0 ? (
-        <div className="mt-6 rounded-2xl border border-line bg-surface-1 px-6 py-16 text-center">
-          <Store size={26} aria-hidden className="mx-auto text-faint" />
+        <div className="border-line bg-surface-1 mt-6 rounded-[20px] border px-6 py-16 text-center shadow-md">
+          <Store size={26} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">No brands open yet</p>
-          <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
-            Nothing is live for you right now. This fills up as brands come on board, and
-            you will find them here first.
+          <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+            Nothing is live for you right now. This fills up as brands come on board, and you
+            will find them here first.
           </p>
         </div>
       ) : (
@@ -74,10 +76,10 @@ export function Brands() {
             >
               <Link
                 to={`/app/brands/${brand.slug}`}
-                className="flex h-full flex-col rounded-2xl border border-line bg-surface-1 p-5 transition-colors duration-200 hover:border-accent"
+                className="border-line bg-surface-1 hover:border-accent flex h-full flex-col rounded-[20px] border p-5 shadow-md transition-colors duration-200"
               >
                 <div className="flex items-center gap-3">
-                  <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-full border border-line bg-surface-2">
+                  <span className="border-line bg-surface-2 grid size-11 shrink-0 place-items-center overflow-hidden rounded-full border">
                     {brand.logo_url ? (
                       <img src={brand.logo_url} alt="" className="size-full object-cover" />
                     ) : (
@@ -87,7 +89,7 @@ export function Brands() {
                   <span className="min-w-0">
                     <span className="block truncate text-lg font-bold">{brand.name}</span>
                     {brand.tagline ? (
-                      <span className="mt-0.5 block truncate text-[13px] text-muted">
+                      <span className="text-muted mt-0.5 block truncate text-[13px]">
                         {brand.tagline}
                       </span>
                     ) : null}
@@ -95,13 +97,13 @@ export function Brands() {
                 </div>
 
                 {brand.description ? (
-                  <p className="mt-4 line-clamp-3 text-[14px] leading-relaxed text-muted">
+                  <p className="text-muted mt-4 line-clamp-3 text-[14px] leading-relaxed">
                     {brand.description}
                   </p>
                 ) : null}
 
                 <div className="mt-auto pt-5">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-[12px] text-muted">
+                  <span className="bg-surface-2 text-muted inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px]">
                     <Tag size={12} aria-hidden />
                     <span className="wx-numeric">{counts?.[brand.id] ?? 0}</span>
                     {(counts?.[brand.id] ?? 0) === 1 ? 'offer' : 'offers'}

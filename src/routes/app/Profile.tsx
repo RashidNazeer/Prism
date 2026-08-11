@@ -75,23 +75,25 @@ export function Profile() {
 
   return (
     <AppShell>
-      <h1 className="text-[clamp(1.6rem,4vw,2.25rem)] font-extrabold">My profile</h1>
-      <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
-        Your account details. Only your name is yours to change; the rest is set by the
-        Wurx team.
+      <h1 className="font-display text-[clamp(26px,4.4vw,40px)] leading-[1.05] font-semibold tracking-[-0.02em]">
+        My profile
+      </h1>
+      <p className="text-muted mt-2 max-w-2xl text-[15px] leading-relaxed">
+        Your account details. Only your name is yours to change; the rest is set by the Wurx
+        team.
       </p>
 
       {isLoading ? (
         <div className="mt-8 max-w-xl space-y-4">
-          <div className="h-32 animate-pulse rounded-2xl bg-surface-1" />
-          <div className="h-40 animate-pulse rounded-2xl bg-surface-1" />
+          <div className="wx-skeleton h-32 rounded-[20px]" />
+          <div className="wx-skeleton h-40 rounded-[20px]" />
         </div>
       ) : (
         <div className="mt-8 grid max-w-xl gap-6">
           {/* ------------------------------------------------------- name -- */}
-          <section className="rounded-2xl border border-line bg-surface-1 p-6">
+          <section className="border-line bg-surface-1 rounded-[20px] border p-6 shadow-md">
             <h2 className="text-lg font-bold">Your name</h2>
-            <p className="mt-1.5 text-[14px] leading-relaxed text-muted">
+            <p className="text-muted mt-1.5 text-[14px] leading-relaxed">
               What the Wurx team and your brand hubs call you.
             </p>
 
@@ -125,7 +127,7 @@ export function Profile() {
                 {saved ? (
                   <span
                     role="status"
-                    className="inline-flex items-center gap-1.5 text-[13px] text-success"
+                    className="text-success inline-flex items-center gap-1.5 text-[13px]"
                   >
                     <Check size={15} aria-hidden />
                     Saved
@@ -136,14 +138,11 @@ export function Profile() {
           </section>
 
           {/* ---------------------------------------------------- account -- */}
-          <section className="rounded-2xl border border-line bg-surface-1 p-6">
+          <section className="border-line bg-surface-1 rounded-[20px] border p-6 shadow-md">
             <h2 className="text-lg font-bold">Account</h2>
             <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
               <Row label="Email" value={profile?.email ?? ''} breakAll />
-              <Row
-                label="Status"
-                value={profile ? ROLE_LABEL[profile.role] : ''}
-              />
+              <Row label="Status" value={profile ? ROLE_LABEL[profile.role] : ''} />
               <Row
                 label="Tier"
                 value={profile?.tier ? TIER_LABEL[profile.tier] : 'Not assigned yet'}
@@ -165,7 +164,7 @@ export function Profile() {
 
           {/* ------------------------------------------------ application -- */}
           {application ? (
-            <section className="rounded-2xl border border-line bg-surface-1 p-6">
+            <section className="border-line bg-surface-1 rounded-[20px] border p-6 shadow-md">
               <h2 className="text-lg font-bold">Your application</h2>
               <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
                 <Row label="TikTok handle" value={`@${application.tiktok_handle}`} breakAll />
@@ -190,9 +189,9 @@ export function Profile() {
                   })}
                 />
               </dl>
-              <p className="mt-5 border-t border-line pt-4 text-[13px] leading-relaxed text-faint">
-                Something wrong here? Tell the Wurx team and they will correct it. It
-                cannot be edited once an application has been reviewed.
+              <p className="border-line text-faint mt-5 border-t pt-4 text-[13px] leading-relaxed">
+                Something wrong here? Tell the Wurx team and they will correct it. It cannot be
+                edited once an application has been reviewed.
               </p>
             </section>
           ) : null}
@@ -202,15 +201,7 @@ export function Profile() {
   );
 }
 
-function Row({
-  label,
-  value,
-  breakAll,
-}: {
-  label: string;
-  value: string;
-  breakAll?: boolean;
-}) {
+function Row({ label, value, breakAll }: { label: string; value: string; breakAll?: boolean }) {
   return (
     <div>
       <dt className="text-faint">{label}</dt>

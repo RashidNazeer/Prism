@@ -113,5 +113,16 @@ export const stageIndex = (stage: OfferStage): number => OFFER_STAGES.indexOf(st
 export const stageProgress = (stage: OfferStage): number =>
   stageIndex(stage) / (OFFER_STAGES.length - 1);
 
+/**
+ * Tailwind text colour for a stage's money bucket, so anything printed NEXT to
+ * a tracker agrees with it. Without this the committed amount on an offer card
+ * came out indigo while the bar under it was amber, which is two answers to one
+ * question.
+ */
+export const stageTextTone = (stage: OfferStage): string =>
+  ({ working: 'text-stage-live', due: 'text-stage-due', paid: 'text-stage-paid' })[
+    STAGE_META[stage].bucket
+  ];
+
 export const isStage = (v: unknown): v is OfferStage =>
   typeof v === 'string' && (OFFER_STAGES as readonly string[]).includes(v);

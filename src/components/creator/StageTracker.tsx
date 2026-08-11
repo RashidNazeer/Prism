@@ -1,5 +1,3 @@
-import { m } from 'motion/react';
-import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { OFFER_STAGES, STAGE_META, stageIndex, type OfferStage } from '@/lib/offer-stages';
 
@@ -11,59 +9,53 @@ import { OFFER_STAGES, STAGE_META, stageIndex, type OfferStage } from '@/lib/off
  * as what came before. Hiding the rest would answer half the question.
  *
  * Labels sit under the current step only. Seven captions across a phone is a
- * wall of text; one caption and a row of dots is a status.
+ * wall of text; one caption and a row of bars is a status.
+ *
+ * These are the SAME seven bars the home screen draws, deliberately. An offer
+ * card and the dashboard can show the same job at the same moment, and two
+ * different drawings of one pipeline read as two different facts.
  */
-export function StageTracker({
-  stage,
-  className,
-}: {
-  stage: OfferStage;
-  className?: string;
-}) {
+
+const BAR = {
+  working: 'bg-stage-live',
+  due: 'bg-stage-due',
+  paid: 'bg-stage-paid',
+} as const;
+
+const TEXT = {
+  working: 'text-stage-live',
+  due: 'text-stage-due',
+  paid: 'text-stage-paid',
+} as const;
+
+export function StageTracker({ stage, className }: { stage: OfferStage; className?: string }) {
   const at = stageIndex(stage);
-  const meta = STAGE_META[stage];
-  const Icon = meta.icon;
+  const bucket = STAGE_META[stage].bucket;
 
   return (
     <div className={className}>
-      <ol className="flex items-center gap-1" aria-label={`Stage: ${meta.label}`}>
-        {OFFER_STAGES.map((s, i) => {
-          const done = i < at;
-          const now = i === at;
-          return (
-            <li key={s} className="flex min-w-0 flex-1 items-center gap-1">
-              <m.span
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 0.45, delay: i * 0.05, ease: [0.16, 1, 0.3, 1] }}
-                className={cn(
-                  'h-1.5 w-full origin-left rounded-full',
-                  done || now ? 'bg-accent' : 'bg-surface-2'
-                )}
-                // Every step is in the label above; repeating each one here
-                // would make a screen reader read the pipeline twice.
-                aria-hidden
-              />
-            </li>
-          );
-        })}
+      <ol className="flex gap-[3px]" aria-label={`Stage: ${STAGE_META[stage].label}`}>
+        {OFFER_STAGES.map((s, i) => (
+          <li
+            key={s}
+            // Every step is named in the caption below; repeating each one here
+            // would make a screen reader read the pipeline twice.
+            aria-hidden
+            className={cn(
+              'h-[5px] flex-1 rounded-[3px]',
+              i < at && 'bg-text/25',
+              i === at && BAR[bucket],
+              i > at && 'bg-line'
+            )}
+          />
+        ))}
       </ol>
 
-      <p className="mt-2 flex items-center gap-2 text-[13px]">
-        <span
-          className={cn(
-            'grid size-6 shrink-0 place-items-center rounded-full',
-            stage === 'paid' ? 'bg-success-soft text-success' : 'bg-accent-soft text-accent'
-          )}
-        >
-          {stage === 'paid' ? <Check size={13} aria-hidden /> : <Icon size={13} aria-hidden />}
+      <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+        <span className={cn('text-[12.5px] font-semibold', TEXT[bucket])}>
+          {at + 1}. {STAGE_META[stage].label}
         </span>
-        <span className="min-w-0">
-          <span className="font-semibold">{meta.label}</span>
-          <span className="ml-2 text-faint">
-            {at + 1} of {OFFER_STAGES.length}
-          </span>
-        </span>
+        <span className="text-muted text-[12.5px]">{STAGE_META[stage].short}</span>
       </p>
     </div>
   );

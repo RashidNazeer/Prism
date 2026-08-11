@@ -24,7 +24,7 @@ import {
   type MyOfferApplication,
 } from '@/lib/creator/useOfferApplications';
 import { money, percent } from '@/lib/money';
-import { STAGE_META } from '@/lib/offer-stages';
+import { STAGE_META, stageTextTone } from '@/lib/offer-stages';
 
 /**
  * A Brand Hub, as a creator sees it.
@@ -85,9 +85,9 @@ export function BrandHub() {
     return (
       <AppShell>
         <div className="max-w-3xl space-y-4">
-          <div className="h-10 w-64 animate-pulse rounded bg-surface-2" />
-          <div className="h-10 w-full animate-pulse rounded bg-surface-2" />
-          <div className="h-40 animate-pulse rounded-2xl bg-surface-1" />
+          <div className="wx-skeleton h-10 w-64" />
+          <div className="wx-skeleton h-10 w-full" />
+          <div className="wx-skeleton h-40 rounded-[20px]" />
         </div>
       </AppShell>
     );
@@ -96,11 +96,10 @@ export function BrandHub() {
   if (isError || !brand) {
     return (
       <AppShell>
-        <div className="max-w-lg rounded-2xl border border-line bg-surface-1 p-8 text-center">
+        <div className="border-line bg-surface-1 max-w-lg rounded-[20px] border p-8 text-center shadow-md">
           <p className="font-semibold">That brand hub is not open</p>
-          <p className="mt-2 text-[14px] leading-relaxed text-muted">
-            It may have been retired, or it may not be one of yours. Nothing else is
-            affected.
+          <p className="text-muted mt-2 text-[14px] leading-relaxed">
+            It may have been retired, or it may not be one of yours. Nothing else is affected.
           </p>
           <ButtonLink to="/app/brands" variant="secondary" size="sm" className="mt-5">
             Back to brand hubs
@@ -115,7 +114,7 @@ export function BrandHub() {
       <Header brand={brand} />
 
       {/* ------------------------------------------------------------ tabs -- */}
-      <div className="mt-4 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      <div className="-mx-4 mt-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         <div role="tablist" aria-label="Brand hub sections" className="flex min-w-max gap-2">
           {SECTIONS.map((s) => {
             const active = s.key === section;
@@ -128,14 +127,16 @@ export function BrandHub() {
                 aria-selected={active}
                 disabled={!built}
                 onClick={() => go(s.key)}
-                title={built || !('soon' in s) ? undefined : `${s.label} arrives with ${s.soon}`}
+                title={
+                  built || !('soon' in s) ? undefined : `${s.label} arrives with ${s.soon}`
+                }
                 className={cn(
                   'shrink-0 rounded-full border px-4 py-2 text-[13.5px] font-medium transition-colors duration-200',
                   active
-                    ? 'border-accent bg-accent text-on-accent'
+                    ? 'border-text bg-text text-inverse'
                     : built
-                      ? 'border-line bg-surface-1 text-muted hover:border-accent hover:text-accent'
-                      : 'cursor-default border-dashed border-line bg-transparent text-faint'
+                      ? 'border-line bg-surface-1 text-muted hover:border-text hover:text-text'
+                      : 'border-line text-faint cursor-default border-dashed bg-transparent'
                 )}
               >
                 {s.label}
@@ -180,12 +181,12 @@ function Header({ brand }: { brand: CreatorBrand }) {
       <Link
         to="/app/brands"
         aria-label="Back to all brand hubs"
-        className="grid size-8 shrink-0 place-items-center rounded-lg border border-line text-muted transition-colors duration-200 hover:border-accent hover:text-accent"
+        className="border-line text-muted hover:border-accent hover:text-accent grid size-8 shrink-0 place-items-center rounded-lg border transition-colors duration-200"
       >
         <ArrowLeft size={15} aria-hidden />
       </Link>
 
-      <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full border border-line bg-surface-2">
+      <span className="border-line bg-surface-2 grid size-9 shrink-0 place-items-center overflow-hidden rounded-full border">
         {brand.logo_url ? (
           <img src={brand.logo_url} alt="" className="size-full object-cover" />
         ) : (
@@ -194,11 +195,11 @@ function Header({ brand }: { brand: CreatorBrand }) {
       </span>
 
       <div className="min-w-0">
-        <h1 className="truncate text-[clamp(1.15rem,2.6vw,1.4rem)] font-extrabold">
+        <h1 className="font-display truncate text-[clamp(1.15rem,2.6vw,1.4rem)] font-semibold tracking-[-0.015em]">
           {brand.name}
         </h1>
         {brand.tagline ? (
-          <p className="truncate text-[13px] text-muted">{brand.tagline}</p>
+          <p className="text-muted truncate text-[13px]">{brand.tagline}</p>
         ) : null}
       </div>
     </div>
@@ -225,11 +226,11 @@ function Overview({
       <section>
         <SectionHeading>Meet the brand</SectionHeading>
         {brand.description ? (
-          <p className="mt-3 max-w-3xl leading-relaxed whitespace-pre-line text-muted">
+          <p className="text-muted mt-3 max-w-3xl leading-relaxed whitespace-pre-line">
             {brand.description}
           </p>
         ) : (
-          <p className="mt-3 text-[14px] leading-relaxed text-faint">
+          <p className="text-faint mt-3 text-[14px] leading-relaxed">
             This brand has not written its introduction yet.
           </p>
         )}
@@ -247,29 +248,29 @@ function Overview({
         {loading ? (
           <ul className="mt-3 grid gap-2">
             {Array.from({ length: 3 }).map((_, i) => (
-              <li key={i} className="h-16 animate-pulse rounded-xl bg-surface-1" />
+              <li key={i} className="wx-skeleton h-16 rounded-xl" />
             ))}
           </ul>
         ) : products.length === 0 ? (
-          <div className="mt-3 rounded-2xl border border-line bg-surface-1 px-6 py-12 text-center">
-            <Package size={24} aria-hidden className="mx-auto text-faint" />
+          <div className="border-line bg-surface-1 mt-3 rounded-[20px] border px-6 py-12 text-center shadow-md">
+            <Package size={24} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">Products are on their way</p>
-            <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
-              The brand has not listed its products here yet. They appear with the
-              commission you earn on each one.
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+              The brand has not listed its products here yet. They appear with the commission
+              you earn on each one.
             </p>
           </div>
         ) : (
-          <ul className="mt-3 overflow-hidden rounded-2xl border border-line">
+          <ul className="border-line mt-3 overflow-hidden rounded-2xl border">
             {products.map((product, i) => (
               <li
                 key={product.id}
                 className={cn(
-                  'flex flex-wrap items-center gap-x-4 gap-y-2 bg-surface-1 px-4 py-3.5',
-                  i > 0 && 'border-t border-line'
+                  'bg-surface-1 flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5',
+                  i > 0 && 'border-line border-t'
                 )}
               >
-                <span className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl border border-line bg-surface-2">
+                <span className="border-line bg-surface-2 grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl border">
                   {product.image_url ? (
                     <img src={product.image_url} alt="" className="size-full object-cover" />
                   ) : (
@@ -281,13 +282,13 @@ function Overview({
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold break-words">{product.name}</span>
                     {product.badge_title ? (
-                      <span className="rounded-full bg-accent-soft px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] text-accent uppercase">
+                      <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.12em] uppercase">
                         {product.badge_title}
                       </span>
                     ) : null}
                   </span>
                   {product.price !== null ? (
-                    <span className="wx-numeric mt-0.5 block text-[13px] text-muted">
+                    <span className="font-display text-muted mt-0.5 block text-[13px]">
                       {money(product.price, product.currency)}
                     </span>
                   ) : null}
@@ -296,10 +297,10 @@ function Overview({
                 {/* The number they actually came for. */}
                 {percent(product.commission_rate) ? (
                   <span className="shrink-0 text-right">
-                    <span className="wx-numeric block text-lg font-bold text-accent">
+                    <span className="font-display text-accent block text-[19px] font-semibold">
                       {percent(product.commission_rate)}
                     </span>
-                    <span className="block font-mono text-[9px] tracking-[0.14em] text-faint uppercase">
+                    <span className="text-muted block text-[10px] font-semibold tracking-[0.12em] uppercase">
                       Your cut
                     </span>
                   </span>
@@ -316,10 +317,10 @@ function Overview({
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3">
-      <h2 className="font-mono text-[11px] tracking-[0.16em] text-muted uppercase">
+      <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
         {children}
       </h2>
-      <span aria-hidden className="h-px flex-1 bg-line" />
+      <span aria-hidden className="bg-line h-px flex-1" />
     </div>
   );
 }
@@ -343,7 +344,7 @@ function Offers({
     return (
       <ul className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <li key={i} className="h-52 animate-pulse rounded-2xl bg-surface-1" />
+          <li key={i} className="wx-skeleton h-52 rounded-[20px]" />
         ))}
       </ul>
     );
@@ -351,12 +352,12 @@ function Offers({
 
   if (offers.length === 0) {
     return (
-      <div className="mt-6 max-w-2xl rounded-2xl border border-line bg-surface-1 px-6 py-14 text-center">
-        <Ticket size={26} aria-hidden className="mx-auto text-faint" />
+      <div className="border-line bg-surface-1 mt-6 max-w-2xl rounded-[20px] border px-6 py-14 text-center shadow-md">
+        <Ticket size={26} aria-hidden className="text-faint mx-auto" />
         <p className="mt-4 font-semibold">No offers open right now</p>
-        <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
-          {brandName} has nothing on the table at the moment. New offers land here as
-          soon as they go live.
+        <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+          {brandName} has nothing on the table at the moment. New offers land here as soon as
+          they go live.
         </p>
       </div>
     );
@@ -422,42 +423,42 @@ function OfferCard({
       : null;
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-line bg-surface-1 p-5">
+    <div className="border-line bg-surface-1 flex h-full flex-col rounded-[20px] border p-5 shadow-md">
       {offer.badge_title ? (
-        <span className="mb-3 self-start rounded-full bg-accent-soft px-2.5 py-0.5 font-mono text-[10px] tracking-[0.12em] text-accent uppercase">
+        <span className="bg-accent-soft text-accent mb-3 self-start rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-[0.12em] uppercase">
           {offer.badge_title}
         </span>
       ) : null}
 
       <h3 className="text-lg font-bold">{offer.title}</h3>
       {offer.description ? (
-        <p className="mt-2 text-[14px] leading-relaxed text-muted">{offer.description}</p>
+        <p className="text-muted mt-2 text-[14px] leading-relaxed">{offer.description}</p>
       ) : null}
 
       {hasVideos || hasReward ? (
-        <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-2 border-t border-line pt-4">
+        <div className="border-line mt-4 flex flex-wrap items-end gap-x-6 gap-y-2 border-t pt-4">
           {hasVideos ? (
             <span>
-              <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+              <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
                 Videos
               </span>
-              <span className="wx-numeric mt-1 block text-lg font-bold">
+              <span className="font-display mt-1 block text-[19px] font-semibold">
                 {offer.video_count}
               </span>
             </span>
           ) : null}
           {hasReward ? (
             <span>
-              <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+              <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
                 You get
               </span>
-              <span className="wx-numeric mt-1 block text-lg font-bold text-accent">
+              <span className="font-display text-accent mt-1 block text-[19px] font-semibold">
                 {money(offer.reward_amount, offer.currency)}
               </span>
             </span>
           ) : null}
           {perVideo !== null ? (
-            <span className="text-[12px] text-faint">
+            <span className="text-faint text-[12px]">
               {money(perVideo, offer.currency)} per video
             </span>
           ) : null}
@@ -493,7 +494,7 @@ function OfferAction({
     return (
       <Note tone="success" icon={<Check size={15} aria-hidden />}>
         <span className="font-semibold">You are already on this one</span>
-        <span className="block text-[13px] text-muted">
+        <span className="text-muted block text-[13px]">
           No application needed. Start posting whenever you are ready.
         </span>
       </Note>
@@ -509,25 +510,24 @@ function OfferAction({
         <div
           className={cn(
             'rounded-xl px-3.5 py-3',
-            stage === 'paid' ? 'bg-success-soft' : 'bg-surface-2'
+            stage === 'paid' ? 'bg-stage-paid-soft' : 'bg-surface-2'
           )}
         >
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <span className={cn('text-[14px] font-semibold', stage === 'paid' && 'text-success')}>
+            <span
+              className={cn('text-[14px] font-semibold', stage === 'paid' && 'text-stage-paid')}
+            >
               {stage === 'paid' ? 'Paid out' : 'You are in'}
             </span>
             {application.committed_amount != null ? (
               <span
-                className={cn(
-                  'wx-numeric text-[14px] font-bold',
-                  stage === 'paid' ? 'text-success' : 'text-accent'
-                )}
+                className={cn('font-display text-[15px] font-semibold', stageTextTone(stage))}
               >
                 {money(application.committed_amount, application.currency)}
               </span>
             ) : null}
           </div>
-          <p className="mt-1 text-[13px] leading-relaxed text-muted">
+          <p className="text-muted mt-1 text-[13px] leading-relaxed">
             {STAGE_META[stage].creatorHint}
           </p>
         </div>
@@ -535,7 +535,7 @@ function OfferAction({
         <StageTracker stage={stage} className="mt-3" />
 
         {application.decision_note ? (
-          <p className="mt-2 text-[13px] text-muted">{application.decision_note}</p>
+          <p className="text-muted mt-2 text-[13px]">{application.decision_note}</p>
         ) : null}
       </div>
     );
@@ -565,7 +565,7 @@ function OfferAction({
           {withdraw.isPending ? 'Withdrawing...' : 'Withdraw'}
         </Button>
         {withdraw.error ? (
-          <p role="alert" className="mt-2 text-[12px] text-danger">
+          <p role="alert" className="text-danger mt-2 text-[12px]">
             {(withdraw.error as Error).message}
           </p>
         ) : null}
@@ -579,7 +579,7 @@ function OfferAction({
         <Note tone="danger" icon={<X size={15} aria-hidden />}>
           <span className="font-semibold">Not this time</span>
           {application.decision_note ? (
-            <span className="mt-0.5 block text-[13px] text-muted">
+            <span className="text-muted mt-0.5 block text-[13px]">
               {application.decision_note}
             </span>
           ) : null}
@@ -611,8 +611,8 @@ function Note({
     <p
       className={cn(
         'flex items-start gap-2.5 rounded-xl px-3.5 py-3 text-[14px]',
-        tone === 'success' && 'bg-success-soft text-success',
-        tone === 'pending' && 'bg-warning-soft text-warning',
+        tone === 'success' && 'bg-stage-paid-soft text-stage-paid',
+        tone === 'pending' && 'bg-stage-due-soft text-stage-due',
         tone === 'danger' && 'bg-danger-soft text-danger'
       )}
     >

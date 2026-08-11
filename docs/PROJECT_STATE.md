@@ -401,6 +401,22 @@ Studio: `/studio` placeholder only.
   the build fails if they drift.
 - Skeletons, never bare spinners. Designed empty and error states.
 
+### Creator UI polish: DONE
+
+All five creator screens now share one design language: Instrument Sans and
+Sora, the retuned surfaces, 20px cards with a real shadow, sans eyebrows
+instead of mono, figures in Sora, shimmer skeletons, and the three stage
+colours doing all the work that success/warning used to do badly.
+
+Home carries both directions from the design (Overview and Pipeline, switched
+in the URL). Offers, Brand hubs, a Brand Hub and Profile were brought onto the
+same language in one pass.  draws the same seven bars the home
+screen does, so one job never looks like two different facts on two screens.
+
+**Next: the ADMIN side, which has had none of this.** It is still on mono
+eyebrows, 2xl radii, no shadows and the old palette, and it now sits visibly a
+generation behind the creator screens.
+
 ### The creator side is going out to a UI agent first
 
 **`docs/UI_BRIEF_CREATOR.md`** is a complete, self-contained brief for an
