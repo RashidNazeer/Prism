@@ -411,23 +411,16 @@ offers.
   a different fact.
 - The card never says "no fixed deliverable or fee on this one". Spending a line
   on the absence of something a creator never asked about is worse than silence.
-- Brands, products and offers are NOT live here (see the offer requests entry
-  for what is). The mutation on the admin side refreshes both, and a websocket
-  per creator per hub would buy nothing.
-
-## Offer dashboards (both sides, across every brand)
-
-**Files:** `src/routes/admin/AllOffers.tsx`, `src/lib/admin/useAllOffers.ts`,
-`src/routes/app/Offers.tsx`, `src/lib/creator/useAllOffers.ts`
-**Routes:** `/admin/offers` (catalogue), `/admin/offers/requests` (queue),
-`/app/offers` (creator)
-
-The Brand Hub answers "what is this brand offering". These answer what cuts
-across brands. Before them, seeing an offer meant remembering which brand owned
-it and going in through the hub.
-
-**Change rules**
-
+- **Brands, products and offers ARE live here, as of 2026-08-11.** They were
+  not, and the argument for that (a websocket per creator per hub buys nothing)
+  was wrong in one specific way: an admin renaming an offer, re-pricing it,
+  retiring a brand or adding a product left every creator reading that screen
+  on the old version until they happened to refetch. `useCatalogueLive` is ONE
+  channel covering all three tables; call it once per screen with a unique key,
+  because two channels sharing a name means the second subscribe is silently
+  ignored.
+- `brand_products` had to be added to the realtime publication for that; brands
+  and offers were already members and simply had nobody listening.
 - `/admin/offers` is the catalogue and `/admin/offers/requests` is the queue.
   They are separate screens because they are separate jobs, done at different
   times. The sidebar has an **Offers** group holding both.

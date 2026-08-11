@@ -90,6 +90,9 @@ pnpm verify:brands [url]    # brands and offers, end to end plus attacks.
                             # Needs ADMIN_EMAIL and ADMIN_PASSWORD too
 pnpm verify:offer-requests [url]  # creators asking for offers, staff deciding,
                             # and nine attacks. Needs ADMIN_EMAIL/ADMIN_PASSWORD
+pnpm verify:live [url]      # admin moves a stage on the REAL admin screen,
+                            # creator sees it on all three of their screens
+                            # with no reload. Needs SUPABASE_SERVICE_KEY
 pnpm verify:responsive [url] # every screen at 375, 768, 1024 and 1440px.
                             # Needs ADMIN_EMAIL and ADMIN_PASSWORD, no service key
 pnpm shots [url] [path]     # retina screenshots of a PUBLIC page

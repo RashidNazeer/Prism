@@ -130,10 +130,23 @@ export function stateFor(
   offer: CreatorOfferRow,
   request: MyOfferApplication | undefined
 ): CreatorOfferState {
+  /*
+   * A LIVE REQUEST WINS OVER WHAT THE OFFER SAYS ABOUT ITSELF.
+   *
+   * `needs_application` used to be checked first, which was wrong the moment
+   * an admin switched it off on an offer somebody had already been approved
+   * for. The card then said "You are already on this one" and swallowed the
+   * whole truth behind it: their stage, their tracker, and the money they are
+   * owed all disappeared, on both the offers screen and inside the hub, while
+   * the dashboard carried on showing them. One job, two answers.
+   *
+   * Nothing about the offer can be more important than work already under way
+   * on it, so approved and pending are decided here before anything else.
+   */
+  if (request?.status === 'approved') return 'in';
+  if (request?.status === 'pending') return 'waiting';
   if (!offer.needs_application) return 'open';
   if (!request) return 'canApply';
-  if (request.status === 'approved') return 'in';
-  if (request.status === 'pending') return 'waiting';
   if (request.status === 'rejected') return 'declined';
   return 'canApply';
 }

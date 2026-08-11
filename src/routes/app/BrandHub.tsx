@@ -25,6 +25,7 @@ import {
 } from '@/lib/creator/useOfferApplications';
 import { money, percent } from '@/lib/money';
 import { STAGE_META, stageTextTone } from '@/lib/offer-stages';
+import { useCatalogueLive } from '@/lib/creator/useCatalogueLive';
 
 /**
  * A Brand Hub, as a creator sees it.
@@ -61,6 +62,9 @@ export function BrandHub() {
   const { data: profile } = useProfile();
   const role = profile?.role ?? claims?.role;
   const approved = role === 'creator' || role === 'ops' || role === 'admin';
+
+  // Admin edits to brands, offers and products land here without a reload.
+  useCatalogueLive('hub');
 
   const { data: brand, isLoading, isError } = useCreatorBrand(slug);
   const { data: offers, isLoading: offersLoading } = useCreatorOffers(brand?.id);
@@ -489,20 +493,15 @@ function OfferAction({
 }) {
   const withdraw = useApplyForOffer();
 
-  // Already theirs. Nothing to ask for, so nothing to click.
-  if (!offer.needs_application) {
-    return (
-      <Note tone="success" icon={<Check size={15} aria-hidden />}>
-        <span className="font-semibold">You are already on this one</span>
-        <span className="text-muted block text-[13px]">
-          No application needed. Start posting whenever you are ready.
-        </span>
-      </Note>
-    );
-  }
-
-  // Approved work shows the pipeline here too. Three creator screens can show
-  // the same offer, and they must not give three different answers about it.
+  /*
+   * Approved work is decided FIRST, before anything the offer says about
+   * itself. See `stateFor` in useAllOffers for the whole story: checking
+   * `needs_application` first meant an admin switching it off hid the stage,
+   * the tracker and the money of somebody already working on it.
+   *
+   * Three creator screens can show the same offer, and they must not give
+   * three different answers about it.
+   */
   if (application?.status === 'approved') {
     const stage = application.stage ?? 'pending_request';
     return (
@@ -570,6 +569,19 @@ function OfferAction({
           </p>
         ) : null}
       </div>
+    );
+  }
+
+  // Already theirs, and nothing under way on it. Nothing to ask for, so
+  // nothing to click.
+  if (!offer.needs_application) {
+    return (
+      <Note tone="success" icon={<Check size={15} aria-hidden />}>
+        <span className="font-semibold">You are already on this one</span>
+        <span className="text-muted block text-[13px]">
+          No application needed. Start posting whenever you are ready.
+        </span>
+      </Note>
     );
   }
 

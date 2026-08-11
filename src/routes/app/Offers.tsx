@@ -21,6 +21,7 @@ import {
   type CreatorOfferState,
 } from '@/lib/creator/useAllOffers';
 import { useApplyForOffer, type MyOfferApplication } from '@/lib/creator/useOfferApplications';
+import { useCatalogueLive } from '@/lib/creator/useCatalogueLive';
 
 /**
  * Every offer open to this creator, across every brand.
@@ -63,6 +64,9 @@ export function Offers() {
   const [brandId, setBrandId] = useState('');
   const [search, setSearch] = useState('');
   const [applyingTo, setApplyingTo] = useState<CreatorOfferRow | null>(null);
+
+  // Admin edits to brands, offers and products land here without a reload.
+  useCatalogueLive('offers');
 
   const { data: offers, isLoading, isError, error } = useAllCreatorOffers();
   const { data: requests } = useAllMyRequests();

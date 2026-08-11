@@ -22,7 +22,8 @@
     "verify:offer-requests": "node scripts/check-offer-requests.mjs",
     "verify:responsive": "node scripts/check-responsive.mjs",
     "shots": "node scripts/shots.mjs",
-    "shots:creator": "node scripts/shots-creator.mjs"
+    "shots:creator": "node scripts/shots-creator.mjs",
+    "verify:live": "node scripts/check-live.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

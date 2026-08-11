@@ -6,6 +6,7 @@ import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import { useCreatorBrands, useCreatorOfferCounts } from '@/lib/creator/useCreatorBrands';
+import { useCatalogueLive } from '@/lib/creator/useCatalogueLive';
 
 /**
  * Every brand a creator can work with.
@@ -24,6 +25,9 @@ export function Brands() {
   // congratulated for.
   const role = profile?.role ?? claims?.role;
   const approved = role === 'creator' || role === 'ops' || role === 'admin';
+
+  // Admin edits to brands, offers and products land here without a reload.
+  useCatalogueLive('brands');
 
   const { data: brands, isLoading, isError, error } = useCreatorBrands();
   const rows = brands ?? [];
