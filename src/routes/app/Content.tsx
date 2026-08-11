@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { Plus, Search, Video } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
@@ -22,9 +23,14 @@ import { useMyWork } from '@/lib/creator/useMyWork';
 /**
  * My Content: everything a creator has filmed, and what is still owed.
  *
- * The board at the top is the point. A creator with four jobs running wants one
- * answer before anything else, "what do I still have to film", and that is a
- * number nobody could get out of this product until now.
+ * Two sections rather than one column. The board and the job list are a page in
+ * their own right and used to sit ON TOP of the work, so a creator coming to
+ * look at a video scrolled past the same summary every single time. They now
+ * have their own room, and Submissions is what you land on.
+ *
+ * The dashboard still answers the question somebody with four jobs running
+ * actually has, "what do I still have to film", which is a number nobody could
+ * get out of this product until now.
  *
  * Only APPROVED videos count towards a job. That is the rule everywhere,
  * including in the database, so a creator can never be told they are finished
@@ -54,6 +60,24 @@ export function Content() {
 
   const { data: work, isLoading: workLoading } = useMyWork();
   const { data: content, isLoading, isError, error } = useMyContent();
+
+  /*
+   * Submissions first, deliberately.
+   *
+   * The board and the job list together are taller than a laptop viewport, so
+   * landing on them meant scrolling past a summary every single time to reach
+   * the work. Same rule the admin screens follow: the default section is the
+   * job, not the summary. The dashboard is one click away and keeps its own
+   * room rather than sitting on top of everything else.
+   */
+  const [params, setParams] = useSearchParams();
+  const view: View = params.get('view') === 'dashboard' ? 'dashboard' : 'submissions';
+  const setView = (next: View) => {
+    const p = new URLSearchParams(params);
+    if (next === 'dashboard') p.set('view', next);
+    else p.delete('view');
+    setParams(p, { replace: true });
+  };
 
   const [tab, setTab] = useState<Tab>('all');
   const [brandId, setBrandId] = useState('');
@@ -151,112 +175,119 @@ export function Content() {
           </div>
         ) : (
           <>
-            <Summary counts={counts} outstanding={outstanding} jobs={jobs.length} />
+            <ViewSwitch view={view} onChange={setView} />
 
-            <Jobs
-              jobs={jobs}
-              rows={rows}
-              onAdd={(applicationId) => setPosting({ applicationId })}
-            />
-
-            {/* ------------------------------------------------------ list -- */}
-            <section className="flex flex-col gap-[14px]">
-              <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-                <div
-                  role="tablist"
-                  aria-label="Filter content"
-                  className="bg-surface-2 flex min-w-max gap-1 rounded-xl p-[3px]"
-                >
-                  {TABS.map((t) => (
-                    <button
-                      key={t.value}
-                      role="tab"
-                      type="button"
-                      aria-selected={tab === t.value}
-                      onClick={() => setTab(t.value)}
-                      className={cn(
-                        'shrink-0 rounded-[9px] px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-200',
-                        tab === t.value ? 'bg-text text-inverse' : 'text-muted hover:text-text'
-                      )}
-                    >
-                      {t.label}
-                      {counts[t.value] > 0 ? (
-                        <span
-                          className={cn(
-                            'ml-1.5 text-[12px]',
-                            tab === t.value ? 'text-inverse/70' : 'text-muted'
-                          )}
-                        >
-                          {counts[t.value]}
-                        </span>
-                      ) : null}
-                    </button>
-                  ))}
+            {view === 'dashboard' ? (
+              <>
+                <Summary counts={counts} outstanding={outstanding} jobs={jobs.length} />
+                <Jobs
+                  jobs={jobs}
+                  rows={rows}
+                  onAdd={(applicationId) => setPosting({ applicationId })}
+                />
+              </>
+            ) : (
+              /* ---------------------------------------------------- list -- */
+              <section className="flex flex-col gap-[14px]">
+                <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+                  <div
+                    role="tablist"
+                    aria-label="Filter content"
+                    className="bg-surface-2 flex min-w-max gap-1 rounded-xl p-[3px]"
+                  >
+                    {TABS.map((t) => (
+                      <button
+                        key={t.value}
+                        role="tab"
+                        type="button"
+                        aria-selected={tab === t.value}
+                        onClick={() => setTab(t.value)}
+                        className={cn(
+                          'shrink-0 rounded-[9px] px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-200',
+                          tab === t.value
+                            ? 'bg-text text-inverse'
+                            : 'text-muted hover:text-text'
+                        )}
+                      >
+                        {t.label}
+                        {counts[t.value] > 0 ? (
+                          <span
+                            className={cn(
+                              'ml-1.5 text-[12px]',
+                              tab === t.value ? 'text-inverse/70' : 'text-muted'
+                            )}
+                          >
+                            {counts[t.value]}
+                          </span>
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex flex-wrap items-center gap-2.5">
-                <div className="relative min-w-0 flex-1 basis-52">
-                  <Search
-                    size={15}
-                    aria-hidden
-                    className="text-faint pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
-                  />
-                  <input
-                    type="search"
-                    name="search"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search by ad code, brand or offer"
-                    aria-label="Search your content"
-                    className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[13px] focus:outline-none"
-                  />
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <div className="relative min-w-0 flex-1 basis-52">
+                    <Search
+                      size={15}
+                      aria-hidden
+                      className="text-faint pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
+                    />
+                    <input
+                      type="search"
+                      name="search"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Search by ad code, brand or offer"
+                      aria-label="Search your content"
+                      className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[13px] focus:outline-none"
+                    />
+                  </div>
+                  <label className="sr-only" htmlFor="content-brand">
+                    Filter by brand
+                  </label>
+                  <Select
+                    id="content-brand"
+                    name="brand"
+                    value={brandId}
+                    onChange={(e) => setBrandId(e.target.value)}
+                    className="h-9 basis-44 text-[13px]"
+                  >
+                    <option value="">All brands</option>
+                    {brands.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </Select>
                 </div>
-                <label className="sr-only" htmlFor="content-brand">
-                  Filter by brand
-                </label>
-                <Select
-                  id="content-brand"
-                  name="brand"
-                  value={brandId}
-                  onChange={(e) => setBrandId(e.target.value)}
-                  className="h-9 basis-44 text-[13px]"
-                >
-                  <option value="">All brands</option>
-                  {brands.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </Select>
-              </div>
 
-              {shown.length === 0 ? (
-                <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-16 text-center shadow-md">
-                  <Video size={26} aria-hidden className="text-faint mx-auto" />
-                  <p className="mt-4 font-semibold">
-                    {rows.length === 0 ? 'No videos yet' : 'Nothing matches that'}
-                  </p>
-                  <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
-                    {rows.length === 0
-                      ? 'Film your first video, paste the link and its ad code, and it lands here.'
-                      : 'Try a different search, brand or tab.'}
-                  </p>
-                </div>
-              ) : (
-                <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {shown.map((row) => (
-                    <li key={row.id}>
-                      <ContentCard
-                        row={row}
-                        onPlay={() => setPlaying(row)}
-                        onEdit={row.status === 'approved' ? undefined : () => setEditing(row)}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
+                {shown.length === 0 ? (
+                  <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-16 text-center shadow-md">
+                    <Video size={26} aria-hidden className="text-faint mx-auto" />
+                    <p className="mt-4 font-semibold">
+                      {rows.length === 0 ? 'No videos yet' : 'Nothing matches that'}
+                    </p>
+                    <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+                      {rows.length === 0
+                        ? 'Film your first video, paste the link and its ad code, and it lands here.'
+                        : 'Try a different search, brand or tab.'}
+                    </p>
+                  </div>
+                ) : (
+                  <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {shown.map((row) => (
+                      <li key={row.id}>
+                        <ContentCard
+                          row={row}
+                          onPlay={() => setPlaying(row)}
+                          onEdit={row.status === 'approved' ? undefined : () => setEditing(row)}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            )}
           </>
         )}
       </div>
@@ -281,6 +312,48 @@ export function Content() {
 
       {playing ? <VideoPlayer row={playing} onClose={() => setPlaying(null)} /> : null}
     </AppShell>
+  );
+}
+
+/* --------------------------------------------------------------- view --- */
+
+/**
+ * Two sections, not one long scroll.
+ *
+ * The board and the job list are a page in their own right, and stacking them
+ * above the work meant a creator scrolled past the same summary every time they
+ * came to look at a video. The choice lives in the URL so a refresh keeps it.
+ */
+const VIEWS = [
+  { key: 'submissions', label: 'Submissions' },
+  { key: 'dashboard', label: 'Dashboard' },
+] as const;
+
+type View = (typeof VIEWS)[number]['key'];
+
+function ViewSwitch({ view, onChange }: { view: View; onChange: (v: View) => void }) {
+  return (
+    <div
+      role="tablist"
+      aria-label="How to read your content"
+      className="bg-surface-2 flex gap-1 self-start rounded-xl p-[3px]"
+    >
+      {VIEWS.map((v) => (
+        <button
+          key={v.key}
+          role="tab"
+          type="button"
+          aria-selected={view === v.key}
+          onClick={() => onChange(v.key)}
+          className={cn(
+            'rounded-[9px] px-[11px] py-1.5 text-[13px] font-medium transition-colors duration-200',
+            view === v.key ? 'bg-text text-inverse' : 'text-muted hover:text-text'
+          )}
+        >
+          {v.label}
+        </button>
+      ))}
+    </div>
   );
 }
 

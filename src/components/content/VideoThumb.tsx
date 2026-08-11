@@ -8,8 +8,10 @@ import type { ContentRow } from '@/lib/content';
 /**
  * The picture on a content card.
  *
- * A 9:16 well, because these are TikToks and a 16:9 box would letterbox every
- * one of them.
+ * A 4:5 well. The source is 9:16, but a true portrait card ran well over 500px
+ * tall on a laptop and a row of four became a wall you had to scroll twice to
+ * get past. `object-cover` crops evenly top and bottom, which is where a TikTok
+ * thumbnail carries least, and a 16:9 box would letterbox every one of them.
  *
  * The thumbnail is hotlinked from the platform's CDN, and the URL oEmbed gives
  * us is SIGNED with about two days on the clock. So a card that worked on
@@ -118,7 +120,7 @@ export function VideoThumb({
   );
 
   const shell = cn(
-    'group border-line bg-surface-2 relative block aspect-[9/16] w-full overflow-hidden rounded-[14px] border',
+    'group border-line bg-surface-2 relative block aspect-[4/5] w-full overflow-hidden rounded-[14px] border',
     className
   );
 
