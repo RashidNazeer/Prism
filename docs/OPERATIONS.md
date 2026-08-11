@@ -118,6 +118,13 @@ node scripts/reconcile-budgets.mjs [--dry-run] # put brand budgets back in step
 Every suite creates real accounts and **deletes them afterwards**. Run against
 dev only.
 
+**A redesign re-runs every suite that asserts COPY, not just the suites for the
+screens that were obviously touched.** The creator UI rebuild re-ran the content
+and responsive suites but not `verify:offer-requests`, which asserts creator
+copy from inside an admin flow. Two of its checks had been failing silently for
+a day, on strings the redesign had deleted. If a step changes wording anywhere,
+grep the `scripts/` folder for that wording before calling it done.
+
 **Run them detached, never in the foreground.** Rashid's machine has 7.4 GB of
 RAM and VS Code alone holds well over a gigabyte of it. A suite launching
 Chromium on top of that pushed the machine into its page file far enough that

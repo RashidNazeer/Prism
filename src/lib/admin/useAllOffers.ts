@@ -136,6 +136,50 @@ export function useOfferPeople(offerIds: string[]) {
   });
 }
 
+export interface OfferContent {
+  approved: number;
+  submitted: number;
+  needs_another_take: number;
+}
+
+/**
+ * What has actually been filmed against each offer on this page.
+ *
+ * The stage says where a job stands with us; this says what has landed. One
+ * grouped read for the whole page, the same shape as `useOfferPeople` beside
+ * it, and it rides the `content_submissions_offer_status_idx` added on
+ * 2026-08-11. Before that index `offer_id` was a foreign key with nothing on
+ * it, so every per-offer rollup was a sequential scan and so was every offer
+ * deletion.
+ *
+ * Staff only in practice: `content_submissions` is theirs to read in full. A
+ * creator running this would get a group built from their own rows, which is
+ * why this hook lives here and nothing under `src/lib/creator/` may import it.
+ */
+export function useOfferContent(offerIds: string[]) {
+  const key = [...offerIds].sort().join(',');
+
+  return useQuery({
+    queryKey: ['admin', 'offer-content', key],
+    enabled: offerIds.length > 0,
+    staleTime: 15_000,
+    queryFn: async (): Promise<Record<string, OfferContent>> => {
+      const { data, error } = await getSupabase()
+        .from('content_submissions')
+        .select('offer_id, status')
+        .in('offer_id', offerIds);
+      if (error) throw error;
+
+      const out: Record<string, OfferContent> = {};
+      for (const row of (data ?? []) as { offer_id: string; status: keyof OfferContent }[]) {
+        const c = (out[row.offer_id] ??= { approved: 0, submitted: 0, needs_another_take: 0 });
+        c[row.status] += 1;
+      }
+      return out;
+    },
+  });
+}
+
 /** Counts for the status tabs. Cheap: PostgREST returns a header, not rows. */
 export function useOfferStatusCounts() {
   return useQuery({

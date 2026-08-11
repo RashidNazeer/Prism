@@ -28,11 +28,20 @@ export function ContentCard({
   row,
   onPlay,
   onEdit,
+  aboutTheJob,
   children,
 }: {
   row: ContentRow;
   onPlay: () => void;
   onEdit?: () => void;
+  /**
+   * Anything extra about the job behind this video, under the offer title.
+   *
+   * A SLOT, not a flag. The admin screen puts who filmed it and how much of
+   * their job is left in here; the creator screen puts nothing, because they
+   * already know both. This component never asks who is looking.
+   */
+  aboutTheJob?: React.ReactNode;
   /** The admin card slots its decision controls in here. */
   children?: React.ReactNode;
 }) {
@@ -62,6 +71,8 @@ export function ContentCard({
         <p className="text-[14px] leading-[1.3] font-semibold break-words">
           {row.offer?.title ?? 'An offer'}
         </p>
+
+        {aboutTheJob}
 
         <p className="text-muted font-mono text-[11.5px] break-all">{row.ad_code}</p>
 

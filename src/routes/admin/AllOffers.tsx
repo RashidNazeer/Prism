@@ -11,10 +11,12 @@ import {
   DEFAULT_ALL_OFFERS_FILTERS,
   useAllOffers,
   useBrandsWithOffers,
+  useOfferContent,
   useOfferPeople,
   useOfferStatusCounts,
   type AllOffersFilters,
   type AllOffersRow,
+  type OfferContent,
   type OfferKindFilter,
   type OfferPeople,
   type OfferStatusFilter,
@@ -84,9 +86,22 @@ export function AllOffers() {
   const total = data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / ALL_OFFERS_PAGE_SIZE));
 
-  const { data: people } = useOfferPeople(
-    rows.filter((o) => o.needs_application).map((o) => o.id)
-  );
+  /*
+   * ASK ABOUT EVERY OFFER ON THE PAGE, AND DECIDE ON WHAT COMES BACK.
+   *
+   * This used to skip any offer whose `needs_application` flag was off, which
+   * meant flipping that flag on an offer six people were already mid-pipeline
+   * on quietly erased all six from this screen. The flag describes whether a
+   * NEW creator has to ask; it says nothing about work already under way.
+   *
+   * So: rows came back, report them, whatever the flag says. No rows and the
+   * flag is off, it belongs to the whole roster and there is nothing to count.
+   * That is the same rule the creator side follows in `stateFor`, and the same
+   * one Rashid gave for progress: follow the job, never the flag.
+   */
+  const offerIds = rows.map((o) => o.id);
+  const { data: people } = useOfferPeople(offerIds);
+  const { data: content } = useOfferContent(offerIds);
 
   return (
     <AppShell>
@@ -221,18 +236,18 @@ export function AllOffers() {
         {isLoading ? (
           <ul className="grid gap-2.5">
             {Array.from({ length: 5 }).map((_, i) => (
-              <li key={i} className="h-28 animate-pulse rounded-2xl bg-surface-1" />
+              <li key={i} className="wx-skeleton h-28 rounded-[20px]" />
             ))}
           </ul>
         ) : isError ? (
-          <div className="rounded-2xl border border-line bg-surface-1 px-6 py-14 text-center">
+          <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-14 text-center shadow-md">
             <p className="font-semibold">That list would not load</p>
             <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
-          <div className="rounded-2xl border border-line bg-surface-1 px-6 py-16 text-center">
+          <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-16 text-center shadow-md">
             <Tag size={26} aria-hidden className="mx-auto text-faint" />
             <p className="mt-4 font-semibold">No offers match that</p>
             <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
@@ -244,7 +259,11 @@ export function AllOffers() {
           <ul className="grid gap-2.5">
             {rows.map((offer) => (
               <li key={offer.id}>
-                <OfferRow offer={offer} people={people?.[offer.id]} />
+                <OfferRow
+                  offer={offer}
+                  people={people?.[offer.id]}
+                  content={content?.[offer.id]}
+                />
               </li>
             ))}
           </ul>
@@ -289,13 +308,21 @@ export function AllOffers() {
 
 /* ------------------------------------------------------------------ row -- */
 
-function OfferRow({ offer, people }: { offer: AllOffersRow; people: OfferPeople | undefined }) {
+function OfferRow({
+  offer,
+  people,
+  content,
+}: {
+  offer: AllOffersRow;
+  people: OfferPeople | undefined;
+  content: OfferContent | undefined;
+}) {
   const hasTerms = offer.video_count !== null && offer.reward_amount !== null;
   const on = people?.approved ?? 0;
   const waiting = people?.pending ?? 0;
 
   return (
-    <div className="rounded-2xl border border-line bg-surface-1 p-4 sm:p-5">
+    <div className="border-line bg-surface-1 rounded-[20px] border p-4 shadow-md sm:p-5">
       <div className="flex flex-wrap items-start gap-x-5 gap-y-3">
         <div className="min-w-0 flex-1 basis-56">
           <div className="flex flex-wrap items-center gap-2">
@@ -333,7 +360,7 @@ function OfferRow({ offer, people }: { offer: AllOffersRow; people: OfferPeople 
 
         {/* The deal. */}
         <div className="shrink-0">
-          <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+          <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
             The deal
           </span>
           {hasTerms ? (
@@ -346,30 +373,67 @@ function OfferRow({ offer, people }: { offer: AllOffersRow; people: OfferPeople 
           )}
         </div>
 
-        {/* Who is on it. An open offer belongs to everyone on the roster and
-            there is no row to count, so it says that rather than showing a zero
-            that reads like nobody wanted it. */}
+        {/*
+          Who is on it, decided by what came back rather than by the flag.
+
+          An offer with nobody on it and no application needed belongs to the
+          whole roster: there is genuinely no row to count, so it says that
+          instead of a zero that reads like nobody wanted it. But an offer with
+          people on it reports them WHATEVER the flag says, because switching
+          the flag off does not send six creators home.
+        */}
         <div className="shrink-0">
-          <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+          <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
             Creators
           </span>
-          {offer.needs_application ? (
+          {on > 0 || waiting > 0 ? (
             <span className="mt-1 flex items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 text-[16px] font-bold">
+              <span className="font-display inline-flex items-center gap-1.5 text-[16px] font-semibold">
                 <Users size={14} aria-hidden className="text-faint" />
                 <span className="wx-numeric">{on}</span>
               </span>
               {waiting > 0 ? (
                 <Link
                   to={`/admin/offers/requests?brand=${offer.brand_id}`}
-                  className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2.5 py-1 text-[12px] font-medium text-warning transition-opacity hover:opacity-80"
+                  className="bg-stage-due-soft text-stage-due inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-medium transition-opacity hover:opacity-80"
                 >
                   <span className="wx-numeric">{waiting}</span> waiting
                 </Link>
               ) : null}
+              {!offer.needs_application ? (
+                <span className="text-faint text-[12px]">plus anyone else</span>
+              ) : null}
+            </span>
+          ) : offer.needs_application ? (
+            <span className="text-muted mt-1 block text-[14px]">Nobody yet</span>
+          ) : (
+            <span className="text-stage-paid mt-1 block text-[14px]">Open to everyone</span>
+          )}
+        </div>
+
+        {/* What has actually been filmed against it. Same grouped read shape:
+            one query for the whole page, never one per row. */}
+        <div className="shrink-0">
+          <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+            Videos in
+          </span>
+          {content ? (
+            <span className="mt-1 flex items-center gap-3">
+              <span className="font-display text-[16px] font-semibold">
+                <span className="text-stage-paid wx-numeric">{content.approved}</span>
+                <span className="text-faint"> approved</span>
+              </span>
+              {content.submitted > 0 ? (
+                <Link
+                  to={`/admin/content?tab=submitted`}
+                  className="bg-stage-live-soft text-stage-live inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-medium transition-opacity hover:opacity-80"
+                >
+                  <span className="wx-numeric">{content.submitted}</span> to watch
+                </Link>
+              ) : null}
             </span>
           ) : (
-            <span className="mt-1 block text-[14px] text-success">Open to everyone</span>
+            <span className="text-muted mt-1 block text-[14px]">Nothing yet</span>
           )}
         </div>
       </div>

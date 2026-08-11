@@ -1,10 +1,12 @@
 # Project state
 
 **Last updated:** 2026-08-11
-**Current step:** joining the product up, step 1 of 8. A job now says how much
-of it has been filmed, everywhere the job appears.
-**Next:** step 2 of `UI_CONNECTIONS_PLAN.md`, the admin side of the same join,
-which also fixes the queue quoting the wrong money. Await Rashid's approval.
+**Current step:** joining the product up, steps 1 and 2 of 8 are built. A job
+says how much of it has been filmed, on both sides.
+**Next:** Rashid is testing 1 and 2 together. The remaining ADMIN work is steps
+5 to 8 of `UI_CONNECTIONS_PLAN.md` (a brand's money and content split, the
+brand's Creators tab, a per-creator screen, and the operations home). Steps 3
+and 4 are creator side. Await his word on which.
 **Status:** Everything below is built, tested and on `dev`.
 
 ---
@@ -417,6 +419,33 @@ offer. A 12-agent audit of every screen produced
 - `pnpm verify:content`: 33 checks, up from 26. The new ones prove a rival
   creator gets nothing from the view, that it carries no budget column, that
   re-scoping does not move an agreed job, and both stuck-job fixes.
+
+### Joining the product up, step 2: the admin side of the same join (2026-08-11)
+
+- **The requests queue was quoting the wrong money and now does not.** It
+  fetched what was agreed at approval and then rendered the offer's price today.
+  Re-price an offer and the queue, the brand's budget and the creator's own
+  dashboard gave two answers about one promise. A pending row still shows the
+  offer's live terms, which is genuinely what is being asked for.
+- **Each approved row now carries the same progress bar the creator sees**, how
+  long the job has stood where it is (amber past a fortnight), the last move
+  made on it in the words the creator was given, and a link to their videos.
+- **The admin content screen says who filmed it and how much of their job it
+  is.** A reviewer had a brand, an offer title and an ad code, on a screen whose
+  search box searches by handle.
+- **The Approve button says when this is the last one**, because approving it
+  finishes the job and moves the creator on. A label, not a confirm step:
+  reviewing at speed was deliberate. Afterwards it says what the decision
+  actually did, which the database has always returned and the screen discarded.
+- **The catalogue stopped hiding live work.** It skipped any offer whose
+  needs-application flag was off, so switching that flag on an offer six people
+  were mid-pipeline on erased all six from the screen. It now asks about every
+  offer and decides on what comes back. Each row also shows videos in and how
+  many are waiting to be watched.
+- **All three screens are on the current design language**, which is why they no
+  longer sit a generation behind the creator side.
+- No migration needed: every new read rides an index that already existed, two
+  of which had never been used by a query.
 
 ## Known bugs
 

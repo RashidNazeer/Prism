@@ -487,11 +487,24 @@ try {
   const rivalCtx = await browser.newContext();
   const rivalPage = await rivalCtx.newPage();
   await signIn(rivalPage, RIVAL_EMAIL);
-  await admin.rpc('apply_for_offer', {
+  /*
+   * The error was being thrown away, which made this check lie.
+   *
+   * If this RPC fails, for any reason including a transient network blip on the
+   * machine running the suite, no request is ever created and the read below
+   * comes back empty. The check then reports "a creator sees only their own
+   * requests (0 rows)", which reads like a row level security failure and is
+   * nothing of the kind. Set-up failing must not be reported as the thing under
+   * test failing.
+   */
+  const rivalApplied = await admin.rpc('apply_for_offer', {
     p_actor_id: rivalId,
     p_offer_id: fixed.id,
     p_note: 'mine',
   });
+  if (rivalApplied.error) {
+    throw new Error(`set-up failed, the rival could not apply: ${rivalApplied.error.message}`);
+  }
   const spying = await asUser(rivalPage, '/rest/v1/offer_applications?select=id,creator_id');
   check(
     rows(spying).length > 0 && rows(spying).every((r) => r.creator_id === rivalId),
@@ -818,8 +831,19 @@ try {
     .then(() => true)
     .catch(() => false);
   const board = await page.evaluate(() => document.body.innerText);
+  /*
+   * Copy updated 2026-08-11. This asserted "paid to you so far", which the
+   * creator home stopped saying when it was rebuilt from Rashid's approved
+   * design, and the suite was not re-run against it, so it had been failing
+   * quietly ever since. The money card now leads with "Agreed with you so far"
+   * and splits it into Paid, Awaiting payment and In progress.
+   *
+   * Both halves are asserted on purpose: the figure alone would pass while the
+   * money sat in the wrong bucket, and "money follows the STAGE, never the
+   * status" is the rule this check exists to defend.
+   */
   check(
-    countedAsPaid && /paid to you so far/i.test(board),
+    countedAsPaid && /agreed with you so far/i.test(board) && /\bpaid\b/i.test(board),
     'once it is marked paid the creator dashboard counts it as money received'
   );
 
@@ -977,8 +1001,15 @@ try {
     (await page.getByText(/paid out/i).count()) > 0,
     'an approved offer shows where it has actually got to, not just "you are in"'
   );
+  /*
+   * Also updated 2026-08-11, and stale for the same reason. `StageTracker`
+   * captions the current step as "7. Paid" rather than "7 of 7"; it has drawn
+   * seven bars either way, and the point of the check is that the offer card
+   * and the dashboard draw the SAME tracker rather than two pictures of one
+   * pipeline.
+   */
   check(
-    (await page.getByText(/7 of 7/).count()) > 0,
+    (await page.getByText(/7\.\s*Paid/i).count()) > 0,
     'with the same seven step tracker the dashboard uses'
   );
   check(

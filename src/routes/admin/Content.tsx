@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { Check, RotateCcw, Search, Video } from 'lucide-react';
+import { Check, Flag, RotateCcw, Search, Video } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Field';
@@ -18,6 +18,7 @@ import {
   type ContentFilters,
   type ContentTotals,
 } from '@/lib/admin/useAdminContent';
+import { useJobProgressFor, type JobProgress } from '@/lib/work/job-progress';
 
 /**
  * Content: every video the roster has posted, and the team's decision on it.
@@ -94,6 +95,15 @@ export function AdminContent() {
   const rows = data?.rows ?? [];
   const total = data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / CONTENT_PAGE_SIZE));
+
+  /*
+   * The jobs behind the videos on this page, in ONE grouped read. Several
+   * videos usually share a job, so the ids are deduplicated first: twenty cards
+   * is often only five or six jobs.
+   */
+  const { data: progress } = useJobProgressFor([
+    ...new Set(rows.map((r) => r.application_id)),
+  ]);
 
   return (
     <AppShell>
@@ -240,8 +250,14 @@ export function AdminContent() {
                 <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {rows.map((row) => (
                     <li key={row.id}>
-                      <ContentCard row={row} onPlay={() => setPlaying(row)}>
-                        <Review row={row} />
+                      <ContentCard
+                        row={row}
+                        onPlay={() => setPlaying(row)}
+                        aboutTheJob={
+                          <JobMeta row={row} progress={progress?.get(row.application_id)} />
+                        }
+                      >
+                        <Review row={row} progress={progress?.get(row.application_id)} />
                       </ContentCard>
                     </li>
                   ))}
@@ -448,24 +464,80 @@ function Board({ counts }: { counts: ContentTotals }) {
 /* -------------------------------------------------------------- review --- */
 
 /**
+ * Who filmed it, and how much of their job this video is part of.
+ *
+ * A reviewer used to see a brand, an offer title and an ad code, on a screen
+ * whose search box searches by handle. Whose video it was, and whether it was
+ * the fourth of five or the first of ten, were on other screens entirely.
+ */
+function JobMeta({ row, progress }: { row: ContentRow; progress: JobProgress | undefined }) {
+  const who = row.creator_handle ? `@${row.creator_handle}` : row.creator_name;
+  if (!who && !progress) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+      {who ? <span className="text-muted text-[12.5px] break-all">{who}</span> : null}
+      {progress && progress.required !== null ? (
+        <span
+          className={cn(
+            'font-display text-[12px] font-semibold',
+            progress.done ? 'text-stage-paid' : 'text-muted'
+          )}
+        >
+          {progress.approved}/{progress.required} on this job
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+/**
  * The decision, on the card itself.
  *
  * No confirmation step: watching a video IS the deliberation, and both ways are
  * reversible, audited and land on the creator's screen immediately. Asking a
  * second time for every video in a queue of forty would only teach people to
  * click through the dialog without reading it.
+ *
+ * It DOES say out loud when a decision is about to finish somebody's job, or
+ * un-finish one. That is not a confirmation step, it is a label, and it is the
+ * highest-stakes moment on the screen: approving the last video is the only
+ * thing in the whole product that can carry a job to "content completed".
  */
-function Review({ row }: { row: ContentRow }) {
+function Review({ row, progress }: { row: ContentRow; progress: JobProgress | undefined }) {
   const review = useReviewContent();
   const [asking, setAsking] = useState(false);
   const [note, setNote] = useState('');
 
+  /*
+   * Would THIS approval be the last one? It copies the database's rule exactly:
+   * a number has to have been agreed, and the approved count has to reach it.
+   * Getting that wrong would promise something that does not happen.
+   */
+  const wouldFinish =
+    progress != null &&
+    progress.required !== null &&
+    !progress.done &&
+    progress.approved + 1 >= progress.required;
+
+  // And the other direction: taking back an approval on a finished job sends it
+  // back to content pending, and the creator is told.
+  const wouldReopen = row.status === 'approved' && progress?.done === true;
+
   if (row.status === 'approved') {
     return (
-      <p className="border-line text-stage-paid flex items-center gap-1.5 border-t pt-2.5 text-[12.5px] font-semibold">
-        <Check size={14} aria-hidden />
-        Counted towards the offer
-      </p>
+      <div className="border-line flex flex-col gap-1.5 border-t pt-2.5">
+        <p className="text-stage-paid flex items-center gap-1.5 text-[12.5px] font-semibold">
+          <Check size={14} aria-hidden />
+          Counted towards the offer
+        </p>
+        {wouldReopen ? (
+          <p className="text-faint text-[11.5px] leading-relaxed">
+            This job is finished on the strength of this video. Sending it back would
+            reopen it.
+          </p>
+        ) : null}
+      </div>
     );
   }
 
@@ -508,6 +580,15 @@ function Review({ row }: { row: ContentRow }) {
 
   return (
     <div className="border-line flex flex-col gap-2 border-t pt-2.5">
+      {/* Said before the click, never as a dialog after it. Reviewing at speed
+          was a deliberate decision and a confirm step would undo it. */}
+      {wouldFinish ? (
+        <p className="text-stage-paid flex items-start gap-1.5 text-[12px] leading-relaxed font-medium">
+          <Flag size={13} aria-hidden className="mt-0.5 shrink-0" />
+          Approving this finishes the job and moves them on.
+        </p>
+      ) : null}
+
       <div className="flex flex-wrap gap-2">
         <Button
           size="sm"
@@ -522,6 +603,19 @@ function Review({ row }: { row: ContentRow }) {
           Another take
         </Button>
       </div>
+      {/* What the decision actually DID. The database has always returned this
+          and the screen threw it away, so finishing somebody's work looked
+          identical to approving one video of five. */}
+      {review.data?.result.advanced ? (
+        <p role="status" className="text-stage-paid text-[12px] font-medium">
+          That was the last one. The job is finished.
+        </p>
+      ) : review.data?.result.reopened ? (
+        <p role="status" className="text-stage-due text-[12px] font-medium">
+          The job went back to content pending, and they have been told.
+        </p>
+      ) : null}
+
       {review.error ? (
         <p role="alert" className="text-danger text-[12px]">
           {(review.error as Error).message}

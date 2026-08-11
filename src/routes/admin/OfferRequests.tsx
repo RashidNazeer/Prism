@@ -6,6 +6,7 @@ import {
   Check,
   Handshake,
   Search,
+  Video,
   X,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
@@ -27,6 +28,9 @@ import {
   type OfferStatusFilter,
 } from '@/lib/admin/useOfferApplications';
 import type { OfferApplicationStatus } from '@/lib/offer-stages';
+import { JobProgressBar } from '@/components/work/JobProgress';
+import { useJobProgressFor, type JobProgress } from '@/lib/work/job-progress';
+import { isStale, standingFor, useLatestStageMoves, type StageMove } from '@/lib/work/stage-moves';
 
 /**
  * Every creator asking for an offer, in one queue.
@@ -92,6 +96,15 @@ export function OfferRequests() {
 
   const rows = data?.rows ?? [];
   const total = data?.total ?? 0;
+
+  /*
+   * Two grouped reads over the rows ON THIS PAGE, never one per row: twenty
+   * rows must not become forty round trips. Only approved requests have a job
+   * behind them, so only they are asked about.
+   */
+  const jobIds = rows.filter((r) => r.status === 'approved').map((r) => r.id);
+  const { data: progress } = useJobProgressFor(jobIds);
+  const { data: moves } = useLatestStageMoves(jobIds);
   const pages = Math.max(1, Math.ceil(total / OFFER_QUEUE_PAGE_SIZE));
 
   return (
@@ -235,18 +248,18 @@ export function OfferRequests() {
         {isLoading ? (
           <ul className="grid gap-2.5">
             {Array.from({ length: 5 }).map((_, i) => (
-              <li key={i} className="h-28 animate-pulse rounded-2xl bg-surface-1" />
+              <li key={i} className="wx-skeleton h-28 rounded-[20px]" />
             ))}
           </ul>
         ) : isError ? (
-          <div className="rounded-2xl border border-line bg-surface-1 px-6 py-14 text-center">
+          <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-14 text-center shadow-md">
             <p className="font-semibold">That queue would not load</p>
             <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
-          <div className="rounded-2xl border border-line bg-surface-1 px-6 py-16 text-center">
+          <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-16 text-center shadow-md">
             <Handshake size={26} aria-hidden className="mx-auto text-faint" />
             <p className="mt-4 font-semibold">
               {filters.status === 'pending' && !filters.search && !filters.brandId
@@ -265,6 +278,8 @@ export function OfferRequests() {
               <li key={row.id}>
                 <RequestRow
                   row={row}
+                  progress={progress?.get(row.id)}
+                  lastMove={moves?.get(row.id)}
                   onDecide={(decision) => setDialog({ row, decision })}
                 />
               </li>
@@ -328,16 +343,36 @@ const STATUS_CHIP: Record<OfferApplicationStatus, { label: string; className: st
 
 function RequestRow({
   row,
+  progress,
+  lastMove,
   onDecide,
 }: {
   row: OfferQueueRow;
+  progress: JobProgress | undefined;
+  lastMove: StageMove | undefined;
   onDecide: (decision: 'approved' | 'rejected') => void;
 }) {
   const chip = STATUS_CHIP[row.status];
   const who = row.creator_handle ? `@${row.creator_handle}` : (row.creator_name ?? 'A creator');
 
+  const agreed = row.status === 'approved';
+  const terms = agreed
+    ? {
+        videos: row.committed_video_count,
+        amount: row.committed_amount,
+        currency: row.currency,
+      }
+    : {
+        videos: row.offer?.video_count ?? null,
+        amount: row.offer?.reward_amount ?? null,
+        currency: row.offer?.currency ?? row.currency,
+      };
+
+  const standing = standingFor(row.stage_updated_at);
+  const stale = isStale(row.stage_updated_at);
+
   return (
-    <div className="rounded-2xl border border-line bg-surface-1 p-4 sm:p-5">
+    <div className="border-line bg-surface-1 rounded-[20px] border p-4 shadow-md sm:p-5">
       <div className="flex flex-wrap items-start gap-x-5 gap-y-3">
         {/* Who, and what they want. */}
         <div className="min-w-0 flex-1 basis-56">
@@ -381,26 +416,37 @@ function RequestRow({
           </p>
         </div>
 
-        {/* The deal being agreed to. The largest thing on the row, because it
-            is the only thing the decision actually turns on. It is always the
-            offer's own terms: a creator takes an offer as it is written. */}
+        {/*
+          The deal. The largest thing on the row, because it is the only thing
+          the decision actually turns on.
+
+          WHICH deal depends on whether one has been struck. A pending request
+          is somebody asking for the offer AS IT IS WRITTEN TODAY, so it shows
+          the offer's own terms. An approved one shows what was agreed and
+          charged to the brand, which is frozen on the request and stops
+          matching the offer the moment anybody re-prices or re-scopes it. This
+          row used to print the live offer in both cases, so the queue, the
+          budget and the creator's own screen could give two answers about one
+          promise.
+        */}
         <div className="shrink-0">
-          <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
-            They are asking for
+          <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+            {agreed ? 'Agreed' : 'They are asking for'}
           </span>
-          {row.offer?.video_count !== null && row.offer?.reward_amount != null ? (
-            <span className="wx-numeric mt-1 block text-[17px] font-bold">
-              {row.offer.video_count}{' '}
-              {row.offer.video_count === 1 ? 'video' : 'videos'} for{' '}
-              <span className="text-accent">
-                {money(row.offer.reward_amount, row.offer.currency)}
-              </span>
+          {terms.amount != null ? (
+            <span className="font-display mt-1 block text-[17px] font-semibold">
+              {terms.videos !== null ? (
+                <>
+                  {terms.videos} {terms.videos === 1 ? 'video' : 'videos'} for{' '}
+                </>
+              ) : null}
+              <span className="text-accent">{money(terms.amount, terms.currency)}</span>
             </span>
           ) : (
-            // The admin never wrote the terms down. Say so, rather than
-            // printing a zero somebody reads as a real number.
-            <span className="mt-1 block text-[14px] text-muted">
-              Terms not set on the offer
+            // Nobody wrote the terms down. Say so, rather than printing a zero
+            // somebody reads as a real number.
+            <span className="text-muted mt-1 block text-[14px]">
+              {agreed ? 'No fixed fee on this one' : 'Terms not set on the offer'}
             </span>
           )}
         </div>
@@ -421,15 +467,59 @@ function RequestRow({
         ) : null}
       </div>
 
+      {/*
+        What the stage cannot say: whether they have actually filmed anything.
+        A job at "content pending" for three weeks with four of five approved is
+        a different conversation from one at the same stage with nothing posted,
+        and until now the queue showed both identically.
+      */}
+      {agreed && progress ? (
+        <div className="border-line mt-3 flex flex-wrap items-center justify-between gap-x-5 gap-y-2 border-t pt-3">
+          <JobProgressBar progress={progress} className="min-w-[210px] flex-1" compact />
+
+          <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1">
+            {standing ? (
+              <span className="text-[12.5px]">
+                <span className="text-muted">Standing here </span>
+                <span className={cn('font-medium', stale ? 'text-stage-due' : 'text-text')}>
+                  {standing}
+                </span>
+              </span>
+            ) : null}
+            <Link
+              to={`/admin/content?search=${encodeURIComponent(row.creator_handle ?? '')}`}
+              className="text-muted hover:text-accent inline-flex items-center gap-1.5 text-[12.5px] transition-colors"
+            >
+              <Video size={13} aria-hidden />
+              Their videos
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
+      {/*
+        The last thing that happened, in the words the CREATOR was given. An
+        admin picking this row up should not have to guess what the last person
+        told them.
+      */}
+      {agreed && lastMove ? (
+        <p className="text-muted mt-2 text-[12.5px] leading-relaxed">
+          <span className="text-faint">Last move: </span>
+          {lastMove.from_stage ? `${STAGE_META[lastMove.from_stage].label} to ` : ''}
+          {STAGE_META[lastMove.to_stage].label}
+          {lastMove.note ? <span className="text-text">, {lastMove.note}</span> : null}
+        </p>
+      ) : null}
+
       {row.note ? (
-        <p className="mt-3 border-t border-line pt-3 text-[13px] leading-relaxed text-muted">
+        <p className="border-line text-muted mt-3 border-t pt-3 text-[13px] leading-relaxed">
           {row.note}
         </p>
       ) : null}
 
       {row.decision_note ? (
         <p className="mt-3 border-t border-line pt-3 text-[13px] leading-relaxed text-faint">
-          <span className="font-mono text-[10px] tracking-[0.14em] uppercase">
+          <span className="text-[11px] font-semibold tracking-[0.14em] uppercase">
             You said
           </span>{' '}
           {row.decision_note}
@@ -457,7 +547,7 @@ function StageControl({ row }: { row: OfferQueueRow }) {
 
   return (
     <div className="min-w-0 shrink-0">
-      <span className="block font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+      <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
         Stage
       </span>
       <div className="mt-1 flex items-center gap-2">

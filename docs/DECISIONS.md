@@ -554,3 +554,25 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   `authenticated` database role, so the import graph was the last thing standing
   between a commercial column and a creator's screen. It caught three real
   violations the hour it was added.
+- 2026-08-11: **The requests queue shows what was AGREED on an approved row,
+  and the offer's live terms only on a pending one.** It fetched
+  `committed_amount` and then rendered `offer.reward_amount`, so re-pricing an
+  offer made the queue, the brand's budget and the creator's own dashboard give
+  two answers about one promise. A pending request genuinely is somebody asking
+  for the offer as written today, so that case keeps the live terms.
+- 2026-08-11: **The offers catalogue decides who is on an offer from the ROWS,
+  not from the `needs_application` flag.** Skipping open offers meant switching
+  that flag on an offer six creators were mid-pipeline on erased all six from
+  the screen. Same rule the creator side already followed, and the same one
+  Rashid gave for progress: follow the job, never the flag.
+- 2026-08-11: **"Approving this finishes the job" is a label, never a
+  confirmation step.** Reviewing at speed was a deliberate decision and a dialog
+  per video would be worked around within a week. The label copies the database
+  rule exactly, or it promises something that does not happen.
+- 2026-08-11: **Two checks in `verify:offer-requests` had been failing since the
+  creator UI was rebuilt, and nobody knew**, because that step re-ran the
+  content and responsive suites but not this one. They asserted copy the
+  redesign had deleted ("paid to you so far", "7 of 7"). Fixed against the
+  current design rather than deleted. The lesson is in OPERATIONS: a redesign
+  re-runs every suite that asserts copy, not just the ones for the screens that
+  were obviously touched.

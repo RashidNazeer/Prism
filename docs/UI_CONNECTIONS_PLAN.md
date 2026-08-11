@@ -89,7 +89,15 @@ depend on and nothing currently enforces.
 
 Also ships: a demo data script, so every state has something to render on dev.
 
-### Step 2. The admin side sees the same job, and stops quoting the wrong money
+### Step 2. The admin side sees the same job, and stops quoting the wrong money  **BUILT 2026-08-11**
+
+Shipped as described. No migration was needed: every new read rides an index
+that already existed, two of which had never been used by a query. It also
+turned up two checks in `verify:offer-requests` that had been failing silently
+since the creator UI rebuild, on copy that redesign deleted; both were fixed
+against the current design rather than removed, and OPERATIONS now says a
+redesign re-runs every suite that asserts copy.
+
 
 The requests queue shows what was actually agreed with that creator instead of
 what the offer says today. It shows how many videos have landed, how long the

@@ -54,6 +54,16 @@ export interface OfferQueueRow {
   stage_updated_at: string | null;
   /** What we agreed to pay, snapshotted at approval. */
   committed_amount: string | number | null;
+  /**
+   * How many videos were agreed, snapshotted at approval beside the amount.
+   *
+   * On an APPROVED row this and `committed_amount` are the deal. The offer's
+   * own `video_count` and `reward_amount` are what it says TODAY, which is a
+   * different fact the moment anybody re-prices or re-scopes it, and showing
+   * today's terms against a promise already made is how the queue, the brand's
+   * budget and the creator's own dashboard came to give two answers.
+   */
+  committed_video_count: number | null;
   /** The currency the offer was quoted in when they asked. */
   currency: string;
   note: string | null;
@@ -113,8 +123,8 @@ export const sanitiseOfferSearch = (raw: string) =>
 
 const COLUMNS =
   'id, offer_id, brand_id, creator_id, creator_handle, creator_name, creator_email, ' +
-  'status, stage, stage_updated_at, committed_amount, currency, note, ' +
-  'decision_note, decided_at, created_at, ' +
+  'status, stage, stage_updated_at, committed_amount, committed_video_count, ' +
+  'currency, note, decision_note, decided_at, created_at, ' +
   'offer:offers (id, title, video_count, reward_amount, currency), ' +
   /*
    * The budget is reached THROUGH the brand, not beside it.

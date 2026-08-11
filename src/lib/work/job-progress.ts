@@ -156,6 +156,39 @@ export function useMyJobProgress(limit = 200) {
 }
 
 /**
+ * The same view, for a page of jobs somebody else owns.
+ *
+ * ONE grouped read over the rows actually on the page, never one query per row:
+ * twenty rows must not become twenty round trips. Same shape the admin queue's
+ * `useOfferPeople` already uses.
+ *
+ * Not creator-specific and not staff-specific. The view is `security_invoker`,
+ * so whoever calls it gets exactly the jobs their policies allow, and a creator
+ * passing somebody else's ids gets an empty map rather than an error. That is
+ * why this can live in the neutral folder at all.
+ */
+export function useJobProgressFor(applicationIds: string[]) {
+  // Sorted, so the cache key does not change when the page re-renders in a
+  // different order.
+  const key = [...applicationIds].sort().join(',');
+
+  return useQuery({
+    queryKey: ['work', 'job-progress-for', key],
+    enabled: applicationIds.length > 0,
+    staleTime: 15_000,
+    queryFn: async (): Promise<Map<string, JobProgress>> => {
+      const { data, error } = await getSupabase()
+        .from('job_progress')
+        .select(JOB_PROGRESS_COLUMNS)
+        .in('application_id', applicationIds);
+      if (error) throw error;
+      const rows = (data ?? []) as unknown as JobProgressRow[];
+      return new Map(rows.map((r) => [r.application_id, deriveProgress(r)]));
+    },
+  });
+}
+
+/**
  * The one sentence that describes where a job has got to.
  *
  * Written once so the home screen, the offers list and the brand hub cannot

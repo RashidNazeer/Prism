@@ -88,6 +88,44 @@ how much content he has posted maybe a progress bar".
   creator, that re-scoping an offer does not move an agreed job, and both
   stuck-job fixes.
 
+**The admin side of the same join, 2026-08-11 (step 2)**
+
+Files: `src/lib/work/stage-moves.ts`, `src/routes/admin/OfferRequests.tsx`,
+`src/routes/admin/Content.tsx`, `src/routes/admin/AllOffers.tsx`,
+`src/lib/admin/useAllOffers.ts` (`useOfferContent`).
+
+- **The queue shows what was AGREED on an approved row, not the offer's price
+  today.** It read `row.offer.reward_amount` while fetching `committed_amount`
+  and ignoring it, so re-pricing an offer made the queue, the brand's budget and
+  the creator's own dashboard give two answers about one promise. A PENDING row
+  still shows the offer's live terms, because that is genuinely what the creator
+  is asking for.
+- **The catalogue asks about every offer on the page and decides on what comes
+  back.** It used to skip any offer whose `needs_application` was off, so
+  flipping that flag on an offer six people were mid-pipeline on erased all six
+  from the screen. Rows back means report them whatever the flag says; no rows
+  and the flag off means "Open to everyone". Same rule as `stateFor`.
+- **"Approving this finishes the job" is a LABEL, never a confirmation step.**
+  Reviewing at speed was a deliberate decision. The label copies the database
+  rule exactly (a number must have been agreed, and this approval must reach
+  it), or it promises something that does not happen.
+- `review_content` has always returned `advanced`, and now `reopened`, and the
+  screen threw both away. Finishing somebody's work looked identical to
+  approving one of five. It says so now.
+- **Every per-row number is one grouped read over the page**: `useJobProgressFor`,
+  `useLatestStageMoves`, `useOfferPeople`, `useOfferContent`. Never one query
+  per row. The content ids are deduplicated first, because several videos
+  usually share one job.
+- `useLatestStageMoves` deliberately does NOT select the actor. `actor_id` points
+  at `profiles`, which a creator cannot read for anybody else, so an embed would
+  return null rather than refusing and the panel would look broken the day
+  somebody reuses it on a creator screen.
+- These three screens are now on the current design language: sans eyebrows
+  rather than mono, `rounded-[20px]` with `shadow-md`, `wx-skeleton` rather than
+  `animate-pulse`, and the "waiting" and "to watch" chips use the stage colours
+  rather than warning/success, which is the light-mode collision those tokens
+  exist to end.
+
 ## Content (video links and ad codes)
 
 **Files:** `src/lib/content.ts`, `src/lib/creator/useMyContent.ts`,

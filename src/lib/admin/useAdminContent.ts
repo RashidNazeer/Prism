@@ -159,14 +159,25 @@ export function useReviewContent() {
         body: { action: 'content.review', ...input },
       });
       if (error) throw new Error(await messageFrom(error));
-      return data as { result: { submission: ContentRow; advanced: boolean } };
+      /*
+       * `advanced` and `reopened` are the database telling us what the decision
+       * actually DID to the job. They were being fetched and thrown away, so
+       * approving the last video of a job silently finished somebody's work and
+       * the person who clicked it was never told.
+       */
+      return data as {
+        result: { submission: ContentRow; advanced: boolean; reopened: boolean };
+      };
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['admin', 'content'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'content-counts'] });
-      // Approving the last video finishes the job, so the request queue is now
-      // out of date too.
+      // Approving the last video finishes the job, so the request queue and
+      // every progress figure on the page are now out of date too.
       void queryClient.invalidateQueries({ queryKey: ['admin', 'offer-applications'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'offer-content'] });
+      void queryClient.invalidateQueries({ queryKey: ['work', 'job-progress-for'] });
+      void queryClient.invalidateQueries({ queryKey: ['work', 'latest-stage-moves'] });
     },
   });
 }
