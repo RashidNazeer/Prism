@@ -492,15 +492,40 @@ list here.
 
 ## Next action
 
-**More UI updates. Rashid will say which screens.** Nothing is blocked and
-there is no half-finished work: every screen below is built, tested and
-deployed.
+**Rashid is testing all eight steps of `UI_CONNECTIONS_PLAN.md` end to end.
+Wait for his report. A bug he finds becomes the current step.**
 
-The obvious candidate, unprompted, is the **ADMIN side**. The creator screens
-and the two Content screens are on the new design language; the older admin
-screens (dashboard, applications, the queue, brands, activity) are not. They
-still use mono eyebrows, the old radii and no shadow, so they sit visibly a
-generation behind. Raise it, do not start it.
+Nothing is blocked and there is no half-finished work.
+
+### THE DEV DATABASE IS EMPTY, on purpose, since 2026-08-12
+
+He asked for a clean slate to test the whole flow from the beginning. Deleted:
+every creator and applicant account, 12 applications, 5 brands, 8 offers, 8
+products, 6 requests, 13 stage events, 18 videos and 141 audit rows. The
+`brand-assets` bucket was already empty.
+
+**Exactly one account survives: `rashid@wurxmedia.com`, admin, active.** His
+password is not written down anywhere, by design, and is his to type.
+
+Consequences to expect, and NOT to report as bugs:
+
+- Every screen shows its empty state rather than its numbers. The brand Creators
+  tab says nobody has asked yet, `/admin/creators` says no creators yet, and the
+  money blocks are absent rather than showing zeros. That is deliberate.
+- The joined-up work only becomes visible once a creator has been walked all the
+  way through a job. Until then there is nothing to join up.
+- Any suite needing `ADMIN_EMAIL` must make its own throwaway account, as
+  OPERATIONS already says. Do not point one at his admin.
+
+To fill it again: `node scripts/seed-brands.mjs` then
+`node scripts/seed-pipeline.mjs`. Both take `--clean`. Ask first; he may want it
+empty.
+
+### The junk test data is gone
+
+The offer titled `55` with badge `55555`, and the Pay-per-video offer whose
+description said $50 a video while its reward was $12, went with the reset.
+Nothing left to clean.
 
 ### The design language, which is now settled
 
@@ -538,7 +563,8 @@ Public: `/` landing, `/apply` and `/signup` (same screen), `/login`,
 
 Admin: `/admin` dashboard, `/admin/applications` and `/admin/applications/:id`,
 `/admin/activity`, `/admin/offers`, `/admin/offers/requests`,
-**`/admin/content`**, `/admin/brands`, `/admin/brands/:id`.
+`/admin/content`, `/admin/brands`, `/admin/brands/:id` (tabs: Offers, Overview,
+About, **Creators**), **`/admin/creators`** and **`/admin/creators/:id`**.
 
 Creator: `/app` (Overview and Pipeline views), `/app/offers`, `/app/brands`,
 `/app/brands/:slug`, **`/app/content`**, `/app/profile`.
@@ -547,11 +573,15 @@ Studio: `/studio` placeholder only.
 
 ### Housekeeping worth one commit of its own
 
-- The repo is not prettier-clean: `pnpm format` rewrites files it has never run
-  against, mostly Tailwind class ordering. One commit, nothing else in it.
-- Dev carries junk test data Rashid made: an offer titled `55` with badge
-  `55555`, and a Pay-per-video offer whose description says $50 a video while
-  its reward is $12. His to clean, not mine.
+- The repo is still not prettier-clean overall. Every file touched between
+  2026-08-11 and 12 was formatted, but the rest were not, so `pnpm format`
+  would still rewrite a lot, mostly Tailwind class ordering. One commit,
+  nothing else in it.
+- There is no `src/types/database.ts`. CLAUDE.md prescribes
+  `supabase gen types typescript --linked > src/types/database.ts` and it has
+  never been run, so every hook ends in `as unknown as Row[]` and a renamed
+  column compiles clean and fails in the browser. That now covers FIVE views as
+  well as the tables. Worth doing before the next schema change.
 
 ### Still parked, at Rashid's request
 
