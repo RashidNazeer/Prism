@@ -61,7 +61,7 @@ const timezone = z
   .trim()
   .min(1, 'Which timezone does this deadline mean?')
   .max(64)
-  .regex(/^[A-Za-z]+\/[A-Za-z_+\-0-9\/]+$|^UTC$/, 'That is not a timezone name');
+  .regex(/^[A-Za-z]+\/[A-Za-z_+\-0-9/]+$|^UTC$/, 'That is not a timezone name');
 
 const ContestSave = z.object({
   action: z.literal('contest.save'),

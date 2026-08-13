@@ -17,6 +17,7 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
+import { joinChannel } from '@/lib/realtime';
 import { useAuth } from '@/lib/auth/auth-context';
 
 /** One row of the view, exactly as it comes back. */
@@ -109,47 +110,28 @@ export function useMyJobProgress(limit = 200) {
    * row security to DELETE events, so without it the whole old row of somebody
    * else's deleted submission would arrive here.
    *
-   * The channel name is its own. Two channels sharing a name means the second
-   * subscribe is silently ignored, and this hook mounts on screens that already
-   * run one.
+   * Through `joinChannel` rather than `supabase.channel()` directly, and that
+   * is load bearing rather than tidiness. This hook mounts more than once on
+   * the same screen, `supabase.channel(name)` returns the EXISTING channel when
+   * one is already open, and calling `.on()` on a channel that has already
+   * subscribed throws. It threw during render, so a creator clicking "Add a
+   * video" got a full page error instead of a dialog. See src/lib/realtime.ts.
    */
   useEffect(() => {
     if (!user?.id) return;
-    const supabase = getSupabase();
 
-    const channel = supabase
-      .channel(`job-progress:${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'content_submissions',
-          filter: `creator_id=eq.${user.id}`,
-        },
-        () => {
-          void queryClient.invalidateQueries({ queryKey: ['work', 'job-progress'] });
-        }
-      )
-      .on(
+    return joinChannel(
+      `job-progress:${user.id}`,
+      [
+        { table: 'content_submissions', filter: `creator_id=eq.${user.id}` },
         // A new approval creates a new job, which needs a row on the board even
         // before anything has been filmed for it.
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'offer_applications',
-          filter: `creator_id=eq.${user.id}`,
-        },
-        () => {
-          void queryClient.invalidateQueries({ queryKey: ['work', 'job-progress'] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+        { table: 'offer_applications', filter: `creator_id=eq.${user.id}` },
+      ],
+      () => {
+        void queryClient.invalidateQueries({ queryKey: ['work', 'job-progress'] });
+      }
+    );
   }, [user?.id, queryClient]);
 
   return query;
