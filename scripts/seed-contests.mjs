@@ -119,18 +119,41 @@ for (const c of CREATORS) {
   // script and is not what this one is testing.
   const { error: profileErr } = await admin
     .from('profiles')
-    .update({
-      role: 'creator',
-      tier: 'creator',
-      is_active: true,
-      display_name: c.name,
-      tiktok_handle: c.handle,
-    })
+    .update({ role: 'creator', tier: 'creator', is_active: true, display_name: c.name })
     .eq('id', userId);
 
   if (profileErr) {
     console.log(`  FAILED  ${c.handle}  ${profileErr.message}`);
     continue;
+  }
+
+  /*
+   * The handle is NOT on the profile. It is typed on the application, and
+   * `creator_directory` reads it by joining the two, so a creator with no
+   * application row shows up everywhere in the admin panel with a blank handle.
+   * That is what a real approved creator looks like, so the seed builds one.
+   */
+  const { data: hasApplication } = await admin
+    .from('applications')
+    .select('id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (!hasApplication) {
+    const { error: appErr } = await admin.from('applications').insert({
+      user_id: userId,
+      tiktok_handle: c.handle,
+      niche: 'other',
+      niche_other: 'Seeded for contest testing',
+      worked_with_wurx: false,
+      // TEXT, not an array, and the column wants between 8 and 1000 characters.
+      video_links: `https://www.tiktok.com/@${c.handle}`,
+      status: 'approved',
+      reviewed_by: staff.id,
+      reviewed_at: new Date().toISOString(),
+      review_note: 'Seeded for contest testing.',
+    });
+    if (appErr) console.log(`    no application row for ${c.handle}: ${appErr.message}`);
   }
 
   let entered = 0;
