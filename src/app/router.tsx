@@ -13,9 +13,67 @@ import { RequireAuth, RedirectIfSignedIn } from '@/components/auth/RequireAuth';
  * security boundary. Every query underneath is still filtered by row level
  * security, so a tampered token buys an empty page and nothing else.
  */
+/**
+ * Load a screen, and survive the deploy that happened while the tab was open.
+ *
+ * THE FAILURE, seen on dev on 2026-08-13 after nine deploys in an evening:
+ *
+ *   Unexpected Application Error!
+ *   Failed to fetch dynamically imported module: /assets/Dashboard-LYjx_st3.js
+ *
+ * Every screen here is its own file with a content hash in its name, so a
+ * deploy renames all of them. A tab opened before that deploy still holds the
+ * old index, and the moment it needs a screen it has not downloaded yet it asks
+ * for a filename that no longer exists on the CDN. Signing in and signing out
+ * are exactly those moments, which is why it looked like an auth bug.
+ *
+ * It will happen to real creators too, and more often than it did to us: a
+ * phone keeps a tab alive for days.
+ *
+ * So: try again once in case the network simply dropped the request, and if it
+ * still fails, reload. A reload fetches the current index and therefore the
+ * current filenames, and it keeps the URL, so somebody signing in still lands
+ * where they were going. The session lives in localStorage and survives it.
+ *
+ * The timestamp guard is what stops a genuinely broken deploy turning into an
+ * infinite refresh: at most one reload per tab per minute, and after that the
+ * error is allowed through to the boundary where somebody will see it.
+ */
+const RELOAD_KEY = 'wx.chunk-reload';
+
 const lazyRoute = (load: () => Promise<Record<string, unknown>>, name: string) => async () => {
-  const mod = await load();
-  return { Component: mod[name] as React.ComponentType };
+  try {
+    const mod = await load();
+    return { Component: mod[name] as React.ComponentType };
+  } catch (error) {
+    try {
+      const mod = await load();
+      return { Component: mod[name] as React.ComponentType };
+    } catch {
+      /* Still gone. Fall through to the reload. */
+    }
+
+    let last = 0;
+    try {
+      last = Number(window.sessionStorage.getItem(RELOAD_KEY) ?? '0');
+    } catch {
+      /* Private mode with storage blocked. Treat it as never reloaded. */
+    }
+
+    if (Date.now() - last > 60_000) {
+      try {
+        window.sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+      } catch {
+        /* As above. The reload is still worth attempting. */
+      }
+      window.location.reload();
+      // The reload takes the page, so this never settles. Returning a pending
+      // promise stops the router rendering an error in the meantime.
+      return new Promise<never>(() => {});
+    }
+
+    throw error;
+  }
 };
 
 export const router = createBrowserRouter([
