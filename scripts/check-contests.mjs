@@ -134,7 +134,10 @@ try {
   await page.waitForURL(/\/contests\/new$/, { timeout: 20_000 });
   ok('the setup screen is its own route, not a dialog');
 
-  await page.fill('input[maxlength="160"]', CONTEST_NAME);
+  // By label, not by an attribute. The first version of this suite found the
+  // name box by maxlength and broke the moment that number was corrected.
+  const nameBox = () => page.getByLabel('Name', { exact: true });
+  await nameBox().fill(CONTEST_NAME);
   await page.fill('input[type="date"]', '2027-03-14');
   await page.fill('input[type="time"]', '23:59');
 
@@ -166,7 +169,7 @@ try {
   await page.goto(`${BASE}/admin/brands/${brand.id}/contests/new`, {
     waitUntil: 'domcontentloaded',
   });
-  await page.fill('input[maxlength="160"]', `Suite contest ${STAMP} past`);
+  await page.getByLabel('Name', { exact: true }).fill(`Suite contest ${STAMP} past`);
   await page.fill('input[type="date"]', '2020-01-01');
   await page.click('button[type="submit"]');
   await page.waitForSelector('[role="alert"]', { timeout: 10_000 });
@@ -197,7 +200,7 @@ try {
       await page.goto(`${BASE}/admin/brands/${brand.id}/contests/new`, {
         waitUntil: 'domcontentloaded',
       });
-      await page.waitForSelector('input[maxlength="160"]', { timeout: 20_000 });
+      await page.getByLabel('Name', { exact: true }).waitFor({ timeout: 20_000 });
       const formScrolls = await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
       );
