@@ -24,7 +24,20 @@ import { contestLifecycleOf, type ContestLifecycle } from '@/lib/contest-state';
 export const BRAND_CONTESTS_PAGE_SIZE = 12;
 
 export type ContestStatus = 'active' | 'inactive';
-export type DeliverableKind = 'fixed' | 'rank' | 'milestone';
+
+/**
+ * What a deliverable asks for. Mirrors the database enum
+ * `public.contest_deliverable_type`, two values today and more later, one
+ * `alter type ... add value` at a time.
+ *
+ * THE THREE KINDS ARE GONE, and with them rankPosition, metric, threshold and
+ * the old videoCount column. Placings were dropped on 2026-08-13: anybody who
+ * reaches a target earns its reward and several creators can earn the same one,
+ * so there is nothing to come first in. Declared here rather than imported from
+ * `useManageContest`, which already imports `ContestStatus` from this file and
+ * would make the two a cycle.
+ */
+export type ContestDeliverableType = 'gmv' | 'video_count';
 
 /** The commercial half. Staff only, and its own table for exactly that reason. */
 export interface ContestCommercials {
@@ -32,17 +45,23 @@ export interface ContestCommercials {
   internalNote: string | null;
 }
 
+/**
+ * ONE DELIVERABLE: a type, a target the creator has to reach, and the reward
+ * for reaching it.
+ *
+ * BOTH NUMBERS ARE REAL NUMBERS, never null. The database requires them, so
+ * there is no "not priced yet" case left to draw and no null to mistake for a
+ * zero. A reward of zero is a genuine unpaid deliverable and reads as one.
+ */
 export interface ContestDeliverable {
   id: string;
   contestId: string;
-  kind: DeliverableKind;
+  type: ContestDeliverableType;
   title: string;
   detail: string | null;
-  videoCount: number | null;
-  rankPosition: number | null;
-  metric: string | null;
-  threshold: number | null;
-  rewardAmount: number | null;
+  /** The number to reach. Whole, 1 to 1000, when the type is video_count. */
+  targetValue: number;
+  rewardAmount: number;
   sortOrder: number;
   isActive: boolean;
 }
@@ -70,7 +89,12 @@ export interface Contest {
   brandId: string;
   name: string;
   description: string | null;
-  judgingBasis: string | null;
+  /*
+   * judgingBasis is GONE, with the column. It existed so a placing would never
+   * feel arbitrary, and there are no placings: the deliverable rows say what a
+   * creator has to reach in numbers. Naming the column in a select now returns
+   * 42703 and blanks the whole screen, so it is out of CONTEST_COLUMNS too.
+   */
   briefUrl: string | null;
   bannerUrl: string | null;
   status: ContestStatus;
@@ -88,7 +112,7 @@ export interface Contest {
 }
 
 const CONTEST_COLUMNS =
-  'id, brand_id, name, description, judging_basis, brief_url, banner_url, status, ' +
+  'id, brand_id, name, description, brief_url, banner_url, status, ' +
   'needs_admin_approval, opens_at, expires_at, expires_at_timezone, currency, ' +
   'settled_at, cancelled_at, cancel_message, created_at, updated_at';
 
@@ -97,7 +121,6 @@ interface ContestRow {
   brand_id: string;
   name: string;
   description: string | null;
-  judging_basis: string | null;
   brief_url: string | null;
   banner_url: string | null;
   status: ContestStatus;
@@ -118,7 +141,6 @@ const flatten = (r: ContestRow): Contest => ({
   brandId: r.brand_id,
   name: r.name,
   description: r.description,
-  judgingBasis: r.judging_basis,
   briefUrl: r.brief_url,
   bannerUrl: r.banner_url,
   status: r.status,
@@ -296,8 +318,8 @@ export function useContest(contestId: string | undefined) {
         sb
           .from('contest_deliverables')
           .select(
-            'id, contest_id, kind, title, detail, video_count, rank_position, metric, ' +
-              'threshold, reward_amount, sort_order, is_active'
+            'id, contest_id, type, title, detail, target_value, reward_amount, ' +
+              'sort_order, is_active'
           )
           .eq('contest_id', id)
           .order('sort_order', { ascending: true }),
@@ -322,14 +344,16 @@ export function useContest(contestId: string | undefined) {
       interface DRow {
         id: string;
         contest_id: string;
-        kind: DeliverableKind;
+        type: ContestDeliverableType;
         title: string;
         detail: string | null;
-        video_count: number | null;
-        rank_position: number | null;
-        metric: string | null;
-        threshold: number | null;
-        reward_amount: number | null;
+        /*
+         * numeric(14, 2) arrives as a string over PostgREST whenever it does not
+         * fit a double cleanly, which is why both of these go through Number()
+         * below rather than being trusted as they land.
+         */
+        target_value: number | string;
+        reward_amount: number | string;
         sort_order: number;
         is_active: boolean;
       }
@@ -361,14 +385,11 @@ export function useContest(contestId: string | undefined) {
         deliverables: ((d.data ?? []) as unknown as DRow[]).map((r) => ({
           id: r.id,
           contestId: r.contest_id,
-          kind: r.kind,
+          type: r.type,
           title: r.title,
           detail: r.detail,
-          videoCount: r.video_count,
-          rankPosition: r.rank_position,
-          metric: r.metric,
-          threshold: r.threshold,
-          rewardAmount: r.reward_amount,
+          targetValue: Number(r.target_value),
+          rewardAmount: Number(r.reward_amount),
           sortOrder: r.sort_order,
           isActive: r.is_active,
         })),

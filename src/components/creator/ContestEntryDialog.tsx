@@ -10,7 +10,7 @@ import { formatDeadline, timeLeft } from '@/lib/contest-time';
 import { useFocusTrap } from '@/lib/use-focus-trap';
 import {
   useEnterContest,
-  type ContestRewardKind,
+  type ContestDeliverableType,
   type CreatorContest,
 } from '@/lib/creator/useCreatorContests';
 
@@ -44,112 +44,99 @@ import {
  *     position. Decision D7.
  */
 
-/* ------------------------------------------------------- the reward rows -- */
+/* -------------------------------------------------- the deliverable rows -- */
 
 /**
- * Enough of a reward row to draw it, shared by the contest's live rows and by
+ * Enough of a deliverable to draw one, shared by the contest's live rows and by
  * the frozen terms an entrant already holds. Both shapes carry these fields and
- * the card has to read identically either way, or one promise looks like two.
+ * a card has to read identically either way, or one promise looks like two.
+ *
+ * `currency` is optional because only a frozen term carries one: a term is
+ * quoted in the currency it was agreed in, which can differ from what the
+ * contest says today.
+ *
+ * `targetValue` IS READ ONLY on every creator surface, for ever. It is drawn
+ * here and it is never bound to an input anywhere a creator can reach.
+ *
+ * PLACINGS ARE GONE, so there is no rank to draw and no ordinal to write.
+ * Anybody who reaches a target earns its reward and several creators can earn
+ * the same one.
  */
-export interface RewardLike {
+export interface DeliverableLike {
   id: string;
-  kind: ContestRewardKind;
+  type: ContestDeliverableType;
   title: string;
   detail: string | null;
-  videoCount: number | null;
-  rankPosition: number | null;
-  metric: string | null;
-  threshold: number | null;
-  rewardAmount: number | null;
-  /** Present on a frozen term, which is quoted in the currency it was agreed in. */
+  targetValue: number;
+  rewardAmount: number;
   currency?: string;
 }
-
-const ordinal = (n: number): string => {
-  const rest = n % 100;
-  if (rest >= 11 && rest <= 13) return `${n}th`;
-  const last = n % 10;
-  if (last === 1) return `${n}st`;
-  if (last === 2) return `${n}nd`;
-  if (last === 3) return `${n}rd`;
-  return `${n}th`;
-};
 
 /**
  * What this row asks somebody to actually do, in one phrase.
  *
  * Never the title. The title is the admin's own words and nothing in this
- * product generates one, so this sits BESIDE it rather than replacing it.
- * Returns an empty string when the row carries nothing to describe, and the
- * caller draws nothing rather than an empty bullet.
+ * product generates one, so this sits BESIDE it rather than replacing it. The
+ * type is what decides how one column is read: a GMV target is money and a
+ * video target is a count.
  */
-function rewardAsk(r: RewardLike): string {
-  if (r.kind === 'fixed') {
-    if (r.videoCount === null) return '';
-    return r.videoCount === 1 ? 'Film 1 video' : `Film ${r.videoCount} videos`;
+function ask(d: DeliverableLike, currency: string): string {
+  if (d.type === 'video_count') {
+    const n = Math.round(d.targetValue);
+    return n === 1 ? 'Post 1 video' : `Post ${n} videos`;
   }
-  if (r.kind === 'rank') {
-    return r.rankPosition === null ? '' : `Finish ${ordinal(r.rankPosition)}`;
-  }
-  if (r.threshold === null || !r.metric) return '';
-  return `Reach ${r.threshold.toLocaleString()} ${r.metric}`;
+  return `Reach ${money(d.targetValue, d.currency ?? currency)} in GMV`;
 }
 
 /**
- * What it pays.
+ * The rows a contest asks for, drawn once for the whole creator side.
  *
- * "Not set yet" where nothing has been decided, NEVER a zero. A zero here would
- * read as "this pays nothing", which is a different and untrue sentence, and it
- * is the one thing a creator would act on.
+ * A reward of zero is a REAL VALUE now rather than a missing one: the database
+ * requires an amount, and zero means a deliverable that is part of the brief
+ * rather than one that pays. So it is said in words rather than printed as a
+ * currency zero, which would read as a decision nobody has made.
  */
-function rewardPays(r: RewardLike, currency: string): string {
-  if (r.rewardAmount === null) return 'Not set yet';
-  return money(r.rewardAmount, r.currency ?? currency);
-}
-
-export function RewardRows({
-  rewards,
+export function DeliverableRows({
+  rows,
   currency,
   className,
 }: {
-  rewards: RewardLike[];
+  rows: DeliverableLike[];
   currency: string;
   className?: string;
 }) {
-  if (rewards.length === 0) return null;
+  if (rows.length === 0) return null;
 
   return (
     <ul className={cn('flex flex-col gap-2', className)}>
-      {rewards.map((r) => {
-        const ask = rewardAsk(r);
-        const unset = r.rewardAmount === null;
-        return (
-          <li
-            key={r.id}
-            className="border-line bg-surface-2 flex flex-wrap items-start justify-between gap-x-4 gap-y-1 rounded-xl border px-3.5 py-3"
-          >
-            <span className="min-w-0 flex-1 basis-40">
-              <span className="text-text block text-[14px] leading-snug font-semibold">
-                {r.title}
+      {rows.map((d) => (
+        <li
+          key={d.id}
+          className="border-line bg-surface-2 flex flex-wrap items-start justify-between gap-x-4 gap-y-1 rounded-xl border px-3.5 py-3"
+        >
+          <span className="min-w-0 flex-1 basis-40">
+            <span className="text-text block text-[14px] leading-snug font-semibold">
+              {d.title}
+            </span>
+            <span className="text-muted mt-0.5 block text-[13px]">{ask(d, currency)}</span>
+            {d.detail ? (
+              <span className="text-faint mt-0.5 block text-[12px] leading-relaxed">
+                {d.detail}
               </span>
-              {ask ? <span className="text-muted mt-0.5 block text-[13px]">{ask}</span> : null}
-              {r.detail ? (
-                <span className="text-faint mt-0.5 block text-[12px] leading-relaxed">
-                  {r.detail}
-                </span>
-              ) : null}
-            </span>
-            <span
-              className={cn(
-                'font-display shrink-0 text-[16px] font-semibold',
-                unset ? 'text-faint text-[13px] font-normal' : 'text-accent'
-              )}
-            >
-              {rewardPays(r, currency)}
-            </span>
-          </li>
-        );
-      })}
+            ) : null}
+          </span>
+          <span
+            className={cn(
+              'font-display shrink-0 text-[16px] font-semibold',
+              d.rewardAmount > 0 ? 'text-accent' : 'text-faint text-[13px] font-normal'
+            )}
+          >
+            {d.rewardAmount > 0
+              ? money(d.rewardAmount, d.currency ?? currency)
+              : 'Part of the brief'}
+          </span>
+        </li>
+      ))}
     </ul>
   );
 }
@@ -310,7 +297,7 @@ export function ContestEntryDialog({
           </p>
           <p className="text-muted mt-1 text-[13px] leading-relaxed">
             {instant
-              ? 'Nobody has to approve you. Tap once and the rewards below are locked to your entry exactly as they read now.'
+              ? 'Nobody has to approve you. Tap once and the deliverables below are locked to your entry exactly as they read now.'
               : 'You are asking to enter. Somebody at Wurx reads every entry, and the answer lands on this screen the moment they decide. Nothing to check by email.'}
           </p>
         </div>
@@ -353,25 +340,24 @@ export function ContestEntryDialog({
               </p>
             ) : null}
 
-            {contest.rewards.length > 0 ? (
-              <RewardRows
-                rewards={contest.rewards}
+            {contest.deliverables.length > 0 ? (
+              <DeliverableRows
+                rows={contest.deliverables}
                 currency={contest.currency}
                 className="mt-3"
               />
             ) : (
               <p className="text-muted mt-2 text-[13px] leading-relaxed">
-                No reward rows are on this one yet. The team will confirm what it pays with you
-                directly.
+                Nothing has been set on this one yet. The team will confirm what it asks for and
+                what it pays with you directly.
               </p>
             )}
 
-            {contest.judgingBasis ? (
-              <p className="border-line text-muted mt-3 border-t pt-3 text-[13px] leading-relaxed">
-                <span className="text-text font-semibold">How it is judged: </span>
-                {contest.judgingBasis}
-              </p>
-            ) : null}
+            {/*
+              "How it is judged" used to sit here. It is gone with the placings:
+              the rows above say in numbers what that sentence said in words, and
+              anybody who reaches a target earns its reward.
+            */}
 
             {contest.products.length > 0 ? (
               <p className="text-muted mt-3 text-[13px] leading-relaxed">

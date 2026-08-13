@@ -221,10 +221,17 @@ export const router = createBrowserRouter([
         HydrateFallback: RouteFallback,
         lazy: lazyRoute(() => import('@/routes/admin/OfferRequests'), 'OfferRequests'),
       },
+      // Two screens, the same split offers already has: what is running, and
+      // who is waiting on us. Different questions, worked at different times.
       {
         path: '/admin/contests',
         HydrateFallback: RouteFallback,
         lazy: lazyRoute(() => import('@/routes/admin/AllContests'), 'AllContests'),
+      },
+      {
+        path: '/admin/contests/claims',
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/routes/admin/ContestClaims'), 'ContestClaims'),
       },
       {
         path: '/admin/content',

@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { Link, useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Check, Loader2, Trash2 } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
+import { ContestDeliverables } from '@/components/admin/ContestDeliverables';
 import { ContestExclusions } from '@/components/admin/ContestExclusions';
 import { ContestProducts } from '@/components/admin/ContestProducts';
-import { ContestRewardRows } from '@/components/admin/ContestRewardRows';
+import { ContestProgressQueue } from '@/components/admin/ContestProgressQueue';
 import { Button } from '@/components/ui/Button';
 import { Field, Input, Select, Textarea } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
@@ -18,7 +19,8 @@ import { useManageContest } from '@/lib/admin/useManageContest';
  * The contest setup screen.
  *
  * A FULL SCREEN, not a dialog, ruled 2026-08-13. A contest carries a dozen
- * fields plus three lists inside it, which is past what a dialog can hold
+ * fields plus its deliverables, its claims queue, its products and its barred
+ * creators inside it, which is past what a dialog can hold
  * honestly, and the designer drew both of their directions as full pages
  * without being asked to.
  *
@@ -88,7 +90,6 @@ function defaultZone(): string {
 interface FormState {
   name: string;
   description: string;
-  judgingBasis: string;
   date: string;
   time: string;
   timezone: string;
@@ -103,7 +104,6 @@ interface FormState {
 const EMPTY: FormState = {
   name: '',
   description: '',
-  judgingBasis: '',
   date: '',
   time: '23:59',
   timezone: defaultZone(),
@@ -252,7 +252,6 @@ export function ContestSetup() {
     setForm({
       name: c.name,
       description: c.description ?? '',
-      judgingBasis: c.judgingBasis ?? '',
       date,
       time,
       timezone: c.expiresAtTimezone,
@@ -360,7 +359,6 @@ export function ContestSetup() {
         brandId: brandId!,
         name: form.name.trim(),
         description: form.description.trim() || null,
-        judgingBasis: form.judgingBasis.trim() || null,
         expiresAt: instant!,
         expiresAtTimezone: form.timezone,
         briefUrl: form.briefUrl.trim() || null,
@@ -450,9 +448,10 @@ export function ContestSetup() {
   const formMissing = (!isNew && contestFailed) || showSkeleton || showGone;
 
   /*
-   * The id the three lists hang off, and the reason there are three of them
-   * rather than three dead boxes on a new contest: every one of them writes
-   * against a contest_id, and there is no contest until Create is pressed.
+   * The id the four sections below hang off, and the reason they appear only
+   * once it exists rather than as dead boxes on a new contest: every one of them
+   * reads or writes against a contest_id, and there is no contest until Create
+   * is pressed.
    *
    * `createdId` covers the single render between the row being written and the
    * URL catching up, so the lists do not appear and then blink out again.
@@ -462,14 +461,11 @@ export function ContestSetup() {
   /*
    * Read from the SAVED contest rather than from the form.
    *
-   * The reward rows carry amounts in the currency the contest is stored in, and
-   * the database refuses a ranked prize against the sentence it holds, not the
-   * one sitting unsaved in a box. Reading the form here would put a GBP label
-   * on USD figures the moment somebody touched the currency select without
-   * saving, and would hide the ranked prize warning that is about to fire.
+   * Deliverables carry amounts in the currency the contest is stored in.
+   * Reading the form here would put a GBP label on USD figures the moment
+   * somebody touched the currency select without saving it.
    */
   const savedCurrency = existing?.contest?.currency ?? form.currency;
-  const savedJudgingBasis = existing?.contest?.judgingBasis ?? null;
   const listsLoading = loadingContest && !existing;
 
   return (
@@ -606,24 +602,15 @@ export function ContestSetup() {
                   )}
                 </Field>
 
-                <Field
-                  label="How it is judged"
-                  hint="Needed once this contest pays for finishing in a place. With no live scoreboard, this sentence is the only thing a creator has to go on."
-                >
-                  {({ id, describedBy, invalid }) => (
-                    <Input
-                      id={id}
-                      value={form.judgingBasis}
-                      onChange={(e) => set('judgingBasis', e.target.value)}
-                      maxLength={600}
-                      readOnly={busy}
-                      placeholder="e.g. Most approved videos by the deadline"
-                      aria-describedby={describedBy}
-                      invalid={invalid}
-                    />
-                  )}
-                </Field>
-
+                {/*
+                  "How it is judged" was here and is gone with placings, on
+                  Rashid's redesign of 2026-08-13. Nobody finishes first any
+                  more: a contest is a list of deliverables, and each one says
+                  what a creator has to reach in numbers. The sentence existed
+                  because a placing with no stated basis feels arbitrary, and
+                  there is no placing left to explain. The column is dropped in
+                  the same step, so there is nothing to write it into either.
+                */}
                 <Field
                   label="Content brief link"
                   hint="Optional. Opens in a new tab for creators."
@@ -858,13 +845,18 @@ export function ContestSetup() {
             */}
             {liveContestId ? (
               <>
-                <ContestRewardRows
+                <ContestDeliverables
                   contestId={liveContestId}
                   currency={savedCurrency}
-                  savedJudgingBasis={savedJudgingBasis}
                   rows={existing?.deliverables ?? []}
                   loading={listsLoading}
                 />
+                {/*
+                  The claims queue for THIS contest, on the same screen as the
+                  deliverables it is judged against. Nothing a creator types
+                  counts until somebody confirms it here.
+                */}
+                <ContestProgressQueue contestId={liveContestId} />
                 <ContestProducts
                   contestId={liveContestId}
                   brandId={brandId!}
@@ -879,7 +871,7 @@ export function ContestSetup() {
               </>
             ) : (
               <p className="text-faint max-w-prose text-[12px] leading-relaxed">
-                Reward rows, products and barred creators all hang off this contest, so they
+                Deliverables, products and barred creators all hang off this contest, so they
                 open the moment it exists. Press Create contest and they appear here, on this
                 same screen.
               </p>
@@ -954,7 +946,7 @@ function DeleteContest({
   return (
     <div className="border-danger/40 bg-danger-soft rounded-xl border p-4">
       <p className="text-danger max-w-prose text-[13px] leading-relaxed font-medium">
-        Delete this contest? It goes for good, along with its reward rows and its budget. The
+        Delete this contest? It goes for good, along with its deliverables and its budget. The
         activity log keeps a record of what it was. Nobody can be in it: if anybody is waiting
         or approved, settle or decide them first.
       </p>

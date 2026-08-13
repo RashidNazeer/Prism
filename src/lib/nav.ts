@@ -80,6 +80,21 @@ const ADMIN: NavGroup[] = [
     ],
   },
   {
+    // Its own group, the same shape as Offers and for the same reason. It is
+    // NOT only a tab inside a brand: "what is running" and "who is waiting on
+    // me" are asked across every brand at once, and making somebody walk into a
+    // brand to find out was the wrong shape.
+    //
+    // Claims is the one that must never be missed. A creator types their own
+    // GMV, so nothing they claim counts until it is confirmed here, and a claim
+    // sitting unread is a creator watching a number that will not move.
+    label: 'Contests',
+    items: [
+      { label: 'All contests', icon: Trophy, to: '/admin/contests' },
+      { label: 'Claims', icon: Inbox, to: '/admin/contests/claims' },
+    ],
+  },
+  {
     label: 'Content',
     items: [{ label: 'Content', icon: Video, to: '/admin/content' }],
   },
@@ -103,15 +118,6 @@ const ADMIN: NavGroup[] = [
         icon: Store,
         to: '/admin/brands',
         activePrefixes: ['/admin/brands'],
-      },
-      // Its own entry, not only a tab inside a brand. Somebody asking "what is
-      // running and who is waiting on me" is asking across every brand at once,
-      // and making them walk into a brand first to find out was wrong.
-      {
-        label: 'Contests',
-        icon: Trophy,
-        to: '/admin/contests',
-        activePrefixes: ['/admin/contests'],
       },
       { label: 'Campaigns', icon: Megaphone, soon: 'Next' },
     ],

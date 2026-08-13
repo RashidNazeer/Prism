@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
-import type { ContestStatus, DeliverableKind } from '@/lib/admin/useContests';
+import type { ContestStatus } from '@/lib/admin/useContests';
 
 /**
  * Every STAFF write in the contest feature.
@@ -15,7 +15,22 @@ import type { ContestStatus, DeliverableKind } from '@/lib/admin/useContests';
  * joined, and there must never be one. That capability does not exist in the
  * database either. Cancelling the whole contest is the only exit and it affects
  * everybody, which is why it reads as a fire alarm rather than a tidy-up.
+ *
+ * TWO OF THESE ARE THE STAFF HALF OF WHAT A CREATOR SEES. `deliverable.save`
+ * writes the target and the reward, which no creator may write anywhere in this
+ * product, and `progress.review` is the confirmation that turns a figure a
+ * creator typed into a figure money may be owed against.
  */
+
+/**
+ * What a deliverable asks for. Mirrors the database enum
+ * `public.contest_deliverable_type`, which starts at two values and grows one
+ * `alter type ... add value` at a time.
+ */
+export type ContestDeliverableType = 'gmv' | 'video_count';
+
+/** Staff confirm or refuse a claim. `pending` is the only thing a creator writes. */
+export type ContestProgressStatus = 'pending' | 'confirmed' | 'rejected';
 
 export type ContestSavePayload = {
   action: 'contest.save';
@@ -23,8 +38,12 @@ export type ContestSavePayload = {
   brandId: string;
   name: string;
   description: string | null;
-  /** Required by the database once the contest carries an active ranked prize. */
-  judgingBasis: string | null;
+  /*
+   * judgingBasis is GONE, from here, from the Edge Function and from
+   * `save_contest`'s argument list. There are no placings to state a basis for:
+   * a contest is a list of deliverables and each one says its target in
+   * numbers. Sending the field now reaches a function that does not accept it.
+   */
   /** ISO instant. Always sent with its zone, because one is meaningless alone. */
   expiresAt: string;
   /** An IANA zone name, never an offset. See rule L6. */
@@ -62,19 +81,36 @@ export type ContestCancelPayload = {
   message: string | null;
 };
 
+/**
+ * ONE DELIVERABLE: pick a type, type the target the creator has to reach, type
+ * the reward for reaching it. That is the whole popup, and the whole row.
+ *
+ * BOTH NUMBERS ARE REQUIRED rather than nullable, which is a change: a reward
+ * used to be typed later on a row that only named a placing. Nothing is
+ * contingent on a placing now, so a row without a target is meaningless and a
+ * row without a reward has no purpose. Zero is a legal reward and means an
+ * unpaid deliverable, which the brief-only case needs.
+ *
+ * SEVERAL DELIVERABLES MAY SHARE A TYPE, deliberately. 500 GMV pays 50 and 1000
+ * pays 120, and one creator earns both on the way past. There is no uniqueness
+ * on (contest, type) in the database and adding one here would delete tiering.
+ */
 export type DeliverableSavePayload = {
   action: 'deliverable.save';
   deliverableId?: string | null;
   contestId: string;
-  kind: DeliverableKind;
+  type: ContestDeliverableType;
   /** Typed by the admin, every time. Nothing generates one. See decision Q11. */
   title: string;
   detail: string | null;
-  videoCount: number | null;
-  rankPosition: number | null;
-  metric: string | null;
-  threshold: number | null;
-  rewardAmount: number | null;
+  /**
+   * The number the creator has to reach. A whole number of videos, 1 to 1000,
+   * when the type is video_count. Read only to creators in the browser AND on
+   * the wire: no function a creator can reach takes a target argument.
+   */
+  targetValue: number;
+  /** What reaching it pays. Zero means an unpaid deliverable, never "not set". */
+  rewardAmount: number;
   sortOrder: number;
   isActive: boolean;
 };
@@ -83,6 +119,34 @@ export type DeliverableSavePayload = {
 export type DeliverableRetirePayload = {
   action: 'deliverable.retire';
   deliverableId: string;
+};
+
+/**
+ * Confirming or refusing what one creator says they have achieved.
+ *
+ * NOTHING COUNTS UNTIL THIS RUNS, and that is the whole reason the action
+ * exists: a creator types their own GMV, so an unconfirmed figure is a claim
+ * about money rather than a total. Money is only ever owed against a confirmed
+ * one.
+ *
+ * IT CARRIES NO FIGURES. Staff decide on WHAT THE CREATOR TYPED and cannot edit
+ * it into something else, because a figure somebody else rewrote is not a claim
+ * anybody made. A wrong one is refused with a sentence and the creator sends
+ * the right one.
+ *
+ * MESSAGE, NOT REASON (decision D14). The creator reads it, it is the only
+ * place they are told why, and a rejection without one is refused at the door
+ * and again in the database.
+ *
+ * It decides nothing about the videos: those are reviewed one by one through
+ * `manage-content`, so confirming a count of six is not a decision about six
+ * videos.
+ */
+export type ProgressReviewPayload = {
+  action: 'progress.review';
+  updateId: string;
+  status: Exclude<ContestProgressStatus, 'pending'>;
+  message: string | null;
 };
 
 export type ProductsSetPayload = {
@@ -115,6 +179,7 @@ export type ManageContestPayload =
   | ContestCancelPayload
   | DeliverableSavePayload
   | DeliverableRetirePayload
+  | ProgressReviewPayload
   | ProductsSetPayload
   | ExclusionSavePayload
   | ExclusionRemovePayload;
@@ -137,6 +202,15 @@ export function useManageContest() {
       void queryClient.invalidateQueries({ queryKey: ['admin', 'contests'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'contest'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
+      /*
+       * The claims queue. `contest_progress_updates` is deliberately NOT in the
+       * realtime publication, because row security is not applied to DELETE
+       * events and a creator's claimed GMV would broadcast to anybody who
+       * opened an unfiltered channel. So a decision reaching the queue is this
+       * line, and nothing else: staff must not have to reload to see that the
+       * claim they just confirmed has left the list.
+       */
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'contest-progress'] });
       // The creator side reads the same contests through different queries, so
       // an admin who is also looking at a hub sees their own edit there too.
       void queryClient.invalidateQueries({ queryKey: ['creator'] });
@@ -150,8 +224,9 @@ export function useManageContest() {
  * `functions.invoke` reports any non-2xx as a generic "Edge Function returned a
  * non-2xx status code" and hides the body on `error.context`, which is the
  * actual Response. Without this an admin would see that sentence instead of
- * "say how this contest is judged before you add a ranked prize", which is the
- * one that tells them what to do next.
+ * "somebody has already been promised this deliverable as it stands, so add a
+ * new one instead of changing it", which is the one that tells them what to do
+ * next.
  */
 async function messageFrom(error: unknown): Promise<string> {
   const context = (error as { context?: Response }).context;

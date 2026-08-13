@@ -11,11 +11,31 @@
  * (rule E6). A shared door would have carried that difference as an `if` in the
  * middle of a hundred lines, which is exactly how the wrong branch gets reached.
  *
- * Three actions, and none of them writes a row from here:
+ * Four actions, and none of them writes a row from here:
  *
  *   contest.enter     apply_for_contest        enter, or ask to
  *   contest.withdraw  withdraw_contest_entry   change your own mind
  *   contest.target    set_contest_entry_target the private number, theirs alone
+ *   progress.submit   submit_contest_progress  what they have achieved so far
+ *
+ * THE SECURITY LINE OF THE PROGRESS FEATURE RUNS THROUGH THIS FILE, so it is
+ * stated once here and enforced twice below. A CREATOR MAY WRITE THEIR OWN
+ * ACHIEVEMENT AND NOTHING ELSE: not a target, not a reward, not another
+ * entrant's figures, and not their own confirmation.
+ *
+ *   1. `ProgressSubmit` is a STRICT object with no target field and no reward
+ *      field, so a request carrying either is refused outright rather than
+ *      quietly stripped. There is nothing to forget to validate, because there
+ *      is nothing to accept.
+ *   2. The call to `submit_contest_progress` is rebuilt key by key below, so
+ *      only the seven fields the database reads ever reach it.
+ *   3. The database function itself takes no target argument, no reward
+ *      argument and no status argument, matches the entry on creator_id as well
+ *      as id, and hard codes the claim as `pending`.
+ *
+ * Nothing here counts as money either. A claim sits at `pending` until a member
+ * of staff confirms it through `manage-contest`, because a creator typing their
+ * own GMV is a creator typing their own payslip.
  *
  * The shape is the one every function in this product uses:
  *
@@ -86,7 +106,91 @@ const Target = z.object({
   target: z.number().int().min(1, 'A target is at least one video').max(1000).nullable(),
 });
 
-const Body = z.discriminatedUnion('action', [Enter, Withdraw, Target]);
+/**
+ * ONE NEW VIDEO, filed with a progress update.
+ *
+ * `strictObject`, so a key nobody asked for is a refusal rather than a silent
+ * strip. Every bound is `contest_submissions`' own column check: the link is
+ * https and between 12 and 2048 characters, the ad code is between 3 and 120.
+ * A door narrower than the column refuses work the database would have taken; a
+ * door wider than it hands a creator a constraint violation instead of a
+ * sentence.
+ *
+ * The optional four are what the preview lookup fills in. They are decoration
+ * on a card, never a fact about money.
+ */
+const ProgressVideo = z.strictObject({
+  videoUrl: z
+    .url({
+      protocol: /^https$/,
+      error: 'Every new video needs a link that starts with https://',
+    })
+    .min(12, 'Every new video needs a link that starts with https://')
+    .max(2048, 'That link is too long to be a video link'),
+  adCode: z
+    .string()
+    .trim()
+    .min(3, 'Every new video needs its ad code')
+    .max(120, 'Keep an ad code under 120 characters'),
+  adAuthorized: z.boolean().default(false),
+  thumbnailUrl: z.string().trim().max(2048).nullish(),
+  videoTitle: z.string().trim().max(300).nullish(),
+  videoAuthor: z.string().trim().max(160).nullish(),
+  embedId: z.string().trim().max(120).nullish(),
+});
+
+/**
+ * WHAT THEY HAVE ACHIEVED, TYPED BY THEM, AND WAITING FOR STAFF.
+ *
+ * THE FIGURES ARE CUMULATIVE TOTALS, NOT INCREMENTS. "I am at 640 GMV and 6
+ * videos", never "I did 140 more". Every bound below is the sentence
+ * `submit_contest_progress` raises for the same case, said here so a creator
+ * gets a sentence at the door rather than a numeric overflow or a constraint
+ * violation from the column. The database remains the guarantee: it is the only
+ * layer that knows what was claimed before, so the two rules that depend on
+ * history live there and only there.
+ *
+ *   - THE VIDEO COUNT MAY NOT GO BACKWARDS, refused by naming both numbers.
+ *   - EXACTLY THE NEW VIDEOS ARE ASKED FOR, never the total: 5 to 6 asks for
+ *     one link and ad code, not six, and the earlier five are shown rather than
+ *     re-entered.
+ *
+ * NO TARGET FIELD AND NO REWARD FIELD, and `strictObject` means one cannot be
+ * smuggled in as an extra key either. Read the header.
+ */
+const ProgressSubmit = z.strictObject({
+  action: z.literal('progress.submit'),
+  entryId: z.uuid(),
+  gmv: z
+    .number()
+    .finite()
+    .min(0, 'A GMV figure cannot be less than zero')
+    .max(100_000_000, 'That GMV figure looks like a typo')
+    // Stored as numeric(14, 2). Rounded here rather than letting Postgres
+    // truncate a third decimal place somebody pasted in.
+    .transform((n) => Math.round(n * 100) / 100),
+  videoCount: z
+    .number()
+    .int('A video count is a whole number of videos')
+    .min(0, 'A video count cannot be less than zero')
+    .max(1000, 'That video count looks like a typo'),
+  /*
+   * The ceiling is the video count's own, because an update can add at most as
+   * many videos as the count allows in total. The duplicate check is the same
+   * comparison the database makes, `lower(trim(...))`, so the two cannot
+   * disagree about what counts as the same link.
+   */
+  videos: z
+    .array(ProgressVideo)
+    .max(1000, 'That is more videos than one update can carry')
+    .refine(
+      (list) =>
+        new Set(list.map((v) => v.videoUrl.trim().toLowerCase())).size === list.length,
+      'The same link is in that list twice'
+    ),
+});
+
+const Body = z.discriminatedUnion('action', [Enter, Withdraw, Target, ProgressSubmit]);
 
 /** SQLSTATE from the database functions to something HTTP shaped. */
 const STATUS_FOR_PG: Record<string, number> = {
@@ -120,6 +224,19 @@ const BARRED = 'you are not eligible for this contest';
 function humanise(message: string, code: string | undefined): string {
   if (code === '23505') {
     if (!message.includes('duplicate key')) return message;
+    /*
+     * Three different rows can collide now, so the fallback alone would tell
+     * somebody filing a video that they are already in a contest they have been
+     * in for a fortnight. `submit_contest_progress` raises its own sentences for
+     * both of these before the index is reached; these needles are for the race
+     * where two taps arrive at once and the index answers first.
+     */
+    if (message.includes('one_pending_idx')) {
+      return 'Your last update is still with the team, so wait for them to confirm it before sending another';
+    }
+    if (message.includes('video_url')) {
+      return 'You have already posted that link on this contest';
+    }
     return 'You are already in this one';
   }
   if (code === '23514') return 'One of those values is outside what we allow';
@@ -191,10 +308,19 @@ Deno.serve(async (req) => {
 
   const parsed = Body.safeParse(raw);
   if (!parsed.success) {
-    return reply(
-      { error: parsed.error.issues[0]?.message ?? 'That request was not valid' },
-      400
-    );
+    const issue = parsed.error.issues[0];
+    /*
+     * A field nobody asked for gets its own sentence, because the only requests
+     * that carry one are hand written: the browser sends what these schemas
+     * describe. `progress.submit` is strict precisely so a target or a reward
+     * arriving in the body is a refusal rather than a key quietly dropped, and
+     * a refusal that says so is what makes that testable.
+     */
+    const message =
+      issue?.code === 'unrecognized_keys'
+        ? 'That request carried a field it is not allowed to send'
+        : (issue?.message ?? 'That request was not valid');
+    return reply({ error: message }, 400);
   }
   const input = parsed.data;
 
@@ -211,6 +337,33 @@ Deno.serve(async (req) => {
     rpc = await admin.rpc('withdraw_contest_entry', {
       p_actor_id: actor.id,
       p_entry_id: input.entryId,
+    });
+  } else if (input.action === 'progress.submit') {
+    /*
+     * REBUILT KEY BY KEY, and that is the second half of the guarantee in the
+     * header rather than a formatting habit. Only these seven fields per video,
+     * and only these three figures, can reach the database, whatever else was
+     * in the body. `p_actor_id` comes from the verified token and never from
+     * the request, so the entry is matched on somebody the auth server named.
+     *
+     * The keys are snake_case because the function reads them straight out of
+     * jsonb by name. A camelCase key here would arrive as a null link and be
+     * refused as a missing one, which is a confusing way to find a typo.
+     */
+    rpc = await admin.rpc('submit_contest_progress', {
+      p_actor_id: actor.id,
+      p_entry_id: input.entryId,
+      p_gmv: input.gmv,
+      p_video_count: input.videoCount,
+      p_videos: input.videos.map((v) => ({
+        video_url: v.videoUrl,
+        ad_code: v.adCode,
+        ad_authorized: v.adAuthorized,
+        thumbnail_url: v.thumbnailUrl ?? null,
+        video_title: v.videoTitle ?? null,
+        video_author: v.videoAuthor ?? null,
+        embed_id: v.embedId ?? null,
+      })),
     });
   } else {
     rpc = await admin.rpc('set_contest_entry_target', {

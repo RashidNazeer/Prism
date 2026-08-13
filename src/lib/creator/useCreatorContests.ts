@@ -37,16 +37,42 @@ import { useAuth } from '@/lib/auth/auth-context';
  * gets paid. Nothing in this file may ever drop a contest somebody holds an
  * entry in.
  *
- * AND WHAT IS NOT HERE, by decision D7: no entrant count, no other creator, no
- * position in a field, no "you are 3rd of 14". Not as a column, not as a
- * derived number, not as a hint. The database refuses to serve those facts; the
- * client must not reconstruct them.
+ * WHAT A CREATOR MAY NOW LEARN ABOUT THE FIELD, and the exact size of it.
+ * Decision D7 said no creator ever sees anything about another entrant, and
+ * rule N1 said no creator reachable surface returns a count of entrants in any
+ * form. Rashid amended both on 2026-08-13 to exactly one sentence: "2nd closest
+ * of 5 to the GMV target". So `useMyContestStanding` below returns a rank and a
+ * count, from the database function `my_contest_standing`, and NOTHING ELSE
+ * about anybody else. No handle, no name, no figure, no identifier, ever, and
+ * nothing in this file may reconstruct one.
+ *
+ * A ranking is computed across every entrant, so it can only come from a
+ * security definer function that ranks the whole field and then filters down to
+ * the caller. Counting rows this browser can read would answer "1 of 1" with no
+ * error at all, which is the failure mode brand_rollups was written against.
+ *
+ * AND WHAT THE CREATOR TYPES, which is the other half of this file. They enter
+ * cumulative totals, a GMV figure and a video count, and NOTHING COUNTS UNTIL
+ * STAFF CONFIRM IT. Two numbers are therefore carried apart everywhere below
+ * and must never be merged: `confirmed` is what the team has checked and the
+ * only figure money may be owed against, and a `pending` claim is what somebody
+ * typed. THE TARGET IS READ ONLY HERE, in the browser and on the wire: nothing
+ * in this file writes one, and `submit_contest_progress` takes no target
+ * argument at all.
  */
 
 /* ------------------------------------------------------------------ shapes -- */
 
 export type ContestEntryStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn';
-export type ContestRewardKind = 'fixed' | 'rank' | 'milestone';
+
+/**
+ * What a deliverable asks for. Mirrors the database enum
+ * `public.contest_deliverable_type`, two values today and more later.
+ */
+export type ContestDeliverableType = 'gmv' | 'video_count';
+
+/** Where one claimed set of figures has got to. Only staff can move it. */
+export type ContestProgressStatus = 'pending' | 'confirmed' | 'rejected';
 
 export interface CreatorContestBrand {
   id: string;
@@ -56,23 +82,25 @@ export interface CreatorContestBrand {
 }
 
 /**
- * One reward row, exactly as an admin typed it.
+ * ONE DELIVERABLE, exactly as an admin typed it: what it asks for, the target
+ * to reach, and what reaching it pays.
  *
- * `rewardAmount` is genuinely nullable and a null is NOT a zero. A row with no
- * amount reads "Not set yet" everywhere it is drawn, because printing a zero
- * where nothing has been decided tells a creator this contest pays nothing.
+ * BOTH NUMBERS ARE REAL NUMBERS NOW, never null. The database requires them, so
+ * there is no "not set yet" case left to draw and no null to mistake for a
+ * zero. A reward of zero is a genuine unpaid deliverable and reads as one.
+ *
+ * `targetValue` IS READ ONLY, everywhere, for ever. It is drawn beside what a
+ * creator has achieved and is never an input on any creator screen.
  */
-export interface CreatorContestReward {
+export interface CreatorContestDeliverable {
   id: string;
   contestId: string;
-  kind: ContestRewardKind;
+  type: ContestDeliverableType;
   title: string;
   detail: string | null;
-  videoCount: number | null;
-  rankPosition: number | null;
-  metric: string | null;
-  threshold: number | null;
-  rewardAmount: number | null;
+  /** The number to reach. Whole, 1 to 1000, when the type is video_count. */
+  targetValue: number;
+  rewardAmount: number;
   sortOrder: number;
 }
 
@@ -90,8 +118,16 @@ export interface CreatorContestEntry {
   /** True when the contest was on auto approve at the moment they entered. */
   autoApproved: boolean;
   currency: string;
-  /** The fixed money, frozen at approval. Null until approved, or if none. */
+  /**
+   * Every active reward on the contest, added up and frozen at approval. It was
+   * the fixed half once; nothing is contingent on a placing any more, so it is
+   * now the lot. Null until approved, or if there is none.
+   *
+   * IT IS WHAT IS ON OFFER, NEVER WHAT IS OWED. A reward is earned by reaching
+   * a target and released by staff at settlement against a CONFIRMED figure.
+   */
   committedAmount: number | null;
+  /** The video targets added up, frozen the same way. */
   committedVideoCount: number | null;
   note: string | null;
   decisionNote: string | null;
@@ -103,22 +139,65 @@ export interface CreatorContestEntry {
  * What one entrant was promised, copied at the moment they were approved and
  * never read live from the contest again.
  *
- * This is why an approved card stops quoting `rewards` and starts quoting
- * these: an admin adding, retiring or re-pricing a reward row on Friday must
- * not rewrite what somebody agreed to on Monday.
+ * This is why an approved card stops quoting `deliverables` and starts quoting
+ * these: an admin adding, retiring or re-pricing a deliverable on Friday must
+ * not rewrite what somebody agreed to on Monday. The database refuses to move a
+ * type, a target or a reward on a row anybody already holds terms against.
  */
 export interface CreatorContestTerm {
   id: string;
   entryId: string;
-  kind: ContestRewardKind;
+  /** The deliverable it was copied from, so a card can line the two up. */
+  deliverableId: string | null;
+  type: ContestDeliverableType;
   title: string;
   detail: string | null;
-  videoCount: number | null;
-  rankPosition: number | null;
-  metric: string | null;
-  threshold: number | null;
-  rewardAmount: number | null;
+  targetValue: number;
+  rewardAmount: number;
   currency: string;
+}
+
+/**
+ * ONE CLAIM: what a creator said they had achieved, and what staff did about
+ * it.
+ *
+ * THE FIGURES ARE CUMULATIVE TOTALS, NOT INCREMENTS, so two of these are never
+ * added together. The newest confirmed one is the total, which is what
+ * `contest_entry_confirmed_totals` returns and why nothing here sums anything.
+ *
+ * A `pending` or `rejected` row is a claim and nothing more. `staffMessage` is
+ * the sentence the creator reads under a refused figure and is the only place
+ * they are told why, so it is rendered wherever a rejection is.
+ */
+export interface CreatorProgressUpdate {
+  id: string;
+  entryId: string;
+  gmv: number;
+  videoCount: number;
+  status: ContestProgressStatus;
+  staffMessage: string | null;
+  confirmedAt: string | null;
+  createdAt: string;
+}
+
+/**
+ * WHAT ONE ENTRY HAS ACTUALLY ACHIEVED, built from confirmed claims only.
+ *
+ * Anything that draws a bar, names a reward or talks about money reads this and
+ * never the raw claims, because an unconfirmed figure is not a total. Taken
+ * from the LATEST confirmed update rather than the sum of them, in the view,
+ * because the figures are cumulative.
+ *
+ * `claimsWaiting` is how a screen says "with the team" without pretending the
+ * number in it counts yet.
+ */
+export interface CreatorConfirmedTotals {
+  entryId: string;
+  contestId: string;
+  confirmedGmv: number;
+  confirmedVideoCount: number;
+  confirmedAt: string | null;
+  claimsWaiting: number;
 }
 
 /** One row of `contest_entry_progress`, which is keyed to exactly one entry. */
@@ -140,8 +219,11 @@ export interface CreatorContest {
   brand: CreatorContestBrand | null;
   name: string;
   description: string | null;
-  /** The sentence that IS the judging, because nothing here computes a placing. */
-  judgingBasis: string | null;
+  /*
+   * judgingBasis is GONE, with the column. It existed so a placing would never
+   * feel arbitrary, and there are no placings: the deliverables say what to do
+   * in numbers, and anybody who reaches a target earns its reward.
+   */
   briefUrl: string | null;
   bannerUrl: string | null;
   status: 'active' | 'inactive';
@@ -154,7 +236,8 @@ export interface CreatorContest {
   settledAt: string | null;
   cancelledAt: string | null;
   cancelMessage: string | null;
-  rewards: CreatorContestReward[];
+  /** What it asks for and what each thing pays. Read only to them, always. */
+  deliverables: CreatorContestDeliverable[];
   products: CreatorContestProduct[];
   /** Their own entry, if they have one. Never anybody else's, by policy. */
   entry: CreatorContestEntry | null;
@@ -163,6 +246,15 @@ export interface CreatorContest {
   progress: CreatorEntryProgress | null;
   /** Their own private target. Staff cannot read this, and never will. */
   target: number | null;
+  /**
+   * Everything they have ever claimed on this entry, newest first. The history
+   * IS the evidence, so it is a list rather than a latest row.
+   */
+  progressUpdates: CreatorProgressUpdate[];
+  /** The claim waiting on the team, if there is one. At most one, by index. */
+  pendingClaim: CreatorProgressUpdate | null;
+  /** Confirmed only. The one figure money may be owed against. */
+  confirmed: CreatorConfirmedTotals | null;
 }
 
 /* ------------------------------------------------------------- the door --- */
@@ -221,7 +313,7 @@ export function isLiveForThem(c: CreatorContest): boolean {
 /* ------------------------------------------------------------ the reads --- */
 
 const CONTEST_COLUMNS =
-  'id, brand_id, name, description, judging_basis, brief_url, banner_url, status, ' +
+  'id, brand_id, name, description, brief_url, banner_url, status, ' +
   'needs_admin_approval, opens_at, expires_at, expires_at_timezone, currency, ' +
   'settled_at, cancelled_at, cancel_message, ' +
   'brand:brands (id, name, slug, logo_url)';
@@ -241,7 +333,6 @@ interface ContestRow {
   brand_id: string;
   name: string;
   description: string | null;
-  judging_basis: string | null;
   brief_url: string | null;
   banner_url: string | null;
   status: 'active' | 'inactive';
@@ -256,17 +347,14 @@ interface ContestRow {
   brand: { id: string; name: string; slug: string; logo_url: string | null } | null;
 }
 
-interface RewardRow {
+interface DeliverableRow {
   id: string;
   contest_id: string;
-  kind: ContestRewardKind;
+  type: ContestDeliverableType;
   title: string;
   detail: string | null;
-  video_count: number | null;
-  rank_position: number | null;
-  metric: string | null;
-  threshold: number | null;
-  reward_amount: number | null;
+  target_value: number;
+  reward_amount: number;
   sort_order: number;
 }
 
@@ -278,7 +366,7 @@ interface ProductRow {
 
 export interface CreatorContestCatalogue {
   contests: ContestRow[];
-  rewards: RewardRow[];
+  deliverables: DeliverableRow[];
   products: ProductRow[];
 }
 
@@ -287,10 +375,10 @@ export interface CreatorContestCatalogue {
  *
  * THREE READS, NOT ONE NESTED SELECT. The three tables carry three different
  * policies, and a nested select that silently returns an empty array for one of
- * them looks exactly like a contest with no reward rows. Reading them apart
+ * them looks exactly like a contest that asks for nothing. Reading them apart
  * means an error is an error and an empty list is an empty list.
  *
- * No `contest_id` filter on the reward rows or the products either. Both
+ * No `contest_id` filter on the deliverables or the products either. Both
  * policies are written as "exists a contest I can read", evaluated with the
  * caller's own rights, so the rows that come back are already the rows of the
  * contests above. Passing a list of ids would be the client re-deciding
@@ -323,8 +411,7 @@ export function useCreatorContestCatalogue() {
         sb
           .from('contest_deliverables')
           .select(
-            'id, contest_id, kind, title, detail, video_count, rank_position, metric, ' +
-              'threshold, reward_amount, sort_order'
+            'id, contest_id, type, title, detail, target_value, reward_amount, sort_order'
           )
           .order('sort_order', { ascending: true })
           .limit(CEILING * 8),
@@ -341,7 +428,7 @@ export function useCreatorContestCatalogue() {
 
       return {
         contests: (c.data ?? []) as unknown as ContestRow[],
-        rewards: (d.data ?? []) as unknown as RewardRow[],
+        deliverables: (d.data ?? []) as unknown as DeliverableRow[],
         products: (p.data ?? []) as unknown as ProductRow[],
       };
     },
@@ -384,15 +471,33 @@ interface EntryRow {
 interface TermRow {
   id: string;
   entry_id: string;
-  kind: ContestRewardKind;
+  deliverable_id: string | null;
+  type: ContestDeliverableType;
   title: string;
   detail: string | null;
-  video_count: number | null;
-  rank_position: number | null;
-  metric: string | null;
-  threshold: number | null;
-  reward_amount: number | null;
+  target_value: number;
+  reward_amount: number;
   currency: string;
+}
+
+interface ProgressUpdateRow {
+  id: string;
+  entry_id: string;
+  gmv: number;
+  video_count: number;
+  status: ContestProgressStatus;
+  staff_message: string | null;
+  confirmed_at: string | null;
+  created_at: string;
+}
+
+interface ConfirmedTotalsRow {
+  entry_id: string;
+  contest_id: string;
+  confirmed_gmv: number;
+  confirmed_video_count: number;
+  confirmed_at: string | null;
+  claims_waiting: number;
 }
 
 interface ProgressRow {
@@ -416,11 +521,14 @@ export interface MyContestEntries {
   terms: TermRow[];
   progress: ProgressRow[];
   targets: TargetRow[];
+  updates: ProgressUpdateRow[];
+  confirmed: ConfirmedTotalsRow[];
 }
 
 /**
  * Their own side of every contest: the entry, what was promised, how much has
- * been filmed, and the private number they set themselves.
+ * been filmed, the private number they set themselves, everything they have
+ * claimed and everything the team has confirmed.
  *
  * Kept live on `contest_entries`, filtered to their own rows. A decision has to
  * land while they are looking at the screen, because being told immediately is
@@ -431,6 +539,15 @@ export interface MyContestEntries {
  * The `creator_id` filter is load bearing rather than tidiness: postgres_changes
  * does not apply row security to DELETE events, so an unfiltered binding would
  * hand this browser the old row of somebody else's deleted entry.
+ *
+ * THE CLAIMS ARE NOT ON THAT CHANNEL, and cannot be. `contest_progress_updates`
+ * is deliberately outside the realtime publication for the same reason: row
+ * security is not applied to DELETE events, `delete_contest` cascades these
+ * rows away, and a creator's claimed GMV would broadcast to anybody who opened
+ * an unfiltered channel by hand. A claim moves because this creator typed it,
+ * which invalidates below, or because staff decided it, which this browser
+ * learns on the next refetch. Six reads, one round trip, because they are all
+ * the same question: what is true about my own entries right now.
  */
 export function useMyContestEntries() {
   const { user } = useAuth();
@@ -442,7 +559,7 @@ export function useMyContestEntries() {
     queryFn: async (): Promise<MyContestEntries> => {
       const sb = getSupabase();
 
-      const [e, t, g, k] = await Promise.all([
+      const [e, t, g, k, u, f] = await Promise.all([
         sb
           .from('contest_entries')
           .select(
@@ -454,8 +571,8 @@ export function useMyContestEntries() {
         sb
           .from('contest_entry_terms')
           .select(
-            'id, entry_id, kind, title, detail, video_count, rank_position, metric, ' +
-              'threshold, reward_amount, currency'
+            'id, entry_id, deliverable_id, type, title, detail, target_value, ' +
+              'reward_amount, currency'
           )
           .limit(CEILING * 8),
         sb
@@ -466,18 +583,53 @@ export function useMyContestEntries() {
           )
           .limit(CEILING),
         sb.from('contest_entry_targets').select('entry_id, target').limit(CEILING),
+        /*
+         * EVERY CLAIM THEY HAVE EVER MADE, newest first, and their own only:
+         * `contest_progress_updates` has one creator policy and it is
+         * `creator_id = auth.uid()`. No filter is written here for the same
+         * reason none is written anywhere else in this file, and the ordering
+         * is the one `contest_progress_updates_creator_idx` was built for.
+         *
+         * Rejected rows are kept rather than filtered. They carry the sentence
+         * staff wrote, they are why a video count cannot go back down, and
+         * hiding them would leave a creator wondering what happened.
+         */
+        sb
+          .from('contest_progress_updates')
+          .select(
+            'id, entry_id, gmv, video_count, status, staff_message, confirmed_at, created_at'
+          )
+          .order('created_at', { ascending: false })
+          .limit(CEILING * 4),
+        /*
+         * THE CONFIRMED TOTALS, which are the only totals. A view, keyed to an
+         * entry, which belongs to exactly one person, so this browser's count
+         * over its own rows is complete rather than silently narrowed. Anything
+         * that draws a bar or names money reads this and never the claims.
+         */
+        sb
+          .from('contest_entry_confirmed_totals')
+          .select(
+            'entry_id, contest_id, confirmed_gmv, confirmed_video_count, ' +
+              'confirmed_at, claims_waiting'
+          )
+          .limit(CEILING),
       ]);
 
       if (e.error) throw e.error;
       if (t.error) throw t.error;
       if (g.error) throw g.error;
       if (k.error) throw k.error;
+      if (u.error) throw u.error;
+      if (f.error) throw f.error;
 
       return {
         entries: (e.data ?? []) as unknown as EntryRow[],
         terms: (t.data ?? []) as unknown as TermRow[],
         progress: (g.data ?? []) as unknown as ProgressRow[],
         targets: (k.data ?? []) as unknown as TargetRow[],
+        updates: (u.data ?? []) as unknown as ProgressUpdateRow[],
+        confirmed: (f.data ?? []) as unknown as ConfirmedTotalsRow[],
       };
     },
   });
@@ -502,33 +654,101 @@ export function useMyContestEntries() {
 
 /* ----------------------------------------------------------- the joining -- */
 
-const flattenReward = (r: RewardRow): CreatorContestReward => ({
-  id: r.id,
-  contestId: r.contest_id,
-  kind: r.kind,
-  title: r.title,
-  detail: r.detail,
-  videoCount: r.video_count,
-  rankPosition: r.rank_position,
-  metric: r.metric,
-  threshold: r.threshold,
-  rewardAmount: r.reward_amount,
-  sortOrder: r.sort_order,
+const flattenDeliverable = (d: DeliverableRow): CreatorContestDeliverable => ({
+  id: d.id,
+  contestId: d.contest_id,
+  type: d.type,
+  title: d.title,
+  detail: d.detail,
+  targetValue: Number(d.target_value),
+  rewardAmount: Number(d.reward_amount),
+  sortOrder: d.sort_order,
 });
 
 const flattenTerm = (t: TermRow): CreatorContestTerm => ({
   id: t.id,
   entryId: t.entry_id,
-  kind: t.kind,
+  deliverableId: t.deliverable_id,
+  type: t.type,
   title: t.title,
   detail: t.detail,
-  videoCount: t.video_count,
-  rankPosition: t.rank_position,
-  metric: t.metric,
-  threshold: t.threshold,
-  rewardAmount: t.reward_amount,
+  targetValue: Number(t.target_value),
+  rewardAmount: Number(t.reward_amount),
   currency: t.currency,
 });
+
+const flattenUpdate = (u: ProgressUpdateRow): CreatorProgressUpdate => ({
+  id: u.id,
+  entryId: u.entry_id,
+  gmv: Number(u.gmv),
+  videoCount: u.video_count,
+  status: u.status,
+  staffMessage: u.staff_message,
+  confirmedAt: u.confirmed_at,
+  createdAt: u.created_at,
+});
+
+/* ----------------------------------------------------- what the form needs -- */
+
+/**
+ * THE HIGHEST VIDEO COUNT EVER CLAIMED ON THIS ENTRY, whatever became of it.
+ *
+ * The same figure `submit_contest_progress` computes, and it counts REJECTED
+ * claims too, deliberately: the videos filed against one exist and were
+ * reviewed, so re-asking for them would file them twice. A form that used the
+ * confirmed count instead would ask for the same six links a second time and
+ * then be refused by the database, which is the worst of both.
+ */
+export function videosAlreadyDeclared(updates: CreatorProgressUpdate[]): number {
+  return updates.reduce((max, u) => (u.videoCount > max ? u.videoCount : max), 0);
+}
+
+/**
+ * HOW MANY LINKS AND AD CODES TO ASK FOR: the INCREASE, never the total.
+ *
+ * Going from 5 to 6 asks for one. Rashid was explicit, the database refuses any
+ * other number by naming both, and this is the one place the browser computes
+ * it so no screen can invent its own arithmetic. Negative is impossible by
+ * clamping here and refused by the database anyway: a count may never go back
+ * down, because that would orphan videos staff have already looked at.
+ */
+export function newVideosNeeded(
+  nextCount: number,
+  updates: CreatorProgressUpdate[]
+): number {
+  return Math.max(0, Math.round(nextCount) - videosAlreadyDeclared(updates));
+}
+
+/** The claim sitting with the team, if there is one. At most one, by index. */
+export function pendingClaimOf(updates: CreatorProgressUpdate[]): CreatorProgressUpdate | null {
+  return updates.find((u) => u.status === 'pending') ?? null;
+}
+
+/**
+ * WHERE THEY SAY THEY ARE, which is a different question from where the team
+ * says they are, and the two are drawn apart on purpose.
+ *
+ * The figures are cumulative, so this is the latest claim if one is waiting and
+ * the confirmed figure otherwise. NOT the larger of the two: a claim may
+ * correct a figure DOWNWARDS, because somebody who fat fingered 6400 has to be
+ * able to fix it, and quietly keeping the bigger number would leave a creator
+ * looking at a GMV they had just told us was wrong.
+ *
+ * Feed this to `DeliverableProgress` as `claimed` and the confirmed totals as
+ * `confirmed`. It draws them as two different things because an unconfirmed
+ * figure is a claim about money.
+ */
+export function claimedTotalsOf(
+  updates: CreatorProgressUpdate[],
+  confirmed: CreatorConfirmedTotals | null
+): { gmv: number; videoCount: number } {
+  const pending = pendingClaimOf(updates);
+  if (pending) return { gmv: pending.gmv, videoCount: pending.videoCount };
+  return {
+    gmv: confirmed?.confirmedGmv ?? 0,
+    videoCount: confirmed?.confirmedVideoCount ?? 0,
+  };
+}
 
 /**
  * Everything on one screen, stitched.
@@ -553,11 +773,11 @@ export function useCreatorContests() {
     const rows = catalogue.data?.contests ?? [];
     if (rows.length === 0) return [];
 
-    const rewards = new Map<string, CreatorContestReward[]>();
-    for (const r of catalogue.data?.rewards ?? []) {
-      const list = rewards.get(r.contest_id) ?? [];
-      list.push(flattenReward(r));
-      rewards.set(r.contest_id, list);
+    const deliverables = new Map<string, CreatorContestDeliverable[]>();
+    for (const d of catalogue.data?.deliverables ?? []) {
+      const list = deliverables.get(d.contest_id) ?? [];
+      list.push(flattenDeliverable(d));
+      deliverables.set(d.contest_id, list);
     }
 
     const products = new Map<string, CreatorContestProduct[]>();
@@ -602,8 +822,30 @@ export function useCreatorContests() {
     const targetFor = new Map<string, number>();
     for (const k of mine.data?.targets ?? []) targetFor.set(k.entry_id, k.target);
 
+    // Newest first out of the query, and kept in that order per entry: the most
+    // recent claim is the one a card leads with.
+    const updatesFor = new Map<string, CreatorProgressUpdate[]>();
+    for (const u of mine.data?.updates ?? []) {
+      const list = updatesFor.get(u.entry_id) ?? [];
+      list.push(flattenUpdate(u));
+      updatesFor.set(u.entry_id, list);
+    }
+
+    const confirmedFor = new Map<string, CreatorConfirmedTotals>();
+    for (const f of mine.data?.confirmed ?? []) {
+      confirmedFor.set(f.entry_id, {
+        entryId: f.entry_id,
+        contestId: f.contest_id,
+        confirmedGmv: Number(f.confirmed_gmv),
+        confirmedVideoCount: f.confirmed_video_count,
+        confirmedAt: f.confirmed_at,
+        claimsWaiting: f.claims_waiting,
+      });
+    }
+
     return rows.map((r): CreatorContest => {
       const row = entryFor.get(r.id) ?? null;
+      const updates = row ? (updatesFor.get(row.id) ?? []) : [];
       const entry: CreatorContestEntry | null = row
         ? {
             id: row.id,
@@ -634,7 +876,6 @@ export function useCreatorContests() {
           : null,
         name: r.name,
         description: r.description,
-        judgingBasis: r.judging_basis,
         briefUrl: r.brief_url,
         bannerUrl: r.banner_url,
         status: r.status,
@@ -646,12 +887,18 @@ export function useCreatorContests() {
         settledAt: r.settled_at,
         cancelledAt: r.cancelled_at,
         cancelMessage: r.cancel_message,
-        rewards: rewards.get(r.id) ?? [],
+        deliverables: deliverables.get(r.id) ?? [],
         products: products.get(r.id) ?? [],
         entry,
         terms: entry ? (termsFor.get(entry.id) ?? []) : [],
         progress: entry ? (progressFor.get(entry.id) ?? null) : null,
         target: entry ? (targetFor.get(entry.id) ?? null) : null,
+        progressUpdates: updates,
+        pendingClaim: pendingClaimOf(updates),
+        // Null until the team has confirmed something, and null is NOT a zero:
+        // a screen says nothing is confirmed yet rather than printing 0 GMV,
+        // which would read as "you have sold nothing".
+        confirmed: entry ? (confirmedFor.get(entry.id) ?? null) : null,
       };
     });
   }, [catalogue.data, mine.data]);
@@ -665,6 +912,82 @@ export function useCreatorContests() {
     isError: catalogue.isError || mine.isError,
     error: (catalogue.error ?? mine.error) as Error | null,
   };
+}
+
+/* -------------------------------------------------------------- standing -- */
+
+/**
+ * "2nd closest of 5 to the GMV target." That sentence, and nothing else.
+ *
+ * Every number here is either the caller's own or an aggregate over the field.
+ * There is no handle, no name, no identifier and no other entrant's figure, and
+ * nothing may ever be added: this is the exact width of the amendment Rashid
+ * made to decision D7 and rule N1 on 2026-08-13.
+ *
+ * IT TAKES NO USER ID, and that is the database's doing rather than this hook's
+ * politeness. `my_contest_standing` reads `auth.uid()` itself, so there is no
+ * argument a curious person could change into somebody else. It ranks the whole
+ * field inside a security definer function and then filters down to the
+ * caller's own row, which is the only shape that is both true and safe: ranking
+ * the rows this browser can read would answer "1 of 1" with no error at all.
+ *
+ * NULL WHEN THERE IS NOTHING TO SAY. A creator with no approved entry in that
+ * contest gets zero rows, which is the same answer as a contest that does not
+ * exist, so this is not a discovery tool either. A screen draws nothing rather
+ * than inventing a place.
+ *
+ * Ties share a place: two creators on the same confirmed GMV are both 2nd and
+ * the next is 4th, because inventing an order between two people who are level
+ * is both untrue and a fact about somebody else.
+ */
+export interface MyContestStanding {
+  /** How many people are in it. No hint of who. */
+  entrants: number;
+  /** The caller's own confirmed figures, the same ones the totals view carries. */
+  confirmedGmv: number;
+  confirmedVideoCount: number;
+  /** 1 is closest. Ranked on confirmed figures only, so it lags reality. */
+  gmvPlace: number;
+  videoPlace: number;
+}
+
+interface StandingRow {
+  entrants: number;
+  confirmed_gmv: number;
+  confirmed_video_count: number;
+  gmv_place: number;
+  video_place: number;
+}
+
+export function useMyContestStanding(contestId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['creator', 'contest-standing', contestId],
+    enabled: Boolean(contestId),
+    /*
+     * A minute. A standing only moves when a member of staff confirms
+     * somebody's claim, which is a human decision rather than a stream of
+     * events, and it is ranked on confirmed figures that lag reality anyway.
+     */
+    staleTime: 60_000,
+    queryFn: async (): Promise<MyContestStanding | null> => {
+      const { data, error } = await getSupabase().rpc('my_contest_standing', {
+        p_contest_id: contestId,
+      });
+      if (error) throw error;
+
+      // A set returning function, so this is an array of nought or one.
+      const row = (data as StandingRow[] | null)?.[0];
+      if (!row) return null;
+
+      return {
+        entrants: row.entrants,
+        confirmedGmv: Number(row.confirmed_gmv),
+        confirmedVideoCount: row.confirmed_video_count,
+        gmvPlace: row.gmv_place,
+        videoPlace: row.video_place,
+      };
+    },
+  });
 }
 
 /* --------------------------------------------------------------- writing -- */
@@ -685,7 +1008,50 @@ export type SetTargetPayload = {
 };
 
 /**
- * Entering, withdrawing, and the private target.
+ * ONE NEW VIDEO, filed with an update. Exactly the new ones, never the ones
+ * already declared: 5 to 6 sends one of these, not six.
+ */
+export type ContestProgressVideo = {
+  videoUrl: string;
+  adCode: string;
+  adAuthorized?: boolean;
+  thumbnailUrl?: string | null;
+  videoTitle?: string | null;
+  videoAuthor?: string | null;
+  embedId?: string | null;
+};
+
+/**
+ * WHAT THEY HAVE ACHIEVED, TYPED BY THEM, WAITING FOR STAFF.
+ *
+ * LOOK AT WHAT IS NOT IN THIS TYPE, because it is the security design rather
+ * than an omission. There is no target, no reward, no status, no creator id and
+ * no other entrant. A creator may write their own achievement and nothing else.
+ * The Edge Function's schema for this action is STRICT, so a field that is not
+ * listed here is refused outright rather than quietly dropped, and
+ * `submit_contest_progress` takes no target or reward argument at all: there is
+ * nothing to forget to validate, because there is nothing to pass.
+ *
+ * THE FIGURES ARE CUMULATIVE TOTALS. "I am at 640 GMV and 6 videos", never "I
+ * did 140 more". GMV may go down, because a fat fingered 6400 has to be
+ * fixable. THE VIDEO COUNT MAY NOT, because videos are filed and reviewed one
+ * by one and a lower count would orphan work staff have already looked at.
+ *
+ * `videos` carries exactly the INCREASE, which is what `newVideosNeeded` above
+ * computes. The database refuses any other number by naming both.
+ *
+ * IT LANDS AS A CLAIM. Nothing here is money until staff confirm it.
+ */
+export type SubmitProgressPayload = {
+  action: 'progress.submit';
+  entryId: string;
+  gmv: number;
+  videoCount: number;
+  videos: ContestProgressVideo[];
+};
+
+/**
+ * Entering, withdrawing, the private target, and saying what they have done.
  *
  * Not a table write, and there is no way to make it one: not one of the eleven
  * contest tables carries an insert, update or delete policy, and every database
@@ -703,7 +1069,11 @@ export function useEnterContest() {
 
   return useMutation({
     mutationFn: async (
-      payload: EnterContestPayload | WithdrawEntryPayload | SetTargetPayload
+      payload:
+        | EnterContestPayload
+        | WithdrawEntryPayload
+        | SetTargetPayload
+        | SubmitProgressPayload
     ) => {
       const { data, error } = await getSupabase().functions.invoke('enter-contest', {
         body: payload,
@@ -716,10 +1086,18 @@ export function useEnterContest() {
       /*
        * The catalogue too, and not only for tidiness. Entering an auto approve
        * contest freezes terms in the same transaction, and the card has to stop
-       * quoting the contest's live reward rows and start quoting the frozen
+       * quoting the contest's live deliverables and start quoting the frozen
        * ones the moment it does.
        */
       void queryClient.invalidateQueries({ queryKey: ['creator', 'contests'] });
+      /*
+       * And their standing, which is a separate query keyed per contest.
+       * Filing a claim does not move it, because a claim is not confirmed, but
+       * the videos filed with it move `contest_entry_progress`, and a creator
+       * who has just typed something and sees two figures disagree will believe
+       * the wrong one. Invalidating the whole prefix costs one small call.
+       */
+      void queryClient.invalidateQueries({ queryKey: ['creator', 'contest-standing'] });
     },
   });
 }

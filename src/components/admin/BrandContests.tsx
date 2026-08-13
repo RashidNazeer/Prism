@@ -235,8 +235,14 @@ function ContestRow({ contest, now }: { contest: Contest; now: number }) {
             {contest.name}
           </h3>
 
-          {contest.judgingBasis ? (
-            <p className="text-muted mt-1 line-clamp-1 text-[13px]">{contest.judgingBasis}</p>
+          {/*
+            "How it is judged" used to sit here. It is gone with the placings:
+            what a contest asks for is now a list of deliverables, each with a
+            target and what reaching it pays, and those are read on the contest
+            itself rather than summarised in a sentence on a list row.
+          */}
+          {contest.description ? (
+            <p className="text-muted mt-1 line-clamp-1 text-[13px]">{contest.description}</p>
           ) : null}
         </div>
 

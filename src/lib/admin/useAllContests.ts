@@ -68,8 +68,13 @@ export interface AllContestsRow {
  * made up values one refactor away from being printed, and the columns left are
  * a description and a banner url on a page of twenty rows.
  */
+/*
+ * judging_basis is NOT in this list any more. The column is dropped by
+ * 20260814010000, so naming it returns 42703 and blanks the whole page rather
+ * than leaving one field empty.
+ */
 const CONTEST_COLUMNS =
-  'id, brand_id, name, description, judging_basis, brief_url, banner_url, status, ' +
+  'id, brand_id, name, description, brief_url, banner_url, status, ' +
   'needs_admin_approval, opens_at, expires_at, expires_at_timezone, currency, ' +
   'settled_at, cancelled_at, cancel_message, created_at, updated_at, ' +
   'brand:brands (id, name, is_active)';
@@ -79,7 +84,6 @@ interface ContestRow {
   brand_id: string;
   name: string;
   description: string | null;
-  judging_basis: string | null;
   brief_url: string | null;
   banner_url: string | null;
   status: ContestStatus;
@@ -102,7 +106,6 @@ const flatten = (r: ContestRow): AllContestsRow => ({
     brandId: r.brand_id,
     name: r.name,
     description: r.description,
-    judgingBasis: r.judging_basis,
     briefUrl: r.brief_url,
     bannerUrl: r.banner_url,
     status: r.status,

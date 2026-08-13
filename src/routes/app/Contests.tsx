@@ -1,10 +1,28 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { m } from 'motion/react';
-import { Check, Clock, ExternalLink, Search, Store, Target, Trophy, X } from 'lucide-react';
+import {
+  Check,
+  Clock,
+  ExternalLink,
+  Gauge,
+  Search,
+  Store,
+  Target,
+  Trophy,
+  X,
+} from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
-import { ContestEntryDialog, RewardRows } from '@/components/creator/ContestEntryDialog';
+import {
+  ContestEntryDialog,
+  DeliverableRows,
+  type DeliverableLike,
+} from '@/components/creator/ContestEntryDialog';
+import {
+  ContestProgressDialog,
+  ContestProgressSummary,
+} from '@/components/creator/ContestProgressDialog';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Field';
 import { ContestStateChip } from '@/components/work/ContestStateChip';
@@ -43,15 +61,19 @@ import {
  *    not in are grouped separately at the bottom, so a shut door cannot sit in
  *    the middle of the ones they can still act on.
  *
- * 2. Nothing here says anything about another entrant: no headcount, no field
- *    size, no position, no "3rd of 14". Decision D7. There is no such column to
- *    read and the client must not reconstruct one.
+ * 2. Nothing here says anything about another entrant: no handle, no name, no
+ *    figure. Decision D7. There is no such column to read and the client must
+ *    not reconstruct one.
  *
- * NOTHING ON THIS SCREEN IMPLIES A PLACING HAS BEEN COMPUTED, either. There is
- * no GMV and no view data in this product, so a ranked contest is judged by the
- * sentence in `judging_basis` and settled by a person. Where that sentence
- * exists it is shown as the whole answer, and where it does not the reward row
- * simply says what it pays for.
+ * THERE ARE NO PLACINGS ANY MORE. A contest is a list of deliverables, and
+ * anybody who reaches a target earns its reward, so nothing on this screen has
+ * to imply that somebody has been ranked. "How it is judged" is gone with them.
+ *
+ * WHAT AN ENTERED CREATOR GETS HERE, and it is the point of the redesign: their
+ * own claimed figures drawn against the target, what is still waiting to be
+ * confirmed, and Update progress. The two bands are deliberately different
+ * colours because an unconfirmed figure is a claim about money, and money is
+ * only ever owed against a confirmed one.
  */
 
 type Tab = 'all' | 'in' | 'waiting' | 'open';
@@ -109,8 +131,20 @@ export function Contests() {
   const [brandId, setBrandId] = useState('');
   const [search, setSearch] = useState('');
   const [entering, setEntering] = useState<CreatorContest | null>(null);
+  /*
+   * The contest whose progress panel is open, held as the contest rather than
+   * as an id, so the panel can be titled and priced without reaching back into
+   * the list for a row that may have been refetched underneath it.
+   */
+  const [updating, setUpdating] = useState<CreatorContest | null>(null);
 
   const now = useNow();
+  /*
+   * Their claimed and confirmed figures ride along with their entries, in the
+   * same query, because they are the same question: what is true about my own
+   * entries right now. So a card that has an entry to draw always has the
+   * figures to draw on it, and there is no third loading state on this screen.
+   */
   const { contests, isLoading, isError, error } = useCreatorContests();
 
   const brands = useMemo(() => {
@@ -170,6 +204,17 @@ export function Contests() {
    */
   const live = shown.filter((c) => doorOf(c, now) === 'open' || isLiveForThem(c));
   const shut = shown.filter((c) => doorOf(c, now) !== 'open' && !isLiveForThem(c));
+
+  /*
+   * The open panel reads the CURRENT row rather than the copy that was captured
+   * when it opened. Sending a claim invalidates the entries query, and a panel
+   * holding the old object would still be showing figures the browser has since
+   * been told are out of date. It falls back to the captured row so the panel
+   * cannot vanish mid sentence if a filter or a refetch drops it from the list.
+   */
+  const updatingNow = updating
+    ? (contests.find((c) => c.id === updating.id) ?? updating)
+    : null;
 
   return (
     <AppShell>
@@ -299,6 +344,7 @@ export function Contests() {
                         now={now}
                         canEnterAtAll={isCreator}
                         onEnter={() => setEntering(contest)}
+                        onUpdateProgress={() => setUpdating(contest)}
                       />
                     </m.li>
                   ))}
@@ -328,6 +374,7 @@ export function Contests() {
                           now={now}
                           canEnterAtAll={isCreator}
                           onEnter={() => setEntering(contest)}
+                          onUpdateProgress={() => setUpdating(contest)}
                         />
                       </li>
                     ))}
@@ -342,6 +389,16 @@ export function Contests() {
       {entering ? (
         <ContestEntryDialog contest={entering} onClose={() => setEntering(null)} />
       ) : null}
+
+      {/*
+        Only ever opened from a card whose entry is approved, so the entry is
+        there. `submit_contest_progress` matches the entry on creator_id as well
+        as on its id besides, so an entry id that arrived any other way is
+        refused as "that is not one of your contests".
+      */}
+      {updatingNow?.entry ? (
+        <ContestProgressDialog contest={updatingNow} onClose={() => setUpdating(null)} />
+      ) : null}
     </AppShell>
   );
 }
@@ -353,12 +410,14 @@ function ContestCard({
   now,
   canEnterAtAll,
   onEnter,
+  onUpdateProgress,
 }: {
   contest: CreatorContest;
   now: number;
   /** False for staff, who may read a contest but may never enter one. Rule E6. */
   canEnterAtAll: boolean;
   onEnter: () => void;
+  onUpdateProgress: () => void;
 }) {
   const door = doorOf(contest, now);
   const state = entryStateOf(contest);
@@ -368,13 +427,14 @@ function ContestCard({
    * ONCE THEY ARE IN, THE CARD QUOTES WHAT THEY WERE PROMISED.
    *
    * `contest_entry_terms` is copied at approval and never read live from the
-   * contest again, so an admin adding, retiring or re-pricing a reward row
+   * contest again, so an admin adding, retiring or re-pricing a deliverable
    * afterwards legitimately differs from what this entrant holds. Printing
-   * today's rows above a bar counting against a frozen five is one card saying
-   * two things at once, which is the exact bug the offers card had to be fixed
-   * for.
+   * today's rows above a bar counting against a frozen target is one card
+   * saying two things at once, which is the exact bug the offers card had to be
+   * fixed for.
    */
-  const rewards = inIt && contest.terms.length > 0 ? contest.terms : contest.rewards;
+  const promised = inIt && contest.terms.length > 0;
+  const rows: DeliverableLike[] = promised ? contest.terms : contest.deliverables;
 
   return (
     <div className="border-line bg-surface-1 flex h-full flex-col rounded-[20px] border p-5 shadow-md">
@@ -428,22 +488,22 @@ function ContestCard({
         </span>
       </div>
 
-      {/* -------------------------------------------------------- rewards -- */}
-      {rewards.length > 0 ? (
+      {/* --------------------------------------------------- deliverables -- */}
+      {rows.length > 0 ? (
         <div className="mt-4">
           <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
-            {inIt && contest.terms.length > 0 ? 'What you were promised' : 'What it pays'}
+            {promised ? 'What you were promised' : 'What it asks for'}
           </p>
-          <RewardRows rewards={rewards} currency={contest.currency} className="mt-2" />
+          <DeliverableRows rows={rows} currency={contest.currency} className="mt-2" />
         </div>
       ) : null}
 
-      {contest.judgingBasis ? (
-        <p className="text-muted mt-3 text-[13px] leading-relaxed">
-          <span className="text-text font-semibold">How it is judged: </span>
-          {contest.judgingBasis}
-        </p>
-      ) : null}
+      {/*
+        "How it is judged" used to sit here. It is gone with the placings: a
+        contest is a list of deliverables now, each one a target and what
+        reaching it pays, so the rows above say in numbers what a sentence used
+        to say in words.
+      */}
 
       {contest.products.length > 0 ? (
         <p className="text-muted mt-2 text-[13px] leading-relaxed">
@@ -470,6 +530,7 @@ function ContestCard({
           door={door}
           canEnterAtAll={canEnterAtAll}
           onEnter={onEnter}
+          onUpdateProgress={onUpdateProgress}
         />
       </div>
     </div>
@@ -493,11 +554,13 @@ function ContestAction({
   door,
   canEnterAtAll,
   onEnter,
+  onUpdateProgress,
 }: {
   contest: CreatorContest;
   door: ContestDoor;
   canEnterAtAll: boolean;
   onEnter: () => void;
+  onUpdateProgress: () => void;
 }) {
   const state = entryStateOf(contest);
   const act = useEnterContest();
@@ -506,7 +569,23 @@ function ContestAction({
   const refusal = act.error ? (act.error as Error).message : '';
 
   if (state === 'in') {
-    const progress = contest.progress;
+    /*
+     * How many of their VIDEOS have been watched, which is a different question
+     * from how far along their figures are. Contest videos are reviewed one by
+     * one, so "1 to redo" has to survive on this card even when the deliverable
+     * bars above it are full.
+     */
+    const filmed = contest.progress;
+    /*
+     * WHAT IS ON OFFER, NEVER WHAT IS OWED, and the redesign made saying so
+     * necessary rather than tidy. `committed_amount` used to be the fixed
+     * rewards only; with placings gone it is the sum of EVERY reward on the
+     * contest, so it is now a figure for reaching every target rather than one
+     * for turning up. It is labelled, and it is deliberately NOT drawn in the
+     * stage-paid token: that token means the team has checked it and it pays,
+     * which is exactly what this figure is not. Money is owed against a
+     * CONFIRMED progress figure and nothing else.
+     */
     const amount = contest.entry?.committedAmount ?? null;
 
     /*
@@ -516,7 +595,7 @@ function ContestAction({
      * button whose only outcome is a refusal.
      */
     const canWithdraw =
-      (progress?.posted ?? 0) === 0 && !contest.settledAt && !contest.cancelledAt;
+      (filmed?.posted ?? 0) === 0 && !contest.settledAt && !contest.cancelledAt;
 
     return (
       <div>
@@ -524,8 +603,11 @@ function ContestAction({
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <span className="text-stage-paid text-[14px] font-semibold">You are in</span>
             {amount !== null ? (
-              <span className="font-display text-stage-paid text-[15px] font-semibold">
-                {money(amount, contest.entry?.currency ?? contest.currency)}
+              <span className="text-muted text-[12px]">
+                <span className="wx-numeric font-display text-text text-[15px] font-semibold">
+                  {money(amount, contest.entry?.currency ?? contest.currency)}
+                </span>{' '}
+                on offer here
               </span>
             ) : null}
           </div>
@@ -545,7 +627,38 @@ function ContestAction({
           ) : null}
         </div>
 
-        {progress ? <EntryProgress progress={progress} /> : null}
+        {/*
+          THEIR FIGURES AGAINST THE TARGET, which is the whole of what an
+          entered creator comes back to this screen for. No loading state: the
+          entry, its terms, its claims and its confirmed totals all arrive in
+          the same query, so a card with an entry to draw always has these.
+        */}
+        <ContestProgressSummary contest={contest} className="border-line mt-4 border-t pt-4" />
+
+        {/*
+          UPDATE PROGRESS. Offered while the contest can still take one: the
+          database refuses a claim on a settled or cancelled contest, and a
+          button whose only outcome is a refusal is the same bug as offering
+          Withdraw once work has been filed.
+
+          IT SAYS SO WHEN SOMETHING IS ALREADY WAITING. Only one claim can be
+          with the team at a time, so the panel behind it has nothing to fill in
+          in that case, and a button that promised a form would be a dead end.
+        */}
+        {!contest.settledAt && !contest.cancelledAt ? (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="mt-3 min-h-11 w-full sm:w-auto"
+            onClick={onUpdateProgress}
+          >
+            <Gauge size={15} aria-hidden />
+            {contest.pendingClaim ? 'See what is with the team' : 'Update progress'}
+          </Button>
+        ) : null}
+
+        {filmed ? <VideosFiled progress={filmed} /> : null}
 
         {contest.entry?.decisionNote ? (
           <p className="text-muted mt-2 text-[13px]">{contest.entry.decisionNote}</p>
@@ -676,46 +789,38 @@ function ContestAction({
 /* --------------------------------------------------------- how far along -- */
 
 /**
- * How much of their own entry has been filmed.
+ * What has happened to their videos, in one line.
+ *
+ * NO SECOND BAR. The deliverable bars above already draw a video count against
+ * a target, and this counts the same videos through a different lens: how many
+ * have been WATCHED. Two bars an inch apart, showing two different numbers for
+ * what looks like one question, is the card saying two things at once, which is
+ * exactly the bug the offers card had to be fixed for. So this is a sentence.
  *
  * Every number here is about ONE person's entry, which is the property that
  * makes `contest_entry_progress` safe to read at all: a count over one
- * creator's own rows is complete rather than silently narrowed. Nothing on this
- * bar knows another entrant exists.
- *
- * `required` NULL means an open ended entry, and then there is no denominator,
- * so no bar is drawn at all rather than a bar against zero.
+ * creator's own rows is complete rather than silently narrowed. Nothing here
+ * knows another entrant exists.
  */
-function EntryProgress({ progress }: { progress: NonNullable<CreatorContest['progress']> }) {
-  const { required, approved, waiting, needsAnotherTake, posted } = progress;
+function VideosFiled({ progress }: { progress: NonNullable<CreatorContest['progress']> }) {
+  const { approved, waiting, needsAnotherTake, posted } = progress;
+
+  // Nothing filed is nothing to report, and a row of zeros would read as a
+  // problem rather than as a beginning.
+  if (posted === 0) return null;
 
   const parts: string[] = [];
-  if (required !== null) parts.push(`${approved} of ${required} approved`);
-  else if (posted > 0) parts.push(`${approved} approved`);
+  if (approved > 0) parts.push(`${approved} counted`);
   if (waiting > 0) parts.push(`${waiting} with the team`);
   if (needsAnotherTake > 0) parts.push(`${needsAnotherTake} to redo`);
 
-  const fraction =
-    required === null || required === 0 ? null : Math.min(1, approved / required);
-
   return (
-    <div className="border-line mt-3 border-t pt-3">
-      {fraction !== null ? (
-        <div
-          className="bg-surface-3 h-1.5 w-full overflow-hidden rounded-full"
-          role="img"
-          aria-label={parts.join(', ')}
-        >
-          <div
-            className="bg-stage-paid ease-brand h-full rounded-full transition-all duration-500"
-            style={{ width: `${Math.round(fraction * 100)}%` }}
-          />
-        </div>
-      ) : null}
-      <p className={cn('text-muted text-[13px]', fraction !== null && 'mt-2')}>
-        {parts.length > 0 ? parts.join(', ') : 'Nothing filed yet'}
-      </p>
-    </div>
+    <p className="text-muted mt-3 text-[13px]">
+      <span className="text-text font-semibold">
+        Your {posted === 1 ? 'video' : 'videos'}:{' '}
+      </span>
+      {parts.length > 0 ? parts.join(', ') : `${posted} sent`}
+    </p>
   );
 }
 

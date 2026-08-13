@@ -2,9 +2,20 @@
  * manage-contest
  * ---------------------------------------------------------------------------
  * Every STAFF write in the contest feature. The creator side (entering,
- * withdrawing, setting a private target, filing a video) lands in a later step
- * and gets its own door, because the role check is different and mixing them
- * makes it harder to see which is which.
+ * withdrawing, setting a private target, filing a video, typing what they have
+ * achieved) has its own door in `enter-contest`, because the role check is
+ * different and mixing them makes it harder to see which is which.
+ *
+ * TWO OF THE ACTIONS HERE ARE THE OTHER HALF OF A CREATOR'S SCREEN:
+ *
+ *   deliverable.save   what a contest asks for and what it pays. A type, a
+ *                      TARGET the creator has to reach, and the REWARD for
+ *                      reaching it. Staff type all three, here, and nowhere in
+ *                      the product may a creator write any of them.
+ *   progress.review    the confirmation that makes a claimed figure real.
+ *                      Nothing a creator types counts until this runs, because
+ *                      a creator typing their own GMV is a creator typing their
+ *                      own payslip.
  *
  * Same shape as `manage-brand`, for the same reasons:
  *
@@ -91,10 +102,14 @@ const ContestSave = z.object({
   // back as an unreadable check constraint violation.
   name: z.string().trim().min(1, 'A contest needs a name').max(120, 'That name is too long, keep it under 120 characters'),
   description: z.string().trim().max(4000).nullish(),
-  // Required by the database whenever the contest carries an active ranked
-  // prize, and that is checked there rather than here, because it depends on
-  // rows in another table. See rule N7.
-  judgingBasis: z.string().trim().max(600).nullish(),
+  /*
+   * judgingBasis IS GONE, and it is gone from `save_contest`'s argument list as
+   * well. There are no placings to state a basis for: a contest is a list of
+   * deliverables, and each one says in numbers what a creator has to reach.
+   * Leaving the field here would have been worse than useless, because
+   * `save_contest` was dropped and recreated one argument shorter, so a request
+   * still carrying it would bind to nothing and arrive as PGRST202.
+   */
   expiresAt: z.iso.datetime({ offset: true }),
   expiresAtTimezone: timezone,
   opensAt: z.iso.datetime({ offset: true }).nullish(),
@@ -146,32 +161,82 @@ const ContestCancel = z.object({
 });
 
 /**
- * One reward row. Three shapes live in one table:
- *   fixed     - do this, get paid. Carries a video count.
- *   rank      - finish in this place, get paid. Carries a position.
- *   milestone - reach this number, get paid. Carries a metric and a threshold.
+ * ONE DELIVERABLE: a type, a target the creator has to reach, and the reward
+ * for reaching it. That is the whole popup behind Add deliverable, and the
+ * whole row.
  *
- * The title is typed by the admin on all three, every time. Nothing generates
- * one. Rashid ruled that on 2026-08-13 against the recommendation, so a blank
- * title is refused here, again in the database, and again by the column.
+ * THE THREE KINDS ARE GONE, and with them rankPosition, metric, threshold and
+ * videoCount. Placings were dropped on 2026-08-13: anybody who reaches a target
+ * earns its reward, and several creators can earn the same one, so there is
+ * nothing to come first in. A video target is now a target_value like any
+ * other, which is why one column is read on every screen.
+ *
+ * BOTH NUMBERS ARE REQUIRED, not nullish, and that mirrors
+ * `save_contest_deliverable`, whose p_target_value and p_reward_amount are
+ * required arguments for the same reason: a defaulted argument is how a client
+ * that forgot one writes a row anyway. A reward of zero is still legal and
+ * means an unpaid deliverable.
+ *
+ * The title is typed by the admin every time. Nothing generates one. Rashid
+ * ruled that on 2026-08-13 against the recommendation, so a blank title is
+ * refused here, again in the database, and again by the column.
  */
 const DeliverableSave = z.object({
   action: z.literal('deliverable.save'),
   deliverableId: z.uuid().nullish(),
   contestId: z.uuid(),
-  kind: z.enum(['fixed', 'rank', 'milestone']),
-  title: z.string().trim().min(1, 'Give this reward row a short name').max(160),
-  // Both bounds are the column's own: `detail` allows 1000 and `metric` allows
-  // 40. A door narrower than the column refuses work the database would have
-  // taken; a door wider than it hands the admin a constraint violation.
+  type: z.enum(['gmv', 'video_count'], { error: 'Pick what this deliverable asks for' }),
+  title: z.string().trim().min(1, 'Give this deliverable a short name').max(160),
+  // The column's own bound. A door narrower than the column refuses work the
+  // database would have taken; a door wider than it hands the admin a
+  // constraint violation instead of a sentence.
   detail: z.string().trim().max(1000).nullish(),
-  videoCount: z.number().int().min(1).max(1000).nullish(),
-  rankPosition: z.number().int().min(1).max(1000).nullish(),
-  metric: z.string().trim().max(40, 'Keep what is being measured under 40 characters').nullish(),
-  threshold: money.nullish(),
-  rewardAmount: money.nullish(),
+  /*
+   * ABOVE ZERO, because a deliverable earned by entering is not a deliverable,
+   * and rounded to the two decimal places numeric(14, 2) stores rather than
+   * letting Postgres truncate a third one silently.
+   *
+   * The 100 million ceiling is the typo guard `save_contest_deliverable`
+   * carries, quoted here so it is a sentence rather than a numeric overflow.
+   * Whether a video target is whole and under 1000 depends on `type`, so it is
+   * checked after the union: a `.refine()` on a member stops it being a plain
+   * object and `discriminatedUnion` needs plain objects.
+   */
+  targetValue: z
+    .number()
+    .finite()
+    .positive('A deliverable needs a target above zero for the creator to reach')
+    .max(100_000_000, 'That target looks like a typo')
+    .transform((n) => Math.round(n * 100) / 100),
+  rewardAmount: money,
   sortOrder: z.number().int().min(0).max(9999).default(0),
   isActive: z.boolean().default(true),
+});
+
+/**
+ * THE CONFIRMATION THAT MAKES A CLAIMED FIGURE REAL, and the only way a
+ * progress update ever leaves `pending`.
+ *
+ * It carries no figures. Staff confirm or refuse WHAT THE CREATOR TYPED; they
+ * do not get to edit it into something else, because a figure somebody else
+ * rewrote is not a claim anybody made. If it is wrong it is refused with a
+ * sentence and the creator sends the right one.
+ *
+ * MESSAGE, NOT REASON (decision D14). The creator reads this, it is the only
+ * place they are told why, and `review_contest_progress` refuses a rejection
+ * with nothing said. That refusal is mirrored below the union so an admin gets
+ * the question rather than a round trip.
+ *
+ * It does NOT decide anything about the videos. Contest videos are reviewed one
+ * by one through `manage-content`, decided by Rashid on 2026-08-13, so
+ * confirming a count of six is not a decision about six videos.
+ */
+const ProgressReview = z.object({
+  action: z.literal('progress.review'),
+  updateId: z.uuid(),
+  status: z.enum(['confirmed', 'rejected'], { error: 'A decision is confirmed or rejected' }),
+  // 500, the length `contest_progress_updates.staff_message` allows.
+  message: z.string().trim().max(500, 'Keep that under 500 characters').nullish(),
 });
 
 /**
@@ -223,6 +288,7 @@ const Body = z.discriminatedUnion('action', [
   ContestCancel,
   DeliverableSave,
   DeliverableRetire,
+  ProgressReview,
   ProductsSet,
   ExclusionSave,
   ExclusionRemove,
@@ -249,17 +315,24 @@ const STATUS_FOR_PG: Record<string, number> = {
 function humanise(message: string, code: string | undefined): string {
   if (code === '23505') {
     /*
-     * OUR OWN SENTENCE WINS. `save_contest_deliverable` raises "this contest
-     * already has a prize for place 3" with 23505 precisely because a raw
-     * duplicate key error is not a sentence, and the needle tests below threw
-     * it away and returned "That already exists" instead: the raw error the
-     * needles were written to catch would have matched, so the fallback only
-     * ever fired on the good message. Anything that is not raw Postgres text
-     * was written for a person, so it goes back untouched.
+     * OUR OWN SENTENCE WINS. Several of these functions raise 23505 carrying a
+     * sentence written for a person, precisely because a raw duplicate key
+     * error is not one, and the needle tests below used to throw those away and
+     * return "That already exists" instead: the raw error the needles were
+     * written to catch would have matched, so the fallback only ever fired on
+     * the good message. Anything that is not raw Postgres text was written for
+     * a person, so it goes back untouched.
      */
     if (!message.includes('duplicate key')) return message;
-    if (message.includes('rank_idx')) {
-      return 'Another reward row already pays for that place';
+    /*
+     * The `rank_idx` needle went with the index. Two deliverables of the same
+     * type on one contest is the TIERED shape Rashid asked for by name (500
+     * pays 50, 1000 pays 120), so there is no uniqueness on a deliverable left
+     * to violate, and a needle for an index that no longer exists is a sentence
+     * somebody later reads as the rule.
+     */
+    if (message.includes('one_pending_idx')) {
+      return 'That creator already has an update waiting to be confirmed';
     }
     if (message.includes('exclusion')) return 'That person is already barred from this contest';
     if (message.includes('placement_idx')) return 'Two entrants cannot both finish in that place';
@@ -336,20 +409,39 @@ Deno.serve(async (req) => {
   }
   const input = parsed.data;
 
-  // Checked after the union rather than inside it: a `.refine()` on a member
-  // stops it being a plain object, and `discriminatedUnion` needs plain
-  // objects. Each reward kind needs the field that gives it meaning, and a
-  // missing one is a question worth asking rather than a constraint violation.
-  if (input.action === 'deliverable.save') {
-    if (input.kind === 'fixed' && !input.videoCount) {
-      return reply({ error: 'How many videos does this row ask for?' }, 400);
+  /*
+   * Checked after the union rather than inside it: a `.refine()` on a member
+   * stops it being a plain object, and `discriminatedUnion` needs plain
+   * objects. Getting that wrong makes the whole action unreachable rather than
+   * merely unvalidated, which is worse.
+   *
+   * WHAT A VIDEO TARGET IS ALLOWED TO BE, in the two sentences
+   * `save_contest_deliverable` raises, because a check constraint violation on
+   * `contest_deliverables_video_target_whole` is not one. The database is still
+   * the guarantee; this is only the wording arriving sooner.
+   */
+  if (input.action === 'deliverable.save' && input.type === 'video_count') {
+    if (!Number.isInteger(input.targetValue)) {
+      return reply(
+        { error: `A video target is a whole number of videos, not ${input.targetValue}` },
+        400
+      );
     }
-    if (input.kind === 'rank' && !input.rankPosition) {
-      return reply({ error: 'Which place does this row pay for?' }, 400);
+    if (input.targetValue > 1000) {
+      return reply({ error: 'A video target above 1000 is a typo, not a contest' }, 400);
     }
-    if (input.kind === 'milestone' && (!input.metric?.trim() || input.threshold == null)) {
-      return reply({ error: 'A milestone needs something to count, and a number to reach' }, 400);
-    }
+  }
+
+  // A refusal with nothing said is a creator with nothing to act on, and this
+  // is the one screen where the sentence is the whole product. Refused in
+  // `review_contest_progress` too; asked here so the admin is asked rather than
+  // told after a round trip.
+  if (
+    input.action === 'progress.review' &&
+    input.status === 'rejected' &&
+    !input.message?.trim()
+  ) {
+    return reply({ error: 'Say what was wrong with these figures, the creator reads it' }, 400);
   }
 
   // Barring somebody has to name them somehow. Checked here rather than in the
@@ -370,7 +462,6 @@ Deno.serve(async (req) => {
       p_expires_at_timezone: input.expiresAtTimezone,
       p_contest_id: input.contestId ?? null,
       p_description: input.description ?? null,
-      p_judging_basis: input.judgingBasis ?? null,
       p_brief_url: input.briefUrl ?? null,
       p_banner_url: input.bannerUrl ?? null,
       p_opens_at: input.opensAt ?? null,
@@ -406,15 +497,12 @@ Deno.serve(async (req) => {
     rpc = await admin.rpc('save_contest_deliverable', {
       p_actor_id: actor.id,
       p_contest_id: input.contestId,
-      p_kind: input.kind,
+      p_type: input.type,
       p_title: input.title,
+      p_target_value: input.targetValue,
+      p_reward_amount: input.rewardAmount,
       p_deliverable_id: input.deliverableId ?? null,
       p_detail: input.detail ?? null,
-      p_video_count: input.videoCount ?? null,
-      p_rank_position: input.rankPosition ?? null,
-      p_metric: input.metric ?? null,
-      p_threshold: input.threshold ?? null,
-      p_reward_amount: input.rewardAmount ?? null,
       p_sort_order: input.sortOrder,
       p_is_active: input.isActive,
     });
@@ -422,6 +510,20 @@ Deno.serve(async (req) => {
     rpc = await admin.rpc('retire_contest_deliverable', {
       p_actor_id: actor.id,
       p_deliverable_id: input.deliverableId,
+    });
+  } else if (input.action === 'progress.review') {
+    /*
+     * The staff half of the one thing in this feature that is about money. The
+     * database takes the row FOR UPDATE before it reads its status, so two
+     * admins deciding the same claim in the same second get one decision and
+     * one 55006, which arrives below as a 409 carrying "that update was already
+     * confirmed" rather than as a silent second write.
+     */
+    rpc = await admin.rpc('review_contest_progress', {
+      p_actor_id: actor.id,
+      p_update_id: input.updateId,
+      p_status: input.status,
+      p_message: input.message ?? null,
     });
   } else if (input.action === 'products.set') {
     rpc = await admin.rpc('set_contest_products', {

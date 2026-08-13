@@ -540,6 +540,13 @@ export type Database = {
             foreignKeyName: "contest_awards_entry_id_fkey"
             columns: ["entry_id"]
             isOneToOne: false
+            referencedRelation: "contest_entry_confirmed_totals"
+            referencedColumns: ["entry_id"]
+          },
+          {
+            foreignKeyName: "contest_awards_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
             referencedRelation: "contest_entry_progress"
             referencedColumns: ["entry_id"]
           },
@@ -591,15 +598,12 @@ export type Database = {
           detail: string | null
           id: string
           is_active: boolean
-          kind: Database["public"]["Enums"]["contest_deliverable_kind"]
-          metric: string | null
-          rank_position: number | null
-          reward_amount: number | null
+          reward_amount: number
           sort_order: number
-          threshold: number | null
+          target_value: number
           title: string
+          type: Database["public"]["Enums"]["contest_deliverable_type"]
           updated_at: string
-          video_count: number | null
         }
         Insert: {
           contest_id: string
@@ -607,15 +611,12 @@ export type Database = {
           detail?: string | null
           id?: string
           is_active?: boolean
-          kind: Database["public"]["Enums"]["contest_deliverable_kind"]
-          metric?: string | null
-          rank_position?: number | null
-          reward_amount?: number | null
+          reward_amount: number
           sort_order?: number
-          threshold?: number | null
+          target_value: number
           title: string
+          type: Database["public"]["Enums"]["contest_deliverable_type"]
           updated_at?: string
-          video_count?: number | null
         }
         Update: {
           contest_id?: string
@@ -623,15 +624,12 @@ export type Database = {
           detail?: string | null
           id?: string
           is_active?: boolean
-          kind?: Database["public"]["Enums"]["contest_deliverable_kind"]
-          metric?: string | null
-          rank_position?: number | null
-          reward_amount?: number | null
+          reward_amount?: number
           sort_order?: number
-          threshold?: number | null
+          target_value?: number
           title?: string
+          type?: Database["public"]["Enums"]["contest_deliverable_type"]
           updated_at?: string
-          video_count?: number | null
         }
         Relationships: [
           {
@@ -817,6 +815,13 @@ export type Database = {
             foreignKeyName: "contest_entry_events_entry_id_fkey"
             columns: ["entry_id"]
             isOneToOne: false
+            referencedRelation: "contest_entry_confirmed_totals"
+            referencedColumns: ["entry_id"]
+          },
+          {
+            foreignKeyName: "contest_entry_events_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
             referencedRelation: "contest_entry_progress"
             referencedColumns: ["entry_id"]
           },
@@ -870,6 +875,13 @@ export type Database = {
             foreignKeyName: "contest_entry_targets_entry_id_fkey"
             columns: ["entry_id"]
             isOneToOne: true
+            referencedRelation: "contest_entry_confirmed_totals"
+            referencedColumns: ["entry_id"]
+          },
+          {
+            foreignKeyName: "contest_entry_targets_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: true
             referencedRelation: "contest_entry_progress"
             referencedColumns: ["entry_id"]
           },
@@ -883,13 +895,10 @@ export type Database = {
           detail: string | null
           entry_id: string
           id: string
-          kind: Database["public"]["Enums"]["contest_deliverable_kind"]
-          metric: string | null
-          rank_position: number | null
-          reward_amount: number | null
-          threshold: number | null
+          reward_amount: number
+          target_value: number
           title: string
-          video_count: number | null
+          type: Database["public"]["Enums"]["contest_deliverable_type"]
         }
         Insert: {
           created_at?: string
@@ -898,13 +907,10 @@ export type Database = {
           detail?: string | null
           entry_id: string
           id?: string
-          kind: Database["public"]["Enums"]["contest_deliverable_kind"]
-          metric?: string | null
-          rank_position?: number | null
-          reward_amount?: number | null
-          threshold?: number | null
+          reward_amount: number
+          target_value: number
           title: string
-          video_count?: number | null
+          type: Database["public"]["Enums"]["contest_deliverable_type"]
         }
         Update: {
           created_at?: string
@@ -913,13 +919,10 @@ export type Database = {
           detail?: string | null
           entry_id?: string
           id?: string
-          kind?: Database["public"]["Enums"]["contest_deliverable_kind"]
-          metric?: string | null
-          rank_position?: number | null
-          reward_amount?: number | null
-          threshold?: number | null
+          reward_amount?: number
+          target_value?: number
           title?: string
-          video_count?: number | null
+          type?: Database["public"]["Enums"]["contest_deliverable_type"]
         }
         Relationships: [
           {
@@ -935,6 +938,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contest_entries"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_entry_terms_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "contest_entry_confirmed_totals"
+            referencedColumns: ["entry_id"]
           },
           {
             foreignKeyName: "contest_entry_terms_entry_id_fkey"
@@ -1086,6 +1096,98 @@ export type Database = {
           },
         ]
       }
+      contest_progress_updates: {
+        Row: {
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          creator_id: string
+          entry_id: string
+          gmv: number
+          id: string
+          staff_message: string | null
+          status: Database["public"]["Enums"]["contest_progress_status"]
+          updated_at: string
+          video_count: number
+        }
+        Insert: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          creator_id: string
+          entry_id: string
+          gmv?: number
+          id?: string
+          staff_message?: string | null
+          status?: Database["public"]["Enums"]["contest_progress_status"]
+          updated_at?: string
+          video_count?: number
+        }
+        Update: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          creator_id?: string
+          entry_id?: string
+          gmv?: number
+          id?: string
+          staff_message?: string | null
+          status?: Database["public"]["Enums"]["contest_progress_status"]
+          updated_at?: string
+          video_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_progress_updates_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "creator_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_progress_updates_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_progress_updates_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_progress_updates_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_progress_updates_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "contest_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_progress_updates_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "contest_entry_confirmed_totals"
+            referencedColumns: ["entry_id"]
+          },
+          {
+            foreignKeyName: "contest_progress_updates_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "contest_entry_progress"
+            referencedColumns: ["entry_id"]
+          },
+        ]
+      }
       contest_submissions: {
         Row: {
           ad_authorized: boolean
@@ -1102,6 +1204,7 @@ export type Database = {
           embed_id: string | null
           entry_id: string
           id: string
+          progress_update_id: string | null
           status: Database["public"]["Enums"]["content_status"]
           thumbnail_url: string | null
           updated_at: string
@@ -1124,6 +1227,7 @@ export type Database = {
           embed_id?: string | null
           entry_id: string
           id?: string
+          progress_update_id?: string | null
           status?: Database["public"]["Enums"]["content_status"]
           thumbnail_url?: string | null
           updated_at?: string
@@ -1146,6 +1250,7 @@ export type Database = {
           embed_id?: string | null
           entry_id?: string
           id?: string
+          progress_update_id?: string | null
           status?: Database["public"]["Enums"]["content_status"]
           thumbnail_url?: string | null
           updated_at?: string
@@ -1207,8 +1312,22 @@ export type Database = {
             foreignKeyName: "contest_submissions_entry_id_fkey"
             columns: ["entry_id"]
             isOneToOne: false
+            referencedRelation: "contest_entry_confirmed_totals"
+            referencedColumns: ["entry_id"]
+          },
+          {
+            foreignKeyName: "contest_submissions_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
             referencedRelation: "contest_entry_progress"
             referencedColumns: ["entry_id"]
+          },
+          {
+            foreignKeyName: "contest_submissions_progress_update_id_fkey"
+            columns: ["progress_update_id"]
+            isOneToOne: false
+            referencedRelation: "contest_progress_updates"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1227,7 +1346,6 @@ export type Database = {
           expires_at: string
           expires_at_timezone: string
           id: string
-          judging_basis: string | null
           name: string
           needs_admin_approval: boolean
           opens_at: string
@@ -1250,7 +1368,6 @@ export type Database = {
           expires_at: string
           expires_at_timezone?: string
           id?: string
-          judging_basis?: string | null
           name: string
           needs_admin_approval?: boolean
           opens_at?: string
@@ -1273,7 +1390,6 @@ export type Database = {
           expires_at?: string
           expires_at_timezone?: string
           id?: string
-          judging_basis?: string | null
           name?: string
           needs_admin_approval?: boolean
           opens_at?: string
@@ -1741,6 +1857,48 @@ export type Database = {
           },
         ]
       }
+      contest_entry_confirmed_totals: {
+        Row: {
+          brand_id: string | null
+          claims_waiting: number | null
+          confirmed_at: string | null
+          confirmed_gmv: number | null
+          confirmed_video_count: number | null
+          contest_id: string | null
+          creator_id: string | null
+          entry_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_entries_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_entries_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_entries_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_entries_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contest_entry_progress: {
         Row: {
           approved: number | null
@@ -1929,16 +2087,16 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      assert_contest_within_budget: {
+        Args: { p_budget: number; p_contest_id: string; p_currency: string }
+        Returns: undefined
+      }
       cancel_contest: {
         Args: { p_actor_id: string; p_contest_id: string; p_message?: string }
         Returns: Json
       }
       contest_excludes: {
         Args: { p_contest_id: string; p_user_id: string }
-        Returns: boolean
-      }
-      contest_excludes_caller: {
-        Args: { p_contest_id: string }
         Returns: boolean
       }
       contest_is_open: { Args: { p_contest_id: string }; Returns: boolean }
@@ -1966,6 +2124,20 @@ export type Database = {
       jwt_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      my_contest_standing: {
+        Args: { p_contest_id: string }
+        Returns: {
+          confirmed_gmv: number
+          confirmed_video_count: number
+          entrants: number
+          gmv_place: number
+          video_place: number
+        }[]
+      }
+      pin_contest_exclusions: {
+        Args: { p_email: string; p_handle: string; p_user_id: string }
+        Returns: undefined
       }
       record_contest_exclusion_attempt: {
         Args: { p_contest_id: string; p_user_id: string }
@@ -2022,9 +2194,19 @@ export type Database = {
         Args: {
           p_actor_id: string
           p_block?: boolean
+          p_block_reason?: string
           p_decision: Database["public"]["Enums"]["contest_entry_status"]
           p_entry_id: string
           p_note?: string
+        }
+        Returns: Json
+      }
+      review_contest_progress: {
+        Args: {
+          p_actor_id: string
+          p_message?: string
+          p_status: Database["public"]["Enums"]["contest_progress_status"]
+          p_update_id: string
         }
         Returns: Json
       }
@@ -2072,7 +2254,6 @@ export type Database = {
           p_description?: string
           p_expires_at: string
           p_expires_at_timezone: string
-          p_judging_basis?: string
           p_name: string
           p_needs_admin_approval?: boolean
           p_opens_at?: string
@@ -2096,14 +2277,11 @@ export type Database = {
           p_deliverable_id?: string
           p_detail?: string
           p_is_active?: boolean
-          p_kind: Database["public"]["Enums"]["contest_deliverable_kind"]
-          p_metric?: string
-          p_rank_position?: number
-          p_reward_amount?: number
+          p_reward_amount: number
           p_sort_order?: number
-          p_threshold?: number
+          p_target_value: number
           p_title: string
-          p_video_count?: number
+          p_type: Database["public"]["Enums"]["contest_deliverable_type"]
         }
         Returns: Json
       }
@@ -2221,6 +2399,16 @@ export type Database = {
         }
         Returns: Json
       }
+      submit_contest_progress: {
+        Args: {
+          p_actor_id: string
+          p_entry_id: string
+          p_gmv: number
+          p_video_count: number
+          p_videos?: Json
+        }
+        Returns: Json
+      }
       update_content: {
         Args: {
           p_actor_id: string
@@ -2253,8 +2441,9 @@ export type Database = {
         | "admin"
       application_status: "pending" | "approved" | "rejected"
       content_status: "submitted" | "approved" | "needs_another_take"
-      contest_deliverable_kind: "fixed" | "rank" | "milestone"
+      contest_deliverable_type: "gmv" | "video_count"
       contest_entry_status: "pending" | "approved" | "rejected" | "withdrawn"
+      contest_progress_status: "pending" | "confirmed" | "rejected"
       contest_status: "active" | "inactive"
       creator_tier: "creator" | "rising" | "pro" | "elite"
       offer_application_status:
@@ -2401,8 +2590,9 @@ export const Constants = {
       app_role: ["applicant", "creator", "creative_strategist", "ops", "admin"],
       application_status: ["pending", "approved", "rejected"],
       content_status: ["submitted", "approved", "needs_another_take"],
-      contest_deliverable_kind: ["fixed", "rank", "milestone"],
+      contest_deliverable_type: ["gmv", "video_count"],
       contest_entry_status: ["pending", "approved", "rejected", "withdrawn"],
+      contest_progress_status: ["pending", "confirmed", "rejected"],
       contest_status: ["active", "inactive"],
       creator_tier: ["creator", "rising", "pro", "elite"],
       offer_application_status: [
