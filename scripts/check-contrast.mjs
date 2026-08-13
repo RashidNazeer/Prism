@@ -75,11 +75,17 @@ const PAIRS = [
   ['--wx-text-muted', '--wx-surface-2', 4.5, 'muted text on nested card'],
   ['--wx-text-faint', '--wx-bg', 4.5, 'faint text on page'],
   ['--wx-text-faint', '--wx-surface-1', 4.5, 'faint text on card'],
-  // KNOWN BAD, deliberately not listed as a pair because it would fail:
-  //   --wx-text-faint on --wx-surface-2 is 4.31:1 in light mode.
-  // `text-faint` is fine on the page and on a card, but NOT on a nested card.
-  // Use `text-muted` there instead; that combination is checked above and
-  // passes in both themes. This slipped into the queue's tab counters once.
+  // These two were the hole. `--wx-text-faint` is what every input placeholder
+  // is painted in, and an input well is `--wx-surface-3`, so the greyed hint in
+  // every form in the product sat at 3.96:1 dark and 3.97:1 light against a
+  // required 4.5 and passed every build, because the guard only ever checked
+  // the text a person TYPES into the well, never the hint behind it. Faint on a
+  // nested card was failing too, at 4.31:1, and had been worked around with a
+  // note telling everyone to use `text-muted` there instead of fixing the
+  // colour. Both tokens moved 20/255 on 2026-08-13 and both pairs now hold, so
+  // they are assertions rather than a comment nobody reads.
+  ['--wx-text-faint', '--wx-surface-2', 4.5, 'faint text on nested card'],
+  ['--wx-text-faint', '--wx-surface-3', 4.5, 'placeholder in an input well'],
   ['--wx-accent', '--wx-bg', 4.5, 'accent text on page'],
   ['--wx-accent', '--wx-surface-1', 4.5, 'accent text on card'],
   ['--wx-accent', '--wx-surface-2', 4.5, 'accent text on nested card'],

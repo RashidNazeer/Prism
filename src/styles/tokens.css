@@ -27,10 +27,10 @@
   --wx-surface-2: #221e1a; /* hover, nested cards */
   --wx-surface-3: #2a251f; /* wells, inputs */
 
-  /* Text, all verified >= 4.5:1 on --wx-bg AND --wx-surface-2 */
+  /* Text, all verified >= 4.5:1 on EVERY surface, --wx-bg to --wx-surface-3 */
   --wx-text: #f4f0ea; /* 16.97:1 */
   --wx-text-muted: #9d9387; /*  6.38:1 */
-  --wx-text-faint: #8a8175; /*  4.96:1 */
+  --wx-text-faint: #938b80; /*  5.73:1 */
   --wx-text-inverse: #100e0c;
 
   /* Borders, subtle is decorative only; interactive is for inputs/buttons */
@@ -108,7 +108,7 @@
 
   --wx-text: #191512; /* 16.53:1 */
   --wx-text-muted: #736a61; /*  4.83:1 */
-  --wx-text-faint: #766d63; /*  4.58:1 */
+  --wx-text-faint: #6d645b; /*  5.28:1 */
   --wx-text-inverse: #f6f4f1;
 
   --wx-border: #e3ded6;
