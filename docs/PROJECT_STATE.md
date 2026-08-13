@@ -1,6 +1,44 @@
 # Project state
 
-**Last updated:** 2026-08-11
+**Last updated:** 2026-08-14
+
+## Contests, built on 2026-08-13 and 14
+
+Live on dev, end to end, and testable now.
+
+**A contest is a list of DELIVERABLES.** Each one is a type, a target and a
+reward. Two types, `gmv` and `video_count`, and the enum is written so a third
+is one line. Add as many as you like. Placings were dropped: anybody who reaches
+a target earns its reward and several creators can earn the same one.
+
+**Progress is typed by the creator and confirmed by staff.** Cumulative totals,
+never increments. The target is read only to them in the browser AND on the
+wire. Filing a claim asks for exactly the NEW videos, so five to six asks for
+one link and one ad code, not six. The count may not go backwards. NOTHING
+COUNTS UNTIL STAFF CONFIRM IT, because a creator typing their own GMV is a
+creator typing their own payslip.
+
+**Where they stand, without names.** `my_contest_standing` returns only the
+caller's own position, derived from `auth.uid()` with no user id argument. A
+creator learns they are 2nd closest of 5 and nothing about who the others are.
+This AMENDS decision D7, and Rashid confirmed the amendment on 2026-08-13.
+
+Screens: `/admin/contests` (what is running), `/admin/contests/claims` (who is
+waiting on us), the Contests tab inside a brand, the full screen setup form at
+`/admin/brands/:id/contests/:contestId`, and `/app/contests` with two views, the
+list and the creator's own dashboard.
+
+`pnpm verify:contests` drives the real admin screens then attacks the same data
+as a real signed in creator. `pnpm seed:contests` puts five creators in a
+contest with uneven figures, `--clean` removes them.
+
+**Read [CONTESTS_PLAN.md](CONTESTS_PLAN.md) before touching any of it.** It
+holds the numbered rules, and several were learned the hard way in one night.
+
+Still to build: settlement, and real tracking. Both wait on a decision Rashid
+has parked until the performance tracking conversation.
+
+**Previously, last updated:** 2026-08-11
 **Current step:** joining the product up, steps 1 and 2 of 8 are built. A job
 says how much of it has been filmed, on both sides.
 **Next:** Rashid is testing 1 and 2 together. The remaining ADMIN work is steps

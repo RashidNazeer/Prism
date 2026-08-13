@@ -199,5 +199,14 @@ for (const c of CREATORS) {
   console.log(`  ready    ${c.handle.padEnd(16)} ${c.name.padEnd(18)} entered ${entered}`);
 }
 
+/*
+ * The addresses, printed, because the handle is NOT the address: punctuation is
+ * stripped to build one, so `nora.tries` signs in as `noratries@...`. Printing
+ * the handle alone sent me to a login that could not work.
+ */
+console.log('\nSign in as any of them with:');
+for (const c of CREATORS) {
+  console.log(`  ${c.handle.replace(/[^a-z0-9]/g, '')}${SUFFIX}`);
+}
 console.log(`\nPassword for all of them: ${PASSWORD}`);
 console.log('Remove them again with: node scripts/seed-contests.mjs --clean\n');
