@@ -175,6 +175,15 @@ export const router = createBrowserRouter([
         HydrateFallback: RouteFallback,
         lazy: lazyRoute(() => import('@/routes/admin/BrandHub'), 'BrandHub'),
       },
+      // A full screen rather than a dialog, ruled 2026-08-13: a contest carries
+      // a dozen fields plus three lists inside it. `new` and an id share one
+      // component, because creating and editing are the same form with one
+      // different verb on the button.
+      {
+        path: '/admin/brands/:id/contests/:contestId',
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/routes/admin/ContestSetup'), 'ContestSetup'),
+      },
       {
         path: '/admin/creators',
         HydrateFallback: RouteFallback,

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { BrandAbout } from '@/components/admin/BrandAbout';
+import { BrandContests } from '@/components/admin/BrandContests';
 import { BrandCreators } from '@/components/admin/BrandCreators';
 import { BrandDialog } from '@/components/admin/BrandDialog';
 import { OfferDialog } from '@/components/admin/OfferDialog';
@@ -66,13 +67,13 @@ const SECTIONS = [
   { key: 'offers', label: 'Offers', icon: Tag },
   { key: 'about', label: 'About', icon: Info },
   { key: 'campaigns', label: 'Campaigns', icon: Megaphone, soon: 'Next' },
-  { key: 'contests', label: 'Contests', icon: Trophy, soon: 'Next' },
+  { key: 'contests', label: 'Contests', icon: Trophy },
   { key: 'promotions', label: 'Promotions', icon: Gift, soon: 'Later' },
   { key: 'discounts', label: 'Discounts', icon: Percent, soon: 'Later' },
   { key: 'creators', label: 'Creators', icon: Users },
 ] as const;
 
-const BUILT = new Set(['overview', 'offers', 'about', 'creators']);
+const BUILT = new Set(['overview', 'offers', 'about', 'creators', 'contests']);
 
 export function BrandHub() {
   const { id } = useParams<{ id: string }>();
@@ -240,6 +241,8 @@ export function BrandHub() {
         <BrandAbout brand={brand} />
       ) : section === 'creators' ? (
         <BrandCreators brandId={brand.id} brandName={brand.name} />
+      ) : section === 'contests' ? (
+        <BrandContests brandId={brand.id} brandName={brand.name} />
       ) : (
         <Offers
           offers={offerPage?.rows ?? []}
