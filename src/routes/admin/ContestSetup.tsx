@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { ArrowLeft, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, Check, Loader2, Trash2 } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
 import { Field, Input, Select, Textarea } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
-import { formatDeadline } from '@/lib/contest-time';
+import { formatDeadline, instantFromWallClock, wallClockFields } from '@/lib/contest-time';
+import { useAuth } from '@/lib/auth/auth-context';
 import { useBrand } from '@/lib/admin/useBrands';
 import { useContest } from '@/lib/admin/useContests';
 import { useManageContest } from '@/lib/admin/useManageContest';
@@ -22,15 +23,21 @@ import { useManageContest } from '@/lib/admin/useManageContest';
  * high, the header stays compact, nothing is centred, and no id, slug or route
  * is ever shown.
  *
- * NOTHING IS SAVED UNTIL SAVE IS PRESSED. There is no draft row, by decision:
- * `contests.name` and `expires_at` are both NOT NULL, so a half filled contest
- * cannot exist in the database and therefore can never leak into a count, a
- * list, a policy or a creator's screen. The cost, which was accepted: a half
- * filled form does not follow an admin to a different computer.
+ * NO CONTEST ROW EXISTS UNTIL SAVE IS PRESSED (Q12, rule F12). `contests.name`
+ * and `expires_at` are both NOT NULL, so a half filled contest cannot exist in
+ * the database and therefore can never leak into a count, a list, a policy or a
+ * creator's screen.
+ *
+ * That is a statement about the DATABASE, not about the browser. The half
+ * filled form is held in localStorage, keyed on the admin's own user id AND the
+ * brand AND the contest being edited, so two admins sharing one machine and one
+ * admin working on two brands cannot collide. It survives a reload and a closed
+ * tab, and it is cleared on a successful save. The accepted cost, and the only
+ * one, is that it does not follow an admin to a different computer.
  */
 
 /** Led by the zones Wurx actually works across. The rest follow. See rule L6. */
-const ZONES = [
+const LEAD_ZONES = [
   'Europe/London',
   'America/New_York',
   'America/Chicago',
@@ -39,13 +46,37 @@ const ZONES = [
   'UTC',
 ];
 
+/**
+ * And the full list behind them, which rule L6 asks for by name so a US brand's
+ * contest can close at midnight where its creators are. Without it a contest
+ * for creators in Sydney could not be set at all, and a contest written by a
+ * script in a zone outside the six loaded into a controlled `<select>` whose
+ * value matched no option: Chrome renders that as an EMPTY box, and touching it
+ * silently reinterprets the deadline.
+ *
+ * Read through a typed lookup rather than `Intl.supportedValuesOf` directly,
+ * because the declaration is not in every TypeScript lib and an older browser
+ * simply leaves us with the six.
+ */
+const ALL_ZONES: string[] = (() => {
+  try {
+    const supported = (Intl as unknown as { supportedValuesOf?: (key: string) => string[] })
+      .supportedValuesOf;
+    return typeof supported === 'function' ? supported('timeZone') : [];
+  } catch {
+    return [];
+  }
+})();
+
+const zoneLabel = (z: string) => z.replace(/_/g, ' ');
+
 const CURRENCIES = ['USD', 'GBP', 'EUR'];
 
 /** The browser's own zone, if we recognise it, so the common case needs no thought. */
 function defaultZone(): string {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    return tz && ZONES.includes(tz) ? tz : 'Europe/London';
+    return tz && LEAD_ZONES.includes(tz) ? tz : 'Europe/London';
   } catch {
     return 'Europe/London';
   }
@@ -81,74 +112,144 @@ const EMPTY: FormState = {
   internalNote: '',
 };
 
+type FieldKey = 'name' | 'date' | 'time' | 'timezone' | 'briefUrl' | 'budget';
+type FieldErrors = Partial<Record<FieldKey, string>>;
+
 /**
- * A wall clock date and time IN A NAMED ZONE, turned into a real instant.
+ * The budget box, read once.
  *
- * Built by asking Intl what the zone's offset was at roughly that moment,
- * rather than trusting the browser's own zone, which is the entire failure L6
- * exists to prevent.
+ * Three answers, not two. `Number('5,000')` is NaN, and the old code sent
+ * `totalBudget: null` when it saw one, which WIPED a budget that was already
+ * set and showed a green Saved tick over the top of it. An unreadable figure is
+ * a question for the admin, never a silent null.
  */
-function toInstant(date: string, time: string, timeZone: string): string | null {
-  if (!date || !time) return null;
-  const naive = new Date(`${date}T${time}:00Z`);
-  if (Number.isNaN(naive.getTime())) return null;
+type Money =
+  | { kind: 'empty' }
+  | { kind: 'number'; value: number }
+  | { kind: 'invalid'; message: string };
 
+function readMoney(raw: string): Money {
+  const t = raw.trim();
+  if (!t) return { kind: 'empty' };
+
+  const n = Number(t);
+  if (!Number.isFinite(n)) {
+    return { kind: 'invalid', message: 'Give the budget as a number, for example 5000' };
+  }
+  if (n < 0) return { kind: 'invalid', message: 'A budget cannot be less than nothing' };
+  if (n > 99_999_999) return { kind: 'invalid', message: 'That budget is larger than we can store' };
+  return { kind: 'number', value: Math.round(n * 100) / 100 };
+}
+
+/* ------------------------------------------------------------------ draft -- */
+
+const draftKeyFor = (userId: string | undefined, brandId: string | undefined, contestKey: string) =>
+  userId && brandId ? `wx.contest-draft.${userId}.${brandId}.${contestKey}` : null;
+
+function readDraft(key: string | null): FormState | null {
+  if (!key) return null;
   try {
-    const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone,
-      hour12: false,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    }).formatToParts(naive);
-
-    const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? '0');
-    const asZone = Date.UTC(
-      get('year'),
-      get('month') - 1,
-      get('day'),
-      get('hour') % 24,
-      get('minute'),
-      get('second')
-    );
-    // The gap between the same wall clock read in UTC and read in the zone IS
-    // the offset, so subtracting it turns the typed time into the instant.
-    return new Date(naive.getTime() * 2 - asZone).toISOString();
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<FormState>;
+    // Merged over EMPTY rather than trusted whole, so a draft written by an
+    // older version of this screen cannot leave a field undefined.
+    return { ...EMPTY, ...parsed };
   } catch {
     return null;
   }
 }
 
+function clearDraft(key: string | null) {
+  if (!key) return;
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    /* A full or blocked localStorage is not worth failing a save over. */
+  }
+}
+
+/* ------------------------------------------------------------------ screen -- */
+
 export function ContestSetup() {
   const { id: brandId, contestId } = useParams<{ id: string; contestId: string }>();
   const isNew = !contestId || contestId === 'new';
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const { data: brand } = useBrand(brandId);
-  const { data: existing, isPending: loadingContest } = useContest(isNew ? undefined : contestId);
+  const {
+    data: existing,
+    isPending: loadingContest,
+    isError: contestFailed,
+    refetch: refetchContest,
+  } = useContest(isNew ? undefined : contestId);
   const manage = useManageContest();
 
   const [form, setForm] = useState<FormState>(EMPTY);
-  const [error, setError] = useState('');
+  const [formError, setFormError] = useState('');
+  const [errors, setErrors] = useState<FieldErrors>({});
   const [saved, setSaved] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
-  // Fill the form once the contest arrives. Keyed on the id so switching
-  // between two contests does not leave the first one's values behind.
+  /*
+   * The id of a contest this screen has just created, held so that a failure
+   * AFTER the row was written cannot turn the next press of the button into a
+   * second contest. There is no unique key on (brand_id, name) anywhere, so
+   * nothing else would have stopped it.
+   */
+  const [createdId, setCreatedId] = useState<string | null>(null);
+
+  const contestKey = isNew ? 'new' : contestId!;
+  const draftKey = draftKeyFor(user?.id, brandId, contestKey);
+
+  const nameRef = useRef<HTMLInputElement>(null);
+  const dateRef = useRef<HTMLInputElement>(null);
+  const timeRef = useRef<HTMLInputElement>(null);
+  const briefRef = useRef<HTMLInputElement>(null);
+  const budgetRef = useRef<HTMLInputElement>(null);
+
+  /*
+   * SEEDED ONCE PER CONTEST, and that is the whole point of the ref.
+   *
+   * The effect used to depend on `existing`, which is a NEW OBJECT on every
+   * settled fetch. `useManageContest` invalidates ['admin','contest'] on
+   * success and the query client refetches on reconnect, so a save or a wifi
+   * blip rewrote every field under whoever was typing, with no draft anywhere
+   * to recover from.
+   */
+  const filledFor = useRef<string | null>(null);
+
   useEffect(() => {
+    if (filledFor.current === contestKey) return;
+
+    const draft = readDraft(draftKey);
+    if (draft) {
+      setForm(draft);
+      // Already on disk. Marking it dirty here would only rewrite what was just
+      // read, and would carry a stale flag across a switch between contests.
+      setDirty(false);
+      filledFor.current = contestKey;
+      return;
+    }
+
+    if (isNew) {
+      setForm(EMPTY);
+      setDirty(false);
+      filledFor.current = contestKey;
+      return;
+    }
+
     const c = existing?.contest;
-    if (!c) return;
-    const d = new Date(c.expiresAt);
-    const inZone = (opts: Intl.DateTimeFormatOptions) =>
-      new Intl.DateTimeFormat('en-CA', { timeZone: c.expiresAtTimezone, ...opts }).format(d);
+    if (!c) return; // still loading, or gone: the error card handles the second
+
+    const { date, time } = wallClockFields(Date.parse(c.expiresAt), c.expiresAtTimezone);
     setForm({
       name: c.name,
       description: c.description ?? '',
       judgingBasis: c.judgingBasis ?? '',
-      date: inZone({ year: 'numeric', month: '2-digit', day: '2-digit' }),
-      time: inZone({ hour: '2-digit', minute: '2-digit', hour12: false }),
+      date,
+      time,
       timezone: c.expiresAtTimezone,
       currency: c.currency,
       briefUrl: c.briefUrl ?? '',
@@ -157,68 +258,189 @@ export function ContestSetup() {
       budget: existing?.commercials?.totalBudget?.toString() ?? '',
       internalNote: existing?.commercials?.internalNote ?? '',
     });
-  }, [existing]);
+    setDirty(false);
+    filledFor.current = contestKey;
+  }, [contestKey, draftKey, isNew, existing]);
 
-  const set = <K extends keyof FormState>(k: K, v: FormState[K]) => {
+  const set = useCallback(<K extends keyof FormState>(k: K, v: FormState[K]) => {
     setForm((f) => ({ ...f, [k]: v }));
+    setDirty(true);
     setSaved(false);
-    setError('');
-  };
+    setFormError('');
+    setErrors((e) => {
+      if (!(k in e)) return e;
+      const next = { ...e };
+      delete next[k as FieldKey];
+      return next;
+    });
+  }, []);
 
-  const instant = useMemo(
-    () => toInstant(form.date, form.time, form.timezone),
+  // Held on this machine, debounced, and never a file. See rule F12.
+  useEffect(() => {
+    if (!draftKey || !dirty) return;
+    const t = setTimeout(() => {
+      try {
+        window.localStorage.setItem(draftKey, JSON.stringify(form));
+      } catch {
+        /* Nothing to do and nothing worth saying. */
+      }
+    }, 500);
+    return () => clearTimeout(t);
+  }, [draftKey, dirty, form]);
+
+  const parsed = useMemo(
+    () => instantFromWallClock(form.date, form.time, form.timezone),
     [form.date, form.time, form.timezone]
   );
+  const instant = parsed?.ok ? parsed.iso : null;
+  const clockRefusal = parsed && !parsed.ok ? parsed.message : null;
+
+  /** The zone the contest is actually set in, even if it is not one of our six. */
+  const extraZone =
+    form.timezone && !LEAD_ZONES.includes(form.timezone) && !ALL_ZONES.includes(form.timezone)
+      ? form.timezone
+      : null;
+
+  function focusFirst(next: FieldErrors) {
+    const order: [FieldKey, React.RefObject<HTMLInputElement | null>][] = [
+      ['name', nameRef],
+      ['date', dateRef],
+      ['time', timeRef],
+      ['briefUrl', briefRef],
+      ['budget', budgetRef],
+    ];
+    for (const [key, ref] of order) {
+      if (next[key]) {
+        ref.current?.focus();
+        return;
+      }
+    }
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    setError('');
+    setFormError('');
 
-    if (!form.name.trim()) return setError('Give this contest a name');
-    if (!instant) return setError('When does this contest close?');
-    if (Date.parse(instant) <= Date.now()) {
-      return setError('That deadline has already passed');
+    // ------------------------------------------------------- what we refuse --
+    const next: FieldErrors = {};
+    const money = readMoney(form.budget);
+
+    if (!form.name.trim()) next.name = 'Give this contest a name';
+    if (!form.date || !form.time) next.date = 'When does this contest close?';
+    else if (clockRefusal) next.time = clockRefusal;
+    else if (!instant) next.date = 'When does this contest close?';
+    else if (Date.parse(instant) <= Date.now()) {
+      next.date = 'That deadline has already passed';
     }
+    if (form.briefUrl.trim() && !/^https:\/\/\S{4,}/i.test(form.briefUrl.trim())) {
+      next.briefUrl = 'A brief link has to be a full web address starting with https://';
+    }
+    if (money.kind === 'invalid') next.budget = money.message;
 
+    if (Object.keys(next).length > 0) {
+      setErrors(next);
+      focusFirst(next);
+      return;
+    }
+    setErrors({});
+
+    // ------------------------------------------------------------ the save --
+    const targetId = isNew ? createdId : contestId!;
+
+    let id: string;
     try {
       const contest = (await manage.mutateAsync({
         action: 'contest.save',
-        contestId: isNew ? null : contestId,
+        contestId: targetId,
         brandId: brandId!,
         name: form.name.trim(),
         description: form.description.trim() || null,
         judgingBasis: form.judgingBasis.trim() || null,
-        expiresAt: instant,
+        expiresAt: instant!,
         expiresAtTimezone: form.timezone,
         briefUrl: form.briefUrl.trim() || null,
-        bannerUrl: null,
+        // Carried through rather than nulled. There is no banner control on this
+        // screen yet (rule B8, step 1), and `save_contest` writes this column
+        // unconditionally, so sending null here would erase artwork set by
+        // anything else the day one exists.
+        bannerUrl: existing?.contest?.bannerUrl ?? null,
         currency: form.currency,
         status: form.status,
         needsAdminApproval: form.needsAdminApproval,
       })) as { id: string };
+      id = contest.id;
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'That did not save');
+      return;
+    }
 
-      // Its own action, so the setup form cannot touch the money by sending a
-      // stale copy of it back with an unrelated edit.
-      const budget = form.budget.trim() ? Number(form.budget) : null;
-      if (budget !== null || form.internalNote.trim()) {
+    /*
+     * THE ROW IS COMMITTED, so the screen stops being a create screen HERE,
+     * before anything else can fail. The budget lives behind a second call, and
+     * a refusal from it used to leave the URL on /new with Create still armed:
+     * pressing it again wrote a second contest, which no screen in the product
+     * could then delete.
+     */
+    setCreatedId(id);
+    clearDraft(draftKey);
+    if (isNew) {
+      // Seeded already, by the admin, so the screen keeps showing what they
+      // typed instead of flashing a skeleton at them while it reads back the
+      // row it just wrote.
+      filledFor.current = id;
+      navigate(`/admin/brands/${brandId}/contests/${id}`, { replace: true });
+    }
+
+    /*
+     * Its own action, so the setup form cannot touch the money by sending a
+     * stale copy of it back with an unrelated edit. ALWAYS SENT when a contest
+     * already exists: emptying the box is an edit, and skipping the call left
+     * the old figure in place, enforcing all three M7 checks invisibly, under a
+     * green Saved tick.
+     */
+    const note = form.internalNote.trim() || null;
+    const touchesMoney = !isNew || money.kind === 'number' || note !== null;
+
+    if (touchesMoney) {
+      try {
         await manage.mutateAsync({
           action: 'contest.commercials',
-          contestId: contest.id,
-          totalBudget: Number.isFinite(budget as number) ? budget : null,
-          internalNote: form.internalNote.trim() || null,
+          contestId: id,
+          totalBudget: money.kind === 'number' ? money.value : null,
+          internalNote: note,
         });
+      } catch (err) {
+        setErrors({ budget: err instanceof Error ? err.message : 'That budget did not save' });
+        setFormError('The contest itself is saved. Only the budget and the note did not go through.');
+        budgetRef.current?.focus();
+        return;
       }
-
-      if (isNew) {
-        navigate(`/admin/brands/${brandId}/contests/${contest.id}`, { replace: true });
-      }
-      setSaved(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'That did not save');
     }
+
+    // Both keys, because a create moves the form from the "new" key to the
+    // contest's own one part way through this function.
+    clearDraft(draftKeyFor(user?.id, brandId, id));
+    setDirty(false);
+    setSaved(true);
   }
 
   const busy = manage.isPending;
+
+  /*
+   * The submit button lives in the header, OUTSIDE the form it owns, so any
+   * state that does not render the form leaves `form="contest-form"` pointing
+   * at nothing and the button does nothing at all, silently, while still
+   * looking enabled and primary.
+   *
+   * `seeded` is read rather than `loadingContest` alone because the create flow
+   * ends in exactly that state: the navigate makes this an existing contest,
+   * its query is pending, and the form the admin is looking at is already
+   * correct. There is nothing to wait for.
+   */
+  const seeded = filledFor.current === contestKey;
+  const showSkeleton = !isNew && !contestFailed && loadingContest && !seeded;
+  const showGone = !isNew && !contestFailed && !loadingContest && !existing?.contest && !seeded;
+  const formMissing = (!isNew && contestFailed) || showSkeleton || showGone;
 
   return (
     <AppShell>
@@ -239,43 +461,90 @@ export function ContestSetup() {
           </div>
 
           <div className="flex items-center gap-2">
-            {saved ? (
-              <span className="text-stage-paid inline-flex items-center gap-1.5 text-[13px] font-semibold">
-                <Check size={15} aria-hidden />
-                Saved
-              </span>
-            ) : null}
-            <Button type="submit" form="contest-form" disabled={busy}>
+            {/* Permanently in the tree, so a screen reader hears the result of
+                pressing the button instead of nothing at all. */}
+            <p role="status" aria-live="polite" className="text-success text-[13px] font-semibold">
+              {saved ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <Check size={15} aria-hidden />
+                  Saved
+                </span>
+              ) : null}
+            </p>
+            <Button type="submit" form="contest-form" disabled={busy || formMissing}>
               {busy ? <Loader2 size={16} className="animate-spin" aria-hidden /> : null}
               {isNew ? 'Create contest' : 'Save changes'}
             </Button>
           </div>
         </div>
 
-        {!isNew && loadingContest ? (
+        {contestFailed && !isNew ? (
+          <div className="border-line bg-surface-1 flex flex-col items-start gap-3 rounded-[20px] border p-8 shadow-md">
+            <h2 className="font-display text-text text-[21px] leading-tight font-bold">
+              That contest could not be opened
+            </h2>
+            <p className="text-muted max-w-prose text-[14px] leading-relaxed">
+              It may have been deleted, or the connection dropped on the way. Nothing has been
+              changed.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" onClick={() => void refetchContest()}>
+                Try again
+              </Button>
+              <Link
+                to={`/admin/brands/${brandId}?section=contests`}
+                className="text-accent inline-flex min-h-11 items-center text-[13px] font-semibold hover:underline"
+              >
+                Back to {brand?.name ?? 'the brand'}
+              </Link>
+            </div>
+          </div>
+        ) : showSkeleton ? (
           <div className="wx-skeleton h-[420px] rounded-[20px]" />
+        ) : showGone ? (
+          <div className="border-line bg-surface-1 flex flex-col items-start gap-3 rounded-[20px] border p-8 shadow-md">
+            <h2 className="font-display text-text text-[21px] leading-tight font-bold">
+              There is no contest here any more
+            </h2>
+            <p className="text-muted max-w-prose text-[14px] leading-relaxed">
+              It has been deleted, or it belongs to another brand.
+            </p>
+            <Link
+              to={`/admin/brands/${brandId}?section=contests`}
+              className="text-accent inline-flex min-h-11 items-center text-[13px] font-semibold hover:underline"
+            >
+              Back to {brand?.name ?? 'the brand'}
+            </Link>
+          </div>
         ) : (
-          <form id="contest-form" onSubmit={onSubmit} className="flex flex-col gap-4">
-            {error ? (
+          <form
+            id="contest-form"
+            onSubmit={onSubmit}
+            aria-busy={busy}
+            className="flex flex-col gap-4"
+          >
+            {formError ? (
               <p
                 role="alert"
                 className="bg-danger-soft text-danger rounded-xl px-4 py-3 text-[13px] font-medium"
               >
-                {error}
+                {formError}
               </p>
             ) : null}
 
             {/* -------------------------------------------------- the job -- */}
             <Card title="The contest">
-              <Field label="Name">
+              <Field label="Name" error={errors.name}>
                 {({ id, describedBy, invalid }) => (
                   <Input
                     id={id}
+                    ref={nameRef}
                     value={form.name}
                     onChange={(e) => set('name', e.target.value)}
                     placeholder="e.g. Back to school sprint"
-                    maxLength={160}
-                    disabled={busy}
+                    // 120, the length the column actually allows.
+                    maxLength={120}
+                    readOnly={busy}
                     aria-describedby={describedBy}
                     invalid={invalid}
                     required
@@ -294,7 +563,7 @@ export function ContestSetup() {
                     onChange={(e) => set('description', e.target.value)}
                     rows={3}
                     maxLength={4000}
-                    disabled={busy}
+                    readOnly={busy}
                     placeholder="e.g. Four videos featuring the lunchbox range, parent facing."
                     aria-describedby={describedBy}
                     invalid={invalid}
@@ -312,7 +581,7 @@ export function ContestSetup() {
                     value={form.judgingBasis}
                     onChange={(e) => set('judgingBasis', e.target.value)}
                     maxLength={600}
-                    disabled={busy}
+                    readOnly={busy}
                     placeholder="e.g. Most approved videos by the deadline"
                     aria-describedby={describedBy}
                     invalid={invalid}
@@ -320,15 +589,20 @@ export function ContestSetup() {
                 )}
               </Field>
 
-              <Field label="Content brief link" hint="Optional. Opens in a new tab for creators.">
+              <Field
+                label="Content brief link"
+                hint="Optional. Opens in a new tab for creators."
+                error={errors.briefUrl}
+              >
                 {({ id, describedBy, invalid }) => (
                   <Input
                     id={id}
+                    ref={briefRef}
                     type="url"
                     value={form.briefUrl}
                     onChange={(e) => set('briefUrl', e.target.value)}
                     maxLength={500}
-                    disabled={busy}
+                    readOnly={busy}
                     placeholder="https://"
                     aria-describedby={describedBy}
                     invalid={invalid}
@@ -340,28 +614,30 @@ export function ContestSetup() {
             {/* ------------------------------------------------ the clock -- */}
             <Card title="When it closes">
               <div className="grid gap-4 sm:grid-cols-3">
-                <Field label="Date">
+                <Field label="Date" error={errors.date}>
                   {({ id, describedBy, invalid }) => (
                     <Input
                       id={id}
+                      ref={dateRef}
                       type="date"
                       value={form.date}
                       onChange={(e) => set('date', e.target.value)}
-                      disabled={busy}
+                      readOnly={busy}
                       aria-describedby={describedBy}
                       invalid={invalid}
                       required
                     />
                   )}
                 </Field>
-                <Field label="Time">
+                <Field label="Time" error={errors.time ?? clockRefusal ?? undefined}>
                   {({ id, describedBy, invalid }) => (
                     <Input
                       id={id}
+                      ref={timeRef}
                       type="time"
                       value={form.time}
                       onChange={(e) => set('time', e.target.value)}
-                      disabled={busy}
+                      readOnly={busy}
                       aria-describedby={describedBy}
                       invalid={invalid}
                       required
@@ -378,17 +654,35 @@ export function ContestSetup() {
                       aria-describedby={describedBy}
                       invalid={invalid}
                     >
-                      {ZONES.map((z) => (
-                        <option key={z} value={z}>
-                          {z.replace('_', ' ')}
-                        </option>
-                      ))}
+                      {/* The zone the contest is already set in always has an
+                          option, even when it is one nobody here would pick. An
+                          unmatched value renders as an empty box, and touching
+                          it silently reinterprets the deadline. */}
+                      {extraZone ? <option value={extraZone}>{zoneLabel(extraZone)}</option> : null}
+                      <optgroup label="Where Wurx works">
+                        {LEAD_ZONES.map((z) => (
+                          <option key={z} value={z}>
+                            {zoneLabel(z)}
+                          </option>
+                        ))}
+                      </optgroup>
+                      {ALL_ZONES.length > 0 ? (
+                        <optgroup label="Everywhere else">
+                          {ALL_ZONES.filter((z) => !LEAD_ZONES.includes(z)).map((z) => (
+                            <option key={z} value={z}>
+                              {zoneLabel(z)}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ) : null}
                     </Select>
                   )}
                 </Field>
               </div>
 
-              <p className="text-muted text-[13px]">
+              {/* The echo is the entire justification for the three control
+                  design in rule L6, so it has to speak when the zone changes. */}
+              <p className="text-muted text-[13px]" aria-live="polite">
                 {instant ? (
                   <>
                     A creator reads this as{' '}
@@ -397,6 +691,8 @@ export function ContestSetup() {
                     </span>
                     , wherever they are.
                   </>
+                ) : clockRefusal ? (
+                  clockRefusal
                 ) : (
                   'Pick a date and a time, and the deadline appears here exactly as a creator will read it.'
                 )}
@@ -451,14 +747,19 @@ export function ContestSetup() {
               note="No creator can read anything in this box. It is not hidden by a filter, it is in a table they cannot reach."
             >
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label={`Total budget, ${form.currency}`}>
+                <Field
+                  label={`Total budget, ${form.currency}`}
+                  error={errors.budget}
+                  hint="Leave it empty for no ceiling. Emptying it removes the one that is there."
+                >
                   {({ id, describedBy, invalid }) => (
                     <Input
                       id={id}
+                      ref={budgetRef}
                       inputMode="decimal"
                       value={form.budget}
                       onChange={(e) => set('budget', e.target.value)}
-                      disabled={busy}
+                      readOnly={busy}
                       placeholder="e.g. 5000"
                       aria-describedby={describedBy}
                       invalid={invalid}
@@ -474,7 +775,7 @@ export function ContestSetup() {
                     onChange={(e) => set('internalNote', e.target.value)}
                     rows={2}
                     maxLength={2000}
-                    disabled={busy}
+                    readOnly={busy}
                     placeholder="e.g. Client signed off 12 August"
                     aria-describedby={describedBy}
                     invalid={invalid}
@@ -506,13 +807,105 @@ export function ContestSetup() {
               </p>
             </Card>
 
-            <p className="text-faint pb-8 text-[12px]">
+            <p className="text-faint text-[12px]">
               Reward rows, products and barred creators come next, and open once the contest exists.
             </p>
+
+            {!isNew && existing?.contest ? (
+              <DeleteContest
+                brandId={brandId!}
+                contestId={contestId!}
+                contestName={existing.contest.name}
+              />
+            ) : null}
+
+            <div className="pb-8" />
           </form>
         )}
       </div>
     </AppShell>
+  );
+}
+
+/**
+ * Rule L17: turning a contest off and deleting one are BOTH controls in this
+ * step. `delete_contest` shipped in the first migration with no caller, and a
+ * write function with no control is a capability nobody has: a contest created
+ * by mistake would have sat on the brand's list for ever.
+ *
+ * Its own mutation, so a failed delete cannot paint an error over the save
+ * button and vice versa. The refusal it is most likely to meet is the good one:
+ * the database declines while anybody is pending or approved, and says how many.
+ */
+function DeleteContest({
+  brandId,
+  contestId,
+  contestName,
+}: {
+  brandId: string;
+  contestId: string;
+  contestName: string;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const manage = useManageContest();
+
+  async function onDelete() {
+    setError('');
+    try {
+      await manage.mutateAsync({ action: 'contest.delete', contestId });
+      navigate(`/admin/brands/${brandId}?section=contests`, { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'That did not delete');
+    }
+  }
+
+  if (!confirming) {
+    return (
+      <div className="flex">
+        <Button
+          type="button"
+          variant="ghost"
+          aria-label={`Delete ${contestName}`}
+          onClick={() => setConfirming(true)}
+        >
+          <Trash2 size={15} aria-hidden />
+          Delete this contest
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-danger/40 bg-danger-soft rounded-xl border p-4">
+      <p className="text-danger max-w-prose text-[13px] leading-relaxed font-medium">
+        Delete this contest? It goes for good, along with its reward rows and its budget. The
+        activity log keeps a record of what it was. Nobody can be in it: if anybody is waiting or
+        approved, settle or decide them first.
+      </p>
+      {error ? (
+        <p role="alert" className="text-danger mt-2 text-[12px]">
+          {error}
+        </p>
+      ) : null}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button type="button" disabled={manage.isPending} onClick={() => void onDelete()}>
+          {manage.isPending ? 'Deleting...' : 'Yes, delete'}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={manage.isPending}
+          onClick={() => {
+            setConfirming(false);
+            setError('');
+          }}
+        >
+          Keep it
+        </Button>
+      </div>
+    </div>
   );
 }
 

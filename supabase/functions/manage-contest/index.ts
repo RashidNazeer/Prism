@@ -63,11 +63,33 @@ const timezone = z
   .max(64)
   .regex(/^[A-Za-z]+\/[A-Za-z_+\-0-9/]+$|^UTC$/, 'That is not a timezone name');
 
+/**
+ * A link somebody will click, and `z.url()` on its own is NOT one.
+ *
+ * In zod 4 a bare `z.url()` only requires `new URL(value)` to parse, with no
+ * protocol and no hostname check, so `javascript:alert(1)` and `http://...`
+ * both passed here and were stopped by the column instead, arriving back as a
+ * 23514 that humanise() flattened to "One of those values is outside what we
+ * allow" on a form with eleven inputs. The columns are `~* '^https://'` and
+ * `length between 12 and 2048`; this now says the same thing in a sentence,
+ * first, which is what the plan's attack test 24 asks the door to do.
+ */
+const httpsUrl = z
+  .url({
+    protocol: /^https$/,
+    error: 'A link has to be a full web address starting with https://',
+  })
+  .min(12, 'A link has to be a full web address starting with https://')
+  .max(500, 'That link is too long, keep it under 500 characters');
+
 const ContestSave = z.object({
   action: z.literal('contest.save'),
   contestId: z.uuid().nullish(),
   brandId: z.uuid('A contest must belong to a brand'),
-  name: z.string().trim().min(1, 'A contest needs a name').max(160),
+  // 120, not 160. `contests.name` is `length(trim(name)) between 1 and 120`, so
+  // 160 here meant a name between the two lengths reached the column and came
+  // back as an unreadable check constraint violation.
+  name: z.string().trim().min(1, 'A contest needs a name').max(120, 'That name is too long, keep it under 120 characters'),
   description: z.string().trim().max(4000).nullish(),
   // Required by the database whenever the contest carries an active ranked
   // prize, and that is checked there rather than here, because it depends on
@@ -76,11 +98,19 @@ const ContestSave = z.object({
   expiresAt: z.iso.datetime({ offset: true }),
   expiresAtTimezone: timezone,
   opensAt: z.iso.datetime({ offset: true }).nullish(),
-  briefUrl: z.url('That brief address is not a URL').max(500).nullish(),
-  bannerUrl: z.url('That banner address is not a URL').max(500).nullish(),
-  currency: currency.default('USD'),
-  status: z.enum(['active', 'inactive']).default('inactive'),
-  needsAdminApproval: z.boolean().default(true),
+  briefUrl: httpsUrl.nullish(),
+  bannerUrl: httpsUrl.nullish(),
+  /*
+   * NO DEFAULTS ON THESE THREE, deliberately, and it is not a style choice.
+   * `save_contest` writes all three unconditionally, so a caller that simply
+   * left `currency` out would have had `USD` filled in here and written over a
+   * GBP contest, silently, with every prize on it keeping its numbers. The only
+   * caller already sends all three, and `contest.commercials` is a separate
+   * action precisely so no form ever has to send a field it does not own.
+   */
+  currency,
+  status: z.enum(['active', 'inactive']),
+  needsAdminApproval: z.boolean(),
 });
 
 /** Staff only, and its own action so the setup form cannot reach it by accident. */
@@ -131,10 +161,13 @@ const DeliverableSave = z.object({
   contestId: z.uuid(),
   kind: z.enum(['fixed', 'rank', 'milestone']),
   title: z.string().trim().min(1, 'Give this reward row a short name').max(160),
-  detail: z.string().trim().max(600).nullish(),
+  // Both bounds are the column's own: `detail` allows 1000 and `metric` allows
+  // 40. A door narrower than the column refuses work the database would have
+  // taken; a door wider than it hands the admin a constraint violation.
+  detail: z.string().trim().max(1000).nullish(),
   videoCount: z.number().int().min(1).max(1000).nullish(),
   rankPosition: z.number().int().min(1).max(1000).nullish(),
-  metric: z.string().trim().max(120).nullish(),
+  metric: z.string().trim().max(40, 'Keep what is being measured under 40 characters').nullish(),
   threshold: money.nullish(),
   rewardAmount: money.nullish(),
   sortOrder: z.number().int().min(0).max(9999).default(0),
@@ -215,11 +248,25 @@ const STATUS_FOR_PG: Record<string, number> = {
  */
 function humanise(message: string, code: string | undefined): string {
   if (code === '23505') {
+    /*
+     * OUR OWN SENTENCE WINS. `save_contest_deliverable` raises "this contest
+     * already has a prize for place 3" with 23505 precisely because a raw
+     * duplicate key error is not a sentence, and the needle tests below threw
+     * it away and returned "That already exists" instead: the raw error the
+     * needles were written to catch would have matched, so the fallback only
+     * ever fired on the good message. Anything that is not raw Postgres text
+     * was written for a person, so it goes back untouched.
+     */
+    if (!message.includes('duplicate key')) return message;
     if (message.includes('rank_idx')) {
       return 'Another reward row already pays for that place';
     }
     if (message.includes('exclusion')) return 'That person is already barred from this contest';
-    if (message.includes('slug')) return 'A contest with a very similar name already exists';
+    if (message.includes('placement_idx')) return 'Two entrants cannot both finish in that place';
+    if (message.includes('awards_money_idx')) {
+      return 'That prize is already listed once for this entrant';
+    }
+    if (message.includes('outcome_idx')) return 'That entrant already has an outcome';
     return 'That already exists';
   }
   if (code === '23514') return 'One of those values is outside what we allow';
@@ -399,10 +446,25 @@ Deno.serve(async (req) => {
   }
 
   if (rpc.error) {
-    const code = rpc.error.code;
+    /*
+     * An unrecognised SQLSTATE is OUR fault, not the admin's, so it is a 500
+     * and it is logged, exactly as manage-brand does it. The case this is
+     * written for is the one this feature's own migration warns about: an
+     * argument list drifting gives PGRST202 and "Could not find the function
+     * public.save_contest(...) in the schema cache", which used to arrive in
+     * the admin's red bar as a 400, as though they had typed something wrong,
+     * with no server trace to find it by.
+     */
+    const status = STATUS_FOR_PG[rpc.error.code ?? ''] ?? 500;
+    if (status === 500) console.error('manage-contest failed', input.action, rpc.error);
     return reply(
-      { error: humanise(rpc.error.message ?? 'That did not work', code) },
-      STATUS_FOR_PG[code ?? ''] ?? 400
+      {
+        error:
+          status === 500
+            ? 'Something went wrong at our end saving that. It has been logged.'
+            : humanise(rpc.error.message ?? 'That did not work', rpc.error.code),
+      },
+      status
     );
   }
 

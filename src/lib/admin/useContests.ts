@@ -172,6 +172,15 @@ const sanitise = (raw: string) =>
     .slice(0, 64);
 
 /**
+ * `_` survives `sanitise` and `_` is a single character wildcard in `ilike`, so
+ * a search for "spring_2026" was matching "springX2026". Escaped rather than
+ * stripped, because stripping it would stop a contest with an underscore in its
+ * name being findable by its own name. `%` and `\` are already gone by the time
+ * this runs; both are listed so the function is correct on its own terms.
+ */
+const forLike = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
+
+/**
  * Every contest a brand runs, paged in the database.
  *
  * Paged rather than fetched whole because the Offers tab shipped unbounded and
@@ -186,6 +195,11 @@ export function useBrandContests(brandId: string | undefined, filters: BrandCont
     enabled: Boolean(brandId),
     placeholderData: keepPreviousData,
     staleTime: 15_000,
+    // Rule L5. A contest closes because a clock passed, which writes no row and
+    // therefore fires no realtime event and invalidates nothing. Without this,
+    // an admin who leaves the tab open across a deadline keeps reading an "open
+    // to enter" chip on a contest nobody can enter any more.
+    refetchInterval: 60_000,
     queryFn: async (): Promise<{ rows: Contest[]; total: number }> => {
       const from = (filters.page - 1) * BRAND_CONTESTS_PAGE_SIZE;
 
@@ -195,7 +209,7 @@ export function useBrandContests(brandId: string | undefined, filters: BrandCont
         .eq('brand_id', brandId!);
 
       if (filters.status !== 'all') q = q.eq('status', filters.status);
-      if (search) q = q.ilike('name', `%${search}%`);
+      if (search) q = q.ilike('name', `%${forLike(search)}%`);
 
       // Soonest deadline first. A contest closing tomorrow is the one somebody
       // opened this tab to deal with.
@@ -212,16 +226,30 @@ export function useBrandContests(brandId: string | undefined, filters: BrandCont
   });
 }
 
-/** Counts for the status tabs, in the database rather than over a page of rows. */
-export function useBrandContestCounts(brandId: string | undefined) {
+/**
+ * Counts for the status tabs, in the database rather than over a page of rows.
+ *
+ * THE SEARCH IS APPLIED HERE TOO, and it has to be. Counting the whole brand
+ * while the list below counts the match is the same quiet disagreement that had
+ * to be fixed on the Offers tab: the chips said 40 and the list showed 3, and
+ * neither number was labelled as answering a different question.
+ */
+export function useBrandContestCounts(brandId: string | undefined, rawSearch = '') {
+  const search = sanitise(rawSearch);
+
   return useQuery({
-    queryKey: ['admin', 'contests', brandId, 'counts'],
+    queryKey: ['admin', 'contests', brandId, 'counts', search],
     enabled: Boolean(brandId),
     staleTime: 15_000,
     queryFn: async (): Promise<{ all: number; active: number; inactive: number }> => {
       const sb = getSupabase();
-      const base = () =>
-        sb.from('contests').select('id', { count: 'exact', head: true }).eq('brand_id', brandId!);
+      const base = () => {
+        const q = sb
+          .from('contests')
+          .select('id', { count: 'exact', head: true })
+          .eq('brand_id', brandId!);
+        return search ? q.ilike('name', `%${forLike(search)}%`) : q;
+      };
 
       const [all, active, inactive] = await Promise.all([
         base(),

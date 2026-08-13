@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { ChevronLeft, ChevronRight, Plus, Search, Trophy } from 'lucide-react';
 import { Button, ButtonLink } from '@/components/ui/Button';
@@ -27,12 +27,21 @@ import {
  * this tab to deal with.
  */
 
-/** The colour a state earns. Only the three stage tokens say where work has got to. */
+/**
+ * The colour a lifecycle state earns, and NONE of them is a stage token.
+ *
+ * Rule C1 settles this in words: the three stage tokens are allowed for an
+ * ENTRY state, which is where one creator's work and money have got to, and
+ * "the contest's own lifecycle state, open or closed to new entries or ended or
+ * settled, stays banned", with the warning that misreading the ruling "would
+ * put a money token on the event's own status chip". Open is not paid and a
+ * passed deadline is not money owed to anybody.
+ */
 const STATE_STYLE: Record<ContestState, string> = {
-  open: 'bg-stage-paid-soft text-stage-paid',
-  off: 'bg-surface-3 text-muted',
-  closed: 'bg-stage-due-soft text-stage-due',
-  settled: 'bg-surface-3 text-muted',
+  open: 'bg-info-soft text-info',
+  off: 'bg-surface-2 text-muted',
+  closed: 'bg-surface-2 text-text',
+  settled: 'bg-surface-3 text-text',
   cancelled: 'bg-danger-soft text-danger',
 };
 
@@ -42,6 +51,25 @@ const TABS = [
   { key: 'inactive', label: 'Off' },
 ] as const;
 
+/**
+ * The ticking clock rule L5 asks for.
+ *
+ * Expiry writes no row, so it fires no realtime event and no query
+ * invalidation: a tab left open across a deadline would otherwise still be
+ * showing "Closes in 2 hours" and a green chip an hour after the contest shut.
+ * Thirty seconds is fine because the tightest thing this drives is a ceiled
+ * minute. `now` is then passed into both `stateOf` and `timeLeft` rather than
+ * read inside them, which is also what makes both testable (rule L15).
+ */
+function useNow(everyMs = 30_000): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), everyMs);
+    return () => clearInterval(t);
+  }, [everyMs]);
+  return now;
+}
+
 export function BrandContests({ brandId, brandName }: { brandId: string; brandName: string }) {
   const [filters, setFilters] = useState<BrandContestFilters>({
     search: '',
@@ -49,8 +77,9 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
     page: 1,
   });
 
+  const now = useNow();
   const { data, isPending, isError } = useBrandContests(brandId, filters);
-  const { data: counts } = useBrandContestCounts(brandId);
+  const { data: counts } = useBrandContestCounts(brandId, filters.search);
 
   const rows = data?.rows ?? [];
   const total = data?.total ?? 0;
@@ -148,7 +177,7 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
         <ul className="flex flex-col gap-3">
           {rows.map((c) => (
             <li key={c.id}>
-              <ContestRow contest={c} />
+              <ContestRow contest={c} now={now} />
             </li>
           ))}
         </ul>
@@ -191,9 +220,9 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
   );
 }
 
-function ContestRow({ contest }: { contest: Contest }) {
-  const state = stateOf(contest);
-  const left = timeLeft(contest.expiresAt);
+function ContestRow({ contest, now }: { contest: Contest; now: number }) {
+  const state = stateOf(contest, now);
+  const left = timeLeft(contest.expiresAt, now);
 
   return (
     <Link
