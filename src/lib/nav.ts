@@ -1,5 +1,6 @@
 import {
   Award,
+  Banknote,
   Building2,
   Gift,
   Handshake,
@@ -88,10 +89,15 @@ const ADMIN: NavGroup[] = [
     // Claims is the one that must never be missed. A creator types their own
     // GMV, so nothing they claim counts until it is confirmed here, and a claim
     // sitting unread is a creator watching a number that will not move.
+    //
+    // Rewards is the money that confirmation creates. Since 2026-08-14 a reward
+    // is owed the moment a claim is confirmed, so these two are one job in two
+    // sittings: check the figures, then send what they earned.
     label: 'Contests',
     items: [
       { label: 'All contests', icon: Trophy, to: '/admin/contests' },
       { label: 'Claims', icon: Inbox, to: '/admin/contests/claims' },
+      { label: 'Rewards', icon: Banknote, to: '/admin/contests/rewards' },
     ],
   },
   {

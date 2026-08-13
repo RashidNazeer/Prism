@@ -280,18 +280,55 @@ const ExclusionRemove = z.object({
   exclusionId: z.uuid(),
 });
 
+/**
+ * Closing a contest. It moves no money and takes no outcomes: rewards are owed
+ * the moment staff confirm the figures that earn them, and paid separately,
+ * both of which keep working after this.
+ *
+ * The old five argument `settle_contest` was dropped on 2026-08-14, so this
+ * action never existed against it and cannot be carrying a stale shape.
+ */
+const ContestSettle = z.object({
+  action: z.literal('contest.settle'),
+  contestId: z.uuid(),
+  // The creator reads this on their own entry timeline.
+  message: z.string().trim().max(500).nullish(),
+});
+
+/**
+ * Marking earned rewards paid. A LIST, because the screen is a queue of
+ * everything we owe across every contest and paying a run of people in one
+ * sitting is the actual job. One id is a list of one.
+ *
+ * `allowSuspended` is not a convenience flag. Paying somebody whose account we
+ * have switched off is a decision, so the database refuses without it and the
+ * screen has to ask out loud (rule S8).
+ */
+const AwardPay = z.object({
+  action: z.literal('award.pay'),
+  awardIds: z
+    .array(z.uuid())
+    .min(1, 'Pick at least one reward to mark paid')
+    .max(100, 'That is more than 100 rewards at once'),
+  // THE CREATOR READS THIS, on every reward in the list.
+  message: z.string().trim().max(500).nullish(),
+  allowSuspended: z.boolean().default(false),
+});
+
 const Body = z.discriminatedUnion('action', [
   ContestSave,
   ContestCommercials,
   ContestStatus,
   ContestDelete,
   ContestCancel,
+  ContestSettle,
   DeliverableSave,
   DeliverableRetire,
   ProgressReview,
   ProductsSet,
   ExclusionSave,
   ExclusionRemove,
+  AwardPay,
 ]);
 
 /** SQLSTATE from the database functions to something HTTP shaped. */
@@ -335,11 +372,16 @@ function humanise(message: string, code: string | undefined): string {
       return 'That creator already has an update waiting to be confirmed';
     }
     if (message.includes('exclusion')) return 'That person is already barred from this contest';
-    if (message.includes('placement_idx')) return 'Two entrants cannot both finish in that place';
-    if (message.includes('awards_money_idx')) {
-      return 'That prize is already listed once for this entrant';
+    /*
+     * The placement and outcome needles went with placings and the outcome row
+     * on 2026-08-14. What is left is the one that stops a creator being paid
+     * twice for crossing the same target twice, and it should never reach a
+     * human at all: `award_reached_terms` skips a term that already has a row,
+     * so this only fires on a genuine race between two confirmations.
+     */
+    if (message.includes('one_per_term')) {
+      return 'That reward has already been recorded for this entrant';
     }
-    if (message.includes('outcome_idx')) return 'That entrant already has an outcome';
     return 'That already exists';
   }
   if (code === '23514') return 'One of those values is outside what we allow';
@@ -492,6 +534,30 @@ Deno.serve(async (req) => {
       p_actor_id: actor.id,
       p_contest_id: input.contestId,
       p_message: input.message ?? null,
+    });
+  } else if (input.action === 'contest.settle') {
+    /*
+     * Closing, not paying. The database refuses while any entry OR any progress
+     * claim is still waiting, because a claim that can never be confirmed is a
+     * reward silently cancelled, and it returns what is still unpaid so the
+     * screen can say so.
+     */
+    rpc = await admin.rpc('settle_contest', {
+      p_actor_id: actor.id,
+      p_contest_id: input.contestId,
+      p_message: input.message ?? null,
+    });
+  } else if (input.action === 'award.pay') {
+    /*
+     * The moment money leaves. One transaction for the whole list: if the
+     * eleventh row refuses, the first ten roll back, because a partial success
+     * with no way to see which half landed is worse than a refusal.
+     */
+    rpc = await admin.rpc('pay_contest_awards', {
+      p_actor_id: actor.id,
+      p_award_ids: input.awardIds,
+      p_message: input.message ?? null,
+      p_allow_suspended: input.allowSuspended,
     });
   } else if (input.action === 'deliverable.save') {
     rpc = await admin.rpc('save_contest_deliverable', {

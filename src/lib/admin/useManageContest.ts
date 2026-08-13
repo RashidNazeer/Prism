@@ -171,18 +171,61 @@ export type ExclusionRemovePayload = {
   exclusionId: string;
 };
 
+/**
+ * Closing a contest. It is NOT a payment, and that changed on 2026-08-14.
+ *
+ * Rewards are owed the moment staff confirm the figures that earn them, so by
+ * the time a contest closes there is nothing left to work out. Closing says the
+ * event is over: no more entries, no more claims, no more confirmations. Paying
+ * carries on afterwards and is a separate action.
+ *
+ * The database refuses to close a contest with a claim still waiting, because
+ * that claim could never be confirmed afterwards and confirming is the only
+ * thing that can owe somebody money. It returns what is still unpaid rather
+ * than refusing on it, so the screen warns before the click.
+ */
+export type ContestSettlePayload = {
+  action: 'contest.settle';
+  contestId: string;
+  /** MESSAGE, not reason: every entrant reads this on their own timeline. */
+  message: string | null;
+};
+
+/**
+ * Marking earned rewards paid. The second and last state money has here.
+ *
+ * A LIST, because the screen is a queue of everything we owe across every
+ * contest and clearing a run of it in one sitting is the job. One reward is a
+ * list of one, so there is a single code path.
+ *
+ * `allowSuspended` is not a convenience. The database refuses to pay somebody
+ * whose account we have switched off unless this is set, so the screen has to
+ * ask out loud rather than let it through with the rest (rule S8).
+ *
+ * THERE IS NO WAY BACK. Nothing unpays a reward, so the screen confirms first.
+ */
+export type AwardPayPayload = {
+  action: 'award.pay';
+  awardIds: string[];
+  /** THE CREATOR READS THIS, on every reward in the list. */
+  message: string | null;
+  allowSuspended: boolean;
+};
+
 export type ManageContestPayload =
   | ContestSavePayload
   | ContestCommercialsPayload
   | ContestStatusPayload
   | ContestDeletePayload
   | ContestCancelPayload
+  | ContestSettlePayload
   | DeliverableSavePayload
   | DeliverableRetirePayload
   | ProgressReviewPayload
   | ProductsSetPayload
   | ExclusionSavePayload
-  | ExclusionRemovePayload;
+  | ExclusionRemovePayload
+  | AwardPayPayload;
 
 export function useManageContest() {
   const queryClient = useQueryClient();
@@ -211,6 +254,13 @@ export function useManageContest() {
        * claim they just confirmed has left the list.
        */
       void queryClient.invalidateQueries({ queryKey: ['admin', 'contest-progress'] });
+      /*
+       * The rewards queue. A confirmation writes the bill in the same
+       * transaction, so confirming a claim is also the moment money appears
+       * here, and an admin who clears a claim and then opens Rewards must not
+       * find it stale.
+       */
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'contest-awards'] });
       // The creator side reads the same contests through different queries, so
       // an admin who is also looking at a hub sees their own edit there too.
       void queryClient.invalidateQueries({ queryKey: ['creator'] });

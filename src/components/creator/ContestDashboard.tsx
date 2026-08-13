@@ -66,7 +66,22 @@ export function ContestDashboard({ contests }: { contests: CreatorContest[] }) {
 
   /* -------------------------------------------------------- the headline -- */
 
-  let earned = 0;
+  /*
+   * THE MONEY COMES OFF THE BILL, NOT OFF THIS SCREEN'S ARITHMETIC.
+   *
+   * Until 2026-08-14 "earned" was computed here by walking the contest's
+   * deliverables and asking which targets looked reached. That was the best
+   * available answer while nothing recorded rewards, and it was wrong in two
+   * ways it could never fix: it read the deliverables AS THEY ARE TODAY rather
+   * than the frozen terms somebody agreed to, and it could not tell earned from
+   * paid because nothing knew.
+   *
+   * A reward is now written the moment staff confirm the figure that crosses
+   * its target, so `contest.awards` IS what they have earned, and it splits
+   * into the two states money actually has here.
+   */
+  let owed = 0;
+  let paid = 0;
   let reachable = 0;
   let waiting = 0;
   const currency = mine[0]?.currency ?? 'USD';
@@ -76,9 +91,16 @@ export function ContestDashboard({ contests }: { contests: CreatorContest[] }) {
     const confirmedVideos = c.confirmed?.confirmedVideoCount ?? 0;
     if (c.pendingClaim) waiting += 1;
 
+    for (const w of c.awards) {
+      if (w.paidAt) paid += w.amount;
+      else owed += w.amount;
+    }
+
+    // Still to play for stays on the deliverables, because it is about what is
+    // on offer rather than about what has been earned, and a target nobody has
+    // reached has no award row to read.
     for (const d of c.deliverables) {
-      if (isReached(d, confirmedGmv, confirmedVideos)) earned += d.rewardAmount;
-      else reachable += d.rewardAmount;
+      if (!isReached(d, confirmedGmv, confirmedVideos)) reachable += d.rewardAmount;
     }
   }
 
@@ -86,12 +108,17 @@ export function ContestDashboard({ contests }: { contests: CreatorContest[] }) {
     <div className="mt-6 flex flex-col gap-4">
       {/* Four figures, not four charts. A single number is not improved by being drawn. */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Figure label="Contests you are in" value={String(mine.length)} />
         <Figure
-          label="Earned so far"
-          value={money(earned, currency)}
+          label="Owed to you"
+          value={money(owed, currency)}
+          tone={owed > 0 ? 'due' : undefined}
+          note="Earned and confirmed. Waiting to be paid."
+        />
+        <Figure
+          label="Paid to you"
+          value={money(paid, currency)}
           tone="paid"
-          note="Targets you have reached on confirmed figures"
+          note="From contests, and already sent"
         />
         <Figure
           label="Still to play for"
@@ -211,6 +238,62 @@ function ContestCard({ contest }: { contest: CreatorContest }) {
           />
         ))}
       </div>
+
+      {/*
+       * WHAT THIS CONTEST HAS ACTUALLY EARNED THEM. Separate from the bars
+       * above on purpose: a bar is about a target, and this is about money that
+       * exists. A reward appears the moment the team confirms the figure that
+       * crosses its target, and changes to paid when it has been sent.
+       */}
+      {contest.awards.length > 0 ? (
+        <div className="border-line mt-5 border-t pt-4">
+          <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+            What you have earned
+          </p>
+          <ul className="mt-2.5 flex flex-col gap-2">
+            {contest.awards.map((w) => {
+              const term = contest.terms.find((t) => t.id === w.termId);
+              return (
+                <li
+                  key={w.id}
+                  className="border-line bg-surface-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 rounded-xl border px-3.5 py-3"
+                >
+                  <span className="min-w-0 flex-1 basis-44">
+                    <span className="text-text block text-[13px] font-semibold break-words">
+                      {term?.title ?? 'A reward you earned'}
+                    </span>
+                    {w.message ? (
+                      <span className="text-muted mt-0.5 block text-[12px] leading-relaxed">
+                        {w.message}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2.5">
+                    <span
+                      className={cn(
+                        'wx-numeric font-display text-[17px] leading-none font-bold',
+                        w.paidAt ? 'text-stage-paid' : 'text-stage-due'
+                      )}
+                    >
+                      {money(w.amount, w.currency)}
+                    </span>
+                    <span
+                      className={cn(
+                        'rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                        w.paidAt
+                          ? 'bg-stage-paid-soft text-stage-paid'
+                          : 'bg-stage-due-soft text-stage-due'
+                      )}
+                    >
+                      {w.paidAt ? 'Paid' : 'Owed to you'}
+                    </span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
 
       {contest.pendingClaim ? (
         <p className="text-stage-due mt-4 text-[13px] font-medium">

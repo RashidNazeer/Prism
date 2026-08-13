@@ -52,8 +52,22 @@ const check = (name, cond, detail) => (cond ? ok(name) : bad(name, detail));
 const STAMP = Date.now().toString(36);
 const ADMIN_EMAIL = `contests-admin-${STAMP}@wurxmediahub.test`;
 const CREATOR_EMAIL = `contests-creator-${STAMP}@wurxmediahub.test`;
+// A second creator who does NOTHING, and exists only to prove that being signed
+// in is not the same as being allowed to read somebody else's money.
+const RIVAL_EMAIL = `contests-rival-${STAMP}@wurxmediahub.test`;
 const PW = 'Wx-contests-suite-2026!';
 const CONTEST_NAME = `Suite contest ${STAMP}`;
+
+/*
+ * The numbers the whole money half turns on, in one place, because they are
+ * asserted from four directions: the deliverable the admin types, the frozen
+ * term, the figure the creator claims, and the reward that confirming owes.
+ * REACHED is deliberately past TARGET, so confirming crosses it.
+ */
+const TARGET = 500;
+const REWARD = 120;
+const REACHED = 640;
+const BUDGET = 4321;
 
 const made = { users: [], contests: [] };
 
@@ -77,7 +91,27 @@ async function cleanup() {
     await admin.from('contests').delete().eq('id', id);
   }
   await admin.from('contests').delete().like('name', 'Suite contest %');
-  for (const id of made.users) await admin.auth.admin.deleteUser(id);
+  // The audit rows this suite writes are keyed on the ACTOR as well as the
+  // subject: paying a reward and confirming a claim are logged against the
+  // throwaway admin, and deleting the account would otherwise orphan them.
+  for (const id of made.users) {
+    await admin.from('audit_log').delete().eq('actor_id', id);
+    await admin.from('audit_log').delete().eq('target_user_id', id);
+    await admin.auth.admin.deleteUser(id);
+  }
+}
+
+/**
+ * What the entry dialog is actually saying, when the row it should have written
+ * is not there. A failing assertion that only says "false" costs a whole run to
+ * diagnose, and this dialog refuses for six different reasons.
+ */
+async function enterFailureDetail(dialog) {
+  try {
+    return (await dialog.innerText()).replace(/\s+/g, ' ').slice(0, 400);
+  } catch {
+    return 'the dialog is gone, and no entry was written';
+  }
 }
 
 async function signIn(page, email) {
@@ -94,8 +128,9 @@ const browser = await launchBrowser();
 const errors = [];
 
 try {
-  await makeUser(ADMIN_EMAIL, 'admin');
+  const adminId = await makeUser(ADMIN_EMAIL, 'admin');
   await makeUser(CREATOR_EMAIL, 'creator');
+  await makeUser(RIVAL_EMAIL, 'creator');
 
   const { data: brand } = await admin
     .from('brands')
@@ -158,8 +193,17 @@ try {
     .eq('name', CONTEST_NAME)
     .maybeSingle();
   check('the contest reached the database', Boolean(saved));
+  if (!saved) throw new Error('nothing to test the money half against');
   if (saved) {
     made.contests.push(saved.id);
+    // Staff only, and the creator half below proves it never reaches a browser
+    // that is not staff. Set through the real function so the audit row exists.
+    await admin.rpc('save_contest_commercials', {
+      p_actor_id: adminId,
+      p_contest_id: saved.id,
+      p_total_budget: BUDGET,
+      p_internal_note: null,
+    });
     check('its timezone was stored as an IANA name', /^[A-Za-z]+\/[A-Za-z_]+$|^UTC$/.test(saved.expires_at_timezone), saved.expires_at_timezone);
     check('a new contest is off until switched on', saved.status === 'inactive', saved.status);
   }
@@ -224,8 +268,454 @@ try {
   );
   check('every control is at least 44px tall on a phone', small.length === 0, small.join(' | '));
 
+  // ---------------------------------------------- a deliverable, on screen --
+  console.log('\n6. Adding a deliverable through the popup');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto(`${BASE}/admin/brands/${brand.id}/contests/${saved.id}`, {
+    waitUntil: 'domcontentloaded',
+  });
+  /*
+   * The trigger and the dialog's submit BOTH say "Add deliverable", so every
+   * locator here is scoped to the dialog rather than to the page. The setup
+   * form behind it carries a Name field of its own, which is the trap that made
+   * this worth writing down.
+   */
+  await page.getByRole('button', { name: 'Add deliverable' }).first().click();
+  const popup = page.getByRole('dialog', { name: 'Add a deliverable' });
+  await popup.waitFor({ timeout: 15_000 });
+
+  await popup.getByLabel('Name', { exact: true }).fill('Suite GMV target');
+  await popup.getByLabel(/^Target GMV/).fill(String(TARGET));
+  await popup.getByLabel(/^Reward/).fill(String(REWARD));
+  await popup.locator('button[type="submit"]').click();
+
+  await page.waitForFunction(
+    (t) => document.body.innerText.includes(t),
+    'Suite GMV target',
+    { timeout: 20_000 }
+  );
+  ok('the deliverable popup saves and the row appears');
+
+  const { data: deliverable } = await admin
+    .from('contest_deliverables')
+    .select('id, type, target_value, reward_amount, is_active')
+    .eq('contest_id', saved.id)
+    .maybeSingle();
+
+  check('the target and the reward reached the database', Boolean(deliverable));
+  if (deliverable) {
+    check(
+      'the target is exactly what was typed',
+      Number(deliverable.target_value) === TARGET,
+      String(deliverable.target_value)
+    );
+    check(
+      'the reward is exactly what was typed',
+      Number(deliverable.reward_amount) === REWARD,
+      String(deliverable.reward_amount)
+    );
+  }
+
+  /*
+   * Switched on and open to everybody, through the database rather than the
+   * form, because the form path for both is already covered above and what is
+   * being set up here is the CREATOR half. Auto approval keeps the entry flow to
+   * one click, which is the flow most contests will actually run.
+   */
+  await admin
+    .from('contests')
+    .update({ status: 'active', needs_admin_approval: false })
+    .eq('id', saved.id);
+
+  // ------------------------------------------------- the creator's screens --
+  console.log('\n7. The creator, in a real browser');
+  const cctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const cpage = await cctx.newPage();
+  cpage.on('console', (m) => {
+    if (m.type() === 'error') errors.push(`[creator] ${m.text()}`);
+  });
+  cpage.on('pageerror', (e) => errors.push(`[creator] ${String(e)}`));
+
+  await cpage.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' });
+  await cpage.fill('input[type="email"]', CREATOR_EMAIL);
+  await cpage.fill('input[type="password"]', PW);
+  await cpage.click('button[type="submit"]');
+  await cpage.waitForURL((u) => !u.pathname.includes('/login'), { timeout: 20_000 });
+  ok('the creator can sign in through the screen');
+
+  await cpage.goto(`${BASE}/app/contests`, { waitUntil: 'domcontentloaded' });
+  await cpage.waitForFunction((n) => document.body.innerText.includes(n), CONTEST_NAME, {
+    timeout: 20_000,
+  });
+  ok('the creator contest screen lists a live contest');
+
+  const creatorText = await cpage.textContent('body');
+  check(
+    'the creator is shown the target and the reward',
+    creatorText.includes('Suite GMV target'),
+    'the deliverable is not named on the creator screen'
+  );
+  check(
+    'no contest budget appears anywhere on the creator screen',
+    !creatorText.includes(String(BUDGET)),
+    'the contest budget is rendered to a creator'
+  );
+
+  // ---------------------------------------------------------- entry dialog --
+  console.log('\n8. The entry dialog');
+  /*
+   * SCOPED TO THIS CONTEST'S CARD, not to the first matching button on the
+   * page. Dev carries other live contests, every approved creator can see all
+   * of them, and the first Enter button on the screen belongs to whichever one
+   * closes soonest. The name carries a timestamp, so exactly one card matches.
+   */
+  const card = cpage.locator('li').filter({ hasText: CONTEST_NAME });
+  await card.getByRole('button', { name: 'Enter this contest' }).click();
+
+  const enterDialog = cpage.getByRole('dialog');
+  await enterDialog.waitFor({ timeout: 15_000 });
+  ok('the entry dialog opens');
+
+  const dialogText = await enterDialog.innerText();
+  check(
+    'the dialog says what the contest pays before they commit',
+    dialogText.includes('Suite GMV target'),
+    'the deliverable is not shown in the entry dialog'
+  );
+  check(
+    'and it is the contest they tapped',
+    dialogText.includes(CONTEST_NAME),
+    'the dialog opened on a different contest'
+  );
+
+  await enterDialog.locator('button[type="submit"]').click();
+
+  /*
+   * THE DIALOG CLOSING IS THE SIGNAL, not a phrase on the page.
+   *
+   * The first version of this waited for "You are in" in the body text, which
+   * passed INSTANTLY against the dialog's own heading, "You are in the moment
+   * you tap". So the suite read the database before the entry had been written
+   * and reported the feature broken. A dialog that closes only when the write
+   * came back is the thing that actually says it worked.
+   */
+  await enterDialog.waitFor({ state: 'detached', timeout: 25_000 });
+  await card.getByText('You are in', { exact: false }).first().waitFor({ timeout: 20_000 });
+  ok('entering lands them in the contest');
+
+  const { data: entry, error: entryErr } = await admin
+    .from('contest_entries')
+    .select('id, status, creator_id')
+    .eq('contest_id', saved.id)
+    .maybeSingle();
+
+  check(
+    'the entry reached the database',
+    Boolean(entry),
+    entryErr?.message ?? (await enterFailureDetail(enterDialog))
+  );
+  if (!entry) throw new Error('no entry, so there is nothing to claim against');
+  check('and it was approved without a decision', entry?.status === 'approved', entry?.status);
+
+  const { data: frozen } = await admin
+    .from('contest_entry_terms')
+    .select('id, type, target_value, reward_amount')
+    .eq('entry_id', entry.id);
+
+  check('the promise was frozen onto the entry', (frozen ?? []).length === 1);
+  check(
+    'the frozen reward is the one they were shown',
+    Number(frozen?.[0]?.reward_amount) === REWARD,
+    String(frozen?.[0]?.reward_amount)
+  );
+
+  // ------------------------------------------------------- progress dialog --
+  console.log('\n9. The progress dialog');
+  await cpage.reload({ waitUntil: 'domcontentloaded' });
+  await cpage
+    .locator('li')
+    .filter({ hasText: CONTEST_NAME })
+    .getByRole('button', { name: 'Update progress' })
+    .click();
+
+  const progressDialog = cpage.getByRole('dialog');
+  await progressDialog.waitFor({ timeout: 15_000 });
+  ok('the progress dialog opens');
+
+  const progressText = await progressDialog.innerText();
+  check(
+    'the dialog says nothing counts until the team confirms it',
+    /confirm/i.test(progressText),
+    'no confirmation caveat on the progress dialog'
+  );
+
+  // A target field would be a creator typing their own payslip. There is not
+  // one, on the wire or on the screen, and this is the screen half.
+  const editableTarget = await cpage.evaluate(() =>
+    [...document.querySelectorAll('input, textarea')].some(
+      (el) =>
+        !el.disabled &&
+        !el.readOnly &&
+        /target|reward/i.test(
+          (el.getAttribute('name') ?? '') + (el.getAttribute('aria-label') ?? '')
+        )
+    )
+  );
+  check('no target or reward is editable by a creator', !editableTarget);
+
+  await progressDialog.getByLabel('Total GMV so far').fill(String(REACHED));
+  await progressDialog.getByLabel('Videos posted so far').fill('1');
+  await progressDialog.getByRole('button', { name: 'Continue' }).click();
+
+  /*
+   * EXACTLY ONE PAIR OF BOXES, because the count moved from 0 to 1. This is the
+   * rule Rashid was explicit about: going from five to six asks for ONE link,
+   * not six, and the database refuses any other number by naming both.
+   */
+  await progressDialog.getByLabel('Video link').waitFor({ timeout: 15_000 });
+  const linkBoxes = await progressDialog.getByLabel('Video link').count();
+  check('the dialog asks for exactly the NEW videos, not the total', linkBoxes === 1, String(linkBoxes));
+
+  await progressDialog
+    .getByLabel('Video link')
+    .fill(`https://www.tiktok.com/@suite/video/${STAMP}1`);
+  await progressDialog.getByLabel('Ad code').fill(`SUITE-${STAMP}`);
+
+  await progressDialog.getByRole('button', { name: 'Send to the team' }).click();
+  await progressDialog
+    .getByText('with the team', { exact: false })
+    .first()
+    .waitFor({ timeout: 25_000 });
+  ok('a claim can be filed from the dialog');
+
+  const { data: claim } = await admin
+    .from('contest_progress_updates')
+    .select('id, gmv, status')
+    .eq('entry_id', entry.id)
+    .maybeSingle();
+
+  check('the claim reached the database as PENDING', claim?.status === 'pending', claim?.status);
+  check('carrying the figure they typed', Number(claim?.gmv) === REACHED, String(claim?.gmv));
+
+  const { count: earlyAwards } = await admin
+    .from('contest_awards')
+    .select('id', { count: 'exact', head: true })
+    .eq('contest_id', saved.id);
+  check(
+    'NOTHING is owed on an unconfirmed claim, even one past the target',
+    (earlyAwards ?? 0) === 0,
+    `${earlyAwards} award(s) written before anybody confirmed anything`
+  );
+
+  // ------------------------------------------- confirming is what owes money --
+  console.log('\n10. Confirming a claim owes the money');
+  await page.goto(`${BASE}/admin/contests/claims`, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction((n) => document.body.innerText.includes(n), CONTEST_NAME, {
+    timeout: 20_000,
+  });
+  ok('the claim is waiting on the claims screen');
+
+  /*
+   * SCOPED TO THIS CONTEST'S CARD. Dev carries real seeded claims from other
+   * creators, and the first Confirm button on this queue belongs to whoever has
+   * been waiting longest. Confirming one of those would owe real money to
+   * somebody this suite has nothing to do with, and then delete nothing on the
+   * way out.
+   */
+  await page
+    .locator('li')
+    .filter({ hasText: CONTEST_NAME })
+    .getByRole('button', { name: 'Confirm these figures' })
+    .click();
+  await page.waitForFunction(
+    (n) => !document.body.innerText.includes(n),
+    CONTEST_NAME,
+    { timeout: 25_000 }
+  );
+  ok('confirming clears it from the queue');
+
+  const { data: award } = await admin
+    .from('contest_awards')
+    .select('id, awarded_amount, awarded_currency, reached_value, paid_at, creator_id, term_id')
+    .eq('contest_id', saved.id)
+    .maybeSingle();
+
+  check('confirming wrote the reward', Boolean(award));
+  if (award) {
+    check(
+      'for exactly what the deliverable promised',
+      Number(award.awarded_amount) === REWARD,
+      String(award.awarded_amount)
+    );
+    check('and it is OWED, not paid', award.paid_at === null);
+    check(
+      'the figure that crossed the target is frozen on it',
+      Number(award.reached_value) === REACHED,
+      String(award.reached_value)
+    );
+    check('it points at the frozen promise, not at the live deliverable', award.term_id === frozen?.[0]?.id);
+  }
+
+  // Confirming twice must not pay twice. The claim is already decided, so this
+  // is the second decision guard, and the award constraint behind it.
+  const secondDecision = await admin.rpc('review_contest_progress', {
+    p_actor_id: adminId,
+    p_update_id: claim.id,
+    p_status: 'confirmed',
+    p_message: null,
+  });
+  check('a second decision on the same claim is refused', Boolean(secondDecision.error));
+
+  const { count: awardCount } = await admin
+    .from('contest_awards')
+    .select('id', { count: 'exact', head: true })
+    .eq('contest_id', saved.id);
+  check('and no second reward was written', (awardCount ?? 0) === 1, String(awardCount));
+
+  // --------------------------------------------------- the creator sees it --
+  console.log('\n11. The creator sees what they are owed');
+  await cpage.goto(`${BASE}/app/contests?view=progress`, { waitUntil: 'domcontentloaded' });
+  await cpage.waitForFunction(
+    () => /Owed to you/.test(document.body.innerText),
+    undefined,
+    { timeout: 20_000 }
+  );
+  ok('the creator dashboard says what is owed to them');
+
+  const owedText = await cpage.textContent('body');
+  check(
+    'and names the reward it was earned against',
+    owedText.includes('Suite GMV target'),
+    'the reward is not named on the creator dashboard'
+  );
+
+  // ------------------------------------------------------------- paying it --
+  console.log('\n12. Paying it, on the rewards screen');
+  await page.goto(`${BASE}/admin/contests/rewards`, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction((n) => document.body.innerText.includes(n), CONTEST_NAME, {
+    timeout: 20_000,
+  });
+  ok('the reward is waiting on the rewards screen');
+
+  // Scoped for the same reason the claims queue is: dev owes real money to real
+  // seeded creators, and paying one of theirs would be a lie this suite leaves
+  // behind.
+  await page
+    .locator('li')
+    .filter({ hasText: CONTEST_NAME })
+    .locator('input[type="checkbox"]')
+    .check();
+  await page.getByRole('button', { name: 'Mark paid' }).click();
+  await page.waitForFunction(
+    () => /Yes, mark it paid|Yes, mark them paid/.test(document.body.innerText),
+    undefined,
+    { timeout: 15_000 }
+  );
+  ok('marking paid asks first');
+
+  const confirmText = await page.textContent('body');
+  check(
+    'and says plainly that it cannot be undone',
+    /cannot be undone/i.test(confirmText),
+    'no irreversibility warning before paying'
+  );
+
+  await page.getByRole('button', { name: /Yes, mark (it|them) paid/ }).click();
+  await page.waitForFunction(
+    (n) => !document.body.innerText.includes(n),
+    CONTEST_NAME,
+    { timeout: 25_000 }
+  );
+  ok('the paid reward leaves the owed list');
+
+  const { data: afterPay } = await admin
+    .from('contest_awards')
+    .select('paid_at, paid_by')
+    .eq('id', award.id)
+    .maybeSingle();
+  check('the database says it is paid', Boolean(afterPay?.paid_at));
+  check('and records who said so', afterPay?.paid_by === adminId);
+
+  const payAgain = await admin.rpc('pay_contest_awards', {
+    p_actor_id: adminId,
+    p_award_ids: [award.id],
+    p_message: null,
+    p_allow_suspended: false,
+  });
+  check('paying the same reward twice is refused', Boolean(payAgain.error));
+
+  await cpage.goto(`${BASE}/app/contests?view=progress`, { waitUntil: 'domcontentloaded' });
+  await cpage.waitForFunction(() => /\bPaid\b/.test(document.body.innerText), undefined, {
+    timeout: 20_000,
+  });
+  ok('and the creator sees it as paid');
+
+  // ------------------------------------------------------- closing it -------
+  console.log('\n13. Closing the contest');
+  const closeWithClaim = await admin.rpc('settle_contest', {
+    p_actor_id: adminId,
+    p_contest_id: saved.id,
+    p_message: null,
+  });
+  check('a contest with no waiting claim closes', !closeWithClaim.error, closeWithClaim.error?.message);
+
+  const { data: closed } = await admin
+    .from('contests')
+    .select('settled_at, settled_by')
+    .eq('id', saved.id)
+    .maybeSingle();
+  check('it is recorded as closed, with an actor', Boolean(closed?.settled_at && closed?.settled_by));
+
+  const closeAgain = await admin.rpc('settle_contest', {
+    p_actor_id: adminId,
+    p_contest_id: saved.id,
+    p_message: null,
+  });
+  check('closing it twice is refused', Boolean(closeAgain.error));
+
+  // ---------------------------------------------- creator widths and console --
+  console.log('\n14. The creator screens at every width');
+  for (const width of [375, 768, 1024, 1440]) {
+    for (const theme of ['dark', 'light']) {
+      await cpage.setViewportSize({ width, height: 900 });
+      await cpage.emulateMedia({ colorScheme: theme });
+      await cpage.goto(`${BASE}/app/contests`, { waitUntil: 'domcontentloaded' });
+      await cpage.waitForFunction((n) => document.body.innerText.includes(n), CONTEST_NAME, {
+        timeout: 20_000,
+      });
+      const scrolls = await cpage.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
+      );
+      check(`creator contests has no sideways scroll at ${width}px ${theme}`, !scrolls);
+    }
+  }
+
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto(`${BASE}/admin/contests/rewards?view=paid`, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => /Contest rewards/.test(document.body.innerText), undefined, {
+    timeout: 20_000,
+  });
+  const rewardScrolls = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
+  );
+  check('the rewards screen has no sideways scroll on a phone', !rewardScrolls);
+
+  const rewardSmall = await page.evaluate(() =>
+    [...document.querySelectorAll('button, a[href]')]
+      .filter((el) => el.getBoundingClientRect().height > 0)
+      .filter((el) => el.getBoundingClientRect().height < 44)
+      .map((el) => (el.textContent ?? '').trim().slice(0, 30))
+      .filter(Boolean)
+  );
+  check('every rewards control is at least 44px tall on a phone', rewardSmall.length === 0, rewardSmall.join(' | '));
+
+  await cctx.close();
+
+
   // ------------------------------------------------- the money, on the wire --
-  console.log('\n6. As a real creator, over the wire');
+  console.log('\n15. As a real creator, over the wire');
   const asCreator = createClient(URL, PUB, { auth: { persistSession: false } });
   const { error: sErr } = await asCreator.auth.signInWithPassword({
     email: CREATOR_EMAIL,
@@ -262,10 +752,134 @@ try {
   });
   check('a creator is refused by the edge function', Boolean(fnAttempt.error));
 
+  /*
+   * THE MONEY ATTACKS. Everything above is about what a creator can READ.
+   * These are about what they can do to the bill, which is the part that pays
+   * them, so every one of them is run as a real signed-in creator against the
+   * real endpoint rather than reasoned about.
+   */
+  const ownAwards = await asCreator.from('contest_awards').select('id, awarded_amount');
+  check(
+    'a creator reads their OWN rewards',
+    (ownAwards.data ?? []).length >= 1,
+    'the earner cannot see what they earned'
+  );
+
+  const payViaFn = await asCreator.functions.invoke('manage-contest', {
+    body: { action: 'award.pay', awardIds: [award.id], message: null, allowSuspended: false },
+  });
+  check('a creator cannot mark their own reward paid', Boolean(payViaFn.error));
+
+  const payViaRpc = await asCreator.rpc('pay_contest_awards', {
+    p_actor_id: adminId,
+    p_award_ids: [award.id],
+    p_message: null,
+    p_allow_suspended: false,
+  });
+  check('and cannot reach the pay function directly either', Boolean(payViaRpc.error));
+
+  const settleViaRpc = await asCreator.rpc('settle_contest', {
+    p_actor_id: adminId,
+    p_contest_id: saved.id,
+    p_message: null,
+  });
+  check('a creator cannot close a contest', Boolean(settleViaRpc.error));
+
+  // The writer lives in `private` precisely so PostgREST cannot see it. If this
+  // ever succeeds, somebody has moved it into an exposed schema and a creator
+  // can pay themselves.
+  const awardViaRpc = await asCreator.rpc('award_reached_terms', {
+    p_entry_id: entry.id,
+    p_gmv: 999999,
+    p_video_count: 999,
+    p_actor_id: adminId,
+    p_event_note: null,
+  });
+  check('the reward writer is not reachable as an RPC at all', Boolean(awardViaRpc.error));
+
+  /*
+   * There is no update policy on contest_awards at all, and PostgREST answers a
+   * filtered-away UPDATE with success and zero rows rather than with an error.
+   * So the assertion is on the ROW, not on the response: an attack that changes
+   * nothing and reports nothing is exactly what this should look like.
+   */
+  await asCreator
+    .from('contest_awards')
+    .update({ awarded_amount: 99_999, paid_by: entry.creator_id })
+    .eq('id', award.id);
+
+  const { data: afterAttack } = await admin
+    .from('contest_awards')
+    .select('awarded_amount, paid_by')
+    .eq('id', award.id)
+    .maybeSingle();
+
+  check(
+    'a creator cannot raise their own reward',
+    Number(afterAttack?.awarded_amount) === REWARD,
+    String(afterAttack?.awarded_amount)
+  );
+  check(
+    'and cannot rewrite who paid it',
+    afterAttack?.paid_by === adminId,
+    'a creator wrote onto the reward row'
+  );
+
+  const awardInsert = await asCreator.from('contest_awards').insert({
+    contest_id: saved.id,
+    entry_id: entry.id,
+    creator_id: entry.creator_id,
+    term_id: frozen[0].id,
+    awarded_amount: 99999,
+    awarded_currency: 'USD',
+  });
+  check('a creator cannot invent a reward for themselves', Boolean(awardInsert.error));
+
+  const awardTotals = await asCreator.from('contest_award_totals').select('contest_id');
+  check(
+    'a creator reads nothing from the rewards rollup',
+    (awardTotals.data ?? []).length === 0,
+    JSON.stringify(awardTotals.data)
+  );
+
   await asCreator.auth.signOut();
 
+  // -------------------------------------------------- somebody else's money --
+  console.log('\n16. A rival creator');
+  const asRival = createClient(URL, PUB, { auth: { persistSession: false } });
+  const { error: rErr } = await asRival.auth.signInWithPassword({
+    email: RIVAL_EMAIL,
+    password: PW,
+  });
+  check('the rival can sign in', !rErr, rErr?.message);
+
+  const rivalAwards = await asRival.from('contest_awards').select('id');
+  check(
+    "a creator reads NOTHING of another creator's rewards",
+    (rivalAwards.data ?? []).length === 0,
+    JSON.stringify(rivalAwards.data)
+  );
+
+  const rivalTerms = await asRival.from('contest_entry_terms').select('id');
+  check(
+    "and nothing of another creator's frozen promise",
+    (rivalTerms.data ?? []).length === 0
+  );
+
+  const rivalClaims = await asRival.from('contest_progress_updates').select('id, gmv');
+  check("and nothing of another creator's claimed figures", (rivalClaims.data ?? []).length === 0);
+
+  const rivalStanding = await asRival.rpc('my_contest_standing', { p_contest_id: saved.id });
+  check(
+    'the standing tells a non-entrant nothing at all',
+    !rivalStanding.error && (rivalStanding.data ?? []).length === 0,
+    JSON.stringify(rivalStanding.data ?? rivalStanding.error)
+  );
+
+  await asRival.auth.signOut();
+
   // ------------------------------------------------------------ console ---
-  console.log('\n7. The console');
+  console.log('\n17. The console');
   check('zero console errors across every screen and width', errors.length === 0, errors.join('\n        '));
 } catch (err) {
   bad('the suite itself threw', String(err));

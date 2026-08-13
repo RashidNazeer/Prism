@@ -255,6 +255,40 @@ export interface CreatorContest {
   pendingClaim: CreatorProgressUpdate | null;
   /** Confirmed only. The one figure money may be owed against. */
   confirmed: CreatorConfirmedTotals | null;
+  /** What they have actually earned on this entry, newest first. */
+  awards: CreatorContestAward[];
+}
+
+/**
+ * ONE REWARD THEY HAVE EARNED, and the only thing in this file that is money
+ * rather than a figure money might one day be owed against.
+ *
+ * WRITTEN BY THE TEAM CONFIRMING A CLAIM, never by anything a creator does.
+ * Rashid, 2026-08-14: a reward is owed the moment staff confirm the figure that
+ * crosses its target. So this row existing IS the proof that a target was
+ * reached and checked, which is why no screen recomputes it.
+ *
+ * TWO STATES ONLY. `paidAt` null is owed; anything else is paid. They are drawn
+ * with the same two tokens the rest of the product uses for exactly this
+ * distinction, and they are never added into one figure.
+ *
+ * `reachedValue` is the figure that crossed the target, frozen at the moment it
+ * did. Without it a receipt written six weeks later would quote whatever their
+ * total is now, which is not what anybody was paid on.
+ */
+export interface CreatorContestAward {
+  id: string;
+  entryId: string;
+  contestId: string;
+  /** The frozen term it was earned against, so a card can name the target. */
+  termId: string;
+  amount: number;
+  currency: string;
+  reachedValue: number | null;
+  /** Written by staff when they mark it paid. The creator reads it. */
+  message: string | null;
+  createdAt: string;
+  paidAt: string | null;
 }
 
 /* ------------------------------------------------------------- the door --- */
@@ -516,6 +550,19 @@ interface TargetRow {
   target: number;
 }
 
+interface AwardRow {
+  id: string;
+  entry_id: string;
+  contest_id: string;
+  term_id: string;
+  awarded_amount: number;
+  awarded_currency: string;
+  reached_value: number | null;
+  message: string | null;
+  created_at: string;
+  paid_at: string | null;
+}
+
 export interface MyContestEntries {
   entries: EntryRow[];
   terms: TermRow[];
@@ -523,6 +570,7 @@ export interface MyContestEntries {
   targets: TargetRow[];
   updates: ProgressUpdateRow[];
   confirmed: ConfirmedTotalsRow[];
+  awards: AwardRow[];
 }
 
 /**
@@ -559,7 +607,7 @@ export function useMyContestEntries() {
     queryFn: async (): Promise<MyContestEntries> => {
       const sb = getSupabase();
 
-      const [e, t, g, k, u, f] = await Promise.all([
+      const [e, t, g, k, u, f, w] = await Promise.all([
         sb
           .from('contest_entries')
           .select(
@@ -614,6 +662,28 @@ export function useMyContestEntries() {
               'confirmed_at, claims_waiting'
           )
           .limit(CEILING),
+        /*
+         * WHAT THEY HAVE ACTUALLY EARNED, and whether it has been paid.
+         *
+         * This is the bill, and it is the truth about money rather than a
+         * calculation this browser does. A screen adding up which targets look
+         * reached would be reading the contest's deliverables AS THEY ARE
+         * TODAY, while a reward is owed against the FROZEN TERM somebody agreed
+         * to, so an admin adding a deliverable on Friday would make Monday's
+         * dashboard claim money nobody owes.
+         *
+         * Own rows only: `contest_awards_select_own` is `creator_id =
+         * auth.uid()` and there is no other creator policy on the table, which
+         * is the same reason no filter is written anywhere else in this file.
+         */
+        sb
+          .from('contest_awards')
+          .select(
+            'id, entry_id, contest_id, term_id, awarded_amount, awarded_currency, ' +
+              'reached_value, message, created_at, paid_at'
+          )
+          .order('created_at', { ascending: false })
+          .limit(CEILING * 8),
       ]);
 
       if (e.error) throw e.error;
@@ -622,6 +692,7 @@ export function useMyContestEntries() {
       if (k.error) throw k.error;
       if (u.error) throw u.error;
       if (f.error) throw f.error;
+      if (w.error) throw w.error;
 
       return {
         entries: (e.data ?? []) as unknown as EntryRow[],
@@ -630,6 +701,7 @@ export function useMyContestEntries() {
         targets: (k.data ?? []) as unknown as TargetRow[],
         updates: (u.data ?? []) as unknown as ProgressUpdateRow[],
         confirmed: (f.data ?? []) as unknown as ConfirmedTotalsRow[],
+        awards: (w.data ?? []) as unknown as AwardRow[],
       };
     },
   });
@@ -642,6 +714,14 @@ export function useMyContestEntries() {
       [
         { table: 'contest_entries', filter: `creator_id=eq.${user.id}` },
         { table: 'contest_submissions', filter: `creator_id=eq.${user.id}` },
+        /*
+         * Money landing is the most felt moment in the product, so a reward
+         * being marked paid has to arrive under their hands rather than on the
+         * next refetch. Filtered to their own id for the same load bearing
+         * reason as the other two: postgres_changes does not apply row security
+         * to DELETE events.
+         */
+        { table: 'contest_awards', filter: `creator_id=eq.${user.id}` },
       ],
       () => {
         void queryClient.invalidateQueries({ queryKey: ['creator', 'contest-entries'] });
@@ -831,6 +911,26 @@ export function useCreatorContests() {
       updatesFor.set(u.entry_id, list);
     }
 
+    // Newest first out of the query and kept that way per entry, so a card
+    // leads with the reward they most recently earned.
+    const awardsFor = new Map<string, CreatorContestAward[]>();
+    for (const w of mine.data?.awards ?? []) {
+      const list = awardsFor.get(w.entry_id) ?? [];
+      list.push({
+        id: w.id,
+        entryId: w.entry_id,
+        contestId: w.contest_id,
+        termId: w.term_id,
+        amount: Number(w.awarded_amount),
+        currency: w.awarded_currency,
+        reachedValue: w.reached_value === null ? null : Number(w.reached_value),
+        message: w.message,
+        createdAt: w.created_at,
+        paidAt: w.paid_at,
+      });
+      awardsFor.set(w.entry_id, list);
+    }
+
     const confirmedFor = new Map<string, CreatorConfirmedTotals>();
     for (const f of mine.data?.confirmed ?? []) {
       confirmedFor.set(f.entry_id, {
@@ -899,6 +999,7 @@ export function useCreatorContests() {
         // a screen says nothing is confirmed yet rather than printing 0 GMV,
         // which would read as "you have sold nothing".
         confirmed: entry ? (confirmedFor.get(entry.id) ?? null) : null,
+        awards: entry ? (awardsFor.get(entry.id) ?? []) : [],
       };
     });
   }, [catalogue.data, mine.data]);

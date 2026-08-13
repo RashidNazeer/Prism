@@ -221,8 +221,9 @@ export const router = createBrowserRouter([
         HydrateFallback: RouteFallback,
         lazy: lazyRoute(() => import('@/routes/admin/OfferRequests'), 'OfferRequests'),
       },
-      // Two screens, the same split offers already has: what is running, and
-      // who is waiting on us. Different questions, worked at different times.
+      // Three screens, three jobs: what is running, who is waiting on us, and
+      // what it has cost. Different questions, worked at different times of day,
+      // and a screen that tries to answer two of them answers neither well.
       {
         path: '/admin/contests',
         HydrateFallback: RouteFallback,
@@ -232,6 +233,11 @@ export const router = createBrowserRouter([
         path: '/admin/contests/claims',
         HydrateFallback: RouteFallback,
         lazy: lazyRoute(() => import('@/routes/admin/ContestClaims'), 'ContestClaims'),
+      },
+      {
+        path: '/admin/contests/rewards',
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/routes/admin/ContestRewards'), 'ContestRewards'),
       },
       {
         path: '/admin/content',

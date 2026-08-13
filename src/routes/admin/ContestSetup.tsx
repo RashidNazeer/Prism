@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { ArrowLeft, Check, Loader2, Trash2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { ArrowLeft, Check, Loader2, Lock, Trash2 } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { ContestDeliverables } from '@/components/admin/ContestDeliverables';
 import { ContestExclusions } from '@/components/admin/ContestExclusions';
@@ -9,6 +10,8 @@ import { ContestProgressQueue } from '@/components/admin/ContestProgressQueue';
 import { Button } from '@/components/ui/Button';
 import { Field, Input, Select, Textarea } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
+import { money } from '@/lib/money';
+import { getSupabase } from '@/lib/supabase';
 import { formatDeadline, instantFromWallClock, wallClockFields } from '@/lib/contest-time';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useBrand } from '@/lib/admin/useBrands';
@@ -878,11 +881,19 @@ export function ContestSetup() {
             )}
 
             {!isNew && existing?.contest ? (
-              <DeleteContest
-                brandId={brandId!}
-                contestId={contestId!}
-                contestName={existing.contest.name}
-              />
+              <>
+                <CloseContest
+                  contestId={contestId!}
+                  currency={savedCurrency}
+                  settledAt={existing.contest.settledAt}
+                  cancelledAt={existing.contest.cancelledAt}
+                />
+                <DeleteContest
+                  brandId={brandId!}
+                  contestId={contestId!}
+                  contestName={existing.contest.name}
+                />
+              </>
             ) : null}
 
             <div className="pb-8" />
@@ -890,6 +901,169 @@ export function ContestSetup() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+/**
+ * CLOSING A CONTEST, which since 2026-08-14 moves no money at all.
+ *
+ * `settle_contest` shipped with no caller for the same reason `delete_contest`
+ * did, and it stayed that way while it still meant "work out who won and pay
+ * them". It does not mean that any more: a reward is owed the moment staff
+ * confirm the figure that crosses its target, so by the time a contest closes
+ * every penny is already recorded. Closing says the event is over.
+ *
+ * THE TWO REFUSALS ARE THE POINT, and both are good ones. The database declines
+ * while an entry is still pending, because an applicant left waiting on a dead
+ * contest is in no queue and gets no decision. And it declines while a PROGRESS
+ * CLAIM is still pending, because that claim could never be confirmed
+ * afterwards and confirming is the only thing that can owe somebody money, so
+ * closing over the top of one would silently cancel a reward already earned.
+ *
+ * WHAT IS STILL OWED IS SHOWN, NOT REFUSED. Closing and paying genuinely finish
+ * at different times, and `pay_contest_awards` keeps working on a closed
+ * contest. So the figure is put in front of somebody before the click rather
+ * than discovered after it.
+ */
+function CloseContest({
+  contestId,
+  currency,
+  settledAt,
+  cancelledAt,
+}: {
+  contestId: string;
+  currency: string;
+  settledAt: string | null;
+  cancelledAt: string | null;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const manage = useManageContest();
+
+  // What is still unpaid on this contest, from the staff-only rollup rather
+  // than counted off a screen.
+  const owed = useQuery({
+    queryKey: ['admin', 'contest-awards', 'totals', contestId],
+    staleTime: 10_000,
+    queryFn: async () => {
+      const { data, error: err } = await getSupabase()
+        .from('contest_award_totals')
+        .select('owed, awards_owed')
+        .eq('contest_id', contestId);
+      if (err) throw err;
+      const rows = (data ?? []) as unknown as { owed: number | string; awards_owed: number }[];
+      return {
+        amount: rows.reduce((n, r) => n + Number(r.owed), 0),
+        count: rows.reduce((n, r) => n + r.awards_owed, 0),
+      };
+    },
+  });
+
+  if (cancelledAt) {
+    return (
+      <p className="text-muted max-w-prose text-[13px] leading-relaxed">
+        This contest was cancelled. Nothing more can be entered, claimed or confirmed on it.
+      </p>
+    );
+  }
+
+  if (settledAt) {
+    return (
+      <p className="text-muted max-w-prose text-[13px] leading-relaxed">
+        This contest is closed. Rewards already earned can still be paid from{' '}
+        <Link to="/admin/contests/rewards" className="text-accent font-semibold hover:underline">
+          Contest rewards
+        </Link>
+        .
+      </p>
+    );
+  }
+
+  async function onClose() {
+    setError('');
+    try {
+      await manage.mutateAsync({
+        action: 'contest.settle',
+        contestId,
+        // MESSAGE, not reason. Every entrant reads it on their own timeline.
+        message: message.trim() || null,
+      });
+      setConfirming(false);
+      setMessage('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'That did not close');
+    }
+  }
+
+  if (!confirming) {
+    return (
+      <div className="flex">
+        <Button type="button" variant="secondary" onClick={() => setConfirming(true)}>
+          <Lock size={15} aria-hidden />
+          Close this contest
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-line-strong bg-surface-2 rounded-xl border p-4">
+      <p className="text-text max-w-prose text-[13px] leading-relaxed font-medium">
+        Close this contest? Nobody can enter it, claim on it or have figures confirmed on it
+        again. Everybody in it is told on their own timeline.
+      </p>
+
+      {owed.data && owed.data.count > 0 ? (
+        <p className="bg-stage-due-soft text-stage-due mt-3 rounded-xl px-3.5 py-2.5 text-[13px] leading-relaxed font-medium">
+          {money(owed.data.amount, currency)} is still owed across {owed.data.count} reward
+          {owed.data.count === 1 ? '' : 's'}. Closing does not cancel it, and you can still pay it
+          from Contest rewards afterwards.
+        </p>
+      ) : null}
+
+      <div className="mt-3">
+        <Field label="Message to everybody in it" hint="They read this. Optional.">
+          {({ id, describedBy, invalid }) => (
+            <Textarea
+              id={id}
+              name="close-message"
+              rows={2}
+              maxLength={500}
+              value={message}
+              disabled={manage.isPending}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="e.g. That is a wrap. Rewards go out with this month's run."
+              aria-describedby={describedBy}
+              invalid={invalid}
+            />
+          )}
+        </Field>
+      </div>
+
+      {error ? (
+        <p role="alert" className="text-danger mt-2 text-[12px]">
+          {error}
+        </p>
+      ) : null}
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button type="button" disabled={manage.isPending} onClick={() => void onClose()}>
+          {manage.isPending ? 'Closing...' : 'Yes, close it'}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={manage.isPending}
+          onClick={() => {
+            setConfirming(false);
+            setError('');
+          }}
+        >
+          Keep it running
+        </Button>
+      </div>
+    </div>
   );
 }
 
