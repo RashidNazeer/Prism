@@ -26,7 +26,6 @@ which brings section 2.2.1 and rules B1 to B7 with it. Q6 and the raised items i
 Q8 to Q10 were still open at that point; the paragraph below is what happened to
 them later the same day.
 
-Where an analyst and a reviewer disagreed, this document picks one and says
 **Settled 2026-08-13, second pass, after the design review.** Four more rulings
 and nine corrections to this plan's own text. **D7, no creator ever sees anything
 about another entrant**, which closes Q6 in its strongest form and cuts the
@@ -49,6 +48,38 @@ C4), realtime connection status (rule S9), one vocabulary (3.11), one definition
 of days left (rule L15), where a sent-back video sits in the tracker (2.11, rule
 W6) and the email promise coming out of the copy while `PARKED.md` items 1 and 2
 are unfixed (rule W7).
+
+**Settled 2026-08-13, third pass, after the seven agent review of design turn 3.**
+Eleven rulings we made ourselves, plus three notes, because every one of them was
+already decided by a rule in this document and only needed writing down: rules
+**L16**, **L17**, **F8** to **F10**, **X10**, **W8**, **B8** and **C6** to **C8**,
+plus notes under **L6**, **C2** and **C4** saying those three are ours to execute
+rather than the designer's homework. One new token comes with them, **`--wx-scrim`
+(rule C7)**, with a real value in both modes and parity enforced by the guard.
+**Twelve findings from that review were checked and rejected**, and they are
+recorded in **3.13** with the reason each one is wrong, so no later turn spends
+itself on them again. **Four things only Rashid could answer were raised in
+section 5 as AWAITING RASHID**, because until they came back the admin setup form
+had no layout, and **step 1 in section 6 was split around them**: everything that
+did not need that layout was buildable that day, and the list of what did was
+short and named.
+
+**Settled 2026-08-13, fourth pass. He answered all four, the same day, after the
+run that recorded them had already been launched.** Q11 to Q14 are DECIDED and
+nothing in this document asks them any more. **Q11, the admin types every reward
+row's title, every time**, against the recommendation, so nothing anywhere
+generates one (rule F11). **Q12, a half filled contest lives in the browser only**,
+there is no draft row and no nullable column, and the cost, that it does not
+follow an admin to another computer, is written out in rule F12 and owed to the
+designer in **3.14**. **Q13 is the only real schema change of the four**:
+`contests.judging_basis` is its own nullable column (2.2), REQUIRED whenever the
+contest carries an active deliverable of the `rank` kind, enforced in
+`save_contest` and in `save_contest_deliverable` because a CHECK cannot see
+another table (rule N7).
+**Q14, the setup form is a full screen of its own, not a dialog**, which changes
+step 1's file list, turns join 15's modal case into a page case, and brings the
+owner's admin layout rules to bear on it in full (rule F13). The entry panel for
+CREATORS is untouched and stays a dialog.
 
 Where an analyst and a reviewer disagreed, this document picks one and says
 which and why. Those calls are marked **RULED HERE** and are the places worth
@@ -204,6 +235,38 @@ create table public.contests (
   description text check (description is null or length(description) <= 4000),
 
   /*
+   * HOW THIS CONTEST IS JUDGED, in the admin's own words. Decided by Rashid on
+   * 2026-08-13, Q13, and it is the only schema change the four answers of that
+   * day carried.
+   *
+   * Named for what it is rather than for the screen it appears on. It is the
+   * BASIS a placing is decided on, so it stays right if the creator surface is
+   * redrawn, and nothing later has to explain why a column is called after a
+   * panel that no longer exists.
+   *
+   * Creator readable, like every other column on this table, and deliberately
+   * NOT commercial: it is the sentence rule N5 counts as one of exactly three
+   * sources of motivation on a live contest, so it belongs where a creator can
+   * read it in the same select that draws the contest.
+   *
+   * Nullable HERE, and required by a function rather than by a constraint. A
+   * contest carrying any ACTIVE deliverable of the `rank` kind must have it,
+   * because with Q5 deferred this sentence is the only thing standing in for a
+   * scoreboard and a placing with no stated basis is the one thing that would
+   * make a contest feel arbitrary. A CHECK constraint cannot see another table,
+   * so the requirement is enforced in save_contest AND in
+   * save_contest_deliverable, both directions, since either one could create
+   * the illegal combination. See rule N7.
+   *
+   * Trimmed length in the idiom cancel_message uses, not the raw <= idiom
+   * description uses, because a sentence made of spaces is exactly the value a
+   * form leaves behind when somebody tabs through the field.
+   */
+  judging_basis text check (
+    judging_basis is null or length(trim(judging_basis)) between 1 and 600
+  ),
+
+  /*
    * The content brief. Staff write it, every entrant clicks it, so it is a
    * one to many surface and gets the same check content_submissions.video_url
    * carries: https only, bounded, no javascript: or data: URL can ever reach a
@@ -301,7 +364,18 @@ create table public.contests (
   settled_by uuid references public.profiles (id) on delete set null,
   cancelled_at timestamptz,
   cancelled_by uuid references public.profiles (id) on delete set null,
-  cancel_reason text check (cancel_reason is null or length(trim(cancel_reason)) between 1 and 500),
+  /*
+   * MESSAGE, not reason. Ruled 2026-08-13, see decision D14.
+   *
+   * Every column on this table is creator facing, and the cancel screen labels
+   * this field as what the entrants will read. A field called "reason" invites
+   * somebody to type "client pulled the budget" into a box two creators open.
+   * The exclusion table keeps its own "reason" column, correctly, because that
+   * one is staff only.
+   */
+  cancel_message text check (
+    cancel_message is null or length(trim(cancel_message)) between 1 and 500
+  ),
 
   created_by uuid references public.profiles (id) on delete set null,
   created_at timestamptz not null default now(),
@@ -438,6 +512,19 @@ create table public.contest_deliverables (
 
   kind public.contest_deliverable_kind not null,
 
+  /*
+   * THE ADMIN TYPES THIS, EVERY TIME. Decided by Rashid on 2026-08-13, Q11,
+   * against the recommendation, which had been to generate a title from the
+   * row's own numbers and let him override it.
+   *
+   * The column is unchanged by that answer and always was going to be: both
+   * answers wrote the same column. What the answer settles is that NOTHING
+   * generates a value for it, ever. Not the client, not the Edge Function, not
+   * a database default, not a fallback at render time. The trimmed length check
+   * is therefore load bearing rather than cosmetic: it is what refuses a row
+   * whose title is spaces, which is what a form leaves behind when somebody
+   * tabs through the field. See rule F11.
+   */
   title text not null check (length(trim(title)) between 1 and 160),
   detail text check (detail is null or length(detail) <= 1000),
 
@@ -1053,13 +1140,17 @@ create policy "contest_submissions_select_own" on public.contest_submissions
 create policy "contest_awards_select_own" on public.contest_awards
   for select to authenticated using (creator_id = (select auth.uid()));
 
--- No insert, update or delete policy on any of the ten, on purpose. Every
+-- No insert, update or delete policy on any of the eleven, on purpose. Every
 -- write goes through the functions below.
 
 -- ---------------------------------------------------------------- grants ---
 -- Auto expose is off, so nothing is reachable without an explicit grant, and
 -- that includes service_role. Missing the second line of each pair is how four
 -- content functions shipped returning "permission denied".
+-- Table level, never column level. judging_basis (2.2) needs no grant of its own
+-- and must never get one: it rides this line because it is creator facing by
+-- design, and the day somebody reaches for a column level grant on contests is
+-- the day the budget belongs on this table, which is what 2.0 refuses.
 grant select on public.contests             to authenticated;
 grant select on public.contest_commercials  to authenticated;
 grant select on public.contest_deliverables to authenticated;
@@ -1432,6 +1523,45 @@ and raises 22023 naming the value if it is not found. It cannot be a column
 check, because that catalogue lookup is not immutable and Postgres refuses it in
 a CHECK. Zod on both sides restricts the field to the list the form offers,
 which is a convenience; this is the boundary. See rule L6 and gap 2.
+
+**`save_contest` carries `p_judging_basis text default null`, and TWO functions
+enforce the one rule behind it.** Added 2026-08-13 with the column (2.2, Q13,
+rule N7). The value is trimmed to NULL when blank and stored on
+`contests.judging_basis`; it is in the always-allowed tier of rule F2, because
+saying more clearly how a contest is judged changes nothing anybody was promised,
+and it is audited on `contest.created` and `contest.updated` through the usual
+`jsonb_strip_nulls(jsonb_build_object(...))` so the activity log shows who wrote
+the sentence and who changed it.
+
+**The requirement it carries cannot live in a CHECK**, because a check constraint
+cannot see `contest_deliverables`, so it is enforced in both functions that can
+create the illegal combination, and both are needed because either direction gets
+there on its own:
+
+- **`save_contest`**, when the incoming `judging_basis` is null or blank while the
+  contest already holds an active deliverable of the `rank` kind. Counted under
+  the contest row lock the function already takes, and refused in the wording
+  style `delete_offer` uses, with the count in it:
+  `raise exception 'this contest has % ranked prize rows, so it needs a sentence
+  saying how it is judged', v_rank_count using errcode = '22023';`
+- **`save_contest_deliverable`**, when the row being written is of the `rank` kind
+  and the contest's `judging_basis` is null or blank:
+  `raise exception 'say how this contest is judged before you add a ranked prize'
+  using errcode = '22023';`
+
+`retire_contest_deliverable` needs no clause: retiring the last rank row leaves a
+contest with a sentence and nothing ranked, which is legal and harmless. The Zod
+schema refuses the same pair on both sides so the admin meets it in the form
+rather than in a raise, and these two are the boundary.
+
+**There is no draft row, and `save_contest` must never grow one.** Decided by
+Rashid on 2026-08-13, Q12. `contests.name` and `contests.expires_at` stay
+`not null`, there is no draft value in `contest_status`, no nullable column
+exists to hold a half filled contest, and `save_contest` either writes a legal
+contest or raises. A half finished form is held in the admin's own browser and
+touches no database row at all (rule F12). Nothing incomplete can therefore reach
+a count, a list, a policy or a screen, because there is nothing incomplete to
+reach them.
 
 **There is no `remove_contest_entry`, and there must never be one.** An earlier
 draft of this plan carried it as a deliberate, audited admin removal. Rashid cut
@@ -1870,7 +2000,23 @@ which is what D7 keeps; **W**, the words and what the tracker counts; and **C**,
 colour and contrast, which is where two rulings correcting our own documents
 live. Rules **L15** and **S9** joined the existing groups.
 
-### 3.1 Status, expiry and the lifecycle (rules L1 to L15)
+**Eleven more rules joined on 2026-08-13 in the third pass**, after the seven
+agent review of design turn 3: **L16**, **L17**, **F8** to **F10**, **X10**,
+**W8**, **B8**, and **C6** to **C8**, which is also where the **C** group grows a
+motion ruling. Every one of them implements a rule that was already here and
+says which, so none of them is a new decision, and none of them needs a drawing
+to be true. The findings from that review that were rejected are in **3.13**.
+
+**Four more rules joined on 2026-08-13 in the fourth pass**, and unlike the
+eleven above these ARE new decisions, because they are Rashid's four answers to
+the AWAITING RASHID questions: **F11** (the admin types every reward row's
+title), **F12** (a half filled contest lives in the browser only, there is no
+draft row), **F13** (the setup form is a full screen of its own) and **N7** (the
+judging sentence is its own column and is required by any ranked prize). N7 is
+the only one of the four that reaches the schema. **3.14** is what they owe the
+designer.
+
+### 3.1 Status, expiry and the lifecycle (rules L1 to L17)
 
 **L1. A contest has three independent axes, and no single admin control may move
 more than one of them: openness (may a new creator enter), visibility (who may
@@ -1957,6 +2103,17 @@ value comes from:
   they type. That echo is the whole reason the three controls are worth the
   space: it is the only moment anybody can catch a deadline set in the wrong
   zone, and it costs nothing once the formatter from this rule exists.
+
+**RULED 2026-08-13, third design turn: this control is built from THIS RULE and
+not from the drawing.** Design turn 3 offers two city pills where the select
+belongs. They are ignored, and the five bullets above are the specification. L6
+already fixes the control in more detail than a frame could: which five zones lead
+the list, that the full list sits behind them, that it is preselected to the
+admin's own browser zone, that it is always visible, and that the resulting
+instant is echoed back as the creator will read it. Two pills cannot express a
+zone Wurx does not work in every day, and the first contest that needs a sixth
+zone is back at a select nobody drew. This is also why the timezone control is
+listed in 3.13 as a rejected blocker rather than as an open question.
 
 **Without it:** a creator in California reads "Closes today" at 16:00 PT, taps
 Apply, is refused because the instant was 23:59 Europe/London, and there is
@@ -2054,7 +2211,36 @@ contest, which is the failure rule M10 was written against, arriving on the
 deadline instead of on the money. The creator cannot tell which screen is
 lying, and both are right about a different arithmetic.
 
-### 3.2 The frozen promise and editing (rules F1 to F7)
+**L16. ADDED 2026-08-13, third design turn. The deadline calendar disables every
+instant at or before now once any entry is pending or approved, and says in one
+line what to do instead.** This is rule L11 drawn rather than a new rule:
+`save_contest` already refuses to move `expires_at` to now or earlier while
+anybody is pending or approved, and a calendar that offers a day the function will
+refuse turns a rule into an error message the admin meets after typing instead of
+a door that was never open. The line under it is one sentence, no longer: ending a
+contest early is Cancel or Settle, both of which write a per entry outcome (L11,
+L13). On a contest with nobody in it nothing is disabled, because nothing is being
+protected. Enforced in the client, with `save_contest` still the boundary.
+**Without it:** an admin backdates the expiry to close a contest quickly, gets a
+22023 quoting a rule they have never read, and reaches for the delete instead,
+which L14 also refuses.
+
+**L17. ADDED 2026-08-13, third design turn. Turning a contest off and deleting one
+are both admin controls in step 1, and neither is drawn anywhere in the design. We
+add both without asking.** `set_contest_status` and `delete_contest` ship in the
+first migration (section 6), and a write function with no control is a capability
+nobody has. Off is the `contest_status` switch, which means closed to new entrants
+and nothing else, and the control says so where it sits, because L1 and L8 are the
+whole reason that switch is safe. Delete is a separate, confirmed, destructive
+action carrying the refusal this plan already specifies: it declines while any
+entry is pending or approved, raising 23503 and naming the count, in the wording
+style `delete_offer` already uses (L12, L14), so the refusal reads as a reason
+rather than as a foreign key error.
+**Without it:** the only way to stop a contest is to backdate its expiry, which
+L11 refuses, or to leave it running, so a contest created by mistake on a live
+brand sits on the admin's list for ever with no way to take it off.
+
+### 3.2 The frozen promise and editing (rules F1 to F13)
 
 **F1. At the moment an entry becomes approved, immediately under auto approve or
 at the admin decision under manual, copy every active deliverable onto
@@ -2072,9 +2258,14 @@ refusal, not the presence of entries.** Enforced in `save_contest`.
   `reward_amount` / `video_count` / `rank_position` / `threshold` on an existing
   deliverable row, and moving `expires_at` into the past.
 - **Always allowed and always audited:** `name`, `description`, `brief_url`,
-  `banner_url`, the product list, `needs_admin_approval`, extending
-  `expires_at`, adding a NEW deliverable row, and retiring an existing one with
-  `is_active`.
+  `banner_url`, `judging_basis`, the product list, `needs_admin_approval`,
+  extending `expires_at`, adding a NEW deliverable row, and retiring an existing
+  one with `is_active`.
+- **`judging_basis` is always allowed but not always CLEARABLE.** Added
+  2026-08-13 with the column. Writing a better sentence changes nothing anybody
+  was promised, so it is not frozen; emptying it on a contest that carries an
+  active `rank` row is refused by `save_contest`, because that leaves a placing
+  with no stated basis, which is the one state rule N7 exists to prevent.
 - **`expires_at_timezone` moves only with `expires_at`, never on its own.**
   Added 2026-08-13 with the column. The two together are one fact, and editing
   the zone alone silently moves the instant for everybody already entered, or
@@ -2130,6 +2321,137 @@ flags where an offer had one, so it has three ways in. **Without it:** an entran
 mid deliverable on a contest that just expired sees "Closed" where their tracker,
 their deliverables and their reward used to be, while the admin queue still shows
 them working. One contest, two answers.
+
+**F8. ADDED 2026-08-13, third design turn. The brand is context, not a field. The
+setup form carries it as a heading and offers no way to change it.** This is rule
+F6 drawn: `contests.brand_id` is never updatable, it is absent from
+`save_contest`'s update branch, and the form is only ever opened from inside a
+brand, so the only thing a change affordance can do is raise an expectation the
+function is built to refuse. **The change control the design draws comes off**, and
+the brand's name becomes the line that says whose contest this is.
+**Without it:** an admin retargets a contest to another brand, is refused with no
+sentence attached to the control that offered it, and the composite foreign key in
+`contest_products` is the only thing standing between that and a contest spending
+one brand's budget on another brand's products.
+
+**F9. ADDED 2026-08-13, third design turn. The Instant and Reviewed toggle carries
+rule F4's sentence beside it, in the form: flipping it approves nobody pending and
+un-approves nobody already in.** F4 already enforces exactly that in
+`save_contest`, which updates the contest row and touches no entry; this rule is
+that guarantee said out loud at the moment the decision is made, because the
+toggle looks precisely like a control that would sweep the queue. The sentence is
+one line under the toggle, not a tooltip, because a hover has no tap equivalent on
+a phone.
+**Without it:** an admin flips it to Instant expecting the fourteen people waiting
+to be let in, nothing happens to any of them, and the next move is either a
+support question or somebody building the bulk approval F4 deliberately kept
+separate.
+
+**F10. ADDED 2026-08-13, third design turn. Every column with a writer gets a
+control, and four of them have none in the design. They get one without asking.**
+Each is a column that already ships in this plan and already has a function
+argument behind it:
+- **`contest_commercials.internal_note`** (2.3). Staff only, never rendered on a
+  creator surface, and the only place an admin can write down why the budget is
+  the number it is.
+- **`contests.opens_at`** (2.2). It exists, it defaults to `now()`, and the table
+  already checks that the expiry is later than it. A contest that opens on Monday
+  is a thing the schema can already do and the form cannot say.
+- **`contests.currency`** as a real select over the existing `CURRENCIES` list,
+  not a word printed inside a money field's label. It is the single currency
+  dimension of the whole contest (2.0) and rule M5 groups every total by it, so it
+  is a decision, not a decoration.
+- **`contest_deliverables.sort_order`** (2.4). It decides the order every entrant
+  reads the reward rows in, and it is indexed for exactly that.
+**Without it:** the migration ships four columns nothing can write, they take
+their defaults for ever, and the first admin who needs one gets a second form
+bolted on later rather than a field that was always meant to be there.
+**A fifth column joined the form on 2026-08-13 and is not one of these four**,
+because it is an answer rather than an omission: `contests.judging_basis` arrived
+with Q13, it has a control from the day the column exists, and rule N7 is its
+specification.
+
+**F11. DECIDED BY RASHID 2026-08-13, Q11. The admin types every reward row's
+title, every time, and nothing anywhere generates one.** Not the client, not
+`manage-contest`, not `save_contest_deliverable`, not a database default, and not
+a fallback at render time. A row arriving with a blank or whitespace-only title is
+refused by the database, through the trimmed length check that
+`contest_deliverables.title` has always carried (2.4), and refused by the form
+first, **with a named message against that row rather than a form level error**,
+because a contest with six reward rows and one untitled one is a form the admin
+cannot fix from a sentence at the top of it. Enforced in three places, exactly as
+rule S7's brief link is: the Zod schema, the same schema again inside the Edge
+Function, and the column check.
+**He chose this against the recommendation, which had been to generate a title
+from the row's own numbers and let him override it, so the cost is his and is
+recorded:** one more thing to type on an already long form, on every reward row,
+and a contest with six rows means six titles typed. What he bought with it is
+that the sentence every entrant reads on their frozen terms (2.7, rule F1) is his
+sentence, the same words on the promise as on the form, and changing it later is
+an edit rather than a code change.
+**Without it:** the generated title ships as a fallback "for now", every contest
+in the product carries the same six phrases, and the words on fourteen frozen
+promises are ours.
+
+**F12. DECIDED BY RASHID 2026-08-13, Q12. A half filled contest lives in the
+browser and nowhere else. There is no draft row.** `contests.name` and
+`contests.expires_at` stay `not null`, `contest_status` gains no draft value, no
+column is made nullable to hold a partial contest, and `save_contest` either
+writes a legal contest or raises (2.13). **Nothing incomplete can reach a count, a
+list, a policy or a screen, because nothing incomplete exists in the database.**
+That is the whole value of the answer, and it is why `contest_is_open`, both
+creator select policies, `contest_totals` and every admin list need no draft
+clause: there is no state for them to exclude.
+
+**What is held, and where.** The in-progress form is kept client side, **keyed on
+the admin's own user id AND the brand AND the contest being edited (or `new`)**,
+so two admins sharing one machine and one admin working on two brands cannot
+collide, and it is cleared on a successful save and on sign out. It survives a
+reload and a closed tab, which is the whole of what it was asked to do.
+
+**What is NOT held.** Nothing staff-only and commercially sensitive beyond what
+that admin can already read on that screen, which is the bound rather than a
+promise to be careful, and **never an uploaded file**: the banner is uploaded
+first and only its URL is kept, once the upload has succeeded (rules B6, B8). A
+half filled form holding a 2 MB image is a storage quota and a privacy question
+that nobody asked for.
+
+**The cost he accepted, plainly:** it does not follow an admin to a different
+computer. The design promises "picked up where you left it yesterday", and that
+sentence is only true on the same machine, in the same browser, signed in as the
+same person. **The designer must be told**, and it is item 1 of what handback 5
+owes them (3.14).
+**Without it:** drafts become schema work, `name` and `expires_at` stop being
+required, and then every creator read path, `contest_is_open`, both select
+policies and five write functions each grow a clause excluding a contest that was
+never finished, and the first one that forgets shows a creator a contest with no
+name.
+
+**F13. DECIDED BY RASHID 2026-08-13, Q14. The contest setup form is a FULL SCREEN
+of its own, a route reached from the brand hub's Contests tab, and it is not a
+dialog anywhere in this document.** His reasoning, recorded: a contest carries
+around twelve fields plus three lists inside it, the products, the reward rows and
+the people barred from it, which is beyond a dialog.
+
+**What that binds, and all of it is the owner's admin layout rules applying in
+full** rather than anything new: the working content starts high, the header stays
+compact, reference data goes under an **Overview** rather than stacked above the
+work, the content sits left against the sidebar at a max width and is never
+centred, and no slug, id or route is ever shown to an admin. It is checked at
+375px, 768px, 1024px and 1440px like every other admin screen, as a **page** case
+in the responsive suite and not as a modal one (join 15).
+
+**The entry panel for CREATORS is unaffected and stays a dialog.** It carries one
+decision and a note, it is opened from a card the creator is looking at, and
+nothing about this ruling reaches it.
+
+**The precedent it sets, stated because it is real:** this is the only admin
+editor in the product that is not a dialog, and every later form will be measured
+against it. That is accepted; the alternative was a twelve field form with three
+nested lists inside a panel that has to fit 375px.
+**Without it:** the form ships as a dialog, the three lists inside it each get
+their own scroll region, and on a phone the admin is scrolling a list inside a
+panel inside a page, which is the shape that has to be unbuilt rather than fixed.
 
 ### 3.3 Money (rules M1 to M10)
 
@@ -2239,7 +2561,7 @@ brand add up to 19,000, and there is nothing on either screen that explains the
 gap, so Rashid has to hold the rule in his head to read his own money correctly.
 That is worse than the single misleading figure the separate pot was chosen over.
 
-### 3.4 Exclusion (rules X1 to X9)
+### 3.4 Exclusion (rules X1 to X10)
 
 **X1. Exclusions live in their own table with one `is_staff()` SELECT policy and
 no creator policy, and are never joined into any view, realtime publication or
@@ -2386,6 +2708,26 @@ does to the four people already filming, and the first time it happens for real
 is the time it matters. **The cost of the answer he gave is real and is written
 down in full in 3.4.1 rather than left to be discovered.**
 
+**X10. ADDED 2026-08-13, third design turn. The exclusion list editor shows three
+things the design leaves off, and all three are columns that already exist because
+rules X3 and X5 depend on them being seen.**
+- **The `reason` field.** It is staff only and never leaves the table (X1), so it
+  is safe to collect, and it is the only record anywhere of why a name is on the
+  list. Without it the list is a set of handles nobody can defend six weeks later.
+- **The unresolved flag, worded as "this bar has not matched an account yet".**
+  That is rule X3 made visible, and the wording matters as much as the flag: an
+  exclusion typed before that person has signed up is the NORMAL case, not an
+  error, so it must not read as one. What it does mean is that only the handle or
+  the email is being compared, and both are editable by the person being barred,
+  until `save_contest_exclusion` resolves and pins a `user_id`.
+- **The attempts counter and `last_attempt_at`.** This is the whole point of rule
+  X5, and it is the fact Rashid asked for by name. Rule X8 fixes the words: "3
+  blocked attempts", never a click, a tap, an application or a rejected request,
+  because there was no button and there is no entry.
+**Without it:** the admin who typed a handle never learns it resolved to nobody
+(X3), and the counter on the exclusion row is a number no screen ever prints,
+which costs exactly as much as not tracking it and looks like tracking it.
+
 ### 3.4.1 The accepted risk: there is no lever to pull a bad actor out
 
 **Accepted by Rashid on 2026-08-13, deliberately, with the consequence stated to
@@ -2524,8 +2866,8 @@ creators are subscribed.** Enforced in the client hooks and in the publication
 membership. `postgres_changes` does not apply row security to DELETE events and
 these tables carry `replica identity full`, and
 `src/lib/creator/useCatalogueLive.ts:19-21` currently claims otherwise in a
-comment that is wrong for deletes. **Without it:** an admin deletes a draft
-contest and every creator with a hub open receives the full old row, including
+comment that is wrong for deletes. **Without it:** an admin deletes a contest
+outright and every creator with a hub open receives the full old row, including
 contests deliberately hidden from them.
 
 **S7. The content brief link is validated as `^https://` with a length bound in
@@ -2630,7 +2972,7 @@ new denial verbs to that scan on the first screen Rashid opens.
 **Without it:** the admin home gets slower every week that anybody probes a
 contest.
 
-### 3.8 The banner image (rules B1 to B7)
+### 3.8 The banner image (rules B1 to B8)
 
 Decided by Rashid on 2026-08-13, decision 6. A contest carries optional banner
 artwork that a staff member uploads inside the contest setup form.
@@ -2725,7 +3067,23 @@ popup and the setup form's preview, and no surface may set its own aspect ratio.
 crop, and rule B4's whole argument, that one contest cannot be twice the height
 of the next, is enforced by four separate people remembering the same number.
 
-### 3.9 Nobody else exists (rules N1 to N6)
+**B8. ADDED 2026-08-13, third design turn. The upload control is specified by this
+document down to its component, so the frames the design still owes for it block
+nothing.** It is **`ImageUploadField` over `useImageUpload` with
+`folder="contests/<contest_id>"`**, the same pair the brand About tab and the
+product dialog already use, which means the 2 MB refusal, the type refusal and the
+"that upload did not go through" wording all exist already and are **not
+rewritten** (2.2.1, rule B6). Three things are new and all three are named
+elsewhere in this document rather than left to a drawing: a **3:1 preview at the
+crop the creator will actually see** (rule B4), a **clear control** so a banner
+can be taken off again, and **helper text saying the file is publicly readable and
+must carry nothing commercial** (2.2.1). This is why the missing upload frames are
+listed in 3.13 as a rejected blocker.
+**Without it:** a control that already ships is redrawn from scratch, the size and
+type refusals get worded a second way, and the two wordings disagree on the one
+screen where the admin is already annoyed at a file that would not upload.
+
+### 3.9 Nobody else exists (rules N1 to N7)
 
 **Decided by Rashid on 2026-08-13 as D7, in its strongest form. No creator ever
 sees anything about another entrant.** These rules exist because D7 forbids
@@ -2775,9 +3133,11 @@ because it is staff written and therefore feels controlled, and it is the same
 data.
 
 **N5. Motivation on a live contest comes from three sources and there is no
-fourth.** The sentence the contest is judged on, the creator's own approved
-count going up, and the target they set themselves (3.10). All three are facts
-about one person or about the contest's own terms.
+fourth.** The sentence the contest is judged on, which since 2026-08-13 is a
+column of its own rather than a paragraph somebody remembered to type (N7,
+`contests.judging_basis`), the creator's own approved count going up, and the
+target they set themselves (3.10). All three are facts about one person or about
+the contest's own terms.
 **Without it:** the competing screen has nothing on it, which is the pressure
 that produces a leaderboard.
 
@@ -2789,6 +3149,41 @@ seam is the `src/lib/admin/*` import boundary that rule M1 already draws.
 **Without it:** a shared contest card takes an `entrantCount` prop because the
 admin side has one, and it renders as zero on the creator side, or worse, does
 not.
+
+**N7. DECIDED BY RASHID 2026-08-13, Q13. How a contest is judged is its own
+field, `contests.judging_basis` (2.2), and it is REQUIRED on any contest carrying
+an active deliverable of the `rank` kind.** It is not a paragraph inside
+`description`.
+
+**Why it is required rather than merely available.** Q5 is deferred by Rashid's
+own choice, so nothing in this product computes a placing and nothing will for
+now. That makes this sentence the only thing standing in for a scoreboard, and a
+placing with no stated basis is the one thing that would make a contest feel
+arbitrary, on the one product whose promise is that the numbers are real. The
+copy Q5 already fixes, "A person at Wurx publishes the placings when it closes",
+is honest about WHO decides; this column is what says HOW, and the two only work
+as a pair.
+
+**Where it is enforced, exactly, because a CHECK cannot see another table.** In
+`save_contest`, which counts the contest's active `rank` rows under the lock it
+already takes and refuses a null or blank sentence with a 22023 naming the count;
+and in `save_contest_deliverable`, which refuses a `rank` row on a contest whose
+`judging_basis` is null or blank, also 22023. **Both directions, because either
+one alone leaves the illegal combination reachable**: adding a rank row to a
+contest with no sentence, or clearing the sentence on a contest that already has
+a rank row. The raise wording for both is in 2.13. Zod carries the same pair on
+both sides so the admin meets it in the form, and `retire_contest_deliverable`
+carries no clause because a sentence with nothing ranked is legal.
+
+**What a creator gets.** It comes back on the same `contests` select that draws
+everything else, so it costs no second query and no policy of its own, and it
+renders **on its own, in a fixed place**, on the contest's own page and in the
+join panel, rather than buried in the description where every admin puts it
+somewhere different. It is a fact about the contest's terms, so N5 counts it, and
+it names nobody, so N2 and N3 are untouched by it.
+**Without it:** the basis is a paragraph, its position moves contest to contest,
+the creator screen cannot point at it, and N5's first source of motivation
+degrades to whatever somebody remembered to type.
 
 ### 3.10 The creator's own target (rules T1 to T5)
 
@@ -2844,7 +3239,7 @@ path, from `settle_contest` and from every admin hook.
 queue as "promised 6, delivered 2", and a note a creator wrote to themselves
 becomes something we hold them to.
 
-### 3.11 The words, and what the tracker counts (rules W1 to W7)
+### 3.11 The words, and what the tracker counts (rules W1 to W8)
 
 **Added 2026-08-13, gaps 6, 8 and 9.** The design currently describes one entry
 three different ways on one screen, and the brief and the schema use two
@@ -2920,7 +3315,22 @@ That trigger is this feature.
 on a screen whose whole purpose is that they can stop watching, and the failure
 is invisible to us because a mail that is never sent logs nothing.
 
-### 3.12 Colour and contrast, ruled (rules C1 to C5)
+**W8. ADDED 2026-08-13, third design turn. A brand new contest prints no zeroes on
+its summary rows.** A contest with no entrants, nothing filed and no money
+committed shows the row's own empty sentence rather than "0 entrants, 0 filed, £0
+committed". This is rule L15's "it never prints zero" and rule W6's "the sentence
+names only the non-zero segments", applied to the one screen where every number is
+zero at once, which is the ninety seconds after a contest is created.
+**Note what this does NOT change, because the two look alike.** Rule M10's contest
+money block on a BRAND still shows a zero rather than hiding itself, deliberately,
+because there the zero is the answer to a question the reader asked about that
+brand and a missing block reads as "there is no contest money" exactly when there
+is. A summary row on a contest nobody has entered yet is answering nothing.
+**Without it:** the first thing Rashid sees after setting a contest up is a wall
+of zeroes, which reads as a screen that failed to load rather than as a contest
+that has not started.
+
+### 3.12 Colour, contrast and motion, ruled (rules C1 to C8)
 
 **C1. RULED BY RASHID 2026-08-13, settling a contradiction between two of our
 own documents. The three stage tokens ARE used for an entry STATE. They are NOT
@@ -2967,6 +3377,13 @@ well. Text that has to be read on it is `--wx-text`, which is checked and passes
 (`check-contrast.mjs:72`). Where 1A wants a quiet well behind the money and the
 deadline, the well is `--wx-surface-2`, where muted is checked and passes, and
 where accent is checked and passes.
+**OURS TO EXECUTE, and not the designer's homework. Ruled 2026-08-13, third design
+turn.** Turn 3 still puts muted and accent strings on surface 3, and that is not
+sent back for a fourth turn. At build time **every muted or accent string on
+`--wx-surface-3` either moves to `--wx-surface-2` or becomes `--wx-text`**,
+whichever the panel wants, and that is the whole of C2. It needs nobody's drawing,
+it is a class per string, and waiting for a frame to say it would cost a turn to
+learn something this rule already decided.
 **Without it:** the two smallest strings on the most-read panel of the most
 likely direction fail AA in light mode, on a phone, in daylight, and nothing in
 the toolchain says a word.
@@ -3005,6 +3422,10 @@ them changes.
 `--wx-border-interactive` on the page and on surface 1 only, and surface 2 is
 where the dot actually lives. That third pair is the one in C3 above, so the
 guard records it rather than permitting it.
+**Also ours to execute, same date and same reason as the note under C2.** Every
+neutral dot in every frame becomes `--wx-text-muted` when it is built, wherever it
+appears and whichever direction it came from. There is nothing here to hand back
+and nothing to wait for.
 **Without it:** the one signal on the waiting screen that is not a word is
 invisible on a phone in daylight, and the design's own rule that colour is never
 the only signal is what saves us, which is not a plan.
@@ -3025,6 +3446,121 @@ for.
 our gold `#8a5f1f` and our warning amber `#8a6410` are within a hair of each
 other.
 
+**C6. ADDED 2026-08-13, third design turn. A secondary button is the existing
+`Button` secondary variant, which already borders with `--wx-border-interactive`.
+The inline borders drawn across fifteen controls in turn 3 are never copied.**
+Those measure roughly 1.5:1 against the surface behind them, which is half the 3:1
+WCAG 1.4.11 asks of a control's own boundary, and the variant that already ships
+is both correct and one class. This is rule C4's failure shape, a non-text graphic
+carrying meaning at a ratio nothing guards, arriving fifteen times instead of once.
+**Without it:** contests ship a second button style at half the required contrast,
+it reads as the house style precisely because there are fifteen of them, and the
+next feature inherits it by copy and paste before anybody measures one.
+
+**C7. ADDED 2026-08-13, third design turn. There is ONE scrim, `--wx-scrim`, a
+token with a real value in BOTH modes, and no dialog backdrop is ever hardcoded
+again.** Every panel frame in turn 3 hardcodes an rgba value; one of them does it
+**inside the LIGHT frame**, where a scrim mixed for a near-black page is simply
+the wrong colour on cream; the 1440 panel uses a different value again; and our
+own shipped dialogs carry a third and a fourth, `bg-black/60` in
+`src/components/creator/ApplyDialog.tsx:81` and in
+`src/components/admin/BrandDialog.tsx:102`, with `bg-black/70` in
+`src/components/content/VideoPlayer.tsx:36`. That is four spellings of one
+decision before contests add a fifth.
+- **Proposed values:** dark `rgba(6, 5, 4, 0.72)`, light `rgba(25, 21, 18, 0.46)`.
+  The light value is our own ink `#191512`, the colour `--wx-grid-line` already
+  mixes with in light mode, rather than pure black, which sits on cream like a
+  hole rather than like a dimmed page.
+- **Parity is enforced from the day it lands, for free.**
+  `scripts/check-contrast.mjs` fails the build when a colour token exists in one
+  mode and is missing from the other (`check-contrast.mjs:138-143`), which is
+  exactly the failure a hand-mixed backdrop commits. It carries no `PAIRS` entry
+  and needs none: the contrast pass deliberately skips translucent values
+  (`check-contrast.mjs:161-162`) because a scrim sits over a backdrop the script
+  cannot know.
+- **The existing dialogs move onto it in the same commit**, or the token is the
+  fifth spelling rather than the only one.
+**Without it:** the light theme gets a backdrop mixed for the dark one, nothing in
+the toolchain has an opinion about it because nothing checks a value nobody named,
+and every future dialog picks its own number for want of a token to reach for.
+
+**C8. ADDED 2026-08-13, third design turn. Motion snaps to the three durations
+that already live in `tokens.css`: `--wx-dur-fast` 140ms, `--wx-dur-base` 240ms,
+`--wx-dur-slow` 420ms.** The design's 90ms and 200ms are outside that set and
+become 140 and 240 when they are built. Nobody can see the difference between 200
+and 240; everybody can see a product where six components each chose their own
+number.
+**Without it:** durations arrive as literals inside class names, `tokens.css`
+stops being where timing lives the way it is already where colour lives, and the
+first component that wants a fourth duration invents one because there is nothing
+saying it may not.
+
+### 3.13 Twelve findings raised and rejected, 2026-08-13 (do not reopen)
+
+The seven agent review of design turn 3 ran six readers past an adversarial
+judge, and **the judge rejected twelve of their findings as wrong.** They collapse
+into the five claims below, and the first of them accounts for three of the twelve
+on its own. They are recorded here because a wrong finding that three readers
+reached independently is a finding a fourth reader will reach again, and the cost
+of it is a whole turn.
+
+- **"A person at Wurx publishes the placings when it closes" does NOT breach
+  decision D7, and three readers said it did, with eight or nine citations each.
+  All three were wrong.** Q5 in section 5 already ruled on this exact sentence:
+  it survives the cut of direction 2F and **should be reused verbatim**. It is
+  the honest label on a placing that was typed by a person rather than computed,
+  which is what settlement now writes for every entrant (2.9, rule N3), and it
+  names nobody, counts nobody and compares nobody. The sentence that does NOT
+  survive is 2F's "a snapshot from when the team last published, not a live
+  count", and Q5 already says which is which and why they read alike. Nothing
+  here is open.
+- **The missing banner upload frames do not block step 1.** The plan specifies
+  that control down to its component, its hook, its folder, its preview ratio and
+  its refusal wording (rule B8, 2.2.1, step 1). There is nothing a frame would
+  decide.
+- **The timezone control is not a blocker.** Rule L6 specifies it in more detail
+  than any frame would, down to the five zones that lead the list and the echoed
+  instant, and the ruling under L6 says the drawing is ignored.
+- **The states index overstating its own coverage is a trust problem with the
+  designer, not an input to a build.** It changes nothing that gets built and
+  nothing in this document reads that index as a source.
+- **The entry panel's missing refusals are step 2 work, not a step 1 gap.** The
+  function those refusals speak for, `apply_for_contest`, does not exist until the
+  second migration (section 6), so there is nothing yet for the panel to refuse
+  and no sentence to match word for word.
+
+### 3.14 What handback 5 owes the designer, from the four answers of 2026-08-13
+
+Rashid's answers to Q11 to Q14 change what the design has to say, and three of the
+four change a screen that has already been drawn. This is the list, and it is
+short on purpose: everything else in those four answers is ours to build.
+
+1. **A half filled contest lives in the browser only, so "picked up where you left
+   it yesterday" is true on that machine and nowhere else.** This is the one that
+   must be told rather than inferred (Q12, rule F12). Both setup frames in turn 3
+   assert a saved draft, and there is no draft row and never will be. The form
+   remembers itself on the same computer, in the same browser, signed in as the
+   same person; on a second machine it is a blank form. **Any copy promising more
+   than that is copy we cannot keep**, so the sentence has to say the machine or
+   say nothing.
+2. **The setup form is a full screen, not a dialog, and it needs 375, 768 and
+   1024 as well as the 1440 already drawn** (Q14, rule F13). It sits inside the
+   admin shell with the sidebar present, which neither drawn direction shows, so
+   the owner's layout rules can be checked against it: working content high,
+   compact header, reference data under an Overview, content left against the
+   sidebar at a max width, and never a slug, an id or a route on screen. **The
+   creator entry panel stays a dialog and is not part of this.**
+3. **Every reward row has a title field the admin types, on all three row shapes**
+   (Q11, rule F11). The reward row editor drawn in turn 3 has no field for it, and
+   nothing generates one, so a contest with six rows is six titles typed. The
+   refusal for a blank one is named against that row, not at the top of the form,
+   which is a state the row editor has to be able to draw.
+4. **The judging sentence is its own field on the form and its own place on the
+   creator surfaces** (Q13, rule N7), not a paragraph inside the description. On a
+   contest with any ranked prize it is required, so the form needs the required
+   state and the creator screen needs a fixed home for it where it is found rather
+   than read past.
+
 ---
 
 ## 4. Every join into an existing screen
@@ -3038,7 +3574,7 @@ filter for staff). Those five are the price of the two decisions Rashid made on
 
 | # | Where | What joins | What breaks if skipped |
 |---|---|---|---|
-| 1 | `src/routes/admin/BrandHub.tsx:69`, `:75`, `:237-253` | Remove `soon` from the Contests entry, add `'contests'` to `BUILT`, add a `section === 'contests'` branch | The switch at `:243` falls through to `<Offers>`, so an admin clicks Contests and gets the Offers list under a Contests heading, silently |
+| 1 | `src/routes/admin/BrandHub.tsx:69`, `:75`, `:237-253` | Remove `soon` from the Contests entry, add `'contests'` to `BUILT`, add a `section === 'contests'` branch, and **link from that tab to the setup form's own route** rather than opening a dialog in place (Q14, rule F13) | The switch at `:243` falls through to `<Offers>`, so an admin clicks Contests and gets the Offers list under a Contests heading, silently. And a New contest button with nothing behind it is the half of the tab that makes the other half pointless |
 | 2 | `src/routes/app/BrandHub.tsx:48`, `:52`, `:152-167` | The identical three edits | The creator ternary at `:159` falls through to `<Overview>`, so a creator clicks Contests and lands on the brand's story. Building only the admin half is the thing that already cost trust once |
 | 3 | `src/routes/app/BrandHub.tsx:122-148` | The remaining unbuilt tabs stop being `disabled` buttons whose only explanation is a `title` attribute, and their `soon: 'Step 8'` / `'Step 9'` labels become "Next" / "Later" | Most of the roster is on a phone, where four grey pills carry no explanation and cannot be reached by keyboard. This is confirmed defect 4 in `UI_CONNECTIONS_PLAN.md:211-214`, and a badge naming a step that already shipped reads as a broken promise |
 | 4 | `src/lib/admin/useOpsHome.ts:37-56` | A fourth head-only count of pending contest entries, inside the SAME `Promise.all` | A second racing query lets the sentence flicker through "all clear" on the way to the truth, which the comment at `:14-16` forbids |
@@ -3052,23 +3588,44 @@ filter for staff). Those five are the price of the two decisions Rashid made on
 | 12 | `src/lib/creator/useCreatorBrands.ts` (`useOfferCounts` shape), `src/lib/admin/useBrands.ts:383-405` | Brand cards on `/app/brands` and `/admin/brands` say a contest is running, from one grouped read over the page | A creator scrolls past the brand running the contest they would have entered, because every card still looks identical |
 | 13 | `src/components/work/JobProgress.tsx` | Contest deliverable progress uses `JobProgressBar` or a sibling in the same neutral folder, taking staff-only data as a prop | The seven-bar tracker is already drawn twice and agrees only by luck. Per-unit spans (`Content.tsx:480-493`) also fall apart on an open-ended deliverable count; the percentage-width bar does not |
 | 14 | `src/components/creator/PostContentDialog.tsx:38-108` or a new dialog | **ONE route for a creator to file any work.** Wherever a creator posts a video today they are offered contest entries and offer jobs together in the same picker, from one dialog, and a contest card saying "2 still to film" carries that same button. Today that dialog builds its dropdowns from `MyWorkRow[]`, approved offer applications only, so the source becomes both. This is the D4 mitigation and is not optional | Step 1 of `UI_CONNECTIONS_PLAN.md` existed to remove dead-end counts. A count you cannot act on is decoration. And the separate `contest_submissions` table was chosen on the promise that a creator would never have two places to go to post a video: two dialogs is that promise broken on the creator's screen, where they are least able to tell which one their video belongs in |
-| 15 | `scripts/check-responsive.mjs:44-105` | Every new contest screen in `SCREENS`, a `via` selector for anything behind an id, and a modal case for the entry dialog and the contest form | A screen behind an id is invisible to the suite. Adding the application detail screen found a 375px overflow that had existed since it was built, and a page can pass at every width while a modal opened on it does not |
+| 15 | `scripts/check-responsive.mjs:44-105` | Every new contest screen in `SCREENS`, a `via` selector for anything behind an id, a **PAGE case for the contest setup form at 375, 768, 1024 and 1440** (Q14, rule F13: it is a route, not a dialog, and this line asked for a modal case until he answered), and a modal case for the creator entry dialog, which is unaffected and stays a dialog | A screen behind an id is invisible to the suite. Adding the application detail screen found a 375px overflow that had existed since it was built, and a page can pass at every width while a modal opened on it does not. And a modal case pointed at a route tests nothing at all: it waits for a panel that never opens |
 | 16 | `src/routes/admin/Content.tsx` and its queue hook, plus wherever `manage-contest`'s `contest_content.review` lands | **Two review queues that read as one job with a filter.** Contest submissions and offer submissions are reviewed from the same screen, with one set of controls, one approve and one needs-another-take action, and a filter that says which kind you are looking at. They stay two tables and two functions underneath (decision 4) and that seam never reaches the reviewer. The default view is everything waiting, not one kind | The second cost Rashid accepted when he chose the separate submission path was two queues in his team's day, and he was promised they would feel like one job with a filter. Two unrelated screens is that promise broken: the day's work is now in two places, one of them gets checked less often, and a creator waits on a video nobody is looking at |
 
-Four more that are not screens but are the same class of omission:
+Six more that are not screens but are the same class of omission:
 
 - **`src/lib/schemas/contest.ts`** sits beside `brand.ts` and reuses
   `optionalMoney`, `optionalCount`, `CURRENCIES` and `collectFieldErrors`, with
   every `.refine()` message matching the Edge Function's sentence word for word.
   It also carries the IANA timezone list from rule L6 and the same list is
   re-checked in the Edge Function, with `pg_timezone_names` as the boundary
-  underneath both.
+  underneath both. **Three things joined it on 2026-08-13 with Rashid's four
+  answers:** `judging_basis`, optional in itself but required by a
+  `.superRefine()` whenever the deliverable list holds an active `rank` row, in
+  both directions and in the same words the two functions raise (Q13, rule N7);
+  a **non-empty trimmed** reward row `title`, whose message is attached to that
+  row's path rather than to the form, so the error lands on the row (Q11, rule
+  F11); and nothing at all for drafts, because there are none (Q12, rule F12).
+- **One client-side draft store for the setup form**, keyed on the admin's user
+  id, the brand and the contest being edited or `new`, cleared on a successful
+  save and on sign out (Q12, rule F12). It holds no file, only a banner URL once
+  the upload has succeeded, and nothing beyond what that admin can already read
+  on that screen. It is the whole implementation of "come back to it later", and
+  it is a browser concern rather than a schema one, which is the answer.
 - **`scripts/check-contrast.mjs`** gains the `KNOWN_BAD` list and its drift
   check (rule C3), and `src/styles/tokens.css` gains `--wx-deadline` and
   `--wx-rank-1/-2/-3` in **both** modes with their `PAIRS` entries, in the same
   commit as the first screen that uses them (rule C5). Skipping this leaves
   three combinations that fail AA in light mode with nothing in the toolchain
   mentioning them, which is how they got into a design in the first place.
+- **`src/styles/tokens.css` also gains `--wx-scrim`** (rule C7), dark
+  `rgba(6, 5, 4, 0.72)` and light `rgba(25, 21, 18, 0.46)`, and the four dialogs
+  that hardcode a backdrop today move onto it in the same commit. It takes no
+  `PAIRS` entry, because the guard skips translucent values on purpose
+  (`check-contrast.mjs:161-162`), but the **parity check covers it from the first
+  run**: a colour token present in one mode and missing from the other fails the
+  build (`check-contrast.mjs:138-143`), which is the exact mistake a hand-mixed
+  backdrop makes. This is the one new token contests add that is not a colour
+  anybody reads text against.
 - **One date and countdown formatter**, in a neutral folder, taking `now` and
   the contest's `expires_at_timezone` as arguments (rules L6 and L15). There is
   no date formatter anywhere in `src/lib/` today. Two of them is how the same
@@ -3083,10 +3640,11 @@ Four more that are not screens but are the same class of omission:
 
 ---
 
-## 5. The product questions, nine decided and one deferred
+## 5. The product questions, thirteen decided, one deferred
 
 **Decisions 1 to 4 were made by Rashid on 2026-08-12, D5, D6 and Q7 on
-2026-08-13, and D7 and D8 later the same day after the design review. All nine
+2026-08-13, D7 and D8 later the same day after the design review, and Q11 to Q14
+later still, after the third design turn. All thirteen
 are recorded here as settled.** The reasoning under each is kept, compressed,
 because it is the record of WHY, and because the cost he accepted is part of the
 decision rather than a footnote to it. Nothing later in this document asks any of
@@ -3094,6 +3652,15 @@ them again. **Q6 is now CLOSED by D7 and is kept below in its old form with the
 answer written over it, because the question is the record of what the answer
 cost.** Q5 is deferred by his own choice, and the items in Q8 to Q10 are raises
 rather than questions, one of which has now been ruled on (rule W7).
+
+**Four new ones opened on 2026-08-13 after the third design turn, and he answered
+all four the same day, after the run that recorded them had already been
+launched.** They were the layout of the admin setup form and nothing else, and
+they are now **Q11 to Q14, DECIDED**, kept under their own heading below between
+Q7 and the raises, with their original question numbers so the cross references
+elsewhere in this document still resolve. **Nothing in this feature is waiting on
+him.** One of the four, Q13, is a real schema change and is in 2.2; the other
+three change the form, the client and the suite.
 
 ### D1. What "deliverables with rewards" means. DECIDED 2026-08-12
 
@@ -3410,6 +3977,52 @@ list of them scannable.
 Written up as rules B4 and B7 in 3.8, and as the "no aspect ratio column" note in
 2.2.
 
+### D14. What the cancellation text is called. DECIDED 2026-08-13
+
+**Decided: the column is `cancel_message`, not `cancel_reason`.** Renamed in the
+migration before it was applied, so it cost nothing. After it is applied this is
+a data migration, which is why it was worth thirty seconds now.
+
+**Why:** every column on `contests` is creator facing, and the cancel screen
+labels this field as what the entrants will read. A field called "reason" invites
+somebody at eleven at night to type "client pulled the budget" into a box that
+two creators then open. The column name is the last thing standing between an
+internal note and the person it is about.
+
+**What did NOT change, deliberately:** `contest_exclusions.reason` keeps its
+name. That one is staff only, no policy exposes it to anybody outside the team,
+and there it is genuinely a reason rather than a message.
+
+**The cost:** the word no longer matches `offer_applications`' rejection reason,
+which is also creator facing and also badly named. That one is shipped and out of
+scope here. Worth revisiting if it is ever touched for another purpose.
+
+### D15. Whether product terms freeze when a creator enters. DECIDED 2026-08-13
+
+**Decided: a creator always sees the brand's CURRENT price and commission.**
+Nothing about a product is snapshotted onto a contest beyond what already is.
+
+Rashid ruled against the recommendation, which had been to freeze price and
+commission at entry the way `committed_amount` freezes money at approval.
+
+**What this means in the schema:** nothing to build. `contest_products` already
+carries `product_name` and `external_product_id` as a snapshot, so a rename
+cannot blank a brief, and it carries no price or commission column at all.
+Price and commission come from a live join to `brand_products` on every read.
+**Do not add those columns later without asking him**, because adding them
+silently changes what a creator sees.
+
+**The cost he accepted, recorded plainly:** a creator who entered a contest at 25
+percent commission can open it a week later and read 18 percent, with nothing on
+the screen telling them it changed or when. That is different from the money
+rules everywhere else in this feature, where what was promised is frozen. It is
+defensible, because a commission is the brand's live term rather than a promise
+Wurx made, but it is the one place in contests where the number a creator read
+can move under them.
+
+**Raise this again if:** a creator ever queries a commission figure, or the first
+time a brand cuts one mid contest.
+
 ### Q7. What happens to a creator who is already entered when an admin excludes them? DECIDED 2026-08-13
 
 **Decided: nothing happens to them, and there is no action that could make
@@ -3449,6 +4062,125 @@ one transaction, so a mistyped handle would destroy live work with one keystroke
 Combined with **D5** (an exclusion is scoped to ONE contest), the exclusion
 feature is now fully specified: it is per contest, it is forward looking only, and
 it has no reverse.
+
+### Q11 to Q14, the four that held up the setup form. ALL DECIDED 2026-08-13
+
+**Raised on 2026-08-13 after the third design turn as AWAITING RASHID, and
+answered by him the same day, after the run that recorded them had already been
+launched.** They were the layout of the admin setup form and nothing else, so
+nothing else in step 1 ever waited on them. The question numbers are kept so the
+cross references elsewhere in this document still resolve, and the reasoning under
+each is kept because it is the record of WHY, and because the cost he accepted is
+part of the decision rather than a footnote to it.
+
+**Q11. The reward row's title. DECIDED 2026-08-13.**
+
+**Decided: the admin types it, every time.** He chose this **against the
+recommendation**, which had been to generate a title from the row's own numbers
+and let him override it. So nothing generates a title, ever: not the client, not
+the Edge Function, not `save_contest_deliverable`, not a default and not a
+fallback at render time. `contest_deliverables.title` stays `not null` with its
+existing trimmed length check (2.4) and no column changes. A row arriving with a
+blank or whitespace-only title is refused by the database, and refused by the form
+first, with a named message **against that row** rather than a form level error.
+
+**The cost he accepted:** one more thing to type on an already long form, on every
+reward row, and a contest with six reward rows means six titles typed.
+
+**Why, kept for the record:** the title is the sentence every entrant reads on
+their frozen terms (2.7, rule F1), and a generated one would have made those words
+ours, identical on every contest in the product, and changeable only by a code
+change rather than by an edit. Written up as rule **F11**, with the suite proving
+a whitespace-only title is refused by the database even when the client is
+bypassed (section 7).
+
+**Q12. Whether a half filled contest can be saved. DECIDED 2026-08-13.**
+
+**Decided: it lives in the browser only. There is NO draft row.**
+`contests.name` and `contests.expires_at` stay `not null`, `contest_status` gains
+no draft value, no column becomes nullable, there is no partial row of any kind,
+and **nothing incomplete can ever reach a count, a list, a policy or a screen.**
+The half filled form is held client side, keyed so that two admins on one machine
+and one admin on two brands cannot collide, and it survives a reload and a closed
+tab on **that machine only**. What is not held client side: nothing staff-only and
+commercially sensitive beyond what that admin can already read on that screen, and
+**never an uploaded file, only its URL once the upload has succeeded**.
+
+**The cost he accepted, plainly:** it does not follow an admin to a different
+computer. The design promises "picked up where you left it yesterday", and that
+is only true on the same machine. **The designer must be told**, and it is item 1
+of what handback 5 owes them (3.14).
+
+**Why, kept for the record:** a real draft state was schema work rather than form
+work. `name` and `expires_at` would have had to stop being required, and then
+every creator read path, `contest_is_open`, both `contests` select policies and
+five write functions would each need a clause excluding a contest nobody finished,
+with the first one that forgot showing a creator a contest with no name. What
+ships instead is one Save that writes the contest, its commercials, its
+deliverables, its products and its exclusions in one call and refuses until the
+name and the deadline exist, and the schema in 2.2 was already right for it.
+Written up as rule **F12**, with the suite proving no contest row exists until it
+is legal (section 7).
+
+**Q13. Whether the judging sentence is its own field. DECIDED 2026-08-13.**
+
+**Decided: its own field. This is the only real schema change of the four.**
+`contests.judging_basis` is a nullable text column with a trimmed length check in
+the idiom the other text columns use (2.2), named for what it is rather than for
+the screen it appears on. It is creator readable like the rest of `contests` and
+it is not commercial. It is **REQUIRED whenever the contest carries any active
+deliverable of the `rank` kind**, and because a CHECK constraint cannot see
+another table that requirement is enforced in `save_contest` and in
+`save_contest_deliverable`, **both directions**, since either one could create the
+illegal combination: adding a rank row to a contest with no sentence, or clearing
+the sentence on a contest that already has a rank row. Both raises are written out
+in 2.13.
+
+**The cost he accepted:** one more column, one more argument on `save_contest`,
+one more field on an already long form, one more thing Zod refuses on both sides,
+and a second place a save can be turned down.
+
+**Why, kept for the record:** rule N5 makes the sentence the contest is judged on
+one of exactly three sources of motivation on a live contest, now that D7 has
+removed the other entrants, so it carries more weight than a paragraph usually
+does. And with Q5 deferred, nothing computes a placing, so this sentence is the
+only thing standing in for a scoreboard: a placing with no stated basis is the one
+thing that would make a contest feel arbitrary. As a paragraph inside
+`description` every admin would have put it somewhere different and the creator
+screen could not have pointed at it. **This is not Q5.** Q5 asks what actually
+ranks a ranked contest and is deferred by his own choice; this settles only where
+the sentence describing it lives. Written up as rule **N7**, carried into the
+setup form's field list, the write path, Zod on both sides, the audit detail and
+the creator read.
+
+**Q14. Dialog or full page. DECIDED 2026-08-13.**
+
+**Decided: a full screen of its own.** The setup form is a route, reached from the
+brand hub's Contests tab, and it is not a dialog anywhere in this document.
+**His reasoning, recorded:** a contest carries around twelve fields plus three
+lists inside it, the products, the reward rows and the people barred from it,
+which is beyond a dialog.
+
+**What it changes:** step 1's file list gains a route and loses a dialog
+component; join 15's **modal** case for this form becomes a **page** case at 375,
+768, 1024 and 1440; and the owner's admin layout rules now apply to it in full,
+working content starting high, a compact header, reference data under an Overview
+rather than stacked above the work, content left against the sidebar at a max
+width and never centred, and no slug, id or route ever shown to an admin. **The
+entry panel for CREATORS is unaffected and stays a dialog.**
+
+**The cost he accepted:** it is the only admin editor in the product that is not a
+dialog, which is a precedent every later form will be measured against.
+
+**Why, kept for the record:** both directions in turn 3 are drawn as full 1440
+pages while this plan had put the form in a dialog, and neither drawing shows the
+admin sidebar, so the owner's rule that content hugs the sidebar could not be
+checked against either. A dialog would have had to fit twelve fields and three
+nested lists at 375px, which neither drawn direction does, and the shape that
+produces, a list scrolling inside a panel scrolling inside a page, has to be
+unbuilt rather than fixed. **The form still needs 375, 768 and 1024**, which turn
+3 has for neither direction; that is item 2 of what handback 5 owes the designer
+(3.14). Written up as rule **F13**.
 
 ### Q8 to Q10, three that must be raised rather than answered
 
@@ -3497,6 +4229,77 @@ Ships alone because it touches every existing hook and nothing else.
 
 ### Step 1. A brand can run a contest  (admin only, no creator surface)
 
+**SPLIT 2026-08-13, third design turn, and UNBLOCKED the same day. The setup
+form's layout was the only unsettled part of this step, and Rashid answered all
+four questions behind it** (section 5, Q11 to Q14). The split stands as the build
+order, because it is still the right order: everything that is not the
+arrangement of the form is specified to the level a build needs, so it is written
+first and the form is laid out on top of it. **Build in this order.**
+
+**What the four answers changed inside this step:** the form is a **route with
+its own full screen**, not a dialog (Q14, rule F13); the migration carries one
+more column, `contests.judging_basis`, with its requirement enforced in
+`save_contest` and `save_contest_deliverable` (Q13, rule N7); every reward row
+carries a title the admin types, with a blank one refused against that row (Q11,
+rule F11); and there is **no draft row**, so the half filled form is a client-side
+store keyed per admin, per brand, per contest, and the migration is untouched by
+it (Q12, rule F12).
+
+**The first tier, which never depended on an answer:**
+
+1. **The migration**, exactly as listed below: the enums, the five tables, the
+   two `contests` indexes, the `audit_log(action)` index, every check constraint
+   and the `brand_products (id, brand_id)` unique key the composite foreign key
+   needs. Four columns in it now have controls promised against them by rule F10,
+   which changes nothing about the migration and is why it can ship first.
+   **`contests.judging_basis` is in this migration** (Q13, rule N7) and Q12 adds
+   nothing to it at all: there is no draft column, no draft status and no
+   nullable name or expiry, which is the answer.
+2. **The grants and the policies**, including the deliberate absences in 2.10 and
+   a `grant all privileges on table ... to service_role;` on every new table,
+   without which the Edge Function silently reads nothing and it looks like RLS
+   working (rule S2).
+3. **The write functions** in this step's half of 2.13, with their row locks,
+   their refusals, their audit verbs and the `pg_timezone_names` check inside
+   `save_contest`. `set_contest_status` and `delete_contest` are in this set and
+   rule L17 now says both get a control. **`save_contest` also carries
+   `p_judging_basis` and both halves of the N7 refusal, one here and one in
+   `save_contest_deliverable`**, and both raises are audited like every other
+   field.
+4. **The Edge Function `manage-contest`**, its per action gate, its Zod body and
+   its refusal sentences, which the client's Zod messages then match word for
+   word. Its contract is settled (2.13, rule S1) and no part of it depends on how
+   the form is arranged.
+5. **`scripts/seed-brands.mjs`'s contest seed** and `scripts/check-contests.mjs`
+   phase one, including the three storage checks in section 7. Both drive the
+   functions rather than the screens, so both run before a form exists. **Ask
+   before seeding; he may want the database empty.**
+6. **The two controls whose behaviour is already fully specified**, built in
+   `src/components/ui/` as controls rather than as parts of a page: the **date,
+   time and timezone control from rule L6** with its echoed instant and its
+   calendar disabling under rule L16, and the **banner upload from rule B8**,
+   `ImageUploadField` over `useImageUpload` at `contests/<contest_id>` with the
+   3:1 preview, the clear control and the helper text. The date control has no
+   precedent in this codebase at all; the banner upload has one and keeps it,
+   adding only the three things rule B8 names. They are the two the design still
+   owes frames for, and neither needs the layout to exist. The products
+   multi-select described below is the same kind of object and can be built
+   beside them.
+7. **The design system work from 3.12**, listed further down, now including the
+   new `--wx-scrim` token from rule C7 and the motion durations from rule C8.
+
+**The second tier, the setup form itself, which is now fully specified.** It is a
+**route with its own full screen** under the admin shell, reached from the brand
+hub's Contests tab, holding the controls above plus the fields the four answers
+settled: a typed title on every reward row (F11), the judging sentence as its own
+field, required whenever an active reward row of the `rank` kind is present (N7),
+and no Save-as-draft anywhere on it, because a half finished form is remembered
+in the browser and written nowhere (F12). The owner's admin layout rules apply to
+it in full and it is checked at 375, 768, 1024 and 1440 as a page (F13, join 15).
+**What the design still owes for it is in 3.14 and blocks nothing**: the four
+answers specify the form to the level a build needs, in the same way rule B8
+specifies the upload control and rule L6 specifies the deadline control.
+
 Migration `20260813090000_contests_are_a_real_thing.sql`: the enums, `contests`,
 `contest_commercials`, `contest_deliverables`, `contest_products`,
 `contest_exclusions`, `contest_is_open()`, `save_contest`,
@@ -3514,6 +4317,16 @@ retrofitted cheaply: a `not null` column added later needs a backfill and a
 guess at what zone the existing rows were set in, and the guess is exactly the
 thing the column exists to stop anybody making.
 
+**`contests.judging_basis` ships here too, with `save_contest`'s
+`p_judging_basis` argument and both halves of the rule N7 refusal** (Q13). It is
+nullable, so it could technically be added later, and it is not, for two reasons:
+the requirement lives in two functions rather than in a constraint, so retrofitting
+it means reopening `save_contest` and `save_contest_deliverable` after they have
+shipped and been called, and a `rank` deliverable can be created from the day this
+migration lands, which is the exact combination N7 refuses. A rule that arrives
+after the rows it governs is a backfill and an argument about which contests are
+exempt.
+
 `supabase/functions/manage-contest/index.ts`: the Edge Function, copied from
 `manage-brand` for its contract (`{ ok: true, result }`, 500 fallback) and from
 `manage-offer-application` for its per-action gate, because contests are a
@@ -3521,22 +4334,31 @@ both-sides feature.
 
 Client: `src/lib/schemas/contest.ts`, `src/lib/admin/useContests.ts`,
 `src/lib/admin/useManageContest.ts`, `src/components/admin/BrandContests.tsx`
-registered in the admin hub's section switch, and the contest dialog. **Two
-controls have no precedent anywhere in this codebase and are real design work,
-not a field:** a datetime picker, which after rule L6 is a **date, a time AND a
-timezone select with the resulting instant echoed back in words as the creator
-will read it** (there is no date control and no date formatter in `src/lib/`),
-and a products multi-select (`Field.tsx` exports a single-value `Select` only,
-hand-built with `appearance-none` because the OS arrow cannot be themed). Both
-are built here, in `src/components/ui/`, or the contest form ships the first
-admin dialog in the product with unstyled OS controls on a `#1a1714` panel.
+registered in the admin hub's section switch, **the setup form as its own route
+and its own screen** rather than a dialog component (Q14, rule F13), reached from
+the brand hub's Contests tab and code-split like every other route, and **the
+client-side draft store behind it**, keyed on the admin's user id, the brand and
+the contest being edited or `new`, cleared on a successful save and on sign out
+(Q12, rule F12). **Two controls have no
+precedent anywhere in this codebase and are real design work, not a field:** a
+datetime picker, which after rule L6 is a **date, a time AND a timezone select
+with the resulting instant echoed back in words as the creator will read it**
+(there is no date control and no date formatter in `src/lib/`), and a products
+multi-select (`Field.tsx` exports a single-value `Select` only, hand-built with
+`appearance-none` because the OS arrow cannot be themed). Both are built here, in
+`src/components/ui/`, or the setup form ships the first admin editor in the
+product with unstyled OS controls on a `#1a1714` panel.
 
 **The design system work from 3.12 also lands here**, before any screen is drawn
 on top of it: `--wx-deadline` and `--wx-rank-1/-2/-3` into `tokens.css` in both
-modes with their `PAIRS` entries, the `KNOWN_BAD` list and its drift check in
-`scripts/check-contrast.mjs` (rule C3), and the layout fix that keeps muted and
-accent text off surface 3 (rule C2). Adding a guard after the screens it would
-have caught is how the three light mode failures got as far as a design review.
+modes with their `PAIRS` entries, **`--wx-scrim` into `tokens.css` in both modes
+with the four hardcoded dialog backdrops moved onto it in the same commit (rule
+C7)**, the `KNOWN_BAD` list and its drift check in `scripts/check-contrast.mjs`
+(rule C3), and the layout fix that keeps muted and accent text off surface 3 (rule
+C2). The secondary button variant is used rather than an inline border (rule C6)
+and every duration is one of the three already in `tokens.css` (rule C8), from the
+first component onwards. Adding a guard after the screens it would have caught is
+how the three light mode failures got as far as a design review.
 
 **The banner upload ships in this step, in this form, and it is the third control
 on it.** It is `ImageUploadField` over `useImageUpload` with
@@ -3555,7 +4377,11 @@ Also here: joins 1, 8 and 10 (admin half), and `scripts/check-contests.mjs` phas
 one, including the three storage checks in section 7.
 
 At the end of this step an admin can set a contest up properly and nobody else
-can see anything.
+can see anything. **The form is still the last thing built rather than the
+first**, which was the point of the split and stays the point of it now that the
+four answers are in: the migration, the functions, the Edge Function, the seed and
+the three controls all stand on their own, and the screen is arranged on top of
+things that already work.
 
 ### Step 2. Creators can enter  (the moment the feature exists)
 
@@ -3566,7 +4392,20 @@ Migration `20260813120000_creators_enter_contests.sql`: `contest_entries`,
 `contest_excludes_caller` (2.12.1)**, the creator policies
 on `contests` and `contest_deliverables` **including the exclusion clause on
 both of them**, `brands_select_own_contest_entries`,
-the realtime publication membership, `contest_totals` and `contest_entry_progress`.
+the realtime publication membership for the three tables that exist by then, and
+`contest_totals`.
+
+**Three things in 2.10 and 2.11 cannot ship in this step, and saying so here is
+cheaper than a migration that will not apply.** `contest_entry_progress` left
+joins `contest_submissions`; the publication membership in 2.10 includes that
+same table; and rule E3's "has submitted nothing and been awarded nothing" reads
+`contest_submissions` and `contest_awards`. Those two tables arrive in steps 4
+and 5. So the view and that table's publication membership land with
+`contest_submissions` in step 4, and `withdraw_contest_entry` is replaced in the
+migration that creates each table it has to read, gaining one half of its guard
+each time. Until then withdrawal from approved is refused on the entry row alone,
+which is the same answer, because a creator with no submissions and no awards is
+every creator there is.
 
 **The gap 1 fix ships in this step and cannot be deferred to a later one**, for
 a reason worth stating: this is the step that creates the creator policies in
@@ -3578,11 +4417,16 @@ creates the policy.
 3.4.1): the admin entries queue built in this step approves, rejects and shows an
 excluded flag, and that is the whole of what it can do to a row.
 
-Client: `src/lib/creator/useContests.ts`, a shared `contestState()` in a neutral
-file because both sides read it, **the one date and countdown formatter from
-rules L6 and L15 in the same neutral folder**, the contest card written ONCE and
-used by the creator hub tab and the creator contests screen,
-`ContestApplyDialog` copied from `ApplyDialog`, the admin entries queue, joins
+Client: `src/lib/creator/useContests.ts`, whose explicit `COLUMNS` constant
+carries **`judging_basis`** so the sentence arrives on the same select as the rest
+of the contest and costs no second query (Q13, rule N7), a shared `contestState()`
+in a neutral file because both sides read it, **the one date and countdown
+formatter from rules L6 and L15 in the same neutral folder**, the contest card
+written ONCE and used by the creator hub tab and the creator contests screen,
+**the judging sentence rendered on its own in a fixed place** on the contest's own
+page and in the join panel rather than inside the description,
+`ContestApplyDialog` copied from `ApplyDialog` **and staying a dialog, which Q14
+did not touch**, the admin entries queue, joins
 2, 3, 4, 5, 9, 10 (creator half), 11 and 12, the `refetchInterval` plus clock
 tick from rule L5, **and the realtime status from rule S9, which the waiting
 screen's dot and copy read.** The waiting and locked screens ship with rule W7's
@@ -3612,9 +4456,11 @@ either.
 
 ### Step 4. Contest deliverables can be filed  (both sides)
 
-Migration `20260813150000_contest_content.sql`: `contest_submissions`,
-`submit_contest_content`, `review_contest_content`, **`contest_entry_targets`
-and `set_contest_entry_target`**, the oEmbed refresh action on `manage-contest`.
+Migration `20260813150000_contest_content.sql`: `contest_submissions`, its
+publication membership, **`contest_entry_progress`, which held back from step 2
+because it left joins that table**, `submit_contest_content`,
+`review_contest_content`, **`contest_entry_targets` and
+`set_contest_entry_target`**, the oEmbed refresh action on `manage-contest`.
 Joins 13, 14 and 16. The progress bar comes from `src/components/work/`, not a
 third drawing, **and it has four segments, not three** (rule W6), which is a
 change to a shared component and therefore has to be agreed with the offer side
@@ -3806,6 +4652,69 @@ creator, and an anonymous tokenless call.
   Test it by supplying `now` rather than by waiting, which is why rule L15 makes
   `now` an argument.
 
+### What the suite must prove about the four answers of 2026-08-13
+
+**These are Q11 to Q14 made testable.** Three of them are rules about something
+NOT existing, which nothing else in this file catches, so each one is written as
+the read that would find it if it came back.
+
+- **A reward row title of spaces is refused by the DATABASE, with the client
+  bypassed** (Q11, rule F11). Insert a `contest_deliverables` row with a title of
+  `'   '` using the **service key**, straight at the table: the trimmed length
+  check refuses it. Then the same through `save_contest_deliverable`, which
+  raises. Then through `manage-contest`, which refuses with the same sentence Zod
+  uses. Three layers, one wording, and the service-key case is the one that
+  matters here, because Zod passing is not proof.
+- **Nothing generates a title** (Q11). Save a reward row of each of the three
+  kinds through `manage-contest` with the title omitted entirely: three refusals,
+  and a service-key read shows no row was written with a title our code composed.
+  A default that quietly fills the column is exactly what this answer forbids.
+- **The blank-title refusal names the row**, not the form. On a contest with six
+  reward rows and one blank title, the message is attached to that row in the
+  form. A form level error on a six row editor is unfixable by the person reading
+  it.
+- **No contest row exists until it is legal** (Q12, rule F12). Fill the setup form
+  half way, abandon it, reload, and confirm with the **service key** that
+  `contests` holds no new row of any kind. Then post at `manage-contest` with the
+  name missing, then with the deadline missing: two refusals, and two service-key
+  re-reads showing nothing written.
+- **There is no draft anything**, asserted against the catalogue rather than
+  inferred (Q12): `contest_status` has exactly `active` and `inactive`, and
+  `contests.name` and `contests.expires_at` are both `NOT NULL` in
+  `information_schema.columns`. This fails the day somebody makes room for a
+  draft.
+- **The half filled form survives a reload and a closed tab, and does not follow
+  the admin anywhere else** (Q12). Restored in the same browser as the same
+  admin; **absent** for a second admin signed in on the same browser, absent for
+  the same admin on a second brand's new contest, and cleared after a successful
+  save and after sign out. The keying is the whole rule and this is what proves
+  it.
+- **No file is held client side** (Q12), only a URL after the upload succeeded.
+  Pick a banner, abandon the form, and confirm nothing image-shaped is in the
+  stored draft.
+- **A ranked prize cannot exist without a judging sentence, in both directions**
+  (Q13, rule N7). `save_contest_deliverable` adding a `rank` row to a contest
+  whose `judging_basis` is null is refused with a sentence; `save_contest`
+  clearing `judging_basis` to null or to spaces on a contest that already carries
+  an active `rank` row is refused with a sentence naming the count. **Both, or the
+  test proves half a rule**, and a service-key re-read after each shows the row
+  unchanged.
+- **Retiring the last rank row then clearing the sentence succeeds** (Q13). That
+  combination is legal, `retire_contest_deliverable` carries no clause, and a
+  suite that refuses it has turned a rule into a trap.
+- **A `fixed`-only and a `milestone`-only contest save with no judging sentence at
+  all** (Q13). The requirement is about ranked prizes, not about every contest.
+- **A creator reads `judging_basis` from their own token, on the same select as
+  the rest of the contest** (Q13), and it appears in no `contest_commercials` read
+  and in nothing gated on `is_staff()`. It is creator facing by design and this is
+  what says so.
+- **The setup form is driven as a PAGE at 375, 768, 1024 and 1440** (Q14, rule
+  F13), with no horizontal page scroll at any width, the content left against the
+  sidebar rather than centred, and no slug, id or route rendered anywhere on it.
+  **The creator entry dialog is still driven as a modal case** in the same run,
+  because Q14 did not touch it and a suite that converts both has lost the one
+  that stayed.
+
 ### What the suite must prove about the private target
 
 **These run as a real signed-in ADMIN as well as a creator, because the point is
@@ -3923,6 +4832,21 @@ that the person with every permission still cannot do it** (Q7, rule X9, 3.4.1).
   `pnpm check:contrast` fails if either mode is missing a value. Parity is
   already enforced product wide; this is the reminder that a token added for
   contests is not exempt.
+- **`--wx-scrim` exists in both modes and nothing hardcodes a backdrop** (rule
+  C7). Two assertions, because the token alone proves nothing: `pnpm
+  check:contrast` fails when either mode's value is deleted, and no contest
+  surface, dialog or panel resolves its backdrop to a literal `rgba(...)` or a
+  `bg-black/NN` class in either theme. The four dialogs that carry a literal today
+  are re-checked in the same run, or the token becomes the fifth spelling instead
+  of the only one.
+- **No secondary control draws its own border** (rule C6). The border colour on
+  every secondary button in the contest screens resolves to
+  `--wx-border-interactive` through the shared variant, in both themes, since the
+  inline borders it replaces measure roughly 1.5:1 and nothing in `PAIRS` reaches
+  them.
+- **Every transition duration on a contest surface is 140ms, 240ms or 420ms**
+  (rule C8), read from the computed style rather than from a class name, because
+  a literal in a class is exactly what the rule is against.
 
 ### What the suite must prove about the one route and the one queue
 
@@ -3940,8 +4864,10 @@ that the person with every permission still cannot do it** (Q7, rule X9, 3.4.1).
 ### Two suites that are not new but must be re-run and extended
 
 - **`pnpm verify:responsive`.** Every new contest screen in `SCREENS`, a `via`
-  entry for anything behind an id, and a modal case for the contest form and the
-  entry dialog. `check-responsive.mjs:41-42` defaults `CREATOR_EMAIL` to a demo
+  entry for anything behind an id, **a PAGE case for the contest setup form** at
+  375, 768, 1024 and 1440 (Q14, rule F13, which replaced the modal case this line
+  used to ask for), and a modal case for the creator entry dialog, which stays a
+  dialog. `check-responsive.mjs:41-42` defaults `CREATOR_EMAIL` to a demo
   account that no longer exists on the empty dev database, so seeding is a
   precondition for this suite, not a nicety.
 - **`pnpm verify:live`.** An admin closing a contest must remove the Apply button
