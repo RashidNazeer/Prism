@@ -999,3 +999,42 @@ early.
 | My Numbers                   | Step 8  | Facts, Brand Hubs              | none                           |
 | Leaderboards                 | Step 9  | Facts, privacy flag            | Brand Hubs                     |
 | Offers + Discord             | Step 10 | Tiers, Brand Hubs              | none                           |
+
+## Contests
+
+Built 2026-08-13 and 14. **Read docs/CONTESTS_PLAN.md before touching it**, it
+holds the numbered rules and most were learned the hard way in one night.
+
+**A contest is a list of DELIVERABLES**: a type (gmv or video_count), a target,
+and a reward. Placings were dropped, so there is no ranking and no judging
+sentence. Anybody who reaches a target earns its reward, and several creators
+can earn the same one.
+
+**Progress is typed by the creator and confirmed by staff.** Cumulative totals,
+never increments. THE TARGET IS READ ONLY TO A CREATOR in the browser and on the
+wire: no function they can reach takes a target or a reward argument, and the
+creator door uses a strict object so sending one is refused rather than
+stripped. A claim asks for exactly the NEW videos, so 5 to 6 asks for one link
+and one ad code. The count may not go backwards.
+
+**Nothing counts until staff confirm it.** A creator typing their own GMV is a
+creator typing their own payslip, so confirmed and claimed are never added and
+never drawn the same. Money is only ever owed against a confirmed figure.
+
+**Standing without names.** my_contest_standing is a security definer function,
+not a view, returning ONLY the caller's own position from auth.uid() with no
+user id argument. It never returns another entrant's figures or identifiers.
+
+**Two doors.** manage-contest is staff only. enter-contest requires an active
+creator. A creator must never reach the staff door and cannot.
+
+**Screens.** /admin/contests, /admin/contests/claims, the Contests tab in a
+brand, the full screen setup form at /admin/brands/:id/contests/:contestId, and
+/app/contests with two views, the list and the creator's own dashboard.
+
+**Traps already paid for.** The contest budget lives in contest_commercials, its
+own staff only table, for the same reason the brand budget does. There is no way
+to remove a creator from a contest they joined, deliberately, and the plan says
+not to add one without asking. An exclusion is scoped to ONE contest. Deadlines
+are stored with an IANA zone name beside them and always shown in the zone the
+admin chose, never the reader's.

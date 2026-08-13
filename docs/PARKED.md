@@ -17,6 +17,37 @@ Rules:
 
 ---
 
+## 0. Contests: what is left, as of 2026-08-14
+
+**Status:** PAUSED where noted, the rest is simply next
+**Owner:** Claude
+
+Everything below is contests. The feature is live on dev and testable; these are
+the gaps, named so nobody rediscovers them.
+
+- **Settlement.** Earned deliverables are computed and shown, but nothing pays
+  them out. `settle_contest` exists and is not wired to a screen.
+- **Real tracking. PAUSED, Rashid's call.** Progress is typed by the creator and
+  confirmed by staff. He will say when the sheet or the data source exists. Do
+  not start this without him.
+- **`pnpm verify:contests` only drives ADMIN screens.** 36 checks, and not one
+  of them opens the creator contest screen, the entry dialog or the progress
+  dialog. Extending it is the highest value testing work left.
+- **`contest_awards.note` is creator readable and its name does not say so.**
+  The same trap as `cancel_reason`, which became `cancel_message` on 2026-08-13.
+  Nothing leaks today because the settle screen does not exist. Rename it in the
+  migration that builds settlement, and it costs nothing then.
+- **Eight realtime hooks still call `supabase.channel()` directly**, and carry
+  the fault that crashed the whole page on 2026-08-13: two components sharing a
+  channel name. `job-progress` was moved to `joinChannel` in
+  `src/lib/realtime.ts`. The rest are: `useApplication`, `useMyWork`,
+  `useMyContent`, `useOfferApplications`, `useAllOffers`, `useCatalogueLive`,
+  `useAdminContent` and the offers channel in `useBrands`.
+- **A creator can enter a GMV figure with nothing behind it.** Staff confirm it,
+  which is the agreed control, but there is no evidence attached to a GMV claim
+  the way video links are attached to a count. Worth raising when real money
+  moves.
+
 ## 1. Resend email setup (DNS fix + API key)
 
 **Status:** PAUSED, 2026-07-29, at Rashid's request to keep development moving
