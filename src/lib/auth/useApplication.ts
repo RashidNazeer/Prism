@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
+import { joinChannel } from '@/lib/realtime';
 import { useAuth } from './auth-context';
 
 export type ApplicationStatus = 'pending' | 'approved' | 'rejected';
@@ -66,30 +67,17 @@ export function useApplication() {
 
   useEffect(() => {
     if (!enabled || !user?.id) return;
-    const supabase = getSupabase();
 
     // A narrow channel: this user's row only. Never a global firehose.
-    const channel = supabase
-      .channel(`application:${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'applications',
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          void queryClient.invalidateQueries({ queryKey: ['application', user.id] });
-          // A decision usually changes the role too, so refresh that as well.
-          void queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    return joinChannel(
+      `application:${user.id}`,
+      [{ table: 'applications', filter: `user_id=eq.${user.id}` }],
+      () => {
+        void queryClient.invalidateQueries({ queryKey: ['application', user.id] });
+        // A decision usually changes the role too, so refresh that as well.
+        void queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
+      }
+    );
   }, [enabled, user?.id, queryClient]);
 
   return query;

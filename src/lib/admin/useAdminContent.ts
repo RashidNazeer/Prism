@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
+import { joinChannel } from '@/lib/realtime';
 import { CONTENT_COLUMNS, type ContentRow, type ContentStatus } from '@/lib/content';
 
 /**
@@ -59,22 +60,10 @@ export function useAdminContent(filters: ContentFilters) {
   // A creator posting a video has to appear in the queue while somebody is
   // looking at it, the same way a request does.
   useEffect(() => {
-    const supabase = getSupabase();
-    const channel = supabase
-      .channel('admin-content')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'content_submissions' },
-        () => {
-          void queryClient.invalidateQueries({ queryKey: ['admin', 'content'] });
-          void queryClient.invalidateQueries({ queryKey: ['admin', 'content-counts'] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    return joinChannel('admin-content', [{ table: 'content_submissions' }], () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'content'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'content-counts'] });
+    });
   }, [queryClient]);
 
   return query;

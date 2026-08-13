@@ -27,7 +27,7 @@ export function Brands() {
   const approved = role === 'creator' || role === 'ops' || role === 'admin';
 
   // Admin edits to brands, offers and products land here without a reload.
-  useCatalogueLive('brands');
+  useCatalogueLive();
 
   const { data: brands, isLoading, isError, error } = useCreatorBrands();
   const rows = brands ?? [];

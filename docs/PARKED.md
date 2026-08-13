@@ -17,36 +17,40 @@ Rules:
 
 ---
 
-## 0. Contests: what is left, as of 2026-08-14
+## 0. Contests: what is left, as of 2026-08-14 (evening)
 
-**Status:** PAUSED where noted, the rest is simply next
+**Status:** PAUSED where noted
 **Owner:** Claude
 
-Everything below is contests. The feature is live on dev and testable; these are
-the gaps, named so nobody rediscovers them.
+**Settlement is DONE and is no longer on this list.** Rashid decided both halves
+on 2026-08-14: a reward is owed the moment staff confirm the figure that crosses
+its target, and the product tracks owed then paid. `contest_awards.note` became
+`message` in the same migration, and the eight realtime hooks moved onto
+`joinChannel`. `pnpm verify:contests` went from 36 checks to 106 and now drives
+the creator screens. What is left is below.
 
-- **Settlement.** Earned deliverables are computed and shown, but nothing pays
-  them out. `settle_contest` exists and is not wired to a screen.
 - **Real tracking. PAUSED, Rashid's call.** Progress is typed by the creator and
   confirmed by staff. He will say when the sheet or the data source exists. Do
   not start this without him.
-- **`pnpm verify:contests` only drives ADMIN screens.** 36 checks, and not one
-  of them opens the creator contest screen, the entry dialog or the progress
-  dialog. Extending it is the highest value testing work left.
-- **`contest_awards.note` is creator readable and its name does not say so.**
-  The same trap as `cancel_reason`, which became `cancel_message` on 2026-08-13.
-  Nothing leaks today because the settle screen does not exist. Rename it in the
-  migration that builds settlement, and it costs nothing then.
-- **Eight realtime hooks still call `supabase.channel()` directly**, and carry
-  the fault that crashed the whole page on 2026-08-13: two components sharing a
-  channel name. `job-progress` was moved to `joinChannel` in
-  `src/lib/realtime.ts`. The rest are: `useApplication`, `useMyWork`,
-  `useMyContent`, `useOfferApplications`, `useAllOffers`, `useCatalogueLive`,
-  `useAdminContent` and the offers channel in `useBrands`.
 - **A creator can enter a GMV figure with nothing behind it.** Staff confirm it,
-  which is the agreed control, but there is no evidence attached to a GMV claim
-  the way video links are attached to a count. Worth raising when real money
-  moves.
+  which is the agreed control, and that confirmation now owes real money in the
+  same transaction, so the control matters more than it did. There is still no
+  evidence attached to a GMV claim the way video links are attached to a count.
+  **Trigger: the first time a reward is paid on a GMV figure nobody checked
+  against the seller centre.**
+- **There is no way to unpay a reward**, on purpose: the guard is a confirmation
+  step on the screen and an audit row naming who clicked. **Trigger: the first
+  mis-click.** The fix is a `pay_contest_awards` counterpart that writes a
+  reversal row rather than clearing `paid_at`, so the history stays true.
+- **`contest_entry_events.note` is creator readable and its name does not say
+  so**, the same shape as the trap `contest_awards.note` was. It is lower risk,
+  because that table is documented at the table level as the creator's own
+  history and nothing private has ever been written to it. Rename it the next
+  time that file is opened for another reason.
+- **Closing a contest does not chase what it still owes.** `settle_contest`
+  reports the unpaid total and the screen warns before the click, but nothing
+  afterwards reminds anybody. **Trigger: a closed contest still owing money a
+  fortnight later.**
 
 ## 1. Resend email setup (DNS fix + API key)
 

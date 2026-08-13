@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
+import { joinChannel } from '@/lib/realtime';
 import { useAuth } from '@/lib/auth/auth-context';
 import type { MyOfferApplication } from '@/lib/creator/useOfferApplications';
 
@@ -93,29 +94,26 @@ export function useAllMyRequests() {
     },
   });
 
+  /*
+   * THE SAME CHANNEL NAME `useOfferApplications` USES, and that is the point of
+   * `joinChannel` rather than an accident. Both hooks watch exactly one thing,
+   * this creator's own rows in `offer_applications`, and they used to open two
+   * channels for it under two different names. Reference counted, a screen
+   * running both now holds one subscription and both hooks hear every event.
+   *
+   * The name says what is being watched rather than which hook asked, because
+   * a third caller should join this one rather than invent a third name.
+   */
   useEffect(() => {
     if (!user?.id) return;
-    const supabase = getSupabase();
 
-    const channel = supabase
-      .channel(`all-my-requests:${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'offer_applications',
-          filter: `creator_id=eq.${user.id}`,
-        },
-        () => {
-          void queryClient.invalidateQueries({ queryKey: ['creator', 'all-my-requests'] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    return joinChannel(
+      `offer-applications:${user.id}`,
+      [{ table: 'offer_applications', filter: `creator_id=eq.${user.id}` }],
+      () => {
+        void queryClient.invalidateQueries({ queryKey: ['creator', 'all-my-requests'] });
+      }
+    );
   }, [user?.id, queryClient]);
 
   return query;

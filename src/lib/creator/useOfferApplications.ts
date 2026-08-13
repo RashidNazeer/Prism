@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
+import { joinChannel } from '@/lib/realtime';
 import { useAuth } from '@/lib/auth/auth-context';
 import type { OfferApplicationStatus, OfferStage } from '@/lib/offer-stages';
 
@@ -75,33 +76,28 @@ export function useMyOfferApplications(brandId: string | undefined) {
     },
   });
 
+  /*
+   * Narrowed to this creator's own rows. Row level security would filter it
+   * anyway, but there is no reason to be told about rows we then discard.
+   *
+   * THE BRAND IS NOT IN THE CHANNEL NAME ANY MORE, deliberately. It never was
+   * in the FILTER, so `my-offer-applications:<brand>:<creator>` opened a
+   * separate subscription per brand to exactly the same rows, and a third to
+   * the same rows again from `useAllOffers`. One name, reference counted, one
+   * socket, and every listener still hears everything.
+   */
   useEffect(() => {
     if (!brandId || !user?.id) return;
-    const supabase = getSupabase();
 
-    // Narrowed to this creator's own rows. Row level security would filter it
-    // anyway, but there is no reason to be told about rows we then discard.
-    const channel = supabase
-      .channel(`my-offer-applications:${brandId}:${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'offer_applications',
-          filter: `creator_id=eq.${user.id}`,
-        },
-        () => {
-          void queryClient.invalidateQueries({
-            queryKey: ['creator', 'my-offer-applications'],
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    return joinChannel(
+      `offer-applications:${user.id}`,
+      [{ table: 'offer_applications', filter: `creator_id=eq.${user.id}` }],
+      () => {
+        void queryClient.invalidateQueries({
+          queryKey: ['creator', 'my-offer-applications'],
+        });
+      }
+    );
   }, [brandId, user?.id, queryClient]);
 
   return query;

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
+import { joinChannel } from '@/lib/realtime';
 import { useAuth } from '@/lib/auth/auth-context';
 import { CONTENT_COLUMNS, type ContentRow } from '@/lib/content';
 
@@ -42,31 +43,18 @@ export function useMyContent() {
 
   useEffect(() => {
     if (!user?.id) return;
-    const supabase = getSupabase();
 
-    const channel = supabase
-      .channel(`my-content:${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'content_submissions',
-          filter: `creator_id=eq.${user.id}`,
-        },
-        () => {
-          void queryClient.invalidateQueries({ queryKey: ['creator', 'my-content'] });
-          // An approval can be the thing that finishes a job, and the job lives
-          // on the dashboard. Leaving that stale would mean the two screens
-          // disagreed about whether the work was done.
-          void queryClient.invalidateQueries({ queryKey: ['creator', 'my-work'] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    return joinChannel(
+      `my-content:${user.id}`,
+      [{ table: 'content_submissions', filter: `creator_id=eq.${user.id}` }],
+      () => {
+        void queryClient.invalidateQueries({ queryKey: ['creator', 'my-content'] });
+        // An approval can be the thing that finishes a job, and the job lives
+        // on the dashboard. Leaving that stale would mean the two screens
+        // disagreed about whether the work was done.
+        void queryClient.invalidateQueries({ queryKey: ['creator', 'my-work'] });
+      }
+    );
   }, [user?.id, queryClient]);
 
   return query;

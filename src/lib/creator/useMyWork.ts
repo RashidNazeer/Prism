@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
+import { joinChannel } from '@/lib/realtime';
 import { useAuth } from '@/lib/auth/auth-context';
 import { STAGE_META, type OfferApplicationStatus, type OfferStage } from '@/lib/offer-stages';
 
@@ -89,42 +90,31 @@ export function useMyWork() {
 
   // A stage change has to land while they are looking at it. Being told
   // immediately is the entire product.
+  /*
+   * ITS OWN NAME, not the shared `offer-applications:<id>` one, because it
+   * watches a SECOND table as well. `joinChannel` refuses to let two different
+   * binding sets share a name, loudly in development, and it is right to: a
+   * caller joining this name expecting only offer_applications would silently
+   * be woken by stage events too.
+   *
+   * The two invalidations are kept apart even though both fire the same first
+   * key, because a stage event also moves the timeline and an application
+   * change does not.
+   */
   useEffect(() => {
     if (!user?.id) return;
-    const supabase = getSupabase();
 
-    const channel = supabase
-      .channel(`my-work:${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'offer_applications',
-          filter: `creator_id=eq.${user.id}`,
-        },
-        () => {
-          void queryClient.invalidateQueries({ queryKey: ['creator', 'my-work'] });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'offer_stage_events',
-          filter: `creator_id=eq.${user.id}`,
-        },
-        () => {
-          void queryClient.invalidateQueries({ queryKey: ['creator', 'my-work'] });
-          void queryClient.invalidateQueries({ queryKey: ['creator', 'my-stage-events'] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    return joinChannel(
+      `my-work:${user.id}`,
+      [
+        { table: 'offer_applications', filter: `creator_id=eq.${user.id}` },
+        { table: 'offer_stage_events', event: 'INSERT', filter: `creator_id=eq.${user.id}` },
+      ],
+      () => {
+        void queryClient.invalidateQueries({ queryKey: ['creator', 'my-work'] });
+        void queryClient.invalidateQueries({ queryKey: ['creator', 'my-stage-events'] });
+      }
+    );
   }, [user?.id, queryClient]);
 
   return query;

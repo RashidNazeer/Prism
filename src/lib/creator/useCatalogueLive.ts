@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { getSupabase } from '@/lib/supabase';
+import { joinChannel } from '@/lib/realtime';
 
 /**
  * Keep the brands, offers and products a creator is looking at current.
@@ -20,38 +20,46 @@ import { getSupabase } from '@/lib/supabase';
  * product produces a change a creator is not authorised to receive, so it never
  * reaches them; they just stop seeing the row on the next read.
  *
- * `key` must be unique per mounted screen. Two channels with one name is a
- * Supabase footgun: the second subscribe is ignored and the screen that thinks
- * it is listening never hears anything.
+ * IT TOOK A `key` ARGUMENT UNTIL 2026-08-14, AND THE REASON IT NO LONGER DOES
+ * IS THE WHOLE POINT OF `joinChannel`. Three screens called this with 'hub',
+ * 'brands' and 'offers' because of a comment that said, correctly at the time,
+ * that "two channels with one name is a Supabase footgun: the second subscribe
+ * is ignored and the screen that thinks it is listening never hears anything".
+ * That was a caller being asked to work around a bug in this file. Reference
+ * counting fixes it here instead: every screen joins one channel, everybody
+ * hears everything, and it closes when the last one unmounts. Three separate
+ * subscriptions to identical rows became one.
  */
-export function useCatalogueLive(key: string) {
+export function useCatalogueLive() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const supabase = getSupabase();
     const invalidate = (...keys: string[]) => {
       for (const k of keys) {
         void queryClient.invalidateQueries({ queryKey: ['creator', k] });
       }
     };
 
-    const channel = supabase
-      .channel(`creator-catalogue:${key}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'brands' }, () =>
-        // A renamed or retired brand changes the list, the hub header and the
-        // brand shown against every offer.
-        invalidate('brands', 'brand', 'all-offers')
-      )
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'offers' }, () =>
-        invalidate('all-offers', 'offers', 'offer-counts')
-      )
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'brand_products' }, () =>
-        invalidate('products')
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [key, queryClient]);
+    return joinChannel(
+      'creator-catalogue',
+      [{ table: 'brands' }, { table: 'offers' }, { table: 'brand_products' }],
+      () => {
+        /*
+         * Every key, on any of the three, rather than one set per table.
+         *
+         * `joinChannel` fires ONE callback for the whole channel and does not
+         * say which binding woke it, which is a deliberate trade: the three
+         * tables here are edited in the same sitting, the reads are cached
+         * behind a `staleTime`, and an invalidation that turns out to be
+         * unnecessary costs one request. Telling them apart would mean three
+         * channels, which is exactly what this stopped doing.
+         *
+         * A renamed or retired brand changes the list, the hub header AND the
+         * brand shown against every offer, so even the narrow version had to
+         * invalidate three keys.
+         */
+        invalidate('brands', 'brand', 'all-offers', 'offers', 'offer-counts', 'products');
+      }
+    );
+  }, [queryClient]);
 }

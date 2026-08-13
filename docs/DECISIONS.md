@@ -620,3 +620,49 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   `applications.tiktok_handle` has been indexed since July; a second index on
   the same column is accepted silently by Postgres and then maintained on every
   write forever.
+- 2026-08-14: **A contest reward is owed at the CONFIRMATION, not at the end of
+  the contest, and the product tracks owed then paid.** Rashid, given the four
+  options. It follows from a decision already made: placings were dropped on
+  2026-08-13, so nothing is contingent on anybody else, and the instant somebody
+  confirms 640 against a 500 target there is nothing left to discover by waiting
+  eleven weeks. The cost is that `settle_contest` had to be rewritten rather than
+  wired up, and the old five argument version DROPPED, because a function still
+  accepting `p_outcomes` is a function somebody will pass outcomes to and be
+  quietly ignored.
+- 2026-08-14: **`contest_awards` stops being a settlement outcome table and
+  becomes a bill**: every row is money against one frozen term, `term_id` NOT
+  NULL, amount > 0. The outcome row (`term_id` null, amount 0) existed only to
+  carry a placing for entrants who won nothing, and with placings gone it is a
+  row that says nothing while still turning up in a sum of money and a count of
+  entrants. Done while the table was empty, which was the only free moment it
+  would ever have.
+- 2026-08-14: **Rule S8 moves from settlement to payment.** Refusing to pay a
+  suspended creator without `p_allow_suspended` used to sit on `settle_contest`
+  because that was where money moved. Money moves at `pay_contest_awards` now.
+  Awarding one is automatic, because they keep everything they earned; SENDING it
+  is the decision somebody makes on purpose.
+- 2026-08-14: **Awarding never refuses on budget.** M7's settle-time refusal is
+  gone, because it existed for one big irreversible payout. A confirmation is a
+  statement about what a creator actually did, and a budget must not make us
+  pretend they did less. This follows the rule the brand budget bar has had since
+  2026-08-01: going over is allowed and shown, never blocked. M7's OTHER half,
+  refusing to define reward rows that add up to more than the budget, is
+  untouched: that is an offer, not a bill.
+- 2026-08-14: **`settle_contest` refuses to close a contest with a progress claim
+  still pending**, which is new and is the most expensive thing it could
+  otherwise do. Confirming is the only thing that can owe somebody money, and a
+  claim on a closed contest can never be confirmed, so closing over one silently
+  cancels a reward already earned.
+- 2026-08-14: **`private.award_reached_terms` half-checks nothing, on purpose.**
+  It does no permission checking of its own and inherits `review_contest_progress`'s.
+  A helper that half checks is worse than one that plainly cannot be reached,
+  because the half check reads like the whole one to the next person. Being in
+  `private` is what makes "cannot be reached" true: PostgREST exposes every
+  executable function in an exposed schema.
+- 2026-08-14: **`useCatalogueLive` lost its `key` argument.** Three screens
+  passed 'hub', 'brands' and 'offers' because a comment in that file told callers
+  to work around a Supabase footgun. That was a caller being asked to fix a bug in
+  the library file; `joinChannel` fixes it in the library file, and three
+  subscriptions to identical rows became one. The general form: when a hook's
+  documentation tells its callers how to avoid a hazard, the hazard belongs to
+  the hook.

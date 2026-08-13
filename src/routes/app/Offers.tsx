@@ -63,7 +63,7 @@ export function Offers() {
   const [applyingTo, setApplyingTo] = useState<CreatorOfferRow | null>(null);
 
   // Admin edits to brands, offers and products land here without a reload.
-  useCatalogueLive('offers');
+  useCatalogueLive();
 
   const { data: offers, isLoading, isError, error } = useAllCreatorOffers();
   const { data: requests } = useAllMyRequests();

@@ -1021,6 +1021,47 @@ and one ad code. The count may not go backwards.
 creator typing their own payslip, so confirmed and claimed are never added and
 never drawn the same. Money is only ever owed against a confirmed figure.
 
+**CONFIRMING IS THE MONEY EVENT** (Rashid, 2026-08-14). The moment staff confirm
+a figure that crosses a target, `review_contest_progress` writes a
+`contest_awards` row in the same transaction and that reward is OWED. It is not
+worked out at the end of the contest, because there is nothing left to work out:
+placings are gone, so nothing is contingent on anybody else.
+
+- **`contest_awards` is a bill, not a settlement table.** Every row is money
+  against one FROZEN TERM, never against the live deliverable, so an admin
+  adding a deliverable on Friday cannot owe money on Monday's entry. It carries
+  `reached_value`, the figure that crossed the target, frozen, so a receipt read
+  six weeks later does not quote a number nobody was paid on.
+- **Two states, owed then paid.** `paid_at` null is owed. `pay_contest_awards`
+  takes a LIST and does the whole list in one transaction. **There is no way to
+  unpay**; the guard is a confirmation step on the screen.
+- **One award per promise**, as a unique constraint, and it is the double
+  payment guard: a creator who reports 640 then 900 crosses the same 500 target
+  twice and is paid for it once.
+- **`private.award_reached_terms` is the only writer**, and it is in `private`
+  because PostgREST exposes every executable function in an exposed schema, so
+  in `public` a money writer taking an entry id and a figure would be an
+  endpoint. The suite asserts a signed-in creator cannot reach it.
+- **Rule S8 lives on payment now, not on settlement.** Paying a suspended
+  creator needs `p_allow_suspended`; awarding one does not, because they keep
+  everything they earned and the deliberate act is sending the money.
+- **Going over budget is allowed and shown, never blocked**, the same rule the
+  brand budget bar has followed since 2026-08-01. A confirmation is a statement
+  about what somebody actually did, and a budget must not make us pretend they
+  did less.
+
+**`settle_contest` CLOSES a contest and moves no money.** It was rewritten on
+2026-08-14 and the old five argument version was DROPPED, so nothing can pass it
+outcomes. It refuses while any entry is pending (rule L12) and, new, **while any
+progress claim is pending**: that claim could never be confirmed afterwards, and
+confirming is the only thing that can owe somebody money, so closing over one
+would silently cancel a reward already earned. It reports what is still unpaid
+rather than refusing on it, and paying keeps working on a closed contest.
+
+The name stays `settle_contest` against the instinct to rename it, because
+`settled_at`, `settled_by`, the `settled` entry event and the `contest.settled`
+audit action all say settled. The screen says "Close this contest".
+
 **Standing without names.** my_contest_standing is a security definer function,
 not a view, returning ONLY the caller's own position from auth.uid() with no
 user id argument. It never returns another entrant's figures or identifiers.
@@ -1028,13 +1069,86 @@ user id argument. It never returns another entrant's figures or identifiers.
 **Two doors.** manage-contest is staff only. enter-contest requires an active
 creator. A creator must never reach the staff door and cannot.
 
-**Screens.** /admin/contests, /admin/contests/claims, the Contests tab in a
-brand, the full screen setup form at /admin/brands/:id/contests/:contestId, and
-/app/contests with two views, the list and the creator's own dashboard.
+**Screens.** /admin/contests, /admin/contests/claims, **/admin/contests/rewards**,
+the Contests tab in a brand, the full screen setup form at
+/admin/brands/:id/contests/:contestId, and /app/contests with two views, the list
+and the creator's own dashboard. The three admin screens are three jobs: what is
+running, who is waiting on us, what it cost. Rewards opens on OWED, because that
+is the job; Paid is the record, one click across, in the URL.
 
 **Traps already paid for.** The contest budget lives in contest_commercials, its
 own staff only table, for the same reason the brand budget does. There is no way
 to remove a creator from a contest they joined, deliberately, and the plan says
 not to add one without asking. An exclusion is scoped to ONE contest. Deadlines
 are stored with an IANA zone name beside them and always shown in the zone the
-admin chose, never the reader's.
+admin chose, never the reader's. **`contest_awards.message` is read by the
+creator**, which is why it is not called `note`, the same trap as `cancel_reason`
+on 2026-08-13.
+
+**`pnpm verify:contests`, 106 checks.** It drives the admin screens, then the
+CREATOR screens in a second real browser (the contest list, the entry dialog and
+the progress dialog), then the whole money path: file a claim, confirm it, watch
+the reward appear as owed, pay it on the rewards screen, watch the creator's own
+screen say paid, then close the contest. Sixteen of them are attacks, including a
+rival creator who can read none of it.
+
+Two things in that suite worth not relearning. **Waiting for "You are in"
+matched the entry dialog's own heading, "You are in the moment you tap"**, so it
+passed instantly and read the database before the write landed; the dialog
+CLOSING is the signal. And **every queue locator is scoped to this contest's
+card**, because dev carries real seeded claims and the first Confirm button on
+the screen belongs to whoever has been waiting longest.
+
+---
+
+## Realtime, and the one rule about it
+
+**Everything that listens to Postgres goes through `joinChannel` in
+`src/lib/realtime.ts`. Nothing calls `supabase.channel()` itself.** As of
+2026-08-14 that is true of every hook in the product; there are no exceptions
+left.
+
+**The bug it exists to kill**, which took the whole page down on 2026-08-13:
+
+```
+cannot add `postgres_changes` callbacks for realtime:job-progress:<uuid>
+after `subscribe()`
+```
+
+`supabase.channel(name)` does NOT always make a new channel. If one with that
+name is already open it hands back the EXISTING one, so when two components on
+one screen both subscribe, the second calls `.on()` on an already-subscribed
+channel, supabase-js throws, and because it throws during render React replaces
+the page with an error screen. A creator clicking "Add a video" saw exactly that.
+
+**Unique names are not the fix.** They stop the crash and cause a quieter
+problem: N components opening N subscriptions to the same rows, and the first to
+unmount tearing the channel out from under the others, because `removeChannel`
+does not care who else is listening. `joinChannel` reference counts instead: the
+first caller opens and subscribes, later callers add a listener, the channel goes
+when the last listener does.
+
+**What that changed when the last eight hooks moved onto it:**
+
+- `useCatalogueLive` **lost its `key` argument**. Three screens passed 'hub',
+  'brands' and 'offers' because of a comment telling callers to work around this
+  exact footgun. Three subscriptions to identical rows became one.
+- `useAllOffers` and `useOfferApplications` now **share the channel name
+  `offer-applications:<creator>`**. Both watch one thing, this creator's own
+  rows, and they had two names for it. `useOfferApplications` also had the brand
+  in its NAME but never in its FILTER, so it opened one subscription per brand
+  to the same rows.
+- `useMyWork` keeps its own name because it watches a second table.
+  `joinChannel` refuses to let two different binding sets share a name, loudly in
+  development, and it is right to.
+
+**A filter is load bearing, not tidiness.** `postgres_changes` does not apply row
+security to DELETE events, so an unfiltered binding hands the browser the old row
+of somebody else's deleted record. Every creator-facing binding carries
+`creator_id=eq.<uuid>`.
+
+**Two tables are deliberately OUT of the realtime publication**:
+`contest_progress_updates`, because a creator's claimed GMV would broadcast on a
+DELETE to anybody who opened an unfiltered channel by hand, and there is no
+creator-facing reason to need it live. A decision on a claim invalidates the
+query directly instead.

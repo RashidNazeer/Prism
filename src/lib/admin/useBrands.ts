@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
+import { joinChannel } from '@/lib/realtime';
 
 /**
  * Brands, and everything inside one brand's hub, as STAFF see it.
@@ -337,37 +338,24 @@ export function useOffers(brandId: string | undefined, filters: BrandOfferFilter
 
   useEffect(() => {
     if (!brandId) return;
-    const supabase = getSupabase();
 
     // Narrow to this brand. Never a firehose over every offer in the product.
-    const channel = supabase
-      .channel(`offers:${brandId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'offers',
-          filter: `brand_id=eq.${brandId}`,
-        },
-        () => {
-          /*
-           * The key gained a filters object when this list started paging, so
-           * the exact key no longer matches. TanStack matches by PREFIX, so
-           * this still invalidates every page and every filter combination of
-           * this brand's offers, and only this brand's.
-           */
-          void queryClient.invalidateQueries({ queryKey: ['admin', 'offers', brandId] });
-          void queryClient.invalidateQueries({
-            queryKey: ['admin', 'brand-offer-counts', brandId],
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    return joinChannel(
+      `offers:${brandId}`,
+      [{ table: 'offers', filter: `brand_id=eq.${brandId}` }],
+      () => {
+        /*
+         * The key gained a filters object when this list started paging, so
+         * the exact key no longer matches. TanStack matches by PREFIX, so
+         * this still invalidates every page and every filter combination of
+         * this brand's offers, and only this brand's.
+         */
+        void queryClient.invalidateQueries({ queryKey: ['admin', 'offers', brandId] });
+        void queryClient.invalidateQueries({
+          queryKey: ['admin', 'brand-offer-counts', brandId],
+        });
+      }
+    );
   }, [brandId, queryClient]);
 
   return query;

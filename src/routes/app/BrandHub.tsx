@@ -63,7 +63,7 @@ export function BrandHub() {
   const approved = role === 'creator' || role === 'ops' || role === 'admin';
 
   // Admin edits to brands, offers and products land here without a reload.
-  useCatalogueLive('hub');
+  useCatalogueLive();
 
   const { data: brand, isLoading, isError } = useCreatorBrand(slug);
   const { data: offers, isLoading: offersLoading } = useCreatorOffers(brand?.id);

@@ -2,6 +2,42 @@
 
 **Last updated:** 2026-08-14
 
+## Contest rewards: owed on confirmation, then paid (2026-08-14)
+
+**Settlement is built, and it is not a settlement screen.** Rashid decided both
+halves: a reward becomes money owed **the moment staff confirm the figure that
+crosses its target**, not at the end of the contest, and the product tracks two
+states, **owed then paid**.
+
+That is why there is no "award" button anywhere. Confirming a claim writes the
+bill in the same transaction, so nothing on any screen can grant a reward that
+has no confirmed figure behind it.
+
+- **`/admin/contests/rewards`**, a third item in the Contests menu. What we owe,
+  oldest first, with the target and what they actually reached on every row.
+  Select a run of them and mark them paid behind a confirmation that says
+  plainly it cannot be undone. Paid is a second tab, the record.
+- **"Close this contest"** on the setup screen, which moves no money and says
+  what closing leaves owed. It refuses while a claim is still waiting, because
+  that claim could never be confirmed afterwards and confirming is the only
+  thing that owes anybody money.
+- **The creator screen leads with Owed to you and Paid to you**, live. It used
+  to compute "earned" in the browser by walking the contest's LIVE deliverables,
+  which could claim money nobody owed the moment an admin added one.
+- Three creators on dev had already earned money against figures confirmed
+  before a reward could exist. The migration backfilled them: **6 rewards,
+  $1,400**, exactly what confirming those same figures today would produce.
+
+**`pnpm verify:contests` is at 106 checks, up from 36**, and the creator side is
+finally in it: the contest screen, the entry dialog and the progress dialog are
+all driven in a real browser, then the whole money path end to end, then sixteen
+attacks including a rival creator who can read none of it.
+
+**Every realtime hook now goes through `joinChannel`.** The last eight moved on
+2026-08-14, so nothing in the product calls `supabase.channel()` itself and the
+crash class is closed. Three subscriptions to identical rows became one, and
+`useCatalogueLive` lost the `key` argument that existed only to work around it.
+
 ## Contests, built on 2026-08-13 and 14
 
 Live on dev, end to end, and testable now.
@@ -35,8 +71,8 @@ contest with uneven figures, `--clean` removes them.
 **Read [CONTESTS_PLAN.md](CONTESTS_PLAN.md) before touching any of it.** It
 holds the numbered rules, and several were learned the hard way in one night.
 
-Still to build: settlement, and real tracking. Both wait on a decision Rashid
-has parked until the performance tracking conversation.
+Still to build: **real tracking**, which waits on the performance tracking
+conversation Rashid has parked. Settlement is done, see the section above.
 
 **Previously, last updated:** 2026-08-11
 **Current step:** joining the product up, steps 1 and 2 of 8 are built. A job

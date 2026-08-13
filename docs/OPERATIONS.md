@@ -96,6 +96,12 @@ pnpm verify:content [url]   # a creator posts a video, the team decides, and
 pnpm verify:live [url]      # admin moves a stage on the REAL admin screen,
                             # creator sees it on all three of their screens
                             # with no reload. Needs SUPABASE_SERVICE_KEY
+pnpm verify:contests [url]  # 106 checks. Admin builds a contest and a
+                            # deliverable on the real screens, a creator enters
+                            # and claims on theirs, staff confirm it, the reward
+                            # appears as owed, gets paid, and the creator sees
+                            # it. Sixteen attacks. Needs SUPABASE_SERVICE_KEY.
+                            # Makes its own accounts and removes them.
 pnpm verify:responsive [url] # every screen at 375, 768, 1024 and 1440px.
                             # Needs ADMIN_EMAIL and ADMIN_PASSWORD, no service key
 pnpm shots [url] [path]     # retina screenshots of a PUBLIC page
