@@ -1,5 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
+import { contestLifecycleOf, type ContestLifecycle } from '@/lib/contest-state';
 
 /**
  * Contests, as STAFF see them.
@@ -140,24 +141,20 @@ const flatten = (r: ContestRow): Contest => ({
  * anybody read it, and may the people already in still work and be paid. This
  * only answers the first, and it is deliberately NOT called `isOpen`, because
  * a closed contest still carries live work.
+ *
+ * THE BODY LIVES IN `src/lib/contest-state.ts` now, because the creator side
+ * needs exactly the same answer in exactly the same words and may not import
+ * this file. This stays here so every existing caller keeps its import.
+ *
+ * There is deliberately no `STATE_LABEL` beside it any more. The words belong
+ * to `ContestStateChip`, which both sides draw, and a second exported map of
+ * the same five phrases is how two screens end up disagreeing about one of them.
  */
-export type ContestState = 'settled' | 'cancelled' | 'closed' | 'off' | 'open';
+export type ContestState = ContestLifecycle;
 
 export function stateOf(c: Contest, now = Date.now()): ContestState {
-  if (c.cancelledAt) return 'cancelled';
-  if (c.settledAt) return 'settled';
-  if (c.status === 'inactive') return 'off';
-  if (Date.parse(c.expiresAt) <= now) return 'closed';
-  return 'open';
+  return contestLifecycleOf(c, now);
 }
-
-export const STATE_LABEL: Record<ContestState, string> = {
-  open: 'Open to enter',
-  off: 'Closed to new entries',
-  closed: 'Deadline passed',
-  settled: 'Settled',
-  cancelled: 'Cancelled',
-};
 
 export interface BrandContestFilters {
   search: string;
@@ -351,11 +348,16 @@ export function useContest(contestId: string | undefined) {
         last_attempt_at: string | null;
         created_at: string;
       }
-      const mm = m.data as unknown as { total_budget: number | null; internal_note: string | null } | null;
+      const mm = m.data as unknown as {
+        total_budget: number | null;
+        internal_note: string | null;
+      } | null;
 
       return {
         contest: c.data ? flatten(c.data as unknown as ContestRow) : null,
-        commercials: mm ? { totalBudget: mm.total_budget, internalNote: mm.internal_note } : null,
+        commercials: mm
+          ? { totalBudget: mm.total_budget, internalNote: mm.internal_note }
+          : null,
         deliverables: ((d.data ?? []) as unknown as DRow[]).map((r) => ({
           id: r.id,
           contestId: r.contest_id,

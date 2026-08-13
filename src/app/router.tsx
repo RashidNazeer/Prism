@@ -175,6 +175,14 @@ export const router = createBrowserRouter([
         HydrateFallback: RouteFallback,
         lazy: lazyRoute(() => import('@/routes/app/Offers'), 'Offers'),
       },
+      // Contests get their own place in the menu on BOTH sides, the same way
+      // offers do. Reaching them only by walking into a brand first was the
+      // wrong shape and Rashid caught it.
+      {
+        path: '/app/contests',
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/routes/app/Contests'), 'Contests'),
+      },
       {
         path: '/app/content',
         HydrateFallback: RouteFallback,
@@ -212,6 +220,11 @@ export const router = createBrowserRouter([
         path: '/admin/offers/requests',
         HydrateFallback: RouteFallback,
         lazy: lazyRoute(() => import('@/routes/admin/OfferRequests'), 'OfferRequests'),
+      },
+      {
+        path: '/admin/contests',
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/routes/admin/AllContests'), 'AllContests'),
       },
       {
         path: '/admin/content',

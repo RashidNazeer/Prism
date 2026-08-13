@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { Link, useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Check, Loader2, Trash2 } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
+import { ContestExclusions } from '@/components/admin/ContestExclusions';
+import { ContestProducts } from '@/components/admin/ContestProducts';
+import { ContestRewardRows } from '@/components/admin/ContestRewardRows';
 import { Button } from '@/components/ui/Button';
 import { Field, Input, Select, Textarea } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
@@ -124,9 +127,7 @@ type FieldErrors = Partial<Record<FieldKey, string>>;
  * a question for the admin, never a silent null.
  */
 type Money =
-  | { kind: 'empty' }
-  | { kind: 'number'; value: number }
-  | { kind: 'invalid'; message: string };
+  { kind: 'empty' } | { kind: 'number'; value: number } | { kind: 'invalid'; message: string };
 
 function readMoney(raw: string): Money {
   const t = raw.trim();
@@ -137,14 +138,18 @@ function readMoney(raw: string): Money {
     return { kind: 'invalid', message: 'Give the budget as a number, for example 5000' };
   }
   if (n < 0) return { kind: 'invalid', message: 'A budget cannot be less than nothing' };
-  if (n > 99_999_999) return { kind: 'invalid', message: 'That budget is larger than we can store' };
+  if (n > 99_999_999)
+    return { kind: 'invalid', message: 'That budget is larger than we can store' };
   return { kind: 'number', value: Math.round(n * 100) / 100 };
 }
 
 /* ------------------------------------------------------------------ draft -- */
 
-const draftKeyFor = (userId: string | undefined, brandId: string | undefined, contestKey: string) =>
-  userId && brandId ? `wx.contest-draft.${userId}.${brandId}.${contestKey}` : null;
+const draftKeyFor = (
+  userId: string | undefined,
+  brandId: string | undefined,
+  contestKey: string
+) => (userId && brandId ? `wx.contest-draft.${userId}.${brandId}.${contestKey}` : null);
 
 function readDraft(key: string | null): FormState | null {
   if (!key) return null;
@@ -411,7 +416,9 @@ export function ContestSetup() {
         });
       } catch (err) {
         setErrors({ budget: err instanceof Error ? err.message : 'That budget did not save' });
-        setFormError('The contest itself is saved. Only the budget and the note did not go through.');
+        setFormError(
+          'The contest itself is saved. Only the budget and the note did not go through.'
+        );
         budgetRef.current?.focus();
         return;
       }
@@ -442,6 +449,29 @@ export function ContestSetup() {
   const showGone = !isNew && !contestFailed && !loadingContest && !existing?.contest && !seeded;
   const formMissing = (!isNew && contestFailed) || showSkeleton || showGone;
 
+  /*
+   * The id the three lists hang off, and the reason there are three of them
+   * rather than three dead boxes on a new contest: every one of them writes
+   * against a contest_id, and there is no contest until Create is pressed.
+   *
+   * `createdId` covers the single render between the row being written and the
+   * URL catching up, so the lists do not appear and then blink out again.
+   */
+  const liveContestId = isNew ? createdId : contestId!;
+
+  /*
+   * Read from the SAVED contest rather than from the form.
+   *
+   * The reward rows carry amounts in the currency the contest is stored in, and
+   * the database refuses a ranked prize against the sentence it holds, not the
+   * one sitting unsaved in a box. Reading the form here would put a GBP label
+   * on USD figures the moment somebody touched the currency select without
+   * saving, and would hide the ranked prize warning that is about to fire.
+   */
+  const savedCurrency = existing?.contest?.currency ?? form.currency;
+  const savedJudgingBasis = existing?.contest?.judgingBasis ?? null;
+  const listsLoading = loadingContest && !existing;
+
   return (
     <AppShell>
       <div className="mx-0 w-full max-w-[1128px]">
@@ -463,7 +493,11 @@ export function ContestSetup() {
           <div className="flex items-center gap-2">
             {/* Permanently in the tree, so a screen reader hears the result of
                 pressing the button instead of nothing at all. */}
-            <p role="status" aria-live="polite" className="text-success text-[13px] font-semibold">
+            <p
+              role="status"
+              aria-live="polite"
+              className="text-success text-[13px] font-semibold"
+            >
               {saved ? (
                 <span className="inline-flex items-center gap-1.5">
                   <Check size={15} aria-hidden />
@@ -517,111 +551,34 @@ export function ContestSetup() {
             </Link>
           </div>
         ) : (
-          <form
-            id="contest-form"
-            onSubmit={onSubmit}
-            aria-busy={busy}
-            className="flex flex-col gap-4"
-          >
-            {formError ? (
-              <p
-                role="alert"
-                className="bg-danger-soft text-danger rounded-xl px-4 py-3 text-[13px] font-medium"
-              >
-                {formError}
-              </p>
-            ) : null}
+          <div className="flex flex-col gap-4">
+            <form
+              id="contest-form"
+              onSubmit={onSubmit}
+              aria-busy={busy}
+              className="flex flex-col gap-4"
+            >
+              {formError ? (
+                <p
+                  role="alert"
+                  className="bg-danger-soft text-danger rounded-xl px-4 py-3 text-[13px] font-medium"
+                >
+                  {formError}
+                </p>
+              ) : null}
 
-            {/* -------------------------------------------------- the job -- */}
-            <Card title="The contest">
-              <Field label="Name" error={errors.name}>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    ref={nameRef}
-                    value={form.name}
-                    onChange={(e) => set('name', e.target.value)}
-                    placeholder="e.g. Back to school sprint"
-                    // 120, the length the column actually allows.
-                    maxLength={120}
-                    readOnly={busy}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    required
-                  />
-                )}
-              </Field>
-
-              <Field
-                label="What creators do"
-                hint="Shown to every creator who can see this contest."
-              >
-                {({ id, describedBy, invalid }) => (
-                  <Textarea
-                    id={id}
-                    value={form.description}
-                    onChange={(e) => set('description', e.target.value)}
-                    rows={3}
-                    maxLength={4000}
-                    readOnly={busy}
-                    placeholder="e.g. Four videos featuring the lunchbox range, parent facing."
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                  />
-                )}
-              </Field>
-
-              <Field
-                label="How it is judged"
-                hint="Needed once this contest pays for finishing in a place. With no live scoreboard, this sentence is the only thing a creator has to go on."
-              >
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    value={form.judgingBasis}
-                    onChange={(e) => set('judgingBasis', e.target.value)}
-                    maxLength={600}
-                    readOnly={busy}
-                    placeholder="e.g. Most approved videos by the deadline"
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                  />
-                )}
-              </Field>
-
-              <Field
-                label="Content brief link"
-                hint="Optional. Opens in a new tab for creators."
-                error={errors.briefUrl}
-              >
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    ref={briefRef}
-                    type="url"
-                    value={form.briefUrl}
-                    onChange={(e) => set('briefUrl', e.target.value)}
-                    maxLength={500}
-                    readOnly={busy}
-                    placeholder="https://"
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                  />
-                )}
-              </Field>
-            </Card>
-
-            {/* ------------------------------------------------ the clock -- */}
-            <Card title="When it closes">
-              <div className="grid gap-4 sm:grid-cols-3">
-                <Field label="Date" error={errors.date}>
+              {/* -------------------------------------------------- the job -- */}
+              <Card title="The contest">
+                <Field label="Name" error={errors.name}>
                   {({ id, describedBy, invalid }) => (
                     <Input
                       id={id}
-                      ref={dateRef}
-                      type="date"
-                      value={form.date}
-                      onChange={(e) => set('date', e.target.value)}
+                      ref={nameRef}
+                      value={form.name}
+                      onChange={(e) => set('name', e.target.value)}
+                      placeholder="e.g. Back to school sprint"
+                      // 120, the length the column actually allows.
+                      maxLength={120}
                       readOnly={busy}
                       aria-describedby={describedBy}
                       invalid={invalid}
@@ -629,187 +586,304 @@ export function ContestSetup() {
                     />
                   )}
                 </Field>
-                <Field label="Time" error={errors.time ?? clockRefusal ?? undefined}>
+
+                <Field
+                  label="What creators do"
+                  hint="Shown to every creator who can see this contest."
+                >
                   {({ id, describedBy, invalid }) => (
-                    <Input
+                    <Textarea
                       id={id}
-                      ref={timeRef}
-                      type="time"
-                      value={form.time}
-                      onChange={(e) => set('time', e.target.value)}
+                      value={form.description}
+                      onChange={(e) => set('description', e.target.value)}
+                      rows={3}
+                      maxLength={4000}
                       readOnly={busy}
+                      placeholder="e.g. Four videos featuring the lunchbox range, parent facing."
                       aria-describedby={describedBy}
                       invalid={invalid}
-                      required
                     />
                   )}
                 </Field>
-                <Field label="Timezone">
+
+                <Field
+                  label="How it is judged"
+                  hint="Needed once this contest pays for finishing in a place. With no live scoreboard, this sentence is the only thing a creator has to go on."
+                >
                   {({ id, describedBy, invalid }) => (
-                    <Select
+                    <Input
                       id={id}
-                      value={form.timezone}
-                      onChange={(e) => set('timezone', e.target.value)}
-                      disabled={busy}
+                      value={form.judgingBasis}
+                      onChange={(e) => set('judgingBasis', e.target.value)}
+                      maxLength={600}
+                      readOnly={busy}
+                      placeholder="e.g. Most approved videos by the deadline"
                       aria-describedby={describedBy}
                       invalid={invalid}
-                    >
-                      {/* The zone the contest is already set in always has an
+                    />
+                  )}
+                </Field>
+
+                <Field
+                  label="Content brief link"
+                  hint="Optional. Opens in a new tab for creators."
+                  error={errors.briefUrl}
+                >
+                  {({ id, describedBy, invalid }) => (
+                    <Input
+                      id={id}
+                      ref={briefRef}
+                      type="url"
+                      value={form.briefUrl}
+                      onChange={(e) => set('briefUrl', e.target.value)}
+                      maxLength={500}
+                      readOnly={busy}
+                      placeholder="https://"
+                      aria-describedby={describedBy}
+                      invalid={invalid}
+                    />
+                  )}
+                </Field>
+              </Card>
+
+              {/* ------------------------------------------------ the clock -- */}
+              <Card title="When it closes">
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <Field label="Date" error={errors.date}>
+                    {({ id, describedBy, invalid }) => (
+                      <Input
+                        id={id}
+                        ref={dateRef}
+                        type="date"
+                        value={form.date}
+                        onChange={(e) => set('date', e.target.value)}
+                        readOnly={busy}
+                        aria-describedby={describedBy}
+                        invalid={invalid}
+                        required
+                      />
+                    )}
+                  </Field>
+                  <Field label="Time" error={errors.time ?? clockRefusal ?? undefined}>
+                    {({ id, describedBy, invalid }) => (
+                      <Input
+                        id={id}
+                        ref={timeRef}
+                        type="time"
+                        value={form.time}
+                        onChange={(e) => set('time', e.target.value)}
+                        readOnly={busy}
+                        aria-describedby={describedBy}
+                        invalid={invalid}
+                        required
+                      />
+                    )}
+                  </Field>
+                  <Field label="Timezone">
+                    {({ id, describedBy, invalid }) => (
+                      <Select
+                        id={id}
+                        value={form.timezone}
+                        onChange={(e) => set('timezone', e.target.value)}
+                        disabled={busy}
+                        aria-describedby={describedBy}
+                        invalid={invalid}
+                      >
+                        {/* The zone the contest is already set in always has an
                           option, even when it is one nobody here would pick. An
                           unmatched value renders as an empty box, and touching
                           it silently reinterprets the deadline. */}
-                      {extraZone ? <option value={extraZone}>{zoneLabel(extraZone)}</option> : null}
-                      <optgroup label="Where Wurx works">
-                        {LEAD_ZONES.map((z) => (
-                          <option key={z} value={z}>
-                            {zoneLabel(z)}
-                          </option>
-                        ))}
-                      </optgroup>
-                      {ALL_ZONES.length > 0 ? (
-                        <optgroup label="Everywhere else">
-                          {ALL_ZONES.filter((z) => !LEAD_ZONES.includes(z)).map((z) => (
+                        {extraZone ? (
+                          <option value={extraZone}>{zoneLabel(extraZone)}</option>
+                        ) : null}
+                        <optgroup label="Where Wurx works">
+                          {LEAD_ZONES.map((z) => (
                             <option key={z} value={z}>
                               {zoneLabel(z)}
                             </option>
                           ))}
                         </optgroup>
-                      ) : null}
-                    </Select>
-                  )}
-                </Field>
-              </div>
+                        {ALL_ZONES.length > 0 ? (
+                          <optgroup label="Everywhere else">
+                            {ALL_ZONES.filter((z) => !LEAD_ZONES.includes(z)).map((z) => (
+                              <option key={z} value={z}>
+                                {zoneLabel(z)}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ) : null}
+                      </Select>
+                    )}
+                  </Field>
+                </div>
 
-              {/* The echo is the entire justification for the three control
+                {/* The echo is the entire justification for the three control
                   design in rule L6, so it has to speak when the zone changes. */}
-              <p className="text-muted text-[13px]" aria-live="polite">
-                {instant ? (
-                  <>
-                    A creator reads this as{' '}
-                    <span className="text-text font-semibold">
-                      {formatDeadline(instant, form.timezone)}
-                    </span>
-                    , wherever they are.
-                  </>
-                ) : clockRefusal ? (
-                  clockRefusal
-                ) : (
-                  'Pick a date and a time, and the deadline appears here exactly as a creator will read it.'
-                )}
-              </p>
-            </Card>
-
-            {/* ----------------------------------------------- who gets in -- */}
-            <Card title="Who gets in">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Entry">
-                  {({ id, describedBy, invalid }) => (
-                    <Select
-                      id={id}
-                      value={form.needsAdminApproval ? 'review' : 'instant'}
-                      onChange={(e) => set('needsAdminApproval', e.target.value === 'review')}
-                      disabled={busy}
-                      aria-describedby={describedBy}
-                      invalid={invalid}
-                    >
-                      <option value="review">Someone at Wurx approves each entry</option>
-                      <option value="instant">Anyone eligible is in the moment they tap</option>
-                    </Select>
+                <p className="text-muted text-[13px]" aria-live="polite">
+                  {instant ? (
+                    <>
+                      A creator reads this as{' '}
+                      <span className="text-text font-semibold">
+                        {formatDeadline(instant, form.timezone)}
+                      </span>
+                      , wherever they are.
+                    </>
+                  ) : clockRefusal ? (
+                    clockRefusal
+                  ) : (
+                    'Pick a date and a time, and the deadline appears here exactly as a creator will read it.'
                   )}
-                </Field>
-                <Field label="Currency">
-                  {({ id, describedBy, invalid }) => (
-                    <Select
-                      id={id}
-                      value={form.currency}
-                      onChange={(e) => set('currency', e.target.value)}
-                      disabled={busy}
-                      aria-describedby={describedBy}
-                      invalid={invalid}
-                    >
-                      {CURRENCIES.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
+                </p>
+              </Card>
+
+              {/* ----------------------------------------------- who gets in -- */}
+              <Card title="Who gets in">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Entry">
+                    {({ id, describedBy, invalid }) => (
+                      <Select
+                        id={id}
+                        value={form.needsAdminApproval ? 'review' : 'instant'}
+                        onChange={(e) => set('needsAdminApproval', e.target.value === 'review')}
+                        disabled={busy}
+                        aria-describedby={describedBy}
+                        invalid={invalid}
+                      >
+                        <option value="review">Someone at Wurx approves each entry</option>
+                        <option value="instant">
+                          Anyone eligible is in the moment they tap
                         </option>
-                      ))}
-                    </Select>
-                  )}
-                </Field>
-              </div>
-              <p className="text-muted text-[13px]">
-                Changing this later approves nobody who is waiting, and removes nobody already in.
-              </p>
-            </Card>
+                      </Select>
+                    )}
+                  </Field>
+                  <Field label="Currency">
+                    {({ id, describedBy, invalid }) => (
+                      <Select
+                        id={id}
+                        value={form.currency}
+                        onChange={(e) => set('currency', e.target.value)}
+                        disabled={busy}
+                        aria-describedby={describedBy}
+                        invalid={invalid}
+                      >
+                        {CURRENCIES.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                  </Field>
+                </div>
+                <p className="text-muted text-[13px]">
+                  Changing this later approves nobody who is waiting, and removes nobody already
+                  in.
+                </p>
+              </Card>
 
-            {/* ---------------------------------------------------- money -- */}
-            <Card
-              title="Only Wurx sees this"
-              note="No creator can read anything in this box. It is not hidden by a filter, it is in a table they cannot reach."
-            >
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field
-                  label={`Total budget, ${form.currency}`}
-                  error={errors.budget}
-                  hint="Leave it empty for no ceiling. Emptying it removes the one that is there."
-                >
+              {/* ---------------------------------------------------- money -- */}
+              <Card
+                title="Only Wurx sees this"
+                note="No creator can read anything in this box. It is not hidden by a filter, it is in a table they cannot reach."
+              >
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field
+                    label={`Total budget, ${form.currency}`}
+                    error={errors.budget}
+                    hint="Leave it empty for no ceiling. Emptying it removes the one that is there."
+                  >
+                    {({ id, describedBy, invalid }) => (
+                      <Input
+                        id={id}
+                        ref={budgetRef}
+                        inputMode="decimal"
+                        value={form.budget}
+                        onChange={(e) => set('budget', e.target.value)}
+                        readOnly={busy}
+                        placeholder="e.g. 5000"
+                        aria-describedby={describedBy}
+                        invalid={invalid}
+                      />
+                    )}
+                  </Field>
+                </div>
+                <Field label="Internal note">
                   {({ id, describedBy, invalid }) => (
-                    <Input
+                    <Textarea
                       id={id}
-                      ref={budgetRef}
-                      inputMode="decimal"
-                      value={form.budget}
-                      onChange={(e) => set('budget', e.target.value)}
+                      value={form.internalNote}
+                      onChange={(e) => set('internalNote', e.target.value)}
+                      rows={2}
+                      maxLength={2000}
                       readOnly={busy}
-                      placeholder="e.g. 5000"
+                      placeholder="e.g. Client signed off 12 August"
                       aria-describedby={describedBy}
                       invalid={invalid}
                     />
                   )}
                 </Field>
-              </div>
-              <Field label="Internal note">
-                {({ id, describedBy, invalid }) => (
-                  <Textarea
-                    id={id}
-                    value={form.internalNote}
-                    onChange={(e) => set('internalNote', e.target.value)}
-                    rows={2}
-                    maxLength={2000}
-                    readOnly={busy}
-                    placeholder="e.g. Client signed off 12 August"
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                  />
-                )}
-              </Field>
-            </Card>
+              </Card>
 
-            {/* ------------------------------------------------- live yet -- */}
-            <Card title="Is it running">
-              <Field label="Status">
-                {({ id, describedBy, invalid }) => (
-                  <Select
-                    id={id}
-                    value={form.status}
-                    onChange={(e) => set('status', e.target.value as 'active' | 'inactive')}
-                    disabled={busy}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                  >
-                    <option value="inactive">Off, nobody can enter and nobody can see it</option>
-                    <option value="active">On, creators can see it and enter</option>
-                  </Select>
-                )}
-              </Field>
-              <p className="text-muted text-[13px]">
-                Switching a contest off closes the door, never the work. Anybody already in carries
-                on filming and still gets paid.
+              {/* ------------------------------------------------- live yet -- */}
+              <Card title="Is it running">
+                <Field label="Status">
+                  {({ id, describedBy, invalid }) => (
+                    <Select
+                      id={id}
+                      value={form.status}
+                      onChange={(e) => set('status', e.target.value as 'active' | 'inactive')}
+                      disabled={busy}
+                      aria-describedby={describedBy}
+                      invalid={invalid}
+                    >
+                      <option value="inactive">
+                        Off, nobody can enter and nobody can see it
+                      </option>
+                      <option value="active">On, creators can see it and enter</option>
+                    </Select>
+                  )}
+                </Field>
+                <p className="text-muted text-[13px]">
+                  Switching a contest off closes the door, never the work. Anybody already in
+                  carries on filming and still gets paid.
+                </p>
+              </Card>
+            </form>
+
+            {/*
+              OUTSIDE the form above, deliberately. Each of these three carries
+              a form of its own, and a form inside a form is not a thing HTML
+              has: the browser drops the inner one, and every button in it
+              starts submitting the contest instead of doing its own job.
+            */}
+            {liveContestId ? (
+              <>
+                <ContestRewardRows
+                  contestId={liveContestId}
+                  currency={savedCurrency}
+                  savedJudgingBasis={savedJudgingBasis}
+                  rows={existing?.deliverables ?? []}
+                  loading={listsLoading}
+                />
+                <ContestProducts
+                  contestId={liveContestId}
+                  brandId={brandId!}
+                  selected={existing?.products ?? []}
+                  loading={listsLoading}
+                />
+                <ContestExclusions
+                  contestId={liveContestId}
+                  rows={existing?.exclusions ?? []}
+                  loading={listsLoading}
+                />
+              </>
+            ) : (
+              <p className="text-faint max-w-prose text-[12px] leading-relaxed">
+                Reward rows, products and barred creators all hang off this contest, so they
+                open the moment it exists. Press Create contest and they appear here, on this
+                same screen.
               </p>
-            </Card>
-
-            <p className="text-faint text-[12px]">
-              Reward rows, products and barred creators come next, and open once the contest exists.
-            </p>
+            )}
 
             {!isNew && existing?.contest ? (
               <DeleteContest
@@ -820,7 +894,7 @@ export function ContestSetup() {
             ) : null}
 
             <div className="pb-8" />
-          </form>
+          </div>
         )}
       </div>
     </AppShell>
@@ -881,8 +955,8 @@ function DeleteContest({
     <div className="border-danger/40 bg-danger-soft rounded-xl border p-4">
       <p className="text-danger max-w-prose text-[13px] leading-relaxed font-medium">
         Delete this contest? It goes for good, along with its reward rows and its budget. The
-        activity log keeps a record of what it was. Nobody can be in it: if anybody is waiting or
-        approved, settle or decide them first.
+        activity log keeps a record of what it was. Nobody can be in it: if anybody is waiting
+        or approved, settle or decide them first.
       </p>
       {error ? (
         <p role="alert" className="text-danger mt-2 text-[12px]">
@@ -921,8 +995,12 @@ function Card({
   return (
     <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-[20px] border p-5 shadow-md">
       <div>
-        <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">{title}</h2>
-        {note ? <p className={cn('text-faint mt-1.5 max-w-prose text-[12px]')}>{note}</p> : null}
+        <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+          {title}
+        </h2>
+        {note ? (
+          <p className={cn('text-faint mt-1.5 max-w-prose text-[12px]')}>{note}</p>
+        ) : null}
       </div>
       {children}
     </section>

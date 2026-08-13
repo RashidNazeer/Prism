@@ -3,17 +3,16 @@ import { Link } from 'react-router';
 import { ChevronLeft, ChevronRight, Plus, Search, Trophy } from 'lucide-react';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
+import { ContestStateChip } from '@/components/work/ContestStateChip';
 import { cn } from '@/lib/utils';
 import { formatDeadline, timeLeft } from '@/lib/contest-time';
 import {
   BRAND_CONTESTS_PAGE_SIZE,
-  STATE_LABEL,
   stateOf,
   useBrandContestCounts,
   useBrandContests,
   type BrandContestFilters,
   type Contest,
-  type ContestState,
 } from '@/lib/admin/useContests';
 
 /**
@@ -27,23 +26,12 @@ import {
  * this tab to deal with.
  */
 
-/**
- * The colour a lifecycle state earns, and NONE of them is a stage token.
- *
- * Rule C1 settles this in words: the three stage tokens are allowed for an
- * ENTRY state, which is where one creator's work and money have got to, and
- * "the contest's own lifecycle state, open or closed to new entries or ended or
- * settled, stays banned", with the warning that misreading the ruling "would
- * put a money token on the event's own status chip". Open is not paid and a
- * passed deadline is not money owed to anybody.
+/*
+ * The chip, its words and its colours all live in
+ * `src/components/work/ContestStateChip.tsx`, shared with the cross brand list
+ * and with the creator's own screen. Rule C1 is enforced there in one place
+ * rather than in three private copies of the same map.
  */
-const STATE_STYLE: Record<ContestState, string> = {
-  open: 'bg-info-soft text-info',
-  off: 'bg-surface-2 text-muted',
-  closed: 'bg-surface-2 text-text',
-  settled: 'bg-surface-3 text-text',
-  cancelled: 'bg-danger-soft text-danger',
-};
 
 const TABS = [
   { key: 'all', label: 'All' },
@@ -92,7 +80,7 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
       {/* ------------------------------------------------------- controls -- */}
       <div className="flex flex-wrap items-center gap-3">
         <div
-          className="flex rounded-full border border-line p-1"
+          className="border-line flex rounded-full border p-1"
           role="tablist"
           aria-label="Filter contests"
         >
@@ -113,7 +101,12 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
               >
                 {t.label}
                 {typeof n === 'number' ? (
-                  <span className={cn('ml-2 font-mono text-[11px]', active ? 'text-muted' : 'text-faint')}>
+                  <span
+                    className={cn(
+                      'ml-2 font-mono text-[11px]',
+                      active ? 'text-muted' : 'text-faint'
+                    )}
+                  >
                     {n}
                   </span>
                 ) : null}
@@ -232,9 +225,7 @@ function ContestRow({ contest, now }: { contest: Contest; now: number }) {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className={cn('rounded-full px-2.5 py-1 text-[11px] font-semibold', STATE_STYLE[state])}>
-              {STATE_LABEL[state]}
-            </span>
+            <ContestStateChip state={state} />
             <span className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
               {contest.needsAdminApproval ? 'You approve entries' : 'Anyone can enter'}
             </span>

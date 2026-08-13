@@ -1,4 +1,5 @@
 import {
+  Award,
   Building2,
   Gift,
   Handshake,
@@ -103,6 +104,15 @@ const ADMIN: NavGroup[] = [
         to: '/admin/brands',
         activePrefixes: ['/admin/brands'],
       },
+      // Its own entry, not only a tab inside a brand. Somebody asking "what is
+      // running and who is waiting on me" is asking across every brand at once,
+      // and making them walk into a brand first to find out was wrong.
+      {
+        label: 'Contests',
+        icon: Trophy,
+        to: '/admin/contests',
+        activePrefixes: ['/admin/contests'],
+      },
       { label: 'Campaigns', icon: Megaphone, soon: 'Next' },
     ],
   },
@@ -132,6 +142,7 @@ const CREATOR: NavGroup[] = [
       },
       { label: 'Leaderboards', icon: Trophy, soon: 'Step 9' },
       { label: 'Offers', icon: Gift, to: '/app/offers' },
+      { label: 'Contests', icon: Award, to: '/app/contests' },
       { label: 'My content', icon: Video, to: '/app/content' },
     ],
   },
@@ -148,7 +159,12 @@ const CREATOR: NavGroup[] = [
  * that it opens on approval. What we will not do is put a live-looking link in
  * front of somebody it does not work for yet.
  */
-const LOCKED_UNTIL_APPROVED = ['/app/brands', '/app/offers', '/app/content'];
+const LOCKED_UNTIL_APPROVED = [
+  '/app/brands',
+  '/app/offers',
+  '/app/contests',
+  '/app/content',
+];
 
 const APPLICANT: NavGroup[] = CREATOR.map((group) => ({
   ...group,
