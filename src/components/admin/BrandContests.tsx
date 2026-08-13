@@ -164,6 +164,7 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
             <Button
               variant="secondary"
               size="sm"
+              className="min-h-11"
               disabled={filters.page <= 1}
               onClick={() => setFilters((f) => ({ ...f, page: f.page - 1 }))}
             >
@@ -176,6 +177,7 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
             <Button
               variant="secondary"
               size="sm"
+              className="min-h-11"
               disabled={filters.page >= pages}
               onClick={() => setFilters((f) => ({ ...f, page: f.page + 1 }))}
             >

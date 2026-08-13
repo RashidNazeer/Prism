@@ -187,7 +187,8 @@ export function BrandHub() {
           variant="secondary"
           size="sm"
           onClick={() => setEditingBrand(true)}
-          className="ml-auto shrink-0"
+          // 44px, because sm is 36px and this is reachable on a phone.
+          className="ml-auto min-h-11 shrink-0"
         >
           <Pencil size={14} aria-hidden />
           Edit brand
@@ -213,7 +214,9 @@ export function BrandHub() {
                 disabled={!built}
                 onClick={() => go(s.key)}
                 className={cn(
-                  'flex shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-[14px] font-medium transition-colors duration-200',
+                  // min-h-11 is 44px, the smallest thing a thumb should have to
+                  // hit. These were 41px, which the contests suite caught.
+                  'flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-[14px] font-medium transition-colors duration-200',
                   active
                     ? 'border-accent text-accent'
                     : built
