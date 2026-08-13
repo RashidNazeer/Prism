@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
 import {
   Check,
@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
+import { ContestDashboard } from '@/components/creator/ContestDashboard';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
 import {
   ContestEntryDialog,
@@ -111,6 +112,46 @@ function useNow(everyMs = 30_000): number {
   return now;
 }
 
+/** Two views, one URL. The list is the job; the dashboard is the summary. */
+function ViewSwitch({
+  view,
+  onChange,
+}: {
+  view: 'contests' | 'progress';
+  onChange: (next: 'contests' | 'progress') => void;
+}) {
+  const options = [
+    { key: 'contests' as const, label: 'Contests' },
+    { key: 'progress' as const, label: 'My progress' },
+  ];
+  return (
+    <div
+      role="tablist"
+      aria-label="Contests view"
+      className="bg-surface-2 mt-5 flex w-fit gap-1 rounded-xl p-[3px]"
+    >
+      {options.map((o) => {
+        const active = view === o.key;
+        return (
+          <button
+            key={o.key}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(o.key)}
+            className={cn(
+              'ease-brand min-h-11 rounded-lg px-4 text-[13px] font-semibold transition-colors',
+              active ? 'bg-surface-1 text-text shadow-sm' : 'text-muted hover:text-text'
+            )}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function Contests() {
   const { claims } = useAuth();
   const { data: profile } = useProfile();
@@ -126,6 +167,28 @@ export function Contests() {
    * offering Withdraw once work has been filed.
    */
   const isCreator = role === 'creator';
+
+  /*
+   * Two views, and the choice lives in the URL, which is the house pattern the
+   * creator home and both content screens already use.
+   *
+   * THE DEFAULT IS THE LIST, not the dashboard. Rashid has asked for this twice
+   * now: the default section is the JOB, not the summary. Somebody opening
+   * Contests is looking for something to enter or something to file, and a wall
+   * of their own figures would push that below the fold.
+   */
+  const [params, setParams] = useSearchParams();
+  const view = params.get('view') === 'progress' ? 'progress' : 'contests';
+  const setView = (next: 'contests' | 'progress') =>
+    setParams(
+      (p) => {
+        const q = new URLSearchParams(p);
+        if (next === 'progress') q.set('view', 'progress');
+        else q.delete('view');
+        return q;
+      },
+      { replace: true }
+    );
 
   const [tab, setTab] = useState<Tab>('all');
   const [brandId, setBrandId] = useState('');
@@ -229,8 +292,15 @@ export function Contests() {
 
       {!approved ? (
         <LockedUntilApproved className="mt-6" />
+      ) : view === 'progress' ? (
+        <>
+          <ViewSwitch view={view} onChange={setView} />
+          <ContestDashboard contests={contests} />
+        </>
       ) : (
         <>
+          <ViewSwitch view={view} onChange={setView} />
+
           {/* ------------------------------------------------------- tabs -- */}
           <div className="-mx-4 mt-5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
             <div
