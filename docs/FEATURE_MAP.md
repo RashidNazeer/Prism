@@ -1069,6 +1069,32 @@ user id argument. It never returns another entrant's figures or identifiers.
 **Two doors.** manage-contest is staff only. enter-contest requires an active
 creator. A creator must never reach the staff door and cannot.
 
+**CONTEST MONEY IS ON THE CREATOR HOME, BESIDE OFFER MONEY, NEVER IN IT.** Added
+2026-08-14. `/app` used to count offer money only, which was complete until
+contest rewards existed. `ContestEarnings` is its own card reading its own query
+(`useContestEarnings`, one read of `contest_awards`), and the separation is
+STRUCTURAL rather than a label: the offer money card's three cells add up to its
+own headline by construction, which is the property that lets a creator check
+our arithmetic, and a contest reward dropped in there would quietly make that
+headline a lie. The card also says the rule in words, for anybody reading rather
+than looking.
+
+Three things that fall out of it, all of them real people rather than edge cases,
+because contests are open to every approved creator regardless of which brands
+they work with:
+
+- **A creator with contest money is not on their first day**, and `nothingYet`
+  used to say they were, sending somebody who was owed $850 to a screen telling
+  them to take their first offer.
+- **A creator with contest money and NO offer work does not get the money card**,
+  because it would read "$0 across 0 jobs" over an empty bar and three zero
+  cells, sitting above the only money they have. Their money leads, and the
+  first-day panel underneath does its real job.
+- **That panel's "Earned so far: Nothing yet" was hardcoded** and became a lie
+  the moment it could sit under a contest reward. It says "Earned from offers"
+  now, and deliberately does NOT quote the contest figure, because that figure is
+  already on the screen and printing it twice invites somebody to add them.
+
 **Screens.** /admin/contests, /admin/contests/claims, **/admin/contests/rewards**,
 the Contests tab in a brand, the full screen setup form at
 /admin/brands/:id/contests/:contestId, and /app/contests with two views, the list
@@ -1085,7 +1111,7 @@ admin chose, never the reader's. **`contest_awards.message` is read by the
 creator**, which is why it is not called `note`, the same trap as `cancel_reason`
 on 2026-08-13.
 
-**`pnpm verify:contests`, 106 checks.** It drives the admin screens, then the
+**`pnpm verify:contests`, 121 checks.** It drives the admin screens, then the
 CREATOR screens in a second real browser (the contest list, the entry dialog and
 the progress dialog), then the whole money path: file a claim, confirm it, watch
 the reward appear as owed, pay it on the rewards screen, watch the creator's own

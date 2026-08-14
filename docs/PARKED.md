@@ -51,18 +51,14 @@ the creator screens. What is left is below.
   reports the unpaid total and the screen warns before the click, but nothing
   afterwards reminds anybody. **Trigger: a closed contest still owing money a
   fortnight later.**
-- **THE CREATOR HOME DOES NOT KNOW ABOUT CONTEST MONEY, and this gap is new.**
-  `/app` leads with "Paid to you so far", which counts offer money only. That
-  was complete until 2026-08-14, because no contest money existed. It does now:
-  a creator can be owed $850 from contests, see it on `/app/contests`, and find
-  their own home screen still saying they have been paid nothing.
-
-  **Not built without Rashid**, and that is the only reason it is parked rather
-  than done. Rule M10 already decides the ARITHMETIC, and it is not negotiable:
-  contest money sits BESIDE offer money in its own labelled block and is never
-  added into it. What is undecided is WHERE on that screen, and `/app` is the
-  one he approved pixel for pixel from a design and has twice told me carries
-  what matters. **Raise it the next time he opens the creator home.**
+- **A creator can enter a contest and see nothing about it on their home until
+  they earn something.** The contest block on `/app` is about MONEY, so it draws
+  nothing until a reward exists. Somebody entered and mid-way to a target has no
+  trace of it on the first screen they open. That is deliberate rather than
+  forgotten: the alternative is a permanent block on every creator's home
+  teaching them to skip that part of the page, and `/app/contests` is where a
+  contest with no money in it belongs. **Trigger: Rashid asking why his home
+  does not mention a contest he is in.**
 
 ## 1. Resend email setup (DNS fix + API key)
 

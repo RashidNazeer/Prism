@@ -7,6 +7,8 @@ import { ButtonLink } from '@/components/ui/Button';
 import { WelcomeMoment } from '@/components/creator/WelcomeMoment';
 import { ApprovedMoment } from '@/components/creator/ApprovedMoment';
 import { MoneySplit, PipelineBoard } from '@/components/creator/PipelineBoard';
+import { ContestEarnings } from '@/components/creator/ContestEarnings';
+import { useContestEarnings } from '@/lib/creator/useContestEarnings';
 import { JobProgressBar } from '@/components/work/JobProgress';
 import { cn } from '@/lib/utils';
 import { money } from '@/lib/money';
@@ -201,6 +203,14 @@ function CreatorHome({
   const { data: progress } = useMyJobProgress();
   const summary = useWorkSummary(rows);
   const moved = useJustMoved(rows);
+  /*
+   * Read here as well as inside `ContestEarnings`, and that is one request:
+   * TanStack dedupes on the query key, so the second caller gets the first
+   * one's promise. It is read here because the FIRST DAY screen below has to
+   * know about it, and a component that decides its own visibility cannot tell
+   * its parent what it decided.
+   */
+  const { data: contestMoney } = useContestEarnings();
 
   const [params, setParams] = useSearchParams();
   const view: View = params.get('view') === 'pipeline' ? 'pipeline' : 'overview';
@@ -226,7 +236,21 @@ function CreatorHome({
 
   if (isLoading) return <Skeleton />;
 
-  const nothingYet = summary.approved === 0 && summary.waiting === 0;
+  /*
+   * A CREATOR WITH MONEY IS NOT ON THEIR FIRST DAY, and until 2026-08-14 this
+   * line said they were.
+   *
+   * `nothingYet` used to ask only about OFFER work, which was complete while
+   * offers were the only way to earn anything. Contests are open to every
+   * approved creator regardless of which brands they work with, so somebody can
+   * enter one, hit a target, be owed real money, and land on a screen telling
+   * them to go and take their first offer. The money card underneath will read
+   * zero, which is true of their offer work, and the contest block beside it
+   * carries what they have actually earned.
+   */
+  const hasContestMoney = (contestMoney ?? []).some((r) => r.owed > 0 || r.paid > 0);
+  const noOfferWork = summary.approved === 0 && summary.waiting === 0;
+  const nothingYet = noOfferWork && !hasContestMoney;
 
   return (
     <div className="wx-pop flex max-w-[1140px] flex-col gap-[14px]">
@@ -236,6 +260,29 @@ function CreatorHome({
         <Suspense fallback={<div className="wx-skeleton h-[420px] rounded-[20px]" />}>
           <FirstDay />
         </Suspense>
+      ) : noOfferWork ? (
+        /*
+         * CONTEST MONEY, BUT NO OFFER WORK AT ALL. Contests are open to every
+         * approved creator regardless of which brands they work with, so this
+         * is a real person, not an edge case.
+         *
+         * The money card is NOT DRAWN for them, and that is the whole point of
+         * this branch. It would be a hero block reading "$0 across 0 jobs" over
+         * an empty flow bar and three zero cells, sitting above the only money
+         * they actually have. Every figure in it would be true and the screen
+         * would read as broken, which is the thing the owner's layout rules are
+         * written against.
+         *
+         * So their money leads, and the first day panel underneath does its
+         * real job: getting them onto an offer. No view switch either, because
+         * Pipeline would be seven empty stages.
+         */
+        <>
+          <ContestEarnings />
+          <Suspense fallback={<div className="wx-skeleton h-[420px] rounded-[20px]" />}>
+            <FirstDay />
+          </Suspense>
+        </>
       ) : (
         <>
           <ViewSwitch view={view} onChange={setView} />
@@ -248,10 +295,25 @@ function CreatorHome({
                 <MoneySplit summary={summary} moved={moved} />
                 <Activity rows={rows ?? []} events={events ?? []} moved={moved} compact />
               </div>
+
+              {/* Its own row rather than a third cell in that grid: contest
+                  money is a separate pot and must never sit in a layout that
+                  reads as part of the offer money beside it. See rule M10. */}
+              <ContestEarnings />
             </>
           ) : (
             <>
               <Money summary={summary} moved={moved} />
+
+              {/*
+                DIRECTLY UNDER THE MONEY CARD, and never inside it. The card
+                above adds its three cells up to its own headline, which is what
+                lets a creator check our arithmetic; a contest reward in there
+                would break the addition. Renders nothing at all until there is
+                contest money, so a creator in no contest sees the screen they
+                have always seen.
+              */}
+              <ContestEarnings />
 
               <div className="grid [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))] items-start gap-[14px]">
                 <Work rows={work} pending={pending} moved={moved} progress={progress} />

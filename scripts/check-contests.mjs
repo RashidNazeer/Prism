@@ -590,6 +590,82 @@ try {
     'the reward is not named on the creator dashboard'
   );
 
+  /*
+   * THE HOME SCREEN, which is the one they open first and the one that said
+   * they had been paid nothing until 2026-08-14.
+   *
+   * This suite creator has NO offer work at all, which makes the M10 assertion
+   * exact rather than approximate: their offer money is zero, so if the two
+   * pots were ever added the headline would carry the contest reward, and if
+   * they are kept apart it cannot.
+   */
+  await cpage.goto(`${BASE}/app`, { waitUntil: 'domcontentloaded' });
+  /*
+   * CASE INSENSITIVE, and that is not laziness. `innerText` returns RENDERED
+   * text, so it applies `text-transform`, and this eyebrow carries `uppercase`.
+   * The literal "From contests" is in the source and never on the rendered
+   * page. `textContent` would not transform it, which is why the assertions
+   * below, which read textContent, can be exact.
+   */
+  const sawContestMoney = await cpage
+    .waitForFunction(() => /from contests/i.test(document.body.innerText), undefined, {
+      timeout: 20_000,
+    })
+    .then(() => true)
+    .catch(() => false);
+
+  const homeText = await cpage.textContent('body');
+  check(
+    'the creator HOME shows contest money',
+    sawContestMoney,
+    homeText.replace(/\s+/g, ' ').slice(0, 500)
+  );
+  check(
+    'the home says the reward is owed',
+    /Owed to you/.test(homeText),
+    'no owed figure on the home screen'
+  );
+  check(
+    'and says plainly the two pots are never added together',
+    /never added together/i.test(homeText),
+    'nothing on the home screen keeps contest money apart from offer money'
+  );
+
+  /*
+   * NO CARD OF ZEROS ABOVE THEIR REAL MONEY. This creator has taken no offer,
+   * so the offer money block would read "$0 across 0 jobs" over an empty flow
+   * bar and three zero cells, sitting above the only money they have. Every
+   * figure in it would be true and the screen would read as broken.
+   */
+  check(
+    'a contest-only creator is not shown an offer money card full of zeros',
+    !/Agreed with you so far/.test(homeText),
+    'the zeroed offer money card is drawn above their contest money'
+  );
+  check(
+    'and the first day panel does not call that money nothing',
+    !/Earned so far\s*Nothing yet/.test(homeText.replace(/\s+/g, ' ')),
+    'the first day panel says they have earned nothing while owing them money'
+  );
+
+  /*
+   * RULE M10, and it is worth saying what this check can and cannot prove. It
+   * is VACUOUS for this creator, because the offer block is not drawn for them
+   * at all, so there is no figure the reward could have been added into. What
+   * actually enforces M10 is structural: two components, two queries, no shared
+   * arithmetic, and the sentence asserted above. The check is kept because the
+   * day somebody gives this suite's creator offer work as well, it stops being
+   * vacuous and starts being the real test.
+   */
+  const offerHeadline = (await cpage.getByText('Agreed with you so far').count())
+    ? await cpage.getByText('Agreed with you so far').locator('xpath=../..').innerText()
+    : '';
+  check(
+    'contest money is never counted into the offer headline (rule M10)',
+    !offerHeadline.includes(String(REWARD)),
+    `the offer headline carries the contest reward: ${offerHeadline.replace(/\s+/g, ' ').slice(0, 160)}`
+  );
+
   // ------------------------------------------------------------- paying it --
   console.log('\n12. Paying it, on the rewards screen');
   await page.goto(`${BASE}/admin/contests/rewards`, { waitUntil: 'domcontentloaded' });
@@ -651,6 +727,22 @@ try {
   });
   ok('and the creator sees it as paid');
 
+  await cpage.goto(`${BASE}/app`, { waitUntil: 'domcontentloaded' });
+  await cpage.waitForFunction(
+    () => /Paid to you/.test(document.body.innerText),
+    undefined,
+    { timeout: 20_000 }
+  );
+  const homePaid = await cpage
+    .getByText('From contests')
+    .locator('xpath=../..')
+    .innerText();
+  check(
+    'the home moves it from owed to paid',
+    /Paid to you/.test(homePaid) && /nothing waiting/.test(homePaid),
+    homePaid.replace(/\s+/g, ' ').slice(0, 200)
+  );
+
   // ------------------------------------------------------- closing it -------
   console.log('\n13. Closing the contest');
   const closeWithClaim = await admin.rpc('settle_contest', {
@@ -688,6 +780,23 @@ try {
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
       );
       check(`creator contests has no sideways scroll at ${width}px ${theme}`, !scrolls);
+
+      /*
+       * THE HOME, WITH CONTEST MONEY ON IT, which is the only place this data
+       * can be checked at width. `verify:responsive` drives a creator built
+       * from the offer pipeline and has never had a contest reward, so it
+       * would photograph the card's absence and call it a pass.
+       */
+      await cpage.goto(`${BASE}/app`, { waitUntil: 'domcontentloaded' });
+      await cpage.waitForFunction(
+        () => /from contests/i.test(document.body.innerText),
+        undefined,
+        { timeout: 20_000 }
+      );
+      const homeScrolls = await cpage.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
+      );
+      check(`the home with contest money has no sideways scroll at ${width}px ${theme}`, !homeScrolls);
     }
   }
 

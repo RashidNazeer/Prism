@@ -65,7 +65,20 @@ export default function FirstDay() {
 
         <dl className="border-line flex flex-wrap gap-[14px] border-t pt-4">
           <div className="flex flex-col gap-0.5">
-            <dt className="text-muted text-[12px]">Earned so far</dt>
+            {/*
+              "Nothing yet" was hardcoded, and it was true for as long as offers
+              were the only way to earn anything. Contests are open to every
+              approved creator regardless of which brands they work with, so
+              somebody can be owed real money and still have taken no offer.
+              This panel sits directly under their contest money in that case,
+              and a flat "Nothing yet" beside it would call the block above it a
+              liar.
+
+              It names OFFERS rather than quoting the contest figure, because
+              that figure is already on the screen and printing it twice invites
+              somebody to add them.
+            */}
+            <dt className="text-muted text-[12px]">Earned from offers</dt>
             <dd className="font-display text-[19px] font-semibold">Nothing yet</dd>
           </div>
           <div className="flex flex-col gap-0.5">

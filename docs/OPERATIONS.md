@@ -96,7 +96,7 @@ pnpm verify:content [url]   # a creator posts a video, the team decides, and
 pnpm verify:live [url]      # admin moves a stage on the REAL admin screen,
                             # creator sees it on all three of their screens
                             # with no reload. Needs SUPABASE_SERVICE_KEY
-pnpm verify:contests [url]  # 106 checks. Admin builds a contest and a
+pnpm verify:contests [url]  # 121 checks. Admin builds a contest and a
                             # deliverable on the real screens, a creator enters
                             # and claims on theirs, staff confirm it, the reward
                             # appears as owed, gets paid, and the creator sees

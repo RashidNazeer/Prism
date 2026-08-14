@@ -666,3 +666,20 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   subscriptions to identical rows became one. The general form: when a hook's
   documentation tells its callers how to avoid a hazard, the hazard belongs to
   the hook.
+- 2026-08-14: **Contest money is its own CARD on the creator home, not a fourth
+  cell in the money block.** Rule M10 said "beside, never added into", and the
+  card above it has a stronger property than a label can carry: its three cells
+  add up to its own headline by construction, which is what lets a creator check
+  our arithmetic. A contest reward in there would quietly make the headline a
+  lie. Two cards cannot be added by accident; two cells can.
+- 2026-08-14: **A creator with contest money and no offer work is not shown the
+  money card at all.** It would read "$0 across 0 jobs" over an empty flow bar
+  and three zero cells, directly above the only money they have. Every figure in
+  it would be true and the screen would read as broken, which is the failure the
+  owner's layout rules are written against. Their money leads and the first-day
+  panel does its real job underneath.
+- 2026-08-14: **The first-day panel says "Earned from offers", not "Earned so
+  far".** That figure was hardcoded to "Nothing yet" and was correct for as long
+  as offers were the only way to earn anything. It deliberately does not quote
+  the contest figure: that is already on the screen, and printing a number twice
+  is an invitation to add the two together.

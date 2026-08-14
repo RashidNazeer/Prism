@@ -24,11 +24,17 @@ has no confirmed figure behind it.
 - **The creator screen leads with Owed to you and Paid to you**, live. It used
   to compute "earned" in the browser by walking the contest's LIVE deliverables,
   which could claim money nobody owed the moment an admin added one.
+- **The creator HOME shows contest money too**, in its own block beside the offer
+  money and never inside it. Three things fell out of that, all real people: a
+  creator with contest money was being shown the first-day screen; one with no
+  offer work was being shown a hero card of zeros above the only money they have,
+  which now is not drawn for them at all; and the first-day panel's hardcoded
+  "Earned so far: Nothing yet" was a lie the moment it sat under a reward.
 - Three creators on dev had already earned money against figures confirmed
   before a reward could exist. The migration backfilled them: **6 rewards,
   $1,400**, exactly what confirming those same figures today would produce.
 
-**`pnpm verify:contests` is at 106 checks, up from 36**, and the creator side is
+**`pnpm verify:contests` is at 121 checks, up from 36**, and the creator side is
 finally in it: the contest screen, the entry dialog and the progress dialog are
 all driven in a real browser, then the whole money path end to end, then sixteen
 attacks including a rival creator who can read none of it.
