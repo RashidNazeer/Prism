@@ -26,8 +26,9 @@ Rules:
 on 2026-08-14: a reward is owed the moment staff confirm the figure that crosses
 its target, and the product tracks owed then paid. `contest_awards.note` became
 `message` in the same migration, and the eight realtime hooks moved onto
-`joinChannel`. `pnpm verify:contests` went from 36 checks to 106 and now drives
-the creator screens. What is left is below.
+`joinChannel`. `pnpm verify:contests` went from 36 checks to 121 and now drives
+the creator screens, and contest money reached the creator home. What is left is
+below.
 
 - **Real tracking. PAUSED, Rashid's call.** Progress is typed by the creator and
   confirmed by staff. He will say when the sheet or the data source exists. Do
@@ -59,6 +60,28 @@ the creator screens. What is left is below.
   teaching them to skip that part of the page, and `/app/contests` is where a
   contest with no money in it belongs. **Trigger: Rashid asking why his home
   does not mention a contest he is in.**
+
+## 0b. `pnpm verify:responsive` cannot run on dev, and has not since 12 Aug
+
+**Status:** BLOCKED on Rashid, one word
+**Owner:** Rashid to decide, Claude to run
+**Trigger to raise again: RAISED 2026-08-14.**
+
+The suite signs in as `skinbyamara@wurxmediahub.demo`, a creator that
+`scripts/seed-pipeline.mjs` makes. The dev database was deliberately emptied on
+2026-08-12 and that seed has never been run since, so all six CREATOR screens
+fail on "content rendered" every time. The admin half still passes.
+
+Nothing is broken. The suite is asserting against an account that does not
+exist, and it has been silently unrunnable for two days, which is the worse
+half: the one suite that guarantees every screen at 375, 768, 1024 and 1440px
+has not covered the creator side across the whole contest build.
+
+**The decision is Rashid's because it puts demo data back on dev.** One command,
+`node scripts/seed-pipeline.mjs`, and `--clean` takes it away again. He asked
+for the clean slate, so it does not go back without him saying so.
+
+---
 
 ## 1. Resend email setup (DNS fix + API key)
 
