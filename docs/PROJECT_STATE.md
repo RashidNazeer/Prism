@@ -577,7 +577,29 @@ Wait for his report. A bug he finds becomes the current step.**
 
 Nothing is blocked and there is no half-finished work.
 
-### THE DEV DATABASE IS EMPTY, on purpose, since 2026-08-12
+### What is on dev now, as of 2026-08-14
+
+The clean slate below is no longer the whole picture. Dev currently carries:
+
+- **`rashid@wurxmedia.com`**, admin, the only account that is not test data.
+- **Four brands with offers and products**, from `seed-brands.mjs`.
+- **Five contest creators** (`*@wurxmediahub.contest`) in "Back to School" on
+  Bentgo with uneven figures, from `seed-contests.mjs`. Three of them are owed
+  real contest money: $850, $350 and $200.
+- **Seven demo applicants** (`*@wurxmediahub.demo`) sitting in the review queue,
+  from `seed-applications.mjs`, put back on 2026-08-14 at Rashid's word.
+  `pnpm verify:responsive` signs in as `skinbyamara@wurxmediahub.demo` and had
+  been silently unrunnable without it since the wipe.
+
+Each of those three seeds takes `--clean` and removes exactly what it made.
+
+**`seed-pipeline.mjs` was run and correctly wrote nothing.** It only puts videos
+against jobs that are ALREADY approved, and dev has one, whose turn in its cycle
+is "nothing posted yet". A rich pipeline needs creators approved onto offers
+first, which no seed does; `check-offer-requests` builds that state and takes it
+away again.
+
+### The clean slate this replaced, from 2026-08-12
 
 He asked for a clean slate to test the whole flow from the beginning. Deleted:
 every creator and applicant account, 12 applications, 5 brands, 8 offers, 8

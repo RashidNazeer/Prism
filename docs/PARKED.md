@@ -61,28 +61,6 @@ below.
   contest with no money in it belongs. **Trigger: Rashid asking why his home
   does not mention a contest he is in.**
 
-## 0b. `pnpm verify:responsive` cannot run on dev, and has not since 12 Aug
-
-**Status:** BLOCKED on Rashid, one word
-**Owner:** Rashid to decide, Claude to run
-**Trigger to raise again: RAISED 2026-08-14.**
-
-The suite signs in as `skinbyamara@wurxmediahub.demo`, a creator that
-`scripts/seed-pipeline.mjs` makes. The dev database was deliberately emptied on
-2026-08-12 and that seed has never been run since, so all six CREATOR screens
-fail on "content rendered" every time. The admin half still passes.
-
-Nothing is broken. The suite is asserting against an account that does not
-exist, and it has been silently unrunnable for two days, which is the worse
-half: the one suite that guarantees every screen at 375, 768, 1024 and 1440px
-has not covered the creator side across the whole contest build.
-
-**The decision is Rashid's because it puts demo data back on dev.** One command,
-`node scripts/seed-pipeline.mjs`, and `--clean` takes it away again. He asked
-for the clean slate, so it does not go back without him saying so.
-
----
-
 ## 1. Resend email setup (DNS fix + API key)
 
 **Status:** PAUSED, 2026-07-29, at Rashid's request to keep development moving

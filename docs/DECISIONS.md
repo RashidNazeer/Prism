@@ -683,3 +683,19 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   as offers were the only way to earn anything. It deliberately does not quote
   the contest figure: that is already on the screen, and printing a number twice
   is an invitation to add the two together.
+- 2026-08-14: **The demo APPLICATIONS are back on dev, at Rashid's word, and the
+  demo pipeline is not.** `verify:responsive` had been silently unrunnable since
+  the 12 August wipe: it signs in as `skinbyamara@wurxmediahub.demo`, and all six
+  creator screens failed on "content rendered" every run while the admin half
+  passed. The account comes from `seed-applications.mjs`, NOT from
+  `seed-pipeline.mjs` as the note in PARKED assumed; the pipeline seed only puts
+  videos against jobs that are already approved, and with one approved job on dev
+  it correctly wrote nothing. So the fix was the applications seed alone, which
+  is also the state that suite is written for: its `/app` expectation matches an
+  applicant in review, not an approved creator with a full board.
+- 2026-08-14: **A suite that cannot run is worse than a suite that fails.** This
+  one reported 24 failures every time and they were all one missing account, so
+  they read as noise and were skipped for two days, across the entire contest
+  build. Anything that needs seeded data should say so when the data is absent
+  rather than failing per screen. Not fixed today; noted here so the next person
+  to touch `check-responsive.mjs` fixes the reporting rather than the symptom.
