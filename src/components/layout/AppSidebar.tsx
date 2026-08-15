@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router';
-import { LogOut, X } from 'lucide-react';
+import { LogOut, Plus, X } from 'lucide-react';
 import { WurxMark } from '@/components/brand/WurxMark';
 import { cn } from '@/lib/utils';
 import { isNavItemActive, navForRole, type NavItem } from '@/lib/nav';
@@ -8,11 +8,42 @@ import type { AppRole } from '@/lib/auth/auth-context';
 /**
  * The product's navigation.
  *
- * One component for the fixed desktop rail and the mobile drawer, so the two
- * can never drift apart. `collapsed` shrinks it to icons only on wide screens;
- * the drawer is never collapsed, because a drawer you have opened on purpose
- * should show you words.
+ * REBUILT 2026-08-15 against the design Rashid supplied in `MY UI/All Contest`,
+ * because the old one was, in his words, very boring. What came across from that
+ * design: the 280px rail, the brand block with a subtitle under the wordmark,
+ * the gradient call to action at the top, roomier rows with the icon and label
+ * on one line, and an active row drawn as a tinted pill WITH a solid bar on its
+ * inner edge rather than a tint alone.
+ *
+ * WHAT DID NOT COME ACROSS IS THE PALETTE, and that was his call: the design is
+ * indigo and violet on navy, and Wurx is gold on near-black, locked to
+ * wurxmedia.com in CLAUDE.md. So every surface, gradient and glow here is a
+ * `--wx-*` token and the design's structure is what was copied.
+ *
+ * BOTH THEMES, as he asked. The glass utilities invert their wash in light mode
+ * rather than tinting the dark one, because a white wash over paper is nothing
+ * at all. See `tokens.css`.
+ *
+ * One component for the fixed desktop rail and the mobile drawer, so the two can
+ * never drift apart. `collapsed` shrinks it to icons only on wide screens; the
+ * drawer is never collapsed, because a drawer you have opened on purpose should
+ * show you words.
  */
+
+/**
+ * The gradient button at the top of the rail.
+ *
+ * The design labels it "Create New" with no destination, which is fine in a
+ * picture and useless in a product. So it points at the thing each role
+ * actually creates, and it is absent for the roles that create nothing rather
+ * than being a button that apologises when you press it.
+ */
+function createActionFor(role: AppRole | undefined): { label: string; to: string } | null {
+  if (role === 'admin' || role === 'ops') return { label: 'New contest', to: '/admin/contests' };
+  if (role === 'creator') return { label: 'Add a video', to: '/app/content' };
+  return null;
+}
+
 export function AppSidebar({
   role,
   name,
@@ -36,53 +67,81 @@ export function AppSidebar({
   const { pathname } = useLocation();
   const groups = navForRole(role);
   const initial = (name || email || '?').trim().charAt(0) || '?';
+  const create = createActionFor(role);
 
   return (
-    <div className="flex h-full flex-col bg-surface-1">
+    <div className="bg-bg flex h-full flex-col">
       {/* ---------------------------------------------------------- brand -- */}
       <div
         className={cn(
-          'flex h-16 shrink-0 items-center border-b border-line',
-          collapsed ? 'justify-center px-2' : 'justify-between px-5'
+          'flex shrink-0 items-center gap-3',
+          collapsed ? 'justify-center px-2 py-5' : 'justify-between px-5 py-6'
         )}
       >
         <Link
           to="/"
           aria-label="WurxMediaHub home"
           onClick={onNavigate}
-          className={collapsed ? 'grid place-items-center' : undefined}
+          className={cn('flex items-center gap-3', collapsed && 'justify-center')}
         >
           {/* Collapsed there is no room for the wordmark, so show the mascot
               alone rather than a half-cut "WURX". */}
           <WurxMark markOnly={collapsed} height={collapsed ? 28 : 26} />
+          {/* The design puts a quiet subtitle under the wordmark. It says what
+              the product is to somebody who has just been let in. */}
+          {!collapsed ? (
+            <span className="text-faint -mt-0.5 hidden text-[11px] leading-none font-medium sm:block">
+              Creator Platform
+            </span>
+          ) : null}
         </Link>
         {onClose ? (
           <button
             type="button"
             onClick={onClose}
             aria-label="Close menu"
-            className="grid size-9 place-items-center rounded-full text-muted transition-colors hover:text-accent"
+            className="text-muted hover:text-accent grid size-11 shrink-0 place-items-center rounded-full transition-colors"
           >
             <X size={18} aria-hidden />
           </button>
         ) : null}
       </div>
 
+      {/* ------------------------------------------------------------ cta -- */}
+      {create ? (
+        <div className={cn('shrink-0 pb-4', collapsed ? 'px-2' : 'px-4')}>
+          <Link
+            to={create.to}
+            onClick={onNavigate}
+            title={collapsed ? create.label : undefined}
+            className={cn(
+              'wx-gradient text-on-accent ease-brand flex min-h-11 items-center justify-center gap-2',
+              'rounded-xl text-[13px] font-semibold shadow-md transition-all duration-300',
+              'hover:shadow-lg active:translate-y-px',
+              collapsed ? 'w-full px-0' : 'w-full px-4'
+            )}
+          >
+            <Plus size={16} aria-hidden className="shrink-0" />
+            <span className={collapsed ? 'sr-only' : undefined}>{create.label}</span>
+          </Link>
+        </div>
+      ) : null}
+
       {/* ------------------------------------------------------------ nav -- */}
       <nav
         aria-label="Main"
-        className={cn('flex-1 overflow-y-auto py-4', collapsed ? 'px-2' : 'px-3')}
+        className={cn('flex-1 overflow-y-auto pb-4', collapsed ? 'px-2' : 'px-3')}
       >
         {groups.map((group) => (
           <div key={group.label} className="mb-5 last:mb-0">
             {collapsed ? (
-              <div className="mx-auto mb-2 h-px w-6 bg-line" aria-hidden />
+              <div className="bg-line mx-auto mb-2 h-px w-6" aria-hidden />
             ) : (
-              <p className="px-3 pb-2 font-mono text-[10px] tracking-[0.16em] text-faint uppercase">
+              <p className="text-faint px-3 pb-2 font-mono text-[10px] tracking-[0.16em] uppercase">
                 {group.label}
               </p>
             )}
-            <ul className="grid gap-0.5">
+            <ul className="grid gap-1">
               {group.items.map((item) => (
                 <li key={item.label}>
                   <NavRow
@@ -102,13 +161,17 @@ export function AppSidebar({
       {/* One line: avatar, who you are, and the way out. This used to be a card
           with the name, the email and two chips stacked under it, which on a
           creator read "CREATOR  CREATOR" because the role and the starting tier
-          share a word. Role and tier belong on the profile screen, not here. */}
-      <div className={cn('shrink-0 border-t border-line', collapsed ? 'p-2' : 'p-3')}>
+          share a word. Role and tier belong on the profile screen, not here.
+
+          The design's footer is a divider with Settings and Logout under it.
+          Ours keeps the identity, because a product where you can be signed in
+          as two different people in two tabs had better say which one you are. */}
+      <div className={cn('border-line shrink-0 border-t', collapsed ? 'p-2' : 'p-3')}>
         {collapsed ? (
           <div className="grid gap-1.5">
             <p
               title={`${name || 'Signed in'}${email ? ` (${email})` : ''}`}
-              className="mx-auto grid size-9 place-items-center rounded-full bg-accent-soft font-mono text-[13px] font-bold text-accent uppercase"
+              className="bg-accent-soft text-accent mx-auto grid size-9 place-items-center rounded-full font-mono text-[13px] font-bold uppercase"
             >
               {initial}
             </p>
@@ -117,17 +180,17 @@ export function AppSidebar({
               disabled={signingOut}
               onClick={onSignOut}
               title="Sign out"
-              className="mx-auto grid size-9 place-items-center rounded-lg text-muted transition-colors duration-200 hover:bg-surface-2 hover:text-accent disabled:opacity-50"
+              className="text-muted hover:bg-surface-2 hover:text-danger mx-auto grid size-11 place-items-center rounded-lg transition-colors duration-200 disabled:opacity-50"
             >
               <LogOut size={15} aria-hidden />
               <span className="sr-only">Sign out</span>
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2.5 rounded-xl bg-surface-2 py-2 pr-1.5 pl-2.5">
+          <div className="wx-glass-panel flex items-center gap-2.5 rounded-xl py-2 pr-1.5 pl-2.5">
             <span
               aria-hidden
-              className="grid size-9 shrink-0 place-items-center rounded-full bg-accent-soft font-mono text-[13px] font-bold text-accent uppercase"
+              className="bg-accent-soft text-accent grid size-9 shrink-0 place-items-center rounded-full font-mono text-[13px] font-bold uppercase"
             >
               {initial}
             </span>
@@ -135,19 +198,19 @@ export function AppSidebar({
               <span className="block truncate text-[13px] font-semibold">
                 {name || 'Signed in'}
               </span>
-              <span className="block truncate text-[11px] text-faint">{email}</span>
+              <span className="text-faint block truncate text-[11px]">{email}</span>
             </span>
             <button
               type="button"
               disabled={signingOut}
               onClick={onSignOut}
               title="Sign out"
-              className="grid size-9 shrink-0 place-items-center rounded-lg text-muted transition-colors duration-200 hover:bg-surface-1 hover:text-accent disabled:opacity-50"
+              // Turns danger on hover, the way the design's Logout does. It is
+              // the one row in here that ends a session.
+              className="text-muted hover:bg-surface-1 hover:text-danger grid size-11 shrink-0 place-items-center rounded-lg transition-colors duration-200 disabled:opacity-50"
             >
               <LogOut size={15} aria-hidden />
-              <span className="sr-only">
-                {signingOut ? 'Signing out' : 'Sign out'}
-              </span>
+              <span className="sr-only">{signingOut ? 'Signing out' : 'Sign out'}</span>
             </button>
           </div>
         )}
@@ -167,9 +230,16 @@ function NavRow({
   collapsed: boolean;
   onNavigate?: () => void;
 }) {
+  /*
+   * py-3 and gap-3, from the design, against py-2.5 and gap-3 before. It reads
+   * as a deliberate list rather than a dense one, which is most of why the old
+   * rail felt flat. `min-h-11` keeps every row a legal tap target on a phone,
+   * which the responsive suite asserts.
+   */
   const base = cn(
-    'flex items-center gap-3 rounded-xl py-2.5 text-[14px] transition-colors duration-200',
-    collapsed ? 'justify-center px-0' : 'px-3.5'
+    'ease-brand relative flex min-h-11 items-center gap-3 rounded-xl py-3 text-[14px]',
+    'transition-all duration-200',
+    collapsed ? 'justify-center px-0' : 'px-4'
   );
 
   // Not built yet. Rendered as text, never as a link: a nav item that navigates
@@ -177,11 +247,11 @@ function NavRow({
   if (!item.to) {
     return (
       <span
-        className={cn(base, 'cursor-default text-faint')}
+        className={cn(base, 'text-faint cursor-default')}
         aria-disabled="true"
         title={collapsed ? `${item.label} (${item.soon ?? 'later'})` : undefined}
       >
-        <item.icon size={16} aria-hidden className="shrink-0" />
+        <item.icon size={17} aria-hidden className="shrink-0" />
         {collapsed ? (
           <span className="sr-only">
             {item.label}, {item.soon ?? 'not yet built'}
@@ -190,7 +260,7 @@ function NavRow({
           <>
             <span className="truncate">{item.label}</span>
             {item.soon ? (
-              <span className="ml-auto shrink-0 rounded-full border border-line px-1.5 py-0.5 font-mono text-[9px] tracking-[0.1em] text-faint uppercase">
+              <span className="border-line text-faint ml-auto shrink-0 rounded-full border px-1.5 py-0.5 font-mono text-[9px] tracking-[0.1em] uppercase">
                 {item.soon}
               </span>
             ) : null}
@@ -209,11 +279,23 @@ function NavRow({
       className={cn(
         base,
         active
-          ? 'bg-accent-soft font-semibold text-accent'
+          ? 'bg-accent-soft text-accent font-semibold'
           : 'text-muted hover:bg-surface-2 hover:text-text'
       )}
     >
-      <item.icon size={16} aria-hidden className="shrink-0" />
+      {/*
+        THE INDICATOR BAR, which is the piece of the design that makes the
+        active row read at a glance rather than as a slightly different shade.
+        The design puts it on the outer edge; it sits on the INNER edge here so
+        it survives the collapsed rail, where the outer edge is the screen.
+      */}
+      {active ? (
+        <span
+          aria-hidden
+          className="bg-accent absolute inset-y-1.5 left-0 w-[3px] rounded-full"
+        />
+      ) : null}
+      <item.icon size={17} aria-hidden className="shrink-0" />
       <span className={collapsed ? 'sr-only' : 'truncate'}>{item.label}</span>
     </Link>
   );

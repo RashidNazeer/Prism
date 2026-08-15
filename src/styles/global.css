@@ -289,6 +289,69 @@
   background-image: var(--wx-glow);
 }
 
+/* ---------------------------------------------------------------- glass ----
+   From the design Rashid approved on 2026-08-15, in the Wurx palette.
+
+   BOTH MODES WORK, and that is the whole difficulty. Glassmorphism is a
+   dark-mode idea built out of white washes; on paper those wash to nothing.
+   Every value here is a token, and the light block of tokens.css inverts the
+   wash to ink rather than tinting the dark one. Nothing in this file knows
+   which mode it is in, which is the point.
+
+   `backdrop-filter` is a real cost on a phone, so it is applied through a
+   token and dropped entirely for anybody who asks for reduced motion, where a
+   blurred layer under a scrolling list is the most expensive thing on screen. */
+@utility wx-glass {
+  background-image: var(--wx-glass-fill);
+  border: 1px solid var(--wx-glass-line);
+  box-shadow: var(--wx-glass-rim);
+  backdrop-filter: blur(var(--wx-glass-blur));
+  -webkit-backdrop-filter: blur(var(--wx-glass-blur));
+}
+
+/* The flatter sibling: filter bars and rails, no inner rim. */
+@utility wx-glass-panel {
+  background-color: var(--wx-glass-panel);
+  border: 1px solid var(--wx-glass-line);
+  backdrop-filter: blur(var(--wx-glass-blur));
+  -webkit-backdrop-filter: blur(var(--wx-glass-blur));
+}
+
+/* Under-lighting, on hover only. Gold here, indigo in the design. */
+@utility wx-glass-hover {
+  transition:
+    transform 300ms var(--wx-ease),
+    box-shadow 300ms var(--wx-ease),
+    border-color 300ms var(--wx-ease);
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: var(--wx-border-strong);
+    box-shadow: var(--wx-glass-rim), var(--wx-glass-glow);
+  }
+}
+
+/* The design's primary action: a gradient fill rather than a flat one. */
+@utility wx-gradient {
+  background-image: var(--wx-accent-gradient);
+
+  &:hover {
+    background-image: var(--wx-accent-gradient-hover);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wx-glass,
+  .wx-glass-panel {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .wx-glass-hover:hover {
+    transform: none;
+  }
+}
+
 /* Faint technical grid, straight from the wurxmedia.com visual language. */
 @utility wx-grid {
   background-image:

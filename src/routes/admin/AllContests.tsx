@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { ChevronLeft, ChevronRight, Search, Trophy, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, ShieldCheck, Trophy, Users } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
 import { Field, Input, Select } from '@/components/ui/Field';
@@ -187,7 +187,10 @@ export function AllContests() {
       ) : null}
 
       {/* --------------------------------------------------------- filters -- */}
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_15rem_13rem]">
+      {/* One glass panel holding all three, from the design, rather than three
+          controls floating on the page. It reads as a toolbar, which is what it
+          is. */}
+      <div className="wx-glass-panel mt-3 grid gap-3 rounded-xl p-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_15rem_13rem]">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -263,9 +266,9 @@ export function AllContests() {
         )}
       >
         {isLoading ? (
-          <ul className="grid gap-2.5">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <li key={i} className="wx-skeleton h-32 rounded-[20px] sm:h-28" />
+          <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <li key={i} className="wx-skeleton h-[196px] rounded-[20px]" />
             ))}
           </ul>
         ) : isError ? (
@@ -307,9 +310,12 @@ export function AllContests() {
             />
           )
         ) : (
-          <ul className="grid gap-2.5">
+          // Three across on a desktop, two on a tablet, one on a phone, from
+          // the design. `items-stretch` is what lets every card's footer line
+          // up regardless of how long its title runs.
+          <ul className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
             {rows.map((row) => (
-              <li key={row.contest.id}>
+              <li key={row.contest.id} className="flex">
                 <ContestRow
                   row={row}
                   now={now}
@@ -377,54 +383,73 @@ function ContestRow({
   const state = stateOf(c, now);
   const left = timeLeft(c.expiresAt, now);
 
+  /*
+   * REBUILT AS A CARD ON 2026-08-15, from the design Rashid supplied. It was a
+   * wide row with four columns of labelled text, which held the same facts and
+   * read as a spreadsheet. The design's shape: a brand pill and a status chip
+   * on the top line, the name big underneath, then a rule, then the closing
+   * date on the left and the entrant count on the right.
+   *
+   * The glass, the rim light and the gold under-glow on hover are the design's,
+   * in Wurx colours, and both themes carry them: see `wx-glass` in global.css.
+   */
   return (
     <Link
       to={`/admin/brands/${c.brandId}/contests/${c.id}`}
-      className="ease-brand border-line bg-surface-1 hover:border-line-strong block rounded-[20px] border p-4 shadow-md transition-colors sm:p-5"
+      className="wx-glass wx-glass-hover group flex h-full flex-col gap-4 rounded-[20px] p-5"
     >
-      <div className="flex flex-wrap items-start gap-x-5 gap-y-3">
-        {/* ------------------------------------------------- what it is -- */}
-        <div className="min-w-0 flex-1 basis-56">
-          <div className="flex flex-wrap items-center gap-2">
-            {/* The brand is plain text, not a second link: a link inside a link
-                is invalid, and the whole card is already the target. */}
-            <span className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
-              {row.brandName ?? 'Unknown brand'}
+      {/* --------------------------------------------- brand and status -- */}
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        {/* The brand is plain text in a pill, not a second link: a link inside
+            a link is invalid, and the whole card is already the target. */}
+        <span className="bg-surface-2 border-line text-text shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold tracking-[0.1em] uppercase">
+          {row.brandName ?? 'Unknown brand'}
+        </span>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {!row.brandIsActive ? (
+            <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
+              Brand retired
             </span>
-            {!row.brandIsActive ? (
-              <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
-                Brand retired
-              </span>
-            ) : null}
-          </div>
-
-          <h3 className="font-display text-text mt-1 text-[18px] leading-tight font-bold break-words">
-            {c.name}
-          </h3>
-
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <ContestStateChip state={state} />
-            <span className="text-faint text-[12px]">
-              {c.needsAdminApproval ? 'You approve entries' : 'Anyone can enter'}
-            </span>
-          </div>
+          ) : null}
+          <ContestStateChip state={state} />
         </div>
+      </div>
 
-        {/* ----------------------------------------------- when it closes -- */}
+      {/* ------------------------------------------------------ what it is -- */}
+      <div>
+        <h3 className="font-display text-text group-hover:text-accent text-[20px] leading-tight font-bold break-words transition-colors">
+          {c.name}
+        </h3>
+        <p className="text-muted mt-2 flex items-center gap-2 text-[13px]">
+          <ShieldCheck size={15} aria-hidden className="text-faint shrink-0" />
+          {c.needsAdminApproval ? 'You approve entries' : 'Anyone can enter'}
+        </p>
+      </div>
+
+      {/* --------------------------------- when it closes, and who is in -- */}
+      {/*
+        `mt-auto` pins this to the bottom, so cards of different title lengths
+        line their footers up across the row. That is most of why a grid of
+        cards reads as a set rather than as a pile.
+      */}
+      <div className="border-line mt-auto flex items-end justify-between gap-4 border-t pt-4">
         {/* Always in the zone the admin chose, never the reader's. Rule L6. */}
-        <div className="min-w-0 shrink-0">
-          <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
-            Closes
+        <div className="min-w-0">
+          <span className="text-faint block text-[10px] font-semibold tracking-[0.14em] uppercase">
+            Closing date
           </span>
-          <span className="text-text mt-1 block text-[14px] font-semibold">
-            {formatDeadline(c.expiresAt, c.expiresAtTimezone)}
+          <span className="mt-1 flex flex-wrap items-center gap-2">
+            <span className="text-text text-[13px] font-semibold">
+              {formatDeadline(c.expiresAt, c.expiresAtTimezone)}
+            </span>
+            <span className="bg-surface-2 text-muted border-line shrink-0 rounded-md border px-2 py-0.5 font-mono text-[11px]">
+              {left}
+            </span>
           </span>
-          <span className="text-muted mt-0.5 block font-mono text-[12px]">{left}</span>
         </div>
 
-        {/* ------------------------------------------------------ who is in -- */}
         {/*
-          The two numbers this screen exists for, counted by Postgres in
+          The number this screen exists for, counted by Postgres in
           `contest_totals` rather than by counting rows in the browser.
 
           A contest nobody has entered has no row in that view at all, so a
@@ -432,27 +457,26 @@ function ContestRow({
           flight this shows a skeleton, and only once it lands does it say
           nobody is in. Printing 0 early would read as "nobody wanted it".
         */}
-        <div className="shrink-0">
-          <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+        <div className="shrink-0 text-right">
+          <span className="text-faint block text-[10px] font-semibold tracking-[0.14em] uppercase">
             Creators
           </span>
           {peoplePending && !people ? (
-            <span className="wx-skeleton mt-1.5 block h-5 w-24 rounded-md" />
+            <span className="wx-skeleton mt-1.5 ml-auto block h-5 w-16 rounded-md" />
           ) : people && (people.approved > 0 || people.pending > 0) ? (
-            <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <span className="font-display text-text inline-flex items-center gap-1.5 text-[16px] font-semibold">
-                <Users size={14} aria-hidden className="text-faint" />
+            <span className="mt-1 flex flex-col items-end gap-1">
+              <span className="font-display text-text inline-flex items-center gap-1.5 text-[17px] font-semibold">
                 <span className="wx-numeric font-mono">{people.approved}</span>
-                <span className="text-faint text-[13px] font-normal">in</span>
+                <Users size={15} aria-hidden className="text-accent" />
               </span>
               {people.pending > 0 ? (
-                <span className="bg-stage-due-soft text-stage-due inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-medium">
-                  <span className="wx-numeric font-mono">{people.pending}</span> waiting on you
+                <span className="bg-stage-due-soft text-stage-due inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium">
+                  <span className="wx-numeric font-mono">{people.pending}</span> waiting
                 </span>
               ) : null}
             </span>
           ) : (
-            <span className="text-muted mt-1 block text-[14px]">Nobody yet</span>
+            <span className="text-muted mt-1 block text-[13px]">Nobody yet</span>
           )}
         </div>
       </div>

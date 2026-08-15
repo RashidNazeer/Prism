@@ -96,6 +96,33 @@
 
   /* The Wurx logo is cream artwork, drawn for a dark background. */
   --wx-mark-filter: none;
+
+  /* ------------------------------------------------------- glass, 2026-08-15 --
+     From the design Rashid approved ("Obsidian Lumina"), rendered in the Wurx
+     palette rather than its indigo, because the brand palette is locked to
+     wurxmedia.com and he confirmed it stays.
+
+     THESE ARE OVERLAYS, NOT COLOURS, and the light block is not a tint of this
+     one. A white wash at 5% over near-black lifts a card off the page; the same
+     wash over paper does nothing at all, so light mode washes DOWNWARD in ink.
+     Getting that backwards is how a glass design turns into a flat one the
+     moment somebody switches theme. */
+  --wx-glass-fill: linear-gradient(
+    135deg,
+    rgba(244, 240, 234, 0.055) 0%,
+    rgba(244, 240, 234, 0) 100%
+  );
+  --wx-glass-panel: rgba(244, 240, 234, 0.035);
+  --wx-glass-line: rgba(244, 240, 234, 0.1);
+  /* The top-left rim light. One inset stroke reads as a light source above. */
+  --wx-glass-rim: inset 1px 1px 0 0 rgba(244, 240, 234, 0.1);
+  /* Under-lighting on hover, in brand gold rather than the design's indigo. */
+  --wx-glass-glow: 0 0 40px rgba(200, 146, 75, 0.18);
+  --wx-glass-blur: 24px;
+
+  /* The gradient the design puts on its primary action. Gold to amber here. */
+  --wx-accent-gradient: linear-gradient(135deg, #c8924b 0%, #e0a95f 100%);
+  --wx-accent-gradient-hover: linear-gradient(135deg, #d8a15b 0%, #f0bb72 100%);
 }
 
 [data-theme='light'] {
@@ -164,6 +191,28 @@
      multiplies each channel, so the contrast between the mascot's face and its
      eyes survives instead of flattening to a silhouette. */
   --wx-mark-filter: brightness(0.32);
+
+  /* ------------------------------------------------------- glass, 2026-08-15 --
+     THE INVERSE OF THE DARK BLOCK, NOT A TINT OF IT.
+
+     Glassmorphism is a dark-mode idea: it works by washing WHITE over a dark
+     page, and every value in the design is some opacity of white. Copy those
+     numbers onto paper and the cards vanish, because white on near-white is
+     nothing. So light mode washes downward in ink instead, and the rim light
+     stays white because a highlight is a highlight in both modes.
+
+     The alphas are lower than the dark ones on purpose: ink over paper reads
+     far stronger than white over black at the same opacity. */
+  --wx-glass-fill: linear-gradient(135deg, rgba(25, 21, 18, 0.035) 0%, rgba(25, 21, 18, 0) 100%);
+  --wx-glass-panel: rgba(25, 21, 18, 0.022);
+  --wx-glass-line: rgba(25, 21, 18, 0.1);
+  --wx-glass-rim: inset 1px 1px 0 0 rgba(255, 255, 255, 0.7);
+  /* Gold, darkened to the light-mode gold, or the glow is invisible on paper. */
+  --wx-glass-glow: 0 0 40px rgba(138, 95, 31, 0.16);
+  --wx-glass-blur: 24px;
+
+  --wx-accent-gradient: linear-gradient(135deg, #8a5f1f 0%, #a3762c 100%);
+  --wx-accent-gradient-hover: linear-gradient(135deg, #74501a 0%, #8f6624 100%);
 }
 
 /* ---------------------------------------------------------------------------
