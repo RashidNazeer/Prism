@@ -170,18 +170,18 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
       {isLoading ? (
         <ul className="mt-4 grid gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <li key={i} className="wx-skeleton h-32 rounded-[20px]" />
+            <li key={i} className="wx-skeleton h-32 rounded-xl" />
           ))}
         </ul>
       ) : isError ? (
-        <div className="border-line bg-surface-1 mt-4 rounded-[20px] border px-6 py-14 text-center shadow-md">
+        <div className="border-line bg-surface-1 mt-4 rounded-xl border px-6 py-14 text-center shadow-md">
           <p className="font-semibold">That roster would not load</p>
           <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
             {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
           </p>
         </div>
       ) : rows.length === 0 ? (
-        <div className="border-line bg-surface-1 mt-4 rounded-[20px] border px-6 py-16 text-center shadow-md">
+        <div className="border-line bg-surface-1 mt-4 rounded-xl border px-6 py-16 text-center shadow-md">
           <Users size={26} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">
             {filtered ? 'Nobody matches that' : 'Nobody has asked yet'}
@@ -260,7 +260,7 @@ function RosterCard({ row }: { row: RosterRow }) {
   ];
 
   return (
-    <div className="border-line bg-surface-1 rounded-[20px] border p-4 shadow-md sm:p-5">
+    <div className="border-line bg-surface-1 rounded-xl border p-4 shadow-md sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-x-5 gap-y-3">
         <div className="min-w-0 flex-1 basis-52">
           <Link

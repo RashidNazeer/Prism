@@ -74,13 +74,13 @@ export function Profile() {
 
       {isLoading ? (
         <div className="mt-8 max-w-xl space-y-4">
-          <div className="wx-skeleton h-32 rounded-[20px]" />
-          <div className="wx-skeleton h-40 rounded-[20px]" />
+          <div className="wx-skeleton h-32 rounded-xl" />
+          <div className="wx-skeleton h-40 rounded-xl" />
         </div>
       ) : (
         <div className="mt-8 grid max-w-xl gap-6">
           {/* ------------------------------------------------------- name -- */}
-          <section className="border-line bg-surface-1 rounded-[20px] border p-6 shadow-md">
+          <section className="border-line bg-surface-1 rounded-xl border p-6 shadow-md">
             <h2 className="text-lg font-bold">Your name</h2>
             <p className="text-muted mt-1.5 text-[14px] leading-relaxed">
               What the Wurx team and your brand hubs call you.
@@ -127,7 +127,7 @@ export function Profile() {
           </section>
 
           {/* ---------------------------------------------------- account -- */}
-          <section className="border-line bg-surface-1 rounded-[20px] border p-6 shadow-md">
+          <section className="border-line bg-surface-1 rounded-xl border p-6 shadow-md">
             <h2 className="text-lg font-bold">Account</h2>
             <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
               <Row label="Email" value={profile?.email ?? ''} breakAll />
@@ -153,7 +153,7 @@ export function Profile() {
 
           {/* ------------------------------------------------ application -- */}
           {application ? (
-            <section className="border-line bg-surface-1 rounded-[20px] border p-6 shadow-md">
+            <section className="border-line bg-surface-1 rounded-xl border p-6 shadow-md">
               <h2 className="text-lg font-bold">Your application</h2>
               <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
                 <Row label="TikTok handle" value={`@${application.tiktok_handle}`} breakAll />

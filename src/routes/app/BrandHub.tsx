@@ -90,7 +90,7 @@ export function BrandHub() {
         <div className="max-w-3xl space-y-4">
           <div className="wx-skeleton h-10 w-64" />
           <div className="wx-skeleton h-10 w-full" />
-          <div className="wx-skeleton h-40 rounded-[20px]" />
+          <div className="wx-skeleton h-40 rounded-xl" />
         </div>
       </AppShell>
     );
@@ -99,7 +99,7 @@ export function BrandHub() {
   if (isError || !brand) {
     return (
       <AppShell>
-        <div className="border-line bg-surface-1 max-w-lg rounded-[20px] border p-8 text-center shadow-md">
+        <div className="border-line bg-surface-1 max-w-lg rounded-xl border p-8 text-center shadow-md">
           <p className="font-semibold">That brand hub is not open</p>
           <p className="text-muted mt-2 text-[14px] leading-relaxed">
             It may have been retired, or it may not be one of yours. Nothing else is affected.
@@ -255,7 +255,7 @@ function Overview({
             ))}
           </ul>
         ) : products.length === 0 ? (
-          <div className="border-line bg-surface-1 mt-3 rounded-[20px] border px-6 py-12 text-center shadow-md">
+          <div className="border-line bg-surface-1 mt-3 rounded-xl border px-6 py-12 text-center shadow-md">
             <Package size={24} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">Products are on their way</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
@@ -350,7 +350,7 @@ function Offers({
     return (
       <ul className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <li key={i} className="wx-skeleton h-52 rounded-[20px]" />
+          <li key={i} className="wx-skeleton h-52 rounded-xl" />
         ))}
       </ul>
     );
@@ -358,7 +358,7 @@ function Offers({
 
   if (offers.length === 0) {
     return (
-      <div className="border-line bg-surface-1 mt-6 max-w-2xl rounded-[20px] border px-6 py-14 text-center shadow-md">
+      <div className="border-line bg-surface-1 mt-6 max-w-2xl rounded-xl border px-6 py-14 text-center shadow-md">
         <Ticket size={26} aria-hidden className="text-faint mx-auto" />
         <p className="mt-4 font-semibold">No offers open right now</p>
         <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">

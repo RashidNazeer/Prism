@@ -140,7 +140,7 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
       {isPending ? (
         <div className="flex flex-col gap-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="wx-skeleton h-[104px] rounded-[20px]" />
+            <div key={i} className="wx-skeleton h-[104px] rounded-xl" />
           ))}
         </div>
       ) : isError ? (
@@ -220,7 +220,7 @@ function ContestRow({ contest, now }: { contest: Contest; now: number }) {
   return (
     <Link
       to={`/admin/brands/${contest.brandId}/contests/${contest.id}`}
-      className="ease-brand border-line bg-surface-1 hover:border-line-strong block rounded-[20px] border p-5 shadow-md transition-colors"
+      className="ease-brand border-line bg-surface-1 hover:border-line-strong block rounded-xl border p-5 shadow-md transition-colors"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
@@ -267,8 +267,8 @@ function Empty({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="border-line bg-surface-1 flex flex-col items-start gap-3 rounded-[20px] border p-8 shadow-md">
-      <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-[14px] border">
+    <div className="border-line bg-surface-1 flex flex-col items-start gap-3 rounded-xl border p-8 shadow-md">
+      <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
         <Trophy size={19} className="text-muted" aria-hidden />
       </div>
       <h3 className="font-display text-text text-[21px] leading-tight font-bold">{title}</h3>

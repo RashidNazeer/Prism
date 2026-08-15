@@ -48,18 +48,18 @@ export function Brands() {
       ) : isLoading ? (
         <ul className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <li key={i} className="wx-skeleton h-40 rounded-[20px]" />
+            <li key={i} className="wx-skeleton h-40 rounded-xl" />
           ))}
         </ul>
       ) : isError ? (
-        <div className="border-line bg-surface-1 mt-6 rounded-[20px] border px-6 py-14 text-center shadow-md">
+        <div className="border-line bg-surface-1 mt-6 rounded-xl border px-6 py-14 text-center shadow-md">
           <p className="font-semibold">That list would not load</p>
           <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
             {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
           </p>
         </div>
       ) : rows.length === 0 ? (
-        <div className="border-line bg-surface-1 mt-6 rounded-[20px] border px-6 py-16 text-center shadow-md">
+        <div className="border-line bg-surface-1 mt-6 rounded-xl border px-6 py-16 text-center shadow-md">
           <Store size={26} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">No brands open yet</p>
           <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
@@ -80,7 +80,7 @@ export function Brands() {
             >
               <Link
                 to={`/app/brands/${brand.slug}`}
-                className="border-line bg-surface-1 hover:border-accent flex h-full flex-col rounded-[20px] border p-5 shadow-md transition-colors duration-200"
+                className="border-line bg-surface-1 hover:border-accent flex h-full flex-col rounded-xl border p-5 shadow-md transition-colors duration-200"
               >
                 <div className="flex items-center gap-3">
                   <span className="border-line bg-surface-2 grid size-11 shrink-0 place-items-center overflow-hidden rounded-full border">

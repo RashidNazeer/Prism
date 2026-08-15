@@ -73,7 +73,7 @@ export function OfferCard({
       : null;
 
   return (
-    <div className="border-line bg-surface-1 flex h-full flex-col rounded-[20px] border p-5 shadow-md">
+    <div className="border-line bg-surface-1 flex h-full flex-col rounded-xl border p-5 shadow-md">
       {showBrand && offer.brand ? (
         <Link
           to={`/app/brands/${offer.brand.slug}`}

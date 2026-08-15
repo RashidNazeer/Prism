@@ -204,7 +204,7 @@ export function ContestEntryQueue({
   return (
     <section
       className={cn(
-        'border-line bg-surface-1 flex flex-col gap-4 rounded-[20px] border p-5 shadow-md',
+        'border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5 shadow-md',
         className
       )}
     >
@@ -232,7 +232,7 @@ export function ContestEntryQueue({
           <div className="wx-skeleton h-[120px] rounded-2xl" />
         </div>
       ) : isError ? (
-        <div className="border-line flex flex-col items-start gap-3 rounded-[20px] border border-dashed p-6">
+        <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
           <h3 className="font-display text-text text-[19px] leading-tight font-bold">
             That queue would not load
           </h3>
@@ -244,8 +244,8 @@ export function ContestEntryQueue({
           </Button>
         </div>
       ) : rows.length === 0 ? (
-        <div className="border-line flex flex-col items-start gap-3 rounded-[20px] border border-dashed p-6">
-          <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-[14px] border">
+        <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
+          <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
             <DoorOpen size={19} className="text-muted" aria-hidden />
           </div>
           <h3 className="font-display text-text text-[19px] leading-tight font-bold">

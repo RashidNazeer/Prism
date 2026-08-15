@@ -1,4 +1,5 @@
 import { AppShell } from '@/components/layout/AppShell';
+import { ContestsHeader } from '@/components/admin/ContestsHeader';
 import { ContestEntryQueue } from '@/components/admin/ContestEntryQueue';
 import { ContestProgressQueue } from '@/components/admin/ContestProgressQueue';
 
@@ -23,16 +24,9 @@ export function ContestClaims() {
   return (
     <AppShell>
       <div className="mx-0 w-full max-w-[1128px]">
-        <div className="pb-5">
-          <h1 className="font-display text-text text-[26px] leading-tight font-bold">
-            Contest claims
-          </h1>
-          <p className="text-muted mt-1 max-w-prose text-[14px] leading-relaxed">
-            Everybody waiting on the team: creators asking to join a contest, and creators saying
-            what they have achieved. Nothing counts towards a reward, and nothing is owed, until
-            you confirm it here.
-          </p>
-        </div>
+        <ContestsHeader subtitle="Everybody waiting on the team: creators asking to join a contest, and creators saying what they have achieved. Nothing counts towards a reward, and nothing is owed, until you confirm it here." />
+
+        <div className="pt-4" />
 
         {/*
           ENTRIES FIRST, and this is the screen Rashid looked at when he found

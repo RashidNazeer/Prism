@@ -248,18 +248,18 @@ export function OfferRequests() {
         {isLoading ? (
           <ul className="grid gap-2.5">
             {Array.from({ length: 5 }).map((_, i) => (
-              <li key={i} className="wx-skeleton h-28 rounded-[20px]" />
+              <li key={i} className="wx-skeleton h-28 rounded-xl" />
             ))}
           </ul>
         ) : isError ? (
-          <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-14 text-center shadow-md">
+          <div className="border-line bg-surface-1 rounded-xl border px-6 py-14 text-center shadow-md">
             <p className="font-semibold">That queue would not load</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
-          <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-16 text-center shadow-md">
+          <div className="border-line bg-surface-1 rounded-xl border px-6 py-16 text-center shadow-md">
             <Handshake size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">
               {filters.status === 'pending' && !filters.search && !filters.brandId
@@ -372,7 +372,7 @@ function RequestRow({
   const stale = isStale(row.stage_updated_at);
 
   return (
-    <div className="border-line bg-surface-1 rounded-[20px] border p-4 shadow-md sm:p-5">
+    <div className="border-line bg-surface-1 rounded-xl border p-4 shadow-md sm:p-5">
       <div className="flex flex-wrap items-start gap-x-5 gap-y-3">
         {/* Who, and what they want. */}
         <div className="min-w-0 flex-1 basis-56">

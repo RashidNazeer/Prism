@@ -49,7 +49,7 @@ export function ContentCard({
   const tone = TONE[meta.tone];
 
   return (
-    <article className="border-line bg-surface-1 flex h-full flex-col gap-3 rounded-[20px] border p-3 shadow-md transition-shadow duration-300 hover:shadow-lg">
+    <article className="border-line bg-surface-1 flex h-full flex-col gap-3 rounded-xl border p-3 shadow-md transition-shadow duration-300 hover:shadow-lg">
       <VideoThumb row={row} onPlay={onPlay} />
 
       <div className="flex min-w-0 flex-1 flex-col gap-2 px-1 pb-1">

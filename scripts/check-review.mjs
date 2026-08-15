@@ -244,19 +244,49 @@ try {
 
   /* ----------------------------------------------------------- [2] filters */
   console.log('\n[2] Filters and search');
+  /*
+   * NARROW TO THIS RUN'S OWN APPLICANTS FIRST, and this is the fix for a real
+   * failure rather than tidiness.
+   *
+   * These two assertions used to filter the WHOLE QUEUE and then expect this
+   * run's two applicants to be visible in it. That held only while dev's queue
+   * was small enough to fit on one page. On 2026-08-15 seven demo applications
+   * went back on dev (verify:responsive needs the account they come with), the
+   * filtered list paged, this suite's own rows fell off page one, and it
+   * reported a working filter as broken.
+   *
+   * A suite must not assume it owns the database it runs against. Every handle
+   * here shares the run stamp, so searching for that prefix puts this run's
+   * applicants, and nobody else's, in view. The filter assertion underneath is
+   * then about the FILTER, which is what it was always meant to be about.
+   */
+  await adminPage.fill('input[name="search"]', `wurxrev${stamp}`);
+  await adminPage.press('input[name="search"]', 'Enter');
+  await rowLink(PEOPLE[1].handle).first().waitFor({ timeout: 20_000 });
+
   await adminPage.getByRole('button', { name: /worked with wurx/i }).click();
-  await adminPage.waitForTimeout(1200);
+  // Wait for the row that must GO, rather than for a guessed number of
+  // milliseconds. Fixed sleeps before a DOM assertion are the most common flake
+  // in this repo.
+  await rowLink(PEOPLE[1].handle)
+    .first()
+    .waitFor({ state: 'detached', timeout: 20_000 })
+    .catch(() => {});
   check(
     (await rowLink(PEOPLE[0].handle).count()) === 1 &&
       (await rowLink(PEOPLE[1].handle).count()) === 0,
     'the "worked with Wurx" filter narrows to people we already know'
   );
+
   await adminPage.getByRole('button', { name: /worked with wurx/i }).click();
-  await adminPage.waitForTimeout(900);
+  await rowLink(PEOPLE[1].handle).first().waitFor({ timeout: 20_000 });
 
   await adminPage.fill('input[name="search"]', PEOPLE[1].handle);
   await adminPage.press('input[name="search"]', 'Enter');
-  await adminPage.waitForTimeout(1200);
+  await rowLink(PEOPLE[0].handle)
+    .first()
+    .waitFor({ state: 'detached', timeout: 20_000 })
+    .catch(() => {});
   check(
     (await rowLink(PEOPLE[1].handle).count()) === 1 &&
       (await rowLink(PEOPLE[0].handle).count()) === 0,

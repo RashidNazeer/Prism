@@ -168,7 +168,7 @@ export function PostContentDialog({
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        className="border-line bg-surface-1 relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-[20px] border p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-[20px] sm:p-7"
+        className="border-line bg-surface-1 relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-[20px] border p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-xl sm:p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -246,7 +246,7 @@ export function PostContentDialog({
           {/* What this job asked for, and where it has got to. The number they
               came to check, so it sits above the fields rather than under. */}
           {progress ? (
-            <div className="border-line bg-surface-2 mt-4 rounded-[14px] border px-4 py-3.5">
+            <div className="border-line bg-surface-2 mt-4 rounded-lg border px-4 py-3.5">
               {progress.required === null ? (
                 <p className="text-[14px] leading-relaxed">
                   This one has no set number of videos. Post what you agreed and the team will
@@ -339,7 +339,7 @@ export function PostContentDialog({
               disabled={busy}
               onClick={() => setAuthorized((v) => !v)}
               className={cn(
-                'border-line flex w-full items-center gap-3 rounded-[14px] border px-4 py-3.5 text-left transition-colors duration-200',
+                'border-line flex w-full items-center gap-3 rounded-lg border px-4 py-3.5 text-left transition-colors duration-200',
                 authorized ? 'bg-stage-paid-soft border-stage-paid/40' : 'bg-surface-2'
               )}
             >

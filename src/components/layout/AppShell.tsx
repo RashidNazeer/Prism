@@ -166,7 +166,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             dead gap beside the sidebar, so the two halves stop looking like one
             page. Capped width, hugging the left, behaves at every size. */}
         <main className="min-w-0 flex-1">
-          <div className="w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+          {/* Tightened 2026-08-15. Rashid, more than once: do not give extra
+              spaces, show the content early. It was py-6/py-8 under a top bar
+              that already costs 57px, so every screen in the product started a
+              third of the way down. */}
+          <div className="w-full max-w-7xl px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
             {children}
           </div>
         </main>

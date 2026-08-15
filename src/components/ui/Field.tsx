@@ -10,8 +10,15 @@ import { cn } from '@/lib/utils';
  * announces the problem instead of it being a red border only.
  */
 
+/*
+ * `rounded-lg`, not `rounded-xl`, since 2026-08-15. Rashid: reduce the roundness
+ * of the corners of inputs and other things, look at the design. His design puts
+ * inputs at 0.5rem and containers at 0.75rem, and the old 0.75rem on a 44px tall
+ * control was round enough to read as a pill, which is why the forms looked soft
+ * next to the cards rather than part of them.
+ */
 const controlBase = [
-  'w-full rounded-xl border bg-surface-3 px-4 text-[15px]',
+  'w-full rounded-lg border bg-surface-3 px-4 text-[15px]',
   'placeholder:text-faint',
   'transition-colors duration-200 ease-brand',
   'focus:outline-none focus-visible:outline-none',

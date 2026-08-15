@@ -115,7 +115,7 @@ export function AdminDashboard() {
               <Link
                 to={q.to}
                 className={cn(
-                  'border-line bg-surface-1 hover:border-accent/60 flex h-full flex-col rounded-[20px] border p-5 shadow-md transition-colors'
+                  'border-line bg-surface-1 hover:border-accent/60 flex h-full flex-col rounded-xl border p-5 shadow-md transition-colors'
                 )}
               >
                 <span className="text-muted flex items-center gap-2 text-[11px] font-semibold tracking-[0.14em] uppercase">
@@ -138,7 +138,7 @@ export function AdminDashboard() {
       </ul>
 
       {/* ---------------------------------------------- waiting on them --- */}
-      <section className="border-line bg-surface-1 mt-4 rounded-[20px] border p-5 shadow-md">
+      <section className="border-line bg-surface-1 mt-4 rounded-xl border p-5 shadow-md">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
             Waiting on creators
@@ -177,7 +177,7 @@ export function AdminDashboard() {
             <Link
               key={c.label}
               to={c.to}
-              className="border-line bg-surface-2 hover:border-accent/60 rounded-[14px] border px-4 py-3 transition-colors"
+              className="border-line bg-surface-2 hover:border-accent/60 rounded-lg border px-4 py-3 transition-colors"
             >
               <dt className="text-muted flex items-center gap-2 text-[11px] font-semibold tracking-[0.14em] uppercase">
                 <c.icon size={13} aria-hidden className="text-faint" />
@@ -208,7 +208,7 @@ export function AdminDashboard() {
 
       {/* ---------------------------------------------------------- at risk -- */}
       {risk && (risk.brands.length > 0 || risk.emptyOffers > 0 || risk.blocked > 0) ? (
-        <section className="border-line bg-surface-1 mt-4 rounded-[20px] border p-5 shadow-md">
+        <section className="border-line bg-surface-1 mt-4 rounded-xl border p-5 shadow-md">
           <h2 className="text-muted flex items-center gap-2 text-[11px] font-semibold tracking-[0.14em] uppercase">
             <AlertTriangle size={14} aria-hidden className="text-faint" />
             Worth a look
@@ -254,7 +254,7 @@ export function AdminDashboard() {
       ) : null}
 
       {/* --------------------------------------------------------- activity -- */}
-      <section className="border-line bg-surface-1 mt-4 rounded-[20px] border shadow-md">
+      <section className="border-line bg-surface-1 mt-4 rounded-xl border shadow-md">
         <div className="border-line flex items-center justify-between gap-3 border-b px-5 py-3.5">
           <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
             Latest activity
@@ -312,7 +312,7 @@ export function AdminDashboard() {
       </section>
 
       {inbox && inbox.total === 0 ? (
-        <div className="border-line bg-surface-1 mt-4 rounded-[20px] border p-5 shadow-md">
+        <div className="border-line bg-surface-1 mt-4 rounded-xl border p-5 shadow-md">
           <p className="font-semibold">Nothing needs you right now.</p>
           <p className="text-muted mt-1.5 max-w-xl text-[14px] leading-relaxed">
             A good moment to look at what is running: which brands are near their budget, and
@@ -349,7 +349,7 @@ function MoneyRow({ m, showCurrency }: { m: OpsMoney; showCurrency: boolean }) {
   if (m.total === 0) return null;
 
   return (
-    <section className="border-line bg-surface-1 mt-4 rounded-[20px] border p-5 shadow-md">
+    <section className="border-line bg-surface-1 mt-4 rounded-xl border p-5 shadow-md">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
           Committed across every brand{showCurrency ? ` (${m.currency})` : ''}
@@ -377,7 +377,7 @@ function MoneyRow({ m, showCurrency }: { m: OpsMoney; showCurrency: boolean }) {
         {cells.map((c) => (
           <div
             key={c.label}
-            className="border-line bg-surface-2 rounded-[14px] border px-4 py-3"
+            className="border-line bg-surface-2 rounded-lg border px-4 py-3"
           >
             <dt className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
               {c.label}

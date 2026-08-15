@@ -185,14 +185,14 @@ export function Content() {
         ) : isLoading || workLoading ? (
           <Skeleton />
         ) : isError ? (
-          <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-14 text-center shadow-md">
+          <div className="border-line bg-surface-1 rounded-xl border px-6 py-14 text-center shadow-md">
             <p className="font-semibold">That would not load</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : jobs.length === 0 ? (
-          <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-16 text-center shadow-md">
+          <div className="border-line bg-surface-1 rounded-xl border px-6 py-16 text-center shadow-md">
             <Video size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">Nothing to film yet</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
@@ -288,7 +288,7 @@ export function Content() {
                 </div>
 
                 {shown.length === 0 ? (
-                  <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-16 text-center shadow-md">
+                  <div className="border-line bg-surface-1 rounded-xl border px-6 py-16 text-center shadow-md">
                     <Video size={26} aria-hidden className="text-faint mx-auto" />
                     <p className="mt-4 font-semibold">
                       {rows.length === 0 ? 'No videos yet' : 'Nothing matches that'}
@@ -396,7 +396,7 @@ function Summary({
   ];
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-5 rounded-[22px] border p-[clamp(18px,2.4vw,26px)] shadow-md">
+    <section className="border-line bg-surface-1 flex flex-col gap-5 rounded-xl border p-[clamp(18px,2.4vw,26px)] shadow-md">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
@@ -417,7 +417,7 @@ function Summary({
         {cells.map((cell) => (
           <div
             key={cell.label}
-            className={cn('flex flex-col gap-1.5 rounded-[14px] p-3.5', cell.tone.soft)}
+            className={cn('flex flex-col gap-1.5 rounded-lg p-3.5', cell.tone.soft)}
           >
             <dt className={cn('text-[12px] font-semibold', cell.tone.text)}>{cell.label}</dt>
             <dd className="font-display text-[23px] font-semibold">{cell.value}</dd>
@@ -444,7 +444,7 @@ function Jobs({
   onAdd: (applicationId: string) => void;
 }) {
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-[20px] border p-5 shadow-md">
+    <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-xl border p-5 shadow-md">
       <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
         What each job still needs
       </h2>
@@ -519,11 +519,11 @@ function Jobs({
 function Skeleton() {
   return (
     <div className="flex flex-col gap-[14px]">
-      <div className="wx-skeleton h-[190px] rounded-[22px]" />
-      <div className="wx-skeleton h-[150px] rounded-[20px]" />
+      <div className="wx-skeleton h-[190px] rounded-xl" />
+      <div className="wx-skeleton h-[150px] rounded-xl" />
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <li key={i} className="wx-skeleton h-[360px] rounded-[20px]" />
+          <li key={i} className="wx-skeleton h-[360px] rounded-xl" />
         ))}
       </ul>
     </div>

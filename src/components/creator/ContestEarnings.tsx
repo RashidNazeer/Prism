@@ -62,7 +62,7 @@ export function ContestEarnings() {
   if (rows.length === 0) return null;
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-[20px] border p-[clamp(16px,2vw,22px)] shadow-md">
+    <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-[clamp(16px,2vw,22px)] shadow-md">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <p className="text-muted flex items-center gap-2 text-[11px] font-semibold tracking-[0.14em] uppercase">
           <Trophy size={14} className="text-stage-due" aria-hidden />
@@ -179,7 +179,7 @@ function Cell({
   return (
     <div
       className={cn(
-        'flex flex-col gap-1.5 rounded-[14px] p-3.5',
+        'flex flex-col gap-1.5 rounded-lg p-3.5',
         tone === 'due' ? 'bg-stage-due-soft' : 'bg-stage-paid-soft'
       )}
     >

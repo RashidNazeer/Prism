@@ -378,7 +378,7 @@ export function Contests() {
           {isLoading ? (
             <ul className="mt-4 grid gap-3 lg:grid-cols-2">
               {Array.from({ length: 4 }).map((_, i) => (
-                <li key={i} className="wx-skeleton h-72 rounded-[20px]" />
+                <li key={i} className="wx-skeleton h-72 rounded-xl" />
               ))}
             </ul>
           ) : isError ? (
@@ -507,7 +507,7 @@ function ContestCard({
   const rows: DeliverableLike[] = promised ? contest.terms : contest.deliverables;
 
   return (
-    <div className="border-line bg-surface-1 flex h-full flex-col rounded-[20px] border p-5 shadow-md">
+    <div className="border-line bg-surface-1 flex h-full flex-col rounded-xl border p-5 shadow-md">
       {contest.brand ? (
         <Link
           to={`/app/brands/${contest.brand.slug}`}
@@ -1052,8 +1052,8 @@ function Note({
 
 function Empty({ title, body }: { title: string; body: string }) {
   return (
-    <div className="border-line bg-surface-1 mt-4 rounded-[20px] border px-6 py-14 text-center shadow-md">
-      <span className="bg-surface-3 border-line-strong mx-auto grid size-12 place-items-center rounded-[14px] border">
+    <div className="border-line bg-surface-1 mt-4 rounded-xl border px-6 py-14 text-center shadow-md">
+      <span className="bg-surface-3 border-line-strong mx-auto grid size-12 place-items-center rounded-lg border">
         <Trophy size={20} aria-hidden className="text-muted" />
       </span>
       <p className="font-display mt-4 text-[19px] font-semibold">{title}</p>

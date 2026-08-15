@@ -820,9 +820,21 @@ try {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto(`${BASE}/admin/contests/rewards?view=paid`, { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => /Contest rewards/.test(document.body.innerText), undefined, {
-    timeout: 20_000,
-  });
+  /*
+   * "Contest rewards" was this screen's h1 until 2026-08-15, when the three
+   * contest screens gained one shared header and the h1 became "Contests" with
+   * All / Claims / Rewards beside it. This assertion went stale the moment that
+   * shipped, which is the class OPERATIONS warns about by name: after a copy
+   * change, grep `scripts/` for the old wording. I did not, and this caught it.
+   *
+   * It now waits on the screen's OWN content rather than on a page title, which
+   * is the thing that cannot be renamed by a layout change somewhere else.
+   */
+  await page.waitForFunction(
+    () => /rewards already paid|nothing has been paid yet/i.test(document.body.innerText),
+    undefined,
+    { timeout: 20_000 }
+  );
   const rewardScrolls = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
   );

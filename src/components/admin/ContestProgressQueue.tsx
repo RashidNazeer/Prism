@@ -418,7 +418,7 @@ export function ContestProgressQueue({
   return (
     <section
       className={cn(
-        'border-line bg-surface-1 flex flex-col gap-4 rounded-[20px] border p-5 shadow-md',
+        'border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5 shadow-md',
         className
       )}
     >
@@ -442,11 +442,11 @@ export function ContestProgressQueue({
 
       {isPending ? (
         <div className="flex flex-col gap-3">
-          <div className="wx-skeleton h-[220px] rounded-[20px]" />
-          <div className="wx-skeleton h-[220px] rounded-[20px]" />
+          <div className="wx-skeleton h-[220px] rounded-xl" />
+          <div className="wx-skeleton h-[220px] rounded-xl" />
         </div>
       ) : isError ? (
-        <div className="border-line flex flex-col items-start gap-3 rounded-[20px] border border-dashed p-6">
+        <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
           <h3 className="font-display text-text text-[19px] leading-tight font-bold">
             That queue would not load
           </h3>
@@ -464,7 +464,7 @@ export function ContestProgressQueue({
          * queue. Saying "nothing is waiting" here would be a lie with the count
          * still showing beside it.
          */
-        <div className="border-line flex flex-col items-start gap-3 rounded-[20px] border border-dashed p-6">
+        <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
           <h3 className="font-display text-text text-[19px] leading-tight font-bold">
             This page is empty now
           </h3>
@@ -476,8 +476,8 @@ export function ContestProgressQueue({
           </Button>
         </div>
       ) : rows.length === 0 ? (
-        <div className="border-line flex flex-col items-start gap-3 rounded-[20px] border border-dashed p-6">
-          <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-[14px] border">
+        <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
+          <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
             <Check size={19} className="text-muted" aria-hidden />
           </div>
           <h3 className="font-display text-text text-[19px] leading-tight font-bold">
@@ -602,7 +602,7 @@ function ClaimCard({
   }
 
   return (
-    <article className="border-line bg-surface-1 rounded-[20px] border p-4 sm:p-5">
+    <article className="border-line bg-surface-1 rounded-xl border p-4 sm:p-5">
       {/* ------------------------------------------------------------ who -- */}
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">

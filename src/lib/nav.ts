@@ -1,6 +1,5 @@
 import {
   Award,
-  Banknote,
   Building2,
   Gift,
   Handshake,
@@ -86,18 +85,24 @@ const ADMIN: NavGroup[] = [
     // me" are asked across every brand at once, and making somebody walk into a
     // brand to find out was the wrong shape.
     //
-    // Claims is the one that must never be missed. A creator types their own
-    // GMV, so nothing they claim counts until it is confirmed here, and a claim
-    // sitting unread is a creator watching a number that will not move.
+    // CLAIMS AND REWARDS LEFT THIS LIST ON 2026-08-15, at Rashid's request, and
+    // became tabs in the Contests page header instead. His reasoning, and it is
+    // right: three sidebar rows for one subject spends the menu on something
+    // the page can carry itself, and the three screens are one job read three
+    // ways rather than three places to go.
     //
-    // Rewards is the money that confirmation creates. Since 2026-08-14 a reward
-    // is owed the moment a claim is confirmed, so these two are one job in two
-    // sittings: check the figures, then send what they earned.
+    // They are still routes, still linked, still reachable directly. Nothing
+    // was removed except three rows of chrome.
     label: 'Contests',
     items: [
-      { label: 'All contests', icon: Trophy, to: '/admin/contests' },
-      { label: 'Claims', icon: Inbox, to: '/admin/contests/claims' },
-      { label: 'Rewards', icon: Banknote, to: '/admin/contests/rewards' },
+      {
+        label: 'Contests',
+        icon: Trophy,
+        to: '/admin/contests',
+        // The tabs live under /admin/contests/*, so the sidebar row has to stay
+        // lit while somebody is on Claims or Rewards.
+        activePrefixes: ['/admin/contests'],
+      },
     ],
   },
   {

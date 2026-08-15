@@ -513,7 +513,7 @@ export function ContestSetup() {
         </div>
 
         {contestFailed && !isNew ? (
-          <div className="border-line bg-surface-1 flex flex-col items-start gap-3 rounded-[20px] border p-8 shadow-md">
+          <div className="border-line bg-surface-1 flex flex-col items-start gap-3 rounded-xl border p-8 shadow-md">
             <h2 className="font-display text-text text-[21px] leading-tight font-bold">
               That contest could not be opened
             </h2>
@@ -534,9 +534,9 @@ export function ContestSetup() {
             </div>
           </div>
         ) : showSkeleton ? (
-          <div className="wx-skeleton h-[420px] rounded-[20px]" />
+          <div className="wx-skeleton h-[420px] rounded-xl" />
         ) : showGone ? (
-          <div className="border-line bg-surface-1 flex flex-col items-start gap-3 rounded-[20px] border p-8 shadow-md">
+          <div className="border-line bg-surface-1 flex flex-col items-start gap-3 rounded-xl border p-8 shadow-md">
             <h2 className="font-display text-text text-[21px] leading-tight font-bold">
               There is no contest here any more
             </h2>
@@ -1161,7 +1161,7 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-[20px] border p-5 shadow-md">
+    <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5 shadow-md">
       <div>
         <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
           {title}

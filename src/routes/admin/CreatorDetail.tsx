@@ -60,7 +60,7 @@ export function CreatorDetail() {
         <div className="max-w-3xl space-y-4">
           <div className="wx-skeleton h-9 w-64 rounded-lg" />
           <div className="wx-skeleton h-10 w-full rounded-lg" />
-          <div className="wx-skeleton h-40 rounded-[20px]" />
+          <div className="wx-skeleton h-40 rounded-xl" />
         </div>
       </AppShell>
     );
@@ -69,7 +69,7 @@ export function CreatorDetail() {
   if (isError || !creator) {
     return (
       <AppShell>
-        <div className="border-line bg-surface-1 max-w-lg rounded-[20px] border p-8 text-center shadow-md">
+        <div className="border-line bg-surface-1 max-w-lg rounded-xl border p-8 text-center shadow-md">
           <p className="font-semibold">No such creator</p>
           <p className="text-muted mt-2 text-[14px] leading-relaxed">
             The account may have been closed. Nothing else is affected.
@@ -125,7 +125,7 @@ export function CreatorDetail() {
         ].map((c) => (
           <div
             key={c.label}
-            className="border-line bg-surface-1 rounded-[20px] border px-5 py-4 shadow-md"
+            className="border-line bg-surface-1 rounded-xl border px-5 py-4 shadow-md"
           >
             <dt className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
               {c.label}
@@ -181,7 +181,7 @@ function WorkTab({ jobs, loading }: { jobs: CreatorJob[]; loading: boolean }) {
     return (
       <ul className="mt-5 grid gap-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <li key={i} className="wx-skeleton h-28 rounded-[20px]" />
+          <li key={i} className="wx-skeleton h-28 rounded-xl" />
         ))}
       </ul>
     );
@@ -189,7 +189,7 @@ function WorkTab({ jobs, loading }: { jobs: CreatorJob[]; loading: boolean }) {
 
   if (jobs.length === 0) {
     return (
-      <div className="border-line bg-surface-1 mt-5 rounded-[20px] border px-6 py-16 text-center shadow-md">
+      <div className="border-line bg-surface-1 mt-5 rounded-xl border px-6 py-16 text-center shadow-md">
         <Video size={26} aria-hidden className="text-faint mx-auto" />
         <p className="mt-4 font-semibold">Nothing taken yet</p>
         <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
@@ -210,7 +210,7 @@ function WorkTab({ jobs, loading }: { jobs: CreatorJob[]; loading: boolean }) {
         return (
           <li
             key={job.id}
-            className="border-line bg-surface-1 rounded-[20px] border p-4 shadow-md sm:p-5"
+            className="border-line bg-surface-1 rounded-xl border p-4 shadow-md sm:p-5"
           >
             <div className="flex flex-wrap items-start justify-between gap-x-5 gap-y-2">
               <div className="min-w-0 flex-1 basis-52">
@@ -285,7 +285,7 @@ function HistoryTab({ creatorId }: { creatorId: string }) {
     return (
       <ul className="mt-5 grid gap-2">
         {Array.from({ length: 5 }).map((_, i) => (
-          <li key={i} className="wx-skeleton h-14 rounded-[14px]" />
+          <li key={i} className="wx-skeleton h-14 rounded-lg" />
         ))}
       </ul>
     );
@@ -294,12 +294,12 @@ function HistoryTab({ creatorId }: { creatorId: string }) {
   return (
     <div className="mt-5">
       {(rows ?? []).length === 0 ? (
-        <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-14 text-center shadow-md">
+        <div className="border-line bg-surface-1 rounded-xl border px-6 py-14 text-center shadow-md">
           <History size={26} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">Nothing recorded yet</p>
         </div>
       ) : (
-        <ul className="border-line bg-surface-1 divide-line divide-y rounded-[20px] border shadow-md">
+        <ul className="border-line bg-surface-1 divide-line divide-y rounded-xl border shadow-md">
           {(rows ?? []).map((row) => (
             <li
               key={row.id}
@@ -396,7 +396,7 @@ function AccountTab({
         {facts.map((f) => (
           <div
             key={f.label}
-            className="border-line bg-surface-1 rounded-[14px] border px-5 py-4"
+            className="border-line bg-surface-1 rounded-lg border px-5 py-4"
           >
             <dt className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
               {f.label}

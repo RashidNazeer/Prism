@@ -42,7 +42,7 @@ export function ApplicationDetail() {
       {isLoading ? (
         <div className="mt-6 max-w-3xl space-y-4">
           <div className="wx-skeleton h-10 w-64 rounded" />
-          <div className="wx-skeleton h-48 rounded-[20px]" />
+          <div className="wx-skeleton h-48 rounded-xl" />
         </div>
       ) : isError ? (
         <Empty
@@ -100,7 +100,7 @@ function Loaded({
           now, which is how this was found.
         */}
         <div className="grid min-w-0 gap-6">
-          <section className="border-line bg-surface-1 min-w-0 rounded-[20px] border p-6 shadow-md">
+          <section className="border-line bg-surface-1 min-w-0 rounded-xl border p-6 shadow-md">
             <h2 className="text-lg font-bold">Application</h2>
             <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
               <Row label="Niche" value={niche} />
@@ -154,7 +154,7 @@ function Loaded({
             </div>
           </section>
 
-          <section className="border-line bg-surface-1 min-w-0 rounded-[20px] border p-6 shadow-md">
+          <section className="border-line bg-surface-1 min-w-0 rounded-xl border p-6 shadow-md">
             <h2 className="text-lg font-bold">Account</h2>
             {application.applicant ? (
               <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
@@ -199,7 +199,7 @@ function Loaded({
           {application.status === 'pending' ? (
             <ReviewPanel application={application} />
           ) : (
-            <section className="border-line bg-surface-1 min-w-0 rounded-[20px] border p-6 shadow-md">
+            <section className="border-line bg-surface-1 min-w-0 rounded-xl border p-6 shadow-md">
               <h2 className="text-lg font-bold">Decision</h2>
               <div className="mt-4">
                 <StatusBadge status={application.status} />
@@ -232,7 +232,7 @@ function Loaded({
           )}
 
           {/* --------------------------------------------------- audit trail */}
-          <section className="border-line bg-surface-1 min-w-0 rounded-[20px] border p-6 shadow-md">
+          <section className="border-line bg-surface-1 min-w-0 rounded-xl border p-6 shadow-md">
             <h2 className="text-sm font-semibold">History</h2>
             {history && history.length > 0 ? (
               <ul className="mt-4 grid gap-3 text-[13px]">
@@ -302,7 +302,7 @@ function Row({
 
 function Empty({ title, body }: { title: string; body: string }) {
   return (
-    <div className="border-line bg-surface-1 mt-8 max-w-lg rounded-[20px] border p-8 text-center shadow-md">
+    <div className="border-line bg-surface-1 mt-8 max-w-lg rounded-xl border p-8 text-center shadow-md">
       <p className="font-semibold">{title}</p>
       <p className="text-muted mt-2 text-[14px] leading-relaxed">{body}</p>
       <ButtonLink to="/admin/applications" variant="secondary" size="sm" className="mt-5">

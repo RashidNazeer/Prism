@@ -257,7 +257,7 @@ export function Applications() {
       {/* ------------------------------------------------------------- table */}
       <div
         className={cn(
-          'border-line bg-surface-1 mt-4 overflow-hidden rounded-[20px] border shadow-md transition-opacity duration-200',
+          'border-line bg-surface-1 mt-4 overflow-hidden rounded-xl border shadow-md transition-opacity duration-200',
           isPlaceholderData && 'opacity-60'
         )}
       >

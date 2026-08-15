@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router';
 import { AppShell } from '@/components/layout/AppShell';
+import { ContestsHeader } from '@/components/admin/ContestsHeader';
 import {
   ContestRewardsQueue,
   type RewardsView,
@@ -32,16 +33,9 @@ export function ContestRewards() {
   return (
     <AppShell>
       <div className="mx-0 w-full max-w-[1128px]">
-        <div className="pb-5">
-          <h1 className="font-display text-text text-[26px] leading-tight font-bold">
-            Contest rewards
-          </h1>
-          <p className="text-muted mt-1 max-w-prose text-[14px] leading-relaxed">
-            What creators have earned by crossing a target on figures this team confirmed. Nothing
-            here was granted by hand: a reward becomes owed at the moment a claim is confirmed, and
-            the only thing left to do with it is pay it.
-          </p>
-        </div>
+        <ContestsHeader subtitle="What creators have earned by crossing a target on figures this team confirmed. Nothing here was granted by hand: a reward becomes owed at the moment a claim is confirmed, and the only thing left to do with it is pay it." />
+
+        <div className="pt-4" />
 
         <ContestRewardsQueue
           view={view}

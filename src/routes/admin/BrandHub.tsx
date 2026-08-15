@@ -127,7 +127,7 @@ export function BrandHub() {
         <div className="max-w-3xl space-y-4">
           <div className="wx-skeleton h-8 w-56 rounded" />
           <div className="wx-skeleton h-10 w-full rounded" />
-          <div className="wx-skeleton h-36 rounded-[20px]" />
+          <div className="wx-skeleton h-36 rounded-xl" />
         </div>
       </AppShell>
     );
@@ -136,7 +136,7 @@ export function BrandHub() {
   if (isError || !brand) {
     return (
       <AppShell>
-        <div className="border-line bg-surface-1 max-w-lg rounded-[20px] border p-8 text-center shadow-md">
+        <div className="border-line bg-surface-1 max-w-lg rounded-xl border p-8 text-center shadow-md">
           <p className="font-semibold">
             {isError ? 'That brand would not load' : 'No such brand'}
           </p>
@@ -300,7 +300,7 @@ function Overview({ brand }: { brand: Brand }) {
     <div className="mt-6 grid max-w-4xl gap-6">
       {/* Budget first, because it is the only fact here that changes on its own
           and the only one with a consequence. Everything below is reference. */}
-      <div className="border-line bg-surface-1 rounded-[20px] border px-5 py-4 shadow-md">
+      <div className="border-line bg-surface-1 rounded-xl border px-5 py-4 shadow-md">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <dt className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
             Budget committed to creators
@@ -421,7 +421,7 @@ function MoneyByStage({ m, showCurrency }: { m: BrandMoney; showCurrency: boolea
   ];
 
   return (
-    <section className="border-line bg-surface-1 rounded-[20px] border p-5 shadow-md">
+    <section className="border-line bg-surface-1 rounded-xl border p-5 shadow-md">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
           Where the committed money has got to
@@ -456,7 +456,7 @@ function MoneyByStage({ m, showCurrency }: { m: BrandMoney; showCurrency: boolea
         {cells.map((c) => (
           <div
             key={c.key}
-            className="border-line bg-surface-2 rounded-[14px] border px-3.5 py-3"
+            className="border-line bg-surface-2 rounded-lg border px-3.5 py-3"
           >
             <dt className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
               {c.label}
@@ -496,7 +496,7 @@ function ContentLanded({ content }: { content: BrandContent | undefined }) {
   ];
 
   return (
-    <section className="border-line bg-surface-1 rounded-[20px] border p-5 shadow-md">
+    <section className="border-line bg-surface-1 rounded-xl border p-5 shadow-md">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
           What has been filmed for this brand
@@ -518,7 +518,7 @@ function ContentLanded({ content }: { content: BrandContent | undefined }) {
           {cells.map((c) => (
             <div
               key={c.key}
-              className="border-line bg-surface-2 rounded-[14px] border px-3.5 py-3"
+              className="border-line bg-surface-2 rounded-lg border px-3.5 py-3"
             >
               <dt className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
                 {c.label}
@@ -642,11 +642,11 @@ function Offers({
       {loading ? (
         <ul className="mt-4 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <li key={i} className="wx-skeleton h-36 rounded-[20px]" />
+            <li key={i} className="wx-skeleton h-36 rounded-xl" />
           ))}
         </ul>
       ) : offers.length === 0 ? (
-        <div className="border-line bg-surface-1 mt-4 rounded-[20px] border px-6 py-14 text-center shadow-md">
+        <div className="border-line bg-surface-1 mt-4 rounded-xl border px-6 py-14 text-center shadow-md">
           <Ticket size={26} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">
             {filtered ? 'Nothing matches that' : 'No offers yet'}
@@ -723,7 +723,7 @@ function OfferCard({ offer, onEdit }: { offer: Offer; onEdit: () => void }) {
   return (
     <div
       className={cn(
-        'bg-surface-1 flex h-full flex-col rounded-[20px] border p-5',
+        'bg-surface-1 flex h-full flex-col rounded-xl border p-5',
         offer.status === 'active' ? 'border-line' : 'border-line border-dashed'
       )}
     >

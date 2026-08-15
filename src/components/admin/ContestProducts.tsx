@@ -140,7 +140,7 @@ export function ContestProducts({ contestId, brandId, selected, loading }: Props
   }
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-[20px] border p-5 shadow-md">
+    <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5 shadow-md">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
@@ -190,11 +190,11 @@ export function ContestProducts({ contestId, brandId, selected, loading }: Props
 
       {loading || isPending ? (
         <div className="flex flex-col gap-3">
-          <div className="wx-skeleton h-[76px] rounded-[20px]" />
-          <div className="wx-skeleton h-[76px] rounded-[20px]" />
+          <div className="wx-skeleton h-[76px] rounded-xl" />
+          <div className="wx-skeleton h-[76px] rounded-xl" />
         </div>
       ) : isError ? (
-        <div className="border-line flex flex-col items-start gap-3 rounded-[20px] border border-dashed p-6">
+        <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
           <h3 className="font-display text-text text-[19px] leading-tight font-bold">
             The products did not load
           </h3>
@@ -206,8 +206,8 @@ export function ContestProducts({ contestId, brandId, selected, loading }: Props
           </Button>
         </div>
       ) : live.length === 0 && strays.length === 0 ? (
-        <div className="border-line flex flex-col items-start gap-3 rounded-[20px] border border-dashed p-6">
-          <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-[14px] border">
+        <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
+          <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
             <Package size={19} className="text-muted" aria-hidden />
           </div>
           <h3 className="font-display text-text text-[19px] leading-tight font-bold">
@@ -280,7 +280,7 @@ function ProductRow({
   return (
     <label
       className={cn(
-        'ease-brand flex min-h-11 cursor-pointer flex-wrap items-center gap-x-4 gap-y-3 rounded-[20px] border p-4 transition-colors',
+        'ease-brand flex min-h-11 cursor-pointer flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border p-4 transition-colors',
         checked
           ? 'border-accent bg-accent-soft'
           : 'border-line bg-surface-1 hover:border-line-strong',
@@ -340,7 +340,7 @@ function StrayRow({
   onRemove: () => void;
 }) {
   return (
-    <div className="border-line bg-surface-1 flex min-h-11 flex-wrap items-center gap-x-4 gap-y-3 rounded-[20px] border border-dashed p-4">
+    <div className="border-line bg-surface-1 flex min-h-11 flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border border-dashed p-4">
       <span className="min-w-0 flex-1 basis-40 text-[14px] font-semibold break-words">
         {name}
       </span>

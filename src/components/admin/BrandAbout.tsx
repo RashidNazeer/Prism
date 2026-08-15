@@ -186,11 +186,11 @@ function Products({ brandId, brandName }: { brandId: string; brandName: string }
       {isLoading ? (
         <ul className="mt-4 grid gap-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <li key={i} className="wx-skeleton h-20 rounded-[20px]" />
+            <li key={i} className="wx-skeleton h-20 rounded-xl" />
           ))}
         </ul>
       ) : rows.length === 0 ? (
-        <div className="border-line bg-surface-1 mt-4 rounded-[20px] border px-6 py-12 text-center shadow-md">
+        <div className="border-line bg-surface-1 mt-4 rounded-xl border px-6 py-12 text-center shadow-md">
           <Package size={24} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">No products yet</p>
           <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
@@ -232,7 +232,7 @@ function ProductRow({ product, onEdit }: { product: BrandProduct; onEdit: () => 
   return (
     <div
       className={cn(
-        'bg-surface-1 rounded-[20px] border p-4',
+        'bg-surface-1 rounded-xl border p-4',
         product.is_active ? 'border-line' : 'border-line border-dashed'
       )}
     >

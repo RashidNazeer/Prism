@@ -205,18 +205,18 @@ export function Offers() {
           {isLoading ? (
             <ul className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
-                <li key={i} className="wx-skeleton h-52 rounded-[20px]" />
+                <li key={i} className="wx-skeleton h-52 rounded-xl" />
               ))}
             </ul>
           ) : isError ? (
-            <div className="border-line bg-surface-1 mt-4 rounded-[20px] border px-6 py-14 text-center shadow-md">
+            <div className="border-line bg-surface-1 mt-4 rounded-xl border px-6 py-14 text-center shadow-md">
               <p className="font-semibold">That list would not load</p>
               <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
                 {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
               </p>
             </div>
           ) : shown.length === 0 ? (
-            <div className="border-line bg-surface-1 mt-4 rounded-[20px] border px-6 py-16 text-center shadow-md">
+            <div className="border-line bg-surface-1 mt-4 rounded-xl border px-6 py-16 text-center shadow-md">
               <Ticket size={26} aria-hidden className="text-faint mx-auto" />
               <p className="mt-4 font-semibold">
                 {(offers ?? []).length === 0 ? 'No offers yet' : 'Nothing matches that'}

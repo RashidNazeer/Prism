@@ -126,7 +126,7 @@ export function AdminContent() {
               <ByBrand rows={counts.byBrand} onPick={(id) => set({ brand: id, view: '' })} />
             </>
           ) : (
-            <div className="wx-skeleton h-[220px] rounded-[22px]" />
+            <div className="wx-skeleton h-[220px] rounded-xl" />
           )
         ) : (
           <>
@@ -223,18 +223,18 @@ export function AdminContent() {
             {isLoading ? (
               <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <li key={i} className="wx-skeleton h-[400px] rounded-[20px]" />
+                  <li key={i} className="wx-skeleton h-[400px] rounded-xl" />
                 ))}
               </ul>
             ) : isError ? (
-              <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-14 text-center shadow-md">
+              <div className="border-line bg-surface-1 rounded-xl border px-6 py-14 text-center shadow-md">
                 <p className="font-semibold">That would not load</p>
                 <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
                   {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
                 </p>
               </div>
             ) : rows.length === 0 ? (
-              <div className="border-line bg-surface-1 rounded-[20px] border px-6 py-16 text-center shadow-md">
+              <div className="border-line bg-surface-1 rounded-xl border px-6 py-16 text-center shadow-md">
                 <Video size={26} aria-hidden className="text-faint mx-auto" />
                 <p className="mt-4 font-semibold">Nothing here</p>
                 <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
@@ -358,7 +358,7 @@ function ByBrand({
   const most = Math.max(...rows.map((r) => r.all), 1);
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-[20px] border p-5 shadow-md">
+    <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-xl border p-5 shadow-md">
       <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
         Where it is coming from
       </h2>
@@ -431,7 +431,7 @@ function Board({ counts }: { counts: ContentTotals }) {
   ];
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-5 rounded-[22px] border p-[clamp(18px,2.4vw,26px)] shadow-md">
+    <section className="border-line bg-surface-1 flex flex-col gap-5 rounded-xl border p-[clamp(18px,2.4vw,26px)] shadow-md">
       <div className="flex flex-col gap-1">
         <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
           Videos posted
@@ -448,7 +448,7 @@ function Board({ counts }: { counts: ContentTotals }) {
         {cells.map((cell) => (
           <div
             key={cell.label}
-            className={cn('flex flex-col gap-1.5 rounded-[14px] p-3.5', cell.tone.soft)}
+            className={cn('flex flex-col gap-1.5 rounded-lg p-3.5', cell.tone.soft)}
           >
             <dt className={cn('text-[12px] font-semibold', cell.tone.text)}>{cell.label}</dt>
             <dd className="font-display text-[23px] font-semibold">{cell.value}</dd>

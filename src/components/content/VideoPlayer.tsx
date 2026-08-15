@@ -41,7 +41,7 @@ export function VideoPlayer({ row, onClose }: { row: ContentRow; onClose: () => 
         initial={{ opacity: 0, y: 16, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-        className="border-line bg-surface-1 relative flex max-h-[100dvh] w-full max-w-[420px] flex-col overflow-y-auto rounded-t-[20px] border p-4 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-[20px]"
+        className="border-line bg-surface-1 relative flex max-h-[100dvh] w-full max-w-[420px] flex-col overflow-y-auto rounded-t-[20px] border p-4 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-xl"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -63,7 +63,7 @@ export function VideoPlayer({ row, onClose }: { row: ContentRow; onClose: () => 
           </button>
         </div>
 
-        <div className="bg-surface-2 border-line mt-3 overflow-hidden rounded-[14px] border">
+        <div className="bg-surface-2 border-line mt-3 overflow-hidden rounded-lg border">
           {id ? (
             <iframe
               // `?autoplay=0` so opening a card never blares sound at somebody

@@ -27,6 +27,7 @@
     "verify:content": "node scripts/check-content.mjs",
     "verify:contests": "node scripts/check-contests.mjs",
     "verify:all": "node scripts/verify-all.mjs",
+    "measure:nav": "node scripts/measure-nav.mjs",
     "seed:contests": "node scripts/seed-contests.mjs"
   },
   "dependencies": {

@@ -418,11 +418,11 @@ export function ContestRewardsQueue({
       <div className="grid gap-3 sm:grid-cols-2">
         {totals.isPending ? (
           <>
-            <div className="wx-skeleton h-[104px] rounded-[20px]" />
-            <div className="wx-skeleton h-[104px] rounded-[20px]" />
+            <div className="wx-skeleton h-[104px] rounded-xl" />
+            <div className="wx-skeleton h-[104px] rounded-xl" />
           </>
         ) : (totals.data ?? []).length === 0 ? (
-          <div className="border-line text-muted sm:col-span-2 rounded-[20px] border border-dashed p-5 text-[13px] leading-relaxed">
+          <div className="border-line text-muted sm:col-span-2 rounded-xl border border-dashed p-5 text-[13px] leading-relaxed">
             No contest reward has been earned yet. A reward appears here the moment somebody on
             this team confirms the figures that earn it.
           </div>
@@ -476,7 +476,7 @@ export function ContestRewardsQueue({
       </div>
 
       {/* ------------------------------------------------------ the list -- */}
-      <div className="border-line bg-surface-1 flex flex-col gap-4 rounded-[20px] border p-4 shadow-md sm:p-5">
+      <div className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-4 shadow-md sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
           <div>
             <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
@@ -510,7 +510,7 @@ export function ContestRewardsQueue({
             <div className="wx-skeleton h-[92px] rounded-2xl" />
           </div>
         ) : isError ? (
-          <div className="border-line flex flex-col items-start gap-3 rounded-[20px] border border-dashed p-6">
+          <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
             <h3 className="font-display text-text text-[19px] leading-tight font-bold">
               That would not load
             </h3>
@@ -523,7 +523,7 @@ export function ContestRewardsQueue({
             </Button>
           </div>
         ) : rows.length === 0 && total > 0 ? (
-          <div className="border-line flex flex-col items-start gap-3 rounded-[20px] border border-dashed p-6">
+          <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
             <h3 className="font-display text-text text-[19px] leading-tight font-bold">
               This page is empty now
             </h3>
@@ -624,7 +624,7 @@ export function ContestRewardsQueue({
 
       {/* ----------------------------------------------------- the action -- */}
       {view === 'owed' && chosen.length > 0 ? (
-        <div className="border-line-strong bg-surface-2 sticky bottom-3 z-10 flex flex-col gap-3 rounded-[20px] border p-4 shadow-md sm:p-5">
+        <div className="border-line-strong bg-surface-2 sticky bottom-3 z-10 flex flex-col gap-3 rounded-xl border p-4 shadow-md sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <p className="text-text text-[14px] font-semibold">
               {chosen.length} reward{chosen.length === 1 ? '' : 's'},{' '}
@@ -744,7 +744,7 @@ function MoneyCard({
   hint: string;
 }) {
   return (
-    <div className="border-line bg-surface-1 rounded-[20px] border p-5 shadow-md">
+    <div className="border-line bg-surface-1 rounded-xl border p-5 shadow-md">
       <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
         {label}
       </span>
@@ -898,8 +898,8 @@ function RewardCard({
 
 function EmptyState({ view, scoped }: { view: RewardsView; scoped: boolean }) {
   return (
-    <div className="border-line flex flex-col items-start gap-3 rounded-[20px] border border-dashed p-6">
-      <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-[14px] border">
+    <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
+      <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
         <Trophy size={19} className="text-muted" aria-hidden />
       </div>
       <h3 className="font-display text-text text-[19px] leading-tight font-bold">

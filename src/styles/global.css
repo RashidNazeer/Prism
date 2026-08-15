@@ -5,33 +5,41 @@
    Type, for signed-in screens only.
 
    Two variable faces, SELF-HOSTED from /public/fonts, never fetched from a
-   third party: Instrument Sans for the interface and Sora for display figures
-   and headings. Together the latin subsets are 23 KB, and the latin-ext files
-   are only pulled if an accented character actually appears.
+   third party: Inter for the interface and Sora for display figures and
+   headings, which is the pairing the approved design uses. Together the latin
+   subsets are 59 KB, and the latin-ext files are only pulled if an accented
+   character actually appears.
 
    Declaring a face costs nothing. A browser downloads it the first time
    something on screen is set in it, which is why these are safe to declare
    here and scope to `.wx-app` below: the public landing page never asks for
    them, so its measured payload is unchanged.
    ============================================================================ */
+/* INTER, NOT INSTRUMENT SANS, SINCE 2026-08-15. Rashid asked for the design's
+   own body face, and the design pairs Sora headings with Inter body. Sora was
+   already ours, so this is the half that was missing.
+
+   IT COSTS 36 KB MORE on the signed-in bundle: Inter's latin subset is 47 KB
+   against Instrument Sans' 11 KB, because it is a variable face carrying the
+   whole 400 to 700 axis. Worth saying out loud rather than discovering later.
+   It is cached after the first signed-in page, and the PUBLIC landing page
+   still downloads nothing, because these are scoped to `.wx-app` below. */
 @font-face {
-  font-family: 'Instrument Sans';
+  font-family: 'Inter';
   font-style: normal;
   font-weight: 400 700;
-  font-stretch: 100%;
   font-display: swap;
-  src: url('/fonts/instrument-sans-latin.woff2') format('woff2');
+  src: url('/fonts/inter-latin.woff2') format('woff2');
   unicode-range:
     U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
     U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
-  font-family: 'Instrument Sans';
+  font-family: 'Inter';
   font-style: normal;
   font-weight: 400 700;
-  font-stretch: 100%;
   font-display: swap;
-  src: url('/fonts/instrument-sans-latin-ext.woff2') format('woff2');
+  src: url('/fonts/inter-latin-ext.woff2') format('woff2');
   unicode-range:
     U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
     U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
@@ -63,10 +71,10 @@
    than in tokens.css is what keeps the two faces off the public page. */
 .wx-app {
   --wx-font-sans:
-    'Instrument Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
   --wx-font-display:
-    'Sora', 'Instrument Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Sora', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
 
   font-family: var(--wx-font-sans);
@@ -92,6 +100,10 @@
   --color-line: var(--wx-border);
   --color-line-strong: var(--wx-border-strong);
   --color-line-interactive: var(--wx-border-interactive);
+  /* The design's translucent hairline: a rule you can see the page through,
+     rather than a solid one. Inverts to ink in light mode, like the rest of the
+     glass, so it is visible on paper as well as on near-black. */
+  --color-glass: var(--wx-glass-line);
 
   --color-accent: var(--wx-accent);
   --color-accent-hover: var(--wx-accent-hover);

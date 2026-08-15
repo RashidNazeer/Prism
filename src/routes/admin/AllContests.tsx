@@ -3,7 +3,8 @@ import { Link, useSearchParams } from 'react-router';
 import { ChevronLeft, ChevronRight, Search, ShieldCheck, Trophy, Users } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
-import { Field, Input, Select } from '@/components/ui/Field';
+import { Input, Select } from '@/components/ui/Field';
+import { ContestsHeader } from '@/components/admin/ContestsHeader';
 import { ContestStateChip } from '@/components/work/ContestStateChip';
 import { cn } from '@/lib/utils';
 import { formatDeadline, timeLeft } from '@/lib/contest-time';
@@ -127,23 +128,26 @@ export function AllContests() {
 
   return (
     <AppShell>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h1 className="font-display text-[clamp(1.4rem,3.5vw,1.9rem)] font-extrabold">
-          Contests
-        </h1>
-        <p className="text-muted text-[14px]">
-          Every contest we run, across every brand, soonest deadline first.
-        </p>
-      </div>
+      <ContestsHeader />
 
-      {/* ------------------------------------------------------------ tabs -- */}
-      {/* Scrolls inside its own container on a phone. The page itself never
-          scrolls sideways at any width. */}
-      <div className="-mx-4 mt-5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      {/* ------------------------------------------------------ the toolbar -- */}
+      {/*
+        EVERY FILTER ON ONE LINE, from Rashid's layout note: the four states,
+        then search, then the two dropdowns, all in the same row inside one
+        panel with a translucent border.
+
+        It was a tab pill, then a hint, then a three column grid of LABELLED
+        fields, which cost about 150px of height to say three words the
+        placeholders already say. The labels are still there for screen readers
+        through aria-label; they are just not taking a line each.
+      */}
+      <div className="wx-glass-panel mt-3 flex flex-wrap items-center gap-2 rounded-lg p-2">
+        {/* The four states. Scrolls inside itself on a phone rather than
+            pushing the page sideways. */}
         <div
           role="tablist"
-          aria-label="Filter contests"
-          className="border-line bg-surface-1 inline-flex min-w-max rounded-xl border p-1"
+          aria-label="Filter contests by state"
+          className="bg-surface-2 border-line flex shrink-0 items-center gap-0.5 rounded-md border p-1"
         >
           {TABS.map((t) => {
             const n = counts?.[t.value];
@@ -156,7 +160,10 @@ export function AllContests() {
                 aria-selected={active}
                 onClick={() => setFilters({ tab: t.value })}
                 className={cn(
-                  'ease-brand min-h-11 shrink-0 rounded-lg px-3.5 text-[13px] font-medium transition-colors duration-200',
+                  // min-h-11, not the design's smaller pill. 44px is the tap
+                  // target rule in CLAUDE.md and `verify:responsive` asserts it
+                  // on every control; the design was drawn for a desktop.
+                  'ease-brand min-h-11 shrink-0 rounded px-3 text-[13px] font-medium transition-colors duration-200',
                   active ? 'bg-accent text-on-accent' : 'text-muted hover:text-accent'
                 )}
               >
@@ -175,6 +182,57 @@ export function AllContests() {
             );
           })}
         </div>
+
+        <form
+          className="min-w-[10rem] flex-1"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setFilters({ search: searchDraft });
+          }}
+        >
+          <div className="relative">
+            <Search
+              size={15}
+              aria-hidden
+              className="text-faint pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
+            />
+            <Input
+              type="search"
+              name="search"
+              aria-label="Search contests by name or brand"
+              value={searchDraft}
+              onChange={(e) => setSearchDraft(e.target.value)}
+              placeholder="Search contests..."
+              className="h-10 rounded-md pl-9 text-[14px]"
+            />
+          </div>
+        </form>
+
+        <Select
+          name="brand"
+          aria-label="Filter by brand"
+          value={filters.brandId}
+          onChange={(e) => setFilters({ brandId: e.target.value })}
+          className="h-10 w-auto min-w-[8.5rem] shrink-0 rounded-md text-[14px]"
+        >
+          <option value="">All brands</option>
+          {(brands ?? []).map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.name}
+            </option>
+          ))}
+        </Select>
+
+        <Select
+          name="sort"
+          aria-label="Order contests"
+          value={filters.sort}
+          onChange={(e) => setFilters({ sort: e.target.value as AllContestsSort })}
+          className="h-10 w-auto min-w-[8.5rem] shrink-0 rounded-md text-[14px]"
+        >
+          <option value="deadline">Closing soonest</option>
+          <option value="newest">Newest first</option>
+        </Select>
       </div>
 
       {/* Ended is a subset of On, and saying so is cheaper than letting somebody
@@ -186,78 +244,6 @@ export function AllContests() {
         </p>
       ) : null}
 
-      {/* --------------------------------------------------------- filters -- */}
-      {/* One glass panel holding all three, from the design, rather than three
-          controls floating on the page. It reads as a toolbar, which is what it
-          is. */}
-      <div className="wx-glass-panel mt-3 grid gap-3 rounded-xl p-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_15rem_13rem]">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            setFilters({ search: searchDraft });
-          }}
-        >
-          <Field label="Search" hint="Contest name or brand name. Press enter.">
-            {({ id, describedBy, invalid }) => (
-              <div className="relative">
-                <Search
-                  size={15}
-                  aria-hidden
-                  className="text-faint pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
-                />
-                <Input
-                  id={id}
-                  type="search"
-                  name="search"
-                  value={searchDraft}
-                  onChange={(e) => setSearchDraft(e.target.value)}
-                  placeholder="e.g. Back to school, or Lumi"
-                  className="pl-9"
-                  aria-describedby={describedBy}
-                  invalid={invalid}
-                />
-              </div>
-            )}
-          </Field>
-        </form>
-
-        <Field label="Brand">
-          {({ id, describedBy, invalid }) => (
-            <Select
-              id={id}
-              name="brand"
-              value={filters.brandId}
-              onChange={(e) => setFilters({ brandId: e.target.value })}
-              aria-describedby={describedBy}
-              invalid={invalid}
-            >
-              <option value="">All brands</option>
-              {(brands ?? []).map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
-
-        <Field label="Order">
-          {({ id, describedBy, invalid }) => (
-            <Select
-              id={id}
-              name="sort"
-              value={filters.sort}
-              onChange={(e) => setFilters({ sort: e.target.value as AllContestsSort })}
-              aria-describedby={describedBy}
-              invalid={invalid}
-            >
-              <option value="deadline">Closing soonest</option>
-              <option value="newest">Newest first</option>
-            </Select>
-          )}
-        </Field>
-      </div>
-
       {/* ------------------------------------------------------------ list -- */}
       <div
         className={cn(
@@ -268,7 +254,7 @@ export function AllContests() {
         {isLoading ? (
           <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <li key={i} className="wx-skeleton h-[196px] rounded-[20px]" />
+              <li key={i} className="wx-skeleton h-[196px] rounded-xl" />
             ))}
           </ul>
         ) : isError ? (
@@ -396,7 +382,7 @@ function ContestRow({
   return (
     <Link
       to={`/admin/brands/${c.brandId}/contests/${c.id}`}
-      className="wx-glass wx-glass-hover group flex h-full flex-col gap-4 rounded-[20px] p-5"
+      className="wx-glass wx-glass-hover group flex h-full flex-col gap-4 rounded-xl p-5"
     >
       {/* --------------------------------------------- brand and status -- */}
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -496,8 +482,8 @@ function Panel({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="border-line bg-surface-1 flex flex-col items-start gap-3 rounded-[20px] border p-6 shadow-md sm:p-8">
-      <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-[14px] border">
+    <div className="border-line bg-surface-1 flex flex-col items-start gap-3 rounded-xl border p-6 shadow-md sm:p-8">
+      <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
         <Trophy size={19} className="text-muted" aria-hidden />
       </div>
       <h2 className="font-display text-text text-[19px] leading-tight font-bold">{title}</h2>

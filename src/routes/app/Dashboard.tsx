@@ -257,7 +257,7 @@ function CreatorHome({
       <Header name={name} tier={tier} handle={handle} />
 
       {nothingYet ? (
-        <Suspense fallback={<div className="wx-skeleton h-[420px] rounded-[20px]" />}>
+        <Suspense fallback={<div className="wx-skeleton h-[420px] rounded-xl" />}>
           <FirstDay />
         </Suspense>
       ) : noOfferWork ? (
@@ -279,7 +279,7 @@ function CreatorHome({
          */
         <>
           <ContestEarnings />
-          <Suspense fallback={<div className="wx-skeleton h-[420px] rounded-[20px]" />}>
+          <Suspense fallback={<div className="wx-skeleton h-[420px] rounded-xl" />}>
             <FirstDay />
           </Suspense>
         </>
@@ -473,7 +473,7 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
   ].filter((s) => s.value > 0);
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-5 rounded-[22px] border p-[clamp(18px,2.4vw,26px)] shadow-md">
+    <section className="border-line bg-surface-1 flex flex-col gap-5 rounded-xl border p-[clamp(18px,2.4vw,26px)] shadow-md">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
@@ -538,7 +538,7 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
           {cells.map((cell) => (
             <div
               key={cell.key}
-              className={cn('flex flex-col gap-1.5 rounded-[14px] p-3.5', cell.tone.soft)}
+              className={cn('flex flex-col gap-1.5 rounded-lg p-3.5', cell.tone.soft)}
             >
               <dt className={cn('text-[12px] font-semibold', cell.tone.text)}>{cell.label}</dt>
               <dd
@@ -573,7 +573,7 @@ function Work({
   progress: Map<string, JobProgress> | undefined;
 }) {
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-[20px] border p-5 shadow-md">
+    <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-xl border p-5 shadow-md">
       <div className="flex items-baseline justify-between gap-2.5">
         <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
           Work you took
@@ -712,7 +712,7 @@ function Activity({
   const claimed = new Set<string>();
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-[20px] border p-5 shadow-md">
+    <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-xl border p-5 shadow-md">
       <h2 className="text-muted flex items-center gap-2 text-[11px] font-semibold tracking-[0.14em] uppercase">
         <span aria-hidden className="wx-blink bg-stage-paid size-1.5 rounded-full" />
         Everything that moved
@@ -1002,7 +1002,7 @@ function Skeleton() {
         <div className="wx-skeleton h-10 w-72 max-w-full" />
       </div>
 
-      <div className="border-line bg-surface-1 flex flex-col gap-[18px] rounded-[22px] border p-[22px] shadow-md">
+      <div className="border-line bg-surface-1 flex flex-col gap-[18px] rounded-xl border p-[22px] shadow-md">
         <div className="wx-skeleton h-3.5 w-[150px]" />
         <div className="wx-skeleton h-[46px] w-[210px]" />
         <div className="wx-skeleton h-4 w-full rounded-full" />
@@ -1014,13 +1014,13 @@ function Skeleton() {
       </div>
 
       <div className="grid [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] gap-[14px]">
-        <div className="border-line bg-surface-1 flex flex-col gap-3.5 rounded-[20px] border p-5">
+        <div className="border-line bg-surface-1 flex flex-col gap-3.5 rounded-xl border p-5">
           <div className="wx-skeleton h-3 w-28" />
           {[0, 1, 2].map((i) => (
             <div key={i} className="wx-skeleton h-[58px]" />
           ))}
         </div>
-        <div className="border-line bg-surface-1 flex flex-col gap-3.5 rounded-[20px] border p-5">
+        <div className="border-line bg-surface-1 flex flex-col gap-3.5 rounded-xl border p-5">
           <div className="wx-skeleton h-3 w-24" />
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="wx-skeleton h-[38px]" />

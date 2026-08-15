@@ -431,16 +431,30 @@ try {
     (r) => r?.needs_application === false,
     'the offer edit to land'
   );
-  await page.waitForTimeout(1200);
   check(
     Number(edited?.reward_amount) === 450.55,
     `pennies survive the round trip (got ${edited?.reward_amount})`
   );
   check(edited?.needs_application === false, 'the offer is now open to all');
-  check(
-    (await page.getByText(/open to all/i).count()) > 0,
-    'the card updated without a reload'
-  );
+
+  /*
+   * WAIT FOR THE CARD, not for 1200 milliseconds.
+   *
+   * This was a fixed sleep and it failed one run in several, most recently on
+   * 2026-08-15, where it reported a working screen as broken. The write has
+   * already landed by here; what is being waited on is a realtime event, then
+   * an invalidation, then a refetch, then a render, and that chain is not 1.2
+   * seconds wide on a loaded machine. Sleeping a guessed number of milliseconds
+   * before a DOM assertion is the single most common flake in this repo and
+   * OPERATIONS says so.
+   */
+  const cardUpdated = await page
+    .getByText(/open to all/i)
+    .first()
+    .waitFor({ timeout: 20_000 })
+    .then(() => true)
+    .catch(() => false);
+  check(cardUpdated, 'the card updated without a reload');
 
 
   /* --------------------------------------------- [4b] the brand's story -- */
@@ -800,7 +814,24 @@ try {
   );
 
   await spyPage.goto(`${BASE}/app/brands/${brand.slug}`, { waitUntil: 'domcontentloaded' });
-  await spyPage.waitForTimeout(2500);
+  /*
+   * WAIT FOR THE PRODUCT, which is the LAST thing on this screen to arrive.
+   *
+   * This was `waitForTimeout(2500)`, and on 2026-08-15 it failed with the
+   * tagline present and the product missing: the brand and its products are two
+   * separate reads, and only one of them had landed. A guessed sleep that is
+   * long enough on a quiet machine is not long enough on a loaded one, and it
+   * reported a working screen as broken.
+   *
+   * Swallowing the timeout is deliberate. If the product genuinely never
+   * renders, the checks below still run and still fail, with their own wording,
+   * rather than the suite dying on a raw Playwright error.
+   */
+  await spyPage
+    .getByText('Recovery Cream, 2 oz')
+    .first()
+    .waitFor({ timeout: 20_000 })
+    .catch(() => {});
   check(
     (await spyPage.getByRole('heading', { name: BRAND_NAME }).count()) > 0,
     'and its hub opens on the brand itself'

@@ -290,7 +290,7 @@ export function ContestDeliverables({ contestId, currency, rows, loading }: Prop
   }
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-[20px] border p-5 shadow-md">
+    <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5 shadow-md">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
         <div>
           <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
@@ -319,12 +319,12 @@ export function ContestDeliverables({ contestId, currency, rows, loading }: Prop
 
       {loading ? (
         <div className="flex flex-col gap-3">
-          <div className="wx-skeleton h-[92px] rounded-[20px]" />
-          <div className="wx-skeleton h-[92px] rounded-[20px]" />
+          <div className="wx-skeleton h-[92px] rounded-xl" />
+          <div className="wx-skeleton h-[92px] rounded-xl" />
         </div>
       ) : ordered.length === 0 ? (
-        <div className="border-line flex flex-col items-start gap-3 rounded-[20px] border border-dashed p-6">
-          <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-[14px] border">
+        <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
+          <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
             <Target size={19} className="text-muted" aria-hidden />
           </div>
           <h3 className="font-display text-text text-[19px] leading-tight font-bold">
@@ -406,7 +406,7 @@ function DeliverableCard({
   return (
     <div
       className={cn(
-        'bg-surface-1 rounded-[20px] border p-4',
+        'bg-surface-1 rounded-xl border p-4',
         row.isActive ? 'border-line' : 'border-line border-dashed opacity-70'
       )}
     >

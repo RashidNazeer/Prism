@@ -48,7 +48,7 @@ export function PipelineBoard({
   ];
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-[18px] rounded-[22px] border p-[clamp(18px,2.4vw,26px)] shadow-md">
+    <section className="border-line bg-surface-1 flex flex-col gap-[18px] rounded-xl border p-[clamp(18px,2.4vw,26px)] shadow-md">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
           Your pipeline, stage by stage
@@ -76,7 +76,7 @@ export function PipelineBoard({
             <li
               key={`${stage}-${moved.key}`}
               className={cn(
-                'border-line flex min-h-[150px] flex-col gap-2.5 rounded-[14px] border p-3',
+                'border-line flex min-h-[150px] flex-col gap-2.5 rounded-lg border p-3',
                 here.length > 0 ? tone.soft : 'bg-surface-2',
                 justMoved && 'wx-flash'
               )}
@@ -183,7 +183,7 @@ export function MoneySplit({ summary, moved }: { summary: WorkSummary; moved: Mo
   ];
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-[20px] border p-5 shadow-md">
+    <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5 shadow-md">
       <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
         Where the money sits
       </h2>

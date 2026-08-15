@@ -49,8 +49,8 @@ export function ContestDashboard({ contests }: { contests: CreatorContest[] }) {
 
   if (mine.length === 0) {
     return (
-      <div className="border-line bg-surface-1 mt-6 flex flex-col items-start gap-3 rounded-[20px] border p-8 shadow-md">
-        <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-[14px] border">
+      <div className="border-line bg-surface-1 mt-6 flex flex-col items-start gap-3 rounded-xl border p-8 shadow-md">
+        <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
           <Trophy size={19} className="text-muted" aria-hidden />
         </div>
         <h2 className="font-display text-text text-[21px] leading-tight font-bold">
@@ -152,7 +152,7 @@ function Figure({
   tone?: 'paid' | 'due';
 }) {
   return (
-    <div className="border-line bg-surface-1 rounded-[20px] border p-4 shadow-md">
+    <div className="border-line bg-surface-1 rounded-xl border p-4 shadow-md">
       <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">{label}</p>
       <p
         className={cn(
@@ -186,7 +186,7 @@ function ContestCard({ contest }: { contest: CreatorContest }) {
     null;
 
   return (
-    <section className="border-line bg-surface-1 rounded-[20px] border p-5 shadow-md">
+    <section className="border-line bg-surface-1 rounded-xl border p-5 shadow-md">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
@@ -214,7 +214,7 @@ function ContestCard({ contest }: { contest: CreatorContest }) {
 
       {/* Where they stand. Never a name, never anybody else's figures. */}
       {standing && standing.entrants > 1 ? (
-        <div className="border-line bg-surface-2 mt-4 flex flex-wrap gap-x-6 gap-y-2 rounded-[14px] border p-3.5">
+        <div className="border-line bg-surface-2 mt-4 flex flex-wrap gap-x-6 gap-y-2 rounded-lg border p-3.5">
           <Standing label="On GMV" place={standing.gmvPlace} of={standing.entrants} />
           <Standing label="On videos" place={standing.videoPlace} of={standing.entrants} />
           <p className="text-faint basis-full text-[12px] leading-snug">

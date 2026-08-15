@@ -31,7 +31,7 @@ export default function FirstDay() {
 
   return (
     <>
-      <section className="border-line bg-surface-1 flex flex-col gap-5 rounded-[20px] border p-6 shadow-md">
+      <section className="border-line bg-surface-1 flex flex-col gap-5 rounded-xl border p-6 shadow-md">
         <div className="flex max-w-[560px] flex-col gap-2">
           <h2 className="font-display text-[clamp(20px,3vw,27px)] font-semibold tracking-[-0.015em]">
             You are approved. Nothing taken yet.
@@ -93,7 +93,7 @@ export default function FirstDay() {
       </section>
 
       {starters.length > 0 ? (
-        <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-[20px] border p-5 shadow-md">
+        <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-xl border p-5 shadow-md">
           <div className="flex flex-wrap items-baseline justify-between gap-2.5">
             <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
               Start here
@@ -107,7 +107,7 @@ export default function FirstDay() {
             {starters.map((offer) => (
               <li
                 key={offer.id}
-                className="border-line bg-surface-2 flex flex-wrap items-center gap-3 rounded-[14px] border p-3.5"
+                className="border-line bg-surface-2 flex flex-wrap items-center gap-3 rounded-lg border p-3.5"
               >
                 <span
                   aria-hidden
