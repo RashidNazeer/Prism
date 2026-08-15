@@ -76,7 +76,32 @@ pnpm lint                # oxlint
 pnpm preview             # serve dist on :4173, needed by every browser suite
 ```
 
-Verification suites. All need a preview or live URL; the last four also need
+**Run everything with one command**, and prefer this over picking suites by
+hand:
+
+```bash
+pnpm verify:all [url]              # every suite below, in sequence, one summary
+pnpm verify:all [url] --only=contests,live
+pnpm verify:all [url] --skip=session
+```
+
+It checks its preconditions FIRST and names anything missing in a sentence (no
+server, no service key, no demo creator) rather than letting eleven suites fail
+for one reason. It makes ONE throwaway admin for the whole run and removes it in
+a `finally`, so Rashid's account is never used. One suite at a time, because two
+Chromiums at once put this machine into its page file. A failing suite's output
+is printed in full so nothing has to be re-run to find out why.
+
+**A SKIP exits non-zero, the same as a failure.** Something that could not be
+checked must never read as safety.
+
+Why it exists: there were eleven suites and no way to run them all, so they were
+run from memory and two were quietly red for days. `verify:responsive` since the
+12 August wipe (a missing seeded account) and `verify:browser` since the surface
+retune on 10 August (three hardcoded colours that tokens.css had moved past).
+Both were found within a minute of `verify:all` existing.
+
+Individual suites. All need a preview or live URL; most also need
 `SUPABASE_SERVICE_KEY`:
 
 ```bash

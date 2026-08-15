@@ -17,11 +17,60 @@
  */
 
 import { launchBrowser } from './browser.mjs';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 
 const BASE = process.argv[2] ?? 'http://localhost:4173';
 const SHOTS = '.playwright';
 mkdirSync(SHOTS, { recursive: true });
+
+/* ------------------------------------------------------ the brand colours -- */
+
+/**
+ * THE EXPECTED COLOURS ARE READ FROM `tokens.css`, NEVER TYPED HERE.
+ *
+ * They used to be three literals: rgb(10,10,10), rgb(250,248,243),
+ * rgb(20,18,14). The surfaces were deliberately retuned to the design's warmer
+ * near-black and paper during the creator UI rebuild on 2026-08-10, tokens.css
+ * moved, and these three did not. So this suite failed on every run from that
+ * day until 2026-08-14 and nobody noticed, which made it worth exactly nothing
+ * for four days.
+ *
+ * The check was never really about those numbers. Its own comment said so: "the
+ * real test of the token system: is the page actually dark?" What can genuinely
+ * go wrong is the stylesheet not loading, the theme attribute not being applied,
+ * or something overriding the token, and all three are caught by comparing the
+ * rendered colour to whatever the token says TODAY. A deliberate palette change
+ * is then not a test failure, because it is not a bug.
+ *
+ * `check:contrast` is what guards the palette itself, in both modes, inside the
+ * build. That job is not this file's.
+ */
+const TOKENS = readFileSync('src/styles/tokens.css', 'utf8');
+
+/** The `[data-theme='dark']` block, then the `[data-theme='light']` one. */
+function tokenBlock(selector) {
+  const at = TOKENS.indexOf(selector);
+  if (at === -1) throw new Error(`no ${selector} block in tokens.css`);
+  return TOKENS.slice(at, TOKENS.indexOf('\n}', at));
+}
+
+function rgbOf(block, name) {
+  const m = block.match(new RegExp(`${name}:\\s*#([0-9a-fA-F]{6})`));
+  if (!m) throw new Error(`no ${name} in that tokens.css block`);
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16));
+  // The shape getComputedStyle returns, so the comparison is a plain string
+  // equality rather than a colour parser nobody will maintain.
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+const DARK = tokenBlock("[data-theme='dark']");
+const LIGHT = tokenBlock("[data-theme='light']");
+
+const EXPECT = {
+  darkBg: rgbOf(DARK, '--wx-bg'),
+  lightBg: rgbOf(LIGHT, '--wx-bg'),
+  lightText: rgbOf(LIGHT, '--wx-text'),
+};
 
 const problems = [];
 const note = (m) => console.log(`  ${m}`);
@@ -116,10 +165,11 @@ console.log('\n[1] Dark mode, 1440x900');
   if (!h1?.includes('Your numbers')) bad(`headline missing, got "${h1}"`);
   else note(`OK    headline renders`);
 
-  // The real test of the token system: is the page actually dark?
+  // The real test of the token system: is the page actually dark, in the colour
+  // tokens.css says today?
   const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  if (bg !== 'rgb(10, 10, 10)') bad(`dark background should be rgb(10,10,10), got ${bg}`);
-  else note(`OK    background ${bg}`);
+  if (bg !== EXPECT.darkBg) bad(`dark background should be ${EXPECT.darkBg} per tokens.css, got ${bg}`);
+  else note(`OK    background ${bg}, matching --wx-bg`);
 
   await scrollThrough(page);
   const hidden = await assertNothingInvisible(page);
@@ -145,12 +195,14 @@ console.log('\n[2] Light mode, 1440x900 (OS preference)');
   else note(`OK    data-theme=light (followed the OS setting)`);
 
   const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  if (bg !== 'rgb(250, 248, 243)') bad(`light background should be rgb(250,248,243), got ${bg}`);
-  else note(`OK    background ${bg}`);
+  if (bg !== EXPECT.lightBg)
+    bad(`light background should be ${EXPECT.lightBg} per tokens.css, got ${bg}`);
+  else note(`OK    background ${bg}, matching --wx-bg`);
 
   const color = await page.evaluate(() => getComputedStyle(document.body).color);
-  if (color !== 'rgb(20, 18, 14)') bad(`light text should be rgb(20,18,14), got ${color}`);
-  else note(`OK    text ${color}`);
+  if (color !== EXPECT.lightText)
+    bad(`light text should be ${EXPECT.lightText} per tokens.css, got ${color}`);
+  else note(`OK    text ${color}, matching --wx-text`);
 
   await scrollThrough(page);
   await page.screenshot({ path: `${SHOTS}/02-light-desktop.png`, fullPage: true });

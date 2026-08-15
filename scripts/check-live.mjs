@@ -319,3 +319,12 @@ try {
   console.log('\ncleaned up');
 }
 console.log(failures ? `\n${failures} FAILED` : '\nall good');
+
+/*
+ * AND EXIT NON-ZERO WHEN IT FAILED, which this suite did not do until
+ * 2026-08-14. It printed "3 FAILED" and returned success, so anything reading
+ * the exit code, which is every CI runner and now `verify:all`, would have
+ * called a broken realtime chain green. The line above is for a human reading
+ * the terminal; this one is for everything else.
+ */
+process.exit(failures === 0 ? 0 : 1);

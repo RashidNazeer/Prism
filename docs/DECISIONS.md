@@ -699,3 +699,24 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   build. Anything that needs seeded data should say so when the data is absent
   rather than failing per screen. Not fixed today; noted here so the next person
   to touch `check-responsive.mjs` fixes the reporting rather than the symptom.
+- 2026-08-14: **`pnpm verify:all` exists, and a SKIP exits non-zero.** Eleven
+  suites and no way to run them meant they were run from memory, and two were
+  quietly red for days: `verify:responsive` since the 12 August wipe, and
+  `verify:browser` since the surface retune on 10 August. Both were found within
+  a minute of the runner existing, which is the whole argument for it. Something
+  that could not be checked must never read as safety, so a skipped suite fails
+  the run rather than being omitted from the total.
+- 2026-08-14: **`verify:browser` reads its expected colours from `tokens.css`
+  rather than hardcoding them.** It carried three literals, the palette moved
+  underneath them deliberately, and the suite failed on every run for four days.
+  The check was never about those numbers; its own comment said the point was
+  "is the page actually dark". Comparing the rendered colour to whatever the
+  token says TODAY still catches the stylesheet not loading, the theme attribute
+  not applying, and anything overriding the token, while a deliberate palette
+  change stops being a test failure. The palette itself is guarded by
+  `check:contrast` inside the build, which is a different job.
+- 2026-08-14: **`check-live.mjs` printed "N FAILED" and exited zero.** It had no
+  `process.exit` at all, so a broken realtime chain, which is the product's
+  central promise, would have been reported as green by anything reading the
+  exit code. Found while building `verify:all`, because the runner reads exit
+  codes and nothing had ever read that one.

@@ -26,6 +26,7 @@
     "verify:live": "node scripts/check-live.mjs",
     "verify:content": "node scripts/check-content.mjs",
     "verify:contests": "node scripts/check-contests.mjs",
+    "verify:all": "node scripts/verify-all.mjs",
     "seed:contests": "node scripts/seed-contests.mjs"
   },
   "dependencies": {
