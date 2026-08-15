@@ -30,11 +30,44 @@ export interface AuthClaims {
 
 export type AuthStatus = 'loading' | 'signedOut' | 'signedIn';
 
+/**
+ * SOMEBODY ELSE SIGNED IN, IN ANOTHER TAB, AND THIS TAB IS NOW THEM.
+ *
+ * Supabase stores the session in localStorage, which belongs to the ORIGIN, not
+ * to the tab. So signing in as a creator in one tab replaces the admin session
+ * in every other tab of the same browser, silently. That is not a bug in
+ * Supabase and it is not something the app can prevent: there is one session
+ * per origin and there always will be.
+ *
+ * What WAS a bug is that nothing said so. The admin screen carried on rendering
+ * because it had already loaded, the next thing the admin clicked went to an
+ * Edge Function with somebody else's token, and it came back "Not signed in" on
+ * a screen that plainly showed them signed in. Rashid hit this repeatedly, and
+ * the first time he raised it I called it "not a code bug" and moved on, which
+ * was wrong: the swap is unavoidable, being ambushed by it is not.
+ *
+ * `null` until it happens. Set only when a REAL person was replaced by a
+ * different person or by nobody, never on the first sign-in of a fresh tab and
+ * never on a token refresh, which produces a new token for the same user id.
+ */
+export interface IdentitySwap {
+  /** The user id that was signed in here before. Never null: no swap without one. */
+  from: string;
+  /** Who is signed in now. Null means the other tab signed out. */
+  to: string | null;
+  /** Their email, when it is known, so the banner can name them. */
+  toEmail: string | null;
+}
+
 export interface AuthContextValue {
   status: AuthStatus;
   session: Session | null;
   user: User | null;
   claims: AuthClaims | null;
+  /** See IdentitySwap. Null in the ordinary case, which is almost always. */
+  identitySwap: IdentitySwap | null;
+  /** Dismiss the banner. The swap itself cannot be undone from here. */
+  acknowledgeSwap: () => void;
   signOut: () => Promise<void>;
 }
 

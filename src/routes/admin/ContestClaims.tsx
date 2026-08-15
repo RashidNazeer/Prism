@@ -1,4 +1,5 @@
 import { AppShell } from '@/components/layout/AppShell';
+import { ContestEntryQueue } from '@/components/admin/ContestEntryQueue';
 import { ContestProgressQueue } from '@/components/admin/ContestProgressQueue';
 
 /**
@@ -27,12 +28,22 @@ export function ContestClaims() {
             Contest claims
           </h1>
           <p className="text-muted mt-1 max-w-prose text-[14px] leading-relaxed">
-            What creators say they have achieved, waiting to be confirmed. Nothing counts towards a
-            reward, and nothing is owed, until you confirm it here.
+            Everybody waiting on the team: creators asking to join a contest, and creators saying
+            what they have achieved. Nothing counts towards a reward, and nothing is owed, until
+            you confirm it here.
           </p>
         </div>
 
-        <ContestProgressQueue />
+        {/*
+          ENTRIES FIRST, and this is the screen Rashid looked at when he found
+          the bug. Somebody waiting to be let in cannot claim anything yet, so
+          leaving them below the progress queue would bury the thing that is
+          blocking them behind the thing that is not.
+        */}
+        <div className="flex flex-col gap-4">
+          <ContestEntryQueue />
+          <ContestProgressQueue />
+        </div>
       </div>
     </AppShell>
   );

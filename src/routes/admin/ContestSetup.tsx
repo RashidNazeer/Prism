@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Check, Loader2, Lock, Trash2 } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { ContestDeliverables } from '@/components/admin/ContestDeliverables';
+import { ContestEntryQueue } from '@/components/admin/ContestEntryQueue';
 import { ContestExclusions } from '@/components/admin/ContestExclusions';
 import { ContestProducts } from '@/components/admin/ContestProducts';
 import { ContestProgressQueue } from '@/components/admin/ContestProgressQueue';
@@ -855,10 +856,11 @@ export function ContestSetup() {
                   loading={listsLoading}
                 />
                 {/*
-                  The claims queue for THIS contest, on the same screen as the
-                  deliverables it is judged against. Nothing a creator types
-                  counts until somebody confirms it here.
+                  Who is waiting to be let in, then what they say they have
+                  achieved. Both are "somebody is waiting on us", and an entry
+                  blocks everything downstream of it, so it comes first.
                 */}
+                <ContestEntryQueue contestId={liveContestId} />
                 <ContestProgressQueue contestId={liveContestId} />
                 <ContestProducts
                   contestId={liveContestId}

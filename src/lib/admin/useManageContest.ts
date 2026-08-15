@@ -149,6 +149,30 @@ export type ProgressReviewPayload = {
   message: string | null;
 };
 
+/**
+ * LETTING SOMEBODY INTO A CONTEST, OR TURNING THEM AWAY.
+ *
+ * This did not exist until 2026-08-15 and its absence was the whole of a bug
+ * Rashid found by hand: on a contest that needs approval, a creator applied,
+ * saw "With the team", and waited for ever, because nothing in the product
+ * could answer. `review_contest_entry` had been in the database since day one
+ * with no caller but the seed script.
+ *
+ * NOTE IS READ BY THE CREATOR. `blockReason` is staff only. Turning somebody
+ * away and barring them are two decisions: a refusal leaves them free to apply
+ * again, and `block` also writes an exclusion scoped to this one contest.
+ */
+export type EntryReviewPayload = {
+  action: 'entry.review';
+  entryId: string;
+  decision: 'approved' | 'rejected';
+  /** MESSAGE to the creator, whatever the column is called. */
+  note: string | null;
+  block: boolean;
+  /** Staff only, and genuinely a reason: no creator can ever read it. */
+  blockReason: string | null;
+};
+
 export type ProductsSetPayload = {
   action: 'products.set';
   contestId: string;
@@ -221,6 +245,7 @@ export type ManageContestPayload =
   | ContestSettlePayload
   | DeliverableSavePayload
   | DeliverableRetirePayload
+  | EntryReviewPayload
   | ProgressReviewPayload
   | ProductsSetPayload
   | ExclusionSavePayload
@@ -261,6 +286,9 @@ export function useManageContest() {
        * find it stale.
        */
       void queryClient.invalidateQueries({ queryKey: ['admin', 'contest-awards'] });
+      // The entries queue. Deciding one has to take it off the screen without a
+      // reload, the same as every other queue in the admin panel.
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'contest-entries'] });
       // The creator side reads the same contests through different queries, so
       // an admin who is also looking at a hub sees their own edit there too.
       void queryClient.invalidateQueries({ queryKey: ['creator'] });

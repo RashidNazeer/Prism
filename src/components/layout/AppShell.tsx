@@ -5,6 +5,7 @@ import { Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { WurxMark } from '@/components/brand/WurxMark';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { AppSidebar } from '@/components/layout/AppSidebar';
+import { IdentitySwapBanner } from '@/components/auth/IdentitySwapBanner';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
@@ -102,6 +103,13 @@ export function AppShell({ children }: { children: ReactNode }) {
         collapsed ? 'lg:grid-cols-[4.5rem_minmax(0,1fr)]' : 'lg:grid-cols-[16rem_minmax(0,1fr)]'
       )}
     >
+      {/*
+        Outside the grid and fixed, so it covers whatever is on screen including
+        an open dialog. Signing in elsewhere while half way through approving
+        somebody is exactly the case it exists for.
+      */}
+      <IdentitySwapBanner />
+
       {/* ------------------------------------------------- desktop rail --- */}
       <aside className="sticky top-0 hidden h-dvh border-r border-line lg:block">
         {sidebar('rail')}

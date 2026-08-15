@@ -1,6 +1,59 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
+import { joinChannel } from '@/lib/realtime';
+import { useAuth } from '@/lib/auth/auth-context';
 import { contestLifecycleOf, type ContestLifecycle } from '@/lib/contest-state';
+
+/**
+ * KEEP EVERY ADMIN CONTEST SCREEN CURRENT, ON ONE CHANNEL.
+ *
+ * `contest_entries` has been in the realtime publication since contests
+ * shipped, and until 2026-08-15 no ADMIN screen ever subscribed to it. So a
+ * creator applying, or withdrawing, or applying again after withdrawing,
+ * changed nothing in front of whoever was looking at the contest. Rashid found
+ * all three by hand, which is the worst way to find them.
+ *
+ * ONE channel for all of it rather than one per hook. `joinChannel` reference
+ * counts, so every screen that calls this shares a single subscription and the
+ * last one to unmount closes it. Adding a second channel over the same table
+ * would be two sockets answering one question.
+ *
+ * `contests` is on it too: switching a contest on or off, cancelling it or
+ * closing it moves every list that names it.
+ *
+ * WHAT IS DELIBERATELY NOT ON IT is `contest_progress_updates`, which is
+ * outside the publication on purpose, because row security is not applied to
+ * DELETE events and a creator's claimed GMV would broadcast to anybody who
+ * opened an unfiltered channel. That queue refetches on a timer instead.
+ */
+export function useAdminContestsLive() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    return joinChannel(
+      'admin-contests',
+      [{ table: 'contest_entries' }, { table: 'contests' }],
+      () => {
+        // `all-contests` is its own key, not a child of `contests`, so listing
+        // it here is load bearing: TanStack matches by prefix and would never
+        // have reached it.
+        for (const key of [
+          'contests',
+          'all-contests',
+          'contest',
+          'contest-entries',
+          'contest-awards',
+        ]) {
+          void queryClient.invalidateQueries({ queryKey: ['admin', key] });
+        }
+      }
+    );
+  }, [user?.id, queryClient]);
+}
 
 /**
  * Contests, as STAFF see them.
@@ -208,6 +261,9 @@ const forLike = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
  */
 export function useBrandContests(brandId: string | undefined, filters: BrandContestFilters) {
   const search = sanitise(filters.search);
+  // Somebody entering this brand's contest has to move the count in front of
+  // whoever is looking at it, not on the next reload.
+  useAdminContestsLive();
 
   return useQuery({
     queryKey: ['admin', 'contests', brandId, { ...filters, search }],
@@ -294,6 +350,8 @@ export function useBrandContestCounts(brandId: string | undefined, rawSearch = '
  * returns null for it would look identical to a contest with no budget set.
  */
 export function useContest(contestId: string | undefined) {
+  useAdminContestsLive();
+
   return useQuery({
     queryKey: ['admin', 'contest', contestId],
     enabled: Boolean(contestId),

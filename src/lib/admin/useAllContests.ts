@@ -1,5 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
+import { useAdminContestsLive } from '@/lib/admin/useContests';
 import type { Contest, ContestStatus } from '@/lib/admin/useContests';
 
 /**
@@ -217,6 +218,7 @@ function contestQuery(
  */
 export function useAllContests(filters: AllContestsFilters) {
   const search = sanitise(filters.search);
+  useAdminContestsLive();
 
   return useQuery({
     queryKey: ['admin', 'all-contests', { ...filters, search }],

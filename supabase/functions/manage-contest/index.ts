@@ -281,6 +281,37 @@ const ExclusionRemove = z.object({
 });
 
 /**
+ * LETTING SOMEBODY INTO A CONTEST, OR TURNING THEM AWAY.
+ *
+ * THIS ACTION DID NOT EXIST UNTIL 2026-08-15, AND THAT WAS A HOLE, NOT A GAP.
+ * `review_contest_entry` shipped in the first contest migration and was called
+ * by exactly one thing: the seed script. So on a contest with
+ * `needs_admin_approval` on, a creator applied, saw "With the team", and waited
+ * for ever, because there was no door in the product for anybody to answer
+ * through. The contest suite never caught it because it sets its own contest to
+ * auto-approve, so it walked past the one path that was broken.
+ *
+ * TWO MESSAGES, AND THEY GO TO DIFFERENT PEOPLE. `note` is read by the creator
+ * this is about. `blockReason` is staff only and never leaves the team. They
+ * were one field once and that is exactly the trap `cancel_reason` was.
+ */
+const EntryReview = z.object({
+  action: z.literal('entry.review'),
+  entryId: z.uuid(),
+  decision: z.enum(['approved', 'rejected']),
+  // THE CREATOR READS THIS.
+  note: z.string().trim().max(500).nullish(),
+  /*
+   * Turning somebody away and barring them are two decisions, not one. Refusing
+   * this entry leaves them free to apply again; blocking also writes an
+   * exclusion for THIS contest, which is scoped to one contest by decision D5.
+   */
+  block: z.boolean().default(false),
+  // STAFF ONLY. No creator can ever read it.
+  blockReason: z.string().trim().max(500).nullish(),
+});
+
+/**
  * Closing a contest. It moves no money and takes no outcomes: rewards are owed
  * the moment staff confirm the figures that earn them, and paid separately,
  * both of which keep working after this.
@@ -324,6 +355,7 @@ const Body = z.discriminatedUnion('action', [
   ContestSettle,
   DeliverableSave,
   DeliverableRetire,
+  EntryReview,
   ProgressReview,
   ProductsSet,
   ExclusionSave,
@@ -576,6 +608,21 @@ Deno.serve(async (req) => {
     rpc = await admin.rpc('retire_contest_deliverable', {
       p_actor_id: actor.id,
       p_deliverable_id: input.deliverableId,
+    });
+  } else if (input.action === 'entry.review') {
+    /*
+     * The decision a creator has been staring at "With the team" waiting for.
+     * The database takes the entry FOR UPDATE before it reads its status, so
+     * two admins answering the same request in the same second produce one
+     * decision and one 55006, which arrives below as a 409.
+     */
+    rpc = await admin.rpc('review_contest_entry', {
+      p_actor_id: actor.id,
+      p_entry_id: input.entryId,
+      p_decision: input.decision,
+      p_note: input.note ?? null,
+      p_block: input.block,
+      p_block_reason: input.blockReason ?? null,
     });
   } else if (input.action === 'progress.review') {
     /*

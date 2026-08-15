@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WURX Media - All Contests</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline": "#908fa0",
+                    "error-container": "#93000a",
+                    "on-tertiary": "#003731",
+                    "surface-container-lowest": "#060e20",
+                    "primary-fixed-dim": "#c0c1ff",
+                    "surface-container-low": "#131b2e",
+                    "on-surface": "#dae2fd",
+                    "on-primary-container": "#0d0096",
+                    "on-surface-variant": "#c7c4d7",
+                    "on-tertiary-fixed-variant": "#005047",
+                    "tertiary-fixed": "#62fae3",
+                    "surface-container": "#171f33",
+                    "on-secondary": "#490080",
+                    "inverse-surface": "#dae2fd",
+                    "primary-container": "#8083ff",
+                    "background": "#0b1326",
+                    "on-secondary-fixed-variant": "#6900b3",
+                    "on-background": "#dae2fd",
+                    "tertiary-container": "#008678",
+                    "error": "#ffb4ab",
+                    "surface-container-highest": "#2d3449",
+                    "secondary": "#ddb7ff",
+                    "secondary-container": "#6f00be",
+                    "inverse-on-surface": "#283044",
+                    "outline-variant": "#464554",
+                    "on-error": "#690005",
+                    "surface-variant": "#2d3449",
+                    "on-primary-fixed-variant": "#2f2ebe",
+                    "surface-bright": "#31394d",
+                    "surface-container-high": "#222a3d",
+                    "on-secondary-fixed": "#2c0051",
+                    "on-primary-fixed": "#07006c",
+                    "surface": "#0b1326",
+                    "tertiary": "#3cddc7",
+                    "primary-fixed": "#e1e0ff",
+                    "tertiary-fixed-dim": "#3cddc7",
+                    "on-error-container": "#ffdad6",
+                    "surface-dim": "#0b1326",
+                    "on-tertiary-fixed": "#00201c",
+                    "primary": "#c0c1ff",
+                    "on-tertiary-container": "#000705",
+                    "secondary-fixed": "#f0dbff",
+                    "on-secondary-container": "#d6a9ff",
+                    "on-primary": "#1000a9",
+                    "secondary-fixed-dim": "#ddb7ff",
+                    "surface-tint": "#c0c1ff",
+                    "inverse-primary": "#494bd6"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "card-gap": "16px",
+                    "gutter": "24px",
+                    "base": "8px",
+                    "container-padding": "32px"
+            },
+            "fontFamily": {
+                    "headline-xl": [
+                            "Sora"
+                    ],
+                    "label-sm": [
+                            "Inter"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "headline-lg": [
+                            "Sora"
+                    ],
+                    "headline-lg-mobile": [
+                            "Sora"
+                    ]
+            },
+            "fontSize": {
+                    "headline-xl": [
+                            "48px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "1",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "600"
+                            }
+                    ]
+            }
+        },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #020617; /* Deep Obsidian */
+            color: #dae2fd; /* on-background */
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: inset 1px 1px 0px rgba(255, 255, 255, 0.1); /* Inner glow */
+        }
+        
+        .glow-accent:hover {
+            box-shadow: 0 0 40px rgba(192, 193, 255, 0.15); /* primary-fixed-dim */
+        }
+
+        /* Entrance Animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in-up {
+            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+
+        /* Staggered delays */
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+        .delay-300 { animation-delay: 300ms; }
+        .delay-400 { animation-delay: 400ms; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="relative min-h-screen overflow-x-hidden font-body-md text-body-md selection:bg-primary-container selection:text-on-primary-container">
+<!-- Background Animation Layer -->
+<div class="fixed inset-0 z-[-1] pointer-events-none opacity-40">
+<!-- STITCH_SHADER_START:ANIMATION_3 class="absolute inset-0 w-full h-full" -->
+<div class="absolute inset-0 w-full h-full" style="display:block;">
+<canvas id="shader-canvas-ANIMATION_3" style="display:block;width:100%;height:100%"></canvas>
+<script>
+(function() {
+  const canvas = document.getElementById('shader-canvas-ANIMATION_3');
+
+  // Sync the WebGL drawing-buffer size with the CSS-driven layout size.
+  // This fires on initial layout and whenever the element is resized.
+  function syncSize() {
+    const w = canvas.clientWidth  || 1280;
+    const h = canvas.clientHeight || 720;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width  = w;
+      canvas.height = h;
+    }
+  }
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(syncSize).observe(canvas);
+  }
+  syncSize();
+
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  if (!gl) return;
+  const vs = `attribute vec2 a_position;
+varying vec2 v_texCoord;
+void main() {
+  v_texCoord = a_position * 0.5 + 0.5;
+  gl_Position = vec4(a_position, 0.0, 1.0);
+}`;
+  const fs = `precision highp float;
+varying vec2 v_texCoord;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+void main() {
+    vec2 uv = v_texCoord;
+    
+    // Create a flowing fluid motion
+    float color1 = sin(uv.x * 3.0 + u_time * 0.5) * 0.5 + 0.5;
+    float color2 = cos(uv.y * 2.0 - u_time * 0.3) * 0.5 + 0.5;
+    
+    // Mix electric indigo and deep obsidian
+    vec3 colorA = vec3(0.043, 0.075, 0.149); // obsidian
+    vec3 colorB = vec3(0.388, 0.4, 0.945); // indigo
+    vec3 colorC = vec3(0.537, 0.2, 0.941); // violet
+    
+    float noise = sin(uv.x * 10.0 + uv.y * 10.0 + u_time) * 0.1;
+    vec3 finalColor = mix(colorA, colorB, color1 * 0.4 + noise);
+    finalColor = mix(finalColor, colorC, color2 * 0.3);
+    
+    gl_FragColor = vec4(finalColor * 0.8, 1.0);
+}`;
+  function cs(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, cs(gl.VERTEX_SHADER, vs));
+  gl.attachShader(prog, cs(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const pos = gl.getAttribLocation(prog, 'a_position');
+  gl.enableVertexAttribArray(pos);
+  gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+  const uTime = gl.getUniformLocation(prog, 'u_time');
+  const uRes = gl.getUniformLocation(prog, 'u_resolution');
+  const uMouse = gl.getUniformLocation(prog, 'u_mouse');
+
+  // u_mouse is in pixel coordinates matching u_resolution (ShaderToy convention).
+  // Shaders that need normalized coords should use: u_mouse / u_resolution.
+  let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
+  window.addEventListener('mousemove', (event) => {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width && rect.height) {
+      const nx = (event.clientX - rect.left) / rect.width;
+      const ny = 1.0 - (event.clientY - rect.top) / rect.height;
+      mouse.x = nx * canvas.width;
+      mouse.y = ny * canvas.height;
+    }
+  });
+
+  function render(t) {
+    if (typeof ResizeObserver === 'undefined') syncSize();
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    if (uTime) gl.uniform1f(uTime, t * 0.001);
+    if (uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
+    if (uMouse) gl.uniform2f(uMouse, mouse.x, mouse.y);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    requestAnimationFrame(render);
+  }
+  render(0);
+})();
+</script>
+</div>
+<!-- STITCH_SHADER_END:ANIMATION_3 -->
+<!-- Overlay gradient to ensure contrast -->
+<div class="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/90"></div>
+</div>
+<div class="flex h-screen">
+<!-- Sidebar Navigation -->
+<aside class="bg-background dark:bg-background text-primary dark:text-primary-fixed-dim font-body-md text-body-md w-[280px] h-screen fixed left-0 top-0 border-r border-outline-variant bg-opacity-95 backdrop-blur-3xl shadow-xl flex flex-col gap-2 py-8 z-50">
+<!-- Header Brand -->
+<div class="px-6 mb-8 flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg overflow-hidden bg-surface-container-high border border-outline-variant/50 flex-shrink-0">
+<img alt="WURX Media Logo" class="w-full h-full object-cover" data-alt="A minimalist logo for a premium creator platform, featuring a stylized 'W' in white against a deep dark blue background. The aesthetic is modern, tech-forward, and luxurious." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYkSXPxIV2FoJFfphfXbWaVzS_e9y9-1GKFmOHtnjU3_8BPo3WF1tJHupDCZd3lJ_mAv-8pkoOZEUvtpFnF_hHUfB1tm72F7gmNZf5LQjQsagnDwqN4wFbGWJThbibMwbDA_0C00HNmDbM1yDXJJEwJkMm2wn3I0BqR6vfZP-NrMxuHtrR75GsMJJ-LU7OosPGnGNTp5Ax08qQs97Z7KOwWOJ0Pji3RqewLUYd1hM-stUzh4-8dRN0Bg"/>
+</div>
+<div>
+<h1 class="font-headline-lg text-headline-lg-mobile md:text-[24px] font-bold text-on-background tracking-tighter leading-none">WURX</h1>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-normal">Creator Platform</span>
+</div>
+</div>
+<!-- CTA -->
+<div class="px-4 mb-4">
+<button class="w-full bg-gradient-to-r from-primary-container to-secondary-container hover:from-primary hover:to-secondary text-white font-label-sm text-label-sm py-3 rounded-lg shadow-lg hover:shadow-primary-container/20 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    Create New
+                    <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
+</button>
+</div>
+<!-- Nav Links -->
+<nav class="flex-1 overflow-y-auto px-2">
+<ul class="flex flex-col gap-1">
+<li>
+<a class="flex items-center gap-3 rounded-lg text-on-surface-variant hover:text-on-surface px-4 py-3 transition-colors hover:bg-surface-container-highest/20 duration-300 active:scale-95" href="#">
+<span class="material-symbols-outlined">local_offer</span>
+<span>Offers</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 rounded-lg text-on-surface-variant hover:text-on-surface px-4 py-3 transition-colors hover:bg-surface-container-highest/20 duration-300 active:scale-95" href="#">
+<span class="material-symbols-outlined">mail</span>
+<span>Requests</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 rounded-lg bg-primary-container/10 text-primary-fixed border-r-4 border-primary-fixed font-semibold px-4 py-3 hover:bg-surface-container-highest/20 transition-all duration-300 active:scale-95" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">trophy</span>
+<span>All Contests</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 rounded-lg text-on-surface-variant hover:text-on-surface px-4 py-3 transition-colors hover:bg-surface-container-highest/20 duration-300 active:scale-95" href="#">
+<span class="material-symbols-outlined">assignment_turned_in</span>
+<span>Claims</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 rounded-lg text-on-surface-variant hover:text-on-surface px-4 py-3 transition-colors hover:bg-surface-container-highest/20 duration-300 active:scale-95" href="#">
+<span class="material-symbols-outlined">card_giftcard</span>
+<span>Rewards</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 rounded-lg text-on-surface-variant hover:text-on-surface px-4 py-3 transition-colors hover:bg-surface-container-highest/20 duration-300 active:scale-95" href="#">
+<span class="material-symbols-outlined">group</span>
+<span>Creators</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- Footer Nav -->
+<div class="px-2 mt-auto">
+<ul class="flex flex-col gap-1 border-t border-outline-variant/30 pt-4">
+<li>
+<a class="flex items-center gap-3 rounded-lg text-on-surface-variant hover:text-on-surface px-4 py-3 transition-colors hover:bg-surface-container-highest/20 duration-300 active:scale-95" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span>Settings</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 rounded-lg text-on-surface-variant hover:text-on-surface px-4 py-3 transition-colors hover:bg-surface-container-highest/20 duration-300 active:scale-95 group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-error transition-colors">logout</span>
+<span class="group-hover:text-error transition-colors">Logout</span>
+</a>
+</li>
+</ul>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 ml-[280px] flex flex-col h-screen overflow-hidden">
+<!-- Top App Bar Area (Hybrid approach based on TopNavBar JSON & Custom requirements) -->
+<header class="bg-surface/50 dark:bg-surface-container-lowest/50 text-primary font-headline-lg text-headline-lg flex items-center justify-between px-gutter h-20 w-full backdrop-blur-2xl border-b border-white/10 shadow-sm z-40 sticky top-0 shrink-0">
+<!-- Left: Title & Links -->
+<div class="flex items-center gap-8">
+<h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface tracking-tight">Contests</h2>
+<nav class="hidden lg:flex items-center gap-1">
+<a class="text-primary border-b-2 border-primary pb-2 px-3 text-[16px] font-semibold mt-2" href="#">All</a>
+<a class="text-on-surface-variant hover:text-on-surface transition-colors hover:bg-surface-container-high rounded-md px-3 py-2 text-[16px]" href="#">Claims</a>
+<a class="text-on-surface-variant hover:text-on-surface transition-colors hover:bg-surface-container-high rounded-md px-3 py-2 text-[16px]" href="#">Rewards</a>
+</nav>
+</div>
+<!-- Right: Actions -->
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-on-surface p-2 rounded-full hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="h-8 w-px bg-outline-variant/30 mx-2"></div>
+<button class="flex items-center gap-2 group">
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant/50 group-hover:border-primary transition-colors">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A professional headshot of a person looking confidently at the camera, set against a dark moody background. The lighting is cinematic with subtle rim lights to separate them from the dark backdrop." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBitnqHzKrlgXMGI4joqqF6LzgNG1g5j1REwN5ty9Vvsy2raYp8vxQd_zHSc3ewDuE2O6tyzu042WhyM98hwioDakwiN8-5jNeqEGzwiw85Wz--HQIzrclrWJ0ee4hEKkWY4I4xqMGql6zoD1AYloR6Fm4DgP0cHyi2MrvFAKi55RXvEK2YwZT0vP-2x0QVzWmsUQoX1XPRA1fDvfIYYJ9PwGwRaXh7T72jiaJFPIwMVqhX7riweyvq1Q"/>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-on-surface">arrow_drop_down</span>
+</button>
+<button class="hidden md:flex ml-4 bg-primary-container text-on-primary-container hover:bg-primary px-4 py-2 rounded-lg font-label-sm text-label-sm transition-all items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        New Contest
+                    </button>
+</div>
+</header>
+<!-- Scrollable Content Canvas -->
+<div class="flex-1 overflow-y-auto px-gutter py-8">
+<div class="max-w-[1440px] mx-auto">
+<!-- Filter & Search Bar -->
+<div class="glass-panel rounded-xl p-4 mb-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 fade-in-up">
+<!-- Status Tags -->
+<div class="flex items-center gap-2 bg-surface-container-low/50 p-1 rounded-lg border border-outline-variant/20">
+<button class="bg-primary/20 text-primary px-4 py-1.5 rounded-md font-label-sm text-label-sm shadow-sm">All</button>
+<button class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest/50 px-4 py-1.5 rounded-md font-label-sm text-label-sm transition-colors">On</button>
+<button class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest/50 px-4 py-1.5 rounded-md font-label-sm text-label-sm transition-colors">Off</button>
+<button class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest/50 px-4 py-1.5 rounded-md font-label-sm text-label-sm transition-colors">Ended</button>
+</div>
+<!-- Search & Filters -->
+<div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+<!-- Search -->
+<div class="relative flex-1 lg:w-64 focus-within:ring-2 focus-within:ring-primary rounded-lg transition-all">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+<input class="w-full bg-[#0F172A] border border-outline-variant/30 text-on-surface font-body-md text-sm rounded-lg pl-9 pr-4 py-2 focus:outline-none focus:border-primary/50 placeholder:text-on-surface-variant/50" placeholder="Search contests..." type="text"/>
+</div>
+<!-- Brand Dropdown -->
+<div class="relative">
+<button class="flex items-center justify-between gap-2 bg-[#0F172A] border border-outline-variant/30 text-on-surface-variant hover:text-on-surface px-4 py-2 rounded-lg font-body-md text-sm transition-colors min-w-[120px]">
+<span>Brand</span>
+<span class="material-symbols-outlined text-[18px]">expand_more</span>
+</button>
+</div>
+<!-- Order Dropdown -->
+<div class="relative">
+<button class="flex items-center justify-between gap-2 bg-[#0F172A] border border-outline-variant/30 text-on-surface-variant hover:text-on-surface px-4 py-2 rounded-lg font-body-md text-sm transition-colors min-w-[120px]">
+<span>Newest</span>
+<span class="material-symbols-outlined text-[18px]">sort</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Contests Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-card-gap">
+<!-- Card 1 -->
+<article class="glass-card rounded-xl p-6 flex flex-col gap-4 relative group overflow-hidden transition-all duration-300 hover:-translate-y-1 glow-accent cursor-pointer fade-in-up delay-100">
+<!-- Top Row: Brand & Status -->
+<div class="flex justify-between items-start">
+<div class="bg-surface-container-highest/80 backdrop-blur-md px-3 py-1 rounded-full border border-white/5">
+<span class="font-label-sm text-label-sm text-on-surface tracking-wider uppercase">BENTGO</span>
+</div>
+<div class="flex items-center gap-1.5 bg-tertiary/10 text-tertiary-fixed px-2 py-1 rounded border border-tertiary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+<span class="font-label-sm text-[10px]">Open to enter</span>
+</div>
+</div>
+<!-- Content -->
+<div class="mt-2">
+<h3 class="font-headline-lg text-[20px] text-on-surface font-bold leading-tight mb-2 group-hover:text-primary transition-colors">Back to School Essentials</h3>
+<p class="text-on-surface-variant text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+                                    You approve entries
+                                </p>
+</div>
+<!-- Bottom Row: Dates & Creators -->
+<div class="mt-auto pt-4 border-t border-white/10 flex items-end justify-between">
+<div class="flex flex-col gap-1">
+<span class="text-on-surface-variant/70 text-[11px] uppercase tracking-wider">Closing Date</span>
+<div class="flex items-center gap-2">
+<span class="text-on-surface font-semibold text-sm">Sep 15, 2024</span>
+<span class="bg-error/10 text-error px-2 py-0.5 rounded text-[11px] font-medium border border-error/20">5 days left</span>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="text-on-surface-variant/70 text-[11px] uppercase tracking-wider">Creators</span>
+<div class="flex items-center gap-1 text-on-surface">
+<span class="font-semibold">24</span>
+<span class="material-symbols-outlined text-[16px] text-primary-fixed-dim">group</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="glass-card rounded-xl p-6 flex flex-col gap-4 relative group overflow-hidden transition-all duration-300 hover:-translate-y-1 glow-accent cursor-pointer fade-in-up delay-200">
+<div class="flex justify-between items-start">
+<div class="bg-surface-container-highest/80 backdrop-blur-md px-3 py-1 rounded-full border border-white/5">
+<span class="font-label-sm text-label-sm text-on-surface tracking-wider uppercase">NIKE</span>
+</div>
+<div class="flex items-center gap-1.5 bg-tertiary/10 text-tertiary-fixed px-2 py-1 rounded border border-tertiary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+<span class="font-label-sm text-[10px]">Open to enter</span>
+</div>
+</div>
+<div class="mt-2">
+<h3 class="font-headline-lg text-[20px] text-on-surface font-bold leading-tight mb-2 group-hover:text-primary transition-colors">Urban Runner Series</h3>
+<p class="text-on-surface-variant text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+                                    You approve entries
+                                </p>
+</div>
+<div class="mt-auto pt-4 border-t border-white/10 flex items-end justify-between">
+<div class="flex flex-col gap-1">
+<span class="text-on-surface-variant/70 text-[11px] uppercase tracking-wider">Closing Date</span>
+<div class="flex items-center gap-2">
+<span class="text-on-surface font-semibold text-sm">Oct 02, 2024</span>
+<span class="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded text-[11px] font-medium border border-outline-variant/30">22 days left</span>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="text-on-surface-variant/70 text-[11px] uppercase tracking-wider">Creators</span>
+<div class="flex items-center gap-1 text-on-surface">
+<span class="font-semibold">89</span>
+<span class="material-symbols-outlined text-[16px] text-primary-fixed-dim">group</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="glass-card rounded-xl p-6 flex flex-col gap-4 relative group overflow-hidden transition-all duration-300 hover:-translate-y-1 glow-accent cursor-pointer fade-in-up delay-300">
+<div class="flex justify-between items-start">
+<div class="bg-surface-container-highest/80 backdrop-blur-md px-3 py-1 rounded-full border border-white/5">
+<span class="font-label-sm text-label-sm text-on-surface tracking-wider uppercase">SEPHORA</span>
+</div>
+<div class="flex items-center gap-1.5 bg-outline-variant/30 text-on-surface-variant px-2 py-1 rounded border border-outline-variant/30">
+<span class="font-label-sm text-[10px]">Reviewing</span>
+</div>
+</div>
+<div class="mt-2">
+<h3 class="font-headline-lg text-[20px] text-on-surface font-bold leading-tight mb-2 group-hover:text-primary transition-colors">Holiday Glam Campaign</h3>
+<p class="text-on-surface-variant text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+                                    Brand reviews entries
+                                </p>
+</div>
+<div class="mt-auto pt-4 border-t border-white/10 flex items-end justify-between">
+<div class="flex flex-col gap-1">
+<span class="text-on-surface-variant/70 text-[11px] uppercase tracking-wider">Closing Date</span>
+<div class="flex items-center gap-2">
+<span class="text-on-surface font-semibold text-sm">Aug 30, 2024</span>
+<span class="text-outline text-[11px] font-medium">Closed</span>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="text-on-surface-variant/70 text-[11px] uppercase tracking-wider">Creators</span>
+<div class="flex items-center gap-1 text-on-surface">
+<span class="font-semibold">156</span>
+<span class="material-symbols-outlined text-[16px] text-primary-fixed-dim">group</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 4 -->
+<article class="glass-card rounded-xl p-6 flex flex-col gap-4 relative group overflow-hidden transition-all duration-300 hover:-translate-y-1 glow-accent cursor-pointer fade-in-up delay-400">
+<div class="flex justify-between items-start">
+<div class="bg-surface-container-highest/80 backdrop-blur-md px-3 py-1 rounded-full border border-white/5">
+<span class="font-label-sm text-label-sm text-on-surface tracking-wider uppercase">SAMSUNG</span>
+</div>
+<div class="flex items-center gap-1.5 bg-tertiary/10 text-tertiary-fixed px-2 py-1 rounded border border-tertiary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+<span class="font-label-sm text-[10px]">Open to enter</span>
+</div>
+</div>
+<div class="mt-2">
+<h3 class="font-headline-lg text-[20px] text-on-surface font-bold leading-tight mb-2 group-hover:text-primary transition-colors">Galaxy S24 Ultra Launch</h3>
+<p class="text-on-surface-variant text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+                                    You approve entries
+                                </p>
+</div>
+<div class="mt-auto pt-4 border-t border-white/10 flex items-end justify-between">
+<div class="flex flex-col gap-1">
+<span class="text-on-surface-variant/70 text-[11px] uppercase tracking-wider">Closing Date</span>
+<div class="flex items-center gap-2">
+<span class="text-on-surface font-semibold text-sm">Nov 10, 2024</span>
+<span class="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded text-[11px] font-medium border border-outline-variant/30">61 days left</span>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="text-on-surface-variant/70 text-[11px] uppercase tracking-wider">Creators</span>
+<div class="flex items-center gap-1 text-on-surface">
+<span class="font-semibold">42</span>
+<span class="material-symbols-outlined text-[16px] text-primary-fixed-dim">group</span>
+</div>
+</div>
+</div>
+</article>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

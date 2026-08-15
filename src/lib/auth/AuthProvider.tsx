@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { queryClient } from '@/lib/query-client';
-import { AuthContext, readClaims, type AuthStatus } from './auth-context';
+import {
+  AuthContext,
+  readClaims,
+  type AuthStatus,
+  type IdentitySwap,
+} from './auth-context';
 
 // NOTE: `@/lib/supabase` is imported dynamically below, never at the top of
 // this file. This provider wraps every page including the public landing page,
@@ -43,6 +48,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // from a routine token refresh without putting it in state.
   const currentUserId = useRef<string | null>(null);
 
+  /*
+   * Set when a real person is replaced by a different person, or by nobody,
+   * which in practice only happens because another tab signed in or out. See
+   * IdentitySwap for why this exists at all.
+   */
+  const [identitySwap, setIdentitySwap] = useState<IdentitySwap | null>(null);
+  const acknowledgeSwap = useCallback(() => setIdentitySwap(null), []);
+
   useEffect(() => {
     let cancelled = false;
     let unsubscribe: (() => void) | undefined;
@@ -62,8 +75,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
 
         const nextUserId = nextSession?.user.id ?? null;
-        const userChanged = nextUserId !== currentUserId.current;
+        const previousUserId = currentUserId.current;
+        const userChanged = nextUserId !== previousUserId;
         currentUserId.current = nextUserId;
+
+        /*
+         * A SWAP, not a sign-in. `previousUserId` being non-null is the whole
+         * test: a fresh tab goes null -> somebody, which is ordinary, and a
+         * token refresh keeps the same id. Anything else means the person this
+         * tab belonged to is no longer the person it belongs to, and they are
+         * about to click something that will fail in a way that makes no sense.
+         *
+         * `signOut()` from THIS tab lands here too, and would raise a banner
+         * about a sign-out the user just asked for. It is suppressed by the
+         * guard clearing the flag on the way out, below.
+         */
+        if (userChanged && previousUserId !== null) {
+          setIdentitySwap({
+            from: previousUserId,
+            to: nextUserId,
+            toEmail: nextSession?.user.email ?? null,
+          });
+        }
 
         // Always keep the session object current: the access token inside it is
         // what every database call uses, and it must not go stale.
@@ -94,7 +127,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = await supabaseClient();
     await supabase.auth.signOut();
     // State updates arrive through onAuthStateChange; the guards handle the
-    // redirect. Nothing to do here.
+    // redirect. Nothing to do here EXCEPT clear the swap flag: signing yourself
+    // out is not being ambushed, and a banner explaining it would be noise.
+    setIdentitySwap(null);
   }, []);
 
   const claims = useMemo(
@@ -108,9 +143,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       user: session?.user ?? null,
       claims,
+      identitySwap,
+      acknowledgeSwap,
       signOut,
     }),
-    [status, session, claims, signOut]
+    [status, session, claims, identitySwap, acknowledgeSwap, signOut]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
