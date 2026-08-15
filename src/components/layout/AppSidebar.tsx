@@ -39,7 +39,19 @@ import type { AppRole } from '@/lib/auth/auth-context';
  * than being a button that apologises when you press it.
  */
 function createActionFor(role: AppRole | undefined): { label: string; to: string } | null {
-  if (role === 'admin' || role === 'ops') return { label: 'New contest', to: '/admin/contests' };
+  /*
+   * STAFF GO TO THE BRAND LIST, NOT THE CONTEST LIST, and the first version of
+   * this got it wrong in a way worth writing down. It said "New contest" and
+   * went to /admin/contests, which is a LIST with no way to create anything on
+   * it: a contest belongs to a brand and is made inside one. A button that
+   * names an action and performs a navigation is a lie, and this one also
+   * collided with the real "New contest" button on the brand's Contests tab,
+   * which the contests suite caught within a minute by clicking the wrong one.
+   *
+   * So it says what it does. Picking the brand IS the first step of making a
+   * contest, and the label no longer promises to skip it.
+   */
+  if (role === 'admin' || role === 'ops') return { label: 'Start a contest', to: '/admin/brands' };
   if (role === 'creator') return { label: 'Add a video', to: '/app/content' };
   return null;
 }

@@ -114,6 +114,23 @@ async function enterFailureDetail(dialog) {
   }
 }
 
+/**
+ * THE MAIN CONTENT AREA, NEVER THE WHOLE PAGE.
+ *
+ * OPERATIONS has said "scope assertions to <main>" since three suites were
+ * found searching the whole document and matching the sidebar. This one was
+ * still clicking `text=New contest` unscoped, and on 2026-08-15 the rebuilt
+ * sidebar grew a gradient button that also said New contest. Playwright happily
+ * clicked the sidebar, the browser navigated somewhere reasonable, and the
+ * suite failed twenty seconds later on a URL that made no sense.
+ *
+ * The button was ALSO wrong, and that is the more useful half of what this
+ * caught: it named an action and performed a navigation to a list you cannot
+ * create anything from. Both were fixed. This helper is so the next duplicate
+ * label is a non-event.
+ */
+const main = (page) => page.locator('main');
+
 async function signIn(page, email) {
   await page.goto(`${BASE}/admin/login`, { waitUntil: 'domcontentloaded' });
   await page.fill('input[type="email"]', email);
@@ -153,7 +170,7 @@ try {
   await page.goto(`${BASE}/admin/brands/${brand.id}?section=contests`, {
     waitUntil: 'domcontentloaded',
   });
-  await page.waitForSelector('text=New contest', { timeout: 20_000 });
+  await main(page).getByText('New contest').first().waitFor({ timeout: 20_000 });
   ok('the tab renders and offers a new contest');
 
   const bodyText = await page.textContent('body');
@@ -165,7 +182,7 @@ try {
 
   // ------------------------------------------------------- creating one --
   console.log('\n2. Creating a contest through the screen');
-  await page.click('text=New contest');
+  await main(page).getByText('New contest').first().click();
   await page.waitForURL(/\/contests\/new$/, { timeout: 20_000 });
   ok('the setup screen is its own route, not a dialog');
 
@@ -235,7 +252,7 @@ try {
       await page.goto(`${BASE}/admin/brands/${brand.id}?section=contests`, {
         waitUntil: 'domcontentloaded',
       });
-      await page.waitForSelector('text=New contest', { timeout: 20_000 });
+      await main(page).getByText('New contest').first().waitFor({ timeout: 20_000 });
       const scrolls = await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
       );
@@ -258,7 +275,7 @@ try {
   await page.goto(`${BASE}/admin/brands/${brand.id}?section=contests`, {
     waitUntil: 'domcontentloaded',
   });
-  await page.waitForSelector('text=New contest', { timeout: 20_000 });
+  await main(page).getByText('New contest').first().waitFor({ timeout: 20_000 });
   const small = await page.evaluate(() =>
     [...document.querySelectorAll('button, a[href]')]
       .filter((el) => el.getBoundingClientRect().height > 0)
