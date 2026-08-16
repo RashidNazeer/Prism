@@ -39,7 +39,9 @@ export function FilterBar({
   return (
     <div
       className={cn(
-        'wx-glass-panel flex flex-wrap items-center gap-2 rounded-lg p-2',
+        // `wx-tap-row` keeps every control in here thumb-sized on a phone and
+        // lets it be dense above `sm`. See global.css for why it is px.
+        'wx-glass-panel wx-tap-row flex flex-wrap items-center gap-2 rounded-lg p-2',
         className
       )}
     >

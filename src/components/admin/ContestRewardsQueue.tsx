@@ -464,7 +464,7 @@ export function ContestRewardsQueue({
             aria-selected={view === tab}
             onClick={() => switchView(tab)}
             className={cn(
-              'min-h-11 flex-1 rounded-lg px-3 text-[0.8125rem] font-semibold transition-colors duration-200',
+              'min-h-[44px] flex-1 rounded-lg px-3 text-[0.8125rem] font-semibold transition-colors duration-200',
               view === tab
                 ? 'bg-surface-1 text-text shadow-sm'
                 : 'text-muted hover:text-accent'
@@ -540,7 +540,7 @@ export function ContestRewardsQueue({
           <>
             {view === 'owed' ? (
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                <label className="text-muted inline-flex min-h-11 cursor-pointer items-center gap-2.5 text-[0.8125rem] font-medium">
+                <label className="text-muted inline-flex min-h-[44px] cursor-pointer items-center gap-2.5 text-[0.8125rem] font-medium">
                   <input
                     type="checkbox"
                     className="size-[18px] cursor-pointer accent-[var(--wx-accent)]"
@@ -590,7 +590,7 @@ export function ContestRewardsQueue({
                 type="button"
                 variant="secondary"
                 size="sm"
-                className="min-h-11"
+                className="min-h-[44px]"
                 disabled={page <= 1}
                 onClick={() => {
                   setSelected(new Set());
@@ -607,7 +607,7 @@ export function ContestRewardsQueue({
                 type="button"
                 variant="secondary"
                 size="sm"
-                className="min-h-11"
+                className="min-h-[44px]"
                 disabled={page >= pages}
                 onClick={() => {
                   setSelected(new Set());
@@ -638,12 +638,12 @@ export function ContestRewardsQueue({
                   type="button"
                   variant="secondary"
                   size="sm"
-                  className="min-h-11"
+                  className="min-h-[44px]"
                   onClick={() => setSelected(new Set())}
                 >
                   Clear
                 </Button>
-                <Button type="button" size="sm" className="min-h-11" onClick={() => setConfirming(true)}>
+                <Button type="button" size="sm" className="min-h-[44px]" onClick={() => setConfirming(true)}>
                   <Banknote size={15} aria-hidden />
                   Mark paid
                 </Button>
@@ -712,7 +712,7 @@ export function ContestRewardsQueue({
                 <Button
                   type="button"
                   variant="secondary"
-                  className="min-h-11"
+                  className="min-h-[44px]"
                   disabled={busy}
                   onClick={() => {
                     setConfirming(false);
@@ -899,7 +899,7 @@ function RewardCard({
 function EmptyState({ view, scoped }: { view: RewardsView; scoped: boolean }) {
   return (
     <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
-      <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
+      <div className="bg-surface-3 border-line-strong grid size-[44px] place-items-center rounded-lg border">
         <Trophy size={19} className="text-muted" aria-hidden />
       </div>
       <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">

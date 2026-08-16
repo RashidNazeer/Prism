@@ -50,7 +50,7 @@ export function ContestDashboard({ contests }: { contests: CreatorContest[] }) {
   if (mine.length === 0) {
     return (
       <div className="border-line bg-surface-1 mt-6 flex flex-col items-start gap-3 rounded-xl border p-8 shadow-md">
-        <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
+        <div className="bg-surface-3 border-line-strong grid size-[44px] place-items-center rounded-lg border">
           <Trophy size={19} className="text-muted" aria-hidden />
         </div>
         <h2 className="font-display text-text text-[1.3125rem] leading-tight font-bold">
@@ -303,7 +303,7 @@ function ContestCard({ contest }: { contest: CreatorContest }) {
 
       <Link
         to="/app/contests"
-        className="text-accent ease-brand mt-4 inline-flex min-h-11 items-center text-[0.8125rem] font-semibold transition-colors hover:underline"
+        className="text-accent ease-brand mt-4 inline-flex min-h-[44px] items-center text-[0.8125rem] font-semibold transition-colors hover:underline"
       >
         Open this contest
       </Link>

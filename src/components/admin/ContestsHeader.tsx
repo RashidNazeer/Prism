@@ -48,7 +48,7 @@ export function ContestsHeader({ subtitle }: { subtitle?: string }) {
         now, underlined, along with every other section in the product. Repeating
         it here was the same word twice, 40px apart.
       */}
-      <div className="border-glass flex flex-wrap items-center gap-x-4 gap-y-3 border-b pb-2.5">
+      <div className="border-glass wx-tap-row flex flex-wrap items-center gap-x-4 gap-y-3 border-b pb-2.5">
         <nav aria-label="Contest sections" className="flex min-w-0 items-center gap-1">
           {SECTIONS.map((s) => {
             // Exact match on All, or /admin/contests would light up on every
@@ -169,7 +169,7 @@ function BrandPicker({ onClose }: { onClose: () => void }) {
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="text-muted hover:text-accent -mt-1 -mr-1 grid size-11 shrink-0 place-items-center rounded-lg transition-colors"
+            className="text-muted hover:text-accent -mt-1 -mr-1 grid size-[44px] shrink-0 place-items-center rounded-lg transition-colors"
           >
             <X size={17} aria-hidden />
           </button>

@@ -479,7 +479,7 @@ export function ContestSetup() {
           <div className="min-w-0">
             <Link
               to={`/admin/brands/${brandId}?section=contests`}
-              className="text-muted hover:text-text ease-brand inline-flex min-h-11 items-center gap-1.5 text-[0.8125rem] font-semibold transition-colors"
+              className="text-muted hover:text-text ease-brand inline-flex min-h-[44px] items-center gap-1.5 text-[0.8125rem] font-semibold transition-colors"
             >
               <ArrowLeft size={15} aria-hidden />
               {brand?.name ?? 'Back'}
@@ -531,7 +531,7 @@ export function ContestSetup() {
               </Button>
               <Link
                 to={`/admin/brands/${brandId}?section=contests`}
-                className="text-accent inline-flex min-h-11 items-center text-[0.8125rem] font-semibold hover:underline"
+                className="text-accent inline-flex min-h-[44px] items-center text-[0.8125rem] font-semibold hover:underline"
               >
                 Back to {brand?.name ?? 'the brand'}
               </Link>
@@ -549,7 +549,7 @@ export function ContestSetup() {
             </p>
             <Link
               to={`/admin/brands/${brandId}?section=contests`}
-              className="text-accent inline-flex min-h-11 items-center text-[0.8125rem] font-semibold hover:underline"
+              className="text-accent inline-flex min-h-[44px] items-center text-[0.8125rem] font-semibold hover:underline"
             >
               Back to {brand?.name ?? 'the brand'}
             </Link>

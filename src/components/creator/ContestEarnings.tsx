@@ -70,7 +70,7 @@ export function ContestEarnings() {
         </p>
         <Link
           to="/app/contests?view=progress"
-          className="text-accent ease-brand inline-flex min-h-11 items-center gap-1.5 text-[0.8125rem] font-semibold transition-colors hover:underline"
+          className="text-accent ease-brand inline-flex min-h-[44px] items-center gap-1.5 text-[0.8125rem] font-semibold transition-colors hover:underline"
         >
           See where you stand
           <ArrowRight size={14} aria-hidden />

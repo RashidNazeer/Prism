@@ -13,7 +13,7 @@ export function NotFound() {
         </p>
         <Link
           to="/"
-          className="inline-flex h-11 items-center rounded-full bg-accent px-6 text-sm font-semibold text-on-accent transition-colors duration-200 ease-brand hover:bg-accent-hover"
+          className="inline-flex h-[44px] items-center rounded-full bg-accent px-6 text-sm font-semibold text-on-accent transition-colors duration-200 ease-brand hover:bg-accent-hover"
         >
           Back to WurxMediaHub
         </Link>

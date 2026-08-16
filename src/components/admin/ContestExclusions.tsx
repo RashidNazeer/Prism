@@ -224,7 +224,7 @@ export function ContestExclusions({ contestId, rows, loading }: Props) {
         </div>
       ) : rows.length === 0 ? (
         <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
-          <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
+          <div className="bg-surface-3 border-line-strong grid size-[44px] place-items-center rounded-lg border">
             <UserX size={19} className="text-muted" aria-hidden />
           </div>
           <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
@@ -306,7 +306,7 @@ function ExclusionRow({
               type="button"
               variant="ghost"
               size="sm"
-              className="min-h-11"
+              className="min-h-[44px]"
               disabled={busy}
               aria-label={`Lift the bar on ${who}`}
               onClick={() => setConfirming(true)}
@@ -328,7 +328,7 @@ function ExclusionRow({
               type="button"
               variant="secondary"
               size="sm"
-              className="min-h-11"
+              className="min-h-[44px]"
               disabled={busy}
               onClick={onLift}
             >
@@ -338,7 +338,7 @@ function ExclusionRow({
               type="button"
               variant="ghost"
               size="sm"
-              className="min-h-11"
+              className="min-h-[44px]"
               disabled={busy}
               onClick={() => setConfirming(false)}
             >

@@ -170,7 +170,7 @@ export function AppSidebar({
             type="button"
             onClick={onClose}
             aria-label="Close menu"
-            className="text-muted hover:text-accent grid size-11 shrink-0 place-items-center rounded-full transition-colors"
+            className="text-muted hover:text-accent grid size-[44px] shrink-0 place-items-center rounded-full transition-colors"
           >
             <X size={18} aria-hidden />
           </button>
@@ -185,7 +185,7 @@ export function AppSidebar({
             onClick={onNavigate}
             title={collapsed ? create.label : undefined}
             className={cn(
-              'wx-gradient text-on-accent ease-brand flex min-h-11 items-center justify-center gap-2',
+              'wx-gradient text-on-accent ease-brand flex min-h-[44px] items-center justify-center gap-2',
               'rounded-xl text-[0.8125rem] font-semibold shadow-md transition-all duration-300',
               'hover:shadow-lg active:translate-y-px',
               collapsed ? 'w-full px-0' : 'w-full px-4'
@@ -256,7 +256,7 @@ export function AppSidebar({
               disabled={signingOut}
               onClick={onSignOut}
               title="Sign out"
-              className="text-muted hover:bg-surface-2 hover:text-danger mx-auto grid size-11 place-items-center rounded-lg transition-colors duration-200 disabled:opacity-50"
+              className="text-muted hover:bg-surface-2 hover:text-danger mx-auto grid size-[44px] place-items-center rounded-lg transition-colors duration-200 disabled:opacity-50"
             >
               <LogOut size={15} aria-hidden />
               <span className="sr-only">Sign out</span>
@@ -283,7 +283,7 @@ export function AppSidebar({
               title="Sign out"
               // Turns danger on hover, the way the design's Logout does. It is
               // the one row in here that ends a session.
-              className="text-muted hover:bg-surface-1 hover:text-danger grid size-11 shrink-0 place-items-center rounded-lg transition-colors duration-200 disabled:opacity-50"
+              className="text-muted hover:bg-surface-1 hover:text-danger grid size-[44px] shrink-0 place-items-center rounded-lg transition-colors duration-200 disabled:opacity-50"
             >
               <LogOut size={15} aria-hidden />
               <span className="sr-only">{signingOut ? 'Signing out' : 'Sign out'}</span>
@@ -311,12 +311,12 @@ function NavRow({
    * left a wide band of nothing to the right of every label. Now py-2 / px-3 /
    * 13px inside 240px.
    *
-   * `min-h-11` DOES NOT MOVE. It is 44px, the minimum tap target, and the
+   * `min-h-[44px]` DOES NOT MOVE. It is 44px, the minimum tap target, and the
    * responsive suite asserts it at 375px. Density is allowed to come out of the
    * padding; it is not allowed to come out of whether a thumb can hit the row.
    */
   const base = cn(
-    'ease-brand relative flex min-h-11 items-center gap-2.5 rounded-lg py-2 text-[0.8125rem]',
+    'ease-brand relative flex min-h-[44px] items-center gap-2.5 rounded-lg py-2 text-[0.8125rem]',
     'transition-all duration-200',
     collapsed ? 'justify-center px-0' : 'px-3'
   );

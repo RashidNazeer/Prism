@@ -16,7 +16,7 @@ export function HowItWorks() {
           <Reveal key={step.n} delay={i * 0.08}>
             <li className="group h-full rounded-2xl border border-line bg-surface-1 p-7 transition-colors duration-300 ease-brand hover:border-line-interactive">
               <span
-                className="wx-numeric grid size-11 place-items-center rounded-xl bg-accent font-display text-sm font-bold text-on-accent"
+                className="wx-numeric grid size-[44px] place-items-center rounded-xl bg-accent font-display text-sm font-bold text-on-accent"
                 aria-hidden
               >
                 {step.n}

@@ -390,6 +390,41 @@
   }
 }
 
+/*
+  A row of controls that stays thumb-sized on a phone.
+
+  WHY IT IS PX AND WHY IT IS HERE. A 44px tap target is sized for a FINGER, and
+  a finger does not get smaller because somebody prefers smaller text. Every
+  control in the product used to carry `min-h-11`, which is 2.75rem and happened
+  to equal 44px at the browser's 16px root; the text-size setting moved the root
+  to 15px and quietly turned all of them into 41px. `verify:contests` caught it
+  on the brand hub at 375px, which is exactly what that check exists for.
+
+  So the floor is physical and stops following the setting. Above `sm` it lifts
+  entirely, because a pointer is not a thumb and the dense row is the point.
+
+  It is on the CONTAINER rather than on each control on purpose: a filter row
+  gains controls over time, and a rule every new one has to remember is a rule
+  that will be forgotten.
+*/
+@utility wx-tap-row {
+  & button,
+  & a[href],
+  & input,
+  & select {
+    min-height: 44px;
+  }
+
+  @media (width >= 40rem) {
+    & button,
+    & a[href],
+    & input,
+    & select {
+      min-height: 0;
+    }
+  }
+}
+
 /* The design's primary action: a gradient fill rather than a flat one. */
 @utility wx-gradient {
   background-image: var(--wx-accent-gradient);

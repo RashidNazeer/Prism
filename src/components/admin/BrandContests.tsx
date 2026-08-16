@@ -95,7 +95,7 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
                 aria-selected={active}
                 onClick={() => setFilters((f) => ({ ...f, status: t.key, page: 1 }))}
                 className={cn(
-                  'ease-brand min-h-11 rounded-full px-4 text-[0.8125rem] font-semibold transition-colors',
+                  'ease-brand min-h-[44px] rounded-full px-4 text-[0.8125rem] font-semibold transition-colors',
                   active ? 'bg-surface-3 text-text' : 'text-muted hover:text-text'
                 )}
               >
@@ -186,7 +186,7 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
             <Button
               variant="secondary"
               size="sm"
-              className="min-h-11"
+              className="min-h-[44px]"
               disabled={filters.page <= 1}
               onClick={() => setFilters((f) => ({ ...f, page: f.page - 1 }))}
             >
@@ -199,7 +199,7 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
             <Button
               variant="secondary"
               size="sm"
-              className="min-h-11"
+              className="min-h-[44px]"
               disabled={filters.page >= pages}
               onClick={() => setFilters((f) => ({ ...f, page: f.page + 1 }))}
             >
@@ -268,7 +268,7 @@ function Empty({
 }) {
   return (
     <div className="border-line bg-surface-1 flex flex-col items-start gap-3 rounded-xl border p-8 shadow-md">
-      <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
+      <div className="bg-surface-3 border-line-strong grid size-[44px] place-items-center rounded-lg border">
         <Trophy size={19} className="text-muted" aria-hidden />
       </div>
       <h3 className="font-display text-text text-[1.3125rem] leading-tight font-bold">{title}</h3>

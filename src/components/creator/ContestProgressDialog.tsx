@@ -441,7 +441,7 @@ export function ContestProgressDialog({
             type="button"
             onClick={() => !busy && onClose()}
             aria-label="Close"
-            className="text-muted hover:text-accent -mt-1 -mr-1 grid size-11 shrink-0 place-items-center rounded-lg transition-colors"
+            className="text-muted hover:text-accent -mt-1 -mr-1 grid size-[44px] shrink-0 place-items-center rounded-lg transition-colors"
           >
             <X size={17} aria-hidden />
           </button>
@@ -592,13 +592,13 @@ export function ContestProgressDialog({
             </div>
 
             <div className="mt-6 flex flex-wrap gap-2.5">
-              <Button type="button" className="min-h-11" disabled={busy} onClick={toVideos}>
+              <Button type="button" className="min-h-[44px]" disabled={busy} onClick={toVideos}>
                 Continue
               </Button>
               <Button
                 type="button"
                 variant="ghost"
-                className="min-h-11"
+                className="min-h-[44px]"
                 disabled={busy}
                 onClick={onClose}
               >
@@ -732,7 +732,7 @@ export function ContestProgressDialog({
             <div className="mt-5 flex flex-wrap gap-2.5">
               <Button
                 type="button"
-                className="min-h-11"
+                className="min-h-[44px]"
                 disabled={busy}
                 onClick={() => void send()}
               >
@@ -742,7 +742,7 @@ export function ContestProgressDialog({
               <Button
                 type="button"
                 variant="ghost"
-                className="min-h-11"
+                className="min-h-[44px]"
                 disabled={busy}
                 onClick={() => {
                   setRefusal('');
@@ -793,7 +793,7 @@ export function ContestProgressDialog({
             </p>
 
             <div className="mt-6">
-              <Button type="button" className="min-h-11" onClick={onClose}>
+              <Button type="button" className="min-h-[44px]" onClick={onClose}>
                 Done
               </Button>
             </div>
@@ -974,7 +974,7 @@ function WaitingPanel({
       </dl>
 
       <div className="mt-6">
-        <Button type="button" className="min-h-11" onClick={onClose}>
+        <Button type="button" className="min-h-[44px]" onClick={onClose}>
           Close
         </Button>
       </div>
@@ -998,7 +998,7 @@ function EarlierVideo({ video, index }: { video: VideoRow; index: number }) {
         href={video.video_url}
         target="_blank"
         rel="noreferrer noopener"
-        className="text-accent inline-flex min-h-11 min-w-0 flex-1 basis-40 items-center gap-1.5 text-[0.8125rem] font-medium hover:underline"
+        className="text-accent inline-flex min-h-[44px] min-w-0 flex-1 basis-40 items-center gap-1.5 text-[0.8125rem] font-medium hover:underline"
       >
         <span className="truncate">{video.video_url}</span>
         <ExternalLink size={12} aria-hidden className="shrink-0" />

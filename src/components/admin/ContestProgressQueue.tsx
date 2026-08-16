@@ -477,7 +477,7 @@ export function ContestProgressQueue({
         </div>
       ) : rows.length === 0 ? (
         <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
-          <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
+          <div className="bg-surface-3 border-line-strong grid size-[44px] place-items-center rounded-lg border">
             <Check size={19} className="text-muted" aria-hidden />
           </div>
           <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
@@ -514,7 +514,7 @@ export function ContestProgressQueue({
               type="button"
               variant="secondary"
               size="sm"
-              className="min-h-11"
+              className="min-h-[44px]"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
@@ -528,7 +528,7 @@ export function ContestProgressQueue({
               type="button"
               variant="secondary"
               size="sm"
-              className="min-h-11"
+              className="min-h-[44px]"
               disabled={page >= pages}
               onClick={() => setPage((p) => Math.min(pages, p + 1))}
             >
@@ -725,7 +725,7 @@ function ClaimCard({
                       href={video.videoUrl}
                       target="_blank"
                       rel="noreferrer noopener"
-                      className="text-accent inline-flex min-h-11 items-center gap-1.5 text-[0.8125rem] font-semibold hover:underline"
+                      className="text-accent inline-flex min-h-[44px] items-center gap-1.5 text-[0.8125rem] font-semibold hover:underline"
                     >
                       <Video size={14} aria-hidden />
                       <span className="break-all">{video.videoTitle ?? 'Watch this one'}</span>
@@ -803,7 +803,7 @@ function ClaimCard({
           <Button
             type="button"
             variant="secondary"
-            className="min-h-11"
+            className="min-h-[44px]"
             disabled={busy}
             onClick={() => void decide('rejected')}
           >

@@ -207,7 +207,7 @@ export function ContestProducts({ contestId, brandId, selected, loading }: Props
         </div>
       ) : live.length === 0 && strays.length === 0 ? (
         <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
-          <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
+          <div className="bg-surface-3 border-line-strong grid size-[44px] place-items-center rounded-lg border">
             <Package size={19} className="text-muted" aria-hidden />
           </div>
           <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
@@ -280,7 +280,7 @@ function ProductRow({
   return (
     <label
       className={cn(
-        'ease-brand flex min-h-11 cursor-pointer flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border p-4 transition-colors',
+        'ease-brand flex min-h-[44px] cursor-pointer flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border p-4 transition-colors',
         checked
           ? 'border-accent bg-accent-soft'
           : 'border-line bg-surface-1 hover:border-line-strong',
@@ -340,7 +340,7 @@ function StrayRow({
   onRemove: () => void;
 }) {
   return (
-    <div className="border-line bg-surface-1 flex min-h-11 flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border border-dashed p-4">
+    <div className="border-line bg-surface-1 flex min-h-[44px] flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border border-dashed p-4">
       <span className="min-w-0 flex-1 basis-40 text-[0.875rem] font-semibold break-words">
         {name}
       </span>
@@ -351,7 +351,7 @@ function StrayRow({
         type="button"
         variant="ghost"
         size="sm"
-        className="min-h-11"
+        className="min-h-[44px]"
         disabled={busy}
         onClick={onRemove}
       >

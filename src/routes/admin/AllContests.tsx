@@ -152,7 +152,7 @@ export function AllContests() {
           // asserts it on every control at 375px. `FilterTab` is drawn at the
           // desktop height, so the height comes back here rather than being
           // lost in the move to the shared row.
-          className="[&>button]:min-h-11"
+          className="[&>button]:min-h-[44px]"
         >
           {TABS.map((t) => (
             <FilterTab
@@ -314,7 +314,7 @@ export function AllContests() {
             <Button
               variant="secondary"
               size="sm"
-              className="min-h-11"
+              className="min-h-[44px]"
               disabled={filters.page <= 1}
               onClick={() => setFilters({ page: filters.page - 1 })}
             >
@@ -327,7 +327,7 @@ export function AllContests() {
             <Button
               variant="secondary"
               size="sm"
-              className="min-h-11"
+              className="min-h-[44px]"
               disabled={filters.page >= pages}
               onClick={() => setFilters({ page: filters.page + 1 })}
             >
@@ -472,7 +472,7 @@ function Panel({
 }) {
   return (
     <div className="border-line bg-surface-1 flex flex-col items-start gap-3 rounded-xl border p-6 shadow-md sm:p-8">
-      <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
+      <div className="bg-surface-3 border-line-strong grid size-[44px] place-items-center rounded-lg border">
         <Trophy size={19} className="text-muted" aria-hidden />
       </div>
       <h2 className="font-display text-text text-[1.1875rem] leading-tight font-bold">{title}</h2>

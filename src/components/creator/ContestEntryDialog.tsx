@@ -274,7 +274,7 @@ export function ContestEntryDialog({
             type="button"
             onClick={() => !busy && onClose()}
             aria-label="Close"
-            className="text-muted hover:text-accent -mt-1 -mr-1 grid size-11 shrink-0 place-items-center rounded-lg transition-colors"
+            className="text-muted hover:text-accent -mt-1 -mr-1 grid size-[44px] shrink-0 place-items-center rounded-lg transition-colors"
           >
             <X size={17} aria-hidden />
           </button>
@@ -377,7 +377,7 @@ export function ContestEntryDialog({
                 href={contest.briefUrl}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="text-accent mt-3 inline-flex min-h-11 items-center gap-1.5 text-[0.8125rem] font-semibold hover:underline"
+                className="text-accent mt-3 inline-flex min-h-[44px] items-center gap-1.5 text-[0.8125rem] font-semibold hover:underline"
               >
                 Read the full brief
                 <ExternalLink size={13} aria-hidden />

@@ -307,7 +307,7 @@ export function ContestDeliverables({ contestId, currency, rows, loading }: Prop
           <Button
             type="button"
             variant="secondary"
-            className="min-h-11"
+            className="min-h-[44px]"
             disabled={busy}
             onClick={() => setEditing(blankDraft(nextSortOrder))}
           >
@@ -324,7 +324,7 @@ export function ContestDeliverables({ contestId, currency, rows, loading }: Prop
         </div>
       ) : ordered.length === 0 ? (
         <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
-          <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
+          <div className="bg-surface-3 border-line-strong grid size-[44px] place-items-center rounded-lg border">
             <Target size={19} className="text-muted" aria-hidden />
           </div>
           <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
@@ -459,7 +459,7 @@ function DeliverableCard({
             type="button"
             variant="secondary"
             size="sm"
-            className="min-h-11"
+            className="min-h-[44px]"
             disabled={busy}
             onClick={onEdit}
           >
@@ -471,7 +471,7 @@ function DeliverableCard({
               type="button"
               variant="ghost"
               size="sm"
-              className="min-h-11"
+              className="min-h-[44px]"
               disabled={busy}
               onClick={onRetire}
             >
@@ -483,7 +483,7 @@ function DeliverableCard({
               type="button"
               variant="ghost"
               size="sm"
-              className="min-h-11"
+              className="min-h-[44px]"
               disabled={busy}
               onClick={onRestore}
             >
@@ -680,7 +680,7 @@ function DeliverableDialog({
             type="button"
             onClick={() => !busy && onClose()}
             aria-label="Close"
-            className="text-muted hover:text-accent -mt-1 -mr-1 grid size-11 shrink-0 place-items-center rounded-lg transition-colors"
+            className="text-muted hover:text-accent -mt-1 -mr-1 grid size-[44px] shrink-0 place-items-center rounded-lg transition-colors"
           >
             <X size={17} aria-hidden />
           </button>

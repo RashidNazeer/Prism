@@ -69,7 +69,7 @@ export function IdentitySwapBanner() {
           <Button
             type="button"
             size="sm"
-            className="min-h-11"
+            className="min-h-[44px]"
             onClick={() => window.location.reload()}
           >
             <RefreshCw size={15} aria-hidden />
@@ -79,7 +79,7 @@ export function IdentitySwapBanner() {
             type="button"
             onClick={acknowledgeSwap}
             aria-label="Dismiss"
-            className="text-stage-due hover:bg-stage-due/10 grid size-11 shrink-0 place-items-center rounded-lg transition-colors"
+            className="text-stage-due hover:bg-stage-due/10 grid size-[44px] shrink-0 place-items-center rounded-lg transition-colors"
           >
             <X size={17} aria-hidden />
           </button>

@@ -82,7 +82,7 @@ export function Brands() {
                 className="border-line bg-surface-1 hover:border-accent flex h-full flex-col rounded-xl border p-5 shadow-md transition-colors duration-200"
               >
                 <div className="flex items-center gap-3">
-                  <span className="border-line bg-surface-2 grid size-11 shrink-0 place-items-center overflow-hidden rounded-full border">
+                  <span className="border-line bg-surface-2 grid size-[44px] shrink-0 place-items-center overflow-hidden rounded-full border">
                     {brand.logo_url ? (
                       <img src={brand.logo_url} alt="" className="size-full object-cover" />
                     ) : (

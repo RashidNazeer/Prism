@@ -139,7 +139,7 @@ function ViewSwitch({
             aria-selected={active}
             onClick={() => onChange(o.key)}
             className={cn(
-              'ease-brand min-h-11 rounded-lg px-4 text-[0.8125rem] font-semibold transition-colors',
+              'ease-brand min-h-[44px] rounded-lg px-4 text-[0.8125rem] font-semibold transition-colors',
               active ? 'bg-surface-1 text-text shadow-sm' : 'text-muted hover:text-text'
             )}
           >
@@ -315,7 +315,7 @@ export function Contests() {
                   aria-selected={tab === t.value}
                   onClick={() => setTab(t.value)}
                   className={cn(
-                    'ease-brand inline-flex min-h-11 shrink-0 items-center justify-center rounded-[9px] px-3.5 text-[0.8125rem] font-medium transition-colors',
+                    'ease-brand inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-[9px] px-3.5 text-[0.8125rem] font-medium transition-colors',
                     tab === t.value ? 'bg-text text-inverse' : 'text-muted hover:text-text'
                   )}
                 >
@@ -350,7 +350,7 @@ export function Contests() {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search contests or brands"
                 aria-label="Search contests or brands"
-                className="h-11 pl-9 text-[0.8125rem]"
+                className="h-[44px] pl-9 text-[0.8125rem]"
               />
             </div>
 
@@ -362,7 +362,7 @@ export function Contests() {
               name="brand"
               value={brandId}
               onChange={(e) => setBrandId(e.target.value)}
-              className="h-11 basis-44 text-[0.8125rem]"
+              className="h-[44px] basis-44 text-[0.8125rem]"
             >
               <option value="">All brands</option>
               {brands.map((b) => (
@@ -510,7 +510,7 @@ function ContestCard({
       {contest.brand ? (
         <Link
           to={`/app/brands/${contest.brand.slug}`}
-          className="text-muted hover:text-accent flex min-h-11 items-center gap-2.5 transition-colors"
+          className="text-muted hover:text-accent flex min-h-[44px] items-center gap-2.5 transition-colors"
         >
           <span className="border-line bg-surface-2 grid size-7 shrink-0 place-items-center overflow-hidden rounded-full border">
             {contest.brand.logoUrl ? (
@@ -586,7 +586,7 @@ function ContestCard({
           href={contest.briefUrl}
           target="_blank"
           rel="noreferrer noopener"
-          className="text-accent mt-2 inline-flex min-h-11 items-center gap-1.5 self-start text-[0.8125rem] font-semibold hover:underline"
+          className="text-accent mt-2 inline-flex min-h-[44px] items-center gap-1.5 self-start text-[0.8125rem] font-semibold hover:underline"
         >
           Read the full brief
           <ExternalLink size={13} aria-hidden />
@@ -719,7 +719,7 @@ function ContestAction({
             type="button"
             variant="secondary"
             size="sm"
-            className="mt-3 min-h-11 w-full sm:w-auto"
+            className="mt-3 min-h-[44px] w-full sm:w-auto"
             onClick={onUpdateProgress}
           >
             <Gauge size={15} aria-hidden />
@@ -741,7 +741,7 @@ function ContestAction({
           <Button
             variant="ghost"
             size="sm"
-            className="mt-2 min-h-11"
+            className="mt-2 min-h-[44px]"
             disabled={busy}
             onClick={() =>
               act.mutate({ action: 'contest.withdraw', entryId: contest.entry!.id })
@@ -772,7 +772,7 @@ function ContestAction({
         <Button
           variant="ghost"
           size="sm"
-          className="mt-2 min-h-11"
+          className="mt-2 min-h-[44px]"
           disabled={busy}
           onClick={() => act.mutate({ action: 'contest.withdraw', entryId: contest.entry!.id })}
         >
@@ -799,7 +799,7 @@ function ContestAction({
           ) : null}
         </Note>
         {door === 'open' && canEnterAtAll ? (
-          <Button variant="secondary" size="sm" className="mt-2 min-h-11" onClick={onEnter}>
+          <Button variant="secondary" size="sm" className="mt-2 min-h-[44px]" onClick={onEnter}>
             Ask again
           </Button>
         ) : null}
@@ -814,7 +814,7 @@ function ContestAction({
           <span className="font-semibold">You pulled out of this one</span>
         </Note>
         {door === 'open' && canEnterAtAll ? (
-          <Button variant="secondary" size="sm" className="mt-2 min-h-11" onClick={onEnter}>
+          <Button variant="secondary" size="sm" className="mt-2 min-h-[44px]" onClick={onEnter}>
             Enter after all
           </Button>
         ) : null}
@@ -935,7 +935,7 @@ function TargetControl({ entryId, target }: { entryId: string; target: number | 
           setValue(target === null ? '' : String(target));
           setOpen(true);
         }}
-        className="text-muted hover:text-accent ease-brand mt-3 flex min-h-11 w-full items-center gap-2 text-left text-[0.8125rem] transition-colors"
+        className="text-muted hover:text-accent ease-brand mt-3 flex min-h-[44px] w-full items-center gap-2 text-left text-[0.8125rem] transition-colors"
       >
         <Target size={14} aria-hidden className="shrink-0" />
         {target === null ? (
@@ -970,12 +970,12 @@ function TargetControl({ entryId, target }: { entryId: string; target: number | 
           disabled={busy}
           onChange={(e) => setValue(e.target.value)}
           placeholder="e.g. 6"
-          className="h-11 w-24 text-[0.875rem]"
+          className="h-[44px] w-24 text-[0.875rem]"
         />
         <Button
           type="button"
           size="sm"
-          className="min-h-11"
+          className="min-h-[44px]"
           disabled={busy}
           onClick={() => {
             const n = Number(value.trim());
@@ -993,7 +993,7 @@ function TargetControl({ entryId, target }: { entryId: string; target: number | 
             type="button"
             variant="ghost"
             size="sm"
-            className="min-h-11"
+            className="min-h-[44px]"
             disabled={busy}
             onClick={() => void save(null)}
           >
@@ -1004,7 +1004,7 @@ function TargetControl({ entryId, target }: { entryId: string; target: number | 
           type="button"
           variant="ghost"
           size="sm"
-          className="min-h-11"
+          className="min-h-[44px]"
           disabled={busy}
           onClick={() => {
             setOpen(false);
