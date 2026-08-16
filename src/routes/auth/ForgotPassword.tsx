@@ -62,7 +62,7 @@ export function ForgotPassword() {
           <span className="mx-auto grid size-12 place-items-center rounded-full bg-success-soft text-success">
             <Check size={22} aria-hidden />
           </span>
-          <p className="mt-5 text-[15px] leading-relaxed text-muted">
+          <p className="mt-5 text-[0.9375rem] leading-relaxed text-muted">
             Nothing after a few minutes? Check your spam folder, then try again.
           </p>
         </div>

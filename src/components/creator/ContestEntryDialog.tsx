@@ -115,20 +115,20 @@ export function DeliverableRows({
           className="border-line bg-surface-2 flex flex-wrap items-start justify-between gap-x-4 gap-y-1 rounded-xl border px-3.5 py-3"
         >
           <span className="min-w-0 flex-1 basis-40">
-            <span className="text-text block text-[14px] leading-snug font-semibold">
+            <span className="text-text block text-[0.875rem] leading-snug font-semibold">
               {d.title}
             </span>
-            <span className="text-muted mt-0.5 block text-[13px]">{ask(d, currency)}</span>
+            <span className="text-muted mt-0.5 block text-[0.8125rem]">{ask(d, currency)}</span>
             {d.detail ? (
-              <span className="text-faint mt-0.5 block text-[12px] leading-relaxed">
+              <span className="text-faint mt-0.5 block text-[0.75rem] leading-relaxed">
                 {d.detail}
               </span>
             ) : null}
           </span>
           <span
             className={cn(
-              'font-display shrink-0 text-[16px] font-semibold',
-              d.rewardAmount > 0 ? 'text-accent' : 'text-faint text-[13px] font-normal'
+              'font-display shrink-0 text-[1rem] font-semibold',
+              d.rewardAmount > 0 ? 'text-accent' : 'text-faint text-[0.8125rem] font-normal'
             )}
           >
             {d.rewardAmount > 0
@@ -260,12 +260,12 @@ export function ContestEntryDialog({
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+            <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               {contest.brand?.name ?? 'Contest'}
             </p>
             <h2
               id={headingId}
-              className="font-display mt-1 text-[21px] leading-tight font-bold"
+              className="font-display mt-1 text-[1.3125rem] leading-tight font-bold"
             >
               {contest.name}
             </h2>
@@ -289,13 +289,13 @@ export function ContestEntryDialog({
         >
           <p
             className={cn(
-              'text-[14px] font-semibold',
+              'text-[0.875rem] font-semibold',
               instant ? 'text-stage-paid' : 'text-stage-live'
             )}
           >
             {instant ? 'You are in the moment you tap' : 'A person decides this one'}
           </p>
-          <p className="text-muted mt-1 text-[13px] leading-relaxed">
+          <p className="text-muted mt-1 text-[0.8125rem] leading-relaxed">
             {instant
               ? 'Nobody has to approve you. Tap once and the deliverables below are locked to your entry exactly as they read now.'
               : 'You are asking to enter. Somebody at Wurx reads every entry, and the answer lands on this screen the moment they decide. Nothing to check by email.'}
@@ -304,14 +304,14 @@ export function ContestEntryDialog({
 
         {/* ------------------------------------------------- the deadline -- */}
         <div className="border-line mt-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t pt-4">
-          <span className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <span className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Closes
           </span>
           <span className="text-right">
-            <span className="text-text block text-[14px] font-semibold">
+            <span className="text-text block text-[0.875rem] font-semibold">
               {formatDeadline(contest.expiresAt, contest.expiresAtTimezone)}
             </span>
-            <span className="text-muted mt-0.5 flex items-center justify-end gap-1.5 font-mono text-[12px]">
+            <span className="text-muted mt-0.5 flex items-center justify-end gap-1.5 font-mono text-[0.75rem]">
               <Clock size={12} aria-hidden />
               {left}
             </span>
@@ -322,7 +322,7 @@ export function ContestEntryDialog({
           {enter.error ? (
             <p
               role="alert"
-              className="bg-danger-soft text-danger mb-4 rounded-xl px-4 py-3 text-[13px] font-medium"
+              className="bg-danger-soft text-danger mb-4 rounded-xl px-4 py-3 text-[0.8125rem] font-medium"
             >
               {(enter.error as Error).message}
             </p>
@@ -330,12 +330,12 @@ export function ContestEntryDialog({
 
           {/* ---------------------------------- exactly what they agree to -- */}
           <div className="border-line bg-surface-2 rounded-xl border px-4 py-3.5">
-            <p className="text-faint text-[11px] font-semibold tracking-[0.14em] uppercase">
+            <p className="text-faint text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               {instant ? 'What you are agreeing to' : 'What you are asking for'}
             </p>
 
             {contest.description ? (
-              <p className="text-muted mt-2 text-[13px] leading-relaxed">
+              <p className="text-muted mt-2 text-[0.8125rem] leading-relaxed">
                 {contest.description}
               </p>
             ) : null}
@@ -347,7 +347,7 @@ export function ContestEntryDialog({
                 className="mt-3"
               />
             ) : (
-              <p className="text-muted mt-2 text-[13px] leading-relaxed">
+              <p className="text-muted mt-2 text-[0.8125rem] leading-relaxed">
                 Nothing has been set on this one yet. The team will confirm what it asks for and
                 what it pays with you directly.
               </p>
@@ -360,13 +360,13 @@ export function ContestEntryDialog({
             */}
 
             {contest.products.length > 0 ? (
-              <p className="text-muted mt-3 text-[13px] leading-relaxed">
+              <p className="text-muted mt-3 text-[0.8125rem] leading-relaxed">
                 <span className="text-text font-semibold">Products: </span>
                 {contest.products.map((p) => p.productName).join(', ')}
               </p>
             ) : null}
 
-            <p className="text-faint mt-3 text-[12px] leading-relaxed">
+            <p className="text-faint mt-3 text-[0.75rem] leading-relaxed">
               {instant
                 ? 'These are copied onto your entry as you tap, and they cannot be changed afterwards, by anybody.'
                 : 'These are copied onto your entry the moment somebody says yes, and they cannot be changed afterwards, by anybody.'}
@@ -377,7 +377,7 @@ export function ContestEntryDialog({
                 href={contest.briefUrl}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="text-accent mt-3 inline-flex min-h-11 items-center gap-1.5 text-[13px] font-semibold hover:underline"
+                className="text-accent mt-3 inline-flex min-h-11 items-center gap-1.5 text-[0.8125rem] font-semibold hover:underline"
               >
                 Read the full brief
                 <ExternalLink size={13} aria-hidden />

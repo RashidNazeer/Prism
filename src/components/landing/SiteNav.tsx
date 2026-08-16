@@ -126,7 +126,7 @@ export function SiteNav() {
                     <a
                       href={l.href}
                       onClick={() => setOpen(false)}
-                      className="block rounded-lg px-3 py-3 text-[15px] text-muted transition-colors duration-200 ease-brand hover:bg-surface-2 hover:text-accent"
+                      className="block rounded-lg px-3 py-3 text-[0.9375rem] text-muted transition-colors duration-200 ease-brand hover:bg-surface-2 hover:text-accent"
                     >
                       {l.label}
                     </a>

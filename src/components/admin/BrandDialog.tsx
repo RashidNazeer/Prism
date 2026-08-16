@@ -112,7 +112,7 @@ export function BrandDialog({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold">{brand ? 'Edit brand' : 'Add a brand'}</h2>
-            <p className="text-muted mt-1 text-[14px] leading-relaxed">
+            <p className="text-muted mt-1 text-[0.875rem] leading-relaxed">
               A brand is a seller store on TikTok Shop. Everything else in its hub hangs off
               this.
             </p>
@@ -233,8 +233,8 @@ export function BrandDialog({
                 className="mt-0.5 size-4 cursor-pointer accent-[var(--wx-accent)]"
               />
               <span>
-                <span className="block text-[14px] font-medium">Active</span>
-                <span className="text-muted mt-0.5 block text-[13px] leading-relaxed">
+                <span className="block text-[0.875rem] font-medium">Active</span>
+                <span className="text-muted mt-0.5 block text-[0.8125rem] leading-relaxed">
                   Switch this off to retire a brand without deleting it or its history.
                 </span>
               </span>

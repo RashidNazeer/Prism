@@ -42,15 +42,73 @@ const CREATOR_EMAIL = process.env.CREATOR_EMAIL ?? 'skinbyamara@wurxmediahub.dem
 const CREATOR_PASSWORD = process.env.CREATOR_PASSWORD ?? 'demo-password-for-dev-only-1';
 
 const SCREENS = [
-  // Copy changed 2026-08-11 when the home stopped being about one queue.
-  { path: '/admin', name: 'Dashboard', expect: /good to see you/i },
-  { path: '/admin/applications', name: 'Applications', expect: /^applications$/i },
-  { path: '/admin/offers', name: 'All offers', expect: /every deal on the table/i },
-  { path: '/admin/offers/requests', name: 'Offer requests', expect: /offer requests/i },
-  { path: '/admin/activity', name: 'Activity', expect: /^activity$/i },
-  { path: '/admin/content', name: 'Content', expect: /every video the roster/i },
-  { path: '/admin/brands', name: 'Brands', expect: /^brands$/i },
-  { path: '/admin/creators', name: 'Creators', expect: /^creators$/i },
+  /*
+   * WHAT `expect` IS ALLOWED TO POINT AT.
+   *
+   * Every admin screen lost its <h1> title row and its description paragraph on
+   * 2026-08-16. The section name lives in the shell's top bar now, where
+   * AppShell renders it as the page's only <h1>. That broke eight rows below:
+   * some named copy that no longer exists ("Good to see you", "Every deal on
+   * the table", "Every video the roster has posted"), the rest named the
+   * deleted heading itself (/^brands$/, /^creators$/, /^activity$/,
+   * /^applications$/, /offer requests/).
+   *
+   * THE OBVIOUS REPAIR WAS THE WRONG ONE. Pointing these at the new top-bar
+   * name would have been worse than leaving them broken, because the bar is
+   * drawn from the route rather than from the screen: "Brands" would be on
+   * screen even if Brands.tsx rendered nothing at all, and this suite would
+   * report a healthy layout for a blank page. That is the same mistake as the
+   * sidebar incident recorded further down, where an unscoped search matched
+   * the rail's own link and reported a bug that did not exist. The match is
+   * scoped to <main>, and the top bar sits outside <main>, so nothing here can
+   * be satisfied by the shell even by accident.
+   *
+   * So each row names something only the SCREEN can put on the page: a filter
+   * tab, a control in its own filter row, a label on its own data, or its empty
+   * state. Prefer whatever survives an empty dev database AND a failed query,
+   * because neither is a layout bug and both would otherwise read as one.
+   */
+  // The three inbox tiles ARE the dashboard, and they render in every state
+  // including the one where the counts failed to load. check-review.mjs asserts
+  // this same string, so the two suites cannot drift apart on it.
+  { path: '/admin', name: 'Dashboard', expect: /people asking to join/i },
+  // The "Worked with Wurx" toggle in the filter row, and deliberately NOT one
+  // of the column headings: that row is `hidden md:grid`, so anything taken
+  // from it is genuinely invisible at 375px and this suite would fail a healthy
+  // phone layout on every run.
+  { path: '/admin/applications', name: 'Applications', expect: /worked with wurx/i },
+  // Filter tab labels. They come from static arrays in the route files, so they
+  // hold up with no rows, no matches, or a dead database, none of which is a
+  // responsiveness failure.
+  { path: '/admin/offers', name: 'All offers', expect: /switched off/i },
+  { path: '/admin/offers/requests', name: 'Offer requests', expect: /withdrawn/i },
+  /*
+   * Activity has no filter row at all, on purpose, so there is no static
+   * control to aim at. These are the two ends of the one list it does draw: its
+   * pager once the log has entries, its empty state when it truly has none. The
+   * error state ("The log would not load") matches neither, which is the point,
+   * a screen that failed to load must not pass as a screen that laid out fine.
+   */
+  {
+    path: '/admin/activity',
+    name: 'Activity',
+    expect: /nothing has happened yet|\d+ to \d+ of \d+/i,
+  },
+  // The tab is in the filter row and the view switch beside it defaults to
+  // Submissions, so this is on screen before any content has loaded.
+  { path: '/admin/content', name: 'Content', expect: /another take/i },
+  // The primary action in the filter row, which this screen keeps in every
+  // state, loading and empty included.
+  { path: '/admin/brands', name: 'Brands', expect: /add brand/i },
+  // Creators has no button and no tabs, only a search box and two selects, and
+  // an <option> inside a closed <select> has no box to measure so it can never
+  // count as visible. This is the card's own money label, with both empty
+  // states behind it, the same shape as Creator detail below.
+  {
+    path: '/admin/creators',
+    name: 'Creators',
+    expect: /agreed|no creators yet|nobody matches that/i,
+  },
   /*
    * SCREENS BEHIND AN ID.
    *
@@ -65,7 +123,12 @@ const SCREENS = [
     path: '/admin/brands',
     via: 'a[href^="/admin/brands/"]',
     name: 'Brand hub',
-    expect: /what this brand pays creators/i,
+    // The hub lands on Offers rather than on a summary, and this is the action
+    // in that tab's filter row. It used to be the line above it, "What this
+    // brand pays creators for content", which went with every other description
+    // row on 2026-08-16. Still proves the same thing the old one did: the
+    // default tab drew its own body, not just the eight tab buttons.
+    expect: /new offer/i,
   },
   {
     path: '/admin/creators',

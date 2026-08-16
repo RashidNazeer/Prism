@@ -3,8 +3,9 @@ import { Link, useSearchParams } from 'react-router';
 import { ChevronLeft, ChevronRight, Plus, Search, Store, Tag } from 'lucide-react';
 import { BrandDialog } from '@/components/admin/BrandDialog';
 import { BudgetBar } from '@/components/admin/BudgetBar';
+import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Field';
+import { Input, Select } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
 import {
   BRAND_PAGE_SIZE,
@@ -75,48 +76,73 @@ export function Brands() {
 
   return (
     <>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-[clamp(1.6rem,4vw,2.25rem)] font-extrabold">Brands</h1>
-          <p className="text-muted mt-2 max-w-2xl text-[15px] leading-relaxed">
-            Every seller store we run. Open one to manage its offers, and everything else in its
-            hub.
-          </p>
-        </div>
-        <Button onClick={() => setCreating(true)} className="shrink-0">
-          <Plus size={16} aria-hidden />
-          Add brand
-        </Button>
-      </div>
-
       {/* ----------------------------------------------------------- filters */}
-      <div className="mt-6 flex flex-wrap items-center gap-2.5 sm:gap-3">
-        <div
-          role="tablist"
-          aria-label="Filter brands"
-          className="border-line bg-surface-1 inline-flex rounded-xl border p-1"
-        >
+      {/*
+        NO TITLE ROW HERE ANY MORE. The shell's top bar carries "Brands" as the
+        page's <h1> since 2026-08-16, taken from the sidebar's own label, so a
+        heading in the body would be the same word said twice. The tagline under
+        it went with it: Rashid, plainly, "i don't want to show description of
+        that section". Nobody lands here without having chosen Brands from the
+        menu, so it was explaining the screen to the one person who already knew.
+
+        The controls are the first thing on the page now, in the shared
+        `FilterBar` so this row cannot drift from the one he approved on
+        contests. Radius is `rounded-md` on everything in it, height `h-10`: he
+        asked for slightly rounded, "do not give it circle look".
+      */}
+      <FilterBar
+        action={
+          <Button
+            onClick={() => setCreating(true)}
+            className="h-10 shrink-0 rounded-md text-[0.875rem]"
+          >
+            <Plus size={16} aria-hidden />
+            Add brand
+          </Button>
+        }
+      >
+        <FilterTabs label="Filter brands">
           {TABS.map((t) => (
-            <button
+            <FilterTab
               key={t.value}
-              role="tab"
-              type="button"
-              aria-selected={filters.active === t.value}
+              active={filters.active === t.value}
               onClick={() => setFilters({ active: t.value })}
-              className={cn(
-                'shrink-0 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors duration-200 sm:px-3.5',
-                filters.active === t.value
-                  ? 'bg-accent text-on-accent'
-                  : 'text-muted hover:text-accent'
-              )}
             >
               {t.label}
-            </button>
+            </FilterTab>
           ))}
-        </div>
+        </FilterTabs>
+
+        <form
+          className="min-w-[10rem] flex-1"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setFilters({ search: searchDraft });
+          }}
+        >
+          <div className="relative">
+            <Search
+              size={15}
+              aria-hidden
+              className="text-faint pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
+            />
+            <Input
+              type="search"
+              name="search"
+              value={searchDraft}
+              onChange={(e) => setSearchDraft(e.target.value)}
+              placeholder="Search brands"
+              aria-label="Search brands by name"
+              className="h-10 rounded-md pl-9 text-[0.875rem]"
+            />
+          </div>
+        </form>
 
         {/* Budget is a first-class filter, not a detail. "Which brands are
-            nearly spent" is the question this list gets asked most. */}
+            nearly spent" is the question this list gets asked most.
+
+            The label stays sr-only rather than becoming an aria-label, so the
+            control keeps the accessible name it already had. */}
         <label className="sr-only" htmlFor="budget-filter">
           Filter by budget used
         </label>
@@ -125,7 +151,7 @@ export function Brands() {
           name="budget"
           value={filters.budget}
           onChange={(e) => setFilters({ budget: e.target.value as BudgetBand })}
-          className="h-9 basis-44 text-[13px]"
+          className="h-10 w-auto min-w-[10rem] shrink-0 rounded-md text-[0.875rem]"
         >
           {BUDGET_BANDS.map((b) => (
             <option key={b.value} value={b.value}>
@@ -133,35 +159,12 @@ export function Brands() {
             </option>
           ))}
         </Select>
-
-        <form
-          className="relative min-w-0 flex-1 basis-48"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setFilters({ search: searchDraft });
-          }}
-        >
-          <Search
-            size={15}
-            aria-hidden
-            className="text-faint pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
-          />
-          <input
-            type="search"
-            name="search"
-            value={searchDraft}
-            onChange={(e) => setSearchDraft(e.target.value)}
-            placeholder="Search brands"
-            aria-label="Search brands by name"
-            className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[13px] focus:outline-none"
-          />
-        </form>
-      </div>
+      </FilterBar>
 
       {/* ------------------------------------------------------------- grid */}
       <div
         className={cn(
-          'mt-5 transition-opacity duration-200',
+          'mt-4 transition-opacity duration-200',
           isPlaceholderData && 'opacity-60'
         )}
       >
@@ -174,7 +177,7 @@ export function Brands() {
         ) : isError ? (
           <div className="border-line bg-surface-1 rounded-xl border px-6 py-14 text-center shadow-md">
             <p className="font-semibold">That list would not load</p>
-            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
@@ -186,7 +189,7 @@ export function Brands() {
                 ? 'No brands match that'
                 : 'No brands yet'}
             </p>
-            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {filters.search || filters.active !== 'active' || filters.budget !== 'any'
                 ? 'Try a different search, budget band, or switch to All.'
                 : 'Add the first seller store and its hub is ready to fill.'}
@@ -211,19 +214,19 @@ export function Brands() {
                     <div className="flex items-start justify-between gap-3">
                       <span className="min-w-0">
                         <span className="block truncate text-lg font-bold">{brand.name}</span>
-                        <span className="text-faint mt-0.5 block truncate font-mono text-[11px]">
+                        <span className="text-faint mt-0.5 block truncate font-mono text-[0.6875rem]">
                           {brand.store_id}
                         </span>
                       </span>
                       {!brand.is_active ? (
-                        <span className="bg-surface-2 text-muted shrink-0 rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
+                        <span className="bg-surface-2 text-muted shrink-0 rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
                           Retired
                         </span>
                       ) : null}
                     </div>
 
                     {brand.client_name ? (
-                      <p className="text-muted mt-3 truncate text-[13px]">
+                      <p className="text-muted mt-3 truncate text-[0.8125rem]">
                         {brand.client_name}
                       </p>
                     ) : null}
@@ -231,14 +234,14 @@ export function Brands() {
                     <div className="mt-auto pt-5">
                       <div className="flex flex-wrap items-end justify-between gap-3">
                         <span>
-                          <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+                          <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                             Budget
                           </span>
-                          <span className="wx-numeric mt-1 block text-[15px] font-semibold">
+                          <span className="wx-numeric mt-1 block text-[0.9375rem] font-semibold">
                             {money(brand.budget_allocated, brand.currency)}
                           </span>
                         </span>
-                        <span className="bg-surface-2 text-muted inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px]">
+                        <span className="bg-surface-2 text-muted inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.75rem]">
                           <Tag size={12} aria-hidden />
                           <span className="wx-numeric">{c ? c.active : 0}</span> live
                           {c && c.total > c.active ? (
@@ -261,7 +264,7 @@ export function Brands() {
                         grow taller on a phone.
                       */}
                       {waiting?.[brand.id] ? (
-                        <p className="text-stage-due mt-3 text-[12.5px] font-medium">
+                        <p className="text-stage-due mt-3 text-[0.78125rem] font-medium">
                           {waiting[brand.id]}{' '}
                           {waiting[brand.id] === 1 ? 'creator is' : 'creators are'} waiting on
                           you
@@ -279,7 +282,7 @@ export function Brands() {
       {/* -------------------------------------------------------- pagination */}
       {total > BRAND_PAGE_SIZE ? (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="wx-numeric text-muted text-[13px]">
+          <p className="wx-numeric text-muted text-[0.8125rem]">
             {(filters.page - 1) * BRAND_PAGE_SIZE + 1} to{' '}
             {Math.min(filters.page * BRAND_PAGE_SIZE, total)} of {total}
           </p>
@@ -293,7 +296,7 @@ export function Brands() {
               <ChevronLeft size={15} aria-hidden />
               Previous
             </Button>
-            <span className="wx-numeric text-muted px-1 font-mono text-[12px]">
+            <span className="wx-numeric text-muted px-1 font-mono text-[0.75rem]">
               {filters.page} / {pages}
             </span>
             <Button

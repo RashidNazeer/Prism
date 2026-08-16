@@ -87,7 +87,7 @@ function Story({ brand }: { brand: Brand }) {
 
   return (
     <section>
-      <p className="text-muted text-[14px] leading-relaxed">
+      <p className="text-muted text-[0.875rem] leading-relaxed">
         How this brand introduces itself in the creator hub.
       </p>
 
@@ -148,7 +148,7 @@ function Story({ brand }: { brand: Brand }) {
           {saved && !busy ? (
             <span
               role="status"
-              className="text-success inline-flex items-center gap-1.5 text-[13px] font-medium"
+              className="text-success inline-flex items-center gap-1.5 text-[0.8125rem] font-medium"
             >
               <Check size={15} aria-hidden />
               Saved
@@ -173,7 +173,7 @@ function Products({ brandId, brandName }: { brandId: string; brandName: string }
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-semibold">Products</h2>
-          <p className="text-muted mt-1 text-[14px] leading-relaxed">
+          <p className="text-muted mt-1 text-[0.875rem] leading-relaxed">
             What the brand sells, and the commission we offer on each one.
           </p>
         </div>
@@ -193,7 +193,7 @@ function Products({ brandId, brandName }: { brandId: string; brandName: string }
         <div className="border-line bg-surface-1 mt-4 rounded-xl border px-6 py-12 text-center shadow-md">
           <Package size={24} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">No products yet</p>
-          <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+          <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
             Creators see these when they open the hub, with the commission on each.
           </p>
           <Button className="mt-6" onClick={() => setDialog({})}>
@@ -251,35 +251,35 @@ function ProductRow({ product, onEdit }: { product: BrandProduct; onEdit: () => 
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-semibold break-words">{product.name}</p>
             {product.badge_title ? (
-              <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
+              <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
                 {product.badge_title}
               </span>
             ) : null}
             {!product.is_active ? (
-              <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
+              <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
                 Hidden
               </span>
             ) : null}
           </div>
-          <p className="text-faint mt-1 font-mono text-[11px] break-all">
+          <p className="text-faint mt-1 font-mono text-[0.6875rem] break-all">
             {product.external_product_id}
           </p>
         </div>
 
         <div className="flex items-center gap-5">
           <span>
-            <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+            <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               Price
             </span>
-            <span className="wx-numeric mt-0.5 block text-[15px] font-semibold">
+            <span className="wx-numeric mt-0.5 block text-[0.9375rem] font-semibold">
               {money(product.price, product.currency)}
             </span>
           </span>
           <span>
-            <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+            <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               Commission
             </span>
-            <span className="wx-numeric text-accent mt-0.5 block text-[15px] font-bold">
+            <span className="wx-numeric text-accent mt-0.5 block text-[0.9375rem] font-bold">
               {rate || 'Not set'}
             </span>
           </span>
@@ -307,12 +307,12 @@ function ProductRow({ product, onEdit }: { product: BrandProduct; onEdit: () => 
 
       {confirming ? (
         <div className="border-danger/40 bg-danger-soft mt-4 rounded-xl border p-4">
-          <p className="text-danger text-[13px] leading-relaxed font-medium">
+          <p className="text-danger text-[0.8125rem] leading-relaxed font-medium">
             Delete {product.name}? It goes for good, though the audit log keeps a record of what
             it was.
           </p>
           {manage.error ? (
-            <p role="alert" className="text-danger mt-2 text-[12px]">
+            <p role="alert" className="text-danger mt-2 text-[0.75rem]">
               {(manage.error as Error).message}
             </p>
           ) : null}

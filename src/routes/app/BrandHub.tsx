@@ -100,7 +100,7 @@ export function BrandHub() {
       <>
         <div className="border-line bg-surface-1 max-w-lg rounded-xl border p-8 text-center shadow-md">
           <p className="font-semibold">That brand hub is not open</p>
-          <p className="text-muted mt-2 text-[14px] leading-relaxed">
+          <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
             It may have been retired, or it may not be one of yours. Nothing else is affected.
           </p>
           <ButtonLink to="/app/brands" variant="secondary" size="sm" className="mt-5">
@@ -133,7 +133,7 @@ export function BrandHub() {
                   built || !('soon' in s) ? undefined : `${s.label} arrives with ${s.soon}`
                 }
                 className={cn(
-                  'shrink-0 rounded-full border px-4 py-2 text-[13.5px] font-medium transition-colors duration-200',
+                  'shrink-0 rounded-full border px-4 py-2 text-[0.84375rem] font-medium transition-colors duration-200',
                   active
                     ? 'border-text bg-text text-inverse'
                     : built
@@ -201,7 +201,7 @@ function Header({ brand }: { brand: CreatorBrand }) {
           {brand.name}
         </h1>
         {brand.tagline ? (
-          <p className="text-muted truncate text-[13px]">{brand.tagline}</p>
+          <p className="text-muted truncate text-[0.8125rem]">{brand.tagline}</p>
         ) : null}
       </div>
     </div>
@@ -232,7 +232,7 @@ function Overview({
             {brand.description}
           </p>
         ) : (
-          <p className="text-faint mt-3 text-[14px] leading-relaxed">
+          <p className="text-faint mt-3 text-[0.875rem] leading-relaxed">
             This brand has not written its introduction yet.
           </p>
         )}
@@ -257,7 +257,7 @@ function Overview({
           <div className="border-line bg-surface-1 mt-3 rounded-xl border px-6 py-12 text-center shadow-md">
             <Package size={24} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">Products are on their way</p>
-            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               The brand has not listed its products here yet. They appear with the commission
               you earn on each one.
             </p>
@@ -284,13 +284,13 @@ function Overview({
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold break-words">{product.name}</span>
                     {product.badge_title ? (
-                      <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.12em] uppercase">
+                      <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 text-[0.625rem] font-semibold tracking-[0.12em] uppercase">
                         {product.badge_title}
                       </span>
                     ) : null}
                   </span>
                   {product.price !== null ? (
-                    <span className="font-display text-muted mt-0.5 block text-[13px]">
+                    <span className="font-display text-muted mt-0.5 block text-[0.8125rem]">
                       {money(product.price, product.currency)}
                     </span>
                   ) : null}
@@ -299,10 +299,10 @@ function Overview({
                 {/* The number they actually came for. */}
                 {percent(product.commission_rate) ? (
                   <span className="shrink-0 text-right">
-                    <span className="font-display text-accent block text-[19px] font-semibold">
+                    <span className="font-display text-accent block text-[1.1875rem] font-semibold">
                       {percent(product.commission_rate)}
                     </span>
-                    <span className="text-muted block text-[10px] font-semibold tracking-[0.12em] uppercase">
+                    <span className="text-muted block text-[0.625rem] font-semibold tracking-[0.12em] uppercase">
                       Your cut
                     </span>
                   </span>
@@ -319,7 +319,7 @@ function Overview({
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3">
-      <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+      <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         {children}
       </h2>
       <span aria-hidden className="bg-line h-px flex-1" />
@@ -360,7 +360,7 @@ function Offers({
       <div className="border-line bg-surface-1 mt-6 max-w-2xl rounded-xl border px-6 py-14 text-center shadow-md">
         <Ticket size={26} aria-hidden className="text-faint mx-auto" />
         <p className="mt-4 font-semibold">No offers open right now</p>
-        <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+        <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
           {brandName} has nothing on the table at the moment. New offers land here as soon as
           they go live.
         </p>

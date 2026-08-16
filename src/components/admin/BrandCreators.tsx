@@ -89,7 +89,7 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
   return (
     <section className="mt-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-muted text-[14px] leading-relaxed">
+        <p className="text-muted text-[0.875rem] leading-relaxed">
           Everyone who has ever asked for one of this brand's offers.
         </p>
       </div>
@@ -109,7 +109,7 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
               aria-selected={filters.tab === t.value}
               onClick={() => set({ tab: t.value === 'all' ? '' : t.value })}
               className={cn(
-                'shrink-0 rounded-[9px] px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-200',
+                'shrink-0 rounded-[9px] px-3.5 py-1.5 text-[0.8125rem] font-medium transition-colors duration-200',
                 filters.tab === t.value ? 'bg-text text-inverse' : 'text-muted hover:text-text'
               )}
             >
@@ -117,7 +117,7 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
               {counts && counts[t.value] > 0 ? (
                 <span
                   className={cn(
-                    'ml-1.5 text-[12px]',
+                    'ml-1.5 text-[0.75rem]',
                     filters.tab === t.value ? 'text-inverse/70' : 'text-muted'
                   )}
                 >
@@ -144,7 +144,7 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
             onChange={(e) => set({ who: e.target.value })}
             placeholder="Search by handle, name or email"
             aria-label="Search creators on this brand"
-            className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[13px] focus:outline-none"
+            className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[0.8125rem] focus:outline-none"
           />
         </div>
 
@@ -156,7 +156,7 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
           name="by"
           value={filters.sort}
           onChange={(e) => set({ by: e.target.value === 'committed' ? '' : e.target.value })}
-          className="h-9 basis-44 text-[13px]"
+          className="h-9 basis-44 text-[0.8125rem]"
         >
           {SORTS.map((s) => (
             <option key={s.value} value={s.value}>
@@ -176,7 +176,7 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
       ) : isError ? (
         <div className="border-line bg-surface-1 mt-4 rounded-xl border px-6 py-14 text-center shadow-md">
           <p className="font-semibold">That roster would not load</p>
-          <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+          <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
             {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
           </p>
         </div>
@@ -186,7 +186,7 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
           <p className="mt-4 font-semibold">
             {filtered ? 'Nobody matches that' : 'Nobody has asked yet'}
           </p>
-          <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+          <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
             {filtered
               ? 'Try a different search or tab.'
               : `Creators appear here as soon as they ask for one of ${brandName}'s offers. An offer that is open to everyone needs no asking, so it puts nobody in this list.`}
@@ -204,7 +204,7 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
 
           {pages > 1 ? (
             <div className="mt-4 flex items-center justify-between gap-3">
-              <p className="text-muted text-[13px]">
+              <p className="text-muted text-[0.8125rem]">
                 Page {filters.page} of {pages}, {total} in total
               </p>
               <div className="flex gap-2">
@@ -270,10 +270,10 @@ function RosterCard({ row }: { row: RosterRow }) {
             {who}
           </Link>
           {row.creator_name && row.creator_handle ? (
-            <p className="text-muted mt-0.5 truncate text-[13px]">{row.creator_name}</p>
+            <p className="text-muted mt-0.5 truncate text-[0.8125rem]">{row.creator_name}</p>
           ) : null}
 
-          <p className="text-muted mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px]">
+          <p className="text-muted mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.78125rem]">
             <span>
               {row.jobs_approved} on
               {row.jobs_pending > 0 ? `, ${row.jobs_pending} waiting` : ''}
@@ -289,10 +289,10 @@ function RosterCard({ row }: { row: RosterRow }) {
 
         {/* What they have actually delivered, against what was promised. */}
         <div className="shrink-0">
-          <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Delivered
           </span>
-          <span className="font-display mt-1 flex items-center gap-1.5 text-[16px] font-semibold">
+          <span className="font-display mt-1 flex items-center gap-1.5 text-[1rem] font-semibold">
             <Video size={13} aria-hidden className="text-faint" />
             <span
               className={cn(
@@ -308,7 +308,7 @@ function RosterCard({ row }: { row: RosterRow }) {
             ) : null}
           </span>
           {row.videos_waiting > 0 ? (
-            <span className="text-stage-live mt-0.5 block text-[12px]">
+            <span className="text-stage-live mt-0.5 block text-[0.75rem]">
               {row.videos_waiting} to watch
             </span>
           ) : null}
@@ -318,7 +318,7 @@ function RosterCard({ row }: { row: RosterRow }) {
       {row.jobs_approved > 0 ? (
         <div className="border-line mt-3 border-t pt-3">
           {mixed ? (
-            <p className="text-muted text-[12.5px]">
+            <p className="text-muted text-[0.78125rem]">
               This creator has money on this brand in more than one currency, so it is not added
               up here. Open them to see each job.
             </p>
@@ -326,10 +326,10 @@ function RosterCard({ row }: { row: RosterRow }) {
             <dl className="flex flex-wrap gap-x-6 gap-y-2">
               {cells.map((c) => (
                 <div key={c.label}>
-                  <dt className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+                  <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                     {c.label}
                   </dt>
-                  <dd className={cn('font-display mt-0.5 text-[15px] font-semibold', c.text)}>
+                  <dd className={cn('font-display mt-0.5 text-[0.9375rem] font-semibold', c.text)}>
                     {fmt(c.value)}
                   </dd>
                 </div>

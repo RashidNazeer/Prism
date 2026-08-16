@@ -9,7 +9,7 @@ export function TrustedBy() {
       {/* Full-bleed: the marquee runs edge to edge, not inside the container. */}
       <div className="py-9">
         <Container className="pb-7">
-          <p className="text-center font-mono text-[11px] tracking-[0.18em] text-faint uppercase">
+          <p className="text-center font-mono text-[0.6875rem] tracking-[0.18em] text-faint uppercase">
             Trusted by creators &amp; brands worldwide
           </p>
         </Container>
@@ -26,7 +26,7 @@ export function TrustedBy() {
                   <span className="wx-lining block font-display text-[clamp(2rem,5vw,3rem)] leading-none font-extrabold tracking-tight">
                     {stat.value}
                   </span>
-                  <span className="mt-3 block font-mono text-[11px] tracking-[0.16em] text-faint uppercase">
+                  <span className="mt-3 block font-mono text-[0.6875rem] tracking-[0.16em] text-faint uppercase">
                     {stat.label}
                   </span>
                 </dd>

@@ -1,7 +1,8 @@
 import { Link, useSearchParams } from 'react-router';
 import { ChevronLeft, ChevronRight, Search, Users, Video } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Field';
+import { Input, Select } from '@/components/ui/Field';
+import { FilterBar } from '@/components/layout/FilterBar';
 import { money } from '@/lib/money';
 import { TIER_LABEL } from '@/lib/tiers';
 import {
@@ -73,31 +74,40 @@ export function Creators() {
 
   return (
     <>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h1 className="font-display text-[clamp(1.4rem,3.5vw,1.9rem)] font-semibold tracking-[-0.015em]">
-          Creators
-        </h1>
-        <p className="text-muted text-[14px]">
-          {total > 0 ? `${total} on the roster` : 'Everybody approved to work with us.'}
-        </p>
-      </div>
-
       {/* -------------------------------------------------------- filters -- */}
-      <div className="mt-4 flex flex-wrap items-center gap-2.5 sm:gap-3">
+      {/*
+        NO TITLE ROW SINCE 2026-08-16. The top bar carries "Creators" as this
+        page's <h1>, so a heading repeating the lit menu row a few pixels lower
+        was the same word three times on one screen, and the line beside it
+        ("N on the roster") described the screen rather than helping anybody
+        work. Rashid: I don't want to show a description of that section.
+
+        The roster total has not gone anywhere useful: the pager under the list
+        still reports it, which is the only place the number changes what you
+        do next.
+
+        The controls are `FilterBar` so this row cannot drift from the contests
+        row he signed off: same panel, same radius, same heights.
+      */}
+      <FilterBar>
         <div className="relative min-w-0 flex-1 basis-52">
           <Search
             size={15}
             aria-hidden
-            className="text-faint pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
+            className="text-faint pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
           />
-          <input
+          {/* The shared `Input`, not a hand-rolled one, so the search box here
+              and the search box on contests are the same control. It stays
+              uncontrolled with an onChange: typing filters as you type, and a
+              re-render from the URL update must not fight the caret. */}
+          <Input
             type="search"
             name="q"
             defaultValue={filters.search}
             onChange={(e) => set({ q: e.target.value })}
             placeholder="Search by handle, name or email"
             aria-label="Search creators"
-            className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[13px] focus:outline-none"
+            className="h-10 rounded-md pl-9 text-[0.875rem]"
           />
         </div>
 
@@ -109,7 +119,7 @@ export function Creators() {
           name="show"
           value={filters.active}
           onChange={(e) => set({ show: e.target.value === 'all' ? '' : e.target.value })}
-          className="h-9 basis-40 text-[13px]"
+          className="h-10 w-auto min-w-[8.5rem] shrink-0 rounded-md text-[0.875rem]"
         >
           <option value="all">Everyone</option>
           <option value="active">Active only</option>
@@ -124,7 +134,7 @@ export function Creators() {
           name="sort"
           value={filters.sort}
           onChange={(e) => set({ sort: e.target.value === 'newest' ? '' : e.target.value })}
-          className="h-9 basis-40 text-[13px]"
+          className="h-10 w-auto min-w-[8.5rem] shrink-0 rounded-md text-[0.875rem]"
         >
           {SORTS.map((s) => (
             <option key={s.value} value={s.value}>
@@ -132,7 +142,7 @@ export function Creators() {
             </option>
           ))}
         </Select>
-      </div>
+      </FilterBar>
 
       {/* ----------------------------------------------------------- list -- */}
       {isLoading ? (
@@ -144,7 +154,7 @@ export function Creators() {
       ) : isError ? (
         <div className="border-line bg-surface-1 mt-4 rounded-xl border px-6 py-14 text-center shadow-md">
           <p className="font-semibold">That list would not load</p>
-          <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+          <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
             {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
           </p>
         </div>
@@ -154,7 +164,7 @@ export function Creators() {
           <p className="mt-4 font-semibold">
             {filtered ? 'Nobody matches that' : 'No creators yet'}
           </p>
-          <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+          <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
             {filtered
               ? 'Try a different search or filter.'
               : 'People appear here the moment an application is approved.'}
@@ -172,7 +182,7 @@ export function Creators() {
 
           {pages > 1 ? (
             <div className="mt-4 flex items-center justify-between gap-3">
-              <p className="text-muted text-[13px]">
+              <p className="text-muted text-[0.8125rem]">
                 Page {filters.page} of {pages}, {total} in total
               </p>
               <div className="flex gap-2">
@@ -217,27 +227,27 @@ function CreatorCard({ row, work }: { row: CreatorRow; work: CreatorWork | undef
       <div className="flex flex-wrap items-center gap-2">
         <p className="font-semibold break-all">{who}</p>
         {row.tier ? (
-          <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
+          <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
             {TIER_LABEL[row.tier]}
           </span>
         ) : null}
         {!row.is_active ? (
-          <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
+          <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
             Suspended
           </span>
         ) : null}
       </div>
 
       {row.display_name && row.tiktok_handle ? (
-        <p className="text-muted mt-0.5 truncate text-[13px]">{row.display_name}</p>
+        <p className="text-muted mt-0.5 truncate text-[0.8125rem]">{row.display_name}</p>
       ) : null}
 
       <div className="border-line mt-3 flex flex-wrap items-end gap-x-5 gap-y-2 border-t pt-3">
         <span>
-          <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Agreed
           </span>
-          <span className="font-display mt-0.5 block text-[16px] font-semibold">
+          <span className="font-display mt-0.5 block text-[1rem] font-semibold">
             {work === undefined
               ? '...'
               : mixed
@@ -246,10 +256,10 @@ function CreatorCard({ row, work }: { row: CreatorRow; work: CreatorWork | undef
           </span>
         </span>
         <span>
-          <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Paid
           </span>
-          <span className="font-display text-stage-paid mt-0.5 block text-[16px] font-semibold">
+          <span className="font-display text-stage-paid mt-0.5 block text-[1rem] font-semibold">
             {work === undefined
               ? '...'
               : mixed
@@ -257,13 +267,13 @@ function CreatorCard({ row, work }: { row: CreatorRow; work: CreatorWork | undef
                 : money(work.paid, work.currency ?? 'USD')}
           </span>
         </span>
-        <span className="text-muted flex items-center gap-1.5 text-[12.5px]">
+        <span className="text-muted flex items-center gap-1.5 text-[0.78125rem]">
           <Video size={13} aria-hidden className="text-faint" />
           {work?.videosApproved ?? 0} approved
         </span>
       </div>
 
-      <p className="text-faint mt-2 text-[12.5px]">
+      <p className="text-faint mt-2 text-[0.78125rem]">
         {work
           ? `${work.approved} ${work.approved === 1 ? 'job' : 'jobs'} across ${work.brands} ${work.brands === 1 ? 'brand' : 'brands'}`
           : 'Loading their work'}

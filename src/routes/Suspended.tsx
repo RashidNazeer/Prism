@@ -22,7 +22,7 @@ export function Suspended() {
         <span className="mx-auto grid size-12 place-items-center rounded-full bg-warning-soft text-warning">
           <ShieldAlert size={22} aria-hidden />
         </span>
-        <p className="mt-5 text-[15px] leading-relaxed text-muted">
+        <p className="mt-5 text-[0.9375rem] leading-relaxed text-muted">
           If you think this is a mistake, reply to any email from us and we will take a
           look.
         </p>

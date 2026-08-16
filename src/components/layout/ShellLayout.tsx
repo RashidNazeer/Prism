@@ -1,7 +1,8 @@
-import { Suspense } from 'react';
+import { Suspense, useLayoutEffect } from 'react';
 import { Outlet } from 'react-router';
 import { AppShell } from '@/components/layout/AppShell';
 import { ScreenFallback } from '@/components/layout/ScreenFallback';
+import { applyUiScale, clearUiScale, storedUiScale } from '@/lib/ui-scale';
 
 /**
  * THE FRAME EVERY SIGNED-IN SCREEN SLOTS INTO, and the reason navigation is
@@ -32,6 +33,20 @@ import { ScreenFallback } from '@/components/layout/ScreenFallback';
  * extra steps.
  */
 export function ShellLayout() {
+  /*
+   * The text-size setting is the app's, not the whole site's. It goes on when
+   * the shell mounts and comes off when it unmounts, so the public landing page
+   * keeps the browser's own 16px and the proportions it was drawn at.
+   *
+   * `useLayoutEffect` rather than `useEffect`: this changes the size of
+   * everything, and doing it after the first paint would show one frame at the
+   * wrong scale on every sign-in.
+   */
+  useLayoutEffect(() => {
+    applyUiScale(storedUiScale());
+    return clearUiScale;
+  }, []);
+
   return (
     <AppShell>
       <Suspense fallback={<ScreenFallback />}>

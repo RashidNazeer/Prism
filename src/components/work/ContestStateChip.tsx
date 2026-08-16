@@ -33,7 +33,7 @@ export function ContestStateChip({
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold',
+        'inline-flex items-center rounded-full px-2.5 py-1 text-[0.6875rem] font-semibold',
         STATE_STYLE[state],
         className
       )}

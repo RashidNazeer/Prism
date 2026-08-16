@@ -3,7 +3,8 @@ import { Link, useSearchParams } from 'react-router';
 import { ChevronLeft, ChevronRight, Check, Handshake, Search, Video, X } from 'lucide-react';
 import { OfferReviewDialog } from '@/components/admin/OfferReviewDialog';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Field';
+import { Input, Select } from '@/components/ui/Field';
+import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { cn } from '@/lib/utils';
 import { money } from '@/lib/money';
 import { isStage, OFFER_STAGES, STAGE_META, type OfferStage } from '@/lib/offer-stages';
@@ -105,88 +106,70 @@ export function OfferRequests() {
 
   return (
     <>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h1 className="text-[clamp(1.4rem,3.5vw,1.9rem)] font-extrabold">Offer requests</h1>
-        <p className="text-muted text-[14px]">
-          Creators asking to take an offer, or offering their own terms.
-        </p>
-      </div>
+      {/*
+        THE ROW IS THE TOP OF THE PAGE. There was a heading here that said
+        "Offer requests" and a line under it that said what the screen was for;
+        the shell now prints the section name as the page's h1 in the top bar, so
+        the heading was the same words twice and the tagline explained the screen
+        to somebody already standing on it. Rashid, 2026-08-16: "i don't want to
+        show description of that section".
 
-      {/* ------------------------------------------------------------ tabs -- */}
-      <div className="-mx-4 mt-5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-        <div
-          role="tablist"
-          aria-label="Filter requests"
-          className="border-line bg-surface-1 inline-flex min-w-max rounded-xl border p-1"
-        >
+        The five states, the search and the dropdowns were three stacked rows.
+        They are one now, in the shared `FilterBar`, so this queue cannot drift
+        from the contests row he signed off. The accessible names the sr-only
+        labels used to carry moved onto the controls as `aria-label`, unchanged.
+      */}
+      <FilterBar>
+        <FilterTabs label="Filter requests">
           {TABS.map((t) => {
             const n =
               t.value === 'all' ? undefined : counts?.[t.value as OfferApplicationStatus];
             return (
-              <button
+              <FilterTab
                 key={t.value}
-                role="tab"
-                type="button"
-                aria-selected={filters.status === t.value}
+                active={filters.status === t.value}
+                // A zero is not worth printing on a queue tab: "Rejected 0"
+                // reads as a number somebody has to go and check.
+                count={n !== undefined && n > 0 ? n : undefined}
                 onClick={() => setFilters({ status: t.value })}
-                className={cn(
-                  'shrink-0 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors duration-200 sm:px-3.5',
-                  filters.status === t.value
-                    ? 'bg-accent text-on-accent'
-                    : 'text-muted hover:text-accent'
-                )}
               >
                 {t.label}
-                {n !== undefined && n > 0 ? (
-                  <span
-                    className={cn(
-                      'wx-numeric ml-1.5 text-[12px]',
-                      filters.status === t.value ? 'text-on-accent/80' : 'text-faint'
-                    )}
-                  >
-                    {n}
-                  </span>
-                ) : null}
-              </button>
+              </FilterTab>
             );
           })}
-        </div>
-      </div>
+        </FilterTabs>
 
-      {/* --------------------------------------------------------- filters -- */}
-      <div className="mt-3 flex flex-wrap items-center gap-2.5 sm:gap-3">
         <form
-          className="relative min-w-0 flex-1 basis-52"
+          className="min-w-[10rem] flex-1"
           onSubmit={(e) => {
             e.preventDefault();
             setFilters({ search: searchDraft });
           }}
         >
-          <Search
-            size={15}
-            aria-hidden
-            className="text-faint pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
-          />
-          <input
-            type="search"
-            name="search"
-            value={searchDraft}
-            onChange={(e) => setSearchDraft(e.target.value)}
-            placeholder="Search creators"
-            aria-label="Search by handle, name or email"
-            className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[13px] focus:outline-none"
-          />
+          <div className="relative">
+            <Search
+              size={15}
+              aria-hidden
+              className="text-faint pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
+            />
+            <Input
+              type="search"
+              name="search"
+              value={searchDraft}
+              onChange={(e) => setSearchDraft(e.target.value)}
+              placeholder="Search creators"
+              aria-label="Search by handle, name or email"
+              className="h-10 rounded-md pl-9 text-[0.875rem]"
+            />
+          </div>
         </form>
 
-        <label className="sr-only" htmlFor="brand-filter">
-          Filter by brand
-        </label>
         <Select
-          id="brand-filter"
           name="brand"
+          aria-label="Filter by brand"
           value={filters.brandId}
           onChange={(e) => setFilters({ brandId: e.target.value })}
-          className="h-9 basis-44 text-[13px]"
+          className="h-10 w-auto min-w-[8.5rem] shrink-0 rounded-md text-[0.875rem]"
         >
           <option value="">All brands</option>
           {(brands ?? []).map((b) => (
@@ -199,43 +182,33 @@ export function OfferRequests() {
         {/* Only meaningful on approved work: nothing else has a stage. Hidden
             elsewhere rather than shown doing nothing. */}
         {filters.status === 'approved' || filters.status === 'all' ? (
-          <>
-            <label className="sr-only" htmlFor="stage-filter">
-              Filter by stage
-            </label>
-            <Select
-              id="stage-filter"
-              name="stage"
-              value={filters.stage}
-              onChange={(e) => setFilters({ stage: (e.target.value || '') as OfferStage | '' })}
-              className="h-9 basis-48 text-[13px]"
-            >
-              <option value="">Any stage</option>
-              {OFFER_STAGES.map((s) => (
-                <option key={s} value={s}>
-                  {STAGE_META[s].label}
-                </option>
-              ))}
-            </Select>
-          </>
+          <Select
+            name="stage"
+            aria-label="Filter by stage"
+            value={filters.stage}
+            onChange={(e) => setFilters({ stage: (e.target.value || '') as OfferStage | '' })}
+            className="h-10 w-auto min-w-[9rem] shrink-0 rounded-md text-[0.875rem]"
+          >
+            <option value="">Any stage</option>
+            {OFFER_STAGES.map((s) => (
+              <option key={s} value={s}>
+                {STAGE_META[s].label}
+              </option>
+            ))}
+          </Select>
         ) : null}
 
-        <label className="sr-only" htmlFor="sort-filter">
-          Sort
-        </label>
         <Select
-          id="sort-filter"
           name="sort"
+          aria-label="Sort"
           value={filters.sort}
-          onChange={(e) =>
-            setFilters({ sort: e.target.value === 'oldest' ? 'oldest' : 'newest' })
-          }
-          className="h-9 basis-36 text-[13px]"
+          onChange={(e) => setFilters({ sort: e.target.value === 'oldest' ? 'oldest' : 'newest' })}
+          className="h-10 w-auto min-w-[8.5rem] shrink-0 rounded-md text-[0.875rem]"
         >
           <option value="newest">Newest first</option>
           <option value="oldest">Oldest first</option>
         </Select>
-      </div>
+      </FilterBar>
 
       {/* ------------------------------------------------------------ list -- */}
       <div
@@ -253,7 +226,7 @@ export function OfferRequests() {
         ) : isError ? (
           <div className="border-line bg-surface-1 rounded-xl border px-6 py-14 text-center shadow-md">
             <p className="font-semibold">That queue would not load</p>
-            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
@@ -265,7 +238,7 @@ export function OfferRequests() {
                 ? 'Nothing waiting on you'
                 : 'Nothing matches that'}
             </p>
-            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {filters.status === 'pending' && !filters.search && !filters.brandId
                 ? 'Requests land here the moment a creator asks for an offer.'
                 : 'Try a different search, brand or status.'}
@@ -290,7 +263,7 @@ export function OfferRequests() {
       {/* ------------------------------------------------------ pagination -- */}
       {total > OFFER_QUEUE_PAGE_SIZE ? (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="wx-numeric text-muted text-[13px]">
+          <p className="wx-numeric text-muted text-[0.8125rem]">
             {(filters.page - 1) * OFFER_QUEUE_PAGE_SIZE + 1} to{' '}
             {Math.min(filters.page * OFFER_QUEUE_PAGE_SIZE, total)} of {total}
           </p>
@@ -304,7 +277,7 @@ export function OfferRequests() {
               <ChevronLeft size={15} aria-hidden />
               Previous
             </Button>
-            <span className="wx-numeric text-muted px-1 font-mono text-[12px]">
+            <span className="wx-numeric text-muted px-1 font-mono text-[0.75rem]">
               {filters.page} / {pages}
             </span>
             <Button
@@ -380,7 +353,7 @@ function RequestRow({
             {row.status !== 'pending' ? (
               <span
                 className={cn(
-                  'rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase',
+                  'rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase',
                   chip.className
                 )}
               >
@@ -389,7 +362,7 @@ function RequestRow({
             ) : null}
           </div>
 
-          <p className="text-muted mt-1 text-[14px]">
+          <p className="text-muted mt-1 text-[0.875rem]">
             <span className="text-text font-medium">{row.offer?.title ?? 'An offer'}</span>
             {row.brand ? (
               <>
@@ -405,7 +378,7 @@ function RequestRow({
             ) : null}
           </p>
 
-          <p className="text-faint mt-1 font-mono text-[11px]">
+          <p className="text-faint mt-1 font-mono text-[0.6875rem]">
             {new Date(row.created_at).toLocaleString(undefined, {
               day: 'numeric',
               month: 'short',
@@ -429,11 +402,11 @@ function RequestRow({
           promise.
         */}
         <div className="shrink-0">
-          <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             {agreed ? 'Agreed' : 'They are asking for'}
           </span>
           {terms.amount != null ? (
-            <span className="font-display mt-1 block text-[17px] font-semibold">
+            <span className="font-display mt-1 block text-[1.0625rem] font-semibold">
               {terms.videos !== null ? (
                 <>
                   {terms.videos} {terms.videos === 1 ? 'video' : 'videos'} for{' '}
@@ -444,7 +417,7 @@ function RequestRow({
           ) : (
             // Nobody wrote the terms down. Say so, rather than printing a zero
             // somebody reads as a real number.
-            <span className="text-muted mt-1 block text-[14px]">
+            <span className="text-muted mt-1 block text-[0.875rem]">
               {agreed ? 'No fixed fee on this one' : 'Terms not set on the offer'}
             </span>
           )}
@@ -478,7 +451,7 @@ function RequestRow({
 
           <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1">
             {standing ? (
-              <span className="text-[12.5px]">
+              <span className="text-[0.78125rem]">
                 <span className="text-muted">Standing here </span>
                 <span className={cn('font-medium', stale ? 'text-stage-due' : 'text-text')}>
                   {standing}
@@ -487,7 +460,7 @@ function RequestRow({
             ) : null}
             <Link
               to={`/admin/content?search=${encodeURIComponent(row.creator_handle ?? '')}`}
-              className="text-muted hover:text-accent inline-flex items-center gap-1.5 text-[12.5px] transition-colors"
+              className="text-muted hover:text-accent inline-flex items-center gap-1.5 text-[0.78125rem] transition-colors"
             >
               <Video size={13} aria-hidden />
               Their videos
@@ -502,7 +475,7 @@ function RequestRow({
         told them.
       */}
       {agreed && lastMove ? (
-        <p className="text-muted mt-2 text-[12.5px] leading-relaxed">
+        <p className="text-muted mt-2 text-[0.78125rem] leading-relaxed">
           <span className="text-faint">Last move: </span>
           {lastMove.from_stage ? `${STAGE_META[lastMove.from_stage].label} to ` : ''}
           {STAGE_META[lastMove.to_stage].label}
@@ -511,14 +484,14 @@ function RequestRow({
       ) : null}
 
       {row.note ? (
-        <p className="border-line text-muted mt-3 border-t pt-3 text-[13px] leading-relaxed">
+        <p className="border-line text-muted mt-3 border-t pt-3 text-[0.8125rem] leading-relaxed">
           {row.note}
         </p>
       ) : null}
 
       {row.decision_note ? (
-        <p className="border-line text-faint mt-3 border-t pt-3 text-[13px] leading-relaxed">
-          <span className="text-[11px] font-semibold tracking-[0.14em] uppercase">
+        <p className="border-line text-faint mt-3 border-t pt-3 text-[0.8125rem] leading-relaxed">
+          <span className="text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             You said
           </span>{' '}
           {row.decision_note}
@@ -546,7 +519,7 @@ function StageControl({ row }: { row: OfferQueueRow }) {
 
   return (
     <div className="min-w-0 shrink-0">
-      <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+      <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         Stage
       </span>
       <div className="mt-1 flex items-center gap-2">
@@ -572,7 +545,7 @@ function StageControl({ row }: { row: OfferQueueRow }) {
               stage: e.target.value as OfferStage,
             })
           }
-          className="h-9 w-48 text-[13px]"
+          className="h-9 w-48 text-[0.8125rem]"
         >
           {OFFER_STAGES.map((s) => (
             <option key={s} value={s}>
@@ -582,7 +555,7 @@ function StageControl({ row }: { row: OfferQueueRow }) {
         </Select>
       </div>
       {setStage.error ? (
-        <p role="alert" className="text-danger mt-1 text-[12px]">
+        <p role="alert" className="text-danger mt-1 text-[0.75rem]">
           {(setStage.error as Error).message}
         </p>
       ) : null}

@@ -857,16 +857,41 @@ application` is the only door, and it checks the role PER ACTION: create and
 
 ## Admin screen layout
 
-**Files:** `src/components/layout/AppShell.tsx`, every admin route.
+**Files:** `src/components/layout/AppShell.tsx`,
+`src/components/layout/FilterBar.tsx`, `src/lib/nav.ts` (`sectionTitleFor`),
+`src/lib/ui-scale.ts`, `src/components/layout/TextSizeMenu.tsx`, every admin
+route.
 
 Rashid's rules, recorded in CLAUDE.md and binding on new features.
 
+**The chrome, rebuilt 2026-08-16**
+
+- **The top bar names the section, underlined, and that is the page's only
+  `<h1>`.** It comes from the sidebar's own labels through `sectionTitleFor`, so
+  the bar and the lit menu row cannot disagree.
+- **A screen draws no title row and no description of itself.** Both came off
+  every admin screen; they cost roughly 120px above the work to repeat the word
+  the menu was already showing.
+- **Row one is `<FilterBar>`:** tabs, search, filters on one line, translucent
+  border, `rounded-lg`, with at most one primary action pinned right. Segmented
+  controls are `<FilterTabs>`/`<FilterTab>`, never hand-rolled per screen.
+- **A record screen keeps the record's name as an `<h2>`.** The bar answers
+  "where am I", not "which one is open".
+- **Corners are slight:** `rounded-md` on controls, `rounded-xl` on cards,
+  `rounded-full` only on icon buttons and status pills.
+- **The rail is 15rem**, its scrollbar is hidden (`wx-scroll-quiet`) while it
+  still scrolls, its scroll position survives navigation, and the Wurx mark is
+  the collapse control. There is no collapse arrow in the bar.
+- **Type is `rem` everywhere**, scaled by one root `font-size` that the person
+  using it can change from the bar. See `src/lib/ui-scale.ts`.
+
 **Change rules**
 
-- **The main area is left aligned against the rail**, capped at `max-w-7xl`, and
-  is NOT centred. Centring looks fine on a laptop and falls apart when somebody
-  zooms out or opens a wide monitor: the content drifts to the middle and leaves
-  a dead gap beside the sidebar, so the page stops reading as one thing.
+- **The main area is left aligned against the rail, at full width**, with no
+  max-width cap, and is NOT centred. Both halves of that are the same rule:
+  centring drifts the content into the middle on a wide monitor and a cap stops
+  it short when somebody zooms out. Either way a dead gap opens beside the
+  sidebar and the page stops reading as one thing.
 - **Working content starts high.** Compact headers: a back control, the name, a
   status chip if it earns its place, and the primary action, on one row.
 - **Reference data lives under an Overview tab**, not stacked above the work. On

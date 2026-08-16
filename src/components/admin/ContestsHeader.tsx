@@ -43,13 +43,13 @@ export function ContestsHeader({ subtitle }: { subtitle?: string }) {
         than a solid rule, which is the "transparent borders" he pointed at in
         the design.
       */}
-      <div className="border-glass flex flex-wrap items-center gap-x-6 gap-y-3 border-b pb-3">
-        <h1 className="font-display shrink-0 text-[clamp(1.35rem,3vw,1.75rem)] leading-none font-extrabold">
-          Contests
-        </h1>
-
-        {/* A little margin, then the three sections, exactly as he drew it. */}
-        <nav aria-label="Contest sections" className="flex min-w-0 items-center gap-1 sm:ml-2">
+      {/*
+        THE TITLE LEFT THIS ROW ON 2026-08-16. It says "Contests" in the top bar
+        now, underlined, along with every other section in the product. Repeating
+        it here was the same word twice, 40px apart.
+      */}
+      <div className="border-glass flex flex-wrap items-center gap-x-4 gap-y-3 border-b pb-2.5">
+        <nav aria-label="Contest sections" className="flex min-w-0 items-center gap-1">
           {SECTIONS.map((s) => {
             // Exact match on All, or /admin/contests would light up on every
             // one of its own children.
@@ -60,7 +60,7 @@ export function ContestsHeader({ subtitle }: { subtitle?: string }) {
                 to={s.to}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'ease-brand relative flex min-h-11 items-center rounded-lg px-3 text-[15px] transition-colors duration-200',
+                  'ease-brand relative flex min-h-10 items-center rounded-md px-3 text-[0.875rem] transition-colors duration-200',
                   active
                     ? 'text-accent font-semibold'
                     : 'text-muted hover:bg-surface-2 hover:text-text'
@@ -72,7 +72,7 @@ export function ContestsHeader({ subtitle }: { subtitle?: string }) {
                 {active ? (
                   <span
                     aria-hidden
-                    className="bg-accent absolute inset-x-3 -bottom-3 h-[2px] rounded-full"
+                    className="bg-accent absolute inset-x-3 -bottom-2.5 h-[2px] rounded-full"
                   />
                 ) : null}
               </Link>
@@ -85,7 +85,7 @@ export function ContestsHeader({ subtitle }: { subtitle?: string }) {
         <button
           type="button"
           onClick={() => setPicking(true)}
-          className="wx-gradient text-on-accent ease-brand ml-auto inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-4 text-[13px] font-semibold shadow-sm transition-all duration-200 hover:shadow-md active:translate-y-px"
+          className="wx-gradient text-on-accent ease-brand ml-auto inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md px-4 text-[0.8125rem] font-semibold shadow-sm transition-all duration-200 hover:shadow-md active:translate-y-px"
         >
           <Plus size={16} aria-hidden />
           New contest
@@ -93,7 +93,7 @@ export function ContestsHeader({ subtitle }: { subtitle?: string }) {
       </div>
 
       {subtitle ? (
-        <p className="text-muted mt-2.5 max-w-prose text-[13px] leading-relaxed">{subtitle}</p>
+        <p className="text-muted mt-2.5 max-w-prose text-[0.8125rem] leading-relaxed">{subtitle}</p>
       ) : null}
 
       {picking ? <BrandPicker onClose={() => setPicking(false)} /> : null}
@@ -158,10 +158,10 @@ function BrandPicker({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-display text-[19px] leading-tight font-bold">
+            <h2 className="font-display text-[1.1875rem] leading-tight font-bold">
               Which brand is it for?
             </h2>
-            <p className="text-muted mt-1 text-[13px] leading-relaxed">
+            <p className="text-muted mt-1 text-[0.8125rem] leading-relaxed">
               A contest belongs to one brand, and its budget and products come from that brand.
             </p>
           </div>
@@ -182,7 +182,7 @@ function BrandPicker({ onClose }: { onClose: () => void }) {
             <div className="wx-skeleton h-12 rounded-lg" />
           </div>
         ) : (data ?? []).length === 0 ? (
-          <p className="text-muted mt-5 text-[14px] leading-relaxed">
+          <p className="text-muted mt-5 text-[0.875rem] leading-relaxed">
             There is no active brand to hang a contest off yet. Add one first, and it appears
             here.
           </p>
@@ -196,7 +196,7 @@ function BrandPicker({ onClose }: { onClose: () => void }) {
                     onClose();
                     navigate(`/admin/brands/${b.id}/contests/new`);
                   }}
-                  className="border-line bg-surface-2 hover:border-accent hover:text-accent ease-brand flex min-h-12 w-full items-center rounded-lg border px-4 text-left text-[14px] font-medium transition-colors"
+                  className="border-line bg-surface-2 hover:border-accent hover:text-accent ease-brand flex min-h-12 w-full items-center rounded-lg border px-4 text-left text-[0.875rem] font-medium transition-colors"
                 >
                   {b.name}
                 </button>

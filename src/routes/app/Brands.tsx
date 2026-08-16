@@ -34,10 +34,10 @@ export function Brands() {
 
   return (
     <>
-      <h1 className="font-display text-[clamp(26px,4.4vw,40px)] leading-[1.05] font-semibold tracking-[-0.02em]">
+      <h1 className="font-display text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
         Brand hubs
       </h1>
-      <p className="text-muted mt-2 max-w-2xl text-[15px] leading-relaxed">
+      <p className="text-muted mt-2 max-w-2xl text-[0.9375rem] leading-relaxed">
         The brands you can work with. Open one to see what it sells, what it pays, and the
         offers you can take.
       </p>
@@ -53,7 +53,7 @@ export function Brands() {
       ) : isError ? (
         <div className="border-line bg-surface-1 mt-6 rounded-xl border px-6 py-14 text-center shadow-md">
           <p className="font-semibold">That list would not load</p>
-          <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+          <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
             {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
           </p>
         </div>
@@ -61,7 +61,7 @@ export function Brands() {
         <div className="border-line bg-surface-1 mt-6 rounded-xl border px-6 py-16 text-center shadow-md">
           <Store size={26} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">No brands open yet</p>
-          <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+          <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
             Nothing is live for you right now. This fills up as brands come on board, and you
             will find them here first.
           </p>
@@ -92,7 +92,7 @@ export function Brands() {
                   <span className="min-w-0">
                     <span className="block truncate text-lg font-bold">{brand.name}</span>
                     {brand.tagline ? (
-                      <span className="text-muted mt-0.5 block truncate text-[13px]">
+                      <span className="text-muted mt-0.5 block truncate text-[0.8125rem]">
                         {brand.tagline}
                       </span>
                     ) : null}
@@ -100,13 +100,13 @@ export function Brands() {
                 </div>
 
                 {brand.description ? (
-                  <p className="text-muted mt-4 line-clamp-3 text-[14px] leading-relaxed">
+                  <p className="text-muted mt-4 line-clamp-3 text-[0.875rem] leading-relaxed">
                     {brand.description}
                   </p>
                 ) : null}
 
                 <div className="mt-auto pt-5">
-                  <span className="bg-surface-2 text-muted inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px]">
+                  <span className="bg-surface-2 text-muted inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.75rem]">
                     <Tag size={12} aria-hidden />
                     <span className="wx-numeric">{counts?.[brand.id] ?? 0}</span>
                     {(counts?.[brand.id] ?? 0) === 1 ? 'offer' : 'offers'}

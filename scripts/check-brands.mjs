@@ -250,8 +250,15 @@ try {
 
   // The hub lands on Offers, not on a summary, because that is what somebody
   // came to a brand to do. The facts live one tab across.
+  //
+  // This used to read the explanation line under the tab, "What this brand pays
+  // creators for content". That line was deleted on 2026-08-16 along with every
+  // other title and description row in the admin panel. The replacement is the
+  // action in the Offers filter row, which only that tab draws, so the check
+  // still fails if the hub opens on Overview. Deliberately not the tab BUTTON,
+  // which is present whichever tab is showing.
   check(
-    (await page.getByText(/what this brand pays creators/i).count()) > 0,
+    (await page.getByRole('button', { name: /new offer/i }).count()) > 0,
     'it opens straight onto offers, not onto a wall of facts'
   );
   check(

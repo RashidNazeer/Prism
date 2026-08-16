@@ -52,10 +52,10 @@ export function StageTracker({ stage, className }: { stage: OfferStage; classNam
       </ol>
 
       <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-        <span className={cn('text-[12.5px] font-semibold', TEXT[bucket])}>
+        <span className={cn('text-[0.78125rem] font-semibold', TEXT[bucket])}>
           {at + 1}. {STAGE_META[stage].label}
         </span>
-        <span className="text-muted text-[12.5px]">{STAGE_META[stage].short}</span>
+        <span className="text-muted text-[0.78125rem]">{STAGE_META[stage].short}</span>
       </p>
     </div>
   );

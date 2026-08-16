@@ -143,10 +143,10 @@ export function ContestProducts({ contestId, brandId, selected, loading }: Props
     <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5 shadow-md">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Products
           </h2>
-          <p className="text-faint mt-1.5 max-w-prose text-[12px]">
+          <p className="text-faint mt-1.5 max-w-prose text-[0.75rem]">
             Price and commission come from the brand and stay live. Nothing is copied onto the
             contest, so correcting a price on the brand corrects it here.
           </p>
@@ -156,7 +156,7 @@ export function ContestProducts({ contestId, brandId, selected, loading }: Props
           role="status"
           aria-live="polite"
           className={cn(
-            'text-[13px] font-semibold',
+            'text-[0.8125rem] font-semibold',
             error ? 'text-danger' : saved ? 'text-success' : 'text-muted'
           )}
         >
@@ -181,7 +181,7 @@ export function ContestProducts({ contestId, brandId, selected, loading }: Props
             */
             <span className="wx-skeleton block h-4 w-24 rounded-md" />
           ) : (
-            <span className="font-mono text-[12px]">
+            <span className="font-mono text-[0.75rem]">
               {chosen.size} of {live.length + strays.length} chosen
             </span>
           )}
@@ -195,10 +195,10 @@ export function ContestProducts({ contestId, brandId, selected, loading }: Props
         </div>
       ) : isError ? (
         <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
-          <h3 className="font-display text-text text-[19px] leading-tight font-bold">
+          <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
             The products did not load
           </h3>
-          <p className="text-muted max-w-prose text-[14px] leading-relaxed">
+          <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">
             Nothing has changed on this contest. This is a read, so trying again is safe.
           </p>
           <Button type="button" variant="secondary" onClick={() => void refetch()}>
@@ -210,10 +210,10 @@ export function ContestProducts({ contestId, brandId, selected, loading }: Props
           <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
             <Package size={19} className="text-muted" aria-hidden />
           </div>
-          <h3 className="font-display text-text text-[19px] leading-tight font-bold">
+          <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
             No more products to link with this contest
           </h3>
-          <p className="text-muted max-w-prose text-[14px] leading-relaxed">
+          <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">
             This brand has none yet. Products belong to the brand rather than to the contest, so
             they are added once there and every one of them can be picked here afterwards. A
             contest does not need any.
@@ -255,7 +255,7 @@ export function ContestProducts({ contestId, brandId, selected, loading }: Props
         work out whether anything is missing.
       */}
       {!loading && !isPending && !isError && live.length > 0 && live.every((p) => chosen.has(p.id)) ? (
-        <p className="text-muted text-[13px]">
+        <p className="text-muted text-[0.8125rem]">
           No more products to link with this contest. Every product this brand has is already on
           it.
         </p>
@@ -303,24 +303,24 @@ function ProductRow({
         )}
       </span>
 
-      <span className="min-w-0 flex-1 basis-40 text-[14px] font-semibold break-words">
+      <span className="min-w-0 flex-1 basis-40 text-[0.875rem] font-semibold break-words">
         {product.name}
       </span>
 
       <span className="flex items-center gap-5">
         <span>
-          <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Price
           </span>
-          <span className="wx-numeric mt-0.5 block text-[15px] font-semibold">
+          <span className="wx-numeric mt-0.5 block text-[0.9375rem] font-semibold">
             {money(product.price, product.currency)}
           </span>
         </span>
         <span>
-          <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Commission
           </span>
-          <span className="wx-numeric text-accent mt-0.5 block text-[15px] font-bold">
+          <span className="wx-numeric text-accent mt-0.5 block text-[0.9375rem] font-bold">
             {rate || 'Not set'}
           </span>
         </span>
@@ -341,10 +341,10 @@ function StrayRow({
 }) {
   return (
     <div className="border-line bg-surface-1 flex min-h-11 flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border border-dashed p-4">
-      <span className="min-w-0 flex-1 basis-40 text-[14px] font-semibold break-words">
+      <span className="min-w-0 flex-1 basis-40 text-[0.875rem] font-semibold break-words">
         {name}
       </span>
-      <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
+      <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
         Hidden on the brand
       </span>
       <Button

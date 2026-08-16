@@ -24,7 +24,7 @@ export function LockedUntilApproved({ className }: { className?: string }) {
         <Clock size={22} aria-hidden />
       </span>
       <p className="mt-5 font-semibold">This opens when you are approved</p>
-      <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-muted">
+      <p className="mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed text-muted">
         Brand hubs, their products and their offers are for creators on the roster. A
         real person is reading your application, and this unlocks the moment they say
         yes.

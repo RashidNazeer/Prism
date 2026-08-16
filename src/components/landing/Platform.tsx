@@ -36,7 +36,7 @@ export function Platform() {
                   <Icon size={18} aria-hidden />
                 </span>
                 <h3 className="mt-5 text-lg font-bold">{f.title}</h3>
-                <p className="mt-2.5 text-[15px] leading-relaxed text-muted">{f.body}</p>
+                <p className="mt-2.5 text-[0.9375rem] leading-relaxed text-muted">{f.body}</p>
               </li>
             </Reveal>
           );

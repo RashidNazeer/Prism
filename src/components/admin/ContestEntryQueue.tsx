@@ -210,17 +210,17 @@ export function ContestEntryQueue({
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div>
-          <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Waiting to be let in
           </h2>
-          <p className="text-faint mt-1.5 max-w-prose text-[12px] leading-relaxed">
+          <p className="text-faint mt-1.5 max-w-prose text-[0.75rem] leading-relaxed">
             Creators who have asked to join a contest that you approve entries for. Until you
             answer, they are sitting on "With the team" and nothing about their contest moves.
           </p>
         </div>
 
         {total > 0 ? (
-          <span className="bg-stage-live-soft text-stage-live shrink-0 rounded-full px-3 py-1 text-[12px] font-semibold">
+          <span className="bg-stage-live-soft text-stage-live shrink-0 rounded-full px-3 py-1 text-[0.75rem] font-semibold">
             <span className="wx-numeric font-mono">{total}</span> waiting
           </span>
         ) : null}
@@ -233,10 +233,10 @@ export function ContestEntryQueue({
         </div>
       ) : isError ? (
         <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
-          <h3 className="font-display text-text text-[19px] leading-tight font-bold">
+          <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
             That queue would not load
           </h3>
-          <p className="text-muted max-w-prose text-[14px] leading-relaxed">
+          <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">
             {(error as Error)?.message ?? 'Something went wrong. Nothing has been changed.'}
           </p>
           <Button type="button" variant="secondary" onClick={() => void refetch()}>
@@ -248,10 +248,10 @@ export function ContestEntryQueue({
           <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
             <DoorOpen size={19} className="text-muted" aria-hidden />
           </div>
-          <h3 className="font-display text-text text-[19px] leading-tight font-bold">
+          <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
             Nobody is waiting to get in
           </h3>
-          <p className="text-muted max-w-prose text=[14px] text-[14px] leading-relaxed">
+          <p className="text-muted max-w-prose text=[14px] text-[0.875rem] leading-relaxed">
             {contestId
               ? 'Nobody has asked to join this contest and been left waiting. A request lands here the moment somebody applies.'
               : 'No creator is waiting on a decision about joining a contest. Contests that let people in automatically never appear here.'}
@@ -274,7 +274,7 @@ export function ContestEntryQueue({
 
       {total > PAGE_SIZE ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="wx-numeric text-muted font-mono text-[13px]">
+          <p className="wx-numeric text-muted font-mono text-[0.8125rem]">
             {(page - 1) * PAGE_SIZE + 1} to {Math.min(page * PAGE_SIZE, total)} of {total}
           </p>
           <div className="flex items-center gap-2">
@@ -347,7 +347,7 @@ function EntryCard({
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <h3 className="font-display text-text text-[16px] leading-tight font-bold break-words">
+            <h3 className="font-display text-text text-[1rem] leading-tight font-bold break-words">
               {who}
             </h3>
             {/*
@@ -356,27 +356,27 @@ function EntryCard({
               exactly like a first one is how it gets answered on stale reasons.
             */}
             {row.earlierTries > 0 ? (
-              <span className="bg-stage-due-soft text-stage-due rounded-full px-2 py-0.5 text-[11px] font-semibold">
+              <span className="bg-stage-due-soft text-stage-due rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold">
                 Asked before
               </span>
             ) : null}
           </div>
           {row.creatorHandle && row.creatorName ? (
-            <p className="text-muted mt-1 text-[13px] break-words">{row.creatorName}</p>
+            <p className="text-muted mt-1 text-[0.8125rem] break-words">{row.creatorName}</p>
           ) : null}
-          <p className="text-faint mt-0.5 text-[12px] break-words">
+          <p className="text-faint mt-0.5 text-[0.75rem] break-words">
             {showContest
               ? [row.brandName, row.contestName].filter(Boolean).join(', ') || 'A contest'
               : (row.brandName ?? 'This contest')}
           </p>
         </div>
-        <span className="text-faint shrink-0 font-mono text-[12px]">
+        <span className="text-faint shrink-0 font-mono text-[0.75rem]">
           Asked {waitingFor(row.createdAt, now)}
         </span>
       </div>
 
       {row.note ? (
-        <p className="text-muted border-line bg-surface-1 mt-3 rounded-xl border px-3.5 py-2.5 text-[13px] leading-relaxed">
+        <p className="text-muted border-line bg-surface-1 mt-3 rounded-xl border px-3.5 py-2.5 text-[0.8125rem] leading-relaxed">
           {row.note}
         </p>
       ) : null}
@@ -411,7 +411,7 @@ function EntryCard({
           usually what a refusal means. An exclusion is scoped to this one
           contest by decision D5.
         */}
-        <label className="text-muted mt-3 inline-flex min-h-11 cursor-pointer items-center gap-2.5 text-[13px] font-medium">
+        <label className="text-muted mt-3 inline-flex min-h-11 cursor-pointer items-center gap-2.5 text-[0.8125rem] font-medium">
           <input
             type="checkbox"
             className="size-[18px] cursor-pointer accent-[var(--wx-accent)]"
@@ -449,7 +449,7 @@ function EntryCard({
         {serverError ? (
           <p
             role="alert"
-            className="bg-danger-soft text-danger mt-3 rounded-xl px-3 py-2 text-[13px] font-medium"
+            className="bg-danger-soft text-danger mt-3 rounded-xl px-3 py-2 text-[0.8125rem] font-medium"
           >
             {serverError}
           </p>
@@ -476,7 +476,7 @@ function EntryCard({
           </Button>
         </div>
 
-        <p className="text-faint mt-3 max-w-prose text-[12px] leading-relaxed">
+        <p className="text-faint mt-3 max-w-prose text-[0.75rem] leading-relaxed">
           One decision only: once this is answered it cannot be answered again, even by somebody
           else looking at it right now.
         </p>

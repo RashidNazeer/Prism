@@ -21,6 +21,19 @@ import {
  * The view lives in the URL, so an admin working through the owed list can send
  * somebody the link they are looking at, the same as every other filter in the
  * admin panel.
+ *
+ * NO TITLE AND NO TAGLINE HERE SINCE 2026-08-16. The shell's top bar is the
+ * page's `<h1>` and it already says "Contests"; Rashid on the paragraph that
+ * used to sit under it: "i don't want to show description of that section". It
+ * described the screen rather than telling anybody how to do the job, so it is
+ * deleted rather than moved. The one thing in it that was load bearing, that no
+ * reward is ever granted by hand, is still said inside the list, next to the
+ * rows it is about.
+ *
+ * AND NO `FilterBar`, deliberately. The only control that changes what the list
+ * shows is the Owed/Paid switch, which lives inside `ContestRewardsQueue`
+ * because flipping it has to clear the selection and the page with it. Row one
+ * of this screen is the sections row `ContestsHeader` draws.
  */
 export function ContestRewards() {
   const [params, setParams] = useSearchParams();
@@ -29,23 +42,21 @@ export function ContestRewards() {
   // across, which is the habit Rashid has now asked for twice.
   const view: RewardsView = params.get('view') === 'paid' ? 'paid' : 'owed';
 
+  // Full width, no cap: the shell stopped capping content on 2026-08-16 and a
+  // cap left behind here would reopen the dead gap that change closed.
   return (
-    <>
-      <div className="mx-0 w-full max-w-[1128px]">
-        <ContestsHeader subtitle="What creators have earned by crossing a target on figures this team confirmed. Nothing here was granted by hand: a reward becomes owed at the moment a claim is confirmed, and the only thing left to do with it is pay it." />
+    <div className="flex w-full flex-col gap-4">
+      <ContestsHeader />
 
-        <div className="pt-4" />
-
-        <ContestRewardsQueue
-          view={view}
-          onViewChange={(next) => {
-            const nextParams = new URLSearchParams(params);
-            if (next === 'owed') nextParams.delete('view');
-            else nextParams.set('view', next);
-            setParams(nextParams, { replace: true });
-          }}
-        />
-      </div>
-    </>
+      <ContestRewardsQueue
+        view={view}
+        onViewChange={(next) => {
+          const nextParams = new URLSearchParams(params);
+          if (next === 'owed') nextParams.delete('view');
+          else nextParams.set('view', next);
+          setParams(nextParams, { replace: true });
+        }}
+      />
+    </div>
   );
 }

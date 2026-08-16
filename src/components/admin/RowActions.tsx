@@ -119,7 +119,7 @@ export function RowActions({
   }, [open]);
 
   const item =
-    'flex w-full items-center gap-2.5 px-3.5 py-3 text-left text-[13px] transition-colors duration-150';
+    'flex w-full items-center gap-2.5 px-3.5 py-3 text-left text-[0.8125rem] transition-colors duration-150';
 
   return (
     <>

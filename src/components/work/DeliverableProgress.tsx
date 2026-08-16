@@ -80,10 +80,10 @@ export function DeliverableProgress({
   return (
     <div className={cn('flex flex-col gap-2', className)}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <span id={labelId} className="text-text text-[14px] font-semibold">
+        <span id={labelId} className="text-text text-[0.875rem] font-semibold">
           {title}
         </span>
-        <span className="text-muted font-mono text-[12px]">
+        <span className="text-muted font-mono text-[0.75rem]">
           {/* The confirmed figure leads, because it is the true one. */}
           <span className={cn('font-semibold', done ? 'text-stage-paid' : 'text-text')}>
             {fmt(confirmed, type, currency)}
@@ -135,21 +135,21 @@ export function DeliverableProgress({
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         {awaiting ? (
-          <span className="text-muted inline-flex items-center gap-1.5 text-[12px]">
+          <span className="text-muted inline-flex items-center gap-1.5 text-[0.75rem]">
             <span className="bg-stage-due size-2 rounded-full" aria-hidden />
             {fmt(claimed - confirmed, type, currency)} waiting to be confirmed
           </span>
         ) : null}
 
         {done ? (
-          <span className="text-stage-paid inline-flex items-center gap-1.5 text-[12px] font-semibold">
+          <span className="text-stage-paid inline-flex items-center gap-1.5 text-[0.75rem] font-semibold">
             <span className="bg-stage-paid size-2 rounded-full" aria-hidden />
             Target reached
           </span>
         ) : null}
 
         {typeof reward === 'number' ? (
-          <span className="text-muted ml-auto font-mono text-[12px]">
+          <span className="text-muted ml-auto font-mono text-[0.75rem]">
             {new Intl.NumberFormat('en-GB', {
               style: 'currency',
               currency: currency && /^[A-Z]{3}$/.test(currency) ? currency : 'USD',
@@ -241,7 +241,7 @@ export function DeliverableDonut({
         y="50%"
         dominantBaseline="middle"
         textAnchor="middle"
-        className="fill-text font-display text-[22px] font-bold"
+        className="fill-text font-display text-[1.375rem] font-bold"
       >
         {Math.round(confirmedShare * 100)}%
       </text>
@@ -251,7 +251,7 @@ export function DeliverableDonut({
         dy="1.5em"
         dominantBaseline="middle"
         textAnchor="middle"
-        className="fill-muted text-[10px] font-semibold tracking-[0.14em] uppercase"
+        className="fill-muted text-[0.625rem] font-semibold tracking-[0.14em] uppercase"
       >
         {fmt(confirmed, type, currency)}
       </text>

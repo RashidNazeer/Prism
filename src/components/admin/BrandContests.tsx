@@ -95,7 +95,7 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
                 aria-selected={active}
                 onClick={() => setFilters((f) => ({ ...f, status: t.key, page: 1 }))}
                 className={cn(
-                  'ease-brand min-h-11 rounded-full px-4 text-[13px] font-semibold transition-colors',
+                  'ease-brand min-h-11 rounded-full px-4 text-[0.8125rem] font-semibold transition-colors',
                   active ? 'bg-surface-3 text-text' : 'text-muted hover:text-text'
                 )}
               >
@@ -103,7 +103,7 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
                 {typeof n === 'number' ? (
                   <span
                     className={cn(
-                      'ml-2 font-mono text-[11px]',
+                      'ml-2 font-mono text-[0.6875rem]',
                       active ? 'text-muted' : 'text-faint'
                     )}
                   >
@@ -179,7 +179,7 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
       {/* ---------------------------------------------------------- page -- */}
       {pages > 1 ? (
         <div className="flex items-center justify-between gap-3">
-          <p className="text-muted text-[13px]">
+          <p className="text-muted text-[0.8125rem]">
             {total} contest{total === 1 ? '' : 's'}
           </p>
           <div className="flex items-center gap-2">
@@ -193,7 +193,7 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
               <ChevronLeft size={15} aria-hidden />
               Back
             </Button>
-            <span className="text-muted font-mono text-[12px]">
+            <span className="text-muted font-mono text-[0.75rem]">
               {filters.page} of {pages}
             </span>
             <Button
@@ -226,12 +226,12 @@ function ContestRow({ contest, now }: { contest: Contest; now: number }) {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <ContestStateChip state={state} />
-            <span className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+            <span className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               {contest.needsAdminApproval ? 'You approve entries' : 'Anyone can enter'}
             </span>
           </div>
 
-          <h3 className="font-display text-text mt-2 truncate text-[19px] leading-tight font-bold">
+          <h3 className="font-display text-text mt-2 truncate text-[1.1875rem] leading-tight font-bold">
             {contest.name}
           </h3>
 
@@ -242,15 +242,15 @@ function ContestRow({ contest, now }: { contest: Contest; now: number }) {
             itself rather than summarised in a sentence on a list row.
           */}
           {contest.description ? (
-            <p className="text-muted mt-1 line-clamp-1 text-[13px]">{contest.description}</p>
+            <p className="text-muted mt-1 line-clamp-1 text-[0.8125rem]">{contest.description}</p>
           ) : null}
         </div>
 
         <div className="text-right">
-          <p className="text-text text-[13px] font-semibold">
+          <p className="text-text text-[0.8125rem] font-semibold">
             {formatDeadline(contest.expiresAt, contest.expiresAtTimezone)}
           </p>
-          <p className="text-muted mt-0.5 font-mono text-[12px]">{left}</p>
+          <p className="text-muted mt-0.5 font-mono text-[0.75rem]">{left}</p>
         </div>
       </div>
     </Link>
@@ -271,8 +271,8 @@ function Empty({
       <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
         <Trophy size={19} className="text-muted" aria-hidden />
       </div>
-      <h3 className="font-display text-text text-[21px] leading-tight font-bold">{title}</h3>
-      <p className="text-muted max-w-prose text-[14px] leading-relaxed">{body}</p>
+      <h3 className="font-display text-text text-[1.3125rem] leading-tight font-bold">{title}</h3>
+      <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">{body}</p>
       {action}
     </div>
   );

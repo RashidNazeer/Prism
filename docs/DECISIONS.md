@@ -746,3 +746,41 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   took 1313s against 721s green, because each failing check burns twelve seconds.
   It was the machine. Re-running was the only honest way to know, and guessing
   either way would have been wrong.
+- 2026-08-16: **The top bar names the section, and it is the page's only `<h1>`.**
+  Every screen used to draw its own title and a sentence describing itself,
+  roughly 120px above the work, to repeat a word the lit menu row was already
+  saying. Rashid asked for both rows to go and for the name to move into the bar
+  with an underline. The name is read from the sidebar's own labels
+  (`sectionTitleFor`), so the bar and the lit row cannot disagree, and it is a
+  real `<h1>` so nothing was traded away for the space.
+- 2026-08-16: **Row one of an admin screen is the filter row, and it is a shared
+  component.** `FilterBar`/`FilterTabs`/`FilterTab` is the contests row lifted
+  out rather than a new interpretation of it, because that is the one he
+  approved. Every screen had grown its own segmented control with a different
+  height, radius and way of showing a count.
+- 2026-08-16: **The content area has no max width.** It was `max-w-7xl`. Zooming
+  out stopped the content at 1280px and left the rest of the monitor empty. The
+  old rule said "left aligned, never centred" for exactly this reason, so
+  removing the cap serves the rule rather than breaking it: a cap opens the same
+  dead gap, just on the other edge.
+- 2026-08-16: **Every type size is a `rem`, and one root `font-size` scales the
+  app.** 846 hardcoded pixel sizes were converted in one codemod first, because
+  a `text-[13px]` opts out of the setting entirely. Tailwind's spacing scale is
+  `rem` too, so padding, gaps and radii move with the type and the result is a
+  genuinely denser page rather than small text in boxes that did not shrink.
+  Breakpoints are unaffected at every setting: `rem` in a media query is always
+  measured against the browser's initial 16px.
+- 2026-08-16: **Text size is a control in the top bar, not a settings screen.**
+  Staff have no settings screen for it to live on, and a size control you cannot
+  see while you change it is a bad one. From the bar every step is visible on the
+  page behind the menu, so it is chosen by looking rather than by guessing.
+- 2026-08-16: **The menu's scroll position is kept outside React.** Clicking an
+  item near the bottom snapped the list to the top: a scroll container's
+  `scrollTop` is clamped by the browser the moment its contents are briefly
+  shorter, and nothing put it back. It is restored in a layout effect, before
+  paint, from a module-scope value rather than state, because state would
+  re-render the rail on every wheel event.
+- 2026-08-16: **The Wurx mark collapses the rail; the arrow in the bar is gone.**
+  Rashid asked for the control to be the icon itself so the bar could give that
+  space to the section name. It is a real `<button>` on the rail and a real
+  `<Link>` in the drawer, never one dressed as the other.

@@ -91,7 +91,7 @@ export function ApplyDialog({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold">{offer.title}</h2>
-            <p className="mt-1 text-[14px] text-muted">{brandName}</p>
+            <p className="mt-1 text-[0.875rem] text-muted">{brandName}</p>
           </div>
           <button
             type="button"
@@ -110,10 +110,10 @@ export function ApplyDialog({
           <div className="rounded-xl border border-line bg-surface-2 px-4 py-3.5">
             {hasTerms ? (
               <>
-                <span className="font-mono text-[10px] tracking-[0.14em] text-faint uppercase">
+                <span className="font-mono text-[0.625rem] tracking-[0.14em] text-faint uppercase">
                   You would be asking for
                 </span>
-                <span className="wx-numeric mt-1 block text-[15px] font-semibold">
+                <span className="wx-numeric mt-1 block text-[0.9375rem] font-semibold">
                   {offer.video_count} {offer.video_count === 1 ? 'video' : 'videos'} for{' '}
                   <span className="text-accent">
                     {money(offer.reward_amount, offer.currency)}
@@ -121,12 +121,12 @@ export function ApplyDialog({
                 </span>
               </>
             ) : (
-              <span className="text-[14px] leading-relaxed text-muted">
+              <span className="text-[0.875rem] leading-relaxed text-muted">
                 The team will confirm what this one involves with you directly.
               </span>
             )}
             {offer.description ? (
-              <span className="mt-3 block border-t border-line pt-3 text-[13px] leading-relaxed text-muted">
+              <span className="mt-3 block border-t border-line pt-3 text-[0.8125rem] leading-relaxed text-muted">
                 {offer.description}
               </span>
             ) : null}

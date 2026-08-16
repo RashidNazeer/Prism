@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
 import { AnimatePresence, m } from 'motion/react';
-import { Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { WurxMark } from '@/components/brand/WurxMark';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { TextSizeMenu } from '@/components/layout/TextSizeMenu';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { IdentitySwapBanner } from '@/components/auth/IdentitySwapBanner';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import { useFocusTrap } from '@/lib/use-focus-trap';
+import { sectionTitleFor } from '@/lib/nav';
 
 const COLLAPSE_KEY = 'wurxmediahub-sidebar-collapsed';
 
@@ -88,11 +90,28 @@ export function AppShell({ children }: { children: ReactNode }) {
       signingOut={signingOut}
       onSignOut={handleSignOut}
       collapsed={mode === 'rail' && collapsed}
+      {...(mode === 'rail' ? { onToggleCollapse: () => setCollapsed((v) => !v) } : {})}
       {...(mode === 'drawer'
         ? { onNavigate: () => setDrawerOpen(false), onClose: () => setDrawerOpen(false) }
         : {})}
     />
   );
+
+  /*
+   * THE BAR NAMES THE SECTION NOW, in the menu's own words.
+   *
+   * Rashid, 2026-08-16: put the section name where the collapse arrow was, with
+   * an underline, and delete the title row and the description row every screen
+   * was drawing below it. Those two rows cost roughly 120px on every screen in
+   * the product, to repeat a word the lit menu row was already saying.
+   *
+   * This is the page's real `<h1>`. There is exactly one on screen, it changes
+   * with the route, and a screen reader still hears the section named on
+   * arrival, so nothing was traded away for the space. Record screens keep their
+   * own name in the body as an `<h2>`, because the bar answers "where am I",
+   * not "which one is open".
+   */
+  const section = sectionTitleFor(role, pathname);
 
   return (
     <div
@@ -100,9 +119,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         // `wx-app` switches the type tokens over to the two self-hosted faces.
         // It lives here so the public landing page never asks for them.
         'wx-app min-h-dvh bg-bg lg:grid',
-        // 17.5rem is the design's 280px rail. The old 16rem was cramping the
-        // roomier rows it asks for.
-        collapsed ? 'lg:grid-cols-[4.5rem_minmax(0,1fr)]' : 'lg:grid-cols-[17.5rem_minmax(0,1fr)]'
+        /*
+         * 15rem, down from 17.5rem on 2026-08-16. Rashid: the rail is too wide
+         * and there is a lot of dead space to the right of every label, which
+         * the screenshot bore out. 240px still fits the longest label we have
+         * ("Brand hubs") on one line beside its icon, and hands 40px back to
+         * the work on every screen.
+         *
+         * It is `rem`, so it follows the text-size setting: somebody reading at
+         * Large gets a rail with room for the bigger words rather than a fixed
+         * 240px box with clipped labels in it.
+         */
+        collapsed ? 'lg:grid-cols-[4rem_minmax(0,1fr)]' : 'lg:grid-cols-[15rem_minmax(0,1fr)]'
       )}
     >
       {/*
@@ -121,38 +149,37 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* --------------------------------------------------------- top --- */}
         {/* Opaque at every width. It is sticky, so a transparent band on
             desktop meant page content scrolled visibly underneath it. */}
-        <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-line bg-surface-1/90 px-4 backdrop-blur-xl sm:px-6">
+        <header className="border-line bg-surface-1/90 sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-3 border-b px-4 backdrop-blur-xl sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
-            {/* Collapse lives here, not in the rail: at 72px wide the rail has
-                no room for a control, and it would vanish exactly when you
-                need it to bring the labels back. */}
-            <button
-              type="button"
-              onClick={() => setCollapsed((v) => !v)}
-              aria-label={collapsed ? 'Expand the menu' : 'Collapse the menu'}
-              aria-pressed={collapsed}
-              className="hidden size-9 place-items-center rounded-lg border border-line text-muted transition-colors duration-200 hover:border-accent hover:text-accent lg:grid"
-            >
-              {collapsed ? (
-                <PanelLeftOpen size={17} aria-hidden />
-              ) : (
-                <PanelLeftClose size={17} aria-hidden />
-              )}
-            </button>
-
-            <Link to="/" aria-label="WurxMediaHub home" className="lg:hidden">
+            {/* The mark stays on a phone, where there is no rail to carry it.
+                On desktop the rail has it, and it is the collapse control. */}
+            <Link to="/" aria-label="WurxMediaHub home" className="shrink-0 lg:hidden">
               <WurxMark />
             </Link>
+
+            {section ? (
+              <h1 className="font-display relative min-w-0 truncate py-1 text-[1.0625rem] leading-none font-bold tracking-[-0.01em] sm:text-[1.1875rem]">
+                {section}
+                {/* The underline he asked for. Under the WORD, not across the
+                    bar, so it reads as the name of where you are rather than as
+                    another rule under a rule. */}
+                <span
+                  aria-hidden
+                  className="bg-accent absolute inset-x-0 -bottom-1 h-[2px] rounded-full"
+                />
+              </h1>
+            ) : null}
           </div>
 
           <div className="flex items-center gap-2">
+            <TextSizeMenu />
             <ThemeToggle />
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
               aria-label="Open menu"
               aria-expanded={drawerOpen}
-              className="grid size-10 place-items-center rounded-full border border-line text-muted transition-colors duration-200 hover:border-accent hover:text-accent lg:hidden"
+              className="border-line text-muted hover:border-accent hover:text-accent grid size-10 place-items-center rounded-full border transition-colors duration-200 lg:hidden"
             >
               <Menu size={18} aria-hidden />
             </button>
@@ -160,19 +187,26 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
 
         {/* ----------------------------------------------------- content --- */}
-        {/* Left aligned against the rail, NOT centred. Centring looks fine on a
-            laptop and falls apart the moment somebody zooms out or opens this
-            on a wide monitor: the content drifts into the middle and leaves a
-            dead gap beside the sidebar, so the two halves stop looking like one
-            page. Capped width, hugging the left, behaves at every size. */}
+        {/*
+          FULL WIDTH SINCE 2026-08-16, and the cap is gone rather than raised.
+
+          It was `max-w-7xl`. Rashid zoomed out, saw the content stop at 1280px
+          with the rest of the monitor empty beside it, and asked for the width
+          back so more cards fit on a row. He is right, and the old rule in
+          CLAUDE.md was aiming at the same thing from the other side: it said
+          "left aligned, never centred" precisely so zooming out could not open
+          a dead gap. A cap does open one, just on the other edge. No cap opens
+          none at any width or any zoom, which is what the rule was for.
+
+          Still `min-w-0`, so a wide table inside scrolls in its own container
+          rather than pushing the page sideways.
+        */}
         <main className="min-w-0 flex-1">
           {/* Tightened 2026-08-15. Rashid, more than once: do not give extra
               spaces, show the content early. It was py-6/py-8 under a top bar
               that already costs 57px, so every screen in the product started a
               third of the way down. */}
-          <div className="w-full max-w-7xl px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
-            {children}
-          </div>
+          <div className="w-full px-4 py-4 sm:px-6 sm:py-5 lg:px-8">{children}</div>
         </main>
       </div>
 

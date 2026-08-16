@@ -45,10 +45,10 @@ export function VideoPlayer({ row, onClose }: { row: ContentRow; onClose: () => 
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-[15px] font-semibold">
+            <p className="truncate text-[0.9375rem] font-semibold">
               {row.video_title ?? 'Your video'}
             </p>
-            <p className="text-muted truncate text-[13px]">
+            <p className="text-muted truncate text-[0.8125rem]">
               {row.brand?.name}
               {row.offer?.title ? `, ${row.offer.title}` : ''}
             </p>
@@ -77,7 +77,7 @@ export function VideoPlayer({ row, onClose }: { row: ContentRow; onClose: () => 
           ) : (
             <div className="px-6 py-14 text-center">
               <p className="font-semibold">This one will not play here</p>
-              <p className="text-muted mx-auto mt-2 max-w-xs text-[14px] leading-relaxed">
+              <p className="text-muted mx-auto mt-2 max-w-xs text-[0.875rem] leading-relaxed">
                 The link does not carry a video id we can build a player from. It should still
                 open on TikTok.
               </p>
@@ -89,7 +89,7 @@ export function VideoPlayer({ row, onClose }: { row: ContentRow; onClose: () => 
           href={row.video_url}
           target="_blank"
           rel="noreferrer noopener"
-          className="text-muted hover:text-accent mt-3 inline-flex items-center gap-1.5 self-start text-[13px] transition-colors"
+          className="text-muted hover:text-accent mt-3 inline-flex items-center gap-1.5 self-start text-[0.8125rem] transition-colors"
         >
           <ExternalLink size={14} aria-hidden />
           Open on TikTok

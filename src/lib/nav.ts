@@ -221,3 +221,40 @@ export function isNavItemActive(item: NavItem, pathname: string): boolean {
     (p) => pathname === p || pathname.startsWith(`${p}/`)
   );
 }
+
+/**
+ * WHICH SECTION AM I IN, in the words the menu already uses.
+ *
+ * Added 2026-08-16. The top bar now names the section instead of every screen
+ * repeating its own title in a heading and a description underneath it, which
+ * cost roughly 120px before any work appeared. Rashid asked for exactly that:
+ * the section name, underlined, in the bar, and the two rows below it gone.
+ *
+ * It reads the SAME list the sidebar draws, so the bar and the lit menu row can
+ * never disagree. A screen that needs a different word passes `title` to
+ * `PageChrome`; a record screen keeps its own name in the body, because the bar
+ * says which section you are in, not which record you have open.
+ *
+ * The longest prefix wins, so `/admin/offers/requests` resolves to Requests
+ * rather than to All offers, which also matches which row the sidebar lights.
+ */
+export function sectionTitleFor(role: AppRole | undefined, pathname: string): string | null {
+  let best: { label: string; score: number } | null = null;
+
+  for (const group of navForRole(role)) {
+    for (const item of group.items) {
+      if (!isNavItemActive(item, pathname)) continue;
+      // Score by how much of the path the match accounts for. An exact hit on a
+      // long route beats a prefix hit on a short one.
+      const candidates = [item.to ?? '', ...(item.activePrefixes ?? [])];
+      const score = Math.max(
+        ...candidates.map((c) =>
+          c && (pathname === c || pathname.startsWith(`${c}/`)) ? c.length : 0
+        )
+      );
+      if (!best || score > best.score) best = { label: item.label, score };
+    }
+  }
+
+  return best?.label ?? null;
+}

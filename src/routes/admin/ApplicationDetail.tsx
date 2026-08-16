@@ -30,9 +30,14 @@ export function ApplicationDetail() {
 
   return (
     <>
+      {/*
+        No margin above it. The screen used to open with a title row the top bar
+        now draws, so this link is the first thing on the page and the shell's
+        own padding is the only space it needs.
+      */}
       <Link
         to="/admin/applications"
-        className="text-muted hover:text-accent mt-4 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.14em] uppercase transition-colors"
+        className="text-muted hover:text-accent inline-flex items-center gap-1.5 font-mono text-[0.6875rem] tracking-[0.14em] uppercase transition-colors"
       >
         <ArrowLeft size={14} aria-hidden />
         Back to queue
@@ -73,13 +78,24 @@ function Loaded({
 
   return (
     <>
+      {/*
+        AN `h2`, NOT AN `h1`, SINCE 2026-08-16. The shell's top bar is the page's
+        `h1` and says "Applications"; this says which one is open. The handle is
+        the only thing an admin identifies an application by, so it stays on the
+        screen at the same size, it just stops claiming to be the page title.
+
+        The section headings inside the cards below are left at `h2`. Demoting
+        them to `h3` would be the tidier outline, but ReviewPanel draws its own
+        "Decision" heading from another file, and a half-demoted page reads worse
+        to a screen reader than a flat one.
+      */}
       <div className="mt-5 flex flex-wrap items-center gap-3">
-        <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold break-all">
+        <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold break-all">
           @{application.tiktok_handle}
-        </h1>
+        </h2>
         <StatusBadge status={application.status} />
         {application.worked_with_wurx ? (
-          <span className="bg-accent-soft text-accent inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[10px] tracking-[0.12em] uppercase">
+          <span className="bg-accent-soft text-accent inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
             <Star size={11} aria-hidden />
             Worked with Wurx
           </span>
@@ -112,7 +128,7 @@ function Loaded({
             </dl>
 
             <div className="border-line mt-6 border-t pt-5">
-              <p className="text-faint font-mono text-[11px] tracking-[0.14em] uppercase">
+              <p className="text-faint font-mono text-[0.6875rem] tracking-[0.14em] uppercase">
                 Videos
               </p>
               {links.length > 0 ? (
@@ -134,7 +150,7 @@ function Loaded({
                         href={link}
                         target="_blank"
                         rel="noreferrer noopener"
-                        className="text-accent inline-flex max-w-full min-w-0 items-center gap-2 text-[14px] underline-offset-4 hover:underline"
+                        className="text-accent inline-flex max-w-full min-w-0 items-center gap-2 text-[0.875rem] underline-offset-4 hover:underline"
                       >
                         <span className="min-w-0 truncate">{link}</span>
                         <ExternalLink size={13} aria-hidden className="shrink-0" />
@@ -146,7 +162,7 @@ function Loaded({
                 // Anything that is not an http(s) URL is shown as plain text and
                 // never as a link. A stored `javascript:` string must not become
                 // something a reviewer can click.
-                <p className="text-muted mt-3 text-[14px] leading-relaxed break-words whitespace-pre-wrap">
+                <p className="text-muted mt-3 text-[0.875rem] leading-relaxed break-words whitespace-pre-wrap">
                   {application.video_links}
                 </p>
               )}
@@ -176,7 +192,7 @@ function Loaded({
                 <Row label="Joined" value={formatDateTime(application.applicant.created_at)} />
               </dl>
             ) : (
-              <p className="text-muted mt-4 text-[14px]">
+              <p className="text-muted mt-4 text-[0.875rem]">
                 This account has been deleted. The application is kept for the record.
               </p>
             )}
@@ -219,11 +235,11 @@ function Loaded({
                 />
               </dl>
               {application.review_note ? (
-                <p className="border-line bg-surface-2 text-muted mt-5 rounded-xl border px-4 py-3 text-[14px] leading-relaxed">
+                <p className="border-line bg-surface-2 text-muted mt-5 rounded-xl border px-4 py-3 text-[0.875rem] leading-relaxed">
                   {application.review_note}
                 </p>
               ) : null}
-              <p className="text-faint mt-5 text-[13px] leading-relaxed">
+              <p className="text-faint mt-5 text-[0.8125rem] leading-relaxed">
                 A decision is final from this screen. Changing it means editing the account
                 directly, which is deliberate: it keeps the audit trail honest.
               </p>
@@ -234,7 +250,7 @@ function Loaded({
           <section className="border-line bg-surface-1 min-w-0 rounded-xl border p-6 shadow-md">
             <h2 className="text-sm font-semibold">History</h2>
             {history && history.length > 0 ? (
-              <ul className="mt-4 grid gap-3 text-[13px]">
+              <ul className="mt-4 grid gap-3 text-[0.8125rem]">
                 {history.map((entry) => (
                   <li key={entry.id} className="border-line border-l-2 pl-3">
                     <p className="font-medium">
@@ -254,7 +270,7 @@ function Loaded({
                 ))}
               </ul>
             ) : (
-              <p className="text-faint mt-3 text-[13px] leading-relaxed">
+              <p className="text-faint mt-3 text-[0.8125rem] leading-relaxed">
                 Nothing yet. Every approval and rejection is recorded here, and the record
                 cannot be edited from the browser by anyone, including an admin.
               </p>
@@ -303,7 +319,7 @@ function Empty({ title, body }: { title: string; body: string }) {
   return (
     <div className="border-line bg-surface-1 mt-8 max-w-lg rounded-xl border p-8 text-center shadow-md">
       <p className="font-semibold">{title}</p>
-      <p className="text-muted mt-2 text-[14px] leading-relaxed">{body}</p>
+      <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">{body}</p>
       <ButtonLink to="/admin/applications" variant="secondary" size="sm" className="mt-5">
         Back to queue
       </ButtonLink>

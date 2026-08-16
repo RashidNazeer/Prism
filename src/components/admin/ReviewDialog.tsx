@@ -138,7 +138,7 @@ export function ReviewDialog({
           </button>
         </div>
 
-        <p className="text-muted mt-2 text-[14px] leading-relaxed">
+        <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
           {decision === 'approved' ? (
             <>
               {many ? 'They all become creators' : 'They become a creator'} straight away, on
@@ -158,7 +158,7 @@ export function ReviewDialog({
             {targets.map((t) => (
               <li
                 key={t.id}
-                className="bg-surface-2 text-muted rounded-full px-2.5 py-1 text-[12px]"
+                className="bg-surface-2 text-muted rounded-full px-2.5 py-1 text-[0.75rem]"
               >
                 @{t.handle}
               </li>
@@ -212,18 +212,18 @@ export function ReviewDialog({
         </div>
 
         {review.error ? (
-          <p role="alert" className="text-danger mt-4 text-[13px]">
+          <p role="alert" className="text-danger mt-4 text-[0.8125rem]">
             {(review.error as Error).message}
           </p>
         ) : null}
 
         {failures.length > 0 ? (
           <div className="border-danger/40 bg-danger-soft mt-4 rounded-xl border px-4 py-3">
-            <p className="text-danger flex items-center gap-2 text-[13px] font-medium">
+            <p className="text-danger flex items-center gap-2 text-[0.8125rem] font-medium">
               <AlertTriangle size={15} aria-hidden />
               {review.data!.reviewed} went through, {failures.length} did not
             </p>
-            <ul className="text-danger mt-2 grid gap-1 text-[12px]">
+            <ul className="text-danger mt-2 grid gap-1 text-[0.75rem]">
               {failures.slice(0, 5).map((f) => {
                 const target = targets.find((t) => t.id === f.applicationId);
                 return (

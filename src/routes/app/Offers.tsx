@@ -115,10 +115,10 @@ export function Offers() {
   return (
     <>
       <div className="flex flex-col gap-1.5 px-0.5 py-1">
-        <h1 className="font-display text-[clamp(26px,4.4vw,40px)] leading-[1.05] font-semibold tracking-[-0.02em]">
+        <h1 className="font-display text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
           Offers
         </h1>
-        <p className="text-muted text-[15px]">
+        <p className="text-muted text-[0.9375rem]">
           Everything on the table, from every brand you work with.
         </p>
       </div>
@@ -142,7 +142,7 @@ export function Offers() {
                   aria-selected={tab === t.value}
                   onClick={() => setTab(t.value)}
                   className={cn(
-                    'shrink-0 rounded-[9px] px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-200',
+                    'shrink-0 rounded-[9px] px-3.5 py-1.5 text-[0.8125rem] font-medium transition-colors duration-200',
                     tab === t.value ? 'bg-text text-inverse' : 'text-muted hover:text-text'
                   )}
                 >
@@ -150,7 +150,7 @@ export function Offers() {
                   {counts[t.value] > 0 ? (
                     <span
                       className={cn(
-                        'ml-1.5 text-[12px]',
+                        'ml-1.5 text-[0.75rem]',
                         tab === t.value ? 'text-inverse/70' : 'text-muted'
                       )}
                     >
@@ -177,7 +177,7 @@ export function Offers() {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search offers or brands"
                 aria-label="Search offers or brands"
-                className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[13px] focus:outline-none"
+                className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[0.8125rem] focus:outline-none"
               />
             </div>
 
@@ -189,7 +189,7 @@ export function Offers() {
               name="brand"
               value={brandId}
               onChange={(e) => setBrandId(e.target.value)}
-              className="h-9 basis-44 text-[13px]"
+              className="h-9 basis-44 text-[0.8125rem]"
             >
               <option value="">All brands</option>
               {brands.map((b) => (
@@ -210,7 +210,7 @@ export function Offers() {
           ) : isError ? (
             <div className="border-line bg-surface-1 mt-4 rounded-xl border px-6 py-14 text-center shadow-md">
               <p className="font-semibold">That list would not load</p>
-              <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+              <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
                 {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
               </p>
             </div>
@@ -220,7 +220,7 @@ export function Offers() {
               <p className="mt-4 font-semibold">
                 {(offers ?? []).length === 0 ? 'No offers yet' : 'Nothing matches that'}
               </p>
-              <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+              <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
                 {(offers ?? []).length === 0
                   ? 'New offers land here as soon as a brand puts one up.'
                   : 'Try a different search, brand or tab.'}

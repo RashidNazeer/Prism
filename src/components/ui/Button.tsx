@@ -24,9 +24,9 @@ const button = cva(
         link: 'text-accent underline-offset-4 hover:underline',
       },
       size: {
-        sm: 'h-9 rounded-lg px-3.5 text-[13px]',
+        sm: 'h-9 rounded-lg px-3.5 text-[0.8125rem]',
         md: 'h-11 rounded-xl px-5 text-sm',
-        lg: 'h-13 rounded-xl px-7 text-[15px]',
+        lg: 'h-13 rounded-xl px-7 text-[0.9375rem]',
         xl: 'h-15 rounded-2xl px-9 text-base font-semibold',
       },
     },

@@ -50,7 +50,7 @@ export function PipelineBoard({
   return (
     <section className="border-line bg-surface-1 flex flex-col gap-[18px] rounded-xl border p-[clamp(18px,2.4vw,26px)] shadow-md">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+        <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Your pipeline, stage by stage
         </h2>
 
@@ -58,8 +58,8 @@ export function PipelineBoard({
           {legend.map((l) => (
             <div key={l.label} className="flex items-center gap-[7px]">
               <span aria-hidden className={cn('size-[9px] rounded-[2px]', l.tone.bar)} />
-              <dt className="text-muted text-[12.5px]">{l.label}</dt>
-              <dd className="text-[13px] font-semibold">{fmt(l.value)}</dd>
+              <dt className="text-muted text-[0.78125rem]">{l.label}</dt>
+              <dd className="text-[0.8125rem] font-semibold">{fmt(l.value)}</dd>
             </div>
           ))}
         </dl>
@@ -82,17 +82,17 @@ export function PipelineBoard({
               )}
             >
               <div className="flex items-center justify-between gap-1.5">
-                <span className="text-muted text-[10px] font-bold tracking-[0.1em]">
+                <span className="text-muted text-[0.625rem] font-bold tracking-[0.1em]">
                   Stage {i + 1}
                 </span>
                 <span aria-hidden className={cn('h-[3px] w-[22px] rounded-[2px]', tone.bar)} />
               </div>
 
               <div className="flex flex-col gap-1">
-                <p className="text-[13px] leading-[1.2] font-semibold">
+                <p className="text-[0.8125rem] leading-[1.2] font-semibold">
                   {STAGE_META[stage].label}
                 </p>
-                <p className="text-muted text-[11px] leading-[1.3]">
+                <p className="text-muted text-[0.6875rem] leading-[1.3]">
                   {STAGE_META[stage].short}
                 </p>
               </div>
@@ -100,7 +100,7 @@ export function PipelineBoard({
               <div className="mt-auto flex flex-col gap-1.5">
                 <p
                   className={cn(
-                    'font-display text-[17px] font-semibold',
+                    'font-display text-[1.0625rem] font-semibold',
                     here.length === 0 && 'text-muted',
                     justMoved && 'wx-bump'
                   )}
@@ -116,7 +116,7 @@ export function PipelineBoard({
                     <p
                       key={row.id}
                       className={cn(
-                        'border-line bg-surface-1 rounded-lg border px-[7px] py-[5px] text-[11.5px] leading-[1.25]',
+                        'border-line bg-surface-1 rounded-lg border px-[7px] py-[5px] text-[0.71875rem] leading-[1.25]',
                         moved.ids.has(row.id) && 'wx-pop'
                       )}
                     >
@@ -127,7 +127,7 @@ export function PipelineBoard({
                       {p && p.required !== null ? (
                         <span
                           className={cn(
-                            'font-display mt-0.5 block text-[11px] font-semibold',
+                            'font-display mt-0.5 block text-[0.6875rem] font-semibold',
                             p.done ? 'text-stage-paid' : 'text-muted'
                           )}
                         >
@@ -184,7 +184,7 @@ export function MoneySplit({ summary, moved }: { summary: WorkSummary; moved: Mo
 
   return (
     <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5 shadow-md">
-      <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+      <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         Where the money sits
       </h2>
 
@@ -192,24 +192,24 @@ export function MoneySplit({ summary, moved }: { summary: WorkSummary; moved: Mo
         <span
           key={`total-${moved.key}`}
           className={cn(
-            'font-display text-[clamp(32px,5vw,46px)] leading-none font-semibold tracking-[-0.03em]',
+            'font-display text-[clamp(2rem,5vw,2.875rem)] leading-none font-semibold tracking-[-0.03em]',
             moved.ids.size > 0 && 'wx-bump'
           )}
         >
           {fmt(total)}
         </span>
-        <span className="text-muted text-[13px]">agreed with you</span>
+        <span className="text-muted text-[0.8125rem]">agreed with you</span>
       </p>
 
       <dl className="flex flex-col gap-3">
         {bars.map((bar) => (
           <div key={bar.key} className="flex flex-col gap-1.5">
             <div className="flex items-baseline justify-between gap-2.5">
-              <dt className={cn('text-[13px] font-semibold', bar.tone.text)}>{bar.label}</dt>
+              <dt className={cn('text-[0.8125rem] font-semibold', bar.tone.text)}>{bar.label}</dt>
               <dd
                 key={`${bar.key}-${moved.key}`}
                 className={cn(
-                  'font-display text-[17px] font-semibold',
+                  'font-display text-[1.0625rem] font-semibold',
                   moved.ids.size > 0 && 'wx-bump'
                 )}
               >
@@ -224,7 +224,7 @@ export function MoneySplit({ summary, moved }: { summary: WorkSummary; moved: Mo
                 className={cn('h-full rounded-full', bar.tone.bar)}
               />
             </div>
-            <dd className="text-muted text-[12px]">{bar.sub}</dd>
+            <dd className="text-muted text-[0.75rem]">{bar.sub}</dd>
           </div>
         ))}
       </dl>

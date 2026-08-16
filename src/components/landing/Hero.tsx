@@ -29,7 +29,7 @@ export function Hero() {
         <div className="grid items-start gap-12 pt-24 pb-20 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:pt-28 lg:pb-24">
           <m.div variants={container} initial="hidden" animate="show" className="lg:pt-6">
             <m.div variants={item}>
-              <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface-1/70 px-3.5 py-1.5 font-mono text-[11px] tracking-[0.18em] text-muted uppercase backdrop-blur-sm">
+              <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface-1/70 px-3.5 py-1.5 font-mono text-[0.6875rem] tracking-[0.18em] text-muted uppercase backdrop-blur-sm">
                 <span className="relative flex size-1.5">
                   <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-70" />
                   <span className="relative inline-flex size-1.5 rounded-full bg-accent" />
@@ -49,7 +49,7 @@ export function Hero() {
 
             <m.p
               variants={item}
-              className="mt-6 max-w-lg text-[17px] leading-relaxed text-muted text-pretty"
+              className="mt-6 max-w-lg text-[1.0625rem] leading-relaxed text-muted text-pretty"
             >
               WurxMediaHub is the creator platform behind Wurx Media&rsquo;s TikTok Shop
               brands. One login, every brand you work with, and the real performance

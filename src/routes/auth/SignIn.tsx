@@ -101,7 +101,7 @@ export function SignIn() {
         <div className="mt-3 text-right">
           <Link
             to="/forgot-password"
-            className="text-[13px] text-muted underline-offset-4 hover:text-accent hover:underline"
+            className="text-[0.8125rem] text-muted underline-offset-4 hover:text-accent hover:underline"
           >
             Forgot your password?
           </Link>

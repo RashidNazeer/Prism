@@ -61,20 +61,31 @@ below.
   contest with no money in it belongs. **Trigger: Rashid asking why his home
   does not mention a contest he is in.**
 
-## 0b. The contest screens are half redressed
+## 0b. The creator side has not had the chrome rebuild
 
-**Status:** PAUSED, and the likely next piece of work
+**Status:** PAUSED, and the next piece of work
 **Owner:** Claude
-**Trigger to raise again:** the next time contests are opened at all.
+**Trigger to raise again:** Rashid saying "now the creator side", which he said
+on 2026-08-16 was the plan: "We can do it for admin side only and after that we
+can move to creators side."
 
-`/admin/contests` was rebuilt from Rashid's design on 2026-08-15: one header row
-with the sections and the create button, one toolbar row with every filter, glass
-cards in a grid. The tokens and utilities that made it possible are in place.
+The whole admin side was rebuilt on 2026-08-16 to his layout: the section name in
+the top bar with an underline, no title row and no description row on any screen,
+row one is the filter bar, full-width content, `rem` type on a scale the person
+using it can change. `docs/FEATURE_MAP.md` "Admin screen layout" is the spec and
+`pnpm verify:chrome` guards it.
 
-**Four screens still wear the old language** and now look a generation behind the
-one beside them: the CREATOR contest screen (`/app/contests`), the contest setup
-screen, and the claims and rewards queues, which have the new header but old
-cards underneath. Each is much quicker than the first one was.
+**The creator screens have not had any of it.** They still draw their own `<h1>`
+and their own description, which means two `<h1>`s on those routes now, the shell's
+and the screen's. It is legal HTML and nothing is broken, but it is the leftover
+half of one change rather than a decision. `/app`, `/app/brands`, `/app/offers`,
+`/app/contests`, `/app/content`, `/app/profile`, and the studio home.
+
+**The contest screens are also still half redressed**, from 2026-08-15, and the
+list shrank by two: the claims and rewards queues took the new header and the new
+filter row on 2026-08-16. **Still on the old language:** the CREATOR contest
+screen (`/app/contests`) and the contest SETUP screen. Both are quick now that
+the tokens, the glass utilities and `FilterBar` all exist.
 
 ---
 

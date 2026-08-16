@@ -64,13 +64,13 @@ export function ContestEarnings() {
   return (
     <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-[clamp(16px,2vw,22px)] shadow-md">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <p className="text-muted flex items-center gap-2 text-[11px] font-semibold tracking-[0.14em] uppercase">
+        <p className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           <Trophy size={14} className="text-stage-due" aria-hidden />
           From contests
         </p>
         <Link
           to="/app/contests?view=progress"
-          className="text-accent ease-brand inline-flex min-h-11 items-center gap-1.5 text-[13px] font-semibold transition-colors hover:underline"
+          className="text-accent ease-brand inline-flex min-h-11 items-center gap-1.5 text-[0.8125rem] font-semibold transition-colors hover:underline"
         >
           See where you stand
           <ArrowRight size={14} aria-hidden />
@@ -92,7 +92,7 @@ export function ContestEarnings() {
         this the two cards are just two cards, and the day one figure is quoted
         on a call as "what Wurx owes me" it will be the wrong one.
       */}
-      <p className="text-faint max-w-prose text-[12px] leading-relaxed">
+      <p className="text-faint max-w-prose text-[0.75rem] leading-relaxed">
         Contest rewards are their own pot. They are not part of the offer money above, and the
         two are never added together.
       </p>
@@ -185,7 +185,7 @@ function Cell({
     >
       <dt
         className={cn(
-          'text-[12px] font-semibold',
+          'text-[0.75rem] font-semibold',
           tone === 'due' ? 'text-stage-due' : 'text-stage-paid'
         )}
       >
@@ -193,11 +193,11 @@ function Cell({
       </dt>
       <dd
         key={bumpKey}
-        className={cn('font-display text-[23px] font-semibold', bumpKey ? 'wx-bump' : undefined)}
+        className={cn('font-display text-[1.4375rem] font-semibold', bumpKey ? 'wx-bump' : undefined)}
       >
         {value}
       </dd>
-      <dd className="text-muted text-[12px]">{sub}</dd>
+      <dd className="text-muted text-[0.75rem]">{sub}</dd>
     </div>
   );
 }

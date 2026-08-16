@@ -64,7 +64,7 @@ export function StaffSignIn() {
   return (
     <AuthShell
       eyebrow={
-        <span className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent-soft px-3 py-1.5 font-mono text-[11px] tracking-[0.16em] text-accent uppercase">
+        <span className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent-soft px-3 py-1.5 font-mono text-[0.6875rem] tracking-[0.16em] text-accent uppercase">
           <ShieldCheck size={13} aria-hidden />
           Staff access
         </span>
@@ -123,7 +123,7 @@ export function StaffSignIn() {
         <div className="mt-3 text-right">
           <Link
             to="/forgot-password"
-            className="text-[13px] text-muted underline-offset-4 hover:text-accent hover:underline"
+            className="text-[0.8125rem] text-muted underline-offset-4 hover:text-accent hover:underline"
           >
             Forgot your password?
           </Link>

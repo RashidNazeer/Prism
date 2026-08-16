@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router';
 import { Check, Flag, RotateCcw, Search, Video } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Field';
+import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { VideoPlayer } from '@/components/content/VideoPlayer';
 import { ContentCard } from '@/components/content/ContentCard';
 import { cn } from '@/lib/utils';
@@ -104,19 +105,99 @@ export function AdminContent() {
 
   return (
     <>
-      <div className="flex max-w-[1140px] flex-col gap-[14px]">
-        <div className="flex flex-wrap items-end justify-between gap-4 px-0.5 py-1">
-          <div className="flex flex-col gap-1.5">
-            <h1 className="font-display text-[clamp(26px,4.4vw,40px)] leading-[1.05] font-semibold tracking-[-0.02em]">
-              Content
-            </h1>
-            <p className="text-muted text-[15px]">
-              Every video the roster has posted, with its ad code.
-            </p>
-          </div>
-        </div>
+      <div className="flex flex-col gap-[14px]">
+        {/*
+          NO TITLE ROW AND NO DESCRIPTION ROW. The shell's top bar carries the
+          section name as the page's h1 now, and Rashid asked on 2026-08-16 for
+          the tagline under it to go with it: it described the screen to
+          somebody already standing on it. The width cap went too, because the
+          content area is full width now and a second cap here would leave this
+          screen narrower than the ones beside it.
+        */}
+        {/* ------------------------------------------------------- filters -- */}
+        <FilterBar>
+          {/* The view switch leads the row: which of the two screens you are
+              looking at decides whether the rest of the row means anything. */}
+          <ViewSwitch view={view} onChange={setView} />
 
-        <ViewSwitch view={view} onChange={setView} />
+          {view === 'submissions' ? (
+            <>
+              {/* `flex-wrap` and no `shrink-0`: four labels this long are wider
+                  than a 375px phone, and a row that scrolls sideways hides the
+                  last tab behind an edge. */}
+              <FilterTabs label="Filter content" className="max-w-full flex-wrap">
+                {TABS.map((t) => {
+                  // A zero is not worth the ink, the same as before.
+                  const n = counts?.totals[t.value];
+                  return (
+                    <FilterTab
+                      key={t.value}
+                      active={filters.status === t.value}
+                      count={n || undefined}
+                      onClick={() => set({ status: t.value })}
+                    >
+                      {t.label}
+                    </FilterTab>
+                  );
+                })}
+              </FilterTabs>
+
+              <div className="relative min-w-0 flex-1 basis-52">
+                <Search
+                  size={15}
+                  aria-hidden
+                  className="text-faint pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
+                />
+                <input
+                  type="search"
+                  name="search"
+                  defaultValue={filters.search}
+                  onChange={(e) => set({ q: e.target.value })}
+                  placeholder="Search by handle or ad code"
+                  aria-label="Search content"
+                  className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-10 w-full rounded-md border pr-3 pl-9 text-[0.875rem] focus:outline-none"
+                />
+              </div>
+
+              <label className="sr-only" htmlFor="admin-content-brand">
+                Filter by brand
+              </label>
+              {/* The one control whose width is data rather than design. Left to
+                  size itself a long brand name makes the select wider than a
+                  phone, so it gets a basis it is allowed to shrink from. */}
+              <div className="min-w-0 basis-40">
+                <Select
+                  id="admin-content-brand"
+                  name="brand"
+                  value={filters.brandId}
+                  onChange={(e) => set({ brand: e.target.value })}
+                  className="h-10 w-full rounded-md text-[0.875rem]"
+                >
+                  <option value="">All brands</option>
+                  {(brands ?? []).map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+              <label className="sr-only" htmlFor="admin-content-sort">
+                Sort
+              </label>
+              <Select
+                id="admin-content-sort"
+                name="sort"
+                value={filters.sort}
+                onChange={(e) => set({ sort: e.target.value === 'oldest' ? 'oldest' : '' })}
+                className="h-10 w-auto min-w-[8.5rem] shrink-0 rounded-md text-[0.875rem]"
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+              </Select>
+            </>
+          ) : null}
+        </FilterBar>
 
         {view === 'dashboard' ? (
           counts ? (
@@ -129,95 +210,6 @@ export function AdminContent() {
           )
         ) : (
           <>
-            {/* ---------------------------------------------------------- tabs -- */}
-            <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-              <div
-                role="tablist"
-                aria-label="Filter content"
-                className="bg-surface-2 flex min-w-max gap-1 rounded-xl p-[3px]"
-              >
-                {TABS.map((t) => (
-                  <button
-                    key={t.value}
-                    role="tab"
-                    type="button"
-                    aria-selected={filters.status === t.value}
-                    onClick={() => set({ status: t.value })}
-                    className={cn(
-                      'shrink-0 rounded-[9px] px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-200',
-                      filters.status === t.value
-                        ? 'bg-text text-inverse'
-                        : 'text-muted hover:text-text'
-                    )}
-                  >
-                    {t.label}
-                    {counts && counts.totals[t.value] > 0 ? (
-                      <span
-                        className={cn(
-                          'ml-1.5 text-[12px]',
-                          filters.status === t.value ? 'text-inverse/70' : 'text-muted'
-                        )}
-                      >
-                        {counts.totals[t.value]}
-                      </span>
-                    ) : null}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* ------------------------------------------------------- filters -- */}
-            <div className="flex flex-wrap items-center gap-2.5">
-              <div className="relative min-w-0 flex-1 basis-52">
-                <Search
-                  size={15}
-                  aria-hidden
-                  className="text-faint pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
-                />
-                <input
-                  type="search"
-                  name="search"
-                  defaultValue={filters.search}
-                  onChange={(e) => set({ q: e.target.value })}
-                  placeholder="Search by handle or ad code"
-                  aria-label="Search content"
-                  className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[13px] focus:outline-none"
-                />
-              </div>
-
-              <label className="sr-only" htmlFor="admin-content-brand">
-                Filter by brand
-              </label>
-              <Select
-                id="admin-content-brand"
-                name="brand"
-                value={filters.brandId}
-                onChange={(e) => set({ brand: e.target.value })}
-                className="h-9 basis-44 text-[13px]"
-              >
-                <option value="">All brands</option>
-                {(brands ?? []).map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </Select>
-
-              <label className="sr-only" htmlFor="admin-content-sort">
-                Sort
-              </label>
-              <Select
-                id="admin-content-sort"
-                name="sort"
-                value={filters.sort}
-                onChange={(e) => set({ sort: e.target.value === 'oldest' ? 'oldest' : '' })}
-                className="h-9 basis-36 text-[13px]"
-              >
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-              </Select>
-            </div>
-
             {/* ---------------------------------------------------------- list -- */}
             {isLoading ? (
               <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -228,7 +220,7 @@ export function AdminContent() {
             ) : isError ? (
               <div className="border-line bg-surface-1 rounded-xl border px-6 py-14 text-center shadow-md">
                 <p className="font-semibold">That would not load</p>
-                <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+                <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
                   {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
                 </p>
               </div>
@@ -236,7 +228,7 @@ export function AdminContent() {
               <div className="border-line bg-surface-1 rounded-xl border px-6 py-16 text-center shadow-md">
                 <Video size={26} aria-hidden className="text-faint mx-auto" />
                 <p className="mt-4 font-semibold">Nothing here</p>
-                <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+                <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
                   {filters.status === 'submitted'
                     ? 'Nothing is waiting on you. New videos land here as creators post them.'
                     : 'Try a different search, brand or tab.'}
@@ -262,7 +254,7 @@ export function AdminContent() {
 
                 {pages > 1 ? (
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-muted text-[13px]">
+                    <p className="text-muted text-[0.8125rem]">
                       Page {filters.page} of {pages}, {total} in total
                     </p>
                     <div className="flex gap-2">
@@ -313,27 +305,13 @@ type View = (typeof VIEWS)[number]['key'];
 
 function ViewSwitch({ view, onChange }: { view: View; onChange: (v: View) => void }) {
   return (
-    <div
-      role="tablist"
-      aria-label="How to read the content"
-      className="bg-surface-2 flex gap-1 self-start rounded-xl p-[3px]"
-    >
+    <FilterTabs label="How to read the content">
       {VIEWS.map((v) => (
-        <button
-          key={v.key}
-          role="tab"
-          type="button"
-          aria-selected={view === v.key}
-          onClick={() => onChange(v.key)}
-          className={cn(
-            'rounded-[9px] px-[11px] py-1.5 text-[13px] font-medium transition-colors duration-200',
-            view === v.key ? 'bg-text text-inverse' : 'text-muted hover:text-text'
-          )}
-        >
+        <FilterTab key={v.key} active={view === v.key} onClick={() => onChange(v.key)}>
           {v.label}
-        </button>
+        </FilterTab>
       ))}
-    </div>
+    </FilterTabs>
   );
 }
 
@@ -358,7 +336,7 @@ function ByBrand({
 
   return (
     <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-xl border p-5 shadow-md">
-      <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+      <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         Where it is coming from
       </h2>
 
@@ -371,8 +349,8 @@ function ByBrand({
               className="border-line bg-surface-2 hover:border-text flex w-full flex-col gap-2.5 rounded-[16px] border p-3.5 text-left transition-colors duration-200"
             >
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                <span className="text-[14.5px] font-semibold">{brand.name}</span>
-                <span className="font-display text-[15px] font-semibold">
+                <span className="text-[0.90625rem] font-semibold">{brand.name}</span>
+                <span className="font-display text-[0.9375rem] font-semibold">
                   {brand.all} {brand.all === 1 ? 'video' : 'videos'}
                 </span>
               </div>
@@ -396,7 +374,7 @@ function ByBrand({
                   ))}
               </div>
 
-              <div className="text-muted flex flex-wrap gap-x-4 gap-y-1 text-[12.5px]">
+              <div className="text-muted flex flex-wrap gap-x-4 gap-y-1 text-[0.78125rem]">
                 <span>
                   <span className="text-stage-paid font-semibold">{brand.approved}</span>{' '}
                   approved
@@ -432,14 +410,14 @@ function Board({ counts }: { counts: ContentTotals }) {
   return (
     <section className="border-line bg-surface-1 flex flex-col gap-5 rounded-xl border p-[clamp(18px,2.4vw,26px)] shadow-md">
       <div className="flex flex-col gap-1">
-        <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+        <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Videos posted
         </p>
         <p className="flex flex-wrap items-baseline gap-2.5">
-          <span className="font-display text-[clamp(38px,7vw,58px)] leading-none font-semibold tracking-[-0.03em]">
+          <span className="font-display text-[clamp(2.375rem,7vw,3.625rem)] leading-none font-semibold tracking-[-0.03em]">
             {counts.all}
           </span>
-          <span className="text-muted text-[13px]">across the roster</span>
+          <span className="text-muted text-[0.8125rem]">across the roster</span>
         </p>
       </div>
 
@@ -449,8 +427,8 @@ function Board({ counts }: { counts: ContentTotals }) {
             key={cell.label}
             className={cn('flex flex-col gap-1.5 rounded-lg p-3.5', cell.tone.soft)}
           >
-            <dt className={cn('text-[12px] font-semibold', cell.tone.text)}>{cell.label}</dt>
-            <dd className="font-display text-[23px] font-semibold">{cell.value}</dd>
+            <dt className={cn('text-[0.75rem] font-semibold', cell.tone.text)}>{cell.label}</dt>
+            <dd className="font-display text-[1.4375rem] font-semibold">{cell.value}</dd>
           </div>
         ))}
       </dl>
@@ -473,11 +451,11 @@ function JobMeta({ row, progress }: { row: ContentRow; progress: JobProgress | u
 
   return (
     <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-      {who ? <span className="text-muted text-[12.5px] break-all">{who}</span> : null}
+      {who ? <span className="text-muted text-[0.78125rem] break-all">{who}</span> : null}
       {progress && progress.required !== null ? (
         <span
           className={cn(
-            'font-display text-[12px] font-semibold',
+            'font-display text-[0.75rem] font-semibold',
             progress.done ? 'text-stage-paid' : 'text-muted'
           )}
         >
@@ -524,12 +502,12 @@ function Review({ row, progress }: { row: ContentRow; progress: JobProgress | un
   if (row.status === 'approved') {
     return (
       <div className="border-line flex flex-col gap-1.5 border-t pt-2.5">
-        <p className="text-stage-paid flex items-center gap-1.5 text-[12.5px] font-semibold">
+        <p className="text-stage-paid flex items-center gap-1.5 text-[0.78125rem] font-semibold">
           <Check size={14} aria-hidden />
           Counted towards the offer
         </p>
         {wouldReopen ? (
-          <p className="text-faint text-[11.5px] leading-relaxed">
+          <p className="text-faint text-[0.71875rem] leading-relaxed">
             This job is finished on the strength of this video. Sending it back would reopen it.
           </p>
         ) : null}
@@ -551,7 +529,7 @@ function Review({ row, progress }: { row: ContentRow; progress: JobProgress | un
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="What needs changing? The creator reads this."
-          className="border-line-interactive bg-surface-1 placeholder:text-faint focus:border-accent w-full rounded-xl border px-3 py-2 text-[13px] focus:outline-none"
+          className="border-line-interactive bg-surface-1 placeholder:text-faint focus:border-accent w-full rounded-xl border px-3 py-2 text-[0.8125rem] focus:outline-none"
         />
         <div className="flex flex-wrap gap-2">
           <Button
@@ -579,7 +557,7 @@ function Review({ row, progress }: { row: ContentRow; progress: JobProgress | un
       {/* Said before the click, never as a dialog after it. Reviewing at speed
           was a deliberate decision and a confirm step would undo it. */}
       {wouldFinish ? (
-        <p className="text-stage-paid flex items-start gap-1.5 text-[12px] leading-relaxed font-medium">
+        <p className="text-stage-paid flex items-start gap-1.5 text-[0.75rem] leading-relaxed font-medium">
           <Flag size={13} aria-hidden className="mt-0.5 shrink-0" />
           Approving this finishes the job and moves them on.
         </p>
@@ -603,17 +581,17 @@ function Review({ row, progress }: { row: ContentRow; progress: JobProgress | un
           and the screen threw it away, so finishing somebody's work looked
           identical to approving one video of five. */}
       {review.data?.result.advanced ? (
-        <p role="status" className="text-stage-paid text-[12px] font-medium">
+        <p role="status" className="text-stage-paid text-[0.75rem] font-medium">
           That was the last one. The job is finished.
         </p>
       ) : review.data?.result.reopened ? (
-        <p role="status" className="text-stage-due text-[12px] font-medium">
+        <p role="status" className="text-stage-due text-[0.75rem] font-medium">
           The job went back to content pending, and they have been told.
         </p>
       ) : null}
 
       {review.error ? (
-        <p role="alert" className="text-danger text-[12px]">
+        <p role="alert" className="text-danger text-[0.75rem]">
           {(review.error as Error).message}
         </p>
       ) : null}

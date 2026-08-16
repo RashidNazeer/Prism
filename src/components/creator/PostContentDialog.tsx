@@ -175,7 +175,7 @@ export function PostContentDialog({
             <h2 className="font-display text-lg font-semibold">
               {editing ? 'Edit this video' : 'Add a video'}
             </h2>
-            <p className="text-muted mt-1 text-[14px]">
+            <p className="text-muted mt-1 text-[0.875rem]">
               {editing
                 ? 'Fix the link or the code and it goes back to the team.'
                 : 'Paste the link to your post and its ad code.'}
@@ -248,17 +248,17 @@ export function PostContentDialog({
           {progress ? (
             <div className="border-line bg-surface-2 mt-4 rounded-lg border px-4 py-3.5">
               {progress.required === null ? (
-                <p className="text-[14px] leading-relaxed">
+                <p className="text-[0.875rem] leading-relaxed">
                   This one has no set number of videos. Post what you agreed and the team will
                   confirm.
                 </p>
               ) : (
                 <>
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                    <span className="text-[14px] font-semibold">
+                    <span className="text-[0.875rem] font-semibold">
                       {progress.approved} of {progress.required} approved
                     </span>
-                    <span className="text-muted text-[13px]">
+                    <span className="text-muted text-[0.8125rem]">
                       {progress.done
                         ? 'This job is covered'
                         : `${progress.remaining} still to come`}
@@ -280,7 +280,7 @@ export function PostContentDialog({
                     ))}
                   </div>
                   {progress.waiting > 0 ? (
-                    <p className="text-muted mt-2 text-[12.5px]">
+                    <p className="text-muted mt-2 text-[0.78125rem]">
                       {progress.waiting} more with the team
                     </p>
                   ) : null}
@@ -358,8 +358,8 @@ export function PostContentDialog({
                 />
               </span>
               <span className="min-w-0">
-                <span className="block text-[14px] font-semibold">Authorised</span>
-                <span className="text-muted block text-[12.5px] leading-relaxed">
+                <span className="block text-[0.875rem] font-semibold">Authorised</span>
+                <span className="text-muted block text-[0.78125rem] leading-relaxed">
                   Turn this on once the code is live on your side.
                 </span>
               </span>

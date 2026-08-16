@@ -293,10 +293,10 @@ export function ContestDeliverables({ contestId, currency, rows, loading }: Prop
     <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5 shadow-md">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
         <div>
-          <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Deliverables
           </h2>
-          <p className="text-faint mt-1.5 max-w-prose text-[12px]">
+          <p className="text-faint mt-1.5 max-w-prose text-[0.75rem]">
             What a creator has to reach, and what reaching it pays. Anybody who reaches a target
             earns its reward, and several creators can earn the same one. Every creator who
             enters is promised these exactly as they read on the day they enter.
@@ -327,10 +327,10 @@ export function ContestDeliverables({ contestId, currency, rows, loading }: Prop
           <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
             <Target size={19} className="text-muted" aria-hidden />
           </div>
-          <h3 className="font-display text-text text-[19px] leading-tight font-bold">
+          <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
             Nothing to reach yet
           </h3>
-          <p className="text-muted max-w-prose text-[14px] leading-relaxed">
+          <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">
             A deliverable is one promise: a number the creator has to reach, and what they get
             for reaching it. Add as many as this contest needs, and every creator who enters
             carries a frozen copy of them.
@@ -415,38 +415,38 @@ function DeliverableCard({
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={cn(
-                'rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-[0.06em]',
+                'rounded-full px-2.5 py-1 text-[0.6875rem] font-semibold tracking-[0.06em]',
                 TYPE_CHIP
               )}
             >
               {TYPE_LABEL[row.type]}
             </span>
-            <span className="text-muted font-mono text-[12px]">
+            <span className="text-muted font-mono text-[0.75rem]">
               {askOf(row.type, row.targetValue, currency)}
             </span>
             {!row.isActive ? (
-              <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
+              <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
                 Retired
               </span>
             ) : null}
           </div>
 
-          <p className="text-text mt-2 text-[15px] font-semibold break-words">{row.title}</p>
+          <p className="text-text mt-2 text-[0.9375rem] font-semibold break-words">{row.title}</p>
 
           {row.detail ? (
-            <p className="text-muted mt-1 max-w-prose text-[13px] leading-relaxed break-words">
+            <p className="text-muted mt-1 max-w-prose text-[0.8125rem] leading-relaxed break-words">
               {row.detail}
             </p>
           ) : null}
         </div>
 
         <div className="shrink-0">
-          <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Reward
           </span>
           <span
             className={cn(
-              'wx-numeric font-display mt-0.5 block text-[17px] font-bold',
+              'wx-numeric font-display mt-0.5 block text-[1.0625rem] font-bold',
               unpriced ? 'text-faint' : 'text-text'
             )}
           >
@@ -495,7 +495,7 @@ function DeliverableCard({
       </div>
 
       {!row.isActive ? (
-        <p className="text-faint mt-3 max-w-prose text-[12px] leading-relaxed">
+        <p className="text-faint mt-3 max-w-prose text-[0.75rem] leading-relaxed">
           A retired deliverable is off the contest for anybody entering from now on. Every
           creator who was already promised this one still holds it, and is still paid for it.
         </p>
@@ -504,7 +504,7 @@ function DeliverableCard({
       {error ? (
         <p
           role="alert"
-          className="bg-danger-soft text-danger mt-3 rounded-xl px-3 py-2 text-[13px] font-medium"
+          className="bg-danger-soft text-danger mt-3 rounded-xl px-3 py-2 text-[0.8125rem] font-medium"
         >
           {error}
         </p>
@@ -669,10 +669,10 @@ function DeliverableDialog({
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="font-display text-text text-[21px] leading-tight font-bold">
+            <h2 className="font-display text-text text-[1.3125rem] leading-tight font-bold">
               {values.id ? 'Edit deliverable' : 'Add a deliverable'}
             </h2>
-            <p className="text-muted mt-1 text-[14px] leading-relaxed">
+            <p className="text-muted mt-1 text-[0.875rem] leading-relaxed">
               Pick what it asks for, type the target, type what reaching it pays.
             </p>
           </div>
@@ -797,7 +797,7 @@ function DeliverableDialog({
             <p
               aria-live="polite"
               className={cn(
-                'rounded-xl px-4 py-3 text-[13px] leading-relaxed',
+                'rounded-xl px-4 py-3 text-[0.8125rem] leading-relaxed',
                 summary ? 'bg-surface-2 text-text font-medium' : 'text-faint'
               )}
             >
@@ -810,7 +810,7 @@ function DeliverableDialog({
               reward on an existing deliverable are what they agreed to.
             */}
             {values.id ? (
-              <p className="text-faint max-w-prose text-[12px] leading-relaxed">
+              <p className="text-faint max-w-prose text-[0.75rem] leading-relaxed">
                 If somebody has already been promised this one, its type, target and reward
                 cannot change. Add another deliverable instead, or retire this one. Both are
                 always allowed.
@@ -820,7 +820,7 @@ function DeliverableDialog({
             {serverError ? (
               <p
                 role="alert"
-                className="bg-danger-soft text-danger rounded-xl px-3 py-2 text-[13px] font-medium"
+                className="bg-danger-soft text-danger rounded-xl px-3 py-2 text-[0.8125rem] font-medium"
               >
                 {serverError}
               </p>

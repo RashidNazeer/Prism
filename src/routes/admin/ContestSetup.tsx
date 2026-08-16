@@ -479,14 +479,19 @@ export function ContestSetup() {
           <div className="min-w-0">
             <Link
               to={`/admin/brands/${brandId}?section=contests`}
-              className="text-muted hover:text-text ease-brand inline-flex min-h-11 items-center gap-1.5 text-[13px] font-semibold transition-colors"
+              className="text-muted hover:text-text ease-brand inline-flex min-h-11 items-center gap-1.5 text-[0.8125rem] font-semibold transition-colors"
             >
               <ArrowLeft size={15} aria-hidden />
               {brand?.name ?? 'Back'}
             </Link>
-            <h1 className="font-display text-text mt-1 truncate text-[26px] leading-tight font-bold">
+            {/* An `<h2>` since 2026-08-16, not a demotion of the record. The
+                shell's top bar owns the page's one `<h1>` and names the section
+                you are in; this names the contest you have open, which is a
+                level under that. Size and weight are unchanged, so nothing
+                about it reads smaller. */}
+            <h2 className="font-display text-text mt-1 truncate text-[1.625rem] leading-tight font-bold">
               {isNew ? 'New contest' : form.name || 'Contest'}
-            </h1>
+            </h2>
           </div>
 
           <div className="flex items-center gap-2">
@@ -495,7 +500,7 @@ export function ContestSetup() {
             <p
               role="status"
               aria-live="polite"
-              className="text-success text-[13px] font-semibold"
+              className="text-success text-[0.8125rem] font-semibold"
             >
               {saved ? (
                 <span className="inline-flex items-center gap-1.5">
@@ -513,10 +518,10 @@ export function ContestSetup() {
 
         {contestFailed && !isNew ? (
           <div className="border-line bg-surface-1 flex flex-col items-start gap-3 rounded-xl border p-8 shadow-md">
-            <h2 className="font-display text-text text-[21px] leading-tight font-bold">
+            <h2 className="font-display text-text text-[1.3125rem] leading-tight font-bold">
               That contest could not be opened
             </h2>
-            <p className="text-muted max-w-prose text-[14px] leading-relaxed">
+            <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">
               It may have been deleted, or the connection dropped on the way. Nothing has been
               changed.
             </p>
@@ -526,7 +531,7 @@ export function ContestSetup() {
               </Button>
               <Link
                 to={`/admin/brands/${brandId}?section=contests`}
-                className="text-accent inline-flex min-h-11 items-center text-[13px] font-semibold hover:underline"
+                className="text-accent inline-flex min-h-11 items-center text-[0.8125rem] font-semibold hover:underline"
               >
                 Back to {brand?.name ?? 'the brand'}
               </Link>
@@ -536,15 +541,15 @@ export function ContestSetup() {
           <div className="wx-skeleton h-[420px] rounded-xl" />
         ) : showGone ? (
           <div className="border-line bg-surface-1 flex flex-col items-start gap-3 rounded-xl border p-8 shadow-md">
-            <h2 className="font-display text-text text-[21px] leading-tight font-bold">
+            <h2 className="font-display text-text text-[1.3125rem] leading-tight font-bold">
               There is no contest here any more
             </h2>
-            <p className="text-muted max-w-prose text-[14px] leading-relaxed">
+            <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">
               It has been deleted, or it belongs to another brand.
             </p>
             <Link
               to={`/admin/brands/${brandId}?section=contests`}
-              className="text-accent inline-flex min-h-11 items-center text-[13px] font-semibold hover:underline"
+              className="text-accent inline-flex min-h-11 items-center text-[0.8125rem] font-semibold hover:underline"
             >
               Back to {brand?.name ?? 'the brand'}
             </Link>
@@ -560,7 +565,7 @@ export function ContestSetup() {
               {formError ? (
                 <p
                   role="alert"
-                  className="bg-danger-soft text-danger rounded-xl px-4 py-3 text-[13px] font-medium"
+                  className="bg-danger-soft text-danger rounded-xl px-4 py-3 text-[0.8125rem] font-medium"
                 >
                   {formError}
                 </p>
@@ -709,7 +714,7 @@ export function ContestSetup() {
 
                 {/* The echo is the entire justification for the three control
                   design in rule L6, so it has to speak when the zone changes. */}
-                <p className="text-muted text-[13px]" aria-live="polite">
+                <p className="text-muted text-[0.8125rem]" aria-live="polite">
                   {instant ? (
                     <>
                       A creator reads this as{' '}
@@ -765,7 +770,7 @@ export function ContestSetup() {
                     )}
                   </Field>
                 </div>
-                <p className="text-muted text-[13px]">
+                <p className="text-muted text-[0.8125rem]">
                   Changing this later approves nobody who is waiting, and removes nobody already
                   in.
                 </p>
@@ -833,7 +838,7 @@ export function ContestSetup() {
                     </Select>
                   )}
                 </Field>
-                <p className="text-muted text-[13px]">
+                <p className="text-muted text-[0.8125rem]">
                   Switching a contest off closes the door, never the work. Anybody already in
                   carries on filming and still gets paid.
                 </p>
@@ -874,7 +879,7 @@ export function ContestSetup() {
                 />
               </>
             ) : (
-              <p className="text-faint max-w-prose text-[12px] leading-relaxed">
+              <p className="text-faint max-w-prose text-[0.75rem] leading-relaxed">
                 Deliverables, products and barred creators all hang off this contest, so they
                 open the moment it exists. Press Create contest and they appear here, on this
                 same screen.
@@ -963,7 +968,7 @@ function CloseContest({
 
   if (cancelledAt) {
     return (
-      <p className="text-muted max-w-prose text-[13px] leading-relaxed">
+      <p className="text-muted max-w-prose text-[0.8125rem] leading-relaxed">
         This contest was cancelled. Nothing more can be entered, claimed or confirmed on it.
       </p>
     );
@@ -971,7 +976,7 @@ function CloseContest({
 
   if (settledAt) {
     return (
-      <p className="text-muted max-w-prose text-[13px] leading-relaxed">
+      <p className="text-muted max-w-prose text-[0.8125rem] leading-relaxed">
         This contest is closed. Rewards already earned can still be paid from{' '}
         <Link to="/admin/contests/rewards" className="text-accent font-semibold hover:underline">
           Contest rewards
@@ -1010,13 +1015,13 @@ function CloseContest({
 
   return (
     <div className="border-line-strong bg-surface-2 rounded-xl border p-4">
-      <p className="text-text max-w-prose text-[13px] leading-relaxed font-medium">
+      <p className="text-text max-w-prose text-[0.8125rem] leading-relaxed font-medium">
         Close this contest? Nobody can enter it, claim on it or have figures confirmed on it
         again. Everybody in it is told on their own timeline.
       </p>
 
       {owed.data && owed.data.count > 0 ? (
-        <p className="bg-stage-due-soft text-stage-due mt-3 rounded-xl px-3.5 py-2.5 text-[13px] leading-relaxed font-medium">
+        <p className="bg-stage-due-soft text-stage-due mt-3 rounded-xl px-3.5 py-2.5 text-[0.8125rem] leading-relaxed font-medium">
           {money(owed.data.amount, currency)} is still owed across {owed.data.count} reward
           {owed.data.count === 1 ? '' : 's'}. Closing does not cancel it, and you can still pay it
           from Contest rewards afterwards.
@@ -1043,7 +1048,7 @@ function CloseContest({
       </div>
 
       {error ? (
-        <p role="alert" className="text-danger mt-2 text-[12px]">
+        <p role="alert" className="text-danger mt-2 text-[0.75rem]">
           {error}
         </p>
       ) : null}
@@ -1120,13 +1125,13 @@ function DeleteContest({
 
   return (
     <div className="border-danger/40 bg-danger-soft rounded-xl border p-4">
-      <p className="text-danger max-w-prose text-[13px] leading-relaxed font-medium">
+      <p className="text-danger max-w-prose text-[0.8125rem] leading-relaxed font-medium">
         Delete this contest? It goes for good, along with its deliverables and its budget. The
         activity log keeps a record of what it was. Nobody can be in it: if anybody is waiting
         or approved, settle or decide them first.
       </p>
       {error ? (
-        <p role="alert" className="text-danger mt-2 text-[12px]">
+        <p role="alert" className="text-danger mt-2 text-[0.75rem]">
           {error}
         </p>
       ) : null}
@@ -1162,11 +1167,11 @@ function Card({
   return (
     <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5 shadow-md">
       <div>
-        <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+        <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           {title}
         </h2>
         {note ? (
-          <p className={cn('text-faint mt-1.5 max-w-prose text-[12px]')}>{note}</p>
+          <p className={cn('text-faint mt-1.5 max-w-prose text-[0.75rem]')}>{note}</p>
         ) : null}
       </div>
       {children}

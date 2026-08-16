@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router';
 import { ChevronLeft, ChevronRight, Search, Tag, Users } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Field';
+import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { cn } from '@/lib/utils';
 import { money } from '@/lib/admin/useBrands';
 import {
@@ -104,60 +105,37 @@ export function AllOffers() {
 
   return (
     <>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h1 className="text-[clamp(1.4rem,3.5vw,1.9rem)] font-extrabold">Offers</h1>
-        <p className="text-muted text-[14px]">Every deal on the table, across every brand.</p>
-      </div>
+      {/*
+        NO TITLE ROW AND NO DESCRIPTION ROW. The top bar carries the section name
+        as the page's h1 now, and Rashid asked on 2026-08-16 for both of these to
+        go: they spent the top of every screen repeating the lit menu item. The
+        controls are row one, in the shared `FilterBar` so this screen cannot
+        drift from the shape he approved.
+      */}
+      <FilterBar>
+        <FilterTabs label="Filter offers">
+          {STATUS_TABS.map((t) => (
+            <FilterTab
+              key={t.value}
+              active={filters.status === t.value}
+              // "All" has no count: nothing here totals every offer, and a
+              // number invented for the sake of symmetry would be wrong.
+              count={
+                t.value === 'active'
+                  ? counts?.active
+                  : t.value === 'inactive'
+                    ? counts?.inactive
+                    : undefined
+              }
+              onClick={() => setFilters({ status: t.value })}
+            >
+              {t.label}
+            </FilterTab>
+          ))}
+        </FilterTabs>
 
-      {/* ------------------------------------------------------------ tabs -- */}
-      <div className="-mx-4 mt-5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-        <div
-          role="tablist"
-          aria-label="Filter offers"
-          className="border-line bg-surface-1 inline-flex min-w-max rounded-xl border p-1"
-        >
-          {STATUS_TABS.map((t) => {
-            const n =
-              t.value === 'active'
-                ? counts?.active
-                : t.value === 'inactive'
-                  ? counts?.inactive
-                  : undefined;
-            return (
-              <button
-                key={t.value}
-                role="tab"
-                type="button"
-                aria-selected={filters.status === t.value}
-                onClick={() => setFilters({ status: t.value })}
-                className={cn(
-                  'shrink-0 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors duration-200 sm:px-3.5',
-                  filters.status === t.value
-                    ? 'bg-accent text-on-accent'
-                    : 'text-muted hover:text-accent'
-                )}
-              >
-                {t.label}
-                {n !== undefined && n > 0 ? (
-                  <span
-                    className={cn(
-                      'wx-numeric ml-1.5 text-[12px]',
-                      filters.status === t.value ? 'text-on-accent/80' : 'text-faint'
-                    )}
-                  >
-                    {n}
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* --------------------------------------------------------- filters -- */}
-      <div className="mt-3 flex flex-wrap items-center gap-2.5 sm:gap-3">
         <form
-          className="relative min-w-0 flex-1 basis-52"
+          className="relative min-w-0 flex-1 basis-48"
           onSubmit={(e) => {
             e.preventDefault();
             setFilters({ search: searchDraft });
@@ -166,7 +144,7 @@ export function AllOffers() {
           <Search
             size={15}
             aria-hidden
-            className="text-faint pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
+            className="text-faint pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
           />
           <input
             type="search"
@@ -175,19 +153,22 @@ export function AllOffers() {
             onChange={(e) => setSearchDraft(e.target.value)}
             placeholder="Search offers"
             aria-label="Search offers by title"
-            className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[13px] focus:outline-none"
+            className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-10 w-full rounded-md border pr-3 pl-9 text-[0.875rem] focus:outline-none"
           />
         </form>
 
         <label className="sr-only" htmlFor="brand-filter">
           Filter by brand
         </label>
+        {/* Width is capped as well as floored: brand names come from the
+            database, and a select sized to its longest option would push this
+            row wider than a phone the day somebody registers a long one. */}
         <Select
           id="brand-filter"
           name="brand"
           value={filters.brandId}
           onChange={(e) => setFilters({ brandId: e.target.value })}
-          className="h-9 basis-44 text-[13px]"
+          className="h-10 w-auto max-w-[14rem] min-w-[9rem] shrink-0 rounded-md text-[0.875rem]"
         >
           <option value="">All brands</option>
           {(brands ?? []).map((b) => (
@@ -205,7 +186,7 @@ export function AllOffers() {
           name="kind"
           value={filters.kind}
           onChange={(e) => setFilters({ kind: e.target.value as OfferKindFilter })}
-          className="h-9 basis-44 text-[13px]"
+          className="h-10 w-auto min-w-[10.5rem] shrink-0 rounded-md text-[0.875rem]"
         >
           <option value="all">Any type</option>
           <option value="application">Needs applying for</option>
@@ -220,13 +201,13 @@ export function AllOffers() {
           name="sort"
           value={filters.sort}
           onChange={(e) => setFilters({ sort: e.target.value as AllOffersFilters['sort'] })}
-          className="h-9 basis-40 text-[13px]"
+          className="h-10 w-auto min-w-[9.5rem] shrink-0 rounded-md text-[0.875rem]"
         >
           <option value="newest">Newest first</option>
           <option value="oldest">Oldest first</option>
           <option value="reward">Highest paying</option>
         </Select>
-      </div>
+      </FilterBar>
 
       {/* ------------------------------------------------------------ list -- */}
       <div
@@ -244,7 +225,7 @@ export function AllOffers() {
         ) : isError ? (
           <div className="border-line bg-surface-1 rounded-xl border px-6 py-14 text-center shadow-md">
             <p className="font-semibold">That list would not load</p>
-            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
@@ -252,7 +233,7 @@ export function AllOffers() {
           <div className="border-line bg-surface-1 rounded-xl border px-6 py-16 text-center shadow-md">
             <Tag size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">No offers match that</p>
-            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               Offers are created inside a brand hub. Try a different search, brand or status.
             </p>
           </div>
@@ -274,7 +255,7 @@ export function AllOffers() {
       {/* ------------------------------------------------------ pagination -- */}
       {total > ALL_OFFERS_PAGE_SIZE ? (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="wx-numeric text-muted text-[13px]">
+          <p className="wx-numeric text-muted text-[0.8125rem]">
             {(filters.page - 1) * ALL_OFFERS_PAGE_SIZE + 1} to{' '}
             {Math.min(filters.page * ALL_OFFERS_PAGE_SIZE, total)} of {total}
           </p>
@@ -288,7 +269,7 @@ export function AllOffers() {
               <ChevronLeft size={15} aria-hidden />
               Previous
             </Button>
-            <span className="wx-numeric text-muted px-1 font-mono text-[12px]">
+            <span className="wx-numeric text-muted px-1 font-mono text-[0.75rem]">
               {filters.page} / {pages}
             </span>
             <Button
@@ -329,23 +310,23 @@ function OfferRow({
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-semibold break-words">{offer.title}</p>
             {offer.badge_title ? (
-              <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
+              <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
                 {offer.badge_title}
               </span>
             ) : null}
             {offer.status === 'inactive' ? (
-              <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
+              <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
                 Switched off
               </span>
             ) : null}
             {offer.brand && !offer.brand.is_active ? (
-              <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
+              <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
                 Brand retired
               </span>
             ) : null}
           </div>
 
-          <p className="text-muted mt-1 text-[14px]">
+          <p className="text-muted mt-1 text-[0.875rem]">
             {offer.brand ? (
               <Link
                 to={`/admin/brands/${offer.brand.id}`}
@@ -361,16 +342,16 @@ function OfferRow({
 
         {/* The deal. */}
         <div className="shrink-0">
-          <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             The deal
           </span>
           {hasTerms ? (
-            <span className="wx-numeric mt-1 block text-[16px] font-bold">
+            <span className="wx-numeric mt-1 block text-[1rem] font-bold">
               {offer.video_count} {offer.video_count === 1 ? 'video' : 'videos'} for{' '}
               <span className="text-accent">{money(offer.reward_amount, offer.currency)}</span>
             </span>
           ) : (
-            <span className="text-muted mt-1 block text-[14px]">No fixed terms</span>
+            <span className="text-muted mt-1 block text-[0.875rem]">No fixed terms</span>
           )}
         </div>
 
@@ -384,57 +365,57 @@ function OfferRow({
           the flag off does not send six creators home.
         */}
         <div className="shrink-0">
-          <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Creators
           </span>
           {on > 0 || waiting > 0 ? (
             <span className="mt-1 flex items-center gap-3">
-              <span className="font-display inline-flex items-center gap-1.5 text-[16px] font-semibold">
+              <span className="font-display inline-flex items-center gap-1.5 text-[1rem] font-semibold">
                 <Users size={14} aria-hidden className="text-faint" />
                 <span className="wx-numeric">{on}</span>
               </span>
               {waiting > 0 ? (
                 <Link
                   to={`/admin/offers/requests?brand=${offer.brand_id}`}
-                  className="bg-stage-due-soft text-stage-due inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-medium transition-opacity hover:opacity-80"
+                  className="bg-stage-due-soft text-stage-due inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.75rem] font-medium transition-opacity hover:opacity-80"
                 >
                   <span className="wx-numeric">{waiting}</span> waiting
                 </Link>
               ) : null}
               {!offer.needs_application ? (
-                <span className="text-faint text-[12px]">plus anyone else</span>
+                <span className="text-faint text-[0.75rem]">plus anyone else</span>
               ) : null}
             </span>
           ) : offer.needs_application ? (
-            <span className="text-muted mt-1 block text-[14px]">Nobody yet</span>
+            <span className="text-muted mt-1 block text-[0.875rem]">Nobody yet</span>
           ) : (
-            <span className="text-stage-paid mt-1 block text-[14px]">Open to everyone</span>
+            <span className="text-stage-paid mt-1 block text-[0.875rem]">Open to everyone</span>
           )}
         </div>
 
         {/* What has actually been filmed against it. Same grouped read shape:
             one query for the whole page, never one per row. */}
         <div className="shrink-0">
-          <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Videos in
           </span>
           {content ? (
             <span className="mt-1 flex items-center gap-3">
-              <span className="font-display text-[16px] font-semibold">
+              <span className="font-display text-[1rem] font-semibold">
                 <span className="text-stage-paid wx-numeric">{content.approved}</span>
                 <span className="text-faint"> approved</span>
               </span>
               {content.submitted > 0 ? (
                 <Link
                   to={`/admin/content?tab=submitted`}
-                  className="bg-stage-live-soft text-stage-live inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-medium transition-opacity hover:opacity-80"
+                  className="bg-stage-live-soft text-stage-live inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.75rem] font-medium transition-opacity hover:opacity-80"
                 >
                   <span className="wx-numeric">{content.submitted}</span> to watch
                 </Link>
               ) : null}
             </span>
           ) : (
-            <span className="text-muted mt-1 block text-[14px]">Nothing yet</span>
+            <span className="text-muted mt-1 block text-[0.875rem]">Nothing yet</span>
           )}
         </div>
       </div>

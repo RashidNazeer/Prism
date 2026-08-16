@@ -103,10 +103,10 @@ export function OfferReviewDialog({
         </div>
 
         <div className="border-line bg-surface-2 mt-4 rounded-xl border px-4 py-3.5">
-          <p className="text-[14px] font-semibold">{row.offer?.title ?? 'That offer'}</p>
-          <p className="text-muted mt-0.5 text-[13px]">{row.brand?.name}</p>
-          <p className="border-line mt-3 border-t pt-3 text-[14px]">
-            <span className="text-faint font-mono text-[10px] tracking-[0.14em] uppercase">
+          <p className="text-[0.875rem] font-semibold">{row.offer?.title ?? 'That offer'}</p>
+          <p className="text-muted mt-0.5 text-[0.8125rem]">{row.brand?.name}</p>
+          <p className="border-line mt-3 border-t pt-3 text-[0.875rem]">
+            <span className="text-faint font-mono text-[0.625rem] tracking-[0.14em] uppercase">
               They are asking for
             </span>
             {hasTerms ? (
@@ -122,7 +122,7 @@ export function OfferReviewDialog({
             )}
           </p>
           {row.note ? (
-            <p className="border-line text-muted mt-3 border-t pt-3 text-[13px] leading-relaxed">
+            <p className="border-line text-muted mt-3 border-t pt-3 text-[0.8125rem] leading-relaxed">
               {row.note}
             </p>
           ) : null}
@@ -134,7 +134,7 @@ export function OfferReviewDialog({
             list. */}
         {decision === 'approved' && row.budget ? <BudgetImpact row={row} /> : null}
 
-        <p className="text-muted mt-4 text-[14px] leading-relaxed">
+        <p className="text-muted mt-4 text-[0.875rem] leading-relaxed">
           {decision === 'approved'
             ? 'They are told straight away, and the offer shows as theirs.'
             : 'Nothing is deleted. They can ask again, so a note here saves them guessing.'}
@@ -183,7 +183,7 @@ export function OfferReviewDialog({
         </div>
 
         {review.error ? (
-          <p role="alert" className="text-danger mt-4 text-[13px]">
+          <p role="alert" className="text-danger mt-4 text-[0.8125rem]">
             {(review.error as Error).message}
           </p>
         ) : null}
@@ -241,7 +241,7 @@ function BudgetImpact({ row }: { row: OfferQueueRow }) {
 
   if (allocated === null || !Number.isFinite(allocated)) {
     return (
-      <p className="border-line bg-surface-2 text-muted mt-4 rounded-xl border px-4 py-3 text-[13px] leading-relaxed">
+      <p className="border-line bg-surface-2 text-muted mt-4 rounded-xl border px-4 py-3 text-[0.8125rem] leading-relaxed">
         {row.brand?.name} has no budget set, so there is nothing to count this against.
       </p>
     );
@@ -258,14 +258,14 @@ function BudgetImpact({ row }: { row: OfferQueueRow }) {
         over ? 'border-danger/40 bg-danger-soft' : 'border-line bg-surface-2'
       )}
     >
-      <p className="text-faint font-mono text-[10px] tracking-[0.14em] uppercase">
+      <p className="text-faint font-mono text-[0.625rem] tracking-[0.14em] uppercase">
         {row.brand?.name} budget
       </p>
-      <p className="wx-numeric mt-1 text-[14px]">
+      <p className="wx-numeric mt-1 text-[0.875rem]">
         <span className="font-semibold">{money(after, currency)}</span> of{' '}
         {money(allocated, currency)} committed after this
       </p>
-      <p className={cn('mt-1 text-[13px]', over ? 'text-danger font-medium' : 'text-muted')}>
+      <p className={cn('mt-1 text-[0.8125rem]', over ? 'text-danger font-medium' : 'text-muted')}>
         {over ? (
           <>Over budget by {money(-left, currency)}. You can still approve it.</>
         ) : (

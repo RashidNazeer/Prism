@@ -49,12 +49,12 @@ export function JobProgressBar({
     <div className={className}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
         {compact ? null : (
-          <span className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <span className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Content
           </span>
         )}
         {denominator ? (
-          <span className="font-display text-[13px] font-semibold">
+          <span className="font-display text-[0.8125rem] font-semibold">
             <span className={cn(progress.done ? 'text-stage-paid' : 'text-text')}>
               {approved}
             </span>
@@ -85,11 +85,11 @@ export function JobProgressBar({
       ) : null}
 
       <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-        <p className="text-muted text-[12.5px]">{progressSentence(progress)}</p>
+        <p className="text-muted text-[0.78125rem]">{progressSentence(progress)}</p>
         {showAction ? (
           <Link
             to={addVideoHref!}
-            className="border-line-interactive text-text hover:border-accent hover:text-accent inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-[12.5px] font-medium transition-colors"
+            className="border-line-interactive text-text hover:border-accent hover:text-accent inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-[0.78125rem] font-medium transition-colors"
           >
             <Video size={13} aria-hidden />
             Add a video

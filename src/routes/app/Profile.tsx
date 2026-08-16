@@ -63,10 +63,10 @@ export function Profile() {
 
   return (
     <>
-      <h1 className="font-display text-[clamp(26px,4.4vw,40px)] leading-[1.05] font-semibold tracking-[-0.02em]">
+      <h1 className="font-display text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
         My profile
       </h1>
-      <p className="text-muted mt-2 max-w-2xl text-[15px] leading-relaxed">
+      <p className="text-muted mt-2 max-w-2xl text-[0.9375rem] leading-relaxed">
         Your account details. Only your name is yours to change; the rest is set by the Wurx
         team.
       </p>
@@ -81,7 +81,7 @@ export function Profile() {
           {/* ------------------------------------------------------- name -- */}
           <section className="border-line bg-surface-1 rounded-xl border p-6 shadow-md">
             <h2 className="text-lg font-bold">Your name</h2>
-            <p className="text-muted mt-1.5 text-[14px] leading-relaxed">
+            <p className="text-muted mt-1.5 text-[0.875rem] leading-relaxed">
               What the Wurx team and your brand hubs call you.
             </p>
 
@@ -115,7 +115,7 @@ export function Profile() {
                 {saved ? (
                   <span
                     role="status"
-                    className="text-success inline-flex items-center gap-1.5 text-[13px]"
+                    className="text-success inline-flex items-center gap-1.5 text-[0.8125rem]"
                   >
                     <Check size={15} aria-hidden />
                     Saved
@@ -177,7 +177,7 @@ export function Profile() {
                   })}
                 />
               </dl>
-              <p className="border-line text-faint mt-5 border-t pt-4 text-[13px] leading-relaxed">
+              <p className="border-line text-faint mt-5 border-t pt-4 text-[0.8125rem] leading-relaxed">
                 Something wrong here? Tell the Wurx team and they will correct it. It cannot be
                 edited once an application has been reviewed.
               </p>

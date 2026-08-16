@@ -141,8 +141,21 @@ asking. On prod, ask twice.
   (ids, client, budget, counts) goes in its own **Overview** tab rather than
   stacked above the work. On a record with tabs the default tab is the job, not
   the summary. Never show slugs, ids or routes to an admin. The main area is
-  left aligned against the sidebar with a max width, never centred, or zooming
-  out leaves a gap that makes the page look broken.
+  left aligned against the sidebar and **fills the full width**, never centred
+  and no max-width cap, or zooming out leaves a gap that makes the page look
+  broken.
+- **Screen chrome, fixed on 2026-08-16 and not per-screen taste.** The top bar
+  names the section, underlined, and that is the page's only `<h1>`; it comes
+  from the sidebar's own labels via `sectionTitleFor`. A screen does **not**
+  draw its own title row and does **not** draw a description of itself. Row one
+  is the work: tabs, search and filters on one line inside `<FilterBar>`, with
+  at most one primary action pinned right. A record screen keeps the record's
+  name, as an `<h2>`. Corners are slight: `rounded-md` on controls, `rounded-xl`
+  on cards, `rounded-full` only on icon buttons and status pills.
+- **Every type size is a `rem`, never a `px`.** One root `font-size` set by
+  `src/lib/ui-scale.ts` scales the whole signed-in app, and the person using it
+  can change it from the top bar. A hardcoded `text-[13px]` opts out of that and
+  is a bug.
 - **Responsive on every device, not just mobile first.** Wurx targets US and UK
   TikTok Shop creators, who are mostly on phones and tablets, while the team
   works on laptops and desktops. Every screen, **including the admin panel**, is

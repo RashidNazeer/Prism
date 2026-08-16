@@ -158,6 +158,30 @@
     scroll-behavior: smooth;
   }
 
+  /*
+    HOW BIG THE SIGNED-IN PRODUCT IS. See `src/lib/ui-scale.ts` for the whole
+    reasoning; the short version is that every size in the app is a `rem`, so
+    this one declaration moves type, padding, gaps and radii together.
+
+    The attribute is only present while the app shell is mounted, so the public
+    landing page keeps the browser's 16px and the proportions it was drawn at.
+
+    Media queries are unaffected at every setting: `rem` inside a media query is
+    measured against the browser's initial 16px, never against this.
+  */
+  html[data-ui-scale='compact'] {
+    font-size: 13.6px;
+  }
+  html[data-ui-scale='snug'] {
+    font-size: 14.4px;
+  }
+  html[data-ui-scale='default'] {
+    font-size: 15px;
+  }
+  html[data-ui-scale='large'] {
+    font-size: 16.5px;
+  }
+
   body {
     background-color: var(--wx-bg);
     color: var(--wx-text);
@@ -340,6 +364,29 @@
     transform: translateY(-2px);
     border-color: var(--wx-border-strong);
     box-shadow: var(--wx-glass-rim), var(--wx-glass-glow);
+  }
+}
+
+/*
+  A container that still scrolls but never draws a bar.
+
+  Rashid, 2026-08-16, about the menu: "Remove the scroller it's too boring." The
+  bar is chrome on a rail that is 240px wide and it was drawing a permanent grey
+  stripe down the edge of the brand's own navigation.
+
+  SCROLLING ITSELF IS UNTOUCHED: wheel, trackpad, touch, keyboard and
+  `scrollIntoView` all behave exactly as before, so a short laptop screen can
+  still reach the bottom of the menu. Only the painted bar goes. `-ms-overflow`
+  covers the Edge legacy engine, the pseudo-element covers WebKit and Blink, and
+  `scrollbar-width` covers Firefox.
+*/
+@utility wx-scroll-quiet {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    width: 0;
+    height: 0;
   }
 }
 

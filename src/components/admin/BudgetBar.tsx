@@ -24,7 +24,7 @@ export function BudgetBar({
 
   if (allocated === null) {
     return (
-      <p className={cn('text-faint', size === 'lg' ? 'text-[14px]' : 'text-[12px]')}>
+      <p className={cn('text-faint', size === 'lg' ? 'text-[0.875rem]' : 'text-[0.75rem]')}>
         No budget set for this brand yet.
       </p>
     );
@@ -56,7 +56,7 @@ export function BudgetBar({
       <p
         className={cn(
           'mt-1.5 flex flex-wrap items-baseline gap-x-2',
-          size === 'lg' ? 'text-[13px]' : 'text-[12px]'
+          size === 'lg' ? 'text-[0.8125rem]' : 'text-[0.75rem]'
         )}
       >
         <span className={cn('wx-numeric font-semibold', over ? 'text-danger' : 'text-muted')}>

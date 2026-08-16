@@ -365,7 +365,7 @@ function ViewSwitch({ view, onChange }: { view: View; onChange: (v: View) => voi
           aria-selected={view === v.key}
           onClick={() => onChange(v.key)}
           className={cn(
-            'rounded-[9px] px-[11px] py-1.5 text-[13px] font-medium transition-colors duration-200',
+            'rounded-[9px] px-[11px] py-1.5 text-[0.8125rem] font-medium transition-colors duration-200',
             view === v.key ? 'bg-text text-inverse' : 'text-muted hover:text-text'
           )}
         >
@@ -391,7 +391,7 @@ function Header({
   return (
     <div className="flex flex-wrap items-end justify-between gap-[14px] px-0.5 py-1">
       <div className="flex flex-col gap-1.5">
-        <p className="text-muted flex items-center gap-2 text-[11px] font-semibold tracking-[0.14em] uppercase">
+        <p className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           {/* The one thing on the page allowed to move forever. It is telling
               the truth: the websocket is open and this screen is current. */}
           <span aria-hidden className="wx-blink bg-stage-paid size-1.5 rounded-full" />
@@ -401,19 +401,19 @@ function Header({
           </span>
           WurxMediaHub
         </p>
-        <h1 className="font-display text-[clamp(26px,4.4vw,40px)] leading-[1.05] font-semibold tracking-[-0.02em]">
+        <h1 className="font-display text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
           {greet(name)}
         </h1>
       </div>
 
       <div className="flex items-center gap-2">
         {tier ? (
-          <span className="border-line bg-surface-1 rounded-full border px-3 py-1.5 text-[12px] font-semibold tracking-[0.02em] capitalize">
+          <span className="border-line bg-surface-1 rounded-full border px-3 py-1.5 text-[0.75rem] font-semibold tracking-[0.02em] capitalize">
             {tier} creator
           </span>
         ) : null}
         {handle ? (
-          <span className="border-line bg-surface-1 text-muted rounded-full border px-3 py-1.5 text-[12px]">
+          <span className="border-line bg-surface-1 text-muted rounded-full border px-3 py-1.5 text-[0.75rem]">
             @{handle}
           </span>
         ) : null}
@@ -475,20 +475,20 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
     <section className="border-line bg-surface-1 flex flex-col gap-5 rounded-xl border p-[clamp(18px,2.4vw,26px)] shadow-md">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Agreed with you so far
           </p>
           <p className="flex flex-wrap items-baseline gap-2.5">
             <span
               key={`total-${moved.key}`}
               className={cn(
-                'font-display text-[clamp(38px,7vw,58px)] leading-none font-semibold tracking-[-0.03em]',
+                'font-display text-[clamp(2.375rem,7vw,3.625rem)] leading-none font-semibold tracking-[-0.03em]',
                 moved.ids.size > 0 && 'wx-bump'
               )}
             >
               {fmt(total)}
             </span>
-            <span className="text-muted text-[13px]">
+            <span className="text-muted text-[0.8125rem]">
               across {summary.approved} {summary.approved === 1 ? 'job' : 'jobs'}
             </span>
           </p>
@@ -498,13 +498,13 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
             onto its own line on a phone, a right-aligned figure floats in the
             middle of nowhere. */}
         <div className="flex flex-col gap-0.5 sm:text-right">
-          <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             In your account
           </p>
           <span
             key={`paid-${moved.key}`}
             className={cn(
-              'font-display text-stage-paid text-[clamp(24px,3.4vw,30px)] font-semibold',
+              'font-display text-stage-paid text-[clamp(1.5rem,3.4vw,1.875rem)] font-semibold',
               moved.ids.size > 0 && 'wx-bump'
             )}
           >
@@ -539,17 +539,17 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
               key={cell.key}
               className={cn('flex flex-col gap-1.5 rounded-lg p-3.5', cell.tone.soft)}
             >
-              <dt className={cn('text-[12px] font-semibold', cell.tone.text)}>{cell.label}</dt>
+              <dt className={cn('text-[0.75rem] font-semibold', cell.tone.text)}>{cell.label}</dt>
               <dd
                 key={`${cell.key}-${moved.key}`}
                 className={cn(
-                  'font-display text-[23px] font-semibold',
+                  'font-display text-[1.4375rem] font-semibold',
                   moved.ids.size > 0 && 'wx-bump'
                 )}
               >
                 {fmt(cell.value)}
               </dd>
-              <dd className="text-muted text-[12px]">{cell.sub}</dd>
+              <dd className="text-muted text-[0.75rem]">{cell.sub}</dd>
             </div>
           ))}
         </dl>
@@ -574,10 +574,10 @@ function Work({
   return (
     <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-xl border p-5 shadow-md">
       <div className="flex items-baseline justify-between gap-2.5">
-        <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+        <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Work you took
         </h2>
-        <p className="text-muted text-[13px]">
+        <p className="text-muted text-[0.8125rem]">
           {rows.length} {rows.length === 1 ? 'job' : 'jobs'}
         </p>
       </div>
@@ -599,14 +599,14 @@ function Work({
             >
               <div className="flex items-start gap-3">
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <p className="text-muted truncate text-[11px] font-semibold tracking-[0.08em] uppercase">
+                  <p className="text-muted truncate text-[0.6875rem] font-semibold tracking-[0.08em] uppercase">
                     {row.brand?.name ?? 'A brand'}
                   </p>
-                  <p className="text-[15.5px] leading-[1.25] font-semibold break-words">
+                  <p className="text-[0.96875rem] leading-[1.25] font-semibold break-words">
                     {row.offer?.title ?? 'An offer'}
                   </p>
                 </div>
-                <p className="font-display shrink-0 text-[16px] font-semibold whitespace-nowrap">
+                <p className="font-display shrink-0 text-[1rem] font-semibold whitespace-nowrap">
                   {row.committed_amount === null
                     ? 'To confirm'
                     : money(row.committed_amount, row.currency)}
@@ -631,14 +631,14 @@ function Work({
               </ol>
 
               <p className="flex flex-wrap items-center gap-2">
-                <span className={cn('text-[12.5px] font-semibold', tone.text)}>
+                <span className={cn('text-[0.78125rem] font-semibold', tone.text)}>
                   {at + 1}. {STAGE_META[stage].label}
                 </span>
-                <span className="text-muted text-[12.5px]">
+                <span className="text-muted text-[0.78125rem]">
                   {STAGE_META[stage].creatorHint}
                 </span>
                 {justMoved ? (
-                  <span className="text-stage-live text-[11px] font-semibold">just now</span>
+                  <span className="text-stage-live text-[0.6875rem] font-semibold">just now</span>
                 ) : null}
               </p>
 
@@ -663,15 +663,15 @@ function Work({
           {pending.map((row) => (
             <div key={row.id} className="bg-surface-2 flex flex-col gap-1 rounded-xl p-3">
               <p className="flex flex-wrap items-center gap-2">
-                <span className="text-muted text-[11px] font-bold tracking-[0.08em] uppercase">
+                <span className="text-muted text-[0.6875rem] font-bold tracking-[0.08em] uppercase">
                   {row.status === 'pending' ? 'Waiting on a decision' : 'Not accepted'}
                 </span>
-                <span className="text-[14px] font-semibold">
+                <span className="text-[0.875rem] font-semibold">
                   {row.offer?.title ?? 'An offer'}
                 </span>
-                <span className="text-muted text-[13px]">{row.brand?.name}</span>
+                <span className="text-muted text-[0.8125rem]">{row.brand?.name}</span>
               </p>
-              <p className="text-muted text-[12.5px] leading-[1.4]">
+              <p className="text-muted text-[0.78125rem] leading-[1.4]">
                 {row.status === 'pending'
                   ? `Asked on ${dayMonth(row.created_at)}. We will tell you the moment there is an answer.`
                   : (row.decision_note ??
@@ -712,13 +712,13 @@ function Activity({
 
   return (
     <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-xl border p-5 shadow-md">
-      <h2 className="text-muted flex items-center gap-2 text-[11px] font-semibold tracking-[0.14em] uppercase">
+      <h2 className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         <span aria-hidden className="wx-blink bg-stage-paid size-1.5 rounded-full" />
         Everything that moved
       </h2>
 
       {events.length === 0 ? (
-        <p className="text-muted py-2 text-[13px] leading-relaxed">
+        <p className="text-muted py-2 text-[0.8125rem] leading-relaxed">
           Nothing has moved yet. Every step the team takes on your work lands here as it
           happens.
         </p>
@@ -749,21 +749,21 @@ function Activity({
                 )}
 
                 <div className="flex min-w-0 flex-col gap-0.5">
-                  <p className="text-[14px] leading-[1.3] font-semibold">
+                  <p className="text-[0.875rem] leading-[1.3] font-semibold">
                     {STAGE_META[event.to_stage].label}
                   </p>
-                  <p className="text-muted text-[12.5px] leading-[1.35]">
+                  <p className="text-muted text-[0.78125rem] leading-[1.35]">
                     {row?.brand?.name ? `${row.brand.name}, ` : ''}
                     {row?.offer?.title ?? 'an offer'}
                   </p>
                   {event.note ? (
-                    <p className="text-stage-live text-[12.5px] leading-[1.35]">{event.note}</p>
+                    <p className="text-stage-live text-[0.78125rem] leading-[1.35]">{event.note}</p>
                   ) : null}
                 </div>
 
                 <time
                   dateTime={event.created_at}
-                  className="text-muted pt-0.5 text-[12px] whitespace-nowrap"
+                  className="text-muted pt-0.5 text-[0.75rem] whitespace-nowrap"
                 >
                   {fresh ? 'just now' : dayMonth(event.created_at)}
                 </time>
@@ -797,10 +797,10 @@ function Counts({ summary }: { summary: WorkSummary }) {
             to={item.to}
             className="border-line bg-surface-1 hover:border-stage-live flex h-full flex-col gap-1 rounded-2xl border p-3.5 transition-colors duration-200"
           >
-            <span className="font-display text-[26px] leading-none font-semibold">
+            <span className="font-display text-[1.625rem] leading-none font-semibold">
               {item.n}
             </span>
-            <span className="text-muted text-[12.5px] leading-[1.3]">{item.label}</span>
+            <span className="text-muted text-[0.78125rem] leading-[1.3]">{item.label}</span>
           </Link>
         </li>
       ))}
@@ -892,7 +892,7 @@ function InReview({
             ) : null}
 
             <span
-              className={`relative grid size-8 place-items-center rounded-full border text-[11px] ${
+              className={`relative grid size-8 place-items-center rounded-full border text-[0.6875rem] ${
                 s.state === 'done'
                   ? 'border-accent bg-accent text-on-accent'
                   : s.state === 'now'
@@ -914,7 +914,7 @@ function InReview({
               )}
             </span>
             <span
-              className={`font-mono text-[10px] tracking-[0.12em] uppercase ${
+              className={`font-mono text-[0.625rem] tracking-[0.12em] uppercase ${
                 s.state === 'next' ? 'text-faint' : 'text-muted'
               }`}
             >
@@ -930,11 +930,11 @@ function InReview({
         transition={{ duration: 0.5, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
         className="border-line bg-surface-1 mt-10 w-full rounded-2xl border px-6 py-5 text-left shadow-sm"
       >
-        <p className="text-faint font-mono text-[10px] tracking-[0.14em] uppercase">
+        <p className="text-faint font-mono text-[0.625rem] tracking-[0.14em] uppercase">
           Under review
         </p>
         <p className="mt-2 text-lg font-bold break-all">@{handle}</p>
-        <p className="text-muted mt-1 text-[13px]">
+        <p className="text-muted mt-1 text-[0.8125rem]">
           Applied{' '}
           {new Date(appliedAt).toLocaleDateString(undefined, {
             day: 'numeric',
@@ -942,7 +942,7 @@ function InReview({
             year: 'numeric',
           })}
         </p>
-        <p className="border-line text-muted mt-4 flex items-start gap-2 border-t pt-4 text-[13px] leading-relaxed">
+        <p className="border-line text-muted mt-4 flex items-start gap-2 border-t pt-4 text-[0.8125rem] leading-relaxed">
           <Sparkles size={15} aria-hidden className="text-accent mt-0.5 shrink-0" />
           Keep this page open if you like. The moment a decision is made it changes here on its
           own, with no refresh and no email needed.
@@ -966,7 +966,7 @@ function Rejected({ note }: { note: string | null }) {
         are running, rather than the quality of your work, and it is not permanent.
       </p>
       {note ? (
-        <p className="border-line bg-surface-1 text-muted mt-6 rounded-2xl border px-5 py-4 text-left text-[14px] leading-relaxed">
+        <p className="border-line bg-surface-1 text-muted mt-6 rounded-2xl border px-5 py-4 text-left text-[0.875rem] leading-relaxed">
           {note}
         </p>
       ) : null}

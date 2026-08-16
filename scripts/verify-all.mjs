@@ -101,6 +101,16 @@ const SUITES = [
   { key: 'live', script: 'check-live.mjs', what: 'a stage moving under a creator, no reload', needs: ['service'] },
   { key: 'contests', script: 'check-contests.mjs', what: 'contests end to end, including the money', needs: ['service'] },
   { key: 'responsive', script: 'check-responsive.mjs', what: 'every screen at four widths', needs: ['admin', 'demo-creator'] },
+  /*
+   * The shell rather than the screens: rail width, the hidden scrollbar, the
+   * menu keeping its scroll position, the bar naming the section, the content
+   * filling the width, and the text-size setting.
+   *
+   * It is separate from `responsive` on purpose. Every bug it guards was one
+   * Rashid found himself, and every one of them leaves a page that lays out
+   * perfectly and scrolls nowhere, so `responsive` calls the lot of it healthy.
+   */
+  { key: 'chrome', script: 'check-chrome.mjs', what: 'the rail, the top bar, the width and the text size', needs: ['admin'] },
 ];
 
 /** Fifteen minutes each. The longest real run so far is about four. */

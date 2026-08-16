@@ -23,8 +23,9 @@ import { BrandContests } from '@/components/admin/BrandContests';
 import { BrandCreators } from '@/components/admin/BrandCreators';
 import { BrandDialog } from '@/components/admin/BrandDialog';
 import { OfferDialog } from '@/components/admin/OfferDialog';
+import { FilterBar } from '@/components/layout/FilterBar';
 import { Button, ButtonLink } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Field';
+import { Input, Select } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
 import { useManageBrand } from '@/lib/admin/useManageBrand';
 import { BudgetBar } from '@/components/admin/BudgetBar';
@@ -139,7 +140,7 @@ export function BrandHub() {
           <p className="font-semibold">
             {isError ? 'That brand would not load' : 'No such brand'}
           </p>
-          <p className="text-muted mt-2 text-[14px] leading-relaxed">
+          <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
             {(error as Error)?.message ?? 'It may have been removed. Nothing else is affected.'}
           </p>
           <ButtonLink to="/admin/brands" variant="secondary" size="sm" className="mt-5">
@@ -154,7 +155,12 @@ export function BrandHub() {
     <>
       {/* --------------------------------------------------------- header -- */}
       {/* One row: back, name, and the only action that belongs up here. The
-          slug is gone; it is plumbing, and an admin has no use for a route. */}
+          slug is gone; it is plumbing, and an admin has no use for a route.
+
+          The NAME stays, as an `<h2>` since 2026-08-16. The shell's top bar owns
+          the page's `<h1>` now and says "Brand hubs", which answers "where am
+          I". It cannot answer "which brand is open", so this row still has to,
+          and there must not be a second `<h1>` on the page saying so. */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <Link
           to="/admin/brands"
@@ -172,12 +178,12 @@ export function BrandHub() {
           />
         ) : null}
 
-        <h1 className="min-w-0 text-[clamp(1.35rem,3vw,1.75rem)] font-extrabold break-words">
+        <h2 className="min-w-0 text-[clamp(1.35rem,3vw,1.75rem)] font-extrabold break-words">
           {brand.name}
-        </h1>
+        </h2>
 
         {!brand.is_active ? (
-          <span className="bg-surface-2 text-muted rounded-full px-2.5 py-1 font-mono text-[10px] tracking-[0.12em] uppercase">
+          <span className="bg-surface-2 text-muted rounded-full px-2.5 py-1 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
             Retired
           </span>
         ) : null}
@@ -195,6 +201,16 @@ export function BrandHub() {
       </div>
 
       {/* ----------------------------------------------------------- tabs -- */}
+      {/*
+        NOT a `FilterTabs`, on purpose. These are the record's sections, not a
+        filter on the list below, and three things here cannot survive the trip:
+        the unbuilt sections are `disabled` so nobody lands on an empty page,
+        they carry a "Next"/"Later" badge saying when they arrive, and each has
+        an icon. `FilterTab` has no room for any of that. The precedent is
+        `ContestsHeader`, which keeps its own section nav as a row of its own for
+        the same reason. The filter row that DOES belong in a `FilterBar` is the
+        one inside the Offers tab, below.
+      */}
       <div className="-mx-4 mt-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         <div
           role="tablist"
@@ -215,7 +231,7 @@ export function BrandHub() {
                 className={cn(
                   // min-h-11 is 44px, the smallest thing a thumb should have to
                   // hit. These were 41px, which the contests suite caught.
-                  'flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-[14px] font-medium transition-colors duration-200',
+                  'flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-[0.875rem] font-medium transition-colors duration-200',
                   active
                     ? 'border-accent text-accent'
                     : built
@@ -226,7 +242,7 @@ export function BrandHub() {
                 <s.icon size={15} aria-hidden />
                 {s.label}
                 {'soon' in s ? (
-                  <span className="border-line text-faint rounded-full border px-1.5 py-0.5 font-mono text-[9px] tracking-[0.1em] uppercase">
+                  <span className="border-line text-faint rounded-full border px-1.5 py-0.5 font-mono text-[0.5625rem] tracking-[0.1em] uppercase">
                     {s.soon}
                   </span>
                 ) : null}
@@ -301,10 +317,10 @@ function Overview({ brand }: { brand: Brand }) {
           and the only one with a consequence. Everything below is reference. */}
       <div className="border-line bg-surface-1 rounded-xl border px-5 py-4 shadow-md">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <dt className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Budget committed to creators
           </dt>
-          <dd className="wx-numeric text-[15px] font-semibold">
+          <dd className="wx-numeric text-[0.9375rem] font-semibold">
             {money(brand.budget_used, brand.currency)} of{' '}
             {money(brand.budget_allocated, brand.currency)}
           </dd>
@@ -313,7 +329,7 @@ function Overview({ brand }: { brand: Brand }) {
           <BudgetBar brand={brand} size="lg" />
         </div>
         {budget.over ? (
-          <p className="border-line text-danger mt-3 border-t pt-3 text-[13px] leading-relaxed">
+          <p className="border-line text-danger mt-3 border-t pt-3 text-[0.8125rem] leading-relaxed">
             More has been promised than this brand was allocated. Nothing is blocked, but the
             next approval makes it worse.
           </p>
@@ -372,7 +388,7 @@ function Overview({ brand }: { brand: Brand }) {
         <Fact label="Status" value={brand.is_active ? 'Active' : 'Retired'} />
       </dl>
 
-      <p className="text-faint text-[13px] leading-relaxed">
+      <p className="text-faint text-[0.8125rem] leading-relaxed">
         Campaigns, contests and promotions land here as those parts of the hub are built.
       </p>
     </div>
@@ -422,13 +438,13 @@ function MoneyByStage({ m, showCurrency }: { m: BrandMoney; showCurrency: boolea
   return (
     <section className="border-line bg-surface-1 rounded-xl border p-5 shadow-md">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+        <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Where the committed money has got to
           {showCurrency ? ` (${m.currency})` : ''}
         </h2>
-        <p className="font-display text-[15px] font-semibold">
+        <p className="font-display text-[0.9375rem] font-semibold">
           {fmt(m.total)}
-          <span className="text-faint font-sans text-[13px] font-normal">
+          <span className="text-faint font-sans text-[0.8125rem] font-normal">
             {' '}
             across {m.jobs} {m.jobs === 1 ? 'job' : 'jobs'}
           </span>
@@ -457,10 +473,10 @@ function MoneyByStage({ m, showCurrency }: { m: BrandMoney; showCurrency: boolea
             key={c.key}
             className="border-line bg-surface-2 rounded-lg border px-3.5 py-3"
           >
-            <dt className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+            <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               {c.label}
             </dt>
-            <dd className={cn('font-display mt-1 text-[17px] font-semibold', c.text)}>
+            <dd className={cn('font-display mt-1 text-[1.0625rem] font-semibold', c.text)}>
               {fmt(c.value)}
             </dd>
           </div>
@@ -497,11 +513,11 @@ function ContentLanded({ content }: { content: BrandContent | undefined }) {
   return (
     <section className="border-line bg-surface-1 rounded-xl border p-5 shadow-md">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+        <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           What has been filmed for this brand
         </h2>
         {content && content.posted > 0 ? (
-          <p className="text-muted text-[13px]">
+          <p className="text-muted text-[0.8125rem]">
             {content.posted} {content.posted === 1 ? 'video' : 'videos'} from {content.creators}{' '}
             {content.creators === 1 ? 'creator' : 'creators'}
           </p>
@@ -509,7 +525,7 @@ function ContentLanded({ content }: { content: BrandContent | undefined }) {
       </div>
 
       {content && content.posted === 0 ? (
-        <p className="text-muted mt-3 text-[14px] leading-relaxed">
+        <p className="text-muted mt-3 text-[0.875rem] leading-relaxed">
           Nothing posted yet. Videos land here as creators send them in.
         </p>
       ) : (
@@ -519,10 +535,10 @@ function ContentLanded({ content }: { content: BrandContent | undefined }) {
               key={c.key}
               className="border-line bg-surface-2 rounded-lg border px-3.5 py-3"
             >
-              <dt className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+              <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                 {c.label}
               </dt>
-              <dd className={cn('font-display mt-1 text-[17px] font-semibold', c.text)}>
+              <dd className={cn('font-display mt-1 text-[1.0625rem] font-semibold', c.text)}>
                 {content === undefined ? '...' : c.value}
               </dd>
             </div>
@@ -546,13 +562,13 @@ function Fact({
 }) {
   return (
     <div className="border-line bg-surface-1 rounded-xl border px-5 py-4">
-      <dt className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+      <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         {label}
       </dt>
       <dd
         className={cn(
           'mt-1.5 font-semibold break-all',
-          mono && 'font-mono text-[13px]',
+          mono && 'font-mono text-[0.8125rem]',
           accent && 'wx-numeric text-accent'
         )}
       >
@@ -589,39 +605,48 @@ function Offers({
 
   return (
     <section className="mt-5">
-      {/* No heading repeating the tab you just clicked. The action goes on the
-          same line as the one line of explanation. */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-muted text-[14px] leading-relaxed">
-          What this brand pays creators for content.
-        </p>
-        <Button size="sm" onClick={onNew} className="shrink-0">
-          <Plus size={15} aria-hidden />
-          New offer
-        </Button>
-      </div>
+      {/*
+        THE EXPLANATION ROW WENT ON 2026-08-16. It read "What this brand pays
+        creators for content", above a tab labelled Offers that somebody had just
+        clicked, so it spent a line telling them what they had already chosen.
+        Rashid, plainly: "i don't want to show description of that section".
 
-      {/* Deliberately NO money up here. `check-brands.mjs` asserts this tab
-          carries none: the deal is on each card, and the brand's totals live
-          one tab across under Overview. */}
-      <div className="mt-3 flex flex-wrap items-center gap-2.5 sm:gap-3">
-        <div className="relative min-w-0 flex-1 basis-52">
+        The controls are the first thing in the tab now, in the shared
+        `FilterBar`, so this row cannot drift from the one he approved on
+        contests. `rounded-md` and `h-10` on everything inside it: slightly
+        rounded, "do not give it circle look".
+
+        Deliberately NO money in it. `check-brands.mjs` asserts this tab carries
+        none: the deal is on each card, and the brand's totals live one tab
+        across under Overview.
+      */}
+      <FilterBar
+        action={
+          <Button onClick={onNew} className="h-10 shrink-0 rounded-md text-[0.875rem]">
+            <Plus size={15} aria-hidden />
+            New offer
+          </Button>
+        }
+      >
+        <div className="relative min-w-[10rem] flex-1">
           <Search
             size={15}
             aria-hidden
-            className="text-faint pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
+            className="text-faint pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
           />
-          <input
+          <Input
             type="search"
             name="offer-search"
             defaultValue={filters.search}
             onChange={(e) => onSet({ q: e.target.value })}
             placeholder="Search this brand's offers"
             aria-label="Search this brand's offers"
-            className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[13px] focus:outline-none"
+            className="h-10 rounded-md pl-9 text-[0.875rem]"
           />
         </div>
 
+        {/* The label stays sr-only rather than becoming an aria-label, so the
+            control keeps the accessible name it already had. */}
         <label className="sr-only" htmlFor="offer-status">
           Filter by status
         </label>
@@ -630,13 +655,13 @@ function Offers({
           name="status"
           value={filters.status}
           onChange={(e) => onSet({ status: e.target.value === 'all' ? '' : e.target.value })}
-          className="h-9 basis-40 text-[13px]"
+          className="h-10 w-auto min-w-[10rem] shrink-0 rounded-md text-[0.875rem]"
         >
           <option value="all">Any status</option>
           <option value="active">Live</option>
           <option value="inactive">Switched off</option>
         </Select>
-      </div>
+      </FilterBar>
 
       {loading ? (
         <ul className="mt-4 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
@@ -650,7 +675,7 @@ function Offers({
           <p className="mt-4 font-semibold">
             {filtered ? 'Nothing matches that' : 'No offers yet'}
           </p>
-          <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+          <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
             {filtered
               ? 'Try a different search or status.'
               : 'An offer is a deal: so many videos, for so much. Creators will browse these and either take them or apply.'}
@@ -674,7 +699,7 @@ function Offers({
 
           {pages > 1 ? (
             <div className="mt-4 flex items-center justify-between gap-3">
-              <p className="text-muted text-[13px]">
+              <p className="text-muted text-[0.8125rem]">
                 Page {filters.page} of {pages}, {total} in total
               </p>
               <div className="flex gap-2">
@@ -728,18 +753,18 @@ function OfferCard({ offer, onEdit }: { offer: Offer; onEdit: () => void }) {
     >
       <div className="flex flex-wrap items-center gap-2">
         {offer.badge_title ? (
-          <span className="bg-accent-soft text-accent rounded-full px-2.5 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
+          <span className="bg-accent-soft text-accent rounded-full px-2.5 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
             {offer.badge_title}
           </span>
         ) : null}
         {offer.status === 'inactive' ? (
-          <span className="bg-surface-2 text-muted rounded-full px-2.5 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
+          <span className="bg-surface-2 text-muted rounded-full px-2.5 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
             Inactive
           </span>
         ) : null}
         <span
           className={cn(
-            'rounded-full px-2.5 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase',
+            'rounded-full px-2.5 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase',
             offer.needs_application
               ? 'bg-warning-soft text-warning'
               : 'bg-success-soft text-success'
@@ -751,7 +776,7 @@ function OfferCard({ offer, onEdit }: { offer: Offer; onEdit: () => void }) {
 
       <h3 className="mt-3 text-lg font-bold">{offer.title}</h3>
       {offer.description ? (
-        <p className="text-muted mt-2 line-clamp-3 text-[14px] leading-relaxed">
+        <p className="text-muted mt-2 line-clamp-3 text-[0.875rem] leading-relaxed">
           {offer.description}
         </p>
       ) : null}
@@ -760,7 +785,7 @@ function OfferCard({ offer, onEdit }: { offer: Offer; onEdit: () => void }) {
         <div className="border-line mt-4 flex flex-wrap items-end gap-x-6 gap-y-2 border-t pt-4">
           {hasVideos ? (
             <span>
-              <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+              <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                 Videos
               </span>
               <span className="wx-numeric mt-1 block text-lg font-bold">
@@ -770,7 +795,7 @@ function OfferCard({ offer, onEdit }: { offer: Offer; onEdit: () => void }) {
           ) : null}
           {hasReward ? (
             <span>
-              <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+              <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                 Reward
               </span>
               <span className="wx-numeric text-accent mt-1 block text-lg font-bold">
@@ -779,25 +804,25 @@ function OfferCard({ offer, onEdit }: { offer: Offer; onEdit: () => void }) {
             </span>
           ) : null}
           {perVideo !== null ? (
-            <span className="text-faint text-[12px]">
+            <span className="text-faint text-[0.75rem]">
               {money(perVideo, offer.currency)} per video
             </span>
           ) : null}
         </div>
       ) : (
-        <p className="border-line text-faint mt-4 border-t pt-4 text-[12px]">
+        <p className="border-line text-faint mt-4 border-t pt-4 text-[0.75rem]">
           No fixed deliverable or fee on this one.
         </p>
       )}
 
       {confirming ? (
         <div className="border-danger/40 bg-danger-soft mt-4 rounded-xl border p-4">
-          <p className="text-danger text-[13px] leading-relaxed font-medium">
+          <p className="text-danger text-[0.8125rem] leading-relaxed font-medium">
             Delete this offer? It is removed for good, though the audit log keeps a record of
             what it was.
           </p>
           {manage.error ? (
-            <p role="alert" className="text-danger mt-2 text-[12px]">
+            <p role="alert" className="text-danger mt-2 text-[0.75rem]">
               {(manage.error as Error).message}
             </p>
           ) : null}

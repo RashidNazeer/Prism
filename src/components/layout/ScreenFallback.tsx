@@ -13,17 +13,17 @@
  * because it is the one people see on every first visit to a section.
  *
  * DELIBERATELY GENERIC. It stands in for fifteen different screens, so it draws
- * the shape they share, a heading and some blocks, rather than pretending to be
- * any one of them. A skeleton that mimics the wrong screen is worse than one
- * that mimics none.
+ * the shape they share rather than pretending to be any one of them. A skeleton
+ * that mimics the wrong screen is worse than one that mimics none.
+ *
+ * RESHAPED 2026-08-16, when the title row and the description row came off every
+ * screen. It used to open with two heading bars, which now describe nothing: a
+ * screen's first row is its filter bar. A skeleton that promises a heading and
+ * then delivers a filter row makes the page look like it jumped.
  */
 export function ScreenFallback() {
   return (
     <div role="status" aria-busy className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="wx-skeleton h-8 w-44" />
-        <div className="wx-skeleton h-8 w-56" />
-      </div>
       <div className="wx-skeleton h-14 w-full rounded-lg" />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <div className="wx-skeleton h-[190px] rounded-xl" />

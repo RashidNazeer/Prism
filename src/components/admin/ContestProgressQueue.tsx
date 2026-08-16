@@ -424,17 +424,17 @@ export function ContestProgressQueue({
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div>
-          <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Progress waiting on you
           </h2>
-          <p className="text-faint mt-1.5 max-w-prose text-[12px] leading-relaxed">
+          <p className="text-faint mt-1.5 max-w-prose text-[0.75rem] leading-relaxed">
             Creators type what they have achieved so far. Nothing counts until somebody here
             confirms it, and nothing is owed against a figure that has not been confirmed.
           </p>
         </div>
 
         {total > 0 ? (
-          <span className="bg-stage-due-soft text-stage-due shrink-0 rounded-full px-3 py-1 text-[12px] font-semibold">
+          <span className="bg-stage-due-soft text-stage-due shrink-0 rounded-full px-3 py-1 text-[0.75rem] font-semibold">
             <span className="wx-numeric font-mono">{total}</span> waiting
           </span>
         ) : null}
@@ -447,10 +447,10 @@ export function ContestProgressQueue({
         </div>
       ) : isError ? (
         <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
-          <h3 className="font-display text-text text-[19px] leading-tight font-bold">
+          <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
             That queue would not load
           </h3>
-          <p className="text-muted max-w-prose text-[14px] leading-relaxed">
+          <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">
             {(error as Error)?.message ??
               'Something went wrong reaching the database. Nothing has been changed.'}
           </p>
@@ -465,10 +465,10 @@ export function ContestProgressQueue({
          * still showing beside it.
          */
         <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
-          <h3 className="font-display text-text text-[19px] leading-tight font-bold">
+          <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
             This page is empty now
           </h3>
-          <p className="text-muted max-w-prose text-[14px] leading-relaxed">
+          <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">
             The claims that were on it have been answered. There are still others waiting.
           </p>
           <Button type="button" variant="secondary" onClick={() => setPage(1)}>
@@ -480,10 +480,10 @@ export function ContestProgressQueue({
           <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
             <Check size={19} className="text-muted" aria-hidden />
           </div>
-          <h3 className="font-display text-text text-[19px] leading-tight font-bold">
+          <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
             Nothing is waiting to be confirmed
           </h3>
-          <p className="text-muted max-w-prose text-[14px] leading-relaxed">
+          <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">
             {contestId
               ? 'Nobody in this contest has sent figures we have not answered. The moment somebody updates their progress, it lands here.'
               : 'No creator is waiting on a decision about their figures. The moment somebody updates their progress, it lands here.'}
@@ -506,7 +506,7 @@ export function ContestProgressQueue({
 
       {total > PAGE_SIZE ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="wx-numeric text-muted font-mono text-[13px]">
+          <p className="wx-numeric text-muted font-mono text-[0.8125rem]">
             {(page - 1) * PAGE_SIZE + 1} to {Math.min(page * PAGE_SIZE, total)} of {total}
           </p>
           <div className="flex items-center gap-2">
@@ -521,7 +521,7 @@ export function ContestProgressQueue({
               <ChevronLeft size={15} aria-hidden />
               Back
             </Button>
-            <span className="wx-numeric text-muted px-1 font-mono text-[12px]">
+            <span className="wx-numeric text-muted px-1 font-mono text-[0.75rem]">
               {page} of {pages}
             </span>
             <Button
@@ -606,19 +606,19 @@ function ClaimCard({
       {/* ------------------------------------------------------------ who -- */}
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
-          <h3 className="font-display text-text text-[17px] leading-tight font-bold break-words">
+          <h3 className="font-display text-text text-[1.0625rem] leading-tight font-bold break-words">
             {who}
           </h3>
           {row.creatorHandle && row.creatorName ? (
-            <p className="text-muted mt-1 text-[13px] break-words">{row.creatorName}</p>
+            <p className="text-muted mt-1 text-[0.8125rem] break-words">{row.creatorName}</p>
           ) : null}
-          <p className="text-faint mt-0.5 text-[12px] break-words">
+          <p className="text-faint mt-0.5 text-[0.75rem] break-words">
             {showContest
               ? [row.brandName, row.contestName].filter(Boolean).join(', ') || 'A contest'
               : (row.brandName ?? 'This contest')}
           </p>
         </div>
-        <span className="text-faint shrink-0 font-mono text-[12px]">
+        <span className="text-faint shrink-0 font-mono text-[0.75rem]">
           Claimed {waitingFor(row.createdAt, now)}
         </span>
       </div>
@@ -652,7 +652,7 @@ function ClaimCard({
       </div>
 
       {/* ------------------------------------------- what is real so far -- */}
-      <p className="text-muted mt-3 text-[13px] leading-relaxed">
+      <p className="text-muted mt-3 text-[0.8125rem] leading-relaxed">
         {row.confirmed && (row.confirmed.gmv > 0 || row.confirmed.videoCount > 0) ? (
           <>
             <span className="text-text font-semibold">Confirmed so far: </span>
@@ -670,7 +670,7 @@ function ClaimCard({
       </p>
 
       {row.previous?.status === 'rejected' ? (
-        <p className="text-faint mt-1.5 text-[12px] leading-relaxed">
+        <p className="text-faint mt-1.5 text-[0.75rem] leading-relaxed">
           Their last update was sent back, so the figures it carried were never counted.
         </p>
       ) : null}
@@ -678,7 +678,7 @@ function ClaimCard({
       {/* ------------------------------------------- against the targets -- */}
       {row.terms.length > 0 ? (
         <div className="border-line mt-4 flex flex-col gap-3 border-t pt-4">
-          <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Against what they were promised
           </p>
           {row.terms.map((term) => (
@@ -702,12 +702,12 @@ function ClaimCard({
 
       {/* -------------------------------------------------- the evidence -- */}
       <div className="border-line mt-4 border-t pt-4">
-        <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+        <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Videos with this update
         </p>
 
         {row.videos.length === 0 ? (
-          <p className="text-faint mt-2 max-w-prose text-[13px] leading-relaxed">
+          <p className="text-faint mt-2 max-w-prose text-[0.8125rem] leading-relaxed">
             No new videos came with this one. Only the videos a creator adds are asked for, so
             an update that raises GMV alone carries none.
           </p>
@@ -725,19 +725,19 @@ function ClaimCard({
                       href={video.videoUrl}
                       target="_blank"
                       rel="noreferrer noopener"
-                      className="text-accent inline-flex min-h-11 items-center gap-1.5 text-[13px] font-semibold hover:underline"
+                      className="text-accent inline-flex min-h-11 items-center gap-1.5 text-[0.8125rem] font-semibold hover:underline"
                     >
                       <Video size={14} aria-hidden />
                       <span className="break-all">{video.videoTitle ?? 'Watch this one'}</span>
                       <ExternalLink size={13} aria-hidden />
                     </a>
-                    <span className="text-muted mt-0.5 block font-mono text-[12px] break-all">
+                    <span className="text-muted mt-0.5 block font-mono text-[0.75rem] break-all">
                       {video.adCode}
                     </span>
                   </span>
                   <span
                     className={cn(
-                      'shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                      'shrink-0 rounded-full px-2.5 py-1 text-[0.6875rem] font-semibold',
                       TONE_CHIP[tone.tone]
                     )}
                   >
@@ -749,7 +749,7 @@ function ClaimCard({
           </ul>
         )}
 
-        <p className="text-faint mt-2 max-w-prose text-[12px] leading-relaxed">
+        <p className="text-faint mt-2 max-w-prose text-[0.75rem] leading-relaxed">
           Confirming these figures is not a decision about the videos. Each one is watched and
           decided on its own.
         </p>
@@ -785,7 +785,7 @@ function ClaimCard({
         {serverError ? (
           <p
             role="alert"
-            className="bg-danger-soft text-danger mt-3 rounded-xl px-3 py-2 text-[13px] font-medium"
+            className="bg-danger-soft text-danger mt-3 rounded-xl px-3 py-2 text-[0.8125rem] font-medium"
           >
             {serverError}
           </p>
@@ -812,7 +812,7 @@ function ClaimCard({
           </Button>
         </div>
 
-        <p className="text-faint mt-3 max-w-prose text-[12px] leading-relaxed">
+        <p className="text-faint mt-3 max-w-prose text-[0.75rem] leading-relaxed">
           Confirming is what makes these figures real. One decision only: once this is answered
           it cannot be answered again, even by somebody else looking at it right now.
         </p>
@@ -844,13 +844,13 @@ function Change({
 }) {
   return (
     <div className="bg-surface-2 border-line rounded-xl border px-3.5 py-3">
-      <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+      <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         {label}
       </span>
-      <span className="wx-numeric font-display text-text mt-1 block text-[22px] leading-none font-bold">
+      <span className="wx-numeric font-display text-text mt-1 block text-[1.375rem] leading-none font-bold">
         {now}
       </span>
-      <span className="text-muted mt-1.5 block text-[12px]">
+      <span className="text-muted mt-1.5 block text-[0.75rem]">
         {before === null ? (
           'Their first claim on this entry'
         ) : (

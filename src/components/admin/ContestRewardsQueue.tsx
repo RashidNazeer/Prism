@@ -422,7 +422,7 @@ export function ContestRewardsQueue({
             <div className="wx-skeleton h-[104px] rounded-xl" />
           </>
         ) : (totals.data ?? []).length === 0 ? (
-          <div className="border-line text-muted sm:col-span-2 rounded-xl border border-dashed p-5 text-[13px] leading-relaxed">
+          <div className="border-line text-muted sm:col-span-2 rounded-xl border border-dashed p-5 text-[0.8125rem] leading-relaxed">
             No contest reward has been earned yet. A reward appears here the moment somebody on
             this team confirms the figures that earn it.
           </div>
@@ -464,7 +464,7 @@ export function ContestRewardsQueue({
             aria-selected={view === tab}
             onClick={() => switchView(tab)}
             className={cn(
-              'min-h-11 flex-1 rounded-lg px-3 text-[13px] font-semibold transition-colors duration-200',
+              'min-h-11 flex-1 rounded-lg px-3 text-[0.8125rem] font-semibold transition-colors duration-200',
               view === tab
                 ? 'bg-surface-1 text-text shadow-sm'
                 : 'text-muted hover:text-accent'
@@ -479,10 +479,10 @@ export function ContestRewardsQueue({
       <div className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-4 shadow-md sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
           <div>
-            <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+            <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               {view === 'owed' ? 'Rewards waiting to be paid' : 'Rewards already paid'}
             </h2>
-            <p className="text-faint mt-1.5 max-w-prose text-[12px] leading-relaxed">
+            <p className="text-faint mt-1.5 max-w-prose text-[0.75rem] leading-relaxed">
               {view === 'owed'
                 ? 'Every one of these was earned against a figure this team confirmed. Marking one paid cannot be undone.'
                 : 'What has gone out, newest first. Each row names the reward it settled.'}
@@ -491,7 +491,7 @@ export function ContestRewardsQueue({
           {total > 0 ? (
             <span
               className={cn(
-                'shrink-0 rounded-full px-3 py-1 text-[12px] font-semibold',
+                'shrink-0 rounded-full px-3 py-1 text-[0.75rem] font-semibold',
                 view === 'owed'
                   ? 'bg-stage-due-soft text-stage-due'
                   : 'bg-stage-paid-soft text-stage-paid'
@@ -511,10 +511,10 @@ export function ContestRewardsQueue({
           </div>
         ) : isError ? (
           <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
-            <h3 className="font-display text-text text-[19px] leading-tight font-bold">
+            <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
               That would not load
             </h3>
-            <p className="text-muted max-w-prose text-[14px] leading-relaxed">
+            <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ??
                 'Something went wrong reaching the database. Nothing has been changed.'}
             </p>
@@ -524,10 +524,10 @@ export function ContestRewardsQueue({
           </div>
         ) : rows.length === 0 && total > 0 ? (
           <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
-            <h3 className="font-display text-text text-[19px] leading-tight font-bold">
+            <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
               This page is empty now
             </h3>
-            <p className="text-muted max-w-prose text-[14px] leading-relaxed">
+            <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">
               The rewards that were on it have been paid. There are still others.
             </p>
             <Button type="button" variant="secondary" onClick={() => setPage(1)}>
@@ -540,7 +540,7 @@ export function ContestRewardsQueue({
           <>
             {view === 'owed' ? (
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                <label className="text-muted inline-flex min-h-11 cursor-pointer items-center gap-2.5 text-[13px] font-medium">
+                <label className="text-muted inline-flex min-h-11 cursor-pointer items-center gap-2.5 text-[0.8125rem] font-medium">
                   <input
                     type="checkbox"
                     className="size-[18px] cursor-pointer accent-[var(--wx-accent)]"
@@ -550,7 +550,7 @@ export function ContestRewardsQueue({
                   Everything on this page
                 </label>
                 {selected.size > 0 ? (
-                  <span className="text-faint text-[12px]">
+                  <span className="text-faint text-[0.75rem]">
                     {selected.size} selected. Paging away clears it.
                   </span>
                 ) : null}
@@ -582,7 +582,7 @@ export function ContestRewardsQueue({
 
         {total > PAGE_SIZE ? (
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="wx-numeric text-muted font-mono text-[13px]">
+            <p className="wx-numeric text-muted font-mono text-[0.8125rem]">
               {(page - 1) * PAGE_SIZE + 1} to {Math.min(page * PAGE_SIZE, total)} of {total}
             </p>
             <div className="flex items-center gap-2">
@@ -600,7 +600,7 @@ export function ContestRewardsQueue({
                 <ChevronLeft size={15} aria-hidden />
                 Back
               </Button>
-              <span className="wx-numeric text-muted px-1 font-mono text-[12px]">
+              <span className="wx-numeric text-muted px-1 font-mono text-[0.75rem]">
                 {page} of {pages}
               </span>
               <Button
@@ -626,7 +626,7 @@ export function ContestRewardsQueue({
       {view === 'owed' && chosen.length > 0 ? (
         <div className="border-line-strong bg-surface-2 sticky bottom-3 z-10 flex flex-col gap-3 rounded-xl border p-4 shadow-md sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-            <p className="text-text text-[14px] font-semibold">
+            <p className="text-text text-[0.875rem] font-semibold">
               {chosen.length} reward{chosen.length === 1 ? '' : 's'},{' '}
               <span className="wx-numeric font-mono">
                 {chosenTotalByCurrency.map(([c, amount]) => money(amount, c)).join(' + ')}
@@ -656,7 +656,7 @@ export function ContestRewardsQueue({
               {anySuspended ? (
                 <p
                   role="alert"
-                  className="bg-stage-due-soft text-stage-due flex items-start gap-2 rounded-xl px-3.5 py-2.5 text-[13px] leading-relaxed font-medium"
+                  className="bg-stage-due-soft text-stage-due flex items-start gap-2 rounded-xl px-3.5 py-2.5 text-[0.8125rem] leading-relaxed font-medium"
                 >
                   <ShieldAlert size={16} className="mt-0.5 shrink-0" aria-hidden />
                   <span>
@@ -689,13 +689,13 @@ export function ContestRewardsQueue({
               {serverError ? (
                 <p
                   role="alert"
-                  className="bg-danger-soft text-danger rounded-xl px-3 py-2 text-[13px] font-medium"
+                  className="bg-danger-soft text-danger rounded-xl px-3 py-2 text-[0.8125rem] font-medium"
                 >
                   {serverError}
                 </p>
               ) : null}
 
-              <p className="text-muted max-w-prose text-[13px] leading-relaxed">
+              <p className="text-muted max-w-prose text-[0.8125rem] leading-relaxed">
                 This says the money has been sent. It cannot be undone, and every creator in the
                 list sees their reward change to paid straight away.
               </p>
@@ -745,7 +745,7 @@ function MoneyCard({
 }) {
   return (
     <div className="border-line bg-surface-1 rounded-xl border p-5 shadow-md">
-      <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+      <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         {label}
       </span>
       <div className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -753,7 +753,7 @@ function MoneyCard({
           <span
             key={line.amount}
             className={cn(
-              'wx-numeric font-display text-[26px] leading-none font-bold',
+              'wx-numeric font-display text-[1.625rem] leading-none font-bold',
               tone === 'due' ? 'text-stage-due' : 'text-stage-paid'
             )}
           >
@@ -761,7 +761,7 @@ function MoneyCard({
           </span>
         ))}
       </div>
-      <p className="text-faint mt-2 text-[12px] leading-relaxed">
+      <p className="text-faint mt-2 text-[0.75rem] leading-relaxed">
         {lines.reduce((n, l) => n + l.count, 0)} reward
         {lines.reduce((n, l) => n + l.count, 0) === 1 ? '' : 's'}. {hint}
       </p>
@@ -796,27 +796,27 @@ function RewardCard({
     <>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="font-display text-text text-[16px] leading-tight font-bold break-words">
+          <span className="font-display text-text text-[1rem] leading-tight font-bold break-words">
             {who}
           </span>
           {!row.creatorActive ? (
-            <span className="bg-stage-due-soft text-stage-due inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold">
+            <span className="bg-stage-due-soft text-stage-due inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold">
               <ShieldAlert size={12} aria-hidden />
               Account off
             </span>
           ) : null}
           {row.contestClosed ? (
-            <span className="bg-surface-3 text-muted rounded-full px-2 py-0.5 text-[11px] font-semibold">
+            <span className="bg-surface-3 text-muted rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold">
               Contest closed
             </span>
           ) : null}
         </div>
 
-        <p className="text-muted mt-1 text-[13px] break-words">
+        <p className="text-muted mt-1 text-[0.8125rem] break-words">
           {row.termTitle ?? 'A contest reward'}
         </p>
 
-        <p className="text-faint mt-0.5 text-[12px] break-words">
+        <p className="text-faint mt-0.5 text-[0.75rem] break-words">
           {showContest
             ? [row.brandName, row.contestName].filter(Boolean).join(', ') || 'A contest'
             : (row.brandName ?? 'This contest')}
@@ -828,7 +828,7 @@ function RewardCard({
          * after the creator's totals move on.
          */}
         {target ? (
-          <p className="text-muted mt-2 font-mono text-[12px]">
+          <p className="text-muted mt-2 font-mono text-[0.75rem]">
             Target <span className="text-text font-semibold">{target}</span>
             {reached ? (
               <>
@@ -839,7 +839,7 @@ function RewardCard({
         ) : null}
 
         {row.message ? (
-          <p className="text-muted mt-2 max-w-prose text-[12px] leading-relaxed italic">
+          <p className="text-muted mt-2 max-w-prose text-[0.75rem] leading-relaxed italic">
             &ldquo;{row.message}&rdquo;
           </p>
         ) : null}
@@ -848,13 +848,13 @@ function RewardCard({
       <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
         <span
           className={cn(
-            'wx-numeric font-display text-[20px] leading-none font-bold',
+            'wx-numeric font-display text-[1.25rem] leading-none font-bold',
             view === 'owed' ? 'text-stage-due' : 'text-stage-paid'
           )}
         >
           {money(row.amount, row.currency)}
         </span>
-        <span className="text-faint font-mono text-[11px]">
+        <span className="text-faint font-mono text-[0.6875rem]">
           {view === 'owed'
             ? `owed ${ago(row.createdAt, now)}`
             : row.paidAt
@@ -902,10 +902,10 @@ function EmptyState({ view, scoped }: { view: RewardsView; scoped: boolean }) {
       <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
         <Trophy size={19} className="text-muted" aria-hidden />
       </div>
-      <h3 className="font-display text-text text-[19px] leading-tight font-bold">
+      <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
         {view === 'owed' ? 'Nothing is owed right now' : 'Nothing has been paid yet'}
       </h3>
-      <p className="text-muted max-w-prose text-[14px] leading-relaxed">
+      <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">
         {view === 'owed'
           ? scoped
             ? 'Nobody in this contest has crossed a target on figures we have confirmed. A reward lands here the moment somebody does.'

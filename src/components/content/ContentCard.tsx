@@ -54,12 +54,12 @@ export function ContentCard({
 
       <div className="flex min-w-0 flex-1 flex-col gap-2 px-1 pb-1">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-muted min-w-0 truncate text-[11px] font-semibold tracking-[0.08em] uppercase">
+          <p className="text-muted min-w-0 truncate text-[0.6875rem] font-semibold tracking-[0.08em] uppercase">
             {row.brand?.name ?? 'A brand'}
           </p>
           <span
             className={cn(
-              'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold',
+              'shrink-0 rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold',
               tone.soft,
               tone.text
             )}
@@ -68,26 +68,26 @@ export function ContentCard({
           </span>
         </div>
 
-        <p className="text-[14px] leading-[1.3] font-semibold break-words">
+        <p className="text-[0.875rem] leading-[1.3] font-semibold break-words">
           {row.offer?.title ?? 'An offer'}
         </p>
 
         {aboutTheJob}
 
-        <p className="text-muted font-mono text-[11.5px] break-all">{row.ad_code}</p>
+        <p className="text-muted font-mono text-[0.71875rem] break-all">{row.ad_code}</p>
 
         {row.ad_authorized ? null : (
-          <p className="text-stage-due text-[12px] font-medium">Not marked authorised</p>
+          <p className="text-stage-due text-[0.75rem] font-medium">Not marked authorised</p>
         )}
 
         {row.decision_note ? (
-          <p className="text-muted border-line border-t pt-2 text-[12.5px] leading-relaxed">
+          <p className="text-muted border-line border-t pt-2 text-[0.78125rem] leading-relaxed">
             {row.decision_note}
           </p>
         ) : null}
 
         <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-          <time dateTime={row.created_at} className="text-faint text-[11.5px]">
+          <time dateTime={row.created_at} className="text-faint text-[0.71875rem]">
             {new Date(row.created_at).toLocaleDateString(undefined, {
               day: 'numeric',
               month: 'short',

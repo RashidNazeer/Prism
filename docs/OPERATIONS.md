@@ -141,6 +141,15 @@ pnpm verify:contests [url]  # 121 checks. Admin builds a contest and a
                             # Makes its own accounts and removes them.
 pnpm verify:responsive [url] # every screen at 375, 768, 1024 and 1440px.
                             # Needs ADMIN_EMAIL and ADMIN_PASSWORD, no service key
+pnpm verify:chrome [url]    # the SHELL, not the screens: rail width, the hidden
+                            # scrollbar, the menu keeping its scroll position
+                            # when you click the last item, the mark collapsing
+                            # the rail, the top bar naming the section and
+                            # agreeing with the lit menu row, the content
+                            # filling the width at 1280/1600/1920, and the
+                            # text-size setting sticking across a reload without
+                            # leaking onto the public page.
+                            # Needs ADMIN_EMAIL and ADMIN_PASSWORD, no service key
 pnpm shots [url] [path]     # retina screenshots of a PUBLIC page
 pnpm shots:creator [url]    # the creator home WITH a full pipeline in it, both
                             # themes, four widths. Builds a throwaway creator

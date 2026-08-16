@@ -210,9 +210,27 @@ try {
     (await adminPage.getByText(/people asking to join/i).count()) > 0,
     'the dashboard carries the counts, so the queue does not have to'
   );
+  /*
+   * THE OTHER TWO TILES, not the sentence that used to sit above them.
+   *
+   * This read /waiting on you|are all clear/ until 2026-08-16, when the greeting
+   * and the line under it went the way of every other description row in the
+   * admin panel. Both halves of that regex were in the deleted sentence, so it
+   * could no longer match anything.
+   *
+   * What it was defending is unchanged and is now asserted directly rather than
+   * through prose: the home counts offer requests and videos as well as
+   * applications, so it cannot call the day clear on one queue's strength. These
+   * are the two other tiles' own hint lines, scoped to <main> because the rail
+   * carries links of nearly the same name.
+   */
+  const otherInboxes = await Promise.all([
+    adminPage.locator('main').getByText(/creators asking for a deal/i).count(),
+    adminPage.locator('main').getByText(/work waiting on a decision/i).count(),
+  ]);
   check(
-    (await adminPage.getByText(/waiting on you|are all clear/i).count()) > 0,
-    'and it counts all three inboxes, not just applications'
+    otherInboxes.every((n) => n > 0),
+    `and it counts all three inboxes, not just applications (${otherInboxes.join(', ')})`
   );
 
   await adminPage.getByRole('link', { name: /^applications$/i }).first().click();

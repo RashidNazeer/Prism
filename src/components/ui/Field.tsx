@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
  * next to the cards rather than part of them.
  */
 const controlBase = [
-  'w-full rounded-lg border bg-surface-3 px-4 text-[15px]',
+  'w-full rounded-lg border bg-surface-3 px-4 text-[0.9375rem]',
   'placeholder:text-faint',
   'transition-colors duration-200 ease-brand',
   'focus:outline-none focus-visible:outline-none',
@@ -34,7 +34,7 @@ export function Label({ htmlFor, children }: { htmlFor: string; children: ReactN
   return (
     <label
       htmlFor={htmlFor}
-      className="block font-mono text-[11px] font-medium tracking-[0.14em] text-muted uppercase"
+      className="block font-mono text-[0.6875rem] font-medium tracking-[0.14em] text-muted uppercase"
     >
       {children}
     </label>
@@ -63,11 +63,11 @@ export function Field({
       <Label htmlFor={id}>{label}</Label>
       <div className="mt-2">{children({ id, describedBy, invalid: Boolean(error) })}</div>
       {error ? (
-        <p id={errorId} role="alert" className="mt-1.5 text-[13px] text-danger">
+        <p id={errorId} role="alert" className="mt-1.5 text-[0.8125rem] text-danger">
           {error}
         </p>
       ) : hint ? (
-        <p id={hintId} className="mt-1.5 text-[13px] text-faint">
+        <p id={hintId} className="mt-1.5 text-[0.8125rem] text-faint">
           {hint}
         </p>
       ) : null}

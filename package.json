@@ -21,6 +21,7 @@
     "verify:brands": "node scripts/check-brands.mjs",
     "verify:offer-requests": "node scripts/check-offer-requests.mjs",
     "verify:responsive": "node scripts/check-responsive.mjs",
+    "verify:chrome": "node scripts/check-chrome.mjs",
     "shots": "node scripts/shots.mjs",
     "shots:creator": "node scripts/shots-creator.mjs",
     "verify:live": "node scripts/check-live.mjs",

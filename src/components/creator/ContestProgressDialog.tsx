@@ -426,16 +426,16 @@ export function ContestProgressDialog({
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+            <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               {contest.brand?.name ?? 'Contest'}
             </p>
             <h2
               id={headingId}
-              className="font-display mt-1 text-[21px] leading-tight font-bold"
+              className="font-display mt-1 text-[1.3125rem] leading-tight font-bold"
             >
               {step === 'sent' ? 'Sent to the team' : 'Update your progress'}
             </h2>
-            <p className="text-muted mt-1 text-[13px]">{contest.name}</p>
+            <p className="text-muted mt-1 text-[0.8125rem]">{contest.name}</p>
           </div>
           <button
             type="button"
@@ -450,7 +450,7 @@ export function ContestProgressDialog({
         {refusal ? (
           <p
             role="alert"
-            className="bg-danger-soft text-danger mt-5 rounded-xl px-4 py-3 text-[13px] font-medium"
+            className="bg-danger-soft text-danger mt-5 rounded-xl px-4 py-3 text-[0.8125rem] font-medium"
           >
             {refusal}
           </p>
@@ -467,14 +467,14 @@ export function ContestProgressDialog({
               23:59 in London has nothing on the screen to point at.
             */}
             <div className="border-line mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b pb-4">
-              <span className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+              <span className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                 Closes
               </span>
               <span className="text-right">
-                <span className="text-text block text-[13px] font-semibold">
+                <span className="text-text block text-[0.8125rem] font-semibold">
                   {formatDeadline(contest.expiresAt, contest.expiresAtTimezone)}
                 </span>
-                <span className="text-muted mt-0.5 flex items-center justify-end gap-1.5 font-mono text-[12px]">
+                <span className="text-muted mt-0.5 flex items-center justify-end gap-1.5 font-mono text-[0.75rem]">
                   <Clock size={12} aria-hidden />
                   {timeLeft(contest.expiresAt)}
                 </span>
@@ -492,11 +492,11 @@ export function ContestProgressDialog({
 
             {updates[0]?.status === 'rejected' ? (
               <div className="bg-danger-soft mt-4 rounded-xl px-4 py-3.5">
-                <p className="text-danger text-[13px] font-semibold">
+                <p className="text-danger text-[0.8125rem] font-semibold">
                   Your last figures were sent back
                 </p>
                 {updates[0].staffMessage ? (
-                  <p className="text-muted mt-1 text-[13px] leading-relaxed">
+                  <p className="text-muted mt-1 text-[0.8125rem] leading-relaxed">
                     {updates[0].staffMessage}
                   </p>
                 ) : null}
@@ -504,15 +504,15 @@ export function ContestProgressDialog({
             ) : null}
 
             <div className="border-line bg-surface-2 mt-4 rounded-xl border px-4 py-4">
-              <p className="text-faint text-[11px] font-semibold tracking-[0.14em] uppercase">
+              <p className="text-faint text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                 What you have achieved
               </p>
-              <p className="text-muted mt-1.5 text-[13px] leading-relaxed">
+              <p className="text-muted mt-1.5 text-[0.8125rem] leading-relaxed">
                 Your totals on this contest so far, not what you have done since last time.
               </p>
 
               {updates[0] ? (
-                <p className="text-faint mt-2 text-[12px] leading-relaxed">
+                <p className="text-faint mt-2 text-[0.75rem] leading-relaxed">
                   Last time you told us {money(updates[0].gmv, currency)} and{' '}
                   {updates[0].videoCount} {updates[0].videoCount === 1 ? 'video' : 'videos'}
                   {updates[0].status === 'confirmed' ? ', which the team confirmed.' : '.'}
@@ -582,7 +582,7 @@ export function ContestProgressDialog({
                 finds out afterwards that six links are coming has already
                 decided how long this was going to take.
               */}
-              <p className="text-faint mt-3 text-[12px] leading-relaxed">
+              <p className="text-faint mt-3 text-[0.75rem] leading-relaxed">
                 {newVideos > 0
                   ? `Next you will be asked for ${newVideos} new video ${
                       newVideos === 1 ? 'link and its ad code' : 'links and their ad codes'
@@ -609,14 +609,14 @@ export function ContestProgressDialog({
         ) : step === 'videos' ? (
           <m.div key="videos" {...stepMotion} animate={{ opacity: 1, y: 0 }} className="mt-5">
             <div className="bg-stage-due-soft rounded-xl px-4 py-3.5">
-              <p className="text-stage-due text-[14px] font-semibold">
+              <p className="text-stage-due text-[0.875rem] font-semibold">
                 {newVideos === 0
                   ? 'No new videos this time'
                   : newVideos === 1
                     ? 'One new video to add'
                     : `${newVideos} new videos to add`}
               </p>
-              <p className="text-muted mt-1 text-[13px] leading-relaxed">
+              <p className="text-muted mt-1 text-[0.8125rem] leading-relaxed">
                 {newVideos === 0
                   ? 'Your count has not moved, so there is nothing new to send. Your GMV figure still goes to the team.'
                   : 'Only the ones this update adds. Everything you have already sent stays exactly as it is.'}
@@ -635,12 +635,12 @@ export function ContestProgressDialog({
                 decides whether a link is already on this entry, and it refuses a
                 duplicate by name.
               */
-              <p className="text-muted border-line mt-4 rounded-xl border px-3.5 py-3 text-[13px] leading-relaxed">
+              <p className="text-muted border-line mt-4 rounded-xl border px-3.5 py-3 text-[0.8125rem] leading-relaxed">
                 Your earlier videos would not load just now. You can still add the new ones.
               </p>
             ) : earlier.length > 0 ? (
               <div className="mt-4">
-                <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+                <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                   Already sent
                 </p>
                 <ul className="mt-2 flex flex-col gap-2">
@@ -655,7 +655,7 @@ export function ContestProgressDialog({
               <div className="mt-5 flex flex-col gap-4">
                 {rows.map((row, i) => (
                   <div key={i} className="border-line bg-surface-2 rounded-xl border px-4 py-4">
-                    <p className="text-text text-[13px] font-semibold">
+                    <p className="text-text text-[0.8125rem] font-semibold">
                       New video {floor + i + 1}
                     </p>
                     <div className="mt-3 flex flex-col gap-4">
@@ -721,7 +721,7 @@ export function ContestProgressDialog({
             ) : null}
 
             <div className="border-line mt-6 border-t pt-4">
-              <p className="text-faint text-[12px] leading-relaxed">
+              <p className="text-faint text-[0.75rem] leading-relaxed">
                 You are telling the team you are at {money(roundMoney(typedGmv ?? 0), currency)}{' '}
                 and {Math.round(typedCount ?? 0)}{' '}
                 {Math.round(typedCount ?? 0) === 1 ? 'video' : 'videos'} in total. Nothing
@@ -757,11 +757,11 @@ export function ContestProgressDialog({
         ) : (
           <m.div key="sent" {...stepMotion} animate={{ opacity: 1, y: 0 }} className="mt-5">
             <div className="bg-stage-due-soft rounded-xl px-4 py-4">
-              <p className="text-stage-due flex items-center gap-2 text-[14px] font-semibold">
+              <p className="text-stage-due flex items-center gap-2 text-[0.875rem] font-semibold">
                 <Check size={16} aria-hidden />
                 It is with the team
               </p>
-              <p className="text-muted mt-1.5 text-[13px] leading-relaxed">
+              <p className="text-muted mt-1.5 text-[0.8125rem] leading-relaxed">
                 Nothing counts until somebody at Wurx confirms it. Until then these figures show
                 as waiting on this screen, and the answer lands here with no refresh needed.
               </p>
@@ -770,25 +770,25 @@ export function ContestProgressDialog({
             {sent ? (
               <dl className="border-line mt-4 flex flex-col gap-2 border-t pt-4">
                 <div className="flex items-baseline justify-between gap-4">
-                  <dt className="text-muted text-[13px]">GMV you reported</dt>
-                  <dd className="font-display text-[15px] font-semibold">
+                  <dt className="text-muted text-[0.8125rem]">GMV you reported</dt>
+                  <dd className="font-display text-[0.9375rem] font-semibold">
                     {money(sent.gmv, currency)}
                   </dd>
                 </div>
                 <div className="flex items-baseline justify-between gap-4">
-                  <dt className="text-muted text-[13px]">Videos in total</dt>
-                  <dd className="font-display text-[15px] font-semibold">{sent.count}</dd>
+                  <dt className="text-muted text-[0.8125rem]">Videos in total</dt>
+                  <dd className="font-display text-[0.9375rem] font-semibold">{sent.count}</dd>
                 </div>
                 {sent.added > 0 ? (
                   <div className="flex items-baseline justify-between gap-4">
-                    <dt className="text-muted text-[13px]">New videos sent</dt>
-                    <dd className="font-display text-[15px] font-semibold">{sent.added}</dd>
+                    <dt className="text-muted text-[0.8125rem]">New videos sent</dt>
+                    <dd className="font-display text-[0.9375rem] font-semibold">{sent.added}</dd>
                   </div>
                 ) : null}
               </dl>
             ) : null}
 
-            <p className="text-faint mt-4 text-[12px] leading-relaxed">
+            <p className="text-faint mt-4 text-[0.75rem] leading-relaxed">
               Each video is watched on its own, so one being sent back does not undo the rest.
             </p>
 
@@ -833,8 +833,8 @@ function Targets({
   if (terms.length === 0) {
     return (
       <div className="border-line bg-surface-2 rounded-xl border px-4 py-3.5">
-        <p className="text-text text-[14px] font-semibold">No targets on this one yet</p>
-        <p className="text-muted mt-1 text-[13px] leading-relaxed">
+        <p className="text-text text-[0.875rem] font-semibold">No targets on this one yet</p>
+        <p className="text-muted mt-1 text-[0.8125rem] leading-relaxed">
           Tell us where you have got to anyway. The team will confirm your figures and say what
           this contest asks for.
         </p>
@@ -851,10 +851,10 @@ function Targets({
 
   return (
     <div className="border-line bg-surface-2 rounded-xl border px-4 py-4">
-      <p className="text-faint text-[11px] font-semibold tracking-[0.14em] uppercase">
+      <p className="text-faint text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         What you are going for
       </p>
-      <p className="text-muted mt-1.5 text-[13px] leading-relaxed">
+      <p className="text-muted mt-1.5 text-[0.8125rem] leading-relaxed">
         Set by the team when you were let in. These cannot be changed here, or by you anywhere.
       </p>
 
@@ -912,7 +912,7 @@ function Standing({ contestId }: { contestId: string }) {
   if (!data || data.entrants < 2) return null;
 
   return (
-    <p className="text-muted mt-4 text-[13px] leading-relaxed">
+    <p className="text-muted mt-4 text-[0.8125rem] leading-relaxed">
       <span className="text-text font-semibold">Where you are in the field: </span>
       {ordinal(data.gmvPlace)} closest of {data.entrants} on GMV, {ordinal(data.videoPlace)} on
       videos. Ranked on confirmed figures only, and nobody else is ever named.
@@ -950,11 +950,11 @@ function WaitingPanel({
   return (
     <div className="mt-5">
       <div className="bg-stage-due-soft rounded-xl px-4 py-4">
-        <p className="text-stage-due flex items-center gap-2 text-[14px] font-semibold">
+        <p className="text-stage-due flex items-center gap-2 text-[0.875rem] font-semibold">
           <Clock size={16} aria-hidden />
           Your last update is still with the team
         </p>
-        <p className="text-muted mt-1.5 text-[13px] leading-relaxed">
+        <p className="text-muted mt-1.5 text-[0.8125rem] leading-relaxed">
           Wait for them to confirm it before sending another. The answer lands on this screen
           with no refresh needed.
         </p>
@@ -962,14 +962,14 @@ function WaitingPanel({
 
       <dl className="border-line mt-4 flex flex-col gap-2 border-t pt-4">
         <div className="flex items-baseline justify-between gap-4">
-          <dt className="text-muted text-[13px]">GMV you reported</dt>
-          <dd className="font-display text-[15px] font-semibold">
+          <dt className="text-muted text-[0.8125rem]">GMV you reported</dt>
+          <dd className="font-display text-[0.9375rem] font-semibold">
             {money(claim.gmv, currency)}
           </dd>
         </div>
         <div className="flex items-baseline justify-between gap-4">
-          <dt className="text-muted text-[13px]">Videos in total</dt>
-          <dd className="font-display text-[15px] font-semibold">{claim.videoCount}</dd>
+          <dt className="text-muted text-[0.8125rem]">Videos in total</dt>
+          <dd className="font-display text-[0.9375rem] font-semibold">{claim.videoCount}</dd>
         </div>
       </dl>
 
@@ -993,20 +993,20 @@ function EarlierVideo({ video, index }: { video: VideoRow; index: number }) {
 
   return (
     <li className="border-line bg-surface-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border px-3.5 py-3">
-      <span className="text-faint shrink-0 font-mono text-[12px]">{index}</span>
+      <span className="text-faint shrink-0 font-mono text-[0.75rem]">{index}</span>
       <a
         href={video.video_url}
         target="_blank"
         rel="noreferrer noopener"
-        className="text-accent inline-flex min-h-11 min-w-0 flex-1 basis-40 items-center gap-1.5 text-[13px] font-medium hover:underline"
+        className="text-accent inline-flex min-h-11 min-w-0 flex-1 basis-40 items-center gap-1.5 text-[0.8125rem] font-medium hover:underline"
       >
         <span className="truncate">{video.video_url}</span>
         <ExternalLink size={12} aria-hidden className="shrink-0" />
       </a>
-      <span className="text-faint shrink-0 font-mono text-[12px]">{video.ad_code}</span>
+      <span className="text-faint shrink-0 font-mono text-[0.75rem]">{video.ad_code}</span>
       <span
         className={cn(
-          'inline-flex shrink-0 items-center gap-1.5 text-[12px] font-semibold',
+          'inline-flex shrink-0 items-center gap-1.5 text-[0.75rem] font-semibold',
           video.status === 'approved'
             ? 'text-stage-paid'
             : video.status === 'needs_another_take'
@@ -1079,23 +1079,23 @@ export function ContestProgressSummary({
           />
         ))
       ) : (
-        <p className="text-muted text-[13px] leading-relaxed">
+        <p className="text-muted text-[0.8125rem] leading-relaxed">
           The team have not set what this one asks for yet.
         </p>
       )}
 
       {pendingClaim ? (
-        <p className="text-stage-due flex items-center gap-1.5 text-[12px] font-semibold">
+        <p className="text-stage-due flex items-center gap-1.5 text-[0.75rem] font-semibold">
           <Clock size={12} aria-hidden />
           Your figures are with the team
         </p>
       ) : refused ? (
-        <p className="text-danger text-[12px] leading-relaxed">
+        <p className="text-danger text-[0.75rem] leading-relaxed">
           Your last figures were sent back
           {refused.staffMessage ? `. ${refused.staffMessage}` : '.'}
         </p>
       ) : nothingConfirmed && terms.length > 0 ? (
-        <p className="text-muted flex items-center gap-1.5 text-[12px]">
+        <p className="text-muted flex items-center gap-1.5 text-[0.75rem]">
           <Trophy size={12} aria-hidden />
           Nothing confirmed yet. Tell us where you have got to.
         </p>

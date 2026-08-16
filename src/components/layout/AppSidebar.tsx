@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router';
 import { LogOut, Plus, X } from 'lucide-react';
 import { WurxMark } from '@/components/brand/WurxMark';
@@ -49,6 +50,12 @@ function createActionFor(role: AppRole | undefined): { label: string; to: string
   return null;
 }
 
+/**
+ * Where the menu was scrolled to, kept outside React. See the layout effect in
+ * `AppSidebar` for why this is not state.
+ */
+let navScrollTop = 0;
+
 export function AppSidebar({
   role,
   name,
@@ -57,6 +64,7 @@ export function AppSidebar({
   onSignOut,
   onNavigate,
   onClose,
+  onToggleCollapse,
   collapsed = false,
 }: {
   role: AppRole | undefined;
@@ -67,12 +75,43 @@ export function AppSidebar({
   onNavigate?: () => void;
   /** Present only in the mobile drawer. Adds a close button. */
   onClose?: () => void;
+  /** Present only on the desktop rail. Makes the mark collapse the rail. */
+  onToggleCollapse?: () => void;
   collapsed?: boolean;
 }) {
   const { pathname } = useLocation();
   const groups = navForRole(role);
   const initial = (name || email || '?').trim().charAt(0) || '?';
   const create = createActionFor(role);
+  const navRef = useRef<HTMLElement>(null);
+
+  /*
+   * THE MENU MUST NOT JUMP BACK TO THE TOP WHEN YOU CLICK SOMETHING IN IT.
+   *
+   * Rashid, 2026-08-16: scroll down, click the last item, and the menu snaps to
+   * the top. It happens because the list is a scroll container whose contents
+   * are replaced on navigation, and a browser CLAMPS a container's scrollTop the
+   * instant its content is briefly shorter than the current offset. Nothing in
+   * our code scrolls it; the position is simply lost and never restored.
+   *
+   * So keep it ourselves. The value is module scope rather than state, on
+   * purpose: writing it to state would re-render the rail on every wheel event,
+   * and it must survive the rail being swapped between drawer and rail as well.
+   * `useLayoutEffect` puts it back before the browser paints, so there is no
+   * visible jump even when a restore is needed.
+   */
+  useLayoutEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    if (navScrollTop > 0 && el.scrollTop !== navScrollTop) {
+      el.scrollTop = navScrollTop;
+    }
+    const remember = () => {
+      navScrollTop = el.scrollTop;
+    };
+    el.addEventListener('scroll', remember, { passive: true });
+    return () => el.removeEventListener('scroll', remember);
+  });
 
   return (
     <div className="bg-bg flex h-full flex-col">
@@ -80,26 +119,52 @@ export function AppSidebar({
       <div
         className={cn(
           'flex shrink-0 items-center gap-3',
-          collapsed ? 'justify-center px-2 py-5' : 'justify-between px-5 py-6'
+          collapsed ? 'justify-center px-2 py-4' : 'justify-between px-4 py-4'
         )}
       >
-        <Link
-          to="/"
-          aria-label="WurxMediaHub home"
-          onClick={onNavigate}
-          className={cn('flex items-center gap-3', collapsed && 'justify-center')}
-        >
-          {/* Collapsed there is no room for the wordmark, so show the mascot
-              alone rather than a half-cut "WURX". */}
-          <WurxMark markOnly={collapsed} height={collapsed ? 28 : 26} />
-          {/* The design puts a quiet subtitle under the wordmark. It says what
-              the product is to somebody who has just been let in. */}
-          {!collapsed ? (
-            <span className="text-faint -mt-0.5 hidden text-[11px] leading-none font-medium sm:block">
+        {/*
+          THE MARK IS THE COLLAPSE CONTROL ON DESKTOP, at Rashid's request on
+          2026-08-16: "clicking on icon in menu bar should do the same job", so
+          the arrow could come out of the top bar and give that space to the
+          section name.
+
+          It is a real `<button>` when it collapses and a real `<Link>` when it
+          navigates, never one pretending to be the other, so the keyboard and a
+          screen reader are told the truth about what it does. In the drawer it
+          stays a link home, because a drawer has no collapsed state to toggle.
+        */}
+        {onToggleCollapse ? (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            aria-label={collapsed ? 'Expand the menu' : 'Collapse the menu'}
+            aria-pressed={collapsed}
+            title={collapsed ? 'Expand the menu' : 'Collapse the menu'}
+            className={cn(
+              'ease-brand flex items-center gap-3 rounded-lg transition-opacity duration-200 hover:opacity-80',
+              collapsed && 'justify-center'
+            )}
+          >
+            <WurxMark markOnly={collapsed} height={collapsed ? 26 : 24} />
+            {!collapsed ? (
+              <span className="text-faint -mt-0.5 hidden text-[0.6875rem] leading-none font-medium sm:block">
+                Creator Platform
+              </span>
+            ) : null}
+          </button>
+        ) : (
+          <Link
+            to="/"
+            aria-label="WurxMediaHub home"
+            onClick={onNavigate}
+            className={cn('flex items-center gap-3', collapsed && 'justify-center')}
+          >
+            <WurxMark markOnly={collapsed} height={collapsed ? 26 : 24} />
+            <span className="text-faint -mt-0.5 hidden text-[0.6875rem] leading-none font-medium sm:block">
               Creator Platform
             </span>
-          ) : null}
-        </Link>
+          </Link>
+        )}
         {onClose ? (
           <button
             type="button"
@@ -121,7 +186,7 @@ export function AppSidebar({
             title={collapsed ? create.label : undefined}
             className={cn(
               'wx-gradient text-on-accent ease-brand flex min-h-11 items-center justify-center gap-2',
-              'rounded-xl text-[13px] font-semibold shadow-md transition-all duration-300',
+              'rounded-xl text-[0.8125rem] font-semibold shadow-md transition-all duration-300',
               'hover:shadow-lg active:translate-y-px',
               collapsed ? 'w-full px-0' : 'w-full px-4'
             )}
@@ -133,20 +198,26 @@ export function AppSidebar({
       ) : null}
 
       {/* ------------------------------------------------------------ nav -- */}
+      {/* `wx-scroll-quiet`: it still scrolls, it just stops painting a grey
+          stripe down the edge of the brand's own navigation. See global.css. */}
       <nav
+        ref={navRef}
         aria-label="Main"
-        className={cn('flex-1 overflow-y-auto pb-4', collapsed ? 'px-2' : 'px-3')}
+        className={cn(
+          'wx-scroll-quiet flex-1 overflow-y-auto pb-3',
+          collapsed ? 'px-2' : 'px-2.5'
+        )}
       >
         {groups.map((group) => (
-          <div key={group.label} className="mb-5 last:mb-0">
+          <div key={group.label} className="mb-3.5 last:mb-0">
             {collapsed ? (
               <div className="bg-line mx-auto mb-2 h-px w-6" aria-hidden />
             ) : (
-              <p className="text-faint px-3 pb-2 font-mono text-[10px] tracking-[0.16em] uppercase">
+              <p className="text-faint px-2.5 pb-1 font-mono text-[0.625rem] tracking-[0.16em] uppercase">
                 {group.label}
               </p>
             )}
-            <ul className="grid gap-1">
+            <ul className="grid gap-0.5">
               {group.items.map((item) => (
                 <li key={item.label}>
                   <NavRow
@@ -171,12 +242,12 @@ export function AppSidebar({
           The design's footer is a divider with Settings and Logout under it.
           Ours keeps the identity, because a product where you can be signed in
           as two different people in two tabs had better say which one you are. */}
-      <div className={cn('border-line shrink-0 border-t', collapsed ? 'p-2' : 'p-3')}>
+      <div className={cn('border-line shrink-0 border-t', collapsed ? 'p-2' : 'p-2.5')}>
         {collapsed ? (
           <div className="grid gap-1.5">
             <p
               title={`${name || 'Signed in'}${email ? ` (${email})` : ''}`}
-              className="bg-accent-soft text-accent mx-auto grid size-9 place-items-center rounded-full font-mono text-[13px] font-bold uppercase"
+              className="bg-accent-soft text-accent mx-auto grid size-9 place-items-center rounded-full font-mono text-[0.8125rem] font-bold uppercase"
             >
               {initial}
             </p>
@@ -195,15 +266,15 @@ export function AppSidebar({
           <div className="wx-glass-panel flex items-center gap-2.5 rounded-xl py-2 pr-1.5 pl-2.5">
             <span
               aria-hidden
-              className="bg-accent-soft text-accent grid size-9 shrink-0 place-items-center rounded-full font-mono text-[13px] font-bold uppercase"
+              className="bg-accent-soft text-accent grid size-9 shrink-0 place-items-center rounded-full font-mono text-[0.8125rem] font-bold uppercase"
             >
               {initial}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[13px] font-semibold">
+              <span className="block truncate text-[0.8125rem] font-semibold">
                 {name || 'Signed in'}
               </span>
-              <span className="text-faint block truncate text-[11px]">{email}</span>
+              <span className="text-faint block truncate text-[0.6875rem]">{email}</span>
             </span>
             <button
               type="button"
@@ -236,15 +307,18 @@ function NavRow({
   onNavigate?: () => void;
 }) {
   /*
-   * py-3 and gap-3, from the design, against py-2.5 and gap-3 before. It reads
-   * as a deliberate list rather than a dense one, which is most of why the old
-   * rail felt flat. `min-h-11` keeps every row a legal tap target on a phone,
-   * which the responsive suite asserts.
+   * TIGHTENED 2026-08-16. It was py-3 / px-4 / 14px inside a 280px rail, which
+   * left a wide band of nothing to the right of every label. Now py-2 / px-3 /
+   * 13px inside 240px.
+   *
+   * `min-h-11` DOES NOT MOVE. It is 44px, the minimum tap target, and the
+   * responsive suite asserts it at 375px. Density is allowed to come out of the
+   * padding; it is not allowed to come out of whether a thumb can hit the row.
    */
   const base = cn(
-    'ease-brand relative flex min-h-11 items-center gap-3 rounded-xl py-3 text-[14px]',
+    'ease-brand relative flex min-h-11 items-center gap-2.5 rounded-lg py-2 text-[0.8125rem]',
     'transition-all duration-200',
-    collapsed ? 'justify-center px-0' : 'px-4'
+    collapsed ? 'justify-center px-0' : 'px-3'
   );
 
   // Not built yet. Rendered as text, never as a link: a nav item that navigates
@@ -256,7 +330,7 @@ function NavRow({
         aria-disabled="true"
         title={collapsed ? `${item.label} (${item.soon ?? 'later'})` : undefined}
       >
-        <item.icon size={17} aria-hidden className="shrink-0" />
+        <item.icon size={16} aria-hidden className="shrink-0" />
         {collapsed ? (
           <span className="sr-only">
             {item.label}, {item.soon ?? 'not yet built'}
@@ -265,7 +339,7 @@ function NavRow({
           <>
             <span className="truncate">{item.label}</span>
             {item.soon ? (
-              <span className="border-line text-faint ml-auto shrink-0 rounded-full border px-1.5 py-0.5 font-mono text-[9px] tracking-[0.1em] uppercase">
+              <span className="border-line text-faint ml-auto shrink-0 rounded-full border px-1.5 py-0.5 font-mono text-[0.5625rem] tracking-[0.1em] uppercase">
                 {item.soon}
               </span>
             ) : null}

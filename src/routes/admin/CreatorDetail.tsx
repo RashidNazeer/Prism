@@ -1,5 +1,6 @@
 import { Link, useParams, useSearchParams } from 'react-router';
 import { ArrowLeft, FileText, History, Video } from 'lucide-react';
+import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { ButtonLink } from '@/components/ui/Button';
 import { JobProgressBar } from '@/components/work/JobProgress';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,19 @@ import {
  * downstream keys on the account rather than on the application, a creator can
  * exist with no application at all, and that screen's whole argument is that
  * its decision is final. It gains a link across instead.
+ *
+ * NO TITLE ROW OF ITS OWN SINCE 2026-08-16. The shell's top bar is the page's
+ * `<h1>` and it already says "Creators", so the handle steps down to an `<h2>`
+ * rather than going away: on a record screen the name IS the record, and
+ * "Creators" alone does not tell you whose page you are looking at. There was
+ * never a describe-the-screen paragraph here to delete.
+ *
+ * THE MONEY ROW STAYS ABOVE THE TAB ROW, the one place this screen departs from
+ * "row one is the filter row". Agreed / awaiting / paid are record scope, not
+ * tab scope: they do not change when the tab does, so sitting under the tabs
+ * they would read as a header for the Work list and then contradict themselves
+ * on History. The reference data Rashid asked to be moved off the top, the
+ * account facts, is already a tab across.
  */
 
 const SECTIONS = [
@@ -70,7 +84,7 @@ export function CreatorDetail() {
       <>
         <div className="border-line bg-surface-1 max-w-lg rounded-xl border p-8 text-center shadow-md">
           <p className="font-semibold">No such creator</p>
-          <p className="text-muted mt-2 text-[14px] leading-relaxed">
+          <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
             The account may have been closed. Nothing else is affected.
           </p>
           <ButtonLink to="/admin/creators" variant="secondary" size="sm" className="mt-5">
@@ -89,7 +103,8 @@ export function CreatorDetail() {
 
   return (
     <>
-      {/* Compact header: back, who, and the chips that earn their place. */}
+      {/* Compact header: back, who (an `<h2>`, the shell owns the `<h1>`), and
+          the chips that earn their place. */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <Link
           to="/admin/creators"
@@ -99,17 +114,17 @@ export function CreatorDetail() {
           <ArrowLeft size={15} aria-hidden />
         </Link>
 
-        <h1 className="font-display min-w-0 text-[clamp(1.35rem,3vw,1.75rem)] font-semibold break-words">
+        <h2 className="font-display min-w-0 text-[clamp(1.35rem,3vw,1.75rem)] font-semibold break-words">
           {who}
-        </h1>
+        </h2>
 
         {creator.tier ? (
-          <span className="bg-accent-soft text-accent rounded-full px-2.5 py-1 font-mono text-[10px] tracking-[0.12em] uppercase">
+          <span className="bg-accent-soft text-accent rounded-full px-2.5 py-1 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
             {TIER_LABEL[creator.tier]} tier
           </span>
         ) : null}
         {!creator.is_active ? (
-          <span className="bg-surface-2 text-muted rounded-full px-2.5 py-1 font-mono text-[10px] tracking-[0.12em] uppercase">
+          <span className="bg-surface-2 text-muted rounded-full px-2.5 py-1 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
             Suspended
           </span>
         ) : null}
@@ -126,38 +141,32 @@ export function CreatorDetail() {
             key={c.label}
             className="border-line bg-surface-1 rounded-xl border px-5 py-4 shadow-md"
           >
-            <dt className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+            <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               {c.label}
             </dt>
-            <dd className={cn('font-display mt-1 text-[19px] font-semibold', c.text)}>
+            <dd className={cn('font-display mt-1 text-[1.1875rem] font-semibold', c.text)}>
               {mine === undefined ? '...' : mixed ? 'Mixed currencies' : money(c.value, cur)}
             </dd>
           </div>
         ))}
       </dl>
 
-      {/* ------------------------------------------------------------ tabs -- */}
-      <div className="-mx-4 mt-5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-        <div role="tablist" aria-label="Creator sections" className="flex min-w-max gap-2">
+      {/*
+        ------------------------------------------------------------ tabs --
+        The shared filter row, not this screen's own pills. Same height, radius
+        and colours as every other admin screen, and it WRAPS at 375px where the
+        old row scrolled sideways and hid Account behind the edge. The tablist
+        label and the URL the tabs write are untouched.
+      */}
+      <FilterBar className="mt-5">
+        <FilterTabs label="Creator sections">
           {SECTIONS.map((s) => (
-            <button
-              key={s.key}
-              role="tab"
-              type="button"
-              aria-selected={s.key === section}
-              onClick={() => go(s.key)}
-              className={cn(
-                'shrink-0 rounded-full border px-4 py-2 text-[13.5px] font-medium transition-colors duration-200',
-                s.key === section
-                  ? 'border-text bg-text text-inverse'
-                  : 'border-line bg-surface-1 text-muted hover:border-text hover:text-text'
-              )}
-            >
+            <FilterTab key={s.key} active={s.key === section} onClick={() => go(s.key)}>
               {s.label}
-            </button>
+            </FilterTab>
           ))}
-        </div>
-      </div>
+        </FilterTabs>
+      </FilterBar>
 
       {section === 'history' ? (
         <HistoryTab creatorId={creator.id} />
@@ -191,7 +200,7 @@ function WorkTab({ jobs, loading }: { jobs: CreatorJob[]; loading: boolean }) {
       <div className="border-line bg-surface-1 mt-5 rounded-xl border px-6 py-16 text-center shadow-md">
         <Video size={26} aria-hidden className="text-faint mx-auto" />
         <p className="mt-4 font-semibold">Nothing taken yet</p>
-        <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+        <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
           This creator is approved but has not asked for an offer. Offers that are open to
           everyone need no asking, so they leave no trace here.
         </p>
@@ -213,7 +222,7 @@ function WorkTab({ jobs, loading }: { jobs: CreatorJob[]; loading: boolean }) {
           >
             <div className="flex flex-wrap items-start justify-between gap-x-5 gap-y-2">
               <div className="min-w-0 flex-1 basis-52">
-                <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+                <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                   <Link
                     to={`/admin/brands/${job.brand_id}`}
                     className="hover:text-accent transition-colors"
@@ -221,11 +230,11 @@ function WorkTab({ jobs, loading }: { jobs: CreatorJob[]; loading: boolean }) {
                     {job.brand?.name ?? 'A brand'}
                   </Link>
                 </p>
-                <p className="mt-0.5 text-[15px] font-semibold break-words">
+                <p className="mt-0.5 text-[0.9375rem] font-semibold break-words">
                   {job.offer?.title ?? 'An offer'}
                 </p>
                 {job.status !== 'approved' ? (
-                  <p className="text-muted mt-1 text-[12.5px]">
+                  <p className="text-muted mt-1 text-[0.78125rem]">
                     {job.status === 'pending'
                       ? 'Waiting on a decision'
                       : job.status === 'rejected'
@@ -236,13 +245,13 @@ function WorkTab({ jobs, loading }: { jobs: CreatorJob[]; loading: boolean }) {
               </div>
 
               <div className="shrink-0 text-right">
-                <p className="font-display text-[16px] font-semibold">
+                <p className="font-display text-[1rem] font-semibold">
                   {job.committed_amount == null
                     ? 'No fixed fee'
                     : money(job.committed_amount, job.currency)}
                 </p>
                 {job.committed_video_count ? (
-                  <p className="text-faint text-[12px]">
+                  <p className="text-faint text-[0.75rem]">
                     {job.committed_video_count} videos agreed
                   </p>
                 ) : null}
@@ -252,11 +261,11 @@ function WorkTab({ jobs, loading }: { jobs: CreatorJob[]; loading: boolean }) {
             {stage ? (
               <div className="border-line mt-3 border-t pt-3">
                 <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                  <span className="text-[12.5px] font-semibold">
+                  <span className="text-[0.78125rem] font-semibold">
                     {stageIndex(stage) + 1}. {STAGE_META[stage].label}
                   </span>
                   {standing ? (
-                    <span className="text-muted text-[12.5px]">standing here {standing}</span>
+                    <span className="text-muted text-[0.78125rem]">standing here {standing}</span>
                   ) : null}
                 </p>
                 {p ? <JobProgressBar progress={p} className="mt-2.5" compact /> : null}
@@ -304,13 +313,13 @@ function HistoryTab({ creatorId }: { creatorId: string }) {
               key={row.id}
               className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-5 py-3"
             >
-              <span className="text-[13.5px] font-medium">{describe(row.action)}</span>
-              <span className="text-muted min-w-0 flex-1 truncate text-[12.5px]">
+              <span className="text-[0.84375rem] font-medium">{describe(row.action)}</span>
+              <span className="text-muted min-w-0 flex-1 truncate text-[0.78125rem]">
                 {detailLine(row.detail)}
               </span>
               <time
                 dateTime={row.created_at}
-                className="text-faint shrink-0 text-[12px]"
+                className="text-faint shrink-0 text-[0.75rem]"
                 title={row.actor_email ?? undefined}
               >
                 {new Date(row.created_at).toLocaleDateString(undefined, {
@@ -328,7 +337,7 @@ function HistoryTab({ creatorId }: { creatorId: string }) {
         this list is only ever what WE did. Pretending otherwise would make a
         busy creator look idle.
       */}
-      <p className="text-faint mt-3 text-[12.5px] leading-relaxed">
+      <p className="text-faint mt-3 text-[0.78125rem] leading-relaxed">
         This is the record of decisions the team made. What the creator did, including every
         video they posted, is on the Work tab and the content screen.
       </p>
@@ -397,7 +406,7 @@ function AccountTab({
             key={f.label}
             className="border-line bg-surface-1 rounded-lg border px-5 py-4"
           >
-            <dt className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+            <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               {f.label}
             </dt>
             <dd className="mt-1.5 font-semibold break-words">{f.value}</dd>
@@ -416,7 +425,7 @@ function AccountTab({
           The application they sent
         </ButtonLink>
       ) : (
-        <p className="text-faint text-[12.5px] leading-relaxed">
+        <p className="text-faint text-[0.78125rem] leading-relaxed">
           This creator has no application on file. That is possible: an account can be made for
           somebody directly.
         </p>

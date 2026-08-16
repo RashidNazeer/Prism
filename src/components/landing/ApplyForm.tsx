@@ -176,7 +176,7 @@ export function ApplyForm() {
       className="rounded-2xl border border-line bg-surface-1 p-6 shadow-lg sm:p-7"
     >
       <div className="flex items-center gap-4">
-        <h2 className="font-mono text-[11px] font-medium tracking-[0.16em] text-muted uppercase">
+        <h2 className="font-mono text-[0.6875rem] font-medium tracking-[0.16em] text-muted uppercase">
           {alreadySignedIn ? 'Finish your application' : 'Apply to join'}
         </h2>
         <span className="h-px flex-1 bg-line" aria-hidden />
@@ -350,7 +350,7 @@ export function ApplyForm() {
       </Button>
 
       {!alreadySignedIn && (
-        <p className="mt-4 text-center text-[13px] text-faint">
+        <p className="mt-4 text-center text-[0.8125rem] text-faint">
           Already applied?{' '}
           <Link to="/login" className="font-medium text-accent hover:underline">
             Sign in

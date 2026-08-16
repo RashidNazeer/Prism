@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Search, ShieldCheck, Trophy, Users } from 'l
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Field';
 import { ContestsHeader } from '@/components/admin/ContestsHeader';
+import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { ContestStateChip } from '@/components/work/ContestStateChip';
 import { cn } from '@/lib/utils';
 import { formatDeadline, timeLeft } from '@/lib/contest-time';
@@ -133,54 +134,37 @@ export function AllContests() {
       {/*
         EVERY FILTER ON ONE LINE, from Rashid's layout note: the four states,
         then search, then the two dropdowns, all in the same row inside one
-        panel with a translucent border.
+        panel with a translucent border. The labels those fields used to carry
+        are still there for screen readers through aria-label; they are just not
+        taking a line each any more.
 
-        It was a tab pill, then a hint, then a three column grid of LABELLED
-        fields, which cost about 150px of height to say three words the
-        placeholders already say. The labels are still there for screen readers
-        through aria-label; they are just not taking a line each.
+        The row itself is `FilterBar` now rather than the panel this screen used
+        to spell out by hand. This screen is where that component came from, so
+        nothing here looks different; what changes is that the other admin
+        screens can no longer drift away from it.
       */}
-      <div className="wx-glass-panel mt-3 flex flex-wrap items-center gap-2 rounded-lg p-2">
-        {/* The four states. Scrolls inside itself on a phone rather than
+      <FilterBar className="mt-3">
+        {/* The four states. Wraps inside the panel on a phone rather than
             pushing the page sideways. */}
-        <div
-          role="tablist"
-          aria-label="Filter contests by state"
-          className="bg-surface-2 border-line flex shrink-0 items-center gap-0.5 rounded-md border p-1"
+        <FilterTabs
+          label="Filter contests by state"
+          // 44px is the tap target rule in CLAUDE.md and the contests suite
+          // asserts it on every control at 375px. `FilterTab` is drawn at the
+          // desktop height, so the height comes back here rather than being
+          // lost in the move to the shared row.
+          className="[&>button]:min-h-11"
         >
-          {TABS.map((t) => {
-            const n = counts?.[t.value];
-            const active = filters.tab === t.value;
-            return (
-              <button
-                key={t.value}
-                role="tab"
-                type="button"
-                aria-selected={active}
-                onClick={() => setFilters({ tab: t.value })}
-                className={cn(
-                  // min-h-11, not the design's smaller pill. 44px is the tap
-                  // target rule in CLAUDE.md and `verify:responsive` asserts it
-                  // on every control; the design was drawn for a desktop.
-                  'ease-brand min-h-11 shrink-0 rounded px-3 text-[13px] font-medium transition-colors duration-200',
-                  active ? 'bg-accent text-on-accent' : 'text-muted hover:text-accent'
-                )}
-              >
-                {t.label}
-                {typeof n === 'number' ? (
-                  <span
-                    className={cn(
-                      'wx-numeric ml-1.5 font-mono text-[12px]',
-                      active ? 'text-on-accent/80' : 'text-faint'
-                    )}
-                  >
-                    {n}
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
+          {TABS.map((t) => (
+            <FilterTab
+              key={t.value}
+              active={filters.tab === t.value}
+              count={counts?.[t.value]}
+              onClick={() => setFilters({ tab: t.value })}
+            >
+              {t.label}
+            </FilterTab>
+          ))}
+        </FilterTabs>
 
         <form
           className="min-w-[10rem] flex-1"
@@ -202,7 +186,7 @@ export function AllContests() {
               value={searchDraft}
               onChange={(e) => setSearchDraft(e.target.value)}
               placeholder="Search contests..."
-              className="h-10 rounded-md pl-9 text-[14px]"
+              className="h-10 rounded-md pl-9 text-[0.875rem]"
             />
           </div>
         </form>
@@ -212,7 +196,7 @@ export function AllContests() {
           aria-label="Filter by brand"
           value={filters.brandId}
           onChange={(e) => setFilters({ brandId: e.target.value })}
-          className="h-10 w-auto min-w-[8.5rem] shrink-0 rounded-md text-[14px]"
+          className="h-10 w-auto min-w-[8.5rem] shrink-0 rounded-md text-[0.875rem]"
         >
           <option value="">All brands</option>
           {(brands ?? []).map((b) => (
@@ -227,17 +211,23 @@ export function AllContests() {
           aria-label="Order contests"
           value={filters.sort}
           onChange={(e) => setFilters({ sort: e.target.value as AllContestsSort })}
-          className="h-10 w-auto min-w-[8.5rem] shrink-0 rounded-md text-[14px]"
+          className="h-10 w-auto min-w-[8.5rem] shrink-0 rounded-md text-[0.875rem]"
         >
           <option value="deadline">Closing soonest</option>
           <option value="newest">Newest first</option>
         </Select>
-      </div>
+      </FilterBar>
 
-      {/* Ended is a subset of On, and saying so is cheaper than letting somebody
-          work out why the four numbers do not add up to the first one. */}
+      {/*
+        Ended is a subset of On, and saying so is cheaper than letting somebody
+        work out why the four numbers do not add up to the first one.
+
+        This is not the screen's description, which is why it survived the cull
+        of those: it only exists while the Ended tab is the one you are on, and
+        it sits directly under the tab it is explaining.
+      */}
       {filters.tab === 'ended' ? (
-        <p className="text-faint mt-2 max-w-prose text-[12px] leading-relaxed">
+        <p className="text-faint mt-2 max-w-prose text-[0.75rem] leading-relaxed">
           Switched on, deadline gone, and nobody has settled or cancelled it yet. These are the
           ones waiting on a person. They are counted under On as well.
         </p>
@@ -316,7 +306,7 @@ export function AllContests() {
       {/* ------------------------------------------------------ pagination -- */}
       {total > ALL_CONTESTS_PAGE_SIZE ? (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="wx-numeric text-muted font-mono text-[13px]">
+          <p className="wx-numeric text-muted font-mono text-[0.8125rem]">
             {(filters.page - 1) * ALL_CONTESTS_PAGE_SIZE + 1} to{' '}
             {Math.min(filters.page * ALL_CONTESTS_PAGE_SIZE, total)} of {total}
           </p>
@@ -331,7 +321,7 @@ export function AllContests() {
               <ChevronLeft size={15} aria-hidden />
               Back
             </Button>
-            <span className="wx-numeric text-muted px-1 font-mono text-[12px]">
+            <span className="wx-numeric text-muted px-1 font-mono text-[0.75rem]">
               {filters.page} of {pages}
             </span>
             <Button
@@ -387,12 +377,12 @@ function ContestRow({
       <div className="flex flex-wrap items-start justify-between gap-2">
         {/* The brand is plain text in a pill, not a second link: a link inside
             a link is invalid, and the whole card is already the target. */}
-        <span className="bg-surface-2 border-line text-text shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold tracking-[0.1em] uppercase">
+        <span className="bg-surface-2 border-line text-text shrink-0 rounded-full border px-3 py-1 text-[0.6875rem] font-semibold tracking-[0.1em] uppercase">
           {row.brandName ?? 'Unknown brand'}
         </span>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           {!row.brandIsActive ? (
-            <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase">
+            <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
               Brand retired
             </span>
           ) : null}
@@ -402,10 +392,10 @@ function ContestRow({
 
       {/* ------------------------------------------------------ what it is -- */}
       <div>
-        <h3 className="font-display text-text group-hover:text-accent text-[20px] leading-tight font-bold break-words transition-colors">
+        <h3 className="font-display text-text group-hover:text-accent text-[1.25rem] leading-tight font-bold break-words transition-colors">
           {c.name}
         </h3>
-        <p className="text-muted mt-2 flex items-center gap-2 text-[13px]">
+        <p className="text-muted mt-2 flex items-center gap-2 text-[0.8125rem]">
           <ShieldCheck size={15} aria-hidden className="text-faint shrink-0" />
           {c.needsAdminApproval ? 'You approve entries' : 'Anyone can enter'}
         </p>
@@ -420,14 +410,14 @@ function ContestRow({
       <div className="border-line mt-auto flex items-end justify-between gap-4 border-t pt-4">
         {/* Always in the zone the admin chose, never the reader's. Rule L6. */}
         <div className="min-w-0">
-          <span className="text-faint block text-[10px] font-semibold tracking-[0.14em] uppercase">
+          <span className="text-faint block text-[0.625rem] font-semibold tracking-[0.14em] uppercase">
             Closing date
           </span>
           <span className="mt-1 flex flex-wrap items-center gap-2">
-            <span className="text-text text-[13px] font-semibold">
+            <span className="text-text text-[0.8125rem] font-semibold">
               {formatDeadline(c.expiresAt, c.expiresAtTimezone)}
             </span>
-            <span className="bg-surface-2 text-muted border-line shrink-0 rounded-md border px-2 py-0.5 font-mono text-[11px]">
+            <span className="bg-surface-2 text-muted border-line shrink-0 rounded-md border px-2 py-0.5 font-mono text-[0.6875rem]">
               {left}
             </span>
           </span>
@@ -443,25 +433,25 @@ function ContestRow({
           nobody is in. Printing 0 early would read as "nobody wanted it".
         */}
         <div className="shrink-0 text-right">
-          <span className="text-faint block text-[10px] font-semibold tracking-[0.14em] uppercase">
+          <span className="text-faint block text-[0.625rem] font-semibold tracking-[0.14em] uppercase">
             Creators
           </span>
           {peoplePending && !people ? (
             <span className="wx-skeleton mt-1.5 ml-auto block h-5 w-16 rounded-md" />
           ) : people && (people.approved > 0 || people.pending > 0) ? (
             <span className="mt-1 flex flex-col items-end gap-1">
-              <span className="font-display text-text inline-flex items-center gap-1.5 text-[17px] font-semibold">
+              <span className="font-display text-text inline-flex items-center gap-1.5 text-[1.0625rem] font-semibold">
                 <span className="wx-numeric font-mono">{people.approved}</span>
                 <Users size={15} aria-hidden className="text-accent" />
               </span>
               {people.pending > 0 ? (
-                <span className="bg-stage-due-soft text-stage-due inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium">
+                <span className="bg-stage-due-soft text-stage-due inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.6875rem] font-medium">
                   <span className="wx-numeric font-mono">{people.pending}</span> waiting
                 </span>
               ) : null}
             </span>
           ) : (
-            <span className="text-muted mt-1 block text-[13px]">Nobody yet</span>
+            <span className="text-muted mt-1 block text-[0.8125rem]">Nobody yet</span>
           )}
         </div>
       </div>
@@ -485,8 +475,8 @@ function Panel({
       <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
         <Trophy size={19} className="text-muted" aria-hidden />
       </div>
-      <h2 className="font-display text-text text-[19px] leading-tight font-bold">{title}</h2>
-      <p className="text-muted max-w-prose text-[14px] leading-relaxed">{body}</p>
+      <h2 className="font-display text-text text-[1.1875rem] leading-tight font-bold">{title}</h2>
+      <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">{body}</p>
       {action}
     </div>
   );

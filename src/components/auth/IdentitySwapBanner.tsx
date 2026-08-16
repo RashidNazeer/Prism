@@ -48,7 +48,7 @@ export function IdentitySwapBanner() {
       <div className="mx-auto flex max-w-[1140px] flex-wrap items-center gap-x-4 gap-y-2.5">
         <AlertTriangle size={18} className="text-stage-due shrink-0" aria-hidden />
 
-        <p className="text-stage-due min-w-0 flex-1 basis-64 text-[13px] leading-relaxed font-medium">
+        <p className="text-stage-due min-w-0 flex-1 basis-64 text-[0.8125rem] leading-relaxed font-medium">
           {signedOutElsewhere ? (
             <>
               <span className="font-semibold">You were signed out in another tab.</span> This tab
@@ -90,7 +90,7 @@ export function IdentitySwapBanner() {
           Said plainly rather than left for somebody to work out, because the
           alternative is believing the product is broken.
         */}
-        <p className="text-stage-due/80 basis-full text-[12px] leading-relaxed">
+        <p className="text-stage-due/80 basis-full text-[0.75rem] leading-relaxed">
           To be signed in as two people at once, use a private window or a second browser
           profile. They keep their own storage; tabs in the same window cannot.
         </p>

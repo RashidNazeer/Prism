@@ -16,6 +16,12 @@ import {
  * Read only, and not because the UI says so. `audit_log` has no insert, update
  * or delete grant to `authenticated`, so an admin sitting in the browser
  * console cannot rewrite this page's contents either.
+ *
+ * NO FILTER ROW HERE, deliberately. The screen has nothing to filter by: it is
+ * one list, newest first, and the pager belongs under it rather than above it.
+ * An empty control panel at the top would only be a bar with a border on it.
+ * The title and the blurb that used to sit here are gone with the rest of the
+ * product's title rows, 2026-08-16; the shell names the section now.
  */
 export function Activity() {
   const [params, setParams] = useSearchParams();
@@ -34,15 +40,9 @@ export function Activity() {
 
   return (
     <>
-      <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold">Activity</h1>
-      <p className="text-muted mt-2 max-w-2xl text-[15px] leading-relaxed">
-        Every approval, rejection and blocked attempt, with who did it and when. Nobody can edit
-        or delete this from the browser, including an admin. That is the point of keeping it.
-      </p>
-
       <div
         className={cn(
-          'border-line bg-surface-1 mt-8 overflow-hidden rounded-xl border shadow-md transition-opacity duration-200',
+          'border-line bg-surface-1 overflow-hidden rounded-xl border shadow-md transition-opacity duration-200',
           isPlaceholderData && 'opacity-60'
         )}
       >
@@ -58,7 +58,7 @@ export function Activity() {
         ) : isError ? (
           <div className="px-6 py-14 text-center">
             <p className="font-semibold">The log would not load</p>
-            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
@@ -66,7 +66,7 @@ export function Activity() {
           <div className="px-6 py-16 text-center">
             <History size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">Nothing has happened yet</p>
-            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               The first approval or rejection will appear here.
             </p>
           </div>
@@ -83,7 +83,7 @@ export function Activity() {
 
       {total > 0 ? (
         <div className="mt-4 flex items-center justify-between gap-4">
-          <p className="wx-numeric text-muted text-[13px]">
+          <p className="wx-numeric text-muted text-[0.8125rem]">
             {(page - 1) * AUDIT_PAGE_SIZE + 1} to {Math.min(page * AUDIT_PAGE_SIZE, total)} of{' '}
             {total}
           </p>
@@ -97,7 +97,7 @@ export function Activity() {
               <ChevronLeft size={15} aria-hidden />
               Previous
             </Button>
-            <span className="wx-numeric text-muted px-1 font-mono text-[12px]">
+            <span className="wx-numeric text-muted px-1 font-mono text-[0.75rem]">
               {page} / {pages}
             </span>
             <Button
@@ -138,7 +138,7 @@ function Row({ entry }: { entry: AuditEntry }) {
           as <span className="capitalize">{tier}</span>
         </span>
       ) : null}
-      <span className="wx-numeric text-faint ml-auto shrink-0 text-[13px]">
+      <span className="wx-numeric text-faint ml-auto shrink-0 text-[0.8125rem]">
         {new Date(entry.created_at).toLocaleString(undefined, {
           day: 'numeric',
           month: 'short',
@@ -148,7 +148,7 @@ function Row({ entry }: { entry: AuditEntry }) {
         })}
       </span>
       {note ? (
-        <p className="text-muted w-full text-[13px] leading-relaxed">&ldquo;{note}&rdquo;</p>
+        <p className="text-muted w-full text-[0.8125rem] leading-relaxed">&ldquo;{note}&rdquo;</p>
       ) : null}
     </div>
   );

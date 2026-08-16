@@ -77,10 +77,10 @@ export function ApprovedMoment({
 
             {tier ? (
               <Stagger delay={0.5}>
-                <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-accent-soft px-3.5 py-1.5 font-mono text-[11px] tracking-[0.16em] text-accent uppercase">
+                <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-accent-soft px-3.5 py-1.5 font-mono text-[0.6875rem] tracking-[0.16em] text-accent uppercase">
                   {tier} tier
                 </p>
-                <p className="mt-3 text-[14px] leading-relaxed text-muted">
+                <p className="mt-3 text-[0.875rem] leading-relaxed text-muted">
                   {TIER_COPY[tier]}
                 </p>
               </Stagger>
@@ -88,7 +88,7 @@ export function ApprovedMoment({
 
             {note ? (
               <Stagger delay={0.58}>
-                <p className="mt-6 rounded-2xl border border-line bg-surface-2 px-5 py-4 text-left text-[14px] leading-relaxed text-muted">
+                <p className="mt-6 rounded-2xl border border-line bg-surface-2 px-5 py-4 text-left text-[0.875rem] leading-relaxed text-muted">
                   {note}
                 </p>
               </Stagger>
@@ -104,7 +104,7 @@ export function ApprovedMoment({
               disabled={busy}
               whileHover={{ scale: 1.015 }}
               whileTap={{ scale: 0.985 }}
-              className="group relative flex h-13 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border border-accent bg-transparent text-[15px] font-semibold text-accent transition-colors duration-300 ease-brand hover:text-on-accent disabled:opacity-60"
+              className="group relative flex h-13 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border border-accent bg-transparent text-[0.9375rem] font-semibold text-accent transition-colors duration-300 ease-brand hover:text-on-accent disabled:opacity-60"
             >
               <span
                 aria-hidden

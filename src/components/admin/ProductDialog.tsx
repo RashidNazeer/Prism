@@ -116,7 +116,7 @@ export function ProductDialog({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold">{product ? 'Edit product' : 'Add a product'}</h2>
-            <p className="text-muted mt-1 text-[14px] leading-relaxed">
+            <p className="text-muted mt-1 text-[0.875rem] leading-relaxed">
               What {brandName} sells, and what a creator earns on it.
             </p>
           </div>
@@ -271,8 +271,8 @@ export function ProductDialog({
                 className="mt-0.5 size-4 cursor-pointer accent-[var(--wx-accent)]"
               />
               <span>
-                <span className="block text-[14px] font-medium">Show to creators</span>
-                <span className="text-muted mt-0.5 block text-[13px] leading-relaxed">
+                <span className="block text-[0.875rem] font-medium">Show to creators</span>
+                <span className="text-muted mt-0.5 block text-[0.8125rem] leading-relaxed">
                   Switch this off to keep a product on file without it appearing in the brand
                   hub.
                 </span>

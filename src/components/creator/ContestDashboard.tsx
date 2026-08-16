@@ -53,10 +53,10 @@ export function ContestDashboard({ contests }: { contests: CreatorContest[] }) {
         <div className="bg-surface-3 border-line-strong grid size-11 place-items-center rounded-lg border">
           <Trophy size={19} className="text-muted" aria-hidden />
         </div>
-        <h2 className="font-display text-text text-[21px] leading-tight font-bold">
+        <h2 className="font-display text-text text-[1.3125rem] leading-tight font-bold">
           You are not in a contest yet
         </h2>
-        <p className="text-muted max-w-prose text-[14px] leading-relaxed">
+        <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">
           Enter one and this becomes the screen that tells you how close you are to each target,
           what has been confirmed, and where you sit against everybody else in it.
         </p>
@@ -153,16 +153,16 @@ function Figure({
 }) {
   return (
     <div className="border-line bg-surface-1 rounded-xl border p-4 shadow-md">
-      <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">{label}</p>
+      <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">{label}</p>
       <p
         className={cn(
-          'font-display mt-1.5 text-[26px] leading-none font-bold',
+          'font-display mt-1.5 text-[1.625rem] leading-none font-bold',
           tone === 'paid' ? 'text-stage-paid' : tone === 'due' ? 'text-stage-due' : 'text-text'
         )}
       >
         {value}
       </p>
-      {note ? <p className="text-faint mt-1.5 text-[12px] leading-snug">{note}</p> : null}
+      {note ? <p className="text-faint mt-1.5 text-[0.75rem] leading-snug">{note}</p> : null}
     </div>
   );
 }
@@ -189,13 +189,13 @@ function ContestCard({ contest }: { contest: CreatorContest }) {
     <section className="border-line bg-surface-1 rounded-xl border p-5 shadow-md">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             {contest.brand?.name ?? 'Contest'}
           </p>
-          <h2 className="font-display text-text mt-1 text-[21px] leading-tight font-bold">
+          <h2 className="font-display text-text mt-1 text-[1.3125rem] leading-tight font-bold">
             {contest.name}
           </h2>
-          <p className="text-muted mt-1 text-[13px]">
+          <p className="text-muted mt-1 text-[0.8125rem]">
             Closes {formatDeadline(contest.expiresAt, contest.expiresAtTimezone)}
             <span className="text-faint"> · {timeLeft(contest.expiresAt)}</span>
           </p>
@@ -217,7 +217,7 @@ function ContestCard({ contest }: { contest: CreatorContest }) {
         <div className="border-line bg-surface-2 mt-4 flex flex-wrap gap-x-6 gap-y-2 rounded-lg border p-3.5">
           <Standing label="On GMV" place={standing.gmvPlace} of={standing.entrants} />
           <Standing label="On videos" place={standing.videoPlace} of={standing.entrants} />
-          <p className="text-faint basis-full text-[12px] leading-snug">
+          <p className="text-faint basis-full text-[0.75rem] leading-snug">
             Ranked on confirmed figures only, so it moves when the team confirms a claim rather
             than when somebody posts. Nobody can see who anybody else is.
           </p>
@@ -247,7 +247,7 @@ function ContestCard({ contest }: { contest: CreatorContest }) {
        */}
       {contest.awards.length > 0 ? (
         <div className="border-line mt-5 border-t pt-4">
-          <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             What you have earned
           </p>
           <ul className="mt-2.5 flex flex-col gap-2">
@@ -259,11 +259,11 @@ function ContestCard({ contest }: { contest: CreatorContest }) {
                   className="border-line bg-surface-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 rounded-xl border px-3.5 py-3"
                 >
                   <span className="min-w-0 flex-1 basis-44">
-                    <span className="text-text block text-[13px] font-semibold break-words">
+                    <span className="text-text block text-[0.8125rem] font-semibold break-words">
                       {term?.title ?? 'A reward you earned'}
                     </span>
                     {w.message ? (
-                      <span className="text-muted mt-0.5 block text-[12px] leading-relaxed">
+                      <span className="text-muted mt-0.5 block text-[0.75rem] leading-relaxed">
                         {w.message}
                       </span>
                     ) : null}
@@ -271,7 +271,7 @@ function ContestCard({ contest }: { contest: CreatorContest }) {
                   <span className="flex shrink-0 items-center gap-2.5">
                     <span
                       className={cn(
-                        'wx-numeric font-display text-[17px] leading-none font-bold',
+                        'wx-numeric font-display text-[1.0625rem] leading-none font-bold',
                         w.paidAt ? 'text-stage-paid' : 'text-stage-due'
                       )}
                     >
@@ -279,7 +279,7 @@ function ContestCard({ contest }: { contest: CreatorContest }) {
                     </span>
                     <span
                       className={cn(
-                        'rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                        'rounded-full px-2.5 py-1 text-[0.6875rem] font-semibold',
                         w.paidAt
                           ? 'bg-stage-paid-soft text-stage-paid'
                           : 'bg-stage-due-soft text-stage-due'
@@ -296,14 +296,14 @@ function ContestCard({ contest }: { contest: CreatorContest }) {
       ) : null}
 
       {contest.pendingClaim ? (
-        <p className="text-stage-due mt-4 text-[13px] font-medium">
+        <p className="text-stage-due mt-4 text-[0.8125rem] font-medium">
           One claim is with the team. Nothing moves above until they confirm it.
         </p>
       ) : null}
 
       <Link
         to="/app/contests"
-        className="text-accent ease-brand mt-4 inline-flex min-h-11 items-center text-[13px] font-semibold transition-colors hover:underline"
+        className="text-accent ease-brand mt-4 inline-flex min-h-11 items-center text-[0.8125rem] font-semibold transition-colors hover:underline"
       >
         Open this contest
       </Link>
@@ -315,7 +315,7 @@ function Standing({ label, place, of }: { label: string; place: number; of: numb
   const ordinal =
     place === 1 ? '1st' : place === 2 ? '2nd' : place === 3 ? '3rd' : `${place}th`;
   return (
-    <p className="text-[13px]">
+    <p className="text-[0.8125rem]">
       <span className="text-muted">{label}: </span>
       <span className="text-text font-display font-bold">{ordinal}</span>
       <span className="text-muted"> closest of {of}</span>

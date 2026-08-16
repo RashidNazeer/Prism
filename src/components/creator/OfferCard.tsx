@@ -86,14 +86,14 @@ export function OfferCard({
               <Store size={13} aria-hidden className="text-faint" />
             )}
           </span>
-          <span className="truncate text-[13px] font-medium">{offer.brand.name}</span>
+          <span className="truncate text-[0.8125rem] font-medium">{offer.brand.name}</span>
         </Link>
       ) : null}
 
       {offer.badge_title ? (
         <span
           className={cn(
-            'bg-accent-soft text-accent self-start rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-[0.12em] uppercase',
+            'bg-accent-soft text-accent self-start rounded-full px-2.5 py-0.5 text-[0.625rem] font-semibold tracking-[0.12em] uppercase',
             showBrand && offer.brand ? 'mt-3' : 'mb-3'
           )}
         >
@@ -105,7 +105,7 @@ export function OfferCard({
         {offer.title}
       </h3>
       {offer.description ? (
-        <p className="text-muted mt-2 line-clamp-3 text-[14px] leading-relaxed">
+        <p className="text-muted mt-2 line-clamp-3 text-[0.875rem] leading-relaxed">
           {offer.description}
         </p>
       ) : null}
@@ -114,26 +114,26 @@ export function OfferCard({
         <div className="border-line mt-4 flex flex-wrap items-end gap-x-6 gap-y-2 border-t pt-4">
           {hasVideos ? (
             <span>
-              <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+              <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                 Videos
               </span>
-              <span className="font-display mt-1 block text-[19px] font-semibold">
+              <span className="font-display mt-1 block text-[1.1875rem] font-semibold">
                 {videoCount}
               </span>
             </span>
           ) : null}
           {hasReward ? (
             <span>
-              <span className="text-muted block text-[11px] font-semibold tracking-[0.14em] uppercase">
+              <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                 You get
               </span>
-              <span className="font-display text-accent mt-1 block text-[19px] font-semibold">
+              <span className="font-display text-accent mt-1 block text-[1.1875rem] font-semibold">
                 {money(rewardAmount, currency)}
               </span>
             </span>
           ) : null}
           {perVideo !== null ? (
-            <span className="text-faint text-[12px]">
+            <span className="text-faint text-[0.75rem]">
               {money(perVideo, currency)} per video
             </span>
           ) : null}
@@ -192,19 +192,19 @@ function OfferAction({
         >
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <span
-              className={cn('text-[14px] font-semibold', stage === 'paid' && 'text-stage-paid')}
+              className={cn('text-[0.875rem] font-semibold', stage === 'paid' && 'text-stage-paid')}
             >
               {stage === 'paid' ? 'Paid out' : 'You are in'}
             </span>
             {request.committed_amount != null ? (
               <span
-                className={cn('font-display text-[15px] font-semibold', stageTextTone(stage))}
+                className={cn('font-display text-[0.9375rem] font-semibold', stageTextTone(stage))}
               >
                 {money(request.committed_amount, request.currency)}
               </span>
             ) : null}
           </div>
-          <p className="text-muted mt-1 text-[13px] leading-relaxed">
+          <p className="text-muted mt-1 text-[0.8125rem] leading-relaxed">
             {STAGE_META[stage].creatorHint}
           </p>
         </div>
@@ -220,7 +220,7 @@ function OfferAction({
         ) : null}
 
         {request.decision_note ? (
-          <p className="text-muted mt-2 text-[13px]">{request.decision_note}</p>
+          <p className="text-muted mt-2 text-[0.8125rem]">{request.decision_note}</p>
         ) : null}
       </div>
     );
@@ -247,7 +247,7 @@ function OfferAction({
           {withdraw.isPending ? 'Withdrawing...' : 'Withdraw'}
         </Button>
         {withdraw.error ? (
-          <p role="alert" className="text-danger mt-2 text-[12px]">
+          <p role="alert" className="text-danger mt-2 text-[0.75rem]">
             {(withdraw.error as Error).message}
           </p>
         ) : null}
@@ -267,7 +267,7 @@ function OfferAction({
     return (
       <Note tone="success" icon={<Check size={15} aria-hidden />}>
         <span className="font-semibold">You are already on this one</span>
-        <span className="text-muted block text-[13px]">
+        <span className="text-muted block text-[0.8125rem]">
           Open to every approved creator. Nothing to apply for.
         </span>
       </Note>
@@ -280,7 +280,7 @@ function OfferAction({
         <Note tone="danger" icon={<X size={15} aria-hidden />}>
           <span className="font-semibold">Not this time</span>
           {request.decision_note ? (
-            <span className="text-muted mt-0.5 block text-[13px]">{request.decision_note}</span>
+            <span className="text-muted mt-0.5 block text-[0.8125rem]">{request.decision_note}</span>
           ) : null}
         </Note>
         <Button variant="secondary" size="sm" className="mt-2" onClick={onApply}>
@@ -309,7 +309,7 @@ function Note({
   return (
     <p
       className={cn(
-        'flex items-start gap-2.5 rounded-xl px-3.5 py-3 text-[14px]',
+        'flex items-start gap-2.5 rounded-xl px-3.5 py-3 text-[0.875rem]',
         tone === 'success' && 'bg-stage-paid-soft text-stage-paid',
         tone === 'pending' && 'bg-stage-due-soft text-stage-due',
         tone === 'danger' && 'bg-danger-soft text-danger'

@@ -139,7 +139,7 @@ function ViewSwitch({
             aria-selected={active}
             onClick={() => onChange(o.key)}
             className={cn(
-              'ease-brand min-h-11 rounded-lg px-4 text-[13px] font-semibold transition-colors',
+              'ease-brand min-h-11 rounded-lg px-4 text-[0.8125rem] font-semibold transition-colors',
               active ? 'bg-surface-1 text-text shadow-sm' : 'text-muted hover:text-text'
             )}
           >
@@ -281,10 +281,10 @@ export function Contests() {
   return (
     <>
       <div className="flex flex-col gap-1.5 px-0.5 py-1">
-        <h1 className="font-display text-[clamp(26px,4.4vw,40px)] leading-[1.05] font-semibold tracking-[-0.02em]">
+        <h1 className="font-display text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
           Contests
         </h1>
-        <p className="text-muted text-[15px]">
+        <p className="text-muted text-[0.9375rem]">
           Everything running right now, from every brand you work with.
         </p>
       </div>
@@ -315,7 +315,7 @@ export function Contests() {
                   aria-selected={tab === t.value}
                   onClick={() => setTab(t.value)}
                   className={cn(
-                    'ease-brand inline-flex min-h-11 shrink-0 items-center justify-center rounded-[9px] px-3.5 text-[13px] font-medium transition-colors',
+                    'ease-brand inline-flex min-h-11 shrink-0 items-center justify-center rounded-[9px] px-3.5 text-[0.8125rem] font-medium transition-colors',
                     tab === t.value ? 'bg-text text-inverse' : 'text-muted hover:text-text'
                   )}
                 >
@@ -323,7 +323,7 @@ export function Contests() {
                   {counts[t.value] > 0 ? (
                     <span
                       className={cn(
-                        'ml-1.5 font-mono text-[12px]',
+                        'ml-1.5 font-mono text-[0.75rem]',
                         tab === t.value ? 'text-inverse/70' : 'text-muted'
                       )}
                     >
@@ -350,7 +350,7 @@ export function Contests() {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search contests or brands"
                 aria-label="Search contests or brands"
-                className="h-11 pl-9 text-[13px]"
+                className="h-11 pl-9 text-[0.8125rem]"
               />
             </div>
 
@@ -362,7 +362,7 @@ export function Contests() {
               name="brand"
               value={brandId}
               onChange={(e) => setBrandId(e.target.value)}
-              className="h-11 basis-44 text-[13px]"
+              className="h-11 basis-44 text-[0.8125rem]"
             >
               <option value="">All brands</option>
               {brands.map((b) => (
@@ -422,7 +422,7 @@ export function Contests() {
 
               {shut.length > 0 ? (
                 <section className="mt-8">
-                  <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+                  <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                     Closed, and you were not in these
                   </h2>
                   {/*
@@ -432,7 +432,7 @@ export function Contests() {
                     creator asked about and was not in, plus anything that ran
                     out while this tab was open.
                   */}
-                  <p className="text-faint mt-1.5 max-w-prose text-[13px] leading-relaxed">
+                  <p className="text-faint mt-1.5 max-w-prose text-[0.8125rem] leading-relaxed">
                     Their door has shut and you are not in them, so there is nothing to do here.
                   </p>
                   <ul className="mt-3 grid gap-3 lg:grid-cols-2">
@@ -519,38 +519,38 @@ function ContestCard({
               <Store size={13} aria-hidden className="text-faint" />
             )}
           </span>
-          <span className="truncate text-[13px] font-medium">{contest.brand.name}</span>
+          <span className="truncate text-[0.8125rem] font-medium">{contest.brand.name}</span>
         </Link>
       ) : null}
 
       <div className="mt-1 flex flex-wrap items-center gap-2">
         <ContestStateChip state={door} />
         {door === 'open' ? (
-          <span className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <span className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             {contest.needsAdminApproval ? 'Wurx approves entries' : 'Anyone can enter'}
           </span>
         ) : null}
       </div>
 
-      <h3 className="font-display mt-2 text-[19px] leading-tight font-bold">{contest.name}</h3>
+      <h3 className="font-display mt-2 text-[1.1875rem] leading-tight font-bold">{contest.name}</h3>
 
       {contest.description ? (
-        <p className="text-muted mt-2 line-clamp-3 text-[14px] leading-relaxed">
+        <p className="text-muted mt-2 line-clamp-3 text-[0.875rem] leading-relaxed">
           {contest.description}
         </p>
       ) : null}
 
       {/* ------------------------------------------------------- deadline -- */}
       <div className="border-line mt-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t pt-4">
-        <span className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+        <span className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Closes
         </span>
         <span className="text-right">
           {/* Always in the zone the admin chose, never the reader's. Rule L6. */}
-          <span className="text-text block text-[13px] font-semibold">
+          <span className="text-text block text-[0.8125rem] font-semibold">
             {formatDeadline(contest.expiresAt, contest.expiresAtTimezone)}
           </span>
-          <span className="text-muted mt-0.5 flex items-center justify-end gap-1.5 font-mono text-[12px]">
+          <span className="text-muted mt-0.5 flex items-center justify-end gap-1.5 font-mono text-[0.75rem]">
             <Clock size={12} aria-hidden />
             {timeLeft(contest.expiresAt, now)}
           </span>
@@ -560,7 +560,7 @@ function ContestCard({
       {/* --------------------------------------------------- deliverables -- */}
       {rows.length > 0 ? (
         <div className="mt-4">
-          <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             {promised ? 'What you were promised' : 'What it asks for'}
           </p>
           <DeliverableRows rows={rows} currency={contest.currency} className="mt-2" />
@@ -575,7 +575,7 @@ function ContestCard({
       */}
 
       {contest.products.length > 0 ? (
-        <p className="text-muted mt-2 text-[13px] leading-relaxed">
+        <p className="text-muted mt-2 text-[0.8125rem] leading-relaxed">
           <span className="text-text font-semibold">Products: </span>
           {contest.products.map((p) => p.productName).join(', ')}
         </p>
@@ -586,7 +586,7 @@ function ContestCard({
           href={contest.briefUrl}
           target="_blank"
           rel="noreferrer noopener"
-          className="text-accent mt-2 inline-flex min-h-11 items-center gap-1.5 self-start text-[13px] font-semibold hover:underline"
+          className="text-accent mt-2 inline-flex min-h-11 items-center gap-1.5 self-start text-[0.8125rem] font-semibold hover:underline"
         >
           Read the full brief
           <ExternalLink size={13} aria-hidden />
@@ -670,17 +670,17 @@ function ContestAction({
       <div>
         <div className="bg-stage-paid-soft rounded-xl px-3.5 py-3">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <span className="text-stage-paid text-[14px] font-semibold">You are in</span>
+            <span className="text-stage-paid text-[0.875rem] font-semibold">You are in</span>
             {amount !== null ? (
-              <span className="text-muted text-[12px]">
-                <span className="wx-numeric font-display text-text text-[15px] font-semibold">
+              <span className="text-muted text-[0.75rem]">
+                <span className="wx-numeric font-display text-text text-[0.9375rem] font-semibold">
                   {money(amount, contest.entry?.currency ?? contest.currency)}
                 </span>{' '}
                 on offer here
               </span>
             ) : null}
           </div>
-          <p className="text-muted mt-1 text-[13px] leading-relaxed">
+          <p className="text-muted mt-1 text-[0.8125rem] leading-relaxed">
             {door === 'cancelled'
               ? 'This contest was called off. Nothing you were promised is taken away.'
               : door === 'settled'
@@ -690,7 +690,7 @@ function ContestAction({
                   : 'Closed to new entries. Your work carries on and still pays exactly what you were promised.'}
           </p>
           {contest.cancelMessage ? (
-            <p className="text-muted mt-2 text-[13px] leading-relaxed">
+            <p className="text-muted mt-2 text-[0.8125rem] leading-relaxed">
               {contest.cancelMessage}
             </p>
           ) : null}
@@ -730,7 +730,7 @@ function ContestAction({
         {filmed ? <VideosFiled progress={filmed} /> : null}
 
         {contest.entry?.decisionNote ? (
-          <p className="text-muted mt-2 text-[13px]">{contest.entry.decisionNote}</p>
+          <p className="text-muted mt-2 text-[0.8125rem]">{contest.entry.decisionNote}</p>
         ) : null}
 
         {!contest.settledAt && !contest.cancelledAt && contest.entry ? (
@@ -752,7 +752,7 @@ function ContestAction({
         ) : null}
 
         {refusal ? (
-          <p role="alert" className="text-danger mt-2 text-[12px]">
+          <p role="alert" className="text-danger mt-2 text-[0.75rem]">
             {refusal}
           </p>
         ) : null}
@@ -765,7 +765,7 @@ function ContestAction({
       <div>
         <Note tone="pending" icon={<Clock size={15} aria-hidden />}>
           <span className="font-semibold">With the team</span>
-          <span className="text-muted block text-[13px]">
+          <span className="text-muted block text-[0.8125rem]">
             Somebody is reading your entry. The answer appears here, no refresh needed.
           </span>
         </Note>
@@ -779,7 +779,7 @@ function ContestAction({
           {busy ? 'Withdrawing...' : 'Withdraw'}
         </Button>
         {refusal ? (
-          <p role="alert" className="text-danger mt-2 text-[12px]">
+          <p role="alert" className="text-danger mt-2 text-[0.75rem]">
             {refusal}
           </p>
         ) : null}
@@ -793,7 +793,7 @@ function ContestAction({
         <Note tone="danger" icon={<X size={15} aria-hidden />}>
           <span className="font-semibold">Not this time</span>
           {contest.entry?.decisionNote ? (
-            <span className="text-muted mt-0.5 block text-[13px]">
+            <span className="text-muted mt-0.5 block text-[0.8125rem]">
               {contest.entry.decisionNote}
             </span>
           ) : null}
@@ -824,7 +824,7 @@ function ContestAction({
 
   if (door !== 'open') {
     return (
-      <p className="text-muted bg-surface-2 rounded-xl px-3.5 py-3 text-[13px] leading-relaxed">
+      <p className="text-muted bg-surface-2 rounded-xl px-3.5 py-3 text-[0.8125rem] leading-relaxed">
         {door === 'cancelled'
           ? 'This contest was called off.'
           : door === 'settled'
@@ -841,7 +841,7 @@ function ContestAction({
    */
   if (!canEnterAtAll) {
     return (
-      <p className="text-muted bg-surface-2 rounded-xl px-3.5 py-3 text-[13px] leading-relaxed">
+      <p className="text-muted bg-surface-2 rounded-xl px-3.5 py-3 text-[0.8125rem] leading-relaxed">
         This is the creator view. Entering a contest is something only a creator account does.
       </p>
     );
@@ -884,7 +884,7 @@ function VideosFiled({ progress }: { progress: NonNullable<CreatorContest['progr
   if (needsAnotherTake > 0) parts.push(`${needsAnotherTake} to redo`);
 
   return (
-    <p className="text-muted mt-3 text-[13px]">
+    <p className="text-muted mt-3 text-[0.8125rem]">
       <span className="text-text font-semibold">
         Your {posted === 1 ? 'video' : 'videos'}:{' '}
       </span>
@@ -935,7 +935,7 @@ function TargetControl({ entryId, target }: { entryId: string; target: number | 
           setValue(target === null ? '' : String(target));
           setOpen(true);
         }}
-        className="text-muted hover:text-accent ease-brand mt-3 flex min-h-11 w-full items-center gap-2 text-left text-[13px] transition-colors"
+        className="text-muted hover:text-accent ease-brand mt-3 flex min-h-11 w-full items-center gap-2 text-left text-[0.8125rem] transition-colors"
       >
         <Target size={14} aria-hidden className="shrink-0" />
         {target === null ? (
@@ -954,11 +954,11 @@ function TargetControl({ entryId, target }: { entryId: string; target: number | 
     <div className="border-line bg-surface-2 mt-3 rounded-xl border px-3.5 py-3">
       <label
         htmlFor={`target-${entryId}`}
-        className="text-muted block text-[13px] font-semibold"
+        className="text-muted block text-[0.8125rem] font-semibold"
       >
         Your own target
       </label>
-      <p className="text-faint mt-1 text-[12px] leading-relaxed">
+      <p className="text-faint mt-1 text-[0.75rem] leading-relaxed">
         How many approved videos you are going for. Nobody else sees this, not even the team,
         and you can change it any time.
       </p>
@@ -970,7 +970,7 @@ function TargetControl({ entryId, target }: { entryId: string; target: number | 
           disabled={busy}
           onChange={(e) => setValue(e.target.value)}
           placeholder="e.g. 6"
-          className="h-11 w-24 text-[14px]"
+          className="h-11 w-24 text-[0.875rem]"
         />
         <Button
           type="button"
@@ -1015,7 +1015,7 @@ function TargetControl({ entryId, target }: { entryId: string; target: number | 
         </Button>
       </div>
       {error ? (
-        <p role="alert" className="text-danger mt-2 text-[12px]">
+        <p role="alert" className="text-danger mt-2 text-[0.75rem]">
           {error}
         </p>
       ) : null}
@@ -1037,7 +1037,7 @@ function Note({
   return (
     <p
       className={cn(
-        'flex items-start gap-2.5 rounded-xl px-3.5 py-3 text-[14px]',
+        'flex items-start gap-2.5 rounded-xl px-3.5 py-3 text-[0.875rem]',
         tone === 'pending' && 'bg-stage-due-soft text-stage-due',
         tone === 'danger' && 'bg-danger-soft text-danger',
         tone === 'neutral' && 'bg-surface-2 text-text'
@@ -1055,8 +1055,8 @@ function Empty({ title, body }: { title: string; body: string }) {
       <span className="bg-surface-3 border-line-strong mx-auto grid size-12 place-items-center rounded-lg border">
         <Trophy size={20} aria-hidden className="text-muted" />
       </span>
-      <p className="font-display mt-4 text-[19px] font-semibold">{title}</p>
-      <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">{body}</p>
+      <p className="font-display mt-4 text-[1.1875rem] font-semibold">{title}</p>
+      <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">{body}</p>
     </div>
   );
 }

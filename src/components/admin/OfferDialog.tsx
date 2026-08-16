@@ -139,7 +139,7 @@ export function OfferDialog({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold">{offer ? 'Edit offer' : 'New offer'}</h2>
-            <p className="text-muted mt-1 text-[14px] leading-relaxed">
+            <p className="text-muted mt-1 text-[0.875rem] leading-relaxed">
               What {brandName} will pay a creator, and what they get for it.
             </p>
           </div>
@@ -288,13 +288,13 @@ export function OfferDialog({
             {previewable ? (
               <p
                 role="status"
-                className="border-line bg-surface-2 text-muted rounded-xl border px-4 py-3 text-[14px]"
+                className="border-line bg-surface-2 text-muted rounded-xl border px-4 py-3 text-[0.875rem]"
               >
                 <span className="text-text font-semibold">
                   {videos} {videos === 1 ? 'video' : 'videos'} for{' '}
                   {money(reward, values.currency)}
                 </span>
-                <span className="text-faint block text-[13px]">
+                <span className="text-faint block text-[0.8125rem]">
                   {money(perVideo, values.currency)} per video
                 </span>
               </p>
@@ -328,8 +328,8 @@ export function OfferDialog({
                 className="mt-0.5 size-4 cursor-pointer accent-[var(--wx-accent)]"
               />
               <span>
-                <span className="block text-[14px] font-medium">Needs application</span>
-                <span className="text-muted mt-0.5 block text-[13px] leading-relaxed">
+                <span className="block text-[0.875rem] font-medium">Needs application</span>
+                <span className="text-muted mt-0.5 block text-[0.8125rem] leading-relaxed">
                   {values.needsApplication
                     ? 'A creator has to apply and be approved before they get this.'
                     : 'Any approved creator can take this without asking. Nobody signs it off.'}

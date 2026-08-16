@@ -52,7 +52,7 @@ export function ResetPassword() {
   if (ready === 'checking') {
     return (
       <AuthShell title="One moment">
-        <p className="text-[15px] text-muted">Checking your reset link...</p>
+        <p className="text-[0.9375rem] text-muted">Checking your reset link...</p>
       </AuthShell>
     );
   }
@@ -68,7 +68,7 @@ export function ResetPassword() {
           </Link>
         }
       >
-        <p className="text-[15px] leading-relaxed text-muted">
+        <p className="text-[0.9375rem] leading-relaxed text-muted">
           Ask for a fresh link and use it as soon as it arrives.
         </p>
       </AuthShell>

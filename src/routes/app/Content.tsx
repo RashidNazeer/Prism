@@ -164,10 +164,10 @@ export function Content() {
       <div className="flex max-w-[1140px] flex-col gap-[14px]">
         <div className="flex flex-wrap items-end justify-between gap-4 px-0.5 py-1">
           <div className="flex flex-col gap-1.5">
-            <h1 className="font-display text-[clamp(26px,4.4vw,40px)] leading-[1.05] font-semibold tracking-[-0.02em]">
+            <h1 className="font-display text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
               My content
             </h1>
-            <p className="text-muted text-[15px]">
+            <p className="text-muted text-[0.9375rem]">
               Every video you have filmed for us, and what is still to come.
             </p>
           </div>
@@ -186,7 +186,7 @@ export function Content() {
         ) : isError ? (
           <div className="border-line bg-surface-1 rounded-xl border px-6 py-14 text-center shadow-md">
             <p className="font-semibold">That would not load</p>
-            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
@@ -194,7 +194,7 @@ export function Content() {
           <div className="border-line bg-surface-1 rounded-xl border px-6 py-16 text-center shadow-md">
             <Video size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">Nothing to film yet</p>
-            <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+            <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               Take an offer and it appears here with the number of videos it asks for.
             </p>
           </div>
@@ -228,7 +228,7 @@ export function Content() {
                         aria-selected={tab === t.value}
                         onClick={() => setTab(t.value)}
                         className={cn(
-                          'shrink-0 rounded-[9px] px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-200',
+                          'shrink-0 rounded-[9px] px-3.5 py-1.5 text-[0.8125rem] font-medium transition-colors duration-200',
                           tab === t.value
                             ? 'bg-text text-inverse'
                             : 'text-muted hover:text-text'
@@ -238,7 +238,7 @@ export function Content() {
                         {counts[t.value] > 0 ? (
                           <span
                             className={cn(
-                              'ml-1.5 text-[12px]',
+                              'ml-1.5 text-[0.75rem]',
                               tab === t.value ? 'text-inverse/70' : 'text-muted'
                             )}
                           >
@@ -264,7 +264,7 @@ export function Content() {
                       onChange={(e) => setSearch(e.target.value)}
                       placeholder="Search by ad code, brand or offer"
                       aria-label="Search your content"
-                      className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[13px] focus:outline-none"
+                      className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[0.8125rem] focus:outline-none"
                     />
                   </div>
                   <label className="sr-only" htmlFor="content-brand">
@@ -275,7 +275,7 @@ export function Content() {
                     name="brand"
                     value={brandId}
                     onChange={(e) => setBrandId(e.target.value)}
-                    className="h-9 basis-44 text-[13px]"
+                    className="h-9 basis-44 text-[0.8125rem]"
                   >
                     <option value="">All brands</option>
                     {brands.map((b) => (
@@ -292,7 +292,7 @@ export function Content() {
                     <p className="mt-4 font-semibold">
                       {rows.length === 0 ? 'No videos yet' : 'Nothing matches that'}
                     </p>
-                    <p className="text-muted mx-auto mt-2 max-w-sm text-[14px] leading-relaxed">
+                    <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
                       {rows.length === 0
                         ? 'Film your first video, paste the link and its ad code, and it lands here.'
                         : 'Try a different search, brand or tab.'}
@@ -365,7 +365,7 @@ function ViewSwitch({ view, onChange }: { view: View; onChange: (v: View) => voi
           aria-selected={view === v.key}
           onClick={() => onChange(v.key)}
           className={cn(
-            'rounded-[9px] px-[11px] py-1.5 text-[13px] font-medium transition-colors duration-200',
+            'rounded-[9px] px-[11px] py-1.5 text-[0.8125rem] font-medium transition-colors duration-200',
             view === v.key ? 'bg-text text-inverse' : 'text-muted hover:text-text'
           )}
         >
@@ -398,14 +398,14 @@ function Summary({
     <section className="border-line bg-surface-1 flex flex-col gap-5 rounded-xl border p-[clamp(18px,2.4vw,26px)] shadow-md">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <p className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Videos posted
           </p>
           <p className="flex flex-wrap items-baseline gap-2.5">
-            <span className="font-display text-[clamp(38px,7vw,58px)] leading-none font-semibold tracking-[-0.03em]">
+            <span className="font-display text-[clamp(2.375rem,7vw,3.625rem)] leading-none font-semibold tracking-[-0.03em]">
               {counts.all}
             </span>
-            <span className="text-muted text-[13px]">
+            <span className="text-muted text-[0.8125rem]">
               across {jobs} {jobs === 1 ? 'job' : 'jobs'}
             </span>
           </p>
@@ -418,8 +418,8 @@ function Summary({
             key={cell.label}
             className={cn('flex flex-col gap-1.5 rounded-lg p-3.5', cell.tone.soft)}
           >
-            <dt className={cn('text-[12px] font-semibold', cell.tone.text)}>{cell.label}</dt>
-            <dd className="font-display text-[23px] font-semibold">{cell.value}</dd>
+            <dt className={cn('text-[0.75rem] font-semibold', cell.tone.text)}>{cell.label}</dt>
+            <dd className="font-display text-[1.4375rem] font-semibold">{cell.value}</dd>
           </div>
         ))}
       </dl>
@@ -444,7 +444,7 @@ function Jobs({
 }) {
   return (
     <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-xl border p-5 shadow-md">
-      <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+      <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         What each job still needs
       </h2>
 
@@ -462,14 +462,14 @@ function Jobs({
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-muted truncate text-[11px] font-semibold tracking-[0.08em] uppercase">
+                  <p className="text-muted truncate text-[0.6875rem] font-semibold tracking-[0.08em] uppercase">
                     {job.brand?.name ?? 'A brand'}
                   </p>
-                  <p className="text-[14.5px] leading-[1.25] font-semibold break-words">
+                  <p className="text-[0.90625rem] leading-[1.25] font-semibold break-words">
                     {job.offer?.title ?? 'An offer'}
                   </p>
                 </div>
-                <p className="font-display shrink-0 text-[15px] font-semibold whitespace-nowrap">
+                <p className="font-display shrink-0 text-[0.9375rem] font-semibold whitespace-nowrap">
                   {p.required === null ? 'Open' : `${p.approved}/${p.required}`}
                 </p>
               </div>
@@ -493,7 +493,7 @@ function Jobs({
               ) : null}
 
               <div className="mt-auto flex items-center justify-between gap-2">
-                <span className="text-muted text-[12.5px]">
+                <span className="text-muted text-[0.78125rem]">
                   {p.done
                     ? 'All in and approved'
                     : p.required === null

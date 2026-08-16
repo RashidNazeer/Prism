@@ -1,30 +1,37 @@
 # Project state
 
-## NEXT ACTION AFTER COMPACTION
+## The admin chrome, rebuilt to Rashid's layout (2026-08-16)
 
-**Recorded 2026-08-16, before Rashid compacted the session.**
+**The next job is the creator side**, which he named himself: "We can do it for
+admin side only and after that we can move to creators side." See
+`docs/PARKED.md` 0b.
 
-**Nothing was explicitly queued.** He compacted to save context, not to hand over
-a task. Do not start anything unprompted.
+He gave one long instruction and it is now the standing spec in CLAUDE.md and in
+`FEATURE_MAP.md` "Admin screen layout". What changed:
 
-**Ask him:** "Compaction done. The contest screens are half redressed, the
-creator one and the setup screen still wear the old language. Shall I finish
-those, or is there something else?"
+| | before | after |
+| --- | --- | --- |
+| rail width | 280px, with a painted scrollbar | **225px**, no scrollbar, still scrolls |
+| clicking the last menu item | snapped the list to the top | stays where you left it |
+| collapse control | an arrow in the top bar | **the Wurx mark itself** |
+| above the work | title row + description row, ~120px | **nothing**; the bar names the section |
+| the page's `<h1>` | one per screen, repeating the menu | **one, in the bar**, underlined |
+| row one | filters, laid out differently on every screen | one shared `<FilterBar>` |
+| content width | capped at `max-w-7xl` | **full width** |
+| type | 846 hardcoded `px` sizes | **`rem`**, on a scale the user can change |
 
-The honest options, so the question can be answered rather than reopened:
+**The section name is read from the sidebar's own labels** (`sectionTitleFor` in
+`src/lib/nav.ts`), so the bar and the lit menu row cannot disagree, and
+`verify:chrome` asserts they agree on nine routes.
 
-- **Finish the contest screens** (`docs/PARKED.md` 0b). The design language,
-  tokens and glass utilities all exist now, so each screen is quick.
-- **Real tracking.** PAUSED and HIS to trigger. Do not start it without him.
-- **Anything in `docs/PARKED.md`.** When he asks "what's pending?", answer from
-  that file and nowhere else.
+**Text size is a control in the top bar**, four steps, persisted, and the default
+is 6% smaller than the product was. It works because every size is a `rem` and
+Tailwind's spacing scale is `rem` too, so padding and gaps move with the type.
+Breakpoints do not move: `rem` inside a media query is always the browser's 16px.
 
-**Do not re-explore the codebase to get oriented.** Read this file, then
-`PARKED.md`, then only the files the chosen job names. He has said plainly that
-he does not want tokens spent rediscovering things.
-
-**Nothing is running.** The last `pnpm verify:all` finished green: 11 suites,
-703 checks. Tree clean, `dev` pushed, dev deployed at `5aaccaf`.
+**`pnpm verify:chrome` is the twelfth suite.** Every check in it is a bug he
+found himself, and every one of them leaves a page that lays out perfectly, so
+`verify:responsive` calls the lot of it healthy. Wired into `verify:all`.
 
 ---
 

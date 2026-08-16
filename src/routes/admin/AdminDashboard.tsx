@@ -12,7 +12,6 @@ import {
 import { ButtonLink } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { money } from '@/lib/money';
-import { useProfile } from '@/lib/auth/useProfile';
 import { describeAction, linkForSubject, useAuditLog } from '@/lib/admin/useAuditLog';
 import {
   useAtRisk,
@@ -36,14 +35,11 @@ import {
  * a count you cannot act on is decoration.
  */
 export function AdminDashboard() {
-  const { data: profile } = useProfile();
   const { data: inbox, isLoading: inboxLoading, isError: inboxFailed } = useInbox();
   const { data: creators } = useWithCreators();
   const { data: opsMoney } = useOpsMoney();
   const { data: risk } = useAtRisk();
   const { data: activity, isError: activityFailed } = useAuditLog({ limit: 6 });
-
-  const name = profile?.display_name || profile?.email?.split('@')[0] || 'there';
 
   const queues = [
     {
@@ -71,42 +67,30 @@ export function AdminDashboard() {
 
   return (
     <>
-      <h1 className="font-display text-[clamp(1.6rem,4vw,2.25rem)] font-semibold tracking-[-0.02em]">
-        Good to see you, {name}.
-      </h1>
-
       {/*
-        NEVER claim the day is clear before every count has come back. An empty
-        cache and an empty queue look identical from here, and this sentence
-        used to be wrong in a second way as well: it only ever knew about one
-        of the three queues.
+        THE GREETING AND THE SENTENCE UNDER IT WENT ON 2026-08-16.
+
+        Rashid: the top bar names the section now, and he does not want the
+        description of a section repeated on the section. Both rows were also
+        saying, in prose, exactly what the three tiles below say better, as
+        numbers you can click. The screen opens on the counts instead.
+
+        There is no filter row here. Nothing on this screen filters anything, so
+        an empty control panel would only be a bar of chrome to look past.
+
+        The FAILURE line is the one sentence that survived, and it moved down
+        beside the tiles it is about. It is not a description of the screen, it
+        is the only thing that explains why every count reads "·".
       */}
-      {inboxLoading ? (
-        <div className="wx-skeleton mt-2 h-6 w-72 rounded-lg" />
-      ) : inboxFailed ? (
-        <p className="text-danger mt-2 max-w-2xl text-[15px] leading-relaxed">
+      {inboxFailed ? (
+        <p className="text-danger mb-4 max-w-2xl text-[0.9375rem] leading-relaxed">
           Those numbers would not load, so this page cannot tell you what is waiting. The queues
           themselves still work.
         </p>
-      ) : (
-        <p className="text-muted mt-2 max-w-2xl text-[15px] leading-relaxed">
-          {inbox && inbox.total > 0 ? (
-            <>
-              <span className="text-text font-semibold">
-                {inbox.total} {inbox.total === 1 ? 'thing is' : 'things are'} waiting on you
-              </span>{' '}
-              across{' '}
-              {[inbox.applications, inbox.requests, inbox.videos].filter((n) => n > 0).length}{' '}
-              of the three queues.
-            </>
-          ) : (
-            'Nothing is waiting on you. Applications, offer requests and videos are all clear.'
-          )}
-        </p>
-      )}
+      ) : null}
 
       {/* -------------------------------------------------- waiting on us -- */}
-      <ul className="mt-5 grid gap-3 sm:grid-cols-3">
+      <ul className="grid gap-3 sm:grid-cols-3">
         {queues.map((q) => {
           const n = inbox?.[q.key];
           return (
@@ -117,19 +101,19 @@ export function AdminDashboard() {
                   'border-line bg-surface-1 hover:border-accent/60 flex h-full flex-col rounded-xl border p-5 shadow-md transition-colors'
                 )}
               >
-                <span className="text-muted flex items-center gap-2 text-[11px] font-semibold tracking-[0.14em] uppercase">
+                <span className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                   <q.icon size={14} aria-hidden className="text-faint" />
                   {q.label}
                 </span>
                 <span
                   className={cn(
-                    'font-display mt-3 text-[30px] leading-none font-semibold',
+                    'font-display mt-3 text-[1.875rem] leading-none font-semibold',
                     inboxFailed ? 'text-faint' : n && n > 0 ? 'text-stage-due' : 'text-muted'
                   )}
                 >
                   {inboxLoading ? '' : inboxFailed ? '·' : (n ?? 0)}
                 </span>
-                <span className="text-faint mt-2 text-[12.5px]">{q.hint}</span>
+                <span className="text-faint mt-2 text-[0.78125rem]">{q.hint}</span>
               </Link>
             </li>
           );
@@ -139,13 +123,13 @@ export function AdminDashboard() {
       {/* ---------------------------------------------- waiting on them --- */}
       <section className="border-line bg-surface-1 mt-4 rounded-xl border p-5 shadow-md">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Waiting on creators
           </h2>
           {creators && creators.live > 0 ? (
             <Link
               to="/admin/offers/requests?status=approved"
-              className="text-muted hover:text-accent text-[13px] transition-colors"
+              className="text-muted hover:text-accent text-[0.8125rem] transition-colors"
             >
               {creators.live} {creators.live === 1 ? 'job' : 'jobs'} in flight
             </Link>
@@ -178,11 +162,11 @@ export function AdminDashboard() {
               to={c.to}
               className="border-line bg-surface-2 hover:border-accent/60 rounded-lg border px-4 py-3 transition-colors"
             >
-              <dt className="text-muted flex items-center gap-2 text-[11px] font-semibold tracking-[0.14em] uppercase">
+              <dt className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                 <c.icon size={13} aria-hidden className="text-faint" />
                 {c.label}
               </dt>
-              <dd className="font-display mt-1 text-[19px] font-semibold">
+              <dd className="font-display mt-1 text-[1.1875rem] font-semibold">
                 {c.value ?? '...'}
               </dd>
             </Link>
@@ -190,7 +174,7 @@ export function AdminDashboard() {
         </dl>
 
         {creators && creators.stalled > 0 ? (
-          <p className="border-line text-stage-due mt-4 flex items-start gap-2 border-t pt-3 text-[13px] leading-relaxed">
+          <p className="border-line text-stage-due mt-4 flex items-start gap-2 border-t pt-3 text-[0.8125rem] leading-relaxed">
             <Timer size={14} aria-hidden className="mt-0.5 shrink-0" />
             <span>
               {creators.stalled} {creators.stalled === 1 ? 'job has' : 'jobs have'} not moved in
@@ -208,7 +192,7 @@ export function AdminDashboard() {
       {/* ---------------------------------------------------------- at risk -- */}
       {risk && (risk.brands.length > 0 || risk.emptyOffers > 0 || risk.blocked > 0) ? (
         <section className="border-line bg-surface-1 mt-4 rounded-xl border p-5 shadow-md">
-          <h2 className="text-muted flex items-center gap-2 text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <h2 className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             <AlertTriangle size={14} aria-hidden className="text-faint" />
             Worth a look
           </h2>
@@ -218,7 +202,7 @@ export function AdminDashboard() {
               <li key={b.id}>
                 <Link
                   to={`/admin/brands/${b.id}`}
-                  className="hover:text-accent flex flex-wrap items-baseline gap-x-2 text-[13.5px] transition-colors"
+                  className="hover:text-accent flex flex-wrap items-baseline gap-x-2 text-[0.84375rem] transition-colors"
                 >
                   <span className="font-medium">{b.name}</span>
                   <span className={cn(b.percent >= 100 ? 'text-danger' : 'text-stage-due')}>
@@ -231,7 +215,7 @@ export function AdminDashboard() {
               <li>
                 <Link
                   to="/admin/offers?kind=application"
-                  className="text-muted hover:text-accent text-[13.5px] transition-colors"
+                  className="text-muted hover:text-accent text-[0.84375rem] transition-colors"
                 >
                   {risk.emptyOffers} live {risk.emptyOffers === 1 ? 'offer' : 'offers'} nobody
                   has taken
@@ -242,7 +226,7 @@ export function AdminDashboard() {
               <li>
                 <Link
                   to="/admin/activity"
-                  className="text-muted hover:text-accent text-[13.5px] transition-colors"
+                  className="text-muted hover:text-accent text-[0.84375rem] transition-colors"
                 >
                   {risk.blocked} blocked {risk.blocked === 1 ? 'attempt' : 'attempts'} this week
                 </Link>
@@ -255,12 +239,12 @@ export function AdminDashboard() {
       {/* --------------------------------------------------------- activity -- */}
       <section className="border-line bg-surface-1 mt-4 rounded-xl border shadow-md">
         <div className="border-line flex items-center justify-between gap-3 border-b px-5 py-3.5">
-          <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Latest activity
           </h2>
           <Link
             to="/admin/activity"
-            className="text-muted hover:text-accent flex items-center gap-1 text-[13px] transition-colors"
+            className="text-muted hover:text-accent flex items-center gap-1 text-[0.8125rem] transition-colors"
           >
             See all
             <ArrowRight size={13} aria-hidden />
@@ -268,24 +252,24 @@ export function AdminDashboard() {
         </div>
 
         {activityFailed ? (
-          <p className="text-muted px-5 py-6 text-[14px]">The activity log would not load.</p>
+          <p className="text-muted px-5 py-6 text-[0.875rem]">The activity log would not load.</p>
         ) : (activity ?? []).length === 0 ? (
-          <p className="text-muted px-5 py-6 text-[14px]">Nothing has happened yet.</p>
+          <p className="text-muted px-5 py-6 text-[0.875rem]">Nothing has happened yet.</p>
         ) : (
           <ul className="divide-line divide-y">
             {(activity ?? []).map((entry) => {
               const to = linkForSubject(entry.subject_type, entry.subject_id);
               const body = (
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 px-5 py-3">
-                  <span className="text-[13.5px] font-medium break-all">
+                  <span className="text-[0.84375rem] font-medium break-all">
                     {entry.actor_email ?? 'Somebody'}
                   </span>
-                  <span className="text-muted text-[13.5px]">
+                  <span className="text-muted text-[0.84375rem]">
                     {describeAction(entry.action)}
                   </span>
                   <time
                     dateTime={entry.created_at}
-                    className="text-faint ml-auto shrink-0 text-[12px]"
+                    className="text-faint ml-auto shrink-0 text-[0.75rem]"
                   >
                     {new Date(entry.created_at).toLocaleDateString(undefined, {
                       day: 'numeric',
@@ -313,7 +297,7 @@ export function AdminDashboard() {
       {inbox && inbox.total === 0 ? (
         <div className="border-line bg-surface-1 mt-4 rounded-xl border p-5 shadow-md">
           <p className="font-semibold">Nothing needs you right now.</p>
-          <p className="text-muted mt-1.5 max-w-xl text-[14px] leading-relaxed">
+          <p className="text-muted mt-1.5 max-w-xl text-[0.875rem] leading-relaxed">
             A good moment to look at what is running: which brands are near their budget, and
             which offers nobody has taken.
           </p>
@@ -350,10 +334,10 @@ function MoneyRow({ m, showCurrency }: { m: OpsMoney; showCurrency: boolean }) {
   return (
     <section className="border-line bg-surface-1 mt-4 rounded-xl border p-5 shadow-md">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+        <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Committed across every brand{showCurrency ? ` (${m.currency})` : ''}
         </h2>
-        <p className="font-display text-[15px] font-semibold">{fmt(m.total)}</p>
+        <p className="font-display text-[0.9375rem] font-semibold">{fmt(m.total)}</p>
       </div>
 
       <div
@@ -378,10 +362,10 @@ function MoneyRow({ m, showCurrency }: { m: OpsMoney; showCurrency: boolean }) {
             key={c.label}
             className="border-line bg-surface-2 rounded-lg border px-4 py-3"
           >
-            <dt className="text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+            <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               {c.label}
             </dt>
-            <dd className={cn('font-display mt-1 text-[17px] font-semibold', c.text)}>
+            <dd className={cn('font-display mt-1 text-[1.0625rem] font-semibold', c.text)}>
               {fmt(c.value)}
             </dd>
           </div>
