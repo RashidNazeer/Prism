@@ -1,6 +1,83 @@
 # Project state
 
-**Last updated:** 2026-08-14
+## NEXT ACTION AFTER COMPACTION
+
+**Recorded 2026-08-16, before Rashid compacted the session.**
+
+**Nothing was explicitly queued.** He compacted to save context, not to hand over
+a task. Do not start anything unprompted.
+
+**Ask him:** "Compaction done. The contest screens are half redressed, the
+creator one and the setup screen still wear the old language. Shall I finish
+those, or is there something else?"
+
+The honest options, so the question can be answered rather than reopened:
+
+- **Finish the contest screens** (`docs/PARKED.md` 0b). The design language,
+  tokens and glass utilities all exist now, so each screen is quick.
+- **Real tracking.** PAUSED and HIS to trigger. Do not start it without him.
+- **Anything in `docs/PARKED.md`.** When he asks "what's pending?", answer from
+  that file and nowhere else.
+
+**Do not re-explore the codebase to get oriented.** Read this file, then
+`PARKED.md`, then only the files the chosen job names. He has said plainly that
+he does not want tokens spent rediscovering things.
+
+**Nothing is running.** The last `pnpm verify:all` finished green: 11 suites,
+703 checks. Tree clean, `dev` pushed, dev deployed at `5aaccaf`.
+
+---
+
+## Navigation is instant now (2026-08-15)
+
+The one thing Rashid said at the very start he could not tolerate, fixed and
+measured rather than asserted.
+
+| | before | after |
+| --- | --- | --- |
+| click to URL change, cold | **291ms**, up to 457ms | **5ms** |
+| click to URL change, warm | 11ms | 9ms |
+
+**The cause was the order, not the speed.** React Router's route level `lazy`
+waits for a screen's code before it commits the navigation, so for a third of a
+second nothing moved at all and it read as the app hanging. Click-to-URL and
+click-to-painted were the same number, which was the whole diagnosis.
+
+**Two changes.** The shell moved up into a layout route, so all 23 screens
+stopped drawing their own `<AppShell>` and the sidebar never unmounts; then
+route loading moved to `React.lazy` behind a Suspense boundary inside that
+frame. Plus prefetch on `pointerenter`, `touchstart` and `focus`.
+
+`click to painted` on a cold section is still about 500ms, because the file
+still has to arrive. The point is that the app now answers immediately and fills
+in behind a skeleton. **Measure it with `pnpm measure:nav [url]`**, and measure
+against the LIVE url: localhost has no latency and flatters the cold figure into
+meaninglessness.
+
+## Everything runs with one command
+
+**`pnpm verify:all [url]`** runs all eleven suites in sequence and prints one
+number. 703 checks, about 12 minutes. `--only=` and `--skip=` take suite names.
+**A SKIP exits non-zero**, because something that could not be checked must
+never read as safety.
+
+It exists because eleven suites with no way to run them meant they were run from
+memory, and two were quietly red for days. Its first minute found three suites
+that were not protecting anything.
+
+**Run one suite at a time.** Two Chromiums on this machine push it into swap:
+a full run that failed took 1313s against 721s for the green one, and the
+failures were the machine rather than the code. **Re-run before believing a
+failure.**
+
+## `/precompact`, the project's first skill
+
+`.claude/skills/precompact/SKILL.md`. Rashid types `/precompact - what he wants
+next`, or `/precompact` alone, and everything needed to resume is written to
+disk. The next action goes at the top of THIS file, because instructions cannot
+live in a conversation that is about to be thrown away.
+
+**Previously, last updated:** 2026-08-14
 
 ## Contest rewards: owed on confirmation, then paid (2026-08-14)
 

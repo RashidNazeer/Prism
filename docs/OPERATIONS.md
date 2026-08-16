@@ -83,6 +83,10 @@ hand:
 pnpm verify:all [url]              # every suite below, in sequence, one summary
 pnpm verify:all [url] --only=contests,live
 pnpm verify:all [url] --skip=session
+pnpm measure:nav [url]             # click to URL change, and click to painted,
+                                   # cold and warm. ALWAYS against the LIVE url:
+                                   # localhost has no latency, so "cold" is not
+                                   # cold and the number flatters.
 ```
 
 It checks its preconditions FIRST and names anything missing in a sentence (no
@@ -94,6 +98,14 @@ is printed in full so nothing has to be re-run to find out why.
 
 **A SKIP exits non-zero, the same as a failure.** Something that could not be
 checked must never read as safety.
+
+**Re-run a failing FULL run before believing it.** On 2026-08-16 one reported
+contests and responsive broken, every admin screen failing "content rendered",
+and the screens were fine: loaded by hand at two widths and through the suite's
+own storage-state path. Responsive then passed alone. The failing run took
+**1313s against 721s** for the green one, because each failing check burns
+twelve seconds waiting. That ratio is the tell: a wall-clock time far above
+normal means suspect the machine before the code.
 
 Why it exists: there were eleven suites and no way to run them all, so they were
 run from memory and two were quietly red for days. `verify:responsive` since the

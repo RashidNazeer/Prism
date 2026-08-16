@@ -720,3 +720,29 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   central promise, would have been reported as green by anything reading the
   exit code. Found while building `verify:all`, because the runner reads exit
   codes and nothing had ever read that one.
+- 2026-08-15: **The URL changes before the code arrives, not after.** Route-level
+  `lazy` blocked navigation for 291ms on a cold section while showing the old
+  screen; `React.lazy` behind a Suspense boundary in a layout route makes it 5ms.
+  The download did not get faster and cannot: what changed is that the app now
+  answers the click. Chunks are 7 to 20 KB, so this was never a bundle-size
+  problem and shrinking them would have bought nothing.
+- 2026-08-15: **The shell is a layout route, and no screen may render `<AppShell>`
+  again.** Not a tidy-up: while each screen drew its own sidebar, the sidebar was
+  part of the thing being swapped, so a Suspense fallback would have blanked the
+  entire page. Hoisting it is what allows "frame stays, content loads".
+- 2026-08-15: **Prefetch-on-hover is the lesser half and was built second.** It
+  is an hour of work and removes the skeleton for mouse users, which is
+  tempting enough to have shipped alone and called done. It does nothing on a
+  phone, and phones are most creators, so the structural fix had to come first.
+- 2026-08-15: **`/precompact` is the project's first skill, and the next action
+  is written into `PROJECT_STATE.md` rather than said in the conversation.**
+  Instructions cannot live in the thing being thrown away. CLAUDE.md already
+  makes that file the first read of every session, so the block is guaranteed to
+  be seen.
+- 2026-08-16: **A failing full run is re-run before it is believed.** One
+  `verify:all` reported contests and responsive broken, every admin screen
+  failing. The screens were loaded by hand at two widths and through the suite's
+  own storage-state path, all fine; responsive then passed alone. The failing run
+  took 1313s against 721s green, because each failing check burns twelve seconds.
+  It was the machine. Re-running was the only honest way to know, and guessing
+  either way would have been wrong.

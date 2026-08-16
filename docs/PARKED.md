@@ -61,48 +61,20 @@ below.
   contest with no money in it belongs. **Trigger: Rashid asking why his home
   does not mention a contest he is in.**
 
-## 0b. Navigation feels laggy, and it is measured
+## 0b. The contest screens are half redressed
 
-**Status:** PAUSED at Rashid's word, 2026-08-15. He will call for it.
+**Status:** PAUSED, and the likely next piece of work
 **Owner:** Claude
-**Trigger to raise again:** he asks, or anything else slows navigation further.
+**Trigger to raise again:** the next time contests are opened at all.
 
-He raised this at the very start of the project and again on 2026-08-15: a
-laggy app is the one thing he cannot tolerate, and it is why he refused Next.js.
+`/admin/contests` was rebuilt from Rashid's design on 2026-08-15: one header row
+with the sections and the create button, one toolbar row with every filter, glass
+cards in a grid. The tokens and utilities that made it possible are in place.
 
-**Measured with `pnpm measure:nav` against the live dev URL, not guessed:**
-
-| | click to URL change | click to painted |
-| --- | --- | --- |
-| cold, first visit to a section | **291ms** median, up to 457ms | 329ms |
-| warm, chunk already in memory | **11ms** | 20ms |
-
-**The cause is route-level `lazy` in `src/app/router.tsx`.** React Router waits
-for the chunk to download and parse BEFORE changing the URL, so the old screen
-sits there and nothing moves at all. Click-to-URL and click-to-painted are the
-same number, which is exactly why it reads as hanging rather than loading.
-
-**It is latency, not size.** The chunks are 7 to 20 KB. Merging or shrinking
-them buys almost nothing. The fix is WHEN we fetch, not how much.
-
-**He feels it more than a real user will:** chunk filenames carry a content
-hash, so every deploy makes every section cold again, and he tests on fresh
-deploys all day.
-
-**Second cause, structural:** every route renders its own `<AppShell>`, so the
-sidebar unmounts on every navigation and a content-only skeleton is impossible
-today.
-
-**The two fixes, both agreed as the right shape:**
-
-- **A. Prefetch on hover and focus** in the sidebar. Cold becomes warm before
-  the click: 291ms to about 11ms. An hour, low risk. Does nothing for touch,
-  because there is no hover.
-- **B. A layout route with `<Outlet/>` and Suspense.** The URL changes in about
-  11ms even on a cold chunk, the sidebar never unmounts, the active item lights
-  instantly and the content area shows a skeleton. Half a day, about 20 route
-  files, needs the full suite behind it. The only one that fixes touch devices,
-  which is most creators.
+**Four screens still wear the old language** and now look a generation behind the
+one beside them: the CREATOR contest screen (`/app/contests`), the contest setup
+screen, and the claims and rewards queues, which have the new header but old
+cards underneath. Each is much quicker than the first one was.
 
 ---
 

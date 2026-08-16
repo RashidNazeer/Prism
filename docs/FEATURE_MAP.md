@@ -1178,3 +1178,46 @@ of somebody else's deleted record. Every creator-facing binding carries
 DELETE to anybody who opened an unfiltered channel by hand, and there is no
 creator-facing reason to need it live. A decision on a claim invalidates the
 query directly instead.
+
+---
+
+## Navigation, and why the shell is a layout route
+
+**Files:** `src/app/router.tsx`, `src/components/layout/ShellLayout.tsx`,
+`src/components/layout/ScreenFallback.tsx`, `src/components/layout/AppSidebar.tsx`,
+`scripts/measure-nav.mjs`
+
+Rebuilt 2026-08-15. Rashid said at the very start that a laggy app is the one
+thing he cannot tolerate, and it is why he refused Next.js. He was describing
+this, and it was ours rather than the stack's.
+
+**THE RULE, and it is the whole entry: the URL changes FIRST, the code arrives
+SECOND.** React Router's route-level `lazy` does the opposite: it waits for the
+module before it commits the navigation, so nothing on screen moves at all until
+the download finishes. Measured on the live URL: 291ms click-to-URL cold against
+11ms warm, with click-to-URL and click-to-painted the SAME number. That sameness
+is why it read as hanging rather than loading. After: **5ms cold**.
+
+- **Every signed-in route nests under `ShellLayout`.** No screen may render its
+  own `<AppShell>` again. While they did, the sidebar was part of the thing being
+  swapped and a Suspense fallback would have blanked the whole page, which is
+  worse than the problem. The Suspense boundary sits INSIDE AppShell for exactly
+  that reason.
+- **`screen()` in `router.tsx` is `React.lazy`; `lazyRoute()` is the blocking
+  one and is for PUBLIC routes only.** The landing page and sign in have no shell
+  to hold still, so blocking avoids a flash of empty page.
+- **Declare screens at module scope, never inside the route table.** `lazy()`
+  called during render makes a new component type every time and React remounts
+  the screen.
+- **Names are prefixed by side.** There is an app `Brands` and an admin `Brands`,
+  an app `BrandHub` and an admin `BrandHub`. Mixing them shows a creator the
+  staff screen.
+- **Prefetch on `pointerenter`, `touchstart` and `focus`** (`prefetchRoute`).
+  Cheap, and the lesser half: there is no hover on a phone, and phones are most
+  creators. Failures are swallowed, because a prefetch for a screen nobody asked
+  for must never surface an error.
+- **The deploy-survival retry is unchanged.** A tab open across a deploy asks for
+  a filename that no longer exists; retry once, then reload, at most once per tab
+  per minute.
+- **`pnpm measure:nav [url]` proves it.** Always measure against the LIVE url:
+  localhost has no latency, so "cold" is not cold and the figure flatters.
