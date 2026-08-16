@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { m } from 'motion/react';
 import { Search, Ticket } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { ApplyDialog } from '@/components/creator/ApplyDialog';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
 import { OfferCard } from '@/components/creator/OfferCard';
@@ -114,7 +113,7 @@ export function Offers() {
   }, [offers, latest, tab, brandId, search]);
 
   return (
-    <AppShell>
+    <>
       <div className="flex flex-col gap-1.5 px-0.5 py-1">
         <h1 className="font-display text-[clamp(26px,4.4vw,40px)] leading-[1.05] font-semibold tracking-[-0.02em]">
           Offers
@@ -257,6 +256,6 @@ export function Offers() {
           onClose={() => setApplyingTo(null)}
         />
       ) : null}
-    </AppShell>
+    </>
   );
 }

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { Link, useNavigate, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Check, Loader2, Lock, Trash2 } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { ContestDeliverables } from '@/components/admin/ContestDeliverables';
 import { ContestEntryQueue } from '@/components/admin/ContestEntryQueue';
 import { ContestExclusions } from '@/components/admin/ContestExclusions';
@@ -473,7 +472,7 @@ export function ContestSetup() {
   const listsLoading = loadingContest && !existing;
 
   return (
-    <AppShell>
+    <>
       <div className="mx-0 w-full max-w-[1128px]">
         {/* ------------------------------------------------------- header -- */}
         <div className="flex flex-wrap items-center justify-between gap-3 pb-5">
@@ -902,7 +901,7 @@ export function ContestSetup() {
           </div>
         )}
       </div>
-    </AppShell>
+    </>
   );
 }
 

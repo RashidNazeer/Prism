@@ -1,5 +1,7 @@
+import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router';
 import { RouteFallback } from '@/components/layout/RouteFallback';
+import { ShellLayout } from '@/components/layout/ShellLayout';
 import { RequireAuth, RedirectIfSignedIn } from '@/components/auth/RequireAuth';
 
 /**
@@ -41,6 +43,80 @@ import { RequireAuth, RedirectIfSignedIn } from '@/components/auth/RequireAuth';
  */
 const RELOAD_KEY = 'wx.chunk-reload';
 
+/**
+ * A screen, loaded WITHOUT blocking the navigation.
+ *
+ * THIS IS THE FIX FOR THE LAG RASHID KEPT REPORTING, and the difference is the
+ * order two things happen in rather than how fast either of them is.
+ *
+ * React Router's route-level `lazy` waits for the module before it commits the
+ * navigation. Measured with `pnpm measure:nav` on 2026-08-15: 291ms from click
+ * to the URL changing on a first visit, 11ms once the chunk was in memory, and
+ * click-to-URL and click-to-painted were the SAME number. So for a third of a
+ * second nothing on screen moved at all, which is why it read as the app
+ * hanging rather than loading.
+ *
+ * `React.lazy` behind the Suspense boundary in `ShellLayout` inverts that: the
+ * URL changes immediately, the sidebar and frame stay mounted, the active menu
+ * item lights up, and only the content area suspends. Same download, same
+ * duration, but the app answers the click.
+ *
+ * THE DEPLOY RETRY IS UNCHANGED and still matters. A tab open across a deploy
+ * asks for a filename that no longer exists on the CDN, so this retries once in
+ * case the network simply dropped it, then reloads to pick up the new index.
+ * The timestamp guard keeps a genuinely broken deploy from becoming an infinite
+ * refresh: at most one reload per tab per minute.
+ */
+const screen = (load: () => Promise<Record<string, unknown>>, name: string) =>
+  lazy(async () => {
+    try {
+      const mod = await load();
+      return { default: mod[name] as React.ComponentType };
+    } catch (error) {
+      try {
+        const mod = await load();
+        return { default: mod[name] as React.ComponentType };
+      } catch {
+        /* Still gone. Fall through to the reload. */
+      }
+      return reloadOrThrow(error);
+    }
+  });
+
+/**
+ * Shared by both loaders. Reloads once to pick up the current index, or gives
+ * up and lets the error reach the boundary where somebody will see it.
+ */
+function reloadOrThrow(error: unknown): never {
+  let last = 0;
+  try {
+    last = Number(window.sessionStorage.getItem(RELOAD_KEY) ?? '0');
+  } catch {
+    /* Private mode with storage blocked. Treat it as never reloaded. */
+  }
+
+  if (Date.now() - last > 60_000) {
+    try {
+      window.sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+    } catch {
+      /* As above. The reload is still worth attempting. */
+    }
+    window.location.reload();
+    // The reload takes the page, so this never settles. A pending promise stops
+    // React rendering an error in the meantime.
+    throw new Promise<never>(() => {});
+  }
+
+  throw error;
+}
+
+/**
+ * The blocking loader, kept for the PUBLIC routes only.
+ *
+ * The landing page, sign in and the rest have no shell to hold still and no
+ * sidebar to keep lit, so there is nothing for a Suspense fallback to preserve
+ * and blocking until the module is ready avoids a flash of empty page.
+ */
 const lazyRoute = (load: () => Promise<Record<string, unknown>>, name: string) => async () => {
   try {
     const mod = await load();
@@ -75,6 +151,93 @@ const lazyRoute = (load: () => Promise<Record<string, unknown>>, name: string) =
     throw error;
   }
 };
+
+/* ---------------------------------------------------------- the screens -- */
+/*
+ * Declared once, at module scope, and this is load bearing rather than tidy.
+ * `lazy()` called inside the route table would make a NEW component type on
+ * every render, and React would unmount and remount the screen each time.
+ *
+ * The names are prefixed by side because four of them collide: there is an app
+ * Brands and an admin Brands, an app BrandHub and an admin BrandHub. They are
+ * different screens for different people and mixing them up would show a
+ * creator the staff version.
+ */
+const CreatorDashboard = screen(() => import('@/routes/app/Dashboard'), 'Dashboard');
+const CreatorProfile = screen(() => import('@/routes/app/Profile'), 'Profile');
+const CreatorBrands = screen(() => import('@/routes/app/Brands'), 'Brands');
+const CreatorBrandHub = screen(() => import('@/routes/app/BrandHub'), 'BrandHub');
+const CreatorOffers = screen(() => import('@/routes/app/Offers'), 'Offers');
+const CreatorContests = screen(() => import('@/routes/app/Contests'), 'Contests');
+const CreatorContent = screen(() => import('@/routes/app/Content'), 'Content');
+
+const AdminHome = screen(() => import('@/routes/admin/AdminDashboard'), 'AdminDashboard');
+const AdminApplications = screen(() => import('@/routes/admin/Applications'), 'Applications');
+const AdminApplicationDetail = screen(
+  () => import('@/routes/admin/ApplicationDetail'),
+  'ApplicationDetail'
+);
+const AdminAllOffers = screen(() => import('@/routes/admin/AllOffers'), 'AllOffers');
+const AdminOfferRequests = screen(() => import('@/routes/admin/OfferRequests'), 'OfferRequests');
+const AdminAllContests = screen(() => import('@/routes/admin/AllContests'), 'AllContests');
+const AdminContestClaims = screen(() => import('@/routes/admin/ContestClaims'), 'ContestClaims');
+const AdminContestRewards = screen(
+  () => import('@/routes/admin/ContestRewards'),
+  'ContestRewards'
+);
+const AdminContestSetup = screen(() => import('@/routes/admin/ContestSetup'), 'ContestSetup');
+const AdminContent = screen(() => import('@/routes/admin/Content'), 'AdminContent');
+const AdminActivity = screen(() => import('@/routes/admin/Activity'), 'Activity');
+const AdminBrands = screen(() => import('@/routes/admin/Brands'), 'Brands');
+const AdminBrandHub = screen(() => import('@/routes/admin/BrandHub'), 'BrandHub');
+const AdminCreators = screen(() => import('@/routes/admin/Creators'), 'Creators');
+const AdminCreatorDetail = screen(() => import('@/routes/admin/CreatorDetail'), 'CreatorDetail');
+
+const StudioHome = screen(() => import('@/routes/studio/StudioHome'), 'StudioHome');
+
+/**
+ * START THE DOWNLOAD BEFORE THE CLICK.
+ *
+ * The layout change above means a cold section answers instantly and then shows
+ * a skeleton for about a quarter of a second while its code arrives. This
+ * removes the skeleton in the common case: touching a menu item with a pointer,
+ * or reaching it with the keyboard, begins the fetch, so by the time the click
+ * lands the module is usually already in memory and the screen is simply there.
+ *
+ * It is the cheap half, not the important half. There is no hover on a phone,
+ * which is most creators, and they are the reason the layout change had to be
+ * done properly rather than papered over with this.
+ *
+ * Safe to call as often as you like: an import is cached by the bundler, so
+ * repeat calls are a map lookup. Failures are swallowed on purpose, because a
+ * prefetch that fails must never surface an error for a screen nobody has asked
+ * for yet; the real navigation will retry and report it properly.
+ */
+const PREFETCH: Record<string, () => Promise<unknown>> = {
+  '/app': () => import('@/routes/app/Dashboard'),
+  '/app/profile': () => import('@/routes/app/Profile'),
+  '/app/brands': () => import('@/routes/app/Brands'),
+  '/app/offers': () => import('@/routes/app/Offers'),
+  '/app/contests': () => import('@/routes/app/Contests'),
+  '/app/content': () => import('@/routes/app/Content'),
+  '/admin': () => import('@/routes/admin/AdminDashboard'),
+  '/admin/applications': () => import('@/routes/admin/Applications'),
+  '/admin/activity': () => import('@/routes/admin/Activity'),
+  '/admin/offers': () => import('@/routes/admin/AllOffers'),
+  '/admin/offers/requests': () => import('@/routes/admin/OfferRequests'),
+  '/admin/contests': () => import('@/routes/admin/AllContests'),
+  '/admin/contests/claims': () => import('@/routes/admin/ContestClaims'),
+  '/admin/contests/rewards': () => import('@/routes/admin/ContestRewards'),
+  '/admin/content': () => import('@/routes/admin/Content'),
+  '/admin/brands': () => import('@/routes/admin/Brands'),
+  '/admin/creators': () => import('@/routes/admin/Creators'),
+  '/studio': () => import('@/routes/studio/StudioHome'),
+};
+
+export function prefetchRoute(to: string) {
+  const load = PREFETCH[to];
+  if (load) void load().catch(() => {});
+}
 
 export const router = createBrowserRouter([
   /* ------------------------------------------------------------- public -- */
@@ -139,54 +302,59 @@ export const router = createBrowserRouter([
   },
 
   /* ---------------------------------------------------------- signed in -- */
+  /*
+   * EVERY SIGNED-IN ROUTE NESTS UNDER `ShellLayout`, added 2026-08-15 to make
+   * navigation instant. The shell holds the sidebar, the top bar and the page
+   * frame, and it stays mounted across a navigation, so the URL and the active
+   * menu item change the moment you click and only the content area suspends.
+   * Read the block on `screen()` above for the measurements behind it.
+   */
   {
     Component: () => <RequireAuth allow={['applicant', 'creator']} />,
     children: [
       {
-        path: '/app',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/app/Dashboard'), 'Dashboard'),
-      },
-      {
-        path: '/app/profile',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/app/Profile'), 'Profile'),
-      },
-      // Applicants are allowed onto these routes on purpose, and are shown a
-      // "this opens when you are approved" panel instead of the hub.
-      //
-      // Guarding them with allow={['creator']} would read the role from the
-      // JWT, which lags approval by up to an hour, so somebody who had just
-      // watched the confetti would be bounced back to their dashboard. The
-      // screens read the profile row, which is current, and the database
-      // refuses the rows either way.
-      {
-        path: '/app/brands',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/app/Brands'), 'Brands'),
-      },
-      {
-        path: '/app/brands/:slug',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/app/BrandHub'), 'BrandHub'),
-      },
-      {
-        path: '/app/offers',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/app/Offers'), 'Offers'),
-      },
-      // Contests get their own place in the menu on BOTH sides, the same way
-      // offers do. Reaching them only by walking into a brand first was the
-      // wrong shape and Rashid caught it.
-      {
-        path: '/app/contests',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/app/Contests'), 'Contests'),
-      },
-      {
-        path: '/app/content',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/app/Content'), 'Content'),
+        Component: ShellLayout,
+        children: [
+          {
+            path: '/app',
+            element: <CreatorDashboard />,
+          },
+          {
+            path: '/app/profile',
+            element: <CreatorProfile />,
+          },
+          // Applicants are allowed onto these routes on purpose, and are shown a
+          // "this opens when you are approved" panel instead of the hub.
+          //
+          // Guarding them with allow={['creator']} would read the role from the
+          // JWT, which lags approval by up to an hour, so somebody who had just
+          // watched the confetti would be bounced back to their dashboard. The
+          // screens read the profile row, which is current, and the database
+          // refuses the rows either way.
+          {
+            path: '/app/brands',
+            element: <CreatorBrands />,
+          },
+          {
+            path: '/app/brands/:slug',
+            element: <CreatorBrandHub />,
+          },
+          {
+            path: '/app/offers',
+            element: <CreatorOffers />,
+          },
+          // Contests get their own place in the menu on BOTH sides, the same way
+          // offers do. Reaching them only by walking into a brand first was the
+          // wrong shape and Rashid caught it.
+          {
+            path: '/app/contests',
+            element: <CreatorContests />,
+          },
+          {
+            path: '/app/content',
+            element: <CreatorContent />,
+          },
+        ],
       },
     ],
   },
@@ -194,70 +362,61 @@ export const router = createBrowserRouter([
     Component: () => <RequireAuth allow={['ops', 'admin']} />,
     children: [
       {
+        Component: ShellLayout,
+        children: [
+      {
         path: '/admin',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/admin/AdminDashboard'), 'AdminDashboard'),
+        element: <AdminHome />,
       },
       {
         path: '/admin/applications',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/admin/Applications'), 'Applications'),
+        element: <AdminApplications />,
       },
       {
         path: '/admin/applications/:id',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/admin/ApplicationDetail'), 'ApplicationDetail'),
+        element: <AdminApplicationDetail />,
       },
       // Offers is a section with two screens: the catalogue of everything we
       // run, and the queue of creators waiting on a decision. They answer
       // different questions and are worked at different times.
       {
         path: '/admin/offers',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/admin/AllOffers'), 'AllOffers'),
+        element: <AdminAllOffers />,
       },
       {
         path: '/admin/offers/requests',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/admin/OfferRequests'), 'OfferRequests'),
+        element: <AdminOfferRequests />,
       },
       // Three screens, three jobs: what is running, who is waiting on us, and
       // what it has cost. Different questions, worked at different times of day,
       // and a screen that tries to answer two of them answers neither well.
       {
         path: '/admin/contests',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/admin/AllContests'), 'AllContests'),
+        element: <AdminAllContests />,
       },
       {
         path: '/admin/contests/claims',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/admin/ContestClaims'), 'ContestClaims'),
+        element: <AdminContestClaims />,
       },
       {
         path: '/admin/contests/rewards',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/admin/ContestRewards'), 'ContestRewards'),
+        element: <AdminContestRewards />,
       },
       {
         path: '/admin/content',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/admin/Content'), 'AdminContent'),
+        element: <AdminContent />,
       },
       {
         path: '/admin/activity',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/admin/Activity'), 'Activity'),
+        element: <AdminActivity />,
       },
       {
         path: '/admin/brands',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/admin/Brands'), 'Brands'),
+        element: <AdminBrands />,
       },
       {
         path: '/admin/brands/:id',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/admin/BrandHub'), 'BrandHub'),
+        element: <AdminBrandHub />,
       },
       // A full screen rather than a dialog, ruled 2026-08-13: a contest carries
       // a dozen fields plus three lists inside it. `new` and an id share one
@@ -265,18 +424,17 @@ export const router = createBrowserRouter([
       // different verb on the button.
       {
         path: '/admin/brands/:id/contests/:contestId',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/admin/ContestSetup'), 'ContestSetup'),
+        element: <AdminContestSetup />,
       },
       {
         path: '/admin/creators',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/admin/Creators'), 'Creators'),
+        element: <AdminCreators />,
       },
       {
         path: '/admin/creators/:id',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/admin/CreatorDetail'), 'CreatorDetail'),
+        element: <AdminCreatorDetail />,
+      },
+        ],
       },
     ],
   },
@@ -284,9 +442,13 @@ export const router = createBrowserRouter([
     Component: () => <RequireAuth allow={['creative_strategist']} />,
     children: [
       {
-        path: '/studio',
-        HydrateFallback: RouteFallback,
-        lazy: lazyRoute(() => import('@/routes/studio/StudioHome'), 'StudioHome'),
+        Component: ShellLayout,
+        children: [
+          {
+            path: '/studio',
+            element: <StudioHome />,
+          },
+        ],
       },
     ],
   },

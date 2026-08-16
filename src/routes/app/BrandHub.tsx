@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
 import { ArrowLeft, Package, Store, Ticket } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { ApplyDialog } from '@/components/creator/ApplyDialog';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
 import { OfferCard } from '@/components/creator/OfferCard';
@@ -78,27 +77,27 @@ export function BrandHub() {
 
   if (!approved) {
     return (
-      <AppShell>
+      <>
         <LockedUntilApproved />
-      </AppShell>
+      </>
     );
   }
 
   if (isLoading) {
     return (
-      <AppShell>
+      <>
         <div className="max-w-3xl space-y-4">
           <div className="wx-skeleton h-10 w-64" />
           <div className="wx-skeleton h-10 w-full" />
           <div className="wx-skeleton h-40 rounded-xl" />
         </div>
-      </AppShell>
+      </>
     );
   }
 
   if (isError || !brand) {
     return (
-      <AppShell>
+      <>
         <div className="border-line bg-surface-1 max-w-lg rounded-xl border p-8 text-center shadow-md">
           <p className="font-semibold">That brand hub is not open</p>
           <p className="text-muted mt-2 text-[14px] leading-relaxed">
@@ -108,12 +107,12 @@ export function BrandHub() {
             Back to brand hubs
           </ButtonLink>
         </div>
-      </AppShell>
+      </>
     );
   }
 
   return (
-    <AppShell>
+    <>
       <Header brand={brand} />
 
       {/* ------------------------------------------------------------ tabs -- */}
@@ -165,7 +164,7 @@ export function BrandHub() {
           onSeeOffers={() => go('offers')}
         />
       )}
-    </AppShell>
+    </>
   );
 }
 

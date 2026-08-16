@@ -1,7 +1,6 @@
 import { Link } from 'react-router';
 import { m } from 'motion/react';
 import { Store, Tag } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
@@ -34,7 +33,7 @@ export function Brands() {
   const { data: counts } = useCreatorOfferCounts(rows.map((b) => b.id));
 
   return (
-    <AppShell>
+    <>
       <h1 className="font-display text-[clamp(26px,4.4vw,40px)] leading-[1.05] font-semibold tracking-[-0.02em]">
         Brand hubs
       </h1>
@@ -118,6 +117,6 @@ export function Brands() {
           ))}
         </ul>
       )}
-    </AppShell>
+    </>
   );
 }

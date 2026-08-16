@@ -1,6 +1,5 @@
 import { Link, useParams, useSearchParams } from 'react-router';
 import { ArrowLeft, FileText, History, Video } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { ButtonLink } from '@/components/ui/Button';
 import { JobProgressBar } from '@/components/work/JobProgress';
 import { cn } from '@/lib/utils';
@@ -56,19 +55,19 @@ export function CreatorDetail() {
 
   if (isLoading) {
     return (
-      <AppShell>
+      <>
         <div className="max-w-3xl space-y-4">
           <div className="wx-skeleton h-9 w-64 rounded-lg" />
           <div className="wx-skeleton h-10 w-full rounded-lg" />
           <div className="wx-skeleton h-40 rounded-xl" />
         </div>
-      </AppShell>
+      </>
     );
   }
 
   if (isError || !creator) {
     return (
-      <AppShell>
+      <>
         <div className="border-line bg-surface-1 max-w-lg rounded-xl border p-8 text-center shadow-md">
           <p className="font-semibold">No such creator</p>
           <p className="text-muted mt-2 text-[14px] leading-relaxed">
@@ -78,7 +77,7 @@ export function CreatorDetail() {
             Back to creators
           </ButtonLink>
         </div>
-      </AppShell>
+      </>
     );
   }
 
@@ -89,7 +88,7 @@ export function CreatorDetail() {
   const cur = mine?.currency ?? 'USD';
 
   return (
-    <AppShell>
+    <>
       {/* Compact header: back, who, and the chips that earn their place. */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <Link
@@ -167,7 +166,7 @@ export function CreatorDetail() {
       ) : (
         <WorkTab jobs={jobs ?? []} loading={jobsLoading} />
       )}
-    </AppShell>
+    </>
   );
 }
 

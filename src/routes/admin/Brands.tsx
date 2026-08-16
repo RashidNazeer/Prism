@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { ChevronLeft, ChevronRight, Plus, Search, Store, Tag } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { BrandDialog } from '@/components/admin/BrandDialog';
 import { BudgetBar } from '@/components/admin/BudgetBar';
 import { Button } from '@/components/ui/Button';
@@ -75,7 +74,7 @@ export function Brands() {
   const { data: waiting } = useBrandsWaiting(brandIds);
 
   return (
-    <AppShell>
+    <>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-[clamp(1.6rem,4vw,2.25rem)] font-extrabold">Brands</h1>
@@ -311,6 +310,6 @@ export function Brands() {
       ) : null}
 
       {creating ? <BrandDialog onClose={() => setCreating(false)} /> : null}
-    </AppShell>
+    </>
   );
 }

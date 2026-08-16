@@ -1,6 +1,5 @@
 import { Link, useSearchParams } from 'react-router';
 import { ChevronLeft, ChevronRight, Search, Users, Video } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Field';
 import { money } from '@/lib/money';
@@ -73,7 +72,7 @@ export function Creators() {
   const filtered = Boolean(filters.search) || filters.active !== 'all';
 
   return (
-    <AppShell>
+    <>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h1 className="font-display text-[clamp(1.4rem,3.5vw,1.9rem)] font-semibold tracking-[-0.015em]">
           Creators
@@ -200,7 +199,7 @@ export function Creators() {
           ) : null}
         </>
       )}
-    </AppShell>
+    </>
   );
 }
 

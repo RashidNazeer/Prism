@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
 import { getSupabase } from '@/lib/supabase';
@@ -63,7 +62,7 @@ export function Profile() {
   };
 
   return (
-    <AppShell>
+    <>
       <h1 className="font-display text-[clamp(26px,4.4vw,40px)] leading-[1.05] font-semibold tracking-[-0.02em]">
         My profile
       </h1>
@@ -186,7 +185,7 @@ export function Profile() {
           ) : null}
         </div>
       )}
-    </AppShell>
+    </>
   );
 }
 

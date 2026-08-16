@@ -1,6 +1,5 @@
 import { Link, useSearchParams } from 'react-router';
 import { ChevronLeft, ChevronRight, History, ShieldAlert } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import {
@@ -34,7 +33,7 @@ export function Activity() {
   };
 
   return (
-    <AppShell>
+    <>
       <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold">Activity</h1>
       <p className="text-muted mt-2 max-w-2xl text-[15px] leading-relaxed">
         Every approval, rejection and blocked attempt, with who did it and when. Nobody can edit
@@ -113,7 +112,7 @@ export function Activity() {
           </div>
         </div>
       ) : null}
-    </AppShell>
+    </>
   );
 }
 

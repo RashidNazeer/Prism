@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { Check, Flag, RotateCcw, Search, Video } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Field';
 import { VideoPlayer } from '@/components/content/VideoPlayer';
@@ -104,7 +103,7 @@ export function AdminContent() {
   const { data: progress } = useJobProgressFor([...new Set(rows.map((r) => r.application_id))]);
 
   return (
-    <AppShell>
+    <>
       <div className="flex max-w-[1140px] flex-col gap-[14px]">
         <div className="flex flex-wrap items-end justify-between gap-4 px-0.5 py-1">
           <div className="flex flex-col gap-1.5">
@@ -293,7 +292,7 @@ export function AdminContent() {
       </div>
 
       {playing ? <VideoPlayer row={playing} onClose={() => setPlaying(null)} /> : null}
-    </AppShell>
+    </>
   );
 }
 

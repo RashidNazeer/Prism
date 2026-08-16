@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { Plus, Search, Video } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Field';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
@@ -161,7 +160,7 @@ export function Content() {
   }, [rows, tab, brandId, search]);
 
   return (
-    <AppShell>
+    <>
       <div className="flex max-w-[1140px] flex-col gap-[14px]">
         <div className="flex flex-wrap items-end justify-between gap-4 px-0.5 py-1">
           <div className="flex flex-col gap-1.5">
@@ -331,7 +330,7 @@ export function Content() {
       ) : null}
 
       {playing ? <VideoPlayer row={playing} onClose={() => setPlaying(null)} /> : null}
-    </AppShell>
+    </>
   );
 }
 

@@ -1,5 +1,4 @@
 import { useSearchParams } from 'react-router';
-import { AppShell } from '@/components/layout/AppShell';
 import { ContestsHeader } from '@/components/admin/ContestsHeader';
 import {
   ContestRewardsQueue,
@@ -31,7 +30,7 @@ export function ContestRewards() {
   const view: RewardsView = params.get('view') === 'paid' ? 'paid' : 'owed';
 
   return (
-    <AppShell>
+    <>
       <div className="mx-0 w-full max-w-[1128px]">
         <ContestsHeader subtitle="What creators have earned by crossing a target on figures this team confirmed. Nothing here was granted by hand: a reward becomes owed at the moment a claim is confirmed, and the only thing left to do with it is pay it." />
 
@@ -47,6 +46,6 @@ export function ContestRewards() {
           }}
         />
       </div>
-    </AppShell>
+    </>
   );
 }

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { ChevronLeft, ChevronRight, Search, ShieldCheck, Trophy, Users } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Field';
 import { ContestsHeader } from '@/components/admin/ContestsHeader';
@@ -127,7 +126,7 @@ export function AllContests() {
   const filtering = Boolean(filters.search) || filters.brandId !== '' || filters.tab !== 'all';
 
   return (
-    <AppShell>
+    <>
       <ContestsHeader />
 
       {/* ------------------------------------------------------ the toolbar -- */}
@@ -348,7 +347,7 @@ export function AllContests() {
           </div>
         </div>
       ) : null}
-    </AppShell>
+    </>
   );
 }
 

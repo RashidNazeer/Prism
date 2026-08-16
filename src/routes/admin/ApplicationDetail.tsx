@@ -1,6 +1,5 @@
 import { Link, useParams } from 'react-router';
 import { ArrowLeft, ExternalLink, Star } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import { ReviewPanel } from '@/components/admin/ReviewPanel';
 import { ButtonLink } from '@/components/ui/Button';
@@ -30,7 +29,7 @@ export function ApplicationDetail() {
   });
 
   return (
-    <AppShell>
+    <>
       <Link
         to="/admin/applications"
         className="text-muted hover:text-accent mt-4 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.14em] uppercase transition-colors"
@@ -57,7 +56,7 @@ export function ApplicationDetail() {
       ) : (
         <Loaded application={data} history={history} />
       )}
-    </AppShell>
+    </>
   );
 }
 

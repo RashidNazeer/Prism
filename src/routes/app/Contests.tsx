@@ -12,7 +12,6 @@ import {
   Trophy,
   X,
 } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { ContestDashboard } from '@/components/creator/ContestDashboard';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
 import {
@@ -280,7 +279,7 @@ export function Contests() {
     : null;
 
   return (
-    <AppShell>
+    <>
       <div className="flex flex-col gap-1.5 px-0.5 py-1">
         <h1 className="font-display text-[clamp(26px,4.4vw,40px)] leading-[1.05] font-semibold tracking-[-0.02em]">
           Contests
@@ -469,7 +468,7 @@ export function Contests() {
       {updatingNow?.entry ? (
         <ContestProgressDialog contest={updatingNow} onClose={() => setUpdating(null)} />
       ) : null}
-    </AppShell>
+    </>
   );
 }
 

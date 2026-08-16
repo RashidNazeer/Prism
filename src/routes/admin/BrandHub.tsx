@@ -18,7 +18,6 @@ import {
   Trophy,
   Users,
 } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { BrandAbout } from '@/components/admin/BrandAbout';
 import { BrandContests } from '@/components/admin/BrandContests';
 import { BrandCreators } from '@/components/admin/BrandCreators';
@@ -123,19 +122,19 @@ export function BrandHub() {
 
   if (isLoading) {
     return (
-      <AppShell>
+      <>
         <div className="max-w-3xl space-y-4">
           <div className="wx-skeleton h-8 w-56 rounded" />
           <div className="wx-skeleton h-10 w-full rounded" />
           <div className="wx-skeleton h-36 rounded-xl" />
         </div>
-      </AppShell>
+      </>
     );
   }
 
   if (isError || !brand) {
     return (
-      <AppShell>
+      <>
         <div className="border-line bg-surface-1 max-w-lg rounded-xl border p-8 text-center shadow-md">
           <p className="font-semibold">
             {isError ? 'That brand would not load' : 'No such brand'}
@@ -147,12 +146,12 @@ export function BrandHub() {
             Back to brands
           </ButtonLink>
         </div>
-      </AppShell>
+      </>
     );
   }
 
   return (
-    <AppShell>
+    <>
       {/* --------------------------------------------------------- header -- */}
       {/* One row: back, name, and the only action that belongs up here. The
           slug is gone; it is plumbing, and an admin has no use for a route. */}
@@ -270,7 +269,7 @@ export function BrandHub() {
           onClose={() => setOfferDialog(null)}
         />
       ) : null}
-    </AppShell>
+    </>
   );
 }
 

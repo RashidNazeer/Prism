@@ -9,7 +9,6 @@ import {
   Timer,
   Video,
 } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { ButtonLink } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { money } from '@/lib/money';
@@ -71,7 +70,7 @@ export function AdminDashboard() {
   ];
 
   return (
-    <AppShell>
+    <>
       <h1 className="font-display text-[clamp(1.6rem,4vw,2.25rem)] font-semibold tracking-[-0.02em]">
         Good to see you, {name}.
       </h1>
@@ -324,7 +323,7 @@ export function AdminDashboard() {
           </ButtonLink>
         </div>
       ) : null}
-    </AppShell>
+    </>
   );
 }
 

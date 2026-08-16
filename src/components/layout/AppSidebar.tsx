@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router';
 import { LogOut, Plus, X } from 'lucide-react';
 import { WurxMark } from '@/components/brand/WurxMark';
+import { prefetchRoute } from '@/app/router';
 import { cn } from '@/lib/utils';
 import { isNavItemActive, navForRole, type NavItem } from '@/lib/nav';
 import type { AppRole } from '@/lib/auth/auth-context';
@@ -274,10 +275,25 @@ function NavRow({
     );
   }
 
+  /*
+   * Begin the download on the way to the click, not after it. See
+   * `prefetchRoute` for why, and for why it is only half the fix.
+   *
+   * `pointerenter` covers mouse and stylus. `touchstart` fires on a phone the
+   * moment a finger lands, which is 100ms or so before the click resolves, so
+   * even touch gets a small head start. `focus` covers the keyboard.
+   */
+  const warm = () => {
+    if (item.to) prefetchRoute(item.to);
+  };
+
   return (
     <Link
       to={item.to}
       onClick={onNavigate}
+      onPointerEnter={warm}
+      onTouchStart={warm}
+      onFocus={warm}
       aria-current={active ? 'page' : undefined}
       title={collapsed ? item.label : undefined}
       className={cn(

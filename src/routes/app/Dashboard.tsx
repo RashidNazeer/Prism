@@ -2,7 +2,6 @@ import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
 import { Check, Clock, Sparkles, X } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { ButtonLink } from '@/components/ui/Button';
 import { WelcomeMoment } from '@/components/creator/WelcomeMoment';
 import { ApprovedMoment } from '@/components/creator/ApprovedMoment';
@@ -68,7 +67,7 @@ export function Dashboard() {
   const status = application?.status;
 
   return (
-    <AppShell>
+    <>
       {moment === 'welcome' ? (
         <WelcomeMoment
           name={firstName ?? ''}
@@ -106,7 +105,7 @@ export function Dashboard() {
       ) : (
         <Unfinished />
       )}
-    </AppShell>
+    </>
   );
 }
 

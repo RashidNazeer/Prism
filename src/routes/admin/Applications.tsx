@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { Check, ChevronLeft, ChevronRight, Inbox, Search, Star, X } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import { RowActions } from '@/components/admin/RowActions';
 import { ReviewDialog, type ReviewTarget } from '@/components/admin/ReviewDialog';
@@ -124,7 +123,7 @@ export function Applications() {
   };
 
   return (
-    <AppShell>
+    <>
       <h1 className="text-[clamp(1.6rem,4vw,2.25rem)] font-extrabold">Applications</h1>
       <p className="text-muted mt-2 max-w-2xl text-[15px] leading-relaxed">
         Approve one and their dashboard changes while they are looking at it.
@@ -402,7 +401,7 @@ export function Applications() {
           onDone={() => setSelected(new Set())}
         />
       ) : null}
-    </AppShell>
+    </>
   );
 }
 

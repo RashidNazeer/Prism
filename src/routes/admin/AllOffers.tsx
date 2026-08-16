@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { ChevronLeft, ChevronRight, Search, Tag, Users } from 'lucide-react';
-import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
@@ -104,7 +103,7 @@ export function AllOffers() {
   const { data: content } = useOfferContent(offerIds);
 
   return (
-    <AppShell>
+    <>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h1 className="text-[clamp(1.4rem,3.5vw,1.9rem)] font-extrabold">Offers</h1>
         <p className="text-muted text-[14px]">Every deal on the table, across every brand.</p>
@@ -304,7 +303,7 @@ export function AllOffers() {
           </div>
         </div>
       ) : null}
-    </AppShell>
+    </>
   );
 }
 
