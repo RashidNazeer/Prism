@@ -784,3 +784,20 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   Rashid asked for the control to be the icon itself so the bar could give that
   space to the section name. It is a real `<button>` on the rail and a real
   `<Link>` in the drawer, never one dressed as the other.
+- 2026-08-16: **A tap-target floor is physical pixels and does not follow the
+  text-size setting.** Making every size a `rem` shrank the targets with
+  everything else: `min-h-11` is `2.75rem`, chosen because it equalled 44px at
+  the browser's 16px root, and the new 15px root turned 64 of them into 41px.
+  `verify:contests` caught it on the brand hub at 375px. A 44px target is sized
+  for a finger, and a finger does not get smaller because somebody prefers
+  smaller text. The floor lives on the filter row's CONTAINER (`wx-tap-row`)
+  rather than on each control, because a row that gains a control next month
+  should not depend on anybody remembering.
+- 2026-08-16: **When the machine is the suspect, run against the deployed dev
+  URL rather than localhost.** `live` failed 1 check, then 7, on identical code
+  with a clean tree, and the 7-check run failed its FIRST check, which runs
+  before any realtime does anything. The same suite passed 12/12 in 32s against
+  `wurxmediahubdev.vercel.app`, versus 222s locally. `pnpm preview` is another
+  Node process holding the whole `dist`, and dropping it is often the
+  difference. Check the live `assets/index-*.js` hash matches `dist/` first, or
+  a green run is measuring old code.
