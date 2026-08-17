@@ -801,3 +801,24 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   Node process holding the whole `dist`, and dropping it is often the
   difference. Check the live `assets/index-*.js` hash matches `dist/` first, or
   a green run is measuring old code.
+- 2026-08-17: **The TikTok access token is unreadable by admins, not just by
+  creators.** It reads a client's live ad spend, so `tiktok_connections` has RLS
+  enabled with zero policies and the grants revoked from `anon` and
+  `authenticated`. An admin manages the connection through an edge function and
+  never holds the credential. The settings screen gets what it needs from
+  `tiktok_connection_health`, a security definer view carrying every column
+  except the token, whose WHERE clause is the access control rather than a
+  filter. `pnpm verify:tiktok` signs in as a real admin and proves the token
+  table comes back empty.
+- 2026-08-17: **The OAuth callback route is public, and the nonce is what makes
+  that safe.** Whoever returns from tiktok.com may have no session in that tab,
+  so requiring one would fail the flow at the last step for reasons that look
+  random. Instead the `state` is 32 random bytes, minted by an admin-only
+  function, expires in ten minutes, and is burned in a conditional UPDATE so a
+  replay loses the race rather than being checked-then-used. The refusal message
+  is identical for unknown, used and expired, so nonces cannot be probed.
+- 2026-08-17: **Store-to-brand mapping is a settings screen, not a connect
+  wizard.** Rashid's own correction: "some brands are not yet added so admin can
+  add later and then map". So an unmapped store is a normal state rather than an
+  error, the sync upserts without touching `brand_id`, and Re-check can never
+  discard a mapping somebody made by hand.

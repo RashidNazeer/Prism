@@ -370,3 +370,32 @@ the Edge Function. Never treat the URL as a security boundary.
 - The public landing page must not pull in the Supabase client. It is imported
   dynamically in `AuthProvider`, and `manualChunks` keeps Supabase and TanStack
   Query in separate chunks.
+
+## TikTok ads (added 2026-08-17)
+
+App "Wurx Ads Reporting", App ID `7674829988993957908`, approved. One app for
+both environments; only the redirect URI differs. Secrets live as Supabase
+function secrets on each project, never in the repo:
+`TIKTOK_APP_ID`, `TIKTOK_APP_SECRET`, `TIKTOK_REDIRECT_URI`.
+
+Dev callback `https://wurxmediahubdev.vercel.app/oauth/tiktok/callback`,
+prod `https://wurxmediahub.vercel.app/oauth/tiktok/callback`. **Prod has none of
+these secrets set yet**, deliberately: prod is frozen.
+
+```bash
+pnpm verify:tiktok       # 37 checks, no browser, needs SUPABASE_SERVICE_KEY
+supabase functions deploy tiktok-connect tiktok-callback
+```
+
+**The region trap, which costs an afternoon if you meet it cold.** Supabase runs
+an edge function in the region nearest the caller. From Pakistan that is Mumbai,
+`ap-south-1`, and TikTok blocks every Indian IP because India banned TikTok in
+2020. The reply is `code -1 "Client IP address is in banned Country list."`,
+which reads exactly like a bad app secret. Every call goes through
+`src/lib/tiktok.ts`, which pins `x-region: ap-northeast-1`; the functions also
+check their own region and refuse before calling out. Verified working:
+ap-northeast-1, ap-southeast-1, eu-west-2, us-east-1.
+
+**GMV Max reporting is v2.0, not v1.3.** At v1.3 the report path exists and
+fails with a useless "ERROR Message." and the video endpoint 404s. Not yet
+built; noted here so the next person does not lose the day to it.

@@ -1246,3 +1246,44 @@ is why it read as hanging rather than loading. After: **5ms cold**.
   per minute.
 - **`pnpm measure:nav [url]` proves it.** Always measure against the LIVE url:
   localhost has no latency, so "cold" is not cold and the figure flatters.
+
+## TikTok ads connection (2026-08-17)
+
+**What it is.** An admin authorises our approved TikTok Business app once, and
+the server can then read the ad spend, revenue and orders behind creators'
+videos. This step is the connection and the brand matching only; no reporting
+call and nothing creator-facing has been built yet.
+
+**Creators are never told this exists.** They read numbers. No connect button,
+no mention of TikTok as a data source, nothing in their nav.
+
+| piece | where |
+| --- | --- |
+| tables + RLS | `supabase/migrations/20260817172922_tiktok_ads_connection.sql` |
+| health view | `supabase/migrations/20260817182000_tiktok_connection_health.sql` |
+| TikTok client, region guard | `supabase/functions/_shared/tiktok.ts` |
+| account/store sync | `supabase/functions/_shared/tiktok-sync.ts` |
+| admin actions | `supabase/functions/tiktok-connect/index.ts` |
+| the public exchange | `supabase/functions/tiktok-callback/index.ts` |
+| browser calls | `src/lib/tiktok.ts` |
+| queries | `src/lib/admin/useTikTok.ts` |
+| the screen | `src/routes/admin/TikTokSettings.tsx` (Data → TikTok) |
+| the callback page | `src/routes/OAuthTikTokCallback.tsx` (`/oauth/tiktok/callback`, PUBLIC) |
+| the suite | `scripts/check-tiktok.mjs`, `pnpm verify:tiktok`, 37 checks |
+
+**Four things about this that are load-bearing and easy to undo by accident:**
+
+1. **`tiktok_connections` has RLS on and NO POLICIES, on purpose.** The token
+   reads a client's live spend. Not readable by an admin either, and the suite
+   asserts that by signing in as one and trying. Do not "fix" the missing policy.
+2. **The call must not leave from India.** Supabase runs a function in the
+   region nearest the caller; from Pakistan that is Mumbai, and TikTok blocks
+   every Indian IP, answering `code -1 "Client IP address is in banned Country
+   list"`, which reads exactly like a bad secret. Callers pin `x-region:
+   ap-northeast-1` via `src/lib/tiktok.ts`, and the function refuses before
+   calling out if it finds itself in an unverified region.
+3. **TikTok returns HTTP 200 on failure.** The verdict is the `code` field.
+   `callTikTok` is the only door and treats non-zero as thrown.
+4. **`tiktok_stores.brand_id` is nullable and survives a re-check.** The sync
+   upserts without touching it, because the mapping is a human decision and
+   Re-check must not throw it away.

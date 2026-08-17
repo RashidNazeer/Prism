@@ -188,6 +188,7 @@ const AdminContestRewards = screen(
 const AdminContestSetup = screen(() => import('@/routes/admin/ContestSetup'), 'ContestSetup');
 const AdminContent = screen(() => import('@/routes/admin/Content'), 'AdminContent');
 const AdminActivity = screen(() => import('@/routes/admin/Activity'), 'Activity');
+const AdminTikTok = screen(() => import('@/routes/admin/TikTokSettings'), 'TikTokSettings');
 const AdminBrands = screen(() => import('@/routes/admin/Brands'), 'Brands');
 const AdminBrandHub = screen(() => import('@/routes/admin/BrandHub'), 'BrandHub');
 const AdminCreators = screen(() => import('@/routes/admin/Creators'), 'Creators');
@@ -223,6 +224,7 @@ const PREFETCH: Record<string, () => Promise<unknown>> = {
   '/admin': () => import('@/routes/admin/AdminDashboard'),
   '/admin/applications': () => import('@/routes/admin/Applications'),
   '/admin/activity': () => import('@/routes/admin/Activity'),
+  '/admin/tiktok': () => import('@/routes/admin/TikTokSettings'),
   '/admin/offers': () => import('@/routes/admin/AllOffers'),
   '/admin/offers/requests': () => import('@/routes/admin/OfferRequests'),
   '/admin/contests': () => import('@/routes/admin/AllContests'),
@@ -245,6 +247,20 @@ export const router = createBrowserRouter([
     path: '/',
     HydrateFallback: RouteFallback,
     lazy: lazyRoute(() => import('@/routes/Landing'), 'Landing'),
+  },
+  /*
+   * WHERE TIKTOK SENDS AN ADMIN BACK AFTER THEY AUTHORISE US.
+   *
+   * PUBLIC ON PURPOSE, and it is the only route in the product that has to be:
+   * the browser arrives here straight from tiktok.com and may carry no hub
+   * session in that tab. What makes it safe is the single-use `state` nonce,
+   * minted by an admin-only edge function and burned server side, rather than
+   * this route being hard to reach. See supabase/functions/tiktok-callback.
+   */
+  {
+    path: '/oauth/tiktok/callback',
+    HydrateFallback: RouteFallback,
+    lazy: lazyRoute(() => import('@/routes/OAuthTikTokCallback'), 'OAuthTikTokCallback'),
   },
   {
     path: '/apply',
@@ -409,6 +425,10 @@ export const router = createBrowserRouter([
       {
         path: '/admin/activity',
         element: <AdminActivity />,
+      },
+      {
+        path: '/admin/tiktok',
+        element: <AdminTikTok />,
       },
       {
         path: '/admin/brands',

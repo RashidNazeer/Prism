@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -11,6 +11,31 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -463,9 +488,11 @@ export type Database = {
           creator_id: string
           entry_id: string
           id: string
-          note: string | null
-          placement: number | null
-          term_id: string | null
+          message: string | null
+          paid_at: string | null
+          paid_by: string | null
+          reached_value: number | null
+          term_id: string
         }
         Insert: {
           awarded_amount: number
@@ -476,9 +503,11 @@ export type Database = {
           creator_id: string
           entry_id: string
           id?: string
-          note?: string | null
-          placement?: number | null
-          term_id?: string | null
+          message?: string | null
+          paid_at?: string | null
+          paid_by?: string | null
+          reached_value?: number | null
+          term_id: string
         }
         Update: {
           awarded_amount?: number
@@ -489,9 +518,11 @@ export type Database = {
           creator_id?: string
           entry_id?: string
           id?: string
-          note?: string | null
-          placement?: number | null
-          term_id?: string | null
+          message?: string | null
+          paid_at?: string | null
+          paid_by?: string | null
+          reached_value?: number | null
+          term_id?: string
         }
         Relationships: [
           {
@@ -549,6 +580,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contest_entry_progress"
             referencedColumns: ["entry_id"]
+          },
+          {
+            foreignKeyName: "contest_awards_paid_by_fkey"
+            columns: ["paid_by"]
+            isOneToOne: false
+            referencedRelation: "creator_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_awards_paid_by_fkey"
+            columns: ["paid_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "contest_awards_term_id_fkey"
@@ -1744,6 +1789,230 @@ export type Database = {
         }
         Relationships: []
       }
+      tiktok_ad_accounts: {
+        Row: {
+          advertiser_id: string
+          connection_id: string
+          currency: string | null
+          first_seen_at: string
+          last_seen_at: string
+          name: string | null
+          timezone: string | null
+        }
+        Insert: {
+          advertiser_id: string
+          connection_id: string
+          currency?: string | null
+          first_seen_at?: string
+          last_seen_at?: string
+          name?: string | null
+          timezone?: string | null
+        }
+        Update: {
+          advertiser_id?: string
+          connection_id?: string
+          currency?: string | null
+          first_seen_at?: string
+          last_seen_at?: string
+          name?: string | null
+          timezone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tiktok_ad_accounts_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "tiktok_connection_health"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tiktok_ad_accounts_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "tiktok_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tiktok_connections: {
+        Row: {
+          access_token: string
+          connected_at: string
+          connected_by: string | null
+          granted_advertiser_ids: string[]
+          id: string
+          last_error: string | null
+          last_verified_at: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          scope: string | null
+        }
+        Insert: {
+          access_token: string
+          connected_at?: string
+          connected_by?: string | null
+          granted_advertiser_ids?: string[]
+          id?: string
+          last_error?: string | null
+          last_verified_at?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          scope?: string | null
+        }
+        Update: {
+          access_token?: string
+          connected_at?: string
+          connected_by?: string | null
+          granted_advertiser_ids?: string[]
+          id?: string
+          last_error?: string | null
+          last_verified_at?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          scope?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tiktok_connections_connected_by_fkey"
+            columns: ["connected_by"]
+            isOneToOne: false
+            referencedRelation: "creator_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tiktok_connections_connected_by_fkey"
+            columns: ["connected_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tiktok_connections_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "creator_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tiktok_connections_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tiktok_oauth_states: {
+        Row: {
+          created_at: string
+          expires_at: string
+          started_by: string | null
+          state: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          started_by?: string | null
+          state: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          started_by?: string | null
+          state?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tiktok_oauth_states_started_by_fkey"
+            columns: ["started_by"]
+            isOneToOne: false
+            referencedRelation: "creator_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tiktok_oauth_states_started_by_fkey"
+            columns: ["started_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tiktok_stores: {
+        Row: {
+          advertiser_id: string
+          brand_id: string | null
+          first_seen_at: string
+          last_seen_at: string
+          mapped_at: string | null
+          mapped_by: string | null
+          name: string | null
+          store_authorized_bc_id: string | null
+          store_id: string
+        }
+        Insert: {
+          advertiser_id: string
+          brand_id?: string | null
+          first_seen_at?: string
+          last_seen_at?: string
+          mapped_at?: string | null
+          mapped_by?: string | null
+          name?: string | null
+          store_authorized_bc_id?: string | null
+          store_id: string
+        }
+        Update: {
+          advertiser_id?: string
+          brand_id?: string | null
+          first_seen_at?: string
+          last_seen_at?: string
+          mapped_at?: string | null
+          mapped_by?: string | null
+          name?: string | null
+          store_authorized_bc_id?: string | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tiktok_stores_advertiser_id_fkey"
+            columns: ["advertiser_id"]
+            isOneToOne: false
+            referencedRelation: "tiktok_account_map"
+            referencedColumns: ["advertiser_id"]
+          },
+          {
+            foreignKeyName: "tiktok_stores_advertiser_id_fkey"
+            columns: ["advertiser_id"]
+            isOneToOne: false
+            referencedRelation: "tiktok_ad_accounts"
+            referencedColumns: ["advertiser_id"]
+          },
+          {
+            foreignKeyName: "tiktok_stores_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tiktok_stores_mapped_by_fkey"
+            columns: ["mapped_by"]
+            isOneToOne: false
+            referencedRelation: "creator_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tiktok_stores_mapped_by_fkey"
+            columns: ["mapped_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       brand_content_totals: {
@@ -1774,6 +2043,8 @@ export type Database = {
           currency: string | null
           entries_approved: number | null
           entries_pending: number | null
+          owed: number | null
+          paid: number | null
         }
         Relationships: [
           {
@@ -1850,6 +2121,37 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "offer_applications_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contest_award_totals: {
+        Row: {
+          awarded: number | null
+          awards: number | null
+          awards_owed: number | null
+          awards_paid: number | null
+          brand_id: string | null
+          contest_id: string | null
+          creators: number | null
+          currency: string | null
+          owed: number | null
+          owed_since: string | null
+          paid: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_awards_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contests_brand_id_fkey"
             columns: ["brand_id"]
             isOneToOne: false
             referencedRelation: "brands"
@@ -2035,6 +2337,43 @@ export type Database = {
           },
         ]
       }
+      tiktok_account_map: {
+        Row: {
+          advertiser_id: string | null
+          advertiser_name: string | null
+          brand_id: string | null
+          brand_name: string | null
+          currency: string | null
+          last_seen_at: string | null
+          mapped_at: string | null
+          store_authorized_bc_id: string | null
+          store_id: string | null
+          store_name: string | null
+          timezone: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tiktok_stores_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tiktok_connection_health: {
+        Row: {
+          connected_at: string | null
+          connected_by_email: string | null
+          connected_by_name: string | null
+          granted_advertiser_count: number | null
+          id: string | null
+          last_error: string | null
+          last_verified_at: string | null
+          revoked_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       apply_for_contest: {
@@ -2134,6 +2473,15 @@ export type Database = {
           gmv_place: number
           video_place: number
         }[]
+      }
+      pay_contest_awards: {
+        Args: {
+          p_actor_id: string
+          p_allow_suspended?: boolean
+          p_award_ids: string[]
+          p_message?: string
+        }
+        Returns: Json
       }
       pin_contest_exclusions: {
         Args: { p_email: string; p_handle: string; p_user_id: string }
@@ -2358,13 +2706,7 @@ export type Database = {
         Returns: Json
       }
       settle_contest: {
-        Args: {
-          p_actor_id: string
-          p_allow_suspended?: boolean
-          p_contest_id: string
-          p_note?: string
-          p_outcomes: Json
-        }
+        Args: { p_actor_id: string; p_contest_id: string; p_message?: string }
         Returns: Json
       }
       stage_is_before_content_done: {
@@ -2585,6 +2927,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["applicant", "creator", "creative_strategist", "ops", "admin"],

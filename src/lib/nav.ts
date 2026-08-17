@@ -12,6 +12,7 @@ import {
   TrendingUp,
   Trophy,
   Upload,
+  Plug,
   UserRound,
   Users,
   Video,
@@ -138,7 +139,13 @@ const ADMIN: NavGroup[] = [
     // Not "Step 7": that step shipped on 2026-08-11 and was the creator
     // screens. A badge naming a step that has already landed reads as a broken
     // promise, so unbuilt items say when rather than which number.
-    items: [{ label: 'Uploads', icon: Upload, soon: 'Later' }],
+    items: [
+      // The TikTok ad connection and the brand matching. Named for what it is
+      // to an admin, not for the protocol underneath: nobody manages "an OAuth
+      // integration", they connect TikTok.
+      { label: 'TikTok', icon: Plug, to: '/admin/tiktok' },
+      { label: 'Uploads', icon: Upload, soon: 'Later' },
+    ],
   },
 ];
 

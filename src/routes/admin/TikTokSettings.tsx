@@ -1,0 +1,386 @@
+import { useMemo, useState } from 'react';
+import { AlertTriangle, CheckCircle2, Link2, Plug, RefreshCw, Unplug } from 'lucide-react';
+import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
+import { Button } from '@/components/ui/Button';
+import {
+  useMappableBrands,
+  useTikTokAccounts,
+  useTikTokActions,
+  useTikTokConnection,
+  type AccountMapRow,
+} from '@/lib/admin/useTikTok';
+import { cn } from '@/lib/utils';
+
+/**
+ * Data → TikTok. The ad account connection, and which Wurx brand each TikTok
+ * store belongs to.
+ *
+ * ADMIN ONLY, and creators are never told this exists. They read numbers; the
+ * fact that the numbers come from a TikTok app is ours.
+ *
+ * MAPPING IS A SETTINGS JOB, NOT A WIZARD STEP, which was Rashid's own
+ * correction on 2026-08-17: "some brands are not yet added so admin can add
+ * later and then map". So an unmapped store is a perfectly normal state, it is
+ * shown plainly rather than as an error, and the mapping can be changed or
+ * cleared at any time.
+ *
+ * The screen draws no title and no description of itself: the top bar names the
+ * section, and row one is the work. See CLAUDE.md, screen chrome.
+ */
+
+const TABS = [
+  { key: 'accounts', label: 'Ad accounts' },
+  { key: 'connection', label: 'Connection' },
+] as const;
+type TabKey = (typeof TABS)[number]['key'];
+
+export function TikTokSettings() {
+  const connection = useTikTokConnection();
+  const accounts = useTikTokAccounts();
+  const brands = useMappableBrands();
+  const { connect, recheck, disconnect, map } = useTikTokActions();
+
+  const connected = Boolean(connection.data && !connection.data.revoked_at);
+
+  /*
+   * The default tab is the job, not the summary. When there is a connection the
+   * job is mapping stores to brands; when there is not, the only job available
+   * is making one. Undefined until the query answers, so the screen does not
+   * flash the wrong tab and move under the pointer.
+   */
+  const [tab, setTab] = useState<TabKey | null>(null);
+  const activeTab: TabKey = tab ?? (connected ? 'accounts' : 'connection');
+
+  const unmapped = useMemo(
+    () => (accounts.data ?? []).filter((r) => !r.brand_id).length,
+    [accounts.data]
+  );
+
+  const busy = connect.isPending || recheck.isPending || disconnect.isPending;
+
+  const actionError =
+    (connect.error as Error | null)?.message ??
+    (recheck.error as Error | null)?.message ??
+    (disconnect.error as Error | null)?.message ??
+    (map.error as Error | null)?.message ??
+    null;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <FilterBar
+        action={
+          connected ? (
+            <Button
+              variant="secondary"
+              onClick={() => recheck.mutate()}
+              disabled={busy}
+              className="h-10 shrink-0 rounded-md text-[0.875rem]"
+            >
+              <RefreshCw size={15} aria-hidden className={cn(recheck.isPending && 'animate-spin')} />
+              {recheck.isPending ? 'Checking' : 'Re-check'}
+            </Button>
+          ) : (
+            <Button
+              onClick={() => connect.mutate()}
+              disabled={busy}
+              className="h-10 shrink-0 rounded-md text-[0.875rem]"
+            >
+              <Plug size={15} aria-hidden />
+              {connect.isPending ? 'Opening TikTok' : 'Connect TikTok'}
+            </Button>
+          )
+        }
+      >
+        <FilterTabs label="What to manage">
+          {TABS.map((t) => (
+            <FilterTab
+              key={t.key}
+              active={activeTab === t.key}
+              count={t.key === 'accounts' && connected ? (accounts.data?.length ?? 0) : undefined}
+              onClick={() => setTab(t.key)}
+            >
+              {t.label}
+            </FilterTab>
+          ))}
+        </FilterTabs>
+
+        {connected && unmapped > 0 ? (
+          <span className="text-warning wx-numeric text-[0.75rem] font-semibold">
+            {unmapped} not mapped to a brand yet
+          </span>
+        ) : null}
+      </FilterBar>
+
+      {actionError ? (
+        <p
+          role="alert"
+          className="border-danger/40 bg-danger-soft text-danger rounded-lg border p-3 text-[0.8125rem] leading-relaxed"
+        >
+          {actionError}
+        </p>
+      ) : null}
+
+      {activeTab === 'accounts' ? (
+        <AccountsTab
+          rows={accounts.data ?? []}
+          loading={accounts.isPending}
+          connected={connected}
+          brands={brands.data ?? []}
+          onMap={(storeId, brandId) => map.mutate({ storeId, brandId })}
+          mappingStore={map.isPending ? map.variables?.storeId : undefined}
+        />
+      ) : (
+        <ConnectionTab
+          health={connection.data ?? null}
+          loading={connection.isPending}
+          onDisconnect={(id) => disconnect.mutate(id)}
+          disconnecting={disconnect.isPending}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------- accounts --- */
+
+function AccountsTab({
+  rows,
+  loading,
+  connected,
+  brands,
+  onMap,
+  mappingStore,
+}: {
+  rows: AccountMapRow[];
+  loading: boolean;
+  connected: boolean;
+  brands: { id: string; name: string }[];
+  onMap: (storeId: string, brandId: string | null) => void;
+  mappingStore: string | undefined;
+}) {
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="wx-skeleton h-24 rounded-xl" />
+        <div className="wx-skeleton h-24 rounded-xl" />
+      </div>
+    );
+  }
+
+  if (!connected) {
+    return (
+      <Empty
+        title="No TikTok account is connected"
+        body="Connect the TikTok Business account that runs the GMV Max ads, and the ad accounts it can reach will appear here ready to be matched to brands."
+      />
+    );
+  }
+
+  if (rows.length === 0) {
+    return (
+      <Empty
+        title="Connected, but no stores came back"
+        body="The connection is good, and TikTok reported no GMV Max stores on it. Press Re-check, or confirm the ad account has a TikTok Shop attached."
+      />
+    );
+  }
+
+  /*
+   * Grouped by ad account, because a store means nothing on its own: the
+   * currency and timezone that every future number is denominated in belong to
+   * the ACCOUNT, and showing them once per group is how they stay attached to
+   * the figures underneath.
+   */
+  const groups = new Map<string, AccountMapRow[]>();
+  for (const r of rows) {
+    const list = groups.get(r.advertiser_id) ?? [];
+    list.push(r);
+    groups.set(r.advertiser_id, list);
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {[...groups.entries()].map(([advertiserId, stores]) => {
+        const head = stores[0]!;
+        return (
+          <section key={advertiserId} className="border-line bg-surface-1 rounded-xl border">
+            <header className="border-line flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b px-4 py-3">
+              <h2 className="font-display text-[1rem] font-bold">
+                {head.advertiser_name ?? 'Unnamed ad account'}
+              </h2>
+              <span className="text-muted wx-numeric text-[0.75rem]">
+                {head.currency ?? 'currency unknown'} · {head.timezone ?? 'timezone unknown'}
+              </span>
+            </header>
+
+            <ul className="divide-line divide-y">
+              {stores.map((s) => (
+                <li
+                  key={s.store_id}
+                  className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3"
+                >
+                  <div className="min-w-[10rem] flex-1">
+                    <p className="text-[0.875rem] font-medium">
+                      {s.store_name ?? 'Unnamed store'}
+                    </p>
+                    {s.brand_id ? (
+                      <p className="text-muted mt-0.5 flex items-center gap-1.5 text-[0.75rem]">
+                        <Link2 size={12} aria-hidden />
+                        Showing as {s.brand_name}
+                      </p>
+                    ) : (
+                      <p className="text-warning mt-0.5 text-[0.75rem]">
+                        Not matched to a brand yet
+                      </p>
+                    )}
+                  </div>
+
+                  {/*
+                    A plain select rather than a dialog. Mapping is something an
+                    admin will do a handful of times and then change rarely, and
+                    a two-click popup for one decision is worse than a control
+                    that shows the current answer while it sits there.
+                  */}
+                  <label className="flex shrink-0 items-center gap-2">
+                    <span className="text-faint text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
+                      Brand
+                    </span>
+                    <select
+                      value={s.brand_id ?? ''}
+                      disabled={mappingStore === s.store_id}
+                      onChange={(e) => onMap(s.store_id, e.target.value || null)}
+                      className="border-line bg-surface-2 h-10 min-w-[11rem] rounded-md border px-2 text-[0.8125rem]"
+                    >
+                      <option value="">Not matched</option>
+                      {brands.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ----------------------------------------------------------- connection --- */
+
+function ConnectionTab({
+  health,
+  loading,
+  onDisconnect,
+  disconnecting,
+}: {
+  health: {
+    id: string;
+    connected_at: string;
+    last_verified_at: string | null;
+    last_error: string | null;
+    connected_by_name: string | null;
+    connected_by_email: string | null;
+    granted_advertiser_count: number;
+  } | null;
+  loading: boolean;
+  onDisconnect: (id: string) => void;
+  disconnecting: boolean;
+}) {
+  if (loading) return <div className="wx-skeleton h-40 rounded-xl" />;
+
+  if (!health) {
+    return (
+      <Empty
+        title="Not connected"
+        body="Press Connect TikTok. You will be sent to TikTok to authorise Wurx Ads Reporting, and brought straight back. Only an admin can do this, and creators never see it."
+      />
+    );
+  }
+
+  const when = (iso: string | null) =>
+    iso
+      ? new Date(iso).toLocaleString(undefined, {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : 'never';
+
+  return (
+    <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5">
+      <div className="flex items-start gap-3">
+        {health.last_error ? (
+          <AlertTriangle size={20} aria-hidden className="text-warning mt-0.5 shrink-0" />
+        ) : (
+          <CheckCircle2 size={20} aria-hidden className="text-success mt-0.5 shrink-0" />
+        )}
+        <div className="min-w-0">
+          <h2 className="font-display text-[1.0625rem] font-bold">
+            {health.last_error ? 'Connected, with a problem' : 'Connected'}
+          </h2>
+          <p className="text-muted mt-1 text-[0.8125rem] leading-relaxed">
+            Authorised {when(health.connected_at)}
+            {health.connected_by_name || health.connected_by_email
+              ? ` by ${health.connected_by_name ?? health.connected_by_email}`
+              : ''}
+            . TikTok granted {health.granted_advertiser_count} ad{' '}
+            {health.granted_advertiser_count === 1 ? 'account' : 'accounts'}.
+          </p>
+        </div>
+      </div>
+
+      {/*
+        LAST CHECKED IS SHOWN BECAUSE THERE IS NO REFRESH TOKEN. TikTok's ads
+        API issues one long-lived credential and no way to renew it, so if it is
+        revoked at their end nothing here would fail loudly, the numbers would
+        simply stop moving. A visible date is what turns that into something
+        somebody notices.
+      */}
+      <dl className="border-line grid gap-x-6 gap-y-2 border-t pt-4 text-[0.8125rem] sm:grid-cols-2">
+        <div className="flex items-baseline justify-between gap-3">
+          <dt className="text-faint text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
+            Last checked
+          </dt>
+          <dd className="wx-numeric">{when(health.last_verified_at)}</dd>
+        </div>
+      </dl>
+
+      {health.last_error ? (
+        <p className="border-warning/40 bg-warning-soft text-warning rounded-md border p-3 text-[0.8125rem] leading-relaxed">
+          {health.last_error}
+        </p>
+      ) : null}
+
+      <div className="border-line flex flex-wrap gap-2 border-t pt-4">
+        <Button
+          variant="secondary"
+          onClick={() => onDisconnect(health.id)}
+          disabled={disconnecting}
+          className="text-danger hover:border-danger hover:text-danger h-10 rounded-md text-[0.875rem]"
+        >
+          <Unplug size={15} aria-hidden />
+          {disconnecting ? 'Disconnecting' : 'Disconnect'}
+        </Button>
+        <p className="text-muted self-center text-[0.75rem] leading-relaxed">
+          Disconnecting deletes the token. The brand matching is kept, so reconnecting does not
+          mean doing it again.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function Empty({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="border-line bg-surface-1 rounded-xl border p-8 text-center">
+      <h2 className="font-display text-[1.0625rem] font-bold">{title}</h2>
+      <p className="text-muted mx-auto mt-2 max-w-prose text-[0.875rem] leading-relaxed">{body}</p>
+    </div>
+  );
+}

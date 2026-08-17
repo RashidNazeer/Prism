@@ -92,6 +92,7 @@ const DEMO_CREATOR = 'skinbyamara@wurxmediahub.demo';
 const SUITES = [
   { key: 'browser', script: 'verify-page.mjs', what: 'the landing page, both themes' },
   { key: 'rls', script: 'check-rls.mjs', what: 'the database, attacked as a real user', needs: ['service'] },
+  { key: 'tiktok', script: 'check-tiktok.mjs', what: 'the ad token, attacked as a creator and an admin', needs: ['service'] },
   { key: 'session', script: 'check-session.mjs', what: 'refresh, two tabs, reopen, form survival', needs: ['service'] },
   { key: 'apply', script: 'check-apply.mjs', what: 'sign up to stored application', needs: ['service'] },
   { key: 'review', script: 'check-review.mjs', what: 'the admin review pipeline, plus attacks', needs: ['service', 'admin'] },
