@@ -57,7 +57,10 @@ const Body = z.discriminatedUnion('action', [
     advertiserId: z.string().trim().regex(/^[0-9]{6,32}$/),
     storeId: z.string().trim().regex(/^[0-9]{6,32}$/),
     bcId: z.string().trim().regex(/^[0-9]{6,32}$/),
-    itemIds: z.array(z.string().trim().regex(/^[0-9]{6,32}$/)).min(1).max(50),
+    itemIds: z.array(z.string().trim().regex(/^[0-9]{6,32}$/)).max(50).default([]),
+    // Ask about EVERY video the store has, rather than a named list. This is
+    // how we find spend on videos we do not hold a link for.
+    allVideos: z.boolean().default(false),
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     // Both parameters so the true metric list and the true version can be found
@@ -336,12 +339,16 @@ Deno.serve(async (req) => {
         'metrics',
         JSON.stringify(body.metrics ?? ['cost', 'gross_revenue', 'roi', 'orders'])
       );
-      u.searchParams.set(
-        'filtering',
-        JSON.stringify([
-          { field_name: 'item_id', filter_type: 'IN', filter_value: body.itemIds },
-        ])
-      );
+      // Unfiltered when `allVideos`, which is how we see spend on videos we hold
+      // no link for. Otherwise scoped to the ids asked about.
+      if (!body.allVideos && body.itemIds.length > 0) {
+        u.searchParams.set(
+          'filtering',
+          JSON.stringify([
+            { field_name: 'item_id', filter_type: 'IN', filter_value: body.itemIds },
+          ])
+        );
+      }
       u.searchParams.set('sort_field', 'cost');
       u.searchParams.set('sort_type', 'DESC');
       u.searchParams.set('page_size', '100');

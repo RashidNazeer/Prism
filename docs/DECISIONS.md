@@ -872,3 +872,19 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   Shop expert that a sale is counted on the day it was PURCHASED, not the day
   the ad was seen, so a complete day is final and never changes. The three-day
   window stays only as cover for a failed night, without `force`.
+- 2026-08-18: **Our numbers are only ever as complete as the links we hold, and
+  that is now the biggest operational risk in the feature.** Rashid saw $3.47 in
+  the ad centre against our $2.99 for babblingbrookej in August. Nothing was
+  wrong with the pipeline: TikTok's API agreed with us to the cent for the
+  videos we knew about. The gap was 36 videos of hers we had never been given.
+  With all 51 loaded we report exactly $3.47.
+  Probing the store unfiltered showed **9,487 videos and $17,128 of spend in one
+  fortnight**, so "we hold no link for it" is the normal case, not the
+  exception. A creator who forgets to submit a link simply does not get paid
+  attention for it, and nothing anywhere will say so.
+- 2026-08-18: **A short page is treated as a failed day, not as its answer.**
+  The report is paginated and the store returns thousands of rows. We filter to
+  our own videos so one page holds them today, but the roster only grows and the
+  failure mode is money quietly missing rather than an error. The sync now
+  compares `page_info.total_number` against the rows it received and fails the
+  day if they disagree, so it is retried rather than looking finished forever.

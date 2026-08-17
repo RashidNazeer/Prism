@@ -372,6 +372,28 @@ Deno.serve(async (req) => {
         }
 
         const rows: ReportRow[] = payload?.data?.list ?? [];
+
+        /*
+         * REFUSE TO SILENTLY LOSE ROWS.
+         *
+         * The report is paginated, and this asks for one page of 1000. Probing
+         * the store unfiltered on 2026-08-18 returned `total_number: 9487`, so
+         * a page limit is not theoretical: it is one busy store away. We filter
+         * to our own videos, so a page holds them all today, but the roster
+         * only grows and the failure mode is money quietly going missing rather
+         * than an error.
+         *
+         * So compare what TikTok says exists against what arrived, and treat a
+         * short page as a failure of the day rather than as its answer. A
+         * failed day is retried; a truncated one would look finished forever.
+         */
+        const totalNumber = Number(payload?.data?.page_info?.total_number ?? rows.length);
+        if (totalNumber > rows.length) {
+          throw new Error(
+            `TikTok has ${totalNumber} rows for ${statDate} but sent ${rows.length}. ` +
+              'The report needs paginating before this day can be trusted.'
+          );
+        }
         const toWrite = rows
           .filter((r) => r.dimensions?.item_id)
           .map((r) => ({
