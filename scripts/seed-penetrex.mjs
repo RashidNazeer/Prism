@@ -64,10 +64,10 @@ const STORE_ID = '7495965060132604461';
 const ADVERTISER_ID = '7427187763989987329';
 
 const CREATORS = [
-  { handle: 'babblingbrookej', name: 'Brooke J', videos: 10, reward: 40 },
-  { handle: 'aarontopfinds', name: 'Aaron', videos: 10, reward: 40 },
-  { handle: 'vivianiempire_', name: 'Viviani', videos: 10, reward: 40 },
-  { handle: 'pandanamonium', name: 'Panda', videos: 15, reward: 40 },
+  { handle: 'babblingbrookej', name: 'Brooke J', videos: 10, reward: 40, tier: 'pro' },
+  { handle: 'aarontopfinds', name: 'Aaron', videos: 10, reward: 40, tier: 'rising' },
+  { handle: 'vivianiempire_', name: 'Viviani', videos: 10, reward: 40, tier: 'creator' },
+  { handle: 'pandanamonium', name: 'Panda', videos: 15, reward: 40, tier: 'elite' },
 ];
 
 const LINKS = {
@@ -255,15 +255,75 @@ for (const c of CREATORS) {
     user = data.user;
   }
 
-  await db
+  /*
+   * NO `tiktok_handle` HERE. It lives on `applications`, not on `profiles`, and
+   * naming it made the whole update fail with "column does not exist" while the
+   * script carried on reporting success. Every creator ended up as an
+   * `applicant` with no tier, which is exactly the "behaving differently" Rashid
+   * hit when he signed in.
+   *
+   * Hence the error check. A seed that fails quietly is worse than one that
+   * fails loudly, because the product then looks broken instead of the script.
+   */
+  const { error: profileErr } = await db
     .from('profiles')
     .update({
       role: 'creator',
       is_active: true,
       display_name: c.name,
-      tiktok_handle: c.handle,
+      // An approved creator has a tier, and several screens read it.
+      tier: c.tier,
     })
     .eq('id', user.id);
+  if (profileErr) throw new Error(`could not set up ${c.handle}: ${profileErr.message}`);
+
+  /*
+   * THE PLATFORM APPLICATION, APPROVED AND BACKDATED.
+   *
+   * Rashid, testing: "the creators account is behaving differently ... make it
+   * like they are old creator nothing pending on admin approval". This is why.
+   * Creating the account and setting the role to `creator` is not enough: the
+   * creator home reads the `applications` row to decide what to show, and with
+   * no row at all it correctly concludes this person has not applied yet and
+   * shows them the "finish your application" screen.
+   *
+   * So each one gets an approved application, reviewed a fortnight before their
+   * first video, which is what an established creator's history actually looks
+   * like.
+   */
+  const firstVideo = postedAt(LINKS[c.handle][0]);
+  const appliedAt = new Date(firstVideo.getTime() - 14 * 86_400_000).toISOString();
+  const reviewedAt = new Date(firstVideo.getTime() - 12 * 86_400_000).toISOString();
+
+  const { data: existingApplication } = await db
+    .from('applications')
+    .select('id, status')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (!existingApplication) {
+    const { error } = await db.from('applications').insert({
+      user_id: user.id,
+      tiktok_handle: c.handle,
+      niche: 'Health & wellness',
+      worked_with_wurx: true,
+      video_links: LINKS[c.handle]
+        .slice(0, 3)
+        .map((id) => `https://www.tiktok.com/@${c.handle}/video/${id}`)
+        .join('\n'),
+      status: 'approved',
+      reviewed_at: reviewedAt,
+      review_note: 'Approved during onboarding.',
+      created_at: appliedAt,
+      updated_at: reviewedAt,
+    });
+    if (error) throw new Error(`could not approve ${c.handle}: ${error.message}`);
+  } else if (existingApplication.status !== 'approved') {
+    await db
+      .from('applications')
+      .update({ status: 'approved', reviewed_at: reviewedAt })
+      .eq('id', existingApplication.id);
+  }
 
   const offerId = offerFor[c.videos];
 
@@ -275,6 +335,13 @@ for (const c of CREATORS) {
     .maybeSingle();
 
   if (!application) {
+    /*
+     * The offer request, already decided. Dated a week before their first
+     * video, because a creator does not post the same minute they are let onto
+     * a job, and "requested today, approved today, fifteen videos already
+     * posted" is a history that never happened.
+     */
+    const requestedAt = new Date(firstVideo.getTime() - 7 * 86_400_000).toISOString();
     const { data, error } = await db
       .from('offer_applications')
       .insert({
@@ -284,11 +351,15 @@ for (const c of CREATORS) {
         status: 'approved',
         creator_handle: c.handle,
         creator_name: c.name,
+        created_at: requestedAt,
+        updated_at: requestedAt,
       })
       .select('id')
       .single();
     if (error) throw new Error(`could not accept the offer for ${c.handle}: ${error.message}`);
     application = data;
+  } else {
+    await db.from('offer_applications').update({ status: 'approved' }).eq('id', application.id);
   }
 
   const items = LINKS[c.handle];

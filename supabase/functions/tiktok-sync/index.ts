@@ -187,6 +187,29 @@ Deno.serve(async (req) => {
 
   if (!conn?.access_token) return reply({ error: 'TikTok is not connected.' }, 409);
 
+  /*
+   * REACH BACK FAR ENOUGH FOR A LATE-ADDED VIDEO.
+   *
+   * Rashid's case: a creator posts on the 1st and remembers to paste the link
+   * on the 20th. The ordinary three-day window would never ask about those
+   * nineteen days, so the earnings would simply never appear and nobody would
+   * know to go looking.
+   *
+   * The database works out the depth from videos that have NO figures at all,
+   * dating each one from its own TikTok id. Once they are filled in they stop
+   * counting, so this settles straight back to the short window rather than
+   * re-reading the whole history every night.
+   *
+   * `maxCalls` still bounds the work, and the fingerprint on each run means a
+   * long backfill spread over a few nights never redoes a day it has finished.
+   */
+  let effectiveDays = days;
+  if (!force) {
+    const { data: needed } = await admin.rpc('tiktok_days_to_backfill');
+    const depth = Number(needed ?? 0);
+    if (depth > effectiveDays) effectiveDays = Math.min(depth + 2, 400);
+  }
+
   /* ------------------------------------------- the stores worth asking about */
   const { data: stores } = await admin
     .from('tiktok_stores')
@@ -269,13 +292,13 @@ Deno.serve(async (req) => {
     const zone = zoneOf.get(store.advertiser_id) ?? 'UTC';
 
     // `back` starts at 1: yesterday is the most recent COMPLETE day.
-    for (let back = 1; back <= days; back++) {
+    for (let back = 1; back <= effectiveDays; back++) {
       if (summary.calls >= maxCalls) {
         // Count what is left rather than silently stopping. A truncated run
         // that reads as a complete one is how a chart ends up with a hole
         // nobody knows about.
         summary.hitCallCeiling = true;
-        summary.remaining += days - back + 1;
+        summary.remaining += effectiveDays - back + 1;
         break;
       }
 
@@ -391,9 +414,9 @@ Deno.serve(async (req) => {
       action: 'tiktok.synced',
       subject_type: 'tiktok_connection',
       subject_id: conn.id,
-      detail: { ...summary, days, force },
+      detail: { ...summary, days, effectiveDays, force },
     });
   }
 
-  return reply({ ok: true, ...summary });
+  return reply({ ok: true, ...summary, daysRequested: days, daysCovered: effectiveDays });
 });

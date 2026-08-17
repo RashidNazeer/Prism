@@ -1,10 +1,14 @@
 import { useMemo, useState } from 'react';
-import { ExternalLink, Radio, TrendingUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, Radio, TrendingUp } from 'lucide-react';
 import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { OrdersChart, PerformanceChart } from '@/components/creator/PerformanceChart';
 import {
   RANGES,
   rangeToDates,
+  monthKey,
+  monthLabel,
+  monthToDates,
+  shiftMonth,
   useDailyPerformance,
   usePerformanceWindow,
   useVideoPerformance,
@@ -51,10 +55,29 @@ export function MyNumbers() {
   const [range, setRange] = useState<RangeKey>('all');
 
   const windowQ = usePerformanceWindow();
-  const { from, to } = useMemo(
-    () => rangeToDates(range, windowQ.data),
-    [range, windowQ.data]
-  );
+
+  /*
+   * WHICH MONTH, when the range is "By month". Rashid asked to be able to walk
+   * month by month and see exactly what each one made, which is how somebody
+   * actually asks the question: "what did I earn in July".
+   *
+   * It starts on the newest month that has any data rather than on today's,
+   * because opening on an empty current month would look like the numbers were
+   * missing.
+   */
+  const [month, setMonth] = useState<string | null>(null);
+  const activeMonth =
+    month ?? (windowQ.data?.latest ? windowQ.data.latest.slice(0, 7) : monthKey(new Date()));
+
+  const { from, to } = useMemo(() => {
+    if (range === 'month') return monthToDates(activeMonth, windowQ.data);
+    return rangeToDates(range, windowQ.data);
+  }, [range, activeMonth, windowQ.data]);
+
+  // The bounds of the walk: never before their first video, never past the
+  // month we have data for.
+  const firstMonth = windowQ.data?.earliest?.slice(0, 7) ?? activeMonth;
+  const lastMonth = windowQ.data?.latest?.slice(0, 7) ?? monthKey(new Date());
 
   const videosQ = useVideoPerformance(from, to);
   const dailyQ = useDailyPerformance(from, to);
@@ -140,6 +163,33 @@ export function MyNumbers() {
             </FilterTab>
           ))}
         </FilterTabs>
+
+        {/* The month walker, only while By month is chosen. */}
+        {range === 'month' ? (
+          <div className="border-line bg-surface-2 flex shrink-0 items-center gap-1 rounded-md border p-1">
+            <button
+              type="button"
+              onClick={() => setMonth(shiftMonth(activeMonth, -1))}
+              disabled={activeMonth <= firstMonth}
+              aria-label="Previous month"
+              className="text-muted hover:text-accent grid size-7 place-items-center rounded-sm transition-colors disabled:opacity-30"
+            >
+              <ChevronLeft size={15} aria-hidden />
+            </button>
+            <span className="wx-numeric min-w-[8.5rem] text-center text-[0.8125rem] font-semibold">
+              {monthLabel(activeMonth)}
+            </span>
+            <button
+              type="button"
+              onClick={() => setMonth(shiftMonth(activeMonth, 1))}
+              disabled={activeMonth >= lastMonth}
+              aria-label="Next month"
+              className="text-muted hover:text-accent grid size-7 place-items-center rounded-sm transition-colors disabled:opacity-30"
+            >
+              <ChevronRight size={15} aria-hidden />
+            </button>
+          </div>
+        ) : null}
       </FilterBar>
 
       {loading ? (

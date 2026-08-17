@@ -19,6 +19,7 @@ import { getSupabase } from '@/lib/supabase';
  */
 
 const DAY = 24 * 60 * 60 * 1000;
+const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 export type PerformanceWindow = {
   earliest: string | null;
@@ -132,16 +133,61 @@ export function useDailyPerformance(from: string | null, to: string | null) {
 
 /* ------------------------------------------------------------ date ranges -- */
 
-export type RangeKey = 'all' | '7' | '30' | '90';
+export type RangeKey = 'all' | '7' | '30' | 'month';
 
 export const RANGES: { key: RangeKey; label: string }[] = [
   { key: 'all', label: 'All time' },
   { key: '7', label: '7 days' },
   { key: '30', label: '30 days' },
-  { key: '90', label: '90 days' },
+  { key: 'month', label: 'By month' },
 ];
 
-const iso = (d: Date) => d.toISOString().slice(0, 10);
+/* ----------------------------------------------------------------- months -- */
+
+/**
+ * Walking month by month, which is how somebody actually asks "what did I make
+ * in July".
+ *
+ * A month is `YYYY-MM`. Stepping is done on the STRING rather than by adding 30
+ * days to a Date, because month lengths differ and "a month ago" from the 31st
+ * is a question with no good answer.
+ */
+export const monthKey = (d: Date) =>
+  `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+
+export function shiftMonth(key: string, by: number): string {
+  const [y, m] = key.split('-').map(Number);
+  const d = new Date(Date.UTC(y!, m! - 1 + by, 1));
+  return monthKey(d);
+}
+
+export function monthLabel(key: string): string {
+  const [y, m] = key.split('-').map(Number);
+  return new Date(Date.UTC(y!, m! - 1, 1)).toLocaleDateString(undefined, {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+/** First and last day of a month, clamped to the creator's own window. */
+export function monthToDates(
+  key: string,
+  window: PerformanceWindow | undefined
+): { from: string; to: string } {
+  const [y, m] = key.split('-').map(Number);
+  const first = `${key}-01`;
+  const lastDay = new Date(Date.UTC(y!, m!, 0)).getUTCDate();
+  const last = `${key}-${String(lastDay).padStart(2, '0')}`;
+
+  const yesterday = iso(new Date(Date.now() - DAY));
+  return {
+    from: window?.earliest && window.earliest > first ? window.earliest : first,
+    // Never past yesterday: today is still being counted and we do not store it.
+    to: last > yesterday ? yesterday : last,
+  };
+}
+
 
 /**
  * Turn a range choice into two dates.

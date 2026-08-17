@@ -2899,6 +2899,8 @@ export type Database = {
         }
         Returns: Json
       }
+      tiktok_days_to_backfill: { Args: never; Returns: number }
+      tiktok_posted_at: { Args: { p_item_id: string }; Returns: string }
       tiktok_run_nightly_sync: { Args: { p_days?: number }; Returns: number }
       tiktok_set_sync_secret: { Args: { p_secret: string }; Returns: undefined }
       tiktok_set_sync_url: { Args: { p_url: string }; Returns: undefined }

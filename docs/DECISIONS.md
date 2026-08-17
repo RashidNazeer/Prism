@@ -854,3 +854,21 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   mapping afterwards. Since the sync only pulls mapped stores, running the tests
   quietly switched off every creator's numbers. It now puts the previous
   `brand_id` back.
+- 2026-08-18: **The posting date is decoded from the video id, not asked for.**
+  Rashid wanted a date picker on the submission form so a creator adding a
+  month-old video would still get its history. The need was real; the question
+  was not. A TikTok id carries its creation time in its top 32 bits, so
+  `tiktok_posted_at()` reads it exactly, needs no form field, cannot be
+  misremembered, and works retroactively on every video already stored.
+  `tiktok_days_to_backfill()` uses it to tell the nightly job how far to reach
+  for videos that have no figures yet, so a late-added video fills itself in and
+  then stops costing anything.
+- 2026-08-18: **The nightly run moved from 03:20 to 07:00 UTC.** The ad account
+  reports in UTC-5, so 03:20 UTC was 22:20 the previous evening in the account's
+  own day: asking for "yesterday" returned the day before the one we wanted and
+  left the product two days behind. 07:00 UTC is 02:00 in the account's day, so
+  yesterday means yesterday.
+- 2026-08-18: **No re-checking of settled days.** Rashid confirmed with a TikTok
+  Shop expert that a sale is counted on the day it was PURCHASED, not the day
+  the ad was seen, so a complete day is final and never changes. The three-day
+  window stays only as cover for a failed night, without `force`.
