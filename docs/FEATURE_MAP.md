@@ -1326,3 +1326,24 @@ the spend, GMV, orders and ROI behind their own videos. Two tabs: **Dashboard**
 
 **Today is never stored**, because it is still accruing and would be cached
 wrong. Charts end at yesterday and the screen says so.
+
+### The Penetrex seed (2026-08-18)
+
+Rashid's real roster, in dev so the numbers can be looked at:
+`scripts/seed-penetrex.mjs` (and `--clean`). Four creators, two offers, 46 real
+video links. `scripts/backfill-tiktok.mjs <days>` drives the sync in
+call-budgeted rounds for a deep history.
+
+Sign in as any of them with `WurxPenetrex2026!`:
+`babblingbrookej@wurxseed.test`, `aarontopfinds@wurxseed.test`,
+`vivianiempire_@wurxseed.test`, `pandanamonium@wurxseed.test`.
+
+**The submission date is decoded from the video id.** A TikTok id carries its
+creation time in its top 32 bits, so no API call is needed and it is exact. It
+matters because the creator screen will not let anybody pick a date before their
+first video existed, and seeding everything as "today" would collapse that floor.
+
+**Ad status is all-time, never range-scoped.** "Are ads running on my video" is
+a fact about the video; answering it from the selected range would flip the
+badge as somebody moved a filter. On the real roster 44 of 46 videos carry ads,
+so two creators would otherwise be staring at blank cards with no explanation.

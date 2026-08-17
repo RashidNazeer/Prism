@@ -840,3 +840,17 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   appear under several ad accounts, so syncing every visible pair would store
   the same video twice and double its spend. The mapping is the statement of
   which ad account a brand's money actually comes from.
+- 2026-08-18: **A sync day is only "done" for the videos it was done FOR.** The
+  first real seed exposed this: `tiktok_sync_runs` recorded a finished day, and
+  the sync skipped any day already finished, so three days ticked off by a
+  two-video test run were never re-asked when 46 real videos arrived. Four of
+  aarontopfinds's six videos had no history and his screen read zero. In
+  production it would have been worse and silent: every creator added after the
+  first sync would have stayed permanently empty for every earlier day. Fixed by
+  recording a SHA-256 fingerprint of the sorted item ids on each run and
+  skipping only on an exact match, so a changed roster refills itself once.
+- 2026-08-18: **A test must restore what it borrows.** `check-performance`
+  points the real Penetrex store at a throwaway brand and used to clear the
+  mapping afterwards. Since the sync only pulls mapped stores, running the tests
+  quietly switched off every creator's numbers. It now puts the previous
+  `brand_id` back.

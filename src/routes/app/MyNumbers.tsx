@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ExternalLink, TrendingUp } from 'lucide-react';
+import { ExternalLink, Radio, TrendingUp } from 'lucide-react';
 import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { OrdersChart, PerformanceChart } from '@/components/creator/PerformanceChart';
 import {
@@ -8,6 +8,9 @@ import {
   useDailyPerformance,
   usePerformanceWindow,
   useVideoPerformance,
+  adStateOf,
+  type AdState,
+  type DailyPerformance,
   type RangeKey,
   type VideoPerformance,
 } from '@/lib/creator/usePerformance';
@@ -76,6 +79,36 @@ export function MyNumbers() {
     };
   }, [videos]);
 
+  /*
+   * HOW MANY VIDEOS ARE ACTUALLY CARRYING ADS, which Rashid asked for by name:
+   * "in dashboard total no off videos they posted and no of videos ads are
+   * running on and no of videos ads not running on".
+   *
+   * It matters because a card with no numbers is otherwise ambiguous, and the
+   * wrong reading, "the product has lost my data", is the one that costs trust.
+   * On his real roster it is 44 of 46, so two creators would have been staring
+   * at two blank cards with no explanation.
+   *
+   * Counted from a list already in memory, so this is not a second round trip.
+   */
+  const latestDataDate = useMemo(
+    () => (daily.length > 0 ? daily[daily.length - 1]!.stat_date : null),
+    [daily]
+  );
+
+  const adCounts = useMemo(() => {
+    let running = 0;
+    let ran = 0;
+    let none = 0;
+    for (const v of videos) {
+      const state = adStateOf(v, latestDataDate);
+      if (state === 'running') running++;
+      else if (state === 'ran') ran++;
+      else none++;
+    }
+    return { running, ran, none, total: videos.length, withAds: running + ran };
+  }, [videos, latestDataDate]);
+
   const loading = windowQ.isPending || videosQ.isPending || dailyQ.isPending;
   const hasAnyData = videos.some((v) => v.days_with_data > 0);
 
@@ -125,9 +158,15 @@ export function MyNumbers() {
           body="Your videos are in. Numbers appear the day after we start running ads behind them, and they update every night."
         />
       ) : tab === 'dashboard' ? (
-        <Dashboard totals={totals} daily={daily} videos={videos} currency={currency} />
+        <Dashboard
+          totals={totals}
+          daily={daily}
+          videos={videos}
+          currency={currency}
+          adCounts={adCounts}
+        />
       ) : (
-        <Content videos={videos} currency={currency} />
+        <Content videos={videos} currency={currency} latestDataDate={latestDataDate} />
       )}
     </div>
   );
@@ -140,13 +179,15 @@ function Dashboard({
   daily,
   videos,
   currency,
+  adCounts,
 }: {
   totals: { cost: number; revenue: number; orders: number; roi: number | null };
-  daily: ReturnType<typeof useDailyPerformance>['data'] & object;
+  daily: DailyPerformance[];
   videos: VideoPerformance[];
   currency: string | null;
+  adCounts: { running: number; ran: number; none: number; total: number; withAds: number };
 }) {
-  const rows = daily ?? [];
+  const rows = daily;
   const best = [...rows].sort((a, b) => Number(b.gross_revenue) - Number(a.gross_revenue))[0];
   const topVideo = videos[0];
 
@@ -165,6 +206,54 @@ function Dashboard({
           value={totals.roi === null ? '—' : `${totals.roi.toFixed(2)}x`}
           hint={totals.roi === null ? 'no spend yet' : 'GMV for every 1 spent'}
         />
+      </section>
+
+      {/*
+        WHICH OF YOUR VIDEOS ARE CARRYING ADS. Not every video gets GMV Max
+        behind it, and a creator who does not know that reads an empty card as
+        the product losing their money rather than as no campaign.
+      */}
+      <section className="border-line bg-surface-1 flex flex-wrap items-center gap-x-8 gap-y-3 rounded-xl border p-4">
+        <div>
+          <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
+            Videos posted
+          </p>
+          <p className="font-display wx-numeric mt-1 text-[1.375rem] font-bold">
+            {adCounts.total}
+          </p>
+        </div>
+        <div className="border-line h-9 border-l" aria-hidden />
+        <div>
+          <p className="text-muted flex items-center gap-1.5 text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
+            <Radio size={12} aria-hidden className="text-success" />
+            Ads running
+          </p>
+          <p className="font-display wx-numeric text-success mt-1 text-[1.375rem] font-bold">
+            {adCounts.running}
+          </p>
+        </div>
+        {adCounts.ran > 0 ? (
+          <div>
+            <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
+              Ads finished
+            </p>
+            <p className="font-display wx-numeric mt-1 text-[1.375rem] font-bold">
+              {adCounts.ran}
+            </p>
+          </div>
+        ) : null}
+        <div>
+          <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
+            No ads
+          </p>
+          <p className="font-display wx-numeric text-faint mt-1 text-[1.375rem] font-bold">
+            {adCounts.none}
+          </p>
+        </div>
+        <p className="text-faint max-w-xs text-[0.75rem] leading-relaxed">
+          We don&rsquo;t run GMV Max behind every video. The ones without ads still count towards
+          your offer.
+        </p>
       </section>
 
       <section className="border-line bg-surface-1 rounded-xl border p-5">
@@ -257,12 +346,21 @@ function Stat({
 
 /* --------------------------------------------------------------- content -- */
 
-function Content({ videos, currency }: { videos: VideoPerformance[]; currency: string | null }) {
+function Content({
+  videos,
+  currency,
+  latestDataDate,
+}: {
+  videos: VideoPerformance[];
+  currency: string | null;
+  latestDataDate: string | null;
+}) {
   return (
     <div className="flex flex-col gap-4">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {videos.map((v) => {
           const roi = v.roi === null ? null : Number(v.roi);
+          const adState = adStateOf(v, latestDataDate);
           return (
             <article
               key={v.item_id}
@@ -295,11 +393,26 @@ function Content({ videos, currency }: { videos: VideoPerformance[]; currency: s
                     Watch <ExternalLink size={11} aria-hidden />
                   </a>
                 </div>
+
+                {/*
+                  The badge answers "are you running ads on this one" before the
+                  creator has to work it out from an empty card. Never colour
+                  alone: each state carries its own word.
+                */}
+                <AdBadge state={adState} />
               </div>
 
-              {v.days_with_data === 0 ? (
+              {adState === 'none' ? (
                 <p className="text-muted border-line border-t px-4 py-3 text-[0.8125rem] leading-relaxed">
-                  No ad numbers for this one yet.
+                  We haven&rsquo;t run ads behind this one, so there is nothing to report. It still
+                  counts towards your offer.
+                </p>
+              ) : v.days_with_data === 0 ? (
+                <p className="text-muted border-line border-t px-4 py-3 text-[0.8125rem] leading-relaxed">
+                  Ads ran on this one, but not in the period you picked.
+                  {Number(v.lifetime_revenue) > 0
+                    ? ` All time it made ${money(Number(v.lifetime_revenue), currency)}.`
+                    : ''}
                 </p>
               ) : (
                 <dl className="border-line grid grid-cols-2 gap-x-4 gap-y-3 border-t px-4 py-3">
@@ -315,6 +428,34 @@ function Content({ videos, currency }: { videos: VideoPerformance[]; currency: s
       </div>
       <Footnote />
     </div>
+  );
+}
+
+/**
+ * Running, finished, or never. Colour is never the only carrier: each state
+ * says its own word, so it reads the same to somebody who cannot tell the green
+ * from the grey.
+ */
+function AdBadge({ state }: { state: AdState }) {
+  if (state === 'running') {
+    return (
+      <span className="bg-success-soft text-success inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold">
+        <Radio size={10} aria-hidden />
+        Ads on
+      </span>
+    );
+  }
+  if (state === 'ran') {
+    return (
+      <span className="bg-surface-2 text-muted inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold">
+        Ads finished
+      </span>
+    );
+  }
+  return (
+    <span className="border-line text-faint inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[0.6875rem] font-semibold">
+      No ads
+    </span>
   );
 }
 

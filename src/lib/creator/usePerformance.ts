@@ -42,7 +42,38 @@ export type VideoPerformance = {
   cost_per_order: number | null;
   currency: string | null;
   days_with_data: number;
+  /** Has any ad spend ever landed on this video, over all time. */
+  ads_ever: boolean;
+  /** The most recent day it actually spent, over all time. */
+  last_active_date: string | null;
+  lifetime_cost: number;
+  lifetime_revenue: number;
 };
+
+/**
+ * Is GMV Max running on this video, and is it running NOW.
+ *
+ * ALL-TIME, NEVER RANGE-SCOPED. "Are we running ads on my video" is a fact
+ * about the video, so answering it from whichever seven days happen to be
+ * selected would flip the badge as somebody moved a filter, which is not an
+ * answer. The money on the card stays range-scoped, because that genuinely is
+ * a question about a period.
+ *
+ * "Running" is deliberately generous at three days. TikTok reports complete
+ * days only, so the freshest figure is already yesterday's; a stricter window
+ * would call a live campaign finished every time a day had no spend.
+ */
+export type AdState = 'running' | 'ran' | 'none';
+
+export function adStateOf(video: VideoPerformance, latestDataDate: string | null): AdState {
+  if (!video.ads_ever || !video.last_active_date) return 'none';
+  if (!latestDataDate) return 'ran';
+  const gapDays =
+    (new Date(`${latestDataDate}T00:00:00Z`).getTime() -
+      new Date(`${video.last_active_date}T00:00:00Z`).getTime()) /
+    DAY;
+  return gapDays <= 3 ? 'running' : 'ran';
+}
 
 export type DailyPerformance = {
   stat_date: string;

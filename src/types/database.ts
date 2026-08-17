@@ -2037,6 +2037,7 @@ export type Database = {
           store_id: string | null
           trigger: string
           videos_asked: number | null
+          videos_hash: string | null
         }
         Insert: {
           advertiser_id?: string | null
@@ -2049,6 +2050,7 @@ export type Database = {
           store_id?: string | null
           trigger?: string
           videos_asked?: number | null
+          videos_hash?: string | null
         }
         Update: {
           advertiser_id?: string | null
@@ -2061,6 +2063,7 @@ export type Database = {
           store_id?: string | null
           trigger?: string
           videos_asked?: number | null
+          videos_hash?: string | null
         }
         Relationships: []
       }
@@ -2563,6 +2566,7 @@ export type Database = {
       creator_video_performance: {
         Args: { p_from: string; p_to: string }
         Returns: {
+          ads_ever: boolean
           brand_id: string
           brand_name: string
           cost: number
@@ -2571,6 +2575,9 @@ export type Database = {
           days_with_data: number
           gross_revenue: number
           item_id: string
+          last_active_date: string
+          lifetime_cost: number
+          lifetime_revenue: number
           orders: number
           roi: number
           submission_id: string

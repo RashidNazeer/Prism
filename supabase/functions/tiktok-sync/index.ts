@@ -39,9 +39,22 @@ const Body = z.object({
    * needs 1; a first backfill wants more. Capped, because an unbounded number
    * here is an unbounded number of API calls.
    */
-  days: z.number().int().min(1).max(120).default(1),
+  days: z.number().int().min(1).max(400).default(1),
   /** Refetch days we already have. Off by default: a complete day cannot change. */
   force: z.boolean().default(false),
+  /*
+   * A HARD CEILING ON API CALLS PER RUN, and it does two jobs.
+   *
+   * It is the backstop against a bug or a bad `days` turning into hundreds of
+   * requests, which is the thing Rashid asked to never be possible. And it
+   * keeps a long backfill inside the function's own time limit: 121 days at a
+   * second or two each would run past it and lose the lot.
+   *
+   * A run that hits the ceiling reports `remaining`, and because a finished day
+   * is skipped for free, simply calling again picks up exactly where it left
+   * off. No cursor to keep, nothing to get out of step.
+   */
+  maxCalls: z.number().int().min(1).max(200).default(40),
 });
 
 type ReportRow = {
@@ -155,7 +168,7 @@ Deno.serve(async (req) => {
   }
   const parsed = Body.safeParse(raw ?? {});
   if (!parsed.success) return reply({ error: 'That request made no sense' }, 400);
-  const { days, force } = parsed.data;
+  const { days, force, maxCalls } = parsed.data;
 
   try {
     assertCallableRegion();
@@ -199,6 +212,8 @@ Deno.serve(async (req) => {
     calls: 0,
     rowsWritten: 0,
     daysSkipped: 0,
+    remaining: 0,
+    hitCallCeiling: false,
     failures: [] as { store: string; date: string; reason: string }[],
   };
 
@@ -229,10 +244,41 @@ Deno.serve(async (req) => {
     const itemIds = [...new Set((videos ?? []).map((v) => v.embed_id).filter(Boolean))] as string[];
     if (itemIds.length === 0) continue;
 
+    /*
+     * WHICH VIDEOS THIS RUN COVERS, as a fingerprint.
+     *
+     * A day counts as already pulled only for the SAME set of videos. Skipping
+     * on the date alone was a real bug: a run that asked about two videos
+     * marked the day done, and the forty-six real ones that arrived later were
+     * never asked for it. In production that would have meant every creator
+     * added after the first sync stayed permanently empty for every earlier
+     * day, silently.
+     *
+     * Sorted before hashing so the order the rows come back in cannot change
+     * the fingerprint and cause a pointless refetch.
+     */
+    const sorted = [...itemIds].sort();
+    const digest = await crypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode(sorted.join(','))
+    );
+    const videosHash = Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+
     const zone = zoneOf.get(store.advertiser_id) ?? 'UTC';
 
     // `back` starts at 1: yesterday is the most recent COMPLETE day.
     for (let back = 1; back <= days; back++) {
+      if (summary.calls >= maxCalls) {
+        // Count what is left rather than silently stopping. A truncated run
+        // that reads as a complete one is how a chart ends up with a hole
+        // nobody knows about.
+        summary.hitCallCeiling = true;
+        summary.remaining += days - back + 1;
+        break;
+      }
+
       const statDate = dayInZone(zone, back);
 
       if (!force) {
@@ -242,6 +288,8 @@ Deno.serve(async (req) => {
           .eq('advertiser_id', store.advertiser_id)
           .eq('store_id', store.store_id)
           .eq('stat_date', statDate)
+          // The fingerprint is the point: same day, same videos, or ask again.
+          .eq('videos_hash', videosHash)
           .not('finished_at', 'is', null)
           .is('error', null);
         if ((count ?? 0) > 0) {
@@ -257,6 +305,7 @@ Deno.serve(async (req) => {
           store_id: store.store_id,
           stat_date: statDate,
           videos_asked: itemIds.length,
+          videos_hash: videosHash,
           trigger: isCron ? 'cron' : 'admin',
         })
         .select('id')

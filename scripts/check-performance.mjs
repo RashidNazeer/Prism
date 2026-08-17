@@ -57,7 +57,15 @@ const REAL_STORE = '7495965060132604461';
 const REAL_ADVERTISER = '7427187763989987329';
 
 const users = [];
-const made = { brand: null, offer: null, application: null, submissions: [], mappedStore: false };
+const made = {
+  brand: null,
+  offer: null,
+  application: null,
+  submissions: [],
+  mappedStore: false,
+  // Whatever the store was matched to before this suite borrowed it.
+  previousBrandId: null,
+};
 
 async function makeUser(role, tag) {
   const email = `perf-${tag}-${stamp}@wurxmediahub.test`;
@@ -75,13 +83,38 @@ async function makeUser(role, tag) {
 }
 
 async function cleanup() {
+  /*
+   * The daily rows too. They used to be left behind, and they are how this
+   * suite caused a real bug: its two-video sync runs marked three days
+   * complete, so the forty-six-video roster seeded afterwards skipped those
+   * days entirely. The fingerprint on `tiktok_sync_runs` is the proper fix, but
+   * a suite that leaves money rows for videos nobody owns is still litter.
+   */
+  await admin.from('tiktok_video_daily').delete().eq('item_id', REAL_ITEM);
+  await admin.from('tiktok_video_daily').delete().eq('item_id', '7000000000000000001');
+  await admin.from('tiktok_sync_runs').delete().eq('store_id', REAL_STORE).lte('videos_asked', 2);
+
   for (const s of made.submissions) await admin.from('content_submissions').delete().eq('id', s);
   if (made.application) await admin.from('offer_applications').delete().eq('id', made.application);
   if (made.offer) await admin.from('offers').delete().eq('id', made.offer);
   if (made.mappedStore) {
+    /*
+     * PUT THE MAPPING BACK THE WAY IT WAS, rather than nulling it.
+     *
+     * This suite borrows the real store for a moment and points it at a
+     * throwaway brand. Clearing it afterwards would leave the store matched to
+     * nothing, and since the nightly sync only pulls MAPPED stores, running the
+     * tests would quietly switch off every creator's numbers until somebody
+     * noticed and re-matched it by hand. A test that breaks the thing it tests
+     * is worse than no test.
+     */
     await admin
       .from('tiktok_stores')
-      .update({ brand_id: null, mapped_by: null, mapped_at: null })
+      .update({
+        brand_id: made.previousBrandId,
+        mapped_by: null,
+        mapped_at: made.previousBrandId ? new Date().toISOString() : null,
+      })
       .eq('store_id', REAL_STORE)
       .eq('advertiser_id', REAL_ADVERTISER);
   }
@@ -110,6 +143,7 @@ try {
     throw new Error('no store to test with');
   }
   pass('the real Penetrex store is known');
+  made.previousBrandId = store.brand_id ?? null;
 
   const { data: brand, error: brandErr } = await admin
     .from('brands')
