@@ -1,5 +1,40 @@
 # Project state
 
+## Where we are: Rashid is testing the creator numbers (2026-08-18)
+
+**The product's central promise is live on dev.** A creator signs in and sees
+the real spend, GMV, orders and ROI behind their own videos, pulled from TikTok.
+
+| | |
+| --- | --- |
+| TikTok app | approved, connected on **dev only**; prod has no secrets and stays frozen |
+| Ad accounts | Biomax-PX and Infirst Healthcare; **Penetrex store matched to the Penetrex brand** |
+| Data | 46 real videos, ~2,800 real video-days, back to 18 April |
+| Nightly job | `pg_cron` **07:00 UTC**, one call per store per day |
+| Suites | 15, all green. `verify:tiktok` (37) and `verify:performance` are the new two |
+
+**Sign in as a seeded creator** with `WurxPenetrex2026!`:
+`babblingbrookej@wurxseed.test` is the interesting one, **2.75x ROI on real
+money**. Also `aarontopfinds@`, `vivianiempire_@`, `pandanamonium@`, all
+`@wurxseed.test`. Re-seed or remove with `scripts/seed-penetrex.mjs [--clean]`.
+
+**The two rules that shape all of it:**
+
+1. **Creators cannot reach TikTok at all.** A nightly job fills
+   `tiktok_video_daily`; every creator screen reads that. So the date filter is
+   free and unlimited, and there is no quota to get wrong.
+2. **The browser never names a video.** The read functions take a date range and
+   resolve ownership from `auth.uid()`, with RLS saying it again underneath.
+
+Full detail, including every TikTok API trap, is in `FEATURE_MAP.md` under
+"Creator ad numbers" and "TikTok ads connection".
+
+**Next, once Rashid reports back:** the `Checking` state for a video added last
+night that has no complete day yet — it currently reads "No ads", which is a lie
+for the first day. See `PARKED.md`.
+
+---
+
 ## The admin chrome, rebuilt to Rashid's layout (2026-08-16)
 
 **The next job is the creator side**, which he named himself: "We can do it for

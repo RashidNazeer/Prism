@@ -256,3 +256,40 @@ remaining large items are React and the router (~87 KB, effectively the floor fo
 this stack) and TanStack Query (~10 KB) which the public landing page does not
 actually use. Query could be moved so it only loads behind login. Small win, only
 worth doing if page speed becomes a real complaint.
+
+---
+
+## 12. TikTok ads: what is left, as of 2026-08-18
+
+**Status:** PAUSED
+**Owner:** Claude
+
+The connection, the nightly sync and the creator screens are done and Rashid is
+testing them. These are the pieces we consciously left.
+
+**a. The `Checking` state for a brand-new video.** A video added last night has
+no complete day yet, so the card says "No ads", which is a lie for its first
+day. Four states rather than three: `Checking` (added, nothing pulled yet),
+`Not on ads yet`, `Ads on`, `Ads finished`. **Raise this before any real creator
+uploads**, because the first thing they will do is add a video and look, and the
+first thing they will see is a sentence that is wrong.
+
+**b. Prod has none of it.** No `TIKTOK_APP_ID`, `TIKTOK_APP_SECRET`,
+`TIKTOK_REDIRECT_URI` or `TIKTOK_SYNC_SECRET`, no vault entries, no cron job.
+The prod redirect URI is already registered with TikTok. **Raise when Rashid
+says "make it live".**
+
+**c. The seeded offers do not match the video counts.** The offers are 10-for-$40
+and 15-for-$40, but Brooke posted 15 against the 10 and Panda 20 against the 15.
+Rashid's own data was seeded as given rather than trimmed to fit. **Raise if the
+overdelivery reads oddly on the offer screens.**
+
+**d. Nothing shows an admin whether the nightly job ran.** `tiktok_sync_runs`
+records every attempt and staff can read it, but no screen displays it. If the
+job silently stopped, the first sign would be creators asking why their numbers
+froze. **Raise once prod is live**, or sooner if a night is ever missed.
+
+**e. `verify:performance` calls the real TikTok API.** It is the only suite that
+does, it costs a handful of calls, and it will fail if the connection is ever
+revoked. That is deliberate: a mocked version would have proved nothing about
+the numbers being right. **Raise if the call cost ever matters.**
