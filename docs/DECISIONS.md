@@ -822,3 +822,21 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   add later and then map". So an unmapped store is a normal state rather than an
   error, the sync upserts without touching `brand_id`, and Re-check can never
   discard a mapping somebody made by hand.
+- 2026-08-18: **Creators read a cache, never TikTok.** Rashid's worry was
+  unlimited API calls from the date filter. The better answer than rationing the
+  filter was removing the call: because one request covers every video for one
+  day, a nightly job can fill a per-video-per-day cache for the whole platform
+  in two calls a night, after which any date range is free. It also means a
+  creator has no path to TikTok at all, so there is no quota to get wrong.
+  Supersedes the "fetch on demand, not a scheduled sync" line in the original
+  brief, which he approved changing once the batching was proven.
+- 2026-08-18: **The browser never names a video.** `creator_video_performance`
+  and `creator_daily_performance` take a date range only and resolve ownership
+  from `auth.uid()`. Accepting item ids from the client would have made every
+  creator's numbers one edited request away from anyone. RLS on
+  `tiktok_video_daily` says the same thing again, and `verify:performance` signs
+  in as a second creator and tries the exact id to prove it.
+- 2026-08-18: **Only stores mapped to a brand are synced.** One TikTok Shop can
+  appear under several ad accounts, so syncing every visible pair would store
+  the same video twice and double its spend. The mapping is the statement of
+  which ad account a brand's money actually comes from.

@@ -426,3 +426,9 @@ verify_jwt = false
 # check as a second lock in front of its own role re-check.
 [functions.tiktok-connect]
 verify_jwt = true
+
+# The nightly pull. Reachable by the scheduler with a shared secret, or by an
+# admin with a real session for a backfill; it checks both itself, so the
+# platform's JWT gate is left off to let the scheduler in at all.
+[functions.tiktok-sync]
+verify_jwt = false

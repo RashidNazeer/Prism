@@ -1,5 +1,13 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Link2, Plug, RefreshCw, Unplug } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Download,
+  Link2,
+  Plug,
+  RefreshCw,
+  Unplug,
+} from 'lucide-react';
 import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { Button } from '@/components/ui/Button';
 import {
@@ -41,7 +49,7 @@ export function TikTokSettings() {
   const adAccounts = useTikTokAdAccounts();
   const accounts = useTikTokAccounts();
   const brands = useMappableBrands();
-  const { connect, recheck, disconnect, map } = useTikTokActions();
+  const { connect, recheck, disconnect, map, pull } = useTikTokActions();
 
   const connected = Boolean(connection.data && !connection.data.revoked_at);
 
@@ -145,6 +153,9 @@ export function TikTokSettings() {
           loading={connection.isPending}
           onDisconnect={(id) => disconnect.mutate(id)}
           disconnecting={disconnect.isPending}
+          onPull={(days) => pull.mutate(days)}
+          pulling={pull.isPending}
+          pullResult={pull.data ?? null}
         />
       )}
     </div>
@@ -314,6 +325,9 @@ function ConnectionTab({
   loading,
   onDisconnect,
   disconnecting,
+  onPull,
+  pulling,
+  pullResult,
 }: {
   health: {
     id: string;
@@ -327,6 +341,14 @@ function ConnectionTab({
   loading: boolean;
   onDisconnect: (id: string) => void;
   disconnecting: boolean;
+  onPull: (days: number) => void;
+  pulling: boolean;
+  pullResult: {
+    calls: number;
+    rowsWritten: number;
+    daysSkipped: number;
+    failures: { store: string; date: string; reason: string }[];
+  } | null;
 }) {
   if (loading) return <div className="wx-skeleton h-40 rounded-xl" />;
 
@@ -392,6 +414,44 @@ function ConnectionTab({
       {health.last_error ? (
         <p className="border-warning/40 bg-warning-soft text-warning rounded-md border p-3 text-[0.8125rem] leading-relaxed">
           {health.last_error}
+        </p>
+      ) : null}
+
+      {/*
+        THE NUMBERS ARRIVE ON THEIR OWN, once a night. This button exists for
+        the first run and for testing, because waiting until 03:20 UTC to find
+        out whether a new brand mapping works is not a way to work.
+
+        A day already pulled is skipped without an API call, so pressing it
+        twice costs nothing and it is safe to lean on.
+      */}
+      <div className="border-line flex flex-wrap items-center gap-2 border-t pt-4">
+        <Button
+          variant="secondary"
+          onClick={() => onPull(30)}
+          disabled={pulling}
+          className="h-10 rounded-md text-[0.875rem]"
+        >
+          <Download size={15} aria-hidden />
+          {pulling ? 'Pulling' : 'Pull the last 30 days'}
+        </Button>
+        <p className="text-muted text-[0.75rem] leading-relaxed">
+          Runs every night at 03:20 UTC by itself. Complete days only, so today appears tomorrow.
+        </p>
+      </div>
+
+      {pullResult ? (
+        <p
+          className={cn(
+            'rounded-md border p-3 text-[0.8125rem] leading-relaxed',
+            pullResult.failures.length > 0
+              ? 'border-warning/40 bg-warning-soft text-warning'
+              : 'border-line text-muted'
+          )}
+        >
+          {pullResult.failures.length > 0
+            ? `${pullResult.failures.length} day(s) could not be pulled: ${pullResult.failures[0]?.reason}`
+            : `Pulled ${pullResult.rowsWritten} video-day${pullResult.rowsWritten === 1 ? '' : 's'} in ${pullResult.calls} call${pullResult.calls === 1 ? '' : 's'}${pullResult.daysSkipped > 0 ? `, skipping ${pullResult.daysSkipped} day(s) already stored` : ''}.`}
         </p>
       ) : null}
 

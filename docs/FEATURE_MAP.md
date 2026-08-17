@@ -1287,3 +1287,42 @@ no mention of TikTok as a data source, nothing in their nav.
 4. **`tiktok_stores.brand_id` is nullable and survives a re-check.** The sync
    upserts without touching it, because the mapping is a human decision and
    Re-check must not throw it away.
+
+## Creator ad numbers, My numbers (2026-08-18)
+
+**The moment the product exists for.** A creator opens `/app/numbers` and sees
+the spend, GMV, orders and ROI behind their own videos. Two tabs: **Dashboard**
+(totals, spend-vs-GMV over time, orders per day, best day, top performer) and
+**My content** (a card per video).
+
+| piece | where |
+| --- | --- |
+| cache + read functions | `supabase/migrations/20260818040000_tiktok_video_performance.sql` |
+| the nightly schedule | `..._tiktok_nightly_schedule.sql`, `..._tiktok_schedule_url.sql` |
+| the only thing that calls TikTok | `supabase/functions/tiktok-sync/index.ts` |
+| creator queries | `src/lib/creator/usePerformance.ts` |
+| charts | `src/components/creator/PerformanceChart.tsx` |
+| the screen | `src/routes/app/MyNumbers.tsx` |
+| the suite | `scripts/check-performance.mjs`, `pnpm verify:performance` |
+
+**Five things that are load-bearing:**
+
+1. **Creators cannot reach TikTok at all.** Not rate limited, not quota'd:
+   there is no path. A nightly job (`pg_cron`, 03:20 UTC) pulls each complete
+   day once into `tiktok_video_daily`, and every creator screen reads that
+   table. This is why the date filter is free and unlimited.
+2. **No video id is ever sent from a browser.** The read functions take a date
+   range and derive the creator's videos from `auth.uid()`. A client that
+   cannot name a video cannot ask for another creator's money. `RLS` on
+   `tiktok_video_daily` enforces the same thing a second time.
+3. **One API call covers every video for a day**, because the `item_id` filter
+   accepts a batch (probed 2026-08-18). So cost is per day, not per creator.
+4. **Only MAPPED stores are synced.** Penetrex is visible from two ad accounts;
+   asking both would store the same video twice and double its spend. The brand
+   mapping decides which ad account a brand's money comes from.
+5. **ROI and cost-per-order are never stored.** They are ratios, and a stored
+   daily ROI invites somebody to average thirty of them. Revenue over cost,
+   computed per range, is right at every zoom level.
+
+**Today is never stored**, because it is still accruing and would be cached
+wrong. Charts end at yesterday and the screen says so.

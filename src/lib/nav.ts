@@ -157,7 +157,7 @@ const CREATOR: NavGroup[] = [
   {
     label: 'Your work',
     items: [
-      { label: 'My numbers', icon: TrendingUp, soon: 'Step 8' },
+      { label: 'My numbers', icon: TrendingUp, to: '/app/numbers' },
       {
         label: 'Brand hubs',
         icon: Store,

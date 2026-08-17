@@ -5,6 +5,7 @@ import {
   mapTikTokStore,
   recheckTikTokConnection,
   startTikTokConnect,
+  syncTikTokNow,
 } from '@/lib/tiktok';
 
 /**
@@ -157,6 +158,11 @@ export function useTikTokActions() {
     onSuccess: refresh,
   });
 
+  const pull = useMutation({
+    mutationFn: (days: number) => syncTikTokNow(days),
+    onSuccess: refresh,
+  });
+
   const map = useMutation({
     mutationFn: ({
       advertiserId,
@@ -170,5 +176,5 @@ export function useTikTokActions() {
     onSuccess: refresh,
   });
 
-  return { connect, recheck, disconnect, map };
+  return { connect, recheck, disconnect, map, pull };
 }

@@ -2025,6 +2025,93 @@ export type Database = {
           },
         ]
       }
+      tiktok_sync_runs: {
+        Row: {
+          advertiser_id: string | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          rows_written: number | null
+          started_at: string
+          stat_date: string | null
+          store_id: string | null
+          trigger: string
+          videos_asked: number | null
+        }
+        Insert: {
+          advertiser_id?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          rows_written?: number | null
+          started_at?: string
+          stat_date?: string | null
+          store_id?: string | null
+          trigger?: string
+          videos_asked?: number | null
+        }
+        Update: {
+          advertiser_id?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          rows_written?: number | null
+          started_at?: string
+          stat_date?: string | null
+          store_id?: string | null
+          trigger?: string
+          videos_asked?: number | null
+        }
+        Relationships: []
+      }
+      tiktok_video_daily: {
+        Row: {
+          advertiser_id: string
+          cost: number
+          currency: string | null
+          fetched_at: string
+          gross_revenue: number
+          item_id: string
+          orders: number
+          stat_date: string
+        }
+        Insert: {
+          advertiser_id: string
+          cost?: number
+          currency?: string | null
+          fetched_at?: string
+          gross_revenue?: number
+          item_id: string
+          orders?: number
+          stat_date: string
+        }
+        Update: {
+          advertiser_id?: string
+          cost?: number
+          currency?: string | null
+          fetched_at?: string
+          gross_revenue?: number
+          item_id?: string
+          orders?: number
+          stat_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tiktok_video_daily_advertiser_id_fkey"
+            columns: ["advertiser_id"]
+            isOneToOne: false
+            referencedRelation: "tiktok_account_map"
+            referencedColumns: ["advertiser_id"]
+          },
+          {
+            foreignKeyName: "tiktok_video_daily_advertiser_id_fkey"
+            columns: ["advertiser_id"]
+            isOneToOne: false
+            referencedRelation: "tiktok_ad_accounts"
+            referencedColumns: ["advertiser_id"]
+          },
+        ]
+      }
     }
     Views: {
       brand_content_totals: {
@@ -2454,6 +2541,45 @@ export type Database = {
         Returns: boolean
       }
       contest_is_open: { Args: { p_contest_id: string }; Returns: boolean }
+      creator_daily_performance: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          cost: number
+          currency: string
+          gross_revenue: number
+          orders: number
+          stat_date: string
+          videos: number
+        }[]
+      }
+      creator_performance_window: {
+        Args: never
+        Returns: {
+          earliest: string
+          latest: string
+          videos: number
+        }[]
+      }
+      creator_video_performance: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          brand_id: string
+          brand_name: string
+          cost: number
+          cost_per_order: number
+          currency: string
+          days_with_data: number
+          gross_revenue: number
+          item_id: string
+          orders: number
+          roi: number
+          submission_id: string
+          submitted_at: string
+          thumbnail_url: string
+          video_title: string
+          video_url: string
+        }[]
+      }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       delete_content: {
         Args: { p_actor_id: string; p_content_id: string }
@@ -2766,6 +2892,9 @@ export type Database = {
         }
         Returns: Json
       }
+      tiktok_run_nightly_sync: { Args: { p_days?: number }; Returns: number }
+      tiktok_set_sync_secret: { Args: { p_secret: string }; Returns: undefined }
+      tiktok_set_sync_url: { Args: { p_url: string }; Returns: undefined }
       update_content: {
         Args: {
           p_actor_id: string

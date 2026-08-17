@@ -45,6 +45,26 @@ const Body = z.discriminatedUnion('action', [
    * it never touches the token: it reads it and does not report it.
    */
   z.object({ action: z.literal('connection.probe') }),
+  /*
+   * A REPORT PROBE, admin only. Same reason as the one above: the shape of a
+   * GMV Max report cannot be learned from the docs and cannot be asked from a
+   * laptop in Pakistan. This one exists to answer a specific question Rashid
+   * raised, whether the item_id filter accepts a BATCH, because the answer is
+   * the difference between one API call per creator and one per video.
+   */
+  z.object({
+    action: z.literal('report.probe'),
+    advertiserId: z.string().trim().regex(/^[0-9]{6,32}$/),
+    storeId: z.string().trim().regex(/^[0-9]{6,32}$/),
+    bcId: z.string().trim().regex(/^[0-9]{6,32}$/),
+    itemIds: z.array(z.string().trim().regex(/^[0-9]{6,32}$/)).min(1).max(50),
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    // Both parameters so the true metric list and the true version can be found
+    // by asking, without a redeploy per guess.
+    metrics: z.array(z.string().trim().max(40)).min(1).max(20).optional(),
+    apiVersion: z.enum(['v1.3', 'v2.0']).default('v2.0'),
+  }),
   z.object({ action: z.literal('connection.disconnect'), connectionId: z.uuid() }),
   z.object({
     action: z.literal('store.map'),
@@ -282,6 +302,59 @@ Deno.serve(async (req) => {
       }
 
       return reply(out);
+    }
+
+    /* ------------------------------------------------------ report probe -- */
+    if (body.action === 'report.probe') {
+      const { data: conn } = await admin
+        .from('tiktok_connections')
+        .select('access_token')
+        .is('revoked_at', null)
+        .order('connected_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!conn) return reply({ error: 'There is no live connection to probe.' }, 404);
+
+      /*
+       * v2.0, NOT v1.3. At v1.3 this path exists and fails with a useless
+       * "ERROR Message.", which is the single fact that blocks everything until
+       * somebody knows it.
+       *
+       * `filter_value` is SINGULAR on this endpoint. `/gmv_max/report/get/`
+       * wants `filter_values` plural and rejects item_id anyway.
+       */
+      const u = new URL(
+        `https://business-api.tiktok.com/open_api/${body.apiVersion}/gmv_max/video_list/report/get/`
+      );
+      u.searchParams.set('advertiser_id', body.advertiserId);
+      u.searchParams.set('store_ids', JSON.stringify([body.storeId]));
+      u.searchParams.set('store_authorized_bc_id', body.bcId);
+      u.searchParams.set('start_date', body.startDate);
+      u.searchParams.set('end_date', body.endDate);
+      u.searchParams.set('dimensions', JSON.stringify(['item_id']));
+      u.searchParams.set(
+        'metrics',
+        JSON.stringify(body.metrics ?? ['cost', 'gross_revenue', 'roi', 'orders'])
+      );
+      u.searchParams.set(
+        'filtering',
+        JSON.stringify([
+          { field_name: 'item_id', filter_type: 'IN', filter_value: body.itemIds },
+        ])
+      );
+      u.searchParams.set('sort_field', 'cost');
+      u.searchParams.set('sort_type', 'DESC');
+      u.searchParams.set('page_size', '100');
+
+      const res = await fetch(u.toString(), {
+        headers: { 'Access-Token': conn.access_token, 'Content-Type': 'application/json' },
+      });
+
+      return reply({
+        region: currentRegion(),
+        url: u.toString().replace(/access_token=[^&]*/, 'access_token=REDACTED'),
+        payload: await res.json(),
+      });
     }
 
     /* -------------------------------------------------------- disconnect -- */

@@ -16,6 +16,7 @@
     "verify:browser": "node scripts/verify-page.mjs",
     "verify:rls": "node scripts/check-rls.mjs",
     "verify:tiktok": "node scripts/check-tiktok.mjs",
+    "verify:performance": "node scripts/check-performance.mjs",
     "verify:session": "node scripts/check-session.mjs",
     "verify:apply": "node scripts/check-apply.mjs",
     "verify:review": "node scripts/check-review.mjs",

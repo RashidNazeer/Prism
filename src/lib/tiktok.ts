@@ -47,7 +47,7 @@ async function messageFrom(error: unknown, fallback: string): Promise<string> {
 }
 
 async function callTikTokFunction<T>(
-  name: 'tiktok-connect' | 'tiktok-callback',
+  name: 'tiktok-connect' | 'tiktok-callback' | 'tiktok-sync',
   body: Record<string, unknown>,
   fallback: string
 ): Promise<T> {
@@ -102,4 +102,22 @@ export function mapTikTokStore(advertiserId: string, storeId: string, brandId: s
     { action: 'store.map', advertiserId, storeId, brandId },
     'Could not save that mapping.'
   );
+}
+
+/**
+ * Pull complete days from TikTok now, rather than waiting for tonight.
+ *
+ * ADMIN ONLY, and it is the same function the scheduler calls, so a manual
+ * backfill and the nightly run cannot drift apart. Days already pulled are
+ * skipped without an API call, so pressing it twice costs nothing.
+ */
+export function syncTikTokNow(days: number) {
+  return callTikTokFunction<{
+    ok: true;
+    calls: number;
+    rowsWritten: number;
+    daysSkipped: number;
+    stores: number;
+    failures: { store: string; date: string; reason: string }[];
+  }>('tiktok-sync', { days }, 'Could not pull the numbers.');
 }
