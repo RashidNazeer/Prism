@@ -96,10 +96,10 @@ export function disconnectTikTok(connectionId: string) {
   );
 }
 
-export function mapTikTokStore(storeId: string, brandId: string | null) {
+export function mapTikTokStore(advertiserId: string, storeId: string, brandId: string | null) {
   return callTikTokFunction<{ ok: true }>(
     'tiktok-connect',
-    { action: 'store.map', storeId, brandId },
+    { action: 'store.map', advertiserId, storeId, brandId },
     'Could not save that mapping.'
   );
 }

@@ -129,6 +129,40 @@ try {
   check(!storeErr, 'the service role can store a shop', storeErr?.message);
   if (!storeErr) madeStores.push(storeId);
 
+  /*
+   * THE SAME STORE UNDER A SECOND AD ACCOUNT.
+   *
+   * This is not a hypothetical: Rashid's Penetrex store comes back on both of
+   * his ad accounts, because they share a Business Center, and it arrives with
+   * `is_gmv_max_available: true` from one and `false` from the other. When the
+   * primary key was `store_id` alone the second upsert overwrote the first, so
+   * the row ended up filed under whichever advertiser happened to go last and
+   * carrying the wrong flag. Every report call is made for a specific
+   * advertiser, so that is a route to putting one account's spend on another
+   * account's video: wrong, silently, in money.
+   */
+  const secondAdvertiserId = `7${stamp}${'0'.repeat(Math.max(0, 12 - stamp.length))}`.slice(0, 16);
+  await admin.from('tiktok_ad_accounts').insert({
+    advertiser_id: secondAdvertiserId,
+    connection_id: madeConnection,
+    name: `Second account ${stamp}`,
+  });
+  const { error: pairErr } = await admin.from('tiktok_stores').insert({
+    store_id: storeId,
+    advertiser_id: secondAdvertiserId,
+    name: `Test store ${stamp}`,
+    is_gmv_max_available: false,
+  });
+  check(!pairErr, 'the same store can also belong to a second ad account', pairErr?.message);
+
+  {
+    const { count } = await admin
+      .from('tiktok_stores')
+      .select('*', { count: 'exact', head: true })
+      .eq('store_id', storeId);
+    check(count === 2, 'and both pairs survive, rather than one overwriting the other');
+  }
+
   /* ----------------------------------------------------- [1] a signed out eye */
   console.log('\n[1] Signed out');
   const out = anonClient();
@@ -202,7 +236,8 @@ try {
     const { data, error } = await adminUser.client
       .from('tiktok_account_map')
       .select('*')
-      .eq('store_id', storeId);
+      .eq('store_id', storeId)
+      .eq('advertiser_id', advertiserId);
     check(!error && (data ?? []).length === 1, 'an admin CAN read the account map', error?.message);
     const row = (data ?? [])[0];
     check(
@@ -334,13 +369,19 @@ try {
   }
 
   {
-    const res = await callConnect(adminUser.client, { action: 'store.map', storeId, brandId: null });
+    const res = await callConnect(adminUser.client, {
+      action: 'store.map',
+      advertiserId,
+      storeId,
+      brandId: null,
+    });
     check(res.status === 200, 'an admin CAN clear a mapping through the function', JSON.stringify(res.body));
   }
 
   {
     const res = await callConnect(adminUser.client, {
       action: 'store.map',
+      advertiserId,
       storeId,
       brandId: '00000000-0000-0000-0000-000000000000',
     });

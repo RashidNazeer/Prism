@@ -1944,36 +1944,48 @@ export type Database = {
       tiktok_stores: {
         Row: {
           advertiser_id: string
+          bc_name: string | null
           brand_id: string | null
           first_seen_at: string
+          is_gmv_max_available: boolean | null
           last_seen_at: string
           mapped_at: string | null
           mapped_by: string | null
           name: string | null
           store_authorized_bc_id: string | null
           store_id: string
+          store_status: string | null
+          thumbnail_url: string | null
         }
         Insert: {
           advertiser_id: string
+          bc_name?: string | null
           brand_id?: string | null
           first_seen_at?: string
+          is_gmv_max_available?: boolean | null
           last_seen_at?: string
           mapped_at?: string | null
           mapped_by?: string | null
           name?: string | null
           store_authorized_bc_id?: string | null
           store_id: string
+          store_status?: string | null
+          thumbnail_url?: string | null
         }
         Update: {
           advertiser_id?: string
+          bc_name?: string | null
           brand_id?: string | null
           first_seen_at?: string
+          is_gmv_max_available?: boolean | null
           last_seen_at?: string
           mapped_at?: string | null
           mapped_by?: string | null
           name?: string | null
           store_authorized_bc_id?: string | null
           store_id?: string
+          store_status?: string | null
+          thumbnail_url?: string | null
         }
         Relationships: [
           {
@@ -2341,14 +2353,17 @@ export type Database = {
         Row: {
           advertiser_id: string | null
           advertiser_name: string | null
+          bc_name: string | null
           brand_id: string | null
           brand_name: string | null
           currency: string | null
+          is_gmv_max_available: boolean | null
           last_seen_at: string | null
           mapped_at: string | null
           store_authorized_bc_id: string | null
           store_id: string | null
           store_name: string | null
+          store_status: string | null
           timezone: string | null
         }
         Relationships: [

@@ -174,19 +174,56 @@ export function listAdvertisers(appId: string, secret: string, token: string) {
   });
 }
 
+/**
+ * The advertiser's own details, which is the ONLY place the currency and the
+ * timezone come from.
+ *
+ * They are not on `/oauth2/advertiser/get/`, which returns nothing but the id
+ * and the name. Probed 2026-08-17: this endpoint answers with `currency: "USD"`
+ * and `timezone: "Etc/GMT+5"`, and those two are why it is worth a second call
+ * per account. Every figure we ever show is denominated in them, and a number
+ * whose units are assumed is a number that will eventually be wrong.
+ */
+export type AdvertiserDetail = {
+  advertiser_id: string;
+  name?: string;
+  company?: string;
+  currency?: string;
+  timezone?: string;
+};
+
+export function advertiserInfo(advertiserIds: string[], token: string) {
+  return callTikTok<{ list: AdvertiserDetail[] }>('/open_api/v1.3/advertiser/info/', {
+    method: 'GET',
+    token,
+    query: { advertiser_ids: JSON.stringify(advertiserIds) },
+  });
+}
+
 export type StoreInfo = {
   store_id: string;
   store_name?: string;
   store_authorized_bc_id?: string;
+  store_status?: string;
+  is_gmv_max_available?: boolean;
+  thumbnail_url?: string;
+  store_authorized_bc_info?: { bc_name?: string };
 };
 
 /**
- * The stores under one ad account. `store_authorized_bc_id` is mandatory on
- * every GMV Max report call later, and this is the only place it comes from,
- * which is why it is captured at connect time rather than looked up per request.
+ * The stores under one ad account.
+ *
+ * THE LIST IS UNDER `store_list`, NOT `list`, and that one word cost a
+ * connection that reported "0 stores" as a clean success. Every other list
+ * endpoint on this API uses `list`, which is exactly why it was worth probing
+ * rather than assuming.
+ *
+ * `store_authorized_bc_id` is mandatory on every GMV Max report call later, and
+ * this is the only place it comes from, which is why it is captured at connect
+ * time rather than looked up per request.
  */
 export function listStores(advertiserId: string, token: string) {
-  return callTikTok<{ list: StoreInfo[] }>('/open_api/v1.3/gmv_max/store/list/', {
+  return callTikTok<{ store_list: StoreInfo[] }>('/open_api/v1.3/gmv_max/store/list/', {
     method: 'GET',
     token,
     query: { advertiser_id: advertiserId },

@@ -33,15 +33,49 @@ import { syncAccountsAndStores } from '../_shared/tiktok-sync.ts';
 const Body = z.discriminatedUnion('action', [
   z.object({ action: z.literal('connect.start') }),
   z.object({ action: z.literal('connection.recheck') }),
+  /*
+   * A DIAGNOSTIC. TikTok's docs portal is client rendered and unreadable by
+   * fetch, and several documented details are wrong, so the only way to learn
+   * the true shape of a response is to look at one. This cannot be done from a
+   * laptop in Pakistan, because that request would leave from a Pakistani IP and
+   * meet the same country block as Mumbai. So the probe has to live in here,
+   * where the call goes out from Tokyo.
+   *
+   * It returns the raw payload for the endpoints we depend on. Admin only, and
+   * it never touches the token: it reads it and does not report it.
+   */
+  z.object({ action: z.literal('connection.probe') }),
   z.object({ action: z.literal('connection.disconnect'), connectionId: z.uuid() }),
   z.object({
     action: z.literal('store.map'),
+    /*
+     * BOTH IDS, because one store can be authorised to several ad accounts and
+     * the numbers belong to the PAIR. Rashid's Penetrex store comes back on
+     * both of his accounts; mapping "the store" alone would leave it ambiguous
+     * which advertiser we then ask for the spend, and the wrong answer there is
+     * another advertiser's money on a creator's video.
+     */
+    advertiserId: z.string().trim().regex(/^[0-9]{6,32}$/, 'That is not a TikTok ad account id'),
     storeId: z.string().trim().regex(/^[0-9]{6,32}$/, 'That is not a TikTok store id'),
     // null clears the mapping, which is a real thing an admin needs to do after
     // mapping the wrong brand.
     brandId: z.uuid().nullable(),
   }),
 ]);
+
+/**
+ * A raw GET that returns TikTok's WHOLE envelope, code and message included,
+ * rather than unwrapping `data` and throwing on a non-zero code. Used only by
+ * the probe, where an error IS the answer we are looking for.
+ */
+async function rawGet(path: string, token: string, query: Record<string, string>) {
+  const u = new URL(`https://business-api.tiktok.com${path}`);
+  for (const [k, v] of Object.entries(query)) u.searchParams.set(k, v);
+  const res = await fetch(u.toString(), {
+    headers: { 'Access-Token': token, 'Content-Type': 'application/json' },
+  });
+  return await res.json();
+}
 
 /** A nonce with enough entropy that guessing it is not a strategy. */
 function mintState(): string {
@@ -205,6 +239,51 @@ Deno.serve(async (req) => {
       }
     }
 
+    /* ------------------------------------------------------------- probe -- */
+    if (body.action === 'connection.probe') {
+      const { data: conn } = await admin
+        .from('tiktok_connections')
+        .select('id, access_token, granted_advertiser_ids')
+        .is('revoked_at', null)
+        .order('connected_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!conn) return reply({ error: 'There is no live connection to probe.' }, 404);
+
+      const out: Record<string, unknown> = { region: currentRegion() };
+
+      const raw = async (label: string, fn: () => Promise<unknown>) => {
+        try {
+          out[label] = await fn();
+        } catch (e) {
+          out[label] = { failed: (e as Error).message };
+        }
+      };
+
+      await raw('advertisers', () =>
+        rawGet('/open_api/v1.3/oauth2/advertiser/get/', conn.access_token, {
+          app_id: appId,
+          secret: appSecret,
+        })
+      );
+
+      for (const advertiserId of conn.granted_advertiser_ids ?? []) {
+        await raw(`stores:${advertiserId}`, () =>
+          rawGet('/open_api/v1.3/gmv_max/store/list/', conn.access_token, {
+            advertiser_id: advertiserId,
+          })
+        );
+        await raw(`info:${advertiserId}`, () =>
+          rawGet('/open_api/v1.3/advertiser/info/', conn.access_token, {
+            advertiser_ids: JSON.stringify([advertiserId]),
+          })
+        );
+      }
+
+      return reply(out);
+    }
+
     /* -------------------------------------------------------- disconnect -- */
     if (body.action === 'connection.disconnect') {
       /*
@@ -247,6 +326,7 @@ Deno.serve(async (req) => {
           mapped_at: body.brandId ? new Date().toISOString() : null,
         })
         .eq('store_id', body.storeId)
+        .eq('advertiser_id', body.advertiserId)
         .select('store_id, brand_id')
         .maybeSingle();
 
@@ -255,6 +335,7 @@ Deno.serve(async (req) => {
 
       await audit(body.brandId ? 'tiktok.store_mapped' : 'tiktok.store_unmapped', {
         storeId: body.storeId,
+        advertiserId: body.advertiserId,
         brandId: body.brandId,
       });
 

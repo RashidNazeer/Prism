@@ -4,10 +4,12 @@ import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar'
 import { Button } from '@/components/ui/Button';
 import {
   useMappableBrands,
+  useTikTokAdAccounts,
   useTikTokAccounts,
   useTikTokActions,
   useTikTokConnection,
   type AccountMapRow,
+  type AdAccount,
 } from '@/lib/admin/useTikTok';
 import { cn } from '@/lib/utils';
 
@@ -36,6 +38,7 @@ type TabKey = (typeof TABS)[number]['key'];
 
 export function TikTokSettings() {
   const connection = useTikTokConnection();
+  const adAccounts = useTikTokAdAccounts();
   const accounts = useTikTokAccounts();
   const brands = useMappableBrands();
   const { connect, recheck, disconnect, map } = useTikTokActions();
@@ -96,7 +99,9 @@ export function TikTokSettings() {
             <FilterTab
               key={t.key}
               active={activeTab === t.key}
-              count={t.key === 'accounts' && connected ? (accounts.data?.length ?? 0) : undefined}
+              count={
+                t.key === 'accounts' && connected ? (adAccounts.data?.length ?? 0) : undefined
+              }
               onClick={() => setTab(t.key)}
             >
               {t.label}
@@ -122,12 +127,17 @@ export function TikTokSettings() {
 
       {activeTab === 'accounts' ? (
         <AccountsTab
+          accounts={adAccounts.data ?? []}
           rows={accounts.data ?? []}
-          loading={accounts.isPending}
+          loading={accounts.isPending || adAccounts.isPending}
           connected={connected}
           brands={brands.data ?? []}
-          onMap={(storeId, brandId) => map.mutate({ storeId, brandId })}
-          mappingStore={map.isPending ? map.variables?.storeId : undefined}
+          onMap={(advertiserId, storeId, brandId) => map.mutate({ advertiserId, storeId, brandId })}
+          mappingStore={
+            map.isPending && map.variables
+              ? `${map.variables.advertiserId}:${map.variables.storeId}`
+              : undefined
+          }
         />
       ) : (
         <ConnectionTab
@@ -144,6 +154,7 @@ export function TikTokSettings() {
 /* ------------------------------------------------------------- accounts --- */
 
 function AccountsTab({
+  accounts,
   rows,
   loading,
   connected,
@@ -151,11 +162,12 @@ function AccountsTab({
   onMap,
   mappingStore,
 }: {
+  accounts: AdAccount[];
   rows: AccountMapRow[];
   loading: boolean;
   connected: boolean;
   brands: { id: string; name: string }[];
-  onMap: (storeId: string, brandId: string | null) => void;
+  onMap: (advertiserId: string, storeId: string, brandId: string | null) => void;
   mappingStore: string | undefined;
 }) {
   if (loading) {
@@ -176,47 +188,61 @@ function AccountsTab({
     );
   }
 
-  if (rows.length === 0) {
+  if (accounts.length === 0) {
     return (
       <Empty
-        title="Connected, but no stores came back"
-        body="The connection is good, and TikTok reported no GMV Max stores on it. Press Re-check, or confirm the ad account has a TikTok Shop attached."
+        title="Connected, but no ad accounts came back"
+        body="The connection is good and TikTok named no ad accounts on it. Press Re-check, or confirm the TikTok account you authorised has access to the ad accounts you expected."
       />
     );
   }
 
   /*
-   * Grouped by ad account, because a store means nothing on its own: the
-   * currency and timezone that every future number is denominated in belong to
-   * the ACCOUNT, and showing them once per group is how they stay attached to
-   * the figures underneath.
+   * ONE SECTION PER AD ACCOUNT, WITH ITS STORES INSIDE, and the account is what
+   * drives the list. Building this from the stores was the bug Rashid hit: he
+   * connected, both accounts saved correctly, and the screen said zero, because
+   * a join from stores has nothing to say about an account with no shop.
+   *
+   * The currency and timezone live on the account header, because every figure
+   * we will ever show is denominated in them and they must stay attached to the
+   * numbers rather than float off into a settings page nobody rereads.
    */
-  const groups = new Map<string, AccountMapRow[]>();
+  const storesByAccount = new Map<string, AccountMapRow[]>();
   for (const r of rows) {
-    const list = groups.get(r.advertiser_id) ?? [];
+    const list = storesByAccount.get(r.advertiser_id) ?? [];
     list.push(r);
-    groups.set(r.advertiser_id, list);
+    storesByAccount.set(r.advertiser_id, list);
   }
 
   return (
     <div className="flex flex-col gap-4">
-      {[...groups.entries()].map(([advertiserId, stores]) => {
-        const head = stores[0]!;
+      {accounts.map((account) => {
+        const stores = storesByAccount.get(account.advertiser_id) ?? [];
         return (
-          <section key={advertiserId} className="border-line bg-surface-1 rounded-xl border">
+          <section
+            key={account.advertiser_id}
+            className="border-line bg-surface-1 rounded-xl border"
+          >
             <header className="border-line flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b px-4 py-3">
               <h2 className="font-display text-[1rem] font-bold">
-                {head.advertiser_name ?? 'Unnamed ad account'}
+                {account.name ?? 'Unnamed ad account'}
               </h2>
               <span className="text-muted wx-numeric text-[0.75rem]">
-                {head.currency ?? 'currency unknown'} · {head.timezone ?? 'timezone unknown'}
+                {account.currency ?? 'currency unknown'} ·{' '}
+                {account.timezone ?? 'timezone unknown'}
               </span>
             </header>
 
+            {stores.length === 0 ? (
+              <p className="text-muted px-4 py-4 text-[0.8125rem] leading-relaxed">
+                No TikTok Shop is attached to this ad account, so there is nothing to match to a
+                brand and no spend to read from it yet.
+              </p>
+            ) : (
             <ul className="divide-line divide-y">
               {stores.map((s) => (
                 <li
-                  key={s.store_id}
+                  key={`${s.advertiser_id}:${s.store_id}`}
                   className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3"
                 >
                   <div className="min-w-[10rem] flex-1">
@@ -233,6 +259,17 @@ function AccountsTab({
                         Not matched to a brand yet
                       </p>
                     )}
+                    {/*
+                      TikTok's own flag. A store without it will never return a
+                      single figure, and finding that out weeks later as an
+                      empty report is worse than being told now.
+                    */}
+                    {s.is_gmv_max_available === false ? (
+                      <p className="text-warning mt-0.5 flex items-center gap-1.5 text-[0.75rem]">
+                        <AlertTriangle size={12} aria-hidden />
+                        GMV Max is not switched on for this store
+                      </p>
+                    ) : null}
                   </div>
 
                   {/*
@@ -247,8 +284,8 @@ function AccountsTab({
                     </span>
                     <select
                       value={s.brand_id ?? ''}
-                      disabled={mappingStore === s.store_id}
-                      onChange={(e) => onMap(s.store_id, e.target.value || null)}
+                      disabled={mappingStore === `${s.advertiser_id}:${s.store_id}`}
+                      onChange={(e) => onMap(s.advertiser_id, s.store_id, e.target.value || null)}
                       className="border-line bg-surface-2 h-10 min-w-[11rem] rounded-md border px-2 text-[0.8125rem]"
                     >
                       <option value="">Not matched</option>
@@ -262,6 +299,7 @@ function AccountsTab({
                 </li>
               ))}
             </ul>
+            )}
           </section>
         );
       })}

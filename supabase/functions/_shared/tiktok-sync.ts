@@ -15,7 +15,7 @@
  */
 
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2.110.9';
-import { listAdvertisers, listStores } from './tiktok.ts';
+import { advertiserInfo, listAdvertisers, listStores } from './tiktok.ts';
 
 export type SyncResult = {
   accounts: number;
@@ -36,16 +36,43 @@ export async function syncAccountsAndStores(
   const advertisers = await listAdvertisers(appId, secret, token);
   const list = advertisers?.list ?? [];
 
+  /*
+   * A SECOND CALL, for the currency and the timezone. `/oauth2/advertiser/get/`
+   * returns only the id and the name; everything a figure needs to be readable
+   * lives on `/advertiser/info/`. Probed, not read in a doc.
+   *
+   * It is not allowed to sink the sync: knowing an account exists is worth more
+   * than knowing what currency it bills in, and the account row would otherwise
+   * vanish over a missing label.
+   */
+  const detail = new Map<string, { currency?: string; timezone?: string }>();
+  if (list.length > 0) {
+    try {
+      const info = await advertiserInfo(
+        list.map((a) => String(a.advertiser_id)),
+        token
+      );
+      for (const d of info?.list ?? []) {
+        detail.set(String(d.advertiser_id), { currency: d.currency, timezone: d.timezone });
+      }
+    } catch {
+      /* names only, then. The screen says "currency unknown" rather than lying. */
+    }
+  }
+
   if (list.length > 0) {
     const { error } = await db.from('tiktok_ad_accounts').upsert(
-      list.map((a) => ({
-        advertiser_id: String(a.advertiser_id),
-        connection_id: connectionId,
-        name: a.advertiser_name ?? null,
-        currency: a.currency ?? null,
-        timezone: a.timezone ?? null,
-        last_seen_at: seenAt,
-      })),
+      list.map((a) => {
+        const id = String(a.advertiser_id);
+        return {
+          advertiser_id: id,
+          connection_id: connectionId,
+          name: a.advertiser_name ?? null,
+          currency: detail.get(id)?.currency ?? null,
+          timezone: detail.get(id)?.timezone ?? null,
+          last_seen_at: seenAt,
+        };
+      }),
       { onConflict: 'advertiser_id' }
     );
     if (error) throw new Error(`could not save the ad accounts: ${error.message}`);
@@ -64,7 +91,9 @@ export async function syncAccountsAndStores(
     const advertiserId = String(a.advertiser_id);
     try {
       const res = await listStores(advertiserId, token);
-      const rows = res?.list ?? [];
+      // `store_list`, not `list`. See the note on listStores; reading `list`
+      // here is what made a working connection report zero stores.
+      const rows = res?.store_list ?? [];
       if (rows.length === 0) continue;
 
       const { error } = await db.from('tiktok_stores').upsert(
@@ -75,11 +104,15 @@ export async function syncAccountsAndStores(
           store_authorized_bc_id: s.store_authorized_bc_id
             ? String(s.store_authorized_bc_id)
             : null,
+          store_status: s.store_status ?? null,
+          is_gmv_max_available: s.is_gmv_max_available ?? null,
+          bc_name: s.store_authorized_bc_info?.bc_name ?? null,
+          thumbnail_url: s.thumbnail_url ?? null,
           last_seen_at: seenAt,
         })),
         // brand_id is deliberately absent from this list, so an upsert can
         // never overwrite a mapping somebody made by hand.
-        { onConflict: 'store_id' }
+        { onConflict: 'advertiser_id,store_id' }
       );
       if (error) throw new Error(error.message);
       stores += rows.length;

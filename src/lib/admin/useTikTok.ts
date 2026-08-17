@@ -33,6 +33,14 @@ export type ConnectionHealth = {
   connected_by_email: string | null;
 };
 
+export type AdAccount = {
+  advertiser_id: string;
+  name: string | null;
+  currency: string | null;
+  timezone: string | null;
+  last_seen_at: string;
+};
+
 export type AccountMapRow = {
   store_id: string;
   store_name: string | null;
@@ -45,6 +53,9 @@ export type AccountMapRow = {
   currency: string | null;
   timezone: string | null;
   last_seen_at: string;
+  store_status: string | null;
+  is_gmv_max_available: boolean | null;
+  bc_name: string | null;
 };
 
 export function useTikTokConnection() {
@@ -61,6 +72,31 @@ export function useTikTokConnection() {
         .maybeSingle();
       if (error) throw error;
       return (data as ConnectionHealth | null) ?? null;
+    },
+  });
+}
+
+/**
+ * THE AD ACCOUNTS THEMSELVES, read separately from their stores, and that is
+ * the fix for the first thing Rashid saw.
+ *
+ * The screen used to be built from `tiktok_account_map` alone, which is a join
+ * FROM stores. So an ad account with no GMV Max store attached produced no rows
+ * and vanished completely: he connected successfully, both of his accounts were
+ * stored correctly, and the screen said zero. An account is a real thing whether
+ * or not it has a shop on it, so it is read as one.
+ */
+export function useTikTokAdAccounts() {
+  return useQuery({
+    queryKey: ['admin', 'tiktok', 'ad-accounts'],
+    staleTime: 15_000,
+    queryFn: async (): Promise<AdAccount[]> => {
+      const { data, error } = await getSupabase()
+        .from('tiktok_ad_accounts')
+        .select('advertiser_id, name, currency, timezone, last_seen_at')
+        .order('name', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as AdAccount[];
     },
   });
 }
@@ -122,8 +158,15 @@ export function useTikTokActions() {
   });
 
   const map = useMutation({
-    mutationFn: ({ storeId, brandId }: { storeId: string; brandId: string | null }) =>
-      mapTikTokStore(storeId, brandId),
+    mutationFn: ({
+      advertiserId,
+      storeId,
+      brandId,
+    }: {
+      advertiserId: string;
+      storeId: string;
+      brandId: string | null;
+    }) => mapTikTokStore(advertiserId, storeId, brandId),
     onSuccess: refresh,
   });
 
