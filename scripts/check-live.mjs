@@ -9,6 +9,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 import { launchBrowser } from './browser.mjs';
+import { assertDevProject } from './lib/dev-guard.mjs';
 
 const env = Object.fromEntries(
   readFileSync('.env.local', 'utf8')
@@ -19,6 +20,9 @@ const env = Object.fromEntries(
       return [l.slice(0, i).trim(), l.slice(i + 1).trim()];
     })
 );
+
+// Creates and deletes data. Dev only, checked before anything runs.
+assertDevProject(env.VITE_SUPABASE_URL, 'check-live.mjs');
 const admin = createClient(env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, {
   auth: { persistSession: false },
 });

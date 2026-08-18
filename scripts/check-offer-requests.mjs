@@ -21,6 +21,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 import { launchBrowser } from './browser.mjs';
+import { assertDevProject } from './lib/dev-guard.mjs';
 
 const BASE = process.argv[2] ?? 'http://localhost:4173';
 
@@ -43,6 +44,9 @@ if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
 }
 
 const URL_BASE = env.VITE_SUPABASE_URL;
+
+// Creates and deletes data. Dev only, checked before anything runs.
+assertDevProject(URL_BASE, 'check-offer-requests.mjs');
 const ANON = env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const admin = createClient(URL_BASE, SERVICE, { auth: { persistSession: false } });
 

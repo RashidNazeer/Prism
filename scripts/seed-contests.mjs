@@ -16,6 +16,7 @@
 
 import { readFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { assertDevProject } from './lib/dev-guard.mjs';
 
 const env = Object.fromEntries(
   readFileSync('.env.local', 'utf8')
@@ -26,6 +27,9 @@ const env = Object.fromEntries(
       return [l.slice(0, i).trim(), l.slice(i + 1).trim()];
     })
 );
+
+// Creates and deletes data. Dev only, checked before anything runs.
+assertDevProject(env.VITE_SUPABASE_URL, 'seed-contests.mjs');
 
 const SERVICE = process.env.SUPABASE_SERVICE_KEY;
 if (!SERVICE) throw new Error('SUPABASE_SERVICE_KEY must be set');

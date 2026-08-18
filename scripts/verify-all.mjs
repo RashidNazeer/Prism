@@ -41,6 +41,7 @@
 import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { assertDevProject } from './lib/dev-guard.mjs';
 
 /* ----------------------------------------------------------------- setup -- */
 
@@ -63,6 +64,9 @@ const env = Object.fromEntries(
       return [l.slice(0, i).trim(), l.slice(i + 1).trim()];
     })
 );
+
+// Creates and deletes data. Dev only, checked before anything runs.
+assertDevProject(env.VITE_SUPABASE_URL, 'verify-all.mjs');
 
 const SERVICE = process.env.SUPABASE_SERVICE_KEY;
 const db = SERVICE

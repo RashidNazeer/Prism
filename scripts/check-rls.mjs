@@ -16,6 +16,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
+import { assertDevProject } from './lib/dev-guard.mjs';
 
 /* ------------------------------------------------------------------ setup - */
 
@@ -30,6 +31,9 @@ const env = Object.fromEntries(
 );
 
 const URL = env.VITE_SUPABASE_URL;
+
+// Creates and deletes data. Dev only, checked before anything runs.
+assertDevProject(URL, 'check-rls.mjs');
 const PUBLISHABLE = env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const SERVICE = process.env.SUPABASE_SERVICE_KEY;
 

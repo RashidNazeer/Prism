@@ -447,3 +447,32 @@ TikTok for rather than a wall.
 
 **Not supported as metrics anywhere in GMV Max reporting:** impressions, clicks,
 ctr, video_views, conversion, gross_revenue_roi.
+
+### Nothing here can delete prod, and nothing here can touch WurxBase
+
+**Every script that deletes anything now refuses to run outside dev.** Twenty of
+them create accounts, write rows and remove them again, and until 2026-08-18
+seventeen trusted whatever `.env.local` happened to say. One edited env file and
+a routine `pnpm verify:all` would have made throwaway admins in the live
+database and deleted rows on the way out.
+
+`scripts/lib/dev-guard.mjs` is a POSITIVE check: it must recognise the dev
+project, not merely fail to recognise prod, because a typo matching neither
+would otherwise sail through. Pointing `.env.local` anywhere else produces:
+
+```
+REFUSING TO RUN.
+check-tiktok.mjs creates and deletes data, so it only ever runs against the DEV
+project (npznoiotslruqovorrec).
+```
+
+**WurxBase's and Paid Collaborations' databases are unreachable from here.**
+Every script resolves its connection from `VITE_SUPABASE_URL`, which is ours.
+Their project refs (`bnevtdezskftlrjjgbsg`, `pfkpgmpicjcirnogxkac`) appear
+nowhere in `scripts/`, so no suite, seed or wipe can reach a row of their data.
+Deleting anything of theirs takes a human pressing a button inside their own UI.
+
+**The two scripts that delete on purpose**, as opposed to cleaning up after
+themselves, both carry their own guard as well and both name what they will
+remove before doing it: `wipe-offers-contests.mjs` and `seed-penetrex.mjs
+--clean`.

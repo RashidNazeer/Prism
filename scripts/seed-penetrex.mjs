@@ -29,6 +29,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
+import { assertDevProject } from './lib/dev-guard.mjs';
 
 const env = Object.fromEntries(
   readFileSync('.env.local', 'utf8')
@@ -41,6 +42,9 @@ const env = Object.fromEntries(
 );
 
 const URL_ = env.VITE_SUPABASE_URL ?? '';
+
+// Creates and deletes data. Dev only, checked before anything runs.
+assertDevProject(URL_, 'seed-penetrex.mjs');
 const SERVICE = process.env.SUPABASE_SERVICE_KEY;
 const DEV_REF = 'npznoiotslruqovorrec';
 

@@ -21,6 +21,7 @@ import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 import { mkdirSync } from 'node:fs';
 import { launchBrowser } from './browser.mjs';
+import { assertDevProject } from './lib/dev-guard.mjs';
 
 const env = Object.fromEntries(
   readFileSync('.env.local', 'utf8')
@@ -37,6 +38,9 @@ const SERVICE = process.env.SUPABASE_SERVICE_KEY;
 if (!SERVICE) throw new Error('SUPABASE_SERVICE_KEY must be set');
 
 const URL_BASE = env.VITE_SUPABASE_URL;
+
+// Creates and deletes data. Dev only, checked before anything runs.
+assertDevProject(URL_BASE, 'check-content.mjs');
 const ANON = env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const admin = createClient(URL_BASE, SERVICE, { auth: { persistSession: false } });
 
