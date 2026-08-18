@@ -190,6 +190,7 @@ const AdminContestSetup = screen(() => import('@/routes/admin/ContestSetup'), 'C
 const AdminContent = screen(() => import('@/routes/admin/Content'), 'AdminContent');
 const AdminActivity = screen(() => import('@/routes/admin/Activity'), 'Activity');
 const AdminTikTok = screen(() => import('@/routes/admin/TikTokSettings'), 'TikTokSettings');
+const AdminPaidCollabs = screen(() => import('@/routes/admin/PaidCollabs'), 'PaidCollabs');
 const AdminBrands = screen(() => import('@/routes/admin/Brands'), 'Brands');
 const AdminBrandHub = screen(() => import('@/routes/admin/BrandHub'), 'BrandHub');
 const AdminCreators = screen(() => import('@/routes/admin/Creators'), 'Creators');
@@ -227,6 +228,8 @@ const PREFETCH: Record<string, () => Promise<unknown>> = {
   '/admin/applications': () => import('@/routes/admin/Applications'),
   '/admin/activity': () => import('@/routes/admin/Activity'),
   '/admin/tiktok': () => import('@/routes/admin/TikTokSettings'),
+  // Deliberately NOT prefetched: it is a very large vendored bundle and nobody
+  // who never opens it should download it on a hover.
   '/admin/offers': () => import('@/routes/admin/AllOffers'),
   '/admin/offers/requests': () => import('@/routes/admin/OfferRequests'),
   '/admin/contests': () => import('@/routes/admin/AllContests'),
@@ -435,6 +438,10 @@ export const router = createBrowserRouter([
       {
         path: '/admin/tiktok',
         element: <AdminTikTok />,
+      },
+      {
+        path: '/admin/collabs',
+        element: <AdminPaidCollabs />,
       },
       {
         path: '/admin/brands',

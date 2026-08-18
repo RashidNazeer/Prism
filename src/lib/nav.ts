@@ -2,6 +2,7 @@ import {
   Award,
   Building2,
   Gift,
+  HandCoins,
   Handshake,
   History,
   Inbox,
@@ -144,6 +145,13 @@ const ADMIN: NavGroup[] = [
       // to an admin, not for the protocol underneath: nobody manages "an OAuth
       // integration", they connect TikTok.
       { label: 'TikTok', icon: Plug, to: '/admin/tiktok' },
+      /*
+       * WurxBase, brought in whole and unchanged. STAFF ONLY, and it is in the
+       * ADMIN list alone: no creator nav mentions it and no creator route
+       * reaches it. It carries brand budgets and creator payment details, so
+       * that is not a preference.
+       */
+      { label: 'Paid Collabs', icon: HandCoins, to: '/admin/collabs' },
       { label: 'Uploads', icon: Upload, soon: 'Later' },
     ],
   },

@@ -425,6 +425,40 @@
   }
 }
 
+/*
+  The fence WurxBase runs inside.
+  ---------------------------------------------------------------------------
+  Its stylesheets were rewritten so every selector sits under this class, which
+  stops them reaching the rest of the product. That handles colour and spacing.
+  It does NOT handle position.
+
+  THE PROBLEM THIS SOLVES. WurxBase uses `position: fixed` for its shell and its
+  overlays, written for a page it owned entirely. A fixed element is positioned
+  against the VIEWPORT, not against its parent, so scoping the selector changes
+  nothing about where it lands: their `<main>` covered the whole window and
+  swallowed every click meant for our sidebar. The browser test caught it by
+  failing to click "Dashboard" for thirty seconds.
+
+  THE FIX. A transform on an ancestor makes that ancestor the containing block
+  for fixed descendants. So their fixed layer is bounded by this element instead
+  of by the window, and their modals stay inside the region they belong to.
+  `isolation` keeps their stacking contexts from climbing over our top bar.
+
+  This is OUR file styling OUR wrapper. Nothing in `src/vendor/wurxbase` is
+  touched, which is the whole point of the arrangement.
+*/
+@utility wurxbase-fence {
+  position: relative;
+  isolation: isolate;
+  /* Creates the containing block. `translateZ(0)` rather than `translate(0)`
+     so it also gets its own compositor layer and their animations stay smooth. */
+  transform: translateZ(0);
+  /* Their shell asks for full height; give it a real one to fill rather than
+     the zero it would otherwise inherit. */
+  min-height: calc(100dvh - 8rem);
+  contain: layout paint;
+}
+
 /* The design's primary action: a gradient fill rather than a flat one. */
 @utility wx-gradient {
   background-image: var(--wx-accent-gradient);
