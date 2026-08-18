@@ -293,3 +293,30 @@ froze. **Raise once prod is live**, or sooner if a night is ever missed.
 does, it costs a handful of calls, and it will fail if the connection is ever
 revoked. That is deliberate: a mocked version would have proved nothing about
 the numbers being right. **Raise if the call cost ever matters.**
+
+---
+
+## 13. WurxBase, vendored in, as of 2026-08-18
+
+**Status:** BEFORE LAUNCH on (a), PAUSED on the rest
+**Owner:** Rashid decides, Claude builds
+
+**a. Their database is open, and their key is now in our bundle.** Anyone with
+it can read and write their tables, which hold brand budgets and creator payment
+details. Their own site has the same hole today, so this changes the blast
+radius rather than creating it. Their JavaScript also carries five plaintext
+logins, superadmin included, copied verbatim because the code was to be left
+alone. **Raise before prod, and worth changing those passwords regardless.**
+
+**b. It has its own login.** An admin signs into WurxMediaHub and then signs into
+WurxBase again with `Admin` / `admin.top@wurx`. That is their logic, untouched by
+instruction. **Raise when Rashid tires of the second login.**
+
+**c. The avatar circles keep their teal, orange, blue and purple.** Those
+gradients live in their JavaScript, not their CSS, so the reskin could not reach
+them without editing code. They read as per-brand identity rather than chrome,
+which is arguably correct. **Raise if he wants them in the Wurx palette.**
+
+**d. Nothing re-runs the vendoring pipeline.** If WurxBase changes upstream,
+somebody must copy the CSS fresh, rebuild their prefixed Tailwind, scope, and
+reskin. It is four commands and no script yet. **Raise when their code changes.**

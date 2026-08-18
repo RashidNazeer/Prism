@@ -1347,3 +1347,53 @@ first video existed, and seeding everything as "today" would collapse that floor
 a fact about the video; answering it from the selected range would flip the
 badge as somebody moved a filter. On the real roster 44 of 46 videos carry ads,
 so two creators would otherwise be staring at blank cards with no explanation.
+
+## Paid Collabs: WurxBase, vendored (2026-08-18)
+
+The whole WurxBase dashboard runs inside our admin at `/admin/collabs`, sidebar
+item **Paid Collabs** under Data. **Admin only**; no creator nav mentions it and
+no creator route reaches it.
+
+| piece | where |
+| --- | --- |
+| their app, verbatim | `src/vendor/wurxbase/` |
+| the seam | `src/routes/admin/PaidCollabs.tsx` |
+| our corrections | `src/routes/admin/wurxbase-overrides.css` |
+| the fence | `wurxbase-fence` in `src/styles/global.css` |
+
+**`src/vendor/wurxbase/` is a verbatim copy and stays one.** Rashid's
+instruction: the code, features and logic change by not one line; only the look
+is ours. Not converted to TypeScript, not refactored, not linted to our rules.
+Three files are `.jsx` because Vite will not parse JSX out of a `.js` file, and
+their CSS sits beside them so every import resolves unchanged.
+
+**Their CSS is fenced under `.wurxbase-root`.** All 28,000 lines were rewritten
+by a postcss pass, because they style `body`, `*` and bare elements and would
+otherwise restyle the whole product permanently the first time anybody opened
+the page — a lazily loaded chunk injects its CSS and never takes it back.
+
+**Scoping a selector does nothing about `position: fixed`.** Their shell is
+fixed, so it covered the window and swallowed clicks meant for our sidebar. The
+wrapper carries a `transform`, which makes it the containing block for fixed
+descendants.
+
+**The reskin was a codemod**: 4,673 colours and 700 font stacks onto
+`var(--wx-*)`, mapped by the property each colour sits on, so their screens
+follow our light and dark modes and our text-size control.
+
+### Two things to know before changing anything
+
+**1. Their anon key ships in our bundle, and their tables allow anyone holding
+it to read and write.** That is the same exposure their live Netlify site has
+today, but it is on our domain now as well. Their data includes brand budgets
+and creator payment details. **If their Supabase RLS is ever tightened, do it
+knowing this app reads it too** — a change made "on WurxBase" will silently
+break Paid Collabs here and nobody would connect the two.
+
+**2. The three databases do not disturb each other, and that was tested.** Only
+one auth token exists in the browser, `wurxmediahub-auth`, byte-identical before
+and after using theirs; their clients create no auth storage at all, because
+their apps authenticate against a hardcoded user list rather than Supabase Auth;
+and there are zero GoTrue multiple-instance warnings, which is the exact symptom
+of the random-logout class of bug. Re-run that check if their client setup
+changes.
