@@ -399,3 +399,51 @@ ap-northeast-1, ap-southeast-1, eu-west-2, us-east-1.
 **GMV Max reporting is v2.0, not v1.3.** At v1.3 the report path exists and
 fails with a useless "ERROR Message." and the video endpoint 404s. Not yet
 built; noted here so the next person does not lose the day to it.
+
+### What the GMV Max API will and will not give us (probed 2026-08-18)
+
+Every row below was asked of the live Biomax-PX account, not read in a doc. Use
+`raw.probe` on `tiktok-connect` (admin only, GET, `/open_api/` only) to re-check
+any of it in one request.
+
+**Two reporting endpoints, and they do different jobs.**
+
+| | `/gmv_max/video_list/report/get/` | `/gmv_max/report/get/` |
+| --- | --- | --- |
+| Dimensions | `item_id` **only** | `stat_time_day`, `stat_time_hour`, `spu_id` |
+| Metrics | cost, gross_revenue, orders, roi, cost_per_order | the same **plus `net_cost`** |
+| Scope | one row per video | the whole store |
+
+`net_cost` is rejected on the video endpoint and accepted on the store one. It is
+materially different: 1252.41 against a `cost` of 1492.25 for the same two days,
+so they are not interchangeable. We show `cost`.
+
+**Per video (= per creative) we get:** spend, GMV, orders, ROI, cost per order,
+currency. There is no level below the video: `ad_id`, `creative_id`,
+`campaign_id` and `material_id` all answer `Invalid dim: ... is not exist`, so
+several ad variants of one video cannot be told apart.
+
+**Per product (`spu_id`) the split is lopsided and worth knowing:**
+
+```
+spu_id -1                  cost 20039.29   gmv     0.00   orders   0
+spu_id 1730172319300882989 cost     0.00   gmv 14607.95   orders 896
+spu_id 1730171871984194093 cost     0.00   gmv 11137.91   orders 582
+```
+
+So **GMV and orders per product: yes. Spend and therefore ROI per product: no**,
+because every penny of cost lands in the `-1` bucket.
+
+**Store level by day or by hour works**, and we do not use it yet: e.g.
+`2026-08-14  cost 1282.87  gmv 1945.54  orders 104`, and 24 rows for a single
+day at `stat_time_hour`. That is the obvious source for a brand-level admin
+dashboard.
+
+**Refused outright:** `/gmv_max/campaign/get/` answers `40001 advertiser does
+not grant you /gmv_max/campaign/get/:GET permission`, at both v1.3 and v2.0. So
+**daily budget, target ROAS and optimisation mode are unavailable** — but note
+the wording is *not granted*, not *does not exist*, so it is a scope to ask
+TikTok for rather than a wall.
+
+**Not supported as metrics anywhere in GMV Max reporting:** impressions, clicks,
+ctr, video_views, conversion, gross_revenue_roi.

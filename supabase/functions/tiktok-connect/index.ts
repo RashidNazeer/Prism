@@ -68,6 +68,23 @@ const Body = z.discriminatedUnion('action', [
     metrics: z.array(z.string().trim().max(40)).min(1).max(20).optional(),
     apiVersion: z.enum(['v1.3', 'v2.0']).default('v2.0'),
   }),
+  /*
+   * A GENERIC READ PROBE, admin only.
+   *
+   * Every specific probe so far had to be written, deployed and then thrown
+   * away, and each round trip cost a deploy to learn one fact. This asks any
+   * GMV Max read endpoint with any parameters and returns the raw envelope, so
+   * a question about the API costs a request rather than a release.
+   *
+   * DELIBERATELY NARROW. GET only, `/open_api/` only, on TikTok's host alone,
+   * and it returns what TikTok said without ever reporting the token it used.
+   * It cannot write, and there is no path parameter that would make it able to.
+   */
+  z.object({
+    action: z.literal('raw.probe'),
+    path: z.string().trim().startsWith('/open_api/').max(200),
+    query: z.record(z.string(), z.string()).default({}),
+  }),
   z.object({ action: z.literal('connection.disconnect'), connectionId: z.uuid() }),
   z.object({
     action: z.literal('store.map'),
@@ -361,6 +378,24 @@ Deno.serve(async (req) => {
         region: currentRegion(),
         url: u.toString().replace(/access_token=[^&]*/, 'access_token=REDACTED'),
         payload: await res.json(),
+      });
+    }
+
+    /* --------------------------------------------------------- raw probe -- */
+    if (body.action === 'raw.probe') {
+      const { data: conn } = await admin
+        .from('tiktok_connections')
+        .select('access_token')
+        .is('revoked_at', null)
+        .order('connected_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!conn) return reply({ error: 'There is no live connection to probe.' }, 404);
+
+      return reply({
+        region: currentRegion(),
+        path: body.path,
+        payload: await rawGet(body.path, conn.access_token, body.query),
       });
     }
 
