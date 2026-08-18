@@ -56,3 +56,5 @@ supabase/.temp
 *.sln
 *.sw?
 Thumbs.db
+
+.vercel

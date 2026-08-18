@@ -513,3 +513,36 @@ their tables are still writable by anyone holding their publishable key, which
 ships in both bundles. Isolation means our side cannot hurt their data; it does
 not make their data safe from the open policies on their own project, and there
 is no point-in-time recovery on it.
+
+### vercel.json has a strict schema, and a comment in it kills the deployment
+
+Two deployments failed with no build log and a duration of `?`, which is what a
+CONFIG VALIDATION failure looks like: the deployment is rejected before the build
+starts, so there is nothing to read. The cause was a `_comment` key I had added
+inside a rewrite to explain it:
+
+```
+Invalid vercel.json - `rewrites[0]` should NOT have additional property `_comment`.
+```
+
+**Never put a comment in `vercel.json`.** It rejects unknown keys anywhere.
+Explanations go here instead.
+
+**Validate it locally rather than by deploying.** `vercel build` runs the real
+pipeline including config validation:
+
+```bash
+vercel link --token $VERCEL_TOKEN --scope wurxmedia-6695s-projects --project wurxmediahubdev --yes
+vercel build --token $VERCEL_TOKEN --yes      # "Build completed successfully."
+```
+
+**And check the deployment reached READY, not just that the push succeeded.**
+A green `git push` says nothing about the build. `vercel ls wurxmediahubdev`
+shows the state; a run with duration `?` never built at all.
+
+The rewrite excludes `.netlify/` because WurxBase still calls
+`/.netlify/functions/euka`, which does not exist here. Without the exclusion the
+SPA answered it with index.html and a 200, so their code called `.json()` on
+HTML and threw `Unexpected token '<'`. A real 404 lets their own handling
+degrade to null. Square brackets are avoided in the pattern: `source` is parsed
+with path-to-regexp, and a character class is not worth the risk.

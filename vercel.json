@@ -6,8 +6,7 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "rewrites": [
     {
-      "_comment": "WurxBase was built for Netlify and still calls /.netlify/functions/*. Those endpoints do not exist here, and this catch-all was answering them with index.html and a 200, so their code called .json() on HTML and threw \"Unexpected token <\". Their own handling is correct when the endpoint is honestly ABSENT: r.ok is false and it degrades to null. So that prefix is excluded and returns a real 404.",
-      "source": "/((?!assets/|[.]netlify/).*)",
+      "source": "/((?!assets/|.netlify/).*)",
       "destination": "/index.html"
     }
   ],
