@@ -476,3 +476,40 @@ Deleting anything of theirs takes a human pressing a button inside their own UI.
 themselves, both carry their own guard as well and both name what they will
 remove before doing it: `wipe-offers-contests.mjs` and `seed-penetrex.mjs
 --clean`.
+
+### The two platforms cannot reach each other's data
+
+Rashid asked for certainty rather than a promise: deleting from WurxBase's UI
+must only ever affect WurxBase's data, and the same the other way round.
+
+**They are separate Postgres databases in separate Supabase projects.** There is
+no shared table, no cross-database foreign key and no cascade that can span
+them, so a DELETE on one side is *physically* incapable of reaching the other.
+The only way to break that is for code on one side to hold a connection to the
+other, and `pnpm verify:isolation` forbids exactly that. It runs inside
+`pnpm build`, so it cannot be forgotten.
+
+| database | project | reached by |
+| --- | --- | --- |
+| WurxMediaHub | `npznoiotslruqovorrec` | our code only |
+| WurxBase | `bnevtdezskftlrjjgbsg` | the vendored app only |
+| Paid Collaborations | `pfkpgmpicjcirnogxkac` | the vendored app only |
+
+Verified by hand as well as by the guard:
+
+- the vendored code names **only** its own two projects, and never imports our
+  Supabase client;
+- our `src/`, `scripts/` and `supabase/` name **neither** of theirs;
+- **their in-app SQL console is read-only and scoped to their own project**: it
+  hardcodes their URL, sends GET only, rejects
+  `INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|GRANT|REVOKE|COPY|EXECUTE`
+  with a regex, appends `LIMIT 1000` and times out at ten seconds.
+
+The guard was tested by breaking it in both directions and watching the build
+fail, rather than by trusting a green light.
+
+**What this does NOT protect against**, and it is worth being straight about:
+their tables are still writable by anyone holding their publishable key, which
+ships in both bundles. Isolation means our side cannot hurt their data; it does
+not make their data safe from the open policies on their own project, and there
+is no point-in-time recovery on it.
