@@ -41,9 +41,25 @@ export function IdentitySwapBanner() {
   return (
     <div
       role="alert"
-      // Above everything, including dialogs. A dialog is exactly where this bites:
-      // half way through approving somebody, with a Save button that cannot work.
-      className="border-stage-due/40 bg-stage-due-soft fixed inset-x-0 top-0 z-[100] border-b px-4 py-3 shadow-md"
+      /*
+       * Above everything, including dialogs. A dialog is exactly where this
+       * bites: half way through approving somebody, with a Save button that
+       * cannot work.
+       *
+       * THE BACKGROUND IS OPAQUE, and that is not a detail. It used to be
+       * `bg-stage-due-soft`, and every `*-soft` token in this product is a
+       * TRANSLUCENT wash by design, meant to tint whatever card it sits on. A
+       * fixed banner sits on the page itself, so on a phone, where the message
+       * wraps to five lines instead of one, the dashboard showed straight
+       * through the words and the whole thing was unreadable. Creators are
+       * mostly on phones, which is where this warning matters most.
+       *
+       * So: an opaque amber-tinted panel, mixed from the same token against the
+       * card surface, which stays legible in both themes and at every width.
+       * The amber still carries the meaning, through the icon, the rule and the
+       * text.
+       */
+      className="border-stage-due/40 fixed inset-x-0 top-0 z-[100] border-b bg-[color-mix(in_srgb,var(--wx-stage-due)_12%,var(--wx-surface-1))] px-4 py-3 shadow-lg"
     >
       <div className="mx-auto flex max-w-[1140px] flex-wrap items-center gap-x-4 gap-y-2.5">
         <AlertTriangle size={18} className="text-stage-due shrink-0" aria-hidden />
@@ -51,8 +67,17 @@ export function IdentitySwapBanner() {
         <p className="text-stage-due min-w-0 flex-1 basis-64 text-[0.8125rem] leading-relaxed font-medium">
           {signedOutElsewhere ? (
             <>
-              <span className="font-semibold">You were signed out in another tab.</span> This tab
-              is still showing the old screen, and anything you do on it will be refused.
+              {/*
+                NOT "you were signed out in another tab", which is a guess. This
+                fires for a sign-out somewhere else AND for a session that
+                simply ended, and telling somebody which one it was when we do
+                not know is how a message stops being trusted.
+              */}
+              <span className="font-semibold">
+                You are no longer signed in on this browser.
+              </span>{' '}
+              This tab is still showing the old screen, and anything you do on it will be
+              refused.
             </>
           ) : (
             <>
@@ -73,7 +98,10 @@ export function IdentitySwapBanner() {
             onClick={() => window.location.reload()}
           >
             <RefreshCw size={15} aria-hidden />
-            Reload this tab
+            {/* A reload of a tab with no session lands on the sign-in page,
+                because the route guard sends it there. Saying so is more use
+                than "reload", which sounds like it might lose their work. */}
+            {signedOutElsewhere ? 'Sign in again' : 'Reload this tab'}
           </Button>
           <button
             type="button"

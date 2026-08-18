@@ -120,6 +120,11 @@ Individual suites. All need a preview or live URL; most also need
 pnpm verify:browser [url]   # landing page: console, both themes, responsive
 pnpm verify:rls             # attacks the database as a real user
 pnpm verify:session [url]   # section 11: refresh, two tabs, reopen, form survival
+                            # 11 sections now. Section 9 is the identity
+                            # swap: it makes a SECOND throwaway account, signs
+                            # in as it in another tab, and asserts the banner
+                            # names them rather than saying you were signed
+                            # out. Both accounts are deleted at the end.
 pnpm verify:apply  [url]    # sign up to stored application, end to end
 pnpm verify:review [url]    # admin review pipeline + attacks. Needs ADMIN_EMAIL
                             # and ADMIN_PASSWORD too

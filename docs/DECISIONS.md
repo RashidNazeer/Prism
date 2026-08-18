@@ -912,3 +912,25 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   `.wurxbase-root .x` silently loses. Everything of ours is written
   `.wurxbase-root.wurxbase-root .x`, which cannot be undone by a bundler
   decision.
+- 2026-08-19: **A swap keeps the identity the TAB started as, across both auth
+  events.** Rashid reported twice that the app "says signed out" while both
+  accounts are logged in. Swapping accounts is a sign-out followed by a sign-in,
+  and the old test (`previousUserId !== null`) is true for the first event and
+  false for the second, so the banner froze on "you were signed out in another
+  tab" while a different person was in fact signed in and the role guard had
+  already moved the tab to that person's home. The provider now carries
+  `origin` across both events in a ref, rewrites the banner on each, and clears
+  it entirely if the original person signs back in. Nothing said "signed out"
+  that was not a sign-out.
+- 2026-08-19: **The banner no longer guesses HOW the session ended.** "You were
+  signed out in another tab" fires for a session that simply expired too. It
+  says "You are no longer signed in on this browser", which is true in both
+  cases, and offers "Sign in again" rather than "Reload this tab", because
+  reloading a tab with no session lands on the sign-in page anyway.
+- 2026-08-19: **A fixed banner may never take a `*-soft` token as its only
+  background.** Every `*-soft` in `tokens.css` is a translucent wash meant to
+  tint a card. The identity banner used one, and on a phone, where its message
+  wraps to five lines instead of one, the dashboard showed through the words and
+  it was unreadable. It is now an opaque mix of the same token against
+  `--wx-surface-1`. This applies to anything fixed or floating, not just this
+  banner.

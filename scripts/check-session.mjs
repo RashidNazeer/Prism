@@ -18,7 +18,10 @@
  *   7. Protected routes bounce signed-out visitors, and remember where they
  *      were going
  *   8. Role gates send people to their own home instead of someone else's
- *   9. Sign out in one tab is picked up by the other
+ *   9. Signing in as somebody else elsewhere is ANNOUNCED, and announced
+ *      correctly: a swap names who you are now, it does not claim you were
+ *      signed out
+ *  10. Sign out in one tab is picked up by the other
  *
  * Honest note on scenario 6: we cannot sit here for two hours, so the stored
  * access token is expired on purpose and the app is given the chance to
@@ -89,8 +92,11 @@ async function dismissWelcome(page) {
   return true;
 }
 
+const OTHER_EMAIL = `session-other-${stamp}@wurxmediahub.test`;
+
 const browser = await launchBrowser();
 let userId = null;
+let otherUserId = null;
 
 try {
   /* ------------------------------------------------------- 1. sign up --- */
@@ -101,7 +107,8 @@ try {
   const page = await ctx.newPage();
   const consoleErrors = [];
   page.on('console', (m) => {
-    if (m.type() === 'error' && !/favicon|DevTools/i.test(m.text())) consoleErrors.push(m.text());
+    if (m.type() === 'error' && !/favicon|DevTools/i.test(m.text()))
+      consoleErrors.push(m.text());
   });
   page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e.message}`));
 
@@ -137,7 +144,10 @@ try {
   await page.getByRole('button', { name: /takes 60 seconds/i }).click();
 
   await page.waitForURL('**/app', { timeout: 30000 }).catch(() => {});
-  check(new URL(page.url()).pathname === '/app', `applicant lands on /app (got ${new URL(page.url()).pathname})`);
+  check(
+    new URL(page.url()).pathname === '/app',
+    `applicant lands on /app (got ${new URL(page.url()).pathname})`
+  );
 
   check(await dismissWelcome(page), 'the one-time welcome is shown to a new creator');
 
@@ -164,7 +174,11 @@ try {
   // sign up landed but the application insert did not) or merely slow.
   if (!roleShown) {
     const { data: row } = userId
-      ? await admin.from('applications').select('id, status').eq('user_id', userId).maybeSingle()
+      ? await admin
+          .from('applications')
+          .select('id, status')
+          .eq('user_id', userId)
+          .maybeSingle()
       : { data: null };
     console.error(`        application row in the database: ${JSON.stringify(row)}`);
     const shown = await page
@@ -191,7 +205,10 @@ try {
   const saved = await ctx.storageState();
   await ctx.close();
 
-  const ctx2 = await browser.newContext({ storageState: saved, viewport: { width: 1280, height: 900 } });
+  const ctx2 = await browser.newContext({
+    storageState: saved,
+    viewport: { width: 1280, height: 900 },
+  });
   const page2 = await ctx2.newPage();
   await page2.goto(`${BASE}/app`, { waitUntil: 'networkidle' });
   await page2.waitForTimeout(1200);
@@ -208,7 +225,10 @@ try {
   check(new URL(tabB.url()).pathname === '/app', 'second tab is signed in too');
   await page2.bringToFront();
   await page2.waitForTimeout(600);
-  check(new URL(page2.url()).pathname === '/app', 'first tab still signed in after switching back');
+  check(
+    new URL(page2.url()).pathname === '/app',
+    'first tab still signed in after switching back'
+  );
 
   /* --------------------------------- 5 + 6. refresh under a live form ---- */
   console.log('\n[5] Token refresh underneath a half-filled form');
@@ -307,22 +327,129 @@ try {
     `an applicant opening /admin is sent to their own home (got ${new URL(page2.url()).pathname})`
   );
 
-  /* ------------------------------------------------------- 9. sign out --- */
-  console.log('\n[9] Sign out');
+  /* -------------------------------------------------- 9. identity swap --- */
+  /*
+   * SOMEBODY ELSE SIGNS IN, AND THIS TAB HAS TO SAY SO, TRUTHFULLY.
+   *
+   * The session lives in localStorage, which belongs to the origin and not to
+   * the tab, so signing in as a second person anywhere in this browser replaces
+   * the first person everywhere in it. That is unavoidable. Being ambushed by
+   * it is not, which is what the banner is for.
+   *
+   * WHAT THIS CHECK EXISTS FOR, and it is a bug Rashid reported twice: swapping
+   * accounts is TWO auth events, a sign-out and then a sign-in, and the banner
+   * used to freeze on the first one. It told him he had been signed out while a
+   * different person was in fact signed in, on a screen the role guard had
+   * already moved to that person's home. Being told you are signed out while
+   * plainly signed in is worse than being told nothing at all.
+   *
+   * So this asserts the WORDS, not merely that some banner appeared.
+   */
+  console.log('\n[9] Somebody else signs in, and this tab is told who');
+
+  const { data: made, error: makeErr } = await admin.auth.admin.createUser({
+    email: OTHER_EMAIL,
+    password: PASSWORD,
+    email_confirm: true,
+  });
+  if (makeErr) throw new Error(`could not create the second account: ${makeErr.message}`);
+  otherUserId = made.user.id;
+  await admin.from('profiles').update({ role: 'admin', is_active: true }).eq('id', otherUserId);
+
+  await page2.goto(`${BASE}/app`, { waitUntil: 'networkidle' });
+  await page2.waitForTimeout(1200);
+
+  const swapBanner = page2
+    .getByRole('alert')
+    .filter({ hasText: /signed in as|no longer signed in/i });
+  check((await swapBanner.count()) === 0, 'no swap banner while nothing has swapped');
+
+  // A second tab does what a person does: signs out, then signs in as the other
+  // account. Two events, which is the whole point of the check.
+  const tabC = await ctx2.newPage();
+  await tabC.goto(`${BASE}/app`, { waitUntil: 'networkidle' });
+  await tabC.waitForTimeout(1000);
+  await tabC
+    .getByRole('button', { name: /sign out/i })
+    .first()
+    .click();
+  await tabC.waitForURL('**/login**', { timeout: 20000 }).catch(() => {});
+  await tabC.goto(`${BASE}/admin/login`, { waitUntil: 'networkidle' });
+  await tabC.fill('input[name="email"]', OTHER_EMAIL);
+  await tabC.fill('input[name="password"]', PASSWORD);
+  await tabC.getByRole('button', { name: /^sign in$/i }).click();
+  await tabC.waitForURL('**/admin**', { timeout: 30000 }).catch(() => {});
+
+  await page2.bringToFront();
+  await page2.waitForTimeout(3000);
+
+  check((await swapBanner.count()) > 0, 'the first tab is told that somebody else signed in');
+  const swapText = (await swapBanner.count()) ? await swapBanner.first().innerText() : '';
+  check(
+    swapText.includes(OTHER_EMAIL),
+    `the banner names who is signed in now (got: ${swapText.slice(0, 90)})`
+  );
+  check(
+    !/no longer signed in/i.test(swapText),
+    'the banner does NOT claim a sign-out when a different person is signed in'
+  );
+
+  /*
+   * AND COMING HOME CLEARS IT.
+   *
+   * Signing back in as the person this tab started as is the other half of the
+   * same fix: the warning exists because the screen is out of date, so once it
+   * is up to date again the warning has to go by itself. Nobody dismisses a
+   * banner that is telling them something no longer true; they stop reading
+   * banners.
+   *
+   * It also puts the browser back to the applicant, which every check after
+   * this one assumes.
+   */
+  await tabC.goto(`${BASE}/app`, { waitUntil: 'networkidle' });
+  await tabC.waitForTimeout(1200);
+  await tabC
+    .getByRole('button', { name: /sign out/i })
+    .first()
+    .click();
+  await tabC.waitForURL('**/login**', { timeout: 20000 }).catch(() => {});
+  await tabC.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
+  await tabC.fill('input[name="email"]', EMAIL);
+  await tabC.fill('input[name="password"]', PASSWORD);
+  await tabC.getByRole('button', { name: /^sign in$/i }).click();
+  await tabC.waitForURL('**/app**', { timeout: 30000 }).catch(() => {});
+
+  await page2.bringToFront();
+  await page2.waitForTimeout(3000);
+  check(
+    (await swapBanner.count()) === 0,
+    'the banner clears itself once the original person is signed in again'
+  );
+
+  await tabC.close();
+
+  /* ------------------------------------------------------- 10. sign out --- */
+  console.log('\n[10] Sign out');
   await page2.goto(`${BASE}/app`, { waitUntil: 'networkidle' });
   await page2.waitForTimeout(800);
   await page2.getByRole('button', { name: /sign out/i }).click();
   await page2.waitForTimeout(2000);
   await page2.goto(`${BASE}/app`, { waitUntil: 'networkidle' });
   await page2.waitForTimeout(1000);
-  check(new URL(page2.url()).pathname === '/login', 'after signing out, /app redirects to /login');
+  check(
+    new URL(page2.url()).pathname === '/login',
+    'after signing out, /app redirects to /login'
+  );
 
   await tabB.reload({ waitUntil: 'networkidle' });
   await tabB.waitForTimeout(1500);
   check(new URL(tabB.url()).pathname === '/login', 'the other tab is signed out too');
 
-  console.log('\n[10] Console cleanliness');
-  check(consoleErrors.length === 0, `no console errors during the whole run (${consoleErrors.length})`);
+  console.log('\n[11] Console cleanliness');
+  check(
+    consoleErrors.length === 0,
+    `no console errors during the whole run (${consoleErrors.length})`
+  );
   consoleErrors.slice(0, 5).forEach((e) => console.error(`        ${e}`));
 
   await ctx2.close();
@@ -330,6 +457,14 @@ try {
   fail(`unexpected error: ${e.message}`);
 } finally {
   await browser.close();
+  if (otherUserId) {
+    // The swap account. Its audit rows go first: the foreign key is ON DELETE
+    // RESTRICT on purpose, so an actor can never be erased from their own trail.
+    await admin.from('audit_log').delete().eq('actor_id', otherUserId);
+    const { error } = await admin.auth.admin.deleteUser(otherUserId);
+    if (error) fail(`could not delete the swap account: ${error.message}`);
+    else console.log('[cleanup] swap account deleted');
+  }
   if (userId) {
     // Retry: this one call has intermittently failed at the socket level right
     // after Playwright shuts down. Leaving a stray account behind on dev is

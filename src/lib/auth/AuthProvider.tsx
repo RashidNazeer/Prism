@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { queryClient } from '@/lib/query-client';
-import {
-  AuthContext,
-  readClaims,
-  type AuthStatus,
-  type IdentitySwap,
-} from './auth-context';
+import { AuthContext, readClaims, type AuthStatus, type IdentitySwap } from './auth-context';
 
 // NOTE: `@/lib/supabase` is imported dynamically below, never at the top of
 // this file. This provider wraps every page including the public landing page,
@@ -54,7 +49,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * IdentitySwap for why this exists at all.
    */
   const [identitySwap, setIdentitySwap] = useState<IdentitySwap | null>(null);
-  const acknowledgeSwap = useCallback(() => setIdentitySwap(null), []);
+
+  /*
+   * The same value, readable from inside the auth listener.
+   *
+   * The listener is registered once and closes over its first render, so it
+   * cannot see `identitySwap` in state. It has to, because swapping accounts is
+   * TWO events, not one, and the second must be able to correct the first.
+   */
+  const swapRef = useRef<IdentitySwap | null>(null);
+  const showSwap = useCallback((next: IdentitySwap | null) => {
+    swapRef.current = next;
+    setIdentitySwap(next);
+  }, []);
+  const acknowledgeSwap = useCallback(() => showSwap(null), [showSwap]);
 
   useEffect(() => {
     let cancelled = false;
@@ -80,22 +88,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         currentUserId.current = nextUserId;
 
         /*
-         * A SWAP, not a sign-in. `previousUserId` being non-null is the whole
-         * test: a fresh tab goes null -> somebody, which is ordinary, and a
-         * token refresh keeps the same id. Anything else means the person this
-         * tab belonged to is no longer the person it belongs to, and they are
-         * about to click something that will fail in a way that makes no sense.
+         * A SWAP, not a sign-in. A fresh tab goes null -> somebody, which is
+         * ordinary, and a token refresh keeps the same id. Anything else means
+         * the person this tab belonged to is no longer the person it belongs
+         * to, and they are about to click something that will fail in a way
+         * that makes no sense.
          *
          * `signOut()` from THIS tab lands here too, and would raise a banner
          * about a sign-out the user just asked for. It is suppressed by the
          * guard clearing the flag on the way out, below.
+         *
+         * SWAPPING ACCOUNTS IS TWO EVENTS, AND THE FIRST ONE LIES. Rashid,
+         * 2026-08-19: it sometimes says signed out while both accounts are
+         * logged in. Signing out over there and straight back in as somebody
+         * else fires SIGNED_OUT and then SIGNED_IN. The old test was
+         * `previousUserId !== null`, which is true for the first event and
+         * FALSE for the second, because by then the previous id is null. So the
+         * banner froze on "you were signed out in another tab" while a
+         * different person was in fact signed in, on a screen the guard had
+         * already moved to that person's home. The message was wrong, and being
+         * told you are signed out while plainly signed in is worse than being
+         * told nothing.
+         *
+         * `origin` is therefore the person this TAB started as, carried across
+         * both events, and the banner is rewritten by each one.
          */
-        if (userChanged && previousUserId !== null) {
-          setIdentitySwap({
-            from: previousUserId,
-            to: nextUserId,
-            toEmail: nextSession?.user.email ?? null,
-          });
+        if (userChanged) {
+          const origin = swapRef.current?.from ?? previousUserId;
+
+          if (origin === null) {
+            // Ordinary first sign-in in a fresh tab. Nothing to warn about.
+          } else if (nextUserId === origin) {
+            // Back to the person this tab belongs to, so there is nothing left
+            // to explain. Happens when somebody signs out elsewhere and then
+            // signs back in as themselves.
+            showSwap(null);
+          } else {
+            showSwap({
+              from: origin,
+              to: nextUserId,
+              toEmail: nextSession?.user.email ?? null,
+            });
+          }
         }
 
         // Always keep the session object current: the access token inside it is
@@ -121,7 +155,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       unsubscribe?.();
     };
-  }, []);
+    // `showSwap` and nothing else. It is a `useCallback` with no dependencies,
+    // so its identity never changes and this effect still runs exactly once,
+    // which it must: re-running it would tear down and re-register the auth
+    // listener, and a listener that comes and goes is how auth events get
+    // missed.
+  }, [showSwap]);
 
   const signOut = useCallback(async () => {
     const supabase = await supabaseClient();
@@ -129,13 +168,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // State updates arrive through onAuthStateChange; the guards handle the
     // redirect. Nothing to do here EXCEPT clear the swap flag: signing yourself
     // out is not being ambushed, and a banner explaining it would be noise.
-    setIdentitySwap(null);
-  }, []);
+    // The ref goes with it, or the next sign-in in this tab would be read as
+    // the second half of a swap that never happened.
+    showSwap(null);
+  }, [showSwap]);
 
-  const claims = useMemo(
-    () => readClaims(session?.access_token),
-    [session?.access_token]
-  );
+  const claims = useMemo(() => readClaims(session?.access_token), [session?.access_token]);
 
   const value = useMemo(
     () => ({

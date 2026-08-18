@@ -4,20 +4,57 @@
 
 **Recorded 2026-08-19.**
 
-Rashid is **testing the Paid Collabs header and dark mode**, just rebuilt and
-deployed. Nothing else is queued: ask what he wants next and answer from
-`docs/PARKED.md` if he asks what is pending.
+Rashid is testing two things just shipped: the **Paid Collabs header and dark
+mode**, and the **identity-swap banner on the creator side**. Nothing else is
+queued: ask what he wants next and answer from `docs/PARKED.md` if he asks
+what is pending.
 
-If he comes back to Paid Collabs, the two known defects there are both in
-PARKED and both **theirs, not ours**: the brand and creator tables collapse into
-cards at 768px and below that show only two or three of their fields, and their
-app's writes to its own `app_settings` are refused by its RLS and log a 401 and
-a 42501 on every load.
+He asked for one thing to be remembered rather than fixed: **the vendored
+WurxBase tables lose most of their fields as cards at 768px and below** ("we
+will fix that later"). It is PARKED item 13e, it was measured to be theirs and
+not ours, and the memory file is `wurxbase-narrow-tables`.
 
 **Do not re-explore the codebase to get oriented.** This file, then PARKED,
 then only the files the chosen job names.
 
 ---
+
+## "It says signed out while I am signed in", finished (2026-08-19)
+
+Rashid: we fixed this from the admin end, do the creator side as well.
+
+**The banner was never admin-only.** It lives in `AppShell`, which both sides
+render through `ShellLayout`, so creator screens have had it since 2026-08-15.
+Proved rather than assumed, by signing in as a seeded creator and swapping the
+session underneath them in a second tab.
+
+**What WAS broken, on both sides, is that it lied.** Swapping accounts is two
+auth events, a sign-out and then a sign-in, and the test for "is this a swap"
+was `previousUserId !== null`, which is true for the first and false for the
+second. So the banner froze on **"You were signed out in another tab"** while a
+different person was in fact signed in, on a screen the role guard had already
+moved to that person's home. That is exactly the sentence he kept seeing.
+`AuthProvider` now carries the identity the TAB started as across both events
+in a ref, rewrites the banner on each, and clears it entirely when the original
+person signs back in.
+
+**Two smaller lies with it.** "Signed out in another tab" also fires for a
+session that simply ended, so it now says "You are no longer signed in on this
+browser", which is true either way, and the button says "Sign in again" rather
+than "Reload this tab".
+
+**And it was unreadable on a phone.** The banner was painted
+`bg-stage-due-soft`, and every `*-soft` token is a TRANSLUCENT wash meant to
+tint a card. Fixed to the page and wrapped to five lines on a 390px screen, the
+dashboard showed straight through the words. It is an opaque mix of the same
+token against the card surface now, checked in both themes. Creators are mostly
+on phones, which is where this warning matters most.
+
+**`pnpm verify:session` is 11 sections now**, section 9 being this: it builds
+a second throwaway account, signs in as it in another tab, and asserts the words
+the banner uses, not merely that a banner appeared. All green, zero console
+errors.
+
 
 ## The Paid Collabs header, and the theme it was stealing (2026-08-19)
 

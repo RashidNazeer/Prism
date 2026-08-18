@@ -1423,3 +1423,35 @@ their apps authenticate against a hardcoded user list rather than Supabase Auth;
 and there are zero GoTrue multiple-instance warnings, which is the exact symptom
 of the random-logout class of bug. Re-run that check if their client setup
 changes.
+
+## Being signed in as somebody else (2026-08-19)
+
+| what | where |
+| --- | --- |
+| detection | `src/lib/auth/AuthProvider.tsx` |
+| the banner | `src/components/auth/IdentitySwapBanner.tsx` |
+| mounted for both sides | `src/components/layout/AppShell.tsx` |
+| proof | `scripts/check-session.mjs` section 9 |
+
+**One session per browser per origin, and that cannot be changed.** Supabase
+keeps it in localStorage, which belongs to the origin and not to the tab, so
+signing in as a creator anywhere in a browser replaces the admin everywhere in
+it. The product does not try to prevent that. It announces it.
+
+**The banner is in `AppShell`, which both admin and creator routes render
+through `ShellLayout`.** There is no creator-side copy and there must not be:
+one banner, one detector, both sides.
+
+**A swap is TWO auth events and the first one lies.** Signing out over there and
+straight back in as somebody else fires `SIGNED_OUT` then `SIGNED_IN`. Test
+the identity the TAB STARTED AS, carried in a ref across both, or the banner
+freezes on "you were signed out" while somebody else is plainly signed in. That
+exact wrong message is what Rashid reported, twice.
+
+**It must clear itself.** If the original person signs back in, the screen is up
+to date again and the warning has to go on its own. Nobody dismisses a banner
+that is telling them something untrue; they stop reading banners.
+
+**Do not paint a fixed banner with a `*-soft` token.** They are translucent
+washes for tinting cards. On a phone this one wrapped to five lines and the page
+showed through it.
