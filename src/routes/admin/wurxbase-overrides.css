@@ -1,0 +1,87 @@
+/*
+ * The corrections the codemod could not infer.
+ *
+ * OUR FILE, NOT THEIRS. `src/vendor/wurxbase/` stays a verbatim copy; this sits
+ * beside the route that mounts it and is loaded after their stylesheets, so it
+ * wins on order without needing `!important` on everything.
+ *
+ * WHY IT EXISTS. Retokenising 4,673 colours automatically gets the palette
+ * right and cannot get every ROLE right, because a colour on its own does not
+ * say what it is for. A pale blue is a card in one rule and a selected state in
+ * the next, and no amount of inference separates them. So the sweep does the
+ * mass and this does the handful it read wrong, which is the correct division:
+ * hand-editing four thousand colours would have missed forty of them silently.
+ *
+ * Keep this SHORT. Anything long enough to need sections belongs back in the
+ * codemod as a better rule.
+ */
+
+/* ---------------------------------------------------------------- inputs -- */
+/*
+ * Text fields came out wearing the accent as a fill. Their own `--pc-card`
+ * resolves correctly; a more specific rule further down their sheet was setting
+ * a background that mapped onto the accent, and the search box turned into a
+ * solid gold pill you could not read your own typing in.
+ *
+ * A field is a WELL: it is the recessed thing you type into, so it takes a
+ * surface, never the accent. The accent belongs on its focus ring, where it
+ * says "this one is yours" without swallowing the text.
+ */
+.wurxbase-root input:not([type='checkbox']):not([type='radio']):not([type='range']),
+.wurxbase-root textarea,
+.wurxbase-root select {
+  /* !important, and only here. Their sheet carries a later, more specific
+     rule that paints fields with the accent, and an override file layered over
+     vendored CSS is the one place forcing it is the honest answer rather than a
+     specificity arms race. */
+  background: var(--wx-surface-2) !important;
+  color: var(--wx-text) !important;
+  border-color: var(--wx-border);
+}
+
+.wurxbase-root input:not([type='checkbox']):not([type='radio']):focus,
+.wurxbase-root textarea:focus,
+.wurxbase-root select:focus {
+  background: var(--wx-surface-1) !important;
+  border-color: var(--wx-accent);
+  box-shadow: 0 0 0 3px var(--wx-accent-ring);
+  outline: none;
+}
+
+.wurxbase-root ::placeholder {
+  color: var(--wx-text-faint);
+  opacity: 1;
+}
+
+/* Checkboxes and radios keep the accent, which is exactly what it is for. */
+.wurxbase-root input[type='checkbox'],
+.wurxbase-root input[type='radio'] {
+  accent-color: var(--wx-accent);
+}
+
+/* ------------------------------------------------------------ scrollbars -- */
+/* Their scrollbars were styled for a white page and stayed pale on the dark
+   one, which reads as a stripe of light down the side of every table. */
+.wurxbase-root ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.wurxbase-root ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.wurxbase-root ::-webkit-scrollbar-thumb {
+  background: var(--wx-border-strong);
+  border-radius: 999px;
+}
+.wurxbase-root ::-webkit-scrollbar-thumb:hover {
+  background: var(--wx-text-faint);
+}
+
+/* --------------------------------------------------------------- surface -- */
+/* The page they draw is ours now, so it sits on our canvas rather than the
+   near-white one their design assumed. */
+.wurxbase-root {
+  background: var(--wx-bg);
+  color: var(--wx-text);
+  font-family: var(--wx-font-sans);
+}

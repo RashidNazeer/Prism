@@ -1,5 +1,7 @@
 import { Suspense, lazy, useEffect, useRef } from 'react';
 import { useTheme } from '@/components/theme/theme-context';
+// Loaded AFTER their stylesheets so it wins on order. See the file's header.
+import './wurxbase-overrides.css';
 
 /**
  * Paid Collabs: the WurxBase dashboard, running inside WurxMediaHub.

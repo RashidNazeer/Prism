@@ -51,10 +51,10 @@
 
   /* Enhanced shadow hierarchy (One UI soft elevation) */
   --elev-0: none;
-  --elev-1: 0 1px 2px rgba(15,23,42,0.04), 0 1px 3px rgba(15,23,42,0.03);
-  --elev-2: 0 2px 6px rgba(15,23,42,0.05), 0 4px 14px rgba(15,23,42,0.06);
-  --elev-3: 0 6px 18px rgba(15,23,42,0.07), 0 12px 32px rgba(15,23,42,0.09);
-  --elev-4: 0 16px 40px rgba(15,23,42,0.10), 0 28px 64px rgba(15,23,42,0.12);
+  --elev-1: 0 1px 2px color-mix(in srgb, var(--wx-accent) 4%, transparent), 0 1px 3px color-mix(in srgb, var(--wx-accent) 3%, transparent);
+  --elev-2: 0 2px 6px color-mix(in srgb, var(--wx-accent) 5%, transparent), 0 4px 14px color-mix(in srgb, var(--wx-accent) 6%, transparent);
+  --elev-3: 0 6px 18px color-mix(in srgb, var(--wx-accent) 7%, transparent), 0 12px 32px color-mix(in srgb, var(--wx-accent) 9%, transparent);
+  --elev-4: 0 16px 40px color-mix(in srgb, var(--wx-accent) 10%, transparent), 0 28px 64px color-mix(in srgb, var(--wx-accent) 12%, transparent);
   --elev-focus: 0 0 0 3px rgba(var(--accent-rgb), 0.18);
 
   /* Animation timing */
@@ -85,36 +85,36 @@
 
 /* ---------- Dark mode ---------- */
 .wurxbase-root[data-theme="dark"] {
-  --bg:          #0B0D12;
-  --surface:     #14171E;
-  --paper:       #0F1218;
-  --paper-deep:  #181B23;
-  --cream:       #14171E;
+  --bg:          var(--wx-accent);
+  --surface:     var(--wx-accent);
+  --paper:       var(--wx-accent);
+  --paper-deep:  var(--wx-accent);
+  --cream:       var(--wx-accent);
 
-  --text:        #E7EAF2;
-  --ink:         #E7EAF2;
-  --text-soft:   #BFC5D2;
-  --ink-soft:    #BFC5D2;
-  --text-muted:  #8A93A6;
-  --muted:       #8A93A6;
-  --text-faint:  #5B6478;
+  --text:        var(--wx-on-accent);
+  --ink:         var(--wx-on-accent);
+  --text-soft:   var(--wx-text-faint);
+  --ink-soft:    var(--wx-text-faint);
+  --text-muted:  var(--wx-text-muted);
+  --muted:       var(--wx-accent);
+  --text-faint:  var(--wx-text);
 
-  --hairline:    #22262F;
-  --border:      #2A2F3A;
-  --border-soft: #22262F;
+  --hairline:    var(--wx-border-strong);
+  --border:      var(--wx-border-strong);
+  --border-soft: var(--wx-border-strong);
 
-  --blue-soft:   #10213D;
-  --green-soft:  #0F2417;
-  --amber-soft:  #2A1F05;
-  --red-soft:    #2A0E0E;
+  --blue-soft:   var(--wx-accent);
+  --green-soft:  var(--wx-success);
+  --amber-soft:  var(--wx-warning);
+  --red-soft:    var(--wx-danger);
 
   --accent-soft:   hsl(var(--accent-h) 50% 18%);
   --accent-border: hsl(var(--accent-h) 40% 30%);
 
-  --elev-1: 0 1px 2px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.25);
-  --elev-2: 0 2px 6px rgba(0,0,0,0.35), 0 4px 14px rgba(0,0,0,0.30);
-  --elev-3: 0 6px 18px rgba(0,0,0,0.40), 0 12px 32px rgba(0,0,0,0.35);
-  --elev-4: 0 16px 40px rgba(0,0,0,0.50), 0 28px 64px rgba(0,0,0,0.45);
+  --elev-1: 0 1px 2px color-mix(in srgb, var(--wx-bg) 35%, transparent), 0 1px 3px color-mix(in srgb, var(--wx-bg) 25%, transparent);
+  --elev-2: 0 2px 6px color-mix(in srgb, var(--wx-bg) 35%, transparent), 0 4px 14px color-mix(in srgb, var(--wx-bg) 30%, transparent);
+  --elev-3: 0 6px 18px color-mix(in srgb, var(--wx-bg) 40%, transparent), 0 12px 32px color-mix(in srgb, var(--wx-bg) 35%, transparent);
+  --elev-4: 0 16px 40px color-mix(in srgb, var(--wx-bg) 50%, transparent), 0 28px 64px color-mix(in srgb, var(--wx-bg) 45%, transparent);
 
   color-scheme: dark;
 }
@@ -531,7 +531,7 @@
 .wurxbase-root[data-theme="dark"] .page-head { background: var(--surface) !important; }
 .wurxbase-root[data-theme="dark"] .topbar { box-shadow: 0 1px 0 rgba(0,0,0,0.4); }
 .wurxbase-root[data-theme="dark"] .ph-title {
-  background: linear-gradient(135deg, #F5F7FB 0%, #C7CCD8 100%);
+  background: linear-gradient(135deg, var(--wx-accent-soft) 0%, var(--wx-accent) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;

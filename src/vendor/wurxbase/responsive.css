@@ -48,8 +48,8 @@
     align-items: center;
     gap: 0;
     padding: 10px 14px 0;
-    background: #fff;
-    border-bottom: 1px solid #E8ECF4;
+    background: var(--wx-surface-1);
+    border-bottom: 1px solid var(--wx-accent);
   }
   /* Flatten ph-left so title + badge-row become direct flex children of page-head */
   .wurxbase-root .ph-left { display: contents; }
@@ -61,7 +61,7 @@
     font-size: 18px;
     font-weight: 900;
     letter-spacing: -0.5px;
-    color: #0F172A;
+    color: var(--wx-accent);
     white-space: nowrap;
     padding-bottom: 8px;
   }
@@ -86,7 +86,7 @@
     align-items: center;
     gap: 0;
     padding: 7px 0 9px;
-    border-top: 1px solid #F0F2FA;
+    border-top: 1px solid var(--wx-accent);
     overflow: visible;
   }
 
@@ -116,7 +116,7 @@
     width: 3px;
     height: 3px;
     border-radius: 50%;
-    background: #D1D5DB;
+    background: var(--wx-accent);
   }
 
   /* Number — big + colored */
@@ -126,8 +126,8 @@
     letter-spacing: -0.5px;
     line-height: 1;
   }
-  .wurxbase-root .ph-kpi-blue   .ph-kpi-val { color: #2563EB; }
-  .wurxbase-root .ph-kpi-purple .ph-kpi-val { color: #7C3AED; }
+  .wurxbase-root .ph-kpi-blue   .ph-kpi-val { color: var(--wx-accent); }
+  .wurxbase-root .ph-kpi-purple .ph-kpi-val { color: var(--wx-accent); }
 
   /* Label — small + muted gray (same for both) */
   .wurxbase-root .ph-kpi-lbl {
@@ -135,8 +135,8 @@
     font-weight: 500;
     letter-spacing: 0;
   }
-  .wurxbase-root .ph-kpi-blue   .ph-kpi-lbl { color: #94A3B8; }
-  .wurxbase-root .ph-kpi-purple .ph-kpi-lbl { color: #94A3B8; }
+  .wurxbase-root .ph-kpi-blue   .ph-kpi-lbl { color: var(--wx-accent); }
+  .wurxbase-root .ph-kpi-purple .ph-kpi-lbl { color: var(--wx-accent); }
 
   /* ════════════════════════════════
      FILTER BAR — search + chips (2 rows)
@@ -144,8 +144,8 @@
   .wurxbase-root .filter-section {
     padding: 0 12px;
     top: 52px;
-    background: #fff;
-    border-bottom: 1px solid #EAEDF6;
+    background: var(--wx-surface-1);
+    border-bottom: 1px solid var(--wx-accent);
   }
   .wurxbase-root .filter-bar {
     height: auto;
@@ -251,9 +251,9 @@
     padding: 10px 10px 9px;
     gap: 6px;
     border-radius: 16px;
-    background: #fff !important;
-    border: 1px solid #ECEEF6 !important;
-    border-left: 1px solid #ECEEF6 !important;
+    background: var(--wx-surface-1) !important;
+    border: 1px solid var(--wx-accent) !important;
+    border-left: 1px solid var(--wx-accent) !important;
     box-shadow: 0 2px 8px rgba(15,23,42,0.06) !important;
   }
   .wurxbase-root .bstat-card:hover {
@@ -279,7 +279,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.4px;
-    color: #94A3B8;
+    color: var(--wx-accent);
     line-height: 1.3;
   }
 
@@ -290,12 +290,12 @@
     letter-spacing: -0.5px;
     line-height: 1.15;
   }
-  .wurxbase-root .bstat-card-blue   .bsc-value { color: #6366F1; }
-  .wurxbase-root .bstat-card-purple .bsc-value { color: #8B5CF6; }
-  .wurxbase-root .bstat-card-amber  .bsc-value { color: #D97706; }
-  .wurxbase-root .bstat-card-teal   .bsc-value { color: #0D9488; }
-  .wurxbase-root .bstat-card-green  .bsc-value { color: #059669; }
-  .wurxbase-root .bstat-card-rose   .bsc-value { color: #F43F5E; }
+  .wurxbase-root .bstat-card-blue   .bsc-value { color: var(--wx-accent); }
+  .wurxbase-root .bstat-card-purple .bsc-value { color: var(--wx-accent); }
+  .wurxbase-root .bstat-card-amber  .bsc-value { color: var(--wx-warning); }
+  .wurxbase-root .bstat-card-teal   .bsc-value { color: var(--wx-info); }
+  .wurxbase-root .bstat-card-green  .bsc-value { color: var(--wx-success); }
+  .wurxbase-root .bstat-card-rose   .bsc-value { color: var(--wx-danger); }
 
   /* Hide sub / progress */
   .wurxbase-root .bsc-sub           { display: none !important; }
@@ -323,10 +323,10 @@
   .wurxbase-root .table-scroll {
     overflow: visible;
     border-radius: 16px;
-    border: 1.5px solid #E8ECF4;
+    border: 1.5px solid var(--wx-accent);
     box-shadow: 0 2px 12px rgba(0,0,0,0.05);
     max-height: none;
-    background: #fff;
+    background: var(--wx-surface-1);
   }
   .wurxbase-root table {
     width: 100%;
@@ -339,8 +339,8 @@
   .wurxbase-root thead tr { display: table-row; }
   .wurxbase-root thead th.col-check-th {
     height: 34px;
-    background: #F4F6FB;
-    border-bottom: 1.5px solid #E8ECF4;
+    background: var(--wx-accent-soft);
+    border-bottom: 1.5px solid var(--wx-accent);
     width: 38px !important;
     min-width: 38px !important;
     padding: 0 4px 0 12px !important;
@@ -351,8 +351,8 @@
     height: 34px;
     font-size: 10.5px;
     letter-spacing: 0.4px;
-    background: #F4F6FB;
-    border-bottom: 1.5px solid #E8ECF4;
+    background: var(--wx-accent-soft);
+    border-bottom: 1.5px solid var(--wx-accent);
     padding: 0 16px;
     /* reset sticky — no horizontal scroll */
     position: static !important;
@@ -365,8 +365,8 @@
     height: 34px;
     font-size: 10.5px;
     letter-spacing: 0.4px;
-    background: #F4F6FB;
-    border-bottom: 1.5px solid #E8ECF4;
+    background: var(--wx-accent-soft);
+    border-bottom: 1.5px solid var(--wx-accent);
     padding: 0 10px;
     position: static !important;
     right: auto !important;
@@ -380,12 +380,12 @@
   .wurxbase-root tbody tr {
     display: table-row;
     height: 46px;
-    border-bottom: 1px solid #F0F2F9;
-    background: #fff;
+    border-bottom: 1px solid var(--wx-accent);
+    background: var(--wx-surface-1);
   }
   .wurxbase-root tbody tr:last-child { border-bottom: none; }
-  .wurxbase-root tbody tr:hover { background: #F6F8FF; }
-  .wurxbase-root tbody tr.selected-row { background: #F5F3FF; }
+  .wurxbase-root tbody tr:hover { background: var(--wx-accent-soft); }
+  .wurxbase-root tbody tr.selected-row { background: var(--wx-accent-soft); }
 
   /* Checkbox cell */
   .wurxbase-root .col-check-td {
@@ -414,7 +414,7 @@
     padding: 0 16px !important;
     font-size: 14px !important;
     font-weight: 600 !important;
-    color: #0F172A !important;
+    color: var(--wx-accent) !important;
     vertical-align: middle;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -449,7 +449,7 @@
   /* ════════════════════════════════
      DETAIL MODAL — slide up from bottom
   ════════════════════════════════ */
-  .wurxbase-root .modal-overlay { padding: 0; align-items: flex-end; background: rgba(10,14,30,0.5); }
+  .wurxbase-root .modal-overlay { padding: 0; align-items: flex-end; background: color-mix(in srgb, var(--wx-accent) 50%, transparent); }
 
   /* New VIP modal — bottom sheet */
   .wurxbase-root .ndm {
@@ -715,10 +715,10 @@
   }
 
   /* Active touch feedback on brand tabs */
-  .wurxbase-root .brand-tab:active { transform: scale(0.94); background: #EEF2FF !important; }
+  .wurxbase-root .brand-tab:active { transform: scale(0.94); background: var(--wx-accent-soft) !important; }
 
   /* Row tap feedback */
-  .wurxbase-root .tr-clickable:active td { background: #F0F4FF !important; }
+  .wurxbase-root .tr-clickable:active td { background: var(--wx-accent-soft) !important; }
 
   /* Smooth scroll on all containers */
   .wurxbase-root .table-scroll, .wurxbase-root .brand-tabs-bar, .wurxbase-root .filter-chips-group {
