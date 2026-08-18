@@ -1,5 +1,67 @@
 # Project state
 
+## NEXT ACTION AFTER COMPACTION
+
+**Recorded 2026-08-18 by /precompact.**
+
+Nothing was queued. Rashid gave no next instruction with this compaction, so
+**ask what he wants to work on**, and answer from `docs/PARKED.md` if he asks
+what is pending.
+
+He was last **testing Paid Collabs** (the vendored WurxBase) after a run of
+failed deployments that hid three commits from him. Those are fixed and live.
+The obvious things to offer, all from PARKED:
+
+- the **`Checking` state** for a video added last night, which currently reads
+  "No ads" and is a lie on its first day. Marked *before any real creator
+  uploads*, because their first act will be to add a video and look at it;
+- **their second login** inside Paid Collabs, which he may now be tired of;
+- **prod has none of the TikTok setup**, deliberately, until he says make it live.
+
+**Do not re-explore the codebase to get oriented.** This file, then PARKED,
+then only the files the chosen job names.
+
+---
+
+## Paid Collabs: WurxBase runs inside our admin (2026-08-18, later)
+
+The whole WurxBase dashboard is vendored into `/admin/collabs`, sidebar item
+**Paid Collabs** under Data, admin only. Brands, creators, performance,
+reporting, leaderboard, discovery, with their real data.
+
+**Their code is untouched by instruction** — Rashid: the code, features and
+logic change by not one line, only the look becomes ours. `src/vendor/wurxbase/`
+is verbatim; the only edits were three `.js` to `.jsx` renames because Vite will
+not parse JSX out of a `.js` file.
+
+**The reskin was a codemod**: 4,673 colours and 700 font stacks onto
+`var(--wx-*)`, mapped by the property each colour sits on, so their screens now
+follow our light and dark modes and our text-size control.
+
+**Three databases, and they cannot reach each other.** `pnpm verify:isolation`
+runs inside `pnpm build` and fails it if the vendored app ever names our project
+or imports our client, or if our code names either of theirs. Tested by breaking
+it in both directions.
+
+**Every deleting script now refuses to run outside dev.** Twenty of them create
+and remove data; seventeen used to trust whatever `.env.local` said.
+
+### The thing that cost the most time, and it was mine
+
+**Two deployments failed and I reported both as deployed.** I verified the push
+and stopped verifying the deploy, so the 404 fix and the isolation guard sat in
+git while Rashid looked at an old build and hit the same error. He found it in
+the Vercel dashboard rather than from me.
+
+The cause was a `_comment` key I had put inside `vercel.json` to explain a
+rewrite. Its schema rejects unknown keys, so the deployment was rejected before
+the build started — no log, duration `?`. **Never comment `vercel.json`.**
+
+There is a local validation loop now: `vercel build` runs the real pipeline
+including config validation. **And a deployment is not done until `vercel ls`
+says READY.** Both in OPERATIONS.
+
+---
 ## Where we are: Rashid is testing the creator numbers (2026-08-18)
 
 **The product's central promise is live on dev.** A creator signs in and sees
