@@ -1359,6 +1359,8 @@ no creator route reaches it.
 | their app, verbatim | `src/vendor/wurxbase/` |
 | the seam | `src/routes/admin/PaidCollabs.tsx` |
 | our corrections | `src/routes/admin/wurxbase-overrides.css` |
+| the header, ours | `src/routes/admin/wurxbase-chrome.css` |
+| shooting it | `scripts/shots-collabs.mjs` |
 | the fence | `wurxbase-fence` in `src/styles/global.css` |
 
 **`src/vendor/wurxbase/` is a verbatim copy and stays one.** Rashid's
@@ -1380,6 +1382,30 @@ descendants.
 **The reskin was a codemod**: 4,673 colours and 700 font stacks onto
 `var(--wx-*)`, mapped by the property each colour sits on, so their screens
 follow our light and dark modes and our text-size control.
+
+### Three rules for changing the look in here
+
+**1. Doubling the class, not `!important`, is how our CSS wins.** Their
+stylesheet ships inside the lazily loaded vendor chunk, so it is injected AFTER
+whatever `PaidCollabs.tsx` imports. A rule of ours written `.wurxbase-root .x`
+has the same specificity as theirs and therefore LOSES on order. Write
+`.wurxbase-root.wurxbase-root .x`. This was found the expensive way: a status
+palette that was correct in the source and had no effect on the screen.
+
+**2. `!important` is only for their inline styles.** Their header is drawn from
+`style={{}}` objects, roughly forty hardcoded colours the codemod could never
+see, and an inline style beats any stylesheet. Their hover handlers write inline
+backgrounds too, so hover has to be restated in CSS rather than left to their
+JavaScript.
+
+**3. Never let them own `<html>`.** Their `applyPrefsToDOM` writes
+`data-theme`, `data-accent`, `data-density`, `data-radius` and
+`data-motion` onto the document element, and `data-theme` is the attribute our
+entire palette switches on. Theirs defaults to `light`, so opening this screen
+turned the whole admin light and it stayed light after leaving, because our
+provider only writes that attribute when the theme changes and nothing had
+changed. `PaidCollabs.tsx` reclaims it with a MutationObserver and mirrors the
+other four onto the fence, where their scoped rules read them.
 
 ### Two things to know before changing anything
 

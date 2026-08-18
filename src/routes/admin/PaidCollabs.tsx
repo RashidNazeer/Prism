@@ -1,7 +1,10 @@
 import { Suspense, lazy, useEffect, useRef } from 'react';
 import { useTheme } from '@/components/theme/theme-context';
-// Loaded AFTER their stylesheets so it wins on order. See the file's header.
+// Both win on specificity rather than on order. See the header of each file:
+// the vendored CSS ships in a lazily loaded chunk, so "loaded after theirs" is
+// not something an import position in here can promise.
 import './wurxbase-overrides.css';
+import './wurxbase-chrome.css';
 
 /**
  * Paid Collabs: the WurxBase dashboard, running inside WurxMediaHub.
@@ -43,10 +46,56 @@ export function PaidCollabs() {
    * That anchor used to be `<html>`; scoping moved it to this div, so the value
    * has to arrive here. Kept in an effect rather than rendered as a prop so it
    * follows a theme change made while the screen is open.
+   *
+   * AND THE OTHER DIRECTION, which is the whole reason this effect got longer.
+   * WurxBase has its own appearance settings, and `applyPrefsToDOM` writes all
+   * five of them straight onto `<html>`: theme, accent, density, radius,
+   * motion. One of those five is `data-theme`, which is the exact attribute
+   * `src/styles/tokens.css` switches our entire palette on, and theirs defaults
+   * to `light`. So opening this screen turned the whole admin light, and it
+   * STAYED light after leaving it, because our provider only writes that
+   * attribute when the theme actually changes and nothing had changed.
+   *
+   * Rather than edit their file, the seam takes the attribute back: an observer
+   * puts our theme straight back on `<html>` whenever they set it, and mirrors
+   * their other four onto the fence, where their own scoped rules read them.
+   * Their settings panel therefore still works inside here, on everything
+   * except the theme, which our toggle owns because our toggle is the one that
+   * moves the rest of the product with it.
    */
   useEffect(() => {
     const el = fence.current;
-    if (el) el.setAttribute('data-theme', resolved);
+    if (!el) return;
+
+    const html = document.documentElement;
+    const theirs = ['data-accent', 'data-density', 'data-radius', 'data-motion'];
+
+    const reclaim = () => {
+      if (html.getAttribute('data-theme') !== resolved) {
+        // Writing this fires the observer again; the guard above stops there.
+        html.setAttribute('data-theme', resolved);
+      }
+      el.setAttribute('data-theme', resolved);
+      for (const name of theirs) {
+        const value = html.getAttribute(name);
+        if (value === null) el.removeAttribute(name);
+        else el.setAttribute(name, value);
+      }
+    };
+
+    reclaim();
+    const observer = new MutationObserver(reclaim);
+    observer.observe(html, {
+      attributes: true,
+      attributeFilter: ['data-theme', ...theirs],
+    });
+
+    return () => {
+      observer.disconnect();
+      // Leave the document as we found it: our theme, and none of their four.
+      html.setAttribute('data-theme', resolved);
+      for (const name of theirs) html.removeAttribute(name);
+    };
   }, [resolved]);
 
   return (

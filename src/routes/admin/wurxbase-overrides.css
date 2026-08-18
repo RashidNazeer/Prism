@@ -85,3 +85,154 @@
   color: var(--wx-text);
   font-family: var(--wx-font-sans);
 }
+
+/* ------------------------------------------------------- the three states -- */
+/*
+ * WHAT WAS WRONG. The sweep mapped every status FOREGROUND onto a text token:
+ * `--pc-warn-fg: var(--wx-text-muted)`, `--pc-success-fg: var(--wx-text)`. A
+ * colour cannot say what it is for, so "the writing inside a status pill" read
+ * as "writing" and got the writing colour. The result is a pill whose fill
+ * carries the meaning and whose label carries none, and in dark mode
+ * muted-grey on a 14% amber wash is the unreadable "Payment Pending" tag
+ * Rashid photographed.
+ *
+ * WHY THE STAGE RAMP AND NOT success/warning/accent. WurxBase has exactly
+ * three states and so do we, and ours were built for precisely this: indigo
+ * moving, amber owed, green paid, contrast-checked on both papers. The obvious
+ * mapping (accent for in-progress, warning for pending) is the one tokens.css
+ * warns about in writing, because in light mode the brand gold #8a5f1f and the
+ * warning amber #8a6410 are within a hair of each other and two of the three
+ * states would have looked like one.
+ *
+ * Videos in Progress -> live   Payment Pending -> due   Payment Sent -> paid
+ */
+.wurxbase-root.wurxbase-root {
+  --pc-info-bg: var(--wx-stage-live-soft);
+  --pc-info-fg: var(--wx-stage-live);
+  --pc-warn-bg: var(--wx-stage-due-soft);
+  --pc-warn-fg: var(--wx-stage-due);
+  --pc-success-bg: var(--wx-stage-paid-soft);
+  --pc-success-fg: var(--wx-stage-paid);
+  --pc-error-bg: var(--wx-danger-soft);
+  --pc-error-fg: var(--wx-danger);
+
+  /* Their whole palette was flattened onto one surface, so a card never lifted
+     off the page behind it. Ours are layered, and the shadows they shipped
+     (black at 4%) are invisible on near-black. */
+  --pc-bg: var(--wx-bg);
+  --pc-card: var(--wx-surface-1);
+  --pc-card-2: var(--wx-surface-2);
+  --pc-shadow: var(--wx-shadow-sm);
+  --pc-shadow-lg: var(--wx-shadow-md);
+}
+
+/*
+ * On paper the three at full strength are 4.3-4.5:1 inside their own wash,
+ * which is a hair under AA for 12px bold. Mixing a fifth of the ink in takes
+ * them to 5.5-6:1 and keeps the hue, which is the whole point of colouring a
+ * status. Dark mode is already 6.8:1 and up, so it is left alone.
+ */
+.wurxbase-root.wurxbase-root[data-theme='light'] {
+  --pc-info-fg: color-mix(in srgb, var(--wx-stage-live) 84%, var(--wx-text));
+  --pc-warn-fg: color-mix(in srgb, var(--wx-stage-due) 84%, var(--wx-text));
+  --pc-success-fg: color-mix(in srgb, var(--wx-stage-paid) 84%, var(--wx-text));
+}
+
+/* ------------------------------------------------------- group dividers -- */
+/*
+ * The rules that separate the groups in the creators table were tinted by hand
+ * from the old palette and kept two colours the sweep could not correct: the
+ * PENDING label was painted `--wx-on-accent`, which is near-black in dark mode
+ * and therefore invisible on its own amber wash, and its count chip was painted
+ * `--wx-danger`, which says "error" about a perfectly normal state.
+ *
+ * `.wurxbase-root.wurxbase-root` is deliberate. Their stylesheet arrives in a
+ * lazily loaded chunk, so it can be injected AFTER this file; doubling the
+ * class wins on specificity instead of on order, which is the only thing here
+ * that cannot change underneath us.
+ */
+.wurxbase-root.wurxbase-root .pc-ct-divider-progress {
+  --pc-div: var(--wx-stage-live);
+  --pc-div-fg: var(--pc-info-fg);
+}
+.wurxbase-root.wurxbase-root .pc-ct-divider-pending {
+  --pc-div: var(--wx-stage-due);
+  --pc-div-fg: var(--pc-warn-fg);
+}
+.wurxbase-root.wurxbase-root .pc-ct-divider-sent {
+  --pc-div: var(--wx-stage-paid);
+  --pc-div-fg: var(--pc-success-fg);
+}
+
+.wurxbase-root.wurxbase-root .pc-ct-divider-progress .pc-ct-divider-line,
+.wurxbase-root.wurxbase-root .pc-ct-divider-pending .pc-ct-divider-line,
+.wurxbase-root.wurxbase-root .pc-ct-divider-sent .pc-ct-divider-line {
+  height: 1.5px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in srgb, var(--pc-div) 40%, transparent) 12%,
+    color-mix(in srgb, var(--pc-div) 40%, transparent) 88%,
+    transparent
+  );
+}
+
+.wurxbase-root.wurxbase-root .pc-ct-divider-progress .pc-ct-divider-label,
+.wurxbase-root.wurxbase-root .pc-ct-divider-pending .pc-ct-divider-label,
+.wurxbase-root.wurxbase-root .pc-ct-divider-sent .pc-ct-divider-label {
+  background: color-mix(in srgb, var(--pc-div) 12%, transparent);
+  border-color: color-mix(in srgb, var(--pc-div) 42%, transparent);
+  color: var(--pc-div-fg);
+}
+
+.wurxbase-root.wurxbase-root .pc-ct-divider-progress .pc-ct-divider-count,
+.wurxbase-root.wurxbase-root .pc-ct-divider-pending .pc-ct-divider-count,
+.wurxbase-root.wurxbase-root .pc-ct-divider-sent .pc-ct-divider-count {
+  background: color-mix(in srgb, var(--pc-div) 22%, transparent);
+  color: var(--pc-div-fg);
+}
+
+/* ---------------------------------------------------------- colour-scheme -- */
+/*
+ * Their sheet pins `color-scheme: light` on the app root, with a comment saying
+ * dark is not supported. It is now, and that one line is what makes the native
+ * month picker and the spinners inside it render as white chrome in the middle
+ * of a near-black page.
+ */
+.wurxbase-root[data-theme='dark'] .pc-app {
+  color-scheme: dark;
+}
+
+/* ------------------------------------------------------ the invisible dot -- */
+/*
+ * Their KPI row colours its five dots by hand, and the fifth is `#0A0A0A`,
+ * which was a near-black dot on a white card and is now a near-black dot on a
+ * near-black one. The other four are legible in both themes and keep their
+ * meaning, including the one that turns red when a budget goes negative, so
+ * only the broken one is touched.
+ *
+ * Matched on the colour rather than on its position because the same row is
+ * rendered in the drilldowns too, and a dot too dark to see is the bug wherever
+ * it appears. `rgb(10, 10, 10)` is how the browser serialises `#0A0A0A` into
+ * the style attribute, which is defined behaviour, not a guess.
+ */
+.wurxbase-root[data-theme='dark'] .pc-kpi-dot[style*='rgb(10, 10, 10)'] {
+  background: var(--wx-text-muted) !important;
+}
+
+/* --------------------------------------------------------- the greeting -- */
+/*
+ * Their daily hello is `position: fixed; top: 72px`, which in their own app put
+ * it just under the window's top edge. In here the fence is a containing block
+ * (it carries a transform), so `fixed` resolves against the fence instead of
+ * the viewport and 72px lands square on top of their header, or on the tab row
+ * on a phone.
+ *
+ * Moving it to the foot of the fence fixes it at every width at once and is
+ * where a transient hello belongs anyway: it now covers nothing, and it still
+ * fades itself out after five seconds exactly as they wrote it.
+ */
+.wurxbase-root.wurxbase-root .greet-banner {
+  top: auto;
+  bottom: 28px;
+}

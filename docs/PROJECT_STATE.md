@@ -2,26 +2,72 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-18 by /precompact.**
+**Recorded 2026-08-19.**
 
-Nothing was queued. Rashid gave no next instruction with this compaction, so
-**ask what he wants to work on**, and answer from `docs/PARKED.md` if he asks
-what is pending.
+Rashid is **testing the Paid Collabs header and dark mode**, just rebuilt and
+deployed. Nothing else is queued: ask what he wants next and answer from
+`docs/PARKED.md` if he asks what is pending.
 
-He was last **testing Paid Collabs** (the vendored WurxBase) after a run of
-failed deployments that hid three commits from him. Those are fixed and live.
-The obvious things to offer, all from PARKED:
-
-- the **`Checking` state** for a video added last night, which currently reads
-  "No ads" and is a lie on its first day. Marked *before any real creator
-  uploads*, because their first act will be to add a video and look at it;
-- **their second login** inside Paid Collabs, which he may now be tired of;
-- **prod has none of the TikTok setup**, deliberately, until he says make it live.
+If he comes back to Paid Collabs, the two known defects there are both in
+PARKED and both **theirs, not ours**: the brand and creator tables collapse into
+cards at 768px and below that show only two or three of their fields, and their
+app's writes to its own `app_settings` are refused by its RLS and log a 401 and
+a 42501 on every load.
 
 **Do not re-explore the codebase to get oriented.** This file, then PARKED,
 then only the files the chosen job names.
 
 ---
+
+## The Paid Collabs header, and the theme it was stealing (2026-08-19)
+
+Rashid: *"fix the header it's boring make it beautiful and also make sure dark
+mode should work fine it seems it will break at some places such as payment
+pending tag is not clear"*.
+
+**The header is now ours.** It was the last region of the screen still wearing
+WurxBase coffee-brown, because the reskin codemod rewrote their STYLESHEETS and
+that bar is drawn from `style={{}}` objects in the JSX, which no sweep can
+reach. It is now our card under a gold rim light, with the real Wurx mark (their
+markup asks for `/wurx-logo.png`, which did not exist here until now, so what
+had been rendering was their fallback tile with a W in it), the section name
+against a gold rule, the app's own name demoted to a tracked-out eyebrow between
+two gold hairlines, and one gold thing in the bar: the profile chip.
+`src/routes/admin/wurxbase-chrome.css`, our file. Theirs is still untouched.
+
+**The real find was underneath it.** Their `applyPrefsToDOM` writes five
+attributes straight onto `<html>`, and one of them is `data-theme`, which is
+the exact attribute `src/styles/tokens.css` switches our whole palette on.
+Theirs defaults to `light`. So opening Paid Collabs turned the entire admin
+light, and it STAYED light after leaving the screen, because our provider only
+writes that attribute when the theme actually changes and nothing had changed.
+`PaidCollabs.tsx` now takes the attribute back with a MutationObserver and
+mirrors their other four onto the fence, where their own scoped rules read them,
+so their appearance settings still work in here on everything except the theme.
+
+**The "Payment Pending" tag** was one of three: the sweep had mapped every
+status FOREGROUND onto a text token, so the fill carried the meaning and the
+label carried none. They are on our three-state stage ramp now (live, due,
+paid), darkened a fifth in light mode where they were 4.3:1 inside their own
+wash. Same fix reached the group divider chips, one of which was painted
+`--wx-on-accent` and was therefore invisible in the dark.
+
+**Two more dark-mode holes closed**: their fifth KPI dot is hardcoded `#0A0A0A`
+and was a black dot on a black card; and their daily greeting is `position:
+fixed; top:72px`, which lands on their own header in here because our fence
+carries a transform and is therefore the containing block. It sits at the foot
+of the fence now.
+
+**Also:** their shell was capped at 1740px and centred, against Rashid's
+standing rule, and its `min-height:100vh` guaranteed a scrollbar under our top
+bar. Both gone. On phones their header no longer repeats the Wurx mark our own
+top bar is already showing.
+
+**Verified by rendering it**, not by reading it: `node scripts/shots-collabs.mjs`
+shoots both themes at 1440/1024/768/390, seeds their session as a **viewer** so
+a run cannot write to their database, and measures page overflow. Zero
+horizontal scroll at all eight combinations.
+
 
 ## Paid Collabs: WurxBase runs inside our admin (2026-08-18, later)
 

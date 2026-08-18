@@ -888,3 +888,27 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   failure mode is money quietly missing rather than an error. The sync now
   compares `page_info.total_number` against the rows it received and fails the
   day if they disagree, so it is retried rather than looking finished forever.
+- 2026-08-19: **Our theme toggle owns the theme inside Paid Collabs; theirs does
+  not.** WurxBase has its own appearance settings and writes `data-theme` onto
+  `<html>`, which is the attribute our whole palette switches on, so opening the
+  screen turned the entire admin light and left it that way. The alternatives
+  were to edit their file (forbidden), rename our attribute (an app-wide change
+  to satisfy a guest), or take the attribute back at the seam. We take it back,
+  and mirror their other four preference attributes onto the fence so their
+  density, radius, accent and motion settings still work in here. If Rashid ever
+  wants their theme picker to drive this screen, it is one line in the seam, but
+  two theme controls that disagree is worse than one that wins.
+- 2026-08-19: **WurxBase's three statuses use our stage ramp, not
+  success/warning/accent.** In progress is live-indigo, payment pending is
+  due-amber, payment sent is paid-green. The obvious mapping is the one
+  `tokens.css` warns about in writing: in light mode the brand gold `#8a5f1f`
+  and the warning amber `#8a6410` are within a hair of each other, so two of the
+  three states would have read as one. In light mode the three are mixed a fifth
+  toward the ink, because at full strength they are 4.3-4.5:1 inside their own
+  wash, a hair under AA for a 12px pill.
+- 2026-08-19: **Our overrides on vendored CSS win by specificity, never by
+  order.** Their stylesheet is inside the lazily loaded vendor chunk, so it is
+  injected after anything the route imports. A correction written
+  `.wurxbase-root .x` silently loses. Everything of ours is written
+  `.wurxbase-root.wurxbase-root .x`, which cannot be undone by a bundler
+  decision.

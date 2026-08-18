@@ -154,6 +154,13 @@ pnpm shots [url] [path]     # retina screenshots of a PUBLIC page
 pnpm shots:creator [url]    # the creator home WITH a full pipeline in it, both
                             # themes, four widths. Builds a throwaway creator
                             # and removes it again. Needs SUPABASE_SERVICE_KEY
+node scripts/shots-collabs.mjs [url] [path]
+                            # Paid Collabs (vendored WurxBase) in both themes at
+                            # 1440/1024/768/390, plus the header on its own and
+                            # the creators tab. Seeds THEIR session as a viewer,
+                            # so a run cannot write to their database. Also
+                            # reports page overflow and console errors.
+                            # Needs ADMIN_EMAIL and ADMIN_PASSWORD
 node scripts/check-admin.mjs <url> <email> <password> [role] [path]
 node scripts/create-admin.mjs <email> <password> [role]
 node scripts/seed-applications.mjs [--clean]   # demo queue data, DEV ONLY

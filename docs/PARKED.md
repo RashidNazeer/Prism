@@ -315,7 +315,29 @@ instruction. **Raise when Rashid tires of the second login.**
 **c. The avatar circles keep their teal, orange, blue and purple.** Those
 gradients live in their JavaScript, not their CSS, so the reskin could not reach
 them without editing code. They read as per-brand identity rather than chrome,
-which is arguably correct. **Raise if he wants them in the Wurx palette.**
+which is arguably correct. The presence cluster in the header is the exception
+and was neutralised on 2026-08-19, because a neon pink circle six pixels from
+the brand mark is chrome whatever the code calls it. **Raise if he wants the
+rest in the Wurx palette.**
+
+**e. Their tables lose most of their fields at 768px and below.** Every wide
+table in WurxBase collapses into stacked cards on a narrow screen, and the card
+shows two or three of the eight or nine values it holds; the rest are in the DOM
+and not laid out. This is their own responsive CSS and it was measured on
+2026-08-19 to be **unaffected by anything we changed**: the card's height is
+identical with our shell rules and with theirs put back. Rewriting a
+table-to-card transformation across six tabs is a real piece of work, not a
+correction, so it was not folded into a styling pass. **Raise when Rashid opens
+Paid Collabs on a phone or a tablet, or before anyone is asked to work in it
+away from a desk.**
+
+**f. Their app cannot write its own settings, and says so on every load.** Each
+page load logs a 401, a 406 and `42501 new row violates row-level security
+policy for table "app_settings"` from `scheduleSettingsSave`. That is their
+table in their project, refusing their own client, which means it fails on their
+live site too. Nothing of ours reads it and nothing visible breaks; it is noise
+in the console that will confuse the next person who looks. **Raise with
+whoever owns WurxBase, or when console noise starts hiding our own errors.**
 
 **d. Nothing re-runs the vendoring pipeline.** If WurxBase changes upstream,
 somebody must copy the CSS fresh, rebuild their prefixed Tailwind, scope, and

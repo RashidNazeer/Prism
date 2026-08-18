@@ -1,0 +1,359 @@
+/*
+ * The WurxBase header, in Wurx.
+ *
+ * OUR FILE, NOT THEIRS. `src/vendor/wurxbase/` stays a verbatim copy.
+ *
+ * WHY IT IS SEPARATE FROM wurxbase-overrides.css. That file is corrections: a
+ * handful of colours the sweep read the wrong role for. This is a redesign, and
+ * it exists because the sweep could not reach this bar at all. It retokenised
+ * 4,673 colours in their STYLESHEETS; their header is drawn from `style={{}}`
+ * objects in the JSX, roughly forty hardcoded values, so it came through
+ * untouched and stayed the only region of the screen still wearing WurxBase
+ * coffee-brown while everything around it had become near-black and gold.
+ *
+ * It is also where dark mode broke worst. The centred title is painted
+ * `--wx-on-accent`, which is white on paper and near-black in the dark, so on
+ * the brown bar it read fine in light mode and disappeared completely in dark.
+ * Rashid saw the light one; the dark one was a blank space where the app's name
+ * should be.
+ *
+ * TWO THINGS ABOUT THE SELECTORS, both deliberate:
+ *
+ *   `.wurxbase-root.wurxbase-root` — their stylesheet arrives in a lazily
+ *   loaded chunk and can therefore be injected AFTER this file. Doubling the
+ *   class wins on specificity instead of on load order, which is the only thing
+ *   here that cannot change underneath us.
+ *
+ *   `!important` — an inline style beats any stylesheet, so every value that
+ *   overrides one of their `style={{}}` objects has to force it. Values that
+ *   only override a rule in their sheet do not, and do not have it. Their hover
+ *   handlers write inline backgrounds too, which is why hover is restated here
+ *   rather than left to the JavaScript.
+ *
+ * SIZES ARE IN px, ON PURPOSE. The rest of the product is rem so the text-size
+ * control scales it. Inside this fence sit eighteen thousand lines of somebody
+ * else's px, and a bar whose logo scaled while the tab row beneath it did not
+ * would look broken at any setting but the default. The fence opts out as a
+ * unit, and this matches it.
+ */
+
+/* ---------------------------------------------------------------- the bar -- */
+.wurxbase-root.wurxbase-root .pc-header-dark {
+  /* Gold light falling from the top left, over the approved glass wash, over
+     our card. Three layers rather than a flat fill, which is what stopped it
+     looking like a grey strip with things on it. */
+  background:
+    radial-gradient(
+      140% 260% at 1% 0%,
+      color-mix(in srgb, var(--wx-accent) 16%, transparent) 0%,
+      transparent 58%
+    ),
+    var(--wx-glass-fill), var(--wx-surface-1) !important;
+  border: 1px solid var(--wx-border) !important;
+  /* A warm rim along the top edge reads as a light source above the bar. */
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in srgb, var(--wx-accent) 26%, transparent),
+    var(--wx-shadow-md) !important;
+  border-radius: 999px;
+  padding: 7px 14px 7px 14px !important;
+  margin-bottom: 14px !important;
+  gap: 10px;
+}
+
+/* ------------------------------------------------------------------ mark -- */
+/*
+ * Their slot is a 60px square with `objectFit: contain`, which is drawn for a
+ * square mark. Ours is 228x64, so it landed 60x17 inside that square: a smear
+ * three pixels tall. It also asked for `/wurx-logo.png`, which did not exist in
+ * this app until now, so what actually rendered was their fallback tile, a
+ * cream square with a W in it. The file is published now and the slot is let
+ * out to the artwork's own shape.
+ */
+.wurxbase-root.wurxbase-root .pc-header-dark .pc-brand-logo {
+  width: auto !important;
+  height: auto !important;
+  flex: 0 0 auto !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  padding: 0 2px 0 6px !important;
+}
+
+.wurxbase-root.wurxbase-root .pc-header-dark .pc-brand-logo img {
+  width: auto !important;
+  height: 30px !important;
+  object-fit: contain !important;
+  /* Cream artwork, drawn for a dark background; light mode darkens it the same
+     way <WurxMark> does rather than leaving it to vanish into the paper. */
+  filter: var(--wx-mark-filter);
+}
+
+/* The section name. It has no class of its own, and it is the only child of the
+   brand group that is not the mark. */
+.wurxbase-root.wurxbase-root .pc-header-dark .pc-brand > span:not(.pc-brand-logo) {
+  color: var(--wx-text) !important;
+  border-left: 1px solid color-mix(in srgb, var(--wx-accent) 34%, transparent) !important;
+  padding-left: 13px !important;
+  font-size: 15px !important;
+  letter-spacing: -0.1px !important;
+}
+
+/* ----------------------------------------------------------- app name -- */
+/*
+ * Demoted from a second 15.5px bold title competing with the section name into
+ * a tracked-out eyebrow between two gold rules. Same words, and now there is a
+ * hierarchy: what you are looking at on the left, where you are on the right,
+ * and the product's own name held quietly in the middle.
+ */
+.wurxbase-root.wurxbase-root .pc-head-title {
+  gap: 13px;
+}
+
+.wurxbase-root.wurxbase-root .pc-head-title-text {
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--wx-text);
+  text-shadow: none;
+}
+
+.wurxbase-root.wurxbase-root .pc-head-title-line {
+  width: 32px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--wx-accent) 60%, transparent)
+  );
+}
+
+.wurxbase-root.wurxbase-root .pc-head-title-line.flip {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--wx-accent) 60%, transparent),
+    transparent
+  );
+}
+
+/* ----------------------------------------------------------- the actions -- */
+/* Every round button in the bar. Cream-at-10% was invisible on paper and flat
+   in the dark; a real surface with a hairline gives them an edge, and the gold
+   arrives on hover, where it means something. */
+.wurxbase-root.wurxbase-root .pc-header-dark button[title] {
+  background: var(--wx-surface-2) !important;
+  color: var(--wx-text-muted) !important;
+  border: 1px solid var(--wx-border) !important;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.wurxbase-root.wurxbase-root .pc-header-dark button[title]:hover {
+  background: var(--wx-accent-soft) !important;
+  color: var(--wx-accent) !important;
+  border-color: color-mix(in srgb, var(--wx-accent) 45%, transparent) !important;
+}
+
+/* The vertical rule between the actions and the profile. Matched on "an empty
+   div with inline styles", excluding the flexible spacer, which is the only
+   other one in the bar and would otherwise become a full-width block of
+   colour. */
+.wurxbase-root.wurxbase-root .pc-header-dark div[style]:empty:not([style*='flex']) {
+  background: var(--wx-border-strong) !important;
+}
+
+/* Pending approvals: amber, because it is money owed attention, and it keeps
+   its colour on hover instead of turning gold like its neighbours. */
+.wurxbase-root.wurxbase-root .pc-header-dark button[title$='pending'],
+.wurxbase-root.wurxbase-root .pc-header-dark button[title$='pending']:hover {
+  color: var(--wx-stage-due) !important;
+  border-color: color-mix(in srgb, var(--wx-stage-due) 40%, transparent) !important;
+}
+
+.wurxbase-root.wurxbase-root .pc-header-dark button[title$='pending'] > span {
+  background: var(--wx-stage-due) !important;
+  color: var(--wx-text-inverse) !important;
+}
+
+/* The unread pip, and the ring that cuts it out of the bar behind it. */
+.wurxbase-root.wurxbase-root .pc-header-dark button[title='Notifications'] > span {
+  background: var(--wx-danger) !important;
+  box-shadow: 0 0 0 2px var(--wx-surface-1) !important;
+}
+
+/* Sign out is the one destructive control up here and stays red, in our red. */
+.wurxbase-root.wurxbase-root .pc-header-dark button[title='Sign out'] {
+  background: var(--wx-danger-soft) !important;
+  color: var(--wx-danger) !important;
+  border-color: color-mix(in srgb, var(--wx-danger) 30%, transparent) !important;
+}
+
+.wurxbase-root.wurxbase-root .pc-header-dark button[title='Sign out']:hover {
+  background: color-mix(in srgb, var(--wx-danger) 20%, transparent) !important;
+  color: var(--wx-danger) !important;
+  border-color: color-mix(in srgb, var(--wx-danger) 50%, transparent) !important;
+}
+
+/* ------------------------------------------------------------- who is on -- */
+/*
+ * Two things were wrong with the presence cluster. Its rings were punched out
+ * in the old bar's brown, so on the new one every avatar wore a brown halo. And
+ * its fills come from a hash of the person's name, which on this bar produced a
+ * neon pink circle sitting six pixels from the brand mark.
+ *
+ * The fills go neutral. It costs a little: everyone here is drawn with the same
+ * anonymous person glyph already, so the colour was the only thing separating
+ * one viewer from the next, and now the tooltip is. That is the right trade in
+ * a strip whose job is to say "two other people are looking at this", and the
+ * one dot that still has to carry meaning, the green one saying they are live,
+ * keeps its colour and is now the only saturated thing in the group.
+ */
+.wurxbase-root.wurxbase-root .pc-header-dark div[title$='viewing now'] > span {
+  background: var(--wx-surface-3) !important;
+  color: var(--wx-text-muted) !important;
+  border-color: var(--wx-surface-1) !important;
+}
+
+.wurxbase-root.wurxbase-root .pc-header-dark div[title$='viewing now'] > span > span {
+  background: var(--wx-stage-paid) !important;
+  border-color: var(--wx-surface-1) !important;
+}
+
+/* --------------------------------------------------------------- profile -- */
+.wurxbase-root.wurxbase-root .pc-header-dark [title^='Profile'],
+.wurxbase-root.wurxbase-root .pc-header-dark [title^='Signed in as'] {
+  background: var(--wx-surface-2) !important;
+  border: 1px solid var(--wx-border) !important;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.wurxbase-root.wurxbase-root .pc-header-dark [title^='Profile']:hover {
+  background: var(--wx-accent-soft) !important;
+  border-color: color-mix(in srgb, var(--wx-accent) 45%, transparent) !important;
+}
+
+/* The one place in the bar that carries the brand gradient. One gold thing in a
+   header is a focal point; five would be a fairground. */
+.wurxbase-root.wurxbase-root .pc-header-dark [title^='Profile'] > span:first-child,
+.wurxbase-root.wurxbase-root .pc-header-dark [title^='Signed in as'] > span:first-child {
+  background: var(--wx-accent-gradient) !important;
+  color: var(--wx-on-accent) !important;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--wx-accent) 40%, transparent) !important;
+}
+
+.wurxbase-root.wurxbase-root
+  .pc-header-dark
+  [title^='Profile']
+  > span:last-child
+  > span:first-child,
+.wurxbase-root.wurxbase-root
+  .pc-header-dark
+  [title^='Signed in as']
+  > span:last-child
+  > span:first-child {
+  color: var(--wx-text) !important;
+}
+
+.wurxbase-root.wurxbase-root
+  .pc-header-dark
+  [title^='Profile']
+  > span:last-child
+  > span:last-child,
+.wurxbase-root.wurxbase-root
+  .pc-header-dark
+  [title^='Signed in as']
+  > span:last-child
+  > span:last-child {
+  color: var(--wx-text-muted) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-size: 10px !important;
+}
+
+/* ------------------------------------------------------------------ narrow -- */
+/*
+ * Their sheet compacts this bar at 640px with `!important`, and the rules above
+ * are more specific, so the phone sizes have to be restated here or they would
+ * silently stop applying. The section name goes first: on a phone the mark says
+ * whose product this is and the top bar above already says which screen.
+ */
+@media (max-width: 640px) {
+  .wurxbase-root.wurxbase-root .pc-header-dark {
+    padding: 8px 10px !important;
+    gap: 8px;
+  }
+
+  .wurxbase-root.wurxbase-root .pc-header-dark .pc-brand > span:not(.pc-brand-logo) {
+    display: none !important;
+  }
+
+  .wurxbase-root.wurxbase-root .pc-header-dark .pc-brand-logo {
+    padding: 0 !important;
+  }
+
+  .wurxbase-root.wurxbase-root .pc-header-dark .pc-brand-logo img {
+    height: 26px !important;
+  }
+
+  .wurxbase-root.wurxbase-root .pc-header-dark button[title] {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .wurxbase-root.wurxbase-root .pc-header-dark [title^='Profile'],
+  .wurxbase-root.wurxbase-root .pc-header-dark [title^='Signed in as'] {
+    height: 38px !important;
+    padding: 0 10px 0 4px !important;
+  }
+
+  /* With the brand group gone, the flexible spacer that used to hold the
+     actions apart from it has nothing left to push against, and all it does is
+     leave a third of the bar empty on the wrong side. Dropped, so the actions
+     start at the left edge and line up with the tabs underneath. */
+  .wurxbase-root.wurxbase-root .pc-header-dark div[style*='flex']:empty {
+    display: none !important;
+  }
+}
+
+/* --------------------------------------------------------------- the page -- */
+/*
+ * Two things below the bar that belong to the same fix.
+ *
+ * `max-width` is Rashid's standing rule for every admin screen: the work fills
+ * the width and hugs the sidebar, because a capped centre leaves a gap when you
+ * zoom out and the page reads as broken. Theirs was capped at 1740px.
+ *
+ * `min-height:100vh` was written for a page that owned the whole window. In
+ * here it owns the area under our top bar, so a full viewport of it guaranteed
+ * a scrollbar on every screen no matter how little was on it.
+ */
+.wurxbase-root.wurxbase-root .pc-shell {
+  max-width: none;
+  margin: 0;
+  padding: 18px 24px 90px;
+}
+
+@media (max-width: 640px) {
+  .wurxbase-root.wurxbase-root .pc-shell {
+    padding: 12px 12px 80px;
+  }
+}
+
+.wurxbase-root.wurxbase-root .pc-app {
+  min-height: 0;
+}
+
+/*
+ * One more thing that only goes wrong on a phone: our own top bar shows the
+ * Wurx mark, and their header repeats it forty pixels underneath. One of them
+ * has to go, and it is theirs, because ours is the one that is on every screen.
+ * The row is then purely the actions, which is what a phone has room for.
+ */
+@media (max-width: 640px) {
+  .wurxbase-root.wurxbase-root .pc-header-dark .pc-brand {
+    display: none !important;
+  }
+}
