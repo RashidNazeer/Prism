@@ -240,6 +240,36 @@ const ProgressReview = z.object({
 });
 
 /**
+ * ONE CONTEST VIDEO, WATCHED AND DECIDED, added 2026-08-20.
+ *
+ * `review_contest_content` has existed, finished and audited, since
+ * 2026-08-13 and had NO CALLER: no action here, no hook, no screen. So
+ * `contest_submissions.status` could never leave its default and every contest
+ * video in the product read "With the team" for ever, while the creator's own
+ * list carried "Counted" and "Sent back" states nothing could produce.
+ *
+ * The comment on `progress.review` used to say contest videos are reviewed
+ * through `manage-content`. They are not and never were: that function only
+ * knows `content_submissions`, which is the OFFER table. This is the door.
+ *
+ * SINCE 2026-08-20 IT ALSO MOVES MONEY, which is why it lives beside the other
+ * money actions rather than in `manage-content`. Rashid: "money is only owed
+ * when all videos are up ... admin see one by one and all are approved only
+ * then money is owed." The last approval that reaches a video target owes the
+ * reward; taking an approval back withdraws it again unless it is already paid.
+ */
+const ContentReview = z.object({
+  action: z.literal('content.review'),
+  contentId: z.uuid(),
+  // 'submitted' is not a decision, and the database refuses it too.
+  status: z.enum(['approved', 'needs_another_take'], {
+    error: 'A decision is approve or send back',
+  }),
+  // 500, the length `contest_submissions.decision_note` allows.
+  note: z.string().trim().max(500, 'Keep that under 500 characters').nullish(),
+});
+
+/**
  * Retire, never delete. Once anybody holds frozen terms against a row, the row
  * is part of a promise and deleting it would leave the promise pointing at
  * nothing. There is no delete function for a deliverable at all.
@@ -357,6 +387,7 @@ const Body = z.discriminatedUnion('action', [
   DeliverableRetire,
   EntryReview,
   ProgressReview,
+  ContentReview,
   ProductsSet,
   ExclusionSave,
   ExclusionRemove,
@@ -637,6 +668,19 @@ Deno.serve(async (req) => {
       p_update_id: input.updateId,
       p_status: input.status,
       p_message: input.message ?? null,
+    });
+  } else if (input.action === 'content.review') {
+    /*
+     * One video, watched and decided. Since 2026-08-20 this is also where video
+     * reward money is decided, in the same transaction as the decision, so a
+     * creator can never be owed for work nobody approved and can never keep an
+     * unpaid reward for work that was sent back.
+     */
+    rpc = await admin.rpc('review_contest_content', {
+      p_actor_id: actor.id,
+      p_content_id: input.contentId,
+      p_status: input.status,
+      p_note: input.note ?? null,
     });
   } else if (input.action === 'products.set') {
     rpc = await admin.rpc('set_contest_products', {

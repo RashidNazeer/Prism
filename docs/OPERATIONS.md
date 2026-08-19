@@ -204,6 +204,12 @@ node scripts/check-brand-binding.mjs [brand]
                             # store and ad figures, and that nothing leaks to
                             # another brand. Run it whenever a second brand
                             # gets a store mapped.
+node scripts/seed-penetrex-contest.mjs [--clean]
+                            # DEV ONLY. One Penetrex contest with five entrants
+                            # in five deliberate states, so the contest video
+                            # queue has something in it. Walks the real
+                            # functions, never writes a contest table directly.
+
 node scripts/tidy-dev.mjs [--yes] [--skip-money] [--brands "A,B"]
                             # DEV ONLY. Removes what is on dev but is not the
                             # product: test accounts (@wurxmediahub.test), test

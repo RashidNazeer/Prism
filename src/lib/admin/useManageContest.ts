@@ -150,6 +150,35 @@ export type ProgressReviewPayload = {
 };
 
 /**
+ * ONE CONTEST VIDEO, WATCHED AND DECIDED.
+ *
+ * The twin of `content.review` on the offer side, and it did not exist until
+ * 2026-08-20. `review_contest_content` had been finished in the database since
+ * 2026-08-13 with no caller at all, so no contest video could ever leave
+ * 'submitted' and both screens drew states nothing could produce.
+ *
+ * IT MOVES MONEY. Rashid's rule, decided the same day: a video reward is owed
+ * when the last video is approved, not when a creator claims a number and not
+ * when staff confirm one. So approving the tenth video of ten writes the bill,
+ * and sending one back withdraws it again unless it has already been paid. The
+ * result carries both figures so the screen can say which happened.
+ */
+export type ContestContentReviewPayload = {
+  action: 'content.review';
+  contentId: string;
+  status: 'approved' | 'needs_another_take';
+  /** The creator reads this. Optional, exactly as on the offer side. */
+  note: string | null;
+};
+
+/** What review_contest_content hands back, so a screen can report the money. */
+export type ContestContentReviewResult = {
+  approved_videos: number;
+  rewards: { awards: number; amount: number; currency?: string };
+  withdrawn: { withdrawn: number; amount: number; already_paid: number; currency?: string };
+};
+
+/**
  * LETTING SOMEBODY INTO A CONTEST, OR TURNING THEM AWAY.
  *
  * This did not exist until 2026-08-15 and its absence was the whole of a bug
@@ -247,6 +276,7 @@ export type ManageContestPayload =
   | DeliverableRetirePayload
   | EntryReviewPayload
   | ProgressReviewPayload
+  | ContestContentReviewPayload
   | ProductsSetPayload
   | ExclusionSavePayload
   | ExclusionRemovePayload
@@ -289,6 +319,12 @@ export function useManageContest() {
       // The entries queue. Deciding one has to take it off the screen without a
       // reload, the same as every other queue in the admin panel.
       void queryClient.invalidateQueries({ queryKey: ['admin', 'contest-entries'] });
+      /*
+       * The contest video queue. Deciding a video has to take it off the screen
+       * the same way, and since 2026-08-20 that decision can also owe or
+       * withdraw money, so the rewards queue above matters here too.
+       */
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'contest-content'] });
       // The creator side reads the same contests through different queries, so
       // an admin who is also looking at a hub sees their own edit there too.
       void queryClient.invalidateQueries({ queryKey: ['creator'] });

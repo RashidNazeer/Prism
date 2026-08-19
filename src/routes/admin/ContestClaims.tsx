@@ -1,6 +1,7 @@
 import { ContestsHeader } from '@/components/admin/ContestsHeader';
 import { ContestEntryQueue } from '@/components/admin/ContestEntryQueue';
 import { ContestProgressQueue } from '@/components/admin/ContestProgressQueue';
+import { ContestVideoQueue } from '@/components/admin/ContestVideoQueue';
 
 /**
  * Every claim waiting on the team, across every contest.
@@ -47,6 +48,15 @@ export function ContestClaims() {
       <div className="mt-3 flex flex-col gap-4">
         <ContestEntryQueue />
         <ContestProgressQueue />
+
+        {/*
+          VIDEOS LAST, because a claim is what blocks a creator and a video is
+          what backs it up. But it is on this screen at all because until
+          2026-08-20 a contest video could not be decided ANYWHERE: the review
+          function had no caller, so every one of them read "With the team"
+          for ever, and deciding a claim hid its videos for good.
+        */}
+        <ContestVideoQueue />
       </div>
     </div>
   );

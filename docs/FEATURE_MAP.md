@@ -1181,6 +1181,79 @@ the screen belongs to whoever has been waiting longest.
 
 ---
 
+## Contest videos, and the money they earn (2026-08-20)
+
+**Files:** `src/components/admin/ContestVideoQueue.tsx`,
+`src/components/admin/ContestVideoDecision.tsx`,
+`src/lib/admin/useContestContent.ts`,
+`src/components/admin/ContestProgressQueue.tsx`,
+`src/routes/admin/ContestClaims.tsx`,
+`supabase/functions/manage-contest/index.ts`,
+`supabase/migrations/20260820090000_contest_money_follows_the_videos.sql`,
+`supabase/migrations/20260820100000_restore_review_contest_progress.sql`,
+`scripts/seed-penetrex-contest.mjs`
+**Tables:** `contest_submissions`, `contest_awards`, `contest_entry_events`
+
+Rashid, walking the flow: *"money is only owed when all videos are up for both
+contest and offer it's like they will submit the video when admin see one by one
+and all are approved only then money is owed."*
+
+**Change rules**
+
+- **Until 2026-08-20 no contest video could be decided at all.**
+  `review_contest_content` had been finished, audited and granted since
+  2026-08-13 and was called by NOTHING: no Edge Function action, no hook, no
+  screen. `contest_submissions.status` could therefore never leave its default,
+  so the admin queue's chip read "With the team" on every contest video in the
+  product and the creator's list carried "Counted" and "Sent back" states that
+  no code path could produce. Both screens drew three states of a column that
+  had one.
+- **A video target is earned by APPROVED videos, never by a typed number.**
+  `private.award_reached_terms` lost its `p_video_count` argument and reads
+  `private.entry_approved_videos` instead. Dropping the parameter rather than
+  ignoring it was deliberate: an argument still accepted and no longer used is a
+  trap for whoever passes it next in good faith.
+- **GMV targets did NOT change**, and the asymmetry is the point. There are no
+  videos to approve behind a GMV figure, so staff confirming it IS the control,
+  and the figure is still passed in off a row the caller has locked. Approving a
+  video passes `p_gmv => null` so it can never buy a GMV reward sideways.
+- **Order stopped mattering.** Whichever happens last, the tenth approval or the
+  confirmation of the claim, writes the bill, because both paths ask the same
+  question of the same rows. There is no sequence of clicks that leaves money
+  owed on work nobody approved.
+- **Taking an approval back withdraws the reward, while it is only owed.**
+  `private.withdraw_unearned_awards` deletes the row and writes the creator a
+  `reward_withdrawn` event. It is a DELETE rather than a reversal row because
+  `contest_awards_money_idx` is unique per (contest, entry, term) and a
+  negative row could not sit beside it without dismantling the double-award
+  guard. **A PAID award is never touched**, and the count of skipped ones comes
+  back so the screen can say so rather than implying money moved.
+- **One decision component, two screens.** `ContestVideoDecision` renders in
+  the progress queue beside the videos that came with a claim, and again in the
+  standalone queue. Drawing the same decision twice is how two screens drift.
+- **The standalone queue exists because a decided claim used to hide its
+  videos.** `ContestProgressQueue` reads pending claims only, and the audit log
+  records a count rather than links, so a video on a settled claim was
+  unreachable from anywhere in the product.
+- **The queue says what the click will cost** before the button, the same way
+  the offer queue says "approving this finishes the job". It reads the smallest
+  video term above what is already approved, which is the one the next approval
+  would cross.
+- `pnpm verify:contests` is 141 checks, twenty of them this feature: confirming
+  owes nothing while videos are unwatched, the first approval owes nothing, the
+  last owes everything, sending one back withdraws it, the creator is told,
+  re-approving owes it again, a PAID award survives all of it, and a creator
+  cannot call the review function.
+- **Two things that suite caught, both worth remembering.** The recreated
+  `review_contest_progress` was RETYPED from its own documentation rather than
+  extracted, and wrote `message` where the column is `staff_message` — every
+  confirmation failed with 42703 — while also silently dropping the rule that a
+  rejection must carry a sentence. And adding a second queue to the claims
+  screen broke a page-wide text assertion that had only ever been a proxy for
+  "the row went away"; it now waits for the row itself to detach.
+- `node scripts/seed-penetrex-contest.mjs` builds one contest on dev in five
+  deliberate states, walking the real functions rather than writing rows.
+
 ## Realtime, and the one rule about it
 
 **Everything that listens to Postgres goes through `joinChannel` in

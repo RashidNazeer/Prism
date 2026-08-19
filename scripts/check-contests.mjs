@@ -547,14 +547,31 @@ try {
   await page
     .locator('li')
     .filter({ hasText: CONTEST_NAME })
+    // And the one with a Confirm button on it. Since 2026-08-20 the contest
+    // video queue on this same screen also renders `li`s carrying this contest's
+    // name, so naming the contest alone no longer names one row.
+    .filter({ has: page.getByRole('button', { name: 'Confirm these figures' }) })
+    .first()
     .getByRole('button', { name: 'Confirm these figures' })
     .click();
-  await page.waitForFunction(
-    (n) => !document.body.innerText.includes(n),
-    CONTEST_NAME,
-    { timeout: 25_000 }
-  );
-  ok('confirming clears it from the queue');
+  /*
+   * WAIT FOR THE ROW ITSELF TO GO, not for text to leave the page.
+   * It used to watch the whole body for the contest name, which worked only
+   * while this screen had nothing else on it that could mention a contest.
+   * From 2026-08-20 it also carries the contest VIDEO queue, whose rows belong
+   * to the same contest, so a page-wide check waits 25 seconds for text that is
+   * legitimately still there and then calls a working feature broken.
+   *
+   * The row is identified the way a person would: the one about this contest
+   * that still has a Confirm button on it. Nothing else on the screen has one.
+   */
+  await page
+    .locator('li')
+    .filter({ hasText: CONTEST_NAME })
+    .filter({ has: page.getByRole('button', { name: 'Confirm these figures' }) })
+    .first()
+    .waitFor({ state: 'detached', timeout: 25_000 });
+  ok('confirming clears it from the progress queue');
 
   const { data: award } = await admin
     .from('contest_awards')
@@ -764,8 +781,197 @@ try {
     homePaid.replace(/\s+/g, ' ').slice(0, 200)
   );
 
+  // ------------------------------------------- video money follows videos --
+  /*
+   * RASHID'S RULE, 2026-08-20: "money is only owed when all videos are up ...
+   * admin see one by one and all are approved only then money is owed."
+   *
+   * Everything above this section is about a GMV target, where staff confirming
+   * the figure IS the control and still owes the money. This section is the
+   * other kind, and it is the one that changed: a video target is earned by
+   * APPROVED videos, so the ninth of ten owes nothing and the tenth owes
+   * everything, whatever anybody typed.
+   *
+   * It runs against the database rather than the browser deliberately. The
+   * screen is checked in section 7 and the console in the last section; what
+   * needs proving here is that money cannot be owed for work nobody approved,
+   * and that is a property of the function, not of a button.
+   */
+  console.log('\n13. A video reward is earned by approving the videos');
+
+  const VIDEO_TARGET = 2;
+  const VIDEO_REWARD = 75;
+
+  const vDeliverable = await admin.rpc('save_contest_deliverable', {
+    p_actor_id: adminId,
+    p_contest_id: saved.id,
+    p_type: 'video_count',
+    p_title: 'Suite video target',
+    p_target_value: VIDEO_TARGET,
+    p_reward_amount: VIDEO_REWARD,
+    p_deliverable_id: null,
+    p_detail: null,
+    p_sort_order: 9,
+    p_is_active: true,
+  });
+  check('a video target can be added', !vDeliverable.error, vDeliverable.error?.message);
+
+  /*
+   * The terms are frozen ONTO AN ENTRY at approval, and this entry was approved
+   * before the video target existed, so it does not carry it. That is the rule
+   * working, not a problem: adding a deliverable must never rewrite what
+   * somebody already agreed to. A second entrant is the honest way to test the
+   * new term, and it is also the shape a real contest takes when a target is
+   * added mid-flight.
+   */
+  const vEmail = `contests-video-${STAMP}@wurxmediahub.test`;
+  const vId = await makeUser(vEmail, 'creator');
+
+  const vEntry = await admin.rpc('apply_for_contest', {
+    p_actor_id: vId,
+    p_contest_id: saved.id,
+    p_note: null,
+  });
+  check('a second creator can enter', !vEntry.error, vEntry.error?.message);
+  const vEntryId = vEntry.data?.id ?? vEntry.data?.entry?.id;
+
+  const { data: vTerms } = await admin
+    .from('contest_entry_terms')
+    .select('id, type, target_value, reward_amount')
+    .eq('entry_id', vEntryId)
+    .eq('type', 'video_count');
+  check('and the video target is frozen onto their entry', (vTerms ?? []).length === 1);
+
+  // Two videos, filed the way a creator files them. The count and the list have
+  // to agree or the database refuses, which is itself the rule under test.
+  const vClaim = await admin.rpc('submit_contest_progress', {
+    p_actor_id: vId,
+    p_entry_id: vEntryId,
+    p_gmv: 0,
+    p_video_count: VIDEO_TARGET,
+    p_videos: [
+      { video_url: 'https://www.tiktok.com/@wurxsuite/video/7500000000000000101', ad_code: 'SUITEV1', ad_authorized: true },
+      { video_url: 'https://www.tiktok.com/@wurxsuite/video/7500000000000000102', ad_code: 'SUITEV2', ad_authorized: true },
+    ],
+  });
+  check('they file the videos with the claim', !vClaim.error, vClaim.error?.message);
+
+  const owedFor = async () => {
+    const { data } = await admin
+      .from('contest_awards')
+      .select('id, awarded_amount, paid_at, term_id')
+      .eq('entry_id', vEntryId)
+      .not('term_id', 'is', null);
+    return data ?? [];
+  };
+
+  // CONFIRMING THE CLAIM MUST NOT PAY. This is the whole change: the figure is
+  // right, the creator typed the truth, and nobody has watched anything yet.
+  const vConfirm = await admin.rpc('review_contest_progress', {
+    p_actor_id: adminId,
+    p_update_id: vClaim.data?.id ?? vClaim.data?.update?.id,
+    p_status: 'confirmed',
+    p_message: null,
+  });
+  check('the claim can be confirmed', !vConfirm.error, vConfirm.error?.message);
+  check('but confirming owes NOTHING while the videos are unwatched', (await owedFor()).length === 0);
+
+  const { data: vFiled } = await admin
+    .from('contest_submissions')
+    .select('id')
+    .eq('entry_id', vEntryId)
+    .order('created_at', { ascending: true });
+  check('both videos are on the entry', (vFiled ?? []).length === 2);
+
+  const first = await admin.rpc('review_contest_content', {
+    p_actor_id: adminId,
+    p_content_id: vFiled[0].id,
+    p_status: 'approved',
+    p_note: null,
+  });
+  check('the first approval goes through', !first.error, first.error?.message);
+  check('and owes nothing on its own', (await owedFor()).length === 0);
+
+  const second = await admin.rpc('review_contest_content', {
+    p_actor_id: adminId,
+    p_content_id: vFiled[1].id,
+    p_status: 'approved',
+    p_note: null,
+  });
+  check('the LAST approval owes the reward', Number(second.data?.rewards?.amount) === VIDEO_REWARD, JSON.stringify(second.data?.rewards));
+
+  const afterBoth = await owedFor();
+  check('and there is exactly one award, unpaid', afterBoth.length === 1 && afterBoth[0].paid_at === null);
+
+  // THE OTHER DIRECTION. Nine of ten is not a reward.
+  const back = await admin.rpc('review_contest_content', {
+    p_actor_id: adminId,
+    p_content_id: vFiled[1].id,
+    p_status: 'needs_another_take',
+    p_note: 'Reshoot with the product visible.',
+  });
+  check('sending an approved video back withdraws the reward', Number(back.data?.withdrawn?.withdrawn) === 1, JSON.stringify(back.data?.withdrawn));
+  check('and the award row is gone', (await owedFor()).length === 0);
+
+  const { data: withdrawnEvent } = await admin
+    .from('contest_entry_events')
+    .select('kind, note')
+    .eq('entry_id', vEntryId)
+    .eq('kind', 'reward_withdrawn');
+  check('the creator is told in their own timeline', (withdrawnEvent ?? []).length === 1);
+
+  // And it comes back when the work does.
+  const again = await admin.rpc('review_contest_content', {
+    p_actor_id: adminId,
+    p_content_id: vFiled[1].id,
+    p_status: 'approved',
+    p_note: null,
+  });
+  check('re-approving owes it again', Number(again.data?.rewards?.amount) === VIDEO_REWARD, JSON.stringify(again.data?.rewards));
+
+  /*
+   * THE SAFETY PROPERTY, and the reason withdrawal is not a blanket delete.
+   * Once money has actually been sent, a video decision must not quietly erase
+   * the record of it. The creator is short a video and that is a conversation,
+   * not a database write.
+   */
+  const paidNow = await admin.rpc('pay_contest_awards', {
+    p_actor_id: adminId,
+    p_award_ids: (await owedFor()).map((a) => a.id),
+    p_message: null,
+    p_allow_suspended: false,
+  });
+  check('the reward can be paid', !paidNow.error, paidNow.error?.message);
+
+  const afterPaid = await admin.rpc('review_contest_content', {
+    p_actor_id: adminId,
+    p_content_id: vFiled[1].id,
+    p_status: 'needs_another_take',
+    p_note: 'Changed my mind after paying.',
+  });
+  check('a PAID reward is never withdrawn', Number(afterPaid.data?.withdrawn?.withdrawn) === 0, JSON.stringify(afterPaid.data?.withdrawn));
+  check('and the screen is told why', Number(afterPaid.data?.withdrawn?.already_paid) === 1);
+  const stillThere = await owedFor();
+  check('the paid award is still on the bill', stillThere.length === 1 && stillThere[0].paid_at !== null);
+
+  /*
+   * A creator cannot reach any of this. `review_contest_content` is granted to
+   * service_role alone, like every other contest writer, and a creator holding
+   * the id of their own video is the person most likely to try.
+   */
+  const asVideoCreator = createClient(URL, PUB, { auth: { persistSession: false } });
+  await asVideoCreator.auth.signInWithPassword({ email: vEmail, password: PW });
+  const creatorTries = await asVideoCreator.rpc('review_contest_content', {
+    p_actor_id: adminId,
+    p_content_id: vFiled[0].id,
+    p_status: 'approved',
+    p_note: null,
+  });
+  check('a creator cannot approve a contest video', Boolean(creatorTries.error));
+  await asVideoCreator.auth.signOut();
+
   // ------------------------------------------------------- closing it -------
-  console.log('\n13. Closing the contest');
+  console.log('\n14. Closing the contest');
   const closeWithClaim = await admin.rpc('settle_contest', {
     p_actor_id: adminId,
     p_contest_id: saved.id,
@@ -788,7 +994,7 @@ try {
   check('closing it twice is refused', Boolean(closeAgain.error));
 
   // ---------------------------------------------- creator widths and console --
-  console.log('\n14. The creator screens at every width');
+  console.log('\n15. The creator screens at every width');
   for (const width of [375, 768, 1024, 1440]) {
     for (const theme of ['dark', 'light']) {
       await cpage.setViewportSize({ width, height: 900 });
@@ -857,7 +1063,7 @@ try {
 
 
   // ------------------------------------------------- the money, on the wire --
-  console.log('\n15. As a real creator, over the wire');
+  console.log('\n16. As a real creator, over the wire');
   const asCreator = createClient(URL, PUB, { auth: { persistSession: false } });
   const { error: sErr } = await asCreator.auth.signInWithPassword({
     email: CREATOR_EMAIL,
@@ -987,7 +1193,7 @@ try {
   await asCreator.auth.signOut();
 
   // -------------------------------------------------- somebody else's money --
-  console.log('\n16. A rival creator');
+  console.log('\n17. A rival creator');
   const asRival = createClient(URL, PUB, { auth: { persistSession: false } });
   const { error: rErr } = await asRival.auth.signInWithPassword({
     email: RIVAL_EMAIL,
@@ -1020,8 +1226,9 @@ try {
 
   await asRival.auth.signOut();
 
+
   // ------------------------------------------------------------ console ---
-  console.log('\n17. The console');
+  console.log('\n18. The console');
   check('zero console errors across every screen and width', errors.length === 0, errors.join('\n        '));
 } catch (err) {
   bad('the suite itself threw', String(err));

@@ -392,28 +392,16 @@ connection row (soft revoke is deliberate, the audit trail resolves through it)
 and the second Penetrex store row (the key is advertiser + store, and that store
 really is authorised to both ad accounts). Both are recorded in DECISIONS.
 
-## 17. Contest videos cannot be approved or sent back, as of 2026-08-19
+## 17. DONE 2026-08-20: contest videos are reviewable, and they carry the money
 
-**Status:** NEXT, this is step B of the flow Rashid walked through
-**Owner:** Claude
+`review_contest_content` has a caller at last. Staff approve or send back a
+contest video from either the claims queue or the new standalone contest video
+queue, and since the same day a video decision is also where video reward money
+is decided: the last approval owes the reward, taking one back withdraws it, and
+a PAID reward is never touched. See FEATURE_MAP "Contest videos, and the money
+they earn". `pnpm verify:contests` is 141 checks, twenty of them this.
 
-Found by the flow audit and worth recording separately, because PARKED section 0
-lists five open contest items and this was not one of them, so the gap was
-invisible to the file he answers "what's pending?" from.
-
-`review_contest_content` is finished, audited, granted to `service_role` — and
-called by **nothing**: no Edge Function action, no hook, no screen, no script.
-`submit_contest_content` is the same. So `contest_submissions.status` can
-never leave its default `'submitted'`, which means:
-
-- the admin queue's status chip reads "With the team" for every contest video
-  that has ever been filed, for ever;
-- the creator's own list has full styling for `approved` ("Counted", green) and
-  `needs_another_take` ("Sent back", red) that **no code path can produce**;
-- `contest_entry_progress`, which counts approved contest videos against the
-  committed count, is permanently pinned at "all waiting".
-
-Also: staff can only see contest videos while a progress claim is still
-**pending** (`ContestProgressQueue` filters `status = 'pending'`). The moment a
-claim is decided its videos disappear from every admin screen, and the audit log
-does not carry links either — `submit_contest_progress` audits only a count.
+**What is still open from that item**, and it is smaller than it was: nothing
+compares a creator's TYPED video count against the videos filed, because the
+typed number no longer buys anything. The remaining unevidenced claim is the GMV
+figure, which PARKED section 0 already tracks.

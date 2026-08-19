@@ -2,59 +2,104 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-19, late.**
+**Recorded 2026-08-20.**
 
-Rashid walked the **whole product flow** and asked for it to be reconciled
-against what is actually built. A 16-agent audit did that, every claimed gap
-adversarially re-checked. **Step A is done, deployed and verified. B, C and D
-are agreed and not started.**
+Rashid walked the **whole product flow** and it was reconciled against the code
+by a 16-agent audit, every claimed gap adversarially re-checked. **Steps A and B
+are done, deployed and verified. C and D are agreed and not started.**
 
-**The plan, in his order. Do them one at a time and stop for approval between.**
+**The plan, in his order. One step at a time, stop for approval between.**
 
 - **A. Offers, finished. DONE 2026-08-19.** Approval gates the ad money · a
-  finished job lands on `payment_pending` · the admin can send an approved video
-  back. Migrations `20260819190000` and `20260819193000`.
-- **B. Contest videos become real.** `review_contest_content` is finished in the
-  database and called by NOTHING, so no contest video can ever leave
-  'submitted'. Needs an action on `manage-contest`, a mutation in
-  `useManageContest`, and approve / send-back buttons — reachable after a claim
-  is decided, not only while it is pending. See PARKED item 17, which has the
-  detail. **Also a decision for him:** a retake already moves
-  `contest_entry_progress` (what the creator sees) but NOT
-  `contest_entry_confirmed_totals` (what decides reward money). Two numbers on
-  one entry. He said a retake should count against them; making that true of the
-  money is a redesign of how contests award, not a bug fix.
-- **C. One pipeline for both.** A `creator_videos` union view over
+  finished job lands on `payment_pending` · the admin can send an approved
+  video back. Migrations `20260819190000`, `20260819193000`.
+- **B. Contest videos become real. DONE 2026-08-20.**
+  `review_contest_content` has a caller at last, and a video decision is now
+  where video reward money is decided: the last approval owes it, taking one
+  back withdraws it, a paid one is never touched. Migrations `20260820090000`,
+  `20260820100000`. `pnpm verify:contests` is 141 checks.
+- **C. One pipeline for both. NEXT.** A `creator_videos` union view over
   `content_submissions` + `contest_submissions`, then point the sync query,
   `tiktok_days_to_backfill`, the `tiktok_video_daily` row policy and the three
   `creator_*` functions at it. Needs `distinct on (embed_id)` or a video filed
   against both a job and a contest double counts. Then **Offers / Contests /
-  All** tabs on My Numbers.
+  All** tabs on My Numbers. Two things to know before starting: contest videos
+  currently capture NO `embed_id` (the creator dialog sends only url and ad
+  code, though the RPC and Edge Function already accept it), and the sync's
+  `videos_hash` fingerprint must cover both sources or every night refetches.
 - **D. Leaderboard.** Only after C, or the figure is wrong on day one. Design is
   `MY UI/LeaderBoard/` — take the SHAPE (your-rank band, top-three podium,
   searchable ranked table with a revenue bar) and rebuild it in Wurx tokens; its
   own palette is purple Material with Sora type and would fail
   `pnpm check:contrast`. **His four answers, already given:** names and figures
   visible to everyone · faces on it (so creator avatars stop being admin-only
-  for this one screen) · one global board at `/app/leaderboards`, not per-brand
-  · creators with no figures are hidden, with "You'll appear here once ads start
+  for that one screen) · one global board at `/app/leaderboards`, not per-brand
+  · creators with no figures hidden, with "You'll appear here once ads start
   running on your first video."
 
 **Two things that will bite whoever builds D.** `embed_id` has no uniqueness
-across creators, and every existing query is per-creator so the double count is
-invisible until something sums across people. And only Penetrex has ad data at
-all, which is why the empty rows are hidden rather than shown at $0.
+across creators and every existing query is per-creator, so the double count is
+invisible until something sums across people. And only Penetrex has ad data,
+which is why empty rows are hidden rather than shown at $0.
 
-**Where dev stands, and it is now EXACTLY the sheet data:** one brand
-(Penetrex), 41 creators with pictures, 41 applications, 31 offers, 41 jobs, 85
-videos all approved, 738 money rows all owned by those 85, 4 jobs at Payment
-pending, zero contests. `node scripts/tidy-dev.mjs` re-checks it in a dry run
-and should report nothing to remove.
+**Where dev stands, and it is EXACTLY the sheet data plus one seeded contest:**
+one brand (Penetrex), 41 creators with pictures, 41 applications, 31 offers, 41
+jobs, 85 videos all approved, 738 money rows all owned by those 85, 4 jobs at
+Payment pending. Plus **"Penetrex August Push"**: 5 entrants, 15 videos, 6
+approved, 8 waiting, 1 sent back, $150 owed. `node scripts/tidy-dev.mjs`
+dry-runs a check that nothing else has crept in.
 
 **Do not re-explore the codebase to get oriented.** This file, then PARKED, then
 only the files the chosen step names.
 
 ---
+
+## Contest videos become real (2026-08-20)
+
+Step B. Rashid, asked which number decides a contest reward, answered with a
+better option than any of the three offered: *"money is only owed when all
+videos are up for both contest and offer it's like they will submit the video
+when admin see one by one and all are approved only then money is owed."* It
+removes the problem all three had — money is never owed early, so in the
+ordinary case there is nothing to claw back — and it makes contests say the same
+sentence offers started saying the day before.
+
+**Nothing could decide a contest video at all.** `review_contest_content` had
+been finished, audited and granted since 2026-08-13 and was called by NOTHING.
+So `contest_submissions.status` could never leave 'submitted': the admin chip
+read "With the team" on every contest video in the product, and the creator's
+list carried "Counted" and "Sent back" states no code path could produce. And
+the only place a contest video appeared was inside a PENDING claim, so deciding
+a claim made its videos unreachable — the audit log records a count, never the
+links.
+
+**Now:** an action on `manage-contest`, a shared decision component, and a
+standalone contest video queue on the claims screen beside the other two. A
+video target is earned by APPROVED videos; GMV targets keep the old rule,
+because there are no videos behind a GMV figure and the confirmation IS the
+control there. Approving passes `p_gmv => null` so it can never reach a GMV
+target sideways.
+
+**Order stopped mattering**, which is the nicest part. Whichever happens last,
+the tenth approval or the confirmation of the claim, writes the bill, because
+both paths ask the same question of the same rows.
+
+**Two things the suite caught that would have shipped.** The recreated
+`review_contest_progress` was RETYPED from its own documentation rather than
+extracted, and wrote `message` where the column is `staff_message`: every
+confirmation failed with 42703, and it had also silently dropped the rule that a
+rejection must carry a sentence. `20260820100000` restores the extracted body
+with only the award call changed. And adding a second queue to the claims screen
+broke a page-wide text assertion that had only ever been a proxy for "the row
+went away"; it waits for the row itself to detach now.
+
+**Verified:** `pnpm verify:contests` 141 passed, 0 failed, twenty of them this
+feature — confirming owes nothing while videos are unwatched, the first approval
+owes nothing, the last owes everything, sending one back withdraws it, the
+creator is told in their own timeline, re-approving owes it again, a PAID award
+survives all of it, and a creator cannot call the review function. Build and
+lint clean.
+
 
 ## Only the sheet data, nothing else (2026-08-19, later still)
 

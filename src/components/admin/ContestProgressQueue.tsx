@@ -20,6 +20,7 @@ import { money } from '@/lib/money';
 import { getSupabase } from '@/lib/supabase';
 import { CONTENT_STATUS, type ContentStatus } from '@/lib/content';
 import { useManageContest } from '@/lib/admin/useManageContest';
+import { ContestVideoDecision } from '@/components/admin/ContestVideoDecision';
 
 /**
  * What creators say they have done, waiting for the team to say it is true.
@@ -743,6 +744,17 @@ function ClaimCard({
                   >
                     {tone.label}
                   </span>
+
+                  {/*
+                    DECIDE IT HERE TOO, from 2026-08-20. The reviewer is already
+                    watching this video to judge the figures; making them find
+                    the same row again in another queue is how a video sits
+                    undecided. The same component draws it there, so the two
+                    cannot drift apart.
+                  */}
+                  <span className="w-full">
+                    <ContestVideoDecision contentId={video.id} status={video.status} />
+                  </span>
                 </li>
               );
             })}
@@ -750,8 +762,9 @@ function ClaimCard({
         )}
 
         <p className="text-faint mt-2 max-w-prose text-[0.75rem] leading-relaxed">
-          Confirming these figures is not a decision about the videos. Each one is watched and
-          decided on its own.
+          Confirming these figures is not a decision about the videos, and it is not what pays for
+          them either. Each video is watched on its own, and a video reward is owed once the last
+          one is approved.
         </p>
       </div>
 

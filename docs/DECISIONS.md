@@ -1192,3 +1192,38 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   left a brand and its offer on dev permanently. All the deletes were also
   fire-and-forget, so a foreign key that refused reported nothing. Both fixed;
   the suite now runs 33/33 and `tidy-dev` finds nothing after it.
+- 2026-08-20: **A contest video reward is owed when the last video is
+  approved.** Rashid, asked which of three options decided a contest reward,
+  answered with a fourth and better one: "money is only owed when all videos are
+  up for both contest and offer ... admin see one by one and all are approved
+  only then money is owed." It removes the problem all three options had. Money
+  is never owed early, so in the ordinary case there is nothing to claw back,
+  and it makes contests say the same sentence offers started saying on
+  2026-08-19.
+- 2026-08-20: **GMV targets keep the old rule, and that asymmetry is deliberate.**
+  There are no videos to approve behind a GMV figure, so the staff confirmation
+  IS the control there, exactly as Rashid described that path separately. The
+  video review passes `p_gmv => null` precisely so approving a video can never
+  reach a GMV target sideways on a stale figure.
+- 2026-08-20: **`p_video_count` was dropped from `award_reached_terms`, not
+  ignored.** An argument that is still accepted and no longer changes anything
+  is worse than a signature change: the next caller passes the creator's typed
+  number in good faith and cannot work out why it does nothing.
+- 2026-08-20: **Withdrawing an unearned award DELETES the row and writes a
+  `reward_withdrawn` event.** PARKED argues, correctly, that UNPAYING should
+  write a reversal so history stays true; that is about money that has already
+  left. This is money that was never sent, and
+  `contest_awards_money_idx` is unique per (contest, entry, term), so a
+  negative row could not sit beside it without dismantling the guard that stops
+  a double award. The history lives in the creator's timeline and the audit log
+  instead. **A paid award is never withdrawn**, and the count of skipped ones is
+  returned so a screen can say why rather than implying money moved.
+- 2026-08-20: **Never recreate a database function by retyping it from its own
+  comments.** The first version of `review_contest_progress` in
+  `20260820090000` was rebuilt that way and lost two things: it wrote
+  `message` where the column is `staff_message`, so every confirmation failed
+  with 42703, and it dropped the rule that a rejection must carry a sentence the
+  creator can read. `20260820100000` restores the extracted body with only the
+  award call changed. The offer migration the day before patched its functions
+  from extracted source for exactly this reason; this is what happens when that
+  is not done.
