@@ -35,7 +35,25 @@ import { cn } from '@/lib/utils';
  *
  * TWO TABS, and the default is Dashboard because the first question is "how am
  * I doing", not "list my videos".
+ *
+ * AND A THIRD ROW OF CONTROLS, from 2026-08-20: which CHANNEL the videos came
+ * through. Rashid: "in my numbers section users can have a tab like offer
+ * videos or contest videos and all videos so that they can differentiate that
+ * their which video whether in offers or contest, is going well."
+ *
+ * It filters in the DATABASE, not here, so the chart, the tiles and the cards
+ * all answer the same question. Slicing an already-fetched list in the browser
+ * would have left the chart showing everything while the tiles showed a
+ * subset, which is the exact disagreement this screen was already carrying
+ * between its tiles and its chart until this week.
  */
+
+const SOURCES = [
+  { key: null, label: 'All videos' },
+  { key: 'offer', label: 'Offer videos' },
+  { key: 'contest', label: 'Contest videos' },
+] as const;
+type SourceKey = (typeof SOURCES)[number]['key'];
 
 const TABS = [
   { key: 'dashboard', label: 'Dashboard' },
@@ -53,6 +71,7 @@ const money = (n: number, currency: string | null) =>
 export function MyNumbers() {
   const [tab, setTab] = useState<TabKey>('dashboard');
   const [range, setRange] = useState<RangeKey>('all');
+  const [source, setSource] = useState<SourceKey>(null);
 
   const windowQ = usePerformanceWindow();
 
@@ -79,8 +98,8 @@ export function MyNumbers() {
   const firstMonth = windowQ.data?.earliest?.slice(0, 7) ?? activeMonth;
   const lastMonth = windowQ.data?.latest?.slice(0, 7) ?? monthKey(new Date());
 
-  const videosQ = useVideoPerformance(from, to);
-  const dailyQ = useDailyPerformance(from, to);
+  const videosQ = useVideoPerformance(from, to, source);
+  const dailyQ = useDailyPerformance(from, to, source);
 
   const videos = videosQ.data ?? [];
   const daily = dailyQ.data ?? [];
@@ -156,6 +175,24 @@ export function MyNumbers() {
           It is deliberately a set of ranges rather than two date pickers: a
           creator wants "this month" and "since I started", not a calendar.
         */}
+        {/*
+          WHICH CHANNEL. It sits beside the period rather than above the tabs
+          because it is a filter on the same question, not a different screen:
+          "how am I doing" and "how am I doing on contest work" are the same
+          question with a narrower subject.
+        */}
+        <FilterTabs label="Which videos">
+          {SOURCES.map((sv) => (
+            <FilterTab
+              key={sv.key ?? 'all'}
+              active={source === sv.key}
+              onClick={() => setSource(sv.key)}
+            >
+              {sv.label}
+            </FilterTab>
+          ))}
+        </FilterTabs>
+
         <FilterTabs label="Over what period">
           {RANGES.map((r) => (
             <FilterTab key={r.key} active={range === r.key} onClick={() => setRange(r.key)}>
@@ -207,6 +244,21 @@ export function MyNumbers() {
         <Empty
           title="No approved videos yet"
           body="A video shows up here once the team has watched it and approved it. Then, when we start running ads behind it, the spend, GMV and orders it makes appear on this screen. Anything still being checked is on your Content page."
+        />
+      ) : videos.length === 0 && source !== null ? (
+        /*
+         * NARROWED TO NOTHING, which is a different thing from having nothing.
+         * A creator who has never entered a contest and taps Contest videos
+         * must not be told their numbers are missing; the filter is what is
+         * empty, and the way out is one tap away.
+         */
+        <Empty
+          title={source === 'contest' ? 'No contest videos yet' : 'No offer videos yet'}
+          body={
+            source === 'contest'
+              ? 'Nothing you have filed against a contest has been approved yet. Approved contest videos show their spend and GMV here, the same as offer videos do.'
+              : 'Nothing you have filed against an offer has been approved yet. Tap All videos to see everything you have.'
+          }
         />
       ) : !hasAnyData ? (
         <Empty
@@ -437,9 +489,24 @@ function Content({
                   <p className="truncate text-[0.875rem] font-semibold">
                     {v.video_title || 'Your video'}
                   </p>
-                  {v.brand_name ? (
-                    <p className="text-muted mt-0.5 truncate text-[0.75rem]">{v.brand_name}</p>
-                  ) : null}
+                  <p className="text-muted mt-0.5 flex flex-wrap items-center gap-x-1.5 truncate text-[0.75rem]">
+                    {v.brand_name ? <span className="truncate">{v.brand_name}</span> : null}
+                    {/*
+                      Which channel this one came through, so the All view is
+                      readable without switching filters to work it out. Only
+                      the word, in the muted ink: a coloured pill here would
+                      compete with the ad-status chip, which is the thing on
+                      this card that actually changes.
+                    */}
+                    {v.brand_name ? <span aria-hidden>·</span> : null}
+                    <span>
+                      {v.source === 'both'
+                        ? 'Offer and contest'
+                        : v.source === 'contest'
+                          ? 'Contest'
+                          : 'Offer'}
+                    </span>
+                  </p>
                   <a
                     href={v.video_url}
                     target="_blank"

@@ -110,7 +110,57 @@ if (existing?.length) {
 }
 
 /* -------------------------------------------------------------- the cast -- */
-const HANDLES = ['lowbacklab', 'sarahshopsss', 'neptunenavigates', 'vsternau', 'xxkissnoblissxx'];
+/*
+ * REAL VIDEOS, NONE OF THEM ALREADY IN THE PRODUCT, with the ad codes off
+ * Rashid's own content sheets.
+ *
+ * The first version of this seed reused links from the 85 offer videos, which
+ * worked and demonstrated nothing: every contest video would have been the
+ * same video as an offer video, so `creator_video_performance` would have
+ * reported all of them as source 'both' and the three tabs on My Numbers
+ * would have shown one set of videos three times. These fifteen are August
+ * videos from the same sheets that were never loaded, so they are distinct,
+ * they are real, and their money is real.
+ *
+ * They are recent on purpose. `tiktok_days_to_backfill` works the sync depth
+ * out from the oldest video with no figures, so seeding an April video would
+ * have sent the nightly job back four months and spent a hundred API calls to
+ * make a demo look right.
+ */
+const VIDEOS = {
+  "vsternau": [
+    { url: "https://www.tiktok.com/@vsternau/video/7675484433289334030", ad: "#w2kNxyEDXQzc16s1n+cECfbX8DO52VVUhTMssjBrB6eaB1aJOHhsAywaJgpm89w=" },
+    { url: "https://www.tiktok.com/@vsternau/video/7675100979817123086", ad: "#ho+BEjPgoaiefTDRx+rJODzoPZmHp+FgJRuiCTqJYKRRhh06gnKcAMLwx9BTap8=" },
+    { url: "https://www.tiktok.com/@vsternau/video/7674704477483470093", ad: "#78jjOePaDOymmMWZgtPZnLKsn1hzIGppRLbuADFl0XuCqtvPk84ie9D2Ym3UMu8=" },
+    { url: "https://www.tiktok.com/@vsternau/video/7674310966925905165", ad: "#f1ccRzVpKsnkvD/XlZV5icrcdLIdIYh2wtBnIs65zH8LR94W1Csb279xFyWdix8=" },
+  ],
+  "babblingbrookej": [
+    { url: "https://www.tiktok.com/@babblingbrookej/video/7674746216772570398", ad: "#z/yNxhaMJzYAiUSQCtT5xfdNWYAAMQ1lR+WvN1EgbPPJOeMytUh+iWoopBG0PDQ=" },
+    { url: "https://www.tiktok.com/@babblingbrookej/video/7673615923315576094", ad: "#5BI2wyFoK/4TXUPdDzFrWmsHwiHbfLHfgFuphPiA9HCertGn2yBE3AMmEBTxDCI=" },
+    { url: "https://www.tiktok.com/@babblingbrookej/video/7673618528729042206", ad: "#50bGQ7wfFubhMiVU+FM3wHpA4uHxoAmzzWfR0NR9xX/9awQgZlLi3ydDPSinlag=" },
+    { url: "https://www.tiktok.com/@babblingbrookej/video/7672530408994589983", ad: "#4EAGnHKMoG/L50LQMzfW0ZHeLo6Sk2tWx5rC3RdBkSfV98z+7KZLPaYfEsIClXw=" },
+  ],
+  "kylieehughess": [
+    { url: "https://www.tiktok.com/@kylieehughess/video/7673917749491551518", ad: "#MA/W87OYme3IfWBfft0sGacdyoO3w6OpSnQ5eqTqECtUkpIRej8gjffYt1nUxy4=" },
+    { url: "https://www.tiktok.com/@kylieehughess/video/7673554018681113870", ad: "#Kz2Jd3brKoUKVFlSwp53P/OYeokT4b/XQRF/XV9PHsS48lLaMqd4WbE1yfaKz1s=" },
+    { url: "https://www.tiktok.com/@kylieehughess/video/7673153941500153101", ad: "#XWmCvoLP2Mg+uT3ZWw99PcDxCuRi++EO3qj0dId1n7J7cLhZJgRAXjE6ERz1Sl8=" },
+    { url: "https://www.tiktok.com/@kylieehughess/video/7672849068472765710", ad: "#TIRcVgjQKd/geaCSyGJhp3xvpcgwsG9dmkeBvNE2m3+OX9K+ybKAXflk82mjglQ=" },
+  ],
+  "neptunenavigates": [
+    { url: "https://www.tiktok.com/@neptunenavigates/video/7675448075657235742", ad: "#y8bszLJwyvhyvgHo/9GEiZUUfcVF8SMX2r/bdsNLhpzXpOhDVSPi94tfnbfGu0w=" },
+    { url: "https://www.tiktok.com/@neptunenavigates/video/7674818620907736351", ad: "#H7qpa6rGXpWZvivnv5FkAEG8kl7SWRNy59vvPWEZABqYYf4ZDCuSn+/bqBGqV1Y=" },
+    { url: "https://www.tiktok.com/@neptunenavigates/video/7675075861908819231", ad: "#DwRBFXPc1bGAO0jDF/hHy0VSMW18BDTwR++OTL7pX4pshKtF7IFUQT20KT0P/8g=" },
+    { url: "https://www.tiktok.com/@neptunenavigates/video/7674339416885792030", ad: "#UD7zqIY6IOVp/3LBuFIj3wvXqknwxE+rJzuh7MBVPgIL1jJbZa6GfLYa07SfoXg=" },
+  ],
+  "briceyscarbear": [
+    { url: "https://www.tiktok.com/@briceyscarbear/video/7675524958629498143", ad: "#mtR98rVQKnX9lcJVlWGlkU0DY7xiA4KpVjJeH9Vm00a5RiIIwdWhbRdNLk1Cv+M=" },
+    { url: "https://www.tiktok.com/@briceyscarbear/video/7675098149391748383", ad: "#uB2yN/5WlbOqNR06g0Gd6CBoGxTMDPZ+aUFL877fUS9ZzYNqXuNsTQJsCDSTrj4=" },
+    { url: "https://www.tiktok.com/@briceyscarbear/video/7675151924672400671", ad: "#GcwU+CiVvfxzoJCZ64GzzIDMDx0M4psqTTt2WYSaT7PPFdia1iuggq3V0QPQqx8=" },
+    { url: "https://www.tiktok.com/@briceyscarbear/video/7673864079605271839", ad: "#KN85XHxaalCFVQ+USSK9ap5J/cFPSVcyVCj5KedGIPuzMZcwiLQ1V9HwpKfSkLg=" },
+  ],
+};
+
+const HANDLES = Object.keys(VIDEOS);
 
 const { data: people, error: peopleErr } = await db
   .from('profiles')
@@ -183,39 +233,37 @@ for (const d of DELIVERABLES) {
 }
 
 /* ------------------------------------------------------------ the entrants -- */
-/*
- * A real TikTok link per video, taken from the videos already on dev, so a
- * reviewer clicking through lands on something that exists. The ad codes are
- * invented, which is honest: an ad code is a string we are given, and nothing
- * in the contest path reads it yet.
- */
-const { data: pool, error: poolErr } = await db
-  .from('content_submissions')
-  .select('video_url')
-  .eq('brand_id', BRAND)
-  .limit(40);
-if (poolErr) throw new Error('video pool: ' + poolErr.message);
-const LINKS = [...new Set((pool ?? []).map((v) => v.video_url))];
-if (LINKS.length < 20) throw new Error(`need 20 distinct links to seed with, found ${LINKS.length}`);
 
-let link = 0;
-const nextLinks = (n) =>
-  Array.from({ length: n }, () => ({
-    video_url: LINKS[link++ % LINKS.length],
-    ad_code: `CONTEST-${String(link).padStart(3, '0')}`,
+/*
+ * The ad code is taken from the sheet rather than invented. Nothing in the
+ * contest path reads it yet, but a seed that fills a real column with a fake
+ * value is how somebody later concludes the column is decorative.
+ */
+const filed = {};
+const videosFor = (handle, n) => {
+  const used = filed[handle] ?? 0;
+  const list = VIDEOS[handle].slice(used, used + n);
+  if (list.length < n) throw new Error(`@${handle} has only ${VIDEOS[handle].length} videos to give`);
+  filed[handle] = used + n;
+  return list.map((v) => ({
+    video_url: v.url,
+    ad_code: v.ad,
     ad_authorized: true,
     thumbnail_url: null,
     video_title: null,
     video_author: null,
-    embed_id: null,
+    // Read out of the link, exactly as `enter-contest` does server side. An id
+    // is the only thing ad money is ever matched on.
+    embed_id: v.url.match(/\/video\/(\d{6,32})/)?.[1] ?? null,
   }));
+};
 
 const PLAN = [
-  { handle: 'lowbacklab', videos: 3, approve: 3, sendBack: 0, gmv: 0, note: 'all three approved, the $150 is already owed' },
-  { handle: 'sarahshopsss', videos: 3, approve: 2, sendBack: 0, gmv: 0, note: 'one approval short of $150' },
-  { handle: 'neptunenavigates', videos: 4, approve: 0, sendBack: 0, gmv: 0, note: 'everything waiting' },
-  { handle: 'vsternau', videos: 3, approve: 1, sendBack: 1, gmv: 0, note: 'one sent back already' },
-  { handle: 'xxkissnoblissxx', videos: 2, approve: 0, sendBack: 0, gmv: 2400, note: 'a GMV claim waiting' },
+  { handle: 'vsternau', videos: 3, approve: 3, sendBack: 0, gmv: 0, note: 'all three approved, the $150 is already owed' },
+  { handle: 'babblingbrookej', videos: 3, approve: 2, sendBack: 0, gmv: 0, note: 'one approval short of $150' },
+  { handle: 'kylieehughess', videos: 4, approve: 0, sendBack: 0, gmv: 0, note: 'everything waiting' },
+  { handle: 'neptunenavigates', videos: 3, approve: 1, sendBack: 1, gmv: 0, note: 'one sent back already' },
+  { handle: 'briceyscarbear', videos: 2, approve: 0, sendBack: 0, gmv: 2400, note: 'a GMV claim waiting' },
 ];
 
 for (const p of PLAN) {
@@ -244,7 +292,7 @@ for (const p of PLAN) {
     p_entry_id: ENTRY,
     p_gmv: p.gmv,
     p_video_count: p.videos,
-    p_videos: nextLinks(p.videos),
+    p_videos: videosFor(p.handle, p.videos),
   });
 
   /*

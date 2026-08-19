@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router';
 import { Check, Flag, RotateCcw, Search, Video } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Field';
-import { CreatorFace } from '@/components/admin/CreatorFace';
+import { CreatorFace } from '@/components/work/CreatorFace';
 import { useCreatorAvatars } from '@/lib/admin/useCreatorAvatars';
 import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { VideoPlayer } from '@/components/content/VideoPlayer';

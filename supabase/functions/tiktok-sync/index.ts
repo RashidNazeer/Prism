@@ -261,14 +261,20 @@ Deno.serve(async (req) => {
      * then we should not be spending TikTok calls on it, storing its money, or
      * leaving rows behind for a video that is later sent back.
      */
+    /*
+     * BOTH CHANNELS, through the `creator_videos` view, from 2026-08-20. It
+     * used to name `content_submissions`, which is the OFFER table, so a
+     * contest video's id was never sent to TikTok and its money never existed.
+     * The view is the one place that knows a video can arrive either way.
+     */
     const { data: videos } = await admin
-      .from('content_submissions')
+      .from('creator_videos')
       .select('embed_id')
       .eq('brand_id', store.brand_id)
       .eq('status', 'approved')
       .eq('ad_authorized', true)
       .not('embed_id', 'is', null)
-      .limit(1000);
+      .limit(2000);
 
     const itemIds = [...new Set((videos ?? []).map((v) => v.embed_id).filter(Boolean))] as string[];
     if (itemIds.length === 0) continue;

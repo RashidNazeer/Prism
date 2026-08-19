@@ -5,7 +5,7 @@ import { ButtonLink } from '@/components/ui/Button';
 import { JobProgressBar } from '@/components/work/JobProgress';
 import { cn } from '@/lib/utils';
 import { money } from '@/lib/money';
-import { CreatorFace } from '@/components/admin/CreatorFace';
+import { CreatorFace } from '@/components/work/CreatorFace';
 import { useCreatorAvatars } from '@/lib/admin/useCreatorAvatars';
 import { ROLE_LABEL, TIER_LABEL } from '@/lib/tiers';
 import { STAGE_META, stageIndex } from '@/lib/offer-stages';

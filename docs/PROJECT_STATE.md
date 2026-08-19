@@ -4,55 +4,104 @@
 
 **Recorded 2026-08-20.**
 
-Rashid walked the **whole product flow** and it was reconciled against the code
-by a 16-agent audit, every claimed gap adversarially re-checked. **Steps A and B
-are done, deployed and verified. C and D are agreed and not started.**
+Rashid walked the **whole product flow**, it was reconciled against the code by
+a 16-agent audit with every claimed gap adversarially re-checked, and then he
+said "please complete everything now". **A, B, C and D are all done, deployed
+and verified. Nothing is queued: ask him.**
 
-**The plan, in his order. One step at a time, stop for approval between.**
+- **A. Offers, finished.** Approval gates the ad money · a finished job lands on
+  `payment_pending` · the admin can send an approved video back.
+- **B. Contest videos become real.** `review_contest_content` has a caller at
+  last, and a video decision is where video reward money is decided.
+- **C. One pipeline.** `creator_videos` unions both channels; the sync, the
+  backfill, the row policy and the three read functions all read it. My Numbers
+  has All / Offer / Contest.
+- **D. Leaderboard.** `/app/leaderboards`, live, Step 9 badge gone.
 
-- **A. Offers, finished. DONE 2026-08-19.** Approval gates the ad money · a
-  finished job lands on `payment_pending` · the admin can send an approved
-  video back. Migrations `20260819190000`, `20260819193000`.
-- **B. Contest videos become real. DONE 2026-08-20.**
-  `review_contest_content` has a caller at last, and a video decision is now
-  where video reward money is decided: the last approval owes it, taking one
-  back withdraws it, a paid one is never touched. Migrations `20260820090000`,
-  `20260820100000`. `pnpm verify:contests` is 141 checks.
-- **C. One pipeline for both. NEXT.** A `creator_videos` union view over
-  `content_submissions` + `contest_submissions`, then point the sync query,
-  `tiktok_days_to_backfill`, the `tiktok_video_daily` row policy and the three
-  `creator_*` functions at it. Needs `distinct on (embed_id)` or a video filed
-  against both a job and a contest double counts. Then **Offers / Contests /
-  All** tabs on My Numbers. Two things to know before starting: contest videos
-  currently capture NO `embed_id` (the creator dialog sends only url and ad
-  code, though the RPC and Edge Function already accept it), and the sync's
-  `videos_hash` fingerprint must cover both sources or every night refetches.
-- **D. Leaderboard.** Only after C, or the figure is wrong on day one. Design is
-  `MY UI/LeaderBoard/` — take the SHAPE (your-rank band, top-three podium,
-  searchable ranked table with a revenue bar) and rebuild it in Wurx tokens; its
-  own palette is purple Material with Sora type and would fail
-  `pnpm check:contrast`. **His four answers, already given:** names and figures
-  visible to everyone · faces on it (so creator avatars stop being admin-only
-  for that one screen) · one global board at `/app/leaderboards`, not per-brand
-  · creators with no figures hidden, with "You'll appear here once ads start
-  running on your first video."
+**What he is testing.** Dev is exactly the Penetrex sheet plus one seeded
+contest: one brand, 41 creators with pictures, 31 offers, 41 jobs, 85 offer
+videos, **15 contest videos on real distinct August posts**, 754 money rows, 4
+jobs at Payment pending, \$150 of contest reward owed. The board ranks **6
+creators**, Selena first on \$491.81.
 
-**Two things that will bite whoever builds D.** `embed_id` has no uniqueness
-across creators and every existing query is per-creator, so the double count is
-invisible until something sums across people. And only Penetrex has ad data,
-which is why empty rows are hidden rather than shown at $0.
+**One honest wrinkle to raise if he asks.** The 15 contest videos are real
+August posts from his own sheets that were never loaded, so they are genuinely
+distinct from the 85 — but those particular videos barely ran ads: 6 approved
+carry \$0.84 of spend and **\$0.00 GMV**. The Contest tab on My Numbers works
+and shows real figures; the figures happen to be nearly zero. That is the data,
+not the plumbing.
 
-**Where dev stands, and it is EXACTLY the sheet data plus one seeded contest:**
-one brand (Penetrex), 41 creators with pictures, 41 applications, 31 offers, 41
-jobs, 85 videos all approved, 738 money rows all owned by those 85, 4 jobs at
-Payment pending. Plus **"Penetrex August Push"**: 5 entrants, 15 videos, 6
-approved, 8 waiting, 1 sent back, $150 owed. `node scripts/tidy-dev.mjs`
-dry-runs a check that nothing else has crept in.
+**Everything green:** `verify:contests` 141 · `verify:leaderboard` 34 ·
+`verify:performance` 36 · `verify:content` 33 · `verify:rls` 22 · build,
+lint, contrast · the board checked in a real browser at 375/768/1024/1440 in
+both themes with zero console errors.
+
+**Candidates if he wants more**, none of them started:
+- The other months' videos: 304 more real links on the same sheets (July back to
+  April), roughly 100 API calls. It would make the board and My Numbers much
+  richer than one month of one brand.
+- PARKED 15: two contest queues still draw initials.
+- PARKED 13a: WurxBase's open database and five plaintext logins, BEFORE LAUNCH.
+- The whole of PARKED section 0b: the creator side never had the chrome rebuild.
 
 **Do not re-explore the codebase to get oriented.** This file, then PARKED, then
-only the files the chosen step names.
+only the files the chosen job names.
 
 ---
+
+## The pipeline joins up, and the board goes live (2026-08-20)
+
+Steps C and D, after Rashid said "please complete everything now".
+
+**C. One pipeline for every video.** The ad money path named
+`content_submissions` everywhere, which is the OFFER table, so a contest
+video's id was never sent to TikTok and could not have been read if it had. My
+Numbers was silently "offer videos only" with nothing saying so.
+`creator_videos` unions both channels and the sync, the backfill depth, the
+three read functions and the row policy all read it. My Numbers has **All /
+Offer videos / Contest videos**, filtered in the DATABASE so the chart, the
+tiles and the cards answer the same question.
+
+**Contest videos carry a TikTok id at last.** The column had existed since
+2026-08-13 and was NULL on every row, because the creator's dialog sends a link
+and an ad code while the Edge Function and the RPC both accept an id nobody was
+passing. Derived from the URL server side now, never trusted from the client
+first: a creator who could name the id separately from the link could point
+their row at somebody else's video.
+
+**The deduplication is the subtle part.** There is no uniqueness on
+`embed_id` anywhere, and one creator filing the same video against a job and a
+contest entry is legitimate. `creator_video_performance` collapses to one row
+per (creator, item) and reports `source` as 'offer', 'contest' or 'both'. Each
+tab is right on its own; adding two tabs together is the one sum this data
+cannot support.
+
+**D. The leaderboard.** `/app/leaderboards`, the Step 9 badge gone, built to
+the shape of `MY UI/LeaderBoard/` in Wurx tokens rather than its purple
+Material palette. A band saying where you stand, a podium with first place
+raised, a searchable ranked table with a bar behind each figure.
+
+It **amends D7 for this screen only**, on his explicit answer: names and figures
+visible to everyone, faces on it, one global board, and creators with no figures
+hidden. The anonymous contest standing is untouched and the schema-level ban on
+a contest leaderboard still stands. It is one narrow SECURITY DEFINER function
+rather than a view, because a view would have needed a policy on `profiles`
+wide enough for one creator to read another's row.
+
+**Four things that bit, all worth keeping.** `create or replace` on a function
+with a NEW ARGUMENT creates a second overload rather than replacing anything,
+and PostgREST picks by the argument names a request sends — that is how
+`creator_daily_performance` served the old body and returned an empty chart
+under a full set of cards. `revoke all ... from public` also revokes
+`service_role`, so the board worked for creators and refused every script.
+"Top 100% of creators" is true and unkind and is what last place read. And a
+podium stacked 2-1-3 on a phone reads as second place winning.
+
+**One honest wrinkle.** The 15 seeded contest videos are real August posts from
+his own sheets that were never loaded, so they are genuinely distinct from the
+85 — but those particular videos barely ran ads: \$0.84 of spend and \$0.00
+GMV across the six approved. The tab works; the figures are nearly zero.
+
 
 ## Contest videos become real (2026-08-20)
 

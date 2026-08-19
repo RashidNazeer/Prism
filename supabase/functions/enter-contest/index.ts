@@ -70,6 +70,23 @@ import { z } from 'npm:zod@4.4.3';
 import { corsHeaders, json } from '../_shared/cors.ts';
 
 /**
+ * The TikTok item id, read out of the link.
+ *
+ * That id is the only thing ad money is ever matched on: the report call
+ * filters on `item_id` and `tiktok_video_daily` is keyed on it. A contest video
+ * without one can never have figures, which is exactly the state every contest
+ * video was in until 2026-08-20.
+ *
+ * The same pattern `videoIdFrom` uses in the browser and the same one the
+ * backfill in `20260820140000` uses, so all three agree about what an id is. A
+ * link that carries no id returns null, and that video simply reports nothing
+ * rather than matching some other video by accident.
+ */
+function idFromTikTokUrl(url: string): string | null {
+  return url.match(/\/video\/(\d{6,32})/)?.[1] ?? null;
+}
+
+/**
  * Entering, or asking to. Which of the two it is belongs to the contest, never
  * to the request: `apply_for_contest` reads `needs_admin_approval` under a row
  * lock and decides there, so an old browser tab cannot ask to skip the queue.
@@ -362,7 +379,23 @@ Deno.serve(async (req) => {
         thumbnail_url: v.thumbnailUrl ?? null,
         video_title: v.videoTitle ?? null,
         video_author: v.videoAuthor ?? null,
-        embed_id: v.embedId ?? null,
+        /*
+         * THE ID IS DERIVED HERE, SERVER SIDE, and only falls back to what the
+         * browser sent. Until 2026-08-20 this was `v.embedId ?? null` and the
+         * creator's dialog sent no id at all, so every contest video ever filed
+         * carried a null one — and an id is the ONLY thing ad money is matched
+         * on, so a contest video could never have any.
+         *
+         * Read out of the link rather than fetched: a TikTok URL carries the id
+         * in its path, which is exact, free, and still works for a post that
+         * has since been deleted. oEmbed is none of those things and is used
+         * elsewhere only because the thumbnail and title are wanted too.
+         *
+         * Never trusted from the client first. A creator who could name the id
+         * separately from the link could point their row at somebody else's
+         * video while the link on screen still looked like their own.
+         */
+        embed_id: idFromTikTokUrl(v.videoUrl) ?? v.embedId ?? null,
       })),
     });
   } else {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { m } from 'motion/react';
 import { Check, X } from 'lucide-react';
-import { CreatorFace } from '@/components/admin/CreatorFace';
+import { CreatorFace } from '@/components/work/CreatorFace';
 import { useCreatorAvatars } from '@/lib/admin/useCreatorAvatars';
 import { Button } from '@/components/ui/Button';
 import { Field, Select, Textarea } from '@/components/ui/Field';

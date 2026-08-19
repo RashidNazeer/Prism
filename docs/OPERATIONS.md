@@ -210,6 +210,10 @@ node scripts/seed-penetrex-contest.mjs [--clean]
                             # queue has something in it. Walks the real
                             # functions, never writes a contest table directly.
 
+pnpm verify:leaderboard      # 34 checks, mostly attacks. The board is the only
+                            # place one creator sees another`s figures, so most
+                            # of that suite is about what it must NOT hand over.
+
 node scripts/tidy-dev.mjs [--yes] [--skip-money] [--brands "A,B"]
                             # DEV ONLY. Removes what is on dev but is not the
                             # product: test accounts (@wurxmediahub.test), test

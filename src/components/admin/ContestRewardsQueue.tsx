@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { CreatorFace } from '@/components/admin/CreatorFace';
+import { CreatorFace } from '@/components/work/CreatorFace';
 import { useCreatorAvatars } from '@/lib/admin/useCreatorAvatars';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {

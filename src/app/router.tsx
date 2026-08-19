@@ -171,6 +171,7 @@ const CreatorOffers = screen(() => import('@/routes/app/Offers'), 'Offers');
 const CreatorContests = screen(() => import('@/routes/app/Contests'), 'Contests');
 const CreatorContent = screen(() => import('@/routes/app/Content'), 'Content');
 const CreatorNumbers = screen(() => import('@/routes/app/MyNumbers'), 'MyNumbers');
+const CreatorBoard = screen(() => import('@/routes/app/Leaderboards'), 'Leaderboards');
 
 const AdminHome = screen(() => import('@/routes/admin/AdminDashboard'), 'AdminDashboard');
 const AdminApplications = screen(() => import('@/routes/admin/Applications'), 'Applications');
@@ -224,6 +225,7 @@ const PREFETCH: Record<string, () => Promise<unknown>> = {
   '/app/contests': () => import('@/routes/app/Contests'),
   '/app/content': () => import('@/routes/app/Content'),
   '/app/numbers': () => import('@/routes/app/MyNumbers'),
+  '/app/leaderboards': () => import('@/routes/app/Leaderboards'),
   '/admin': () => import('@/routes/admin/AdminDashboard'),
   '/admin/applications': () => import('@/routes/admin/Applications'),
   '/admin/activity': () => import('@/routes/admin/Activity'),
@@ -378,6 +380,10 @@ export const router = createBrowserRouter([
           {
             path: '/app/numbers',
             element: <CreatorNumbers />,
+          },
+          {
+            path: '/app/leaderboards',
+            element: <CreatorBoard />,
           },
         ],
       },

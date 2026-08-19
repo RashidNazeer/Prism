@@ -5,7 +5,7 @@ import { Input, Select } from '@/components/ui/Field';
 import { FilterBar } from '@/components/layout/FilterBar';
 import { money } from '@/lib/money';
 import { TIER_LABEL } from '@/lib/tiers';
-import { CreatorFace } from '@/components/admin/CreatorFace';
+import { CreatorFace } from '@/components/work/CreatorFace';
 import { useCreatorAvatars } from '@/lib/admin/useCreatorAvatars';
 import {
   CREATOR_PAGE_SIZE,

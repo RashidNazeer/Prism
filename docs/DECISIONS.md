@@ -1227,3 +1227,46 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   award call changed. The offer migration the day before patched its functions
   from extracted source for exactly this reason; this is what happens when that
   is not done.
+- 2026-08-20: **One pipeline, both channels, through `creator_videos`.** The
+  ad money path named `content_submissions` everywhere, which is the OFFER
+  table, so a contest video's id was never sent to TikTok and could not have
+  been read if it had. Four places had to change together — the row policy, the
+  three read functions, the backfill depth and the sync query — because
+  widening three of four leaves a video fetched and unreadable, or readable and
+  never fetched.
+- 2026-08-20: **A video that is both an offer video and a contest video reports
+  `source = 'both'`, and answers to either tab.** There is no uniqueness on
+  `embed_id`, and filing one video against a job and a contest entry is
+  legitimate rather than an error. Each tab's total is correct on its own;
+  adding two tabs together is the one sum this data cannot support and no screen
+  does it. The alternative, picking one channel arbitrarily, would have hidden
+  a real video from a real tab.
+- 2026-08-20: **A contest video's TikTok id is derived server side from the
+  link, never taken from the client first.** A creator who could name the id
+  separately from the link could point their row at somebody else's video while
+  the link on screen still looked like their own.
+- 2026-08-20: **The leaderboard is a SECURITY DEFINER function, not a view.** A
+  view creators could select from would have needed a policy on `profiles`
+  wide enough for one creator to read another's row: a far bigger hole than the
+  screen needs, and open to every query written afterwards. The function returns
+  eleven columns and cannot be asked for a twelfth.
+- 2026-08-20: **D7 is amended for the global GMV board only.** The anonymous
+  contest standing keeps its promise, the schema-level prohibition on a contest
+  leaderboard stands, and nothing in the new function reads a contest table. The
+  two coexist because they are about different things.
+- 2026-08-20: **Creators with no figures are hidden from the board**, Rashid's
+  call. A board that is three quarters zeros reads as broken to the people at
+  the bottom, and it is not even true: a zero there means "not measured yet".
+  They are told so at the top of the screen instead.
+- 2026-08-20: **`creator-avatars` opened to signed-in creators.** A narrow,
+  deliberate reversal of the previous day's admin-only decision, taken because
+  Rashid asked for faces on the board in those words. Objects are named by
+  profile id and `profiles` still refuses one creator another's row, so a name
+  cannot be turned into a path from the client. Writing stays impossible for
+  everybody, which the suite proves.
+- 2026-08-20: **`create or replace` on a function with a NEW ARGUMENT creates
+  a second overload rather than replacing anything**, and PostgREST resolves by
+  the argument names a request sends. That is how `creator_daily_performance`
+  ended up serving the old body to a two-argument caller and returning an empty
+  chart under a full set of cards. Adding a return column forces a `drop` and
+  is safe by accident; adding an argument is not.

@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router';
 import { ArrowLeft, ExternalLink, Star } from 'lucide-react';
-import { CreatorFace } from '@/components/admin/CreatorFace';
+import { CreatorFace } from '@/components/work/CreatorFace';
 import { useCreatorAvatars } from '@/lib/admin/useCreatorAvatars';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import { ReviewPanel } from '@/components/admin/ReviewPanel';

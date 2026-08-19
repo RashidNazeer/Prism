@@ -163,6 +163,20 @@ const SCREENS = [
     expect: /vitauthority|opens when you are approved/i,
     as: 'creator',
   },
+  /*
+   * The leaderboard, added 2026-08-20. The expectation covers both of its real
+   * states, because this suite has no service key and cannot decide whether its
+   * demo creator has figures: either they are on the board, or the band at the
+   * top tells them why they are not. Both have to lay out, and neither may
+   * scroll the page sideways — the board is a four column table on a laptop and
+   * a stack of cards on a phone, and that fold is the thing being measured.
+   */
+  {
+    path: '/app/leaderboards',
+    name: 'Creator leaderboard',
+    expect: /you are not on the board yet|top \d+% of creators|the board is empty/i,
+    as: 'creator',
+  },
   { path: '/admin/login', name: 'Staff sign in', expect: /staff access/i, anon: true },
   { path: '/login', name: 'Creator sign in', expect: /welcome back/i, anon: true },
 ];

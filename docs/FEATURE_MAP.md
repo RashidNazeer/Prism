@@ -1051,7 +1051,7 @@ early.
 | Brand Hubs + theming         | Step 6  | Brands, design tokens          | My Numbers, Leaderboards       |
 | Data pipeline + facts        | Step 7  | Creators, brands, identity map | My Numbers, Leaderboards, Home |
 | My Numbers                   | Step 8  | Facts, Brand Hubs              | none                           |
-| Leaderboards                 | Step 9  | Facts, privacy flag            | Brand Hubs                     |
+| ~~Leaderboards~~ DONE        | Step 9  | see "The leaderboard" above    | -                              |
 | Offers + Discord             | Step 10 | Tiers, Brand Hubs              | none                           |
 
 ## Contests
@@ -1253,6 +1253,111 @@ and all are approved only then money is owed."*
   "the row went away"; it now waits for the row itself to detach.
 - `node scripts/seed-penetrex-contest.mjs` builds one contest on dev in five
   deliberate states, walking the real functions rather than writing rows.
+
+## One pipeline for every video (2026-08-20)
+
+**Files:** `supabase/migrations/20260820140000_one_pipeline_for_every_video.sql`,
+`supabase/migrations/20260820180000_drop_old_performance_arity.sql`,
+`supabase/functions/tiktok-sync/index.ts`,
+`supabase/functions/enter-contest/index.ts`,
+`src/lib/creator/usePerformance.ts`, `src/routes/app/MyNumbers.tsx`
+**View:** `creator_videos`
+
+Rashid: *"we are receiving videos from user from 2 channels that is offers and
+contest ... when admin approves contest videos only then creators should be able
+to see the stats of contest videos."*
+
+**Change rules**
+
+- **`creator_videos` is the union**, offers plus contests, `security_invoker`
+  so both tables' policies still decide. Everything in the ad pipeline reads it
+  now: the sync's query, `tiktok_days_to_backfill`, and the three
+  `creator_*` read functions. The row policy on `tiktok_video_daily` is the
+  one exception and is written as two explicit `exists` instead, because a
+  policy is the floor everything else stands on and should be readable without
+  chasing a view somebody could widen later.
+- **Widening three of the four leaves a hole either way**: a video that is
+  fetched and unreadable, or readable and never fetched.
+- **Deduplicate on `embed_id` before summing anything.** There is no
+  uniqueness on that column anywhere, and one creator filing the same video
+  against a job AND a contest entry is legitimate. `creator_video_performance`
+  collapses to one row per (creator, item) and reports `source` as 'offer',
+  'contest' or 'both'. A 'both' video answers to either tab, so each tab's total
+  is right on its own and **adding two tabs together is the one sum this data
+  cannot support**. Nothing does it.
+- **Contest videos carry an `embed_id` at last.** The column existed since
+  2026-08-13 and was NULL on every row, because the creator's dialog sends only
+  a link and an ad code while the Edge Function and RPC both accept an id nobody
+  passed. `enter-contest` derives it from the URL server side and never trusts
+  a client-supplied one first: a creator who could name the id separately from
+  the link could point their row at somebody else's video. The migration
+  backfills existing rows the same way.
+- **An id is read out of the link, never fetched.** A TikTok URL carries it,
+  which is exact, free, and still works for a deleted post. oEmbed is used
+  elsewhere only because the thumbnail and title are wanted too.
+- **`create or replace` does not replace a function whose argument list
+  changed.** Adding `p_source` to `creator_daily_performance` created a
+  SECOND overload, and PostgREST resolves an RPC by the argument names a request
+  happens to send, so the suite got the old body and an empty chart under a full
+  set of cards. `20260820180000` drops the old arity. Adding a return column
+  forces a `drop` and is safe by accident; adding an argument does not.
+
+## The leaderboard (2026-08-20)
+
+**Files:** `supabase/migrations/20260820160000_creator_leaderboard.sql`,
+`supabase/migrations/20260820170000_leaderboard_grants.sql`,
+`src/lib/creator/useLeaderboard.ts`, `src/routes/app/Leaderboards.tsx`,
+`src/components/work/CreatorFace.tsx`, `scripts/check-leaderboard.mjs`
+
+Step 9, unlocked. Rashid: *"it should show the actual money other creators have
+made and where do the creator himself stands ... by gmv i mean the sum of the
+gmv of all the videos of creator X."*
+
+**Change rules**
+
+- **GMV, and only GMV.** He said it twice, unprompted. Nothing on this screen is
+  a payment, a reward or a fee, and none of those words appear on it.
+- **It amends D7, and only here.** The contest standing stays anonymous because
+  that screen promises in words that nobody can see who anybody else is. This
+  one never made that promise. The schema-level prohibition on a contest
+  leaderboard in `20260813151702` is untouched and nothing here reads a
+  contest table directly.
+- **One narrow `security definer` function, never a view.** A view would have
+  needed a policy on `profiles` wide enough for one creator to read another's
+  row, which is a far bigger hole and would stay open to every later query.
+  `creator_leaderboard` returns eleven columns and cannot be asked for a
+  twelfth: no email, no brand, no budget, no reward, no role, no tier. The suite
+  asserts the column count, not just the absences.
+- **`rank()`, not `row_number()`.** Two creators on identical GMV are
+  genuinely joint.
+- **Only creators with real figures appear**, Rashid's call: a board that is
+  three quarters zeros reads as broken, and a zero here means "not measured
+  yet", not "sold nothing". Somebody absent is told why at the top.
+- **`my_leaderboard_standing` takes no id**, so it cannot be asked about
+  anybody else, and the band at the top is drawn from it rather than from
+  whichever page happens to be loaded.
+- **The percentile is only shown in the top half.** "Top 100% of creators" is
+  true and unkind, and it is what last place read before that.
+- **`creator-avatars` is readable by any signed-in account now**, a deliberate
+  narrow reversal of the 2026-08-19 admin-only decision. Objects are named by
+  PROFILE ID, `profiles` still refuses one creator another's row, so there is
+  no way to turn a name into a path from the client; the only ids a creator
+  holds are the ones the board already showed them. Writing is still impossible
+  for everybody.
+- **`CreatorFace` moved to `src/components/work/`** because it is now drawn
+  on both sides and `src/components/admin/` is closed to creator code by
+  `no-restricted-imports`. Duplicating it would have been two ways of drawing
+  one human.
+- **`revoke all ... from public` also revokes `service_role`.** Same trap
+  OPERATIONS records for new tables. The functions worked perfectly for the
+  creators they are for and returned `permission denied` to every script.
+- **The podium is 2-1-3 side by side and 1-2-3 stacked.** A vertical list
+  starting with second place reads as second place winning.
+- `pnpm verify:leaderboard` is 34 checks, most of them attacks: the private
+  totals function is unreachable as an RPC, a quote in the search is data, the
+  page size is capped however big a limit is asked for, a creator still cannot
+  read another profile or their own unapproved money, signed-out gets nothing,
+  and a creator can sign a face but never write one.
 
 ## Realtime, and the one rule about it
 

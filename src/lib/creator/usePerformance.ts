@@ -27,9 +27,26 @@ export type PerformanceWindow = {
   videos: number;
 };
 
+/**
+ * WHICH CHANNEL A VIDEO CAME THROUGH.
+ *
+ * Rashid: "in my numbers section users can have a tab like offer videos or
+ * contest videos and all videos so that they can differentiate that their
+ * which video whether in offers or contest, is going well."
+ *
+ * 'both' is a real answer, not a fallback. Nothing stops a creator filing the
+ * same video against a job AND a contest entry, and when they have, that video
+ * genuinely did both. It appears under Offers and under Contests, once each,
+ * and under All exactly once, so every tab's total is right on its own. Adding
+ * two tabs together is the one sum this data cannot support, and no screen
+ * does it.
+ */
+export type VideoSource = 'offer' | 'contest' | 'both';
+
 export type VideoPerformance = {
   item_id: string;
   submission_id: string;
+  source: VideoSource;
   video_url: string;
   video_title: string | null;
   thumbnail_url: string | null;
@@ -99,15 +116,21 @@ export function usePerformanceWindow() {
   });
 }
 
-export function useVideoPerformance(from: string | null, to: string | null) {
+export function useVideoPerformance(
+  from: string | null,
+  to: string | null,
+  /** null asks for every video, whichever channel it arrived through. */
+  source: 'offer' | 'contest' | null = null
+) {
   return useQuery({
-    queryKey: ['creator', 'performance', 'videos', from, to],
+    queryKey: ['creator', 'performance', 'videos', from, to, source ?? 'all'],
     enabled: Boolean(from && to),
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<VideoPerformance[]> => {
       const { data, error } = await getSupabase().rpc('creator_video_performance', {
         p_from: from,
         p_to: to,
+        p_source: source,
       });
       if (error) throw error;
       return (data ?? []) as VideoPerformance[];
@@ -115,15 +138,20 @@ export function useVideoPerformance(from: string | null, to: string | null) {
   });
 }
 
-export function useDailyPerformance(from: string | null, to: string | null) {
+export function useDailyPerformance(
+  from: string | null,
+  to: string | null,
+  source: 'offer' | 'contest' | null = null
+) {
   return useQuery({
-    queryKey: ['creator', 'performance', 'daily', from, to],
+    queryKey: ['creator', 'performance', 'daily', from, to, source ?? 'all'],
     enabled: Boolean(from && to),
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<DailyPerformance[]> => {
       const { data, error } = await getSupabase().rpc('creator_daily_performance', {
         p_from: from,
         p_to: to,
+        p_source: source,
       });
       if (error) throw error;
       return (data ?? []) as DailyPerformance[];

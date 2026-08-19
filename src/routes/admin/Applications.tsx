@@ -6,7 +6,7 @@ import { RowActions } from '@/components/admin/RowActions';
 import { ReviewDialog, type ReviewTarget } from '@/components/admin/ReviewDialog';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Field';
-import { CreatorFace } from '@/components/admin/CreatorFace';
+import { CreatorFace } from '@/components/work/CreatorFace';
 import { useCreatorAvatars } from '@/lib/admin/useCreatorAvatars';
 import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { cn } from '@/lib/utils';

@@ -32,7 +32,8 @@
     "verify:all": "node scripts/verify-all.mjs",
     "measure:nav": "node scripts/measure-nav.mjs",
     "seed:contests": "node scripts/seed-contests.mjs",
-    "verify:isolation": "node scripts/check-isolation.mjs"
+    "verify:isolation": "node scripts/check-isolation.mjs",
+    "verify:leaderboard": "node scripts/check-leaderboard.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

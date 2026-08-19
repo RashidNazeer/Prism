@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Check, Handshake, Search, Video, X } from 'l
 import { OfferReviewDialog } from '@/components/admin/OfferReviewDialog';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Field';
-import { CreatorFace } from '@/components/admin/CreatorFace';
+import { CreatorFace } from '@/components/work/CreatorFace';
 import { useCreatorAvatars } from '@/lib/admin/useCreatorAvatars';
 import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { cn } from '@/lib/utils';

@@ -172,7 +172,7 @@ const CREATOR: NavGroup[] = [
         to: '/app/brands',
         activePrefixes: ['/app/brands'],
       },
-      { label: 'Leaderboards', icon: Trophy, soon: 'Step 9' },
+      { label: 'Leaderboards', icon: Trophy, to: '/app/leaderboards' },
       { label: 'Offers', icon: Gift, to: '/app/offers' },
       { label: 'Contests', icon: Award, to: '/app/contests' },
       { label: 'My content', icon: Video, to: '/app/content' },

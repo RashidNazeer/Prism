@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, ExternalLink, Flag, Loader2, Video } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { CreatorFace } from '@/components/admin/CreatorFace';
+import { CreatorFace } from '@/components/work/CreatorFace';
 import { ContestVideoDecision } from '@/components/admin/ContestVideoDecision';
 import { useCreatorAvatars } from '@/lib/admin/useCreatorAvatars';
 import { useContestContent, CONTEST_CONTENT_PAGE } from '@/lib/admin/useContestContent';
