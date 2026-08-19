@@ -975,3 +975,36 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   column, re-evaluates the CHECK, and aborts the whole delete part way through
   the loop. Four more `_at`/`_by` pairs behave identically. No foreign-key
   audit finds any of them, because they are CHECK constraints.
+- 2026-08-19: **Penetrex's August retainer is on dev, from Rashid's own
+  spreadsheet.** 41 creators, $22,250 committed across 393 videos, reconciling
+  against the sheet's own totals to the dollar. `seed-penetrex-offers.mjs`.
+- 2026-08-19: **Creators on identical terms share an offer; a different rate is
+  a different offer.** Rashid's call, and it is also the grain the product was
+  built on: terms live on the OFFER, not on the request, because the two columns
+  that let a creator name their own price were dropped on 2026-07-31. 41 deals
+  become 31 offers, 26 with a single creator and 5 shared, the largest by six.
+- 2026-08-19: **The committed money comes from "Monthly Cost", not from
+  rate x videos.** The sheet carries both and they disagree on five rows because
+  the per-video rate is rounded: Simply Sarah is $73 x 15 = $1,095 against a
+  stated $1,100, Erin Cooper $133 x 15 = $1,995 against $2,000. The monthly
+  figure is what has actually been committed, so it is the one stored; the rate
+  is shown as the sheet prints it.
+- 2026-08-19: **The offer title carries the total AND the rate.** $420 and $415
+  over ten videos both round to "$42 a video", and two offers with identical
+  titles is how somebody gets approved onto the wrong one.
+- 2026-08-19: **The pipeline mirrors the sheet's Status column** rather than
+  starting everyone at the beginning: 37 at content pending, 3 at payment
+  pending, and Sarah Hilliard paid at $500, which is exactly the sheet's TOTAL
+  PAID. Each creator is walked through the stages one call at a time, so
+  `offer_stage_events` holds a real history instead of a single jump.
+- 2026-08-19: **The 41 now display their real names, from the sheet.** A real
+  sign-up records the TikTok handle as the display name because that is all the
+  form collects; the name is what an admin fills in afterwards. The handle is
+  untouched and still shows beside it.
+- 2026-08-19: **Any script that deletes offers must recompute the brand's
+  committed budget.** `brand_commercials.budget_used` is a running total that
+  `review_offer_application` adds to, with no foreign key and no cascade. The
+  first `--clean` of the offers seed left the whole $22,250 committed to offers
+  that no longer existed, and re-seeding on top read $44,500 against a $23,000
+  budget. Nothing errored. Both paths through that script now end in a
+  recomputation, and the seed asserts the result against the sheet.

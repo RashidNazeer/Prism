@@ -4,30 +4,75 @@
 
 **Recorded 2026-08-19.**
 
-Dev was emptied of every creator, offer and contest and reseeded with **Wurx's
-41 real TikTok handles** as approved creators. Rashid said: *"First create their
-accounts then i will tell you next steps."* So **ask him what the next step is**
-before building anything.
+Dev now carries **Penetrex's real August 2026 retainer**: 41 real creators, 31
+offers, 41 approved requests, $22,250 committed across 393 videos, every figure
+reconciling against Rashid's own spreadsheet. He is testing it.
 
-Sign in as any of them with `<handle>@wurxmedia.com` / `1234567890`. The
-handles are in `scripts/seed-creators.mjs`.
+**Ask him what is next.** The obvious candidate, and he has the data for it, is
+**their video links**. The sheet's "Master Sheet" tab holds real TikTok links,
+ad codes and video ids per creator, and **the TikTok money is still in the
+database**: 5,294 video-days of real cost and GMV survived the wipe because
+`tiktok_video_daily` is keyed by video id, not by person. Submitting those
+links would light up My Numbers with real money and no TikTok API call.
 
-Almost certainly next: **offers**, since the wipe took all three and every
-creator's hub currently reads "0 offers you can take". Possibly also their
-video links, which is worth knowing about because **the TikTok money survived
-the wipe**: 5,294 video-days are still in `tiktok_video_daily`, and the 82
-links that pointed at them were captured to
-`%TEMP%\wurx-clean-slate-capture.json` before deleting. Re-submitting those
-links restores the real figures with no TikTok API call.
+Two cautions if that is the job. The Master Sheet names people by first name
+("Graycie", "Lidice", "Lauren"), not by handle, and **some of those names are
+not among the 41** — Lidice and Lauren are not on the retainer. And a video's
+figures re-attach on the video id alone, so the same link submitted by two
+creators would show both of them the same money.
 
-Also waiting on him, both in PARKED: **12 orphaned test admins on dev** (item
-14) and **the vendored WurxBase tables losing their fields at 768px** (item
-13e, "we will fix that later").
+Also still waiting, both in PARKED: **12 orphaned test admins on dev** (item 14)
+and **the vendored WurxBase tables losing their fields at 768px** (item 13e).
 
 **Do not re-explore the codebase to get oriented.** This file, then PARKED,
 then only the files the chosen job names.
 
 ---
+
+## Penetrex's real retainer, on dev (2026-08-19)
+
+Rashid published the Penetrex retainer sheet and asked for the deals in it to
+become approved offers.
+
+**What went in:** 31 offers, 41 approved requests, 132 stage moves. **$22,250
+committed across 393 videos**, against a $23,000 budget, which is 96.74% and
+matches both his spreadsheet's own TOTAL BUDGET ALLOCATED and the figure
+WurxBase shows for the same brand.
+
+**41 deals became 31 offers**, his call and the right one: creators on identical
+terms share an offer and a different rate is a different offer. That is also the
+only shape the schema allows, because terms live on the OFFER and the two
+columns that once let a creator name their own price were dropped on
+2026-07-31. Twenty-six offers carry one creator; five are shared, the largest by
+six.
+
+**The money comes from "Monthly Cost", not from rate x videos.** The sheet
+carries both and they disagree on five rows because the per-video rate is
+rounded: Simply Sarah is $73 x 15 = $1,095 against a stated $1,100. The monthly
+figure is what is actually committed.
+
+**It walked the real path**, four functions, the same ones the admin screens
+call: `save_offer`, then `apply_for_offer` as the creator, then
+`review_offer_application` as Rashid, then `set_offer_stage` once per step so
+the pipeline history is real rather than a jump to the end. The stage each
+creator lands on is the sheet's Status: 37 content pending, 3 payment pending,
+and Sarah Hilliard **paid at $500**, which is exactly the sheet's TOTAL PAID and
+now reads AGREED $500 / PAID $500 on her card.
+
+**All 41 show their real names now**, from the sheet. Their handles are
+untouched and still shown beside them.
+
+**One bug found by running it twice.** `brand_commercials.budget_used` is a
+running total with no foreign key and no cascade, so the first `--clean` left
+the whole $22,250 committed to offers that no longer existed and the re-seed
+read $44,500 against a $23,000 budget, silently. Both paths through the script
+now recompute it from the requests that actually exist, and the seed asserts the
+result against the sheet.
+
+**Verified in a browser on dev:** Gunnar signs in and sees his $1,600 deal; the
+admin offers, requests, creators and brand-hub screens all show the seeded data;
+zero console errors on either side.
+
 
 ## Clean slate: 41 real creators on dev (2026-08-19)
 

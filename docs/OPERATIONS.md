@@ -183,6 +183,13 @@ node scripts/seed-creators.mjs [--clean]       # DEV ONLY
                             # 41, and only if they are creators or applicants,
                             # so it can never take Rashid's own account on the
                             # same domain.
+node scripts/seed-penetrex-offers.mjs [--clean]
+                            # DEV ONLY. Penetrex's August 2026 retainer from
+                            # Rashid's sheet: 31 offers, 41 approved requests,
+                            # $22,250 across 393 videos, each request walked to
+                            # the stage the sheet says. Needs seed-creators to
+                            # have run. Both paths recompute the brand's
+                            # committed budget, which has no cascade of its own.
 node scripts/seed-applications.mjs [--clean]   # demo queue data, DEV ONLY
 node scripts/seed-brands.mjs [--clean]         # demo brands and offers, DEV ONLY
 node scripts/seed-pipeline.mjs [--clean]       # videos against the approved jobs,
