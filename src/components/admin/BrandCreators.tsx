@@ -3,6 +3,8 @@ import { ChevronLeft, ChevronRight, Search, Users, Video } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
+import { CreatorFace } from '@/components/admin/CreatorFace';
+import { useCreatorAvatars } from '@/lib/admin/useCreatorAvatars';
 import { money } from '@/lib/money';
 import {
   DEFAULT_ROSTER_FILTERS,
@@ -82,6 +84,8 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
   const { data: counts } = useRosterCounts(brandId);
 
   const rows = data?.rows ?? [];
+  // One query and one batch of signed URLs for this brand's page.
+  const faces = useCreatorAvatars(rows.map((r) => r.creator_id));
   const total = data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / ROSTER_PAGE_SIZE));
   const filtered = Boolean(filters.search) || filters.tab !== 'all';
@@ -197,7 +201,7 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
           <ul className="mt-4 grid gap-3">
             {rows.map((row) => (
               <li key={row.creator_id}>
-                <RosterCard row={row} />
+                <RosterCard row={row} face={faces[row.creator_id]} />
               </li>
             ))}
           </ul>
@@ -237,7 +241,7 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
 
 /* ----------------------------------------------------------------- card -- */
 
-function RosterCard({ row }: { row: RosterRow }) {
+function RosterCard({ row, face }: { row: RosterRow; face: string | undefined }) {
   const who = row.creator_handle ? `@${row.creator_handle}` : (row.creator_name ?? 'A creator');
 
   /*
@@ -262,6 +266,14 @@ function RosterCard({ row }: { row: RosterRow }) {
   return (
     <div className="border-line bg-surface-1 rounded-xl border p-4 shadow-md sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-x-5 gap-y-3">
+        <CreatorFace
+          src={face}
+          name={row.creator_name}
+          handle={row.creator_handle}
+          size={38}
+          className="mt-0.5"
+        />
+
         <div className="min-w-0 flex-1 basis-52">
           <Link
             to={`/admin/creators/${row.creator_id}`}
@@ -329,7 +341,9 @@ function RosterCard({ row }: { row: RosterRow }) {
                   <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                     {c.label}
                   </dt>
-                  <dd className={cn('font-display mt-0.5 text-[0.9375rem] font-semibold', c.text)}>
+                  <dd
+                    className={cn('font-display mt-0.5 text-[0.9375rem] font-semibold', c.text)}
+                  >
                     {fmt(c.value)}
                   </dd>
                 </div>

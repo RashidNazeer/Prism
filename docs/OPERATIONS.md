@@ -204,6 +204,13 @@ node scripts/check-brand-binding.mjs [brand]
                             # store and ad figures, and that nothing leaks to
                             # another brand. Run it whenever a second brand
                             # gets a store mapped.
+node scripts/sync-avatars.mjs [--refresh]
+                            # DEV ONLY. Fetches each creator's TikTok profile
+                            # picture ONCE into the private creator-avatars
+                            # bucket, 25 at a time, and never retries somebody
+                            # already tried. --refresh does everybody again.
+                            # The ONLY thing that talks to unavatar.io, and it
+                            # runs on Supabase's servers, not in a browser.
 node scripts/seed-applications.mjs [--clean]   # demo queue data, DEV ONLY
 node scripts/seed-brands.mjs [--clean]         # demo brands and offers, DEV ONLY
 node scripts/seed-pipeline.mjs [--clean]       # videos against the approved jobs,

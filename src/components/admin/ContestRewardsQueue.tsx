@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { CreatorFace } from '@/components/admin/CreatorFace';
+import { useCreatorAvatars } from '@/lib/admin/useCreatorAvatars';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {
   BadgeCheck,
@@ -143,11 +145,11 @@ async function fetchRewards(
 
   const [termsRes, entriesRes, contestsRes, profilesRes] = await Promise.all([
     sb.from('contest_entry_terms').select('id, title, type, target_value').in('id', termIds),
+    sb.from('contest_entries').select('id, creator_handle, creator_name').in('id', entryIds),
     sb
-      .from('contest_entries')
-      .select('id, creator_handle, creator_name')
-      .in('id', entryIds),
-    sb.from('contests').select('id, name, brand_id, settled_at, cancelled_at').in('id', contestIds),
+      .from('contests')
+      .select('id, name, brand_id, settled_at, cancelled_at')
+      .in('id', contestIds),
     // is_active, because a suspended creator cannot be paid without somebody
     // saying so out loud and the row has to warn before the click, not after.
     sb.from('profiles').select('id, is_active').in('id', creatorIds),
@@ -347,6 +349,10 @@ export function ContestRewardsQueue({
   // empty array on every render while the query is in flight, which makes the
   // selection memo below recompute forever.
   const rows = useMemo(() => data?.rows ?? [], [data]);
+  // One query and one batch of signed URLs for the page. A face beside a name
+  // is a second signal only: "Account off" stays the thing that says a person
+  // is suspended.
+  const faces = useCreatorAvatars(rows.map((r) => r.creatorId));
   const total = data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const now = Date.now();
@@ -385,7 +391,9 @@ export function ContestRewardsQueue({
   }
 
   function toggleAll() {
-    setSelected((prev) => (prev.size === rows.length ? new Set() : new Set(rows.map((r) => r.id))));
+    setSelected((prev) =>
+      prev.size === rows.length ? new Set() : new Set(rows.map((r) => r.id))
+    );
     setConfirming(false);
     setServerError('');
   }
@@ -422,7 +430,7 @@ export function ContestRewardsQueue({
             <div className="wx-skeleton h-[104px] rounded-xl" />
           </>
         ) : (totals.data ?? []).length === 0 ? (
-          <div className="border-line text-muted sm:col-span-2 rounded-xl border border-dashed p-5 text-[0.8125rem] leading-relaxed">
+          <div className="border-line text-muted rounded-xl border border-dashed p-5 text-[0.8125rem] leading-relaxed sm:col-span-2">
             No contest reward has been earned yet. A reward appears here the moment somebody on
             this team confirms the figures that earn it.
           </div>
@@ -465,9 +473,7 @@ export function ContestRewardsQueue({
             onClick={() => switchView(tab)}
             className={cn(
               'min-h-[44px] flex-1 rounded-lg px-3 text-[0.8125rem] font-semibold transition-colors duration-200',
-              view === tab
-                ? 'bg-surface-1 text-text shadow-sm'
-                : 'text-muted hover:text-accent'
+              view === tab ? 'bg-surface-1 text-text shadow-sm' : 'text-muted hover:text-accent'
             )}
           >
             {tab === 'owed' ? 'Owed' : 'Paid'}
@@ -567,6 +573,7 @@ export function ContestRewardsQueue({
                 <li key={row.id}>
                   <RewardCard
                     row={row}
+                    face={faces[row.creatorId]}
                     now={now}
                     view={view}
                     showContest={!contestId}
@@ -643,7 +650,12 @@ export function ContestRewardsQueue({
                 >
                   Clear
                 </Button>
-                <Button type="button" size="sm" className="min-h-[44px]" onClick={() => setConfirming(true)}>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="min-h-[44px]"
+                  onClick={() => setConfirming(true)}
+                >
                   <Banknote size={15} aria-hidden />
                   Mark paid
                 </Button>
@@ -661,7 +673,8 @@ export function ContestRewardsQueue({
                   <ShieldAlert size={16} className="mt-0.5 shrink-0" aria-hidden />
                   <span>
                     One of these belongs to a creator whose account is switched off. They keep
-                    everything they earned, but paying them is a decision. Going ahead pays them.
+                    everything they earned, but paying them is a decision. Going ahead pays
+                    them.
                   </span>
                 </p>
               ) : null}
@@ -779,8 +792,10 @@ function RewardCard({
   selected,
   onToggle,
   disabled,
+  face,
 }: {
   row: RewardRow;
+  face: string | undefined;
   now: number;
   view: RewardsView;
   showContest: boolean;
@@ -794,6 +809,13 @@ function RewardCard({
 
   const body = (
     <>
+      <CreatorFace
+        src={face}
+        name={row.creatorName}
+        handle={row.creatorHandle}
+        size={34}
+        className="mt-0.5"
+      />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="font-display text-text text-[1rem] leading-tight font-bold break-words">
@@ -879,7 +901,9 @@ function RewardCard({
     <label
       className={cn(
         'flex cursor-pointer flex-col gap-3 rounded-2xl border px-4 py-3.5 transition-colors duration-200 sm:flex-row sm:items-start sm:gap-4',
-        selected ? 'border-accent bg-surface-3' : 'border-line bg-surface-2 hover:border-line-strong'
+        selected
+          ? 'border-accent bg-surface-3'
+          : 'border-line bg-surface-2 hover:border-line-strong'
       )}
     >
       <input

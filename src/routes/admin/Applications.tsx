@@ -6,6 +6,8 @@ import { RowActions } from '@/components/admin/RowActions';
 import { ReviewDialog, type ReviewTarget } from '@/components/admin/ReviewDialog';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Field';
+import { CreatorFace } from '@/components/admin/CreatorFace';
+import { useCreatorAvatars } from '@/lib/admin/useCreatorAvatars';
 import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { cn } from '@/lib/utils';
 import {
@@ -83,6 +85,9 @@ export function Applications() {
   const total = data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const rows = data?.rows ?? [];
+  // One query and one batch of signed URLs for the page. `applicant` is
+  // nullable, so a deleted account simply contributes no id.
+  const faces = useCreatorAvatars(rows.map((r) => r.applicant?.id));
   const filtered =
     Boolean(filters.search) || filters.workedWithWurx || filters.status !== 'pending';
 
@@ -324,6 +329,7 @@ export function Applications() {
                 <Row
                   key={row.id}
                   row={row}
+                  face={row.applicant ? faces[row.applicant.id] : undefined}
                   checked={selected.has(row.id)}
                   onToggle={() => toggle(row.id)}
                   onApprove={() =>
@@ -394,12 +400,14 @@ export function Applications() {
  */
 function Row({
   row,
+  face,
   checked,
   onToggle,
   onApprove,
   onReject,
 }: {
   row: QueueRow;
+  face: string | undefined;
   checked: boolean;
   onToggle: () => void;
   onApprove: () => void;
@@ -449,6 +457,12 @@ function Row({
       {/* ------------------------------------------------------ phone card */}
       <div className="pointer-events-none relative flex items-start gap-3 px-4 py-3 md:hidden">
         {box}
+        <CreatorFace
+          src={face}
+          handle={row.tiktok_handle}
+          name={row.applicant?.display_name}
+          size={38}
+        />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">@{row.tiktok_handle}</p>
           <p className="text-muted mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8125rem]">
@@ -471,7 +485,18 @@ function Row({
         )}
       >
         <span>{box}</span>
-        <span className="min-w-0 truncate font-semibold">@{row.tiktok_handle}</span>
+        {/* Inside the handle cell rather than as a seventh column: the grid is
+            fixed at six and a face is part of who this is, not a fact of its
+            own. */}
+        <span className="flex min-w-0 items-center gap-2.5">
+          <CreatorFace
+            src={face}
+            handle={row.tiktok_handle}
+            name={row.applicant?.display_name}
+            size={30}
+          />
+          <span className="min-w-0 truncate font-semibold">@{row.tiktok_handle}</span>
+        </span>
         <span className="text-muted truncate text-[0.875rem]">{niche}</span>
         <span className="text-center">
           {row.worked_with_wurx ? (

@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight, Check, Handshake, Search, Video, X } from 'l
 import { OfferReviewDialog } from '@/components/admin/OfferReviewDialog';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Field';
+import { CreatorFace } from '@/components/admin/CreatorFace';
+import { useCreatorAvatars } from '@/lib/admin/useCreatorAvatars';
 import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { cn } from '@/lib/utils';
 import { money } from '@/lib/money';
@@ -100,6 +102,8 @@ export function OfferRequests() {
    * behind them, so only they are asked about.
    */
   const jobIds = rows.filter((r) => r.status === 'approved').map((r) => r.id);
+  // One query and one batch of signed URLs for the page being drawn.
+  const faces = useCreatorAvatars(rows.map((r) => r.creator_id));
   const { data: progress } = useJobProgressFor(jobIds);
   const { data: moves } = useLatestStageMoves(jobIds);
   const pages = Math.max(1, Math.ceil(total / OFFER_QUEUE_PAGE_SIZE));
@@ -202,7 +206,9 @@ export function OfferRequests() {
           name="sort"
           aria-label="Sort"
           value={filters.sort}
-          onChange={(e) => setFilters({ sort: e.target.value === 'oldest' ? 'oldest' : 'newest' })}
+          onChange={(e) =>
+            setFilters({ sort: e.target.value === 'oldest' ? 'oldest' : 'newest' })
+          }
           className="h-10 w-auto min-w-[8.5rem] shrink-0 rounded-md text-[0.875rem]"
         >
           <option value="newest">Newest first</option>
@@ -250,6 +256,7 @@ export function OfferRequests() {
               <li key={row.id}>
                 <RequestRow
                   row={row}
+                  face={faces[row.creator_id]}
                   progress={progress?.get(row.id)}
                   lastMove={moves?.get(row.id)}
                   onDecide={(decision) => setDialog({ row, decision })}
@@ -317,11 +324,13 @@ function RequestRow({
   row,
   progress,
   lastMove,
+  face,
   onDecide,
 }: {
   row: OfferQueueRow;
   progress: JobProgress | undefined;
   lastMove: StageMove | undefined;
+  face: string | undefined;
   onDecide: (decision: 'approved' | 'rejected') => void;
 }) {
   const chip = STATUS_CHIP[row.status];
@@ -347,6 +356,14 @@ function RequestRow({
     <div className="border-line bg-surface-1 rounded-xl border p-4 shadow-md sm:p-5">
       <div className="flex flex-wrap items-start gap-x-5 gap-y-3">
         {/* Who, and what they want. */}
+        <CreatorFace
+          src={face}
+          name={row.creator_name}
+          handle={row.creator_handle}
+          size={38}
+          className="mt-0.5"
+        />
+
         <div className="min-w-0 flex-1 basis-56">
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-semibold break-all">{who}</p>

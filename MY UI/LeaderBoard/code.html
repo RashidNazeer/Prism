@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Creator Leaderboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Sora:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#cbc3d7",
+                        "on-tertiary-container": "#00311f",
+                        "background": "#0b1326",
+                        "on-primary-container": "#340080",
+                        "on-primary": "#3c0091",
+                        "surface-container-highest": "#2d3449",
+                        "outline-variant": "#494454",
+                        "on-secondary-fixed-variant": "#004395",
+                        "surface-container": "#171f33",
+                        "primary-fixed-dim": "#d0bcff",
+                        "inverse-surface": "#dae2fd",
+                        "tertiary-fixed": "#6ffbbe",
+                        "on-secondary-container": "#e6ecff",
+                        "error": "#ffb4ab",
+                        "secondary-fixed": "#d8e2ff",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed": "#001a42",
+                        "primary-container": "#a078ff",
+                        "surface-bright": "#31394d",
+                        "surface-container-high": "#222a3d",
+                        "on-tertiary-fixed": "#002113",
+                        "surface": "#0b1326",
+                        "outline": "#958ea0",
+                        "secondary": "#adc6ff",
+                        "inverse-primary": "#6d3bd7",
+                        "tertiary": "#4edea3",
+                        "secondary-fixed-dim": "#adc6ff",
+                        "surface-dim": "#0b1326",
+                        "primary-fixed": "#e9ddff",
+                        "surface-container-low": "#131b2e",
+                        "primary": "#d0bcff",
+                        "on-error": "#690005",
+                        "tertiary-container": "#00a572",
+                        "on-secondary": "#002e6a",
+                        "on-primary-fixed": "#23005c",
+                        "secondary-container": "#0566d9",
+                        "inverse-on-surface": "#283044",
+                        "on-background": "#dae2fd",
+                        "on-surface": "#dae2fd",
+                        "on-tertiary": "#003824",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "surface-variant": "#2d3449",
+                        "surface-tint": "#d0bcff",
+                        "error-container": "#93000a",
+                        "on-primary-fixed-variant": "#5516be",
+                        "surface-container-lowest": "#060e20",
+                        "tertiary-fixed-dim": "#4edea3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "container-max": "1280px",
+                        "margin-page": "40px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "stack-lg": "32px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "data-mono": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "display-lg-mobile": ["Sora"],
+                        "headline-md": ["Sora"],
+                        "display-lg": ["Sora"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "data-mono": ["14px", { "lineHeight": "1.0", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "label-sm": ["13px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg-mobile": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .glass-card:hover {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(20px);
+            transform: scale(1.01);
+            transition: all 0.3s ease;
+        }
+        .glow-shadow {
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.15);
+        }
+        .fade-in { animation: fadeIn 0.8s ease-out forwards; opacity: 0; }
+        .slide-up { animation: slideUp 0.6s ease-out forwards; opacity: 0; transform: translateY(20px); }
+        
+        @keyframes fadeIn { to { opacity: 1; } }
+        @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+        
+        /* Hide scrollbar for clean look */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2d3449; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #494454; }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen flex overflow-x-hidden">
+<!-- SideNavBar (Shared Component) -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container dark:bg-surface-container flex flex-col p-stack-md gap-stack-sm bg-surface-low backdrop-blur-md shadow-xl shadow-primary/10 z-50">
+<!-- Header -->
+<div class="flex items-center gap-4 mb-stack-lg p-2">
+<img class="w-10 h-10 rounded-lg object-cover" data-alt="A sleek, metallic geometric logo design for Creator Workspace, featuring sharp angles and glowing neon accents against a deep dark background, conveying a premium and modern high-tech aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCftyqD9t5JPVUdTPHH-R2mea1hWOSCwOt9BV6TbUGQwxo3xAOEVWBCwg3EXs1OI15SDdoEBC1-kPkRsLBX7xAgkHZJASxMqCt0WakLM9AdB9TLoJY2nfrnuO0V4sFy3RpLa6kMCluSwiGAL6zEjTgSF7m0l5o3Amh149pURylCwc5Uz-ak9DBSW5yFI61OfEDI05GaS7v6gio8jw2ayf4tR115zo4F9KCgB52Q2CS-guYbHFFioFYK"/>
+<div>
+<h1 class="font-headline-md text-headline-md text-on-surface">CreatorFlow Pro</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Elite Tier</p>
+</div>
+</div>
+<!-- Navigation Tabs -->
+<nav class="flex-1 flex flex-col gap-2">
+<a class="flex items-center gap-3 p-3 text-on-surface-variant hover:bg-surface-variant rounded-lg hover:bg-surface-container-high transition-all hover:scale-[1.02] active:scale-100" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">grid_view</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex items-center gap-3 p-3 bg-secondary-container text-on-secondary-container rounded-lg font-bold hover:bg-surface-container-high transition-all hover:scale-[1.02] active:scale-100" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">leaderboard</span>
+<span class="font-label-sm text-label-sm">Rankings</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-on-surface-variant hover:bg-surface-variant rounded-lg hover:bg-surface-container-high transition-all hover:scale-[1.02] active:scale-100" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">payments</span>
+<span class="font-label-sm text-label-sm">Earnings</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-on-surface-variant hover:bg-surface-variant rounded-lg hover:bg-surface-container-high transition-all hover:scale-[1.02] active:scale-100" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">trending_up</span>
+<span class="font-label-sm text-label-sm">Growth</span>
+</a>
+<a class="flex items-center gap-3 p-3 text-on-surface-variant hover:bg-surface-variant rounded-lg hover:bg-surface-container-high transition-all hover:scale-[1.02] active:scale-100" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">help_outline</span>
+<span class="font-label-sm text-label-sm">Support</span>
+</a>
+</nav>
+<!-- CTA & Footer -->
+<div class="mt-auto flex flex-col gap-4">
+<button class="w-full py-3 bg-primary text-on-primary font-label-sm text-label-sm rounded-lg hover:shadow-[0_0_15px_rgba(208,188,255,0.5)] transition-shadow">Upgrade Plan</button>
+<a class="flex items-center gap-3 p-3 text-on-surface-variant hover:bg-surface-variant rounded-lg hover:bg-surface-container-high transition-all hover:scale-[1.02] active:scale-100" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">logout</span>
+<span class="font-label-sm text-label-sm">Sign Out</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 flex-1 p-margin-page max-w-container-max mx-auto w-full">
+<!-- Header Controls -->
+<header class="flex justify-between items-end mb-stack-lg fade-in">
+<div>
+<h2 class="font-display-lg text-display-lg text-on-surface mb-2">Rankings</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Track performance and community standing.</p>
+</div>
+<div class="flex gap-4">
+<div class="flex bg-surface-container-low rounded-lg p-1 border border-outline-variant/20">
+<button class="px-4 py-2 font-label-sm text-label-sm text-on-surface bg-surface-variant rounded-md shadow-sm">Revenue</button>
+<button class="px-4 py-2 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors">Growth</button>
+<button class="px-4 py-2 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors">Engagement</button>
+</div>
+<div class="flex items-center bg-surface-container-low rounded-lg px-3 border border-outline-variant/20">
+<span class="material-symbols-outlined text-on-surface-variant text-sm mr-2">calendar_today</span>
+<select class="bg-transparent border-none text-on-surface font-label-sm text-label-sm focus:ring-0 p-0 py-2 cursor-pointer outline-none">
+<option value="30d">Last 30 Days</option>
+<option value="7d">Last 7 Days</option>
+<option value="12m">Last 12 Months</option>
+</select>
+</div>
+</div>
+</header>
+<!-- Hero Section: Current User Stats -->
+<section class="glass-card rounded-xl p-6 mb-stack-lg flex items-center justify-between glow-shadow slide-up">
+<div class="flex items-center gap-6">
+<div class="relative">
+<img class="w-20 h-20 rounded-full border-2 border-primary object-cover" data-alt="A cinematic close-up portrait of a modern digital creator, lit by soft glowing purple and blue neon lights in a dark studio setting. The subject has a confident expression, professional lighting, high contrast aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVrmpAX_Q2s1UCpM5D3EngITRwhVca2F3kvijCf65QxkXmsF9iqaEkoqORsg2oBxfGLBI2LG9mzyQANjULvifKK7aIz_SAnlK2fQZfxiTPYzyLw80G30Yu9KsZrqXFiCJgs_vFrEsEF4Vhk4C40AVWq3nD2PSekCvtkoKi-NA7ux_-QJngFch1XHIPqlcPZj0O_W7u-nz3H21c0OjXIc0uMk45_ZjnHa9zBalfNKJTkx2mGnkasxDg"/>
+<div class="absolute -bottom-2 -right-2 bg-primary text-on-primary font-data-mono text-data-mono px-2 py-1 rounded-md shadow-lg">#42</div>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Your Performance</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Top 5% of creators this month</p>
+</div>
+</div>
+<div class="flex gap-8 items-center">
+<div class="text-right">
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase mb-1">Total Revenue</p>
+<p class="font-display-lg-mobile text-display-lg-mobile text-tertiary-fixed">$12.5k</p>
+</div>
+<div class="h-16 w-px bg-outline-variant/30"></div>
+<div class="text-right">
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase mb-1">MoM Growth</p>
+<p class="font-display-lg-mobile text-display-lg-mobile text-primary-fixed flex items-center justify-end gap-1">
+<span class="material-symbols-outlined text-primary-fixed">arrow_upward</span>
+                        18.2%
+                    </p>
+</div>
+</div>
+</section>
+<!-- Podium Section -->
+<section class="grid grid-cols-3 gap-6 mb-stack-lg slide-up delay-100">
+<!-- Rank 2 -->
+<div class="glass-card rounded-xl p-6 flex flex-col items-center text-center mt-8 relative">
+<div class="absolute -top-4 bg-outline-variant text-on-surface font-label-sm text-label-sm px-3 py-1 rounded-full border border-surface">#2</div>
+<img class="w-16 h-16 rounded-full mb-4 object-cover border-2 border-outline-variant" data-alt="A stylized portrait of a female content creator wearing sleek futuristic headphones, bathed in moody teal and violet lighting against a deep dark background. Professional studio photography, cyberpunk subtle aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuACmLkAnQeyFM-89OXD_WDA7KoGwxJhMoYdY69E0Vywp0ynVqDcZR3_DSg1IKTlKQwtjb9XaH7uuzOWxH7CGK1Z5jV-MNIedND10bRgnb5sjHiG9vfobmKeHWpcgrBBAvSiU89G1RJN1Psa6lDdiFOShNNqVcaWFudg8GOtOXBXPtTw6dDe3u6Vmwaw2DDk-ZUGzCDMAlLQ4RFTMM7fXcDrb736UbntMe4hCCWYhvgAD14uf5u4HVfF"/>
+<h4 class="font-headline-md text-headline-md text-on-surface mb-1">Alex Vance</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-4">Tech &amp; Design</p>
+<div class="bg-surface-container-high px-4 py-2 rounded-lg w-full">
+<p class="font-data-mono text-data-mono text-secondary-fixed">$45.2k</p>
+</div>
+</div>
+<!-- Rank 1 -->
+<div class="glass-card rounded-xl p-6 flex flex-col items-center text-center relative border-primary/30 glow-shadow scale-[1.05] z-10">
+<div class="absolute -top-5 bg-primary text-on-primary font-label-sm text-label-sm px-4 py-1 rounded-full border-2 border-surface flex items-center gap-1 shadow-lg shadow-primary/30">
+<span class="material-symbols-outlined text-[14px]">emoji_events</span>
+                    #1
+                </div>
+<img class="w-24 h-24 rounded-full mb-4 object-cover border-4 border-primary" data-alt="A high-end portrait of a male tech entrepreneur looking directly at the camera. He is illuminated by a sharp, volumetric white rim light against a pitch-black background. Intense, ambitious mood, premium lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCR9bpuIA56AlJYrzJpfmMmhKDDTguuwHqg63AEkMRLAgC0guunZqfWSpR4eTgRFCl36BzsNqMnqrnESEuZAhSnDEPC8sbsmC0i2Y2o7Zj3UNO49ThuQksniQZ3oxUvV13xhBzGb6_3HL5Qk-KdofDIMCk3yLLK9TANzZpAWKx4R8Rfu53BK3hiMCyl0QI9vYRrFLv5EKZk2OqToWwnyqWBSQQC01Xkj2MB3t0jNmWNXK-bmEZVJRWI"/>
+<h4 class="font-headline-md text-headline-md text-on-surface mb-1 text-primary-fixed-dim">Jordan Lee</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-4">SaaS Development</p>
+<div class="bg-surface-container-highest px-4 py-3 rounded-lg w-full">
+<p class="font-data-mono text-data-mono text-tertiary-fixed text-lg">$62.8k</p>
+</div>
+</div>
+<!-- Rank 3 -->
+<div class="glass-card rounded-xl p-6 flex flex-col items-center text-center mt-8 relative">
+<div class="absolute -top-4 bg-outline text-surface font-label-sm text-label-sm px-3 py-1 rounded-full border border-surface">#3</div>
+<img class="w-16 h-16 rounded-full mb-4 object-cover border-2 border-outline" data-alt="A creative lifestyle portrait of a young digital artist in a dark, atmospheric studio. Colorful neon geometric shapes reflect in their glasses. High fidelity, modern digital aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpoXjL6gug2ySNF_Q3iFa6UU2w2ULKaFGT61WUJfkpvFdKQ29l15LizixBCxsHP24zHFJonfwhpi54XzT8qeLaCsPbO5B7fNYqEId9-753dWS1ONJs9_vNM_o4ZpVrjTLgaHBy-zFgxLrWaqqYz2c0Ewj8Rn59FvuwAhsPhPpEEvaryfynHQFJjvpmRZuobOa2k46VbLHe8GzBHMdiA4aIEJuygNp7V-w4vaQlA4NShQeplKAKPGt9"/>
+<h4 class="font-headline-md text-headline-md text-on-surface mb-1">Sam River</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-4">Digital Art</p>
+<div class="bg-surface-container-high px-4 py-2 rounded-lg w-full">
+<p class="font-data-mono text-data-mono text-secondary-fixed">$38.9k</p>
+</div>
+</div>
+</section>
+<!-- Detailed Leaderboard List -->
+<section class="glass-card rounded-xl overflow-hidden slide-up delay-200">
+<!-- Search / Filter Bar -->
+<div class="p-4 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low/50">
+<div class="relative w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container border border-outline-variant/30 text-on-surface font-body-md text-body-md rounded-lg pl-10 pr-4 py-2 focus:border-primary focus:ring-1 focus:ring-primary transition-colors outline-none placeholder:text-on-surface-variant/50" placeholder="Search creators..." type="text"/>
+</div>
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm">
+<span class="material-symbols-outlined">filter_list</span>
+                    More Filters
+                </button>
+</div>
+<!-- Table Header -->
+<div class="grid grid-cols-12 gap-4 p-4 border-b border-outline-variant/10 text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+<div class="col-span-1 pl-2">Rank</div>
+<div class="col-span-4">Creator</div>
+<div class="col-span-3">Category</div>
+<div class="col-span-2 text-right">Revenue</div>
+<div class="col-span-2 text-right pr-4">Growth</div>
+</div>
+<!-- List Items -->
+<div class="flex flex-col">
+<!-- Item 4 -->
+<div class="grid grid-cols-12 gap-4 p-4 items-center border-b border-outline-variant/5 hover:bg-surface-container-high/50 transition-colors cursor-pointer group">
+<div class="col-span-1 font-data-mono text-data-mono text-on-surface pl-2">04</div>
+<div class="col-span-4 flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="A clean, minimalist headshot of a professional creator against a dark grey background. Soft cinematic lighting highlighting facial features. Premium corporate feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUypNYYlyuXnWrm4wFxIPbBUTUCneBZzzVJL4Ll4bbTAOaS_4qh8EjojRP3yTULK92nPtm9wxL832HMmmL90L6UpFRwk910Wx1asehzI3MWYPykW6Bq0mR2r6Rd4z0HIcPVI_RqIcJESkVpft3o20HIayZc1rE95Lz7jDoyQJO24URNMtByu6F6eM1gCd5n1choZ4dQSGVvlwFnaskhEqSrAZA91wRy4G84NCzeynZuLt3YXmF4MDh"/>
+<span class="font-body-md text-body-md text-on-surface font-medium group-hover:text-primary transition-colors">Morgan Casey</span>
+</div>
+<div class="col-span-3 font-body-md text-body-md text-on-surface-variant">Education</div>
+<div class="col-span-2 flex items-center justify-end gap-2">
+<!-- Simulated Sparkline via Tailwind gradient -->
+<div class="h-6 w-16 bg-gradient-to-r from-transparent via-tertiary-fixed/20 to-tertiary-fixed/50 rounded-sm opacity-50 group-hover:opacity-100 transition-opacity relative overflow-hidden">
+<div class="absolute bottom-0 right-0 w-full h-[2px] bg-tertiary-fixed"></div>
+</div>
+<span class="font-data-mono text-data-mono text-on-surface">$32.1k</span>
+</div>
+<div class="col-span-2 text-right pr-4">
+<span class="inline-flex items-center px-2 py-1 rounded-full bg-tertiary/10 text-tertiary font-label-sm text-label-sm">
+                            +12.4%
+                        </span>
+</div>
+</div>
+<!-- Item 5 -->
+<div class="grid grid-cols-12 gap-4 p-4 items-center border-b border-outline-variant/5 hover:bg-surface-container-high/50 transition-colors cursor-pointer group">
+<div class="col-span-1 font-data-mono text-data-mono text-on-surface pl-2">05</div>
+<div class="col-span-4 flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="A stylized avatar of a creator with bright colored hair, backlit by intense blue neon lighting in a dark room. Edgy, modern, high contrast aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5Q0jcEx-cUbCDghNjidLtq-clly-YU1CNg_o3WtSuNvVeSk-uWOlZcWGGEIis6cz-tOLUxBw6ZkHcKVeuWXtf4tTc4r7aDjtZ3BIPumyavDfToCdrJMDVNNMkduEgRih9VYsB3XgQcerVkB5dEJG8tEmlpgbCgSJvyPPJ4Nl1gOKHlG45CI9vSDSLTSYGm2SLbppd0onN7lDcHSNjbaviENDAXzlE0SWwCX0o_7fu1H5HsO4mSc_r"/>
+<span class="font-body-md text-body-md text-on-surface font-medium group-hover:text-primary transition-colors">Taylor Quinn</span>
+</div>
+<div class="col-span-3 font-body-md text-body-md text-on-surface-variant">Gaming</div>
+<div class="col-span-2 flex items-center justify-end gap-2">
+<div class="h-6 w-16 bg-gradient-to-r from-transparent via-tertiary-fixed/20 to-tertiary-fixed/50 rounded-sm opacity-50 group-hover:opacity-100 transition-opacity relative overflow-hidden">
+<div class="absolute bottom-0 right-0 w-full h-[2px] bg-tertiary-fixed"></div>
+</div>
+<span class="font-data-mono text-data-mono text-on-surface">$29.8k</span>
+</div>
+<div class="col-span-2 text-right pr-4">
+<span class="inline-flex items-center px-2 py-1 rounded-full bg-tertiary/10 text-tertiary font-label-sm text-label-sm">
+                            +8.1%
+                        </span>
+</div>
+</div>
+<!-- Item 6 (Negative Growth Example) -->
+<div class="grid grid-cols-12 gap-4 p-4 items-center border-b border-outline-variant/5 hover:bg-surface-container-high/50 transition-colors cursor-pointer group">
+<div class="col-span-1 font-data-mono text-data-mono text-on-surface pl-2">06</div>
+<div class="col-span-4 flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="A moody, high-fashion style portrait of a content creator looking away from the camera. Dark shadows, subtle rim lighting, professional photography aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDUEtpQNRHEpvePHv0erdyK1g4SQ8jVPBaN7VThq8vAWQjRpzZ3q0IAg9_PHjfTJ3KieI7U9P1fp1r-MRD7sljGGEzLMDDx2-5OuNaxGJFiA-tsKKgLeZ7azwojyR22zFWolvIQqCMM0kkB8pGlkRZj2XGDhRHXMwiUzZvdG0A_8--gVxfNTmACZMcp4rAGXJ1hJ1QW4cRcTTsaDLI8zo6O-OL5TvydETyCIpJGaKou1QIH6aaw0Q-"/>
+<span class="font-body-md text-body-md text-on-surface font-medium group-hover:text-primary transition-colors">Casey Smith</span>
+</div>
+<div class="col-span-3 font-body-md text-body-md text-on-surface-variant">Lifestyle</div>
+<div class="col-span-2 flex items-center justify-end gap-2">
+<div class="h-6 w-16 bg-gradient-to-r from-transparent via-error/20 to-error/50 rounded-sm opacity-50 group-hover:opacity-100 transition-opacity relative overflow-hidden">
+<div class="absolute bottom-0 right-0 w-full h-[2px] bg-error"></div>
+</div>
+<span class="font-data-mono text-data-mono text-on-surface">$27.5k</span>
+</div>
+<div class="col-span-2 text-right pr-4">
+<span class="inline-flex items-center px-2 py-1 rounded-full bg-error/10 text-error font-label-sm text-label-sm">
+                            -2.3%
+                        </span>
+</div>
+</div>
+</div>
+<!-- Pagination / Load More -->
+<div class="p-4 flex justify-center bg-surface-container-low/30 border-t border-outline-variant/10">
+<button class="font-label-sm text-label-sm text-primary hover:text-primary-fixed transition-colors flex items-center gap-1">
+                    Load More <span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+</div>
+</section>
+</main>
+</body></html>

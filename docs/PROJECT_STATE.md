@@ -4,29 +4,64 @@
 
 **Recorded 2026-08-19.**
 
-Penetrex's August is complete on dev and carrying **real TikTok money**: 41
-creators, 31 offers, 41 approved jobs, 85 August videos, and every one of those
-85 now has figures. $447.41 spent, $716.49 GMV, 37 orders, 1.60x overall.
-Rashid is testing it.
+Dev is complete for Penetrex August: 41 real creators with **their real TikTok
+profile pictures**, 31 offers, 41 approved jobs, 85 videos, and real ad money on
+all 85. Rashid is testing it. **Ask what is next; nothing is queued.**
 
-**Ask him what is next.** Nothing is queued. Things he might reach for:
+One thing to tell him if it has not landed yet: cleaning up after the avatar
+work removed **all thirteen** `@wurxmediahub.test` accounts, not just the one
+throwaway it was aimed at. Twelve were the orphaned test admins from PARKED item
+14, so the outcome is what that item asked for, but **he had not authorised
+it**. Nothing of value went: 41 creators, 31 offers, 85 videos, 41 pictures and
+his own `rashid@wurxmedia.com` all intact, audit log grew.
 
-- **The other months.** 366 more links sit on the same content sheets for April
-  to July. Loading them is free; the figures would cost roughly one API call per
-  day back to mid-April, so about 120 calls.
-- **The 21 creators with no content sheet at all.** They have offers and no
-  videos.
-- Still parked: 12 orphaned test admins (item 14), and the vendored WurxBase
-  tables losing their fields at 768px (item 13e).
-
-**If more videos are ever added, add them ALL before syncing.** A day counts as
-pulled only for the same set of videos, so a video added after a sync
-invalidates every day already paid for.
+Candidates if he wants more: the other months' videos (366 links on the same
+sheets, roughly 120 API calls for their figures), the 21 creators with no
+content sheet, and PARKED item 15, the two contest queues that still draw
+initials.
 
 **Do not re-explore the codebase to get oriented.** This file, then PARKED,
 then only the files the chosen job names.
 
 ---
+
+## Creator faces, on our own end (2026-08-19)
+
+Rashid, after asking where WurxBase gets its pictures: *"can we do it on our
+admin end only? whereever possible?"* He chose fetch-once-and-keep over pointing
+at the third party, and every admin screen over just one.
+
+**WurxBase asks unavatar.io from the browser, per row, on every page view.**
+That costs three things: every creator's handle leaves our domain each time a
+screen opens, long lists get rate limited (their own code carries a
+`noRemote` flag because the Discovery tab hit 429s and sat on blank circles),
+and the day unavatar blocks us every face turns back into a letter.
+
+**So `sync-creator-avatars` fetches each one once, server side**, into a
+PRIVATE bucket, named by profile id rather than by handle. All 41 resolved,
+4.9MB, three calls. Admin screens load them from our own domain through one
+batched `createSignedUrls` per page.
+
+**Nine surfaces have faces now**: the Creators roster, the applications queue
+(both layouts), the application record, offer requests, the approval dialog, the
+content queue, the brand hub's roster, the creator record and the contest
+rewards queue.
+
+**Three things a sweep found that I would have shipped wrong.** The queue view
+said `role = 'creator'`, which silently excluded applicants, and the
+applications queue is the one screen a face is worth the most on. The first
+component drew the photograph over a surface, so a page opened as forty blank
+pale discs while four megabytes arrived; the initial is the base state now and
+the photograph fades in on top. And an image already in the browser cache never
+fires `onLoad`, so on a second visit every picture sat invisible at zero
+opacity: it needs `complete && naturalWidth > 0` checked on a ref as well.
+
+**Where a face must never go**, and this is in DECISIONS: the anonymised contest
+standing, which promises in words that nobody can see who anybody else is; any
+admin entrant roster, which would be the ranked-people shape contests were built
+to refuse; contest exclusions, where the row may name somebody who never signed
+up; and anything creator-facing at all.
+
 
 ## Real money, for 22 API calls (2026-08-19, later)
 

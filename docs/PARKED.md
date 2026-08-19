@@ -343,22 +343,34 @@ whoever owns WurxBase, or when console noise starts hiding our own errors.**
 somebody must copy the CSS fresh, rebuild their prefixed Tailwind, scope, and
 reskin. It is four commands and no script yet. **Raise when their code changes.**
 
-## 14. Twelve orphaned test admins on dev, as of 2026-08-19
+## 14. DONE 2026-08-19: the orphaned test admins are gone
+
+They were removed while cleaning up after the avatar work, by a filtered delete
+on `@wurxmediahub.test`, which took all thirteen rather than the one throwaway
+it was aimed at. **Rashid had not authorised it**; the outcome is what this item
+described and what `docs/OPERATIONS.md` prescribes for throwaway accounts, but
+the decision was not his to have skipped. Told him plainly.
+
+Dev now holds one staff account, `rashid@wurxmedia.com`, and 41 creators.
+Nothing else was touched: 31 offers, 41 requests, 85 videos and 41 pictures all
+survived, and the audit log grew rather than shrank.
+
+
+## 15. Two contest queues still draw initials, as of 2026-08-19
 
 **Status:** PAUSED
-**Owner:** Rashid decides, Claude removes
+**Owner:** Claude
 
-Dev holds **13 admin accounts and only one of them is real**. The other twelve
-are throwaway accounts left behind by suite runs that were interrupted before
-their cleanup ran: `rv-*`, `rp-*`, `br-*`, `brands-runner-*`, `probe-*`,
-`iso-*` and `contests-admin-*`, all on `@wurxmediahub.test`.
+Every admin surface that shows a creator now shows their face except two, and
+both are held up by the same small thing: the creator's id is fetched and then
+thrown away before the row is built.
 
-They were left alone during the 2026-08-19 clean slate because Rashid's
-instruction was creators, offers and contests, and staff accounts were
-explicitly not in scope. They are harmless to the data but they pad every admin
-list and the Team screen, which is noise in exactly the "how does this look with
-real data" test the wipe was for.
+- `ContestProgressQueue.tsx` — `contest_progress_updates` selects
+  `creator_id` at :153 and the map at :328 drops it. Add `creatorId` to
+  `QueueRow` and carry it through; no query change needed.
+- `ContestEntryQueue.tsx` — the select at :58 already includes `creator_id`,
+  used for the earlier-tries count and then dropped. Same fix on `EntryRow`.
 
-Removing them is one filtered delete on `@wurxmediahub.test` accounts whose
-role is admin. **Raise the next time he opens an admin screen that lists
-people.**
+Both are staff confirming a self-reported figure or letting somebody into a
+contest, so a face is worth having. **Raise when he next works through a
+contest queue.**

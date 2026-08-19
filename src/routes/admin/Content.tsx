@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router';
 import { Check, Flag, RotateCcw, Search, Video } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Field';
+import { CreatorFace } from '@/components/admin/CreatorFace';
+import { useCreatorAvatars } from '@/lib/admin/useCreatorAvatars';
 import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { VideoPlayer } from '@/components/content/VideoPlayer';
 import { ContentCard } from '@/components/content/ContentCard';
@@ -94,6 +96,9 @@ export function AdminContent() {
 
   const rows = data?.rows ?? [];
   const total = data?.total ?? 0;
+
+  // The faces on this page, in one query and one batch of signed URLs.
+  const faces = useCreatorAvatars(rows.map((r) => r.creator_id));
   const pages = Math.max(1, Math.ceil(total / CONTENT_PAGE_SIZE));
 
   /*
@@ -243,7 +248,11 @@ export function AdminContent() {
                         row={row}
                         onPlay={() => setPlaying(row)}
                         aboutTheJob={
-                          <JobMeta row={row} progress={progress?.get(row.application_id)} />
+                          <JobMeta
+                            row={row}
+                            progress={progress?.get(row.application_id)}
+                            face={faces[row.creator_id]}
+                          />
                         }
                       >
                         <Review row={row} progress={progress?.get(row.application_id)} />
@@ -445,13 +454,31 @@ function Board({ counts }: { counts: ContentTotals }) {
  * whose search box searches by handle. Whose video it was, and whether it was
  * the fourth of five or the first of ten, were on other screens entirely.
  */
-function JobMeta({ row, progress }: { row: ContentRow; progress: JobProgress | undefined }) {
+function JobMeta({
+  row,
+  progress,
+  face,
+}: {
+  row: ContentRow;
+  progress: JobProgress | undefined;
+  face: string | undefined;
+}) {
   const who = row.creator_handle ? `@${row.creator_handle}` : row.creator_name;
   if (!who && !progress) return null;
 
   return (
     <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-      {who ? <span className="text-muted text-[0.78125rem] break-all">{who}</span> : null}
+      {who ? (
+        <span className="text-muted flex items-center gap-1.5 text-[0.78125rem] break-all">
+          <CreatorFace
+            src={face}
+            name={row.creator_name}
+            handle={row.creator_handle}
+            size={20}
+          />
+          {who}
+        </span>
+      ) : null}
       {progress && progress.required !== null ? (
         <span
           className={cn(

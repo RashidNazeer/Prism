@@ -1,5 +1,7 @@
 import { Link, useParams } from 'react-router';
 import { ArrowLeft, ExternalLink, Star } from 'lucide-react';
+import { CreatorFace } from '@/components/admin/CreatorFace';
+import { useCreatorAvatars } from '@/lib/admin/useCreatorAvatars';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import { ReviewPanel } from '@/components/admin/ReviewPanel';
 import { ButtonLink } from '@/components/ui/Button';
@@ -72,6 +74,9 @@ function Loaded({
   application: Detail;
   history: ReturnType<typeof useAuditLog>['data'];
 }) {
+  // One person on this screen, so the hook takes one id. `applicant` is null
+  // for an account that has since been deleted, which the page already handles.
+  const faces = useCreatorAvatars([application.applicant?.id]);
   const niche =
     application.niche === 'Other' ? (application.niche_other ?? 'Other') : application.niche;
   const links = parseLinks(application.video_links);
@@ -90,6 +95,16 @@ function Loaded({
         to a screen reader than a flat one.
       */}
       <div className="mt-5 flex flex-wrap items-center gap-3">
+        {/* Sized to the heading. This is the screen where somebody decides
+            whether to let a stranger in, so the face earns its place here more
+            than anywhere else in the admin. */}
+        <CreatorFace
+          src={application.applicant ? faces[application.applicant.id] : undefined}
+          handle={application.tiktok_handle}
+          name={application.applicant?.display_name}
+          size={48}
+        />
+
         <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold break-all">
           @{application.tiktok_handle}
         </h2>

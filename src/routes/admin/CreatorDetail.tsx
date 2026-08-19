@@ -5,6 +5,8 @@ import { ButtonLink } from '@/components/ui/Button';
 import { JobProgressBar } from '@/components/work/JobProgress';
 import { cn } from '@/lib/utils';
 import { money } from '@/lib/money';
+import { CreatorFace } from '@/components/admin/CreatorFace';
+import { useCreatorAvatars } from '@/lib/admin/useCreatorAvatars';
 import { ROLE_LABEL, TIER_LABEL } from '@/lib/tiers';
 import { STAGE_META, stageIndex } from '@/lib/offer-stages';
 import { useJobProgressFor } from '@/lib/work/job-progress';
@@ -60,6 +62,13 @@ export function CreatorDetail() {
   const { data: jobs, isLoading: jobsLoading } = useCreatorJobs(id);
   const { data: work } = useCreatorWork(id ? [id] : []);
   const mine = id ? work?.get(id) : undefined;
+  /*
+   * Beside the other reads, and ABOVE the loading and not-found guards. A hook
+   * after an early return runs on some renders and not others, which React
+   * forbids and oxlint caught: the route id is what it needs, and that is in
+   * scope here whether the creator loads or not.
+   */
+  const faces = useCreatorAvatars([id]);
 
   const go = (key: string) => {
     const p = new URLSearchParams();
@@ -113,6 +122,15 @@ export function CreatorDetail() {
         >
           <ArrowLeft size={15} aria-hidden />
         </Link>
+
+        {/* Bigger than a list row, because this is the record: it is the
+            confirmation you are about to change the right person's tier. */}
+        <CreatorFace
+          src={faces[creator.id]}
+          name={creator.display_name}
+          handle={creator.tiktok_handle}
+          size={44}
+        />
 
         <h2 className="font-display min-w-0 text-[clamp(1.35rem,3vw,1.75rem)] font-semibold break-words">
           {who}
@@ -265,7 +283,9 @@ function WorkTab({ jobs, loading }: { jobs: CreatorJob[]; loading: boolean }) {
                     {stageIndex(stage) + 1}. {STAGE_META[stage].label}
                   </span>
                   {standing ? (
-                    <span className="text-muted text-[0.78125rem]">standing here {standing}</span>
+                    <span className="text-muted text-[0.78125rem]">
+                      standing here {standing}
+                    </span>
                   ) : null}
                 </p>
                 {p ? <JobProgressBar progress={p} className="mt-2.5" compact /> : null}
@@ -402,10 +422,7 @@ function AccountTab({
     <div className="mt-5 grid max-w-3xl gap-4">
       <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {facts.map((f) => (
-          <div
-            key={f.label}
-            className="border-line bg-surface-1 rounded-lg border px-5 py-4"
-          >
+          <div key={f.label} className="border-line bg-surface-1 rounded-lg border px-5 py-4">
             <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               {f.label}
             </dt>

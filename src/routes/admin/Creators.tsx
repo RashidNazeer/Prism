@@ -5,6 +5,8 @@ import { Input, Select } from '@/components/ui/Field';
 import { FilterBar } from '@/components/layout/FilterBar';
 import { money } from '@/lib/money';
 import { TIER_LABEL } from '@/lib/tiers';
+import { CreatorFace } from '@/components/admin/CreatorFace';
+import { useCreatorAvatars } from '@/lib/admin/useCreatorAvatars';
 import {
   CREATOR_PAGE_SIZE,
   DEFAULT_CREATOR_FILTERS,
@@ -70,6 +72,8 @@ export function Creators() {
 
   // Two grouped reads over the people on this page, never one pair per row.
   const { data: work } = useCreatorWork(rows.map((r) => r.id));
+  // The same ids again: one query and one batch of signed URLs for the page.
+  const faces = useCreatorAvatars(rows.map((r) => r.id));
   const filtered = Boolean(filters.search) || filters.active !== 'all';
 
   return (
@@ -175,7 +179,7 @@ export function Creators() {
           <ul className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {rows.map((row) => (
               <li key={row.id}>
-                <CreatorCard row={row} work={work?.get(row.id)} />
+                <CreatorCard row={row} work={work?.get(row.id)} face={faces[row.id]} />
               </li>
             ))}
           </ul>
@@ -215,7 +219,15 @@ export function Creators() {
 
 /* ----------------------------------------------------------------- card -- */
 
-function CreatorCard({ row, work }: { row: CreatorRow; work: CreatorWork | undefined }) {
+function CreatorCard({
+  row,
+  work,
+  face,
+}: {
+  row: CreatorRow;
+  work: CreatorWork | undefined;
+  face: string | undefined;
+}) {
   const who = row.tiktok_handle ? `@${row.tiktok_handle}` : (row.display_name ?? 'A creator');
   const mixed = (work?.currencies ?? 0) > 1;
 
@@ -224,23 +236,29 @@ function CreatorCard({ row, work }: { row: CreatorRow; work: CreatorWork | undef
       to={`/admin/creators/${row.id}`}
       className="border-line bg-surface-1 hover:border-accent/60 flex h-full flex-col rounded-xl border p-4 shadow-md transition-colors sm:p-5"
     >
-      <div className="flex flex-wrap items-center gap-2">
-        <p className="font-semibold break-all">{who}</p>
-        {row.tier ? (
-          <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
-            {TIER_LABEL[row.tier]}
-          </span>
-        ) : null}
-        {!row.is_active ? (
-          <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
-            Suspended
-          </span>
-        ) : null}
-      </div>
+      <div className="flex items-start gap-3">
+        <CreatorFace src={face} name={row.display_name} handle={row.tiktok_handle} size={40} />
 
-      {row.display_name && row.tiktok_handle ? (
-        <p className="text-muted mt-0.5 truncate text-[0.8125rem]">{row.display_name}</p>
-      ) : null}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-semibold break-all">{who}</p>
+            {row.tier ? (
+              <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+                {TIER_LABEL[row.tier]}
+              </span>
+            ) : null}
+            {!row.is_active ? (
+              <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+                Suspended
+              </span>
+            ) : null}
+          </div>
+
+          {row.display_name && row.tiktok_handle ? (
+            <p className="text-muted mt-0.5 truncate text-[0.8125rem]">{row.display_name}</p>
+          ) : null}
+        </div>
+      </div>
 
       <div className="border-line mt-3 flex flex-wrap items-end gap-x-5 gap-y-2 border-t pt-3">
         <span>

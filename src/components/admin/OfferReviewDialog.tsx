@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { m } from 'motion/react';
 import { Check, X } from 'lucide-react';
+import { CreatorFace } from '@/components/admin/CreatorFace';
+import { useCreatorAvatars } from '@/lib/admin/useCreatorAvatars';
 import { Button } from '@/components/ui/Button';
 import { Field, Select, Textarea } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
@@ -58,6 +60,7 @@ export function OfferReviewDialog({
     };
   }, []);
 
+  const faces = useCreatorAvatars([row.creator_id]);
   const who = row.creator_handle
     ? `@${row.creator_handle}`
     : (row.creator_name ?? 'this creator');
@@ -89,8 +92,20 @@ export function OfferReviewDialog({
         className="border-line bg-surface-1 relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
       >
         <div className="flex items-start justify-between gap-4">
-          <h2 className="text-lg font-bold">
-            {decision === 'approved' ? 'Approve' : 'Reject'} {who}
+          {/* The last screen before an irreversible approval, so a face is a
+              real check that the right row was clicked. The dialog's own
+              aria-label already names them and CreatorFace is aria-hidden, so
+              nothing is announced twice. */}
+          <h2 className="flex items-center gap-2.5 text-lg font-bold">
+            <CreatorFace
+              src={faces[row.creator_id]}
+              name={row.creator_name}
+              handle={row.creator_handle}
+              size={32}
+            />
+            <span>
+              {decision === 'approved' ? 'Approve' : 'Reject'} {who}
+            </span>
           </h2>
           <button
             type="button"
@@ -265,7 +280,9 @@ function BudgetImpact({ row }: { row: OfferQueueRow }) {
         <span className="font-semibold">{money(after, currency)}</span> of{' '}
         {money(allocated, currency)} committed after this
       </p>
-      <p className={cn('mt-1 text-[0.8125rem]', over ? 'text-danger font-medium' : 'text-muted')}>
+      <p
+        className={cn('mt-1 text-[0.8125rem]', over ? 'text-danger font-medium' : 'text-muted')}
+      >
         {over ? (
           <>Over budget by {money(-left, currency)}. You can still approve it.</>
         ) : (

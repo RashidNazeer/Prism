@@ -1059,3 +1059,42 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   figures, dating each from its own TikTok id; the function adds two days of
   slack. 738 video-days came back and all 85 videos now carry real figures:
   $447.41 spent, $716.49 GMV, 37 orders, 1.60x.
+- 2026-08-19: **Creator faces are fetched once and kept, never requested from
+  a third party at view time.** Rashid asked whether we could do what WurxBase
+  does, on our end. WurxBase asks unavatar.io from the BROWSER, per row, on
+  every page view: their own code carries a `noRemote` flag because the
+  Discovery tab hit 429s and sat on blank circles. `sync-creator-avatars`
+  fetches each picture once, server side, into the private `creator-avatars`
+  bucket. All 41 resolved, 4.9MB, three calls. Nothing leaves our domain when a
+  screen opens.
+- 2026-08-19: **That bucket is PRIVATE, where `brand-assets` is public.** The
+  public one says why in its own migration: logos already on a public listing,
+  on cards that must not wait for a token. A person's face plus a path that says
+  whose it is is a different thing, and Rashid asked for admin-only. The cost is
+  one batched `createSignedUrls` per screen, which signs a whole page at once.
+  Objects are named by profile id, not by handle, so the name never says whose
+  face it is.
+- 2026-08-19: **The initial is the BASE state, not a fallback.** The first
+  version drew the photograph with a surface behind it, and a page of forty
+  faces opened as forty blank pale discs while four megabytes arrived. The
+  letter is always rendered and the photograph fades in on top. A letter that
+  becomes a face reads as loading; an empty circle reads as broken.
+- 2026-08-19: **`img.complete` on a ref, as well as `onLoad`.** An image
+  already in the browser cache finishes before React attaches the handler, so
+  `onLoad` never fires and the picture stays at zero opacity for ever. It
+  looked exactly like the faces had stopped working on the second visit to a
+  screen. Checking `complete && naturalWidth > 0` on mount is the only reliable
+  way to ask "is it already here".
+- 2026-08-19: **Applicants are in the avatar queue, not just creators.** The
+  first migration said `role = 'creator'`, which silently excluded the one
+  screen a face is worth the most on: the applications queue, where staff judge
+  a stranger off a handle. 'applicant' is its own role, so those three surfaces
+  would have drawn initials for ever while looking finished.
+- 2026-08-19: **Faces are an admin affordance and never reach a creator.**
+  `useCreatorAvatars` lives in `src/lib/admin/`, which `.oxlintrc.json`
+  forbids creator code from importing; the table has one policy and it is
+  `is_staff()`; the bucket matches. In particular a face must NEVER appear on
+  the anonymised contest standing, which promises in words that nobody can see
+  who anybody else is, nor on any admin entrant roster, which would be the same
+  ranked-people shape contests were built to refuse. Nor on contest exclusions,
+  where the row may name somebody who never signed up.
