@@ -934,3 +934,44 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   it was unreadable. It is now an opaque mix of the same token against
   `--wx-surface-1`. This applies to anything fixed or floating, not just this
   banner.
+- 2026-08-19: **Dev was emptied of every creator, offer and contest, and
+  reseeded with Wurx's 41 real TikTok handles.** Rashid wanted to see the
+  product against real people rather than demo rows. `wipe-clean-slate.mjs`
+  then `reconcile-budgets.mjs` then `seed-creators.mjs`.
+- 2026-08-19: **The seeded accounts walk the real approval path, they do not
+  fake it.** Each one is `auth.admin.createUser` (handle in the metadata, which
+  is the only key the trigger reads) then an `applications` row with the same
+  six columns the browser writes, then `review_application()`, the same
+  Postgres function the admin Review screen reaches through its Edge Function.
+  Setting status, role and tier by hand instead would have produced 41 creators
+  nobody ever let in and an Activity log where they appear from nowhere.
+- 2026-08-19: **Both onboarding stamps are filled in, so they are OLD
+  creators.** Leaving `approval_celebrated_at` null gives every one of them the
+  you-are-approved celebration on first sign-in, which is the exact half state
+  Rashid reported the last time creators were seeded.
+- 2026-08-19: **video_links could not be skipped as asked.** He said to skip it;
+  the column is NOT NULL with a length check and must contain a link. Each
+  creator gets their own TikTok profile URL, which is true, derived only from
+  the handle he gave, and clickable by an admin. Nothing was invented.
+- 2026-08-19: **"50 percent have worked with Wurx" is exactly 21 of 41, not a
+  coin flip per person.** A per-person random lands near half and never on it,
+  and would differ between runs. Which 21 is chosen by a hash of the handle, so
+  the seed is reproducible: two runs produce identical people, and a screenshot
+  taken today still describes the database tomorrow.
+- 2026-08-19: **The niche list excludes "Other".** The database does not
+  validate `niche` at all, only its length, so a value the real form could
+  never produce would land silently and look genuine forever. Picking "Other"
+  would also need a `niche_other` string invented for a real person.
+- 2026-08-19: **The TikTok ad history was kept through the wipe, deliberately.**
+  `tiktok_video_daily` has no foreign key to a person: its key is
+  (item_id, stat_date) and its only reference is to the ad account. So 5,294
+  video-days of real cost and GMV survived deleting every creator, and
+  re-submitting the same links brings the real figures back with no API call.
+  The link that DID die is `content_submissions.embed_id`, so the wipe writes
+  every handle-to-video mapping to a file first.
+- 2026-08-19: **Contests are deleted before accounts, and that order is load
+  bearing.** `contest_exclusions.user_id` is ON DELETE SET NULL under a CHECK
+  that at least one of handle, email or user_id survives. Postgres nulls the
+  column, re-evaluates the CHECK, and aborts the whole delete part way through
+  the loop. Four more `_at`/`_by` pairs behave identically. No foreign-key
+  audit finds any of them, because they are CHECK constraints.

@@ -4,20 +4,85 @@
 
 **Recorded 2026-08-19.**
 
-Rashid is testing two things just shipped: the **Paid Collabs header and dark
-mode**, and the **identity-swap banner on the creator side**. Nothing else is
-queued: ask what he wants next and answer from `docs/PARKED.md` if he asks
-what is pending.
+Dev was emptied of every creator, offer and contest and reseeded with **Wurx's
+41 real TikTok handles** as approved creators. Rashid said: *"First create their
+accounts then i will tell you next steps."* So **ask him what the next step is**
+before building anything.
 
-He asked for one thing to be remembered rather than fixed: **the vendored
-WurxBase tables lose most of their fields as cards at 768px and below** ("we
-will fix that later"). It is PARKED item 13e, it was measured to be theirs and
-not ours, and the memory file is `wurxbase-narrow-tables`.
+Sign in as any of them with `<handle>@wurxmedia.com` / `1234567890`. The
+handles are in `scripts/seed-creators.mjs`.
+
+Almost certainly next: **offers**, since the wipe took all three and every
+creator's hub currently reads "0 offers you can take". Possibly also their
+video links, which is worth knowing about because **the TikTok money survived
+the wipe**: 5,294 video-days are still in `tiktok_video_daily`, and the 82
+links that pointed at them were captured to
+`%TEMP%\wurx-clean-slate-capture.json` before deleting. Re-submitting those
+links restores the real figures with no TikTok API call.
+
+Also waiting on him, both in PARKED: **12 orphaned test admins on dev** (item
+14) and **the vendored WurxBase tables losing their fields at 768px** (item
+13e, "we will fix that later").
 
 **Do not re-explore the codebase to get oriented.** This file, then PARKED,
 then only the files the chosen job names.
 
 ---
+
+## Clean slate: 41 real creators on dev (2026-08-19)
+
+Rashid: *"delete every creator and all it's videos and everything remove all
+offers we will add fresh"*, then create the 41 from the backend.
+
+**Gone:** 19 creator and applicant accounts, 3 offers, 1 contest, 82 video
+submissions, 17 applications. **Kept, deliberately:** 5 brands and their
+products, all staff accounts, the audit log, and 5,294 video-days of real
+TikTok cost and GMV.
+
+**The TikTok money survived because it is not attached to a person.**
+`tiktok_video_daily` is keyed (item_id, stat_date) with its only foreign key
+going to the ad account, so deleting every creator did not touch a row of it.
+What died is `content_submissions.embed_id`, the only thing that recorded whose
+those item_ids were, so the wipe writes the whole handle-to-video mapping out to
+a file before it deletes anything. Re-submitting those links brings every figure
+back with no API call.
+
+**One trap nearly made the wipe fail half way.**
+`contest_exclusions.user_id` is ON DELETE SET NULL under a CHECK that at least
+one of handle, email or user_id survives. Postgres performs the SET NULL, then
+re-evaluates the CHECK, and aborts the entire delete mid-loop with some accounts
+gone and some not. Four more `_at`/`_by` pairs behave the same way. **No
+foreign-key audit finds any of them, because they are CHECK constraints.**
+Contests are therefore deleted before accounts, and the script counts all five
+before touching a single person.
+
+**The 41 walk the real registration path, they do not fake it.**
+`auth.admin.createUser` with the handle in the metadata (the only key the
+trigger reads), then an `applications` row with the same six columns the
+browser writes, then `review_application()` — the same Postgres function the
+admin Review screen reaches through its Edge Function, which moves status, role,
+tier and the audit row in one transaction. Setting those columns by hand would
+have produced 41 creators nobody ever let in. Both onboarding stamps are set, so
+none of them meets the you-are-approved celebration on first sign-in.
+
+**His three instructions, and what each became.** Emails are
+`<handle>@wurxmedia.com`, unique because the handles are. Password
+`1234567890` for all, which is exactly `PASSWORD_MIN`. Niches random but
+deterministic, drawn from the nine real options with "Other" excluded because
+the database does not validate that column at all. "50 percent have worked with
+Wurx" is exactly 21 of 41 rather than a coin flip. `video_links` could NOT be
+skipped as he asked — it is NOT NULL with a length check — so each one carries
+their own TikTok profile URL, derived only from the handle he gave.
+
+**Verified in a real browser on dev**, not just in the database: three of them
+signed in, landed in the hub, no "finish your application" panel, no pending
+state, no celebration, zero console errors.
+
+**Two destructive scripts had weak guards and now import the shared one.**
+`wipe-offers-contests.mjs` carried a second copy of the dev project ref inline,
+and `reconcile-budgets.mjs` — which rewrites every brand's committed figure —
+had no guard at all.
+
 
 ## "It says signed out while I am signed in", finished (2026-08-19)
 

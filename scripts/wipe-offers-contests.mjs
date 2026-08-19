@@ -38,6 +38,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
+import { assertDevProject } from './lib/dev-guard.mjs';
 
 const SERVICE = process.env.SUPABASE_SERVICE_KEY;
 if (!SERVICE) {
@@ -63,23 +64,16 @@ const url = env.VITE_SUPABASE_URL ?? '';
 /*
  * THE GUARD, and it is the most important thing in this file.
  *
- * This deletes real rows and cannot be undone. Prod is frozen and holds no test
- * data, so a run against it would be destroying a customer's work rather than
- * clearing a sandbox. The check is positive: it must recognise the DEV project,
- * not merely fail to recognise prod, because a typo that matches nothing would
- * otherwise sail straight through.
+ * This deletes real rows and cannot be undone, so it only ever runs against
+ * dev. The check is positive: it RECOGNISES the dev project rather than merely
+ * failing to recognise prod, because a typo matching neither would sail
+ * straight through a blocklist.
+ *
+ * It used to be a second copy of the project ref, inline. It is the shared
+ * module now: two copies of the one string that decides which database gets
+ * emptied is exactly the thing that goes stale on the day dev moves.
  */
-const DEV_REF = 'npznoiotslruqovorrec';
-if (!url.includes(DEV_REF)) {
-  console.error(
-    `REFUSING TO RUN.\n\n` +
-      `This script only ever touches the DEV project (${DEV_REF}).\n` +
-      `.env.local points at: ${url || '(nothing)'}\n\n` +
-      `If dev has genuinely moved, change DEV_REF in this file deliberately.\n` +
-      `Never point it at prod.`
-  );
-  process.exit(1);
-}
+assertDevProject(url, 'wipe-offers-contests.mjs');
 
 if (!process.argv.includes('--yes')) {
   console.error(
@@ -154,7 +148,9 @@ if (offerErr) {
   console.error(`could not delete offers: ${offerErr.message}`);
   process.exit(1);
 }
-console.log(`  removed ${offersGone ?? 0} offer(s), and their applications and videos by cascade`);
+console.log(
+  `  removed ${offersGone ?? 0} offer(s), and their applications and videos by cascade`
+);
 
 const after = await countAll();
 
@@ -200,5 +196,7 @@ if (after.brands !== before.brands || after.profiles !== before.profiles) {
 }
 
 console.log('\nEvery offer and contest is gone. Brands, products and people untouched.');
-console.log('Next: node scripts/reconcile-budgets.mjs   (brand budgets still name the deleted offers)\n');
+console.log(
+  'Next: node scripts/reconcile-budgets.mjs   (brand budgets still name the deleted offers)\n'
+);
 process.exit(0);

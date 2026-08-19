@@ -168,6 +168,21 @@ node scripts/shots-collabs.mjs [url] [path]
                             # Needs ADMIN_EMAIL and ADMIN_PASSWORD
 node scripts/check-admin.mjs <url> <email> <password> [role] [path]
 node scripts/create-admin.mjs <email> <password> [role]
+node scripts/wipe-clean-slate.mjs --yes        # DEV ONLY, IRREVERSIBLE.
+                            # Every creator and applicant account, every offer,
+                            # every contest. Keeps brands, staff, the audit log
+                            # and tiktok_video_daily. Writes the handle-to-video
+                            # mapping to a file first, because embed_id is the
+                            # only link between a person and their TikTok money
+                            # and it cascades away. Follow with reconcile-budgets.
+node scripts/seed-creators.mjs [--clean]       # DEV ONLY
+                            # Wurx's 41 real handles as approved creators, via
+                            # the real review_application() path. Password for
+                            # all of them is 1234567890, email is
+                            # <handle>@wurxmedia.com. --clean removes only those
+                            # 41, and only if they are creators or applicants,
+                            # so it can never take Rashid's own account on the
+                            # same domain.
 node scripts/seed-applications.mjs [--clean]   # demo queue data, DEV ONLY
 node scripts/seed-brands.mjs [--clean]         # demo brands and offers, DEV ONLY
 node scripts/seed-pipeline.mjs [--clean]       # videos against the approved jobs,

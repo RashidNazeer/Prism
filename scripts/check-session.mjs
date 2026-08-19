@@ -458,8 +458,10 @@ try {
 } finally {
   await browser.close();
   if (otherUserId) {
-    // The swap account. Its audit rows go first: the foreign key is ON DELETE
-    // RESTRICT on purpose, so an actor can never be erased from their own trail.
+    // The swap account. Its audit rows go first because actor_id is ON DELETE
+    // SET NULL: delete the user and no filter can ever find those rows again.
+    // (They would do no harm either way. audit_log snapshots actor_email and
+    // actor_role beside the id precisely so the trail survives a deletion.)
     await admin.from('audit_log').delete().eq('actor_id', otherUserId);
     const { error } = await admin.auth.admin.deleteUser(otherUserId);
     if (error) fail(`could not delete the swap account: ${error.message}`);

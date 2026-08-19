@@ -342,3 +342,23 @@ whoever owns WurxBase, or when console noise starts hiding our own errors.**
 **d. Nothing re-runs the vendoring pipeline.** If WurxBase changes upstream,
 somebody must copy the CSS fresh, rebuild their prefixed Tailwind, scope, and
 reskin. It is four commands and no script yet. **Raise when their code changes.**
+
+## 14. Twelve orphaned test admins on dev, as of 2026-08-19
+
+**Status:** PAUSED
+**Owner:** Rashid decides, Claude removes
+
+Dev holds **13 admin accounts and only one of them is real**. The other twelve
+are throwaway accounts left behind by suite runs that were interrupted before
+their cleanup ran: `rv-*`, `rp-*`, `br-*`, `brands-runner-*`, `probe-*`,
+`iso-*` and `contests-admin-*`, all on `@wurxmediahub.test`.
+
+They were left alone during the 2026-08-19 clean slate because Rashid's
+instruction was creators, offers and contests, and staff accounts were
+explicitly not in scope. They are harmless to the data but they pad every admin
+list and the Team screen, which is noise in exactly the "how does this look with
+real data" test the wipe was for.
+
+Removing them is one filtered delete on `@wurxmediahub.test` accounts whose
+role is admin. **Raise the next time he opens an admin screen that lists
+people.**

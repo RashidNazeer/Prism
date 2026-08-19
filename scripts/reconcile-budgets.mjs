@@ -22,6 +22,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
+import { assertDevProject } from './lib/dev-guard.mjs';
 
 const env = Object.fromEntries(
   readFileSync('.env.local', 'utf8')
@@ -37,6 +38,11 @@ const SERVICE = process.env.SUPABASE_SERVICE_KEY;
 if (!SERVICE) throw new Error('SUPABASE_SERVICE_KEY must be set');
 
 const dryRun = process.argv.includes('--dry-run');
+// Rewrites every brand's committed figure. Dev only, checked before the
+// client exists: this is a writer, and a writer pointed at prod would
+// silently restate live budgets.
+assertDevProject(env.VITE_SUPABASE_URL, 'reconcile-budgets.mjs');
+
 const admin = createClient(env.VITE_SUPABASE_URL, SERVICE, { auth: { persistSession: false } });
 
 console.log(`\nReconciling budgets on ${env.VITE_SUPABASE_URL}`);
@@ -89,7 +95,5 @@ for (const brand of brands ?? []) {
 if (drifted === 0) {
   console.log('  Every brand already matches its approved requests.\n');
 } else {
-  console.log(
-    `\n  ${drifted} brand(s) ${dryRun ? 'would be' : 'were'} corrected.\n`
-  );
+  console.log(`\n  ${drifted} brand(s) ${dryRun ? 'would be' : 'were'} corrected.\n`);
 }
