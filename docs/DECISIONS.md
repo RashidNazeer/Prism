@@ -1037,3 +1037,25 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   `review_content` advances a job to content completed once its video count is
   met, and it did exactly that for Selena, who delivered all ten of a ten-video
   deal. That is the product working, not something to suppress.
+- 2026-08-19: **The sheets are trusted for VIDEO LINKS ONLY, never for
+  figures.** Rashid: "trust the sheet only for video links not for gmv stats we
+  need api calls for that". Their GMV, Ad Spend, Views and CTR columns are
+  ignored entirely; every number a creator sees comes from TikTok through the
+  sync.
+- 2026-08-19: **Jen Honest's six unlabelled videos are August.** He confirmed
+  them by hand and pasted the links: "for jen honest the last 6 are his videos
+  for aug the month was not label". Checked id by id against her sheet before
+  adding. 85 videos in total now.
+- 2026-08-19: **ADD EVERY VIDEO BEFORE SYNCING, never the other way round.** A
+  sync call costs one API request per store per day, and a day counts as done
+  only for the SAME set of videos (`videos_hash`). Adding a video afterwards
+  invalidates every day already paid for and they all have to be fetched again.
+  Loading all 85 first and syncing once cost 22 calls; syncing at 79 and then
+  adding Jen's six would have cost 44 for the same result.
+- 2026-08-19: **22 API calls covered 85 videos, and that is the floor.** The
+  cost is driven by DAYS, not by videos: one report call per store per day
+  returns every video at once. One store is mapped to Penetrex, and
+  `tiktok_days_to_backfill()` worked out 20 days from the videos that had no
+  figures, dating each from its own TikTok id; the function adds two days of
+  slack. 738 video-days came back and all 85 videos now carry real figures:
+  $447.41 spent, $716.49 GMV, 37 orders, 1.60x.

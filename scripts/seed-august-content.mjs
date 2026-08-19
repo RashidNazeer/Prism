@@ -621,6 +621,53 @@ const VIDEOS = [
     adCode: '#W+XQCkzPPnDLz2PQnjUZgkjSu2X/ALUufqJRgAAZLV+GVC3eJlnP+wJsKlZYG1c=',
     postedAt: '2026-08-18T23:18:43.000Z',
   },
+  // honestfindswithjen, 6 of a 15 video deal.
+  // Her block carries no month at all. Rashid confirmed these six by hand on
+  // 2026-08-19, pasting the links himself: "for jen honest the last 6 are his
+  // videos for aug the month was not label". They are the same six the sheet
+  // holds, checked id by id before they were added.
+  {
+    handle: 'honestfindswithjen',
+    url: 'https://www.tiktok.com/@honestfindswithjen/video/7672857655769173262',
+    itemId: '7672857655769173262',
+    adCode: '#OfBiYTnj7iQ8J9EbmuASmApIsHOTu8wtUiD4b2o2MuX6LQlPAb5ztTJM6ELJ+A4=',
+    postedAt: '2026-08-11T19:26:26.000Z',
+  },
+  {
+    handle: 'honestfindswithjen',
+    url: 'https://www.tiktok.com/@honestfindswithjen/video/7673256919716400398',
+    itemId: '7673256919716400398',
+    adCode: '#4Lrd44uIrM6rQikm6NVpe51soV9nMhv+OzcL2YPM+0qDvW/kt6Xka6mChY7PNsw=',
+    postedAt: '2026-08-12T21:15:47.000Z',
+  },
+  {
+    handle: 'honestfindswithjen',
+    url: 'https://www.tiktok.com/@honestfindswithjen/video/7673259067829161229',
+    itemId: '7673259067829161229',
+    adCode: '#Va28mtR7ny1MFflhceL9z1l4iVPbL9yGovFs1crOuBuK4zaE8uSfTnW4nTrwtps=',
+    postedAt: '2026-08-12T21:24:07.000Z',
+  },
+  {
+    handle: 'honestfindswithjen',
+    url: 'https://www.tiktok.com/@honestfindswithjen/video/7674654582596832526',
+    itemId: '7674654582596832526',
+    adCode: '#MhUUyhyy7bhf0adamzJSMuTKXV+2Wnebjf9qHTByDFxnF3uQ5WgzE1PZKoM/9ZY=',
+    postedAt: '2026-08-16T15:39:26.000Z',
+  },
+  {
+    handle: 'honestfindswithjen',
+    url: 'https://www.tiktok.com/@honestfindswithjen/video/7674658144110333197',
+    itemId: '7674658144110333197',
+    adCode: '#tw6LETzUjPT/AIPBt5kJ/mmd0Xug0SLaBwssRHrYvVpL4xO9Mbqi5isvALimBQY=',
+    postedAt: '2026-08-16T15:53:15.000Z',
+  },
+  {
+    handle: 'honestfindswithjen',
+    url: 'https://www.tiktok.com/@honestfindswithjen/video/7675381987284176142',
+    itemId: '7675381987284176142',
+    adCode: '#PnS3gikVdJnFDoQGP5HWDscEuWQoC8rmGmgA3fDtViGwo4NspwS9lX4ccItUQHU=',
+    postedAt: '2026-08-18T14:42:08.000Z',
+  },
 ];
 
 const BRAND = 'Penetrex';

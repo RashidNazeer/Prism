@@ -4,29 +4,57 @@
 
 **Recorded 2026-08-19.**
 
-Dev carries Penetrex's real August retainer end to end: 41 creators, 31 offers,
-41 approved jobs, **and now 79 August videos with their ad codes**. Rashid is
-testing it.
+Penetrex's August is complete on dev and carrying **real TikTok money**: 41
+creators, 31 offers, 41 approved jobs, 85 August videos, and every one of those
+85 now has figures. $447.41 spent, $716.49 GMV, 37 orders, 1.60x overall.
+Rashid is testing it.
 
-**Two things are waiting on him, ask before doing either:**
+**Ask him what is next.** Nothing is queued. Things he might reach for:
 
-1. **73 of the 79 videos have no ad figures yet.** Only Aaron Finds' six carry
-   real money ($58.46 spent, $29.98 GMV), because those were already in
-   `tiktok_video_daily` from the earlier seed. The rest need a TikTok sync.
-   The days are already marked done in `tiktok_sync_runs`, but the video
-   fingerprint changed when these were added, so a re-run will fetch them.
-   `node scripts/backfill-tiktok.mjs <days>`, and it costs real API calls.
-2. **Jen Honest's six videos.** Posted 11-18 August, straight after her July
-   block, but her sheet gives that block no month. Held back deliberately under
-   his "trust the label" rule.
+- **The other months.** 366 more links sit on the same content sheets for April
+  to July. Loading them is free; the figures would cost roughly one API call per
+  day back to mid-April, so about 120 calls.
+- **The 21 creators with no content sheet at all.** They have offers and no
+  videos.
+- Still parked: 12 orphaned test admins (item 14), and the vendored WurxBase
+  tables losing their fields at 768px (item 13e).
 
-Also still parked: 12 orphaned test admins on dev (item 14), and the vendored
-WurxBase tables losing their fields at 768px (item 13e).
+**If more videos are ever added, add them ALL before syncing.** A day counts as
+pulled only for the same set of videos, so a video added after a sync
+invalidates every day already paid for.
 
 **Do not re-explore the codebase to get oriented.** This file, then PARKED,
 then only the files the chosen job names.
 
 ---
+
+## Real money, for 22 API calls (2026-08-19, later)
+
+Rashid, on the content sheets: *"trust the sheet only for video links not for
+gmv stats we need api calls for that please make sure to make minimum api
+calls"*. And he confirmed Jen Honest's six unlabelled videos as August, pasting
+the links himself.
+
+**85 videos now, and all 85 carry real figures.** $447.41 spent, $716.49 GMV,
+37 orders, 1.60x. Selena is at 9.85x on $491.81 of GMV, Nikki Wilson 13.79x,
+Dana Smith 14.92x; Graycie has the heaviest spend at $180 and 0.25x.
+
+**It cost 22 API calls, which is the floor.** The cost is driven by DAYS and not
+by videos: one report call per store per day returns every video at once. One
+store is mapped to Penetrex, and `tiktok_days_to_backfill()` worked the depth
+out at 20 days from the videos that had no figures, dating each from its own
+TikTok id. 738 video-days came back.
+
+**The order mattered and saved half the cost.** A day counts as pulled only for
+the SAME set of videos, so Jen's six went in BEFORE the sync ran. Syncing at 79
+and adding her afterwards would have invalidated all 22 days and cost 44 calls
+for the same result.
+
+**One self-inflicted false alarm worth remembering.** A check said no store was
+mapped to a brand, which would have meant the sync could do nothing. It was a
+query naming `store_name` when the column is `name`, with the error unread:
+exactly the trap the repo already documents. The mapping was there all along.
+
 
 ## August's videos, and real money on a creator's screen (2026-08-19)
 
