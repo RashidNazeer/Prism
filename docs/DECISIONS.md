@@ -1008,3 +1008,32 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   that no longer existed, and re-seeding on top read $44,500 against a $23,000
   budget. Nothing errored. Both paths through that script now end in a
   recomputation, and the seed asserts the result against the sheet.
+- 2026-08-19: **August's videos go in by the SHEET'S month label, not by the
+  date inside the video id.** Rashid's call: "july 30 and aug 1 these dates can
+  be a bit off because of timezone issues, so trust the sheet data". Gunnar's
+  August batch opens with a video posted 30 July and it is August's work. Both
+  readings were compared before asking him and they disagree a lot, because the
+  label marks the batch a video was commissioned in rather than the day it went
+  up. 79 videos across 11 creators.
+- 2026-08-19: **The month sits on the block's HEADER row, not always beside the
+  first video.** Parsing the header before skipping it turned 38 apparently
+  unlabelled videos into 6. Anything reading these sheets must check the header.
+- 2026-08-19: **Jen Honest's last block is held back.** Six videos posted 11-18
+  August, straight after her July block, but the sheet gives the block no month
+  at all. Under a "trust the label" rule there is no label to trust, and
+  inferring one would be reading Rashid's mind rather than his sheet. Waiting on
+  him.
+- 2026-08-19: **The loaded videos are APPROVED, not left in the review queue.**
+  They are live on TikTok with ad codes against them, so they have plainly been
+  accepted; and the creators at payment pending and paid could not be at those
+  stages with unreviewed content. `--submitted-only` puts them in the queue
+  instead if that is ever wanted.
+- 2026-08-19: **`p_embed_id` is the whole point of the load.** It carries
+  TikTok's item id, which is the ONLY join between a person and the money:
+  `tiktok_video_daily` is keyed (item_id, stat_date) with no reference to a
+  creator. Passing it made real spend and GMV appear on Aaron Finds' screen with
+  no TikTok call at all.
+- 2026-08-19: **Approving content is allowed to move the pipeline by itself.**
+  `review_content` advances a job to content completed once its video count is
+  met, and it did exactly that for Selena, who delivered all ten of a ten-video
+  deal. That is the product working, not something to suppress.

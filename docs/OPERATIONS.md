@@ -190,6 +190,14 @@ node scripts/seed-penetrex-offers.mjs [--clean]
                             # the stage the sheet says. Needs seed-creators to
                             # have run. Both paths recompute the brand's
                             # committed budget, which has no cascade of its own.
+node scripts/seed-august-content.mjs [--clean] [--submitted-only]
+                            # DEV ONLY. The 79 videos in the AUGUST-labelled
+                            # blocks of the 20 per-creator content sheets, with
+                            # their ad codes, submitted as the creator and
+                            # approved as the admin, filed on the day each went
+                            # up. Passes TikTok's item id as embed_id, which is
+                            # what attaches real ad money. Needs the offers seed
+                            # to have run first.
 node scripts/seed-applications.mjs [--clean]   # demo queue data, DEV ONLY
 node scripts/seed-brands.mjs [--clean]         # demo brands and offers, DEV ONLY
 node scripts/seed-pipeline.mjs [--clean]       # videos against the approved jobs,

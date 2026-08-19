@@ -4,30 +4,63 @@
 
 **Recorded 2026-08-19.**
 
-Dev now carries **Penetrex's real August 2026 retainer**: 41 real creators, 31
-offers, 41 approved requests, $22,250 committed across 393 videos, every figure
-reconciling against Rashid's own spreadsheet. He is testing it.
+Dev carries Penetrex's real August retainer end to end: 41 creators, 31 offers,
+41 approved jobs, **and now 79 August videos with their ad codes**. Rashid is
+testing it.
 
-**Ask him what is next.** The obvious candidate, and he has the data for it, is
-**their video links**. The sheet's "Master Sheet" tab holds real TikTok links,
-ad codes and video ids per creator, and **the TikTok money is still in the
-database**: 5,294 video-days of real cost and GMV survived the wipe because
-`tiktok_video_daily` is keyed by video id, not by person. Submitting those
-links would light up My Numbers with real money and no TikTok API call.
+**Two things are waiting on him, ask before doing either:**
 
-Two cautions if that is the job. The Master Sheet names people by first name
-("Graycie", "Lidice", "Lauren"), not by handle, and **some of those names are
-not among the 41** — Lidice and Lauren are not on the retainer. And a video's
-figures re-attach on the video id alone, so the same link submitted by two
-creators would show both of them the same money.
+1. **73 of the 79 videos have no ad figures yet.** Only Aaron Finds' six carry
+   real money ($58.46 spent, $29.98 GMV), because those were already in
+   `tiktok_video_daily` from the earlier seed. The rest need a TikTok sync.
+   The days are already marked done in `tiktok_sync_runs`, but the video
+   fingerprint changed when these were added, so a re-run will fetch them.
+   `node scripts/backfill-tiktok.mjs <days>`, and it costs real API calls.
+2. **Jen Honest's six videos.** Posted 11-18 August, straight after her July
+   block, but her sheet gives that block no month. Held back deliberately under
+   his "trust the label" rule.
 
-Also still waiting, both in PARKED: **12 orphaned test admins on dev** (item 14)
-and **the vendored WurxBase tables losing their fields at 768px** (item 13e).
+Also still parked: 12 orphaned test admins on dev (item 14), and the vendored
+WurxBase tables losing their fields at 768px (item 13e).
 
 **Do not re-explore the codebase to get oriented.** This file, then PARKED,
 then only the files the chosen job names.
 
 ---
+
+## August's videos, and real money on a creator's screen (2026-08-19)
+
+Rashid pointed at the per-creator content sheets linked from the Collabs tab.
+Twenty of the forty-one have one; **79 videos sit in blocks labelled August**
+and they are now loaded, approved, and filed on the day each went up.
+
+**Two parsing mistakes, both caught before anything was written.** The sheets
+are a stack of blocks, one per batch, and reading one as a flat list merged
+months that must not be merged: the first pass reported Gunnar with four videos
+and a second TikTok account, when what he has is a May row on an old handle and
+three August rows on @lowbacklab. Then the month turned out to sit on the
+block's HEADER row rather than beside the first video, and parsing the header
+before skipping it turned 38 apparently unlabelled videos into 6.
+
+**Label, not posting date, on Rashid's instruction:** *"july 30 and aug 1 these
+dates can be a bit off because of timezone issues, so trust the sheet data"*.
+Both readings were put to him first, because they disagree a lot: the label
+marks the batch a video was commissioned in, and Brooke Jackson's entire
+51-video sheet is one block labelled "April" spanning April to August.
+
+**The load walks the real path**, `submit_content` as the creator and
+`review_content` as the admin. `p_embed_id` carries TikTok's item id, which is
+the only join between a person and the money, and approving all ten of Selena's
+ten-video deal advanced her job to content completed on its own, which is the
+product working rather than something to suppress.
+
+**Aaron Finds' My Numbers is alive with real TikTok data**: $29.98 GMV, $58.46
+spend, 0.51x ROI, 6 videos with 4 ads running and 2 finished, a daily chart from
+4 to 18 August, best day $29.98 on the 12th. No TikTok call was made to produce
+any of it; the figures were already in the database with nothing pointing at
+them. The other 73 videos show the designed empty state until a sync fetches
+theirs.
+
 
 ## Penetrex's real retainer, on dev (2026-08-19)
 
