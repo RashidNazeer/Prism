@@ -375,29 +375,22 @@ Both are staff confirming a self-reported figure or letting somebody into a
 contest, so a face is worth having. **Raise when he next works through a
 contest queue.**
 
-## 16. Five thousand orphaned ad-money rows on dev, as of 2026-08-19
+## 16. DONE 2026-08-19: dev holds the sheet data and nothing else
 
-**Status:** PAUSED, needs Rashid's word before anything is deleted
-**Owner:** Claude
+Rashid asked whether anything extra was on dev. Three things were, and he chose
+to remove all three: the orphaned ad-money rows this item was about (5,230
+across 76 videos, $332.51 of GMV), the test litter a broken suite cleanup had
+left, and the four empty brands from the 12 August seed.
 
-`tiktok_video_daily` has no foreign key to a creator or a submission — its
-primary key is `(item_id, stat_date)` and nothing cascades. So the creator wipe
-took the people and their videos and left their money behind. Dev holds **5,968
-rows, of which 5,230 across 76 video ids belong to nobody**: $156.06 of spend and
-$332.51 of GMV from the old `seed-penetrex` roster. The live 85 videos account
-for the other 738.
+`scripts/tidy-dev.mjs` does it, dry-run by default, and refuses any brand that
+is not empty because everything referencing `brands` cascades. Dev is now 41
+creators, 41 applications, 41 avatars, one brand, 31 offers, 41 jobs, 85 videos,
+738 money rows, zero contests. `audit_log` and `tiktok_sync_runs` were kept.
 
-Nobody can read them. The row policy needs an approved submission the reader
-owns, so they are invisible to every creator and only staff see them at all.
-Two reasons they are still worth clearing: the table grows every night whether
-or not anyone owns the rows, and if a creator ever submits one of those same
-TikTok URLs and it is approved, they inherit historic figures earned before they
-were involved.
-
-**Not deleted, deliberately.** After removing thirteen accounts yesterday that
-Rashid had not authorised, a five-thousand-row delete is not one to make on my
-own judgement. **Raise it the next time the wipe script is touched**, or when he
-asks why the numbers table is bigger than the video count suggests.
+Two things I proposed removing and should not have: the revoked TikTok
+connection row (soft revoke is deliberate, the audit trail resolves through it)
+and the second Penetrex store row (the key is advertiser + store, and that store
+really is authorised to both ad accounts). Both are recorded in DECISIONS.
 
 ## 17. Contest videos cannot be approved or sent back, as of 2026-08-19
 

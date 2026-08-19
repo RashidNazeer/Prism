@@ -1148,3 +1148,47 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   says in words that nobody can see who anybody else is, and breaking that would
   be a lie rather than a change. A global leaderboard ranked on ad GMV makes no
   such promise. The contest prohibition stays exactly as written.
+- 2026-08-19: **Dev holds the Penetrex sheet and nothing else.** Rashid:
+  "please make sure that all the data before adding penetrex from the sheet was
+  dummy and useless ... now i wanna see only the data we fetched from the sheet
+  is there any extra data??" There was, from three different causes, and he
+  chose to remove all of it. Dev is now 41 creators, 41 applications, 41
+  avatars, ONE brand, 31 offers, 41 jobs, 85 videos, 738 money rows, 0 contests.
+  `scripts/tidy-dev.mjs` is the re-runnable answer and it dry-runs by default.
+- 2026-08-19: **The four empty brands went** — Vitauthority, BruMate, Physicians
+  Choice, Bentgo, seeded 2026-08-12, each with a budget row and some products
+  and zero offers, jobs, videos or contests. They were part of the same dummy
+  set as the creators the wipe removed. Everything that references `brands` is
+  ON DELETE CASCADE, so `tidy-dev` counts all six referencing tables first and
+  refuses any brand that is not empty. Naming a brand is never enough on its
+  own: the delete would take real work with it and say nothing.
+- 2026-08-19: **The orphaned ad money went, and that GIVES UP a property the
+  wipe script deliberately protected.** `tiktok_video_daily` has no foreign key
+  to a person, which `wipe-clean-slate.mjs` documents as the valuable
+  behaviour: resubmit the same link and the figures reappear with no API call.
+  The cost is that a wipe leaves the money of everybody it deleted lying around
+  for ever — 5,230 rows across 76 videos, $332.51 of GMV, back to 18 April.
+  Nobody could read them, but a creator who ever submitted one of those URLs
+  would have inherited earnings from before they were involved. Removed because
+  they were known dummy data. If any of those videos is ever loaded again its
+  history has to be bought back from TikTok in calls.
+- 2026-08-19: **The revoked TikTok connection STAYS, and so does the second
+  Penetrex store row.** I proposed removing both as litter and was wrong on
+  both, which is worth writing down because the surface reading is convincing.
+  `tiktok_connections` soft-revokes on purpose — "the row stays so the audit
+  trail still resolves" — and the token was overwritten with an empty string at
+  the same moment. And `tiktok_stores` has primary key (advertiser_id,
+  store_id) since `20260817193000`, because Penetrex is authorised to BOTH ad
+  accounts and the GMV figures belong to the PAIR; exactly one pair is mapped to
+  the brand, which is the correct state. Deleting the unmapped row would also
+  simply bring it back on the next store refresh.
+- 2026-08-19: **`audit_log` and `tiktok_sync_runs` were kept**, asked directly.
+  A history that can be erased by whoever is tidying up is not a history, and
+  the sync log is how anybody would ever find out the nightly job had stopped.
+  Neither is visible to a creator.
+- 2026-08-19: **A suite's cleanup belongs in `finally`, and every delete in it
+  is checked.** `check-content` deleted its brand on the last line of the
+  `try`, so the run that could not reach the preview server threw first and
+  left a brand and its offer on dev permanently. All the deletes were also
+  fire-and-forget, so a foreign key that refused reported nothing. Both fixed;
+  the suite now runs 33/33 and `tidy-dev` finds nothing after it.

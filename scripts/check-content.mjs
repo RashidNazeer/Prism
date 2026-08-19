@@ -50,6 +50,12 @@ const RIVAL = 'content-rival@wurxmediahub.test';
 const STAFF = 'content-staff@wurxmediahub.test';
 const made = [];
 
+/*
+ * The brand this suite makes, recorded OUTSIDE the try so the cleanup in
+ * `finally` can still see it. See the note down there for why that matters.
+ */
+const madeBrand = { id: null };
+
 let passes = 0;
 let failures = 0;
 const ok = (m) => {
@@ -164,6 +170,7 @@ try {
     .select('id')
     .single();
   if (brandErr) throw brandErr;
+  madeBrand.id = brand?.id ?? null;
 
   const { data: offer, error: offerErr } = await admin
     .from('offers')
@@ -667,11 +674,34 @@ try {
   /* ------------------------------------------------------------- tidy up -- */
   await admin.from('audit_log').delete().eq('subject_id', firstId);
   await admin.from('audit_log').delete().eq('subject_id', secondId);
-  await admin.from('brands').delete().eq('id', brand.id);
 } finally {
+  /*
+   * THE BRAND IS DELETED HERE, not on the last line of the try.
+   *
+   * It used to be up there, so any throw before it — a browser step that cannot
+   * reach the preview server, which is exactly what happened on 2026-08-19 —
+   * skipped the delete and left a brand and its offer on dev for ever. Rashid
+   * found them when he asked what extra data was on the project.
+   *
+   * And every delete is CHECKED. They were all fire-and-forget, so a foreign
+   * key that refused reported nothing and the row simply stayed. Order matters:
+   * the accounts go first because `applications` cascades from `profiles` and
+   * `profiles` cascades from `auth.users`, then the brand, which cascades its
+   * own offers.
+   */
+  const tidy = async (what, thunk) => {
+    const { error } = await thunk();
+    if (error) console.error(`  LEFT BEHIND  ${what}: ${error.message}`);
+  };
+
   for (const id of made) {
-    await admin.from('audit_log').delete().eq('actor_id', id);
-    await admin.auth.admin.deleteUser(id);
+    await tidy(`audit rows for ${id}`, () =>
+      admin.from('audit_log').delete().eq('actor_id', id)
+    );
+    await tidy(`account ${id}`, () => admin.auth.admin.deleteUser(id));
+  }
+  if (madeBrand.id) {
+    await tidy('the suite brand', () => admin.from('brands').delete().eq('id', madeBrand.id));
   }
   console.log('\ncleaned up');
 }

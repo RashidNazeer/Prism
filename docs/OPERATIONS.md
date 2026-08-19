@@ -204,6 +204,16 @@ node scripts/check-brand-binding.mjs [brand]
                             # store and ad figures, and that nothing leaks to
                             # another brand. Run it whenever a second brand
                             # gets a store mapped.
+node scripts/tidy-dev.mjs [--yes] [--skip-money] [--brands "A,B"]
+                            # DEV ONLY. Removes what is on dev but is not the
+                            # product: test accounts (@wurxmediahub.test), test
+                            # brands, and ad-money rows for videos nobody owns
+                            # any more. DRY RUN unless --yes. It counts a
+                            # brand's offers, jobs, videos and contests before
+                            # touching it and REFUSES any that is not empty,
+                            # because everything referencing brands cascades.
+                            # It never touches audit_log or tiktok_sync_runs.
+
 node scripts/sync-avatars.mjs [--refresh]
                             # DEV ONLY. Fetches each creator's TikTok profile
                             # picture ONCE into the private creator-avatars

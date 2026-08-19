@@ -45,13 +45,58 @@ across creators, and every existing query is per-creator so the double count is
 invisible until something sums across people. And only Penetrex has ad data at
 all, which is why the empty rows are hidden rather than shown at $0.
 
-**Where dev stands:** 41 creators with pictures, 31 offers, 41 jobs, 85 videos
-(all approved), real TikTok money on all 85, 4 jobs now at Payment pending.
+**Where dev stands, and it is now EXACTLY the sheet data:** one brand
+(Penetrex), 41 creators with pictures, 41 applications, 31 offers, 41 jobs, 85
+videos all approved, 738 money rows all owned by those 85, 4 jobs at Payment
+pending, zero contests. `node scripts/tidy-dev.mjs` re-checks it in a dry run
+and should report nothing to remove.
 
 **Do not re-explore the codebase to get oriented.** This file, then PARKED, then
 only the files the chosen step names.
 
 ---
+
+## Only the sheet data, nothing else (2026-08-19, later still)
+
+Rashid: *"please make sure that all the data before adding penetrex from the
+sheet was dummy and useless ... now i wanna see only the data we fetched from
+the sheet is there any extra data??"*
+
+There was, from three separate causes, and he chose to remove all of it.
+
+**Test litter, and it was mine, from an hour earlier.** `check-content` deleted
+its brand on the last line of the `try`, so the run that could not reach the
+preview server threw before it and left a brand, its offer, a rival creator and
+an application behind. Every delete in that cleanup was also fire-and-forget, so
+a refusing foreign key reported nothing. Both fixed: cleanup is in `finally`
+now and reports anything it could not remove. The suite runs 33/33 and leaves
+nothing.
+
+**5,230 ad-money rows across 76 videos**, $332.51 of GMV, back to 18 April.
+`tiktok_video_daily` has no foreign key to a person, so the wipe took the
+people and left their money. **Removing them gives up something the wipe script
+deliberately protected**: resubmit the same link and the figures used to
+reappear with no API call. Worth it here because they were known dummy data, but
+it is a trade rather than a tidy-up.
+
+**Four empty brands** from the 12 August seed, with budgets and products and no
+offers, jobs, videos or contests. `tidy-dev` counts all six referencing tables
+before touching a brand and refuses any that is not empty, because everything
+referencing `brands` cascades and the delete would take real work with it in
+silence.
+
+**Two things I proposed removing and was wrong about**, both worth recording
+because the surface reading is convincing. The revoked TikTok connection row is
+a SOFT revoke by design — the row stays so the audit trail resolves, and the
+token was blanked at the same moment. And the "duplicate" Penetrex store is not
+one: the primary key has been (advertiser_id, store_id) since
+`20260817193000`, because that store is authorised to both ad accounts and the
+figures belong to the pair. Exactly one pair is mapped, which is correct, and
+deleting the other would bring it straight back on the next refresh.
+
+`audit_log` and `tiktok_sync_runs` were kept, asked directly: a history that
+can be erased by whoever is tidying up is not a history.
+
 
 ## The whole flow, reconciled (2026-08-19, late)
 
