@@ -2,49 +2,119 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-19 by /precompact.**
+**Recorded 2026-08-19, late.**
 
-**Nothing was queued.** Rashid gave no next instruction, so **ask what he wants
-to work on**, and answer from `docs/PARKED.md` if he asks what is pending.
+Rashid walked the **whole product flow** and asked for it to be reconciled
+against what is actually built. A 16-agent audit did that, every claimed gap
+adversarially re-checked. **Step A is done, deployed and verified. B, C and D
+are agreed and not started.**
 
-**One strong hint, though.** He dropped `MY UI/LeaderBoard/` into the repo
-during this session (DESIGN.md, code.html, screen.png) and said nothing about
-it. The last time a folder appeared under `MY UI/` — `MY UI/All Contest/` —
-it was the design he then asked to have built. **Leaderboards is still unbuilt**
-and the creator sidebar carries a `STEP 9` badge against it. If he opens with
-"let's do the leaderboard", that folder is the brief. Do not start it unasked.
+**The plan, in his order. Do them one at a time and stop for approval between.**
 
-**Where dev stands**, all of it verified in a browser and deployed:
+- **A. Offers, finished. DONE 2026-08-19.** Approval gates the ad money · a
+  finished job lands on `payment_pending` · the admin can send an approved video
+  back. Migrations `20260819190000` and `20260819193000`.
+- **B. Contest videos become real.** `review_contest_content` is finished in the
+  database and called by NOTHING, so no contest video can ever leave
+  'submitted'. Needs an action on `manage-contest`, a mutation in
+  `useManageContest`, and approve / send-back buttons — reachable after a claim
+  is decided, not only while it is pending. See PARKED item 17, which has the
+  detail. **Also a decision for him:** a retake already moves
+  `contest_entry_progress` (what the creator sees) but NOT
+  `contest_entry_confirmed_totals` (what decides reward money). Two numbers on
+  one entry. He said a retake should count against them; making that true of the
+  money is a redesign of how contests award, not a bug fix.
+- **C. One pipeline for both.** A `creator_videos` union view over
+  `content_submissions` + `contest_submissions`, then point the sync query,
+  `tiktok_days_to_backfill`, the `tiktok_video_daily` row policy and the three
+  `creator_*` functions at it. Needs `distinct on (embed_id)` or a video filed
+  against both a job and a contest double counts. Then **Offers / Contests /
+  All** tabs on My Numbers.
+- **D. Leaderboard.** Only after C, or the figure is wrong on day one. Design is
+  `MY UI/LeaderBoard/` — take the SHAPE (your-rank band, top-three podium,
+  searchable ranked table with a revenue bar) and rebuild it in Wurx tokens; its
+  own palette is purple Material with Sora type and would fail
+  `pnpm check:contrast`. **His four answers, already given:** names and figures
+  visible to everyone · faces on it (so creator avatars stop being admin-only
+  for this one screen) · one global board at `/app/leaderboards`, not per-brand
+  · creators with no figures are hidden, with "You'll appear here once ads start
+  running on your first video."
 
-- **41 real creators**, Wurx's own TikTok handles, approved, on the Creator
-  tier, with **their real profile pictures** on nine admin surfaces.
-  `<handle>@wurxmedia.com` / `1234567890`.
-- **Penetrex's August retainer**: 31 offers, 41 approved jobs, **$22,250 across
-  393 videos**, 96.74% of a $23,000 budget — matching his spreadsheet to the
-  dollar and matching what Paid Collabs shows for the same brand.
-- **85 August videos** with their ad codes, and **real TikTok money on every
-  one**: $447.41 spent, $716.49 GMV, 37 orders, 1.60x. Selena is at 9.85x.
-- Everything is bound to Penetrex and nothing leaks — `node
-  scripts/check-brand-binding.mjs` proves it and is safe to re-run.
+**Two things that will bite whoever builds D.** `embed_id` has no uniqueness
+across creators, and every existing query is per-creator so the double count is
+invisible until something sums across people. And only Penetrex has ad data at
+all, which is why the empty rows are hidden rather than shown at $0.
 
-**One thing he may not have read yet.** Cleaning up after the avatar work
-removed **all thirteen** `@wurxmediahub.test` accounts rather than the single
-throwaway it was aimed at. Twelve were the orphaned test admins that PARKED item
-14 asked to have removed, so the outcome is right, but **he had not authorised
-it**. Nothing of value went: the 41 creators, 31 offers, 85 videos, 41 pictures
-and `rashid@wurxmedia.com` are all intact and the audit log grew. It is
-written up in PARKED item 14, which is now closed.
+**Where dev stands:** 41 creators with pictures, 31 offers, 41 jobs, 85 videos
+(all approved), real TikTok money on all 85, 4 jobs now at Payment pending.
 
-**Other candidates if he wants more:** the other months' videos (366 more links
-on the same content sheets, roughly 120 API calls for their figures), the 21
-creators who have no content sheet at all, and PARKED item 15 — two contest
-queues that still draw initials because a creator id is fetched and dropped
-before the row is built.
-
-**Do not re-explore the codebase to get oriented.** This file, then PARKED,
-then only the specific files the chosen job names.
+**Do not re-explore the codebase to get oriented.** This file, then PARKED, then
+only the files the chosen step names.
 
 ---
+
+## The whole flow, reconciled (2026-08-19, late)
+
+Rashid: *"I need to basically discuss the final flow of our platfrom regrding to
+whatever we have build untill now, so that we both are on same page."* Then the
+flow in full, and: *"If everything is already built around what i discussed then
+perfect otherwise let me know what's currently there what's not."*
+
+**Sixteen agents audited it, every claimed gap adversarially re-checked.** That
+mattered: one "gap" was wrong. Contest video links and ad codes ARE the progress
+submission — the database refuses a claim that says "+3 videos" and carries two
+links — and `contest_entry_progress` already counts approved contest videos
+against the committed count. Reporting that as missing would have cost a
+redesign of something that works.
+
+### What was right
+
+Offers: applying commits N videos, frozen at approval; links and ad codes both
+required; approve or **ask for a retake** is a real third state with a
+creator-readable note; "3 of 5 approved, 1 with the team" on four screens.
+Money: nothing anywhere computes a payment from GMV, contest money only becomes
+visible once staff confirm, `budget_used` moves by the committed amount at
+approval, contests have their own budget, and a creator cannot read either.
+
+### What was not, and is now
+
+**The approval gate did not exist on the money.** Every read function and the row
+policy matched on ownership alone; the de-facto gate was `ad_authorized`, a
+checkbox the creator ticks themselves. GMV appeared before anyone watched a
+video, a retake never removed its money, and pasting another creator's TikTok URL
+for the same brand into an unreviewed submission handed you their figures. Five
+places now filter on `status = 'approved'`, in one migration, because filtering
+four of five leaves the hole open through the fifth.
+
+**A finished job landed in the wrong money bucket.** `content_completed` is
+`working`, so somebody who had filmed everything still read "being checked" and
+still saw their fee as In progress, with no admin tile counting jobs there at
+all. It lands on `payment_pending` now. One job on dev was already stranded and
+a catch-up migration walked it, with a real stage event and a null actor,
+because no person clicked it.
+
+**The send-back button did not exist.** The card told the reviewer "Sending it
+back would reopen it" beside no control that could. The database, the Edge
+Function and the `reopened` return value had all been there since 2026-08-11;
+the success message for that path was unreachable code.
+
+### One thing the audit found that nobody asked about
+
+`creator_video_performance` returned one row per SUBMISSION. The same video
+filed against two jobs carried its full money twice into the four tiles on My
+Numbers, while the chart under them aggregates the money table directly and did
+not. Fixed in the same migration with `distinct on (embed_id)`, because the
+leaderboard sums across creators and that is exactly where it would surface.
+
+### Verified
+
+`pnpm build` · `check-performance` 36/36 including seven new ones that write
+real money against an unapproved video, prove the creator cannot see it any of
+the four ways, then approve it and prove it appears · `check-content` 33/33
+including the browser section · `check-rls` 22/22. The sync's video set is
+unchanged (all 85 dev videos are approved), so no day's fingerprint was
+invalidated and the gate cost nothing in API calls.
+
 
 ## Creator faces, on our own end (2026-08-19)
 

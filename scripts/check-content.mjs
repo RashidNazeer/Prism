@@ -427,15 +427,22 @@ try {
     .select('stage')
     .eq('id', job)
     .single();
-  if (finished?.stage === 'content_completed') {
-    ok('the job is at content completed, moved by the database');
-  } else bad(`the job is at ${finished?.stage}, not content completed`);
+  /*
+   * PAYMENT PENDING, not content completed. Changed 2026-08-19: the last
+   * approval now says "we owe them" rather than "their work is in and being
+   * checked", because the checking is the approval that just happened. The
+   * stage it used to land on is still in the enum and an admin can still pick
+   * it by hand; nothing lands there on its own any more.
+   */
+  if (finished?.stage === 'payment_pending') {
+    ok('the job is at payment pending, moved by the database');
+  } else bad(`the job is at ${finished?.stage}, not payment pending`);
 
   const { data: events } = await admin
     .from('offer_stage_events')
     .select('to_stage, note')
     .eq('application_id', job)
-    .eq('to_stage', 'content_completed');
+    .eq('to_stage', 'payment_pending');
   if ((events ?? []).length === 1) {
     ok('the creator can read why it moved, in their own timeline');
   } else bad('no stage event was written for the creator');
@@ -528,7 +535,10 @@ try {
     .eq('id', job)
     .single();
   if (unApprove.ok && reopened?.stage === 'content_pending') {
-    ok('taking an approval back walks the job out of content completed');
+    // This is now the payment_pending case, which the old guard refused: it
+    // required the job to be sitting exactly at content_completed, and since
+    // 2026-08-19 the approval itself puts it a stage further on.
+    ok('taking an approval back walks the job out of payment pending');
   } else {
     bad(`un-approving left the job at ${reopened?.stage} with a video missing`);
   }
@@ -557,7 +567,7 @@ try {
     .select('stage')
     .eq('id', job)
     .single();
-  if (lastOne.ok && rescued?.stage === 'content_completed') {
+  if (lastOne.ok && rescued?.stage === 'payment_pending') {
     ok('the last approval finishes the job from ANY stage, not just two of seven');
   } else {
     bad(`a fully filmed job was stranded at ${rescued?.stage}`);

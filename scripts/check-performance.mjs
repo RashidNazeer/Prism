@@ -57,6 +57,15 @@ const PASSWORD = 'a-long-enough-test-password-1';
  * Using an invented id would prove the plumbing and nothing about the numbers.
  */
 const REAL_ITEM = '7672433177599773983';
+
+/*
+ * A video the creator owns and NOBODY HAS APPROVED. Money is written against it
+ * with the service key, so the only thing that can hide it is the approval
+ * gate added on 2026-08-19. Before that gate, this id's spend and GMV appeared
+ * on the creator's screen the night after they pasted the link, and stayed
+ * there for ever if the video was later sent back.
+ */
+const PENDING_ITEM = '7000000000000000002';
 const REAL_STORE = '7495965060132604461';
 const REAL_ADVERTISER = '7427187763989987329';
 
@@ -66,6 +75,7 @@ const made = {
   offer: null,
   application: null,
   submissions: [],
+  pendingSubmission: null,
   mappedStore: false,
   // Whatever the store was matched to before this suite borrowed it.
   previousBrandId: null,
@@ -96,6 +106,7 @@ async function cleanup() {
    */
   await admin.from('tiktok_video_daily').delete().eq('item_id', REAL_ITEM);
   await admin.from('tiktok_video_daily').delete().eq('item_id', '7000000000000000001');
+  await admin.from('tiktok_video_daily').delete().eq('item_id', PENDING_ITEM);
   await admin.from('tiktok_sync_runs').delete().eq('store_id', REAL_STORE).lte('videos_asked', 2);
 
   for (const s of made.submissions) await admin.from('content_submissions').delete().eq('id', s);
@@ -203,7 +214,16 @@ try {
   check(!appErr, 'and an approved application', appErr?.message);
   made.application = app?.id ?? null;
 
-  const mkVideo = async (creatorId, embedId) => {
+  /*
+   * STATUS IS EXPLICIT, and it defaults to approved because that is what every
+   * other check in this file is about. Writing `offer_applications` and
+   * `content_submissions` directly is allowed here for the same reason the
+   * other scripts do it, but it means this file has to stamp by hand what
+   * `review_content` would have stamped: since 2026-08-19 an unapproved video
+   * reports no money at all, so seeding without a status would have quietly
+   * emptied the whole suite rather than failing it loudly.
+   */
+  const mkVideo = async (creatorId, embedId, status = 'approved') => {
     const { data, error } = await admin
       .from('content_submissions')
       .insert({
@@ -215,6 +235,7 @@ try {
         ad_code: `PERF${stamp}`,
         ad_authorized: true,
         embed_id: embedId,
+        status,
       })
       .select('id')
       .single();
@@ -227,7 +248,9 @@ try {
   // Creator B gets a DIFFERENT video, so "can B see A's money" is a real
   // question rather than two people sharing one row.
   await mkVideo(creatorB.id, '7000000000000000001');
-  pass('two creators, each with their own video');
+  // A's second video, waiting to be watched. Same creator, same job.
+  made.pendingSubmission = await mkVideo(creatorA.id, PENDING_ITEM, 'submitted');
+  pass('two creators, each with their own video, and one waiting to be checked');
 
   /* ----------------------------------------------------------- [1] the sync */
   console.log('\n[1] The nightly sync, run for real');
@@ -336,6 +359,79 @@ try {
       p_to: '2026-08-16',
     });
     check((data ?? []).length === 0, "and B's daily series is empty");
+  }
+
+  /* ------------------------------- [3b] an unapproved video reports nothing */
+  console.log('\n[3b] A video nobody has approved yet');
+
+  {
+    // Real money, on a video A genuinely owns. The only thing standing between
+    // the creator and it is the approval gate.
+    const { error } = await admin.from('tiktok_video_daily').insert({
+      item_id: PENDING_ITEM,
+      stat_date: '2026-08-10',
+      advertiser_id: REAL_ADVERTISER,
+      cost: 12.34,
+      gross_revenue: 99.99,
+      orders: 3,
+      currency: 'USD',
+    });
+    check(!error, 'money exists in the table for their unapproved video', error?.message);
+  }
+  {
+    const { data } = await creatorA.client
+      .from('tiktok_video_daily')
+      .select('item_id, gross_revenue')
+      .eq('item_id', PENDING_ITEM);
+    check((data ?? []).length === 0, 'the row itself is invisible to them');
+  }
+  {
+    const { data } = await creatorA.client.rpc('creator_video_performance', {
+      p_from: '2026-08-01',
+      p_to: '2026-08-16',
+    });
+    const seen = (data ?? []).some((r) => r.item_id === PENDING_ITEM);
+    check(!seen, 'it is absent from their video list');
+  }
+  {
+    const { data } = await creatorA.client.rpc('creator_daily_performance', {
+      p_from: '2026-08-01',
+      p_to: '2026-08-16',
+    });
+    const gmv = (data ?? []).reduce((a, r) => a + Number(r.gross_revenue ?? 0), 0);
+    check(gmv < 99.99, 'and its GMV is in none of their totals', `saw ${gmv}`);
+  }
+  {
+    const { data } = await creatorA.client.rpc('creator_performance_window');
+    check(
+      Number(data?.[0]?.videos ?? 0) === 1,
+      'their video count still says one, not two'
+    );
+  }
+
+  /*
+   * AND THE GATE OPENS. A rule that only ever hides things could be a broken
+   * join; this proves the same row appears the moment somebody approves it.
+   */
+  {
+    await admin
+      .from('content_submissions')
+      .update({ status: 'approved' })
+      .eq('id', made.pendingSubmission);
+
+    const { data } = await creatorA.client.rpc('creator_video_performance', {
+      p_from: '2026-08-01',
+      p_to: '2026-08-16',
+    });
+    const row = (data ?? []).find((r) => r.item_id === PENDING_ITEM);
+    check(row != null, 'once approved, the same video appears');
+    check(Number(row?.gross_revenue ?? 0) === 99.99, 'carrying its real GMV');
+
+    // Put it back, so the checks below run against the world they expect.
+    await admin
+      .from('content_submissions')
+      .update({ status: 'submitted' })
+      .eq('id', made.pendingSubmission);
   }
 
   /* ---------------------------------------------------- [4] nobody can write */

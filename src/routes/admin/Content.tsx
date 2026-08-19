@@ -504,7 +504,10 @@ function JobMeta({
  * It DOES say out loud when a decision is about to finish somebody's job, or
  * un-finish one. That is not a confirmation step, it is a label, and it is the
  * highest-stakes moment on the screen: approving the last video is the only
- * thing in the whole product that can carry a job to "content completed".
+ * thing in the whole product that can carry a job to "payment pending", which
+ * since 2026-08-19 is where a finished job lands. That moves the creator's fee
+ * out of "in progress" and into "awaiting payment", so this click is the one
+ * that says we owe them.
  */
 function Review({ row, progress }: { row: ContentRow; progress: JobProgress | undefined }) {
   const review = useReviewContent();
@@ -526,22 +529,15 @@ function Review({ row, progress }: { row: ContentRow; progress: JobProgress | un
   // back to content pending, and the creator is told.
   const wouldReopen = row.status === 'approved' && progress?.done === true;
 
-  if (row.status === 'approved') {
-    return (
-      <div className="border-line flex flex-col gap-1.5 border-t pt-2.5">
-        <p className="text-stage-paid flex items-center gap-1.5 text-[0.78125rem] font-semibold">
-          <Check size={14} aria-hidden />
-          Counted towards the offer
-        </p>
-        {wouldReopen ? (
-          <p className="text-faint text-[0.71875rem] leading-relaxed">
-            This job is finished on the strength of this video. Sending it back would reopen it.
-          </p>
-        ) : null}
-      </div>
-    );
-  }
-
+  /*
+   * THE NOTE BOX COMES FIRST, before the approved branch returns.
+   *
+   * It used to sit below it, so an approved row reached the early return and
+   * the reviewer was told "Sending it back would reopen it" beside no control
+   * that could send it back. The database has always allowed it, the Edge
+   * Function has always allowed it, and the success message for the reopen path
+   * was unreachable code. Only the button was missing.
+   */
   if (asking) {
     return (
       <div className="border-line flex flex-col gap-2 border-t pt-2.5">
@@ -579,6 +575,37 @@ function Review({ row, progress }: { row: ContentRow; progress: JobProgress | un
     );
   }
 
+  if (row.status === 'approved') {
+    return (
+      <div className="border-line flex flex-col gap-1.5 border-t pt-2.5">
+        <p className="text-stage-paid flex items-center gap-1.5 text-[0.78125rem] font-semibold">
+          <Check size={14} aria-hidden />
+          Counted towards the offer
+        </p>
+        {wouldReopen ? (
+          <p className="text-faint text-[0.71875rem] leading-relaxed">
+            This job is finished on the strength of this video. Sending it back reopens it and
+            stops the payment.
+          </p>
+        ) : null}
+        {/* Quiet, because taking an approval back is rare and should never be
+            the easiest thing on the card. It is still one click away, which
+            "no button at all" was not. */}
+        <div className="flex flex-wrap gap-2 pt-0.5">
+          <Button variant="ghost" size="sm" onClick={() => setAsking(true)}>
+            <RotateCcw size={14} aria-hidden />
+            Send it back
+          </Button>
+        </div>
+        {review.error ? (
+          <p role="alert" className="text-danger text-[0.75rem]">
+            {(review.error as Error).message}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="border-line flex flex-col gap-2 border-t pt-2.5">
       {/* Said before the click, never as a dialog after it. Reviewing at speed
@@ -586,7 +613,7 @@ function Review({ row, progress }: { row: ContentRow; progress: JobProgress | un
       {wouldFinish ? (
         <p className="text-stage-paid flex items-start gap-1.5 text-[0.75rem] leading-relaxed font-medium">
           <Flag size={13} aria-hidden className="mt-0.5 shrink-0" />
-          Approving this finishes the job and moves them on.
+          Approving this finishes the job and moves them to Payment pending.
         </p>
       ) : null}
 
@@ -609,7 +636,7 @@ function Review({ row, progress }: { row: ContentRow; progress: JobProgress | un
           identical to approving one video of five. */}
       {review.data?.result.advanced ? (
         <p role="status" className="text-stage-paid text-[0.75rem] font-medium">
-          That was the last one. The job is finished.
+          That was the last one. The job is finished and they are awaiting payment.
         </p>
       ) : review.data?.result.reopened ? (
         <p role="status" className="text-stage-due text-[0.75rem] font-medium">

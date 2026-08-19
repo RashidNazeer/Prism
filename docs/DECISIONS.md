@@ -1098,3 +1098,53 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   who anybody else is, nor on any admin entrant roster, which would be the same
   ranked-people shape contests were built to refuse. Nor on contest exclusions,
   where the row may name somebody who never signed up.
+- 2026-08-19: **Approval gates the ad money, not just the deliverable count.**
+  Rashid, walking the whole flow: "make sure creators are only be shown these
+  gmv stats for the videos that are approved by admin." It was not true. The
+  content feature had said since the day it was built that a submission counts
+  for nothing until an admin approves it, and `job_is_filmed` obeyed that; the
+  ad-money path, built a week later, never picked the rule up and matched on
+  ownership alone. The de-facto gate was `ad_authorized`, a checkbox the
+  creator ticks themselves. Beyond the two obvious costs (money shown before
+  anybody watched, money that never goes away after a retake) it was a real
+  hole: there is no uniqueness on `embed_id` or `video_url` across creators
+  and `update_content` lets a creator rewrite the link while a row is
+  unapproved, so pasting another creator's TikTok URL for the same brand made
+  the sync fetch that video's figures and the read functions hand them over.
+  Approval is the lock: a human looks at the video before its money is
+  anybody's.
+- 2026-08-19: **The gate went on all five places in one migration**, rather than
+  the read functions alone. A function filtered while the policy was not still
+  leaks through any query written later, and a policy filtered while the sync
+  was not keeps spending TikTok calls on videos nobody has agreed to. The five
+  are the row policy on `tiktok_video_daily`, `creator_performance_window`,
+  `creator_video_performance`, `creator_daily_performance`,
+  `tiktok_days_to_backfill`, plus the sync's own query in the Edge Function.
+- 2026-08-19: **A finished job lands on `payment_pending`, not
+  `content_completed`.** Rashid: "when creators have uploaded all the videos
+  they committed they and all are approved, automatically their stauts should be
+  go to payment pending". The old target sits in the `working` money bucket, so
+  a creator who had finished everything still read "being checked" and still saw
+  their fee counted as In progress, and no admin tile counted jobs sitting
+  there. The new target says WE owe THEM; it does not automate paying anybody,
+  because `paid` is still a person's decision with money in their hand.
+- 2026-08-19: **The reopen branch now accepts `payment_pending` as well.** It
+  used to insist on exactly `content_completed`, on the grounds that past that
+  point a payment decision had been made by a person and was not ours to
+  reverse. That reasoning stops applying the moment the approval itself is what
+  put the job into `payment_pending`. It still stops short of `paid`:
+  somebody has sent money.
+- 2026-08-19: **`creator_video_performance` deduplicates on `embed_id`.** One
+  row per video, not per submission. The same video filed against two jobs was
+  double counting into the four tiles on My Numbers while the chart below them
+  did not, because that reads `tiktok_video_daily` directly. Invisible today
+  and certain to surface the moment anything sums across creators.
+- 2026-08-19: **D7 is amended for a global GMV leaderboard, and only for that.**
+  D7 (2026-08-13) said no creator ever sees anything about another entrant, and
+  `20260813151702_contests_schema.sql` carries it as a standing prohibition in
+  the schema itself. Rashid, asked directly, chose names and figures visible to
+  everyone, plus faces. The two promises coexist because they are about
+  different things: the contest STANDING stays anonymous, because that screen
+  says in words that nobody can see who anybody else is, and breaking that would
+  be a lie rather than a change. A global leaderboard ranked on ad GMV makes no
+  such promise. The contest prohibition stays exactly as written.

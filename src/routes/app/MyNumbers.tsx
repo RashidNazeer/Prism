@@ -198,9 +198,15 @@ export function MyNumbers() {
           <div className="wx-skeleton h-64 rounded-xl" />
         </div>
       ) : windowQ.data && windowQ.data.videos === 0 ? (
+        /*
+         * "No videos yet" used to be true here, because this screen counted
+         * every video a creator had posted. Since 2026-08-19 it counts only
+         * APPROVED ones, so somebody with three videos waiting to be checked
+         * would have read a flat contradiction of their own Content page.
+         */
         <Empty
-          title="No videos yet"
-          body="Post a video against an offer and it appears here. Once we start running ads behind it, the spend, GMV and orders it makes will show up on this screen."
+          title="No approved videos yet"
+          body="A video shows up here once the team has watched it and approved it. Then, when we start running ads behind it, the spend, GMV and orders it makes appear on this screen. Anything still being checked is on your Content page."
         />
       ) : !hasAnyData ? (
         <Empty

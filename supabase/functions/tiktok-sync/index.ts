@@ -251,15 +251,21 @@ Deno.serve(async (req) => {
     }
 
     /*
-     * The videos to ask about: this brand's, authorised, with an id we can use.
-     * NOT "every video we know", because a report call is scoped to one store
-     * and asking it about another brand's videos would return nothing while
-     * still costing the call.
+     * The videos to ask about: this brand's, APPROVED, authorised, with an id
+     * we can use. NOT "every video we know", because a report call is scoped to
+     * one store and asking it about another brand's videos would return nothing
+     * while still costing the call.
+     *
+     * `status = 'approved'` was added 2026-08-19, and it is not only a mirror of
+     * the read side. A link is a claim until somebody has watched it, and until
+     * then we should not be spending TikTok calls on it, storing its money, or
+     * leaving rows behind for a video that is later sent back.
      */
     const { data: videos } = await admin
       .from('content_submissions')
       .select('embed_id')
       .eq('brand_id', store.brand_id)
+      .eq('status', 'approved')
       .eq('ad_authorized', true)
       .not('embed_id', 'is', null)
       .limit(1000);

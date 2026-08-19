@@ -55,6 +55,18 @@ how much content he has posted maybe a progress bar".
   `useAllOffers.ts` already documents from the other side, and breaking it is
   how an admin flipping that flag once hid somebody's live work.
 - Only APPROVED submissions count, matching the database's own rule.
+- **The finished job lands on `payment_pending`, since 2026-08-19.** It used
+  to land on `content_completed`, which is in the `working` money bucket, so a
+  creator who had filmed everything and had every video approved still read
+  "Your content is in and being checked" and still saw their fee counted as In
+  progress. Nothing moved it but a human on a dropdown, and no admin tile
+  counted jobs sitting there, so a finished job had no queue at all. Rashid's
+  words: "automatically their stauts should be go to payment pending". That
+  stage is a claim about US, not about them; `paid` is still a person's
+  decision. `content_completed` stays in the enum and stays selectable by
+  hand, and neither function snaps it forward, because it is not "before
+  content done". `20260819193000_finished_jobs_catch_up.sql` walked the one job
+  the old rule had already stranded, with a real stage event and a null actor.
 - **`review_content` advances a job from ANY stage before content completed**,
   not the two it used to. Approving the last video while a job sat at "sample
   requested" used to strand it forever. `set_offer_stage` re-checks on arrival
@@ -204,6 +216,23 @@ told to film and had nowhere to put the result.
   `progressFor()` in the browser, which was deleted on 2026-08-11. See the entry
   above. It counts against the number frozen on the JOB at approval, never
   `offers.video_count`.
+- **A link is a claim until somebody has watched it, AND THAT NOW GOVERNS THE
+  MONEY TOO.** Until 2026-08-19 it governed only the deliverable count. The ad
+  figures were gated on `ad_authorized`, which is a checkbox the creator ticks
+  themselves and which this table's own comment admits "we cannot check from
+  here". So a video's GMV appeared before anyone watched it, a video sent back
+  for a retake kept its money on the creator's screen for ever, and — the sharp
+  one — pasting another creator's TikTok URL for the same brand into an
+  unreviewed submission made the nightly sync fetch THAT video's spend and hand
+  it over. `status = 'approved'` is now on all five places at once: the row
+  policy on `tiktok_video_daily`, the three `creator_*` read functions,
+  `tiktok_days_to_backfill`, and the sync's own video query. Filtering fewer
+  than all five leaves the hole open through some other query.
+- **Taking an approval back has a button now.** The admin card had always told
+  the reviewer "Sending it back would reopen it" beside no control that could;
+  the database, the Edge Function and the `reopened` return value had all been
+  there since 2026-08-11 and the success message for that path was unreachable
+  code. Only the button was missing.
 - **A link is a claim until somebody has watched it.** Only APPROVED
   submissions count towards an offer, and `review_content` is the ONLY thing
   that can carry a job to `content_completed`. It does that in the same
@@ -1304,6 +1333,22 @@ the spend, GMV, orders and ROI behind their own videos. Two tabs: **Dashboard**
 | charts | `src/components/creator/PerformanceChart.tsx` |
 | the screen | `src/routes/app/MyNumbers.tsx` |
 | the suite | `scripts/check-performance.mjs`, `pnpm verify:performance` |
+
+**The approval gate, added 2026-08-19, is the first thing to know.** Every
+function and the row policy filter on `content_submissions.status = 'approved'`.
+A creator with three videos waiting to be checked sees no numbers and an empty
+state that says so, rather than the old "No videos yet", which would have flatly
+contradicted their own Content page. See the Content entry above for why.
+
+**`creator_video_performance` returns one row per VIDEO, not per submission.**
+It used to select `cs.id`, and the unique on that table is
+`(application_id, video_url)`, so the same video filed against two jobs
+produced two rows each carrying the full money, which `MyNumbers` sums into the
+four tiles. The chart underneath aggregates `tiktok_video_daily` directly and
+does not double count, so the tiles and the chart could quietly disagree.
+`distinct on (cs.embed_id)` collapses them, keeping the earliest submission.
+Invisible while everything is per-creator, and unavoidable the moment anything
+sums across creators.
 
 **Five things that are load-bearing:**
 
