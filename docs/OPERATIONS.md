@@ -198,6 +198,12 @@ node scripts/seed-august-content.mjs [--clean] [--submitted-only]
                             # up. Passes TikTok's item id as embed_id, which is
                             # what attaches real ad money. Needs the offers seed
                             # to have run first.
+node scripts/check-brand-binding.mjs [brand]
+                            # READ ONLY, and safe against prod. Proves one
+                            # brand owns its offers, requests, videos, TikTok
+                            # store and ad figures, and that nothing leaks to
+                            # another brand. Run it whenever a second brand
+                            # gets a store mapped.
 node scripts/seed-applications.mjs [--clean]   # demo queue data, DEV ONLY
 node scripts/seed-brands.mjs [--clean]         # demo brands and offers, DEV ONLY
 node scripts/seed-pipeline.mjs [--clean]       # videos against the approved jobs,
