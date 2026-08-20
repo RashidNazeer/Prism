@@ -1359,6 +1359,97 @@ gmv of all the videos of creator X."*
   read another profile or their own unapproved money, signed-out gets nothing,
   and a creator can sign a face but never write one.
 
+## Many brands, many ad accounts (2026-08-20)
+
+**Files:** `supabase/migrations/20260820200000_close_the_three_leaks.sql`,
+`..._20260820210000_money_rows_know_their_ad_account.sql`,
+`..._20260820220000_one_brand_one_account_one_owner.sql`,
+`..._20260820230000_backfill_floor_and_no_blending.sql`,
+`supabase/functions/tiktok-sync/index.ts`,
+`supabase/functions/tiktok-callback/index.ts`,
+`supabase/functions/tiktok-connect/index.ts`,
+`src/routes/admin/TikTokSettings.tsx`, `src/lib/admin/useTikTok.ts`,
+`src/lib/creator/usePerformance.ts`, `src/routes/app/MyNumbers.tsx`,
+`scripts/check-leaderboard.mjs`, `scripts/check-performance.mjs`
+
+Rashid, before onboarding brands with their own ad accounts: *"there should be
+proper matching of the brands with ad account ... their gmv should always be the
+sum of every brand every offer/contest they are in ... the creator should never
+be able to see the breakdown of other creators. This is production base scalable
+saas and money sensitive please be careful here."*
+
+Found by a five-agent audit with a refuter per finding. Twelve claims were
+REFUTED and are not bugs; three CRITICALs and six HIGHs were real.
+
+**His four standing rules. Do not re-litigate these.**
+
+1. One brand maps to exactly ONE ad account, never shared either way.
+2. Each brand gets its own TikTok Business Center connection.
+3. USD only, confirmed with his boss. No FX, no conversion, no rate screen.
+4. One video id belongs to ONE creator, permanently.
+
+**Change rules**
+
+- **The money key is `(advertiser_id, item_id, stat_date)`.** It was
+  `(item_id, stat_date)` with the advertiser as a plain column, and the sync
+  upserts a WHOLE ROW, so a second ad account reporting the same video on the
+  same day REPLACED the first — usually with zeros, because a report filtered by
+  item id answers for every id it is given and an account that ran no ads
+  returns nothing. Silent: two healthy runs, correct `rowsWritten`, a $1,240
+  day reading $0.00. **Every read sums across advertisers**, which took almost
+  no change because they already grouped by item and summed. That is the tell
+  that a key is wrong rather than the queries.
+- **`brand_id` and `store_id` are ON the money row**, written by the sync
+  from the store mapping. It is the only honest answer to "which brand paid me":
+  the brand on a SUBMISSION is which brand a video was FILED against, and those
+  diverge for a video two brands both promoted. `creator_brand_performance`
+  reads the money row; `creator_video_performance` attributes a card to the
+  brand that SPENT the most on it, not the first filing.
+- **One brand, one ad account, both directions**, by two partial unique indexes
+  on `tiktok_stores`, plus a refusal in `tiktok-connect` that names the
+  clashing account so an admin reads a sentence rather than a constraint error.
+  Penetrex's shop is authorised to BOTH ad accounts, so the settings screen
+  shows it twice and mapping both was the obvious, catastrophic click.
+- **One video, one creator, by TRIGGER not constraint.** The rule spans two
+  tables and Postgres has no unique index across two. It fires on APPROVAL, not
+  submission: two creators may both paste a link innocently, and blocking at
+  submission would let anyone reserve a video they do not own by pasting first.
+  Cross-creator only — the same creator filing one video against a job AND a
+  contest is legitimate and reports as source 'both'.
+- **A token per STORE, not per project.** `tiktok-sync` resolves it through
+  `tiktok_stores → tiktok_ad_accounts.connection_id → tiktok_connections`.
+  `tiktok-callback` no longer revokes every live connection; it retires only
+  one the new grant supersedes. Before that, connecting brand B silently froze
+  brand A.
+- **The settings screen lists connections, plural**, each with its own
+  Disconnect and last-checked date, and Connect stays available as *Connect
+  another*. It used to render EITHER Connect OR Re-check, so a second Business
+  Center could not be started at all. The pull button is one job for the whole
+  project and sits outside the list.
+- **The sweep is ordered and shares its ceiling.** `.order('advertiser_id')`,
+  a per-store call share so one brand cannot eat the night, a PAGED video roster
+  instead of a flat `.limit(2000)` that silently dropped rows and churned the
+  fingerprint, and a 95-day floor on `tiktok_days_to_backfill` so a video that
+  will never earn stops setting the depth for ever.
+- **A sum spanning two currencies reports NULL and renders with no symbol.** USD
+  only is the decision; the reads used `max(currency)`, which prints one label
+  over a sum of everything. Costing nothing while the answer is USD is the point.
+- **The leaderboard gate lives INSIDE the function**, reading the profiles
+  table. A grant to `authenticated` is not a permission model: applicants,
+  REJECTED applicants and suspended creators all hold it.
+- **`creator_avatars` is staff-only again.** The board returns `avatar_path`
+  from its own SECURITY DEFINER function and the client signs it; it never reads
+  that table, which carries the handle of every applicant ever turned down.
+- **Published tables use `replica identity default`.** Row security is not
+  applied to DELETE events, so `full` broadcast whole rows. Nothing in
+  `src/` reads the old row.
+- **`pnpm verify:performance` [3c] proves two ad accounts ADD**: same video,
+  same day, two advertisers, creator sees 400 not 100, one video, one day, and
+  unchanged when pulled twice. Those ten assertions were green and WORTHLESS on
+  the first run, because `check-performance` takes the CONDITION first and
+  `check-leaderboard` takes the MESSAGE first. Read the output, not the exit
+  code.
+
 ## Realtime, and the one rule about it
 
 **Everything that listens to Postgres goes through `joinChannel` in

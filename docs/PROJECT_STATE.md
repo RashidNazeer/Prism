@@ -2,31 +2,42 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-20.**
+**Recorded 2026-08-20 by /precompact.**
 
-**Nothing is queued. Ask him what he wants.**
+**Nothing was queued.** Rashid gave no next instruction, so **ask what he wants
+to work on**, and answer from `docs/PARKED.md` if he asks what is pending.
 
-The last job was multi-brand money correctness, done in full and deployed. Read
-**PARKED item 18** before touching anything in the money path: it carries his
-four standing rules, what the audit found, what was fixed, and the six things
-deliberately left.
+**The last job finished cleanly**: multi-brand money correctness, screen
+included. He asked for the final gap closed rather than parked — *"please let's
+do not leave it i may forget later"* — so several Business Centers now work end
+to end and nothing blocks onboarding a second brand.
 
-**Multi-brand money is finished, screen included.** Rashid asked for the last
-gap to be closed rather than parked: "please let’s do not leave it i may forget
-later". Several Business Centers work end to end — the callback keeps the
-others, the sync resolves a token per store, and the settings screen lists
-connections with **Connect another** and a per-connection Disconnect. Nothing
-blocks onboarding the second brand.
+**Read PARKED item 18 before touching anything in the money path.** It carries
+his four standing rules, which are not to be re-litigated:
+
+1. One brand maps to exactly ONE ad account, never shared either way.
+2. Each brand gets its own TikTok Business Center connection.
+3. **USD only**, confirmed with his boss. No FX.
+4. One video id belongs to ONE creator, permanently.
+
+**What he is likely to do next, from what he has said:** connect the second
+brand's Business Center and map it. Everything for that is built and deployed,
+and he has no second account yet, so it is untestable end to end until he does.
 
 **Where dev stands:** one brand (Penetrex), 41 creators with pictures, 31
-offers, 41 jobs, 85 offer videos, 15 contest videos, 845 money rows all carrying
-their brand and store, one currency, 4 jobs at Payment pending, \$150 of contest
-reward owed. The board ranks 6 creators.
+offers, 41 jobs, 85 offer videos, 15 contest videos, ~845 money rows all
+carrying their brand and store, one currency, 4 jobs at Payment pending, \$150
+of contest reward owed, 6 creators on the leaderboard.
 `node scripts/tidy-dev.mjs` dry-runs a check that nothing has crept in.
 
 **Suites, all green on 2026-08-20:** `verify:contests` 141 ·
-`verify:leaderboard` 43 · `verify:performance` 36 · `verify:content` 33 ·
+`verify:leaderboard` 43 · `verify:performance` 46 · `verify:content` 33 ·
 `verify:rls` 22.
+
+**Still open, all minor and all in PARKED 18:** the backfill depth is global
+rather than per brand; the daily chart could truncate past ~3 years; the creator
+home's money block can still blend currencies; the leaderboard aggregates per
+page view and will want a rollup at scale.
 
 **Do not re-explore the codebase to get oriented.** This file, then PARKED, then
 only the files the chosen job names.
