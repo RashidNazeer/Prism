@@ -449,11 +449,26 @@ day. Migrations `20260820200000` through `20260820230000`.
 
 ### What is deliberately NOT done
 
-- **The TikTok settings screen still talks about *the* connection.** It lists ad
-  accounts and their shops correctly and the mapping works, but there is no
-  "connect another Business Center" button and disconnect is unscoped. **The
-  sync and the callback support several connections; the screen does not yet
-  show them.** Raise before onboarding the second brand.
+- **BLOCKED, NOT COSMETIC: a second Business Center cannot be connected from
+  the screen at all.** Rashid deferred this on 2026-08-20 ("we will come up to
+  wiring more ads accoutn later so for now it’s fine"), so it is his call and
+  it is safe to leave — but the note it replaces understated it, and the
+  correction matters.
+
+  `TikTokSettings.tsx:83-101` renders **either** Connect **or** Re-check on
+  `connected`, so once anything is connected the Connect button is gone. There
+  is no second door: the OAuth flow can only be started from that button.
+
+  **Everything behind it already works.** `tiktok-callback` no longer revokes
+  the other connections, `tiktok_ad_accounts.connection_id` records which
+  Business Center each account came from, and `tiktok-sync` resolves a token
+  per store through it. So this is roughly a ten-line change: show *Connect
+  another* beside *Re-check*, list connections rather than the connection, and
+  scope disconnect to one. Nothing dangerous is sitting open in the meantime —
+  the money-correctness half is done and deployed.
+
+  **Trigger: the day he wants to connect the second brand’s Business
+  Center.** He will reach for a button that is not there.
 - **`tiktok_days_to_backfill` is still global**, not per brand. The per-store
   call share limits the damage, and the 95-day floor limits it further, but one
   brand's genuinely deep backfill still sets the depth every brand pays for.
