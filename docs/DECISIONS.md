@@ -1270,3 +1270,21 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   ended up serving the old body to a two-argument caller and returning an empty
   chart under a full set of cards. Adding a return column forces a `drop` and
   is safe by accident; adding an argument is not.
+- 2026-08-20: **One brand maps to exactly ONE ad account, and each brand gets
+  its own TikTok Business Center connection.** Rashid's rule, given in those
+  words. It is what keeps `tiktok_video_daily`'s `(item_id, stat_date)`
+  primary key safe: two advertisers reporting one item on one day would
+  overwrite rather than sum, and the one-to-one rule is what stops that being
+  reachable. Treat the rule as load-bearing, not as a convention.
+- 2026-08-20: **USD only.** Confirmed by Rashid with his boss. No FX table, no
+  conversion, no admin rate screen — the earlier proposal for admin-set rates is
+  WITHDRAWN, not deferred. What replaces it: the read functions must refuse to
+  BLEND currencies rather than assume there is only one. A non-USD row appearing
+  must show on the screen, not disappear into a USD total. Assuming is what
+  turns a business decision into a silent money bug the day it stops being true.
+- 2026-08-20: **One video id belongs to one creator, permanently, enforced in
+  the database.** Across both `content_submissions` and
+  `contest_submissions`, because a leaderboard sums across people and nothing
+  currently stops two creators pasting the same TikTok link and both counting
+  its GMV. The same creator filing one video against an offer AND a contest
+  stays legal: that is one person's video doing two jobs.

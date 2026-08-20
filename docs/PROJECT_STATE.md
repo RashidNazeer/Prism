@@ -2,50 +2,45 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-20.**
+**Recorded 2026-08-20, written in a hurry because Rashid was about to hit his
+usage limit. Everything below is his decision, not a suggestion.**
 
-Rashid walked the **whole product flow**, it was reconciled against the code by
-a 16-agent audit with every claimed gap adversarially re-checked, and then he
-said "please complete everything now". **A, B, C and D are all done, deployed
-and verified. Nothing is queued: ask him.**
+**The next job is PARKED item 18: multi-brand money.** Read it first, it has the
+detail. The short version:
 
-- **A. Offers, finished.** Approval gates the ad money · a finished job lands on
-  `payment_pending` · the admin can send an approved video back.
-- **B. Contest videos become real.** `review_contest_content` has a caller at
-  last, and a video decision is where video reward money is decided.
-- **C. One pipeline.** `creator_videos` unions both channels; the sync, the
-  backfill, the row policy and the three read functions all read it. My Numbers
-  has All / Offer / Contest.
-- **D. Leaderboard.** `/app/leaderboards`, live, Step 9 badge gone.
+- He is about to onboard more brands. **Each brand gets its own ad account, and
+  its own TikTok Business Center connection.** One brand to one account, never
+  shared either way.
+- **There is a live defect blocking that plan.** Connecting a second Business
+  Center revokes the first
+  (`supabase/functions/tiktok-callback/index.ts:118-120`), so the first
+  brand's numbers would silently freeze. Fix before any second brand.
+- The schema already carries `tiktok_ad_accounts.connection_id`, so this is a
+  contained change to the callback, the sync's token lookup, and the settings
+  screen. Not a rebuild.
+- **USD only**, confirmed with his boss. No FX. But make the read functions
+  refuse to blend rather than assume.
+- **One video id, one creator**, enforced in the database across both
+  submission tables. Same creator, offer AND contest, stays legal.
+- **Build him a per-brand breakdown of his creators' own numbers.** He asked for
+  it by name. `creator_video_performance` already returns brand_id and
+  brand_name, so the data is there.
+- Totals must remain the sum across every brand and both channels, and the
+  leaderboard must keep showing other creators' TOTALS only, never a per-brand
+  split.
 
-**What he is testing.** Dev is exactly the Penetrex sheet plus one seeded
-contest: one brand, 41 creators with pictures, 31 offers, 41 jobs, 85 offer
-videos, **15 contest videos on real distinct August posts**, 754 money rows, 4
-jobs at Payment pending, \$150 of contest reward owed. The board ranks **6
-creators**, Selena first on \$491.81.
+**A multi-brand money audit was running and was not finished.** Re-run it from
+`<scratchpad>/multi-brand-audit.js`
+(old run id `wf_c08b6020-fd4`, nothing depends on it). Five areas:
+sync/mapping, creator totals arithmetic, leaderboard correctness, cross-creator
+leakage, and scale. **Do that before building**, because the arithmetic across
+brands has not yet been proven correct, only assumed.
 
-**One honest wrinkle to raise if he asks.** The 15 contest videos are real
-August posts from his own sheets that were never loaded, so they are genuinely
-distinct from the 85 — but those particular videos barely ran ads: 6 approved
-carry \$0.84 of spend and **\$0.00 GMV**. The Contest tab on My Numbers works
-and shows real figures; the figures happen to be nearly zero. That is the data,
-not the plumbing.
+**Everything before this is done, deployed and verified:** steps A, B, C and D
+of the flow work. See the session notes below.
 
-**Everything green:** `verify:contests` 141 · `verify:leaderboard` 34 ·
-`verify:performance` 36 · `verify:content` 33 · `verify:rls` 22 · build,
-lint, contrast · the board checked in a real browser at 375/768/1024/1440 in
-both themes with zero console errors.
-
-**Candidates if he wants more**, none of them started:
-- The other months' videos: 304 more real links on the same sheets (July back to
-  April), roughly 100 API calls. It would make the board and My Numbers much
-  richer than one month of one brand.
-- PARKED 15: two contest queues still draw initials.
-- PARKED 13a: WurxBase's open database and five plaintext logins, BEFORE LAUNCH.
-- The whole of PARKED section 0b: the creator side never had the chrome rebuild.
-
-**Do not re-explore the codebase to get oriented.** This file, then PARKED, then
-only the files the chosen job names.
+**Do not re-explore the codebase to get oriented.** This file, then PARKED item
+18, then only the files it names.
 
 ---
 
