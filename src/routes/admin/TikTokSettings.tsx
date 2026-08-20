@@ -15,8 +15,9 @@ import {
   useTikTokAdAccounts,
   useTikTokAccounts,
   useTikTokActions,
-  useTikTokConnection,
+  useTikTokConnections,
   type AccountMapRow,
+  type ConnectionHealth,
   type AdAccount,
 } from '@/lib/admin/useTikTok';
 import { cn } from '@/lib/utils';
@@ -45,13 +46,24 @@ const TABS = [
 type TabKey = (typeof TABS)[number]['key'];
 
 export function TikTokSettings() {
-  const connection = useTikTokConnection();
+  const connections = useTikTokConnections();
   const adAccounts = useTikTokAdAccounts();
   const accounts = useTikTokAccounts();
   const brands = useMappableBrands();
   const { connect, recheck, disconnect, map, pull } = useTikTokActions();
 
-  const connected = Boolean(connection.data && !connection.data.revoked_at);
+  /*
+   * CONNECTIONS, PLURAL, from 2026-08-20. Rashid: "each brand will have it’s
+   * own Business center connection so there must be an option to connect
+   * multiple ad accounts and link them properly with brand."
+   *
+   * The screen used to hold one, and worse, it rendered EITHER Connect OR
+   * Re-check on that one, so once anything was connected the Connect button
+   * was gone and a second Business Center could not be started at all. That
+   * was a blocked path, not a cosmetic one.
+   */
+  const live = connections.data ?? [];
+  const connected = live.length > 0;
 
   /*
    * The default tab is the job, not the summary. When there is a connection the
@@ -70,6 +82,7 @@ export function TikTokSettings() {
   const busy = connect.isPending || recheck.isPending || disconnect.isPending;
 
   const actionError =
+    (connections.error as Error | null)?.message ??
     (connect.error as Error | null)?.message ??
     (recheck.error as Error | null)?.message ??
     (disconnect.error as Error | null)?.message ??
@@ -80,26 +93,41 @@ export function TikTokSettings() {
     <div className="flex flex-col gap-4">
       <FilterBar
         action={
-          connected ? (
-            <Button
-              variant="secondary"
-              onClick={() => recheck.mutate()}
-              disabled={busy}
-              className="h-10 shrink-0 rounded-md text-[0.875rem]"
-            >
-              <RefreshCw size={15} aria-hidden className={cn(recheck.isPending && 'animate-spin')} />
-              {recheck.isPending ? 'Checking' : 'Re-check'}
-            </Button>
-          ) : (
+          /*
+           * CONNECT IS ALWAYS THERE. It used to be replaced by Re-check the
+           * moment anything was connected, which meant a second Business
+           * Center could never be started: the OAuth flow has no other door.
+           * Both buttons now, and the label says which one this is.
+           */
+          <div className="flex shrink-0 flex-wrap gap-2">
+            {connected ? (
+              <Button
+                variant="secondary"
+                onClick={() => recheck.mutate()}
+                disabled={busy}
+                className="h-10 shrink-0 rounded-md text-[0.875rem]"
+              >
+                <RefreshCw
+                  size={15}
+                  aria-hidden
+                  className={cn(recheck.isPending && 'animate-spin')}
+                />
+                {recheck.isPending ? 'Checking' : 'Re-check'}
+              </Button>
+            ) : null}
             <Button
               onClick={() => connect.mutate()}
               disabled={busy}
               className="h-10 shrink-0 rounded-md text-[0.875rem]"
             >
               <Plug size={15} aria-hidden />
-              {connect.isPending ? 'Opening TikTok' : 'Connect TikTok'}
+              {connect.isPending
+                ? 'Opening TikTok'
+                : connected
+                  ? 'Connect another'
+                  : 'Connect TikTok'}
             </Button>
-          )
+          </div>
         }
       >
         <FilterTabs label="What to manage">
@@ -149,10 +177,10 @@ export function TikTokSettings() {
         />
       ) : (
         <ConnectionTab
-          health={connection.data ?? null}
-          loading={connection.isPending}
+          connections={live}
+          loading={connections.isPending}
           onDisconnect={(id) => disconnect.mutate(id)}
-          disconnecting={disconnect.isPending}
+          disconnectingId={disconnect.isPending ? (disconnect.variables ?? null) : null}
           onPull={(days) => pull.mutate(days)}
           pulling={pull.isPending}
           pullResult={pull.data ?? null}
@@ -320,27 +348,37 @@ function AccountsTab({
 
 /* ----------------------------------------------------------- connection --- */
 
+/**
+ * EVERY LIVE CONNECTION, one card each.
+ *
+ * It rendered a single connection until 2026-08-20, because until then a
+ * project only ever had one: the callback revoked the others on the way in.
+ * Under Rashid’s plan of one Business Center per brand there can be several at
+ * once, each with its own token covering its own ad accounts, so “the
+ * connection” is not a thing that exists any more.
+ *
+ * DISCONNECT IS PER CARD, and it always was in the database — the Edge
+ * Function has taken a connectionId since it was written. What was missing was
+ * a screen that could name more than one.
+ *
+ * The pull button stays outside the list. It is one job for the whole project:
+ * the sync sweeps every mapped store across every connection in a single run,
+ * so a button per connection would imply a per-connection pull that does not
+ * exist.
+ */
 function ConnectionTab({
-  health,
+  connections,
   loading,
   onDisconnect,
-  disconnecting,
+  disconnectingId,
   onPull,
   pulling,
   pullResult,
 }: {
-  health: {
-    id: string;
-    connected_at: string;
-    last_verified_at: string | null;
-    last_error: string | null;
-    connected_by_name: string | null;
-    connected_by_email: string | null;
-    granted_advertiser_count: number;
-  } | null;
+  connections: ConnectionHealth[];
   loading: boolean;
   onDisconnect: (id: string) => void;
-  disconnecting: boolean;
+  disconnectingId: string | null;
   onPull: (days: number) => void;
   pulling: boolean;
   pullResult: {
@@ -352,7 +390,7 @@ function ConnectionTab({
 }) {
   if (loading) return <div className="wx-skeleton h-40 rounded-xl" />;
 
-  if (!health) {
+  if (connections.length === 0) {
     return (
       <Empty
         title="Not connected"
@@ -373,50 +411,80 @@ function ConnectionTab({
       : 'never';
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5">
-      <div className="flex items-start gap-3">
-        {health.last_error ? (
-          <AlertTriangle size={20} aria-hidden className="text-warning mt-0.5 shrink-0" />
-        ) : (
-          <CheckCircle2 size={20} aria-hidden className="text-success mt-0.5 shrink-0" />
-        )}
-        <div className="min-w-0">
-          <h2 className="font-display text-[1.0625rem] font-bold">
-            {health.last_error ? 'Connected, with a problem' : 'Connected'}
-          </h2>
-          <p className="text-muted mt-1 text-[0.8125rem] leading-relaxed">
-            Authorised {when(health.connected_at)}
-            {health.connected_by_name || health.connected_by_email
-              ? ` by ${health.connected_by_name ?? health.connected_by_email}`
-              : ''}
-            . TikTok granted {health.granted_advertiser_count} ad{' '}
-            {health.granted_advertiser_count === 1 ? 'account' : 'accounts'}.
-          </p>
-        </div>
-      </div>
+    <div className="flex flex-col gap-4">
+      {connections.map((health) => (
+        <section
+          key={health.id}
+          className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5"
+        >
+          <div className="flex items-start gap-3">
+            {health.last_error ? (
+              <AlertTriangle size={20} aria-hidden className="text-warning mt-0.5 shrink-0" />
+            ) : (
+              <CheckCircle2 size={20} aria-hidden className="text-success mt-0.5 shrink-0" />
+            )}
+            <div className="min-w-0">
+              <h2 className="font-display text-[1.0625rem] font-bold">
+                {health.last_error ? 'Connected, with a problem' : 'Connected'}
+              </h2>
+              <p className="text-muted mt-1 text-[0.8125rem] leading-relaxed">
+                Authorised {when(health.connected_at)}
+                {health.connected_by_name || health.connected_by_email
+                  ? ` by ${health.connected_by_name ?? health.connected_by_email}`
+                  : ''}
+                . TikTok granted {health.granted_advertiser_count} ad{' '}
+                {health.granted_advertiser_count === 1 ? 'account' : 'accounts'}.
+              </p>
+            </div>
+          </div>
 
-      {/*
-        LAST CHECKED IS SHOWN BECAUSE THERE IS NO REFRESH TOKEN. TikTok's ads
-        API issues one long-lived credential and no way to renew it, so if it is
-        revoked at their end nothing here would fail loudly, the numbers would
-        simply stop moving. A visible date is what turns that into something
-        somebody notices.
-      */}
-      <dl className="border-line grid gap-x-6 gap-y-2 border-t pt-4 text-[0.8125rem] sm:grid-cols-2">
-        <div className="flex items-baseline justify-between gap-3">
-          <dt className="text-faint text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
-            Last checked
-          </dt>
-          <dd className="wx-numeric">{when(health.last_verified_at)}</dd>
-        </div>
-      </dl>
+          {/*
+            LAST CHECKED IS SHOWN BECAUSE THERE IS NO REFRESH TOKEN. TikTok's
+            ads API issues one long-lived credential and no way to renew it, so
+            if it is revoked at their end nothing here would fail loudly, the
+            numbers would simply stop moving. A visible date is what turns that
+            into something somebody notices — and with several connections it
+            is what says WHICH brand's figures have gone quiet.
+          */}
+          <dl className="border-line grid gap-x-6 gap-y-2 border-t pt-4 text-[0.8125rem] sm:grid-cols-2">
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-faint text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
+                Last checked
+              </dt>
+              <dd className="wx-numeric">{when(health.last_verified_at)}</dd>
+            </div>
+          </dl>
 
-      {health.last_error ? (
-        <p className="border-warning/40 bg-warning-soft text-warning rounded-md border p-3 text-[0.8125rem] leading-relaxed">
-          {health.last_error}
-        </p>
-      ) : null}
+          {health.last_error ? (
+            <p className="border-warning/40 bg-warning-soft text-warning rounded-md border p-3 text-[0.8125rem] leading-relaxed">
+              {health.last_error}
+            </p>
+          ) : null}
 
+          <div className="border-line flex flex-wrap gap-2 border-t pt-4">
+            <Button
+              variant="secondary"
+              onClick={() => onDisconnect(health.id)}
+              disabled={disconnectingId !== null}
+              className="text-danger hover:border-danger hover:text-danger h-10 rounded-md text-[0.875rem]"
+            >
+              <Unplug size={15} aria-hidden />
+              {disconnectingId === health.id ? 'Disconnecting' : 'Disconnect'}
+            </Button>
+            <p className="text-muted self-center text-[0.75rem] leading-relaxed">
+              {/*
+                WHAT IT ACTUALLY COSTS, said plainly, because with one Business
+                Center per brand this stops one brand's figures rather than all
+                of them, and an admin should know which before clicking.
+              */}
+              Deletes this token only. Its brand matching is kept, so reconnecting does not mean
+              doing it again — but until then, the brands on these ad accounts stop updating.
+            </p>
+          </div>
+        </section>
+      ))}
+
+      <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5">
       {/*
         THE NUMBERS ARRIVE ON THEIR OWN, once a night. This button exists for
         the first run and for testing, because waiting until 03:20 UTC to find
@@ -425,7 +493,10 @@ function ConnectionTab({
         A day already pulled is skipped without an API call, so pressing it
         twice costs nothing and it is safe to lean on.
       */}
-      <div className="border-line flex flex-wrap items-center gap-2 border-t pt-4">
+      {/* No top border: this is the first thing in its own card now that the
+          connections are listed above it, and the rule was drawing a line under
+          nothing. */}
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="secondary"
           onClick={() => onPull(30)}
@@ -455,22 +526,8 @@ function ConnectionTab({
         </p>
       ) : null}
 
-      <div className="border-line flex flex-wrap gap-2 border-t pt-4">
-        <Button
-          variant="secondary"
-          onClick={() => onDisconnect(health.id)}
-          disabled={disconnecting}
-          className="text-danger hover:border-danger hover:text-danger h-10 rounded-md text-[0.875rem]"
-        >
-          <Unplug size={15} aria-hidden />
-          {disconnecting ? 'Disconnecting' : 'Disconnect'}
-        </Button>
-        <p className="text-muted self-center text-[0.75rem] leading-relaxed">
-          Disconnecting deletes the token. The brand matching is kept, so reconnecting does not
-          mean doing it again.
-        </p>
-      </div>
     </section>
+    </div>
   );
 }
 

@@ -59,20 +59,30 @@ export type AccountMapRow = {
   bc_name: string | null;
 };
 
-export function useTikTokConnection() {
+/**
+ * EVERY LIVE CONNECTION, not the newest one.
+ *
+ * This returned a single row until 2026-08-20, which was right while every ad
+ * account sat inside one TikTok Business Center. Rashid’s plan is one Business
+ * Center per brand, so “the connection” stopped being a thing that exists: a
+ * project can hold several at once, each with its own token, each covering its
+ * own ad accounts.
+ *
+ * Ordered oldest first, so the list does not reshuffle itself every time
+ * somebody reconnects one of them.
+ */
+export function useTikTokConnections() {
   return useQuery({
-    queryKey: ['admin', 'tiktok', 'connection'],
+    queryKey: ['admin', 'tiktok', 'connections'],
     staleTime: 15_000,
-    queryFn: async (): Promise<ConnectionHealth | null> => {
+    queryFn: async (): Promise<ConnectionHealth[]> => {
       const { data, error } = await getSupabase()
         .from('tiktok_connection_health')
         .select('*')
         .is('revoked_at', null)
-        .order('connected_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order('connected_at', { ascending: true });
       if (error) throw error;
-      return (data as ConnectionHealth | null) ?? null;
+      return (data ?? []) as ConnectionHealth[];
     },
   });
 }

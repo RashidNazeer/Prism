@@ -11,11 +11,12 @@ The last job was multi-brand money correctness, done in full and deployed. Read
 four standing rules, what the audit found, what was fixed, and the six things
 deliberately left.
 
-**The one thing to raise unprompted:** the TikTok settings screen still talks
-about *the* connection. The sync and the callback support several Business
-Centers now, but the screen has no "connect another" and its disconnect is
-unscoped. **That must be built before the second brand is onboarded**, which is
-the next thing he has said he plans to do.
+**Multi-brand money is finished, screen included.** Rashid asked for the last
+gap to be closed rather than parked: "please let’s do not leave it i may forget
+later". Several Business Centers work end to end — the callback keeps the
+others, the sync resolves a token per store, and the settings screen lists
+connections with **Connect another** and a per-connection Disconnect. Nothing
+blocks onboarding the second brand.
 
 **Where dev stands:** one brand (Penetrex), 41 creators with pictures, 31
 offers, 41 jobs, 85 offer videos, 15 contest videos, 845 money rows all carrying

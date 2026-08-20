@@ -434,6 +434,122 @@ try {
       .eq('id', made.pendingSubmission);
   }
 
+  /* -------------------------- [3c] two ad accounts on one video ADD UP ---- */
+  /*
+   * THE BUG THIS EXISTS FOR, and it was silent in every direction.
+   *
+   * `tiktok_video_daily` was keyed (item_id, stat_date) with the advertiser as
+   * an ordinary column, and the sync upserts a WHOLE ROW onto the key. So the
+   * second ad account to report a video on a given day did not add to the
+   * first, it REPLACED it. Worse, it usually replaced real money with zeros: a
+   * report filtered by item id answers for every id it is given, and an account
+   * that ran no ads on that video returns a row of nothing.
+   *
+   * Nothing failed. Two healthy sync runs, a correct rowsWritten, and a
+   * creator's $1,240 day reading $0.00 — flickering back the next night if the
+   * store order happened to reverse.
+   *
+   * The key carries the advertiser now, so two accounts are two rows and every
+   * read sums them. This writes both rows the way the sync would and asserts
+   * the creator sees the TOTAL.
+   */
+  console.log('\n[3c] Two ad accounts reporting one video add up');
+
+  {
+    const SPLIT_DAY = '2026-08-11';
+    const other = '7441320325654183953'; // Rashid's second real ad account
+
+    const write = async (advertiser, cost, revenue, orders) =>
+      admin.from('tiktok_video_daily').upsert(
+        {
+          item_id: REAL_ITEM,
+          stat_date: SPLIT_DAY,
+          advertiser_id: advertiser,
+          cost,
+          gross_revenue: revenue,
+          orders,
+          currency: 'USD',
+          fetched_at: new Date().toISOString(),
+        },
+        { onConflict: 'advertiser_id,item_id,stat_date' }
+      );
+
+    const first = await write(REAL_ADVERTISER, 40, 300, 3);
+    check(!first.error, 'the first ad account writes its day', first.error?.message);
+
+    const second = await write(other, 10, 100, 1);
+    check(!second.error, 'and the second writes the SAME day without replacing it', second.error?.message);
+
+    const { data: bothRows } = await admin
+      .from('tiktok_video_daily')
+      .select('advertiser_id, cost, gross_revenue')
+      .eq('item_id', REAL_ITEM)
+      .eq('stat_date', SPLIT_DAY);
+    check(
+      (bothRows ?? []).length === 2,
+      'both rows survive, one per ad account',
+      `saw ${(bothRows ?? []).length}`
+    );
+
+    /*
+     * The one that actually matters. Before the key change the creator would
+     * have seen 100, the second account's figure, with the first account's 300
+     * gone. Now they see 400.
+     */
+    const { data: day } = await creatorA.client.rpc('creator_daily_performance', {
+      p_from: SPLIT_DAY,
+      p_to: SPLIT_DAY,
+    });
+    const row = (day ?? [])[0];
+    check(
+      Number(row?.gross_revenue) === 400,
+      'the creator sees the SUM of both accounts, not the last one written',
+      `saw ${row?.gross_revenue}, expected 400`
+    );
+    check(Number(row?.cost) === 50, 'and the spend adds too', `saw ${row?.cost}`);
+    check(Number(row?.orders) === 4, 'and the orders', `saw ${row?.orders}`);
+    check(
+      Number(row?.videos) === 1,
+      'while it still counts as ONE video, not two',
+      `saw ${row?.videos}`
+    );
+
+    // And the card list, which aggregates separately and must agree.
+    const { data: cards } = await creatorA.client.rpc('creator_video_performance', {
+      p_from: SPLIT_DAY,
+      p_to: SPLIT_DAY,
+    });
+    const card = (cards ?? []).find((c) => c.item_id === REAL_ITEM);
+    check(
+      Number(card?.gross_revenue) === 400,
+      'the video card agrees with the chart',
+      `saw ${card?.gross_revenue}`
+    );
+    check(
+      Number(card?.days_with_data) === 1,
+      'and reports one day with data, not two',
+      `saw ${card?.days_with_data}`
+    );
+
+    // Re-running the sync must be idempotent per account, not additive.
+    await write(REAL_ADVERTISER, 40, 300, 3);
+    const { data: again } = await creatorA.client.rpc('creator_daily_performance', {
+      p_from: SPLIT_DAY,
+      p_to: SPLIT_DAY,
+    });
+    check(
+      Number((again ?? [])[0]?.gross_revenue) === 400,
+      'pulling the same day twice does not double it',
+      `saw ${(again ?? [])[0]?.gross_revenue}`
+    );
+
+    await admin
+      .from('tiktok_video_daily')
+      .delete()
+      .eq('item_id', REAL_ITEM)
+      .eq('stat_date', SPLIT_DAY);
+  }
+
   /* ---------------------------------------------------- [4] nobody can write */
   console.log('\n[4] Nobody can write a number');
 

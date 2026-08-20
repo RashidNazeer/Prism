@@ -447,28 +447,18 @@ day. Migrations `20260820200000` through `20260820230000`.
 - **Per-brand breakdown for a creator's own numbers**, which he asked for by
   name, read off the money row rather than guessed from the first filing.
 
+- **Several Business Centers, end to end.** — the callback keeps the others,
+  the sync resolves a token per store, the screen lists connections with a
+  per-connection Disconnect, and Connect stays available as **Connect another**.
+  Rashid asked for it to be finished rather than parked: “please let’s do not
+  leave it i may forget later”.
+- **A suite that proves two ad accounts ADD.** `check-performance` [3c] writes
+  the same video-day from two advertisers and asserts the creator sees 400, not
+  100. Ten assertions, and they were caught passing on a truthy string first
+  because that file takes the condition before the message.
+
 ### What is deliberately NOT done
 
-- **BLOCKED, NOT COSMETIC: a second Business Center cannot be connected from
-  the screen at all.** Rashid deferred this on 2026-08-20 ("we will come up to
-  wiring more ads accoutn later so for now it’s fine"), so it is his call and
-  it is safe to leave — but the note it replaces understated it, and the
-  correction matters.
-
-  `TikTokSettings.tsx:83-101` renders **either** Connect **or** Re-check on
-  `connected`, so once anything is connected the Connect button is gone. There
-  is no second door: the OAuth flow can only be started from that button.
-
-  **Everything behind it already works.** `tiktok-callback` no longer revokes
-  the other connections, `tiktok_ad_accounts.connection_id` records which
-  Business Center each account came from, and `tiktok-sync` resolves a token
-  per store through it. So this is roughly a ten-line change: show *Connect
-  another* beside *Re-check*, list connections rather than the connection, and
-  scope disconnect to one. Nothing dangerous is sitting open in the meantime —
-  the money-correctness half is done and deployed.
-
-  **Trigger: the day he wants to connect the second brand’s Business
-  Center.** He will reach for a button that is not there.
 - **`tiktok_days_to_backfill` is still global**, not per brand. The per-store
   call share limits the damage, and the 95-day floor limits it further, but one
   brand's genuinely deep backfill still sets the depth every brand pays for.
