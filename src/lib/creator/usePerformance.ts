@@ -248,3 +248,49 @@ export function rangeToDates(
   const start = iso(new Date(new Date(`${to}T00:00:00Z`).getTime() - (back - 1) * DAY));
   return { from: start < window.earliest ? window.earliest : start, to };
 }
+
+/* ------------------------------------------------------- which brand paid -- */
+
+export type BrandPerformance = {
+  brand_id: string | null;
+  brand_name: string | null;
+  gmv: number;
+  spend: number;
+  orders: number;
+  videos: number;
+  roi: number | null;
+  currency: string | null;
+};
+
+/**
+ * What this creator made, split by the brand whose ad account actually paid.
+ *
+ * Rashid asked for it by name: "let creators see that in which brand they got
+ * how many money so they can analyse that in which brand they have what money."
+ *
+ * IT READS THE MONEY ROW, NOT THE SUBMISSION, and that distinction is the whole
+ * feature. A submission records which brand a creator FILED a video against;
+ * the money row records which brand's ad account paid for a given day of it.
+ * For an ordinary video those agree. For a video two brands both promoted they
+ * do not, and only the money row can split it honestly — before this, the brand
+ * on a card was whichever offer the video happened to be filed against first,
+ * which is a guess wearing a fact's clothes.
+ *
+ * It takes no creator argument, so it cannot be asked about anybody else, and
+ * it reads through the same row policy as every other creator money read.
+ */
+export function useBrandPerformance(from: string | null, to: string | null) {
+  return useQuery({
+    queryKey: ['creator', 'performance', 'brands', from, to],
+    enabled: Boolean(from && to),
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<BrandPerformance[]> => {
+      const { data, error } = await getSupabase().rpc('creator_brand_performance', {
+        p_from: from,
+        p_to: to,
+      });
+      if (error) throw error;
+      return (data ?? []) as BrandPerformance[];
+    },
+  });
+}

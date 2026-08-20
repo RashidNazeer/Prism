@@ -431,6 +431,60 @@ Deno.serve(async (req) => {
           .eq('id', body.brandId)
           .maybeSingle();
         if (!brand) return reply({ error: 'That brand does not exist.' }, 400);
+
+        /*
+         * ONE BRAND, ONE AD ACCOUNT, BOTH WAYS. Rashid's rule of 2026-08-20:
+         * "each brand has it's own ad account we need to map only one ad
+         * account with one brand only".
+         *
+         * Two unique indexes on `tiktok_stores` enforce this since
+         * 20260820220000, so the database refuses either way round regardless
+         * of what happens here. These checks exist so an admin reads a sentence
+         * naming the clash instead of a constraint violation.
+         *
+         * IT IS NOT A THEORETICAL MISTAKE. Penetrex's shop is authorised to
+         * BOTH of Rashid's ad accounts, so it appears twice on this screen with
+         * a brand dropdown on each, and picking Penetrex on both is the obvious
+         * thing to do. Before the money key was fixed that made the second
+         * account's report overwrite the first with zeros.
+         */
+        const { data: sameStore } = await admin
+          .from('tiktok_stores')
+          .select('advertiser_id')
+          .eq('store_id', body.storeId)
+          .neq('advertiser_id', body.advertiserId)
+          .not('brand_id', 'is', null)
+          .maybeSingle();
+
+        if (sameStore) {
+          return reply(
+            {
+              error:
+                'This shop is already matched to a brand under ad account ' +
+                `${sameStore.advertiser_id}. A shop reports through one ad account only — ` +
+                'unmatch it there first.',
+            },
+            409
+          );
+        }
+
+        const { data: sameBrand } = await admin
+          .from('tiktok_stores')
+          .select('store_id, advertiser_id')
+          .eq('brand_id', body.brandId)
+          .neq('store_id', body.storeId)
+          .maybeSingle();
+
+        if (sameBrand) {
+          return reply(
+            {
+              error:
+                `${brand.name} is already matched to shop ${sameBrand.store_id}. ` +
+                'A brand takes its figures from one ad account only — unmatch that one first.',
+            },
+            409
+          );
+        }
       }
 
       const { data: updated, error } = await admin

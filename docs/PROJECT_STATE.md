@@ -2,47 +2,88 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-20, written in a hurry because Rashid was about to hit his
-usage limit. Everything below is his decision, not a suggestion.**
+**Recorded 2026-08-20.**
 
-**The next job is PARKED item 18: multi-brand money.** Read it first, it has the
-detail. The short version:
+**Nothing is queued. Ask him what he wants.**
 
-- He is about to onboard more brands. **Each brand gets its own ad account, and
-  its own TikTok Business Center connection.** One brand to one account, never
-  shared either way.
-- **There is a live defect blocking that plan.** Connecting a second Business
-  Center revokes the first
-  (`supabase/functions/tiktok-callback/index.ts:118-120`), so the first
-  brand's numbers would silently freeze. Fix before any second brand.
-- The schema already carries `tiktok_ad_accounts.connection_id`, so this is a
-  contained change to the callback, the sync's token lookup, and the settings
-  screen. Not a rebuild.
-- **USD only**, confirmed with his boss. No FX. But make the read functions
-  refuse to blend rather than assume.
-- **One video id, one creator**, enforced in the database across both
-  submission tables. Same creator, offer AND contest, stays legal.
-- **Build him a per-brand breakdown of his creators' own numbers.** He asked for
-  it by name. `creator_video_performance` already returns brand_id and
-  brand_name, so the data is there.
-- Totals must remain the sum across every brand and both channels, and the
-  leaderboard must keep showing other creators' TOTALS only, never a per-brand
-  split.
+The last job was multi-brand money correctness, done in full and deployed. Read
+**PARKED item 18** before touching anything in the money path: it carries his
+four standing rules, what the audit found, what was fixed, and the six things
+deliberately left.
 
-**A multi-brand money audit was running and was not finished.** Re-run it from
-`<scratchpad>/multi-brand-audit.js`
-(old run id `wf_c08b6020-fd4`, nothing depends on it). Five areas:
-sync/mapping, creator totals arithmetic, leaderboard correctness, cross-creator
-leakage, and scale. **Do that before building**, because the arithmetic across
-brands has not yet been proven correct, only assumed.
+**The one thing to raise unprompted:** the TikTok settings screen still talks
+about *the* connection. The sync and the callback support several Business
+Centers now, but the screen has no "connect another" and its disconnect is
+unscoped. **That must be built before the second brand is onboarded**, which is
+the next thing he has said he plans to do.
 
-**Everything before this is done, deployed and verified:** steps A, B, C and D
-of the flow work. See the session notes below.
+**Where dev stands:** one brand (Penetrex), 41 creators with pictures, 31
+offers, 41 jobs, 85 offer videos, 15 contest videos, 845 money rows all carrying
+their brand and store, one currency, 4 jobs at Payment pending, \$150 of contest
+reward owed. The board ranks 6 creators.
+`node scripts/tidy-dev.mjs` dry-runs a check that nothing has crept in.
 
-**Do not re-explore the codebase to get oriented.** This file, then PARKED item
-18, then only the files it names.
+**Suites, all green on 2026-08-20:** `verify:contests` 141 ·
+`verify:leaderboard` 43 · `verify:performance` 36 · `verify:content` 33 ·
+`verify:rls` 22.
+
+**Do not re-explore the codebase to get oriented.** This file, then PARKED, then
+only the files the chosen job names.
 
 ---
+
+## Money that is right when there is more than one brand (2026-08-20)
+
+Rashid, before onboarding brands with their own ad accounts: *"there should be
+proper matching of the brands with ad account ... their gmv should always be the
+sum of every brand every offer/contest they are in ... the creator should never
+be able to see the breakdown of other creators. This is production base scalable
+saas and money sensitive please be careful here."*
+
+He was right to stop the work and ask. A five-agent audit with a refuter per
+finding turned up three CRITICALs and six HIGHs. **Twelve other claims were
+refuted**, including two that read convincingly — currency is populated, and
+unmapping a store does not freeze a brand's history.
+
+**The root cause was one line of schema.** `tiktok_video_daily` was keyed
+`(item_id, stat_date)` with the advertiser as a plain column, and the sync
+upserted a whole row onto that key. A second ad account reporting the same video
+on the same day therefore REPLACED the first — and replaced it with zeros,
+because a report filtered by item id answers for every id it is given and an
+account that ran no ads returns nothing. Silent in every direction: two healthy
+runs, a correct `rowsWritten`, and a creator's \$1,240 day reading \$0.00.
+
+**And the trap was one click away.** Penetrex's shop is authorised to both of
+his ad accounts, so the settings screen showed it twice with a brand dropdown on
+each. Setting both to Penetrex is the obvious thing to do and was the worst.
+
+**Two of the leaks were mine, from the day before.** The leaderboard was granted
+to `authenticated` with no gate inside it, so a REJECTED applicant could read
+every creator's GMV and ad spend. And the avatar policy was `using (true)`,
+handing anyone signed in a table carrying the TikTok handle of every creator and
+every applicant. Both closed. Worth remembering that both looked right while the
+only accounts on dev were approved creators.
+
+**And one that predated all of it.** Four published tables still had
+`replica identity full`, and row security is not applied to DELETE events, so
+an unfiltered subscriber received other creators' links, ad codes and agreed
+amounts. The contests migration found and fixed exactly this for two tables a
+week earlier; these four were never revisited.
+
+**What he actually asked for is in too:** creators can see which brand paid them
+what, read off the money row rather than guessed from whichever offer the video
+was filed against first.
+
+**Currency stays USD by his decision**, so no FX was built. But a sum spanning
+two currencies now reports null and renders without a symbol, so the day that
+decision changes is a question somebody asks rather than money adding up wrong.
+
+**Verified:** `check-leaderboard` 43 including new gates for an applicant, a
+suspended creator and staff, plus the one-video-one-creator rules ·
+`check-performance` 36 · `check-contests` 141 · `check-content` 33 ·
+`check-rls` 22 · build, lint, contrast. All 845 money rows carry their brand
+and store after the re-key, with the same totals as before it.
+
 
 ## The pipeline joins up, and the board goes live (2026-08-20)
 

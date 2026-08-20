@@ -406,150 +406,65 @@ compares a creator's TYPED video count against the videos filed, because the
 typed number no longer buys anything. The remaining unevidenced claim is the GMV
 figure, which PARKED section 0 already tracks.
 
-## 18. Multi-brand money: one Business Center per brand, as of 2026-08-20
+## 18. Multi-brand money: mostly DONE 2026-08-20, with a named remainder
 
-**Status:** NEXT, and part of it is a live defect rather than a gap
-**Owner:** Claude to build, decisions already given by Rashid
+Rashid's rules, taken 2026-08-20 and not to be re-litigated:
 
-Rashid, walking the multi-brand future: *"each brand has it's own ad account we
-need to map only one ad account with one brand only ... each brand will have
-it's own Business center connection so there must be an option to connect
-multiple ad accounts and link them properly with brand"*, and *"their gmv should
-always be the sum of every brand every offer/contest they are in"*, and *"the
-creator should never be able to see the breakdown of other creators"*.
+1. **One brand maps to exactly ONE ad account**, never shared either way.
+2. **Each brand gets its OWN TikTok Business Center connection.**
+3. **USD ONLY**, confirmed with his boss. No FX, no conversion, no rate screen.
+4. **One video id belongs to ONE creator, permanently.**
 
-### His decisions, taken 2026-08-20. Do not re-litigate these.
+A five-agent audit checked the money path against all four, with a refuter per
+finding whose only job was to prove it wrong. **Twelve claims were refuted and
+are not bugs.** Three CRITICALs and six HIGHs survived and were fixed the same
+day. Migrations `20260820200000` through `20260820230000`.
 
-1. **One brand maps to exactly ONE ad account.** Never two brands on one
-   account, never one brand across two.
-2. **Each brand will have its OWN TikTok Business Center connection.** The two
-   ad accounts on dev today are both inside one Business Center and are the same
-   business; only the one that runs the ads is mapped, deliberately.
-3. **USD ONLY.** Confirmed with his boss on 2026-08-20. No FX table, no
-   conversion, no admin rate screen. But the read functions must REFUSE to blend
-   currencies rather than assume: if a non-USD row ever appears, say so on the
-   screen instead of silently adding it to a USD total.
-4. **One video id belongs to ONE creator, permanently**, enforced in the
-   database across BOTH `content_submissions` and `contest_submissions`. The
-   same creator filing one video against an offer AND a contest stays legal.
+### Fixed
 
-### The live defect, found 2026-08-20
+- **The money key could not hold two ad accounts.** `(item_id, stat_date)` with
+  a full-row upsert meant a second advertiser REPLACED the first, usually with
+  zeros. Now `(advertiser_id, item_id, stat_date)`, reads sum across.
+- **One shop could be mapped to a brand twice**, and Penetrex was exactly that
+  shape. Two partial unique indexes, plus a refusal in the Edge Function that
+  names the clashing account.
+- **Two creators could both claim one video.** Trigger on both submission
+  tables, refusing the approval and naming who has it.
+- **The leaderboard had no caller gate**, so applicants, rejected applicants and
+  suspended creators could read every creator's GMV. Gated inside the function.
+- **The avatar index was readable by anyone signed in**, handles of every
+  creator and applicant included. Policy dropped; the board uses the definer
+  function it already had.
+- **DELETE broadcast whole rows** on four published tables. `replica identity
+  default`.
+- **Connecting a second Business Center killed the first.** The sync resolves a
+  token per store now; only a superseded connection is retired.
+- **The sweep was unfair and truncating.** Ordered, per-store call share, paged
+  roster, and a 95-day floor so a video that never earns stops pinning the
+  backfill open.
+- **Currency could blend.** A sum spanning two reports null; screens render
+  bare. USD only stands, but silently is not how it should stand.
+- **Per-brand breakdown for a creator's own numbers**, which he asked for by
+  name, read off the money row rather than guessed from the first filing.
 
-**Connecting a second Business Center silently kills the first.**
-`supabase/functions/tiktok-callback/index.ts:118-120` revokes every live
-connection before inserting the new one:
+### What is deliberately NOT done
 
-```js
-.from('tiktok_connections').update({ access_token: '', revoked_at: nowIso })
-                           .is('revoked_at', null);
-```
+- **The TikTok settings screen still talks about *the* connection.** It lists ad
+  accounts and their shops correctly and the mapping works, but there is no
+  "connect another Business Center" button and disconnect is unscoped. **The
+  sync and the callback support several connections; the screen does not yet
+  show them.** Raise before onboarding the second brand.
+- **`tiktok_days_to_backfill` is still global**, not per brand. The per-store
+  call share limits the damage, and the 95-day floor limits it further, but one
+  brand's genuinely deep backfill still sets the depth every brand pays for.
+- **`creator_daily_performance` can be truncated by PostgREST at 1000 rows**,
+  and it truncates the RECENT end. Only bites past ~3 years of daily data.
+- **The creator Dashboard's money block still sums committed amounts across
+  currencies** (`useMyWork.ts` `summarise()`). Harmless while USD only, and
+  the same class of bug the read functions were just fixed for.
+- **The leaderboard aggregates the money table per page view.** Fine at this
+  size; wants a rollup somewhere past a few hundred thousand rows.
+- **No suite covers two ad accounts on one brand end to end.** The key change is
+  proven by reasoning and by the existing suites, not by a test that maps two
+  accounts and asserts the sums add. That is the one I would write next.
 
-So the day Brand B is connected, Brand A stops being pulled: no error, no
-warning, its creators' numbers just freeze at yesterday. On a money screen that
-is the worst failure shape available. **This blocks his stated plan and must be
-fixed before a second brand is onboarded.**
-
-### What has to change, and what does not
-
-**The schema is already right.** `tiktok_ad_accounts.connection_id` exists and
-references `tiktok_connections`, so the chain store -> ad account ->
-connection -> token is already there. Nothing needs restructuring.
-
-Three places assume "one":
-
-- `supabase/functions/tiktok-callback/index.ts:118-120` — stop revoking
-  everything. Guard against re-connecting the same Business Center instead.
-- `supabase/functions/tiktok-sync/index.ts:181-188` — takes `.limit(1)` on
-  connections and uses that single token for every store. It must resolve the
-  token PER STORE, through that store's advertiser to its own connection.
-- `src/routes/admin/TikTokSettings.tsx` and the disconnect action — they talk
-  about *the* connection rather than *a* connection, and disconnect is
-  unscoped.
-
-### The audit, 2026-08-20: 54 findings, every one adversarially re-checked
-
-Five agents, then a refuter per defect whose only job was to prove it wrong.
-**Twelve were refuted and are NOT bugs** — including "currency is never
-populated" (it is), "unmapping a store freezes a brand's money" (it does not),
-and "the leaderboard can be reconstructed per brand by moving the date window"
-(it cannot). What survived is below, in the order it should be fixed.
-
-**CONFIRMED CRITICAL**
-
-1. **The money key cannot hold two ad accounts.**
-   `tiktok_video_daily` PK is `(item_id, stat_date)` and the sync upserts
-   `onConflict: 'item_id,stat_date'` with a full-row payload, so a second
-   advertiser reporting the same video on the same day REPLACES the first
-   rather than adding to it. Direction is always downward, often to zero,
-   because the report returns zero-spend rows for ids it was filtered on.
-   Silent: `tiktok_sync_runs` shows two healthy runs.
-2. **Nothing stops one TikTok store being mapped to a brand twice, and today's
-   Penetrex IS that shape.** The store is authorised to both ad accounts, so it
-   appears twice on the settings screen with a brand dropdown on each, no
-   constraint, no warning, and no correct answer. Mapping both triggers (1) for
-   every Penetrex video at once.
-3. **Two creators can both claim one video and both bank its GMV**, including
-   on the leaderboard. Reachable today: nothing anywhere enforces one owner per
-   `embed_id`.
-
-**CONFIRMED HIGH**
-
-4. **The leaderboard has no caller gate.** It is granted to `authenticated`,
-   so an applicant, a REJECTED applicant or a suspended creator reads every
-   creator's GMV and ad spend. Introduced 2026-08-20 by the leaderboard
-   migration.
-5. **`creator_avatars` is readable in full by every signed-in account** and
-   carries the TikTok handle of every creator AND every applicant, which turns
-   it into a directory. Also introduced 2026-08-20, by the `using (true)`
-   policy.
-6. **DELETE events broadcast the whole old row.** `content_submissions`,
-   `applications`, `offer_applications` and `offer_stage_events` are all
-   in the realtime publication with `replica identity full`, and row security
-   is not applied to DELETE. `20260813230000` already fixed exactly this for
-   two contest tables and the rest were never done. Nothing in the client reads
-   the old row, so the fix costs nothing.
-7. **Connecting a second Business Center revokes the first**
-   (`tiktok-callback` :117-120), so brand A's money silently freezes the day
-   brand B is connected.
-8. **The sync is unfair and truncating.** One store's backfill depth is applied
-   globally, the store list has no ORDER BY, the first store can eat the whole
-   call ceiling so other brands sync nothing that night, and the video roster is
-   a flat `.limit(2000)` that silently drops rows past that and makes the
-   fingerprint churn every run.
-9. **The creator Dashboard's money block sums committed amounts across
-   currencies** and labels the total with whichever row came last. Pre-existing,
-   in `useMyWork.ts` `summarise()`.
-
-**Currency is DOWNGRADED, not dismissed.** Several findings were about summing
-GBP into USD. Rashid confirmed with his boss on 2026-08-20 that the product is
-**USD only**, so no FX work is needed — but the reads must REFUSE TO BLEND
-rather than assume, or the business decision becomes a silent money bug the day
-it stops being true.
-
-**What the audit found to be genuinely CORRECT**, and should not be
-re-engineered: summing a creator's money across every brand, offer and contest
-is structurally right; a video filed twice counts exactly once in all three read
-paths; the tiles agree with the chart; ROI is a ratio of sums; and the
-leaderboard cannot leak another creator's per-brand breakdown or anything else
-about them.
-
-Full output while it lasts:
-`<scratchpad>/../tasks/whxurwm0x.output`.
-
-### Also outstanding
-
-- **`tiktok_video_daily` PK is `(item_id, stat_date)`** and `advertiser_id`
-  is a plain column. Two advertisers reporting one item on one day OVERWRITE
-  rather than sum. Safe today because one brand maps to one account, which is
-  now a rule rather than an accident, but it deserves a constraint or a comment
-  saying the rule is what keeps it safe.
-- **A per-brand breakdown of a creator's OWN numbers does not exist yet.** He
-  asked for it by name: *"let creators see that in which brand they got how many
-  money so they can analyse"*. `creator_video_performance` already returns
-  `brand_id` and `brand_name` per row, so the data is there.
-- **A multi-brand money audit was running when this was written** and did not
-  finish. Script:
-  `<scratchpad>/multi-brand-audit.js`, run id `wf_c08b6020-fd4`. Re-run it
-  from the script file; nothing depends on the old run. It covers sync/mapping,
-  creator totals arithmetic, leaderboard correctness, cross-creator leakage and
-  scale.

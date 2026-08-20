@@ -55,19 +55,24 @@ const daysAgo = (n: number) => {
   return d.toISOString().slice(0, 10);
 };
 
-const gmv = (n: number, currency: string | null) =>
-  new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: currency || 'USD',
-    maximumFractionDigits: 0,
-  }).format(n);
+/*
+ * A NULL CURRENCY MEANS THE SUM SPANS MORE THAN ONE, so it gets no symbol.
+ * `private.leaderboard_totals` returns null rather than picking one off the
+ * set (20260820230000), because a board that ranks dollars against pounds under
+ * one symbol is not a ranking. USD only is the decision; this is what makes the
+ * day it changes visible instead of silent.
+ */
+const fmt = (n: number, currency: string | null, digits: number) =>
+  currency
+    ? new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency,
+        maximumFractionDigits: digits,
+      }).format(n)
+    : new Intl.NumberFormat(undefined, { maximumFractionDigits: digits }).format(n);
 
-const gmvExact = (n: number, currency: string | null) =>
-  new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: currency || 'USD',
-    maximumFractionDigits: 2,
-  }).format(n);
+const gmv = (n: number, currency: string | null) => fmt(n, currency, 0);
+const gmvExact = (n: number, currency: string | null) => fmt(n, currency, 2);
 
 export function Leaderboards() {
   const [range, setRange] = useState<RangeKey>('all');

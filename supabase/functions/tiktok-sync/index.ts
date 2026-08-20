@@ -176,16 +176,29 @@ Deno.serve(async (req) => {
     return reply({ error: (e as TikTokError).message, region: currentRegion() }, 502);
   }
 
-  /* --------------------------------------------------------- the token ---- */
-  const { data: conn } = await admin
+  /* -------------------------------------------------------- the tokens ---- */
+  /*
+   * ONE TOKEN PER CONNECTION, NOT ONE TOKEN FOR EVERYTHING.
+   *
+   * This used to take the single newest live connection and use its token for
+   * every store. That worked while every ad account sat inside one TikTok
+   * Business Center, and it breaks completely under Rashid's plan of
+   * 2026-08-20: "each brand will have it's own Business center connection".
+   *
+   * A store belongs to an advertiser, an advertiser belongs to a connection,
+   * and that connection holds the only token TikTok will accept for it. Ask
+   * with the wrong one and the call is refused, or worse, answered for an
+   * account you did not mean.
+   */
+  const { data: conns } = await admin
     .from('tiktok_connections')
     .select('id, access_token')
-    .is('revoked_at', null)
-    .order('connected_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .is('revoked_at', null);
 
-  if (!conn?.access_token) return reply({ error: 'TikTok is not connected.' }, 409);
+  const liveConns = (conns ?? []).filter((c) => c.access_token);
+  if (liveConns.length === 0) return reply({ error: 'TikTok is not connected.' }, 409);
+
+  const tokenOfConnection = new Map(liveConns.map((c) => [c.id, c.access_token as string]));
 
   /*
    * REACH BACK FAR ENOUGH FOR A LATE-ADDED VIDEO.
@@ -211,10 +224,18 @@ Deno.serve(async (req) => {
   }
 
   /* ------------------------------------------- the stores worth asking about */
+  /*
+   * ORDERED, because the sweep shares a call ceiling and an unordered list made
+   * "which brands got synced tonight" depend on whatever Postgres returned
+   * first. With several brands that is the difference between a brand being up
+   * to date and a brand being silently a week behind.
+   */
   const { data: stores } = await admin
     .from('tiktok_stores')
     .select('store_id, advertiser_id, store_authorized_bc_id, brand_id')
-    .not('brand_id', 'is', null);
+    .not('brand_id', 'is', null)
+    .order('advertiser_id', { ascending: true })
+    .order('store_id', { ascending: true });
 
   if (!stores || stores.length === 0) {
     return reply({
@@ -224,10 +245,35 @@ Deno.serve(async (req) => {
     });
   }
 
+  /*
+   * The ad accounts carry three things this job needs: the timezone that
+   * decides which day "yesterday" is, the CURRENCY the figures are denominated
+   * in, and the connection whose token can ask about them.
+   *
+   * The currency is taken from the ACCOUNT rather than from the report row. An
+   * account's currency is a fact about the account and is always present; the
+   * per-row metric is optional and, when absent, used to leave the column null
+   * and let every screen quietly assume dollars.
+   */
   const { data: accounts } = await admin
     .from('tiktok_ad_accounts')
-    .select('advertiser_id, timezone');
+    .select('advertiser_id, timezone, currency, connection_id');
+
   const zoneOf = new Map((accounts ?? []).map((a) => [a.advertiser_id, a.timezone ?? 'UTC']));
+  const currencyOf = new Map((accounts ?? []).map((a) => [a.advertiser_id, a.currency ?? null]));
+  const connOfAdvertiser = new Map((accounts ?? []).map((a) => [a.advertiser_id, a.connection_id]));
+
+  /*
+   * A SHARE OF THE CALLS EACH, so one brand's long backfill cannot eat the
+   * night and leave every other brand untouched. The first store used to run
+   * until the global ceiling was hit; with five brands that meant four of them
+   * synced nothing and nothing said so.
+   *
+   * The share is a floor, not a cap on the run: whatever is left over after the
+   * sweep is still available, so a single-brand project behaves exactly as
+   * before.
+   */
+  const perStoreCalls = Math.max(1, Math.floor(maxCalls / stores.length));
 
   const summary = {
     region: currentRegion(),
@@ -241,6 +287,26 @@ Deno.serve(async (req) => {
   };
 
   for (const store of stores) {
+    /*
+     * THIS STORE'S OWN TOKEN, resolved through its advertiser to the connection
+     * that granted it. With one Business Center every store resolved to the
+     * same token and this looked like ceremony; with one per brand it is the
+     * difference between a brand syncing and a brand silently stopping.
+     */
+    const connId = connOfAdvertiser.get(store.advertiser_id);
+    const token = connId ? tokenOfConnection.get(connId) : undefined;
+    if (!token) {
+      summary.failures.push({
+        store: store.store_id,
+        date: '-',
+        reason:
+          'no live TikTok connection covers this ad account, so its brand cannot be synced',
+      });
+      continue;
+    }
+
+    let storeCalls = 0;
+
     if (!store.store_authorized_bc_id) {
       summary.failures.push({
         store: store.store_id,
@@ -267,16 +333,41 @@ Deno.serve(async (req) => {
      * contest video's id was never sent to TikTok and its money never existed.
      * The view is the one place that knows a video can arrive either way.
      */
-    const { data: videos } = await admin
-      .from('creator_videos')
-      .select('embed_id')
-      .eq('brand_id', store.brand_id)
-      .eq('status', 'approved')
-      .eq('ad_authorized', true)
-      .not('embed_id', 'is', null)
-      .limit(2000);
+    /*
+     * PAGED, NOT CAPPED. This was a flat `.limit(2000)` with no ordering, so
+     * past that many approved videos a brand silently dropped the rest AND the
+     * fingerprint below changed on every run, because which rows came back was
+     * arbitrary. That is a money path truncating itself in silence, which is
+     * the worst class of bug this file can have.
+     *
+     * Ordered by id so the set is deterministic, and read to exhaustion so it
+     * is complete.
+     */
+    const itemIdSet = new Set<string>();
+    for (let from = 0; ; from += 1000) {
+      const { data: page, error: pageErr } = await admin
+        .from('creator_videos')
+        .select('embed_id')
+        .eq('brand_id', store.brand_id)
+        .eq('status', 'approved')
+        .eq('ad_authorized', true)
+        .not('embed_id', 'is', null)
+        .order('embed_id', { ascending: true })
+        .range(from, from + 999);
 
-    const itemIds = [...new Set((videos ?? []).map((v) => v.embed_id).filter(Boolean))] as string[];
+      if (pageErr) {
+        summary.failures.push({
+          store: store.store_id,
+          date: '-',
+          reason: 'could not read this brand\'s videos: ' + pageErr.message,
+        });
+        break;
+      }
+      for (const v of page ?? []) if (v.embed_id) itemIdSet.add(v.embed_id as string);
+      if (!page || page.length < 1000) break;
+    }
+
+    const itemIds = [...itemIdSet];
     if (itemIds.length === 0) continue;
 
     /*
@@ -305,10 +396,16 @@ Deno.serve(async (req) => {
 
     // `back` starts at 1: yesterday is the most recent COMPLETE day.
     for (let back = 1; back <= effectiveDays; back++) {
-      if (summary.calls >= maxCalls) {
-        // Count what is left rather than silently stopping. A truncated run
-        // that reads as a complete one is how a chart ends up with a hole
-        // nobody knows about.
+      /*
+       * TWO CEILINGS. The global one is the backstop Rashid asked for; the
+       * per-store one is what stops the first brand in the list spending the
+       * whole night's budget and leaving every other brand untouched with
+       * nothing said about it.
+       *
+       * Either way the run reports what is left, and because a finished day is
+       * skipped for free, calling again picks up exactly where it stopped.
+       */
+      if (summary.calls >= maxCalls || storeCalls >= perStoreCalls) {
         summary.hitCallCeiling = true;
         summary.remaining += effectiveDays - back + 1;
         break;
@@ -373,9 +470,10 @@ Deno.serve(async (req) => {
         u.searchParams.set('page_size', '1000');
 
         const res = await fetch(u.toString(), {
-          headers: { 'Access-Token': conn.access_token, 'Content-Type': 'application/json' },
+          headers: { 'Access-Token': token, 'Content-Type': 'application/json' },
         });
         summary.calls++;
+        storeCalls++;
 
         // 200 on failure is their normal. The verdict is the code field.
         const payload = await res.json();
@@ -412,17 +510,39 @@ Deno.serve(async (req) => {
             item_id: String(r.dimensions!.item_id),
             stat_date: statDate,
             advertiser_id: store.advertiser_id,
+            /*
+             * WHERE THIS MONEY CAME FROM, on the row itself. It is what lets a
+             * creator be told which brand paid them, honestly, even for a video
+             * two brands both promoted — the alternative was reading the brand
+             * off whichever offer the video happened to be filed against first.
+             */
+            store_id: store.store_id,
+            brand_id: store.brand_id,
             cost: num(r.metrics?.cost),
             gross_revenue: num(r.metrics?.gross_revenue),
             orders: Math.round(num(r.metrics?.orders)),
-            currency: r.metrics?.currency ?? null,
+            /*
+             * FROM THE ACCOUNT, not from the report row. An ad account has a
+             * currency and always reports it; the per-row metric is optional,
+             * and when it was missing this column went null and every screen
+             * quietly drew a dollar sign over it.
+             */
+            currency: currencyOf.get(store.advertiser_id) ?? r.metrics?.currency ?? null,
             fetched_at: new Date().toISOString(),
           }));
 
         if (toWrite.length > 0) {
           const { error } = await admin
             .from('tiktok_video_daily')
-            .upsert(toWrite, { onConflict: 'item_id,stat_date' });
+            /*
+             * THE ADVERTISER IS IN THE KEY NOW. It was (item_id, stat_date),
+             * so a second ad account reporting the same video on the same day
+             * REPLACED the first instead of adding to it — and usually replaced
+             * real money with zeros, because a report filtered by item id
+             * returns zero rows for videos that account never ran. Silent in
+             * every direction. See 20260820210000.
+             */
+            .upsert(toWrite, { onConflict: 'advertiser_id,item_id,stat_date' });
           if (error) throw new Error(error.message);
           summary.rowsWritten += toWrite.length;
         }
@@ -447,8 +567,11 @@ Deno.serve(async (req) => {
       actor_id: actorId,
       action: 'tiktok.synced',
       subject_type: 'tiktok_connection',
-      subject_id: conn.id,
-      detail: { ...summary, days, effectiveDays, force },
+      // The oldest live connection, purely so the audit row has a subject. A
+      // run now spans several connections, so the row is about the RUN and the
+      // summary in `detail` is the part worth reading.
+      subject_id: liveConns[0]!.id,
+      detail: { ...summary, days, effectiveDays, force, connections: liveConns.length },
     });
   }
 

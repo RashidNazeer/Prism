@@ -109,17 +109,47 @@ Deno.serve(async (req) => {
       throw new TikTokError('TikTok said yes but sent no access token.');
     }
 
-    /*
-     * Retire any previous live connection. Two live tokens would make "which
-     * one do we report with" a coin toss, and the fresh authorisation is
-     * always the one the admin just chose.
-     */
-    await admin
-      .from('tiktok_connections')
-      .update({ access_token: '', revoked_at: nowIso })
-      .is('revoked_at', null);
-
     const advertiserIds = (grant.advertiser_ids ?? []).map(String);
+
+    /*
+     * RETIRE ONLY WHAT THIS GRANT REPLACES, changed 2026-08-20.
+     *
+     * This used to revoke EVERY live connection before saving the new one, on
+     * the reasoning that two live tokens make "which one do we report with" a
+     * coin toss. That reasoning was right while one Business Center held every
+     * ad account. It is wrong under Rashid's plan: "each brand will have it's
+     * own Business center connection".
+     *
+     * With the old behaviour, connecting brand B silently killed brand A. No
+     * error, no warning: A's creators' numbers simply froze at yesterday and
+     * stayed there until somebody asked why. On a money screen that is the
+     * worst failure shape available.
+     *
+     * The coin toss is answered properly now instead. `tiktok_sync` resolves a
+     * token PER STORE, through that store's advertiser to the connection that
+     * granted it, so two live connections are not ambiguous — they are two
+     * Business Centers, which is the actual situation.
+     *
+     * What still gets retired is a connection this grant genuinely supersedes:
+     * one covering an advertiser the new grant also covers. Re-authorising the
+     * same Business Center replaces its token, as it always did, and leaves
+     * every other brand alone.
+     */
+    if (advertiserIds.length > 0) {
+      const { data: superseded } = await admin
+        .from('tiktok_ad_accounts')
+        .select('connection_id')
+        .in('advertiser_id', advertiserIds);
+
+      const ids = [...new Set((superseded ?? []).map((a) => a.connection_id).filter(Boolean))];
+      if (ids.length > 0) {
+        await admin
+          .from('tiktok_connections')
+          .update({ access_token: '', revoked_at: nowIso })
+          .in('id', ids)
+          .is('revoked_at', null);
+      }
+    }
 
     const { data: conn, error: connErr } = await admin
       .from('tiktok_connections')

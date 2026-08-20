@@ -307,16 +307,42 @@ try {
   /* --------------------------------------------------------- [6] faces ---- */
   console.log('\n[6] The faces, which were admin only yesterday');
   {
-    const { data, error } = await rich.client.from('creator_avatars').select('profile_id, path').limit(5);
-    check('a creator can read the avatar index', !error, error?.message);
-    const withPath = (data ?? []).filter((r) => r.path);
-    if (withPath.length) {
-      const signed = await rich.client.storage
-        .from('creator-avatars')
-        .createSignedUrls([withPath[0].path], 60);
-      check('and sign one, which is what puts a face on the board', !signed.error, signed.error?.message);
+    /*
+     * THE AVATAR INDEX IS STAFF ONLY AGAIN, reversed on 2026-08-20. The policy
+     * added the day before was `using (true)`, which let any signed-in account
+     * read the whole table — and that table carries `handle`, for every
+     * creator AND every applicant, including people who were turned down. A
+     * directory of everybody who ever approached Wurx, for anybody who can sign
+     * up.
+     *
+     * The board does not need it: `creator_leaderboard` is SECURITY DEFINER,
+     * already decides who appears, and returns `avatar_path` as a column. The
+     * client signs that path and never reads this table.
+     */
+    const { data } = await rich.client.from('creator_avatars').select('profile_id, handle');
+    check(
+      'a creator can NOT read the avatar index',
+      (data ?? []).length === 0,
+      `saw ${(data ?? []).length} rows`
+    );
+
+    // But the path from the board still signs, or the faces vanish.
+    const board = await rich.client.rpc('creator_leaderboard', {
+      ...ALL,
+      p_limit: 25,
+      p_offset: 0,
+      p_search: null,
+    });
+    const path = (board.data ?? []).map((r) => r.avatar_path).filter(Boolean)[0];
+    if (path) {
+      const signed = await rich.client.storage.from('creator-avatars').createSignedUrls([path], 60);
+      check(
+        'but can still sign a path the BOARD gave them, which is what draws a face',
+        !signed.error && Boolean(signed.data?.[0]?.signedUrl),
+        signed.error?.message
+      );
     } else {
-      ok('no avatars on this project to sign, skipped');
+      ok('no avatars on the board to sign, skipped');
     }
   }
   {
@@ -328,6 +354,162 @@ try {
   {
     const { data } = await rich.client.from('creator_avatars').delete().eq('profile_id', rich.id).select('profile_id');
     check('and cannot delete a row from the index', (data ?? []).length === 0);
+  }
+
+  /* ------------------------------------------------ [7] who may look at it */
+  /*
+   * A GRANT IS NOT A PERMISSION MODEL. Both functions were granted to
+   * `authenticated`, which every signed-in account holds: an applicant nobody
+   * has let in, an applicant who was REJECTED, and a creator who has been
+   * suspended. All three could read every creator's GMV and ad spend by calling
+   * the RPC. The gate is inside the function body now and reads the profiles
+   * table, so a suspension bites on the next query rather than at the next
+   * token refresh.
+   */
+  console.log('\n[7] Who is allowed to see the board at all');
+
+  const asRole = async (tag, patch) => {
+    const email = `board-${tag}-${STAMP}@wurxmediahub.test`;
+    const { data, error } = await admin.auth.admin.createUser({
+      email,
+      password: PW,
+      email_confirm: true,
+    });
+    if (error) throw new Error(`could not create ${tag}: ${error.message}`);
+    made.users.push(data.user.id);
+    await admin.from('profiles').update(patch).eq('id', data.user.id);
+    const client = anon();
+    await client.auth.signInWithPassword({ email, password: PW });
+    return client;
+  };
+
+  {
+    const applicant = await asRole('applicant', { role: 'applicant', is_active: true });
+    const { data, error } = await applicant.rpc('creator_leaderboard', {
+      ...ALL,
+      p_limit: 25,
+      p_offset: 0,
+      p_search: null,
+    });
+    check(
+      'an applicant who has not been let in sees nothing',
+      !error && (data ?? []).length === 0,
+      JSON.stringify(data ?? error)
+    );
+    const mine = await applicant.rpc('my_leaderboard_standing', ALL);
+    check('and cannot ask where they stand', (mine.data ?? []).length === 0);
+    await applicant.auth.signOut();
+  }
+  {
+    const suspended = await asRole('suspended', { role: 'creator', tier: 'creator', is_active: false });
+    const { data } = await suspended.rpc('creator_leaderboard', {
+      ...ALL,
+      p_limit: 25,
+      p_offset: 0,
+      p_search: null,
+    });
+    check(
+      'a SUSPENDED creator sees nothing, immediately rather than at the next token',
+      (data ?? []).length === 0,
+      `saw ${(data ?? []).length} rows`
+    );
+    await suspended.auth.signOut();
+  }
+  {
+    // Staff must still see it, or the admin cannot check what a creator sees.
+    const staff = await asRole('staff', { role: 'admin', is_active: true });
+    const { data } = await staff.rpc('creator_leaderboard', {
+      ...ALL,
+      p_limit: 25,
+      p_offset: 0,
+      p_search: null,
+    });
+    check('but staff still can', (data ?? []).length > 0, `saw ${(data ?? []).length} rows`);
+    await staff.auth.signOut();
+  }
+
+  /* ------------------------------------------- [8] one video, one creator -- */
+  /*
+   * Rashid, 2026-08-20: "each video has unique id and we need to be careful
+   * because this is money sensitive". Nothing enforced it until now, so two
+   * creators could each have the same link approved and each bank its GMV — on
+   * their own screens AND on the board, where the totals are summed across
+   * people and the same money would have counted twice.
+   */
+  console.log('\n[8] One video cannot belong to two creators');
+
+  {
+    const { error } = await admin.from('content_submissions').insert({
+      application_id: made.application,
+      creator_id: poor.id,
+      brand_id: made.brand,
+      offer_id: made.offer,
+      video_url: `https://www.tiktok.com/@boardsuite/video/${RICH_ITEM}-stolen`,
+      ad_code: `BOARD${STAMP}X`,
+      ad_authorized: true,
+      embed_id: RICH_ITEM,
+      status: 'approved',
+    });
+    check(
+      'a second creator cannot have the same video approved',
+      error !== null,
+      'it was allowed'
+    );
+    if (error) {
+      check(
+        'and the refusal names the creator who already has it',
+        /already approved for/i.test(error.message),
+        error.message
+      );
+    }
+  }
+  {
+    // The same CREATOR filing one video against a job and a contest is legal,
+    // and must stay legal: that is one person's video doing two jobs.
+    const { error } = await admin.from('content_submissions').insert({
+      application_id: made.application,
+      creator_id: rich.id,
+      brand_id: made.brand,
+      offer_id: made.offer,
+      video_url: `https://www.tiktok.com/@boardsuite/video/${RICH_ITEM}-again`,
+      ad_code: `BOARD${STAMP}A`,
+      ad_authorized: true,
+      embed_id: RICH_ITEM,
+      status: 'approved',
+    });
+    check('but the SAME creator filing it twice is still allowed', !error, error?.message);
+  }
+  {
+    const { error } = await admin.from('content_submissions').insert({
+      application_id: made.application,
+      creator_id: poor.id,
+      brand_id: made.brand,
+      offer_id: made.offer,
+      video_url: `https://www.tiktok.com/@boardsuite/video/${RICH_ITEM}-notyet`,
+      ad_code: `BOARD${STAMP}P`,
+      ad_authorized: true,
+      embed_id: RICH_ITEM,
+      status: 'submitted',
+    });
+    check(
+      'and a second creator may still SUBMIT it, so the team decides rather than the clock',
+      !error,
+      error?.message
+    );
+  }
+  {
+    const bad = await admin.from('content_submissions').insert({
+      application_id: made.application,
+      creator_id: rich.id,
+      brand_id: made.brand,
+      offer_id: made.offer,
+      video_url: 'https://www.tiktok.com/@boardsuite/video/nonsense',
+      ad_code: `BOARD${STAMP}N`,
+      ad_authorized: true,
+      embed_id: 'not-an-id',
+      status: 'submitted',
+    });
+    check('an embed_id that is not a number is refused by the column', bad.error !== null);
   }
 
   await rich.client.auth.signOut();

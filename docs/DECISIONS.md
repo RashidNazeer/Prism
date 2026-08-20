@@ -1288,3 +1288,49 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   currently stops two creators pasting the same TikTok link and both counting
   its GMV. The same creator filing one video against an offer AND a contest
   stays legal: that is one person's video doing two jobs.
+- 2026-08-20: **A money row belongs to an AD ACCOUNT, not just to a video and a
+  day.** `tiktok_video_daily` was keyed `(item_id, stat_date)` and the sync
+  upserted a full row on that key, so a second ad account reporting the same
+  video on the same day REPLACED the first instead of adding to it, usually
+  replacing real money with zeros, because a report filtered by item id returns
+  zero rows for videos that account never ran. The key is
+  `(advertiser_id, item_id, stat_date)` now and every read sums across
+  advertisers. The reads needed almost no change to do that, which is the sign
+  the key was wrong rather than the queries.
+- 2026-08-20: **`brand_id` and `store_id` go ON the money row.** It is the only
+  honest answer to which brand paid a creator, which Rashid asked for by name.
+  The brand on a SUBMISSION says which brand a video was filed against; the
+  money row says whose ad account actually spent. They agree for an ordinary
+  video and diverge for one that two brands both promoted, and the previous
+  answer, first filing wins, was a guess wearing a fact’s clothes.
+- 2026-08-20: **One brand, one ad account, enforced both ways.** Two partial
+  unique indexes on `tiktok_stores`. Rashid’s rule, and load-bearing rather
+  than tidy: it is what keeps the money key safe now that two accounts can both
+  write. Penetrex’s shop is authorised to BOTH of his ad accounts, so the
+  settings screen showed it twice with a dropdown on each and picking Penetrex
+  on both was the obvious, catastrophic thing to do.
+- 2026-08-20: **One video belongs to one creator, by trigger rather than
+  constraint.** The rule spans two tables and Postgres has no unique index
+  across two. It checks APPROVAL rather than submission on purpose: two
+  creators may both paste a link innocently, and blocking at submission would
+  let anyone reserve a video they do not own by pasting it first.
+- 2026-08-20: **Connecting a Business Center no longer revokes the others.**
+  The old blanket revoke meant connecting brand B silently froze brand A. The
+  sync resolves a token PER STORE through its advertiser to the connection that
+  granted it, so two live connections are two Business Centers rather than an
+  ambiguity. Only a connection the new grant supersedes is retired.
+- 2026-08-20: **A sum spanning two currencies reports NULL and renders with no
+  symbol.** USD only is the decision, so there is no FX. But the reads used
+  `max(currency)`, which picks a label off a set and prints it over a sum of
+  everything, so the day one GBP account is connected a creator’s GMV becomes
+  dollars plus pounds with a dollar sign on it. Costing nothing while the
+  answer is USD is exactly why it is worth having.
+- 2026-08-20: **`tiktok_days_to_backfill` is capped at 95 days.** It had no end:
+  a video that never runs ads has no figures for ever and set the depth for
+  ever. With brands sharing a call ceiling, one stuck video spent the night and
+  the other brands synced nothing.
+- 2026-08-20: **The realtime publication no longer broadcasts whole rows on
+  DELETE.** Four published tables still had `replica identity full` and row
+  security is not applied to DELETE events. `20260813230000` had already found
+  and fixed this for two contest tables; these four predate that understanding.
+  Nothing in `src/` reads the old row, so it cost no feature.

@@ -12,11 +12,13 @@ import {
   useDailyPerformance,
   usePerformanceWindow,
   useVideoPerformance,
+  useBrandPerformance,
   adStateOf,
   type AdState,
   type DailyPerformance,
   type RangeKey,
   type VideoPerformance,
+  type BrandPerformance,
 } from '@/lib/creator/usePerformance';
 import { cn } from '@/lib/utils';
 
@@ -61,12 +63,22 @@ const TABS = [
 ] as const;
 type TabKey = (typeof TABS)[number]['key'];
 
+/*
+ * A NULL CURRENCY MEANS THE SUM SPANS MORE THAN ONE, and it must not be given a
+ * symbol. The read functions return null rather than picking one off the set
+ * (20260820230000), so this renders the figure bare: visibly odd, which is what
+ * it is, instead of confidently wrong. The product is USD only by decision, so
+ * this should never fire — it exists so the day that changes is a question
+ * somebody asks rather than money quietly adding up wrong.
+ */
 const money = (n: number, currency: string | null) =>
-  new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: currency || 'USD',
-    maximumFractionDigits: 2,
-  }).format(n);
+  currency
+    ? new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency,
+        maximumFractionDigits: 2,
+      }).format(n)
+    : new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(n);
 
 export function MyNumbers() {
   const [tab, setTab] = useState<TabKey>('dashboard');
@@ -99,6 +111,7 @@ export function MyNumbers() {
   const lastMonth = windowQ.data?.latest?.slice(0, 7) ?? monthKey(new Date());
 
   const videosQ = useVideoPerformance(from, to, source);
+  const brandsQ = useBrandPerformance(from, to);
   const dailyQ = useDailyPerformance(from, to, source);
 
   const videos = videosQ.data ?? [];
@@ -272,6 +285,7 @@ export function MyNumbers() {
           videos={videos}
           currency={currency}
           adCounts={adCounts}
+          brands={brandsQ.data ?? []}
         />
       ) : (
         <Content videos={videos} currency={currency} latestDataDate={latestDataDate} />
@@ -288,12 +302,14 @@ function Dashboard({
   videos,
   currency,
   adCounts,
+  brands,
 }: {
   totals: { cost: number; revenue: number; orders: number; roi: number | null };
   daily: DailyPerformance[];
   videos: VideoPerformance[];
   currency: string | null;
   adCounts: { running: number; ran: number; none: number; total: number; withAds: number };
+  brands: BrandPerformance[];
 }) {
   const rows = daily;
   const best = [...rows].sort((a, b) => Number(b.gross_revenue) - Number(a.gross_revenue))[0];
@@ -315,6 +331,17 @@ function Dashboard({
           hint={totals.roi === null ? 'no spend yet' : 'GMV for every 1 spent'}
         />
       </section>
+
+      {/*
+        WHICH BRAND PAID YOU WHAT. Rashid asked for it by name: "let creators
+        see that in which brand they got how many money so they can analyse."
+
+        Only when there is more than one. A creator working for a single brand
+        would just be reading their own total again with a heading on it, and a
+        panel that repeats the number above it teaches people to stop reading
+        panels.
+      */}
+      {brands.length > 1 ? <ByBrand brands={brands} /> : null}
 
       {/*
         WHICH OF YOUR VIDEOS ARE CARRYING ADS. Not every video gets GMV Max
@@ -627,5 +654,68 @@ function Empty({ title, body }: { title: string; body: string }) {
       <h2 className="font-display text-[1.0625rem] font-bold">{title}</h2>
       <p className="text-muted mx-auto mt-2 max-w-prose text-[0.875rem] leading-relaxed">{body}</p>
     </div>
+  );
+}
+
+/* ---------------------------------------------------------- which brand -- */
+
+/**
+ * A creator's own money, split by the brand whose ad account paid for it.
+ *
+ * IT IS THE MONEY ROW'S BRAND, NOT THE OFFER'S. A submission says which brand a
+ * video was filed against; the money row says which brand's ad account actually
+ * spent on it. Those agree for an ordinary video and diverge for one that two
+ * brands both promoted, and only the money row can split that honestly.
+ *
+ * THE BAR IS PROPORTIONAL TO THE BEST BRAND, not to the total, so the shape of
+ * "where does my money come from" is readable without reading a number. Rows
+ * are already ordered by GMV in the database.
+ *
+ * NOTHING HERE IS ABOUT THE BRAND. Its name, and this creator's own figures
+ * against it. No budget, no other creators, no campaign detail — those are
+ * staff facts and this is a creator screen.
+ */
+function ByBrand({ brands }: { brands: BrandPerformance[] }) {
+  const best = Math.max(...brands.map((b) => Number(b.gmv) || 0), 0);
+
+  return (
+    <section className="border-line bg-surface-1 rounded-xl border p-4 sm:p-5">
+      <h2 className="text-[1rem] font-bold">Where your money came from</h2>
+      <p className="text-muted mt-0.5 text-[0.8125rem]">
+        Split by the brand whose ads ran behind each video.
+      </p>
+
+      <ul className="mt-3 flex flex-col gap-2">
+        {brands.map((b) => (
+          <li
+            key={b.brand_id ?? 'unmatched'}
+            className="border-line bg-surface-2 relative overflow-hidden rounded-xl border px-3.5 py-3"
+          >
+            <div
+              aria-hidden
+              className="bg-accent/10 pointer-events-none absolute inset-y-0 left-0"
+              style={{ width: `${best > 0 ? Math.max(2, (Number(b.gmv) / best) * 100) : 0}%` }}
+            />
+            <div className="relative flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <div className="min-w-0">
+                <p className="truncate text-[0.875rem] font-semibold">
+                  {/* A row with no brand is money whose store mapping changed.
+                      Say so plainly rather than printing "null". */}
+                  {b.brand_name ?? 'Not matched to a brand'}
+                </p>
+                <p className="text-faint text-[0.75rem]">
+                  {b.videos} {b.videos === 1 ? 'video' : 'videos'} ·{' '}
+                  {money(Number(b.spend), b.currency)} spent ·{' '}
+                  {b.roi === null ? 'no spend' : `${Number(b.roi).toFixed(2)}x`}
+                </p>
+              </div>
+              <p className="wx-numeric text-accent font-mono text-[1.125rem] font-extrabold">
+                {money(Number(b.gmv), b.currency)}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
