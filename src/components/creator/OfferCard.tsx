@@ -267,8 +267,20 @@ function OfferAction({
     return (
       <Note tone="success" icon={<Check size={15} aria-hidden />}>
         <span className="font-semibold">You are already on this one</span>
+        {/*
+          IT USED TO SAY "Open to every approved creator", and from 2026-08-21
+          that is a claim this card cannot make. Offers now carry an audience:
+          a high commission offer can be narrowed to named creators, and a
+          volume offer can exclude them. The sentence would have been false on
+          every restricted offer, printed on both creator screens, and the card
+          has no way to know which it is looking at — nor should it, since who
+          else can see an offer is not a creator's business.
+
+          So it says the only thing that is true of every offer reaching this
+          branch: you have it, and there is nothing to ask for.
+        */}
         <span className="text-muted block text-[0.8125rem]">
-          Open to every approved creator. Nothing to apply for.
+          It is yours to take. Nothing to apply for.
         </span>
       </Note>
     );

@@ -546,3 +546,35 @@ not raise one. Fixed: every delete is checked, every step is isolated, and a
 suite that litters now exits non-zero. The account has been removed and dev is
 back to 42 profiles (41 creators and Rashid).
 
+---
+
+## 21. Offer kinds: the four things deliberately left
+
+**Parked 2026-08-22, after the audience feature shipped.**
+
+**a. A removed creator keeps the card for up to 30 seconds.**
+`useCatalogueLive` cannot watch `offer_audience` — it is staff-only, and
+putting it in the realtime publication would send rows naming people over the
+wire. So a creator taken off a list keeps the card until `staleTime` lapses,
+and it stays clickable. Clicking is safe: `apply_for_offer` refuses with "that
+offer is not open to you", and `messageFrom` prints that sentence verbatim.
+**Raise if a creator ever reports being told that after clicking a card they
+could see.**
+
+**b. High commission carries no fixed fee, and nothing charges the budget for
+it.** `review_offer_application` is what charges `brand_commercials.budget_used`,
+and it only runs on offers that need applying for — which high commission never
+does. So the grain is safe today. **Raise the moment anybody wants a high
+commission offer that DOES need an application**, because then a share-of-GMV
+reward would be charged against a budget documented as one fixed fee per job.
+
+**c. `offers_open_idx` is partial on `status='active' and not needs_application`.**
+It no longer covers the creator catalogue now that a kind and an audience are in
+the predicate. Harmless at 31 offers. **Raise when an offer list feels slow.**
+
+**d. The creator side does not know an offer's kind, on purpose.** No creator
+query selects `kind`, so no creator screen can accidentally say who else can see
+something. If a creator screen ever needs to distinguish a retainer, add the
+column to BOTH `useAllOffers` and `useCreatorBrands` in the same commit — they
+feed one `OfferCard` and drifting them apart is a documented past bug.
+

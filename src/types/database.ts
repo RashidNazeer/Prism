@@ -90,6 +90,13 @@ export type Database = {
             foreignKeyName: "applications_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "applications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -99,6 +106,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "applications_user_id_fkey"
@@ -158,6 +172,13 @@ export type Database = {
             foreignKeyName: "audit_log_actor_id_fkey"
             columns: ["actor_id"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -167,6 +188,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_log_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "audit_log_target_user_id_fkey"
@@ -283,6 +311,13 @@ export type Database = {
             foreignKeyName: "brand_products_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "brand_products_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -336,6 +371,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "brands_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
           {
             foreignKeyName: "brands_created_by_fkey"
             columns: ["created_by"]
@@ -445,6 +487,13 @@ export type Database = {
             foreignKeyName: "content_submissions_creator_id_fkey"
             columns: ["creator_id"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "content_submissions_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -454,6 +503,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_submissions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "content_submissions_decided_by_fkey"
@@ -529,6 +585,13 @@ export type Database = {
             foreignKeyName: "contest_awards_awarded_by_fkey"
             columns: ["awarded_by"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "contest_awards_awarded_by_fkey"
+            columns: ["awarded_by"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -545,6 +608,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contests"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_awards_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "contest_awards_creator_id_fkey"
@@ -580,6 +650,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contest_entry_progress"
             referencedColumns: ["entry_id"]
+          },
+          {
+            foreignKeyName: "contest_awards_paid_by_fkey"
+            columns: ["paid_by"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "contest_awards_paid_by_fkey"
@@ -766,6 +843,13 @@ export type Database = {
             foreignKeyName: "contest_entries_creator_id_fkey"
             columns: ["creator_id"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "contest_entries_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -775,6 +859,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_entries_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "contest_entries_decided_by_fkey"
@@ -825,6 +916,13 @@ export type Database = {
             foreignKeyName: "contest_entry_events_actor_id_fkey"
             columns: ["actor_id"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "contest_entry_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -834,6 +932,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_entry_events_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "contest_entry_events_creator_id_fkey"
@@ -895,6 +1000,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "contest_entry_targets_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
           {
             foreignKeyName: "contest_entry_targets_creator_id_fkey"
             columns: ["creator_id"]
@@ -1052,6 +1164,13 @@ export type Database = {
             foreignKeyName: "contest_exclusions_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "contest_exclusions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -1061,6 +1180,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_exclusions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "contest_exclusions_user_id_fkey"
@@ -1186,6 +1312,13 @@ export type Database = {
             foreignKeyName: "contest_progress_updates_confirmed_by_fkey"
             columns: ["confirmed_by"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "contest_progress_updates_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -1195,6 +1328,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_progress_updates_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "contest_progress_updates_creator_id_fkey"
@@ -1322,6 +1462,13 @@ export type Database = {
             foreignKeyName: "contest_submissions_creator_id_fkey"
             columns: ["creator_id"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "contest_submissions_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -1331,6 +1478,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_submissions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "contest_submissions_decided_by_fkey"
@@ -1455,6 +1609,13 @@ export type Database = {
             foreignKeyName: "contests_cancelled_by_fkey"
             columns: ["cancelled_by"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "contests_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -1469,6 +1630,13 @@ export type Database = {
             foreignKeyName: "contests_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "contests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -1483,6 +1651,13 @@ export type Database = {
             foreignKeyName: "contests_settled_by_fkey"
             columns: ["settled_by"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "contests_settled_by_fkey"
+            columns: ["settled_by"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -1490,6 +1665,58 @@ export type Database = {
             foreignKeyName: "contests_settled_by_fkey"
             columns: ["settled_by"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_avatars: {
+        Row: {
+          bytes: number | null
+          error: string | null
+          fetched_at: string
+          handle: string | null
+          path: string | null
+          profile_id: string
+          source: string
+        }
+        Insert: {
+          bytes?: number | null
+          error?: string | null
+          fetched_at?: string
+          handle?: string | null
+          path?: string | null
+          profile_id: string
+          source?: string
+        }
+        Update: {
+          bytes?: number | null
+          error?: string | null
+          fetched_at?: string
+          handle?: string | null
+          path?: string | null
+          profile_id?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_avatars_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "creator_avatars_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "creator_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_avatars_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1571,6 +1798,13 @@ export type Database = {
             foreignKeyName: "offer_applications_creator_id_fkey"
             columns: ["creator_id"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "offer_applications_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -1580,6 +1814,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_applications_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "offer_applications_decided_by_fkey"
@@ -1597,6 +1838,80 @@ export type Database = {
           },
           {
             foreignKeyName: "offer_applications_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_audience: {
+        Row: {
+          added_at: string
+          added_by: string | null
+          creator_id: string
+          mode: string
+          offer_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by?: string | null
+          creator_id: string
+          mode: string
+          offer_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string | null
+          creator_id?: string
+          mode?: string
+          offer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_audience_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "offer_audience_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "creator_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_audience_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_audience_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "offer_audience_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_audience_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_audience_offer_id_fkey"
             columns: ["offer_id"]
             isOneToOne: false
             referencedRelation: "offers"
@@ -1640,6 +1955,13 @@ export type Database = {
             foreignKeyName: "offer_stage_events_actor_id_fkey"
             columns: ["actor_id"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "offer_stage_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -1668,6 +1990,13 @@ export type Database = {
             foreignKeyName: "offer_stage_events_creator_id_fkey"
             columns: ["creator_id"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "offer_stage_events_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -1689,6 +2018,7 @@ export type Database = {
           currency: string
           description: string | null
           id: string
+          kind: Database["public"]["Enums"]["offer_kind"]
           needs_application: boolean
           reward_amount: number | null
           status: Database["public"]["Enums"]["offer_status"]
@@ -1704,6 +2034,7 @@ export type Database = {
           currency?: string
           description?: string | null
           id?: string
+          kind?: Database["public"]["Enums"]["offer_kind"]
           needs_application?: boolean
           reward_amount?: number | null
           status?: Database["public"]["Enums"]["offer_status"]
@@ -1719,6 +2050,7 @@ export type Database = {
           currency?: string
           description?: string | null
           id?: string
+          kind?: Database["public"]["Enums"]["offer_kind"]
           needs_application?: boolean
           reward_amount?: number | null
           status?: Database["public"]["Enums"]["offer_status"]
@@ -1733,6 +2065,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "brands"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "offers_created_by_fkey"
@@ -1876,6 +2215,13 @@ export type Database = {
             foreignKeyName: "tiktok_connections_connected_by_fkey"
             columns: ["connected_by"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "tiktok_connections_connected_by_fkey"
+            columns: ["connected_by"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -1885,6 +2231,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tiktok_connections_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "tiktok_connections_revoked_by_fkey"
@@ -1925,6 +2278,13 @@ export type Database = {
           used_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tiktok_oauth_states_started_by_fkey"
+            columns: ["started_by"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
           {
             foreignKeyName: "tiktok_oauth_states_started_by_fkey"
             columns: ["started_by"]
@@ -2013,6 +2373,13 @@ export type Database = {
             foreignKeyName: "tiktok_stores_mapped_by_fkey"
             columns: ["mapped_by"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "tiktok_stores_mapped_by_fkey"
+            columns: ["mapped_by"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -2070,6 +2437,7 @@ export type Database = {
       tiktok_video_daily: {
         Row: {
           advertiser_id: string
+          brand_id: string | null
           cost: number
           currency: string | null
           fetched_at: string
@@ -2077,9 +2445,11 @@ export type Database = {
           item_id: string
           orders: number
           stat_date: string
+          store_id: string | null
         }
         Insert: {
           advertiser_id: string
+          brand_id?: string | null
           cost?: number
           currency?: string | null
           fetched_at?: string
@@ -2087,9 +2457,11 @@ export type Database = {
           item_id: string
           orders?: number
           stat_date: string
+          store_id?: string | null
         }
         Update: {
           advertiser_id?: string
+          brand_id?: string | null
           cost?: number
           currency?: string | null
           fetched_at?: string
@@ -2097,6 +2469,7 @@ export type Database = {
           item_id?: string
           orders?: number
           stat_date?: string
+          store_id?: string | null
         }
         Relationships: [
           {
@@ -2112,6 +2485,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tiktok_ad_accounts"
             referencedColumns: ["advertiser_id"]
+          },
+          {
+            foreignKeyName: "tiktok_video_daily_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2194,6 +2574,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "brands"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_applications_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "offer_applications_creator_id_fkey"
@@ -2291,6 +2678,13 @@ export type Database = {
             foreignKeyName: "contest_entries_creator_id_fkey"
             columns: ["creator_id"]
             isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "contest_entries_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
             referencedRelation: "creator_directory"
             referencedColumns: ["id"]
           },
@@ -2330,6 +2724,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contests"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_entries_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "contest_entries_creator_id_fkey"
@@ -2377,6 +2778,18 @@ export type Database = {
           },
         ]
       }
+      creator_avatar_queue: {
+        Row: {
+          display_name: string | null
+          error: string | null
+          fetched_at: string | null
+          path: string | null
+          profile_id: string | null
+          role: Database["public"]["Enums"]["app_role"] | null
+          tiktok_handle: string | null
+        }
+        Relationships: []
+      }
       creator_directory: {
         Row: {
           application_id: string | null
@@ -2393,6 +2806,22 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"] | null
           tier: Database["public"]["Enums"]["creator_tier"] | null
           tiktok_handle: string | null
+        }
+        Relationships: []
+      }
+      creator_videos: {
+        Row: {
+          ad_authorized: boolean | null
+          brand_id: string | null
+          created_at: string | null
+          creator_id: string | null
+          embed_id: string | null
+          source: string | null
+          status: Database["public"]["Enums"]["content_status"] | null
+          submission_id: string | null
+          thumbnail_url: string | null
+          video_title: string | null
+          video_url: string | null
         }
         Relationships: []
       }
@@ -2415,6 +2844,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "brands"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_applications_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
           },
           {
             foreignKeyName: "offer_applications_creator_id_fkey"
@@ -2535,6 +2971,13 @@ export type Database = {
         Args: { p_budget: number; p_contest_id: string; p_currency: string }
         Returns: undefined
       }
+      can_see_offer: {
+        Args: {
+          p_kind: Database["public"]["Enums"]["offer_kind"]
+          p_offer_id: string
+        }
+        Returns: boolean
+      }
       cancel_contest: {
         Args: { p_actor_id: string; p_contest_id: string; p_message?: string }
         Returns: Json
@@ -2544,14 +2987,49 @@ export type Database = {
         Returns: boolean
       }
       contest_is_open: { Args: { p_contest_id: string }; Returns: boolean }
-      creator_daily_performance: {
+      creator_brand_performance: {
         Args: { p_from: string; p_to: string }
+        Returns: {
+          brand_id: string
+          brand_name: string
+          currency: string
+          gmv: number
+          orders: number
+          roi: number
+          spend: number
+          videos: number
+        }[]
+      }
+      creator_daily_performance: {
+        Args: { p_from: string; p_source?: string; p_to: string }
         Returns: {
           cost: number
           currency: string
           gross_revenue: number
           orders: number
           stat_date: string
+          videos: number
+        }[]
+      }
+      creator_leaderboard: {
+        Args: {
+          p_from: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_to: string
+        }
+        Returns: {
+          avatar_path: string
+          creator_id: string
+          currency: string
+          display_name: string
+          gmv: number
+          is_me: boolean
+          orders: number
+          rank: number
+          spend: number
+          total_creators: number
           videos: number
         }[]
       }
@@ -2564,7 +3042,7 @@ export type Database = {
         }[]
       }
       creator_video_performance: {
-        Args: { p_from: string; p_to: string }
+        Args: { p_from: string; p_source?: string; p_to: string }
         Returns: {
           ads_ever: boolean
           brand_id: string
@@ -2580,6 +3058,7 @@ export type Database = {
           lifetime_revenue: number
           orders: number
           roi: number
+          source: string
           submission_id: string
           submitted_at: string
           thumbnail_url: string
@@ -2621,6 +3100,27 @@ export type Database = {
           gmv_place: number
           video_place: number
         }[]
+      }
+      my_leaderboard_standing: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          currency: string
+          gmv: number
+          orders: number
+          rank: number
+          spend: number
+          top_percent: number
+          total_creators: number
+          videos: number
+        }[]
+      }
+      offer_is_for: {
+        Args: {
+          p_creator_id: string
+          p_kind: Database["public"]["Enums"]["offer_kind"]
+          p_offer_id: string
+        }
+        Returns: boolean
       }
       pay_contest_awards: {
         Args: {
@@ -2795,10 +3295,12 @@ export type Database = {
       save_offer: {
         Args: {
           p_actor_id: string
+          p_audience?: string[]
           p_badge_title?: string
           p_brand_id: string
           p_currency?: string
           p_description?: string
+          p_kind?: Database["public"]["Enums"]["offer_kind"]
           p_needs_application?: boolean
           p_offer_id?: string
           p_reward_amount: number
@@ -2946,6 +3448,7 @@ export type Database = {
         | "approved"
         | "rejected"
         | "withdrawn"
+      offer_kind: "retainer" | "volume" | "high_commission"
       offer_stage:
         | "pending_request"
         | "sample_requested"
@@ -3099,6 +3602,7 @@ export const Constants = {
         "rejected",
         "withdrawn",
       ],
+      offer_kind: ["retainer", "volume", "high_commission"],
       offer_stage: [
         "pending_request",
         "sample_requested",

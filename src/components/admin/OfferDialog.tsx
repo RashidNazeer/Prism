@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { m } from 'motion/react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -6,6 +6,7 @@ import { Field, Input, Select, Textarea } from '@/components/ui/Field';
 import { FormError } from '@/components/auth/AuthShell';
 import { useFocusTrap } from '@/lib/use-focus-trap';
 import { useManageBrand } from '@/lib/admin/useManageBrand';
+import { useOfferAudience } from '@/lib/admin/useAllOffers';
 import {
   collectFieldErrors,
   CURRENCIES,
@@ -50,9 +51,36 @@ export function OfferDialog({
     currency: (offer?.currency ?? 'USD') as OfferInput['currency'],
     status: offer?.status ?? 'active',
     needsApplication: offer?.needs_application ?? true,
+    kind: (offer?.kind ?? 'volume') as OfferInput['kind'],
+    // Filled in below, once the list has loaded. A new offer starts empty.
+    audience: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  /*
+   * Lines the last save could not match to anybody. Shown until the next save,
+   * because the alternative is a toast that disappears before the admin has
+   * read which two of their forty handles were typos.
+   */
+  const [unmatched, setUnmatched] = useState<string[]>([]);
+
+  /*
+   * THE EXISTING LIST HAS TO BE LOADED, NOT ASSUMED EMPTY.
+   *
+   * The offer row handed to this dialog carries no audience — it comes from a
+   * catalogue query that never selects one. Seeding the box with '' and then
+   * saving would replace a retainer's whole creator list with nothing, on an
+   * edit that only meant to fix a typo in the title. So the box stays disabled
+   * until the real list is in it.
+   */
+  const audience = useOfferAudience(offer?.id ?? null);
+  const audienceLoading = Boolean(offer?.id) && audience.isPending;
+  const seeded = useRef(false);
+  useEffect(() => {
+    if (seeded.current || !audience.data) return;
+    seeded.current = true;
+    setValues((v) => ({ ...v, audience: audience.data!.join('\n') }));
+  }, [audience.data]);
 
   const save = useManageBrand();
   const busy = save.isPending;
@@ -72,7 +100,10 @@ export function OfferDialog({
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    // See `audienceLoading`: saving now would wipe a list we have not read yet.
+    if (audienceLoading) return;
     setSubmitted(true);
+    setUnmatched([]);
     const next = collectFieldErrors(offerSchema, values);
     setErrors(next);
     if (Object.keys(next).length > 0) return;
@@ -93,8 +124,20 @@ export function OfferDialog({
         currency: parsed.currency,
         status: parsed.status,
         needsApplication: parsed.needsApplication,
+        kind: parsed.kind,
+        audience: parsed.audience,
       },
-      { onSuccess: onClose }
+      {
+        onSuccess: (result) => {
+          // Saved, but some pasted lines matched nobody. Stay open and name
+          // them; closing would hide the only report the admin gets.
+          if (result.unmatched.length > 0) {
+            setUnmatched(result.unmatched);
+            return;
+          }
+          onClose();
+        },
+      }
     );
   };
 
@@ -318,6 +361,85 @@ export function OfferDialog({
               </Field>
             </div>
 
+            {/* ------------------------------------------------ kind -- */}
+            <Field label="Kind of offer" error={errors.kind}>
+              {({ id, describedBy }) => (
+                <Select
+                  id={id}
+                  name="kind"
+                  value={values.kind}
+                  disabled={busy}
+                  onChange={(e) => set('kind', e.target.value as OfferInput['kind'])}
+                  aria-describedby={describedBy}
+                >
+                  <option value="volume">Volume offer — everyone can see it</option>
+                  <option value="retainer">Retainer campaign — named creators only</option>
+                  <option value="high_commission">
+                    High commission — no application, everyone unless narrowed
+                  </option>
+                </Select>
+              )}
+            </Field>
+
+            {/* --------------------------------------------- audience -- */}
+            <Field
+              label={
+                values.kind === 'volume'
+                  ? 'Hide it from these creators (optional)'
+                  : values.kind === 'retainer'
+                    ? 'Only these creators can see it'
+                    : 'Narrow it to these creators (optional)'
+              }
+              error={errors.audience}
+              hint={
+                values.kind === 'volume'
+                  ? 'Everyone sees this offer except the creators you list here. Use it when somebody already has their own deal.'
+                  : values.kind === 'retainer'
+                    ? 'Nobody else can see this offer, or apply for it. Handles or emails, one per line.'
+                    : 'Leave this empty and every creator sees it. Fill it in and only these creators do.'
+              }
+            >
+              {({ id, describedBy }) => (
+                <Textarea
+                  id={id}
+                  name="audience"
+                  rows={4}
+                  value={values.audience}
+                  disabled={busy || audienceLoading}
+                  placeholder={
+                    audienceLoading
+                      ? 'Loading who is on this offer...'
+                      : '@handle\nsomebody@example.com'
+                  }
+                  onChange={(e) => set('audience', e.target.value)}
+                  aria-describedby={describedBy}
+                />
+              )}
+            </Field>
+
+            {unmatched.length > 0 ? (
+              <p
+                role="status"
+                className="border-stage-due bg-stage-due-soft text-stage-due rounded-md border px-3 py-2 text-[0.8125rem] leading-relaxed"
+              >
+                Saved. These {unmatched.length === 1 ? 'line matched' : 'lines matched'} nobody on
+                the platform and {unmatched.length === 1 ? 'was' : 'were'} left off:{' '}
+                <span className="font-mono">{unmatched.join(', ')}</span>
+              </p>
+            ) : null}
+
+            {/*
+              HIDDEN ON HIGH COMMISSION, because that kind is DEFINED by not
+              needing one — Rashid: *"for these offers do not show user that
+              checkbox"*. The schema and `save_offer` both force the value, so
+              hiding it here removes a control that could only ever lie.
+            */}
+            {values.kind === 'high_commission' ? (
+              <p className="border-line bg-surface-2 text-muted rounded-md border px-3 py-2 text-[0.8125rem] leading-relaxed">
+                High commission offers never need an application. Any creator who can see this one
+                can take it.
+              </p>
+            ) : (
             <label className="border-line-interactive bg-surface-2 flex cursor-pointer items-start gap-3 rounded-xl border p-4">
               <input
                 type="checkbox"
@@ -336,6 +458,7 @@ export function OfferDialog({
                 </span>
               </span>
             </label>
+            )}
           </div>
 
           <div className="mt-7 flex flex-wrap gap-2.5">

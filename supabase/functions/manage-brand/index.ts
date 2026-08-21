@@ -66,7 +66,48 @@ const OfferBody = z.object({
   currency: currency.default('USD'),
   status: z.enum(['active', 'inactive']).default('active'),
   needsApplication: z.boolean().default(true),
+
+  /*
+   * WHO IS THIS OFFER FOR, added 2026-08-21.
+   *
+   *   retainer         named creators only. The list is an ALLOW list and it
+   *                    is required before the offer can go live.
+   *   volume           everyone, minus anyone named. The list EXCLUDES.
+   *   high_commission  never needs an application; the list optionally narrows
+   *                    it, and an empty one means everyone.
+   *
+   * The audience arrives as the raw text an admin pasted — handles, emails, or
+   * a mixture — and is resolved to creator ids below. It is NOT accepted as
+   * ids from the browser: a client that can name arbitrary uuids can put a
+   * person on a private deal, and this is the money-sensitive half of the
+   * feature.
+   */
+  kind: z.enum(['retainer', 'volume', 'high_commission']).default('volume'),
+
+  /*
+   * ONE STRING, NOT AN ARRAY, because that is what an admin pastes: a block of
+   * handles and emails separated by newlines, commas or semicolons, however
+   * they happened to come out of a spreadsheet. Splitting it is this function's
+   * job, next to the resolving — the browser sending a tidy array would only
+   * mean the browser deciding what counts as a separator.
+   *
+   * Capped, because an unbounded list is a write amplifier pointed straight at
+   * a SECURITY DEFINER function.
+   */
+  audience: z.string().max(20000).default(''),
 });
+
+/** Handles and emails out of whatever an admin pasted. */
+function splitAudience(raw: string): string[] {
+  return [
+    ...new Set(
+      raw
+        .split(/[\n,;]+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+    ),
+  ].slice(0, 500);
+}
 
 const DeleteOfferBody = z.object({
   action: z.literal('offer.delete'),
@@ -228,7 +269,18 @@ Deno.serve(async (req) => {
   // is "N videos for $X": a boosted commission rate has no fixed deliverable
   // and no fixed fee, and demanding one only gets a made up number. But an
   // offer somebody applies FOR has to say what they are applying for.
-  if (input.action === 'offer.save' && input.needsApplication) {
+  /*
+   * HIGH COMMISSION NEVER NEEDS AN APPLICATION, so the terms it must carry are
+   * decided against the EFFECTIVE value rather than whatever the form sent.
+   * `save_offer` forces the column the same way; this only decides which
+   * fields are demanded on the way in.
+   */
+  const needsApplication =
+    input.action === 'offer.save' && input.kind !== 'high_commission'
+      ? input.needsApplication
+      : false;
+
+  if (input.action === 'offer.save' && needsApplication) {
     if (!input.description?.trim()) {
       return reply(
         { error: 'An offer creators apply for needs a description of what to deliver' },
@@ -285,6 +337,53 @@ Deno.serve(async (req) => {
       p_product_id: input.productId,
     });
   } else if (input.action === 'offer.save') {
+    /*
+     * RESOLVE THE PASTED TEXT TO REAL CREATORS, SERVER SIDE.
+     *
+     * Rashid asked for handles or emails, and for the misses to be named
+     * rather than silently dropped: *"Save the ones that matched, list the
+     * ones that did not"*. A typo that quietly means "one fewer creator sees
+     * this" is the failure mode worth engineering against, so nothing is
+     * dropped without being reported back.
+     *
+     * `creator_directory` is the only place the two identifiers sit together:
+     * the email is on `profiles`, the TikTok handle is on `applications`. It
+     * is a staff-only view and this runs with the service key, which is
+     * exactly why the browser never gets to send ids.
+     */
+    const wanted = splitAudience(input.audience);
+    const matched = new Map<string, string>(); // input token -> creator id
+    const unmatched: string[] = [];
+
+    if (wanted.length > 0) {
+      const { data: people, error: lookupError } = await admin
+        .from('creator_directory')
+        .select('id, email, tiktok_handle')
+        .eq('is_active', true);
+
+      if (lookupError) {
+        console.error('manage-brand audience lookup failed', lookupError);
+        return reply({ error: 'Could not check who those creators are' }, 500);
+      }
+
+      // Both sides lowercased, and a leading @ is stripped from the pasted
+      // side only: an admin copying from TikTok gets "@name", and the stored
+      // handle has no @.
+      const byHandle = new Map<string, string>();
+      const byEmail = new Map<string, string>();
+      for (const p of people ?? []) {
+        if (p.tiktok_handle) byHandle.set(String(p.tiktok_handle).toLowerCase(), p.id);
+        if (p.email) byEmail.set(String(p.email).toLowerCase(), p.id);
+      }
+
+      for (const token of wanted) {
+        const key = token.toLowerCase().replace(/^@+/, '');
+        const id = byHandle.get(key) ?? byEmail.get(token.toLowerCase());
+        if (id) matched.set(token, id);
+        else unmatched.push(token);
+      }
+    }
+
     rpc = await admin.rpc('save_offer', {
       p_actor_id: actor.id,
       p_brand_id: input.brandId,
@@ -296,8 +395,22 @@ Deno.serve(async (req) => {
       p_description: input.description ?? null,
       p_currency: input.currency,
       p_status: input.status,
-      p_needs_application: input.needsApplication,
+      p_needs_application: needsApplication,
+      p_kind: input.kind,
+      p_audience: [...new Set(matched.values())],
     });
+
+    /*
+     * The unmatched list rides back on a SUCCESSFUL save, because that is what
+     * "save the ones that matched and tell me about the rest" means. On a
+     * failure the error wins and this is not sent: there is nothing saved for
+     * it to be a footnote to.
+     */
+    if (!rpc.error && unmatched.length > 0) {
+      // The same shape as the success reply at the bottom, plus the footnote.
+      // One shape means the client has one thing to read.
+      return reply({ ok: true, result: rpc.data, unmatched }, 200);
+    }
   } else {
     rpc = await admin.rpc('delete_offer', {
       p_actor_id: actor.id,

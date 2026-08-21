@@ -25,10 +25,12 @@ import {
   useBrandsWithOffers,
   useOfferContent,
   useOfferPeople,
+  useOfferKindCounts,
   useOfferStatusCounts,
   type AllOffersFilters,
   type AllOffersRow,
   type OfferContent,
+  type OfferAccessFilter,
   type OfferKindFilter,
   type OfferPeople,
   type OfferStatusFilter,
@@ -83,8 +85,35 @@ const STATUS_TABS: { value: OfferStatusFilter; label: string }[] = [
 
 const isStatus = (v: string | null): v is OfferStatusFilter =>
   v === 'active' || v === 'inactive' || v === 'all';
-const isKind = (v: string | null): v is OfferKindFilter =>
+const isAccess = (v: string | null): v is OfferAccessFilter =>
   v === 'all' || v === 'application' || v === 'open';
+const isKind = (v: string | null): v is OfferKindFilter =>
+  v === 'all' || v === 'retainer' || v === 'volume' || v === 'high_commission';
+
+/*
+ * WHAT EACH KIND IS, in one place, used by the filter and by every card.
+ * `short` is what fits on a card; `label` is what the dropdown says.
+ */
+const KIND_META: Record<
+  'retainer' | 'volume' | 'high_commission',
+  { label: string; short: string; className: string }
+> = {
+  retainer: {
+    label: 'Retainer campaign',
+    short: 'Retainer',
+    className: 'bg-accent-soft text-accent',
+  },
+  volume: {
+    label: 'Volume offer',
+    short: 'Volume',
+    className: 'bg-surface-3 text-muted',
+  },
+  high_commission: {
+    label: 'High commission',
+    short: 'High commission',
+    className: 'bg-stage-paid-soft text-stage-paid',
+  },
+};
 
 const shortDate = (iso: string) =>
   new Date(iso).toLocaleDateString(undefined, {
@@ -97,11 +126,13 @@ export function AllOffers() {
   const [params, setParams] = useSearchParams();
 
   const statusParam = params.get('status');
+  const accessParam = params.get('access');
   const kindParam = params.get('kind');
   const sortParam = params.get('sort');
 
   const filters: AllOffersFilters = {
     status: isStatus(statusParam) ? statusParam : DEFAULT_ALL_OFFERS_FILTERS.status,
+    access: isAccess(accessParam) ? accessParam : 'all',
     kind: isKind(kindParam) ? kindParam : 'all',
     brandId: params.get('brand') ?? '',
     search: params.get('q') ?? '',
@@ -126,6 +157,7 @@ export function AllOffers() {
 
     const p = new URLSearchParams();
     if (merged.status !== DEFAULT_ALL_OFFERS_FILTERS.status) p.set('status', merged.status);
+    if (merged.access !== 'all') p.set('access', merged.access);
     if (merged.kind !== 'all') p.set('kind', merged.kind);
     if (merged.brandId) p.set('brand', merged.brandId);
     if (merged.search) p.set('q', merged.search);
@@ -137,6 +169,7 @@ export function AllOffers() {
 
   const { data, isLoading, isError, error, isPlaceholderData } = useAllOffers(filters);
   const { data: counts } = useOfferStatusCounts();
+  const { data: kindCounts } = useOfferKindCounts();
   const { data: brands } = useBrandsWithOffers();
 
   const rows = data?.rows ?? [];
@@ -243,19 +276,49 @@ export function AllOffers() {
           ))}
         </Select>
 
+        {/*
+          TWO DROPDOWNS, BECAUSE THEY ARE TWO QUESTIONS. "Which kind of offer"
+          and "does a creator have to ask" were one control called "type" until
+          2026-08-21, and they are independent: a retainer may or may not need
+          applying for, and so may a volume offer.
+        */}
         <label className="sr-only" htmlFor="kind-filter">
-          Filter by type
+          Filter by kind
         </label>
         <Select
           id="kind-filter"
           name="kind"
           value={filters.kind}
           onChange={(e) => setFilters({ kind: e.target.value as OfferKindFilter })}
+          className="h-10 w-auto min-w-[11rem] shrink-0 rounded-md text-[0.875rem]"
+        >
+          <option value="all">
+            {kindCounts
+              ? `Any kind (${kindCounts.retainer + kindCounts.volume + kindCounts.high_commission} live)`
+              : 'Any kind'}
+          </option>
+          <option value="retainer">
+            Retainer{kindCounts ? ` (${kindCounts.retainer})` : ''}
+          </option>
+          <option value="volume">Volume{kindCounts ? ` (${kindCounts.volume})` : ''}</option>
+          <option value="high_commission">
+            High commission{kindCounts ? ` (${kindCounts.high_commission})` : ''}
+          </option>
+        </Select>
+
+        <label className="sr-only" htmlFor="access-filter">
+          Filter by whether creators apply
+        </label>
+        <Select
+          id="access-filter"
+          name="access"
+          value={filters.access}
+          onChange={(e) => setFilters({ access: e.target.value as OfferAccessFilter })}
           className="h-10 w-auto min-w-[10.5rem] shrink-0 rounded-md text-[0.875rem]"
         >
-          <option value="all">Any type</option>
+          <option value="all">Any access</option>
           <option value="application">Needs applying for</option>
-          <option value="open">Open to everyone</option>
+          <option value="open">Open to take</option>
         </Select>
 
         <label className="sr-only" htmlFor="sort-filter">
@@ -439,6 +502,16 @@ function OfferCard({
           </span>
 
           <span className="flex shrink-0 items-center gap-1.5">
+            {/* The kind is the first thing on the card after the brand, because
+                it is the thing that decides who can see the money below it. */}
+            <span
+              className={cn(
+                'rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase',
+                KIND_META[offer.kind].className
+              )}
+            >
+              {KIND_META[offer.kind].short}
+            </span>
             {offer.badge_title ? (
               <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
                 {offer.badge_title}
@@ -577,9 +650,10 @@ function OfferCard({
                 not repeated here: it moved onto the card, where it is doing
                 more work. */}
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3 lg:grid-cols-4 lg:gap-x-6">
+              <Fact label="Kind" value={KIND_META[offer.kind].label} />
               <Fact
-                label="Type"
-                value={offer.needs_application ? 'Needs applying for' : 'Open to everyone'}
+                label="Access"
+                value={offer.needs_application ? 'Needs applying for' : 'Open to take'}
               />
               <Fact
                 label="Waiting"

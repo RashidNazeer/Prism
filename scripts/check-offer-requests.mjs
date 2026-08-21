@@ -985,13 +985,35 @@ try {
   await adminPage.press('input[name="search"]', 'Enter');
   await adminPage.waitForTimeout(1500);
 
-  await adminPage.selectOption('select[name="kind"]', 'open');
+  /*
+   * `access`, not `kind`, since 2026-08-21. They were the same control until
+   * offers gained a real kind — retainer, volume, high commission — and the
+   * old "does a creator have to apply" filter had to give the word back. Two
+   * dropdowns now, and this one is the access one.
+   */
+  await adminPage.selectOption('select[name="access"]', 'open');
   await adminPage.waitForTimeout(2000);
   check(
     (await adminPage.getByText('Fixed terms deal').count()) === 0 &&
       (await adminPage.getByText('Already yours').count()) > 0,
     'and filtering to open offers hides the ones that need applying for'
   );
+
+  // And the new axis filters independently of it.
+  await adminPage.selectOption('select[name="access"]', 'all');
+  await adminPage.selectOption('select[name="kind"]', 'retainer');
+  await adminPage.waitForTimeout(2000);
+  check(
+    (await adminPage.getByText('Fixed terms deal').count()) === 0,
+    'filtering to retainers hides a volume offer'
+  );
+  await adminPage.selectOption('select[name="kind"]', 'volume');
+  await adminPage.waitForTimeout(2000);
+  check(
+    (await adminPage.getByText('Fixed terms deal').count()) > 0,
+    'and filtering to volume brings it back'
+  );
+  await adminPage.selectOption('select[name="kind"]', 'all');
 
   // The creator's own dashboard, with the approval from [6] on it.
   await page.goto(`${BASE}/app/offers`, { waitUntil: 'domcontentloaded' });

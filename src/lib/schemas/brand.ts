@@ -51,6 +51,18 @@ export const brandSchema = z.object({
 export type BrandInput = z.input<typeof brandSchema>;
 export type BrandParsed = z.output<typeof brandSchema>;
 
+/**
+ * The one place that decides whether an offer needs applying for.
+ *
+ * High commission is defined by not needing one — Rashid: *"for these offers do
+ * not show user that checkbox"* — so the checkbox is hidden and its stored
+ * value is ignored rather than trusted. `save_offer` forces the column the
+ * same way, so a caller that is not this form cannot get a different answer.
+ */
+function needsApplicationFor(v: { kind: string; needsApplication: boolean }): boolean {
+  return v.kind === 'high_commission' ? false : v.needsApplication;
+}
+
 export const offerSchema = z
   .object({
     badgeTitle: z.string().trim().max(32, 'Keep the badge under 32 characters'),
@@ -61,6 +73,20 @@ export const offerSchema = z
     currency: z.enum(CURRENCIES),
     status: z.enum(['active', 'inactive']),
     needsApplication: z.boolean(),
+
+    /*
+     * WHICH KIND OF OFFER, added 2026-08-21. See the migration
+     * `20260821190802_offer_kinds_and_audience.sql` for the rules; the short
+     * version is that the kind decides how `audience` is read.
+     *
+     * `audience` is the RAW TEXT an admin pasted — handles, emails, or a
+     * mixture, one per line or comma separated. It is deliberately not parsed
+     * into ids here: resolving a handle to a person is a staff-only database
+     * lookup, so it happens in the Edge Function, which then reports which
+     * lines it could not match.
+     */
+    kind: z.enum(['retainer', 'volume', 'high_commission']),
+    audience: z.string().trim().max(20000, 'That is a very long list'),
   })
   /*
    * The terms are required only when the creator has to apply.
@@ -75,15 +101,35 @@ export const offerSchema = z
    * product rule and will keep moving. The database only enforces what is
    * always true: if a video count is present it is between 1 and 1000.
    */
-  .refine((v) => !v.needsApplication || v.description.trim().length > 0, {
+  /*
+   * A RETAINER MUST NAME SOMEBODY BEFORE IT CAN GO LIVE.
+   *
+   * Rashid, asked what a live retainer with an empty list should do:
+   * *"Refuse to make it live"*. An offer literally nobody can see is
+   * indistinguishable from a bug, and it would sit on the screen looking like a
+   * running campaign. Saving it switched OFF is fine — that is how you build
+   * one before you know who it is for.
+   *
+   * The database enforces the same rule in a deferred constraint trigger, so
+   * this is the polite half of it rather than the whole of it.
+   */
+  .refine(
+    (v) => v.kind !== 'retainer' || v.status !== 'active' || v.audience.trim().length > 0,
+    {
+      message:
+        'A live retainer needs at least one creator, or nobody can see it. Add creators, or set it to Switched off.',
+      path: ['audience'],
+    }
+  )
+  .refine((v) => !needsApplicationFor(v) || v.description.trim().length > 0, {
     message: 'An offer creators apply for needs a description of what to deliver',
     path: ['description'],
   })
-  .refine((v) => !v.needsApplication || v.videoCount !== null, {
+  .refine((v) => !needsApplicationFor(v) || v.videoCount !== null, {
     message: 'How many videos would they deliver?',
     path: ['videoCount'],
   })
-  .refine((v) => !v.needsApplication || v.rewardAmount !== null, {
+  .refine((v) => !needsApplicationFor(v) || v.rewardAmount !== null, {
     message: 'What does this offer pay?',
     path: ['rewardAmount'],
   });

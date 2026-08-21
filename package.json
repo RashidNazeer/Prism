@@ -22,6 +22,7 @@
     "verify:review": "node scripts/check-review.mjs",
     "verify:brands": "node scripts/check-brands.mjs",
     "verify:offer-requests": "node scripts/check-offer-requests.mjs",
+    "verify:offers": "node scripts/check-offers.mjs",
     "verify:responsive": "node scripts/check-responsive.mjs",
     "verify:chrome": "node scripts/check-chrome.mjs",
     "shots": "node scripts/shots.mjs",

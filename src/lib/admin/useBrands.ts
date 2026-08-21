@@ -61,6 +61,8 @@ export interface Brand {
 
 export type OfferStatus = 'active' | 'inactive';
 
+export type OfferKind = 'retainer' | 'volume' | 'high_commission';
+
 export interface Offer {
   id: string;
   brand_id: string;
@@ -81,6 +83,8 @@ export interface Offer {
   currency: string;
   status: OfferStatus;
   needs_application: boolean;
+  /** Which of the three kinds. See the 2026-08-21 audience migration. */
+  kind: OfferKind;
   created_at: string;
   updated_at: string;
 }
@@ -118,7 +122,7 @@ const BRAND_COLUMNS_INNER =
   `brand_commercials!inner(${COMMERCIAL_COLUMNS})`;
 
 const OFFER_COLUMNS =
-  'id, brand_id, badge_title, title, description, video_count, reward_amount, currency, status, needs_application, created_at, updated_at';
+  'id, brand_id, badge_title, title, description, video_count, reward_amount, currency, status, needs_application, kind, created_at, updated_at';
 
 export const PRODUCT_COLUMNS =
   'id, brand_id, name, external_product_id, image_url, price, currency, commission_rate, badge_title, is_active, created_at, updated_at';

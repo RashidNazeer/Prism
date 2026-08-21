@@ -746,6 +746,95 @@ labels. `/admin/offers/requests` still resolves to Requests by longest prefix
 even though Requests no longer sits under an Offers heading.
 `pnpm verify:chrome` 43 of 43 covers exactly that.
 
+## Offer kinds, and who is allowed to see an offer (2026-08-22)
+
+**Files:** `supabase/migrations/20260821190802_offer_kinds_and_audience.sql`,
+`supabase/functions/manage-brand/index.ts`, `src/lib/schemas/brand.ts`,
+`src/components/admin/OfferDialog.tsx`, `src/lib/admin/useAllOffers.ts`,
+`src/lib/admin/useManageBrand.ts`, `src/components/creator/OfferCard.tsx`,
+`scripts/check-offers.mjs`
+
+Rashid, from his boss: offers divide into three, and the type carries a guard
+rail rather than a note in the description.
+
+| kind | who sees it | application |
+| --- | --- | --- |
+| **Retainer campaign** | only named creators. Required, and a live one cannot be empty | admin's choice |
+| **Volume** | everyone, minus anyone named. His addition: exclude the people who already have their own deal | admin's choice |
+| **High commission** | everyone, unless narrowed to named creators | **forced off**, checkbox hidden |
+
+**THE LEAK THIS CLOSED WAS LIVE.** Before it, every approved creator could read
+every active offer, so all 41 creators on dev could read all 31 Penetrex deals:
+@dannydailyfinds is on \$800 and could see @erinragancooper is on \$2,000. The
+31 were backfilled to retainers named to whoever is already on them. Checked
+first, not assumed: 31 offers, 31 distinct (videos, reward) pairs, no two the
+same deal, every creator on exactly one.
+
+**Change rules**
+
+- **The rule is written ONCE**, in `offer_is_for(offer, kind, creator)`, which
+  is service-role only because it answers about anybody.
+  `can_see_offer(offer, kind)` is the wrapper `authenticated` may run and takes
+  no creator argument, so it cannot be asked about somebody else. The RLS policy
+  and the write gate both call the same body — two copies is how they drift into
+  disagreeing about who is allowed.
+- **`apply_for_offer` IS SECURITY DEFINER, so RLS does not protect it**, and
+  this is the item that would have made the whole feature decorative. Without
+  its own audience check, a creator holding only an offer id — a stale tab, a
+  copied link — could insert an application; the row then satisfies
+  `offers_select_own_requests` and grants a PERMANENT read; and approving it
+  charges `brand_commercials.budget_used`. A write path escalating into a read
+  policy, ending in money. The check goes BEFORE the duplicate check, or a
+  barred creator learns from the 55006 that they already have a row.
+- **Approving is gated by a TRIGGER on `offer_applications`**, not by editing
+  `review_offer_application`. That function has been re-issued five times
+  across five migrations; copying it again to add four lines is how a body gets
+  subtly retyped. The trigger fires only on the TRANSITION into approved, and
+  catches every path including direct SQL.
+- **`offers_select_own_requests` was NARROWED to pending and approved.** It is
+  permissive and OR'd with everything else, so it ignored the audience list
+  entirely: apply to a retainer, get rejected, and keep reading that creator's
+  private rate for ever. Live and finished jobs keep their offer's name on every
+  creator screen; a rejected request does not.
+- **The mode is stored ON the audience row**, not inferred from the kind.
+  Inferring it means switching an offer from Retainer to Volume silently turns
+  "these three may see it" into "these three may NOT", on live money, with
+  nothing on screen. A DEFERRED constraint trigger refuses the contradiction
+  instead. Deferred because saving a retainer moves the offer and its list in
+  some order, and a per-statement check would fire mid-flight.
+- **That trigger is scoped to the row that moved.** A constraint trigger must be
+  FOR EACH ROW, so a body that scanned every offer would be O(offers x rows) per
+  statement — fine on 31, ruinous later.
+- **`offer_audience` is staff-only and NOT in the realtime publication.** Its
+  rows name the other creators given the same private deal.
+- **`save_offer` was DROPPED and recreated**, not replaced: a new parameter
+  makes an overload, and PostgREST would have resolved some callers to the old
+  body, writing offers with the default kind and no audience under a success
+  toast.
+- **The admin pastes text; the server resolves it.** Handles or emails, newlines
+  or commas, resolved against `creator_directory` with the service key. The
+  browser never sends creator ids — a client that can name arbitrary uuids can
+  put a person on a private deal. Unmatched lines ride back on the successful
+  save and the dialog names them.
+- **The dialog will not save until the existing list has loaded.** The offer row
+  it is handed carries no audience, so seeding the box empty and saving would
+  wipe a retainer's whole list on an edit that meant to fix a typo.
+- **`kind` collided with an existing `kind`.** The admin filter had used that
+  word for `needs_application` (`'all' | 'application' | 'open'`). It is
+  `access` now, with its own dropdown beside the new one. Two "kind"s on one
+  filter bar is the mix-up where an admin filters by one, gets the other, and
+  every test still passes. `scripts/check-offer-requests.mjs` drives both.
+- **OfferCard stopped claiming "Open to every approved creator."** That is a
+  statement about audience and it is false on every restricted offer. It says
+  "It is yours to take" now, which is true of everything reaching that branch.
+
+**Proof:** `pnpm verify:offers`, 26 checks, all as a real signed-in creator
+against the database rather than against a screen — a screen that draws nothing
+proves nothing about what the policies would hand over. It covers both the read
+and the write, the secrecy of the list itself, the empty-live-retainer refusal,
+the mode-flip refusal, and that a creator keeps an offer they already have work
+on.
+
 ## The applications queue, as cards (2026-08-21)
 
 **Files:** `src/routes/admin/Applications.tsx`, `scripts/shots-admin.mjs`

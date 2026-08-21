@@ -17,7 +17,17 @@ import type { OfferStatus } from '@/lib/admin/useBrands';
 export const ALL_OFFERS_PAGE_SIZE = 20;
 
 export type OfferStatusFilter = 'all' | OfferStatus;
-export type OfferKindFilter = 'all' | 'application' | 'open';
+/**
+ * TWO DIFFERENT AXES, AND THEY USED TO SHARE THE WORD "KIND".
+ *
+ *  is whether a creator has to ask: it reads .
+ *  is the offer's TYPE, added 2026-08-21: retainer, volume or high
+ * commission. Both were called "kind" for about an hour, on the same filter
+ * bar, which is the class of mix-up where an admin filters by one and gets the
+ * other while every test still passes.
+ */
+export type OfferAccessFilter = 'all' | 'application' | 'open';
+export type OfferKindFilter = 'all' | 'retainer' | 'volume' | 'high_commission';
 export type AllOffersSort = 'newest' | 'oldest' | 'reward';
 
 export interface AllOffersFilters {
@@ -25,6 +35,8 @@ export interface AllOffersFilters {
   brandId: string;
   status: OfferStatusFilter;
   /** 'application' needs asking for, 'open' is anyone's to take. */
+  access: OfferAccessFilter;
+  /** Which of the three kinds of offer. A different axis from `access`. */
   kind: OfferKindFilter;
   sort: AllOffersSort;
   page: number;
@@ -34,6 +46,7 @@ export const DEFAULT_ALL_OFFERS_FILTERS: AllOffersFilters = {
   search: '',
   brandId: '',
   status: 'active',
+  access: 'all',
   kind: 'all',
   sort: 'newest',
   page: 1,
@@ -50,6 +63,7 @@ export interface AllOffersRow {
   currency: string;
   status: OfferStatus;
   needs_application: boolean;
+  kind: 'retainer' | 'volume' | 'high_commission';
   created_at: string;
   brand: { id: string; name: string; is_active: boolean } | null;
 }
@@ -79,7 +93,7 @@ const FACES_PER_OFFER = 4;
 
 const COLUMNS =
   'id, brand_id, badge_title, title, description, video_count, reward_amount, ' +
-  'currency, status, needs_application, created_at, ' +
+  'currency, status, needs_application, kind, created_at, ' +
   'brand:brands (id, name, is_active)';
 
 /**
@@ -106,7 +120,9 @@ export function useAllOffers(filters: AllOffersFilters) {
 
       if (filters.status !== 'all') q = q.eq('status', filters.status);
       if (filters.brandId) q = q.eq('brand_id', filters.brandId);
-      if (filters.kind !== 'all') q = q.eq('needs_application', filters.kind === 'application');
+      if (filters.access !== 'all')
+        q = q.eq('needs_application', filters.access === 'application');
+      if (filters.kind !== 'all') q = q.eq('kind', filters.kind);
       if (search) q = q.ilike('title', `%${search}%`);
 
       const order =
@@ -248,6 +264,97 @@ export function useOfferStatusCounts() {
       if (active.error) throw active.error;
       if (inactive.error) throw inactive.error;
       return { active: active.count ?? 0, inactive: inactive.count ?? 0 };
+    },
+  });
+}
+
+/**
+ * How many of each kind are RUNNING.
+ *
+ * Rashid's stated reason for the whole feature, alongside the guard rail:
+ * *"admin can see how mnay offfers of which type area ctually running"*. So
+ * "running" means live, not merely existing — a switched-off retainer is not a
+ * campaign anybody is on.
+ *
+ * Three head requests rather than a group-by, for the same reason the status
+ * counts are: PostgREST returns a count in a header and no rows at all, which
+ * is cheaper than fetching every offer to tally it in the browser.
+ */
+export function useOfferKindCounts() {
+  return useQuery({
+    queryKey: ['admin', 'offer-kind-counts'],
+    staleTime: 30_000,
+    queryFn: async (): Promise<Record<'retainer' | 'volume' | 'high_commission', number>> => {
+      const supabase = getSupabase();
+      const kinds = ['retainer', 'volume', 'high_commission'] as const;
+
+      const results = await Promise.all(
+        kinds.map((k) =>
+          supabase
+            .from('offers')
+            .select('id', { count: 'exact', head: true })
+            .eq('status', 'active')
+            .eq('kind', k)
+        )
+      );
+
+      const out = { retainer: 0, volume: 0, high_commission: 0 };
+      kinds.forEach((k, i) => {
+        const r = results[i]!;
+        if (r.error) throw r.error;
+        out[k] = r.count ?? 0;
+      });
+      return out;
+    },
+  });
+}
+
+/**
+ * Who is named on one offer, for the edit form.
+ *
+ * STAFF ONLY, and the policy on `offer_audience` is what makes that true rather
+ * than this hook: the table has one SELECT policy and it is `is_staff()`. A
+ * creator running this gets nothing, which matters because these rows name the
+ * other people who were given the same private rate.
+ *
+ * It returns HANDLES, not ids, because handles are what the admin pasted in and
+ * what they will recognise when they open the offer again. A creator with no
+ * TikTok handle on their application falls back to their email, so nobody
+ * silently vanishes from a list they are actually on.
+ */
+export function useOfferAudience(offerId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['admin', 'offer-audience', offerId ?? 'none'],
+    enabled: Boolean(offerId),
+    staleTime: 15_000,
+    queryFn: async (): Promise<string[]> => {
+      const supabase = getSupabase();
+
+      const { data: rows, error } = await supabase
+        .from('offer_audience')
+        .select('creator_id')
+        .eq('offer_id', offerId!);
+      if (error) throw error;
+      if (!rows?.length) return [];
+
+      const { data: people, error: peopleError } = await supabase
+        .from('creator_directory')
+        .select('id, email, tiktok_handle')
+        .in(
+          'id',
+          rows.map((r) => r.creator_id)
+        );
+      if (peopleError) throw peopleError;
+
+      const label = new Map<string, string>();
+      for (const p of people ?? []) {
+        label.set(p.id as string, p.tiktok_handle ? `@${p.tiktok_handle}` : (p.email as string));
+      }
+
+      return rows
+        .map((r) => label.get(r.creator_id as string))
+        .filter((v): v is string => Boolean(v))
+        .sort((a, b) => a.localeCompare(b));
     },
   });
 }

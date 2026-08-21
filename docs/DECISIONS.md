@@ -1353,3 +1353,14 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   `FilterTabs` **wraps** rather than scrolls, because `FilterBar`'s own rule
   is that a row which scrolls sideways hides a filter behind an edge — it had
   been overflowing the page at 375px on every five-state queue.
+- 2026-08-22: **An offer's audience is enforced in RLS and in the write path,
+  never in the form**, and `offers_select_own_requests` was narrowed to pending
+  and approved requests. Keeping it open for rejected and withdrawn ones meant
+  anybody who applied once kept reading a private rate for ever, which is the
+  person most likely to test it. Work already agreed still keeps its offer's
+  name, which was that policy's original and still-valid reason to exist.
+  Rejected: putting the check only in the Edge Function (`apply_for_offer` is
+  SECURITY DEFINER and is the boundary); an array column on `offers` instead of
+  a table (`replica identity full` would have broadcast the whole audience to
+  every creator who could see the offer); and inferring allow/deny from the kind
+  (a type change would silently invert who is on the list).

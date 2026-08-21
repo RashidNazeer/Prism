@@ -80,7 +80,7 @@ export function BrandDialog({
       },
       {
         onSuccess: (saved) => {
-          onSaved?.(saved as Brand);
+          onSaved?.(saved.row as Brand);
           onClose();
         },
       }

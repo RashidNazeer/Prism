@@ -94,6 +94,31 @@ without asking.
 
 ---
 
+## Offer kinds and audiences (2026-08-22)
+
+Three kinds of offer, and the kind decides who can see it: **Retainer** (named
+creators only), **Volume** (everyone minus anyone excluded), **High commission**
+(no application ever, optionally narrowed).
+
+**It closed a live leak.** All 41 creators on dev could read all 31 Penetrex
+deals, rates included. The 31 are retainers now, each named to whoever is
+already on them; nobody lost anything, because you keep any offer you have a
+request on.
+
+**Enforced in the database, twice.** The browsing policy hides it, and
+`apply_for_offer` — which is SECURITY DEFINER and so bypasses RLS entirely —
+refuses it. Missing that second half would have left a creator holding an offer
+id able to apply, get read access through their own application, and have money
+charged on approval.
+
+**Proof:** `pnpm verify:offers` 26 checks, all as a real signed-in creator.
+Also green: `verify:brands`, `verify:offer-requests`, `verify:content`,
+`verify:rls`.
+
+Details in FEATURE_MAP under "Offer kinds"; the four things left are PARKED 21.
+
+---
+
 ## The requests queue, as cards (2026-08-21)
 
 *"i like it do something with this as well do the same"*, so `/admin/offers/requests`

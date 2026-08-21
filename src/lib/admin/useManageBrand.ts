@@ -37,6 +37,20 @@ export type OfferSavePayload = {
   currency: string;
   status: 'active' | 'inactive';
   needsApplication: boolean;
+
+  /*
+   * BOTH REQUIRED, NEVER OPTIONAL, and that is a security decision rather than
+   * a typing preference. Made optional, TypeScript stays green while a caller
+   * omits them, `save_offer` writes its defaults, and a retainer meant for
+   * three named creators ships to every creator on the platform with a success
+   * toast on screen. A compiler error is the cheapest possible place to catch
+   * that.
+   *
+   * `audience` is the raw pasted text. Resolving a handle to a person is a
+   * staff-only lookup and happens in the Edge Function.
+   */
+  kind: 'retainer' | 'volume' | 'high_commission';
+  audience: string;
 };
 
 export type OfferDeletePayload = { action: 'offer.delete'; offerId: string };
@@ -78,16 +92,30 @@ export type ManagePayload =
   | ProductSavePayload
   | ProductDeletePayload;
 
+export interface ManageResult {
+  row: Brand | Offer | BrandProduct;
+  /** Pasted lines that matched no creator. Empty on everything but offers. */
+  unmatched: string[];
+}
+
 export function useManageBrand() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (payload: ManagePayload): Promise<Brand | Offer | BrandProduct> => {
+    mutationFn: async (payload: ManagePayload): Promise<ManageResult> => {
       const { data, error } = await getSupabase().functions.invoke('manage-brand', {
         body: payload,
       });
       if (error) throw new Error(await messageFrom(error));
-      return (data as { result: Brand | Offer | BrandProduct }).result;
+      const body = data as { result: Brand | Offer | BrandProduct; unmatched?: string[] };
+      /*
+       * `unmatched` rides back on a SUCCESSFUL save of an offer whose pasted
+       * creator list had lines we could not match to anybody. Rashid asked for
+       * exactly that: save what matched, name what did not. It is carried
+       * through here rather than swallowed, because the only place it can be
+       * shown is the dialog that sent it.
+       */
+      return { row: body.result, unmatched: body.unmatched ?? [] };
     },
 
     onSuccess: () => {
@@ -98,6 +126,10 @@ export function useManageBrand() {
       void queryClient.invalidateQueries({ queryKey: ['admin', 'brand'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'offers'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'offer-counts'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'all-offers'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'all-offer-counts'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'offer-kind-counts'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'offer-audience'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
       // The creator hub reads the same rows through different queries, so an
