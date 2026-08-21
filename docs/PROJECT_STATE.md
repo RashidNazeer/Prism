@@ -42,6 +42,43 @@ page view and will want a rollup at scale.
 **Do not re-explore the codebase to get oriented.** This file, then PARKED, then
 only the files the chosen job names.
 
+**Since then, 2026-08-21:** Rashid asked what else the TikTok API offers and
+whether shop GMV is reachable. Answered by probing the live account rather than
+reading docs — `pnpm probe:tiktok`, new. No code changed; the findings are in
+OPERATIONS and the one that needs a decision is PARKED 19. **Nothing is queued
+off the back of it.**
+
+---
+
+## What else the TikTok API will give us (2026-08-21)
+
+A question, not a build. Rashid: *"which other apis are availale can we somehow
+fetch shop gmv the shop ilnked with ad account? Also note that we can apply for
+a certin api if required."*
+
+Answered against the live Penetrex account with a new tool, `pnpm probe:tiktok`,
+which walks every candidate endpoint and prints TikTok's own verdict. Full
+results in `docs/OPERATIONS.md`; three things worth knowing at this level.
+
+**Shop GMV, at store level, is already granted and we are not using it.**
+`/gmv_max/report/get/` answers by day, by hour and by product. It is the obvious
+source for a brand-level admin dashboard and needs no application.
+
+**A video's GMV is not its ads' GMV.** Nine Penetrex videos earned \$216.92 in a
+day with zero spend, so creators already see organic sales and a video with no
+ads on it is not an empty card. Nothing to build; something not to get wrong in
+copy.
+
+**Total shop GMV and TikTok's own affiliate commission are in a different
+product entirely** — the TikTok Shop Partner API, its own app, signing and
+seller authorisation, roughly a week or two of review. PARKED 19 carries what it
+would give us and the trigger for raising it.
+
+Two smaller findings: `/report/integrated/get/` is refused for a missing SCOPE
+rather than a missing grant, so impressions, clicks and views are ours to unlock
+by editing the TikTok app and re-authorising; and GMV Max reporting has no
+engagement metrics at all, confirmed one metric at a time.
+
 ---
 
 ## Money that is right when there is more than one brand (2026-08-20)

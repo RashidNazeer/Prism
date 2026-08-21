@@ -1662,6 +1662,20 @@ a fact about the video; answering it from the selected range would flip the
 badge as somebody moved a filter. On the real roster 44 of 46 videos carry ads,
 so two creators would otherwise be staring at blank cards with no explanation.
 
+**"No ads" does not mean "no money", and the screens must never imply it.**
+Confirmed by probe on 2026-08-21: `gross_revenue` on the video report is what
+the VIDEO sold, not what its ads sold. Nine of Penetrex's videos earned \$216.92
+on a single day with a `cost` of exactly 0.00. So a creator can carry GMV on a
+video no brand ever advertised, and we already store it — a zero-cost row is a
+real row, not a missing one. The opposite reading, that a video without ads has
+nothing to show, is the one to watch for in copy.
+
+**A brand's own Seller Center will always read HIGHER than ours.** The store
+total for that day was \$2,349.04 against \$2,121.52 across every video, and the
+gap is LIVE and product-card selling, which has no video to hang off. Our
+figures are per video by design; never describe them, or a leaderboard built
+from them, as the brand's GMV.
+
 ## Paid Collabs: WurxBase, vendored (2026-08-18)
 
 The whole WurxBase dashboard runs inside our admin at `/admin/collabs`, sidebar

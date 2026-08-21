@@ -472,56 +472,105 @@ check their own region and refuse before calling out. Verified working:
 ap-northeast-1, ap-southeast-1, eu-west-2, us-east-1.
 
 **GMV Max reporting is v2.0, not v1.3.** At v1.3 the report path exists and
-fails with a useless "ERROR Message." and the video endpoint 404s. Not yet
-built; noted here so the next person does not lose the day to it.
+fails with a useless "ERROR Message." and the video endpoint 404s. Built and
+syncing since 2026-08-18; noted here so the next person does not lose the day
+to it.
 
-### What the GMV Max API will and will not give us (probed 2026-08-18)
+### What the TikTok API will and will not give us
 
-Every row below was asked of the live Biomax-PX account, not read in a doc. Use
-`raw.probe` on `tiktok-connect` (admin only, GET, `/open_api/` only) to re-check
-any of it in one request.
+Probed 2026-08-18, re-probed in full 2026-08-21 against the live Penetrex
+account. Nothing here is read from a doc: the docs and the grant disagree, and
+the only honest source is what the account answers.
 
-**Two reporting endpoints, and they do different jobs.**
+```bash
+pnpm probe:tiktok              # every candidate endpoint, with TikTok's own verdict
+pnpm probe:tiktok --metrics    # one metric per request, the only way to get a full list
+pnpm probe:tiktok --reconcile  # add every video up and compare it with the store
+```
 
-| | `/gmv_max/video_list/report/get/` | `/gmv_max/report/get/` |
+It creates a throwaway admin in dev to authenticate with and deletes it again,
+so it needs `SUPABASE_SERVICE_KEY`. It cannot write to TikTok: it goes through
+the `raw.probe` action, which is GET only, `/open_api/` only, TikTok's host
+only.
+
+**READ THE REFUSAL. There are two of them and they mean opposite things.**
+
+| TikTok's words | what it means | who can fix it |
 | --- | --- | --- |
-| Dimensions | `item_id` **only** | `stat_time_day`, `stat_time_hour`, `spu_id` |
-| Metrics | cost, gross_revenue, orders, roi, cost_per_order | the same **plus `net_cost`** |
-| Scope | one row per video | the whole store |
+| `advertiser does not grant you /x/:GET permission` | the ASSET was never granted to this app at authorisation | TikTok, on application, or a wider grant from the advertiser |
+| `Permission error: ... lacks the required scope ... reauthorize your API App` | OUR APP does not carry that scope at all | us, in the TikTok app settings, then Rashid re-authorises |
 
-`net_cost` is rejected on the video endpoint and accepted on the store one. It is
-materially different: 1252.41 against a `cost` of 1492.25 for the same two days,
-so they are not interchangeable. We show `cost`.
+The second one is the cheap one and it is easy to misread as the first.
 
-**Per video (= per creative) we get:** spend, GMV, orders, ROI, cost per order,
-currency. There is no level below the video: `ad_id`, `creative_id`,
-`campaign_id` and `material_id` all answer `Invalid dim: ... is not exist`, so
-several ad variants of one video cannot be told apart.
+**Granted today, and answering.**
 
-**Per product (`spu_id`) the split is lopsided and worth knowing:**
+| endpoint | gives |
+| --- | --- |
+| `/gmv_max/video_list/report/get/` (v2.0) | per video: cost, gross_revenue, orders, roi, cost_per_order |
+| `/gmv_max/report/get/` (v2.0) | the STORE: the same plus `net_cost`, by day, by hour, by product |
+| `/gmv_max/store/list/` | the stores under an ad account, and `store_authorized_bc_id` |
+| `/gmv_max/identity/get/` | the shop's own TikTok identity, name and avatar |
+| `/gmv_max/store/shop_ad_usage_check/` | whether custom shop ads are running |
+| `/gmv_max/video/get/` | videos eligible for custom shop ads (empty on this shop) |
+| `/advertiser/info/`, `/oauth2/advertiser/get/` | the ad accounts, their currency and timezone |
+
+**The metric list is complete and it is short.** Asked one metric per request on
+2026-08-21, because the report names only the FIRST metric it dislikes and a
+long list therefore proves nothing:
+
+- store level: `cost`, `net_cost`, `gross_revenue`, `orders`, `roi`,
+  `cost_per_order`, and `currency` arrives whether asked for or not.
+- video level: the same **minus `net_cost`**.
+
+Everything else is refused by name: impressions, clicks, ctr, cpc, cpm,
+video_views, conversion, conversion_rate, buyers, unit_sales, refund,
+gross_revenue_roi, net_cost_roi, live_gmv, product_gmv, organic_gmv, total_gmv,
+gmv. **There are no view or engagement figures anywhere in GMV Max reporting.**
+
+**Dimensions.** The store report takes `stat_time_day`, `stat_time_hour` and
+`spu_id`, and refuses `item_id`, `campaign_id` and `order_source`. The
+video report takes `item_id` and ONLY `item_id`: it refuses `stat_time_day`
+as a second dimension, which is why the sync asks day by day rather than once
+per range. `/gmv_max/live_list/report/get/` and
+`/gmv_max/product_list/report/get/` do not exist, at either version.
+
+**Spend per product is a dead end**, though GMV per product is fine: every penny
+of cost lands in the `spu_id = -1` bucket.
+
+**The video report carries ORGANIC sales, and this is the important one.** On
+2026-08-15 the store had 9,430 videos with a row, and NINE of them earned money
+with no ad spend at all, \$216.92 of it. So `gross_revenue` on a video is what
+that video sold, not what its ads sold, and a creator sees their GMV whether or
+not the brand ever ran an ad on the video. We already store it: `cost` is
+simply 0 on those rows.
+
+**The store total is bigger than its videos, and always will be.** Same day:
 
 ```
-spu_id -1                  cost 20039.29   gmv     0.00   orders   0
-spu_id 1730172319300882989 cost     0.00   gmv 14607.95   orders 896
-spu_id 1730171871984194093 cost     0.00   gmv 11137.91   orders 582
+store report          cost 1492.25   gmv 2349.04   orders 125
+sum of 9,430 videos   cost 1380.72   gmv 2121.52   orders 112
 ```
 
-So **GMV and orders per product: yes. Spend and therefore ROI per product: no**,
-because every penny of cost lands in the `-1` bucket.
+The \$227.52 gap is LIVE and product-card selling, which has no `item_id` to
+hang off. **Never present a store figure as the sum of the creators' videos**,
+and never derive one from the other.
 
-**Store level by day or by hour works**, and we do not use it yet: e.g.
-`2026-08-14  cost 1282.87  gmv 1945.54  orders 104`, and 24 rows for a single
-day at `stat_time_hour`. That is the obvious source for a brand-level admin
-dashboard.
+**Not granted, and each would need TikTok to widen the authorisation:**
+`/gmv_max/campaign/get/`, `/campaign/gmv_max/info/` (so daily budget, target
+ROAS and optimisation mode are unavailable), `/gmv_max/exclusive_authorization/get/`,
+`/identity/get/`, `/bc/get/`, `/bc/asset/get/`, `/advertiser/balance/get/`.
 
-**Refused outright:** `/gmv_max/campaign/get/` answers `40001 advertiser does
-not grant you /gmv_max/campaign/get/:GET permission`, at both v1.3 and v2.0. So
-**daily budget, target ROAS and optimisation mode are unavailable** — but note
-the wording is *not granted*, not *does not exist*, so it is a scope to ask
-TikTok for rather than a wall.
+**Missing a SCOPE rather than a grant, which is ours to add:**
+`/report/integrated/get/` and `/campaign/get/`. The integrated report is the
+ordinary Ads Manager reporting API and is the only route inside this app to
+impressions, clicks and video views. Adding the scope in the TikTok app settings
+and having Rashid re-authorise is the whole job; no application to TikTok.
 
-**Not supported as metrics anywhere in GMV Max reporting:** impressions, clicks,
-ctr, video_views, conversion, gross_revenue_roi.
+**Total shop GMV — every sale the shop makes, not just the ad-driven ones — is
+not in this API at all.** It lives in the TikTok Shop Partner API, which is a
+different product with its own app, its own signing and its own authorisation.
+See PARKED for what it would give us and what it costs to get.
+
 
 ### Nothing here can delete prod, and nothing here can touch WurxBase
 

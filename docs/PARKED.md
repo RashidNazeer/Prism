@@ -473,3 +473,46 @@ day. Migrations `20260820200000` through `20260820230000`.
   proven by reasoning and by the existing suites, not by a test that maps two
   accounts and asserts the sums add. That is the one I would write next.
 
+---
+
+## 19. The TikTok Shop Partner API, for GMV that is not ours to see yet
+
+**Parked 2026-08-21. Trigger: a brand asks why our figure is lower than their
+Seller Center, or Rashid wants commission owed to come from TikTok rather than
+from a rate we hold ourselves.**
+
+Rashid asked what else the API can give us and whether shop GMV is reachable.
+Answered by probing rather than reading: see OPERATIONS. Short version, the ad
+account gives us **ad-account GMV**, which now demonstrably includes organic
+sales on a video, but never the shop's whole trade.
+
+**What we cannot get from the ads app, at any scope:**
+
+- total shop GMV across every channel, so our figure will always sit BELOW the
+  number a brand reads in Seller Center, and somebody will eventually ask why;
+- the affiliate commission TikTok itself calculated for a creator. Today the
+  money we owe is our own arithmetic against a rate we store, which is correct
+  by our own rules and unverifiable against theirs;
+- creator identity on a video. We know a video is a creator's because the
+  creator pasted the link and an admin approved it, not because TikTok said so.
+
+**Where those actually live.** `https://open-api.tiktokglobalshop.com`, the
+TikTok Shop Partner API. Separate app on partner.tiktokshop.com, separate
+App Key and App Secret, HMAC-SHA256 signing on every request, and a **seller**
+authorisation rather than an advertiser one, so each brand grants it once.
+Paths are `{category}/{version}/{action}`:
+
+| category | what it answers |
+| --- | --- |
+| `analytics` | `shop/performance`, `shop_videos/performance`, `shop_videos/{id}/performance`, `shop_products/performance`, `shop_skus/performance` — GMV and SKU orders for the WHOLE shop and per video, ads or not |
+| `affiliate_seller` | `orders/search` (affiliate orders, with the creator and the commission), `open_collaborations/creator_content_details`, `marketplace_creators/{id}` |
+| `order`, `finance` | order lines and settled statements, if payouts ever need reconciling |
+
+**Cost of getting it:** a Partner Center account, an app, a scope request and a
+review that runs to a week or two. Not a code change we can make alone, which is
+exactly why it is parked rather than started.
+
+**Do not confuse it with the ads app.** Different host, different credentials,
+different authorisation. Nothing about it touches `tiktok_connections`, and a
+seller granting it does not grant anything about ad spend.
+
