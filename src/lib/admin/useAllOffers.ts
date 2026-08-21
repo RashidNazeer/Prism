@@ -54,11 +54,28 @@ export interface AllOffersRow {
   brand: { id: string; name: string; is_active: boolean } | null;
 }
 
+/** One creator on an offer, enough to draw a face and write a name beside it. */
+export interface OfferFace {
+  id: string;
+  name: string | null;
+  handle: string | null;
+}
+
 /** How many creators are on an offer, and how many are waiting on a decision. */
 export interface OfferPeople {
   approved: number;
   pending: number;
+  /**
+   * The approved creators, for the face stack on the card. Capped, because a
+   * card shows three and the number beside them comes from `approved`: keeping
+   * every row here would make the size of this object depend on how popular an
+   * offer got, for no gain on screen.
+   */
+  faces: OfferFace[];
 }
+
+/** Three fit on a card; the fourth is kept so the overflow count is honest. */
+const FACES_PER_OFFER = 4;
 
 const COLUMNS =
   'id, brand_id, badge_title, title, description, video_count, reward_amount, ' +
@@ -118,18 +135,49 @@ export function useOfferPeople(offerIds: string[]) {
     enabled: offerIds.length > 0,
     staleTime: 15_000,
     queryFn: async (): Promise<Record<string, OfferPeople>> => {
+      /*
+       * The name and the handle are ON this row, not on `profiles`. They were
+       * copied here when the creator asked, so this stays one read for the
+       * whole page rather than a read plus an embed that RLS would have to be
+       * reasoned about separately.
+       */
       const { data, error } = await getSupabase()
         .from('offer_applications')
-        .select('offer_id, status')
+        .select('offer_id, status, creator_id, creator_name, creator_handle')
         .in('offer_id', offerIds)
-        .in('status', ['approved', 'pending']);
+        .in('status', ['approved', 'pending'])
+        /*
+         * Oldest first, so the faces on a card are the people who have been on
+         * the offer longest rather than whoever the database happened to return
+         * first. Without an explicit order the same offer can draw a different
+         * three on the next page view, which reads as data changing.
+         */
+        .order('created_at');
       if (error) throw error;
 
+      type Row = {
+        offer_id: string;
+        status: string;
+        creator_id: string | null;
+        creator_name: string | null;
+        creator_handle: string | null;
+      };
+
       const people: Record<string, OfferPeople> = {};
-      for (const row of (data ?? []) as { offer_id: string; status: string }[]) {
-        const p = (people[row.offer_id] ??= { approved: 0, pending: 0 });
-        if (row.status === 'approved') p.approved += 1;
-        else p.pending += 1;
+      for (const row of (data ?? []) as Row[]) {
+        const p = (people[row.offer_id] ??= { approved: 0, pending: 0, faces: [] });
+        if (row.status === 'approved') {
+          p.approved += 1;
+          if (p.faces.length < FACES_PER_OFFER && row.creator_id) {
+            p.faces.push({
+              id: row.creator_id,
+              name: row.creator_name,
+              handle: row.creator_handle,
+            });
+          }
+        } else {
+          p.pending += 1;
+        }
       }
       return people;
     },

@@ -42,11 +42,47 @@ page view and will want a rollup at scale.
 **Do not re-explore the codebase to get oriented.** This file, then PARKED, then
 only the files the chosen job names.
 
-**Since then, 2026-08-21:** Rashid asked what else the TikTok API offers and
-whether shop GMV is reachable. Answered by probing the live account rather than
-reading docs — `pnpm probe:tiktok`, new. No code changed; the findings are in
-OPERATIONS and the one that needs a decision is PARKED 19. **Nothing is queued
-off the back of it.**
+**Since then, 2026-08-21, two things:**
+
+1. Rashid asked what else the TikTok API offers and whether shop GMV is
+   reachable. Answered by probing the live account rather than reading docs —
+   `pnpm probe:tiktok`, new. No code changed; the findings are in OPERATIONS and
+   the one that needs a decision is PARKED 19.
+2. **The admin offers screen was rebuilt as a grid of cards** on his
+   instruction. Waiting on his verdict; the test checklist was given in chat.
+
+---
+
+## The offers grid (2026-08-21)
+
+Rashid: *"Look at the offers ui how boring it is ... horizontal cards rather
+than having one row it's wasting the time ... i am expecting something perfect
+polish the ui please."*
+
+`/admin/offers` was one full-width row per offer with four labelled columns. It
+is a grid now: 1 / 2 / 3 / 4 columns at 375 / 640 / 1280 / 1536, `rounded-md`
+because he asked for a very low radius, three sections divided by hairlines, and
+a card that carries only the four things he named — brand, offer, money, people.
+Everything else moved into a panel the card opens.
+
+**The open card spans its whole row**, with the details beside it above `lg`.
+Expanding in place left a hole, because a grid row is as tall as its tallest
+item. That, and the rest of the reasoning, is in FEATURE_MAP under "The offers
+grid"; the decision and what was rejected are in DECISIONS.
+
+**Creator faces are on the cards**, three then +N, from `CreatorStack` (new,
+`src/components/work/`). The names come off `offer_applications` rows that
+already carried them, so the page still costs one grouped read.
+
+**`pnpm shots:admin <path>` is new** and is how this was checked: both themes at
+375, 768, 1024 and 1440, horizontal-scroll check at each, console errors
+reported, and a second set with a card open via `SHOT_CLICK`. It makes its own
+throwaway admin, so no admin password is needed to look at an admin screen any
+more. All eight widths clean, no console errors.
+
+**Not done, deliberately:** Brands and Contests still use `rounded-xl` cards.
+The low radius was asked for on this screen and was not applied to the others
+without asking.
 
 ---
 

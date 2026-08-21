@@ -301,6 +301,23 @@ node scripts/create-admin.mjs suite-runner@wurxmediahub.test "<a password>" admi
 # then delete the auth user and its audit rows with the service key
 ```
 
+### Looking at an admin screen without a password
+
+```bash
+pnpm shots:admin /admin/offers              # both themes, 375 / 768 / 1024 / 1440
+SHOT_CLICK='button[aria-controls^="offer-details"]' pnpm shots:admin /admin/offers
+```
+
+Every other browser suite wants `ADMIN_EMAIL` and `ADMIN_PASSWORD`. This one
+makes a throwaway admin with the service key, signs in through the real login
+form, and deletes it in a `finally`. It also reports horizontal page scroll at
+each width and any console error, which is how "it works on a phone" gets
+proved rather than asserted. Needs a server: `pnpm build` then `pnpm preview`.
+
+`SHOT_CLICK` takes a second set of shots with something open. Half of a screen
+carrying an accordion or a drawer is invisible in a shot of its resting state,
+and that is usually the half being reviewed.
+
 ## 4. Database changes
 
 ```powershell

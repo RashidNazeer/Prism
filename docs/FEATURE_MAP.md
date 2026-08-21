@@ -693,6 +693,75 @@ offers.
 - Applying uses the SAME `ApplyDialog` as the brand hub. Two apply paths that
   drift apart is how one of them ends up sending something different.
 
+## The offers grid (2026-08-21)
+
+**Files:** `src/routes/admin/AllOffers.tsx`, `src/lib/admin/useAllOffers.ts`,
+`src/components/work/CreatorStack.tsx`, `src/components/work/CreatorFace.tsx`,
+`scripts/shots-admin.mjs`
+
+Rashid: *"Look at the offers ui how boring it is ... horizontal cards rather
+than having one row it's wasting the time ... card will be minimal ... just
+show mian thing such as offer name, deal value ad brand name that's it but
+somethign extra for creators we can show avatras ... keep the corner radius very
+low and clicking on it should show details ... i am expecting something perfect
+polish the ui please."*
+
+It was one full-width row per offer carrying four labelled columns. Now it is a
+grid: 1 / 2 / 3 / 4 columns at 375 / 640 / 1280 / 1536.
+
+**The card says four things and hides the rest.** Brand, offer, money, people.
+The per-video rate, the type, what has been filmed and when it was added all
+moved into the panel that opens. A card that shows everything is a row with
+corners.
+
+**The money is the largest thing on it and its caption carries the rate.** The
+caption said "for 5 videos", which every one of Rashid's titles already says a
+line above, so the biggest element on the card was an echo. `$40 each` is the
+number two offers are actually compared on, and it is the only arithmetic on the
+screen.
+
+**The title is clamped to two lines AND floored at two lines.** Clamped so a
+long one cannot make a card taller than the one beside it; floored so a short
+one cannot make it shorter. In a grid, cards of unequal height read as a bug.
+
+**THE OPEN CARD SPANS THE WHOLE ROW.** Expanding in place left a hole: a grid row
+is as tall as its tallest item, so the two cards beside an open one kept their
+height and the space under them went blank. It spans every column instead, and
+above `lg` the details sit BESIDE the card rather than under it, so what was
+clicked stays the size and shape it was clicked at. The middle section is
+`flex-1` so the stretch lands there and not as a gap under the footer.
+
+**Open state is held by offer id, never by index.** A filter or a page change
+reshuffles the list, and an index would leave a different offer standing open
+with somebody else's details under it. `setFilters` closes whatever is open.
+
+**The panel animates opacity and a 6px rise, NOT height.** It is a column child
+on a phone and a row child on a laptop; a height animation reads as an accordion
+in one and as an unfurling flag in the other.
+
+**Faces come from `offer_applications`, not from a join.** `creator_name` and
+`creator_handle` were copied onto that row when the creator asked, so the page
+still costs ONE grouped read. `useOfferPeople` keeps four per offer
+(`FACES_PER_OFFER`) and the count beside them comes from `approved`, so the
++N is honest without the cache holding two hundred names for a popular offer.
+Every avatar on the page is signed in one call by `useCreatorAvatars`.
+
+**`CreatorStack` is one component for the same reason `CreatorFace` is.**
+Three faces, overlapped by a third of their width, each ringed in the surface
+colour so they are cut out of each other rather than smudged together, then +N.
+It takes `total` separately from `faces` precisely so the two can disagree.
+
+**Radius is `rounded-md` here, not the `rounded-xl` of Brands and Contests.**
+That is his "keep the corner radius very low", asked for on this screen. The
+other card screens have NOT been changed to match — raise it if the difference
+starts to show.
+
+**Reviewing it:** `pnpm shots:admin /admin/offers` renders both themes at 375,
+768, 1024 and 1440, checks for horizontal page scroll and reports console
+errors. `SHOT_CLICK='button[aria-controls^="offer-details"]'` takes a second
+set with a card open, because half of a screen with an accordion on it is
+invisible in a shot of its resting state.
+
 ## The pipeline, and the creator's dashboard
 
 **Files:** `src/lib/offer-stages.ts`, `src/lib/creator/useMyWork.ts`,

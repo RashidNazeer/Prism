@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -31,6 +31,7 @@ export function CreatorFace({
   handle,
   size = 36,
   className,
+  style,
 }: {
   /** Signed URL from `useCreatorAvatars`. Undefined is normal, not an error. */
   src?: string | null;
@@ -39,6 +40,12 @@ export function CreatorFace({
   /** Rendered size in px. A number, so a table row can ask for exactly one. */
   size?: number;
   className?: string;
+  /**
+   * Merged AFTER the size, so a caller can add layout — `CreatorStack` uses it
+   * for the negative margin and stacking order that make faces overlap — but
+   * cannot accidentally resize the disc without also resizing its letter.
+   */
+  style?: CSSProperties;
 }) {
   const [loaded, setLoaded] = useState(false);
   const [broken, setBroken] = useState(false);
@@ -54,7 +61,7 @@ export function CreatorFace({
      */
     <span
       aria-hidden
-      style={{ width: size, height: size, fontSize: Math.round(size * 0.4) }}
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.4), ...style }}
       className={cn(
         'ring-line relative grid shrink-0 place-items-center overflow-hidden rounded-full ring-1 select-none',
         // The base state, and the thing you see first, every time.

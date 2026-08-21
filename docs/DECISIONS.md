@@ -1334,3 +1334,13 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   security is not applied to DELETE events. `20260813230000` had already found
   and fixed this for two contest tables; these four predate that understanding.
   Nothing in `src/` reads the old row, so it cost no feature.
+- 2026-08-21: **The admin offers list is a grid of cards, and an open card
+  spans its whole row.** Rashid asked for cards instead of rows, minimal content
+  and a very low radius. Expanding a card in place was tried first and left a
+  hole in the grid, because a grid row is as tall as its tallest item; spanning
+  every column removes it and gives the details room to sit beside the card
+  above `lg`. Rejected: a dialog, which hides the list you are comparing
+  against; and a detail ROUTE, which the admin does not have for offers and
+  which would have meant inventing one to satisfy a click. The card's radius is
+  `rounded-md` against `rounded-xl` everywhere else — his instruction, on this
+  screen, and deliberately not applied to Brands and Contests without asking.
