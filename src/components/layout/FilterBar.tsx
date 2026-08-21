@@ -57,6 +57,18 @@ export function FilterBar({
  * Every admin screen had grown its own: different heights, different radii,
  * three different ways of showing a count. This is the contests one, which is
  * the one Rashid approved.
+ *
+ * IT WRAPS, AND IT IS NOT ALLOWED TO REFUSE TO SHRINK. It was `shrink-0` with
+ * `shrink-0` tabs inside it, which at 375px made any screen with five states —
+ * Requests, and every other queue with Waiting / Approved / Rejected /
+ * Withdrawn / All — wider than the phone it was on, so the whole PAGE scrolled
+ * sideways and "All" sat off the edge. Found on 2026-08-21 by the width check
+ * in `shots-admin.mjs`; it had been true since the row was shared.
+ *
+ * Wrapping rather than scrolling, deliberately, and for the reason `FilterBar`
+ * itself gives above: a row that scrolls sideways hides a filter behind an edge,
+ * and on a phone nobody finds it. Nothing changes at any width where the tabs
+ * already fit.
  */
 export function FilterTabs({
   label,
@@ -73,7 +85,7 @@ export function FilterTabs({
       role="tablist"
       aria-label={label}
       className={cn(
-        'bg-surface-2 border-line flex shrink-0 items-center gap-0.5 rounded-md border p-1',
+        'bg-surface-2 border-line flex max-w-full flex-wrap items-center gap-0.5 rounded-md border p-1',
         className
       )}
     >

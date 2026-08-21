@@ -693,6 +693,57 @@ offers.
 - Applying uses the SAME `ApplyDialog` as the brand hub. Two apply paths that
   drift apart is how one of them ends up sending something different.
 
+## The requests queue, as cards (2026-08-21)
+
+**Files:** `src/routes/admin/OfferRequests.tsx`,
+`src/components/layout/FilterBar.tsx`, `scripts/check-offer-requests.mjs`
+
+Rashid, straight after the offers grid: *"i like it do something with this as
+well do the same"*. Same language throughout — `rounded-md`, three sections
+split by hairlines, the money as the hero with the rate as its caption, an open
+card spanning the row with the details beside it above `lg`.
+
+**IT IS A QUEUE, AND THAT CHANGES THE STRUCTURE.** Every card carries a control
+that writes: Approve and Reject on a waiting request, the stage dropdown on an
+approved one. Those cannot go behind an expand, and they cannot go INSIDE the
+button that expands, because a `<select>` or a `<button>` nested in another
+button is invalid HTML that browsers resolve by guessing — and the guess is
+usually that the outer one wins, so opening the stage list would have expanded
+the card instead. So the card is split: the reading matter is the button, the
+action bar sits outside it.
+
+**What stays on the card is what the decision turns on:** who, which offer, the
+money, how much has actually been filmed, and how long it has stood there. What
+moves into the panel is what you read after deciding to look: when they asked,
+the last move in the creator's own words, their note, and what you told them.
+
+**No APPROVED chip on an approved card.** The Approved tab was forty-one
+identical green pills repeating what the tab already said, and a card carrying a
+stage dropdown is approved by definition. The chip is kept for **rejected** and
+**withdrawn**, which are the two that would otherwise look the same.
+
+**The progress line says the standing and nothing else.** `JobProgressBar`
+already writes "0 of 5 approved, 5 still to film" under itself; the old row said
+it again in a second place, and the first draft of this card did too.
+
+**The stage dropdown lost its "Stage" eyebrow and its fixed 12rem width.** In a
+labelled column that heading was doing work; in an action bar holding one control
+it is a word explaining a control that explains itself. It fills the bar now, so
+it fits a phone and a narrow column without a second breakpoint. The accessible
+name is unchanged, on the `sr-only` label.
+
+**`FilterTabs` was making the page scroll sideways at 375px, and had been for
+a while.** It was `shrink-0` with `shrink-0` children, so any screen with five
+states — this one, and every other queue with Waiting / Approved / Rejected /
+Withdrawn / All — was wider than the phone it was on and "All" sat off the edge.
+It wraps now. Found by the width check in `shots-admin.mjs`, not by looking.
+
+**`verify:offer-requests` needed one edit and it is worth knowing why.** It
+asserted `getByText(/5 videos for \$300/i)`, one sentence the card no longer
+writes. It now asserts BOTH halves — the amount AND the shape of the deal —
+rather than loosening to whichever half still matched: a card showing \$300 with
+no idea how many videos buys it is exactly what that check exists to catch.
+
 ## The offers grid (2026-08-21)
 
 **Files:** `src/routes/admin/AllOffers.tsx`, `src/lib/admin/useAllOffers.ts`,

@@ -49,7 +49,9 @@ only the files the chosen job names.
    `pnpm probe:tiktok`, new. No code changed; the findings are in OPERATIONS and
    the one that needs a decision is PARKED 19.
 2. **The admin offers screen was rebuilt as a grid of cards** on his
-   instruction. Waiting on his verdict; the test checklist was given in chat.
+   instruction. He approved it: *"i like it"*.
+3. **The requests queue got the same treatment**, at his request. Waiting on his
+   verdict; the test checklist was given in chat.
 
 ---
 
@@ -83,6 +85,44 @@ more. All eight widths clean, no console errors.
 **Not done, deliberately:** Brands and Contests still use `rounded-xl` cards.
 The low radius was asked for on this screen and was not applied to the others
 without asking.
+
+---
+
+## The requests queue, as cards (2026-08-21)
+
+*"i like it do something with this as well do the same"*, so `/admin/offers/requests`
+now matches: same radius, same three sections, same money treatment, same
+open-across-the-row panel.
+
+**The one structural difference** is that this screen is a QUEUE. Every card
+carries a control that writes — Approve and Reject, or the stage dropdown — so
+the card is split: the reading matter is the button that expands, and the action
+bar sits outside it. Nesting a control inside a control is invalid HTML and the
+browser's guess would have made the stage dropdown expand the card.
+
+**Two things came out of it that were not the job:**
+
+- **`FilterTabs` was scrolling the whole page sideways at 375px**, and had been
+  since it was shared. Five states did not fit and nothing let them wrap. Fixed
+  in the shared component, so every five-state queue benefits.
+- **`check-leaderboard.mjs` was littering.** Its cleanup threw every delete
+  result away, and `deleteUser` returns an error rather than raising one, so
+  `board-suspended-…@wurxmediahub.test` sat in dev overnight looking like a
+  clean run. Every delete is checked now and a suite that litters exits
+  non-zero. Dev is back to **42 profiles** (41 creators and Rashid).
+
+**Proof:** `pnpm verify:offer-requests` **76 of 76**, driving the real screen —
+it clicks Approve, works the dialog and moves a stage through the new action
+bar. One assertion in it had to change, because the card no longer writes "5
+videos for $300" as one sentence; it now checks the amount AND the shape of the
+deal rather than whichever half still matched. `pnpm shots:admin` clean at all
+four widths in both themes, no console errors.
+
+**Known flake, now in PARKED 20:** that suite's "reaches the creator without a
+reload" check fails about one run in two on this machine, alternating between
+its two occurrences. Three runs on identical code: fail, fail, then 76/76. It is
+a 25-second realtime timing budget on a machine running a preview server and two
+Chromiums, not a broken path.
 
 ---
 

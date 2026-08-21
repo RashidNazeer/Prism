@@ -553,8 +553,16 @@ try {
     (await adminPage.getByText(`@${HANDLE}`).count()) > 0,
     'the request is in the queue, under the creator handle'
   );
+  /*
+   * The card was rebuilt on 2026-08-21 and the deal is no longer one sentence.
+   * The amount is the hero and the shape of the deal is its caption, so this
+   * asserts BOTH halves rather than loosening to whichever one still matched:
+   * a card showing $300 with no idea how many videos buys it is exactly the
+   * thing this check exists to catch.
+   */
+  const queueText = await adminPage.evaluate(() => document.body.innerText);
   check(
-    (await adminPage.getByText(/5 videos for \$300/i).count()) > 0,
+    queueText.includes('$300') && /5\s+videos/i.test(queueText) && /\$60\s+each/i.test(queueText),
     'with the deal spelled out as numbers, so the decision needs no second screen'
   );
 

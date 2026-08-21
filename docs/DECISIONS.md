@@ -1344,3 +1344,12 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   which would have meant inventing one to satisfy a click. The card's radius is
   `rounded-md` against `rounded-xl` everywhere else — his instruction, on this
   screen, and deliberately not applied to Brands and Contests without asking.
+- 2026-08-21: **On a card that carries a control, the action bar lives OUTSIDE
+  the button that expands it.** The requests queue has a stage dropdown and a
+  pair of decide buttons on every card, and nesting either inside the expanding
+  button is invalid HTML the browser resolves by guessing. Rejected: putting the
+  controls in the panel, which would have made every stage move two clicks on
+  the screen whose whole job is stage moves. Also settled the same day:
+  `FilterTabs` **wraps** rather than scrolls, because `FilterBar`'s own rule
+  is that a row which scrolls sideways hides a filter behind an edge — it had
+  been overflowing the page at 375px on every five-state queue.

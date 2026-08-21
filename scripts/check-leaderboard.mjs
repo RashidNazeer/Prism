@@ -74,17 +74,62 @@ async function makeCreator(tag) {
   return { id: data.user.id, email, client };
 }
 
+/*
+ * CLEANUP THAT SAYS WHEN IT FAILED.
+ *
+ * This used to throw every delete away: `await admin.auth.admin.deleteUser(id)`
+ * returns an error, it does not raise one, so a refused delete looked exactly
+ * like a successful one and the run still printed a clean summary. That is how
+ * `board-suspended-mt1paj3d@wurxmediahub.test` was still sitting in dev on
+ * 2026-08-21, a day after the suite that made it reported itself finished.
+ *
+ * Two rules now, and they are the same two `check-content` learned the hard
+ * way: every delete is CHECKED, and every step is isolated so one failure
+ * cannot skip the steps after it. Litter that is announced gets cleared up;
+ * litter that is silent gets found by Rashid.
+ */
 async function cleanup() {
-  for (const id of made.items) await admin.from('tiktok_video_daily').delete().eq('item_id', id);
-  await admin.from('content_submissions').delete().eq('brand_id', made.brand ?? '00000000-0000-0000-0000-000000000000');
-  if (made.application) await admin.from('offer_applications').delete().eq('id', made.application);
-  if (made.offer) await admin.from('offers').delete().eq('id', made.offer);
+  const failures = [];
+  const step = async (what, fn) => {
+    try {
+      const { error } = (await fn()) ?? {};
+      if (error) failures.push(`${what}: ${error.message}`);
+    } catch (e) {
+      failures.push(`${what}: ${e?.message ?? e}`);
+    }
+  };
+
+  for (const id of made.items)
+    await step(`money rows for ${id}`, () =>
+      admin.from('tiktok_video_daily').delete().eq('item_id', id)
+    );
+
+  if (made.brand)
+    await step('content submissions', () =>
+      admin.from('content_submissions').delete().eq('brand_id', made.brand)
+    );
+  if (made.application)
+    await step('the application', () =>
+      admin.from('offer_applications').delete().eq('id', made.application)
+    );
+  if (made.offer) await step('the offer', () => admin.from('offers').delete().eq('id', made.offer));
+
   for (const id of made.users) {
-    await admin.from('audit_log').delete().eq('actor_id', id);
-    await admin.from('audit_log').delete().eq('target_user_id', id);
-    await admin.auth.admin.deleteUser(id);
+    await step(`audit rows by ${id}`, () => admin.from('audit_log').delete().eq('actor_id', id));
+    await step(`audit rows about ${id}`, () =>
+      admin.from('audit_log').delete().eq('target_user_id', id)
+    );
+    await step(`the account ${id}`, () => admin.auth.admin.deleteUser(id));
   }
-  if (made.brand) await admin.from('brands').delete().eq('id', made.brand);
+
+  if (made.brand) await step('the brand', () => admin.from('brands').delete().eq('id', made.brand));
+
+  if (failures.length) {
+    console.error('\nCLEANUP LEFT THINGS BEHIND. Remove these by hand:');
+    for (const f of failures) console.error(`  ${f}`);
+    // A suite that litters has not passed, whatever its assertions said.
+    process.exitCode = 1;
+  }
 }
 
 console.log(`\nLeaderboard suite against ${URL_}\n${'='.repeat(70)}\n`);

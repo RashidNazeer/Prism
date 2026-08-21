@@ -516,3 +516,33 @@ exactly why it is parked rather than started.
 different authorisation. Nothing about it touches `tiktok_connections`, and a
 seller granting it does not grant anything about ad spend.
 
+---
+
+## 20. `verify:offer-requests` has a flaky realtime check
+
+**Parked 2026-08-21. Trigger: it fails twice in a row on the same assertion, or
+a real creator reports their screen not updating.**
+
+**"and it reaches the creator without a reload"** appears twice in that suite,
+once for an approval and once for a stage move, and on this machine one of the
+two fails roughly one run in two. Three runs on 2026-08-21 against identical
+code: run 1 failed the second, run 2 failed the first, run 3 passed all 76.
+
+It waits 25 seconds for a realtime message to repaint a SECOND browser context
+while a preview server and two Chromiums share 7.4 GB. That is a timing budget,
+not a correctness one, and the alternating failure is the tell: a broken
+realtime path fails the same assertion every time.
+
+**Do not "fix" it by lengthening the timeout without measuring**, and do not
+delete it — it is the only automated proof that an approval reaches a creator
+who is already looking at the screen, which is the thing the product is for. The
+honest fix is to make the suite wait on the realtime SUBSCRIPTION being live
+before it acts, rather than on the paint afterwards.
+
+Same day, unrelated to the flake: `check-leaderboard.mjs` left
+`board-suspended-mt1paj3d@wurxmediahub.test` in dev overnight because its
+cleanup threw every delete result away — `deleteUser` RETURNS an error, it does
+not raise one. Fixed: every delete is checked, every step is isolated, and a
+suite that litters now exits non-zero. The account has been removed and dev is
+back to 42 profiles (41 creators and Rashid).
+
