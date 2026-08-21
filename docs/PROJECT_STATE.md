@@ -50,8 +50,11 @@ only the files the chosen job names.
    the one that needs a decision is PARKED 19.
 2. **The admin offers screen was rebuilt as a grid of cards** on his
    instruction. He approved it: *"i like it"*.
-3. **The requests queue got the same treatment**, at his request. Waiting on his
-   verdict; the test checklist was given in chat.
+3. **The requests queue got the same treatment**, at his request.
+4. **The applications queue too**, after he pushed back that it was still a
+   table — and that its status pill was overlapping the date, which a fixed
+   `2.25rem` actions column sized for a different state had been doing all
+   along. All three admin queues are card grids now. Waiting on his verdict.
 
 ---
 

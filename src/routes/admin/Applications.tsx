@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { Check, ChevronLeft, ChevronRight, Inbox, Search, Star, X } from 'lucide-react';
 import { StatusBadge } from '@/components/admin/StatusBadge';
-import { RowActions } from '@/components/admin/RowActions';
 import { ReviewDialog, type ReviewTarget } from '@/components/admin/ReviewDialog';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Field';
@@ -29,8 +28,6 @@ const STATUS_TABS: { value: StatusFilter; label: string }[] = [
 
 const isStatus = (v: string | null): v is StatusFilter =>
   v === 'pending' || v === 'approved' || v === 'rejected' || v === 'all';
-
-const COLUMNS = 'md:grid-cols-[1.75rem_minmax(0,2fr)_minmax(0,1.3fr)_6rem_7rem_2.25rem]';
 
 const niceDate = (iso: string) =>
   new Date(iso).toLocaleDateString(undefined, {
@@ -210,7 +207,7 @@ export function Applications() {
 
       {/* --------------------------------------------------------- bulk bar */}
       {selected.size > 0 ? (
-        <div className="border-accent bg-accent-soft mt-4 flex flex-wrap items-center gap-2.5 rounded-xl border px-4 py-3">
+        <div className="border-accent bg-accent-soft mt-4 flex flex-wrap items-center gap-2.5 rounded-md border px-4 py-3">
           <p className="text-[0.875rem] font-medium">
             <span className="wx-numeric">{selected.size}</span> selected
           </p>
@@ -237,32 +234,23 @@ export function Applications() {
         </div>
       ) : null}
 
-      {/* ------------------------------------------------------------- table */}
-      <div
-        className={cn(
-          'border-line bg-surface-1 mt-4 overflow-hidden rounded-xl border shadow-md transition-opacity duration-200',
-          isPlaceholderData && 'opacity-60'
-        )}
-      >
+      {/* -------------------------------------------------------------- grid */}
+      <div className={cn('mt-4 transition-opacity duration-200', isPlaceholderData && 'opacity-60')}>
         {isLoading ? (
-          <ul className="divide-line divide-y">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <li key={i} className="flex items-center gap-4 px-4 py-3.5 sm:px-5">
-                <div className="wx-skeleton h-4 w-36 rounded" />
-                <div className="wx-skeleton hidden h-4 w-24 rounded sm:block" />
-                <div className="wx-skeleton ml-auto h-7 w-7 rounded-lg" />
-              </li>
+          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <li key={i} className="wx-skeleton h-[12.5rem] rounded-md" />
             ))}
           </ul>
         ) : isError ? (
-          <div className="px-6 py-14 text-center">
+          <div className="border-line bg-surface-1 rounded-md border px-6 py-14 text-center shadow-md">
             <p className="font-semibold">That list would not load</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
-          <div className="px-6 py-16 text-center">
+          <div className="border-line bg-surface-1 rounded-md border px-6 py-16 text-center shadow-md">
             <Inbox size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">
               {filtered ? 'Nothing matches those filters' : 'No applications waiting'}
@@ -275,58 +263,31 @@ export function Applications() {
           </div>
         ) : (
           <>
-            {/* Select-all for phones and tablets. The column heading row below
-                carries it from `md` up, but that row is hidden on narrow
-                screens, which would have left bulk review as a desktop-only
-                feature on a product whose reviewers are often on a phone. */}
+            {/*
+              SELECT ALL, AT EVERY WIDTH NOW. It used to live in the table's
+              column heading row above `md`, with a separate copy below it for
+              phones. There is no heading row on a grid of cards, so there is one
+              control, and bulk review stops being two implementations of the
+              same thing.
+            */}
             {selectable.length > 0 ? (
-              <div className="border-line flex items-center gap-3 border-b px-4 py-2.5 md:hidden">
-                <label className="-m-2 flex cursor-pointer items-center gap-2.5 p-2">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={toggleAll}
-                    aria-label="Select every pending application on this page"
-                    className="size-4 cursor-pointer accent-[var(--wx-accent)]"
-                  />
-                  <span className="text-muted text-[0.8125rem]">
-                    {allSelected ? 'Clear selection' : `Select all ${selectable.length}`}
-                  </span>
-                </label>
-              </div>
+              <label className="mb-3 -ml-2 flex w-fit cursor-pointer items-center gap-2.5 rounded-md p-2">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleAll}
+                  aria-label="Select every pending application on this page"
+                  className="size-4 cursor-pointer accent-[var(--wx-accent)]"
+                />
+                <span className="text-muted text-[0.8125rem]">
+                  {allSelected ? 'Clear selection' : `Select all ${selectable.length}`}
+                </span>
+              </label>
             ) : null}
 
-            {/* Column headings, desktop only. On a phone every row becomes a
-                stacked card, where headings would just be noise. */}
-            <div
-              className={cn(
-                'border-line text-muted hidden border-b px-5 py-2.5 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase md:grid md:items-center md:gap-4',
-                COLUMNS
-              )}
-            >
-              <span>
-                {selectable.length > 0 ? (
-                  <label className="-m-2.5 flex w-fit cursor-pointer p-2.5">
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
-                      onChange={toggleAll}
-                      aria-label="Select every pending application on this page"
-                      className="size-4 cursor-pointer accent-[var(--wx-accent)]"
-                    />
-                  </label>
-                ) : null}
-              </span>
-              <span>Creator</span>
-              <span>Niche</span>
-              <span className="text-center">Known</span>
-              <span>Applied</span>
-              <span className="sr-only">Actions</span>
-            </div>
-
-            <ul className="divide-line divide-y">
+            <ul className="grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {rows.map((row) => (
-                <Row
+                <ApplicationCard
                   key={row.id}
                   row={row}
                   face={row.applicant ? faces[row.applicant.id] : undefined}
@@ -391,14 +352,32 @@ export function Applications() {
 }
 
 /**
- * One application.
+ * One application, as a card.
  *
- * The whole row opens the application, but it holds real controls too, so the
- * link is an overlay underneath and the grid above it does not take pointer
- * events. Only the checkbox and the menu opt back in. Nesting a button inside
- * an anchor would be invalid markup and behaves differently in every browser.
+ * REBUILT 2026-08-21, third of the three, on Rashid: *"this is not waht i
+ * expcected make it more beautiful ... like horiontal cards you are always
+ * ptting content in a row"*. He was right to push: Offers and Requests had
+ * become cards and this was still a six-column table with a heading row.
+ *
+ * IT NAVIGATES, IT DOES NOT EXPAND, and that is the one real difference from
+ * the other two. Applications HAVE a detail screen, `/admin/applications/:id`,
+ * which is where a decision actually gets made after reading somebody's answers.
+ * An accordion here would be a second, worse copy of a page that already exists.
+ *
+ * SO THE LINK IS AN OVERLAY, not a wrapper. The card carries a checkbox and two
+ * decision buttons, and a button inside an anchor is invalid markup that behaves
+ * differently in every browser. The anchor is absolutely positioned across the
+ * whole card, the content above it does not take pointer events, and only the
+ * controls opt back in. That is the same trick the old row used; it is the
+ * reason it survived the rewrite.
+ *
+ * WHAT FIXED THE OVERLAP Rashid photographed. The table gave "Applied" 7rem and
+ * the actions column 2.25rem, sized for the icon button a PENDING row shows. A
+ * decided row puts a status pill there instead, which is far wider than 2.25rem,
+ * so it grew leftwards across the date: "Jul 20, 2026✓ APPROVED". A card has no
+ * fixed columns to overflow.
  */
-function Row({
+function ApplicationCard({
   row,
   face,
   checked,
@@ -416,101 +395,105 @@ function Row({
   const pending = row.status === 'pending';
   const niche = row.niche === 'Other' ? (row.niche_other ?? 'Other') : row.niche;
 
-  const known = (
-    <span className="bg-accent-soft text-accent inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
-      <Star size={10} aria-hidden />
-      Known
-    </span>
-  );
-
-  // The drawn box stays 16px, but the touchable area is padded out to roughly
-  // 40px. A 16px target sitting on top of a full-row navigation link is a
-  // coin flip on a phone, and losing that flip opens the application instead
-  // of ticking it.
-  const box = pending ? (
-    <label className="pointer-events-auto -m-2.5 flex cursor-pointer p-2.5">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onToggle}
-        onClick={(e) => e.stopPropagation()}
-        aria-label={`Select @${row.tiktok_handle}`}
-        className="size-4 cursor-pointer accent-[var(--wx-accent)]"
-      />
-    </label>
-  ) : null;
-
-  const actions = pending ? (
-    <RowActions handle={row.tiktok_handle} onApprove={onApprove} onReject={onReject} />
-  ) : (
-    <StatusBadge status={row.status} />
-  );
-
   return (
-    <li className={cn('hover:bg-surface-2 relative transition-colors duration-200')}>
+    <li
+      className={cn(
+        'wx-glass hover:border-line-strong relative flex flex-col overflow-hidden rounded-md transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-[var(--wx-glass-glow)]',
+        checked && 'border-accent/60 shadow-[var(--wx-glass-glow)]'
+      )}
+    >
       <Link
         to={`/admin/applications/${row.id}`}
         aria-label={`Open the application from @${row.tiktok_handle}`}
         className="absolute inset-0"
       />
 
-      {/* ------------------------------------------------------ phone card */}
-      <div className="pointer-events-none relative flex items-start gap-3 px-4 py-3 md:hidden">
-        {box}
+      {/* ------------------------------------------------------ 1. who it is -- */}
+      <div className="pointer-events-none relative flex items-center gap-2.5 px-4 pt-3.5 pb-3">
+        {pending ? (
+          /* The drawn box stays 16px and the touchable area is padded out to
+             roughly 40px. A 16px target sitting on a card-sized navigation link
+             is a coin flip on a phone, and losing that flip opens the
+             application instead of ticking it. */
+          <label className="pointer-events-auto -m-2.5 flex shrink-0 cursor-pointer p-2.5">
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={onToggle}
+              onClick={(e) => e.stopPropagation()}
+              aria-label={`Select @${row.tiktok_handle}`}
+              className="size-4 cursor-pointer accent-[var(--wx-accent)]"
+            />
+          </label>
+        ) : null}
+
         <CreatorFace
           src={face}
           handle={row.tiktok_handle}
           name={row.applicant?.display_name}
-          size={38}
+          size={34}
         />
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold">@{row.tiktok_handle}</p>
-          <p className="text-muted mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8125rem]">
-            <span className="truncate">{niche}</span>
-            <span aria-hidden className="text-faint">
-              &middot;
+
+        <span className="min-w-0 flex-1">
+          <span className="text-text block truncate font-semibold">@{row.tiktok_handle}</span>
+          {row.applicant?.display_name ? (
+            <span className="text-faint block truncate text-[0.75rem]">
+              {row.applicant.display_name}
             </span>
-            <span className="wx-numeric whitespace-nowrap">{niceDate(row.created_at)}</span>
-            {row.worked_with_wurx ? known : null}
-          </p>
-        </div>
-        <div className="shrink-0">{actions}</div>
+          ) : null}
+        </span>
+
+        {row.worked_with_wurx ? (
+          <span className="bg-accent-soft text-accent inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+            <Star size={10} aria-hidden />
+            Known
+          </span>
+        ) : null}
       </div>
 
-      {/* -------------------------------------------------------- wide row */}
-      <div
-        className={cn(
-          'pointer-events-none relative hidden px-5 py-3 md:grid md:items-center md:gap-4',
-          COLUMNS
+      {/* ------------------------------------- 2. what they make, and when -- */}
+      <div className="border-line pointer-events-none relative flex flex-1 flex-col gap-2 border-t px-4 pt-3.5 pb-4">
+        <span className="text-faint block text-[0.625rem] font-semibold tracking-[0.14em] uppercase">
+          Niche
+        </span>
+        {/* One line, floored at one, so every closed card in a row is the same
+            height and the grid reads as a set rather than as a pile. */}
+        <p className="font-display text-text line-clamp-2 min-h-[1.5rem] text-[1.0625rem] leading-snug font-bold break-words">
+          {niche}
+        </p>
+        <p className="text-muted mt-auto text-[0.8125rem]">
+          Applied <span className="wx-numeric text-text">{niceDate(row.created_at)}</span>
+        </p>
+      </div>
+
+      {/* ----------------------------------------------- 3. the decision -- */}
+      <div className="border-line bg-surface-2/40 pointer-events-none relative flex items-center gap-2 border-t px-4 py-2.5">
+        {pending ? (
+          <>
+            <Button size="sm" className="pointer-events-auto flex-1" onClick={onApprove}>
+              <Check size={15} aria-hidden />
+              Approve
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="pointer-events-auto flex-1"
+              onClick={onReject}
+            >
+              <X size={15} aria-hidden />
+              Reject
+            </Button>
+          </>
+        ) : (
+          <>
+            <StatusBadge status={row.status} />
+            {row.reviewed_at ? (
+              <span className="wx-numeric text-faint ml-auto text-[0.75rem]">
+                {niceDate(row.reviewed_at)}
+              </span>
+            ) : null}
+          </>
         )}
-      >
-        <span>{box}</span>
-        {/* Inside the handle cell rather than as a seventh column: the grid is
-            fixed at six and a face is part of who this is, not a fact of its
-            own. */}
-        <span className="flex min-w-0 items-center gap-2.5">
-          <CreatorFace
-            src={face}
-            handle={row.tiktok_handle}
-            name={row.applicant?.display_name}
-            size={30}
-          />
-          <span className="min-w-0 truncate font-semibold">@{row.tiktok_handle}</span>
-        </span>
-        <span className="text-muted truncate text-[0.875rem]">{niche}</span>
-        <span className="text-center">
-          {row.worked_with_wurx ? (
-            known
-          ) : (
-            <span aria-hidden className="text-faint">
-              &middot;
-            </span>
-          )}
-        </span>
-        <span className="wx-numeric text-muted text-[0.8125rem] whitespace-nowrap">
-          {niceDate(row.created_at)}
-        </span>
-        <span className="flex justify-end">{actions}</span>
       </div>
     </li>
   );

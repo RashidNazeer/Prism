@@ -91,15 +91,31 @@ try {
         if (msg.type() === 'error') consoleErrors.push(`[${theme} ${size.name}] ${msg.text()}`);
       });
 
-      await page.goto(`${BASE}/admin/login`, { waitUntil: 'networkidle' });
+      /*
+       * `domcontentloaded`, NEVER `networkidle`.
+       *
+       * These screens hold a Supabase realtime socket open, and a page with a
+       * live socket on it may never go network-idle at all. It looked like a
+       * flaky machine — dark mode would shoot cleanly and then the first light
+       * run would sit for thirty seconds and throw — which is the worst kind of
+       * failure to diagnose, because the code it blames is the code that works.
+       * Wait for the thing being photographed instead.
+       */
+      await page.goto(`${BASE}/admin/login`, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('input[name="email"]', { timeout: 20_000 });
       await page.fill('input[name="email"]', email);
       await page.fill('input[name="password"]', password);
       await page.click('button[type="submit"]');
       // Away from the login screen, not merely "somewhere under /admin", which
       // /admin/login matches and would let a failed sign-in through silently.
-      await page.waitForURL((u) => !u.pathname.includes('/login'), { timeout: 20_000 });
+      await page.waitForURL((u) => !u.pathname.includes('/login'), { timeout: 25_000 });
 
-      await page.goto(`${BASE}${PATHNAME}`, { waitUntil: 'networkidle' });
+      await page.goto(`${BASE}${PATHNAME}`, { waitUntil: 'domcontentloaded' });
+      // Something real on the screen: a list, a card grid, or the designed
+      // empty state. Any of the three means the query came back.
+      await page
+        .waitForSelector('main ul li, main [class*="rounded"]', { timeout: 25_000 })
+        .catch(() => {});
 
       /*
        * Faces arrive as SIGNED urls, so they are still resolving when the page
@@ -107,13 +123,33 @@ try {
        * exactly like the avatars being broken. Wait for the images actually on
        * the page to have decoded, then give the entrance animation its moment.
        */
-      await page
-        .waitForFunction(
-          () =>
-            Array.from(document.images).every((img) => img.complete && img.naturalWidth > 0),
-          { timeout: 15_000 }
-        )
-        .catch(() => {});
+      /*
+       * TWO WAITS, AND THE FIRST ONE IS THE POINT.
+       *
+       * This was one wait — "every image on the page has decoded" — which is
+       * TRUE OF A PAGE WITH NO IMAGES ON IT, because `[].every()` is true. An
+       * avatar's `<img>` only mounts once its signed URL has arrived, so the
+       * check passed instantly, the shot was taken, and the result was a page
+       * of initials that looked exactly like the pictures being broken. It
+       * caught the 1440 shots by luck and missed the 375 ones.
+       *
+       * So: wait for at least one image to EXIST (briefly — a screen with no
+       * faces on it is normal and must not pay for this), then wait for the
+       * ones that exist to have decoded.
+       */
+      const hasFaces = await page
+        .waitForFunction(() => document.images.length > 0, { timeout: 8_000 })
+        .then(() => true)
+        .catch(() => false);
+
+      if (hasFaces) {
+        await page
+          .waitForFunction(
+            () => Array.from(document.images).every((img) => img.complete && img.naturalWidth > 0),
+            { timeout: 15_000 }
+          )
+          .catch(() => {});
+      }
       await page.waitForTimeout(900);
 
       // What actually gets judged: the fold, then the whole thing.
@@ -167,9 +203,32 @@ try {
 } finally {
   if (browser) await browser.close();
   if (userId) {
-    await admin.from('audit_log').delete().eq('actor_id', userId);
-    const { error } = await admin.auth.admin.deleteUser(userId);
-    if (error) console.error(`\nCOULD NOT DELETE the shots admin ${email}: ${error.message}`);
-    else console.log(`Shots admin ${email} removed.`);
+    /*
+     * RETRIED, because the alternative is litter. A single `fetch failed` on
+     * this machine — which happens often enough to have cost three runs on
+     * 2026-08-21 — used to leave a throwaway admin in dev for good. Deleting is
+     * idempotent, so trying again is free, and the last word is a loud one so
+     * nobody has to notice a silent leftover a day later.
+     */
+    let removed = false;
+    let why = '';
+    for (let attempt = 1; attempt <= 4 && !removed; attempt++) {
+      try {
+        await admin.from('audit_log').delete().eq('actor_id', userId);
+        await admin.from('audit_log').delete().eq('target_user_id', userId);
+        const { error } = await admin.auth.admin.deleteUser(userId);
+        if (!error) removed = true;
+        else why = error.message;
+      } catch (e) {
+        why = e?.message ?? String(e);
+      }
+      if (!removed && attempt < 4) await new Promise((r) => setTimeout(r, attempt * 1500));
+    }
+    if (removed) console.log(`Shots admin ${email} removed.`);
+    else {
+      console.error(`\nCOULD NOT DELETE the shots admin ${email}: ${why}`);
+      console.error('Remove it by hand before anybody reads the profile counts.');
+      process.exitCode = 1;
+    }
   }
 }

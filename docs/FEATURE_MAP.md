@@ -693,6 +693,53 @@ offers.
 - Applying uses the SAME `ApplyDialog` as the brand hub. Two apply paths that
   drift apart is how one of them ends up sending something different.
 
+## The applications queue, as cards (2026-08-21)
+
+**Files:** `src/routes/admin/Applications.tsx`, `scripts/shots-admin.mjs`
+
+Rashid, and he was right to be sharp about it: *"this is not waht i expcected
+make it more beautiful ... like horiontal cards you are always ptting content in
+a row why why why?"* Offers and Requests had become cards and this was still a
+six-column table with a heading row.
+
+**IT NAVIGATES, IT DOES NOT EXPAND.** That is the one real difference from the
+other two grids. Applications HAVE a detail screen, `/admin/applications/:id`,
+which is where a decision gets made after reading somebody's answers. An
+accordion here would be a second, worse copy of a page that already exists.
+
+**So the link is an OVERLAY, not a wrapper.** The card carries a checkbox and
+two decision buttons, and a button inside an anchor is invalid markup that
+behaves differently in every browser. The anchor is absolutely positioned across
+the card, the content above it is `pointer-events-none`, and only the controls
+opt back in. Same trick the old row used, which is why it survived the rewrite.
+
+**THE OVERLAP RASHID PHOTOGRAPHED, and what actually caused it.** The table gave
+`Applied` 7rem and the actions column `2.25rem`, sized for the icon button a
+PENDING row shows. A decided row puts a status pill there instead, which is far
+wider than 2.25rem, so it grew leftwards across the date and rendered
+"Jul 20, 2026✓ APPROVED". A card has no fixed columns to overflow. **Any fixed
+grid column sized for one state's control will do this the day another state
+puts something bigger in it.**
+
+**Select all moved out of the heading row.** There is no heading row on a grid,
+so the two copies of that control — one in the `md` heading, one in a phone-only
+bar — became one, shown at every width.
+
+**Two bugs in `shots-admin.mjs` came out of shooting this**, and both made the
+tool lie rather than fail:
+
+- It waited on `networkidle`. These screens hold a Supabase realtime socket
+  open, so the page may never go idle at all; dark mode would shoot and the
+  first light run would hang for thirty seconds and throw. It waits for
+  `domcontentloaded` and then for real content now.
+- Its "every image has decoded" wait was **true of a page with no images on it**,
+  because `[].every()` is true. An avatar's `<img>` only mounts once its signed
+  URL arrives, so the check passed instantly and the shot came out as a page of
+  initials — which looks exactly like the pictures being broken. It waits for at
+  least one image to exist first, briefly, then for the ones that exist.
+- The throwaway admin delete is retried four times. One `fetch failed` used to
+  leave an account in dev for good.
+
 ## The requests queue, as cards (2026-08-21)
 
 **Files:** `src/routes/admin/OfferRequests.tsx`,
