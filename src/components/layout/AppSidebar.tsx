@@ -204,20 +204,45 @@ export function AppSidebar({
         ref={navRef}
         aria-label="Main"
         className={cn(
-          'wx-scroll-quiet flex-1 overflow-y-auto pb-3',
+          'wx-scroll-quiet flex-1 overflow-y-auto pt-1 pb-3',
           collapsed ? 'px-2' : 'px-2.5'
         )}
       >
-        {groups.map((group) => (
-          <div key={group.label} className="mb-3.5 last:mb-0">
+        {/*
+          THE GAP LIVES ON THE HEADING, NOT ON THE GROUP.
+          It was `mb-3.5` on every group plus `pb-1` under every heading, which
+          on eight groups was about 100px of nothing in a menu 12 items long —
+          Rashid, 2026-08-21: *"too much gap between and too many sections"*.
+          Now the space is a top margin on the heading, so a group WITHOUT one
+          (Dashboard, and the creator's profile row) sits straight under the
+          list above it instead of paying for a title it does not have.
+        */}
+        {groups.map((group, i) => (
+          /*
+           * THE MARGIN IS ON THE GROUP, NOT ON THE HEADING, and that is not a
+           * style preference. `first:` means `:first-child` of its own parent,
+           * and the heading is always the first child of its group, so
+           * `mt-4 first:mt-0` on the heading resolved to `mt-0` every single
+           * time and the gap it was supposed to create never existed. Here
+           * `first:` refers to the first GROUP, which is what was meant.
+           */
+          <div
+            key={group.label || `group-${i}`}
+            className={cn(group.label && 'mt-4 first:mt-0')}
+          >
             {collapsed ? (
-              <div className="bg-line mx-auto mb-2 h-px w-6" aria-hidden />
-            ) : (
-              <p className="text-faint px-2.5 pb-1 font-mono text-[0.625rem] tracking-[0.16em] uppercase">
+              // The rule stands in for the heading on the narrow rail, and it
+              // is skipped for the same unlabelled groups, so the top of the
+              // rail is not a line above a single icon.
+              group.label ? (
+                <div className="bg-line mx-auto my-2 h-px w-6" aria-hidden />
+              ) : null
+            ) : group.label ? (
+              <p className="text-faint mb-1 px-2.5 font-mono text-[0.625rem] tracking-[0.16em] uppercase">
                 {group.label}
               </p>
-            )}
-            <ul className="grid gap-0.5">
+            ) : null}
+            <ul className="grid gap-px">
               {group.items.map((item) => (
                 <li key={item.label}>
                   <NavRow
@@ -307,16 +332,20 @@ function NavRow({
   onNavigate?: () => void;
 }) {
   /*
-   * TIGHTENED 2026-08-16. It was py-3 / px-4 / 14px inside a 280px rail, which
-   * left a wide band of nothing to the right of every label. Now py-2 / px-3 /
-   * 13px inside 240px.
+   * TIGHTENED TWICE. 2026-08-16 took it from py-3 / px-4 / 14px in a 280px rail
+   * to py-2 / px-3 / 13px in 240px. 2026-08-21 took the HEIGHT down, which is
+   * what Rashid was actually looking at when he said the menu was boring and
+   * gappy: every row was 44px tall on a 1440px laptop, and 44px is a thumb, not
+   * a mouse.
    *
-   * `min-h-[44px]` DOES NOT MOVE. It is 44px, the minimum tap target, and the
-   * responsive suite asserts it at 375px. Density is allowed to come out of the
-   * padding; it is not allowed to come out of whether a thumb can hit the row.
+   * SO 44px ON A PHONE AND 34px ABOVE IT. The floor is the minimum tap target
+   * and it does not move where a finger is doing the pointing; it is simply not
+   * owed to a cursor. `40rem` is the same breakpoint `wx-tap-row` uses for
+   * exactly this trade in the filter bars, so the two cannot drift.
    */
   const base = cn(
     'ease-brand relative flex min-h-[44px] items-center gap-2.5 rounded-lg py-2 text-[0.8125rem]',
+    'sm:min-h-[34px] sm:py-1.5',
     'transition-all duration-200',
     collapsed ? 'justify-center px-0' : 'px-3'
   );
@@ -386,7 +415,7 @@ function NavRow({
       {active ? (
         <span
           aria-hidden
-          className="bg-accent absolute inset-y-1.5 left-0 w-[3px] rounded-full"
+          className="bg-accent absolute inset-y-1 left-0 w-[3px] rounded-full"
         />
       ) : null}
       <item.icon size={17} aria-hidden className="shrink-0" />

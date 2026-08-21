@@ -693,6 +693,46 @@ offers.
 - Applying uses the SAME `ApplyDialog` as the brand hub. Two apply paths that
   drift apart is how one of them ends up sending something different.
 
+## The menu, halved (2026-08-21)
+
+**Files:** `src/lib/nav.ts`, `src/components/layout/AppSidebar.tsx`
+
+Rashid: *"the menu bar is very borign too much gap between and too many sections
+modify it"*. Eight headings above twelve links, five of them over a single item.
+
+**TWO RULES, and they are the whole change:**
+
+1. **No heading over fewer than two items.** A heading over one link is not
+   navigation, it is the same word twice with a gap around it.
+2. **The first group has no heading at all.** Dashboard is where you land; it
+   does not need to be told it is an overview.
+
+Admin went from Overview / Review / Offers / Contests / Content / People /
+Brands / Data to **Waiting on you / Running / People / Data**, grouped by the
+QUESTION rather than by the table underneath — which is why Content moved in
+beside Applications and Requests (all three are "who is waiting on me", and all
+three are card grids now) and why Activity moved out of Review, which it never
+was: it is the audit log, read when something needs explaining rather than
+decided on. Creator and Studio lost their single-item Overview and Account
+headings the same way.
+
+**Rows are 44px on a phone and 34px above it.** The floor is the minimum tap
+target and it does not move where a finger is doing the pointing; it is simply
+not owed to a cursor. `40rem` is the breakpoint `wx-tap-row` already uses for
+this trade in the filter bars, so the two cannot drift.
+
+**`first:mt-0` ON A GROUP HEADING NEVER FIRES, and this cost a round trip.**
+`first:` is `:first-child` **of its own parent**, and the heading is always the
+first child of its group, so `mt-4 first:mt-0` resolved to `mt-0` every time
+and the gap it was written to create never existed. The margin belongs on the
+group `<div>`, where `first:` means the first group. Worth remembering for any
+"space between sections, none before the first" pattern.
+
+**`sectionTitleFor` is unaffected**, because it reads ITEM labels, not group
+labels. `/admin/offers/requests` still resolves to Requests by longest prefix
+even though Requests no longer sits under an Offers heading.
+`pnpm verify:chrome` 43 of 43 covers exactly that.
+
 ## The applications queue, as cards (2026-08-21)
 
 **Files:** `src/routes/admin/Applications.tsx`, `scripts/shots-admin.mjs`

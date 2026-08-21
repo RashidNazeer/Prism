@@ -54,7 +54,10 @@ only the files the chosen job names.
 4. **The applications queue too**, after he pushed back that it was still a
    table — and that its status pill was overlapping the date, which a fixed
    `2.25rem` actions column sized for a different state had been doing all
-   along. All three admin queues are card grids now. Waiting on his verdict.
+   along. All three admin queues are card grids now.
+5. **The sidebar was halved**: eight group headings became four, five of which
+   had sat over a single item, and rows went from 44px to 34px above `sm`.
+   `pnpm verify:chrome` 43 of 43. Waiting on his verdict.
 
 ---
 

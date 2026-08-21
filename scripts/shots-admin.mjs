@@ -111,10 +111,22 @@ try {
       await page.waitForURL((u) => !u.pathname.includes('/login'), { timeout: 25_000 });
 
       await page.goto(`${BASE}${PATHNAME}`, { waitUntil: 'domcontentloaded' });
-      // Something real on the screen: a list, a card grid, or the designed
-      // empty state. Any of the three means the query came back.
+
+      /*
+       * WAIT FOR THE SKELETONS TO GO, not for "something on the screen".
+       *
+       * The first version waited for a list item or a rounded box, which a
+       * SKELETON is: they are `<li class="wx-skeleton rounded-md">` inside the
+       * same `<ul>` the real cards land in. So it matched instantly and
+       * photographed a grid of empty grey rectangles, and the shot looked like
+       * a broken screen rather than a slow one. Every loading state in this
+       * product carries `wx-skeleton`, so their absence is the honest signal
+       * that the query came back.
+       */
       await page
-        .waitForSelector('main ul li, main [class*="rounded"]', { timeout: 25_000 })
+        .waitForFunction(() => document.querySelectorAll('.wx-skeleton').length === 0, {
+          timeout: 25_000,
+        })
         .catch(() => {});
 
       /*

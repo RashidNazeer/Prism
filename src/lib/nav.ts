@@ -54,13 +54,38 @@ export interface NavGroup {
   items: NavItem[];
 }
 
+/**
+ * A GROUP HEADING HAS TO EARN ITS ROW, and until 2026-08-21 none of these did.
+ *
+ * Rashid: *"the menu bar is very borign too much gap between and too many
+ * sections modify it"*. He was looking at EIGHT headings above twelve links —
+ * Overview, Review, Offers, Contests, Content, People, Brands, Data — five of
+ * which sat over a single item. A heading over one link is not navigation, it
+ * is the same word twice with a gap around it, and eight of them turned a
+ * twelve-item menu into a twenty-item scroll.
+ *
+ * TWO RULES NOW, and they are the whole of it:
+ *
+ *   1. No heading over fewer than two items.
+ *   2. The first group has no heading at all. Dashboard is where you land; it
+ *      does not need to be told it is an overview.
+ *
+ * The four that remain are grouped by the QUESTION being asked rather than by
+ * the table underneath, which is why Content moved in beside Applications and
+ * Requests — all three are "who is waiting on me" — and why Activity moved out
+ * of Review, which it never was: it is the audit log, and it is read when
+ * something needs explaining rather than decided on.
+ */
 const ADMIN: NavGroup[] = [
   {
-    label: 'Overview',
+    label: '',
     items: [{ label: 'Dashboard', icon: LayoutDashboard, to: '/admin' }],
   },
   {
-    label: 'Review',
+    // The three queues, and they are one job asked three ways. All three are
+    // card grids as of 2026-08-21 and they read as a set now, which is most of
+    // the argument for them sitting together.
+    label: 'Waiting on you',
     items: [
       {
         label: 'Applications',
@@ -68,48 +93,40 @@ const ADMIN: NavGroup[] = [
         to: '/admin/applications',
         activePrefixes: ['/admin/applications'],
       },
-      { label: 'Activity', icon: History, to: '/admin/activity' },
+      { label: 'Requests', icon: Handshake, to: '/admin/offers/requests' },
+      { label: 'Content', icon: Video, to: '/admin/content' },
     ],
   },
   {
-    // Its own group, with the catalogue first and the queue under it. They are
-    // different jobs: one is "what are we running", the other is "who is
-    // waiting on me".
-    label: 'Offers',
+    /*
+     * What we are running, across every brand. Offers and Contests are here
+     * rather than in groups of their own for the reason Rashid gave when Claims
+     * and Rewards left this list on 2026-08-15: rows of chrome for one subject
+     * spend the menu on something the page can carry itself.
+     *
+     * `/admin/offers/requests` is NOT a child row under All offers. It is a
+     * queue, it lives with the other queues, and `sectionTitleFor` resolves it
+     * by longest prefix so the top bar still says Requests.
+     */
+    label: 'Running',
     items: [
       { label: 'All offers', icon: Tag, to: '/admin/offers' },
-      { label: 'Requests', icon: Handshake, to: '/admin/offers/requests' },
-    ],
-  },
-  {
-    // Its own group, the same shape as Offers and for the same reason. It is
-    // NOT only a tab inside a brand: "what is running" and "who is waiting on
-    // me" are asked across every brand at once, and making somebody walk into a
-    // brand to find out was the wrong shape.
-    //
-    // CLAIMS AND REWARDS LEFT THIS LIST ON 2026-08-15, at Rashid's request, and
-    // became tabs in the Contests page header instead. His reasoning, and it is
-    // right: three sidebar rows for one subject spends the menu on something
-    // the page can carry itself, and the three screens are one job read three
-    // ways rather than three places to go.
-    //
-    // They are still routes, still linked, still reachable directly. Nothing
-    // was removed except three rows of chrome.
-    label: 'Contests',
-    items: [
       {
         label: 'Contests',
         icon: Trophy,
         to: '/admin/contests',
-        // The tabs live under /admin/contests/*, so the sidebar row has to stay
-        // lit while somebody is on Claims or Rewards.
+        // The tabs live under /admin/contests/*, so the row has to stay lit
+        // while somebody is on Claims or Rewards.
         activePrefixes: ['/admin/contests'],
       },
+      {
+        label: 'Brand hubs',
+        icon: Store,
+        to: '/admin/brands',
+        activePrefixes: ['/admin/brands'],
+      },
+      { label: 'Campaigns', icon: Megaphone, soon: 'Next' },
     ],
-  },
-  {
-    label: 'Content',
-    items: [{ label: 'Content', icon: Video, to: '/admin/content' }],
   },
   {
     label: 'People',
@@ -124,26 +141,13 @@ const ADMIN: NavGroup[] = [
     ],
   },
   {
-    label: 'Brands',
-    items: [
-      {
-        label: 'Brand hubs',
-        icon: Store,
-        to: '/admin/brands',
-        activePrefixes: ['/admin/brands'],
-      },
-      { label: 'Campaigns', icon: Megaphone, soon: 'Next' },
-    ],
-  },
-  {
-    label: 'Data',
     // Not "Step 7": that step shipped on 2026-08-11 and was the creator
     // screens. A badge naming a step that has already landed reads as a broken
     // promise, so unbuilt items say when rather than which number.
+    label: 'Data',
     items: [
-      // The TikTok ad connection and the brand matching. Named for what it is
-      // to an admin, not for the protocol underneath: nobody manages "an OAuth
-      // integration", they connect TikTok.
+      // Named for what it is to an admin, not for the protocol underneath:
+      // nobody manages "an OAuth integration", they connect TikTok.
       { label: 'TikTok', icon: Plug, to: '/admin/tiktok' },
       /*
        * WurxBase, brought in whole and unchanged. STAFF ONLY, and it is in the
@@ -152,14 +156,20 @@ const ADMIN: NavGroup[] = [
        * that is not a preference.
        */
       { label: 'Paid Collabs', icon: HandCoins, to: '/admin/collabs' },
+      // Read when something needs explaining, not when something needs
+      // deciding, which is why it is here and not with the queues.
+      { label: 'Activity', icon: History, to: '/admin/activity' },
       { label: 'Uploads', icon: Upload, soon: 'Later' },
     ],
   },
 ];
 
+// Same two rules as ADMIN: no heading over one item, and none over the landing
+// screen. "Overview" sat above Home and "Account" above My profile, which is
+// two headings for two links.
 const CREATOR: NavGroup[] = [
   {
-    label: 'Overview',
+    label: '',
     items: [{ label: 'Home', icon: LayoutDashboard, to: '/app' }],
   },
   {
@@ -179,7 +189,7 @@ const CREATOR: NavGroup[] = [
     ],
   },
   {
-    label: 'Account',
+    label: '',
     items: [{ label: 'My profile', icon: UserRound, to: '/app/profile' }],
   },
 ];
@@ -209,7 +219,7 @@ const APPLICANT: NavGroup[] = CREATOR.map((group) => ({
 
 const STUDIO: NavGroup[] = [
   {
-    label: 'Overview',
+    label: '',
     items: [{ label: 'Home', icon: LayoutDashboard, to: '/studio' }],
   },
   {
