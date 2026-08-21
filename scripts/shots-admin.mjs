@@ -84,7 +84,15 @@ try {
 
       // Planted before any script on the page runs, so the app never paints in
       // the wrong theme first and the shot has no flash in it.
-      await ctx.addInitScript((t) => localStorage.setItem('wurxmediahub-theme', t), theme);
+      await ctx.addInitScript(
+        ({ t, collapsed }) => {
+          localStorage.setItem('wurxmediahub-theme', t);
+          // SHOT_COLLAPSED=1 shoots the narrow icon rail, which is otherwise
+          // only reachable by clicking and therefore never gets looked at.
+          if (collapsed) localStorage.setItem('wurxmediahub-sidebar-collapsed', '1');
+        },
+        { t: theme, collapsed: process.env.SHOT_COLLAPSED === '1' }
+      );
 
       const page = await ctx.newPage();
       page.on('console', (msg) => {

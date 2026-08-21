@@ -695,7 +695,20 @@ offers.
 
 ## The menu, halved (2026-08-21)
 
-**Files:** `src/lib/nav.ts`, `src/components/layout/AppSidebar.tsx`
+**Files:** `src/lib/nav.ts`, `src/components/layout/AppSidebar.tsx`,
+`src/components/brand/WurxMark.tsx`
+
+**The collapsed rail cut the mascot in half, and had since it was built.**
+`WurxMark markOnly` drew a `height × height` box with `object-fit: cover`, on
+the assumption that the mascot sits in a square at the left of the artwork. It
+does not: measured off the file itself, it occupies x 5..78 and y 5..54 of a
+228×64 image, so it is 73 wide by 50 tall and a square window threw away the
+rightmost 15% of its head. It is cut out by hand now — the artwork as a
+background, scaled so the mascot fills the box exactly — and `MARK` in that file
+carries the measured numbers. **Re-measure them if the logo is ever replaced;
+nothing can tell that they have stopped matching.** `SHOT_COLLAPSED=1` on
+`shots-admin.mjs` exists because the rail is otherwise only reachable by
+clicking, which is why nobody had looked at it.
 
 Rashid: *"the menu bar is very borign too much gap between and too many sections
 modify it"*. Eight headings above twelve links, five of them over a single item.
