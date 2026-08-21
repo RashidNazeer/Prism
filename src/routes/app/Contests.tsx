@@ -11,6 +11,8 @@ import {
   Target,
   Trophy,
   X,
+  Ticket,
+  UserRound,
 } from 'lucide-react';
 import { ContestDashboard } from '@/components/creator/ContestDashboard';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
@@ -28,7 +30,7 @@ import { Input, Select } from '@/components/ui/Field';
 import { ContestStateChip } from '@/components/work/ContestStateChip';
 import { cn } from '@/lib/utils';
 import { money } from '@/lib/money';
-import { formatDeadline, timeLeft } from '@/lib/contest-time';
+import { formatDeadline } from '@/lib/contest-time';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import {
@@ -375,9 +377,9 @@ export function Contests() {
 
           {/* ------------------------------------------------------- list -- */}
           {isLoading ? (
-            <ul className="mt-4 grid gap-3 lg:grid-cols-2">
+            <ul className="mt-4 grid gap-4">
               {Array.from({ length: 4 }).map((_, i) => (
-                <li key={i} className="wx-skeleton h-72 rounded-xl" />
+                <li key={i} className="wx-skeleton h-[32rem] rounded-xl" />
               ))}
             </ul>
           ) : isError ? (
@@ -400,7 +402,7 @@ export function Contests() {
           ) : (
             <>
               {live.length > 0 ? (
-                <ul className="mt-4 grid gap-3 lg:grid-cols-2">
+                <ul className="mt-4 grid gap-4">
                   {live.map((contest, i) => (
                     <m.li
                       key={contest.id}
@@ -435,7 +437,7 @@ export function Contests() {
                   <p className="text-faint mt-1.5 max-w-prose text-[0.8125rem] leading-relaxed">
                     Their door has shut and you are not in them, so there is nothing to do here.
                   </p>
-                  <ul className="mt-3 grid gap-3 lg:grid-cols-2">
+                  <ul className="mt-3 grid gap-4">
                     {shut.map((contest) => (
                       <li key={contest.id}>
                         <ContestCard
@@ -474,6 +476,30 @@ export function Contests() {
 
 /* ------------------------------------------------------------- one card -- */
 
+/**
+ * One contest, as a creator sees it.
+ *
+ * REBUILT 2026-08-22 from Rashid's design, and from what he said about the old
+ * one: *"contest is not a normal thing dude it must represent a brand with
+ * images emojis taglines"*. It was a plain bordered box with a heading and some
+ * labelled rows — the same card an offer got, holding a different noun.
+ *
+ * FOUR BANDS, top to bottom: the HERO, what you can EARN, the FACTS about it,
+ * and WHY JOIN. The action sits under all of it, unchanged, because where a
+ * creator stands is decided by their own entry and not by how the card looks.
+ *
+ * IT HAS TO BE RIGHT WITH NO ARTWORK AT ALL, and that is not a nicety: every
+ * contest on this platform had a null `banner_url` until an admin uploaded one,
+ * because the column existed for nine days with no control to fill it. So the
+ * hero falls back to a gold-on-near-black gradient built from tokens, the side
+ * panel drops its picture and keeps its ticks, and nothing shifts position.
+ *
+ * THE SCRIM IS NOT DECORATION. The name, the description and the countdown are
+ * white text sitting ON a photograph an admin chose, and no rule can stop
+ * somebody uploading a bright one. A left-to-right gradient from near-opaque to
+ * transparent keeps the text readable whatever arrives, which is what lets the
+ * artwork be picked on whether it looks good.
+ */
 function ContestCard({
   contest,
   now,
@@ -505,103 +531,269 @@ function ContestCard({
   const promised = inIt && contest.terms.length > 0;
   const rows: DeliverableLike[] = promised ? contest.terms : contest.deliverables;
 
+  // One reason per line, as typed, capped at four. The cap is here rather than
+  // on the column so a long list is trimmed on screen instead of being refused
+  // at save time.
+  const perks = (contest.perks ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 4);
+
   return (
-    <div className="border-line bg-surface-1 flex h-full flex-col rounded-xl border p-5 shadow-md">
-      {contest.brand ? (
-        <Link
-          to={`/app/brands/${contest.brand.slug}`}
-          className="text-muted hover:text-accent flex min-h-[44px] items-center gap-2.5 transition-colors"
+    <div className="border-line bg-surface-1 flex h-full flex-col overflow-hidden rounded-xl border shadow-md">
+      {/* ------------------------------------------------------------ hero -- */}
+      <div className="relative isolate min-h-[17rem] overflow-hidden sm:min-h-[20rem] lg:min-h-[26rem]">
+        {contest.bannerUrl ? (
+          <img
+            src={contest.bannerUrl}
+            alt=""
+            className="absolute inset-0 -z-10 h-full w-full object-cover [object-position:22%_58%] sm:[object-position:center_58%]"
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <div
+            aria-hidden
+            className="from-accent/25 via-surface-2 to-surface-1 absolute inset-0 -z-10 bg-gradient-to-br"
+          />
+        )}
+
+        {/*
+          Two scrims, not one. The horizontal one keeps the left column dark
+          enough for white text however bright the photograph is; the vertical
+          one stops the countdown along the bottom edge floating on a highlight.
+        */}
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/70 to-black/55 sm:bg-gradient-to-r sm:from-black/60 sm:via-black/10 sm:via-45% sm:to-transparent sm:to-62%"
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 bg-gradient-to-t from-black/50 via-transparent to-transparent"
+        />
+
+        <div
+          className="flex h-full flex-col gap-3 p-5 sm:p-6 lg:max-w-[60%]"
+          style={{ textShadow: '0 1px 12px rgba(0,0,0,0.65), 0 1px 2px rgba(0,0,0,0.5)' }}
         >
-          <span className="border-line bg-surface-2 grid size-7 shrink-0 place-items-center overflow-hidden rounded-full border">
-            {contest.brand.logoUrl ? (
-              <img src={contest.brand.logoUrl} alt="" className="size-full object-cover" />
-            ) : (
-              <Store size={13} aria-hidden className="text-faint" />
-            )}
-          </span>
-          <span className="truncate text-[0.8125rem] font-medium">{contest.brand.name}</span>
-        </Link>
-      ) : null}
+          {/* The brand, on its own mark. A contest belongs to a brand before it
+              belongs to us, which is the whole of what Rashid was asking for. */}
+          {contest.brand ? (
+            <Link
+              to={`/app/brands/${contest.brand.slug}`}
+              className="inline-flex w-fit items-center gap-2 rounded-full bg-white/12 px-2.5 py-1.5 text-white/90 backdrop-blur-sm transition-colors hover:bg-white/20"
+            >
+              <span className="grid size-5 shrink-0 place-items-center overflow-hidden rounded-full bg-white/20">
+                {contest.brand.logoUrl ? (
+                  <img src={contest.brand.logoUrl} alt="" className="size-full object-cover" />
+                ) : (
+                  <Store size={11} aria-hidden />
+                )}
+              </span>
+              <span className="truncate font-mono text-[0.625rem] font-semibold tracking-[0.12em] uppercase">
+                {contest.brand.name}
+              </span>
+            </Link>
+          ) : null}
 
-      <div className="mt-1 flex flex-wrap items-center gap-2">
-        <ContestStateChip state={door} />
-        {door === 'open' ? (
-          <span className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
-            {contest.needsAdminApproval ? 'Wurx approves entries' : 'Anyone can enter'}
-          </span>
-        ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            <ContestStateChip state={door} />
+            {door === 'open' ? (
+              <span className="font-mono text-[0.625rem] font-semibold tracking-[0.12em] text-white/70 uppercase">
+                {contest.needsAdminApproval ? 'Wurx approves entries' : 'Anyone can enter'}
+              </span>
+            ) : null}
+          </div>
+
+          <h3 className="font-display max-w-2xl text-[1.5rem] leading-tight font-bold text-white sm:text-[1.75rem]">
+            {contest.name}
+          </h3>
+
+          {contest.description ? (
+            <p className="line-clamp-3 max-w-2xl text-[0.875rem] leading-relaxed text-white/75">
+              {contest.description}
+            </p>
+          ) : null}
+
+          {/* -------------------------------------------------- countdown -- */}
+          {door === 'open' ? (
+            <div className="mt-auto border-t border-white/15 pt-4">
+              <span className="font-mono text-[0.625rem] font-semibold tracking-[0.14em] text-white/60 uppercase">
+                Closes in
+              </span>
+              <div className="mt-2 flex flex-wrap items-end gap-5">
+                <Countdown to={contest.expiresAt} now={now} />
+                {/* The exact moment, in the zone the admin set it in. Rule L6:
+                    a deadline that renders in the reader's zone closes at three
+                    different times for three people. */}
+                <span className="text-[0.75rem] text-white/60">
+                  {formatDeadline(contest.expiresAt, contest.expiresAtTimezone)}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-auto border-t border-white/15 pt-4">
+              <span className="text-[0.8125rem] text-white/70">
+                {formatDeadline(contest.expiresAt, contest.expiresAtTimezone)}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
-      <h3 className="font-display mt-2 text-[1.1875rem] leading-tight font-bold">{contest.name}</h3>
-
-      {contest.description ? (
-        <p className="text-muted mt-2 line-clamp-3 text-[0.875rem] leading-relaxed">
-          {contest.description}
-        </p>
-      ) : null}
-
-      {/* ------------------------------------------------------- deadline -- */}
-      <div className="border-line mt-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t pt-4">
-        <span className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
-          Closes
-        </span>
-        <span className="text-right">
-          {/* Always in the zone the admin chose, never the reader's. Rule L6. */}
-          <span className="text-text block text-[0.8125rem] font-semibold">
-            {formatDeadline(contest.expiresAt, contest.expiresAtTimezone)}
-          </span>
-          <span className="text-muted mt-0.5 flex items-center justify-end gap-1.5 font-mono text-[0.75rem]">
-            <Clock size={12} aria-hidden />
-            {timeLeft(contest.expiresAt, now)}
-          </span>
-        </span>
-      </div>
-
-      {/* --------------------------------------------------- deliverables -- */}
+      {/* -------------------------------------------- what you can earn -- */}
       {rows.length > 0 ? (
-        <div className="mt-4">
-          <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
-            {promised ? 'What you were promised' : 'What it asks for'}
+        <div className="border-line border-t p-5 sm:p-6">
+          <p className="font-display text-text text-[1rem] font-bold">
+            {promised ? 'What you were promised' : 'What you can earn'}
           </p>
-          <DeliverableRows rows={rows} currency={contest.currency} className="mt-2" />
+          <DeliverableRows rows={rows} currency={contest.currency} className="mt-3" />
         </div>
       ) : null}
 
-      {/*
-        "How it is judged" used to sit here. It is gone with the placings: a
-        contest is a list of deliverables now, each one a target and what
-        reaching it pays, so the rows above say in numbers what a sentence used
-        to say in words.
-      */}
-
-      {contest.products.length > 0 ? (
-        <p className="text-muted mt-2 text-[0.8125rem] leading-relaxed">
-          <span className="text-text font-semibold">Products: </span>
-          {contest.products.map((p) => p.productName).join(', ')}
-        </p>
-      ) : null}
-
-      {contest.briefUrl ? (
-        <a
-          href={contest.briefUrl}
-          target="_blank"
-          rel="noreferrer noopener"
-          className="text-accent mt-2 inline-flex min-h-[44px] items-center gap-1.5 self-start text-[0.8125rem] font-semibold hover:underline"
-        >
-          Read the full brief
-          <ExternalLink size={13} aria-hidden />
-        </a>
-      ) : null}
-
-      <div className="mt-auto pt-5">
-        <ContestAction
-          contest={contest}
-          door={door}
-          canEnterAtAll={canEnterAtAll}
-          onEnter={onEnter}
-          onUpdateProgress={onUpdateProgress}
-        />
+      {/* ---------------------------------------------------- the facts -- */}
+      <div className="border-line bg-surface-2/40 grid gap-4 border-t p-5 sm:grid-cols-3 sm:p-6">
+        <Fact icon={<Store size={15} aria-hidden />} label="Brand">
+          {contest.brand?.name ?? 'Unknown brand'}
+        </Fact>
+        <Fact icon={<Ticket size={15} aria-hidden />} label="Entries accepted">
+          {door === 'open'
+            ? 'Open to enter'
+            : door === 'off'
+              ? 'Not running'
+              : door === 'settled'
+                ? 'Settled'
+                : door === 'cancelled'
+                  ? 'Cancelled'
+                  : 'Closed'}
+        </Fact>
+        <Fact icon={<UserRound size={15} aria-hidden />} label="Approved by">
+          {contest.needsAdminApproval ? 'The Wurx team' : 'Nobody, it is automatic'}
+        </Fact>
       </div>
+
+      {/* ----------------------------------------------------- why join -- */}
+      {perks.length > 0 ? (
+        <div className="border-line flex flex-wrap items-center gap-6 border-t p-5 sm:p-6">
+          <div className="min-w-[14rem] flex-1">
+            <p className="font-display text-text text-[1rem] font-bold">Why join this contest?</p>
+            <ul className="mt-3 flex flex-col gap-2">
+              {perks.map((line) => (
+                <li key={line} className="flex items-start gap-2.5">
+                  <Check size={15} aria-hidden className="text-accent mt-0.5 shrink-0" />
+                  <span className="text-muted text-[0.875rem] leading-relaxed">{line}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {contest.cardImageUrl ? (
+            <img
+              src={contest.cardImageUrl}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="h-32 w-32 shrink-0 rounded-xl object-cover sm:h-40 sm:w-40"
+            />
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* --------------------------------------------------- everything else -- */}
+      <div className="flex flex-col gap-3 p-5 pt-0 sm:p-6 sm:pt-0">
+        {contest.products.length > 0 ? (
+          <p className="text-muted text-[0.8125rem] leading-relaxed">
+            <span className="text-text font-semibold">Products: </span>
+            {contest.products.map((p) => p.productName).join(', ')}
+          </p>
+        ) : null}
+
+        {contest.briefUrl ? (
+          <a
+            href={contest.briefUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="text-accent inline-flex min-h-[44px] items-center gap-1.5 self-start text-[0.8125rem] font-semibold hover:underline"
+          >
+            Read the full brief
+            <ExternalLink size={13} aria-hidden />
+          </a>
+        ) : null}
+
+        <div className="mt-auto">
+          <ContestAction
+            contest={contest}
+            door={door}
+            canEnterAtAll={canEnterAtAll}
+            onEnter={onEnter}
+            onUpdateProgress={onUpdateProgress}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The countdown, in four boxes.
+ *
+ * It ticks from `now`, which the page already recomputes on an interval for the
+ * "time left" copy, so this adds no timer of its own. `everyMs` on that hook is
+ * 30 seconds, which is why the seconds box is deliberately not drawn: a seconds
+ * figure that only moves twice a minute reads as a frozen clock, which is worse
+ * than not showing one.
+ */
+function Countdown({ to, now }: { to: string; now: number }) {
+  const ms = Math.max(0, new Date(to).getTime() - now);
+  const days = Math.floor(ms / 86_400_000);
+  const hours = Math.floor((ms % 86_400_000) / 3_600_000);
+  const mins = Math.floor((ms % 3_600_000) / 60_000);
+
+  const boxes = [
+    { value: days, label: days === 1 ? 'Day' : 'Days' },
+    { value: hours, label: hours === 1 ? 'Hour' : 'Hours' },
+    { value: mins, label: mins === 1 ? 'Min' : 'Mins' },
+  ];
+
+  return (
+    <span className="flex items-end gap-4">
+      {boxes.map((b) => (
+        <span key={b.label} className="flex flex-col">
+          <span className="font-display wx-numeric text-[1.75rem] leading-none font-bold text-white">
+            {b.value}
+          </span>
+          <span className="mt-1 font-mono text-[0.625rem] tracking-[0.12em] text-white/60 uppercase">
+            {b.label}
+          </span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** One labelled fact in the band under the hero. */
+function Fact({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <span className="bg-accent-soft text-accent mt-0.5 grid size-7 shrink-0 place-items-center rounded-full">
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="text-faint block font-mono text-[0.625rem] font-semibold tracking-[0.12em] uppercase">
+          {label}
+        </span>
+        <span className="text-text mt-0.5 block truncate text-[0.875rem] font-medium">
+          {children}
+        </span>
+      </span>
     </div>
   );
 }

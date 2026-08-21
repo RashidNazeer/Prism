@@ -746,6 +746,57 @@ labels. `/admin/offers/requests` still resolves to Requests by longest prefix
 even though Requests no longer sits under an Offers heading.
 `pnpm verify:chrome` 43 of 43 covers exactly that.
 
+## The contest card a creator sees (2026-08-22)
+
+**Files:** `src/routes/app/Contests.tsx`, `src/lib/creator/useCreatorContests.ts`
+
+Rashid: *"contest is not a normal thing dude it must represent a brand with
+images emojis taglines"*. It was a bordered box with a heading and some labelled
+rows — the same card an offer got, holding a different noun.
+
+**Four bands:** the HERO (brand pill, state, name, description, countdown), what
+you can EARN, the three FACTS, and WHY JOIN with its picture. The action sits
+under all of it, untouched, because where a creator stands is decided by their
+own entry and not by how the card looks.
+
+**One card per row at every width.** Two of these side by side halves the hero
+and squeezes the countdown.
+
+**THE CROP IS THE WHOLE PROBLEM, and it is different on every screen.** `cover`
+keeps the larger dimension and trims the other, so:
+
+| Width | Box vs photo | What gets trimmed |
+| --- | --- | --- |
+| laptop | box is WIDER than 16:9 | top and bottom — the dark left column survives |
+| phone | box is TALLER than 16:9 | **the sides**, centred |
+
+The phone case shipped broken for one build: the middle of a product shot is the
+product, so white hero text landed on a white tube and all but vanished. Fixed
+by pulling the crop left below `sm` (`[object-position:22%_58%]`) AND by
+switching the scrim from a left-to-right gradient to a bottom-up wash across the
+whole frame — on a narrow screen there is no "left column" to protect, the text
+spans everything.
+
+**The scrim must not do the text's job.** The first version was 90% black over
+the left plus a vertical wash. It read fine on the light theme and buried the
+photograph completely on the dark one — a hero with no visible hero. The words
+carry a `text-shadow` instead, which is readable over anything and costs the
+image nothing; the scrim is now insurance for a blown-out white upload rather
+than the mechanism.
+
+**It has to be right with NO artwork**, and that is not a nicety: every contest
+had a null `banner_url` until an admin uploaded one, because the column existed
+for nine days with no control to fill it. No banner falls back to a gold-on-dark
+gradient from tokens, no side image drops the picture and keeps the ticks, and
+nothing moves.
+
+**`perks` is split on newlines and capped at four IN THE COMPONENT**, not in
+the column. A long list is trimmed on screen rather than refused at save time.
+
+**The seconds box is deliberately absent from the countdown.** `useNow`
+recomputes every 30 seconds, and a seconds figure that moves twice a minute
+reads as a broken clock. Days, hours, minutes only.
+
 ## The contest editor, in five tabs (2026-08-22)
 
 **Files:** `src/routes/admin/ContestSetup.tsx`,

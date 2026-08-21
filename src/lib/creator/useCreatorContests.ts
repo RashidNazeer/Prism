@@ -226,6 +226,10 @@ export interface CreatorContest {
    */
   briefUrl: string | null;
   bannerUrl: string | null;
+  /** Optional picture beside the "why join" panel. */
+  cardImageUrl: string | null;
+  /** Why a creator should enter, one reason per line, as the admin typed it. */
+  perks: string | null;
   status: 'active' | 'inactive';
   needsAdminApproval: boolean;
   opensAt: string;
@@ -347,7 +351,7 @@ export function isLiveForThem(c: CreatorContest): boolean {
 /* ------------------------------------------------------------ the reads --- */
 
 const CONTEST_COLUMNS =
-  'id, brand_id, name, description, brief_url, banner_url, status, ' +
+  'id, brand_id, name, description, brief_url, banner_url, card_image_url, perks, status, ' +
   'needs_admin_approval, opens_at, expires_at, expires_at_timezone, currency, ' +
   'settled_at, cancelled_at, cancel_message, ' +
   'brand:brands (id, name, slug, logo_url)';
@@ -369,6 +373,8 @@ interface ContestRow {
   description: string | null;
   brief_url: string | null;
   banner_url: string | null;
+  card_image_url: string | null;
+  perks: string | null;
   status: 'active' | 'inactive';
   needs_admin_approval: boolean;
   opens_at: string;
@@ -978,6 +984,8 @@ export function useCreatorContests() {
         description: r.description,
         briefUrl: r.brief_url,
         bannerUrl: r.banner_url,
+        cardImageUrl: r.card_image_url,
+        perks: r.perks,
         status: r.status,
         needsAdminApproval: r.needs_admin_approval,
         opensAt: r.opens_at,

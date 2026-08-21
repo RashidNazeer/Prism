@@ -109,11 +109,14 @@ textarea for the "why join" lines. All optional.
 `pnpm verify:contests` **141 of 141**. It needed one edit: it opens
 `?tab=rewards` before driving the deliverables.
 
-**NOT DONE, and it is the other half of what he asked for:** the CREATOR side of
-contests is still the old design. His screenshot showed a hero card with the
-countdown, reward cards and a "why join" panel. The database now carries
-everything that needs — artwork and perks — so it is a screen job, not a schema
-job.
+**The creator side landed too**, on 2026-08-22, against his real uploaded
+artwork: hero, countdown, "what you can earn", three facts, "why join". Details
+in FEATURE_MAP under "The contest card a creator sees"; the crop rules there are
+the part worth reading before touching it.
+
+**Left as he typed it:** `perks` on the Penetrex contest is currently
+"heheheheheheheheheheeh", from testing the field, and Penetrex has no brand logo
+so the hero pill shows a shop icon. Both are content, not code.
 
 ---
 
