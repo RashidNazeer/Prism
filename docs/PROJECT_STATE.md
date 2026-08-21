@@ -94,6 +94,29 @@ without asking.
 
 ---
 
+## The contest editor, in five tabs (2026-08-22)
+
+Rashid: *"admin has to sroll on one page to see who accepted what's going on"*.
+`/admin/brands/:id/contests/:contestId` is now Details · Rewards · Visibility ·
+Settings · Summary, with the tab in the URL and Summary carrying the entry and
+progress queues.
+
+**His question was how many images a contest needs. Two, and one already
+existed**: `banner_url` has been in the schema since 13 August with no upload
+control ever built for it. The new one is `card_image_url`, plus a `perks`
+textarea for the "why join" lines. All optional.
+
+`pnpm verify:contests` **141 of 141**. It needed one edit: it opens
+`?tab=rewards` before driving the deliverables.
+
+**NOT DONE, and it is the other half of what he asked for:** the CREATOR side of
+contests is still the old design. His screenshot showed a hero card with the
+countdown, reward cards and a "why join" panel. The database now carries
+everything that needs — artwork and perks — so it is a screen job, not a schema
+job.
+
+---
+
 ## Offer kinds and audiences (2026-08-22)
 
 Three kinds of offer, and the kind decides who can see it: **Retainer** (named

@@ -109,6 +109,10 @@ const flatten = (r: ContestRow): AllContestsRow => ({
     description: r.description,
     briefUrl: r.brief_url,
     bannerUrl: r.banner_url,
+    // Not selected by the list query: the grid draws no artwork. Present so the
+    // shared Contest type is honest about what a full row carries.
+    cardImageUrl: null,
+    perks: null,
     status: r.status,
     needsAdminApproval: r.needs_admin_approval,
     opensAt: r.opens_at,

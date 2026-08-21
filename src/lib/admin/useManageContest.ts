@@ -51,6 +51,10 @@ export type ContestSavePayload = {
   opensAt?: string | null;
   briefUrl: string | null;
   bannerUrl: string | null;
+  /** Optional picture beside "why join". Added 2026-08-22. */
+  cardImageUrl?: string | null;
+  /** Why a creator should enter, one reason per line. */
+  perks?: string | null;
   currency: string;
   status: ContestStatus;
   needsAdminApproval: boolean;

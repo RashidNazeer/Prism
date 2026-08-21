@@ -150,6 +150,8 @@ export interface Contest {
    */
   briefUrl: string | null;
   bannerUrl: string | null;
+  cardImageUrl: string | null;
+  perks: string | null;
   status: ContestStatus;
   needsAdminApproval: boolean;
   opensAt: string;
@@ -165,7 +167,7 @@ export interface Contest {
 }
 
 const CONTEST_COLUMNS =
-  'id, brand_id, name, description, brief_url, banner_url, status, ' +
+  'id, brand_id, name, description, brief_url, banner_url, card_image_url, perks, status, ' +
   'needs_admin_approval, opens_at, expires_at, expires_at_timezone, currency, ' +
   'settled_at, cancelled_at, cancel_message, created_at, updated_at';
 
@@ -176,6 +178,8 @@ interface ContestRow {
   description: string | null;
   brief_url: string | null;
   banner_url: string | null;
+  card_image_url: string | null;
+  perks: string | null;
   status: ContestStatus;
   needs_admin_approval: boolean;
   opens_at: string;
@@ -196,6 +200,8 @@ const flatten = (r: ContestRow): Contest => ({
   description: r.description,
   briefUrl: r.brief_url,
   bannerUrl: r.banner_url,
+  cardImageUrl: r.card_image_url,
+  perks: r.perks,
   status: r.status,
   needsAdminApproval: r.needs_admin_approval,
   opensAt: r.opens_at,

@@ -116,6 +116,13 @@ const ContestSave = z.object({
   briefUrl: httpsUrl.nullish(),
   bannerUrl: httpsUrl.nullish(),
   /*
+   * Artwork and selling copy, 2026-08-22. Both optional, both creator readable.
+   * The picture is checked as an https URL like every other one an admin
+   * supplies, because it is a string that every entrant's browser then fetches.
+   */
+  cardImageUrl: httpsUrl.nullish(),
+  perks: z.string().trim().max(600).nullish(),
+  /*
    * NO DEFAULTS ON THESE THREE, deliberately, and it is not a style choice.
    * `save_contest` writes all three unconditionally, so a caller that simply
    * left `currency` out would have had `USD` filled in here and written over a
@@ -569,6 +576,8 @@ Deno.serve(async (req) => {
       p_description: input.description ?? null,
       p_brief_url: input.briefUrl ?? null,
       p_banner_url: input.bannerUrl ?? null,
+      p_card_image_url: input.cardImageUrl ?? null,
+      p_perks: input.perks ?? null,
       p_opens_at: input.opensAt ?? null,
       p_currency: input.currency,
       p_status: input.status,

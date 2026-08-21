@@ -1,8 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Check, Loader2, Lock, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  Eye,
+  FileText,
+  ListChecks,
+  Loader2,
+  Lock,
+  SlidersHorizontal,
+  Trash2,
+  Trophy,
+} from 'lucide-react';
 import { ContestDeliverables } from '@/components/admin/ContestDeliverables';
+import { ImageUploadField } from '@/components/admin/ImageUploadField';
 import { ContestEntryQueue } from '@/components/admin/ContestEntryQueue';
 import { ContestExclusions } from '@/components/admin/ContestExclusions';
 import { ContestProducts } from '@/components/admin/ContestProducts';
@@ -102,6 +114,10 @@ interface FormState {
   status: 'active' | 'inactive';
   budget: string;
   internalNote: string;
+  /* Artwork and selling copy, added 2026-08-22. All three optional. */
+  bannerUrl: string | null;
+  cardImageUrl: string | null;
+  perks: string;
 }
 
 const EMPTY: FormState = {
@@ -116,6 +132,9 @@ const EMPTY: FormState = {
   status: 'inactive',
   budget: '',
   internalNote: '',
+  bannerUrl: null,
+  cardImageUrl: null,
+  perks: '',
 };
 
 type FieldKey = 'name' | 'date' | 'time' | 'timezone' | 'briefUrl' | 'budget';
@@ -179,6 +198,19 @@ function clearDraft(key: string | null) {
 
 /* ------------------------------------------------------------------ screen -- */
 
+type ContestTab = 'details' | 'rewards' | 'visibility' | 'settings' | 'summary';
+
+const TABS: { value: ContestTab; label: string; icon: typeof Trophy }[] = [
+  { value: 'details', label: 'Details', icon: FileText },
+  { value: 'rewards', label: 'Rewards', icon: Trophy },
+  { value: 'visibility', label: 'Visibility', icon: Eye },
+  { value: 'settings', label: 'Settings', icon: SlidersHorizontal },
+  { value: 'summary', label: 'Summary', icon: ListChecks },
+];
+
+const isTab = (v: string | null): v is ContestTab =>
+  v === 'details' || v === 'rewards' || v === 'visibility' || v === 'settings' || v === 'summary';
+
 export function ContestSetup() {
   const { id: brandId, contestId } = useParams<{ id: string; contestId: string }>();
   const isNew = !contestId || contestId === 'new';
@@ -198,6 +230,28 @@ export function ContestSetup() {
   const [formError, setFormError] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
   const [saved, setSaved] = useState(false);
+
+  /*
+   * WHICH TAB, IN THE URL.
+   *
+   * Rashid, 2026-08-22: *"admin has to sroll on one page to see who accepted
+   * what's going on each and everything this is very bad"*. He was right: this
+   * screen was the form, the rewards, the entry queue, the progress queue, the
+   * products and the exclusions, stacked, on one scroll.
+   *
+   * In the URL rather than in state, for the same reason every filter on this
+   * product is: a reviewer can send "look at the rewards on this one" as a
+   * link, and the back button behaves after opening a creator and returning.
+   */
+  const [tabParams, setTabParams] = useSearchParams();
+  const tabParam = tabParams.get('tab');
+  const tab: ContestTab = isTab(tabParam) ? tabParam : 'details';
+  const goTab = (next: ContestTab) => {
+    const p = new URLSearchParams(tabParams);
+    if (next === 'details') p.delete('tab');
+    else p.set('tab', next);
+    setTabParams(p, { replace: true });
+  };
   const [dirty, setDirty] = useState(false);
 
   /*
@@ -264,6 +318,15 @@ export function ContestSetup() {
       status: c.status,
       budget: existing?.commercials?.totalBudget?.toString() ?? '',
       internalNote: existing?.commercials?.internalNote ?? '',
+      /*
+       * Artwork and copy hydrate here like everything else. They MUST be
+       * seeded from the row: the save writes all three unconditionally, so a
+       * form that opened with them empty would wipe a contest's hero image on
+       * an edit that only meant to change the deadline.
+       */
+      bannerUrl: c.bannerUrl ?? null,
+      cardImageUrl: c.cardImageUrl ?? null,
+      perks: c.perks ?? '',
     });
     setDirty(false);
     filledFor.current = contestKey;
@@ -365,11 +428,12 @@ export function ContestSetup() {
         expiresAt: instant!,
         expiresAtTimezone: form.timezone,
         briefUrl: form.briefUrl.trim() || null,
-        // Carried through rather than nulled. There is no banner control on this
-        // screen yet (rule B8, step 1), and `save_contest` writes this column
-        // unconditionally, so sending null here would erase artwork set by
-        // anything else the day one exists.
-        bannerUrl: existing?.contest?.bannerUrl ?? null,
+        // There IS a banner control now, on the Details tab, so these come
+        // from the form rather than being carried through untouched.
+        // `save_contest` writes all three unconditionally.
+        bannerUrl: form.bannerUrl,
+        cardImageUrl: form.cardImageUrl,
+        perks: form.perks.trim() || null,
         currency: form.currency,
         status: form.status,
         needsAdminApproval: form.needsAdminApproval,
@@ -489,9 +553,40 @@ export function ContestSetup() {
                 you are in; this names the contest you have open, which is a
                 level under that. Size and weight are unchanged, so nothing
                 about it reads smaller. */}
-            <h2 className="font-display text-text mt-1 truncate text-[1.625rem] leading-tight font-bold">
-              {isNew ? 'New contest' : form.name || 'Contest'}
-            </h2>
+            <div className="mt-1 flex flex-wrap items-center gap-2.5">
+              <h2 className="font-display text-text truncate text-[1.625rem] leading-tight font-bold">
+                {isNew ? 'New contest' : form.name || 'Contest'}
+              </h2>
+              {/*
+                THE STATE, BESIDE THE NAME, from Rashid's design. It was only
+                readable by opening Settings and looking at a dropdown, which
+                is the wrong place to answer "is this live" — that is the first
+                thing you want to know about a contest and the last thing you
+                should have to click for.
+              */}
+              {!isNew && existing?.contest ? (
+                <span
+                  className={cn(
+                    'shrink-0 rounded-full px-2.5 py-1 font-mono text-[0.625rem] tracking-[0.12em] uppercase',
+                    existing.contest.cancelledAt
+                      ? 'bg-danger-soft text-danger'
+                      : existing.contest.settledAt
+                        ? 'bg-surface-2 text-muted'
+                        : existing.contest.status === 'active'
+                          ? 'bg-success-soft text-success'
+                          : 'bg-surface-2 text-muted'
+                  )}
+                >
+                  {existing.contest.cancelledAt
+                    ? 'Cancelled'
+                    : existing.contest.settledAt
+                      ? 'Settled'
+                      : existing.contest.status === 'active'
+                        ? 'Open to enter'
+                        : 'Switched off'}
+                </span>
+              ) : null}
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -509,10 +604,19 @@ export function ContestSetup() {
                 </span>
               ) : null}
             </p>
-            <Button type="submit" form="contest-form" disabled={busy || formMissing}>
-              {busy ? <Loader2 size={16} className="animate-spin" aria-hidden /> : null}
-              {isNew ? 'Create contest' : 'Save changes'}
-            </Button>
+            {/*
+              ONLY ON DETAILS, because only Details is a form.
+              The other four tabs each carry their own controls that save
+              themselves, and the form this button submits is not even in the
+              tree when they are open. A button that is visible but inert is
+              worse than one that is absent.
+            */}
+            {tab === 'details' ? (
+              <Button type="submit" form="contest-form" disabled={busy || formMissing}>
+                {busy ? <Loader2 size={16} className="animate-spin" aria-hidden /> : null}
+                {isNew ? 'Create contest' : 'Save changes'}
+              </Button>
+            ) : null}
           </div>
         </div>
 
@@ -556,8 +660,55 @@ export function ContestSetup() {
           </div>
         ) : (
           <div className="flex flex-col gap-4">
+            {/*
+              THE TABS, from Rashid's design. A contest is five different jobs —
+              what it says, what it pays, who sees it, whether it is running,
+              and what is actually happening on it — and they were one scroll.
+              A new contest opens on Details and cannot leave it until it
+              exists, because everything on the other four hangs off an id.
+            */}
+            <div
+              role="tablist"
+              aria-label="Contest sections"
+              className="border-line flex flex-wrap items-center gap-1 border-b pb-px"
+            >
+              {TABS.map((t) => {
+                const locked = isNew && t.value !== 'details';
+                const active = tab === t.value;
+                return (
+                  <button
+                    key={t.value}
+                    role="tab"
+                    type="button"
+                    aria-selected={active}
+                    disabled={locked}
+                    title={locked ? 'Create the contest first' : undefined}
+                    onClick={() => goTab(t.value)}
+                    className={cn(
+                      'ease-brand relative inline-flex min-h-[40px] items-center gap-2 rounded-t-md px-3 text-[0.8125rem] font-medium transition-colors duration-200',
+                      locked
+                        ? 'text-faint cursor-not-allowed'
+                        : active
+                          ? 'text-accent'
+                          : 'text-muted hover:text-text'
+                    )}
+                  >
+                    <t.icon size={15} aria-hidden />
+                    {t.label}
+                    {active ? (
+                      <span
+                        aria-hidden
+                        className="bg-accent absolute inset-x-2 -bottom-px h-[2px] rounded-full"
+                      />
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+
             <form
               id="contest-form"
+              hidden={tab !== 'details'}
               onSubmit={onSubmit}
               aria-busy={busy}
               className="flex flex-col gap-4"
@@ -572,7 +723,7 @@ export function ContestSetup() {
               ) : null}
 
               {/* -------------------------------------------------- the job -- */}
-              <Card title="The contest">
+              <Card step={1} title="Contest details">
                 <Field label="Name" error={errors.name}>
                   {({ id, describedBy, invalid }) => (
                     <Input
@@ -642,7 +793,7 @@ export function ContestSetup() {
               </Card>
 
               {/* ------------------------------------------------ the clock -- */}
-              <Card title="When it closes">
+              <Card step={2} title="When it closes">
                 <div className="grid gap-4 sm:grid-cols-3">
                   <Field label="Date" error={errors.date}>
                     {({ id, describedBy, invalid }) => (
@@ -732,7 +883,7 @@ export function ContestSetup() {
               </Card>
 
               {/* ----------------------------------------------- who gets in -- */}
-              <Card title="Who gets in">
+              <Card step={3} title="Who gets in">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Entry">
                     {({ id, describedBy, invalid }) => (
@@ -776,9 +927,55 @@ export function ContestSetup() {
                 </p>
               </Card>
 
+              {/* ------------------------------------------------ artwork -- */}
+              <Card
+                step={5}
+                title="How it looks"
+                note="Optional, and every creator screen is designed to be right without any of it. The bucket is PUBLICLY READABLE, so nothing commercial may appear in a picture: no budget, no margin, no rate card, no screenshot of an admin screen."
+              >
+                <ImageUploadField
+                  label="Hero image"
+                  hint="Sits behind the contest name and the countdown. Wide, roughly 3:1. A product shot or a lifestyle photo."
+                  folder={`contests/${liveContestId ?? 'new'}`}
+                  value={form.bannerUrl}
+                  onChange={(url) => set('bannerUrl', url)}
+                  disabled={busy}
+                />
+
+                <ImageUploadField
+                  label="Side image"
+                  hint='Sits beside "Why join this contest". A product on its own reads best here.'
+                  folder={`contests/${liveContestId ?? 'new'}`}
+                  value={form.cardImageUrl}
+                  onChange={(url) => set('cardImageUrl', url)}
+                  disabled={busy}
+                />
+
+                <Field
+                  label="Why join this contest"
+                  hint="One reason per line, up to four. Creators read these exactly as typed."
+                >
+                  {({ id, describedBy, invalid }) => (
+                    <Textarea
+                      id={id}
+                      rows={4}
+                      value={form.perks}
+                      onChange={(e) => set('perks', e.target.value)}
+                      placeholder={
+                        'Get rewarded for content you already make\nBuild a long-term relationship with the brand\nEvery video counts once the team has watched it'
+                      }
+                      maxLength={600}
+                      readOnly={busy}
+                      aria-describedby={describedBy}
+                      invalid={invalid}
+                    />
+                  )}
+                </Field>
+              </Card>
+
               {/* ---------------------------------------------------- money -- */}
               <Card
-                title="Only Wurx sees this"
+                step={4} title="Only Wurx sees this"
                 note="No creator can read anything in this box. It is not hidden by a filter, it is in a table they cannot reach."
               >
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -819,30 +1016,6 @@ export function ContestSetup() {
                 </Field>
               </Card>
 
-              {/* ------------------------------------------------- live yet -- */}
-              <Card title="Is it running">
-                <Field label="Status">
-                  {({ id, describedBy, invalid }) => (
-                    <Select
-                      id={id}
-                      value={form.status}
-                      onChange={(e) => set('status', e.target.value as 'active' | 'inactive')}
-                      disabled={busy}
-                      aria-describedby={describedBy}
-                      invalid={invalid}
-                    >
-                      <option value="inactive">
-                        Off, nobody can enter and nobody can see it
-                      </option>
-                      <option value="active">On, creators can see it and enter</option>
-                    </Select>
-                  )}
-                </Field>
-                <p className="text-muted text-[0.8125rem]">
-                  Switching a contest off closes the door, never the work. Anybody already in
-                  carries on filming and still gets paid.
-                </p>
-              </Card>
             </form>
 
             {/*
@@ -851,7 +1024,7 @@ export function ContestSetup() {
               has: the browser drops the inner one, and every button in it
               starts submitting the contest instead of doing its own job.
             */}
-            {liveContestId ? (
+            {liveContestId && tab === 'rewards' ? (
               <>
                 <ContestDeliverables
                   contestId={liveContestId}
@@ -864,8 +1037,12 @@ export function ContestSetup() {
                   achieved. Both are "somebody is waiting on us", and an entry
                   blocks everything downstream of it, so it comes first.
                 */}
-                <ContestEntryQueue contestId={liveContestId} />
-                <ContestProgressQueue contestId={liveContestId} />
+              </>
+            ) : null}
+
+            {/* ------------------------------------------------ visibility -- */}
+            {liveContestId && tab === 'visibility' ? (
+              <>
                 <ContestProducts
                   contestId={liveContestId}
                   brandId={brandId!}
@@ -878,15 +1055,68 @@ export function ContestSetup() {
                   loading={listsLoading}
                 />
               </>
-            ) : (
-              <p className="text-faint max-w-prose text-[0.75rem] leading-relaxed">
-                Deliverables, products and barred creators all hang off this contest, so they
-                open the moment it exists. Press Create contest and they appear here, on this
-                same screen.
-              </p>
-            )}
+            ) : null}
 
-            {!isNew && existing?.contest ? (
+            {/*
+              SUMMARY IS "WHAT IS ACTUALLY GOING ON", which is the question
+              Rashid could not answer without scrolling: who is waiting to be
+              let in, what they say they have done, and which videos are
+              waiting to be watched. Three queues, one place, and none of them
+              in the way of editing the contest.
+            */}
+            {liveContestId && tab === 'summary' ? (
+              <>
+                <ContestEntryQueue contestId={liveContestId} />
+                <ContestProgressQueue contestId={liveContestId} />
+              </>
+            ) : null}
+
+            {/* -------------------------------------------------- settings -- */}
+            {tab === 'settings' ? (
+              <form id="contest-status-form" onSubmit={onSubmit} className="flex flex-col gap-4">
+                {/* ------------------------------------------------- live yet -- */}
+                <Card title="Is it running">
+                  <Field label="Status">
+                    {({ id, describedBy, invalid }) => (
+                      <Select
+                        id={id}
+                        value={form.status}
+                        onChange={(e) => set('status', e.target.value as 'active' | 'inactive')}
+                        disabled={busy}
+                        aria-describedby={describedBy}
+                        invalid={invalid}
+                      >
+                        <option value="inactive">
+                          Off, nobody can enter and nobody can see it
+                        </option>
+                        <option value="active">On, creators can see it and enter</option>
+                      </Select>
+                    )}
+                  </Field>
+                  <p className="text-muted text-[0.8125rem]">
+                    Switching a contest off closes the door, never the work. Anybody already in
+                    carries on filming and still gets paid.
+                  </p>
+                </Card>
+
+                <div className="flex flex-wrap gap-2.5">
+                  <Button type="submit" disabled={busy || formMissing}>
+                    {busy ? <Loader2 size={16} className="animate-spin" aria-hidden /> : null}
+                    Save changes
+                  </Button>
+                </div>
+              </form>
+            ) : null}
+
+            {isNew ? (
+              <p className="text-faint max-w-prose text-[0.75rem] leading-relaxed">
+                Rewards, products, barred creators and everything happening on this contest all
+                hang off it, so those tabs open the moment it exists. Press Create contest and
+                they unlock.
+              </p>
+            ) : null}
+
+            {!isNew && tab === 'settings' && existing?.contest ? (
               <>
                 <CloseContest
                   contestId={contestId!}
@@ -1156,10 +1386,18 @@ function DeleteContest({
 }
 
 function Card({
+  step,
   title,
   note,
   children,
 }: {
+  /*
+   * The section's number, from Rashid's design. Numbering them is not
+   * decoration: it turns "fill this in somewhere on a long page" into a
+   * sequence somebody can be halfway through, and it gives him something to
+   * point at when he says which part is wrong.
+   */
+  step?: number;
   title: string;
   note?: string;
   children: React.ReactNode;
@@ -1168,6 +1406,7 @@ function Card({
     <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5 shadow-md">
       <div>
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
+          {step ? <span className="text-accent">{step}. </span> : null}
           {title}
         </h2>
         {note ? (

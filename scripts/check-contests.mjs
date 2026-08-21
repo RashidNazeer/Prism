@@ -293,7 +293,14 @@ try {
   console.log('\n6. Adding a deliverable through the popup');
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ colorScheme: 'dark' });
-  await page.goto(`${BASE}/admin/brands/${brand.id}/contests/${saved.id}`, {
+  /*
+   * `?tab=rewards`, since 2026-08-22. The contest screen used to be one scroll
+   * carrying the form, the rewards, both queues, the products and the
+   * exclusions; Rashid asked for it to be five tabs, so the deliverables are no
+   * longer on the page this used to land on. Everything below still drives the
+   * real controls, it just has to open the right drawer first.
+   */
+  await page.goto(`${BASE}/admin/brands/${brand.id}/contests/${saved.id}?tab=rewards`, {
     waitUntil: 'domcontentloaded',
   });
   /*

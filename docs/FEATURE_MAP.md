@@ -746,6 +746,73 @@ labels. `/admin/offers/requests` still resolves to Requests by longest prefix
 even though Requests no longer sits under an Offers heading.
 `pnpm verify:chrome` 43 of 43 covers exactly that.
 
+## The contest editor, in five tabs (2026-08-22)
+
+**Files:** `src/routes/admin/ContestSetup.tsx`,
+`supabase/migrations/20260821200959_contest_artwork_and_perks.sql`,
+`supabase/functions/manage-contest/index.ts`, `src/lib/admin/useContests.ts`,
+`scripts/check-contests.mjs`
+
+Rashid, with a design: *"admin has to sroll on one page to see who accepted
+what's going on each and everything this is very bad"*. He was right. That
+screen was the form, the rewards, the entry queue, the progress queue, the
+products and the exclusions, all stacked, on one scroll.
+
+**Five tabs, in the URL**: Details · Rewards · Visibility · Settings · Summary.
+In the URL so "look at the rewards on this one" is a link, and so the back
+button behaves. A NEW contest is locked to Details, because everything on the
+other four hangs off an id that does not exist yet.
+
+**Summary is "what is actually going on"** — the entry queue and the progress
+queue, which is the exact question he could not answer without scrolling.
+`ContestVideoQueue` is deliberately NOT there: it is not contest-scoped, it
+lists every contest's videos, so on a per-contest tab it would answer a
+different question than the one being asked.
+
+**The Save button only exists on Details**, because only Details is a form. The
+other four carry controls that save themselves, and the form this button submits
+is not in the tree when they are open. A visible-but-inert button is worse than
+an absent one.
+
+**Sections are numbered**, from his design. Numbering turns "fill this in
+somewhere on a long page" into a sequence you can be halfway through, and gives
+him something to point at when he says which part is wrong.
+
+**HOW MANY IMAGES A CONTEST NEEDS: two, and one already existed.**
+
+| | where | status |
+| --- | --- | --- |
+| hero, behind the name and countdown | `contests.banner_url` | existed since 2026-08-13, with **no upload control** — the old form's own comment said so |
+| the picture beside "why join" | `contests.card_image_url` | new |
+| the brand's mark | `brands.logo_url` | existed |
+
+Both new fields are OPTIONAL and every screen is designed to be right without
+them, because the first contests will have neither and a layout that only works
+once somebody uploads artwork looks broken by default. They go in the EXISTING
+`brand-assets` bucket under `contests/<id>` — public read, staff write, 2 MB,
+no SVG — so **nothing commercial may appear in a picture**.
+
+**`perks` is a text column, not a `text[]`.** An array needs array-editing UI
+— add, remove, reorder — for content that is three short lines typed once. One
+textarea split on newlines is the same shape the offer audience box uses.
+
+**Change rules**
+
+- **The artwork fields MUST be seeded from the row when the form loads.**
+  `save_contest` writes all three unconditionally, so a form that opened with
+  them empty would wipe a contest's hero image on an edit that only meant to
+  change the deadline.
+- **`save_contest` was dropped by looking up its own signature**, not by naming
+  the argument list. That list was stale in my head — `judging_basis` left the
+  function when ranked placings were dropped — and the body was EXTRACTED from
+  its migration rather than retyped for the same reason.
+- **`check-contests.mjs` opens `?tab=rewards`** before driving the
+  deliverables. Everything it does is still through the real controls; it just
+  has to open the right drawer first.
+
+**Still on one scroll, deliberately:** the creator's contest screens. That is
+the other half of what he asked for and is the next step.
+
 ## Offer kinds, and who is allowed to see an offer (2026-08-22)
 
 **Files:** `supabase/migrations/20260821190802_offer_kinds_and_audience.sql`,
