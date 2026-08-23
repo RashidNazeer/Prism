@@ -2,62 +2,56 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-20 by /precompact.**
+**Recorded 2026-08-23 by /precompact.**
 
 **Nothing was queued.** Rashid gave no next instruction, so **ask what he wants
 to work on**, and answer from `docs/PARKED.md` if he asks what is pending.
 
-**The last job finished cleanly**: multi-brand money correctness, screen
-included. He asked for the final gap closed rather than parked — *"please let's
-do not leave it i may forget later"* — so several Business Centers now work end
-to end and nothing blocks onboarding a second brand.
+**The last job finished cleanly**: the contest redesign, both sides. He asked
+for the admin editor and the creator card in one go and both landed, tested
+against the real artwork he uploaded. He has not yet said whether he likes the
+creator card — **that verdict is the most likely first thing he brings up.**
 
-**Read PARKED item 18 before touching anything in the money path.** It carries
-his four standing rules, which are not to be re-litigated:
+**What he was working through this session, newest first:**
 
-1. One brand maps to exactly ONE ad account, never shared either way.
-2. Each brand gets its own TikTok Business Center connection.
-3. **USD only**, confirmed with his boss. No FX.
-4. One video id belongs to ONE creator, permanently.
+1. **Contests, both sides** (2026-08-22). Admin is five tabs — Details ·
+   Rewards · Visibility · Settings · Summary, tab in the URL. Creator is a hero
+   card with a countdown, "what you can earn", three facts and "why join". Two
+   new optional columns, `contests.card_image_url` and `contests.perks`;
+   `banner_url` already existed since 13 August with no upload control ever
+   built for it. `verify:contests` 141/141.
+2. **Offer kinds and audiences** (2026-08-22). Retainer / Volume / High
+   commission, enforced in RLS **and** in `apply_for_offer`, which is SECURITY
+   DEFINER and bypasses RLS entirely. It closed a live leak: all 41 dev creators
+   could read all 31 Penetrex rates. `pnpm verify:offers` is new, 26 checks.
+3. **Three admin queues became card grids**, then the sidebar was halved from
+   eight group headings to four, and the collapsed rail stopped cropping the
+   mascot's face.
+4. **The TikTok API was mapped by probing**, not by reading docs.
+   `pnpm probe:tiktok`. Findings in OPERATIONS; the one needing a decision is
+   PARKED 19.
 
-**What he is likely to do next, from what he has said:** connect the second
-brand's Business Center and map it. Everything for that is built and deployed,
-and he has no second account yet, so it is untestable end to end until he does.
+**Read before touching the money path:** PARKED 18 (his four standing rules on
+brands and ad accounts, not to be re-litigated) and PARKED 21 (what was
+deliberately left on offer audiences).
 
-**Where dev stands:** one brand (Penetrex), 41 creators with pictures, 31
-offers, 41 jobs, 85 offer videos, 15 contest videos, ~845 money rows all
-carrying their brand and store, one currency, 4 jobs at Payment pending, \$150
-of contest reward owed, 6 creators on the leaderboard.
-`node scripts/tidy-dev.mjs` dry-runs a check that nothing has crept in.
+**Where dev stands:** one brand (Penetrex, no logo), 41 creators, 31 offers —
+**all now `kind = 'retainer'`** with 41 audience rows, 41 applications all
+approved, 1 contest with 3 rewards and real uploaded artwork, 85 offer videos,
+15 contest videos, ~845 money rows, 42 profiles. `node scripts/tidy-dev.mjs`
+dry-runs a check that nothing has crept in.
 
-**Suites, all green on 2026-08-20:** `verify:contests` 141 ·
-`verify:leaderboard` 43 · `verify:performance` 46 · `verify:content` 33 ·
-`verify:rls` 22.
+**Suites, all green on 2026-08-22:** `verify:contests` 141 · `verify:offers`
+26 · `verify:brands` · `verify:offer-requests` · `verify:content` 33 ·
+`verify:rls` 22 · `verify:chrome` 43.
 
-**Still open, all minor and all in PARKED 18:** the backfill depth is global
-rather than per brand; the daily chart could truncate past ~3 years; the creator
-home's money block can still blend currencies; the leaderboard aggregates per
-page view and will want a rollup at scale.
+**Two known flakes, both this machine and not the code.** `verify:contests`
+and `verify:offer-requests` both failed mid-run with `fetch failed` while
+Chrome was open with ~1.5 GB free, and both went green once it was closed. See
+PARKED 20. **Re-run before believing a failure**, and close Chrome first.
 
 **Do not re-explore the codebase to get oriented.** This file, then PARKED, then
 only the files the chosen job names.
-
-**Since then, 2026-08-21, two things:**
-
-1. Rashid asked what else the TikTok API offers and whether shop GMV is
-   reachable. Answered by probing the live account rather than reading docs —
-   `pnpm probe:tiktok`, new. No code changed; the findings are in OPERATIONS and
-   the one that needs a decision is PARKED 19.
-2. **The admin offers screen was rebuilt as a grid of cards** on his
-   instruction. He approved it: *"i like it"*.
-3. **The requests queue got the same treatment**, at his request.
-4. **The applications queue too**, after he pushed back that it was still a
-   table — and that its status pill was overlapping the date, which a fixed
-   `2.25rem` actions column sized for a different state had been doing all
-   along. All three admin queues are card grids now.
-5. **The sidebar was halved**: eight group headings became four, five of which
-   had sat over a single item, and rows went from 44px to 34px above `sm`.
-   `pnpm verify:chrome` 43 of 43. Waiting on his verdict.
 
 ---
 

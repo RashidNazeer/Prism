@@ -578,3 +578,34 @@ something. If a creator screen ever needs to distinguish a retainer, add the
 column to BOTH `useAllOffers` and `useCreatorBrands` in the same commit — they
 feed one `OfferCard` and drifting them apart is a documented past bug.
 
+---
+
+## 22. Contests: what is left after the redesign
+
+**Parked 2026-08-22.**
+
+**a. The Penetrex contest carries TEST CONTENT, and creators can see it.**
+`perks` currently reads "heheheheheheheheheheeh" — Rashid typed it to check the
+field saved — and it renders on the creator card as a tick. Penetrex also has no
+brand logo, so the hero pill shows a generic shop icon. **Both are content, not
+code:** Details → 5. How it looks, and Brand hub → About. **Raise before any
+real creator is shown that contest.**
+
+**b. The creator screens never had the chrome rebuild.** `/app/contests` still
+draws its own `<h1>` and a description line under it, which the admin side had
+removed on 2026-08-16 because the top bar already names the section. Same for
+the other creator routes. Tracked as PARKED 0b; noted again here because the new
+contest card sits directly under it and the repetition is now obvious.
+
+**c. `ContestVideoQueue` is not contest-scoped.** It lists every contest's
+videos, which is why it was left off the per-contest Summary tab. If a
+per-contest video queue is ever wanted, it needs a `contestId` prop and a
+filter in `useContestContent` — do not just drop the existing component onto
+the tab.
+
+**d. Nothing verifies the contest artwork path end to end.** `verify:contests`
+covers 141 things and none of them upload an image. The hero, the side image and
+the perks were checked by eye at four widths in both themes. **Raise if artwork
+ever comes back wrong after a save**, because there is no test that would catch
+it.
+

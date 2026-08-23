@@ -1364,3 +1364,20 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   a table (`replica identity full` would have broadcast the whole audience to
   every creator who could see the offer); and inferring allow/deny from the kind
   (a type change would silently invert who is on the list).
+- 2026-08-22: **A contest record is five tabs, not one scroll**, and the tab
+  lives in the URL. Rashid: *"admin has to sroll on one page to see who accepted
+  what's going on each and everything this is very bad"*. Summary carries the
+  per-contest queues, which is the question he could not answer. Rejected:
+  keeping the queues on every tab (they are the thing that made it a scroll),
+  and putting `ContestVideoQueue` on Summary — it is not contest-scoped, so on
+  a per-contest tab it answers a different question than the one being asked.
+- 2026-08-22: **A hero image's legibility is the TEXT's job, not the scrim's.**
+  The first creator contest card put 90% black over the left of the photograph.
+  It read fine in light mode and buried the picture completely in dark mode. The
+  words carry a `text-shadow` instead, which is readable over anything and
+  costs the image nothing; the scrim is insurance for a blown-out white upload.
+  The corollary is the rule that made it work: **`cover` crops a different
+  edge on every screen** — wide boxes trim top and bottom, narrow ones trim the
+  sides — so a phone showed the middle of a product shot, which is the product,
+  and white text landed on white. Both the crop origin and the scrim direction
+  are therefore responsive. Do not re-tune one without the other.
