@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { Check, Clock, Store, X } from 'lucide-react';
+import { Check, ChevronDown, Clock, Store, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { StageTracker } from '@/components/creator/StageTracker';
 import { JobProgressBar } from '@/components/work/JobProgress';
@@ -104,11 +104,6 @@ export function OfferCard({
       <h3 className={cn('text-lg font-bold', offer.badge_title && showBrand && 'mt-1')}>
         {offer.title}
       </h3>
-      {offer.description ? (
-        <p className="text-muted mt-2 line-clamp-3 text-[0.875rem] leading-relaxed">
-          {offer.description}
-        </p>
-      ) : null}
 
       {hasVideos || hasReward ? (
         <div className="border-line mt-4 flex flex-wrap items-end gap-x-6 gap-y-2 border-t pt-4">
@@ -140,7 +135,35 @@ export function OfferCard({
         </div>
       ) : null}
 
-      <div className="mt-auto pt-5">
+      {/*
+        THE DESCRIPTION IS BEHIND A DISCLOSURE, not printed on every card.
+
+        Rashid: "we need to make this card with minimum information and then
+        accordion open up with more info". Every offer here carries the same
+        three paragraphs about samples and posting to your own account, so
+        printing them on each card is three cards' worth of identical prose
+        between a creator and the numbers they came to read.
+
+        A `<details>` rather than state and a div: it is open and closed for
+        free, keyboard operable for free, and findable by the browser's own
+        find-on-page even while shut, which a hand-rolled accordion is not.
+      */}
+      {offer.description ? (
+        <details className="group border-line mt-3 border-t pt-3">
+          <summary className="text-muted hover:text-text marker:content-none flex cursor-pointer list-none items-center gap-1.5 text-[0.8125rem] font-semibold transition-colors [&::-webkit-details-marker]:hidden">
+            <ChevronDown
+              size={14}
+              aria-hidden
+              className="shrink-0 transition-transform duration-200 group-open:rotate-180"
+            />
+            <span className="group-open:hidden">What this involves</span>
+            <span className="hidden group-open:inline">Hide the detail</span>
+          </summary>
+          <p className="text-muted mt-2.5 text-[0.875rem] leading-relaxed">{offer.description}</p>
+        </details>
+      ) : null}
+
+      <div className="mt-auto pt-4">
         <OfferAction
           offer={offer}
           request={request}

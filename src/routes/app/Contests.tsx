@@ -557,10 +557,36 @@ function ContestCard({
     .filter(Boolean)
     .slice(0, 4);
 
+  /*
+   * THE BODY IS TABS NOW, NOT A STACK.
+   *
+   * Rashid: "how boring ... user needs to scroll a lot and all is messy please
+   * organize". Every block was printed one under the other, so a single contest
+   * ran to about three screens: rewards, then three facts, then why join, then
+   * the products and the brief, then the button. A creator scrolled past two of
+   * those to reach the one they wanted, on every contest in the list.
+   *
+   * They are now three panels in the same box. The card keeps ONE height, the
+   * action stays pinned under it, and nothing is hidden that was not already
+   * below the fold.
+   *
+   * ONLY THE TABS THAT HAVE SOMETHING BEHIND THEM. A contest with no perks
+   * should not grow an empty "Why join" tab: an empty tab is worse than a
+   * missing one, because it costs a click to find out it was nothing.
+   */
+  const tabs = [
+    rows.length > 0 && { key: 'earn', label: promised ? 'Promised' : 'Rewards' },
+    { key: 'details', label: 'Details' },
+    perks.length > 0 && { key: 'why', label: 'Why join' },
+  ].filter(Boolean) as { key: string; label: string }[];
+
+  const [panel, setPanel] = useState(tabs[0]?.key ?? 'details');
+  const shown = tabs.some((t) => t.key === panel) ? panel : (tabs[0]?.key ?? 'details');
+
   return (
     <div className="border-line bg-surface-1 flex h-full flex-col overflow-hidden rounded-xl border shadow-md">
       {/* ------------------------------------------------------------ hero -- */}
-      <div className="relative isolate min-h-[17rem] overflow-hidden sm:min-h-[20rem] lg:min-h-[26rem]">
+      <div className="relative isolate min-h-[15rem] overflow-hidden sm:min-h-[17rem] lg:min-h-[20rem]">
         {contest.bannerUrl ? (
           <img
             src={contest.bannerUrl}
@@ -659,18 +685,55 @@ function ContestCard({
         </div>
       </div>
 
-      {/* -------------------------------------------- what you can earn -- */}
-      {rows.length > 0 ? (
-        <div className="border-line border-t p-5 sm:p-6">
-          <p className="font-display text-text text-[1rem] font-bold">
-            {promised ? 'What you were promised' : 'What you can earn'}
-          </p>
-          <DeliverableRows rows={rows} currency={contest.currency} className="mt-3" />
+      {/* ------------------------------------------------------------ tabs -- */}
+      {/*
+        TRANSPARENT TABS, which Rashid asked for by name. No filled pills and no
+        box around the row: the underline carries which one is open, so the row
+        reads as part of the card rather than as a control panel bolted onto it.
+        It scrolls sideways inside itself on a narrow screen rather than
+        wrapping to two lines or pushing the card wide.
+      */}
+      <div className="border-line -mb-px overflow-x-auto border-t px-5 sm:px-6">
+        <div role="tablist" aria-label="Contest detail" className="flex min-w-max gap-1">
+          {tabs.map((t) => {
+            const active = t.key === shown;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setPanel(t.key)}
+                className={cn(
+                  'relative min-h-[44px] shrink-0 px-3 text-[0.8125rem] font-semibold transition-colors',
+                  active ? 'text-text' : 'text-muted hover:text-text'
+                )}
+              >
+                {t.label}
+                {active ? (
+                  <span
+                    aria-hidden
+                    className="bg-accent absolute inset-x-2 -bottom-px h-[2px] rounded-full"
+                  />
+                ) : null}
+              </button>
+            );
+          })}
         </div>
-      ) : null}
+      </div>
 
-      {/* ---------------------------------------------------- the facts -- */}
-      <div className="border-line bg-surface-2/40 grid gap-4 border-t p-5 sm:grid-cols-3 sm:p-6">
+      {/*
+        ONE MINIMUM HEIGHT ACROSS THE PANELS. Without it the whole card jumps
+        as somebody moves between a three-row reward list and a one-line perk,
+        and in a grid of cards that drags every neighbour with it.
+      */}
+      <div className="border-line min-h-[11rem] border-t p-5 sm:p-6">
+        {shown === 'earn' && rows.length > 0 ? (
+          <DeliverableRows rows={rows} currency={contest.currency} />
+        ) : null}
+
+        {shown === 'details' ? (
+          <div className="grid gap-4 sm:grid-cols-3">
         <Fact icon={<Store size={15} aria-hidden />} label="Brand">
           {contest.brand?.name ?? 'Unknown brand'}
         </Fact>
@@ -688,14 +751,13 @@ function ContestCard({
         <Fact icon={<UserRound size={15} aria-hidden />} label="Approved by">
           {contest.needsAdminApproval ? 'The Wurx team' : 'Nobody, it is automatic'}
         </Fact>
-      </div>
+          </div>
+        ) : null}
 
-      {/* ----------------------------------------------------- why join -- */}
-      {perks.length > 0 ? (
-        <div className="border-line flex flex-wrap items-center gap-6 border-t p-5 sm:p-6">
+        {shown === 'why' && perks.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-6">
           <div className="min-w-[14rem] flex-1">
-            <p className="font-display text-text text-[1rem] font-bold">Why join this contest?</p>
-            <ul className="mt-3 flex flex-col gap-2">
+            <ul className="flex flex-col gap-2">
               {perks.map((line) => (
                 <li key={line} className="flex items-start gap-2.5">
                   <Check size={15} aria-hidden className="text-accent mt-0.5 shrink-0" />
@@ -714,10 +776,11 @@ function ContestCard({
             />
           ) : null}
         </div>
-      ) : null}
+        ) : null}
+      </div>
 
       {/* --------------------------------------------------- everything else -- */}
-      <div className="flex flex-col gap-3 p-5 pt-0 sm:p-6 sm:pt-0">
+      <div className="border-line flex flex-col gap-3 border-t p-5 sm:p-6">
         {contest.products.length > 0 ? (
           <p className="text-muted text-[0.8125rem] leading-relaxed">
             <span className="text-text font-semibold">Products: </span>

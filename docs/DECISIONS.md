@@ -1458,3 +1458,23 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   the answer. The Home greeting STAYS, because it greets the person rather than
   naming the section; it steps down to an `<h2>`, as do the rejected and
   unfinished full-page states, since the bar owns the page's only `<h1>`.
+- 2026-08-25: **A creator offer card shows the money and hides the prose.**
+  Rashid: *"we need to make this card with minimum information and then
+  accordion open up with more info"*. Every retainer carries the same three
+  paragraphs about samples and posting, so printing them on each card put three
+  cards of identical text between a creator and the figures they came for. The
+  description is now a `<details>`: open and closed for free, keyboard operable
+  for free, and still found by the browser find-on-page while shut, which a
+  hand-rolled accordion is not.
+- 2026-08-25: **A contest card is tabs, not a stack.** Rashid: *"how boring ...
+  user needs to scroll a lot and all is messy please organize"*. Rewards, the
+  facts and Why join were printed one under the other, so one contest ran to
+  about three screens and a creator scrolled past two blocks to reach the one
+  they wanted, on every contest in the list. They are three panels in one box
+  now, with the transparent underlined tabs he asked for rather than filled
+  pills. Two rules that came out of building it: a tab is only rendered when
+  something is behind it, because an empty tab costs a click to discover it was
+  nothing; and the panel carries a min-height, or the card jumps between a
+  three-row reward list and a one-line perk and drags every neighbour in the
+  grid with it. The hero also came down from 26rem to 20rem: at 26 it was 540px,
+  about 40% of the card, with a dead band in the middle of it.
