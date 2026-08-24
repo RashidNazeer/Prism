@@ -1409,3 +1409,12 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   argument passed down to `private.leaderboard_totals` underneath the `rank()`.
   Ranking everybody and then hiding other brands' rows would open the board on
   "#7 of 3", which is not a smaller leaderboard, it is a broken one.
+- 2026-08-24: **A finished day is re-read for a week, because ad spend is not
+  final when the day ends.** The sync had skipped any day it already held, on
+  the stated belief that "a complete day cannot change". True of revenue, false
+  of cost: TikTok credits back invalid traffic afterwards. Rejected: `force` on
+  the nightly run, which would have switched off the late-video backfill in the
+  same move, so the window is a separate `refreshDays` argument. Seven days
+  chosen from measurement, not habit: days four and five out had drifted, days
+  eight and beyond matched exactly. Cost is one report call per store per night
+  per day in the window.

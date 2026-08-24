@@ -611,7 +611,7 @@ it.
 
 ---
 
-## 23. TikTok RESTATES ad spend, and the sync never re-reads a stored day
+## 23. DONE 2026-08-24. TikTok restates ad spend, and the sync never re-read a stored day
 
 **Found and parked 2026-08-24.** Found by `pnpm verify:numbers`, which was
 written for exactly this and is now in the suite list.
@@ -648,8 +648,29 @@ a 7 day forced window is 7 calls a night for one store rather than 1 to 3.
 Open questions for Rashid: how far back to re-read, and whether to re-read
 every night or weekly.
 
-**Raise this before any creator is shown a spend or ROI figure they might
-question**, and before prod ever syncs.
+**FIXED on 2026-08-24.** The sync gained `refreshDays`, and the nightly cron
+now runs `tiktok_run_nightly_sync(3, 7)`: reach back three days for anything
+missing, and re-read the last seven whether or not we already hold them.
+
+**Not `force: true`, which was the obvious fix and is a trap.** The late-video
+backfill depth is only computed when `!force`, so forcing the nightly run would
+have repaired stale spend and silently broken the case Rashid named, a creator
+posting on the 1st and pasting the link on the 20th.
+
+**And the first version of the fix was itself short.** The day loop runs
+`back = 1..effectiveDays`, so `refreshDays: 7` with `days: 3` re-read three
+days and reported seven. It would have missed the very drift it was written for,
+which was four and five days back. The window now widens the loop.
+
+**Proved end to end**, not just by reading the code: a row five days back was
+deliberately overstated by $99.99 and the nightly call put it back; a row a
+fortnight back was left alone, so the window is a real boundary rather than a
+blanket force. `pnpm verify:numbers 20` then compared 1195 video-days against
+the live API with no drift anywhere.
+
+**Still open for prod:** prod has never synced and has none of the TikTok
+secrets set. This migration and function go live with everything else when
+Rashid says so.
 
 ---
 

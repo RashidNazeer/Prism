@@ -508,6 +508,27 @@ which reads exactly like a bad app secret. Every call goes through
 check their own region and refuse before calling out. Verified working:
 ap-northeast-1, ap-southeast-1, eu-west-2, us-east-1.
 
+**THE NIGHTLY RUN RE-READS THE LAST SEVEN DAYS, and this is not optional.**
+`cron.schedule('tiktok-nightly', '20 3 * * *', tiktok_run_nightly_sync(3, 7))`.
+The first number is how far back to reach for figures we are MISSING; the
+second re-reads that many recent days even though we already hold them, because
+**TikTok restates `cost` after a day has closed** (it credits back invalid
+traffic). `gross_revenue` has never moved. Before this, dev was overstating
+spend by 2.8% overall and 13.6% on one day, which makes a creator's ROI read
+LOWER than the truth.
+
+Two traps, both met and both now written into the code:
+
+- **Do not use `force: true` on the nightly run.** The late-video backfill
+  depth is only computed when `!force`, so forcing it fixes spend and breaks a
+  creator pasting a link nineteen days late. `force` is for a manual repair.
+- **`refreshDays` must widen the day loop.** The loop runs
+  `back = 1..effectiveDays`, so `refreshDays: 7` with `days: 3` re-reads three
+  days and reports seven.
+
+Check it with `pnpm verify:numbers`, and repair a specific stretch by hand with
+a `{ days: N, force: true }` call to `tiktok-sync` as an admin.
+
 **GMV Max reporting is v2.0, not v1.3.** At v1.3 the report path exists and
 fails with a useless "ERROR Message." and the video endpoint 404s. Built and
 syncing since 2026-08-18; noted here so the next person does not lose the day

@@ -40,8 +40,37 @@ const Body = z.object({
    * here is an unbounded number of API calls.
    */
   days: z.number().int().min(1).max(400).default(1),
-  /** Refetch days we already have. Off by default: a complete day cannot change. */
+  /**
+   * Refetch every day in the window, including ones we already hold.
+   *
+   * CAREFUL WITH THIS ON THE NIGHTLY RUN. Setting it also switches OFF the
+   * late-video backfill below, because that depth is only computed when
+   * `!force`. A nightly `force: true` would therefore fix stale spend and
+   * break the "creator pastes a link nineteen days late" case in the same
+   * move. Use `refreshDays` for the rolling re-read instead; this stays what
+   * it always was, a manual override for a one-off repair.
+   */
   force: z.boolean().default(false),
+  /*
+   * HOW MANY RECENT DAYS TO RE-READ EVEN THOUGH WE ALREADY HAVE THEM.
+   *
+   * The old comment on `force` said "a complete day cannot change". That is
+   * true of `gross_revenue`, which has never moved on any day we have checked.
+   * IT IS NOT TRUE OF `cost`. TikTok credits back invalid traffic for days
+   * that are already closed, so ad spend keeps moving after we have stored it.
+   * Because a stored day was skipped for ever, dev was showing spend 2.8% too
+   * high overall and 13.6% too high on 2026-08-19, which makes the ROI a
+   * creator is shown LOWER than the truth. Found by `pnpm verify:numbers`.
+   *
+   * So the most recent days are always asked again. Older ones keep the cheap
+   * skip, and the late-video backfill is untouched, because this is a separate
+   * predicate rather than a blanket force.
+   *
+   * SEVEN, from the measurements. Days four and five out had drifted; days
+   * eight and beyond matched exactly. Seven covers the observed window with a
+   * margin and costs one extra call per store per night per day in it.
+   */
+  refreshDays: z.number().int().min(0).max(60).default(0),
   /*
    * A HARD CEILING ON API CALLS PER RUN, and it does two jobs.
    *
@@ -168,7 +197,7 @@ Deno.serve(async (req) => {
   }
   const parsed = Body.safeParse(raw ?? {});
   if (!parsed.success) return reply({ error: 'That request made no sense' }, 400);
-  const { days, force, maxCalls } = parsed.data;
+  const { days, force, maxCalls, refreshDays } = parsed.data;
 
   try {
     assertCallableRegion();
@@ -222,6 +251,18 @@ Deno.serve(async (req) => {
     const depth = Number(needed ?? 0);
     if (depth > effectiveDays) effectiveDays = Math.min(depth + 2, 400);
   }
+
+  /*
+   * THE REFRESH WINDOW HAS TO BE INSIDE THE LOOP TO MEAN ANYTHING.
+   *
+   * The day loop runs `back = 1..effectiveDays`, so asking to re-read seven
+   * days while `days` is three re-reads three and quietly calls it seven. The
+   * first version of this did exactly that, and it would have missed the drift
+   * it was written for: the days measured wrong on 2026-08-24 were four and
+   * five back, both outside a three day loop. A window that reports a number
+   * bigger than the work it does is worse than no window.
+   */
+  if (refreshDays > effectiveDays) effectiveDays = Math.min(refreshDays, 400);
 
   /* ------------------------------------------- the stores worth asking about */
   /*
@@ -413,7 +454,12 @@ Deno.serve(async (req) => {
 
       const statDate = dayInZone(zone, back);
 
-      if (!force) {
+      /*
+       * A DAY INSIDE THE REFRESH WINDOW IS NEVER SKIPPED. `back` is 1 for
+       * yesterday, so `back <= refreshDays` is "recent enough that TikTok may
+       * still be restating it".
+       */
+      if (!force && back > refreshDays) {
         const { count } = await admin
           .from('tiktok_sync_runs')
           .select('*', { count: 'exact', head: true })
@@ -571,9 +617,22 @@ Deno.serve(async (req) => {
       // run now spans several connections, so the row is about the RUN and the
       // summary in `detail` is the part worth reading.
       subject_id: liveConns[0]!.id,
-      detail: { ...summary, days, effectiveDays, force, connections: liveConns.length },
+      detail: {
+        ...summary,
+        days,
+        effectiveDays,
+        force,
+        refreshDays,
+        connections: liveConns.length,
+      },
     });
   }
 
-  return reply({ ok: true, ...summary, daysRequested: days, daysCovered: effectiveDays });
+  return reply({
+    ok: true,
+    ...summary,
+    daysRequested: days,
+    daysCovered: effectiveDays,
+    refreshDays,
+  });
 });
