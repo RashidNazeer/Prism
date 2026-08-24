@@ -138,6 +138,11 @@ pnpm verify:content [url]   # a creator posts a video, the team decides, and
 pnpm verify:live [url]      # admin moves a stage on the REAL admin screen,
                             # creator sees it on all three of their screens
                             # with no reload. Needs SUPABASE_SERVICE_KEY
+pnpm verify:numbers [n|date] # asks TikTok the same question the nightly sync
+                            # asks and diffs it against tiktok_video_daily row
+                            # by row. A penny of drift fails. Default 5 days,
+                            # or pass a count or a single YYYY-MM-DD.
+                            # Needs SUPABASE_SERVICE_KEY
 pnpm verify:offers          # 26 checks, no browser. Attacks the offer audience
                             # rules as a REAL signed-in creator: a retainer they
                             # are not on must be unreadable AND unapplyable.

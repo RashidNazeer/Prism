@@ -609,3 +609,45 @@ the perks were checked by eye at four widths in both themes. **Raise if artwork
 ever comes back wrong after a save**, because there is no test that would catch
 it.
 
+---
+
+## 23. TikTok RESTATES ad spend, and the sync never re-reads a stored day
+
+**Found and parked 2026-08-24.** Found by `pnpm verify:numbers`, which was
+written for exactly this and is now in the suite list.
+
+**What is wrong.** `tiktok-sync` skips any day it already holds: the guard is
+`(advertiser_id, store_id, stat_date, videos_hash)` with a finished run, and
+the comment on the `force` flag says *"a complete day cannot change"*. That is
+true of `gross_revenue`, which has never moved on any day checked. **It is not
+true of `cost`.** TikTok credits back invalid traffic for days that are already
+closed, so the spend figure keeps moving after we have stored it, and we never
+look again.
+
+**What it had done to dev.** On 2026-08-24, before it was corrected:
+
+| day | our spend | TikTok | overstated by |
+| --- | --- | --- | --- |
+| 2026-08-19 | $154.35 | $135.91 | **13.6%** |
+| 2026-08-20 | $128.92 | $128.24 | 0.5% |
+| all stored days | $841.24 | $817.96 | 2.8% |
+
+GMV was correct to the penny on every single day. **Only spend drifts**, which
+is the worse half: a creator sees more spend than was really charged, so the
+ROI we show them is LOWER than the truth. Transparency is the product, and this
+is the number being untransparent.
+
+**Corrected on dev** by calling the sync with `force: true, days: 7`, after
+which all 12 checked days matched exactly, 964 video-days compared.
+
+**The fix, not yet applied because it changes live behaviour and costs API
+calls.** The nightly cron runs `tiktok_run_nightly_sync(3)`, which posts
+`{days: 3}` and no `force`, so it only fills gaps. It should re-read a rolling
+window instead. Roughly one extra call per store per day per day-in-window, so
+a 7 day forced window is 7 calls a night for one store rather than 1 to 3.
+Open questions for Rashid: how far back to re-read, and whether to re-read
+every night or weekly.
+
+**Raise this before any creator is shown a spend or ROI figure they might
+question**, and before prod ever syncs.
+

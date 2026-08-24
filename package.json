@@ -36,7 +36,8 @@
     "seed:contests": "node scripts/seed-contests.mjs",
     "verify:isolation": "node scripts/check-isolation.mjs",
     "verify:leaderboard": "node scripts/check-leaderboard.mjs",
-    "probe:tiktok": "node scripts/probe-tiktok.mjs"
+    "probe:tiktok": "node scripts/probe-tiktok.mjs",
+    "verify:numbers": "node scripts/check-numbers.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",
