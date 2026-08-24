@@ -635,6 +635,59 @@ The \$227.52 gap is LIVE and product-card selling, which has no `item_id` to
 hang off. **Never present a store figure as the sum of the creators' videos**,
 and never derive one from the other.
 
+### Ad delivery status: we do NOT have it, and here is exactly why
+
+Re-probed 2026-08-25 against the live Penetrex account, because Rashid asked
+whether we can tell if an ad is stopped, learning, queued or something else, and
+noted TikTok had changed the status values. Asked rather than read.
+
+**Status is not in GMV Max reporting at all, and that is now settled by name:**
+
+| asked for | TikTok's answer |
+| --- | --- |
+| `secondary_status` as a store-report metric | `Invalid metric: secondary_status not support` |
+| `operation_status` as a video-report metric | `Invalid metric: operation_status not support` |
+| `campaign_id` as a store-report dimension | `Invalid dim: campaign_id is not exist` |
+
+The reports carry money and nothing else. Delivery status lives on the CAMPAIGN,
+AD GROUP and AD objects, in `operation_status` (what the advertiser set) and
+`secondary_status` (what TikTok is actually doing, which is where LEARNING and
+NOT DELIVERING appear).
+
+**Those objects are a SCOPE problem, which is ours to fix and costs nothing.**
+All four come back `code 40001 ... lacks the required scope ... reauthorize your
+API App`, which per the table above means OUR APP does not carry the scope, not
+that the advertiser withheld it:
+
+`/campaign/get/` · `/adgroup/get/` · `/ad/get/` · `/report/integrated/get/`
+
+Add the scopes in the TikTok app settings, have Rashid re-authorise, and the
+status fields arrive. **No application to TikTok.**
+
+**The GMV Max campaign objects are a GRANT problem and would need TikTok:**
+`/gmv_max/campaign/get/` (v1.3 and v2.0) and `/campaign/gmv_max/info/` all
+answer `advertiser does not grant you ... permission`.
+
+**What we have today that is status-ADJACENT, and its limits.** Two booleans at
+shop level, from `/gmv_max/store/shop_ad_usage_check/` and
+`/gmv_max/identity/get/`: `is_running_custom_shop_ads` and
+`promote_all_products_allowed`, plus `live_gmv_max_available` and
+`product_gmv_max_available` on the identity. They describe the SHOP, not an ad.
+
+Everything a creator currently sees about whether ads are running is INFERRED BY
+US from spend, not read from TikTok: `ads_ever` is `bool_or(cost > 0)` and
+"Ads running" is a recent day with cost on it. That is a reasonable proxy and it
+is not the same fact. **A campaign paused an hour ago still reads as running
+until the spend stops arriving**, and a campaign in learning with no spend yet
+reads as "No ads".
+
+**The status VALUES cannot be listed until the scope exists.** TikTok changed
+them, and the only honest source is what this account answers, which is the rule
+the rest of this section was written under.
+
+**Probe it again with:** `pnpm probe:tiktok`, which now carries ten status
+probes at the top of its list.
+
 **Not granted, and each would need TikTok to widen the authorisation:**
 `/gmv_max/campaign/get/`, `/campaign/gmv_max/info/` (so daily budget, target
 ROAS and optimisation mode are unavailable), `/gmv_max/exclusive_authorization/get/`,

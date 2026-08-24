@@ -78,6 +78,99 @@ console.log(`Window ${START} to ${END}\n`);
 const J = JSON.stringify;
 
 const PROBES = [
+  /* --- IS AN AD RUNNING, PAUSED, LEARNING OR STOPPED? --------------------- */
+  /*
+   * Rashid, 2026-08-25: "do we have any endpoint that will tell us the ads
+   * status? such as wether it's stop, learning in queue or something else ...
+   * tiktok recently updated the status values so it could be any".
+   *
+   * Delivery status does not live in the GMV Max REPORTS at all: those carry
+   * money and nothing else. It lives on the campaign, the ad group and the ad,
+   * in `operation_status` (what the advertiser set) and `secondary_status`
+   * (what TikTok is actually doing with it, which is where LEARNING, NOT
+   * DELIVERING and the rest appear).
+   *
+   * Every candidate is asked below, at BOTH versions where both exist, because
+   * the whole point is to find out what this account answers today rather than
+   * what a doc said last week.
+   */
+  [
+    'CAMPAIGN list: operation_status and secondary_status',
+    '/open_api/v1.3/campaign/get/',
+    { advertiser_id: A, page_size: '5' },
+  ],
+  [
+    'CAMPAIGN list at v1.2',
+    '/open_api/v1.2/campaign/get/',
+    { advertiser_id: A, page_size: '5' },
+  ],
+  [
+    'AD GROUP list: where LEARNING usually shows',
+    '/open_api/v1.3/adgroup/get/',
+    { advertiser_id: A, page_size: '5' },
+  ],
+  [
+    'AD list: per creative delivery status',
+    '/open_api/v1.3/ad/get/',
+    { advertiser_id: A, page_size: '5' },
+  ],
+  [
+    'GMV Max CAMPAIGN detail',
+    '/open_api/v2.0/gmv_max/campaign/get/',
+    { advertiser_id: A, store_ids: J([S]), store_authorized_bc_id: BC, page_size: '5' },
+  ],
+  [
+    'GMV Max CAMPAIGN detail at v1.3',
+    '/open_api/v1.3/gmv_max/campaign/get/',
+    { advertiser_id: A, store_ids: J([S]), store_authorized_bc_id: BC, page_size: '5' },
+  ],
+  [
+    'campaign gmv_max info',
+    '/open_api/v1.3/campaign/gmv_max/info/',
+    { advertiser_id: A, store_id: S },
+  ],
+  [
+    'can the STORE report carry a status dimension?',
+    '/open_api/v2.0/gmv_max/report/get/',
+    {
+      advertiser_id: A,
+      store_ids: J([S]),
+      store_authorized_bc_id: BC,
+      start_date: START,
+      end_date: END,
+      dimensions: J(['campaign_id']),
+      metrics: J(['cost', 'secondary_status']),
+    },
+  ],
+  [
+    'can the VIDEO report carry a status metric?',
+    '/open_api/v2.0/gmv_max/video_list/report/get/',
+    {
+      advertiser_id: A,
+      store_ids: J([S]),
+      store_authorized_bc_id: BC,
+      start_date: START,
+      end_date: END,
+      dimensions: J(['item_id']),
+      metrics: J(['cost', 'operation_status']),
+      page_size: '5',
+    },
+  ],
+  [
+    'the integrated report, filtered to campaign status',
+    '/open_api/v1.3/report/integrated/get/',
+    {
+      advertiser_id: A,
+      report_type: 'BASIC',
+      data_level: 'AUCTION_CAMPAIGN',
+      dimensions: J(['campaign_id']),
+      metrics: J(['spend']),
+      start_date: START,
+      end_date: END,
+      page_size: '5',
+    },
+  ],
+
   /* --- the ones round one only got the PARAMETERS wrong on ---------------- */
   [
     'every video the SHOP has (not just ours)',

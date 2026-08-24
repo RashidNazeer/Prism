@@ -765,3 +765,40 @@ because the JWT role lags approval by up to an hour, and they see the
 brand and sits on the plain Wurx background. Minor, and noted so nobody reads
 it as the theming failing.
 
+---
+
+## 26. Ad delivery status: add the scopes and re-authorise
+
+**Parked 2026-08-25**, when Rashid asked whether we can tell if an ad is
+stopped, learning or queued. Probed live: **we cannot, today.**
+
+**It is a SCOPE problem, which means it is ours and it is cheap.**
+`/campaign/get/`, `/adgroup/get/`, `/ad/get/` and `/report/integrated/get/`
+all answer `40001 ... lacks the required scope ... reauthorize your API App`.
+That is the refusal that means OUR APP lacks the scope, not that the advertiser
+withheld it. Add the scopes in the TikTok app settings, Rashid re-authorises,
+done. No application to TikTok.
+
+**What it buys:** `operation_status` (what the advertiser set) and
+`secondary_status` (what TikTok is doing with it, where LEARNING and NOT
+DELIVERING live). It also unlocks the integrated report, which is the only
+route inside this app to impressions, clicks and video views.
+
+**What it does NOT buy:** the GMV Max campaign objects.
+`/gmv_max/campaign/get/` and `/campaign/gmv_max/info/` are a GRANT problem and
+need TikTok to widen the authorisation.
+
+**Confirmed dead ends, so nobody re-probes them:** status is not available as a
+report field. `secondary_status` and `operation_status` are both refused by
+name as metrics, and `campaign_id` is refused as a dimension.
+
+**Why it matters rather than being a nice-to-have.** What a creator sees about
+ads today is inferred from SPEND, not read from TikTok: "Ads running" means a
+recent day had cost on it. So a campaign paused an hour ago still reads as
+running until the spend stops arriving, and a campaign in learning with no
+spend yet reads as "No ads".
+
+**Trigger:** raise it when Rashid next has ten minutes in the TikTok app
+settings, or the first time a creator asks why their video says no ads while
+the brand says it is live.
+
