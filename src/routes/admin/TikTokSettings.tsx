@@ -478,7 +478,7 @@ function ConnectionTab({
                 of them, and an admin should know which before clicking.
               */}
               Deletes this token only. Its brand matching is kept, so reconnecting does not mean
-              doing it again — but until then, the brands on these ad accounts stop updating.
+              doing it again. Until then, the brands on these ad accounts stop updating.
             </p>
           </div>
         </section>

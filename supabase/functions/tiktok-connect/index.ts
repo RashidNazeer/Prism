@@ -461,7 +461,7 @@ Deno.serve(async (req) => {
             {
               error:
                 'This shop is already matched to a brand under ad account ' +
-                `${sameStore.advertiser_id}. A shop reports through one ad account only — ` +
+                `${sameStore.advertiser_id}. A shop reports through one ad account only, ` +
                 'unmatch it there first.',
             },
             409
@@ -480,7 +480,7 @@ Deno.serve(async (req) => {
             {
               error:
                 `${brand.name} is already matched to shop ${sameBrand.store_id}. ` +
-                'A brand takes its figures from one ad account only — unmatch that one first.',
+                'A brand takes its figures from one ad account only, so unmatch that one first.',
             },
             409
           );

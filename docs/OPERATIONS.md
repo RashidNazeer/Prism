@@ -457,7 +457,13 @@ the Edge Function. Never treat the URL as a security boundary.
 
 ## 8. House style
 
-- **No em dashes or en dashes anywhere.** Standing instruction from Rashid.
+- **No em dashes or en dashes in the APP.** Standing instruction from Rashid.
+  It covers everything a person using the product can read: components, copy,
+  microcopy, labels, empty and error states, emails, seed and mock data. It does
+  **not** cover `docs/` or the memory files, which he confirmed on 2026-08-24:
+  *"i told you not to use em dashes in our app u are not restricted to use em
+  dashes in those docs becuase it is u who need to understand"*. Those exist for
+  the agent to read, so write them however reads clearest. **Do not sweep them.**
 - Every colour is a `var(--wx-*)` token; the build fails if dark and light drift
   apart or if contrast drops below WCAG AA.
 - Use `m.div` from Motion, never `motion.div`. `LazyMotion` runs in strict mode
@@ -587,8 +593,8 @@ ordinary Ads Manager reporting API and is the only route inside this app to
 impressions, clicks and video views. Adding the scope in the TikTok app settings
 and having Rashid re-authorise is the whole job; no application to TikTok.
 
-**Total shop GMV, every sale the shop makes and not just the ad-driven ones,
-is not in this API at all.** It lives in the TikTok Shop Partner API, which is a
+**Total shop GMV — every sale the shop makes, not just the ad-driven ones — is
+not in this API at all.** It lives in the TikTok Shop Partner API, which is a
 different product with its own app, its own signing and its own authorisation.
 See PARKED for what it would give us and what it costs to get.
 

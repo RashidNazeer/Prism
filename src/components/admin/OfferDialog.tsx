@@ -372,10 +372,10 @@ export function OfferDialog({
                   onChange={(e) => set('kind', e.target.value as OfferInput['kind'])}
                   aria-describedby={describedBy}
                 >
-                  <option value="volume">Volume offer — everyone can see it</option>
-                  <option value="retainer">Retainer campaign — named creators only</option>
+                  <option value="volume">Volume offer: everyone can see it</option>
+                  <option value="retainer">Retainer campaign: named creators only</option>
                   <option value="high_commission">
-                    High commission — no application, everyone unless narrowed
+                    High commission: no application, everyone unless narrowed
                   </option>
                 </Select>
               )}

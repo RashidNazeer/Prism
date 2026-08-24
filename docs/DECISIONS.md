@@ -158,9 +158,13 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   `--wx-mark-filter: brightness(0.32)`; brightness multiplies each channel, so
   the mascot keeps its internal contrast instead of flattening to a silhouette.
   `public/favicon.svg` still shows the older geometric "W" and does not match.
-- 2026-07-29: **No em dashes or en dashes anywhere.** Rashid's standing
-  instruction. Swept from every source, doc and config file. Watch for this when
-  writing new copy.
+- 2026-07-29: **No em dashes or en dashes in the app.** Rashid's standing
+  instruction. Watch for this when writing new copy.
+  **Scope corrected 2026-08-24**, after I offered to sweep 87 lines out of four
+  docs and he stopped me: the rule is about what a person using the product
+  reads, not about `docs/`. Those are written for the agent, so they are exempt
+  and must not be swept. The original wording said "anywhere", which read as
+  covering the docs too and would have cost an afternoon of pointless rewriting.
 - 2026-07-29: Auth is email and password only for now. Rashid chose it to keep
   moving; email-code sign-in is PARKED, not rejected.
 - 2026-07-29: Applying will create an account. An anonymous application form
