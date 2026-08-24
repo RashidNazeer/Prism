@@ -587,8 +587,8 @@ ordinary Ads Manager reporting API and is the only route inside this app to
 impressions, clicks and video views. Adding the scope in the TikTok app settings
 and having Rashid re-authorise is the whole job; no application to TikTok.
 
-**Total shop GMV — every sale the shop makes, not just the ad-driven ones — is
-not in this API at all.** It lives in the TikTok Shop Partner API, which is a
+**Total shop GMV, every sale the shop makes and not just the ad-driven ones,
+is not in this API at all.** It lives in the TikTok Shop Partner API, which is a
 different product with its own app, its own signing and its own authorisation.
 See PARKED for what it would give us and what it costs to get.
 
@@ -691,3 +691,57 @@ SPA answered it with index.html and a 200, so their code called `.json()` on
 HTML and threw `Unexpected token '<'`. A real 404 lets their own handling
 degrade to null. Square brackets are avoided in the pattern: `source` is parsed
 with path-to-regexp, and a character class is not worth the risk.
+
+## MCP servers (added 2026-08-24)
+
+**Google Stitch**, a UI design service that generates and edits screens from a
+prompt and can carry a design system across them. Declared in `.mcp.json` at the
+repo root:
+
+```json
+{
+  "mcpServers": {
+    "stitch": {
+      "type": "http",
+      "url": "https://stitch.googleapis.com/mcp",
+      "headers": { "X-Goog-Api-Key": "${STITCH_API}" }
+    }
+  }
+}
+```
+
+**`.mcp.json` is committed, so it may never contain the key itself.** Claude
+Code expands `${VAR}` inside `url`, `headers`, `env`, `command` and `args` from
+its own process environment, so the file carries a reference and the machine
+carries the value.
+
+**Where the value lives, and why there.** `STITCH_API` is a persistent **Windows
+user environment variable**, set once with:
+
+```powershell
+[Environment]::SetEnvironmentVariable('STITCH_API', '<key>', 'User')
+```
+
+Three other homes were considered and rejected. A literal key in `.mcp.json`
+would be committed. `.claude/settings.json` and a `headersHelper` are both gated
+on `projects["d:/Milestone/WurxMediaHub"].hasTrustDialogAccepted` in
+`~/.claude.json`, which is currently `false`, and an untrusted folder connects
+the server **with no auth header at all** rather than failing loudly. Writing
+the server straight into `~/.claude.json` works, but Claude Code rewrites that
+file while it runs, so an edit made from inside a session can be flushed away.
+`.mcp.json` is read only from Claude Code's side, which is why it wins.
+
+The same value is also in `.env.local`, where Rashid originally put it. Nothing
+in the app reads it. **Rotating the key means changing both places.**
+
+**A restart is required.** A new value in the user environment reaches only
+processes started after it was set, so VS Code has to be reopened before the
+server connects. If the variable is missing, Claude Code does not fail: it sends
+the literal text `${STITCH_API}` as the header and reports a missing-variable
+warning in `claude mcp list`.
+
+**Verified on 2026-08-24** by reading the URL out of `.mcp.json`, expanding the
+header from the registry value rather than from the current shell, and calling
+the server: `initialize` returned protocol `2024-11-05`, `tools/list` returned
+15 tools. Note that `Invoke-RestMethod` **hangs** on this endpoint, because the
+response advertises `text/event-stream`. Use `curl` with `--max-time`.
