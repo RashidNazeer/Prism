@@ -102,13 +102,20 @@ export type DailyPerformance = {
   currency: string | null;
 };
 
-/** The days this creator could sensibly look at. */
-export function usePerformanceWindow() {
+/**
+ * The days this creator could sensibly look at.
+ *
+ * `brandId` narrows every one of these to a single Brand Hub. Undefined means
+ * the standalone My numbers screen, which still answers for every brand.
+ */
+export function usePerformanceWindow(brandId?: string) {
   return useQuery({
-    queryKey: ['creator', 'performance', 'window'],
+    queryKey: ['creator', 'performance', 'window', brandId ?? 'all'],
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<PerformanceWindow> => {
-      const { data, error } = await getSupabase().rpc('creator_performance_window');
+      const { data, error } = await getSupabase().rpc('creator_performance_window', {
+        p_brand_id: brandId ?? null,
+      });
       if (error) throw error;
       const row = (data as PerformanceWindow[] | null)?.[0];
       return row ?? { earliest: null, latest: null, videos: 0 };
@@ -120,10 +127,12 @@ export function useVideoPerformance(
   from: string | null,
   to: string | null,
   /** null asks for every video, whichever channel it arrived through. */
-  source: 'offer' | 'contest' | null = null
+  source: 'offer' | 'contest' | null = null,
+  /** Set inside a Brand Hub. Videos filed there, and only that brand's money. */
+  brandId?: string
 ) {
   return useQuery({
-    queryKey: ['creator', 'performance', 'videos', from, to, source ?? 'all'],
+    queryKey: ['creator', 'performance', 'videos', from, to, source ?? 'all', brandId ?? 'all'],
     enabled: Boolean(from && to),
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<VideoPerformance[]> => {
@@ -131,6 +140,7 @@ export function useVideoPerformance(
         p_from: from,
         p_to: to,
         p_source: source,
+        p_brand_id: brandId ?? null,
       });
       if (error) throw error;
       return (data ?? []) as VideoPerformance[];
@@ -141,10 +151,11 @@ export function useVideoPerformance(
 export function useDailyPerformance(
   from: string | null,
   to: string | null,
-  source: 'offer' | 'contest' | null = null
+  source: 'offer' | 'contest' | null = null,
+  brandId?: string
 ) {
   return useQuery({
-    queryKey: ['creator', 'performance', 'daily', from, to, source ?? 'all'],
+    queryKey: ['creator', 'performance', 'daily', from, to, source ?? 'all', brandId ?? 'all'],
     enabled: Boolean(from && to),
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<DailyPerformance[]> => {
@@ -152,6 +163,7 @@ export function useDailyPerformance(
         p_from: from,
         p_to: to,
         p_source: source,
+        p_brand_id: brandId ?? null,
       });
       if (error) throw error;
       return (data ?? []) as DailyPerformance[];

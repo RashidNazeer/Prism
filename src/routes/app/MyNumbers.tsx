@@ -80,12 +80,28 @@ const money = (n: number, currency: string | null) =>
       }).format(n)
     : new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(n);
 
-export function MyNumbers() {
+/**
+ * ONE SCREEN, TWO PLACES IT LIVES.
+ *
+ * `/app/numbers` renders it with no brand, and it answers for every brand the
+ * creator works with, exactly as it always has. A Brand Hub renders the same
+ * component with that hub's `brandId`, and every figure on it narrows to that
+ * brand.
+ *
+ * THE NARROWING HAPPENS IN THE DATABASE, NEVER HERE. Each hook passes
+ * `p_brand_id` down to the RPC, which filters the money rows and the video set
+ * together. Filtering the returned array in the browser would look identical
+ * and be wrong: a card's `brand_id` is the brand that spent MOST on that video
+ * over its lifetime, while its cost and GMV are sums across every advertiser,
+ * so `videos.filter(v => v.brand_id === brandId)` would hand this brand another
+ * brand's spend and compute ROI against a denominator that was never theirs.
+ */
+export function MyNumbers({ brandId }: { brandId?: string } = {}) {
   const [tab, setTab] = useState<TabKey>('dashboard');
   const [range, setRange] = useState<RangeKey>('all');
   const [source, setSource] = useState<SourceKey>(null);
 
-  const windowQ = usePerformanceWindow();
+  const windowQ = usePerformanceWindow(brandId);
 
   /*
    * WHICH MONTH, when the range is "By month". Rashid asked to be able to walk
@@ -110,9 +126,14 @@ export function MyNumbers() {
   const firstMonth = windowQ.data?.earliest?.slice(0, 7) ?? activeMonth;
   const lastMonth = windowQ.data?.latest?.slice(0, 7) ?? monthKey(new Date());
 
-  const videosQ = useVideoPerformance(from, to, source);
-  const brandsQ = useBrandPerformance(from, to);
-  const dailyQ = useDailyPerformance(from, to, source);
+  const videosQ = useVideoPerformance(from, to, source, brandId);
+  /*
+   * "Where your money came from" is a split BY brand, so inside a single
+   * brand's hub it is one row restating the tile above it. Not fetched there
+   * at all rather than fetched and hidden, because the round trip is the cost.
+   */
+  const brandsQ = useBrandPerformance(brandId ? null : from, brandId ? null : to);
+  const dailyQ = useDailyPerformance(from, to, source, brandId);
 
   const videos = videosQ.data ?? [];
   const daily = dailyQ.data ?? [];
@@ -286,6 +307,7 @@ export function MyNumbers() {
           currency={currency}
           adCounts={adCounts}
           brands={brandsQ.data ?? []}
+          inBrandHub={Boolean(brandId)}
         />
       ) : (
         <Content videos={videos} currency={currency} latestDataDate={latestDataDate} />
@@ -303,6 +325,7 @@ function Dashboard({
   currency,
   adCounts,
   brands,
+  inBrandHub,
 }: {
   totals: { cost: number; revenue: number; orders: number; roi: number | null };
   daily: DailyPerformance[];
@@ -310,6 +333,8 @@ function Dashboard({
   currency: string | null;
   adCounts: { running: number; ran: number; none: number; total: number; withAds: number };
   brands: BrandPerformance[];
+  /** Inside one brand's hub, so a per-brand split would be one row of itself. */
+  inBrandHub: boolean;
 }) {
   const rows = daily;
   const best = [...rows].sort((a, b) => Number(b.gross_revenue) - Number(a.gross_revenue))[0];
@@ -341,7 +366,7 @@ function Dashboard({
         panel that repeats the number above it teaches people to stop reading
         panels.
       */}
-      {brands.length > 1 ? <ByBrand brands={brands} /> : null}
+      {!inBrandHub && brands.length > 1 ? <ByBrand brands={brands} /> : null}
 
       {/*
         WHICH OF YOUR VIDEOS ARE CARRYING ADS. Not every video gets GMV Max

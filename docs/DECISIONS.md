@@ -1385,3 +1385,27 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   sides — so a phone showed the middle of a product shot, which is the product,
   and white text landed on white. Both the crop origin and the scrim direction
   are therefore responsive. Do not re-tune one without the other.
+- 2026-08-24: **A video belongs to a brand through the offer or contest it
+  was filed against, and its MONEY belongs to the brand whose ad account paid.**
+  Rashid settled the first half: *"offers and contest belong to the brand right.
+  SO when user is adding a video he chooses offer or contest right? so at that
+  time can't we hae a connection that which video is for which brand??"* Yes,
+  and `creator_videos.brand_id` is that connection. But the filing alone is not
+  enough for money: two brands can both run ads on one video, and summing all of
+  a video's money into the brand it was filed under would credit one brand with
+  another's spend. So a Brand Hub LISTS the videos filed there and SUMS only
+  that brand's money rows on them. A video filed here that only another brand
+  paid to promote therefore reads zero, which is true. Rejected: filtering the
+  returned rows in the browser, which looks identical and is wrong, because a
+  card's `brand_id` is the brand that spent MOST on it over its lifetime while
+  its cost and GMV are sums across every advertiser.
+- 2026-08-24: **A Brand Hub tab opens only if there is something behind it.**
+  My numbers, Contests and Leaderboards are real screens and now open inside a
+  hub. Campaigns & briefs and Creative studio have no table, no rows and no
+  screen, so they stay marked and unclickable. Rashid chose that over hiding
+  them: a creator should see the shape of what is coming without being able to
+  walk into an empty room.
+- 2026-08-24: **A per-brand leaderboard is ranked inside the brand**, with the
+  argument passed down to `private.leaderboard_totals` underneath the `rank()`.
+  Ranking everybody and then hiding other brands' rows would open the board on
+  "#7 of 3", which is not a smaller leaderboard, it is a broken one.

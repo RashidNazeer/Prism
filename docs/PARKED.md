@@ -651,3 +651,44 @@ every night or weekly.
 **Raise this before any creator is shown a spend or ROI figure they might
 question**, and before prod ever syncs.
 
+---
+
+## 24. Brand Hub: what the new sections still owe
+
+**Parked 2026-08-24**, when My numbers, Contests and Leaderboards were opened
+inside the creator Brand Hub.
+
+**a. Two tabs are still empty rooms, deliberately.** Campaigns & briefs and
+Creative studio have no table, no migration, no rows and no screen anywhere in
+this repo. They stay marked and unclickable. **Raise it when either is actually
+wanted**, and note first that nobody has yet defined what a CAMPAIGN is as
+distinct from an offer or a contest. That definition is the blocker, not the
+code. One thing to know before it is discussed: the landing page and the
+creator welcome modal already PROMISE briefs to the open web
+(`src/content/site.ts`), so this is not a quiet gap.
+
+**b. Only ONE brand exists on dev, so brand isolation cannot be seen by eye.**
+`verify:brand-numbers` proves the filter is applied, including that an unknown
+brand returns nothing, but with a single brand a per-brand total equals the
+global one and a leak would be INVISIBLE on screen. **Raise the moment a second
+brand with real money exists**, and re-run the suite then. Better still, the
+suite could make a temporary second brand and remove it, the way
+`check-performance.mjs` does.
+
+**c. The ByBrand panel ignores the source filter, and always has.** On the
+standalone My numbers screen, tapping "Contest videos" narrows the tiles and
+the chart but "Where your money came from" keeps showing every video, because
+`creator_brand_performance` has no `p_source` argument at all. That contradicts
+the screen's own comment, which says it filters in the database so everything
+answers the same question. **Pre-existing, found while mapping, not introduced
+here.** Inside a Brand Hub the panel is not rendered, so the bug is confined to
+`/app/numbers`.
+
+**d. `docs/FEATURE_MAP.md` section "Creator ad numbers, My numbers
+(2026-08-18)" is stale in six ways** and contradicts both the code and the
+newer sections of its own file: it describes a `distinct on` that no longer
+exists, lists only the 2026-08-18 migration when every live body comes from
+three later ones, and never mentions `p_source`, `creator_brand_performance`,
+the ByBrand panel or `brand_id` on the money row. **Fix it in the same commit
+as the next change to that surface.**
+

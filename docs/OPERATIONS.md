@@ -138,6 +138,11 @@ pnpm verify:content [url]   # a creator posts a video, the team decides, and
 pnpm verify:live [url]      # admin moves a stage on the REAL admin screen,
                             # creator sees it on all three of their screens
                             # with no reload. Needs SUPABASE_SERVICE_KEY
+pnpm verify:brand-numbers   # 17 checks, no browser. Signs in as a REAL creator
+                            # and proves a Brand Hub shows that brand's money
+                            # and no other. Also proves no OLD OVERLOAD of the
+                            # RPCs survived: an unknown brand must return
+                            # nothing. Needs SUPABASE_SERVICE_KEY
 pnpm verify:numbers [n|date] # asks TikTok the same question the nightly sync
                             # asks and diffs it against tiktok_video_daily row
                             # by row. A penny of drift fails. Default 5 days,
@@ -702,6 +707,24 @@ SPA answered it with index.html and a 200, so their code called `.json()` on
 HTML and threw `Unexpected token '<'`. A real 404 lets their own handling
 degrade to null. Square brackets are avoided in the pattern: `source` is parsed
 with path-to-regexp, and a character class is not worth the risk.
+
+## Screenshot scripts
+
+`pnpm build && pnpm preview` in another shell, then:
+
+```bash
+node scripts/shots-hub.mjs      # the creator Brand Hub: 5 sections x 4 widths
+                                # x 2 themes = 40 shots into shots/hub/.
+                                # Signs in as a real creator with real money,
+                                # writes nothing, and FAILS on a console error
+                                # or any sideways page scroll.
+```
+
+Two traps it encodes, both of which have cost time here. `networkidle` never
+settles on a screen holding a realtime socket, so it waits for the skeletons to
+clear instead. And `[].every()` is TRUE, so waiting for "every image loaded"
+passes instantly on a page whose images have not started; it checks the list is
+non-empty first.
 
 ## MCP servers (added 2026-08-24)
 

@@ -153,7 +153,21 @@ function ViewSwitch({
   );
 }
 
-export function Contests() {
+/**
+ * `hubBrandId` renders this same screen inside a Brand Hub, showing only that
+ * brand's contests.
+ *
+ * NOT THE SAME THING AS THE `brandId` STATE BELOW, which is the creator's own
+ * "Brand" dropdown on the standalone screen. One is where the screen is, the
+ * other is what the person filtered it to. Inside a hub the dropdown is
+ * removed: the hub is already one brand, and a brand filter on a page that is
+ * a brand invites picking a second one.
+ *
+ * It also drops the title block. The standalone route needs an `<h1>` and a
+ * line saying the list spans every brand; inside a hub both are wrong, because
+ * the hub's own tab already names the section and the list is one brand's.
+ */
+export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
   const { claims } = useAuth();
   const { data: profile } = useProfile();
   const role = profile?.role ?? claims?.role;
@@ -209,7 +223,7 @@ export function Contests() {
    * entries right now. So a card that has an entry to draw always has the
    * figures to draw on it, and there is no third loading state on this screen.
    */
-  const { contests, isLoading, isError, error } = useCreatorContests();
+  const { contests, isLoading, isError, error } = useCreatorContests(hubBrandId);
 
   const brands = useMemo(() => {
     const seen = new Map<string, string>();
@@ -282,14 +296,16 @@ export function Contests() {
 
   return (
     <>
-      <div className="flex flex-col gap-1.5 px-0.5 py-1">
-        <h1 className="font-display text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
-          Contests
-        </h1>
-        <p className="text-muted text-[0.9375rem]">
-          Everything running right now, from every brand you work with.
-        </p>
-      </div>
+      {hubBrandId ? null : (
+        <div className="flex flex-col gap-1.5 px-0.5 py-1">
+          <h1 className="font-display text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
+            Contests
+          </h1>
+          <p className="text-muted text-[0.9375rem]">
+            Everything running right now, from every brand you work with.
+          </p>
+        </div>
+      )}
 
       {!approved ? (
         <LockedUntilApproved className="mt-6" />
@@ -356,23 +372,32 @@ export function Contests() {
               />
             </div>
 
-            <label className="sr-only" htmlFor="contest-brand-filter">
-              Filter by brand
-            </label>
-            <Select
-              id="contest-brand-filter"
-              name="brand"
-              value={brandId}
-              onChange={(e) => setBrandId(e.target.value)}
-              className="h-[44px] basis-44 text-[0.8125rem]"
-            >
-              <option value="">All brands</option>
-              {brands.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </Select>
+{/*
+              No brand dropdown inside a Brand Hub. The page IS a brand, so the
+              only thing this control could do there is take the creator to a
+              different one from inside this one's tabs.
+            */}
+            {hubBrandId ? null : (
+              <>
+                <label className="sr-only" htmlFor="contest-brand-filter">
+                  Filter by brand
+                </label>
+                <Select
+                  id="contest-brand-filter"
+                  name="brand"
+                  value={brandId}
+                  onChange={(e) => setBrandId(e.target.value)}
+                  className="h-[44px] basis-44 text-[0.8125rem]"
+                >
+                  <option value="">All brands</option>
+                  {brands.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </Select>
+              </>
+            )}
           </div>
 
           {/* ------------------------------------------------------- list -- */}

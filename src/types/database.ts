@@ -1538,6 +1538,7 @@ export type Database = {
           cancel_message: string | null
           cancelled_at: string | null
           cancelled_by: string | null
+          card_image_url: string | null
           created_at: string
           created_by: string | null
           currency: string
@@ -1548,6 +1549,7 @@ export type Database = {
           name: string
           needs_admin_approval: boolean
           opens_at: string
+          perks: string | null
           settled_at: string | null
           settled_by: string | null
           status: Database["public"]["Enums"]["contest_status"]
@@ -1560,6 +1562,7 @@ export type Database = {
           cancel_message?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
+          card_image_url?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -1570,6 +1573,7 @@ export type Database = {
           name: string
           needs_admin_approval?: boolean
           opens_at?: string
+          perks?: string | null
           settled_at?: string | null
           settled_by?: string | null
           status?: Database["public"]["Enums"]["contest_status"]
@@ -1582,6 +1586,7 @@ export type Database = {
           cancel_message?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
+          card_image_url?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -1592,6 +1597,7 @@ export type Database = {
           name?: string
           needs_admin_approval?: boolean
           opens_at?: string
+          perks?: string | null
           settled_at?: string | null
           settled_by?: string | null
           status?: Database["public"]["Enums"]["contest_status"]
@@ -3001,7 +3007,12 @@ export type Database = {
         }[]
       }
       creator_daily_performance: {
-        Args: { p_from: string; p_source?: string; p_to: string }
+        Args: {
+          p_brand_id?: string
+          p_from: string
+          p_source?: string
+          p_to: string
+        }
         Returns: {
           cost: number
           currency: string
@@ -3013,6 +3024,7 @@ export type Database = {
       }
       creator_leaderboard: {
         Args: {
+          p_brand_id?: string
           p_from: string
           p_limit?: number
           p_offset?: number
@@ -3034,7 +3046,7 @@ export type Database = {
         }[]
       }
       creator_performance_window: {
-        Args: never
+        Args: { p_brand_id?: string }
         Returns: {
           earliest: string
           latest: string
@@ -3042,7 +3054,12 @@ export type Database = {
         }[]
       }
       creator_video_performance: {
-        Args: { p_from: string; p_source?: string; p_to: string }
+        Args: {
+          p_brand_id?: string
+          p_from: string
+          p_source?: string
+          p_to: string
+        }
         Returns: {
           ads_ever: boolean
           brand_id: string
@@ -3102,7 +3119,7 @@ export type Database = {
         }[]
       }
       my_leaderboard_standing: {
-        Args: { p_from: string; p_to: string }
+        Args: { p_brand_id?: string; p_from: string; p_to: string }
         Returns: {
           currency: string
           gmv: number
@@ -3245,6 +3262,7 @@ export type Database = {
           p_banner_url?: string
           p_brand_id: string
           p_brief_url?: string
+          p_card_image_url?: string
           p_contest_id?: string
           p_currency?: string
           p_description?: string
@@ -3253,6 +3271,7 @@ export type Database = {
           p_name: string
           p_needs_admin_approval?: boolean
           p_opens_at?: string
+          p_perks?: string
           p_status?: Database["public"]["Enums"]["contest_status"]
         }
         Returns: Json

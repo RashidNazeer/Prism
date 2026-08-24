@@ -51,10 +51,22 @@ export function useLeaderboard(
   from: string,
   to: string,
   page: number,
-  search: string
+  search: string,
+  /*
+   * Inside a Brand Hub, the board is that brand's own.
+   *
+   * THE RANK IS COMPUTED INSIDE THE BRAND, not globally and then filtered. The
+   * argument goes all the way down to `private.leaderboard_totals`, underneath
+   * the `rank()`, so the numbering is dense over this brand's creators and
+   * `total_creators` counts them. Filtering a global board would open on
+   * "#7 of 3", which is not a smaller leaderboard, it is a broken one.
+   */
+  brandId?: string
 ) {
   return useQuery({
-    queryKey: ['creator', 'leaderboard', from, to, page, search.trim().toLowerCase()],
+    queryKey: [
+      'creator', 'leaderboard', from, to, page, search.trim().toLowerCase(), brandId ?? 'all',
+    ],
     placeholderData: keepPreviousData,
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<LeaderboardRow[]> => {
@@ -64,6 +76,7 @@ export function useLeaderboard(
         p_limit: BOARD_PAGE,
         p_offset: page * BOARD_PAGE,
         p_search: search.trim() || null,
+        p_brand_id: brandId ?? null,
       });
       if (error) throw error;
       return (data ?? []) as LeaderboardRow[];
@@ -82,14 +95,15 @@ export function useLeaderboard(
  * error: a creator whose videos have no figures yet is deliberately absent from
  * the board rather than sitting at the bottom on $0.
  */
-export function useMyStanding(from: string, to: string) {
+export function useMyStanding(from: string, to: string, brandId?: string) {
   return useQuery({
-    queryKey: ['creator', 'leaderboard', 'me', from, to],
+    queryKey: ['creator', 'leaderboard', 'me', from, to, brandId ?? 'all'],
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<MyStanding | null> => {
       const { data, error } = await getSupabase().rpc('my_leaderboard_standing', {
         p_from: from,
         p_to: to,
+        p_brand_id: brandId ?? null,
       });
       if (error) throw error;
       return ((data as MyStanding[] | null) ?? [])[0] ?? null;

@@ -424,11 +424,23 @@ export interface CreatorContestCatalogue {
  * contests above. Passing a list of ids would be the client re-deciding
  * something the database has already decided.
  */
-export function useCreatorContestCatalogue() {
+/**
+ * `brandId` narrows the catalogue to one Brand Hub.
+ *
+ * It is a VIEW filter and not a boundary: what a creator may read is already
+ * decided by the row policy on `contests`, and this only asks for less of it.
+ * The predicate is equality on `brand_id`, which `contests_brand_idx` was
+ * built for, so the narrower query is also the cheaper one.
+ *
+ * Only the contests read changes. Entries are keyed on `contest_id`, so an
+ * entry against another brand's contest simply finds no parent row here and
+ * falls away on its own.
+ */
+export function useCreatorContestCatalogue(brandId?: string) {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ['creator', 'contests'],
+    queryKey: ['creator', 'contests', brandId ?? 'all'],
     staleTime: 30_000,
     /*
      * Rule L5, the ticking clock. A contest closes because a deadline passed,
@@ -440,14 +452,17 @@ export function useCreatorContestCatalogue() {
     queryFn: async (): Promise<CreatorContestCatalogue> => {
       const sb = getSupabase();
 
+      const contestsQuery = sb
+        .from('contests')
+        .select(CONTEST_COLUMNS)
+        // Soonest deadline first, which is the order the screen wants and the
+        // order `contests_soonest_idx` was built for.
+        .order('expires_at', { ascending: true })
+        .limit(CEILING);
+      if (brandId) contestsQuery.eq('brand_id', brandId);
+
       const [c, d, p] = await Promise.all([
-        sb
-          .from('contests')
-          .select(CONTEST_COLUMNS)
-          // Soonest deadline first, which is the order the screen wants and the
-          // order `contests_soonest_idx` was built for.
-          .order('expires_at', { ascending: true })
-          .limit(CEILING),
+        contestsQuery,
         sb
           .from('contest_deliverables')
           .select(
@@ -851,8 +866,8 @@ export function claimedTotalsOf(
  * carry several rows and only the newest describes today. The partial unique
  * index guarantees at most one of them is live.
  */
-export function useCreatorContests() {
-  const catalogue = useCreatorContestCatalogue();
+export function useCreatorContests(brandId?: string) {
+  const catalogue = useCreatorContestCatalogue(brandId);
   const mine = useMyContestEntries();
 
   const contests = useMemo((): CreatorContest[] => {

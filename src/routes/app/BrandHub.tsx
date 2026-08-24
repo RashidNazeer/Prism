@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
 import { ArrowLeft, Package, Store, Ticket } from 'lucide-react';
@@ -25,6 +25,40 @@ import { money, percent } from '@/lib/money';
 import { useCatalogueLive } from '@/lib/creator/useCatalogueLive';
 import { useMyJobProgress } from '@/lib/work/job-progress';
 
+/*
+ * THE THREE REAL SECTIONS ARE THE SAME SCREENS THE SIDEBAR ALREADY OPENS, each
+ * handed this hub's brand id. Not a copy: one screen, two places it lives, so a
+ * fix to the numbers can never land in one and miss the other.
+ *
+ * Lazily, and this matters. My numbers pulls in the chart, and Leaderboards
+ * pulls in avatars and signed storage URLs. Importing them at the top would
+ * fold all three into the Brand Hub chunk, so a creator browsing a brand's
+ * offers would download the whole numbers screen to look at a product list.
+ */
+const HubNumbers = lazy(() =>
+  import('./MyNumbers').then((m) => ({ default: m.MyNumbers }))
+);
+const HubContests = lazy(() =>
+  import('./Contests').then((m) => ({ default: m.Contests }))
+);
+const HubLeaderboards = lazy(() =>
+  import('./Leaderboards').then((m) => ({ default: m.Leaderboards }))
+);
+
+/** Skeletons, never a bare spinner. Roughly the shape of what is arriving. */
+function SectionLoading() {
+  return (
+    <div className="mt-6 flex flex-col gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="wx-skeleton h-24 rounded-xl" />
+        ))}
+      </div>
+      <div className="wx-skeleton h-64 rounded-xl" />
+    </div>
+  );
+}
+
 /**
  * A Brand Hub, as a creator sees it.
  *
@@ -41,14 +75,23 @@ import { useMyJobProgress } from '@/lib/work/job-progress';
 const SECTIONS = [
   { key: 'overview', label: 'Overview' },
   { key: 'offers', label: 'Offers' },
-  { key: 'numbers', label: 'My numbers', soon: 'Step 8' },
-  { key: 'leaderboards', label: 'Leaderboards', soon: 'Step 9' },
+  { key: 'numbers', label: 'My numbers' },
+  { key: 'contests', label: 'Contests' },
+  { key: 'leaderboards', label: 'Leaderboards' },
   { key: 'briefs', label: 'Campaigns & briefs', soon: 'Next' },
-  { key: 'contests', label: 'Contests', soon: 'Next' },
   { key: 'studio', label: 'Creative studio', soon: 'Later' },
 ] as const;
 
-const BUILT = new Set(['overview', 'offers']);
+/*
+ * WHAT IS ACTUALLY BEHIND A TAB, and the honesty is the point.
+ *
+ * My numbers, Contests and Leaderboards are real screens with real data, so
+ * they open. Campaigns & briefs and Creative studio have no table, no rows and
+ * no screen anywhere in this repo, so they stay marked and unclickable rather
+ * than opening an empty room. Rashid asked for every section that is possible,
+ * and these two are not yet possible.
+ */
+const BUILT = new Set(['overview', 'offers', 'numbers', 'contests', 'leaderboards']);
 
 export function BrandHub() {
   const { slug } = useParams<{ slug: string }>();
@@ -155,6 +198,18 @@ export function BrandHub() {
           loading={offersLoading}
           brandName={brand.name}
         />
+      ) : section === 'numbers' ? (
+        <Suspense fallback={<SectionLoading />}>
+          <HubNumbers brandId={brand.id} />
+        </Suspense>
+      ) : section === 'contests' ? (
+        <Suspense fallback={<SectionLoading />}>
+          <HubContests hubBrandId={brand.id} />
+        </Suspense>
+      ) : section === 'leaderboards' ? (
+        <Suspense fallback={<SectionLoading />}>
+          <HubLeaderboards brandId={brand.id} />
+        </Suspense>
       ) : (
         <Overview
           brand={brand}

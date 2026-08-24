@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Search, Trophy } from 'lucide-react';
 import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { CreatorFace } from '@/components/work/CreatorFace';
@@ -74,7 +74,12 @@ const fmt = (n: number, currency: string | null, digits: number) =>
 const gmv = (n: number, currency: string | null) => fmt(n, currency, 0);
 const gmvExact = (n: number, currency: string | null) => fmt(n, currency, 2);
 
-export function Leaderboards() {
+/**
+ * `brandId` renders this board inside a Brand Hub, ranked among that brand's
+ * own creators on that brand's money. The rank is computed inside the brand by
+ * the RPC, not filtered from a global one.
+ */
+export function Leaderboards({ brandId }: { brandId?: string } = {}) {
   const [range, setRange] = useState<RangeKey>('all');
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState('');
@@ -84,8 +89,14 @@ export function Leaderboards() {
     return { from: 'days' in r ? daysAgo(r.days) : r.from, to: today() };
   }, [range]);
 
-  const board = useLeaderboard(from, to, page, search);
-  const mine = useMyStanding(from, to);
+  // Moving between brands (or ranges) must reset paging, or page 3 of a wide
+  // board opens as an empty page on a narrow one.
+  useEffect(() => {
+    setPage(0);
+  }, [brandId]);
+
+  const board = useLeaderboard(from, to, page, search, brandId);
+  const mine = useMyStanding(from, to, brandId);
 
   const rows = board.data ?? [];
   const total = rows[0]?.total_creators ?? mine.data?.total_creators ?? 0;
