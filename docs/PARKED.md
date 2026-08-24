@@ -772,6 +772,28 @@ it as the theming failing.
 **Parked 2026-08-25**, when Rashid asked whether we can tell if an ad is
 stopped, learning or queued. Probed live: **we cannot, today.**
 
+**THE EXACT PATHS TO TICK**, quoted from TikTok's own refusals so there is
+no guessing. Paste each into the "Enter an API name or path" box on the
+**Scope of permission** screen of the app settings:
+
+| category on that screen | path | what it gives |
+| --- | --- | --- |
+| Ads Management | `/campaign/get/` | campaign `operation_status` + `secondary_status` |
+| Ads Management | `/adgroup/get/` | ad group status, where LEARNING shows |
+| Ads Management | `/ad/get/` | per creative delivery status |
+| Reporting | `/report/integrated/get/` | NOT status. Impressions, clicks, video views |
+
+The first three are the status ask. The fourth is optional and unrelated: it is
+the only route inside this app to engagement figures.
+
+**TICKING IS NOT ENOUGH. The token has to be replaced.** An access token carries
+the scopes it was minted with, so every existing token keeps answering 40001
+until Rashid reconnects through Admin, TikTok settings and a new one is issued.
+
+**Then re-probe before believing it:** `pnpm probe:tiktok`. Our calls go to
+v1.3 for these four; if the app only offers a v2.0 scope for them, the probe is
+what will say so rather than a doc.
+
 **It is a SCOPE problem, which means it is ours and it is cheap.**
 `/campaign/get/`, `/adgroup/get/`, `/ad/get/` and `/report/integrated/get/`
 all answer `40001 ... lacks the required scope ... reauthorize your API App`.
