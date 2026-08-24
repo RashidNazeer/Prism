@@ -65,6 +65,9 @@ export type BrandAboutPayload = {
   logoUrl: string | null;
   tagline: string | null;
   description: string | null;
+  /** The one colour the creator's Brand World is derived from. */
+  brandColor: string | null;
+  heroUrl: string | null;
 };
 
 export type ProductSavePayload = {

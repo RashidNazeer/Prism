@@ -26,6 +26,15 @@ export interface CreatorBrand {
   logo_url: string | null;
   tagline: string | null;
   description: string | null;
+  /**
+   * The one colour an admin picked for this brand's world. Null is normal and
+   * every screen is designed for it: the hub falls back to the Wurx gold.
+   * Everything else about the look is derived from this in
+   * `src/lib/brand-theme.ts`, including every text colour.
+   */
+  brand_color: string | null;
+  /** The picture behind the hero, optional. */
+  hero_url: string | null;
 }
 
 export interface CreatorOffer {
@@ -54,7 +63,8 @@ export interface CreatorProduct {
   badge_title: string | null;
 }
 
-const BRAND_COLUMNS = 'id, name, slug, logo_url, tagline, description';
+const BRAND_COLUMNS =
+  'id, name, slug, logo_url, tagline, description, brand_color, hero_url';
 const OFFER_COLUMNS =
   'id, brand_id, badge_title, title, description, video_count, reward_amount, currency, needs_application, created_at';
 const PRODUCT_COLUMNS =

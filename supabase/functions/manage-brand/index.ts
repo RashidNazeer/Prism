@@ -127,6 +127,27 @@ const BrandAboutBody = z.object({
   logoUrl: z.url('That logo address is not a URL').max(500).nullish(),
   tagline: z.string().trim().max(160).nullish(),
   description: z.string().trim().max(4000).nullish(),
+  /*
+   * THE ONE COLOUR A BRAND'S WORLD IS BUILT FROM.
+   *
+   * Checked here as well as in the column and in the browser, because this is
+   * the layer that can say something useful. The column constraint would come
+   * back as a raw Postgres constraint violation, which reaches an admin as a
+   * wall of text about a check named after a table.
+   *
+   * There is no contrast check in this function ON PURPOSE. Readability is not
+   * a property of the hex, it is a property of the palette derived from it, and
+   * `src/lib/brand-theme.ts` guarantees that for EVERY six digit colour: the
+   * text is chosen by measurement, so there is no such thing as an unreadable
+   * input to reject. `scripts/check-brand-theme.mjs` proves it over a hue
+   * circle plus white, black and the primaries, inside `pnpm build`.
+   */
+  brandColor: z
+    .string()
+    .trim()
+    .regex(/^#[0-9a-fA-F]{6}$/, 'A brand colour must look like #173d36')
+    .nullish(),
+  heroUrl: z.url('That hero image address is not a URL').max(2048).nullish(),
 });
 
 const percent = z
@@ -316,6 +337,8 @@ Deno.serve(async (req) => {
       p_logo_url: input.logoUrl ?? null,
       p_tagline: input.tagline ?? null,
       p_description: input.description ?? null,
+      p_brand_color: input.brandColor ?? null,
+      p_hero_url: input.heroUrl ?? null,
     });
   } else if (input.action === 'product.save') {
     rpc = await admin.rpc('save_product', {

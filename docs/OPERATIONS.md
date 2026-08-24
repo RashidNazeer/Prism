@@ -138,6 +138,13 @@ pnpm verify:content [url]   # a creator posts a video, the team decides, and
 pnpm verify:live [url]      # admin moves a stage on the REAL admin screen,
                             # creator sees it on all three of their screens
                             # with no reload. Needs SUPABASE_SERVICE_KEY
+pnpm check:brand-theme      # no database, no browser. Derives a full palette
+                            # for 88 brand colours, including pure yellow,
+                            # white, black and a full hue circle, and asserts
+                            # 13 text-on-background pairs clear WCAG AA in both
+                            # modes. RUNS INSIDE pnpm build, because a brand
+                            # colour lives in the DATABASE and check:contrast,
+                            # which only reads tokens.css, cannot see it
 pnpm verify:brand-numbers   # 17 checks, no browser. Signs in as a REAL creator
                             # and proves a Brand Hub shows that brand's money
                             # and no other. Also proves no OLD OVERLOAD of the

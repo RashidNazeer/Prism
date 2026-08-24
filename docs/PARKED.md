@@ -713,3 +713,39 @@ three later ones, and never mentions `p_source`, `creator_brand_performance`,
 the ByBrand panel or `brand_id` on the money row. **Fix it in the same commit
 as the next change to that surface.**
 
+---
+
+## 25. Brand World: what it still owes
+
+**Parked 2026-08-24**, when the creator Brand Hub became a full-screen world.
+
+**a. `src/routes/app/Brands.tsx` is now orphaned.** `/app/brands` opens the
+first brand rather than a list, so nothing routes to that screen any more. It
+is still in the repo. **Delete it, or give it a home**, next time that area is
+touched. It was left rather than deleted because removing a whole screen in a
+commit about theming is the sort of thing nobody finds again.
+
+**b. Only ONE brand exists on dev, so the brand SWITCHER cannot really be
+seen.** The rail renders the list correctly with one entry, but nobody has
+watched a creator move between two worlds and the colours change. **Raise this
+the moment a second brand exists**, and re-shoot: switching is the whole point
+of the rail.
+
+**c. No brand has a hero image yet.** The column, the upload control and the
+crop rules are all built and the hero is designed to be right without one, but
+the image path has been checked only by eye on a hub that has none. **Raise if
+a hero ever comes back wrong after a save.**
+
+**d. The world has no automated suite of its own.** `scripts/shots-hub.mjs`
+photographs five sections at four widths in both themes and fails on a console
+error, a sideways scroll or a world that never renders, which is real cover.
+But nothing asserts the RAIL: that both lists are present, that a locked tab
+refuses a click, that the Leave link goes home. **Worth adding when the second
+brand arrives**, since that is when the switcher becomes testable.
+
+**e. Applicants reach the world.** They are allowed onto the route on purpose,
+because the JWT role lags approval by up to an hour, and they see the
+"this opens when you are approved" panel. That panel is NOT themed by the
+brand and sits on the plain Wurx background. Minor, and noted so nobody reads
+it as the theming failing.
+

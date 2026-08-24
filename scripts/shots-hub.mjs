@@ -75,11 +75,27 @@ async function settle(page) {
    * NOT `networkidle`. These screens hold a realtime socket open, so the network
    * is never idle and the wait times out on every single shot.
    *
-   * And NOT a bare `.every()` over images either: `[].every()` is true, so a
-   * page whose pictures have not started loading would report itself ready and
-   * be photographed as a grey box. Wait for the skeletons to go, then for the
-   * images only if there ARE any.
+   * WAIT FOR THE WORLD TO EXIST BEFORE WAITING FOR IT TO FINISH, and this order
+   * is the whole thing. "No skeletons on the page" is TRUE of a page that has
+   * not rendered yet, so the first version of this returned instantly on a
+   * blank frame and photographed forty screens of loading bars while reporting
+   * every one of them fine. Same family as `[].every()` being true of an empty
+   * list: a check that passes loudest when its subject is absent.
+   *
+   * So: the world root first, then the skeletons, then the images.
    */
+  /*
+   * AND IT REPORTS RATHER THAN SWALLOWS. A `.catch(() => {})` here is what let
+   * a whole run of loading screens pass as green: the wait failed, nothing said
+   * so, and the screenshot was taken anyway.
+   */
+  const arrived = await page
+    .locator('[data-brand-world]')
+    .first()
+    .waitFor({ timeout: 20000 })
+    .then(() => true)
+    .catch(() => false);
+
   await page
     .waitForFunction(() => document.querySelectorAll('.wx-skeleton').length === 0, {
       timeout: 20000,
@@ -95,6 +111,7 @@ async function settle(page) {
     )
     .catch(() => {});
   await page.waitForTimeout(400);
+  return arrived;
 }
 
 const browser = await launchBrowser();
@@ -131,7 +148,10 @@ try {
         await page.goto(`${BASE}/app/brands/${brand.slug}${q}`, {
           waitUntil: 'domcontentloaded',
         });
-        await settle(page);
+        const arrived = await settle(page);
+        if (!arrived) {
+          errors.push(`[${theme} ${name}] ${section} never rendered the brand world`);
+        }
         const file = `${OUT}/${theme}-${name}-${section}.png`;
         await page.screenshot({ path: file, fullPage: true });
 
@@ -139,7 +159,9 @@ try {
         const overflow = await page.evaluate(
           () => document.documentElement.scrollWidth - document.documentElement.clientWidth
         );
-        const flag = overflow > 1 ? `  <-- PAGE SCROLLS ${overflow}px SIDEWAYS` : '';
+        const flag =
+          (arrived ? '' : '  <-- NEVER RENDERED') +
+          (overflow > 1 ? `  <-- PAGE SCROLLS ${overflow}px SIDEWAYS` : '');
         console.log(`  ${theme.padEnd(5)} ${String(w).padStart(4)}px ${section.padEnd(13)} ${file}${flag}`);
         if (overflow > 1) errors.push(`[${theme} ${name}] ${section} scrolls ${overflow}px sideways`);
       }

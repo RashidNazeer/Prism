@@ -1418,3 +1418,31 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   chosen from measurement, not habit: days four and five out had drifted, days
   eight and beyond matched exactly. Cost is one report call per store per night
   per day in the window.
+- 2026-08-24: **A creator opening a brand leaves Wurx and enters that brand.**
+  Rashid: *"take him to a new world ... user will land in new world in full
+  screen all menu items will be hidden ... these tabs will be the new menu on
+  left side"*. `/app/brands/:slug` is therefore a top-level route that does NOT
+  nest under `ShellLayout`, and its rail carries two lists: the brands, and the
+  open brand's sections. `/app/brands` opens the first brand rather than an
+  index. The way out is a slim Wurx strip at the top of the rail, chosen over
+  hiding it in an avatar menu.
+- 2026-08-24: **An admin picks ONE colour, and the product derives the rest.**
+  Every other colour lives in `tokens.css` where `check:contrast` fails the
+  build; a colour in a database row bypasses that guard entirely, so a palette
+  of pickers would be several ways to ship an unreadable hub with nothing
+  failing. `src/lib/brand-theme.ts` derives the rail, hero, page, cards and
+  every TEXT colour, choosing text by MEASURING contrast against the background
+  it lands on. `check-brand-theme.mjs` runs 88 colours through 13 pairs in both
+  modes inside `pnpm build`. Rejected: three pickers with a warning, and a full
+  palette, both of which move the risk onto whoever is filling the form.
+- 2026-08-24: **A brand world honours the theme toggle**, rather than being one
+  fixed look the admin designs. Dark and light stay equal citizens, so a brand
+  has a dark face and a light face and a creator working at night stays in the
+  dark. Rejected: the mockup's single fixed look, which breaks that rule.
+- 2026-08-24: **The world rebinds the ordinary `--wx-*` tokens for its
+  subtree.** The first version themed only the shell, so a deep green rail
+  framed Wurx-gold cards: the chrome had changed and the content had not.
+  Pointing `--wx-bg`, `--wx-surface-1`, `--wx-text` and friends at the brand
+  palette themes every existing component with no component changes. Success,
+  danger, warning and the stage colours are deliberately NOT rebound: they are
+  semantic, and a red brand must not turn every approved badge into a warning.

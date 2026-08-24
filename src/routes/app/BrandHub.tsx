@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router';
+import { Navigate, useParams, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
-import { ArrowLeft, Package, Store, Ticket } from 'lucide-react';
+import { Package, Ticket } from 'lucide-react';
 import { ApplyDialog } from '@/components/creator/ApplyDialog';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
 import { OfferCard } from '@/components/creator/OfferCard';
@@ -24,6 +24,9 @@ import {
 import { money, percent } from '@/lib/money';
 import { useCatalogueLive } from '@/lib/creator/useCatalogueLive';
 import { useMyJobProgress } from '@/lib/work/job-progress';
+import { BrandWorldShell } from '@/components/brand/BrandWorldShell';
+import { BrandWorldHero } from '@/components/brand/BrandWorldHero';
+import { useCreatorBrands } from '@/lib/creator/useCreatorBrands';
 
 /*
  * THE THREE REAL SECTIONS ARE THE SAME SCREENS THE SIDEBAR ALREADY OPENS, each
@@ -95,6 +98,7 @@ const BUILT = new Set(['overview', 'offers', 'numbers', 'contests', 'leaderboard
 
 export function BrandHub() {
   const { slug } = useParams<{ slug: string }>();
+  const { data: brands, isLoading: brandsLoading } = useCreatorBrands();
   const [params, setParams] = useSearchParams();
   const requested = params.get('section') ?? 'overview';
   const section = BUILT.has(requested) ? requested : 'overview';
@@ -117,6 +121,39 @@ export function BrandHub() {
     if (key !== 'overview') p.set('section', key);
     setParams(p, { replace: true });
   };
+
+  /*
+   * NO SLUG MEANS "TAKE ME INTO A BRAND", not "show me a list of brands".
+   * Rashid: "by default, one of the brand hub should be selected with it's own
+   * theme". `/app/brands` therefore opens the first one rather than an index
+   * page nobody asked for. Replace rather than push, so Back leaves the world
+   * instead of bouncing between the redirect and its target.
+   */
+  if (!slug) {
+    if (brandsLoading) return <WorldSkeleton />;
+    const first = brands?.[0];
+    if (first) return <Navigate to={`/app/brands/${first.slug}`} replace />;
+    /*
+     * NO BRANDS AT ALL is a real state with its own answer, not an error. It is
+     * what an approved creator sees before anybody has opened a hub to them,
+     * and falling through to "that brand hub is not open" would tell them
+     * something had broken when nothing had.
+     */
+    return (
+      <div className="bg-bg text-text flex min-h-screen items-center justify-center p-6">
+        <div className="border-line bg-surface-1 max-w-md rounded-xl border p-8 text-center shadow-md">
+          <p className="font-semibold">No brand hubs yet</p>
+          <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
+            When Wurx opens a brand to you, it appears here with its own space:
+            its offers, its contests and your numbers for it.
+          </p>
+          <ButtonLink to="/app" variant="secondary" size="sm" className="mt-5">
+            Back to your dashboard
+          </ButtonLink>
+        </div>
+      </div>
+    );
+  }
 
   if (!approved) {
     return (
@@ -154,43 +191,35 @@ export function BrandHub() {
     );
   }
 
+  /*
+   * THE SECTIONS ARE THE RAIL NOW, not a row of pills above the content.
+   * Rashid: "all offers, overview contest my numbers, for selected brands,
+   * would be the menu on left side". Choosing a brand and choosing a section
+   * are the same gesture in the same place, which is what makes this read as
+   * moving around one world rather than loading pages.
+   */
   return (
-    <>
-      <Header brand={brand} />
+    <BrandWorldShell
+      brand={brand}
+      brands={brands?.length ? brands : [brand]}
+      sections={SECTIONS}
+      section={section}
+      onSection={go}
+    >
+      {/*
+        The hero only leads the OVERVIEW. On a working section a creator came
+        to do something, and a half screen of brand poetry above their numbers
+        is the "content starts high" rule broken in a nicer font.
+      */}
+      {section === 'overview' ? (
+        <BrandWorldHero
+          brand={brand}
+          offerCount={offers?.length ?? 0}
+          onExplore={() => go('offers')}
+        />
+      ) : null}
 
-      {/* ------------------------------------------------------------ tabs -- */}
-      <div className="-mx-4 mt-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-        <div role="tablist" aria-label="Brand hub sections" className="flex min-w-max gap-2">
-          {SECTIONS.map((s) => {
-            const active = s.key === section;
-            const built = BUILT.has(s.key);
-            return (
-              <button
-                key={s.key}
-                role="tab"
-                type="button"
-                aria-selected={active}
-                disabled={!built}
-                onClick={() => go(s.key)}
-                title={
-                  built || !('soon' in s) ? undefined : `${s.label} arrives with ${s.soon}`
-                }
-                className={cn(
-                  'shrink-0 rounded-full border px-4 py-2 text-[0.84375rem] font-medium transition-colors duration-200',
-                  active
-                    ? 'border-text bg-text text-inverse'
-                    : built
-                      ? 'border-line bg-surface-1 text-muted hover:border-text hover:text-text'
-                      : 'border-line text-faint cursor-default border-dashed bg-transparent'
-                )}
-              >
-                {s.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
+      <div className="min-w-0 flex-1 px-5 py-6 sm:px-8 sm:py-8">
       {section === 'offers' ? (
         <Offers
           offers={offers ?? []}
@@ -219,45 +248,19 @@ export function BrandHub() {
           onSeeOffers={() => go('offers')}
         />
       )}
-    </>
+      </div>
+    </BrandWorldShell>
   );
 }
 
-/* --------------------------------------------------------------- header -- */
-
-/**
- * One compact row: back, mark, name, tagline.
- *
- * This used to be a tall card with the name set large, which said nothing the
- * Overview tab does not say better and pushed the actual content off the first
- * screen. All a creator needs up here is which hub they are standing in.
- */
-function Header({ brand }: { brand: CreatorBrand }) {
+/** While we work out which brand to open. Skeletons, never a bare spinner. */
+function WorldSkeleton() {
   return (
-    <div className="flex items-center gap-3">
-      <Link
-        to="/app/brands"
-        aria-label="Back to all brand hubs"
-        className="border-line text-muted hover:border-accent hover:text-accent grid size-8 shrink-0 place-items-center rounded-lg border transition-colors duration-200"
-      >
-        <ArrowLeft size={15} aria-hidden />
-      </Link>
-
-      <span className="border-line bg-surface-2 grid size-9 shrink-0 place-items-center overflow-hidden rounded-full border">
-        {brand.logo_url ? (
-          <img src={brand.logo_url} alt="" className="size-full object-cover" />
-        ) : (
-          <Store size={16} aria-hidden className="text-faint" />
-        )}
-      </span>
-
-      <div className="min-w-0">
-        <h1 className="font-display truncate text-[clamp(1.15rem,2.6vw,1.4rem)] font-semibold tracking-[-0.015em]">
-          {brand.name}
-        </h1>
-        {brand.tagline ? (
-          <p className="text-muted truncate text-[0.8125rem]">{brand.tagline}</p>
-        ) : null}
+    <div className="flex min-h-screen">
+      <div className="bg-surface-2 hidden w-[16.5rem] shrink-0 lg:block" />
+      <div className="flex-1 p-6">
+        <div className="wx-skeleton h-48 rounded-xl" />
+        <div className="wx-skeleton mt-5 h-8 w-64 rounded-md" />
       </div>
     </div>
   );

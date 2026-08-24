@@ -152,6 +152,27 @@ export const brandAboutSchema = z.object({
     .transform((v) => (v === '' ? null : v)),
   tagline: z.string().trim().max(160, 'Keep the tagline to one line'),
   description: z.string().trim().max(4000, 'That description is too long'),
+  /*
+   * ONE COLOUR, and the empty string is a real answer meaning "use the Wurx
+   * gold". Anything else has to be a six digit hex, checked here, again in the
+   * Edge Function and again by the column, because this value decides what
+   * every creator at this brand looks at.
+   *
+   * There is deliberately NO readability rule here. Whether a hub is legible is
+   * a property of the palette derived from the colour, not of the colour, and
+   * `src/lib/brand-theme.ts` guarantees it for every possible input by
+   * choosing each text colour against the background it lands on.
+   */
+  brandColor: z
+    .string()
+    .trim()
+    .refine((v) => v === '' || /^#[0-9a-fA-F]{6}$/.test(v), 'Use a colour like #173d36')
+    .transform((v) => (v === '' ? null : v.toLowerCase())),
+  heroUrl: z
+    .string()
+    .trim()
+    .max(2048, 'That image address is too long')
+    .transform((v) => (v === '' ? null : v)),
 });
 
 export type BrandAboutInput = z.input<typeof brandAboutSchema>;

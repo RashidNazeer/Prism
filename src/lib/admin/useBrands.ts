@@ -36,6 +36,10 @@ export interface Brand {
   store_id: string;
   /** Creator facing: the brand's own story. */
   logo_url: string | null;
+  /** The one colour a creator's Brand World is built from. Null means Wurx gold. */
+  brand_color: string | null;
+  /** The picture behind that world's hero. Optional. */
+  hero_url: string | null;
   tagline: string | null;
   description: string | null;
   is_active: boolean;
@@ -109,7 +113,7 @@ const COMMERCIAL_COLUMNS =
   'client_name, budget_allocated, budget_used, budget_used_percent, currency';
 
 const BRAND_COLUMNS =
-  'id, name, slug, store_id, logo_url, tagline, description, is_active, created_at, updated_at, ' +
+  'id, name, slug, store_id, logo_url, brand_color, hero_url, tagline, description, is_active, created_at, updated_at, ' +
   `brand_commercials(${COMMERCIAL_COLUMNS})`;
 
 /**
@@ -118,7 +122,7 @@ const BRAND_COLUMNS =
  * would otherwise silently drop any brand missing its commercial row.
  */
 const BRAND_COLUMNS_INNER =
-  'id, name, slug, store_id, logo_url, tagline, description, is_active, created_at, updated_at, ' +
+  'id, name, slug, store_id, logo_url, brand_color, hero_url, tagline, description, is_active, created_at, updated_at, ' +
   `brand_commercials!inner(${COMMERCIAL_COLUMNS})`;
 
 const OFFER_COLUMNS =

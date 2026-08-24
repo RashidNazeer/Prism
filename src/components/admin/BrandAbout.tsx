@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Field, Input, Textarea } from '@/components/ui/Field';
 import { FormError } from '@/components/auth/AuthShell';
 import { ImageUploadField } from '@/components/admin/ImageUploadField';
+import { BrandLookField } from '@/components/admin/BrandLookField';
 import { ProductDialog } from '@/components/admin/ProductDialog';
 import { cn } from '@/lib/utils';
 import { useManageBrand } from '@/lib/admin/useManageBrand';
@@ -50,6 +51,8 @@ function Story({ brand }: { brand: Brand }) {
     logoUrl: brand.logo_url ?? '',
     tagline: brand.tagline ?? '',
     description: brand.description ?? '',
+    brandColor: brand.brand_color ?? '',
+    heroUrl: brand.hero_url ?? '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -80,6 +83,8 @@ function Story({ brand }: { brand: Brand }) {
         logoUrl: parsed.logoUrl,
         tagline: parsed.tagline || null,
         description: parsed.description || null,
+        brandColor: parsed.brandColor,
+        heroUrl: parsed.heroUrl,
       },
       { onSuccess: () => setSaved(true) }
     );
@@ -102,6 +107,30 @@ function Story({ brand }: { brand: Brand }) {
           disabled={busy}
           shape="round"
           onChange={(url) => set('logoUrl', url ?? '')}
+        />
+
+        {/*
+          THE LOOK OF THE WHOLE HUB, one control.
+
+          Rashid asked for a creator to land in "a new world" that is the
+          brand's rather than Wurx's. This is where that is chosen, and it is
+          one colour on purpose: the readability of everything derived from it
+          is guaranteed in code, so there is no combination here to get wrong.
+        */}
+        <BrandLookField
+          value={values.brandColor}
+          error={errors.brandColor}
+          disabled={busy}
+          onChange={(hex) => set('brandColor', hex)}
+        />
+
+        <ImageUploadField
+          label="Hero image"
+          hint="Optional, and every hub is designed to look right without one. Wide works best: it sits behind the brand's name at the top of the world. Up to 2 MB."
+          folder={`brands/${brand.id}`}
+          value={values.heroUrl || null}
+          disabled={busy}
+          onChange={(url) => set('heroUrl', url ?? '')}
         />
 
         <Field label="Tagline" error={errors.tagline} hint="One line under the name. Optional.">

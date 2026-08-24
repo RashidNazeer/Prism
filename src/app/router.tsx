@@ -2,6 +2,7 @@ import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router';
 import { RouteFallback } from '@/components/layout/RouteFallback';
 import { ShellLayout } from '@/components/layout/ShellLayout';
+import { WorldLayout } from '@/components/layout/WorldLayout';
 import { RequireAuth, RedirectIfSignedIn } from '@/components/auth/RequireAuth';
 
 /**
@@ -165,7 +166,6 @@ const lazyRoute = (load: () => Promise<Record<string, unknown>>, name: string) =
  */
 const CreatorDashboard = screen(() => import('@/routes/app/Dashboard'), 'Dashboard');
 const CreatorProfile = screen(() => import('@/routes/app/Profile'), 'Profile');
-const CreatorBrands = screen(() => import('@/routes/app/Brands'), 'Brands');
 const CreatorBrandHub = screen(() => import('@/routes/app/BrandHub'), 'BrandHub');
 const CreatorOffers = screen(() => import('@/routes/app/Offers'), 'Offers');
 const CreatorContests = screen(() => import('@/routes/app/Contests'), 'Contests');
@@ -354,14 +354,7 @@ export const router = createBrowserRouter([
           // watched the confetti would be bounced back to their dashboard. The
           // screens read the profile row, which is current, and the database
           // refuses the rows either way.
-          {
-            path: '/app/brands',
-            element: <CreatorBrands />,
-          },
-          {
-            path: '/app/brands/:slug',
-            element: <CreatorBrandHub />,
-          },
+
           {
             path: '/app/offers',
             element: <CreatorOffers />,
@@ -389,6 +382,41 @@ export const router = createBrowserRouter([
       },
     ],
   },
+  /*
+   * THE BRAND WORLD IS FULL SCREEN, so it does NOT nest under ShellLayout.
+   *
+   * Rashid: "user will land in new world in full screen all menu items will be
+   * hidden". The world draws its own rail, carrying the brand switcher and that
+   * brand's sections, so leaving it inside AppShell would put the Wurx sidebar
+   * beside the brand's own and defeat the whole idea.
+   *
+   * Same `RequireAuth` as the rest of the creator app, and the same allow list:
+   * an applicant may reach it and is shown the "this opens when you are
+   * approved" panel, because the JWT role lags approval by up to an hour and
+   * bouncing somebody who has just been approved is worse than a panel.
+   *
+   * It keeps its own `WorldLayout` only to apply the text-size setting, which
+   * ShellLayout does for every other signed-in screen.
+   */
+  {
+    Component: () => <RequireAuth allow={['applicant', 'creator']} />,
+    children: [
+      {
+        Component: WorldLayout,
+        children: [
+          {
+            path: '/app/brands',
+            element: <CreatorBrandHub />,
+          },
+          {
+            path: '/app/brands/:slug',
+            element: <CreatorBrandHub />,
+          },
+        ],
+      },
+    ],
+  },
+
   {
     Component: () => <RequireAuth allow={['ops', 'admin']} />,
     children: [
