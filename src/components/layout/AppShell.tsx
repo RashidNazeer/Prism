@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import { useFocusTrap } from '@/lib/use-focus-trap';
-import { sectionTitleFor } from '@/lib/nav';
+import { sectionDescriptionFor, sectionTitleFor } from '@/lib/nav';
 
 const COLLAPSE_KEY = 'wurxmediahub-sidebar-collapsed';
 
@@ -112,6 +112,7 @@ export function AppShell({ children }: { children: ReactNode }) {
    * not "which one is open".
    */
   const section = sectionTitleFor(role, pathname);
+  const description = sectionDescriptionFor(role, pathname);
 
   return (
     <div
@@ -158,6 +159,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
 
             {section ? (
+              // `min-w-0 truncate`, unchanged from before the description was
+              // added. `shrink-0` would stop the name truncating and push it
+              // out of a narrow bar instead, and this header is shared with
+              // every admin screen, whose names nobody has re-measured.
               <h1 className="font-display relative min-w-0 truncate py-1 text-[1.0625rem] leading-none font-bold tracking-[-0.01em] sm:text-[1.1875rem]">
                 {section}
                 {/* The underline he asked for. Under the WORD, not across the
@@ -168,6 +173,30 @@ export function AppShell({ children }: { children: ReactNode }) {
                   className="bg-accent absolute inset-x-0 -bottom-1 h-[2px] rounded-full"
                 />
               </h1>
+            ) : null}
+
+            {/*
+              THE SECTION'S ONE LINE, IN THE BAR RATHER THAN ON THE PAGE.
+
+              Rashid, on the creator Contests screen: "write this everything.
+              line in header and remove Contests ... as we did in admin side to
+              reduce the space". A screen that draws its own title and blurb
+              spends the top of every page repeating the lit menu row and
+              pushes the work down; here it costs no vertical space at all.
+
+              Hidden below `md`. On a phone the bar is already the mark, the
+              name and a menu button, and a sentence squeezed between them
+              would truncate to nothing useful. The name alone is the answer at
+              that width, which is why this is decoration rather than the only
+              place the information lives.
+            */}
+            {section && description ? (
+              <>
+                <span aria-hidden className="bg-line hidden h-4 w-px shrink-0 md:block" />
+                <p className="text-muted hidden min-w-0 truncate text-[0.8125rem] md:block">
+                  {description}
+                </p>
+              </>
             ) : null}
           </div>
 

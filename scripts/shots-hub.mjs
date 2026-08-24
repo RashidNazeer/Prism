@@ -101,16 +101,28 @@ async function settle(page) {
       timeout: 20000,
     })
     .catch(() => {});
-  await page
-    .waitForFunction(
-      () => {
-        const imgs = [...document.images];
-        return imgs.length === 0 || imgs.every((i) => i.complete);
-      },
-      { timeout: 10000 }
-    )
-    .catch(() => {});
+  /*
+   * "EVERY IMAGE IS LOADED" IS TRUE TOO EARLY, TWICE OVER.
+   *
+   * `[].every()` is true of a page with no images, which is the version of this
+   * bug already written down. The subtler one bit on 2026-08-24: the app shell
+   * paints two Wurx logos immediately, so `images.length > 0 && all complete`
+   * is satisfied while the card underneath has not rendered its photograph yet.
+   * The screenshot then catches the fallback gradient and looks exactly like a
+   * broken image.
+   *
+   * So it waits for the set to be complete AND STILL complete a moment later,
+   * which is what catches an image that arrives after the first check.
+   */
+  const allLoaded = () =>
+    page
+      .waitForFunction(() => [...document.images].every((i) => i.complete && i.naturalWidth > 0), {
+        timeout: 10000,
+      })
+      .catch(() => {});
+  await allLoaded();
   await page.waitForTimeout(400);
+  await allLoaded();
   return arrived;
 }
 

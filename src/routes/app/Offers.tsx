@@ -114,21 +114,12 @@ export function Offers() {
 
   return (
     <>
-      <div className="flex flex-col gap-1.5 px-0.5 py-1">
-        <h1 className="font-display text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
-          Offers
-        </h1>
-        <p className="text-muted text-[0.9375rem]">
-          Everything on the table, from every brand you work with.
-        </p>
-      </div>
-
       {!approved ? (
         <LockedUntilApproved className="mt-6" />
       ) : (
         <>
           {/* ------------------------------------------------------- tabs -- */}
-          <div className="-mx-4 mt-5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
             <div
               role="tablist"
               aria-label="Filter offers"

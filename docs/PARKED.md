@@ -61,9 +61,9 @@ below.
   contest with no money in it belongs. **Trigger: Rashid asking why his home
   does not mention a contest he is in.**
 
-## 0b. The creator side has not had the chrome rebuild
+## 0b. DONE 2026-08-24. The creator side had not had the chrome rebuild
 
-**Status:** PAUSED, and the next piece of work
+**Status:** DONE for the title rows, which was the whole of it
 **Owner:** Claude
 **Trigger to raise again:** Rashid saying "now the creator side", which he said
 on 2026-08-16 was the plan: "We can do it for admin side only and after that we
@@ -75,11 +75,27 @@ row one is the filter bar, full-width content, `rem` type on a scale the person
 using it can change. `docs/FEATURE_MAP.md` "Admin screen layout" is the spec and
 `pnpm verify:chrome` guards it.
 
-**The creator screens have not had any of it.** They still draw their own `<h1>`
-and their own description, which means two `<h1>`s on those routes now, the shell's
-and the screen's. It is legal HTML and nothing is broken, but it is the leftover
-half of one change rather than a decision. `/app`, `/app/brands`, `/app/offers`,
-`/app/contests`, `/app/content`, `/app/profile`, and the studio home.
+**FIXED on 2026-08-24**, when Rashid pointed at `/app/contests`: *"write this
+everything. line in header and remove Contests ... as we did in admin side to
+reduce the space"*.
+
+Every creator screen has lost its title row. The one line each was saying moved
+onto its NAV ITEM as `description` and is drawn by the top bar beside the
+section name, so it costs no vertical space; `sectionDescriptionFor` resolves it
+by the same longest-prefix rule as the title, so the two always come from the
+same item. Hidden below `md`, where the bar has no room for it.
+
+Done: `/app/offers`, `/app/contests`, `/app/content`, `/app/profile`. `/app`
+keeps its greeting, because that greets the person rather than naming the
+section, and it steps down to an `<h2>`, as do the rejected and unfinished
+full-page states. `/app/numbers` and `/app/leaderboards` never had one.
+`/app/brands` is now the full-screen Brand World with its own rail, and
+`src/routes/app/Brands.tsx` is orphaned (PARKED 25a).
+
+**Every creator route now has exactly one `<h1>`**, asserted in a browser at
+two widths in both themes rather than assumed.
+
+**The studio home still owes it**, and is the only screen left on the list.
 
 **The contest screens are also still half redressed**, from 2026-08-15, and the
 list shrank by two: the claims and rewards queues took the new header and the new
@@ -591,7 +607,7 @@ brand logo, so the hero pill shows a generic shop icon. **Both are content, not
 code:** Details → 5. How it looks, and Brand hub → About. **Raise before any
 real creator is shown that contest.**
 
-**b. The creator screens never had the chrome rebuild.** `/app/contests` still
+**b. DONE 2026-08-24. The creator screens never had the chrome rebuild.** `/app/contests` still
 draws its own `<h1>` and a description line under it, which the admin side had
 removed on 2026-08-16 because the top bar already names the section. Same for
 the other creator routes. Tracked as PARKED 0b; noted again here because the new

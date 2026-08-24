@@ -163,9 +163,12 @@ function ViewSwitch({
  * removed: the hub is already one brand, and a brand filter on a page that is
  * a brand invites picking a second one.
  *
- * It also drops the title block. The standalone route needs an `<h1>` and a
- * line saying the list spans every brand; inside a hub both are wrong, because
- * the hub's own tab already names the section and the list is one brand's.
+ * NEITHER PLACE DRAWS A TITLE ANY MORE. The standalone screen used to open
+ * with an `<h1>` saying "Contests" and a line under it, a few pixels below a
+ * lit menu row already saying Contests. Rashid: "write this everything. line in
+ * header and remove Contests ... as we did in admin side to reduce the space".
+ * The line now lives on the nav item and is drawn by the top bar, so it costs
+ * no vertical space at all. Inside a hub the rail names the section instead.
  */
 export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
   const { claims } = useAuth();
@@ -296,17 +299,6 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
 
   return (
     <>
-      {hubBrandId ? null : (
-        <div className="flex flex-col gap-1.5 px-0.5 py-1">
-          <h1 className="font-display text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
-            Contests
-          </h1>
-          <p className="text-muted text-[0.9375rem]">
-            Everything running right now, from every brand you work with.
-          </p>
-        </div>
-      )}
-
       {!approved ? (
         <LockedUntilApproved className="mt-6" />
       ) : view === 'progress' ? (

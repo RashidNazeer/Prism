@@ -401,9 +401,12 @@ function Header({
           </span>
           WurxMediaHub
         </p>
-        <h1 className="font-display text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
+        {/* An h2, not an h1: the top bar owns the page's only one. This greets
+            the person rather than naming the section, so unlike the other
+            creator screens it earns its row and stays. */}
+        <h2 className="font-display text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
           {greet(name)}
-        </h1>
+        </h2>
       </div>
 
       <div className="flex items-center gap-2">
@@ -960,7 +963,7 @@ function Rejected({ note }: { note: string | null }) {
       <span className="bg-danger-soft text-danger mx-auto grid size-16 place-items-center rounded-full">
         <X size={26} aria-hidden />
       </span>
-      <h1 className="mt-6 text-[clamp(1.5rem,5vw,2rem)] font-extrabold">Not this time</h1>
+      <h2 className="mt-6 text-[clamp(1.5rem,5vw,2rem)] font-extrabold">Not this time</h2>
       <p className="text-muted mt-4 leading-relaxed text-pretty">
         We are not able to take you on right now. This is usually about fit with the brands we
         are running, rather than the quality of your work, and it is not permanent.
@@ -979,7 +982,7 @@ function Rejected({ note }: { note: string | null }) {
 function Unfinished() {
   return (
     <div className="mx-auto max-w-lg py-8 text-center sm:py-14">
-      <h1 className="text-[clamp(1.5rem,5vw,2rem)] font-extrabold">Finish your application</h1>
+      <h2 className="text-[clamp(1.5rem,5vw,2rem)] font-extrabold">Finish your application</h2>
       <p className="text-muted mt-4 leading-relaxed text-pretty">
         Your account is ready, but we do not have your application details yet. It takes about a
         minute.

@@ -47,6 +47,22 @@ export interface NavItem {
    * screen does not orphan the sidebar.
    */
   activePrefixes?: string[];
+  /**
+   * One line the TOP BAR says beside the section name.
+   *
+   * Rashid, looking at the creator Contests screen: "write this everything.
+   * line in header and remove Contests ... as we did in admin side to reduce
+   * the space".
+   *
+   * It lives here rather than in the screen for the same reason the title
+   * does: a screen that draws its own heading repeats the lit menu row a few
+   * pixels lower and pushes the actual work down the page. One definition,
+   * sitting next to the label it appears beside, so the two cannot disagree.
+   *
+   * KEEP IT SHORT. It shares a 3.5rem bar with the section name, and it is
+   * hidden below `md`, where there is no room and the name alone is the answer.
+   */
+  description?: string;
 }
 
 export interface NavGroup {
@@ -183,14 +199,36 @@ const CREATOR: NavGroup[] = [
         activePrefixes: ['/app/brands'],
       },
       { label: 'Leaderboards', icon: Trophy, to: '/app/leaderboards' },
-      { label: 'Offers', icon: Gift, to: '/app/offers' },
-      { label: 'Contests', icon: Award, to: '/app/contests' },
-      { label: 'My content', icon: Video, to: '/app/content' },
+      {
+        label: 'Offers',
+        icon: Gift,
+        to: '/app/offers',
+        description: 'Everything on the table, from every brand you work with.',
+      },
+      {
+        label: 'Contests',
+        icon: Award,
+        to: '/app/contests',
+        description: 'Everything running right now, from every brand you work with.',
+      },
+      {
+        label: 'My content',
+        icon: Video,
+        to: '/app/content',
+        description: 'Every video you have filmed for us, and what is still to come.',
+      },
     ],
   },
   {
     label: '',
-    items: [{ label: 'My profile', icon: UserRound, to: '/app/profile' }],
+    items: [
+      {
+        label: 'My profile',
+        icon: UserRound,
+        to: '/app/profile',
+        description: 'Only your name is yours to change; the rest is set by the Wurx team.',
+      },
+    ],
   },
 ];
 
@@ -282,4 +320,34 @@ export function sectionTitleFor(role: AppRole | undefined, pathname: string): st
   }
 
   return best?.label ?? null;
+}
+
+/**
+ * The line the top bar says beside the section name, when that section has one.
+ *
+ * Resolved by exactly the same longest-prefix rule as `sectionTitleFor`, so the
+ * name and the line beside it always come from the SAME nav item. Resolving
+ * them separately is how a screen ends up captioned with a neighbour's
+ * sentence.
+ */
+export function sectionDescriptionFor(
+  role: AppRole | undefined,
+  pathname: string
+): string | null {
+  let best: { description: string | undefined; score: number } | null = null;
+
+  for (const group of navForRole(role)) {
+    for (const item of group.items) {
+      if (!isNavItemActive(item, pathname)) continue;
+      const candidates = [item.to ?? '', ...(item.activePrefixes ?? [])];
+      const score = Math.max(
+        ...candidates.map((c) =>
+          c && (pathname === c || pathname.startsWith(`${c}/`)) ? c.length : 0
+        )
+      );
+      if (!best || score > best.score) best = { description: item.description, score };
+    }
+  }
+
+  return best?.description ?? null;
 }

@@ -162,15 +162,14 @@ export function Content() {
   return (
     <>
       <div className="flex max-w-[1140px] flex-col gap-[14px]">
-        <div className="flex flex-wrap items-end justify-between gap-4 px-0.5 py-1">
-          <div className="flex flex-col gap-1.5">
-            <h1 className="font-display text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
-              My content
-            </h1>
-            <p className="text-muted text-[0.9375rem]">
-              Every video you have filmed for us, and what is still to come.
-            </p>
-          </div>
+        {/*
+          NO TITLE ROW. The top bar names the section and carries its one line,
+          so all that is left here is the action, pinned right, which is the
+          rule the admin screens already follow: row one is the work.
+          `justify-end` rather than `justify-between`, because with the title
+          gone a single child would otherwise sit on the left.
+        */}
+        <div className="flex flex-wrap items-end justify-end gap-4 px-0.5">
           {approved && jobs.length > 0 ? (
             <Button onClick={() => setPosting({})}>
               <Plus size={16} aria-hidden />

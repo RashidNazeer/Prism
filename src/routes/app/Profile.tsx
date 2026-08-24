@@ -63,21 +63,13 @@ export function Profile() {
 
   return (
     <>
-      <h1 className="font-display text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
-        My profile
-      </h1>
-      <p className="text-muted mt-2 max-w-2xl text-[0.9375rem] leading-relaxed">
-        Your account details. Only your name is yours to change; the rest is set by the Wurx
-        team.
-      </p>
-
       {isLoading ? (
-        <div className="mt-8 max-w-xl space-y-4">
+        <div className="max-w-xl space-y-4">
           <div className="wx-skeleton h-32 rounded-xl" />
           <div className="wx-skeleton h-40 rounded-xl" />
         </div>
       ) : (
-        <div className="mt-8 grid max-w-xl gap-6">
+        <div className="grid max-w-xl gap-6">
           {/* ------------------------------------------------------- name -- */}
           <section className="border-line bg-surface-1 rounded-xl border p-6 shadow-md">
             <h2 className="text-lg font-bold">Your name</h2>

@@ -1446,3 +1446,15 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   palette themes every existing component with no component changes. Success,
   danger, warning and the stage colours are deliberately NOT rebound: they are
   semantic, and a red brand must not turn every approved badge into a warning.
+- 2026-08-24: **The creator screens lost their title rows too, and the one
+  line each was saying moved into the top bar.** Rashid, on Contests: *"write
+  this everything. line in header and remove Contests ... as we did in admin
+  side to reduce the space"*. The admin side did this on 2026-08-16; the
+  creator side had been carrying the debt as PARKED 0b ever since. The line
+  lives on the NAV ITEM, next to the label it appears beside, and
+  `sectionDescriptionFor` resolves it by the same longest-prefix rule as the
+  title, so a screen can never be captioned with a neighbour's sentence. It is
+  hidden below `md`, where the bar has no room and the section name alone is
+  the answer. The Home greeting STAYS, because it greets the person rather than
+  naming the section; it steps down to an `<h2>`, as do the rejected and
+  unfinished full-page states, since the bar owns the page's only `<h1>`.
