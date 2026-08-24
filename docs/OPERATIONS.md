@@ -754,6 +754,49 @@ clear instead. And `[].every()` is TRUE, so waiting for "every image loaded"
 passes instantly on a page whose images have not started; it checks the list is
 non-empty first.
 
+## Brand artwork: the exact sizes (measured 2026-08-24)
+
+**Hero image: 2400 x 1000 px, which is 2.4:1.** JPG or WebP, under 2 MB.
+
+Measured rather than chosen. The hero is full width, so its shape changes with
+the screen: with the browser at 375px the box is **1.41:1**, and at 1920px it is
+**3.98:1**. `object-fit: cover` fills the box and trims the rest, so no single
+export fits every width. 2.4:1 is the geometric middle of that range, which puts
+the worst case at about 40% trimmed at either end instead of 72% at one.
+
+Before 2026-08-24 the hero had no height of its own and was only as tall as its
+text, so the box ran to **5.31:1** on a wide monitor and threw away 72% of the
+picture. It now has `min-h` steps per breakpoint. **If those change, re-measure
+and update this number**, do not guess it.
+
+**Where to put the subject.** The middle is always safe; the edges are not.
+
+- **Vertically: keep everything that matters inside the middle 60%.** The top
+  and bottom 20% are trimmed on a wide screen.
+- **Horizontally: put the product right of centre.** A wide screen shows the
+  full width with the headline over the LEFT, so the left third wants to be
+  quiet: sky, wall, blur, gradient. A phone shows the full height and trims the
+  sides, and the crop is anchored at 58% for exactly this reason, so a
+  right-of-centre subject survives both.
+
+**NO TEXT IN THE IMAGE, and this is the one that has already bitten us.** We
+draw "Create with <brand>." and the brand's own line over the top of it. Rashid's
+first upload was a marketing banner carrying "New Advanced Joint & Muscle Pain
+Relief Cream" and a SHOP NOW button, and the two sets of words landed on each
+other. A photograph, a texture or a product shot on a plain ground. No logos, no
+headlines, no buttons.
+
+**Logo: 512 x 512 px, square, transparent PNG**, under 300 KB.
+
+It is rendered as a small rounded square, 28px in the rail and 34px in the hero,
+and it is cropped with `cover`, so a non-square logo loses its ends. A wordmark
+does not survive at 28px: use the icon or the monogram. Rashid's first upload
+was already square but 1254 x 1254 and 1.28 MB, which is four times the pixels
+anybody sees and about five times the weight.
+
+**Contest artwork is a different shape and is documented with contests**: the
+card banner is a tall hero, not this.
+
 ## MCP servers (added 2026-08-24)
 
 **Google Stitch**, a UI design service that generates and edits screens from a

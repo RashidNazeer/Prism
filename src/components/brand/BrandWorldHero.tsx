@@ -32,7 +32,21 @@ export function BrandWorldHero({
 }) {
   return (
     <header
-      className="relative isolate overflow-hidden px-5 pt-8 pb-10 sm:px-8 sm:pt-10 sm:pb-14"
+      /*
+       * THE HERO NEEDS A HEIGHT OF ITS OWN, or it is only as tall as its words.
+       *
+       * Measured on 2026-08-24: with no minimum, the box ran from 1.41:1 on a
+       * phone to 5.31:1 on a 1920 monitor, because the width grows and the text
+       * does not. `object-fit: cover` then threw away 72% of the picture's
+       * height on a wide screen, which is exactly the "fitted but zoomed"
+       * Rashid reported. No single export ratio can serve a box that moves that
+       * far, so the box is pinned instead: it now runs 1.46:1 to about 3.7:1,
+       * and a 2.4:1 image sits inside that with a sensible margin either way.
+       *
+       * The steps are `rem`, so they follow the text-size setting rather than
+       * clipping the words at Large.
+       */
+      className="relative isolate flex min-h-[16rem] flex-col justify-center overflow-hidden px-5 pt-8 pb-10 sm:min-h-[18rem] sm:px-8 sm:pt-10 sm:pb-14 lg:min-h-[21rem] xl:min-h-[24rem] 2xl:min-h-[28rem]"
       style={{
         background:
           'linear-gradient(115deg, var(--wx-brand-hero-from), var(--wx-brand-hero-to))',
@@ -45,14 +59,48 @@ export function BrandWorldHero({
             src={brand.hero_url}
             alt=""
             aria-hidden
-            className="absolute inset-0 -z-20 h-full w-full object-cover [object-position:30%_50%] sm:[object-position:center_45%]"
+            /*
+             * WHICH PART SURVIVES THE CROP, and the two ends disagree, so they
+             * are set separately.
+             *
+             * A wide screen shows the whole WIDTH and trims top and bottom, so
+             * the headline sits over the left of the picture and the subject
+             * belongs on the right. A phone shows the whole HEIGHT and trims
+             * the SIDES, so a left-anchored crop would cut off exactly that
+             * subject. 58% keeps the right-of-centre band, which is where the
+             * upload guidance in OPERATIONS asks for the product.
+             */
+            className="absolute inset-0 -z-20 h-full w-full object-cover [object-position:58%_50%] sm:[object-position:center_50%]"
+          />
+          {/*
+            THE SCRIM CLEARS THE PICTURE, and this is the correction to the
+            first version, which laid 88% brand colour over the whole frame and
+            turned a product photograph into a flat wash of the brand's hue.
+
+            The words sit on the LEFT, so that is the only place the tint needs
+            to be heavy. It falls away across the frame and is gone by about
+            three quarters, which leaves the right-hand side of the photograph
+            actually visible. Legibility is carried by the text-shadow on the
+            words, exactly as on the contest card: the scrim is insurance for a
+            blown-out upload, not the mechanism.
+
+            Below `sm` the text spans the whole width, so there is no left
+            column to protect and it becomes a bottom-up wash instead.
+          */}
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-10 sm:hidden"
+            style={{
+              background:
+                'linear-gradient(to top, color-mix(in srgb, var(--wx-brand-hero-from) 92%, transparent) 0%, color-mix(in srgb, var(--wx-brand-hero-from) 74%, transparent) 55%, color-mix(in srgb, var(--wx-brand-hero-from) 48%, transparent) 100%)',
+            }}
           />
           <div
             aria-hidden
-            className="absolute inset-0 -z-10"
+            className="absolute inset-0 -z-10 hidden sm:block"
             style={{
               background:
-                'linear-gradient(115deg, color-mix(in srgb, var(--wx-brand-hero-from) 88%, transparent), color-mix(in srgb, var(--wx-brand-hero-to) 55%, transparent))',
+                'linear-gradient(100deg, color-mix(in srgb, var(--wx-brand-hero-from) 94%, transparent) 0%, color-mix(in srgb, var(--wx-brand-hero-from) 76%, transparent) 34%, color-mix(in srgb, var(--wx-brand-hero-from) 26%, transparent) 62%, transparent 82%)',
             }}
           />
         </>

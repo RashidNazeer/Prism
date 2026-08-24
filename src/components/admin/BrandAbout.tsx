@@ -101,7 +101,7 @@ function Story({ brand }: { brand: Brand }) {
 
         <ImageUploadField
           label="Brand logo"
-          hint="PNG, JPG or WebP, up to 2 MB. Shown at the top of the creator's brand hub."
+          hint="512 x 512 px, square, transparent PNG. It is shown as a 28px rounded square, so use the icon or monogram rather than a wordmark."
           folder={`brands/${brand.id}`}
           value={values.logoUrl || null}
           disabled={busy}
@@ -126,7 +126,7 @@ function Story({ brand }: { brand: Brand }) {
 
         <ImageUploadField
           label="Hero image"
-          hint="Optional, and every hub is designed to look right without one. Wide works best: it sits behind the brand's name at the top of the world. Up to 2 MB."
+          hint="2400 x 1000 px works best (2.4:1). Keep the product RIGHT of centre and within the middle 60% top to bottom, because the edges are trimmed on different screens. No text or logos in the image: we write the brand name over it. Optional. Up to 2 MB."
           folder={`brands/${brand.id}`}
           value={values.heroUrl || null}
           disabled={busy}
