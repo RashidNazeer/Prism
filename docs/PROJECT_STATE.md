@@ -4,6 +4,14 @@
 
 **Recorded 2026-08-23 by /precompact.**
 
+**Added after that, 2026-08-24: the Google Stitch MCP server.** Declared in
+`.mcp.json`, key expanded from a Windows user environment variable so the
+committed file holds no secret. Fifteen tools for generating and editing UI
+screens. **It only connects once VS Code has been reopened**, because a new
+user environment variable reaches only processes started after it was set. If
+`/mcp` does not list it, that restart is the first thing to check. Full
+reasoning in OPERATIONS, section "MCP servers".
+
 **Nothing was queued.** Rashid gave no next instruction, so **ask what he wants
 to work on**, and answer from `docs/PARKED.md` if he asks what is pending.
 
