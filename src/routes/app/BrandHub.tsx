@@ -5,8 +5,7 @@ import { Package, Ticket } from 'lucide-react';
 import { ApplyDialog } from '@/components/creator/ApplyDialog';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
 import { OfferCard } from '@/components/creator/OfferCard';
-import { Button, ButtonLink } from '@/components/ui/Button';
-import { cn } from '@/lib/utils';
+import { ButtonLink } from '@/components/ui/Button';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import {
@@ -240,13 +239,7 @@ export function BrandHub() {
           <HubLeaderboards brandId={brand.id} />
         </Suspense>
       ) : (
-        <Overview
-          brand={brand}
-          products={products ?? []}
-          loading={productsLoading}
-          offerCount={offers?.length ?? 0}
-          onSeeOffers={() => go('offers')}
-        />
+        <Overview brand={brand} products={products ?? []} loading={productsLoading} />
       )}
       </div>
     </BrandWorldShell>
@@ -268,51 +261,44 @@ function WorldSkeleton() {
 
 /* ------------------------------------------------------------- overview -- */
 
+/**
+ * The first thing inside a brand, and it is now only the things it sells.
+ *
+ * WHAT CAME OUT, and why. Rashid: "the boring meet the brand, A dedicated space
+ * for creators turning trusted recovery products into great content. and button
+ * below it see offer is wasting space no need remove it".
+ *
+ * He is right twice over. The paragraph was the brand's description, which the
+ * hero directly above already prints in full, so the screen opened by saying
+ * the same sentence twice. And "See 1 offer" was a second route to a tab that
+ * is already lit in the rail and already has a button in the hero. Two of the
+ * three blocks on this screen were repeating its neighbours.
+ *
+ * So the products are the section, and they get the room the duplication was
+ * using.
+ */
 function Overview({
   brand,
   products,
   loading,
-  offerCount,
-  onSeeOffers,
 }: {
   brand: CreatorBrand;
   products: CreatorProduct[];
   loading: boolean;
-  offerCount: number;
-  onSeeOffers: () => void;
 }) {
   return (
-    <div className="mt-6 grid max-w-5xl gap-8">
+    <div className="mt-2 grid gap-6">
       <section>
-        <SectionHeading>Meet the brand</SectionHeading>
-        {brand.description ? (
-          <p className="text-muted mt-3 max-w-3xl leading-relaxed whitespace-pre-line">
-            {brand.description}
-          </p>
-        ) : (
-          <p className="text-faint mt-3 text-[0.875rem] leading-relaxed">
-            This brand has not written its introduction yet.
-          </p>
-        )}
-
-        {offerCount > 0 ? (
-          <Button variant="secondary" size="sm" className="mt-5" onClick={onSeeOffers}>
-            See {offerCount} {offerCount === 1 ? 'offer' : 'offers'}
-          </Button>
-        ) : null}
-      </section>
-
-      <section>
-        <SectionHeading>What they sell</SectionHeading>
+        <SectionHeading>What {brand.name} sells</SectionHeading>
 
         {loading ? (
-          <ul className="mt-3 grid gap-2">
+          <ul className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <li key={i} className="wx-skeleton h-16 rounded-xl" />
+              <li key={i} className="wx-skeleton h-[19rem] rounded-2xl" />
             ))}
           </ul>
         ) : products.length === 0 ? (
-          <div className="border-line bg-surface-1 mt-3 rounded-xl border px-6 py-12 text-center shadow-md">
+          <div className="border-line bg-surface-1 mt-4 rounded-2xl border px-6 py-12 text-center shadow-md">
             <Package size={24} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">Products are on their way</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -321,51 +307,73 @@ function Overview({
             </p>
           </div>
         ) : (
-          <ul className="border-line mt-3 overflow-hidden rounded-2xl border">
+          <ul className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {products.map((product, i) => (
-              <li
+              <m.li
                 key={product.id}
-                className={cn(
-                  'bg-surface-1 flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5',
-                  i > 0 && 'border-line border-t'
-                )}
+                /*
+                 * STAGGERED IN, and capped at six. Past that the last card in a
+                 * long list waits most of a second for its turn, which stops
+                 * reading as polish and starts reading as a slow page.
+                 */
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.32, ease: 'easeOut', delay: Math.min(i, 6) * 0.05 }}
+                className="group border-line bg-surface-1 hover:border-accent/40 relative flex flex-col overflow-hidden rounded-2xl border shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
               >
-                <span className="border-line bg-surface-2 grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl border">
+                {/*
+                  THE PICTURE LEADS, because a product a creator has never held
+                  is a photograph before it is a name. Square, so a grid of them
+                  lines up whatever shape the brand uploaded.
+                */}
+                <div className="bg-surface-2 relative aspect-square overflow-hidden">
                   {product.image_url ? (
-                    <img src={product.image_url} alt="" className="size-full object-cover" />
+                    <img
+                      src={product.image_url}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
+                    />
                   ) : (
-                    <Package size={16} aria-hidden className="text-faint" />
+                    <span className="grid size-full place-items-center">
+                      <Package size={26} aria-hidden className="text-faint" />
+                    </span>
                   )}
-                </span>
 
-                <span className="min-w-0 flex-1 basis-40">
-                  <span className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold break-words">{product.name}</span>
-                    {product.badge_title ? (
-                      <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 text-[0.625rem] font-semibold tracking-[0.12em] uppercase">
-                        {product.badge_title}
-                      </span>
-                    ) : null}
-                  </span>
-                  {product.price !== null ? (
-                    <span className="font-display text-muted mt-0.5 block text-[0.8125rem]">
-                      {money(product.price, product.currency)}
+                  {product.badge_title ? (
+                    <span className="bg-surface-1/90 text-accent absolute top-3 left-3 rounded-full px-2.5 py-1 text-[0.625rem] font-bold tracking-[0.12em] uppercase shadow-sm backdrop-blur">
+                      {product.badge_title}
                     </span>
                   ) : null}
-                </span>
 
-                {/* The number they actually came for. */}
-                {percent(product.commission_rate) ? (
-                  <span className="shrink-0 text-right">
-                    <span className="font-display text-accent block text-[1.1875rem] font-semibold">
-                      {percent(product.commission_rate)}
+                  {/*
+                    THE NUMBER THEY CAME FOR, on the image rather than under it.
+                    A creator scanning a grid is looking for the commission, and
+                    on the picture it is found in one pass instead of one per
+                    card.
+                  */}
+                  {percent(product.commission_rate) ? (
+                    <span className="bg-accent text-on-accent absolute right-3 bottom-3 rounded-full px-3 py-1.5 shadow-lg">
+                      <span className="font-display text-[1rem] leading-none font-bold">
+                        {percent(product.commission_rate)}
+                      </span>
+                      <span className="ml-1.5 text-[0.625rem] font-semibold tracking-[0.1em] uppercase opacity-90">
+                        your cut
+                      </span>
                     </span>
-                    <span className="text-muted block text-[0.625rem] font-semibold tracking-[0.12em] uppercase">
-                      Your cut
-                    </span>
-                  </span>
-                ) : null}
-              </li>
+                  ) : null}
+                </div>
+
+                <div className="flex flex-1 flex-col gap-1 p-4">
+                  <p className="leading-snug font-semibold break-words">{product.name}</p>
+                  {product.price !== null ? (
+                    <p className="font-display text-muted text-[0.875rem]">
+                      {money(product.price, product.currency)}
+                    </p>
+                  ) : null}
+                </div>
+              </m.li>
             ))}
           </ul>
         )}

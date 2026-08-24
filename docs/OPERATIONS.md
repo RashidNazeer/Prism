@@ -472,6 +472,21 @@ the Edge Function. Never treat the URL as a security boundary.
 - Wildcard `Remove-Item` is sometimes blocked by the sandbox. Delete by explicit
   path.
 
+**`PGRST303: JWT issued at future`, a 401 you can ignore ONCE.** Seen on
+2026-08-25 on the first request after a scripted sign-in, and not again in
+three repeats; the clock skew against Supabase measured ZERO seconds a moment
+later. The token is minted by one Supabase service and checked by another, so a
+sub-second difference between them can put `iat` a hair in the future on the
+very first call. TanStack Query retries and the screen fills normally.
+
+**Treat a REPEATING one differently.** If it survives a retry, or shows up on
+more than the first request, check this machine's clock against the server
+before touching any auth code:
+
+```bash
+curl -sS -D - -o /dev/null https://<ref>.supabase.co/rest/v1/ | grep -i "^date:"
+```
+
 ## 8. House style
 
 - **No em dashes or en dashes in the APP.** Standing instruction from Rashid.

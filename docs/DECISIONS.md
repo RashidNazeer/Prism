@@ -1478,3 +1478,15 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   three-row reward list and a one-line perk and drags every neighbour in the
   grid with it. The hero also came down from 26rem to 20rem: at 26 it was 540px,
   about 40% of the card, with a dead band in the middle of it.
+- 2026-08-25: **A Brand Hub overview is the products and nothing else.**
+  Rashid: *"the boring meet the brand ... and button below it see offer is
+  wasting space no need remove it"*. Both were repeating their neighbours: the
+  paragraph was the brand description the hero directly above already prints in
+  full, and "See 1 offer" was a third route to a tab already lit in the rail and
+  already linked from the hero. Products became elevated cards with the picture
+  leading and the commission ON the image, because a creator scanning a grid is
+  looking for the cut and on the picture it is found in one pass.
+- 2026-08-25: **The hero call to action is glass, not a filled button.** A solid
+  accent button on a photograph is a second poster competing with the picture.
+  It keeps the block's text-shadow and fills solid on hover, because glass over
+  an unknown upload is exactly where a control disappears.

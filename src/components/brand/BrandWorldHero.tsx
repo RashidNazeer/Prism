@@ -1,4 +1,5 @@
 import { m } from 'motion/react';
+import { ArrowRight } from 'lucide-react';
 import { BrandChip } from '@/components/brand/BrandWorldShell';
 import type { CreatorBrand } from '@/lib/creator/useCreatorBrands';
 
@@ -162,16 +163,46 @@ export function BrandWorldHero({
         ) : null}
 
         {offerCount > 0 ? (
+          /*
+           * LARGE AND TRANSPARENT, which is what Rashid asked for: "see the
+           * offer button in hero image should be large transparent type".
+           *
+           * A solid accent button on top of a photograph is a second poster
+           * competing with the picture. Glass instead: the hero's own text
+           * colour at low opacity, a hairline border and a blur, so the image
+           * carries on behind it and the button reads as part of the hero
+           * rather than as something dropped on it.
+           *
+           * IT STILL HAS TO BE A BUTTON, THOUGH. Glass over an unknown
+           * photograph is exactly where a control disappears, so it keeps the
+           * text-shadow of the block it sits in, and it fills solid on hover so
+           * the affordance is unmistakable once a cursor is near it.
+           */
           <button
             type="button"
             onClick={onExplore}
-            className="mt-6 rounded-md px-4 py-2.5 text-[0.875rem] font-bold shadow-lg transition hover:-translate-y-px"
+            className="group/cta mt-7 inline-flex items-center gap-2.5 rounded-lg border px-6 py-3.5 text-[0.9375rem] font-bold backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-2xl"
             style={{
-              background: 'var(--wx-brand-accent)',
-              color: 'var(--wx-brand-accent-text)',
+              borderColor: 'color-mix(in srgb, var(--wx-brand-hero-text) 45%, transparent)',
+              background: 'color-mix(in srgb, var(--wx-brand-hero-text) 12%, transparent)',
+              color: 'var(--wx-brand-hero-text)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--wx-brand-hero-text)';
+              e.currentTarget.style.color = 'var(--wx-brand-hero-from)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background =
+                'color-mix(in srgb, var(--wx-brand-hero-text) 12%, transparent)';
+              e.currentTarget.style.color = 'var(--wx-brand-hero-text)';
             }}
           >
             {offerCount === 1 ? 'See the offer' : `See all ${offerCount} offers`}
+            <ArrowRight
+              size={17}
+              aria-hidden
+              className="transition-transform duration-300 group-hover/cta:translate-x-1"
+            />
           </button>
         ) : null}
       </m.div>
