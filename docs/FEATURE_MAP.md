@@ -2210,3 +2210,65 @@ that is telling them something untrue; they stop reading banners.
 **Do not paint a fixed banner with a `*-soft` token.** They are translucent
 washes for tinting cards. On a phone this one wrapped to five lines and the page
 showed through it.
+
+
+## Brand World, the creator side of a Brand Hub (2026-08-24)
+
+**Files:** `src/routes/app/BrandHub.tsx` · `src/components/brand/BrandWorldShell.tsx`
+· `src/components/brand/BrandWorldHero.tsx` · `src/components/layout/WorldLayout.tsx`
+· `src/lib/brand-theme.ts` · `scripts/check-brand-theme.mjs` · `scripts/shots-hub.mjs`
+· migration `20260824170709_brand_world_look.sql`
+
+**Shape.** `/app/brands` and `/app/brands/:slug` sit OUTSIDE `ShellLayout`, under
+their own `WorldLayout`, so the Wurx sidebar and top bar are gone. The rail
+carries two lists: the brands, and the open brand's sections. `/app/brands` with
+no slug opens the first brand rather than an index.
+
+**The rules that are not obvious.**
+
+1. **One colour in, a whole palette out, and the readability is guaranteed in
+   code.** `brands.brand_color` is the only thing an admin picks.
+   `deriveBrandTheme()` works in OKLCH, not HSL, because HSL's lightness is a
+   lie and a ramp that looks even for a blue brand collapses for a yellow one.
+2. **A foreground must clear the WORST background it appears on.** The first
+   version computed each text colour against one background and used it on
+   several, and `check-brand-theme` failed all 88 test colours immediately. Body
+   text derived against the page then printed on a card; hero text derived
+   against the dark end of a gradient then shown over the light end.
+3. **The world rebinds the ordinary `--wx-*` tokens for its subtree**, which is
+   what themes every existing component with no component changes. Success,
+   danger and warning are deliberately NOT rebound: a red brand must not turn
+   every approved badge into a warning.
+4. **`check-contrast` cannot see a database colour**, which is the whole reason
+   `check-brand-theme` exists and runs inside `pnpm build`.
+5. **The hero needs a height of its own.** Without one it is only as tall as its
+   text, so the box ran 1.41:1 on a phone to 5.31:1 on a monitor and `cover`
+   threw away 72% of the picture. Artwork sizes are measured, in OPERATIONS.
+
+**Depended on by:** the creator Brand Hub sections, which are the same screens
+the sidebar opens with a `brandId` passed in. One screen, two places, so a fix
+to the numbers cannot land in one and miss the other.
+
+## Brand-scoped creator numbers (2026-08-24)
+
+**Files:** migration `20260824152633_brand_scoped_creator_numbers.sql` ·
+`src/lib/creator/usePerformance.ts` · `useLeaderboard.ts` · `useCreatorContests.ts`
+· `scripts/check-brand-numbers.mjs`
+
+**The rule, and it is Rashid's:** a video belongs to a brand through the offer or
+contest it was filed against. The MONEY belongs to the brand whose ad account
+paid. Both apply together: a hub LISTS videos filed there and SUMS only that
+brand's money rows on them.
+
+**Three traps, all met:**
+
+1. `create or replace` with a new argument makes a SECOND OVERLOAD. Every
+   signature is dropped by its exact arity first. `verify:brand-numbers` proves
+   it by asking for a brand that does not exist and requiring zero rows.
+2. **The predicate goes in three places** in `creator_video_performance`: `mine`
+   decides which videos exist, `ranged` the money in the period, `lifetime` the
+   ads-running state. Miss one and the tiles are right while the counts are
+   global.
+3. **Rank is computed INSIDE the brand**, underneath the `rank()`, or the board
+   opens on "#7 of 3".
+

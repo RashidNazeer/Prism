@@ -487,6 +487,16 @@ before touching any auth code:
 curl -sS -D - -o /dev/null https://<ref>.supabase.co/rest/v1/ | grep -i "^date:"
 ```
 
+**HEADLESS CHROMIUM LEAKS, and it looks exactly like a hang.** A session on
+2026-08-25 left **26 orphaned chrome processes** and free memory fell to 0.67 GB;
+a screenshot run then timed out after ten minutes with no error. **Kill them
+before any browser suite, and suspect this first when a browser run hangs:**
+
+```powershell
+Get-Process -Name chrome, chromium, headless_shell -ErrorAction SilentlyContinue |
+  Stop-Process -Force
+```
+
 ## 8. House style
 
 - **No em dashes or en dashes in the APP.** Standing instruction from Rashid.

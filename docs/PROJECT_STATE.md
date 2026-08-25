@@ -2,64 +2,69 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-23 by /precompact.**
+**Recorded 2026-08-25 by /precompact.**
 
-**Added after that, 2026-08-24: the Google Stitch MCP server.** Declared in
-`.mcp.json`, key expanded from a Windows user environment variable so the
-committed file holds no secret. Fifteen tools for generating and editing UI
-screens. **It only connects once VS Code has been reopened**, because a new
-user environment variable reaches only processes started after it was set. If
-`/mcp` does not list it, that restart is the first thing to check. Full
-reasoning in OPERATIONS, section "MCP servers".
+**Rashid deferred the one open thread himself:** *"will continue developer setup
+later we'll come to it in a while"*. That is the TikTok **Display API** app on
+developers.tiktok.com, for per-video views. **Do not start it unprompted.** The
+whole application process, the two products, the scopes, the redirect URI and
+the sandbox-before-approval trap are written up in **PARKED 27**, so when he
+raises it, read that and nothing else.
 
-**Nothing was queued.** Rashid gave no next instruction, so **ask what he wants
-to work on**, and answer from `docs/PARKED.md` if he asks what is pending.
+**So nothing is queued. Ask what he wants to work on**, and answer from
+`docs/PARKED.md` if he asks what is pending.
 
-**The last job finished cleanly**: the contest redesign, both sides. He asked
-for the admin editor and the creator card in one go and both landed, tested
-against the real artwork he uploaded. He has not yet said whether he likes the
-creator card — **that verdict is the most likely first thing he brings up.**
+**WHAT HE HAS NOT SEEN YET, and is the likeliest first topic.** The last three
+builds all landed on dev and he has not given a verdict on any of them: the
+creator **Brand World**, the reworked **offer and contest cards**, and the
+**creator top bar**. If he opens with an opinion on any of those, that is why.
 
-**What he was working through this session, newest first:**
+**What this session did, newest first.**
 
-1. **Contests, both sides** (2026-08-22). Admin is five tabs — Details ·
-   Rewards · Visibility · Settings · Summary, tab in the URL. Creator is a hero
-   card with a countdown, "what you can earn", three facts and "why join". Two
-   new optional columns, `contests.card_image_url` and `contests.perks`;
-   `banner_url` already existed since 13 August with no upload control ever
-   built for it. `verify:contests` 141/141.
-2. **Offer kinds and audiences** (2026-08-22). Retainer / Volume / High
-   commission, enforced in RLS **and** in `apply_for_offer`, which is SECURITY
-   DEFINER and bypasses RLS entirely. It closed a live leak: all 41 dev creators
-   could read all 31 Penetrex rates. `pnpm verify:offers` is new, 26 checks.
-3. **Three admin queues became card grids**, then the sidebar was halved from
-   eight group headings to four, and the collapsed rail stopped cropping the
-   mascot's face.
-4. **The TikTok API was mapped by probing**, not by reading docs.
-   `pnpm probe:tiktok`. Findings in OPERATIONS; the one needing a decision is
-   PARKED 19.
+1. **The TikTok scope round, and it is the one with a lesson.** He applied for
+   scopes on my advice and STILL did not get views per video. The scopes worked
+   and gave campaign status, budget and target ROAS. Views were never reachable
+   that way, and I should have established it before sending him to apply.
+   Everything now settled and written down: OPERATIONS "Ad delivery status" and
+   "Impressions and views per video", PARKED 26 (done) and PARKED 27 (the second
+   app). **The headline: there are TWO TikTok platforms and we only ever talked
+   to one.** Money is on business-api, engagement is on open.tiktokapis, and no
+   scope on the first reaches the second.
+2. **The Brand World** (2026-08-24). `/app/brands/:slug` is full screen, outside
+   `ShellLayout`, with a rail carrying the brand switcher AND that brand's
+   sections. One brand colour in the database derives the whole palette for both
+   modes in `src/lib/brand-theme.ts`, and `pnpm check:brand-theme` proves 88
+   colours stay readable, inside `pnpm build`.
+3. **Brand-scoped creator numbers** (2026-08-24). My numbers, Contests and
+   Leaderboards all narrow to one brand inside a hub. `pnpm verify:brand-numbers`
+   17 checks.
+4. **The nightly sync re-reads seven days** (2026-08-24), because TikTok restates
+   ad spend after a day closes. Dev had been 2.8% high overall and 13.6% on one
+   day. `pnpm verify:numbers` compares us against the live API.
+5. **Creator chrome** (2026-08-25). Every creator screen lost its title row; the
+   line moved into the top bar via `sectionDescriptionFor`. PARKED 0b is done.
 
-**Read before touching the money path:** PARKED 18 (his four standing rules on
-brands and ad accounts, not to be re-litigated) and PARKED 21 (what was
-deliberately left on offer audiences).
+**Where dev stands.** One brand (Penetrex, colour `#dc0945`, logo and hero
+uploaded), 41 creators, 31 offers, 1 contest, ~1,200 money rows all matching
+TikTok exactly. TikTok connection `3a8cd503`, reconnected 2026-08-25 with 8
+scopes.
 
-**Where dev stands:** one brand (Penetrex, no logo), 41 creators, 31 offers —
-**all now `kind = 'retainer'`** with 41 audience rows, 41 applications all
-approved, 1 contest with 3 rewards and real uploaded artwork, 85 offer videos,
-15 contest videos, ~845 money rows, 42 profiles. `node scripts/tidy-dev.mjs`
-dry-runs a check that nothing has crept in.
+**Suites, all green:** `verify:contests` 141 · `verify:brand-numbers` 17 ·
+`verify:numbers` · `verify:offers` 26 · `verify:leaderboard` 43 ·
+`verify:rls` · `verify:performance`. **`verify:chrome` was NOT run** and cannot
+be: it needs `ADMIN_EMAIL` and `ADMIN_PASSWORD`, and that password is
+deliberately stored nowhere.
 
-**Suites, all green on 2026-08-22:** `verify:contests` 141 · `verify:offers`
-26 · `verify:brands` · `verify:offer-requests` · `verify:content` 33 ·
-`verify:rls` 22 · `verify:chrome` 43.
+**Two machine problems that will waste your time if you do not know them.**
+Headless Chromium leaks: this session left 26 orphaned processes and free memory
+fell to 0.67 GB, which is what made a screenshot run time out. **Kill stray
+chrome processes before any browser suite.** And an occasional single 401
+`PGRST303 JWT issued at future` on the first request after a scripted sign-in is
+a sub-second clock artefact, documented in OPERATIONS; ignore one, investigate a
+repeat.
 
-**Two known flakes, both this machine and not the code.** `verify:contests`
-and `verify:offer-requests` both failed mid-run with `fetch failed` while
-Chrome was open with ~1.5 GB free, and both went green once it was closed. See
-PARKED 20. **Re-run before believing a failure**, and close Chrome first.
-
-**Do not re-explore the codebase to get oriented.** This file, then PARKED, then
-only the files the chosen job names.
+**Do not re-explore the codebase.** This file, then PARKED, then only the files
+the chosen job names.
 
 ---
 
