@@ -1058,13 +1058,27 @@ moving anything:** the real subset (the Penetrex brand, its products, its real
 TikTok connection and the real GMV rows) is almost certainly what he wants; the
 41 seeded logins should be argued against.
 
-**b. The four TikTok secrets are unset on prod**, so `tiktok-connect`,
-`tiktok-callback` and `tiktok-sync` answer 500. Needed:
-`TIKTOK_APP_ID`, `TIKTOK_APP_SECRET` (both from Rashid, never written to a
-file), `TIKTOK_REDIRECT_URI` = `https://wurxmediahub.vercel.app/oauth/tiktok/callback`,
-and a freshly generated `TIKTOK_SYNC_SECRET`. **The prod redirect URI must also
-be added on TikTok's side**, in the ads app's allowed list, or the callback is
-refused.
+**b. TWO TikTok secrets are still unset on prod.** `TIKTOK_APP_ID` and
+`TIKTOK_REDIRECT_URI` were set on 2026-08-26 — the app id is public and the
+redirect is derivable, so neither needed asking. Outstanding:
+
+- `TIKTOK_APP_SECRET` — **only Rashid can supply it.** It is not on this machine
+  and never has been. The standing rule is that it is never written to a file;
+  it lives only as an Edge Function secret, and `supabase secrets list` returns
+  a DIGEST rather than a value, so it cannot be copied across from dev either.
+  He gets it from TikTok for Business, the "Wurx Ads Reporting" app, Basic
+  Information.
+- `TIKTOK_SYNC_SECRET` — ours to generate, and it must match in TWO places: the
+  Edge Function secret, and the `tiktok_sync_secret` entry in the database vault
+  that the nightly cron reads. Setting one without the other fixes nothing.
+
+**And the prod callback must be added on TIKTOK'S side**,
+`https://wurxmediahub.vercel.app/oauth/tiktok/callback`, in the ads app's
+allowed redirect list, or the round trip is refused.
+
+**Then an admin connects on prod once.** Same app, no new review: the OAuth
+grant is a row in `tiktok_connections`, and that table lives per database, so
+prod needs its own. That is the whole of "authorising again".
 
 **c. The nightly cron throws every night at 03:20** until (b) is done, because
 `tiktok_run_nightly_sync` raises when the vault has no `tiktok_sync_secret` or
