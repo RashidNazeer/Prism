@@ -767,7 +767,7 @@ it as the theming failing.
 
 ---
 
-## 26. Ad delivery status: add the scopes and re-authorise
+## 26. DONE 2026-08-25. Ad delivery status: scopes added, and what it bought
 
 **Parked 2026-08-25**, when Rashid asked whether we can tell if an ad is
 stopped, learning or queued. Probed live: **we cannot, today.**
@@ -820,7 +820,32 @@ recent day had cost on it. So a campaign paused an hour ago still reads as
 running until the spend stops arriving, and a campaign in learning with no
 spend yet reads as "No ads".
 
-**Trigger:** raise it when Rashid next has ten minutes in the TikTok app
-settings, or the first time a creator asks why their video says no ads while
-the brand says it is live.
+**DONE 2026-08-25.** Rashid had the scopes approved and reconnected, and the
+campaign endpoints answer. Full detail in OPERATIONS, "Ad delivery status".
+
+**What it bought:** GMV Max campaign status per campaign
+(`operation_status`, `secondary_status`, `roi_protection_compensation_status`),
+plus the commercial settings this project had written off as unavailable:
+`budget`, `roas_bid`, `auto_budget_enabled`, `roi_protection_enabled`,
+`deep_bid_type`, the schedule and the placements.
+
+**Two things it did NOT buy, and both matter.**
+
+**a. A campaign still cannot be tied to a creator's video.** The video report
+refuses `campaign_id` as both a dimension and a metric, and the campaign's own
+`item_list` is empty with `product_video_specific_type: AUTO_SELECTION`. TikTok
+chooses the videos and will not say which. So per-video ad state stays INFERRED
+from spend, and a paused campaign still reads as running on a creator's screen
+until the spend stops arriving. **This is now a known limit rather than an open
+question.**
+
+**b. `/report/integrated/get/` is still refused**, so impressions, clicks and
+video views are still out of reach. It needs the **Consolidated Report** box
+under Reporting, which was not ticked. One more scope change and reconnect.
+
+**Still open for a future session:** nothing has been BUILT on any of this. The
+campaign status and budget are readable and nothing reads them. The obvious use
+is an admin-only panel on the brand's TikTok tab answering "are this brand's
+campaigns actually running", which is a question Rashid has no way to answer
+today. **Creators must never see the budget or the ROAS target.**
 
