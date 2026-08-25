@@ -849,3 +849,54 @@ is an admin-only panel on the brand's TikTok tab answering "are this brand's
 campaigns actually running", which is a question Rashid has no way to answer
 today. **Creators must never see the budget or the ROAS target.**
 
+---
+
+## 27. Per-video engagement needs a SECOND TikTok app, on a different platform
+
+**Parked 2026-08-25**, after Rashid applied for scopes and still did not get
+views per video. He was right to be annoyed: the scopes worked, but they were
+never going to deliver that, and it should have been checked before he applied.
+
+**THE TWO PLATFORMS ARE NOT THE SAME THING, and this is the whole point.**
+
+| | what we have | what views need |
+| --- | --- | --- |
+| platform | `business-api.tiktok.com` | `open.tiktokapis.com` |
+| portal | TikTok for Business | developers.tiktok.com |
+| authorises | the BRAND's ad account | the CREATOR's own TikTok |
+| gives | money: cost, GMV, orders, ROI | views, likes, comments, shares |
+
+Applying for more scopes on the app we have cannot reach engagement, because
+engagement is not in that product at all. **This is a second app, a second
+developer account, and a second OAuth flow.** No amount of ticking on the first
+one gets there.
+
+**What the second one gives, per video** (TikTok's own Display API docs, read
+2026-08-25, NOT yet tested by us because there is no app):
+
+```
+endpoint  POST /v2/video/list/     on open.tiktokapis.com
+scope     user.info.basic, video.list
+returns   view_count, like_count, comment_count, share_count,
+          id, title, video_description, duration, cover_image_url, embed_link
+```
+
+**It returns the AUTHENTICATED USER's own videos**, which is exactly our case: a
+creator posts to their own account and pastes us the link. They would connect
+their TikTok once, the way they connect anything else.
+
+**Three things to know before promising it.** `video.list` normally needs app
+review before production. The figures are ORGANIC totals for the whole video,
+not the ad-driven slice, so they will not reconcile with anything in
+`tiktok_video_daily` and must never be presented as if they would. And every
+creator has to authorise individually, so coverage will be partial and the
+screens must be right with the figure missing.
+
+**This is creator-facing, unlike the ads connection.** The rule that creators
+never see the TikTok ads connection is about the BRAND's ad account. A creator
+connecting their own account to show their own view count is the opposite: it is
+theirs, and it is the sort of thing the product is for.
+
+**Trigger:** when Rashid wants views on a creator's video badly enough to run a
+second app through review. Nothing in the current product depends on it.
+
