@@ -2,73 +2,48 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-25.**
+**Recorded 2026-08-26.**
 
-**Nothing is queued. Ask what he wants to work on**, and answer from
-`docs/PARKED.md` if he asks what is pending.
+**WAITING ON RASHID.** He is unpausing the production Supabase project himself
+and said *"I will tell you once i have resumed it"*. **Do not touch prod before
+he says so.** The moment he does, the job is **PARKED 30**, the production
+launch checklist, and it has a question in it that must be answered before
+step 3: he said "shift all our data to prod", but his own standing rule is that
+prod never gets test data, and dev's 41 creators all share the password
+`1234567890`. Ask which he means.
 
-**WHAT HE HAS NOT SEEN YET, and is the likeliest first topic.** Four builds are
-on dev without a verdict from him: the creator **Brand World**, the reworked
-**offer and contest cards**, the **creator top bar**, and now **multi-colour
-brand themes** plus the **rebuilt creator offers page**. If he opens with an
-opinion on any of those, that is why.
+**Why this came up at all:** he is registering the TikTok **Display API** app
+(PARKED 27) and it demands a Terms of Service URL and a Privacy Policy URL on
+the prod domain, plus URL-property verification by signature file. Both pages
+now exist and are verified on dev; on prod they render a 16-word "not found",
+because prod is 146 commits and 58 migrations behind and its database is paused.
 
-**Still deferred by him:** the TikTok **Display API** app on
-developers.tiktok.com, for per-video views. *"will continue developer setup
-later we'll come to it in a while"*. **Do not start it unprompted.** The whole
-application process is in **PARKED 27**.
+**What he still needs from the TikTok form** (all worked out, in his hands):
+category Business, the 115-character description, Login Kit as the only product,
+`video.list` as the only scope, the 832-character review text, and the
+URL-prefix verification method — NOT Domain, because that needs a DNS record on
+`vercel.app`, which Vercel owns. He will hand over TikTok's signature file; it
+goes in `public/` and is served verbatim at the domain root (verified).
 
-**What this session did (2026-08-25, second half), newest first.**
+**What this session did (2026-08-26).**
 
-1. **Multi-colour brand themes.** Rashid: *"some brands have multo color
-   themes"*. An admin now colours four areas — hero, menu, pages and cards,
-   buttons — up to four colours each, stored in `brands.theme` jsonb. Anything
-   they do not touch still derives from `brands.brand_color`, byte for byte.
-   **The rule that makes it safe: the admin picks FILLS, the product picks
-   INKS.** A picked colour keeps its hue and saturation exactly; only its
-   brightness is clamped into what that area can carry, and every text colour is
-   still measured against every fill it crosses, including the middle stops of a
-   gradient.
-2. **The guard found two real defects on its first run**, one of them in the
-   ORIGINAL one-colour code: the accent gradient ran from the accent to the far
-   end of the hero, so half of every gradient button in dark mode was far darker
-   than the colour its label was chosen against. Nothing had ever measured it.
-   Fixed. The other was my own first accent band, 0.38–0.62, which failed 869 of
-   1200 random themes because a button's label is one colour and cannot cross
-   the middle of the lightness axis.
-3. **The creator offers page**, rebuilt. A summary strip (open to you, you are
-   on, agreed with you), transparent tabs that appear only when there is more
-   than one kind of thing to filter, work sorted above everything else, and a
-   card that lifts and carries the brand's gradient along its top edge when the
-   creator is actually on it.
-4. **Two new suites.** `pnpm verify:brand-theme` (15 checks) proves the write
-   path refuses a text colour smuggled into the JSON and that a creator cannot
-   repaint a brand. `scripts/shots-brand-look.mjs` photographs the editor in
-   both modes at four widths, making and deleting its own admin.
+1. **`/terms` and `/privacy`**, public, linked from the footer, `wx-prose`
+   rather than a typography plugin. `pnpm verify:legal`, 31 checks, green on
+   dev's deployed site.
+2. **The privacy policy was written from a four-way inventory of the repo**, and
+   that caught a flat falsehood in my own first draft: "other creators cannot see
+   your figures". They can — the leaderboard shows name, face, GMV, ad spend,
+   orders and video count, on Rashid's own 2026-08-20 decision. It also stopped
+   the page quoting a retention period nothing implements.
+3. **PARKED 29**, five things that inventory found. The first is the one to
+   act on: `applications.review_note` is readable by the applicant it is about,
+   because the grant is table-wide while the policy is per row.
 
-**Where dev stands.** One brand (Penetrex, colour `#d33c5a`, **theme null** — a
-multi-colour theme was set only to photograph it and then cleared, so the hub
-looks exactly as it did), 41 creators, 31 offers, 1 contest, ~1,200 money rows
-matching TikTok exactly. TikTok connection `3a8cd503`, 8 scopes.
+**Before this session:** multi-colour brand themes and the rebuilt creator
+offers page (commit `1ffd348`), both on dev, neither given a verdict.
 
-**Verified this session:** `pnpm build` (88 base colours + 1200 random
-multi-colour themes, every gradient stop, both modes) · `verify:brand-theme` 15
-· `verify:offers` · `shots-hub` every section, both themes, four widths, **no
-console errors and no sideways scroll**, run twice: once with a four-area theme
-on and once with it off · `shots-brand-look` the editor, both themes, four
-widths, same clean result. **`verify:brands` and `verify:chrome` were NOT run**
-and cannot be: they need `ADMIN_EMAIL` and `ADMIN_PASSWORD`, and that password
-is deliberately stored nowhere. `check-brand-theme-save.mjs` exists partly to
-cover what `verify:brands` would have.
-
-**Two machine problems that will waste your time if you do not know them.**
-Headless Chromium leaks: kill stray `chrome` processes before any browser
-suite, every time. And an occasional single 401 `PGRST303 JWT issued at future`
-on the first request after a scripted sign-in is a sub-second clock artefact,
-documented in OPERATIONS; ignore one, investigate a repeat.
-
-**Do not re-explore the codebase.** This file, then PARKED, then only the files
-the chosen job names.
+**Do not re-explore the codebase.** This file, then PARKED 30, then only what it
+names.
 
 ---
 
