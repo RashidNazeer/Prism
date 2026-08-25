@@ -2,66 +2,70 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-25 by /precompact.**
+**Recorded 2026-08-25.**
 
-**Rashid deferred the one open thread himself:** *"will continue developer setup
-later we'll come to it in a while"*. That is the TikTok **Display API** app on
-developers.tiktok.com, for per-video views. **Do not start it unprompted.** The
-whole application process, the two products, the scopes, the redirect URI and
-the sandbox-before-approval trap are written up in **PARKED 27**, so when he
-raises it, read that and nothing else.
-
-**So nothing is queued. Ask what he wants to work on**, and answer from
+**Nothing is queued. Ask what he wants to work on**, and answer from
 `docs/PARKED.md` if he asks what is pending.
 
-**WHAT HE HAS NOT SEEN YET, and is the likeliest first topic.** The last three
-builds all landed on dev and he has not given a verdict on any of them: the
-creator **Brand World**, the reworked **offer and contest cards**, and the
-**creator top bar**. If he opens with an opinion on any of those, that is why.
+**WHAT HE HAS NOT SEEN YET, and is the likeliest first topic.** Four builds are
+on dev without a verdict from him: the creator **Brand World**, the reworked
+**offer and contest cards**, the **creator top bar**, and now **multi-colour
+brand themes** plus the **rebuilt creator offers page**. If he opens with an
+opinion on any of those, that is why.
 
-**What this session did, newest first.**
+**Still deferred by him:** the TikTok **Display API** app on
+developers.tiktok.com, for per-video views. *"will continue developer setup
+later we'll come to it in a while"*. **Do not start it unprompted.** The whole
+application process is in **PARKED 27**.
 
-1. **The TikTok scope round, and it is the one with a lesson.** He applied for
-   scopes on my advice and STILL did not get views per video. The scopes worked
-   and gave campaign status, budget and target ROAS. Views were never reachable
-   that way, and I should have established it before sending him to apply.
-   Everything now settled and written down: OPERATIONS "Ad delivery status" and
-   "Impressions and views per video", PARKED 26 (done) and PARKED 27 (the second
-   app). **The headline: there are TWO TikTok platforms and we only ever talked
-   to one.** Money is on business-api, engagement is on open.tiktokapis, and no
-   scope on the first reaches the second.
-2. **The Brand World** (2026-08-24). `/app/brands/:slug` is full screen, outside
-   `ShellLayout`, with a rail carrying the brand switcher AND that brand's
-   sections. One brand colour in the database derives the whole palette for both
-   modes in `src/lib/brand-theme.ts`, and `pnpm check:brand-theme` proves 88
-   colours stay readable, inside `pnpm build`.
-3. **Brand-scoped creator numbers** (2026-08-24). My numbers, Contests and
-   Leaderboards all narrow to one brand inside a hub. `pnpm verify:brand-numbers`
-   17 checks.
-4. **The nightly sync re-reads seven days** (2026-08-24), because TikTok restates
-   ad spend after a day closes. Dev had been 2.8% high overall and 13.6% on one
-   day. `pnpm verify:numbers` compares us against the live API.
-5. **Creator chrome** (2026-08-25). Every creator screen lost its title row; the
-   line moved into the top bar via `sectionDescriptionFor`. PARKED 0b is done.
+**What this session did (2026-08-25, second half), newest first.**
 
-**Where dev stands.** One brand (Penetrex, colour `#dc0945`, logo and hero
-uploaded), 41 creators, 31 offers, 1 contest, ~1,200 money rows all matching
-TikTok exactly. TikTok connection `3a8cd503`, reconnected 2026-08-25 with 8
-scopes.
+1. **Multi-colour brand themes.** Rashid: *"some brands have multo color
+   themes"*. An admin now colours four areas — hero, menu, pages and cards,
+   buttons — up to four colours each, stored in `brands.theme` jsonb. Anything
+   they do not touch still derives from `brands.brand_color`, byte for byte.
+   **The rule that makes it safe: the admin picks FILLS, the product picks
+   INKS.** A picked colour keeps its hue and saturation exactly; only its
+   brightness is clamped into what that area can carry, and every text colour is
+   still measured against every fill it crosses, including the middle stops of a
+   gradient.
+2. **The guard found two real defects on its first run**, one of them in the
+   ORIGINAL one-colour code: the accent gradient ran from the accent to the far
+   end of the hero, so half of every gradient button in dark mode was far darker
+   than the colour its label was chosen against. Nothing had ever measured it.
+   Fixed. The other was my own first accent band, 0.38–0.62, which failed 869 of
+   1200 random themes because a button's label is one colour and cannot cross
+   the middle of the lightness axis.
+3. **The creator offers page**, rebuilt. A summary strip (open to you, you are
+   on, agreed with you), transparent tabs that appear only when there is more
+   than one kind of thing to filter, work sorted above everything else, and a
+   card that lifts and carries the brand's gradient along its top edge when the
+   creator is actually on it.
+4. **Two new suites.** `pnpm verify:brand-theme` (15 checks) proves the write
+   path refuses a text colour smuggled into the JSON and that a creator cannot
+   repaint a brand. `scripts/shots-brand-look.mjs` photographs the editor in
+   both modes at four widths, making and deleting its own admin.
 
-**Suites, all green:** `verify:contests` 141 · `verify:brand-numbers` 17 ·
-`verify:numbers` · `verify:offers` 26 · `verify:leaderboard` 43 ·
-`verify:rls` · `verify:performance`. **`verify:chrome` was NOT run** and cannot
-be: it needs `ADMIN_EMAIL` and `ADMIN_PASSWORD`, and that password is
-deliberately stored nowhere.
+**Where dev stands.** One brand (Penetrex, colour `#d33c5a`, **theme null** — a
+multi-colour theme was set only to photograph it and then cleared, so the hub
+looks exactly as it did), 41 creators, 31 offers, 1 contest, ~1,200 money rows
+matching TikTok exactly. TikTok connection `3a8cd503`, 8 scopes.
+
+**Verified this session:** `pnpm build` (88 base colours + 1200 random
+multi-colour themes, every gradient stop, both modes) · `verify:brand-theme` 15
+· `verify:offers` · `shots-hub` every section, both themes, four widths, **no
+console errors and no sideways scroll**, run twice: once with a four-area theme
+on and once with it off · `shots-brand-look` the editor, both themes, four
+widths, same clean result. **`verify:brands` and `verify:chrome` were NOT run**
+and cannot be: they need `ADMIN_EMAIL` and `ADMIN_PASSWORD`, and that password
+is deliberately stored nowhere. `check-brand-theme-save.mjs` exists partly to
+cover what `verify:brands` would have.
 
 **Two machine problems that will waste your time if you do not know them.**
-Headless Chromium leaks: this session left 26 orphaned processes and free memory
-fell to 0.67 GB, which is what made a screenshot run time out. **Kill stray
-chrome processes before any browser suite.** And an occasional single 401
-`PGRST303 JWT issued at future` on the first request after a scripted sign-in is
-a sub-second clock artefact, documented in OPERATIONS; ignore one, investigate a
-repeat.
+Headless Chromium leaks: kill stray `chrome` processes before any browser
+suite, every time. And an occasional single 401 `PGRST303 JWT issued at future`
+on the first request after a scripted sign-in is a sub-second clock artefact,
+documented in OPERATIONS; ignore one, investigate a repeat.
 
 **Do not re-explore the codebase.** This file, then PARKED, then only the files
 the chosen job names.

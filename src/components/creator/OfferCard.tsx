@@ -73,7 +73,34 @@ export function OfferCard({
       : null;
 
   return (
-    <div className="border-line bg-surface-1 flex h-full flex-col rounded-xl border p-5 shadow-md">
+    /*
+     * THE CARD LIFTS AND LIGHTS UP, and the brand does the lighting.
+     *
+     * Rashid, 2026-08-25: *"polish the ui more specially the offers page"*. The
+     * card was a flat bordered box that looked identical whether a creator had
+     * never touched the offer or was three videos into it.
+     *
+     * `--wx-accent` inside a Brand Hub is that brand's own colour, so the ring
+     * on hover and the hairline along the top are the brand's rather than
+     * Wurx's, in both modes, with no per-brand code anywhere in this file.
+     *
+     * THE TOP EDGE IS ONLY ON A LIVE CARD. A gradient hairline on every card is
+     * decoration; on the two or three a creator is actually on, it is the thing
+     * that finds them in a grid of twelve.
+     */
+    <div
+      className={cn(
+        'group border-line bg-surface-1 relative flex h-full flex-col overflow-hidden rounded-xl border p-5 shadow-md transition-all duration-300',
+        'hover:border-accent/45 hover:-translate-y-0.5 hover:shadow-xl'
+      )}
+    >
+      {agreed ? (
+        <span
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-[3px]"
+          style={{ background: 'var(--wx-accent-gradient)' }}
+        />
+      ) : null}
       {showBrand && offer.brand ? (
         <Link
           to={`/app/brands/${offer.brand.slug}`}
@@ -93,26 +120,40 @@ export function OfferCard({
       {offer.badge_title ? (
         <span
           className={cn(
-            'bg-accent-soft text-accent self-start rounded-full px-2.5 py-0.5 text-[0.625rem] font-semibold tracking-[0.12em] uppercase',
+            'bg-accent-soft self-start rounded-full px-2.5 py-1 text-[0.625rem] font-bold tracking-[0.12em] uppercase',
             showBrand && offer.brand ? 'mt-3' : 'mb-3'
           )}
+          style={{ color: 'var(--wx-brand-accent-ink, var(--wx-accent))' }}
         >
           {offer.badge_title}
         </span>
       ) : null}
 
-      <h3 className={cn('text-lg font-bold', offer.badge_title && showBrand && 'mt-1')}>
+      <h3
+        className={cn(
+          'font-display text-[1.0625rem] leading-snug font-semibold tracking-[-0.01em]',
+          offer.badge_title && showBrand && 'mt-1'
+        )}
+      >
         {offer.title}
       </h3>
 
+      {/*
+        THE TWO NUMBERS THEY CAME FOR, given the room they deserve.
+        A creator scanning a grid of offers is comparing exactly two things:
+        how much work, and how much money. Those were the same size as the
+        surrounding prose, so every comparison meant reading rather than
+        glancing. The per-video figure sits under the money it divides, not
+        beside it, because it is a footnote to that number and not a third one.
+      */}
       {hasVideos || hasReward ? (
-        <div className="border-line mt-4 flex flex-wrap items-end gap-x-6 gap-y-2 border-t pt-4">
+        <div className="border-line mt-4 flex flex-wrap items-start gap-x-7 gap-y-3 border-t pt-4">
           {hasVideos ? (
             <span>
               <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                 Videos
               </span>
-              <span className="font-display mt-1 block text-[1.1875rem] font-semibold">
+              <span className="font-display mt-1 block text-[1.5rem] leading-none font-semibold">
                 {videoCount}
               </span>
             </span>
@@ -122,14 +163,17 @@ export function OfferCard({
               <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                 You get
               </span>
-              <span className="font-display text-accent mt-1 block text-[1.1875rem] font-semibold">
+              <span
+                className="font-display mt-1 block text-[1.5rem] leading-none font-semibold"
+                style={{ color: 'var(--wx-brand-accent-ink, var(--wx-accent))' }}
+              >
                 {money(rewardAmount, currency)}
               </span>
-            </span>
-          ) : null}
-          {perVideo !== null ? (
-            <span className="text-faint text-[0.75rem]">
-              {money(perVideo, currency)} per video
+              {perVideo !== null ? (
+                <span className="text-faint mt-1.5 block text-[0.75rem]">
+                  {money(perVideo, currency)} per video
+                </span>
+              ) : null}
             </span>
           ) : null}
         </div>

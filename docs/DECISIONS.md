@@ -1490,3 +1490,51 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   accent button on a photograph is a second poster competing with the picture.
   It keeps the block's text-shadow and fills solid on hover, because glass over
   an unknown upload is exactly where a control disappears.
+- 2026-08-25: **A brand's look is FOUR AREAS, not one colour.** Rashid: *"some
+  brands have multo color themes so our app should be designed accoridnlgy"*.
+  The one-colour rule from 2026-08-24 was defended on safety grounds and the
+  safety argument was right, but the conclusion drawn from it was wrong: what
+  one colour bought was READABILITY, and readability is not a function of how
+  many colours somebody picks. It is a function of which colours end up as TEXT,
+  and an admin was never picking those. The rule is now **the admin picks fills,
+  the product picks inks**, and it is strictly stronger than the old one because
+  it says what is actually being protected.
+- 2026-08-25: **A picked colour keeps its hue and its saturation; only its
+  brightness is clamped, and only when it falls outside its area's band.** The
+  alternative considered was remapping every stop's lightness proportionally
+  into the band, which preserves the SHAPE of a gradient better but moves
+  colours that were already fine. Rejected: an admin who pastes the hex a client
+  sent them and gets a different hex back stops trusting the tool, and the
+  swatch that says "this is what we will use" is the whole reason they can be
+  handed sixteen pickers.
+- 2026-08-25: **A band must never straddle the middle of the lightness axis.**
+  Learned the expensive way: the first accent band was 0.38 to 0.62 in light
+  mode and 869 of 1200 random themes failed on it. A button's label is one
+  colour and cannot clear both ends. Every band now sits entirely on one side of
+  the divide, which is what the derived theme always did at 0.45 and 0.72.
+- 2026-08-25: **The theme is jsonb in one column, not sixteen colour columns.**
+  A list per area is ordered and will grow; sixteen nullable text columns would
+  be a migration every time somebody wants a fourth stop and still could not
+  express order. The cost is that jsonb holds anything, which is paid for by
+  `brand_theme_ok()` refusing unknown keys in the database, `.strict()` Zod in
+  the browser and again in the Edge Function, and `readBrandThemeConfig`
+  dropping anything unrecognised on the way back out. An unknown key is
+  precisely how a TEXT colour would arrive.
+- 2026-08-25: **Dark and light are still one set of picks, not two.** Rejected
+  giving an admin a separate palette per mode: it doubles the work for every
+  brand and doubles the ways to get one of them wrong. Because the band is per
+  MODE and the hue is kept exactly, one pick genuinely serves both, which is the
+  payoff for having done the colour maths in OKLCH rather than HSL. The escape
+  hatch for a brand that really does want a pale hero or menu is a `tone`
+  toggle, which changes the BAND rather than the colour.
+- 2026-08-25: **Semantic colours stay out of it.** Success, danger, warning and
+  the seven stage colours are still not themed, so the stage tracker inside a
+  brand world is blue and the content bar is green whatever the brand is. That
+  is deliberate — an approval has to look like an approval in every brand — but
+  it is the most visible thing a multi-colour theme does NOT reach, and it is
+  the first question to expect.
+- 2026-08-25: **Stitch (the MCP design tool) was asked for an offers page
+  layout and produced nothing.** `generate_screen_from_text` timed out and
+  `list_screens` came back empty afterwards, so no design was returned and none
+  was used. Recorded so the next attempt starts from "it has failed once on a
+  long prompt" rather than from scratch.

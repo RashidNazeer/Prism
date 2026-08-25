@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
 import type { Brand, BrandProduct, Offer } from '@/lib/admin/useBrands';
+import type { BrandThemeConfig } from '@/lib/brand-theme';
 
 /**
  * Every write in the Brand Hub.
@@ -68,6 +69,14 @@ export type BrandAboutPayload = {
   /** The one colour the creator's Brand World is derived from. */
   brandColor: string | null;
   heroUrl: string | null;
+  /**
+   * The areas an admin coloured by hand, or null for "derive all of them".
+   *
+   * Fills only. No text colour reaches the database, which is what lets an
+   * admin be given four pickers per area without being given a way to ship a
+   * hub creators cannot read.
+   */
+  theme: BrandThemeConfig | null;
 };
 
 export type ProductSavePayload = {

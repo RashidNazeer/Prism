@@ -2226,8 +2226,11 @@ no slug opens the first brand rather than an index.
 
 **The rules that are not obvious.**
 
-1. **One colour in, a whole palette out, and the readability is guaranteed in
-   code.** `brands.brand_color` is the only thing an admin picks.
+1. **The admin picks FILLS. The product picks INKS.** This is the whole safety
+   story and everything else follows from it. Nothing an admin can reach is a
+   text colour; every one of those is computed by measuring contrast against
+   every fill it will cross. It is why the four-colours-per-area editor added on
+   2026-08-25 is no more dangerous than the single picker it replaced.
    `deriveBrandTheme()` works in OKLCH, not HSL, because HSL's lightness is a
    lie and a ramp that looks even for a blue brand collapses for a yellow one.
 2. **A foreground must clear the WORST background it appears on.** The first
@@ -2244,6 +2247,91 @@ no slug opens the first brand rather than an index.
 5. **The hero needs a height of its own.** Without one it is only as tall as its
    text, so the box ran 1.41:1 on a phone to 5.31:1 on a monitor and `cover`
    threw away 72% of the picture. Artwork sizes are measured, in OPERATIONS.
+
+## Multi-colour brand themes (2026-08-25)
+
+**Files:** `src/lib/brand-theme.ts` (the whole thing) ·
+`src/components/admin/BrandLookField.tsx` · `scripts/check-brand-theme.mjs` ·
+`src/lib/schemas/brand.ts` · `supabase/functions/manage-brand/index.ts` ·
+migration `20260825174347_brand_theme_areas.sql`
+
+Rashid: *"some brands have multo color themes so our app should be designed
+accoridnlgy"*. An admin now colours four areas independently, up to four colours
+each, and anything they do not touch is still derived from `brands.brand_color`
+exactly as before.
+
+**The shape.** `brands.theme` jsonb, or null. Four optional areas — `hero`,
+`rail`, `page`, `accent` — each `{ stops: [hex…] }`, plus `angle` on the hero
+and `tone` on the hero and rail. **Fills only.** `brand_theme_ok()` refuses an
+unknown key, which is how a `text` colour would arrive.
+
+**The rules that are not obvious, and four of the five cost something to learn.**
+
+1. **A band per area per mode is what keeps the promise.** A picked colour keeps
+   its hue and its chroma exactly; only its LIGHTNESS is clamped, and only if it
+   falls outside what that area can carry. That is why an admin can be handed
+   sixteen pickers: the fills can never wander somewhere no single ink reaches.
+2. **A band must never straddle the middle of the lightness axis.** The first
+   accent band was 0.38–0.62 in light mode and **869 of 1200 random themes
+   failed on it inside a minute.** A button's label is ONE colour: white fails
+   at the pale end, black at the deep end, and an admin picking one colour from
+   each half ships a button nobody can read. Each mode's band now sits entirely
+   on one side — deep buttons with white in light mode, bright ones with dark
+   ink in dark mode, which is what the derived theme always did at 0.45 and
+   0.72.
+3. **The audit had to learn about the MIDDLE of a gradient.** `CONTRACT` names
+   single colours, so a four-stop hero had two fills no pair mentioned, and the
+   middle of a gradient is exactly where a heading stops being readable.
+   `STOP_CONTRACT` walks every stop of every gradient.
+4. **It found a real bug in the ORIGINAL one-colour code.** The accent gradient
+   ran accent → heroTo, which in dark mode is 0.72 lightness down to 0.42, so
+   half of every gradient button was far darker than the colour its label was
+   chosen against. Nothing measured it because the gradient was assembled in
+   `paletteToVars` while the contract named `accent`. It is now a tight step
+   AWAY from the ink, the same shape Wurx's own tokens use.
+5. **`brand-theme.ts` must stay ONE file.** `check-brand-theme.mjs` transpiles
+   it with raw `tsc` and imports it from plain Node; the moment it imports a
+   sibling the emitted specifier has no `.js` and Node refuses it, and the guard
+   silently stops running inside the build. Splitting it is a two-line change
+   that disarms the alarm.
+6. **Turning an area on changes nothing.** The editor pre-fills with the colours
+   that area is already showing, so customising starts from the current look
+   rather than from a blank row of pickers.
+
+**Guards, and they cover different failures.** `pnpm verify:brand-theme`
+covers the PIPE: 15 checks over the network proving the Edge Function and the
+column refuse what the browser refuses, including a text colour smuggled into
+the JSON, and that a creator cannot repaint a brand. `pnpm check:brand-theme`
+covers the MATHS, inside `pnpm build`: 88 base colours plus
+1200 deterministic random multi-colour themes, every stop, both modes, plus
+assertions that a custom area actually CHANGES the palette (safe-but-useless is
+the failure no contrast check can see) and that an uncustomised brand derives
+exactly as before. `BRAND_THEME_SAMPLES=40000` hammers it by hand; that was run
+before the migration was written.
+
+## The creator offers page (2026-08-25)
+
+**Files:** `src/routes/app/BrandHub.tsx` (`Offers`, `OfferSummary`,
+`bucketFor`) · `src/components/creator/OfferCard.tsx`
+
+Rashid: *"polish the ui more specially the offers page of brand hubs for
+creators"*. It was a bare grid in database order.
+
+- **`bucketFor` is ONE function** because the strip, the tab counts and the card
+  list must agree. Three copies is how a tab reads "Under way 2" and draws
+  three cards.
+- **Work comes first.** live → open → paid, in every view.
+- **A pending request counts as under way**, not open: a creator waiting on us
+  does not think an offer is still open to them, and showing it as open invites
+  applying twice.
+- **Tabs appear only when two piles are non-empty**, and an empty pile gets no
+  tab. A filter over one pile is furniture.
+- **The strip sums `committed_amount`, never `reward_amount`**, grouped by
+  currency. The offer's own figure is what the NEXT person would get; summing it
+  promises money that was never theirs.
+- **No `layoutId` on the tab underline.** This app mounts
+  `LazyMotion features={domAnimation} strict`, which does not ship the layout
+  engine, so a shared-layout underline warns on every click.
 
 **Depended on by:** the creator Brand Hub sections, which are the same screens
 the sidebar opens with a `brandId` passed in. One screen, two places, so a fix

@@ -144,7 +144,26 @@ pnpm check:brand-theme      # no database, no browser. Derives a full palette
                             # 13 text-on-background pairs clear WCAG AA in both
                             # modes. RUNS INSIDE pnpm build, because a brand
                             # colour lives in the DATABASE and check:contrast,
-                            # which only reads tokens.css, cannot see it
+                            # which only reads tokens.css, cannot see it.
+                            # Since 2026-08-25 it also throws 1200 DETERMINISTIC
+                            # random multi-colour themes at every stop of every
+                            # gradient. BRAND_THEME_SAMPLES=40000 hammers it by
+                            # hand; deterministic on purpose, because a guard
+                            # that fails once and passes on the retry teaches
+                            # everyone to press the button again
+pnpm verify:brand-theme     # 15 checks, no browser. Proves the WRITE PATH for
+                            # a brand's colours: browser Zod -> Edge Function
+                            # Zod -> save_brand_about -> the column. The one
+                            # that matters is that a TEXT colour smuggled into
+                            # the JSON is refused rather than quietly stripped,
+                            # because stripping it would look like it worked.
+                            # Makes its own admin, creator and brand, removes
+                            # all three. Needs SUPABASE_SERVICE_KEY
+node scripts/shots-brand-look.mjs http://localhost:4173
+                            # the theme editor, both modes, four widths. Makes
+                            # its own throwaway admin and deletes it in a
+                            # finally, because no admin password is stored
+                            # anywhere in this repo. Needs SUPABASE_SERVICE_KEY
 pnpm verify:brand-numbers   # 17 checks, no browser. Signs in as a REAL creator
                             # and proves a Brand Hub shows that brand's money
                             # and no other. Also proves no OLD OVERLOAD of the
@@ -951,6 +970,51 @@ settles on a screen holding a realtime socket, so it waits for the skeletons to
 clear instead. And `[].every()` is TRUE, so waiting for "every image loaded"
 passes instantly on a page whose images have not started; it checks the list is
 non-empty first.
+
+## A brand's colours: what an admin can set, and what we do with it
+
+Since 2026-08-25 a brand carries `brands.brand_color` (one hex, the fallback
+for everything) **and** `brands.theme` (jsonb, or null).
+
+```jsonc
+{
+  "v": 1,
+  "hero":   { "stops": ["#dc0945", "#1d3149", "#c8924b"], "angle": 120, "tone": "light" },
+  "rail":   { "stops": ["#1d3149", "#0a0a0a"], "tone": "auto" },
+  "page":   { "stops": ["#dc0945", "#1d3149"] },   // stop 2 tints the CARDS
+  "accent": { "stops": ["#dc0945", "#c8924b"] }
+}
+```
+
+Hero takes up to four stops, the rest up to three. `angle` is hero-only,
+`tone` is hero and menu only, and every hex must be lower case. **Fills only:
+there is no text colour in this shape and adding one would silently remove the
+readability guarantee for every brand.** `brand_theme_ok()` refuses an unknown
+key for exactly that reason, so a hand-written `update` cannot smuggle one in.
+
+To set or clear one from the CLI, as service_role (dev only):
+
+```powershell
+# ... load env and SUPABASE_SERVICE_KEY as in section 2 ...
+$h = @{ apikey = $env:SUPABASE_SERVICE_KEY
+        Authorization = "Bearer $($env:SUPABASE_SERVICE_KEY)"
+        'Content-Type' = 'application/json' }
+$body = '{"theme": null}'      # or a full theme object
+Invoke-RestMethod -Method Patch -Headers $h -Body $body `
+  -Uri "$($env:VITE_SUPABASE_URL)/rest/v1/brands?slug=eq.penetrex"
+```
+
+**The band is the safety, and the numbers in it are measurements.** A picked
+colour keeps its hue and its chroma and has only its LIGHTNESS clamped into what
+the area can carry, so no combination reaches a place where one ink cannot be
+read. The one that cost time: a band must never straddle the middle of the
+lightness axis, because a button's label is a single colour. See
+`bandFor()` in `src/lib/brand-theme.ts`.
+
+**`src/lib/brand-theme.ts` must stay one file.** `check-brand-theme.mjs`
+transpiles it with raw `tsc` and imports it from plain Node; a sibling import
+emits a specifier with no `.js` on it, Node refuses to resolve it, and the guard
+stops running inside the build without failing it.
 
 ## Brand artwork: the exact sizes (measured 2026-08-24)
 

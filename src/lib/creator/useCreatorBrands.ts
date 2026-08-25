@@ -35,6 +35,16 @@ export interface CreatorBrand {
   brand_color: string | null;
   /** The picture behind the hero, optional. */
   hero_url: string | null;
+  /**
+   * The areas an admin coloured by hand, beyond the single colour. Null is
+   * normal and means every area is derived from `brand_color`.
+   *
+   * Deliberately typed `unknown`: it is a jsonb column, so what arrives here is
+   * whatever the row happens to hold. `readBrandThemeConfig` is the only thing
+   * allowed to turn it into a theme, and it drops anything it does not
+   * recognise rather than painting with it.
+   */
+  theme: unknown;
 }
 
 export interface CreatorOffer {
@@ -64,7 +74,7 @@ export interface CreatorProduct {
 }
 
 const BRAND_COLUMNS =
-  'id, name, slug, logo_url, tagline, description, brand_color, hero_url';
+  'id, name, slug, logo_url, tagline, description, brand_color, hero_url, theme';
 const OFFER_COLUMNS =
   'id, brand_id, badge_title, title, description, video_count, reward_amount, currency, needs_application, created_at';
 const PRODUCT_COLUMNS =

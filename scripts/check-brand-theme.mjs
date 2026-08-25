@@ -52,7 +52,8 @@ try {
   process.on('exit', () => rmSync(dir, { recursive: true, force: true }));
 }
 
-const { deriveBrandTheme, auditBrandTheme, contrast, CONTRACT } = mod;
+const { deriveBrandTheme, auditBrandTheme, contrast, CONTRACT, AREA_META, readBrandThemeConfig } =
+  mod;
 
 /* ------------------------------------------------------------- the sweep -- */
 
@@ -128,6 +129,162 @@ for (const hex of colours) {
 }
 
 console.log(`\nBrand themes checked: ${colours.length} colours x 2 modes x ${CONTRACT.length} pairs`);
+
+/* --------------------------------------------- the multi-colour sweep -- */
+/*
+ * From 2026-08-25 an admin no longer picks one colour. They pick up to four
+ * PER AREA, for four areas, plus a tone and an angle, which is a space far too
+ * large to enumerate and far too large to eyeball.
+ *
+ * So it is sampled instead, hard, and the sample is DETERMINISTIC. A random
+ * seed would mean a build that fails once and passes on the retry, which is the
+ * worst possible property for a guard: it teaches everyone to press the button
+ * again. This walks the same 1200 themes on every machine, so a failure here is
+ * a bug somebody can reproduce from the printed JSON alone.
+ *
+ * The generator is deliberately stupid, drawing pure random hexes rather than
+ * plausible brand palettes. A designer would never put pure yellow next to
+ * black in one hero. The whole point is that an admin at 11pm might.
+ */
+let seed = 0x5eed1234;
+const rnd = () => {
+  // Mulberry32. Small, no dependency, and the same everywhere.
+  seed |= 0;
+  seed = (seed + 0x6d2b79f5) | 0;
+  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
+const randomHex = () =>
+  `#${Math.floor(rnd() * 0x1000000)
+    .toString(16)
+    .padStart(6, '0')}`;
+
+const AREAS = Object.keys(AREA_META);
+/*
+ * Tunable, so a suspicious change can be hammered by hand without editing this
+ * file: `BRAND_THEME_SAMPLES=40000 node scripts/check-brand-theme.mjs`. The
+ * build runs the default, which takes about a second.
+ */
+const RANDOM_THEMES = Number(process.env.BRAND_THEME_SAMPLES || 1200);
+let themeFailures = 0;
+
+for (let i = 0; i < RANDOM_THEMES; i++) {
+  const cfg = { v: 1 };
+  // Between one and all four areas customised, so the mixed case is covered
+  // too: a custom hero over a derived page is the likeliest real-world shape.
+  const chosen = AREAS.filter(() => rnd() < 0.6);
+  for (const area of chosen.length ? chosen : [pick(AREAS)]) {
+    const meta = AREA_META[area];
+    const count = 1 + Math.floor(rnd() * meta.max);
+    const built = { stops: Array.from({ length: count }, randomHex) };
+    if (meta.tone && rnd() < 0.35) built.tone = 'light';
+    if (meta.angle && rnd() < 0.5) built.angle = Math.floor(rnd() * 361);
+    cfg[area] = built;
+  }
+
+  const base = randomHex();
+  const bad = auditBrandTheme(base, cfg);
+  if (bad.length) {
+    themeFailures++;
+    if (themeFailures <= 5) {
+      console.error(`  FAIL  custom theme on ${base}: ${JSON.stringify(cfg)}`);
+      for (const b of bad.slice(0, 4)) {
+        console.error(
+          `        ${b.mode.padEnd(5)} ${b.label}: ${b.got.toFixed(2)}:1, needs ${b.min}:1`
+        );
+      }
+    }
+  }
+}
+
+if (themeFailures) {
+  console.error(`\n  FAIL  ${themeFailures} of ${RANDOM_THEMES} random custom themes are unreadable`);
+  failures += themeFailures;
+} else {
+  console.log(`  PASS  ${RANDOM_THEMES} random multi-colour themes, every stop of every gradient`);
+}
+
+/*
+ * A CUSTOM AREA HAS TO ACTUALLY CHANGE SOMETHING. A band that clamped too hard,
+ * or an override branch that silently stopped being reached, would leave every
+ * theme readable and every hub identical, and every contrast check above would
+ * still pass. This is the only assertion here that catches "safe but useless".
+ */
+const plain = deriveBrandTheme('#c8924b');
+const wild = deriveBrandTheme('#c8924b', {
+  v: 1,
+  hero: { stops: ['#dc0945', '#1d3149', '#c8924b'], angle: 40 },
+  rail: { stops: ['#1d3149', '#0a0a0a'] },
+  page: { stops: ['#dc0945', '#1d3149'] },
+  accent: { stops: ['#dc0945', '#c8924b'] },
+});
+const moved = [
+  ['hero', wild.light.heroStops.length === 3 && wild.light.heroAngle === 40],
+  ['rail', wild.light.rail !== plain.light.rail],
+  ['page cards', wild.light.surface !== plain.light.surface],
+  ['accent', wild.light.accent !== plain.light.accent],
+  ['dark too', wild.dark.rail !== plain.dark.rail],
+];
+for (const [what, ok] of moved) {
+  if (ok) console.log(`  PASS  a custom ${what} changes the palette`);
+  else {
+    console.error(`  FAIL  a custom ${what} changed nothing, so the override is not being applied`);
+    failures++;
+  }
+}
+
+/* And an uncustomised brand must be untouched by all of the above. */
+const untouched =
+  JSON.stringify(deriveBrandTheme('#173d36')) ===
+  JSON.stringify(deriveBrandTheme('#173d36', null));
+if (untouched) console.log('  PASS  a brand with no custom areas derives exactly as before');
+else {
+  console.error('  FAIL  passing no config changed the derived theme');
+  failures++;
+}
+
+/*
+ * The reader is the last line between a hand-edited database row and a
+ * creator's screen, so it is asserted rather than assumed.
+ */
+const junk = [
+  null,
+  'nope',
+  42,
+  [],
+  { hero: 'red' },
+  { hero: { stops: 'red' } },
+  { hero: { stops: [] } },
+  { hero: { stops: ['nope', 'javascript:alert(1)'] } },
+];
+const survivors = junk.filter((j) => readBrandThemeConfig(j) !== null);
+if (survivors.length === 0) console.log('  PASS  malformed themes read back as "no custom areas"');
+else {
+  console.error(`  FAIL  ${survivors.length} malformed theme(s) were accepted: ${JSON.stringify(survivors)}`);
+  failures++;
+}
+
+const kept = readBrandThemeConfig({
+  hero: { stops: ['#DC0945', 'nope', '#1d3149', '#c8924b', '#000000', '#ffffff'], angle: 999, tone: 'light' },
+  page: { stops: ['#dc0945'], tone: 'light', angle: 40 },
+});
+const keptOk =
+  kept &&
+  kept.hero.stops.length === AREA_META.hero.max &&
+  kept.hero.stops[0] === '#dc0945' &&
+  kept.hero.angle === 360 &&
+  kept.hero.tone === 'light' &&
+  // Page carries neither a tone nor an angle, so both must be dropped rather
+  // than stored and quietly ignored by half the code that reads them.
+  kept.page.tone === undefined &&
+  kept.page.angle === undefined;
+if (keptOk) console.log('  PASS  a valid theme survives the reader, over-long and all');
+else {
+  console.error(`  FAIL  the reader mangled a valid theme: ${JSON.stringify(kept)}`);
+  failures++;
+}
 
 /*
  * A brand whose derived theme is the SAME in both modes would mean the dark

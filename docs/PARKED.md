@@ -931,3 +931,41 @@ https://developers.tiktok.com/doc/app-review-guidelines/
 **Trigger:** when Rashid wants views on a creator's video badly enough to run a
 second app through review. Nothing in the current product depends on it.
 
+
+## 28. Brand themes: the three things deliberately left
+
+**Status:** PAUSED
+**Owner:** Claude
+**Raise it when:** Rashid looks at a brand world and says one of the three
+things below, which is the moment each becomes worth doing rather than before.
+
+Multi-colour themes shipped on 2026-08-25. An admin colours the hero, the menu,
+the pages and the buttons independently, up to four colours each. These were
+considered and left out on purpose.
+
+**a. The stage colours and the status colours are still not themed.** Inside a
+brand world the seven-step tracker is blue, an approved badge is green and a
+rejection is red, whatever the brand's colours are. That is the standing rule —
+an approval has to look like an approval in every brand, and a brand whose
+colour happens to be red must not turn every warning into decoration — but it is
+by far the most visible thing a multi-colour theme does NOT reach. **Expect this
+to be the first question.** If he wants it, the honest middle is to tint the
+NEUTRAL steps of the tracker with the brand and leave the semantic ones alone;
+tinting all of them means a red brand cannot show a rejection.
+
+**b. A brand cannot pick a different palette for dark and light.** One set of
+picks serves both, because the band is per mode and the hue is kept exactly.
+That is the right default and it halves the ways to get a brand wrong. If a
+brand ever genuinely needs two, the shape already has room: `theme.dark`
+alongside the four areas, read only when present. Do not add it speculatively.
+
+**c. Nothing themes the SIGNED-OUT screens or the Wurx side.** Login, the
+dashboard, the offers list outside a hub and the whole admin panel stay Wurx
+gold. A creator only enters a brand's colours by entering that brand.
+
+**Also worth knowing:** `text-accent` inside a brand world resolves to the
+brand's FILL colour, not the measured ink. It clears AA in practice, because the
+accent band sits on the opposite side of the lightness axis from the page band
+in each mode, but `--wx-brand-accent-ink` is the value with the guarantee on it.
+New brand-world code should prefer the ink for text. Not worth a sweep of every
+existing `text-accent` today.

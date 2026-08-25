@@ -121,6 +121,29 @@ const DeleteOfferBody = z.object({
  * About form cannot touch the name, the store id or the budget even by
  * sending a stale copy of them back with its own edit.
  */
+/** A colour an admin picked. Lower cased so a row has exactly one spelling. */
+const themeStop = z.string().trim().regex(/^#[0-9a-fA-F]{6}$/, 'A colour must look like #173d36')
+  .transform((v) => v.toLowerCase());
+
+const themeArea = (max: number, allow: { tone?: boolean; angle?: boolean } = {}) =>
+  z
+    .object({
+      stops: z.array(themeStop).min(1).max(max),
+      ...(allow.angle ? { angle: z.number().int().min(0).max(360).optional() } : {}),
+      ...(allow.tone ? { tone: z.enum(['auto', 'light']).optional() } : {}),
+    })
+    .strict();
+
+const BrandTheme = z
+  .object({
+    v: z.literal(1),
+    hero: themeArea(4, { tone: true, angle: true }).optional(),
+    rail: themeArea(3, { tone: true }).optional(),
+    page: themeArea(3).optional(),
+    accent: themeArea(3).optional(),
+  })
+  .strict();
+
 const BrandAboutBody = z.object({
   action: z.literal('brand.about'),
   brandId: z.uuid(),
@@ -148,6 +171,23 @@ const BrandAboutBody = z.object({
     .regex(/^#[0-9a-fA-F]{6}$/, 'A brand colour must look like #173d36')
     .nullish(),
   heroUrl: z.url('That hero image address is not a URL').max(2048).nullish(),
+  /*
+   * THE AREAS AN ADMIN COLOURED BY HAND.
+   *
+   * `.strict()` on every level, and that is the security-relevant line rather
+   * than a tidiness one. The safety of this whole feature rests on no TEXT
+   * colour ever being stored: fills are held inside a lightness band and every
+   * ink is computed by measuring contrast against them. An extra key sailing
+   * through a permissive object is exactly how a `text` would arrive, so an
+   * unknown key is refused here, refused by `brand_theme_ok` in the database,
+   * and dropped again by `readBrandThemeConfig` on the way back out.
+   *
+   * No contrast check here, ON PURPOSE, for the same reason as `brandColor`
+   * above: readability is not a property of the values, it is a property of the
+   * palette derived from them, and there is no such thing as an unreadable
+   * input to reject.
+   */
+  theme: BrandTheme.nullish(),
 });
 
 const percent = z
@@ -339,6 +379,7 @@ Deno.serve(async (req) => {
       p_description: input.description ?? null,
       p_brand_color: input.brandColor ?? null,
       p_hero_url: input.heroUrl ?? null,
+      p_theme: input.theme ?? null,
     });
   } else if (input.action === 'product.save') {
     rpc = await admin.rpc('save_product', {

@@ -48,9 +48,18 @@ export function BrandWorldHero({
        * clipping the words at Large.
        */
       className="relative isolate flex min-h-[16rem] flex-col justify-center overflow-hidden px-5 pt-8 pb-10 sm:min-h-[18rem] sm:px-8 sm:pt-10 sm:pb-14 lg:min-h-[21rem] xl:min-h-[24rem] 2xl:min-h-[28rem]"
+      /*
+       * THE ANGLE AND THE STOPS ARE THE ADMIN'S NOW, not this file's.
+       *
+       * It used to hardcode `linear-gradient(115deg, from, to)`, which was the
+       * right call while a hero was always two derived colours. From 2026-08-25
+       * a brand can carry up to four, in an order and at an angle somebody
+       * chose, and none of that can be expressed by naming two ends. The whole
+       * value arrives assembled in `--wx-brand-hero-wash`, and a brand that
+       * customised nothing still gets exactly 115 degrees from-to.
+       */
       style={{
-        background:
-          'linear-gradient(115deg, var(--wx-brand-hero-from), var(--wx-brand-hero-to))',
+        background: 'var(--wx-brand-hero-wash)',
         color: 'var(--wx-brand-hero-text)',
       }}
     >

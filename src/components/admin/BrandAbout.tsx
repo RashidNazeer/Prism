@@ -20,6 +20,7 @@ import {
   collectFieldErrors,
   type BrandAboutInput,
 } from '@/lib/schemas/brand';
+import { canonicalBrandTheme, readBrandThemeConfig } from '@/lib/brand-theme';
 
 /**
  * The About tab: who this brand is, and what it sells.
@@ -53,6 +54,14 @@ function Story({ brand }: { brand: Brand }) {
     description: brand.description ?? '',
     brandColor: brand.brand_color ?? '',
     heroUrl: brand.hero_url ?? '',
+    /*
+     * READ THROUGH THE READER, never straight off the row. `theme` is jsonb, so
+     * what arrives is whatever is stored, including a row written before a rule
+     * existed or by a migration written later. Anything unrecognised degrades
+     * to no custom areas rather than being loaded into the form and saved
+     * straight back out again.
+     */
+    theme: readBrandThemeConfig(brand.theme),
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -85,6 +94,9 @@ function Story({ brand }: { brand: Brand }) {
         description: parsed.description || null,
         brandColor: parsed.brandColor,
         heroUrl: parsed.heroUrl,
+        // Canonical on the way out: no default angles, no 'auto' tones, no
+        // empty areas, one spelling per hex. One look, one row.
+        theme: canonicalBrandTheme(parsed.theme),
       },
       { onSuccess: () => setSaved(true) }
     );
@@ -110,18 +122,25 @@ function Story({ brand }: { brand: Brand }) {
         />
 
         {/*
-          THE LOOK OF THE WHOLE HUB, one control.
+          THE LOOK OF THE WHOLE HUB.
 
           Rashid asked for a creator to land in "a new world" that is the
-          brand's rather than Wurx's. This is where that is chosen, and it is
-          one colour on purpose: the readability of everything derived from it
-          is guaranteed in code, so there is no combination here to get wrong.
+          brand's rather than Wurx's, and on 2026-08-25 for that world to be as
+          customisable as brands actually are: "some brands have multo color
+          themes". So this is a base colour plus four areas, up to four colours
+          each, and everything not customised is still derived from the one.
+
+          There is still no combination here to get wrong, and loosening it did
+          not change that: nothing on this form is a TEXT colour. Every one of
+          those is computed against whatever was picked.
         */}
         <BrandLookField
           value={values.brandColor}
-          error={errors.brandColor}
+          theme={values.theme}
+          error={errors.brandColor || errors.theme}
           disabled={busy}
           onChange={(hex) => set('brandColor', hex)}
+          onThemeChange={(next) => set('theme', next)}
         />
 
         <ImageUploadField

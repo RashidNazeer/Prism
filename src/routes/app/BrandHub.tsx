@@ -23,6 +23,7 @@ import {
 import { money, percent } from '@/lib/money';
 import { useCatalogueLive } from '@/lib/creator/useCatalogueLive';
 import { useMyJobProgress } from '@/lib/work/job-progress';
+import { cn } from '@/lib/utils';
 import { BrandWorldShell } from '@/components/brand/BrandWorldShell';
 import { BrandWorldHero } from '@/components/brand/BrandWorldHero';
 import { useCreatorBrands } from '@/lib/creator/useCreatorBrands';
@@ -395,6 +396,49 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 /* --------------------------------------------------------------- offers -- */
 
+/**
+ * Which pile does an offer belong in, from this creator's point of view?
+ *
+ * ONE function, because the three places that need the answer MUST agree: the
+ * figures on the strip, the counts beside the tabs, and which cards a tab
+ * actually shows. Working it out three times is how a tab comes to read
+ * "Under way 2" and then draw three cards.
+ */
+type OfferBucket = 'open' | 'live' | 'paid';
+
+function bucketFor(request: MyOfferApplication | undefined): OfferBucket {
+  if (request?.status === 'approved') return request.stage === 'paid' ? 'paid' : 'live';
+  /*
+   * A PENDING REQUEST COUNTS AS UNDER WAY. It is not work yet, but a creator
+   * who has asked for an offer and is waiting on us does not think of it as
+   * still open to them, and putting it back in "Open to you" would invite them
+   * to apply for the same thing twice.
+   */
+  if (request?.status === 'pending') return 'live';
+  return 'open';
+}
+
+const BUCKETS = [
+  { key: 'all', label: 'Everything' },
+  { key: 'open', label: 'Open to you' },
+  { key: 'live', label: 'Under way' },
+  { key: 'paid', label: 'Paid' },
+] as const;
+
+/**
+ * The offers a brand has on the table, as a creator sees them.
+ *
+ * Rashid, 2026-08-25: *"polish the ui more specially the offers page of brand
+ * hubs for creators"*. It was a bare grid of cards in whatever order the
+ * database returned them, which meant a creator with a sample on the way and
+ * two of five videos filmed had to hunt for that card among the ones they have
+ * never touched.
+ *
+ * WORK COMES FIRST is the organising idea. Three figures answer the two
+ * questions anybody opens this tab with, the tabs cut the list down when there
+ * is genuinely more than one kind of thing here, and inside every view an offer
+ * somebody is actually ON sorts above one they have not started.
+ */
 function Offers({
   offers,
   mine,
@@ -407,23 +451,60 @@ function Offers({
   brandName: string;
 }) {
   const [applyingTo, setApplyingTo] = useState<CreatorOffer | null>(null);
+  const [tab, setTab] = useState<string>('all');
   // How much of each job here has been filmed. Cached by TanStack Query, so
   // this is the same read the offers list and the home screen already made.
   const { data: progress } = useMyJobProgress();
 
+  /*
+   * The newest request per offer wins.
+   *
+   * A creator can be rejected and ask again, so an offer can carry several
+   * rows. `mine` arrives newest first, so the first match is the one that
+   * describes where they stand today.
+   */
+  const latestFor = (offerId: string) => mine.find((a) => a.offer_id === offerId);
+
+  const rows = offers.map((offer) => {
+    const request = latestFor(offer.id);
+    return { offer, request, bucket: bucketFor(request) };
+  });
+
+  const ORDER: Record<OfferBucket, number> = { live: 0, open: 1, paid: 2 };
+  const sorted = [...rows].sort((a, b) => ORDER[a.bucket] - ORDER[b.bucket]);
+
+  const counts = {
+    all: rows.length,
+    open: rows.filter((r) => r.bucket === 'open').length,
+    live: rows.filter((r) => r.bucket === 'live').length,
+    paid: rows.filter((r) => r.bucket === 'paid').length,
+  };
+
+  /*
+   * A FILTER OVER ONE PILE IS FURNITURE, not a filter. The tabs appear only
+   * once there are genuinely two kinds of thing here, so a brand with three
+   * open offers and nothing else does not get a row of controls where three of
+   * the four would do nothing.
+   */
+  const showTabs = [counts.open, counts.live, counts.paid].filter((n) => n > 0).length > 1;
+  const shown = showTabs && tab !== 'all' ? sorted.filter((r) => r.bucket === tab) : sorted;
+
   if (loading) {
     return (
-      <ul className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <li key={i} className="wx-skeleton h-52 rounded-xl" />
-        ))}
-      </ul>
+      <div className="mt-2">
+        <div className="wx-skeleton h-[5.5rem] rounded-2xl" />
+        <ul className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <li key={i} className="wx-skeleton h-64 rounded-xl" />
+          ))}
+        </ul>
+      </div>
     );
   }
 
   if (offers.length === 0) {
     return (
-      <div className="border-line bg-surface-1 mt-6 max-w-2xl rounded-xl border px-6 py-14 text-center shadow-md">
+      <div className="border-line bg-surface-1 mt-2 max-w-2xl rounded-2xl border px-6 py-14 text-center shadow-md">
         <Ticket size={26} aria-hidden className="text-faint mx-auto" />
         <p className="mt-4 font-semibold">No offers open right now</p>
         <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -434,29 +515,81 @@ function Offers({
     );
   }
 
-  /*
-   * The newest request per offer wins.
-   *
-   * A creator can be rejected and ask again, so an offer can carry several
-   * rows. `mine` arrives newest first, so the first match is the one that
-   * describes where they stand today.
-   */
-  const latestFor = (offerId: string) => mine.find((a) => a.offer_id === offerId) ?? null;
-
   return (
-    <>
-      <ul className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {offers.map((offer, i) => (
+    <div className="mt-2">
+      <OfferSummary rows={rows} counts={counts} />
+
+      {showTabs ? (
+        /*
+          TRANSPARENT TABS, the same ones the contest cards use. Rashid asked
+          for those by name on 2026-08-24 and there is no reason for this screen
+          to invent a second vocabulary for the identical gesture. No filled
+          pills and no box: the underline carries which one is open, and the row
+          scrolls sideways inside itself on a phone rather than wrapping.
+        */
+        <div className="border-line mt-6 overflow-x-auto border-b">
+          <div role="tablist" aria-label="Which offers" className="flex min-w-max gap-1">
+            {BUCKETS.map((b) => {
+              const n = counts[b.key];
+              // An empty pile gets no tab. "Paid 0" is a question nobody asked.
+              if (b.key !== 'all' && n === 0) return null;
+              const active = tab === b.key;
+              return (
+                <button
+                  key={b.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setTab(b.key)}
+                  className={cn(
+                    'relative flex min-h-[44px] shrink-0 items-center gap-1.5 px-3 text-[0.8125rem] font-semibold transition-colors',
+                    active ? 'text-text' : 'text-muted hover:text-text'
+                  )}
+                >
+                  {b.label}
+                  <span
+                    className={cn('font-display text-[0.75rem]', active ? 'text-accent' : 'text-faint')}
+                  >
+                    {n}
+                  </span>
+                  {active ? (
+                    /*
+                      A PLAIN SPAN, not a `layoutId` that slides between tabs.
+                      This app mounts `LazyMotion features={domAnimation}` in
+                      strict mode, which deliberately does not ship the layout
+                      engine, so a shared-layout underline would either do
+                      nothing or warn in the console on every click. Zero
+                      console errors is a promise here, not an aspiration.
+                    */
+                    <span
+                      aria-hidden
+                      className="bg-accent absolute inset-x-2 -bottom-px h-[2px] rounded-full"
+                    />
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      <ul className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {shown.map(({ offer, request }, i) => (
           <m.li
+            /*
+             * KEYED ON THE OFFER, so changing tab re-uses the card a creator
+             * was already looking at rather than tearing it down and animating
+             * a new one in. An accordion they opened survives the filter.
+             */
             key={offer.id}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: Math.min(i, 6) * 0.05 }}
+            transition={{ duration: 0.32, ease: 'easeOut', delay: Math.min(i, 6) * 0.04 }}
           >
             <OfferCard
               offer={offer}
-              request={latestFor(offer.id) ?? undefined}
-              progress={progress?.get(latestFor(offer.id)?.id ?? '')}
+              request={request}
+              progress={progress?.get(request?.id ?? '')}
               onApply={() => setApplyingTo(offer)}
             />
           </m.li>
@@ -464,12 +597,107 @@ function Offers({
       </ul>
 
       {applyingTo ? (
-        <ApplyDialog
-          offer={applyingTo}
-          brandName={brandName}
-          onClose={() => setApplyingTo(null)}
-        />
+        <ApplyDialog offer={applyingTo} brandName={brandName} onClose={() => setApplyingTo(null)} />
       ) : null}
-    </>
+    </div>
+  );
+}
+
+/**
+ * Three figures, before any card.
+ *
+ * WHY IT IS WORTH THE ROOM. A creator opening this tab is answering one of two
+ * questions: what could I take on, and what have I been promised. Both were
+ * previously answerable only by reading every card and adding up in your head,
+ * which on a brand with thirty offers is not answerable at all.
+ *
+ * A STRIP RATHER THAN THREE TILES. Three bordered boxes above a grid of
+ * bordered cards is four competing rectangles and the cards lose. Hairlines
+ * between the figures, one soft wash of the brand behind them, and the offers
+ * keep the emphasis they should have.
+ */
+function OfferSummary({
+  rows,
+  counts,
+}: {
+  rows: { offer: CreatorOffer; request: MyOfferApplication | undefined; bucket: OfferBucket }[];
+  counts: { all: number; open: number; live: number; paid: number };
+}) {
+  /*
+   * COMMITTED MONEY IS THE FROZEN FIGURE, never the offer's own.
+   *
+   * Both numbers freeze at approval, and re-pricing an offer applies to whoever
+   * is approved NEXT, so `committed_amount` is what this creator was promised
+   * and `reward_amount` is what the next person would be. Summing the second
+   * would quietly promise somebody money that was never theirs.
+   *
+   * Grouped by currency rather than added blindly. It is almost always one, but
+   * a brand paying some creators in GBP and others in USD would otherwise show
+   * a total that is not a real amount in any currency at all.
+   */
+  const byCurrency = new Map<string, number>();
+  for (const { request } of rows) {
+    if (request?.status !== 'approved' || request.committed_amount == null) continue;
+    byCurrency.set(
+      request.currency,
+      (byCurrency.get(request.currency) ?? 0) + Number(request.committed_amount)
+    );
+  }
+  const totals = [...byCurrency.entries()];
+
+  const figures: { label: string; value: string; strong?: boolean }[] = [
+    { label: 'Open to you', value: String(counts.open) },
+    { label: 'You are on', value: String(counts.live + counts.paid) },
+  ];
+  if (totals.length > 0) {
+    figures.push({
+      label: 'Agreed with you',
+      value: totals.map(([currency, amount]) => money(amount, currency)).join('   '),
+      strong: true,
+    });
+  }
+
+  return (
+    <div
+      className="border-line flex flex-wrap items-center gap-x-7 gap-y-4 rounded-2xl border px-5 py-4 shadow-sm"
+      /*
+        THE BRAND'S OWN COLOUR, at a whisper. Held at 9% over the card surface
+        because a creator reads figures off this: a saturated panel behind
+        numbers is a poster rather than a dashboard. It is a `color-mix` on the
+        accent rather than the accent gradient, because a gradient behind a row
+        of numbers changes the contrast under each one.
+      */
+      style={{
+        background: 'color-mix(in srgb, var(--wx-accent) 9%, var(--wx-surface-1))',
+      }}
+    >
+      {figures.map((f, i) => (
+        <div key={f.label} className="flex items-center gap-7">
+          {i > 0 ? <span aria-hidden className="bg-line hidden h-9 w-px sm:block" /> : null}
+          <div>
+            <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
+              {f.label}
+            </p>
+            <p
+              className="font-display mt-1.5 text-[1.375rem] leading-none font-semibold"
+              /*
+                THE INK, not the fill. `--wx-brand-accent-ink` is the accent
+                walked away from the card until it clears 4.5:1 as TEXT, which
+                is not the same colour as the one that fills a button. Falls
+                back to the ordinary accent outside a brand world, where this
+                component is never rendered but could be.
+              */
+              style={
+                f.strong
+                  ? { color: 'var(--wx-brand-accent-ink, var(--wx-accent))' }
+                  : undefined
+              }
+            >
+              {f.value}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }

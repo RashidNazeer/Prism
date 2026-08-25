@@ -1,10 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { m } from 'motion/react';
 import { ArrowLeft, LogOut, Menu, X } from 'lucide-react';
 import { WurxMark } from '@/components/brand/WurxMark';
 import { useTheme } from '@/components/theme/theme-context';
-import { deriveBrandTheme, paletteToVars, DEFAULT_BRAND_COLOR } from '@/lib/brand-theme';
+import {
+  contrast,
+  deriveBrandTheme,
+  paletteToVars,
+  readBrandThemeConfig,
+  DEFAULT_BRAND_COLOR,
+} from '@/lib/brand-theme';
 import type { CreatorBrand } from '@/lib/creator/useCreatorBrands';
 import { cn } from '@/lib/utils';
 
@@ -23,10 +29,14 @@ import { cn } from '@/lib/utils';
  * same place, which is what makes it feel like moving around one world rather
  * than reloading a page.
  *
- * EVERY COLOUR COMES FROM ONE HEX IN THE DATABASE. `deriveBrandTheme` turns it
- * into a full palette for both modes and picks each text colour by measuring
- * contrast, so an admin cannot pick a colour that makes this unreadable. The
- * variables are set on this element rather than on `:root`, so the world is
+ * EVERY COLOUR COMES OUT OF THE DATABASE, and from 2026-08-25 there can be
+ * several: an admin colours the hero, the menu, the pages and the buttons
+ * independently, up to four colours each, and every one of those is a FILL.
+ * `deriveBrandTheme` turns them into a full palette for both modes and picks
+ * each text colour by MEASURING contrast against every fill it will cross, so
+ * there is no combination an admin can choose that makes this unreadable.
+ *
+ * The variables are set on this element rather than on `:root`, so the world is
  * scoped: nothing leaks out to the rest of the app, and leaving the route is
  * enough to undo it.
  *
@@ -60,8 +70,24 @@ export function BrandWorldShell({
   const navigate = useNavigate();
   const [railOpen, setRailOpen] = useState(false);
 
-  const theme = deriveBrandTheme(brand.brand_color ?? DEFAULT_BRAND_COLOR);
-  const vars = paletteToVars(resolved === 'dark' ? theme.dark : theme.light);
+  /*
+   * ONE COLOUR, PLUS WHATEVER AN ADMIN COLOURED BY HAND.
+   *
+   * `readBrandThemeConfig` rather than the raw column, because `theme` is jsonb
+   * and therefore whatever the row happens to hold. A brand nobody has
+   * customised reads back as null and derives exactly as it always did.
+   *
+   * Memoised on the values it depends on. It is pure maths, but it is a few
+   * hundred contrast measurements, and without this it would run again on every
+   * render of the entire world, including every keystroke inside it.
+   */
+  const vars = useMemo(() => {
+    const theme = deriveBrandTheme(
+      brand.brand_color ?? DEFAULT_BRAND_COLOR,
+      readBrandThemeConfig(brand.theme)
+    );
+    return paletteToVars(resolved === 'dark' ? theme.dark : theme.light);
+  }, [brand.brand_color, brand.theme, resolved]);
 
   /*
    * THE WORLD OWNS THE WHOLE PAGE while it is open, so the body must not sit on
@@ -81,13 +107,24 @@ export function BrandWorldShell({
     setRailOpen(false);
   }, [brand.slug, section]);
 
+  /*
+   * IS THE MENU PALE? Only the Wurx mark needs to know, and it cannot ask the
+   * palette directly because by this point the rail is a CSS variable rather
+   * than a value. Measured off the computed hairline instead: the rail edge is
+   * mixed from the rail's own text colour, so a light text colour means a deep
+   * rail and a dark one means a pale rail.
+   */
+  const paleRail = contrast(vars['--wx-brand-rail-text'] ?? '#ffffff', '#ffffff') > 2;
+
   const rail = (
     <div
       className="flex h-full flex-col gap-6 overflow-y-auto px-3 py-5"
-      // The rail is dark in both modes, so the mark keeps its own colours
-      // rather than the light theme's darkening filter, which would render it
-      // nearly black on a deep brand background.
-      style={{ ['--wx-mark-filter' as string]: 'none' }}
+      // The rail is USUALLY dark, in both modes, so the mark keeps its own
+      // colours rather than the light theme's darkening filter, which would
+      // render it nearly black on a deep brand background. A brand that chose a
+      // pale menu is the exception, and there the filter has to come back or
+      // the mark is a white shape on cream.
+      style={{ ['--wx-mark-filter' as string]: paleRail ? '' : 'none' }}
     >
       {/* ----------------------------------------------- the way back out -- */}
       {/*
@@ -209,7 +246,10 @@ export function BrandWorldShell({
       {/* ------------------------------------------- the rail, on a laptop -- */}
       <aside
         className="hidden w-[16.5rem] shrink-0 border-r lg:block"
-        style={{ background: 'var(--wx-brand-rail)', borderColor: 'rgba(255,255,255,0.10)' }}
+        style={{
+          background: 'var(--wx-brand-rail-wash)',
+          borderColor: 'var(--wx-brand-rail-edge)',
+        }}
       >
         <div className="sticky top-0 h-screen">{rail}</div>
       </aside>
@@ -233,7 +273,10 @@ export function BrandWorldShell({
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
             className="absolute inset-y-0 left-0 w-[17rem] max-w-[85vw] border-r shadow-2xl"
-            style={{ background: 'var(--wx-brand-rail)', borderColor: 'rgba(255,255,255,0.10)' }}
+            style={{
+          background: 'var(--wx-brand-rail-wash)',
+          borderColor: 'var(--wx-brand-rail-edge)',
+        }}
           >
             <button
               type="button"
@@ -252,7 +295,7 @@ export function BrandWorldShell({
       {/* ----------------------------------------------------- the world -- */}
       <div
         className="flex min-w-0 flex-1 flex-col"
-        style={{ background: 'var(--wx-brand-page)', color: 'var(--wx-brand-text)' }}
+        style={{ background: 'var(--wx-brand-page-wash)', color: 'var(--wx-brand-text)' }}
       >
         {/* The phone bar: the only Wurx-shaped chrome left, and it is one button. */}
         <div

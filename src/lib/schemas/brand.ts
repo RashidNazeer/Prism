@@ -137,6 +137,61 @@ export const offerSchema = z
 export type OfferInput = z.input<typeof offerSchema>;
 export type OfferParsed = z.output<typeof offerSchema>;
 
+/* ------------------------------------------------------- the brand's look -- */
+
+/** A colour an admin picked. Lower cased here so a row has one spelling. */
+const hexStop = z
+  .string()
+  .trim()
+  .regex(/^#[0-9a-fA-F]{6}$/, 'Use a colour like #173d36')
+  .transform((v) => v.toLowerCase());
+
+/**
+ * One coloured area of a Brand Hub.
+ *
+ * `.strict()` matters more here than it looks: an unknown key is how a TEXT
+ * colour would arrive, and the whole safety of this feature is that no text
+ * colour is ever stored. `brand_theme_ok` says the same thing in the database.
+ *
+ * Written out three times rather than built by a function with conditional
+ * spreads. The function version inferred `tone?: unknown` and the whole theme
+ * stopped matching `BrandThemeConfig`, which is the type the renderer actually
+ * uses. Three short literals that infer exactly beat one clever one that does
+ * not.
+ */
+const stopsField = (max: number) =>
+  z
+    .array(hexStop)
+    .min(1, 'An area needs at least one colour')
+    .max(max, `That area takes at most ${max} colours`);
+
+const angleField = z.number().int().min(0).max(360).optional();
+const toneField = z.enum(['auto', 'light']).optional();
+
+/** The hero is the only area big enough for four colours and a direction. */
+const heroArea = z.object({ stops: stopsField(4), angle: angleField, tone: toneField }).strict();
+/** The menu can be pale or deep, but it does not have a direction to choose. */
+const railArea = z.object({ stops: stopsField(3), tone: toneField }).strict();
+/** Pages and buttons follow the light or dark theme the CREATOR chose, so no tone. */
+const plainArea = (max: number) => z.object({ stops: stopsField(max) }).strict();
+
+/**
+ * Everything an admin customised beyond the single colour.
+ *
+ * Rashid, 2026-08-25, asking for it: *"some brands have multo color themes so
+ * our app should be designed accoridnlgy"*.
+ */
+export const brandThemeSchema = z
+  .object({
+    v: z.literal(1),
+    hero: heroArea.optional(),
+    rail: railArea.optional(),
+    page: plainArea(3).optional(),
+    accent: plainArea(3).optional(),
+  })
+  .strict()
+  .nullable();
+
 /**
  * The brand's story, as creators read it.
  *
@@ -173,6 +228,20 @@ export const brandAboutSchema = z.object({
     .trim()
     .max(2048, 'That image address is too long')
     .transform((v) => (v === '' ? null : v)),
+  /*
+   * EVERYTHING BEYOND THE ONE COLOUR, and every value in here is a FILL.
+   *
+   * There is no text colour in this shape and there never will be. That is the
+   * whole reason an admin can be handed four pickers per area: whether a hub is
+   * legible is decided by `src/lib/brand-theme.ts`, which holds each fill
+   * inside the lightness band its area can support and then measures every text
+   * colour against every fill it will cross. Add a `text` here and that
+   * guarantee is gone, silently, for every brand.
+   *
+   * Null is the normal state and means "derive all four areas from
+   * brandColor", which is what every brand looked like before 2026-08-25.
+   */
+  theme: brandThemeSchema,
 });
 
 export type BrandAboutInput = z.input<typeof brandAboutSchema>;
