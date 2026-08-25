@@ -684,6 +684,59 @@ used to call unavailable: `budget` (100), `roas_bid` (1.5),
 placements and the identity. **Creators must never see any of it**, for the same
 reason they never see a brand's budget.
 
+**EVERY FIELD, with this account's real values, 2026-08-25.**
+
+`/gmv_max/campaign/get/` returns nine fields per campaign. Penetrex has five,
+all PRODUCT_GMV_MAX, zero LIVE_GMV_MAX:
+
+| field | Penetrex |
+| --- | --- |
+| `campaign_id` | 1872694034054241 and four others |
+| `campaign_name` | Remaining Products · Arthritis 2oz · Daily Joint & Muscle Care 8oz · 3oz · Joint & Muscle Therapy 2oz |
+| `objective_type` | `PRODUCT_SALES` |
+| `operation_status` | `ENABLE` |
+| `secondary_status` | `CAMPAIGN_STATUS_ENABLE` |
+| `roi_protection_compensation_status` | `IN_EFFECT` |
+| `create_time` / `modify_time` | oldest 2025-11-05, all modified in August |
+| `advertiser_id` | 7427187763989987329 |
+
+**THE FILTER VOCABULARY AND THE RETURNED VOCABULARY ARE DIFFERENT, and that
+trips you up if you assume otherwise.** You FILTER with `STATUS_DELIVERY_OK`,
+`STATUS_DISABLE`, `STATUS_DELETE` (TikTok's own list, for both
+`primary_status` and `secondary_status`). What comes BACK is a
+`CAMPAIGN_STATUS_*` value. So the returned set cannot be derived from the
+filter set.
+
+**Only one returned value has been SEEN, because every campaign is live.**
+Queried all three buckets on both ad accounts: DELIVERY_OK returns all five,
+DISABLE and DELETE return zero. **The paused, learning and not-delivering values
+are still unknown, and the only honest way to learn them is to pause a campaign
+in Ads Manager for a minute and re-probe.** Do not fill them in from a doc.
+
+`/campaign/gmv_max/info/` returns about thirty fields. The ones that matter:
+
+```
+budget 100            roas_bid 1.5           deep_bid_type VO_MIN_ROAS
+auto_budget:          current 100, maximum 200, +50% per increase,
+                      2 increases left, next +50
+roi_protection_enabled true       optimization_goal VALUE    billing_event OCPM
+schedule 2026-08-05 -> 2036-08-02 (SCHEDULE_FROM_NOW)
+age_groups 18-24 .. 55-100        location_ids 6252001 (US)
+placements PLACEMENT_TIKTOK       shopping_ads_type PRODUCT
+affiliate_posts_enabled true      accelerate_testing_for_new_videos OFF
+product_specific_type CUSTOMIZED_PRODUCTS   item_group_ids [2 ids]
+identity_list [{ identity_id, identity_type TTS_TT, store_id }]
+```
+
+**`item_list` is EMPTY and `product_video_specific_type` is `AUTO_SELECTION`,**
+which is the single most consequential line here: it is why a campaign cannot
+name its videos. See the limit below.
+
+**CREATORS MUST NEVER SEE ANY OF THE COMMERCIAL FIELDS.** Budget, ROAS target,
+the auto-budget ladder and the targeting are the brand's, and the rule that
+splits a brand's money from a creator's is the same one that put
+`brand_commercials` in its own table.
+
 **THE LIMIT, and it decides what can be built.** A campaign cannot be tied to a
 creator's video:
 
