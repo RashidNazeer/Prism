@@ -40,6 +40,7 @@
     "verify:numbers": "node scripts/check-numbers.mjs",
     "verify:brand-numbers": "node scripts/check-brand-numbers.mjs",
     "verify:brand-theme": "node scripts/check-brand-theme-save.mjs",
+    "verify:legal": "node scripts/check-legal.mjs",
     "check:brand-theme": "node scripts/check-brand-theme.mjs"
   },
   "dependencies": {

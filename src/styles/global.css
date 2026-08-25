@@ -583,3 +583,105 @@
   animation: wx-shimmer 1.4s linear infinite;
   border-radius: var(--wx-radius-md);
 }
+
+/* ---------------------------------------------------------------- prose -- */
+/*
+ * A page of writing: the terms and the privacy policy, and nothing else so far.
+ *
+ * NOT a typography plugin. Two of them are three hundred kilobytes to style two
+ * documents, and every one of them ships its own colour scale, which is exactly
+ * the thing `check:contrast` exists to stop leaking in. This is the four
+ * elements those pages actually use, in our own tokens.
+ *
+ * Every size is a `rem`, so it follows the text-size control in the top bar
+ * like the rest of the product.
+ */
+@utility wx-prose {
+  color: var(--wx-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.75;
+
+  & h2 {
+    color: var(--wx-text);
+    font-family: var(--wx-font-display), sans-serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    margin-top: 2.75rem;
+    margin-bottom: 0.875rem;
+  }
+
+  & h2:first-child {
+    margin-top: 0;
+  }
+
+  & h3 {
+    color: var(--wx-text);
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 1.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  & p {
+    margin-bottom: 1.125rem;
+  }
+
+  & ul {
+    list-style: disc;
+    margin-bottom: 1.125rem;
+    padding-left: 1.25rem;
+  }
+
+  & li {
+    margin-bottom: 0.5rem;
+    padding-left: 0.25rem;
+  }
+
+  & strong {
+    color: var(--wx-text);
+    font-weight: 600;
+  }
+
+  & a {
+    color: var(--wx-accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  & a:hover {
+    color: var(--wx-accent-hover);
+  }
+
+  /* The table of what we hold and why, on the privacy page. It scrolls inside
+     itself on a phone rather than pushing the page sideways. */
+  & .wx-prose-table {
+    overflow-x: auto;
+    margin-bottom: 1.125rem;
+  }
+
+  & table {
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    min-width: 30rem;
+    width: 100%;
+  }
+
+  & th {
+    border-bottom: 1px solid var(--wx-border);
+    color: var(--wx-text);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    padding: 0 0.75rem 0.5rem 0;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  & td {
+    border-bottom: 1px solid var(--wx-border);
+    padding: 0.75rem 0.75rem 0.75rem 0;
+    vertical-align: top;
+  }
+}

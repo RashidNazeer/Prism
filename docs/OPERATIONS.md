@@ -151,6 +151,12 @@ pnpm check:brand-theme      # no database, no browser. Derives a full palette
                             # hand; deterministic on purpose, because a guard
                             # that fails once and passes on the retry teaches
                             # everyone to press the button again
+pnpm verify:legal           # 31 checks. /terms and /privacy render SIGNED OUT
+                            # in both themes at 375 and 1440, have real content,
+                            # are linked from the home page footer, and give a
+                            # real contact address. They are a TikTok app
+                            # SUBMISSION REQUIREMENT, so a route that quietly
+                            # stops resolving would fail a review weeks later
 pnpm verify:brand-theme     # 15 checks, no browser. Proves the WRITE PATH for
                             # a brand's colours: browser Zod -> Edge Function
                             # Zod -> save_brand_about -> the column. The one

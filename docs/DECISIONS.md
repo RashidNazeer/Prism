@@ -1538,3 +1538,24 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   `list_screens` came back empty afterwards, so no design was returned and none
   was used. Recorded so the next attempt starts from "it has failed once on a
   long prompt" rather than from scratch.
+- 2026-08-26: **The TikTok Display API app is registered against the PRODUCTION
+  domain**, `wurxmediahub.vercel.app`, on Rashid's choice between that, dev and a
+  real domain on wurxmedia.com. The consequence he accepted: the demo video must
+  be recorded on prod, so the creator-connect flow has to be live there before
+  the app can be submitted, and he will record it with his own real TikTok
+  account rather than seeded data.
+- 2026-08-26: **`/terms` and `/privacy` exist because TikTok requires them**, not
+  because anybody asked for legal pages. Both are public, unauthenticated and
+  linked from the site footer, because a reviewer looks for the link and not only
+  the URL.
+- 2026-08-26: **The privacy policy may only claim what the code enforces.** It was
+  written from a four-way inventory of the repo and reconciled against it, which
+  caught a flat falsehood in the first draft ("other creators cannot see your
+  figures" — they can, on the leaderboard, by Rashid's own 2026-08-20 decision)
+  and stopped it quoting a retention period that nothing in the codebase
+  implements. An overclaiming privacy policy is a false statement, not a tidy one.
+- 2026-08-26: **Only `video.list` is requested from the Display API**, not
+  `user.info.stats` or `user.info.profile`. TikTok's own review guidance is that
+  every product and scope must be demonstrated on camera, so each extra scope is
+  another thing a first review can be rejected on. Follower counts, if they are
+  ever wanted, are a revision to a live app rather than a new application.

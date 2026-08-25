@@ -969,3 +969,71 @@ accent band sits on the opposite side of the lightness axis from the page band
 in each mode, but `--wx-brand-accent-ink` is the value with the guarantee on it.
 New brand-world code should prefer the ink for text. Not worth a sweep of every
 existing `text-accent` today.
+
+## 29. What the data inventory turned up, 2026-08-26
+
+**Status:** PAUSED, five separate items, none of them started
+**Owner:** Claude
+**Raise it when:** Rashid asks about privacy, security or app review — or
+immediately if any of these is going to prod, because (a) and (b) are about real
+people's information.
+
+A four-way inventory of the migrations, Edge Functions, storage buckets and
+third-party calls was run on 2026-08-26 so the privacy policy could be accurate
+rather than boilerplate. It was, and it also found these. **None is a fabricated
+risk: each was read out of the code, and (b) was proven against dev.**
+
+**a. A staff reviewer's private note about an applicant is readable BY THAT
+APPLICANT.** `applications.review_note` reads like an internal note, but the
+SELECT grant on `applications` is table-wide with no column list, and
+`applications_select_own` is a ROW policy. So the applicant can pull the note
+written about them through the API whether or not a screen ever shows it. Two
+honest fixes: narrow the grant to columns, or tell staff plainly that the note is
+not private. **This is the one to decide first**, because staff are writing notes
+today believing they are private.
+
+**b. Any signed-in account can list the whole `creator-avatars` bucket.**
+PROVEN on dev: signed in as a real creator, `list()` returned all 41 objects.
+`creator_avatars_read_signed_in` is `using (bucket_id = 'creator-avatars')` with
+no further condition, and `creator_avatars_select_signed_in` on the index table
+is `using (true)`, so a creator can also read the index that maps every object
+path to a profile id and a TikTok handle.
+
+Rashid DID approve showing creators each other's faces on the leaderboard
+(2026-08-20), so this is not an unapproved feature. But it goes wider than the
+migration's own comment claims. That comment says *"The only ids a creator ever
+holds are the ones the leaderboard has already decided to show them"* — which is
+false, because listing needs no id at all — and it also says *"Writing stays
+impossible: there is no insert, update or delete policy on this bucket for
+anybody"*, which is false too: the 2026-08-19 migration created `is_staff()`
+gated insert, update and delete policies and they are still there. **Do not edit
+that applied migration; correct it in a new one or leave the correction here.**
+
+The exposure that matters is people who are NOT on any leaderboard: applicants,
+including rejected ones, whose faces are in the same bucket.
+
+**c. Nothing is ever deleted from Storage, and one bucket is public.** There is
+no delete call against Storage anywhere — not in the app, the Edge Functions or
+the scripts. Replacing a brand logo, hero, product photo or contest banner
+uploads a new object and abandons the old one, which stays reachable by URL
+forever; `brand-assets` is a PUBLIC bucket. Deleting a brand, a contest or an
+account removes rows and leaves every image. The dev tidy script empties
+`creator_avatars` but not the bucket, so an "erased" person's face survives as an
+orphan. The privacy policy now says we keep things until asked rather than
+inventing a schedule, so this is honest today, but it is not tidy.
+
+**d. The vendored Paid Collabs CSS imports Inter from Google Fonts.** The main
+product self-hosts every typeface; `src/vendor/wurxbase/App.css` and
+`paidcollabs.css` still `@import` from `fonts.googleapis.com`, and it survives
+into the built CSS. So an admin opening Paid Collabs makes a request to Google.
+No creator screen does. A one-line fix (drop the import, the font is already
+self-hosted), and it removes a third party from the admin panel entirely.
+
+**e. `support@wurxmedia.com` must actually exist.** Both legal pages and the
+TikTok app registration point at it. A reviewer may write to it and a creator
+asking for erasure has a legal right to reach somebody. Set in
+`src/routes/legal/legal-contact.ts`; change it there and nowhere else.
+
+**Also worth knowing, and not a problem:** the TikTok money pipeline runs on DEV
+ONLY. Prod has the TikTok secrets deliberately unset, so production ingests
+nothing from TikTok today.

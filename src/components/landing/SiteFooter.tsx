@@ -21,13 +21,19 @@ export function SiteFooter() {
                 Platform
               </h2>
               <ul className="mt-4 space-y-2.5">
+                {/*
+                  ABSOLUTE, not bare fragments. `#how` scrolls to a section of
+                  the LANDING page, so from /terms or /privacy — which reuse
+                  this footer — it was a link that did nothing at all. `/#how`
+                  goes home and then to the section.
+                */}
                 <li>
-                  <a href="#how" className="text-muted transition-colors hover:text-accent">
+                  <a href="/#how" className="text-muted transition-colors hover:text-accent">
                     How it works
                   </a>
                 </li>
                 <li>
-                  <a href="#platform" className="text-muted transition-colors hover:text-accent">
+                  <a href="/#platform" className="text-muted transition-colors hover:text-accent">
                     Features
                   </a>
                 </li>
@@ -61,6 +67,21 @@ export function SiteFooter() {
                   >
                     Wurx Media
                   </a>
+                </li>
+                {/*
+                  LINKED, not merely reachable. An app reviewer looks for these
+                  in the footer of the site itself; a URL that only exists in a
+                  form field reads as one made for the form.
+                */}
+                <li>
+                  <Link to="/privacy" className="text-muted transition-colors hover:text-accent">
+                    Privacy
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/terms" className="text-muted transition-colors hover:text-accent">
+                    Terms
+                  </Link>
                 </li>
               </ul>
             </div>

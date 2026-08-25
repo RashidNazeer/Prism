@@ -2360,3 +2360,48 @@ brand's money rows on them.
 3. **Rank is computed INSIDE the brand**, underneath the `rank()`, or the board
    opens on "#7 of 3".
 
+
+## The two legal pages (2026-08-26)
+
+**Files:** `src/routes/legal/LegalPage.tsx` (the shell) · `Terms.tsx` ·
+`Privacy.tsx` · `legal-contact.ts` · `scripts/check-legal.mjs` ·
+`src/styles/global.css` (the `wx-prose` utility) ·
+`src/components/landing/SiteFooter.tsx`
+
+`/terms` and `/privacy`, public and unauthenticated. They exist because
+**TikTok's developer portal will not accept an app without both URLs**, on the
+same domain as the app, and a reviewer opens them.
+
+**The rules that are not obvious.**
+
+1. **The privacy policy may only claim what the code enforces.** It was written
+   from an actual four-way inventory of the migrations, Edge Functions, storage
+   buckets and third-party calls, then reconciled line by line. The first draft
+   contained a flat falsehood that survived until the inventory caught it: *"Other
+   creators cannot see your figures."* The leaderboard shows every creator every
+   other creator's name, face, GMV, ad spend, orders and video count, on Rashid's
+   own 2026-08-20 decision. **An overclaiming privacy policy is a false statement,
+   not a tidy one.**
+2. **It does not quote a retention period, because nothing enforces one.** There
+   is no delete call against Storage anywhere in this repo and no purge job on
+   any table, so it says plainly that we keep things until asked to stop.
+3. **It addresses applicants, including rejected ones.** They are a data subject
+   with the weakest position and the one a policy most often forgets, and their
+   rows and their fetched faces persist indefinitely.
+4. **Not `SiteNav`, and the footer anchors had to change.** That header carries
+   `#how` and `#platform`, which are sections of the LANDING page; on a legal
+   page every one was a link that scrolled nowhere. The footer's were made
+   absolute (`/#how`) in the same pass, because the footer is reused here.
+5. **`wx-prose` rather than a typography plugin.** A plugin is hundreds of
+   kilobytes to style two documents and ships its own colour scale, which is
+   exactly what `check:contrast` exists to stop leaking in.
+6. **One `legal-contact.ts` for the address and the names**, because they also
+   go into the TikTok app registration and three copies is how one of them ends
+   up pointing at a mailbox nobody reads.
+
+**Guard.** `pnpm verify:legal`, 31 checks: both pages render **signed out**, in
+both themes, at 375 and 1440, with real content, no console errors and no
+sideways scroll; the home page footer links to both; and the contact address is
+not a placeholder. It waits for the footer to exist before reading it — the
+first version asked at `domcontentloaded` and reported both links missing while
+they sat correctly in the source AND the bundle.

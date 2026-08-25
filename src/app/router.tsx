@@ -274,6 +274,25 @@ export const router = createBrowserRouter([
     HydrateFallback: RouteFallback,
     lazy: lazyRoute(() => import('@/routes/Apply'), 'Apply'),
   },
+  /*
+   * THE TWO LEGAL PAGES, public and unauthenticated on purpose.
+   *
+   * TikTok's developer portal will not accept an app without a Terms of Service
+   * URL and a Privacy Policy URL, both reachable by anybody, both on the same
+   * domain as the app. Registering the Display API app on 2026-08-26 is what
+   * forced them into existence; they are linked from the site footer as well,
+   * because a reviewer looks for the link and not only the URL.
+   */
+  {
+    path: '/terms',
+    HydrateFallback: RouteFallback,
+    lazy: lazyRoute(() => import('@/routes/legal/Terms'), 'Terms'),
+  },
+  {
+    path: '/privacy',
+    HydrateFallback: RouteFallback,
+    lazy: lazyRoute(() => import('@/routes/legal/Privacy'), 'Privacy'),
+  },
   // /signup is the same screen, and deliberately NOT behind the
   // "already signed in? go home" guard.
   //
