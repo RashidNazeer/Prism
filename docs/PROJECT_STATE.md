@@ -4,43 +4,50 @@
 
 **Recorded 2026-08-26.**
 
-**WAITING ON RASHID.** He is unpausing the production Supabase project himself
-and said *"I will tell you once i have resumed it"*. **Do not touch prod before
-he says so.** The moment he does, the job is **PARKED 30**, the production
-launch checklist, and it has a question in it that must be answered before
-step 3: he said "shift all our data to prod", but his own standing rule is that
-prod never gets test data, and dev's 41 creators all share the password
-`1234567890`. Ask which he means.
+**PRODUCTION IS LIVE.** It launched today, for the first time. 58 migrations, 10
+Edge Functions, auth configured, frontend shipped, and sign-in proven to mint a
+token that carries a real identity. `https://wurxmediahub.vercel.app` works.
 
-**Why this came up at all:** he is registering the TikTok **Display API** app
-(PARKED 27) and it demands a Terms of Service URL and a Privacy Policy URL on
-the prod domain, plus URL-property verification by signature file. Both pages
-now exist and are verified on dev; on prod they render a 16-word "not found",
-because prod is 146 commits and 58 migrations behind and its database is paused.
+**THE FIRST THING TO ASK HIM**, because it was asked twice and never answered
+and nothing should move until it is: he said *"we will shift all our data to
+prod"*, and prod is empty. His own standing rule is *"Prod never gets test
+data"*, and dev's 41 creators all share the password `1234567890`. Which does he
+mean — the real subset (Penetrex, its products, its real TikTok connection and
+the real GMV rows), or something wider? See **PARKED 30a**.
 
-**What he still needs from the TikTok form** (all worked out, in his hands):
-category Business, the 115-character description, Login Kit as the only product,
-`video.list` as the only scope, the 832-character review text, and the
-URL-prefix verification method — NOT Domain, because that needs a DNS record on
-`vercel.app`, which Vercel owns. He will hand over TikTok's signature file; it
-goes in `public/` and is served verbatim at the domain root (verified).
+**Where he was when this session ended:** filling in the TikTok **Display API**
+app on developers.tiktok.com (PARKED 27). Everything he needs is worked out:
+category Business, the 115-character description, **Login Kit as the only
+product**, **`video.list` as the only scope**, the 832-character review text,
+and **URL prefix** as the verification method — not Domain, which needs a DNS
+record on `vercel.app` that Vercel owns. He will hand over TikTok's signature
+file; it goes in `public/` and is served verbatim at the domain root (verified).
+`/terms` and `/privacy` now render on prod, which was the thing blocking him.
+
+**Still ahead of him on that app:** the demo video, which cannot be recorded
+until the creator TikTok connection is BUILT — a second OAuth flow, a token
+table with RLS, a connect/disconnect screen and a screen showing view, like,
+comment and share per video. That is a proper roadmap step and has not started.
 
 **What this session did (2026-08-26).**
 
-1. **`/terms` and `/privacy`**, public, linked from the footer, `wx-prose`
-   rather than a typography plugin. `pnpm verify:legal`, 31 checks, green on
-   dev's deployed site.
-2. **The privacy policy was written from a four-way inventory of the repo**, and
-   that caught a flat falsehood in my own first draft: "other creators cannot see
-   your figures". They can — the leaderboard shows name, face, GMV, ad spend,
-   orders and video count, on Rashid's own 2026-08-20 decision. It also stopped
-   the page quoting a retention period nothing implements.
-3. **PARKED 29**, five things that inventory found. The first is the one to
-   act on: `applications.review_note` is readable by the applicant it is about,
-   because the grant is table-wide while the policy is per row.
+1. **`/terms` and `/privacy`**, written from a four-way inventory of the repo
+   rather than a template. That caught a flat falsehood in the first draft
+   ("other creators cannot see your figures" — the leaderboard shows exactly
+   that) and stopped it quoting a retention period nothing implements.
+2. **PARKED 29**, five findings from that inventory. The first is the one to act
+   on: `applications.review_note` is readable by the applicant it is about.
+3. **The production launch**, PARKED 30, with the gotchas in OPERATIONS.
+4. **Three new suites:** `verify:legal` (31), `verify:prod-ready` (30),
+   `verify:signin`. The last two exist because a migration carries the schema
+   and nothing else.
 
-**Before this session:** multi-colour brand themes and the rebuilt creator
-offers page (commit `1ffd348`), both on dev, neither given a verdict.
+**Two mistakes worth not repeating**, both mine, both in verification rather
+than in the product: a check that read `role` instead of `user_role` and
+declared the auth hook dead on a live launch, twice; and a check that treated
+"no error I recognise" as proof an Edge Function was deployed, on a project with
+zero functions on it. **A check that fails safe is fine. A check that passes
+falsely is worse than no check.**
 
 **Do not re-explore the codebase.** This file, then PARKED 30, then only what it
 names.

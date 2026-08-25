@@ -1038,70 +1038,43 @@ asking for erasure has a legal right to reach somebody. Set in
 ONLY. Prod has the TikTok secrets deliberately unset, so production ingests
 nothing from TikTok today.
 
-## 30. THE PRODUCTION LAUNCH, waiting on Rashid unpausing the database
+## 30. DONE 2026-08-26. Production launched. What it still owes.
 
-**Status:** BLOCKED on Rashid, who is unpausing the prod Supabase project himself
-and said *"I will tell you once i have resumed it"* (2026-08-26)
-**Owner:** Claude, on his go-ahead
-**Raise it when:** he says prod is resumed. Do NOT start before that.
+The first production launch happened on 2026-08-26, after Rashid unpaused the
+database himself. **58 migrations applied, 10 Edge Functions deployed, auth
+configured, frontend shipped, sign-in proven to produce a real identity.** The
+gotchas that cost time are written up in OPERATIONS under "Launching an
+environment: what a migration does NOT carry" — the short version is that a
+migration carries the schema and nothing else, and the access token hook
+defaults to OFF, which fails in total silence.
 
-**How far behind prod actually is**, measured 2026-08-26 rather than assumed:
+**What production still owes, and none of it is blocking anybody today:**
 
-| | |
-| --- | --- |
-| commits on `dev` not in `main` | 146 |
-| migrations prod has never run | 58 |
-| Edge Functions never deployed there | ~10 |
-| newest thing prod has | `a210ed1` "Step 2: public landing page" |
-| database | **PAUSED** |
+**a. It is EMPTY. The data question was never answered.** 0 profiles, 0 brands,
+0 offers, 0 contests, 0 money rows. Rashid said *"we will shift all our data to
+prod"*, and his standing rule is *"Prod never gets test data"*. Dev holds 41
+seeded creators sharing the password `1234567890`. **Ask which he means before
+moving anything:** the real subset (the Penetrex brand, its products, its real
+TikTok connection and the real GMV rows) is almost certainly what he wants; the
+41 seeded logins should be argued against.
 
-So this is not a deploy. It is the first production launch of the whole product,
-and it was discovered only because TikTok asked us to verify a URL on the prod
-domain and the legal pages there turned out to render a 16-word "not found".
+**b. The four TikTok secrets are unset on prod**, so `tiktok-connect`,
+`tiktok-callback` and `tiktok-sync` answer 500. Needed:
+`TIKTOK_APP_ID`, `TIKTOK_APP_SECRET` (both from Rashid, never written to a
+file), `TIKTOK_REDIRECT_URI` = `https://wurxmediahub.vercel.app/oauth/tiktok/callback`,
+and a freshly generated `TIKTOK_SYNC_SECRET`. **The prod redirect URI must also
+be added on TikTok's side**, in the ads app's allowed list, or the callback is
+refused.
 
-**THE ORDER MATTERS, and the frontend goes LAST.** Shipping `main` first would
-put an app in front of a database that has none of its tables.
+**c. The nightly cron throws every night at 03:20** until (b) is done, because
+`tiktok_run_nightly_sync` raises when the vault has no `tiktok_sync_secret` or
+`tiktok_sync_url`. A log line in an empty project, but it is not nothing.
 
-1. **Rashid unpauses** `isqepjioowzqoyhlusqo` from the dashboard. Only an admin
-   can; the CLI refuses with "project is paused".
-2. **Confirm the project settings match dev**, because these are per project and
-   are not carried by a migration: `Enable automatic RLS` ON,
-   `Automatically expose new tables` OFF. If the second is not off, every new
-   table's grants will differ from dev's and Edge Functions will silently see
-   nothing.
-3. **Apply the 58 migrations in order**, `supabase db push`, with
-   `SUPABASE_DB_PASSWORD_PROD`. Read what it plans to do before answering yes.
-4. **The custom access token hook** has to be enabled in Auth settings, or every
-   JWT ships without `role` and `tier` and the whole app treats everybody as a
-   stranger.
-5. **Storage buckets**: `brand-assets` (public) and `creator-avatars` (private).
-   Check whether the migrations create them or whether they were made by hand on
-   dev; if by hand, they must be made by hand here too.
-6. **Deploy every Edge Function** and **set its secrets**. The TikTok app id and
-   secret are deliberately unset on prod today, so nothing TikTok-related works
-   until they are set. Never write them to a file.
-7. **Auth redirect URLs** for the prod domain, or password reset and sign-in
-   links point at dev.
-8. **Then merge `dev` into `main`** and let Vercel deploy the frontend.
-9. **Smoke test on prod**: `node scripts/check-legal.mjs https://wurxmediahub.vercel.app`
-   first, because it needs no database and proves the deploy landed; then
-   `verify:rls` against prod, which is the one that matters most on a fresh
-   database.
+**d. `verify:rls` has never been run against prod.** It is the suite that
+matters most on a fresh database and it needs `SUPABASE_SERVICE_KEY` for the
+prod project. Worth running before anybody real signs in.
 
-**THE QUESTION THAT MUST BE ANSWERED BEFORE STEP 3.** Rashid said *"we will
-shift all our data to prod"*. Dev holds 41 seeded creators whose password is
-`1234567890`, a seeded contest, and seeded offers. His own standing rule is
-**"Dev may hold seed data. Prod never gets test data."** Those two cannot both
-be true, so ask which he means:
+**e. Nobody has looked at production in a browser.** Every check so far was a
+script. The legal pages are proven; the rest of the app on prod has been seen by
+nothing with eyes.
 
-- **the schema only**, and prod starts empty, which is what the standing rule
-  says and what a launch normally means; or
-- **the real subset**: the Penetrex brand, its products, its real TikTok
-  connection and the real GMV rows, but none of the seeded creators or their
-  logins; or
-- **everything including the test creators**, which would put 41 accounts with a
-  shared, guessable password into production and should be argued against.
-
-**Also blocked behind this:** the TikTok Display API app cannot verify its URL
-properties until `wurxmediahub.vercel.app/terms` and `/privacy` actually render,
-which needs step 8. See PARKED 27 and the app-review notes.

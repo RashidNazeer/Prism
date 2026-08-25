@@ -41,6 +41,8 @@
     "verify:brand-numbers": "node scripts/check-brand-numbers.mjs",
     "verify:brand-theme": "node scripts/check-brand-theme-save.mjs",
     "verify:legal": "node scripts/check-legal.mjs",
+    "verify:prod-ready": "node scripts/check-prod-ready.mjs",
+    "verify:signin": "node scripts/check-signin.mjs",
     "check:brand-theme": "node scripts/check-brand-theme.mjs"
   },
   "dependencies": {

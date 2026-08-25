@@ -1022,6 +1022,71 @@ transpiles it with raw `tsc` and imports it from plain Node; a sibling import
 emits a specifier with no `.js` on it, Node refuses to resolve it, and the guard
 stops running inside the build without failing it.
 
+## Launching an environment: what a migration does NOT carry
+
+Learned on 2026-08-26, launching production for the first time. `supabase db
+push` moved all 58 migrations and the database still could not run the product.
+**Everything below is per project and invisible to migrations.**
+
+```powershell
+# ... load env as in section 2 ...
+$ref = $env:SUPABASE_PROJECT_REF_PROD
+$env:SUPABASE_URL = "https://$ref.supabase.co"
+# service + publishable keys from: supabase projects api-keys --project-ref $ref
+pnpm verify:prod-ready     # 30 read-only checks: tables, late columns, buckets,
+                           # every Edge Function deployed, and what is in there
+pnpm verify:signin         # makes ONE throwaway account, reads its token,
+                           # deletes it. The only way to prove the auth hook
+```
+
+**1. The custom access token hook is a DASHBOARD SETTING and it defaults to OFF.**
+This is the quietest possible failure: sign-in succeeds, the password works, and
+the token carries no `user_role`, so every policy treats the person as a
+stranger and nothing they own is visible. Nothing errors anywhere. Read or set it
+through the Management API rather than clicking:
+
+```powershell
+$h = @{ Authorization = "Bearer $($env:SUPABASE_ACCESS_TOKEN)"; 'Content-Type' = 'application/json' }
+Invoke-RestMethod -Uri "https://api.supabase.com/v1/projects/$ref/config/auth" -Headers $h |
+  Select-Object hook_custom_access_token_enabled, site_url, uri_allow_list
+$body = @{
+  hook_custom_access_token_enabled = $true
+  hook_custom_access_token_uri     = 'pg-functions://postgres/public/custom_access_token_hook'
+  site_url                         = 'https://wurxmediahub.vercel.app'
+  uri_allow_list                   = 'https://wurxmediahub.vercel.app/**'
+} | ConvertTo-Json
+Invoke-RestMethod -Method Patch -Uri "https://api.supabase.com/v1/projects/$ref/config/auth" -Headers $h -Body $body
+```
+
+**READ `user_role`, NEVER `role`.** `role` is Supabase's own built-in claim and
+is always the string `authenticated`, on a working project and a broken one
+alike. Reading it reported the hook dead on the production launch, twice, where
+it was working perfectly. The app reads `user_role`, `user_tier`, `user_active`.
+
+**2. `site_url` defaults to `http://localhost:3000` and `uri_allow_list` to
+empty.** Password-reset and confirmation emails point at localhost until you fix
+it. Prod's allow list deliberately does NOT include localhost, unlike dev's.
+
+**3. Edge Functions are not deployed by a migration.** `supabase functions
+deploy --project-ref <ref>` with no function name deploys all of them, and it
+reads `verify_jwt` from `config.toml`, so the public callback stays public.
+
+**4. Their secrets are separate again.** Prod launched without
+`TIKTOK_APP_ID`, `TIKTOK_APP_SECRET`, `TIKTOK_REDIRECT_URI` and
+`TIKTOK_SYNC_SECRET`, so the three TikTok functions answer 500. Nothing else is
+affected. Compare the two projects with `supabase secrets list --project-ref`,
+which prints names and digests but never values.
+
+**5. The nightly cron IS created by a migration, and it throws when the vault is
+empty.** `tiktok_run_nightly_sync` reads `tiktok_sync_secret` and
+`tiktok_sync_url` from Supabase Vault and raises if either is missing, so a
+fresh project logs a failure at 03:20 every night until TikTok is configured
+there. Harmless, but it is not nothing.
+
+**6. Storage buckets DO come from the migrations.** `brand-assets` (public) and
+`creator-avatars` (private) both existed on prod straight after the push, which
+is worth knowing so nobody creates them by hand and ends up with two.
+
 ## Brand artwork: the exact sizes (measured 2026-08-24)
 
 **Hero image: 2400 x 1000 px, which is 2.4:1.** JPG or WebP, under 2 MB.

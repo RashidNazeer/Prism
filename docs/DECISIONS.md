@@ -1559,3 +1559,15 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   every product and scope must be demonstrated on camera, so each extra scope is
   another thing a first review can be rejected on. Follower counts, if they are
   ever wanted, are a revision to a live app rather than a new application.
+- 2026-08-26: **Production launched**, on Rashid unpausing the database himself.
+  Order that worked and should be reused: migrations, then auth config, then
+  Edge Functions, then the frontend LAST. The frontend going last is the part
+  that matters — shipping it first puts an app in front of a database with none
+  of its tables.
+- 2026-08-26: **Prod's auth allow-list deliberately excludes localhost**, unlike
+  dev's. A production project that accepts a localhost redirect is a phishing
+  affordance, and nobody develops against prod.
+- 2026-08-26: **Prod launched EMPTY and stays empty until Rashid answers what
+  "shift all our data" means.** Moving 41 seeded creators who share one password
+  into production would be the opposite of his own standing rule, so nothing was
+  moved rather than guessing.
