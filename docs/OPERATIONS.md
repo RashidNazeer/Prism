@@ -752,6 +752,53 @@ the ad on their particular video is paused. Anything per video stays inferred
 from spend, with the caveat that a paused campaign reads as running until the
 spend stops arriving.
 
+### Impressions and views per video: NOT POSSIBLE, and not for want of a scope
+
+Asked on 2026-08-25 after the scope round. The answer is no, and it is worth
+being blunt about it because it is easy to keep chasing.
+
+**Three separate walls, any one of which is fatal.**
+
+**1. The scope is still missing.** `/report/integrated/get/` answers `40001`.
+The **Consolidated Report** box under Reporting was not ticked. That one is
+fixable.
+
+**2. The integrated report has NO VIDEO LEVEL.** TikTok enumerated its own
+`data_level` values when sent a bogus one, and there are eight:
+
+```
+AUCTION_ADVERTISER   AUCTION_CAMPAIGN   AUCTION_ADGROUP   AUCTION_AD
+RESERVATION_ADVERTISER  RESERVATION_CAMPAIGN  RESERVATION_ADGROUP  RESERVATION_AD
+```
+
+Advertiser, campaign, ad group, ad. **Nothing per video.** So even with the
+scope, impressions could never be attributed to one creator's video through it.
+
+**3. GMV Max video reporting refuses every view metric BY NAME**, which is the
+one that closes the door for good:
+
+```
+impressions · video_views · video_play_actions · clicks · ctr · reach · views
+        all -> "Invalid metric: <name> not support"
+```
+
+**And a fourth, for completeness:** GMV Max campaigns have no auction ad groups
+or ads at all. `/adgroup/get/` and `/ad/get/` are granted and return ZERO rows.
+So even AUCTION_ADGROUP and AUCTION_AD reporting would have nothing to report on
+for this account.
+
+**What ticking Consolidated Report would actually buy:** possibly campaign-level
+impressions and clicks, and possibly nothing, since it is unclear whether GMV
+Max campaigns appear in auction reporting at all. It is one tick to find out and
+it is NOT the per-video engagement anybody wanted. **Do not promise a creator
+their view count on the strength of it.**
+
+**The honest summary for the product:** for GMV Max, TikTok's advertising API
+gives money per video and engagement per campaign, and never engagement per
+video. Views per video would have to come from somewhere else entirely, which
+is the TikTok Shop Partner API territory recorded in PARKED 19, or from a
+creator pasting their own figures.
+
 **Not granted, and each would need TikTok to widen the authorisation:**
 `/gmv_max/exclusive_authorization/get/`, `/identity/get/`, `/bc/get/`,
 `/bc/asset/get/`, `/advertiser/balance/get/`.
