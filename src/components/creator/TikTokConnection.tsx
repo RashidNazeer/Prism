@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { m } from 'motion/react';
 import {
+  BadgeCheck,
   Eye,
   Heart,
   Link2,
@@ -17,6 +18,7 @@ import {
   useTikTokAccount,
   useTikTokAction,
   useTikTokVideos,
+  type TikTokAccount,
   type TikTokVideo,
 } from '@/lib/creator/useTikTokAccount';
 
@@ -56,12 +58,24 @@ export function TikTokConnection() {
 
   return (
     <section className="border-line bg-surface-1 rounded-xl border p-5 shadow-md">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        {/* min-w-0 flex-1, and no max-width. With a fixed `max-w-lg` the
+            paragraph was nearly as wide as the card, so the Connected pill
+            wrapped onto a line of its own and read as stranded rather than as
+            a status on the heading. */}
+        <div className="min-w-0 flex-1">
           <h2 className="font-semibold">Your TikTok account</h2>
-          <p className="text-muted mt-1 max-w-lg text-[0.875rem] leading-relaxed">
-            Connect it to see how your own videos performed: views, likes, comments and shares,
-            in here with the rest of your work.
+          <p className="text-muted mt-1 text-[0.875rem] leading-relaxed">
+            {/*
+              TWO SENTENCES, BECAUSE ONE OF THEM IS WRONG HALF THE TIME. This
+              read "Connect it to see how your own videos performed" whatever
+              the state, so somebody who HAD connected was still being asked to.
+              It also predates the profile permission and named only the video
+              figures, which is the same drift the consent list below fell into.
+            */}
+            {connected
+              ? 'Your TikTok profile and your own video numbers, in here with the rest of your work.'
+              : 'Connect it to see your own numbers here: your follower count, and the views, likes, comments and shares on every video you post.'}
           </p>
         </div>
 
@@ -86,14 +100,24 @@ export function TikTokConnection() {
             SAY WHAT IT CAN AND CANNOT DO, before they click rather than after.
             Somebody about to hand a third party access to their account
             deserves the answer at the moment they are deciding.
+
+            SO THIS LIST IS A PROMISE, AND IT MUST MATCH `DISPLAY_SCOPES`
+            EXACTLY. When the profile and stats scopes were added it still read
+            "we only ever read your own public videos", which had quietly become
+            untrue. A scope added without a line added here means the product is
+            lying to somebody at the precise moment they are deciding whether to
+            trust it.
           */}
           <ul className="text-muted mt-4 grid gap-1.5 text-[0.8125rem]">
-            <li>We only ever read your own public videos and their counts.</li>
+            <li>We read your public profile: your name, handle and follower count.</li>
+            <li>
+              We read your own videos and their view, like, comment and share counts.
+            </li>
             <li>
               <strong className="text-text font-semibold">
                 We can never post, edit or delete anything.
               </strong>{' '}
-              The permission we ask for cannot do those things.
+              The permissions we ask for cannot do those things.
             </li>
             <li>You can disconnect at any time, from right here.</li>
           </ul>
@@ -105,43 +129,70 @@ export function TikTokConnection() {
         </div>
       ) : (
         <>
-          <div className="border-line mt-4 flex flex-wrap items-center gap-3 border-t pt-4">
-            {account?.avatar_url ? (
-              <img
-                src={account.avatar_url}
-                alt=""
-                className="size-9 shrink-0 rounded-full object-cover"
-                loading="lazy"
-              />
-            ) : (
-              <span className="bg-surface-2 grid size-9 shrink-0 place-items-center rounded-full">
-                <Video size={15} aria-hidden className="text-faint" />
-              </span>
-            )}
-            <span className="min-w-0 flex-1">
-              <span className="block truncate font-semibold">
-                {account?.display_name ?? 'Your TikTok'}
-              </span>
-              <span className="text-muted block text-[0.75rem]">
-                {account?.last_synced_at
-                  ? `Updated ${new Date(account.last_synced_at).toLocaleString()}`
-                  : 'Not pulled in yet'}
-              </span>
-            </span>
+          <div className="border-line mt-4 border-t pt-4">
+            <div className="flex flex-wrap items-start gap-3">
+              {account?.avatar_url ? (
+                <img
+                  src={account.avatar_url}
+                  alt=""
+                  className="size-10 shrink-0 rounded-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <span className="bg-surface-2 grid size-10 shrink-0 place-items-center rounded-full">
+                  <Video size={15} aria-hidden className="text-faint" />
+                </span>
+              )}
 
-            <Button variant="secondary" size="sm" onClick={() => act.mutate('videos.refresh')} disabled={busy}>
-              <RefreshCw size={14} aria-hidden className={cn(busy && 'animate-spin')} />
-              Refresh
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setConfirmingDisconnect(true)}
-              disabled={busy}
-            >
-              <Unlink size={14} aria-hidden />
-              Disconnect
-            </Button>
+              {/* basis-40 so the buttons drop to a row of their own at ~375px
+                  rather than squeezing the name down to two characters. */}
+              <span className="min-w-0 flex-1 basis-40">
+                <span className="flex items-center gap-1.5">
+                  <span className="truncate font-semibold">
+                    {account?.display_name ?? 'Your TikTok'}
+                  </span>
+                  {account?.is_verified ? (
+                    <>
+                      <BadgeCheck size={15} aria-hidden className="text-accent shrink-0" />
+                      {/* The badge is a picture. Somebody on a screen reader
+                          gets the same fact in words. */}
+                      <span className="sr-only">Verified on TikTok</span>
+                    </>
+                  ) : null}
+                </span>
+
+                {account?.username ? <Handle account={account} /> : null}
+
+                <span className="text-muted mt-0.5 block text-[0.75rem]">
+                  {account?.last_synced_at
+                    ? `Updated ${new Date(account.last_synced_at).toLocaleString()}`
+                    : 'Not pulled in yet'}
+                </span>
+              </span>
+
+              <span className="flex shrink-0 flex-wrap gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => act.mutate('videos.refresh')}
+                  disabled={busy}
+                >
+                  <RefreshCw size={14} aria-hidden className={cn(busy && 'animate-spin')} />
+                  Refresh
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setConfirmingDisconnect(true)}
+                  disabled={busy}
+                >
+                  <Unlink size={14} aria-hidden />
+                  Disconnect
+                </Button>
+              </span>
+            </div>
+
+            {account ? <AccountStats account={account} /> : null}
           </div>
 
           {act.error ? (
@@ -228,6 +279,94 @@ export function TikTokConnection() {
         </>
       )}
     </section>
+  );
+}
+
+/**
+ * Was this scope actually granted?
+ *
+ * READ FROM THE CONNECTION, NEVER FROM `DISPLAY_SCOPES`. What we ask for and
+ * what we hold are different things: a creator can decline a single permission
+ * on TikTok's consent screen, and every connection made before 2026-08-26 was
+ * granted only `user.info.basic,video.list`. A token permanently carries the
+ * scopes it was minted with, so this row is the only honest answer.
+ */
+function granted(scope: string | undefined, want: string): boolean {
+  return (scope ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .includes(want);
+}
+
+/**
+ * Their @handle, linking to their TikTok profile.
+ *
+ * THE HREF IS THIRD-PARTY DATA GOING INTO THE DOM, so the scheme is checked
+ * rather than assumed. React escapes text but will happily render
+ * `href="javascript:..."`, and `profile_deep_link` arrives from an API response
+ * — the one string in this component that somebody else chooses. If it is not
+ * plain https the handle still shows, just not as a link.
+ */
+function Handle({ account }: { account: TikTokAccount }) {
+  const href = account.profile_deep_link;
+  const safe = href && /^https:\/\//i.test(href) ? href : null;
+  const handle = `@${account.username}`;
+
+  if (!safe) {
+    return <span className="text-muted block truncate text-[0.8125rem]">{handle}</span>;
+  }
+  return (
+    <a
+      href={safe}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-muted hover:text-accent block truncate text-[0.8125rem] transition-colors"
+    >
+      {handle}
+      <span className="sr-only"> — open this profile on TikTok in a new tab</span>
+    </a>
+  );
+}
+
+/**
+ * The account totals: followers, lifetime likes, how many videos they have.
+ *
+ * HIDDEN ENTIRELY when the stats permission was not granted, rather than shown
+ * as three dashes. Those are different statements — "TikTok did not tell us
+ * this number" and "you never gave us permission to ask" — and a row of dashes
+ * says the first while meaning the second, which reads as a product that is
+ * broken rather than one respecting a choice somebody made.
+ *
+ * A dash INSIDE the row still means the first thing, and that is correct: the
+ * permission is there, the number is not.
+ *
+ * NOT the same numbers as the video list below. These are the whole account,
+ * for its lifetime; those are one video each.
+ */
+function AccountStats({ account }: { account: TikTokAccount }) {
+  if (!granted(account.scope, 'user.info.stats')) return null;
+
+  return (
+    <dl className="border-line mt-4 grid grid-cols-3 gap-2 border-t pt-4">
+      <Stat label="Followers" value={account.follower_count} />
+      <Stat label="Likes" value={account.likes_count} />
+      <Stat label="Videos" value={account.video_count} />
+    </dl>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number | null }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-faint font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+        {label}
+      </dt>
+      <dd className="font-display wx-lining mt-0.5 text-[1.0625rem] font-semibold">
+        {/* A dash, not a zero. Being told you have no followers when nobody
+            asked is worse than being told we do not know. */}
+        {value === null ? <span className="text-faint">&ndash;</span> : compact(value)}
+      </dd>
+    </div>
   );
 }
 

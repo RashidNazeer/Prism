@@ -22,6 +22,26 @@ export interface TikTokAccount {
   open_id: string;
   display_name: string | null;
   avatar_url: string | null;
+
+  /*
+   * FROM user.info.profile, and EVERY ONE IS NULLABLE.
+   *
+   * Not defensive typing. A creator can decline a permission on TikTok's
+   * consent screen, and anything connected before 2026-08-26 was granted only
+   * `user.info.basic,video.list` — so "we were never told" is a real, common
+   * state that has to survive all the way to the screen rather than being
+   * flattened into an empty string on the way.
+   */
+  username: string | null;
+  profile_deep_link: string | null;
+  is_verified: boolean | null;
+
+  /** From user.info.stats. `null` means not known. NEVER read a null as zero. */
+  follower_count: number | null;
+  likes_count: number | null;
+  video_count: number | null;
+  profile_synced_at: string | null;
+
   scope: string;
   connected_at: string;
   last_synced_at: string | null;
@@ -44,8 +64,19 @@ export interface TikTokVideo {
   fetched_at: string;
 }
 
+/*
+ * NAMED, NEVER `select('*')`.
+ *
+ * The house rule about wide tables is only half of it. The other half is that a
+ * star would silently pick up whatever column is added to this table next, and
+ * this is a table whose whole design note says "readable by its owner, so
+ * anything in it is in the browser". A list you have to edit is a list somebody
+ * has to think about.
+ */
 const ACCOUNT_COLUMNS =
-  'creator_id, open_id, display_name, avatar_url, scope, connected_at, last_synced_at, last_error, revoked_at';
+  'creator_id, open_id, display_name, avatar_url, username, profile_deep_link, ' +
+  'is_verified, follower_count, likes_count, video_count, profile_synced_at, ' +
+  'scope, connected_at, last_synced_at, last_error, revoked_at';
 
 /**
  * Is this creator's TikTok connected, and as whom?

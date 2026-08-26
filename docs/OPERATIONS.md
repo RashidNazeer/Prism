@@ -1033,7 +1033,31 @@ secret come from developers.tiktok.com and are Rashid's to paste; the code
 `.trim()`s all three, because a pasted credential very often carries a newline.
 
 ```powershell
-pnpm verify:creator-tiktok   # 20 checks against dev. Needs SUPABASE_SERVICE_KEY
+pnpm verify:creator-tiktok   # 27 checks against dev. Needs SUPABASE_SERVICE_KEY
+pnpm verify:tiktok-card      # 18 checks in a real browser. Needs a server AND the key
+```
+
+**Fetching the service key on this machine, and the trap in it.** PowerShell 5.1
+does not unroll the array `ConvertFrom-Json` returns, so the obvious one-liner
+
+```powershell
+# WRONG. $_.name is the whole array of names, so the filter matches everything
+# and .api_key returns all four keys joined. Supabase then says "Invalid API key".
+$key = (supabase projects api-keys ... | ConvertFrom-Json |
+        Where-Object { $_.name -eq 'service_role' }).api_key
+```
+
+silently produces a key-shaped string that is four keys long. Build the array
+explicitly and **assert the shape before using it**, or the failure arrives much
+later looking like an auth bug:
+
+```powershell
+$arr = @()
+foreach ($item in (supabase projects api-keys --project-ref <ref> --output json |
+                   ConvertFrom-Json)) { $arr += $item }
+if ($arr.Count -eq 1 -and $arr[0] -is [array]) { $arr = $arr[0] }
+$key = [string]($arr | Where-Object { $_.name -eq 'service_role' }).api_key
+if ($key -notmatch '^eyJ' -or $key.Length -lt 100) { throw 'not a single JWT' }
 ```
 
 **The admin-only diagnostic**, when TikTok says something unhelpful:
@@ -1062,7 +1086,21 @@ are not.
 
 **Prod runs the SANDBOX key** (`sbaw…`) so the demo video can be recorded before
 approval; dev runs the production app key (`awxg…`). **After approval, prod must
-switch to the production key** or real creators cannot connect.
+switch to the production key** or real creators cannot connect. PARKED 27.
+
+**A SANDBOX KEEPS ITS OWN SCOPE LIST, exactly as it keeps its own redirect URI
+list.** Adding a scope to the app does NOT add it to the sandbox. Both lists
+have now bitten once each: the redirect list produced a misleading `client_key`
+error on the authorise page, and the scope list is the same trap one field over.
+Before recording anything against the sandbox, confirm all four scopes —
+`user.info.basic`, `user.info.profile`, `user.info.stats`, `video.list` — are
+enabled **on the sandbox**, not only on the app.
+
+**A WIDER SCOPE LIST DOES NOT REACH AN EXISTING CONNECTION.** A token
+permanently carries the scopes it was minted with, so after adding scopes a
+creator must **disconnect and reconnect** to get them. Nothing in the product
+can do this for them and nothing warns them — the card simply keeps hiding the
+totals strip, correctly, because the permission genuinely is not there.
 
 ## Launching an environment: what a migration does NOT carry
 

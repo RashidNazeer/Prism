@@ -28,6 +28,7 @@ import { corsHeaders, json } from '../_shared/cors.ts';
 import {
   authorizeUrl,
   displayCreds,
+  fetchUser,
   listVideos,
   refreshToken,
   revoke,
@@ -136,7 +137,14 @@ Deno.serve(async (req) => {
     const describe = (v: string) => ({
       length: v.length,
       trimmedLength: v.trim().length,
-      hasWhitespace: /s/.test(v),
+      /*
+       * `/\s/`, WITH THE BACKSLASH. This read `/s/` — a regex matching the
+       * LETTER s — so it answered "yes, whitespace" for any credential
+       * containing an s, which is most of them. Harmless only because it errs
+       * loud rather than quiet; the sibling bug in the same family (a check
+       * that passes when its subject is absent) is the one that costs days.
+       */
+      hasWhitespace: /\s/.test(v),
       prefix: v.trim().slice(0, 4),
       suffix: v.trim().slice(-2),
     });
@@ -305,6 +313,43 @@ Deno.serve(async (req) => {
         .eq('creator_id', creatorId);
       return reply({ error: 'TikTok would not renew the connection. Reconnect to fix it.' }, 502);
     }
+  }
+
+  /*
+   * THE PROFILE BLOCK IS RE-READ ON EVERY REFRESH, not frozen at connect time.
+   *
+   * A follower count that never moves is worse than no follower count: it looks
+   * like a live figure and is actually the number they had the day they linked
+   * their account. Same pass, same button, so "Refresh" means one thing.
+   *
+   * NON-FATAL, DELIBERATELY, and the ordering says why: the videos are what a
+   * creator pressed the button for. Losing the whole refresh because TikTok
+   * declined one profile field would trade the thing they wanted for the thing
+   * they did not ask about. The stale profile simply stays.
+   *
+   * `conn.scope` and not `DISPLAY_SCOPES`: this token carries whatever it was
+   * minted with, which for anything connected before 2026-08-26 is the narrower
+   * pair, and for a creator who declined a permission is narrower still.
+   */
+  try {
+    const who = await fetchUser(accessToken, conn.scope);
+    await admin
+      .from('creator_tiktok_connections')
+      .update({
+        display_name: who.display_name ?? null,
+        avatar_url: who.avatar_url ?? null,
+        username: who.username ?? null,
+        profile_deep_link: who.profile_deep_link ?? null,
+        is_verified: who.is_verified ?? null,
+        /* null, never 0. A wrong zero about your own account reads as true. */
+        follower_count: who.follower_count ?? null,
+        likes_count: who.likes_count ?? null,
+        video_count: who.video_count ?? null,
+        profile_synced_at: new Date().toISOString(),
+      })
+      .eq('creator_id', creatorId);
+  } catch {
+    /* the videos below are the job; a stale profile is not worth failing over */
   }
 
   try {

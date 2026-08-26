@@ -2415,10 +2415,29 @@ they sat correctly in the source AND the bundle.
 `src/components/creator/TikTokConnection.tsx` ·
 `src/routes/OAuthTikTokCreatorCallback.tsx` · `scripts/check-creator-tiktok.mjs`
 
-A creator connects their OWN TikTok account and sees views, likes, comments and
-shares for their own videos. **Working end to end on production since
-2026-08-26**, verified with a real account: connection stored, token stored,
-video figures correct, audit row written.
+A creator connects their OWN TikTok account and sees their profile, their
+follower count, and the views, likes, comments and shares on their own videos.
+**Working end to end on production since 2026-08-26**, verified with a real
+account: connection stored, token stored, video figures correct, audit row
+written.
+
+**FOUR SCOPES, AND THE LIST IS A CONTRACT WITH THREE PARTIES.**
+
+| scope | what it gives | where it shows |
+| --- | --- | --- |
+| `user.info.basic` | open id, display name, avatar | the name and face on the card |
+| `user.info.profile` | username, verified, profile link | the @handle and its badge |
+| `user.info.stats` | followers, lifetime likes, video count | the three totals |
+| `video.list` | per-video views, likes, comments, shares | the video rows |
+
+The code, the application on developers.tiktok.com, the consent list on the
+card and `/privacy` must all agree. **The bug that nearly shipped was invisible
+from inside the product:** the application asked for four scopes while
+`DISPLAY_SCOPES` requested two, so the consent screen looked right to everybody
+here while a reviewer comparing it with the application would have seen the
+mismatch at once. TikTok rejects in **both** directions — a scope requested and
+not demonstrated, and a scope on the application the app never uses.
+`verify:creator-tiktok` section [8] now pins the list.
 
 **THE SECOND TIKTOK INTEGRATION, and it shares nothing with the first.**
 
@@ -2468,8 +2487,41 @@ shared modules. Confusing them cost a whole round of scope applications on
    long for a 16 character key — a trailing newline from the paste. TikTok then
    says "client key not recognised", which reads exactly like a wrong key, so
    the natural response is to re-copy the same value and fail again.
+9. **THE user/info FIELD LIST IS BUILT FROM THE GRANTED SCOPE, NEVER FROM
+   `DISPLAY_SCOPES`.** Asking for a field whose scope was not granted does not
+   omit that field, it fails the WHOLE call with `scope_not_authorized`. Two
+   real cases make this constant: a creator can decline one permission on the
+   consent screen, and every token minted before 2026-08-26 carries only
+   `user.info.basic,video.list` — production included, because it runs the
+   sandbox key until approval. `fetchUser` reads `connections.scope`, and falls
+   back to the basic fields rather than failing, so widening the ask cannot
+   break connections that already exist.
+10. **A withheld figure is hidden or dashed, and the two are different.** No
+   permission granted → the totals strip is not rendered at all. Permission
+   granted but the number missing → a dash. Rendering three dashes for somebody
+   who never granted the scope tells them they have no followers, no likes and
+   no videos, which is a lie about their own account rather than an absence.
+11. **`likes_count` is `bigint`.** A large account's lifetime likes pass 2^31,
+   and an `integer` would overflow into silent nonsense on somebody's own
+   profile.
+12. **`profile_deep_link` is third-party data going into an `href`.** React
+   escapes text but renders `href="javascript:..."` happily, so the scheme is
+   checked before it becomes a link. Not a live threat from TikTok; it is the
+   one string on that card somebody else chooses.
 
-**Guard.** `pnpm verify:creator-tiktok`, 20 checks: the token is unreachable
-even by its owner, one creator cannot see another, the nonce is burned before
-the TikTok exchange, replays and expiries are refused, and a forged
-`creator_id` in the request body is ignored.
+**Guards, two of them.**
+
+`pnpm verify:creator-tiktok`, **27 checks** against the database and the Edge
+Functions: the token is unreachable even by its owner, one creator cannot see
+another's handle or follower count, the nonce is burned before the TikTok
+exchange, replays and expiries are refused, a forged `creator_id` in the request
+body is ignored — and section [8] reads the SOURCE, pinning `DISPLAY_SCOPES` to
+the four on the application and checking the consent list on the card still
+names what they read.
+
+`pnpm verify:tiktok-card`, **18 checks** in a real browser, because the card has
+a branch nothing else can reach: the totals strip is HIDDEN without
+`user.info.stats` and SHOWN with it. Those two look identical in the database
+and identical from the Edge Function. Needs `pnpm build` then `pnpm preview`.
+It seeds `likes_count: null` on purpose so the dash branch is exercised rather
+than assumed, and asserts 375 / 768 / 1440 with no sideways scroll.

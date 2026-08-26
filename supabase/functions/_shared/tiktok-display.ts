@@ -60,15 +60,31 @@ export function displayCreds(): DisplayCreds {
 /**
  * The scopes we ask for, and the ONLY ones.
  *
- * `user.info.basic` is the baseline every app gets and is what tells us which
- * account connected. `video.list` is the one that carries the view, like,
- * comment and share counts, and the one an app reviewer actually looks at.
+ *   user.info.basic    which account this is: open id, display name, avatar
+ *   user.info.profile  the @handle, the verified badge, the link to their page
+ *   user.info.stats    followers, lifetime likes, how many videos they have
+ *   video.list         the per-video views, likes, comments and shares
  *
- * NOTHING ELSE GOES IN HERE without a matching change to the demo video.
- * TikTok's review guidelines: "All selected products and scopes must be clearly
- * demonstrated in the video." An unused scope is a rejection, not a spare.
+ * THIS LIST AND THE APPLICATION MUST AGREE, IN BOTH DIRECTIONS. TikTok's review
+ * guidelines require every requested scope to be demonstrated in the demo
+ * video, and "requests permissions it does not use" is one of their listed
+ * rejection reasons. So an extra scope here is a rejection, and an extra scope
+ * on the APPLICATION that is missing here is also a rejection — the second is
+ * the one that nearly shipped, because it is invisible from inside the code.
+ *
+ * The consent screen a creator sees is generated from THIS ARRAY. If it does
+ * not match the scope list on developers.tiktok.com, the reviewer watching the
+ * demo video sees the mismatch before anybody here does.
+ *
+ * NOTHING GOES IN OR OUT without a matching change to the application, the demo
+ * video, the columns on `creator_tiktok_connections`, and `/privacy`.
  */
-export const DISPLAY_SCOPES = ['user.info.basic', 'video.list'] as const;
+export const DISPLAY_SCOPES = [
+  'user.info.basic',
+  'user.info.profile',
+  'user.info.stats',
+  'video.list',
+] as const;
 
 /** Where to send a creator to approve us. */
 export function authorizeUrl(creds: DisplayCreds, state: string): string {
@@ -134,22 +150,93 @@ export function refreshToken(creds: DisplayCreds, refresh: string) {
   );
 }
 
-/** Who connected, so the screen can say "connected as @handle". */
-export async function fetchUser(accessToken: string) {
-  const fields = 'open_id,union_id,display_name,avatar_url';
-  const res = await fetch(`${API_HOST}/v2/user/info/?fields=${fields}`, {
+/*
+ * WHICH user/info FIELDS EACH SCOPE UNLOCKS.
+ *
+ * Asking for a field whose scope was not granted does not omit that field — it
+ * FAILS THE WHOLE CALL with `scope_not_authorized`. So the field list cannot be
+ * a constant; it has to be built from the scopes the token in hand actually
+ * carries, which is why `fetchUser` takes them as an argument.
+ *
+ * `bio_description` and `following_count` arrive with these same scopes and are
+ * DELIBERATELY NOT REQUESTED. Nothing displays them, and a field nothing
+ * displays is one we cannot justify holding — /privacy enumerates what we keep,
+ * and this list is what makes that page true.
+ */
+const BASIC_FIELDS = ['open_id', 'union_id', 'display_name', 'avatar_url'] as const;
+const PROFILE_FIELDS = ['username', 'profile_deep_link', 'is_verified'] as const;
+const STATS_FIELDS = ['follower_count', 'likes_count', 'video_count'] as const;
+
+export type DisplayUser = {
+  open_id?: string;
+  union_id?: string;
+  display_name?: string;
+  avatar_url?: string;
+  username?: string;
+  profile_deep_link?: string;
+  is_verified?: boolean;
+  follower_count?: number;
+  likes_count?: number;
+  video_count?: number;
+};
+
+/** The fields this particular token is allowed to ask about. */
+export function userFieldsFor(grantedScope?: string | null): string[] {
+  const granted = new Set(
+    (grantedScope ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+  );
+  const fields: string[] = [...BASIC_FIELDS];
+  if (granted.has('user.info.profile')) fields.push(...PROFILE_FIELDS);
+  if (granted.has('user.info.stats')) fields.push(...STATS_FIELDS);
+  return fields;
+}
+
+async function userInfoCall(accessToken: string, fields: string[]): Promise<DisplayUser> {
+  const res = await fetch(`${API_HOST}/v2/user/info/?fields=${fields.join(',')}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   const json = await res.json().catch(() => null);
   if (json?.error?.code && json.error.code !== 'ok') {
     throw new Error(`TikTok user info failed: ${json.error.code} ${json.error.message ?? ''}`.trim());
   }
-  return (json?.data?.user ?? {}) as {
-    open_id?: string;
-    union_id?: string;
-    display_name?: string;
-    avatar_url?: string;
-  };
+  return (json?.data?.user ?? {}) as DisplayUser;
+}
+
+/**
+ * Who connected: enough to say "connected as @handle" with their own numbers.
+ *
+ * FALLS BACK TO THE BASIC FIELDS RATHER THAN FAILING, and that is the whole
+ * reason this is not one call.
+ *
+ * Tokens minted before 2026-08-26 carry only `user.info.basic,video.list`,
+ * because that is all the code asked for then. Production is one of them: it
+ * runs the SANDBOX client key until TikTok approves the app. Without this
+ * fallback, deploying the wider field list would break every existing
+ * connection at once — a live creator's profile card would start erroring over
+ * a scope that was never their fault.
+ *
+ * The ORIGINAL error is what gets thrown if even the narrow call fails, because
+ * `scope_not_authorized` names the actual problem while the retry's error would
+ * only describe the symptom.
+ */
+export async function fetchUser(
+  accessToken: string,
+  grantedScope?: string | null
+): Promise<DisplayUser> {
+  const wanted = userFieldsFor(grantedScope);
+  try {
+    return await userInfoCall(accessToken, wanted);
+  } catch (e) {
+    if (wanted.length === BASIC_FIELDS.length) throw e;
+    try {
+      return await userInfoCall(accessToken, [...BASIC_FIELDS]);
+    } catch {
+      throw e;
+    }
+  }
 }
 
 export type DisplayVideo = {

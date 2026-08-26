@@ -96,9 +96,16 @@ Deno.serve(async (req) => {
     return reply({ error: (e as Error).message }, 502);
   }
 
+  /*
+   * THE GRANTED SCOPE DECIDES WHICH FIELDS WE MAY ASK FOR, and it comes from
+   * TikTok rather than from `DISPLAY_SCOPES`. A creator can decline individual
+   * permissions on the consent screen, and a token minted before a scope
+   * existed simply does not carry it; asking about a field outside the grant
+   * fails the WHOLE call rather than omitting that one field.
+   */
   let who: Awaited<ReturnType<typeof fetchUser>> = {};
   try {
-    who = await fetchUser(token.access_token);
+    who = await fetchUser(token.access_token, token.scope);
   } catch {
     /*
      * NOT FATAL. The token is good, which is the part that matters; we simply
@@ -120,6 +127,24 @@ Deno.serve(async (req) => {
       union_id: who.union_id ?? null,
       display_name: who.display_name ?? null,
       avatar_url: who.avatar_url ?? null,
+
+      /*
+       * FROM user.info.profile AND user.info.stats, and every one is `?? null`
+       * rather than `?? 0` or `?? ''`.
+       *
+       * A creator may decline these on the consent screen, and an older token
+       * never had them, so "not known" has to survive as its own state all the
+       * way to the card. A zero follower count is a number somebody would
+       * believe about their own account, and being told you have no followers
+       * when we simply did not ask is worse than a dash.
+       */
+      username: who.username ?? null,
+      profile_deep_link: who.profile_deep_link ?? null,
+      is_verified: who.is_verified ?? null,
+      follower_count: who.follower_count ?? null,
+      likes_count: who.likes_count ?? null,
+      video_count: who.video_count ?? null,
+      profile_synced_at: who.open_id || who.display_name ? nowIso : null,
       /*
        * WHAT TIKTOK SAYS THEY GRANTED, not what we asked for. A token
        * permanently carries the scopes it was minted with, so the only honest
@@ -163,7 +188,11 @@ Deno.serve(async (req) => {
     subject_id: creatorId,
     /* Names and scopes, never the token. The schema comment on audit_log says
      * "never put secrets in here" and it means it. */
-    detail: { display_name: who.display_name ?? null, scope: token.scope ?? '' },
+    detail: {
+      display_name: who.display_name ?? null,
+      username: who.username ?? null,
+      scope: token.scope ?? '',
+    },
   });
 
   return reply({ ok: true, displayName: who.display_name ?? null });

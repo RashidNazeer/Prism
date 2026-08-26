@@ -1591,3 +1591,43 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   app and the demo video must be recorded on the domain the Website URL names.
   Swapping to the production key after approval is a required step, recorded in
   PARKED 27.
+- 2026-08-26: **Four Display API scopes, not two. This REVERSES the decision
+  taken earlier the same day**, and the reason is worth keeping because the
+  original reasoning was sound and still lost.
+
+  The earlier entry said only `user.info.basic` and `video.list` are requested,
+  since TikTok requires every scope to be demonstrated and each extra one is
+  another thing a first review can reject. That is true. What it did not account
+  for is that the APPLICATION had already been submitted asking for four:
+  `video.list` alone was refused at the portal — Login Kit needs an identity
+  scope beside it — and rather than adding `user.info.basic` alone, all three
+  `user.info` scopes went on.
+
+  That left the application asking for four while the code requested two, which
+  TikTok rejects just as surely as the opposite: "requests permissions it does
+  not use" is one of their listed reasons, and the consent screen in the demo
+  video would visibly have shown two permissions against an application asking
+  for four.
+
+  Closing it by REMOVING the two extra scopes was the smaller change and was
+  offered. Rashid chose to build them, and it is the better answer on the
+  merits: a @handle, a verified badge and a follower count are things this
+  product wants anyway — a brand manager judging which offers suit a creator is
+  asking exactly that question — so the scopes are now used rather than merely
+  justified.
+
+  **The rule this leaves behind:** the scope list is a contract between four
+  places — `DISPLAY_SCOPES`, the application, the consent list on the card, and
+  `/privacy`. Changing one without the others is a rejection or a lie.
+  `verify:creator-tiktok` [8] fails the build side of that.
+- 2026-08-26: **Only fields we display are requested.** `bio_description` and
+  `following_count` arrive free with these same scopes and are deliberately not
+  asked for. Data nothing displays is data we cannot justify holding, and
+  `/privacy` enumerates what we keep — that page is only true if the field list
+  stays this short.
+- 2026-08-26: **The profile block is re-read on every refresh, not frozen at
+  connect time.** A follower count that never moves is worse than none: it looks
+  live and is actually the number they had the day they linked. It is non-fatal
+  in that pass, deliberately — the videos are what somebody pressed the button
+  for, and losing them because TikTok declined one profile field would trade the
+  thing they wanted for the thing they did not ask about.

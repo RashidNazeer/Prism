@@ -108,7 +108,20 @@ try {
     creator_id: A.id,
     open_id: `open-${stamp}`,
     display_name: 'Owner Account',
-    scope: 'user.info.basic,video.list',
+    /*
+     * THE FULL FOUR, because that is what the app now asks for and what section
+     * [7] reads back. A connection stored with the narrower legacy pair would
+     * make every profile assertion below pass on an absent column instead of a
+     * present one.
+     */
+    scope: 'user.info.basic,user.info.profile,user.info.stats,video.list',
+    username: 'owner_handle',
+    profile_deep_link: 'https://www.tiktok.com/@owner_handle',
+    is_verified: true,
+    follower_count: 4321,
+    likes_count: 987_654,
+    video_count: 12,
+    profile_synced_at: new Date().toISOString(),
   });
   /*
    * THE SETUP IS PROVEN BEFORE ANYTHING IS ASSERTED ABOUT IT.
@@ -310,6 +323,113 @@ try {
       else bad('THE NONCE WAS MINTED FOR THE VICTIM', JSON.stringify(minted));
     }
   }
+  console.log('\n[7] The profile and stats columns, and who may read them');
+  {
+    /*
+     * PROVE THE COLUMNS ARE THERE BEFORE ASSERTING ANYTHING ABOUT THEM.
+     *
+     * Every check below this point is about a value in a column added on
+     * 2026-08-26. Run against a database without that migration, a naive
+     * version would report "the spy cannot read the follower count" and pass —
+     * on a column that does not exist. That is the exact shape of the bug that
+     * has now bitten this repo four times, so the setup is verified first and
+     * the whole section is failed loudly if it is not there.
+     */
+    const { data: seed, error } = await admin
+      .from('creator_tiktok_connections')
+      .select('username, is_verified, follower_count, likes_count, video_count')
+      .eq('creator_id', A.id)
+      .maybeSingle();
+
+    if (error || !seed) {
+      bad('setup: the profile columns did not read back — every check in [7] would be vacuous',
+        error ? `${error.code} ${error.message}` : 'no row');
+    } else if (seed.follower_count !== 4321 || seed.username !== 'owner_handle' || seed.is_verified !== true) {
+      bad('setup: the profile columns did not round-trip', JSON.stringify(seed));
+    } else {
+      ok('the profile and stats columns exist and hold what was written');
+
+      /* bigint: a large account's lifetime likes must survive intact. */
+      if (seed.likes_count === 987_654) ok('likes_count round-trips (bigint, not a truncated int)');
+      else bad('likes_count came back wrong', String(seed.likes_count));
+    }
+  }
+  {
+    const { data } = await owner.client
+      .from('creator_tiktok_connections')
+      .select('username, follower_count, likes_count, video_count, is_verified')
+      .eq('creator_id', A.id)
+      .maybeSingle();
+    if (data?.follower_count === 4321 && data?.username === 'owner_handle') {
+      ok('the owner reads their own follower count and handle');
+    } else {
+      bad('the owner cannot read their own profile figures', JSON.stringify(data));
+    }
+  }
+  {
+    /* And the spy still gets nothing, now that there is more to want. */
+    const { data } = await spy.client
+      .from('creator_tiktok_connections')
+      .select('username, follower_count, profile_deep_link');
+    if (!data || data.length === 0) ok("a creator cannot read another creator's handle or follower count");
+    else bad(`the spy read ${data.length} profile row(s)`, JSON.stringify(data).slice(0, 200));
+  }
+
+  console.log('\n[8] The scope contract: the code, the consent list and the application agree');
+  {
+    /*
+     * A SOURCE-LEVEL CHECK, and the reason it exists is the bug it would have
+     * caught: the application on developers.tiktok.com asked for FOUR scopes
+     * while the code requested two. Nothing in the running product could see
+     * that — the consent screen is built from the code, so it looked correct
+     * from the inside while a reviewer comparing it to the application would
+     * have seen the mismatch immediately.
+     *
+     * TikTok rejects both directions: a scope requested and not demonstrated,
+     * and a scope on the application that the app never uses. So the list is
+     * pinned here, and changing it has to be a deliberate act that also updates
+     * the application, the demo video and /privacy.
+     */
+    const EXPECTED = ['user.info.basic', 'user.info.profile', 'user.info.stats', 'video.list'];
+
+    const src = readFileSync('supabase/functions/_shared/tiktok-display.ts', 'utf8');
+    const block = src.match(/export const DISPLAY_SCOPES = \[([^\]]*)\]/);
+    if (!block) {
+      bad('DISPLAY_SCOPES could not be found at all — this check cannot run');
+    } else {
+      const found = [...block[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
+      const same =
+        found.length === EXPECTED.length && EXPECTED.every((x, i) => found[i] === x);
+      if (same) ok(`DISPLAY_SCOPES is exactly the four on the application: ${found.join(', ')}`);
+      else bad('DISPLAY_SCOPES no longer matches the submitted application', `code has: ${found.join(', ') || '(none)'}`);
+    }
+
+    /*
+     * The field list must stay GATED. Requesting a profile field on a token
+     * that never got that scope fails the whole user/info call, which is how a
+     * connection made before today would break.
+     */
+    if (/granted\.has\('user\.info\.profile'\)/.test(src) && /granted\.has\('user\.info\.stats'\)/.test(src)) {
+      ok('the user/info field list is gated on the scopes actually granted');
+    } else {
+      bad('the user/info field list is no longer gated on the granted scope');
+    }
+
+    /*
+     * AND THE PROMISE ON THE SCREEN MUST KEEP UP. This list is what somebody
+     * reads while deciding to trust us, and it silently became untrue the
+     * moment two scopes were added.
+     */
+    const card = readFileSync('src/components/creator/TikTokConnection.tsx', 'utf8');
+    if (card.length < 1000) {
+      bad('the connection card could not be read — the promise check would be vacuous');
+    } else if (/follower count/i.test(card) && /view, like, comment and share/i.test(card)) {
+      ok('the consent list on the card names the profile AND the video permissions');
+    } else {
+      bad('the card no longer tells a creator what the requested scopes read');
+    }
+  }
+
 } finally {
   await admin.from('creator_tiktok_oauth_states').delete().in('creator_id', made);
   for (const id of made) await admin.auth.admin.deleteUser(id);

@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   graphql_public: {
     Tables: {
@@ -332,9 +332,11 @@ export type Database = {
       }
       brands: {
         Row: {
+          brand_color: string | null
           created_at: string
           created_by: string | null
           description: string | null
+          hero_url: string | null
           id: string
           is_active: boolean
           logo_url: string | null
@@ -342,12 +344,15 @@ export type Database = {
           slug: string
           store_id: string
           tagline: string | null
+          theme: Json | null
           updated_at: string
         }
         Insert: {
+          brand_color?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          hero_url?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
@@ -355,12 +360,15 @@ export type Database = {
           slug: string
           store_id: string
           tagline?: string | null
+          theme?: Json | null
           updated_at?: string
         }
         Update: {
+          brand_color?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          hero_url?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
@@ -368,6 +376,7 @@ export type Database = {
           slug?: string
           store_id?: string
           tagline?: string | null
+          theme?: Json | null
           updated_at?: string
         }
         Relationships: [
@@ -1728,6 +1737,236 @@ export type Database = {
           },
         ]
       }
+      creator_tiktok_connections: {
+        Row: {
+          avatar_url: string | null
+          connected_at: string
+          creator_id: string
+          display_name: string | null
+          follower_count: number | null
+          is_verified: boolean | null
+          last_error: string | null
+          last_synced_at: string | null
+          likes_count: number | null
+          open_id: string
+          profile_deep_link: string | null
+          profile_synced_at: string | null
+          revoked_at: string | null
+          scope: string
+          union_id: string | null
+          username: string | null
+          video_count: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          connected_at?: string
+          creator_id: string
+          display_name?: string | null
+          follower_count?: number | null
+          is_verified?: boolean | null
+          last_error?: string | null
+          last_synced_at?: string | null
+          likes_count?: number | null
+          open_id: string
+          profile_deep_link?: string | null
+          profile_synced_at?: string | null
+          revoked_at?: string | null
+          scope?: string
+          union_id?: string | null
+          username?: string | null
+          video_count?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          connected_at?: string
+          creator_id?: string
+          display_name?: string | null
+          follower_count?: number | null
+          is_verified?: boolean | null
+          last_error?: string | null
+          last_synced_at?: string | null
+          likes_count?: number | null
+          open_id?: string
+          profile_deep_link?: string | null
+          profile_synced_at?: string | null
+          revoked_at?: string | null
+          scope?: string
+          union_id?: string | null
+          username?: string | null
+          video_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_tiktok_connections_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: true
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "creator_tiktok_connections_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: true
+            referencedRelation: "creator_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_tiktok_connections_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_tiktok_oauth_states: {
+        Row: {
+          created_at: string
+          creator_id: string
+          expires_at: string
+          state: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          expires_at: string
+          state: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          expires_at?: string
+          state?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_tiktok_oauth_states_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "creator_tiktok_oauth_states_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_tiktok_oauth_states_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_tiktok_tokens: {
+        Row: {
+          access_expires_at: string | null
+          access_token: string
+          creator_id: string
+          refresh_expires_at: string | null
+          refresh_token: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_expires_at?: string | null
+          access_token: string
+          creator_id: string
+          refresh_expires_at?: string | null
+          refresh_token?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_expires_at?: string | null
+          access_token?: string
+          creator_id?: string
+          refresh_expires_at?: string | null
+          refresh_token?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_tiktok_tokens_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: true
+            referencedRelation: "creator_tiktok_connections"
+            referencedColumns: ["creator_id"]
+          },
+        ]
+      }
+      creator_tiktok_videos: {
+        Row: {
+          comment_count: number | null
+          cover_image_url: string | null
+          creator_id: string
+          duration: number | null
+          fetched_at: string
+          like_count: number | null
+          posted_at: string | null
+          share_count: number | null
+          share_url: string | null
+          title: string | null
+          video_id: string
+          view_count: number | null
+        }
+        Insert: {
+          comment_count?: number | null
+          cover_image_url?: string | null
+          creator_id: string
+          duration?: number | null
+          fetched_at?: string
+          like_count?: number | null
+          posted_at?: string | null
+          share_count?: number | null
+          share_url?: string | null
+          title?: string | null
+          video_id: string
+          view_count?: number | null
+        }
+        Update: {
+          comment_count?: number | null
+          cover_image_url?: string | null
+          creator_id?: string
+          duration?: number | null
+          fetched_at?: string
+          like_count?: number | null
+          posted_at?: string | null
+          share_count?: number | null
+          share_url?: string | null
+          title?: string | null
+          video_id?: string
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_tiktok_videos_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_avatar_queue"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "creator_tiktok_videos_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_tiktok_videos_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offer_applications: {
         Row: {
           brand_id: string
@@ -2977,6 +3216,7 @@ export type Database = {
         Args: { p_budget: number; p_contest_id: string; p_currency: string }
         Returns: undefined
       }
+      brand_theme_ok: { Args: { p: Json }; Returns: boolean }
       can_see_offer: {
         Args: {
           p_kind: Database["public"]["Enums"]["offer_kind"]
@@ -3053,6 +3293,7 @@ export type Database = {
           videos: number
         }[]
       }
+      creator_tiktok_sweep_states: { Args: never; Returns: undefined }
       creator_video_performance: {
         Args: {
           p_brand_id?: string
@@ -3249,10 +3490,13 @@ export type Database = {
       save_brand_about: {
         Args: {
           p_actor_id: string
+          p_brand_color?: string
           p_brand_id: string
           p_description?: string
+          p_hero_url?: string
           p_logo_url?: string
           p_tagline?: string
+          p_theme?: Json
         }
         Returns: Json
       }
@@ -3422,7 +3666,10 @@ export type Database = {
       }
       tiktok_days_to_backfill: { Args: never; Returns: number }
       tiktok_posted_at: { Args: { p_item_id: string }; Returns: string }
-      tiktok_run_nightly_sync: { Args: { p_days?: number }; Returns: number }
+      tiktok_run_nightly_sync: {
+        Args: { p_days?: number; p_refresh_days?: number }
+        Returns: number
+      }
       tiktok_set_sync_secret: { Args: { p_secret: string }; Returns: undefined }
       tiktok_set_sync_url: { Args: { p_url: string }; Returns: undefined }
       update_content: {

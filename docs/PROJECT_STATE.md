@@ -2,39 +2,47 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-26 by /precompact.**
+**Recorded 2026-08-26 (evening).**
 
-Rashid asked for this next, in his words: **"i will come to this prod key thing
-later"**.
+**HE IS SUBMITTING THE TIKTOK APP FOR REVIEW.** The build below went in
+mid-submission and is on DEV only.
 
-That is **PARKED 27**, the last step of the TikTok Display API app: after TikTok
-approves it, production must stop using the SANDBOX TikTok key and start using
-the APP'S OWN key. He asked which key that meant, because "the production key"
-was ambiguous between "the key for our prod site" and "the non-sandbox
-credential". PARKED 27 now names it explicitly, with the two traps: the
-identification is inferred from the `sbaw`/`awxg` prefixes and must be confirmed
-in the portal, and the app keeps a redirect URI list separate from the
-sandbox's.
+**THE NEXT ACTION IS TO SHIP IT TO PRODUCTION**, because the demo video has to
+be recorded on `wurxmediahub.vercel.app` and prod is still on the two-scope
+build. Ask first: prod changes only when he says so, and this is a prod change.
+The full sequence, and the order matters, is at the top of **PARKED 27**.
 
-**It is NOT actionable yet.** It is gated on TikTok approving the app, which is
-gated on him recording and submitting the demo video. Nothing to do until either
-happens.
+**WHAT CHANGED AND WHY.** His TikTok application asks for FOUR scopes —
+`user.info.basic`, `user.info.profile`, `user.info.stats`, `video.list` — because
+`video.list` alone was refused at the portal and he added all three user.info
+scopes rather than just the one that was needed. The code requested TWO. That
+mismatch is a listed TikTok rejection reason, and the consent screen in the demo
+video would have shown two permissions against an application asking for four.
+Offered both fixes; **he chose to build the extra two rather than trim the
+application**, which is the better answer anyway — a @handle, a verified badge
+and a follower count are things a brand manager judging offers actually wants.
 
-**Before starting it, ask him:** "Compaction done. Shall I move ahead with the
-production TikTok key swap?" Wait for a yes. Do not begin unprompted, and do not
-begin at all if he has not said the app was approved.
+Built, on dev: six columns on `creator_tiktok_connections`, a user/info field
+list derived from the scope TikTok actually GRANTED (with a fallback to the
+basic fields, so existing connections cannot break), the profile block re-read
+on every refresh rather than frozen at connect time, and the card showing the
+@handle, verified badge and a followers / likes / videos strip. Two suites:
+`verify:creator-tiktok` 20 → **27**, plus a new `verify:tiktok-card`, **18**
+checks in a real browser. Both green. `pnpm build` passes, no console errors,
+375 / 768 / 1440 all clean.
 
-**WHERE HE ACTUALLY WAS:** about to record the demo video. The creator TikTok
-connection works end to end **on production**, proven with his own account:
-connected as "Code Buddy", token stored, a video reading 1241 views / 65 likes /
-4 comments / 0 shares, audit row written. Nothing blocks the recording. The shot
-list is in FEATURE_MAP and on the artifact sheet he has open.
+**THE THREE THINGS THAT WILL BE FORGOTTEN**, all in PARKED 27:
 
-**If he asks what to put in the TikTok forms:** name `Wurx Media Hub`, category
-Business, the 115-character description, **Login Kit as the only product**,
-**`video.list` as the only scope**, the 832-character review text, and the five
-URLs. All in FEATURE_MAP. **Do not add scopes or products** — TikTok requires
-every one to be demonstrated on camera.
+1. **A sandbox keeps its own scope list**, separate from the app's. Adding a
+   scope to the app does not add it to the sandbox. The sibling trap — the
+   sandbox's own redirect URI list — already cost an afternoon as a misleading
+   `client_key` error.
+2. **He must disconnect and reconnect on production** after the deploy. A token
+   carries the scopes it was minted with forever, so "Code Buddy" will keep
+   showing no totals strip until it is re-minted. That is correct behaviour, not
+   a bug, and it will look like one.
+3. **After TikTok approves, prod switches from the sandbox key `sbaw…6e` to the
+   app's own `awxg…7g`** and its secret. Still not actionable until approval.
 
 **Still unanswered, asked twice, do not guess:** production is EMPTY apart from
 his admin account (`rashid@wurxmedia.com`, credentials in `C:\Users\RA_shid\.wurx\prod-admin-setup.txt`).
@@ -42,28 +50,16 @@ He said "we will shift all our data to prod"; his own standing rule is that prod
 never gets test data, and dev's 41 creators share the password `1234567890`.
 **PARKED 30a.**
 
-**What this session did (2026-08-26).**
+**Earlier on 2026-08-26:** `/terms` and `/privacy` written from a four-way repo
+inventory (which produced **PARKED 29**, five findings, the first being that
+`applications.review_note` is readable by the applicant it is about); the first
+production launch, 58 migrations and 10 Edge Functions; and the creator TikTok
+connection itself.
 
-1. **`/terms` and `/privacy`**, written from a four-way inventory of the repo,
-   because TikTok will not accept an app without them. That inventory caught a
-   flat falsehood in my first draft and produced **PARKED 29**, five findings —
-   the first being that `applications.review_note` is readable by the applicant
-   it is about.
-2. **The first production launch.** 58 migrations, 10 Edge Functions, auth
-   configured, frontend last. OPERATIONS, "Launching an environment".
-3. **The creator TikTok connection**, PARKED 27, working on production.
-4. **Six new suites:** `verify:legal`, `verify:prod-ready`, `verify:signin`,
-   `verify:creator-tiktok`, `verify:brand-theme`, plus `shots-brand-look`.
-
-**FOUR OF MY OWN CHECKS LIED IN THE REASSURING DIRECTION THIS SESSION**, and one
-statement to him did too: I said PARKED 27 had been corrected to name the key
-when the edit had never run. **Say a thing is done only after the tool call that
-does it has returned.** The four checks: one read `role` instead of `user_role`
-and declared the auth hook dead on a live launch, twice; one treated "no error I
-recognise" as proof an Edge Function was deployed, on a project with zero
-functions; one asserted a token was unreachable while the table was empty
-because its own setup had failed; one read a TikTok 302-to-login as
-"credentials accepted" when TikTok validates nothing at that point.
+**FIVE OF MY OWN CHECKS LIED IN THE REASSURING DIRECTION TODAY**, plus one
+statement to him. The full catalogue is in the `checks-that-lie` memory. The
+short version: a check is worthless unless it fails when its subject is absent,
+and **say a thing is done only after the tool call that does it has returned.**
 
 **Do not re-explore the codebase.** This file, then PARKED, then only what the
 chosen job names.

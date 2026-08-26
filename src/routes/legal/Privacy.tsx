@@ -110,22 +110,46 @@ export function Privacy() {
 
       <h3>Your TikTok account, if you connect it</h3>
       <p>
-        <strong>This is not available yet and this section describes what it will do when it
-        is.</strong> If you choose to connect your own TikTok account, we receive an access token
-        and your basic TikTok profile, and we read the list of your own public videos together
-        with their view, like, comment and share counts. We use those figures to show you how the
-        videos you submitted performed.
+        If you choose to connect your own TikTok account, we receive an access token and read
+        two things: your public profile, and the list of your own videos. We use them to show
+        you, on your profile page, who is connected and how your videos have done.
+      </p>
+      <p>Exactly what we store, and nothing beyond this list:</p>
+      <ul>
+        <li>
+          <strong>Your profile.</strong> Your TikTok display name, your handle, your profile
+          picture, whether your account is verified, the link to your profile, and TikTok&rsquo;s
+          own identifier for your account.
+        </li>
+        <li>
+          <strong>Your account totals.</strong> Your follower count, the total likes across your
+          account, and how many videos you have posted.
+        </li>
+        <li>
+          <strong>Your videos.</strong> For each of your own videos: its title, thumbnail, link,
+          length, when you posted it, and its view, like, comment and share counts.
+        </li>
+      </ul>
+      <p>
+        TikTok would also give us your bio and the number of accounts you follow. We do not ask
+        for either, because we do not show them anywhere.
       </p>
       <ul>
         <li>Connecting is your choice, and nothing else on the platform depends on it.</li>
         <li>We only ever read <strong>your own</strong> account. We never read anybody else&rsquo;s.</li>
         <li>
           We never post, edit or delete anything on TikTok. The connection is read-only, and the
-          permission we ask for cannot do those things.
+          permissions we ask for cannot do those things.
+        </li>
+        <li>
+          <strong>These are not the same numbers as the sales figures on My numbers.</strong> The
+          figures here are TikTok&rsquo;s own totals for a whole video. My numbers counts only
+          what the advertising behind a video brought in. Both are true and they will never add
+          up against each other.
         </li>
         <li>
           You can disconnect from the same screen you connected on. When you do, we delete the
-          token and stop reading anything.
+          token, delete the video figures we pulled in, and stop reading anything.
         </li>
       </ul>
 
