@@ -864,9 +864,30 @@ row written. See FEATURE_MAP, "The creator TikTok connection".
   shot list. mp4/mov, under 50 MB.
 - **Submit the app for review.** Every field is worked out; the values live in
   the artifact sheet and in FEATURE_MAP.
-- **AFTER APPROVAL: switch prod from the sandbox key to the production key**, or
-  real creators cannot connect. Prod deliberately runs `sbaw…` today because
-  only sandbox auth completes before approval.
+- **AFTER APPROVAL: switch production to the APP'S OWN TikTok key.** Rashid
+  asked which key that means, and "the production key" was too vague, so name it
+  every time:
+
+  | our site | TikTok credential it holds today |
+  | --- | --- |
+  | `wurxmediahubdev.vercel.app` | the APP's own key, `awxg…7g`, 16 chars |
+  | `wurxmediahub.vercel.app` | the SANDBOX key, `sbaw…6e`, 18 chars |
+
+  The switch is: move the `awxg…7g` **key AND its secret** onto production,
+  replacing the `sbaw…` pair. It is not a new credential — it is the one already
+  on dev, found at developers.tiktok.com under the app's own page, NOT inside a
+  sandbox.
+
+  **Two things that will bite:**
+  - The identification is INFERRED from the prefix (`sbaw` is TikTok's sandbox
+    convention) and the differing lengths. Neither value has ever been seen in
+    full. **Confirm in the portal that the app's own page shows a key starting
+    `awxg` and ending `7g` before swapping.**
+  - **The app keeps its own redirect URI list, separate from the sandbox's.**
+    `https://wurxmediahub.vercel.app/oauth/tiktok-creator/callback` must be in
+    the APP's list too, or the swap produces the same misleading `client_key`
+    error the sandbox produced — this time on the live app, with real creators
+    watching.
 - **Then decide where the figures belong.** They are on the profile card because
   that is what the demo video needed. Whether they also belong beside a
   submitted video on Content, or on My numbers, is a product question nobody has

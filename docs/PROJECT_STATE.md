@@ -2,53 +2,68 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-26.**
+**Recorded 2026-08-26 by /precompact.**
 
-**HE IS ABOUT TO RECORD THE TIKTOK DEMO VIDEO.** The creator TikTok connection
-works end to end on PRODUCTION, proven with his own account: connected as "Code
-Buddy", token stored, a video reading 1241 views / 65 likes / 4 comments / 0
-shares. Nothing is blocking him but pressing record.
+Rashid asked for this next, in his words: **"i will come to this prod key thing
+later"**.
 
-**If he asks what to put in the TikTok forms**, every value is on the artifact
-sheet he has, and repeated in FEATURE_MAP: name `Wurx Media Hub`, category
-Business, the 115-character description, Login Kit as the only product,
-`video.list` as the only scope, the 832-character review text, and the five
-URLs. **Do not add scopes or products** — TikTok requires every one to be
-demonstrated on camera.
+That is **PARKED 27**, the last step of the TikTok Display API app: after TikTok
+approves it, production must stop using the SANDBOX TikTok key and start using
+the APP'S OWN key. He asked which key that meant, because "the production key"
+was ambiguous between "the key for our prod site" and "the non-sandbox
+credential". PARKED 27 now names it explicitly, with the two traps: the
+identification is inferred from the `sbaw`/`awxg` prefixes and must be confirmed
+in the portal, and the app keeps a redirect URI list separate from the
+sandbox's.
 
-**THE ONE THAT WILL BE FORGOTTEN:** production runs the **sandbox** TikTok key
-(`sbaw…`) so the video could be recorded before approval. **After TikTok
-approves the app, prod must switch to the production key** or no real creator
-can connect. PARKED 27.
+**It is NOT actionable yet.** It is gated on TikTok approving the app, which is
+gated on him recording and submitting the demo video. Nothing to do until either
+happens.
 
-**Still unanswered, asked twice:** production is EMPTY apart from his admin
-account. He said "we will shift all our data to prod"; his own standing rule is
-that prod never gets test data, and dev's 41 creators share the password
-`1234567890`. **Ask which he means before moving anything.** PARKED 30a.
+**Before starting it, ask him:** "Compaction done. Shall I move ahead with the
+production TikTok key swap?" Wait for a yes. Do not begin unprompted, and do not
+begin at all if he has not said the app was approved.
+
+**WHERE HE ACTUALLY WAS:** about to record the demo video. The creator TikTok
+connection works end to end **on production**, proven with his own account:
+connected as "Code Buddy", token stored, a video reading 1241 views / 65 likes /
+4 comments / 0 shares, audit row written. Nothing blocks the recording. The shot
+list is in FEATURE_MAP and on the artifact sheet he has open.
+
+**If he asks what to put in the TikTok forms:** name `Wurx Media Hub`, category
+Business, the 115-character description, **Login Kit as the only product**,
+**`video.list` as the only scope**, the 832-character review text, and the five
+URLs. All in FEATURE_MAP. **Do not add scopes or products** — TikTok requires
+every one to be demonstrated on camera.
+
+**Still unanswered, asked twice, do not guess:** production is EMPTY apart from
+his admin account (`rashid@wurxmedia.com`, credentials in `C:\Users\RA_shid\.wurx\prod-admin-setup.txt`).
+He said "we will shift all our data to prod"; his own standing rule is that prod
+never gets test data, and dev's 41 creators share the password `1234567890`.
+**PARKED 30a.**
 
 **What this session did (2026-08-26).**
 
-1. **`/terms` and `/privacy`**, written from a four-way inventory of the repo.
-   That caught a flat falsehood in my first draft — "other creators cannot see
-   your figures", when the leaderboard shows exactly that — and stopped the page
-   quoting a retention period nothing implements. **PARKED 29** holds five
-   findings from that inventory; the first is that `applications.review_note` is
-   readable by the applicant it is about.
+1. **`/terms` and `/privacy`**, written from a four-way inventory of the repo,
+   because TikTok will not accept an app without them. That inventory caught a
+   flat falsehood in my first draft and produced **PARKED 29**, five findings —
+   the first being that `applications.review_note` is readable by the applicant
+   it is about.
 2. **The first production launch.** 58 migrations, 10 Edge Functions, auth
-   configured, frontend last. The access token hook defaults to OFF and fails in
-   total silence. OPERATIONS, "Launching an environment".
-3. **The creator TikTok connection**, PARKED 27, built and working on prod.
-4. **Five new suites:** `verify:legal`, `verify:prod-ready`, `verify:signin`,
-   `verify:creator-tiktok`, `verify:brand-theme`.
+   configured, frontend last. OPERATIONS, "Launching an environment".
+3. **The creator TikTok connection**, PARKED 27, working on production.
+4. **Six new suites:** `verify:legal`, `verify:prod-ready`, `verify:signin`,
+   `verify:creator-tiktok`, `verify:brand-theme`, plus `shots-brand-look`.
 
-**FOUR OF MY OWN CHECKS LIED IN THE REASSURING DIRECTION THIS SESSION.** One read
-`role` instead of `user_role` and declared the auth hook dead on a live launch,
-twice. One treated "no error I recognise" as proof an Edge Function was deployed,
-on a project with zero functions. One asserted a token was unreachable while the
-table was empty because its own setup had failed. One read a TikTok 302-to-login
-as "credentials accepted" when TikTok validates nothing at that point. **A check
-that fails safe is fine. A check that passes falsely is worse than no check** —
-and it is the single most repeated mistake in this repo's history.
+**FOUR OF MY OWN CHECKS LIED IN THE REASSURING DIRECTION THIS SESSION**, and one
+statement to him did too: I said PARKED 27 had been corrected to name the key
+when the edit had never run. **Say a thing is done only after the tool call that
+does it has returned.** The four checks: one read `role` instead of `user_role`
+and declared the auth hook dead on a live launch, twice; one treated "no error I
+recognise" as proof an Edge Function was deployed, on a project with zero
+functions; one asserted a token was unreachable while the table was empty
+because its own setup had failed; one read a TikTok 302-to-login as
+"credentials accepted" when TikTok validates nothing at that point.
 
 **Do not re-explore the codebase.** This file, then PARKED, then only what the
 chosen job names.
