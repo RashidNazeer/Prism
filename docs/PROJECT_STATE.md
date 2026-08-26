@@ -2,71 +2,65 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-26 (late).**
+**Recorded 2026-08-26 (end of day).**
 
-**ASK HIM ONE QUESTION FIRST: is the TikTok app approved?** He said "it was 2 i
-got approval on it", which is ambiguous between "the app is approved" and "that
-scope pair was accepted". **If it is approved, PARKED 27's key swap is the next
-job and is the last thing between real creators and this feature** — move
-production off the sandbox key `sbaw…6e` onto the app's own `awxg…7g` and its
-secret, and put the prod callback URL on the APP's redirect list, which is
-separate from the sandbox's. Do not start it without a clear yes.
+**THE TIKTOK APP IS SUBMITTED AND WE ARE WAITING ON TIKTOK.** Nothing about it
+is waiting on us. **PARKED 27** holds every submitted value verbatim, so a
+resubmission never has to re-derive them, and **27b** holds the key swap that
+becomes actionable the moment he says it is approved. **Do not start 27b without
+a clear yes from him.**
 
-**THE APP IS APPROVED FOR TWO SCOPES: `user.info.basic` and `video.list`.** Not
-four. **The demo video does NOT need re-recording**, and nothing is waiting on
-him except the answer above.
+**HE ASKED TO MOVE ON TO SOMETHING ELSE.** Ask what he wants next, and answer
+from `docs/PARKED.md` if he asks what is pending. The live candidates, shortest
+useful summary:
 
-**WHAT HAPPENED, BECAUSE IT IS THE LESSON OF THE DAY.** A submission dialog
-listed four scopes. The app's own **Scopes** page lists two. I read the dialog,
-concluded the code was under-requesting, and we built and shipped the extra two
-to dev and production. **Requesting a scope the app does not have makes TikTok
-refuse the authorise URL, so Connect was broken on production for about twenty
-minutes, silently** — nothing errors on our side. Reverted, redeployed, and
-proved fixed by signing in on prod and reading the scope off the live authorise
-URL: `user.info.basic, video.list`.
+- **PARKED 29** — five findings from the privacy inventory. The first is that
+  `applications.review_note` is readable by the applicant it is about, which is
+  a real leak of internal notes and the obvious next thing to fix.
+- **PARKED 30a** — production is EMPTY apart from his admin account. He said "we
+  will shift all our data to prod"; his own standing rule is that prod never
+  gets test data, and dev's 41 creators share the password `1234567890`. **Asked
+  twice, never answered. Do not guess.**
+- **PARKED 28** — the three things deliberately left out of brand themes.
+- **PARKED 0** — contest tracking, paused on his call, needs a real data source.
+- **Three builds still have no verdict from him:** Brand World, the multi-colour
+  brand themes, and the rebuilt offers page.
 
-**The asymmetry, which is what to carry forward:** too FEW scopes fails at
-review, weeks later; too MANY breaks the product now, for everybody. **When the
-code and the app disagree, narrow the code first and ask second.** And the
-source of truth is the app's Scopes page — never a dialog, never a recollection.
+**WHAT SHIPPED TODAY, and the day's lesson.** `/terms` and `/privacy`; the first
+production launch (58 migrations, 10 Edge Functions); the creator TikTok
+connection, live on prod; and a detour that is worth reading once.
 
-**WHAT WAS KEPT, AND IT IS NOT WASTE.** Six columns on
+I read FOUR scopes off a TikTok **submission dialog** when the app's own
+**Scopes** page listed two, concluded the code was under-requesting, and we
+built and shipped the extra two to dev and production. Requesting a scope the
+app does not have makes TikTok refuse the authorise URL, so **Connect was broken
+on production for about twenty minutes, silently** — nothing errors on our side.
+Reverted, redeployed, proved fixed by signing into prod and reading the scope off
+the live authorise URL.
+
+**The asymmetry to carry forward:** too FEW scopes fails at review, weeks later;
+too MANY breaks the product now, for everybody. **When the code and a third
+party disagree, narrow the code first and ask second**, and read the settings
+page rather than a dialog, a recollection, or my own confidence.
+
+**What was kept from it, all dormant and all correct:** six columns on
 `creator_tiktok_connections`, a user/info field list gated on the scope TikTok
-GRANTED (never on `DISPLAY_SCOPES`), and a totals strip on the card that hides
-itself when the permission is absent. All dormant, all inert until the app has
-those scopes, all correct the day it does. **Do not rebuild it and do not rip it
-out.** What was reverted is only the part that made claims: the request itself,
-the consent list on the card, and `/privacy`.
+GRANTED, and a totals strip that hides itself when the permission is absent.
+Two genuine fixes also came out of it: `/privacy` had claimed the feature "is
+not available yet" while it was live, and the card still said "Connect it to
+see…" to people who had already connected.
 
-**Two real corrections came out of it and both stand:** `/privacy` had said this
-feature "is not available yet" when it has been live since that morning, and the
-card still said "Connect it to see…" to people who had already connected.
-
-**Guards, both green:** `verify:creator-tiktok` 20 → **29**, including [8] which
-pins `DISPLAY_SCOPES` to the app's Scopes page and fails if the card or
-`/privacy` describes data those scopes cannot reach, and [6] which asserts the
-scope on the **live authorise URL the deployed function builds** — the source
-check is only a proxy for what is actually sent. New `verify:tiktok-card`, **18**
-checks in a real browser, covering the hidden-versus-dashed branch that looks
-identical from the database.
-
-**Still unanswered, asked twice, do not guess:** production is EMPTY apart from
-his admin account (`rashid@wurxmedia.com`, credentials in `C:\Users\RA_shid\.wurx\prod-admin-setup.txt`).
-He said "we will shift all our data to prod"; his own standing rule is that prod
-never gets test data, and dev's 41 creators share the password `1234567890`.
-**PARKED 30a.**
-
-**Earlier on 2026-08-26:** `/terms` and `/privacy` written from a four-way repo
-inventory (which produced **PARKED 29**, five findings, the first being that
-`applications.review_note` is readable by the applicant it is about); the first
-production launch, 58 migrations and 10 Edge Functions; and the creator TikTok
-connection itself.
+**Guards, all green:** `verify:creator-tiktok` **29** (section [8] pins
+`DISPLAY_SCOPES` to the app's Scopes page and fails if the card or `/privacy`
+describes data those scopes cannot reach; section [6] asserts the scope on the
+**live authorise URL the deployed function builds**), `verify:tiktok-card` **18**
+in a real browser, `verify:legal` **31**.
 
 **SIX OF MY OWN CHECKS OR CLAIMS LIED IN THE REASSURING DIRECTION TODAY.** The
-catalogue is in the `checks-that-lie` memory. Today added two more: a bundle-hash
+catalogue is in the `checks-that-lie` memory. Today added: a bundle-hash
 comparison that reported production had not deployed when it had (a prod build
 embeds different env values, so its hashes can never match a local dev build),
-and reading a scope list off the wrong page and acting on it.
+and reading a scope list off the wrong page and acting on it with confidence.
 
 **Do not re-explore the codebase.** This file, then PARKED, then only what the
 chosen job names.

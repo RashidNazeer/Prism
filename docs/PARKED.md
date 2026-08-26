@@ -851,7 +851,73 @@ today. **Creators must never see the budget or the ROAS target.**
 
 ---
 
-## 27. DONE 2026-08-26. Per-video engagement, built and working.
+## 27. SUBMITTED 2026-08-26. Waiting on TikTok's review.
+
+**Status:** BLOCKED, on TikTok
+**Owner:** TikTok's review team. Nothing here is waiting on us.
+
+**Trigger to raise this again: the moment Rashid says the app is approved or
+rejected.** He will hear by email. Do not start the key swap below without a
+clear yes from him.
+
+---
+
+### What was submitted, verbatim, so a resubmission never has to re-derive it
+
+| field | value |
+| --- | --- |
+| App name | `WurxMedia Hub` |
+| Category | Business |
+| Public description (115) | A creator platform for TikTok Shop brands. Creators see their own sales, commission and video results in one place. |
+| Products | Login Kit, and only Login Kit |
+| Scopes | `user.info.basic`, `video.list`, and only those two |
+| Platform | Web, `https://wurxmediahub.vercel.app/` |
+| Terms URL | `https://wurxmediahub.vercel.app/terms` |
+| Privacy URL | `https://wurxmediahub.vercel.app/privacy` |
+| Redirect URIs | prod AND dev callbacks, both already on the APP's own list |
+| Reason box (101) | First submission. Requesting Login Kit and video.list so creators can see stats for their own videos. |
+
+**The scope explanation, 932 characters, exactly as submitted:**
+
+> Wurx Media Hub is a private platform for TikTok Shop creators who work with our brands. Creators sign in, see the offers a brand has for them, submit the videos they post, and are paid on the results.
+>
+> Login Kit: a creator chooses 'Connect TikTok' on their own profile page and authorises us with their own TikTok account. We use it only to know which TikTok account belongs to that creator, and to show them that account's name and picture back so they can confirm it is the right one. They can disconnect from the same screen at any time.
+>
+> video.list: once connected, we read the list of that creator's own public videos and show them the view, like, comment and share counts for those videos on their own profile page, so they can see how their posts performed. The figures are shown only to the creator they belong to and to Wurx staff.
+>
+> We never post, edit or delete anything on TikTok, and we never read another user's videos.
+
+**Two earlier drafts were wrong and were caught before submission**, both in the
+same direction — describing the product as doing something it does not:
+
+- "for the videos they submitted to a campaign" — we read the creator's WHOLE
+  recent video list, not a campaign subset. Describing LESS access than you take
+  is the flag a reviewer looks for; describing more is safe.
+- "alongside the sales those videos produced" — the card deliberately does the
+  opposite, and says in as many words that these figures and My numbers are
+  different measures that will never reconcile.
+
+**Verified live at submission time:** `/`, `/terms`, `/privacy` and
+`/oauth/tiktok-creator/callback` all return 200; the redirect URI on the form is
+byte-identical to the one the deployed Edge Function sends; the scope list on
+the form is identical to `DISPLAY_SCOPES`.
+
+**One cosmetic thing left alone:** the app name is `WurxMedia Hub` while the site
+and every document say `Wurx Media Hub`, with the space. Flagged to him, not
+worth blocking on.
+
+---
+
+### If it comes back REJECTED
+
+**Get their reason verbatim before changing anything.** TikTok's messages have
+twice named the wrong field here — an authorise-page `client_key` error that was
+really sandbox redirect configuration. Their stated reason is the starting
+point, not the diagnosis.
+
+---
+
+## 27b. AFTER APPROVAL: the production key swap.
 
 The second TikTok app exists and the flow works end to end **on production**,
 proven with a real account on 2026-08-26: connected as "Code Buddy", token
@@ -859,22 +925,21 @@ stored, one video reading 1241 views / 65 likes / 4 comments / 0 shares, audit
 row written. See FEATURE_MAP, "The creator TikTok connection".
 
 **TWO SCOPES, SETTLED 2026-08-26 (late).** The app's Scopes page lists
-`user.info.basic` and `video.list`, and that is what it is approved for. A
-detour that afternoon read four scopes off a submission dialog, built the extra
-two and shipped them, which broke Connect on production until it was reverted.
-See DECISIONS. **The demo video does NOT need re-recording:** it shows two
-permissions and the video figures, which is exactly what the app asks for.
+`user.info.basic` and `video.list`. A detour that afternoon read four scopes off
+a submission dialog, built the extra two and shipped them, which broke Connect
+on production until it was reverted. See DECISIONS.
 
-**What is left, and none of it is code:**
+**Support for `user.info.profile` and `user.info.stats` is built and DORMANT** —
+columns, scope-gated fields, and a totals strip on the card that hides itself
+when the permission is absent. It keys off what TikTok GRANTED, never off
+`DISPLAY_SCOPES`, so it is inert until those scopes are added to the app and
+correct the day they are. **Do not rebuild it and do not rip it out.** Adding a
+scope means widening `DISPLAY_SCOPES`, the app's Scopes page, the consent list
+on the card and `/privacy` in one commit, then reconnecting.
 
-- **Submit the app for review**, if that has not already happened. Every field is
-  worked out; the values live in the artifact sheet and in FEATURE_MAP.
-- **ASK HIM WHETHER THE APP IS ALREADY APPROVED.** On 2026-08-26 he said "it was
-  2 i got approval on it", which is ambiguous between "the app is approved" and
-  "that scope pair was accepted". **If the app IS approved, the key swap below
-  becomes actionable immediately** and is the last thing standing between real
-  creators and this feature.
-- **AFTER APPROVAL: switch production to the APP'S OWN TikTok key.** Rashid
+**The swap itself, once he says the app is approved:**
+
+- **Switch production to the APP'S OWN TikTok key.** Rashid
   asked which key that means, and "the production key" was too vague, so name it
   every time:
 
@@ -894,10 +959,11 @@ permissions and the video figures, which is exactly what the app asks for.
     full. **Confirm in the portal that the app's own page shows a key starting
     `awxg` and ending `7g` before swapping.**
   - **The app keeps its own redirect URI list, separate from the sandbox's.**
-    `https://wurxmediahub.vercel.app/oauth/tiktok-creator/callback` must be in
-    the APP's list too, or the swap produces the same misleading `client_key`
-    error the sandbox produced — this time on the live app, with real creators
-    watching.
+    **ALREADY HANDLED — verified on the app's Login Kit page 2026-08-26.** Both
+    `https://wurxmediahub.vercel.app/oauth/tiktok-creator/callback` and the dev
+    one are on the APP's own list. Left recorded rather than deleted because the
+    absence of that entry is what produced the misleading `client_key` error on
+    the sandbox, and somebody will otherwise re-check it.
 - **Then decide where the figures belong.** They are on the profile card because
   that is what the demo video needed. Whether they also belong beside a
   submitted video on Content, or on My numbers, is a product question nobody has
