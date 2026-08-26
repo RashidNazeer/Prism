@@ -202,10 +202,16 @@ try {
     ok(`using ad account ${advertiser} to hang test rows on`);
   }
   {
-    /* V1 across two days, so the per-day sum is exercised rather than assumed. */
+    /*
+     * V1 across two days IN AUGUST, so the per-day sum is exercised rather than
+     * assumed, plus a SEPTEMBER day on the same video. That September row is
+     * the point: it must never appear in an August total, and an all-time total
+     * must include it. Both directions are asserted in [4].
+     */
     const { error } = await admin.from('tiktok_video_daily').insert([
       { item_id: V1, stat_date: '2026-08-01', advertiser_id: advertiser, cost: 60.00, gross_revenue: 180.00, orders: 3, currency: 'USD' },
       { item_id: V1, stat_date: '2026-08-02', advertiser_id: advertiser, cost: 40.00, gross_revenue: 20.00, orders: 1, currency: 'USD' },
+      { item_id: V1, stat_date: '2026-09-15', advertiser_id: advertiser, cost: 500.00, gross_revenue: 25.00, orders: 1, currency: 'USD' },
       { item_id: V2, stat_date: '2026-08-01', advertiser_id: advertiser, cost: 1.00, gross_revenue: 9.00, orders: 1, currency: 'USD' },
     ]);
     if (error) {
@@ -214,18 +220,22 @@ try {
     }
     const { data: back } = await admin
       .from('tiktok_video_daily').select('item_id').eq('item_id', V1);
-    if (back?.length === 2) ok('the test ad rows are really there');
+    /* THREE now: two August days plus the September one that section [3]
+       uses to prove the months do not blend. */
+    if (back?.length === 3) ok('the test ad rows are really there, across both months');
     else bad('setup: the test rows did not read back; the rest would be vacuous');
   }
   {
-    const { data, error } = await admin.rpc('ads_totals_for_videos', { p_item_ids: [V1, V2, V3] });
+    const { data, error } = await admin.rpc('ads_totals_for_videos', {
+      p_item_ids: [V1, V2, V3], p_from: '2026-08-01', p_to: '2026-08-31',
+    });
     if (error) {
       bad(`the RPC errored (${error.code} ${error.message})`);
     } else {
       const byId = Object.fromEntries((data ?? []).map((r) => [r.item_id, r]));
 
       if (byId[V1] && near(byId[V1].cost, 100) && near(byId[V1].gross_revenue, 200)) {
-        ok('two days of one video sum to $100 spend and $200 revenue');
+        ok('within August, two days of one video sum to $100 spend and $200 revenue');
       } else {
         bad('the per-day sum is wrong', JSON.stringify(byId[V1]));
       }
@@ -276,7 +286,62 @@ try {
     else bad('an oversized list was accepted, so a caller can ask for anything');
   }
 
-  console.log('\n[3] The RPC cannot leak one creator’s spend to another');
+  console.log('\n[3] Months do not blend');
+  {
+    /*
+     * THE BUG THIS SECTION EXISTS FOR. The first version of these columns
+     * summed every day a video ever ran, and put that lifetime figure in a row
+     * whose budget and GMV were one month's. Rashid caught it while testing.
+     *
+     * V1 carries $100 of August spend and $500 of September spend, chosen so
+     * far apart that a blend is unmistakable rather than a rounding argument.
+     */
+    const call = (from, to) =>
+      admin.rpc('ads_totals_for_videos', { p_item_ids: [V1], p_from: from, p_to: to });
+
+    const { data: aug } = await call('2026-08-01', '2026-08-31');
+    if (aug?.length === 1 && near(aug[0].cost, 100)) ok('August asks for August and gets $100');
+    else bad('the August window is wrong', JSON.stringify(aug));
+
+    const { data: sep } = await call('2026-09-01', '2026-09-30');
+    if (sep?.length === 1 && near(sep[0].cost, 500)) ok('September asks for September and gets $500');
+    else bad('the September window is wrong', JSON.stringify(sep));
+
+    /* The two must not be the same number, or the filter is doing nothing and
+       both checks above would pass on a function that ignores its bounds. */
+    if (aug?.[0] && sep?.[0] && !near(aug[0].cost, sep[0].cost)) {
+      ok('the two months genuinely differ, so the range is being applied');
+    } else {
+      bad('August and September returned the same figure — the bounds are ignored');
+    }
+
+    const { data: all } = await call(null, null);
+    if (all?.length === 1 && near(all[0].cost, 600)) ok('All Time (null bounds) sums both months to $600');
+    else bad('the unbounded total is wrong', JSON.stringify(all));
+
+    const { data: half } = await call('2026-08-02', null);
+    if (half?.length === 1 && near(half[0].cost, 540)) ok('an open-ended range works from one side ($540)');
+    else bad('a one-sided range is wrong', JSON.stringify(half));
+
+    const { data: none } = await call('2026-07-01', '2026-07-31');
+    if (!none || none.length === 0) ok('a month with no spend returns nothing, which the screen shows as a dash');
+    else bad('an empty month returned a row', JSON.stringify(none));
+
+    const { error: backwards } = await call('2026-09-01', '2026-08-01');
+    if (backwards) ok('a backwards range is refused rather than silently returning nothing');
+    else bad('a backwards range was accepted, and would read as "no spend"');
+
+    /*
+     * AND THE OLD ONE-ARGUMENT SIGNATURE MUST BE GONE. Left in place it would
+     * overload, and a two-argument call becomes ambiguous — "function is not
+     * unique" at runtime, from a migration that looked like it succeeded.
+     */
+    const { error: legacy } = await admin.rpc('ads_totals_for_videos', { p_item_ids: [V1] });
+    if (!legacy) ok('calling with ids alone still works, defaulting to all time');
+    else bad(`the defaulted call broke (${legacy.code} ${legacy.message})`);
+  }
+
+  console.log('\n[4] The RPC cannot leak one creator’s spend to another');
   {
     const A = { email: `collab-a-${stamp}@wurx.test`, password: 'CollabA!2026' };
     const B = { email: `collab-b-${stamp}@wurx.test`, password: 'CollabB!2026' };
@@ -341,14 +406,18 @@ try {
       const ca = await sign(A);
       const cb = await sign(B);
 
-      const { data: mine } = await ca.rpc('ads_totals_for_videos', { p_item_ids: [V1] });
+      const { data: mine } = await ca.rpc('ads_totals_for_videos', {
+        p_item_ids: [V1], p_from: '2026-08-01', p_to: '2026-08-31',
+      });
       if (mine?.length === 1 && near(mine[0].cost, 100)) {
         ok('the owning creator DOES see their own video’s spend, so the next check is real');
       } else {
         bad('the owner could not see their own figures; the leak check below would be vacuous', JSON.stringify(mine));
       }
 
-      const { data: theirs } = await cb.rpc('ads_totals_for_videos', { p_item_ids: [V1, V2] });
+      const { data: theirs } = await cb.rpc('ads_totals_for_videos', {
+        p_item_ids: [V1, V2], p_from: '2026-08-01', p_to: '2026-08-31',
+      });
       if (!theirs || theirs.length === 0) {
         ok('another creator asking for the same ids gets nothing back');
       } else {

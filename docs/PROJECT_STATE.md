@@ -2,61 +2,65 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-26 (night).**
+**Recorded 2026-08-27.**
 
-**ASK HIM FOR HIS VERDICT ON THE PAID COLLABS AD COLUMNS**, which are built and
-on DEV only. Two columns on a brand's creator list, **Ad spend** and **ROI**,
-plus the same two figures against each individual video inside an expanded
-creator. **Not shipped to production** — he has not asked for that, and prod
-changes only when he does.
+**HE IS TESTING THE PAID COLLABS AD COLUMNS**, which are on DEV only and not on
+production. Ask for his verdict; do not ship them to prod unless he says so.
 
-Proven with real data on dev: **15 of Penetrex's 41 creators carry figures**
-(e.g. Gunnar $119.17 at 1.13x, Aaron $68.17 at 0.66x). Brands without a
-connected ad account show dashes, which is correct.
+Two columns on a brand's creator list, **Ad spend** and **ROI**, plus the same
+figures against each video inside an expanded creator. **Month-scoped**, driven
+by Paid Collabs' own month selector — he asked for that after testing the first
+version, which summed lifetime and therefore put a different period in a row of
+monthly numbers. "All Time" removes the bounds.
 
-**THE THING WORTH KNOWING BEFORE TOUCHING IT AGAIN:** the join is TikTok's own
-video id, not brand names. He expected to have to match Paid Collab brands to
-ours and worried about spelling; their links already carry the id and
-`tiktok_video_daily.item_id` is that same number, so there is no mapping table,
-nothing to fall out of step, and a brand needs no configuration at all.
+Proven on dev: 15 of Penetrex's 41 creators show real August figures (e.g.
+$222.38, $149.71, $98.13). One RPC call to open a brand; ~424 video ids per
+call across a period switch.
 
-**Two hours were lost to editing the wrong file.** `App.jsx` and `WurxUI.jsx`
-BOTH contain a creators table with similar columns; only **`WurxUI.jsx`** is
-reachable at `/admin/collabs`. The App.jsx version built, passed every data
-test, and changed nothing on screen. **Open the page and look before choosing an
-insertion point.** App.jsx has been reverted to verbatim.
+**The join is TikTok's own video id, not brand names.** Their links carry it and
+`tiktok_video_daily.item_id` is the same number, so there is no mapping table
+and a brand needs no configuration — connecting its ad account is what makes
+figures appear.
 
-**His standing "not one line" rule for the vendored code now has an explicit
-exception, which he chose knowingly.** Every addition is fenced in a
-`WURX-ADDED ... WURX-END` block so a future re-vendor is find-and-reapply.
-Nine such blocks in `WurxUI.jsx`. DECISIONS has the reasoning.
+**THE BUG THAT COST AN HOUR, and it is a general one.** The figures provider
+cancelled its in-flight fetch on every dependency change, the way a React data
+hook usually should. Changing the month IS a dependency change, so both fetches
+completed, both returned real rows, and **both results were thrown away**: a
+screen of dashes with 200s in the network tab and nothing erroring anywhere. The
+cache is keyed `month|id`, so a late result is still correct for its own key.
+**Cancel when a stale result would be WRONG; never when it would merely be old.**
 
-**Guards:** `verify:collab-ads` 22 checks (arithmetic in Node, then the RPC,
-then a creator trying to read another's spend), `verify:collab-ads-ui` 10 checks
-in a real browser. Both green. Build passes, isolation guard passes.
+**Earlier the same night, two hours went to editing the wrong file.** `App.jsx`
+and `WurxUI.jsx` both hold a creators table with near-identical columns; only
+**`WurxUI.jsx`** is reachable at `/admin/collabs`. App.jsx is reverted to
+verbatim. **Open the page and look before choosing an insertion point.**
+
+**His "not one line" rule for the vendored code now has an explicit exception**,
+chosen knowingly. Ten `WURX-ADDED ... WURX-END` blocks in `WurxUI.jsx`, so a
+re-vendor is find-and-reapply.
+
+**Guards:** `verify:collab-ads` 30 checks (arithmetic in Node, the RPC, months
+that must not blend, and a creator trying to read another's spend),
+`verify:collab-ads-ui` 15 checks in a real browser. Both green. Build and the
+isolation guard pass.
 
 **STILL WAITING ON TIKTOK.** The Display API app was submitted 2026-08-26.
 **PARKED 27** holds every submitted value verbatim; **27b** is the production
-key swap, which becomes actionable the moment he says the app is approved and
-NOT BEFORE. Nothing about it is waiting on us.
+key swap, actionable only once he says the app is approved.
 
 **Still unanswered, asked twice, do not guess:** production is EMPTY apart from
-his admin account. He said "we will shift all our data to prod"; his own rule is
-that prod never gets test data, and dev's 41 creators share one password.
-**PARKED 30a.**
+his admin account. **PARKED 30a.**
 
-**Also still without his verdict:** Brand World, the multi-colour brand themes,
-and the rebuilt offers page. **PARKED 29** holds five findings from the privacy
-inventory, the first being that `applications.review_note` is readable by the
-applicant it is about.
+**Also without his verdict:** Brand World, the multi-colour brand themes, the
+rebuilt offers page. **PARKED 29** holds five privacy-inventory findings, the
+first being that `applications.review_note` is readable by its subject.
 
-**SEVEN OF MY OWN CHECKS OR CLAIMS LIED IN THE REASSURING DIRECTION TODAY**, and
-three more failed a correct product because the TEST was wrong. Both lists are
-in the `checks-that-lie` memory. Today's additions: a scope list read off the
-wrong page and acted on with confidence, a bundle-hash comparison that reported
-production had not deployed when it had, and a Playwright wait on
-`double-star/admin/double-star` that matched the login page it was waiting to
-leave.
+**EUKA, asked about on 2026-08-26 and answered:** we have no access to it at
+all. The proxy holding the credentials is on WurxBase's Netlify site and
+`/.netlify/functions/euka` is deliberately 404'd on our domain, so the EUKA
+figures in Paid Collabs are cached in their Supabase rather than live. Nothing
+in their 24,000 lines touches target collaborations. Answering anything more
+needs EUKA credentials or an export from him.
 
 **Do not re-explore the codebase.** This file, then PARKED, then only what the
 chosen job names.

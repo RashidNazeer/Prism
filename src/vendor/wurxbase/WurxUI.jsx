@@ -1729,6 +1729,23 @@ function BrandFace({ brand }) {
 }
 
 function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTime, eukaL30, onBack, onSelectCreator, canEdit, canAdd, canDeleteBrand, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator }) {
+  /* WURX-ADDED · tell our ad figures which month is on screen.
+
+     THIS IS THE WHOLE REASON THE COLUMNS MATCH THE ROW THEY SIT IN. Everything
+     else on this screen — the budget, the allocation, the GMV — is filtered by
+     the month selector above, so an ad spend summed over all time would be a
+     different period sitting in the same line of numbers, inviting a
+     comparison that is not valid. 'All Time' sends '' and means no bounds.
+
+     ONE COMPONENT OWNS THIS because only one brand drilldown is ever open, so
+     a single period is enough and every row and video panel below inherits it
+     without a prop being threaded through them. */
+  const wxSetMonth = wxAdsHook().setMonth;
+  useEffect(() => {
+    wxSetMonth(allTime ? '' : (month || ''));
+  }, [wxSetMonth, allTime, month]);
+  /* WURX-END */
+
   /* ── EUKA posted-videos sync · pulls this brand's creator_videos export,
      matches handles to onboarded creators, merges NEW links into each
      creator's video_codes (existing rows never touched · dedupe by video id).

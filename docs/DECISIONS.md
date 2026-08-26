@@ -1681,3 +1681,22 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   on the spend. A brand-level total is a small addition if it is ever wanted,
   and would be the one most likely to be misread, since it blends creators on
   very different deals.
+- 2026-08-27: **Ad spend and ROI follow the Paid Collabs month selector**, and
+  never show lifetime figures. Rashid asked for this after testing the first
+  version, and he is right: every other number in that row is one month's, so a
+  lifetime total beside them is a different period presented as comparable.
+  "All Time" sends null bounds. The range applies to `stat_date`, which is the
+  ADVERTISER's day, because that is the only boundary TikTok files against.
+- 2026-08-27: **The figures provider does not cancel in-flight requests.** Its
+  cache is keyed `month|id`, so a result arriving late is still correct for its
+  own key and cannot overwrite a newer one. The reflexive
+  `return () => { cancelled = true }` cleanup actively destroyed data here:
+  changing the month grew the effect's dependency, both fetches completed, both
+  returned real rows, and both results were discarded — a screen of dashes with
+  200s in the network tab and no error anywhere. Unmount is guarded with a ref
+  instead. **Cancel a request when a stale result would be WRONG; never when it
+  would merely be old.**
+- 2026-08-27: **Nothing is fetched until the period is known.** The rows render
+  before the drilldown reports its month, so an ungated first pass fired a
+  full-sized all-time query that nothing would display — 357 ids on every brand
+  open. One render of patience halves the traffic.

@@ -1123,9 +1123,19 @@ totals strip, correctly, because the permission genuinely is not there.
 ## Paid Collabs: the Ad Spend and ROI columns
 
 ```powershell
-pnpm verify:collab-ads      # 22 checks, no server. Needs SUPABASE_SERVICE_KEY
-pnpm verify:collab-ads-ui   # 10 checks in a browser. Needs a server AND the key
+pnpm verify:collab-ads      # 30 checks, no server. Needs SUPABASE_SERVICE_KEY
+pnpm verify:collab-ads-ui   # 15 checks in a browser. Needs a server AND the key
 ```
+
+**The figures are MONTH-SCOPED**, driven by Paid Collabs' own month selector;
+"All Time" sends null bounds. The range applies to `stat_date`, the
+ADVERTISER's day (`Etc/GMT+5`), because that is the only boundary TikTok files
+against — a range in any other timezone moves a day's money across a month end.
+
+**Request economy, measured rather than promised:** one RPC to open a brand, and
+around 424 video ids per call when a period changes. The UI suite counts the ids
+inside each request body, because a flat request count cannot tell batching from
+per-row fetching once the row count changes underneath it.
 
 **THE SCREEN IS `WurxUI.jsx`, NOT `App.jsx`.** Both vendored files contain a
 creators table; only WurxUI's is reachable at `/admin/collabs`. An

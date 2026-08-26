@@ -77,6 +77,24 @@ try {
   });
 
   const page = await ctx.newPage();
+  /*
+   * EVERY CALL TO OUR RPC IS COUNTED, because "does this hammer the database"
+   * deserves a number rather than an assurance. One request per creator row
+   * would be dozens per brand; the provider batches instead, and this is what
+   * proves it still does.
+   */
+  const rpcCalls = [];
+  page.on('request', (r) => {
+    if (!r.url().includes('ads_totals_for_videos')) return;
+    let ids = 0;
+    try {
+      ids = (JSON.parse(r.postData() || '{}').p_item_ids || []).length;
+    } catch {
+      /* an unparseable body still counts as a request */
+    }
+    rpcCalls.push({ ids });
+  });
+
   const consoleErrors = [];
   page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
   page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e.message}`));
@@ -249,7 +267,100 @@ try {
     }
   }
 
-  console.log('\n[5] No sideways scroll, no console errors');
+  console.log('\n[5] The figures follow the month selector');
+  {
+    /*
+     * THE BUG THIS SECTION EXISTS FOR. These two columns first summed every day
+     * a video ever ran, and sat in a row whose budget and GMV were one month's.
+     * Rashid caught it while testing: a lifetime figure beside a monthly one
+     * invites a comparison that is not valid.
+     */
+    const spendCells = () => page.locator('.wurxbase-root .pc-cell[data-label="Ad spend"]');
+
+    const read = async () => {
+      const c = spendCells();
+      const n = await c.count();
+      const out = [];
+      for (let i = 0; i < n; i++) out.push((await c.nth(i).innerText()).trim());
+      return out;
+    };
+
+    const before = await read();
+    const realBefore = before.filter((t) => t && t !== '-' && t !== '–');
+    if (realBefore.length === 0) {
+      bad('no creator in this brand shows a figure, so the month check would be vacuous');
+    } else {
+      ok(`${realBefore.length} of ${before.length} creators show a figure this month`);
+
+      const callsBefore = rpcCalls.length;
+
+      /* "All Time" removes the bounds. If the wiring does nothing, the numbers
+         are identical and this fails, which is the point. */
+      const allTime = page.getByRole('button', { name: /^all time$/i }).first();
+      if (await allTime.count()) {
+        await allTime.click();
+        await page.waitForTimeout(3000);
+
+        const after = await read();
+        const realAfter = after.filter((t) => t && t !== '-' && t !== '–');
+
+        if (realAfter.length === 0) {
+          bad('All Time wiped every figure, which is not a wider range');
+        } else if (JSON.stringify(before) !== JSON.stringify(after)) {
+          ok('All Time changes the figures, so the month bounds are really applied');
+        } else {
+          bad('All Time produced identical figures — the month is being ignored');
+        }
+
+        /*
+         * MEASURED AGAINST THE IDS, NOT A FLAT CEILING.
+         *
+         * "All Time" also un-filters the creator LIST, so the brand goes from
+         * 41 creators to a few hundred and the id count grows with it. A fixed
+         * ceiling failed a correctly batched run for that reason. What actually
+         * matters is that the ids are sent in big batches rather than one
+         * request per row, so that is what is asserted.
+         */
+        const fresh = rpcCalls.slice(callsBefore);
+        const spent = fresh.length;
+        const idsSent = fresh.reduce((n, c) => n + c.ids, 0);
+        const expected = Math.max(1, Math.ceil(idsSent / 500));
+        if (spent >= 1 && spent <= expected + 1) {
+          ok(`switching period cost ${spent} request(s) for ${idsSent} videos (${expected} batch(es) of 500)`);
+        } else {
+          bad(`switching period cost ${spent} requests for ${idsSent} videos, expected about ${expected}`);
+        }
+      } else {
+        bad('could not find the All Time button, so the month wiring is unverified');
+      }
+    }
+  }
+
+  console.log('\n[6] Requests are batched, not one per row');
+  {
+    /*
+     * THE MEASURE IS IDS PER REQUEST, which is the thing that would collapse if
+     * the batching broke. One request per creator row would average a handful
+     * of ids each; real batching averages hundreds. A flat count cannot tell
+     * those apart once the row count changes underneath it.
+     */
+    const rows = await page.locator('.wurxbase-root .pc-ct-row').count();
+    const idsTotal = rpcCalls.reduce((n, c) => n + c.ids, 0);
+    const perCall = rpcCalls.length ? idsTotal / rpcCalls.length : 0;
+
+    if (rpcCalls.length === 0) {
+      bad('no RPC calls at all, so the batching claim would be vacuous');
+    } else if (perCall >= 100) {
+      ok(`${rpcCalls.length} call(s) carried ${idsTotal} video ids, ${Math.round(perCall)} per call`);
+    } else {
+      bad(`only ${Math.round(perCall)} ids per call across ${rpcCalls.length} calls — batching is not holding`);
+    }
+
+    if (rpcCalls.length < rows) ok(`fewer requests (${rpcCalls.length}) than creator rows (${rows})`);
+    else bad(`${rpcCalls.length} requests for ${rows} rows — that is per-row fetching`);
+  }
+
+  console.log('\n[7] No sideways scroll, no console errors');
   {
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1

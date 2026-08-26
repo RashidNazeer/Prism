@@ -2553,6 +2553,18 @@ than assumed, and asserts 375 / 768 / 1440 with no sideways scroll.
 Two columns on a brand's creator list — **Ad spend** and **ROI** — and the same
 two figures against each individual video inside an expanded creator.
 
+**BOTH ARE SCOPED TO THE MONTH SELECTOR, and that is not optional.** Everything
+beside them on that screen — the budget, the allocation, the GMV — is filtered
+by the month control at the top, so a lifetime ad spend sitting in the same row
+is a DIFFERENT PERIOD in the same line of numbers, inviting a comparison that is
+not valid. The first version shipped that way and Rashid caught it in testing.
+"All Time" sends null bounds and means exactly that.
+
+**The day boundary is the AD ACCOUNT'S, not ours.** `stat_date` was filed under
+the advertiser's timezone (`Etc/GMT+5`) by the sync, because that is the only
+boundary TikTok reports against. So "August" here is the advertiser's August; a
+range in any other timezone would move a day's money across a month end.
+
 **THE JOIN IS TIKTOK'S VIDEO ID, AND NO BRAND NAMES ARE MATCHED.** Rashid
 expected to have to map Paid Collab brand names onto ours and worried about
 spelling. None of that is needed. Their video links carry the numeric TikTok id,
@@ -2594,6 +2606,20 @@ dashes, which is the honest answer rather than a zero. On dev, 15 of Penetrex's
    track pushes every later column one place along. Our overrides restate both
    lists, and the UI suite asserts the header cell count, the row cell count and
    the computed track count all agree.
+8. **NEVER CANCEL AN IN-FLIGHT FETCH WHOSE RESULT IS CACHED BY KEY.** The
+   provider's effect re-runs whenever its wanted-list grows, and setting the
+   month grows it — so a `return () => { cancelled = true }` cleanup discarded
+   the request already in the air. **Both fetches completed, both returned real
+   rows, and both results were thrown away**: every figure on screen read as a
+   dash while the network tab showed 200s full of data, and nothing errored
+   anywhere. Cancelling was never right here, because results are keyed
+   `month|id` and a late answer is still the correct answer for its own key.
+   The only thing worth guarding is writing state after the provider unmounts,
+   which is now an `alive` ref.
+9. **NOTHING IS FETCHED UNTIL THE PERIOD IS KNOWN.** The rows render before the
+   drilldown's effect reports the month, so without a gate the first pass fired
+   a full-sized all-time query — 357 ids asked for and discarded on every brand
+   open. Waiting one render halves the traffic and costs nothing visible.
 
 **The seam, and why the isolation guard still passes.** All our database access
 is in `collab-ad-figures.tsx`, which the route mounts as a provider. The
@@ -2604,6 +2630,12 @@ something of ours, pass it in as a prop from the route."
 **Guards.** `pnpm verify:collab-ads`, 22 checks, no server needed: the pure
 arithmetic transpiled and run in Node, then the RPC against real rows, then a
 creator trying to read another creator's spend. `pnpm verify:collab-ads-ui`,
-10 checks in a real browser: both headers, header/row/grid-track counts in
-agreement, the computed style proving our CSS won the cascade, and the per-video
-figures in whichever of the two layouts rendered.
+**15 checks** in a real browser: both headers, header/row/grid-track counts in
+agreement, the computed style proving our CSS won the cascade, the per-video
+figures in whichever of the two layouts rendered, that switching to All Time
+actually changes the figures — the only way to prove the month bounds reach the
+screen — and **the request economy measured rather than asserted**. It counts
+the video ids inside every request body, because a flat request count cannot
+tell batching from per-row fetching once the row count changes underneath it.
+Measured on dev: one request to open a brand, and 424 ids per call across a
+period switch.

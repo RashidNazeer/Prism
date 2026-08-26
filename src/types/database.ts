@@ -3163,7 +3163,7 @@ export type Database = {
     }
     Functions: {
       ads_totals_for_videos: {
-        Args: { p_item_ids: string[] }
+        Args: { p_from?: string; p_item_ids: string[]; p_to?: string }
         Returns: {
           cost: number
           currency: string
