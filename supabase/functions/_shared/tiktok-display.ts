@@ -61,30 +61,33 @@ export function displayCreds(): DisplayCreds {
  * The scopes we ask for, and the ONLY ones.
  *
  *   user.info.basic    which account this is: open id, display name, avatar
- *   user.info.profile  the @handle, the verified badge, the link to their page
- *   user.info.stats    followers, lifetime likes, how many videos they have
  *   video.list         the per-video views, likes, comments and shares
  *
- * THIS LIST AND THE APPLICATION MUST AGREE, IN BOTH DIRECTIONS. TikTok's review
- * guidelines require every requested scope to be demonstrated in the demo
- * video, and "requests permissions it does not use" is one of their listed
- * rejection reasons. So an extra scope here is a rejection, and an extra scope
- * on the APPLICATION that is missing here is also a rejection — the second is
- * the one that nearly shipped, because it is invisible from inside the code.
+ * THIS ARRAY MUST EQUAL THE SCOPE LIST ON developers.tiktok.com, and the two
+ * ways of getting that wrong fail very differently:
  *
- * The consent screen a creator sees is generated from THIS ARRAY. If it does
- * not match the scope list on developers.tiktok.com, the reviewer watching the
- * demo video sees the mismatch before anybody here does.
+ *   MORE here than on the app  ->  TikTok refuses the AUTHORISE URL outright.
+ *                                  The Connect button simply stops working, for
+ *                                  everybody, the moment it deploys.
+ *   FEWER here than on the app ->  authorisation still works, and the app is
+ *                                  REJECTED AT REVIEW: "requests permissions it
+ *                                  does not use", with the consent screen in the
+ *                                  demo video visibly showing fewer permissions
+ *                                  than the application asks for.
  *
- * NOTHING GOES IN OR OUT without a matching change to the application, the demo
- * video, the columns on `creator_tiktok_connections`, and `/privacy`.
+ * Both happened on 2026-08-26, in that order, inside two hours. The second was
+ * read off a submission form; the first was shipped to production on the
+ * strength of that reading and broke Connect until the app's own Scopes page
+ * settled it at two. **Read the app's Scopes page, not the submission dialog.**
+ *
+ * The support for `user.info.profile` and `user.info.stats` is still in this
+ * file, in the columns on `creator_tiktok_connections`, and on the card — all
+ * dormant and all harmless, because every one of them is driven by the scope
+ * TikTok GRANTED rather than by this array. Adding either scope to the app is a
+ * one-line change here plus a reconnect, and `/privacy` and the consent list on
+ * the card must be widened in the same commit.
  */
-export const DISPLAY_SCOPES = [
-  'user.info.basic',
-  'user.info.profile',
-  'user.info.stats',
-  'video.list',
-] as const;
+export const DISPLAY_SCOPES = ['user.info.basic', 'video.list'] as const;
 
 /** Where to send a creator to approve us. */
 export function authorizeUrl(creds: DisplayCreds, state: string): string {

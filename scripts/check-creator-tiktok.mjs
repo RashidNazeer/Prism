@@ -317,6 +317,22 @@ try {
     } else {
       const url = new URL(r.json.url);
       const state = url.searchParams.get('state');
+
+      /*
+       * THE SCOPE ON THE LIVE AUTHORISE URL, not the one in the source.
+       *
+       * This is the string TikTok actually validates, and asking for a scope
+       * the app does not have makes TikTok refuse the whole URL — the Connect
+       * button stops working for everybody, immediately, with no error anywhere
+       * on our side. That shipped to production on 2026-08-26 and this is the
+       * check that would have caught it: section [8] reads the source, which is
+       * only a proxy for what the Edge Function is really sending.
+       */
+      const sent = (url.searchParams.get('scope') ?? '').split(',').filter(Boolean);
+      const wanted = ['user.info.basic', 'video.list'];
+      const matches = sent.length === wanted.length && wanted.every((x, i) => sent[i] === x);
+      if (matches) ok(`the live authorise URL asks for exactly: ${sent.join(', ')}`);
+      else bad('THE DEPLOYED FUNCTION ASKS FOR THE WRONG SCOPES', `sending: ${sent.join(', ') || '(none)'}`);
       const { data: minted } = await admin
         .from('creator_tiktok_oauth_states').select('creator_id').eq('state', state).single();
       if (minted?.creator_id === B.id) ok('a forged creator_id in the body is ignored; the nonce belongs to the caller');
@@ -378,19 +394,25 @@ try {
   console.log('\n[8] The scope contract: the code, the consent list and the application agree');
   {
     /*
-     * A SOURCE-LEVEL CHECK, and the reason it exists is the bug it would have
-     * caught: the application on developers.tiktok.com asked for FOUR scopes
-     * while the code requested two. Nothing in the running product could see
-     * that — the consent screen is built from the code, so it looked correct
-     * from the inside while a reviewer comparing it to the application would
-     * have seen the mismatch immediately.
+     * A SOURCE-LEVEL CHECK, PINNED TO WHAT THE APP ACTUALLY GRANTS.
      *
-     * TikTok rejects both directions: a scope requested and not demonstrated,
-     * and a scope on the application that the app never uses. So the list is
-     * pinned here, and changing it has to be a deliberate act that also updates
-     * the application, the demo video and /privacy.
+     * The two scopes below are what the Scopes page on developers.tiktok.com
+     * lists, and what the app was approved for. The two ways of drifting from
+     * it fail very differently, and both happened on 2026-08-26:
+     *
+     *   MORE here than on the app  ->  TikTok refuses the authorise URL and the
+     *                                  Connect button stops working for everyone.
+     *   FEWER here than on the app ->  rejected at review as "requests
+     *                                  permissions it does not use".
+     *
+     * The first was shipped to production that day, on the strength of a
+     * SUBMISSION DIALOG that listed four scopes when the app's own Scopes page
+     * listed two. **The app's Scopes page is the authority, not the dialog.**
+     *
+     * Widening this is a deliberate act that also touches the app's Scopes
+     * page, the demo video, the consent list on the card and /privacy.
      */
-    const EXPECTED = ['user.info.basic', 'user.info.profile', 'user.info.stats', 'video.list'];
+    const EXPECTED = ['user.info.basic', 'video.list'];
 
     const src = readFileSync('supabase/functions/_shared/tiktok-display.ts', 'utf8');
     const block = src.match(/export const DISPLAY_SCOPES = \[([^\]]*)\]/);
@@ -400,8 +422,8 @@ try {
       const found = [...block[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
       const same =
         found.length === EXPECTED.length && EXPECTED.every((x, i) => found[i] === x);
-      if (same) ok(`DISPLAY_SCOPES is exactly the four on the application: ${found.join(', ')}`);
-      else bad('DISPLAY_SCOPES no longer matches the submitted application', `code has: ${found.join(', ') || '(none)'}`);
+      if (same) ok(`DISPLAY_SCOPES matches the app's Scopes page: ${found.join(', ')}`);
+      else bad("DISPLAY_SCOPES no longer matches the app's Scopes page", `code has: ${found.join(', ') || '(none)'}`);
     }
 
     /*
@@ -421,12 +443,33 @@ try {
      * moment two scopes were added.
      */
     const card = readFileSync('src/components/creator/TikTokConnection.tsx', 'utf8');
-    if (card.length < 1000) {
-      bad('the connection card could not be read — the promise check would be vacuous');
-    } else if (/follower count/i.test(card) && /view, like, comment and share/i.test(card)) {
-      ok('the consent list on the card names the profile AND the video permissions');
+    const privacy = readFileSync('src/routes/legal/Privacy.tsx', 'utf8');
+    if (card.length < 1000 || privacy.length < 1000) {
+      bad('the card or the privacy page could not be read — the promise check would be vacuous');
     } else {
-      bad('the card no longer tells a creator what the requested scopes read');
+      if (/view, like, comment and share/i.test(card)) {
+        ok('the consent list on the card names what the video permission reads');
+      } else {
+        bad('the card no longer tells a creator what the requested scopes read');
+      }
+
+      /*
+       * AND IT MUST NOT PROMISE WHAT WE CANNOT READ. With only these two
+       * scopes there is no follower count to have, so a card or a privacy page
+       * that mentions one is over-claiming — the same drift as under-claiming,
+       * pointing the other way. Both pages said it for about two hours.
+       */
+      const wantsStats = EXPECTED.includes('user.info.stats');
+      const cardClaims = /follower count/i.test(card);
+      const privacyClaims = /<strong>Your account totals/i.test(privacy);
+      if (cardClaims === wantsStats && privacyClaims === wantsStats) {
+        ok(`the card and /privacy claim the follower count only if we ask for it (we do not)`);
+      } else {
+        bad(
+          'the card or /privacy describes data the requested scopes cannot reach',
+          `card mentions followers: ${cardClaims}, privacy lists account totals: ${privacyClaims}, scope requested: ${wantsStats}`
+        );
+      }
     }
   }
 

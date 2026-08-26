@@ -858,35 +858,22 @@ proven with a real account on 2026-08-26: connected as "Code Buddy", token
 stored, one video reading 1241 views / 65 likes / 4 comments / 0 shares, audit
 row written. See FEATURE_MAP, "The creator TikTok connection".
 
-**FOUR SCOPES NOW, NOT TWO — CHANGED 2026-08-26 (evening).** The application
-asks for `user.info.basic`, `user.info.profile`, `user.info.stats` and
-`video.list`; the code requested only the first and last, which TikTok rejects
-as "requests permissions it does not use". The extra two are now built and
-shown: the @handle, the verified badge, and a followers / likes / videos strip
-on the profile card. See DECISIONS 2026-08-26 for why building them beat
-trimming the application.
+**TWO SCOPES, SETTLED 2026-08-26 (late).** The app's Scopes page lists
+`user.info.basic` and `video.list`, and that is what it is approved for. A
+detour that afternoon read four scopes off a submission dialog, built the extra
+two and shipped them, which broke Connect on production until it was reverted.
+See DECISIONS. **The demo video does NOT need re-recording:** it shows two
+permissions and the video figures, which is exactly what the app asks for.
 
-**What is left, and only the first item is code:**
+**What is left, and none of it is code:**
 
-- **SHIP THIS TO PRODUCTION FIRST.** The demo video must be recorded on
-  `wurxmediahub.vercel.app` — that is the Website URL on the application — and
-  prod is still on the two-scope build. It needs the migration, both Edge
-  Functions, and the frontend. Nothing about the video is recordable until then.
-- **Confirm the SANDBOX has all four scopes enabled.** A sandbox keeps its own
-  scope list exactly as it keeps its own redirect URI list, and adding a scope
-  to the app does NOT add it to the sandbox. The redirect list already cost an
-  afternoon in the form of a misleading `client_key` error; this is the same
-  trap one field over.
-- **Disconnect and reconnect on production.** A token permanently carries the
-  scopes it was minted with, so the existing "Code Buddy" connection will keep
-  showing no totals strip — correctly, because the permission genuinely is not
-  in that token. Reconnecting mints a new one with all four.
-- **Record the demo video** on `wurxmediahub.vercel.app`, one take, following the
-  shot list. mp4/mov, under 50 MB. **The consent screen must visibly show four
-  permissions**, and each must then be shown doing something: the handle and
-  badge, the follower count, and the per-video figures.
-- **Submit the app for review.** Every field is worked out; the values live in
-  the artifact sheet and in FEATURE_MAP.
+- **Submit the app for review**, if that has not already happened. Every field is
+  worked out; the values live in the artifact sheet and in FEATURE_MAP.
+- **ASK HIM WHETHER THE APP IS ALREADY APPROVED.** On 2026-08-26 he said "it was
+  2 i got approval on it", which is ambiguous between "the app is approved" and
+  "that scope pair was accepted". **If the app IS approved, the key swap below
+  becomes actionable immediately** and is the last thing standing between real
+  creators and this feature.
 - **AFTER APPROVAL: switch production to the APP'S OWN TikTok key.** Rashid
   asked which key that means, and "the production key" was too vague, so name it
   every time:

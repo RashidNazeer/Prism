@@ -9,11 +9,18 @@
  * the database and identical from the Edge Function. They differ only on the
  * screen, which is the one place `verify:creator-tiktok` cannot look.
  *
- * The stakes are ordinary but specific: every connection made before that date,
- * PRODUCTION INCLUDED, carries the narrower pair. If the strip rendered three
- * dashes for them, a creator would read "you have no followers, no likes and no
- * videos" about their own account. That is why the absent case is asserted just
- * as hard as the present one.
+ * The stakes are ordinary but specific: EVERY connection carries the narrower
+ * pair today, production included, because the app is approved for
+ * `user.info.basic` and `video.list` only. If the strip rendered three dashes
+ * for them, a creator would read "you have no followers, no likes and no
+ * videos" about their own account. That is why the absent case — the ONLY case
+ * in production right now — is asserted just as hard as the present one.
+ *
+ * The granted case is therefore testing DORMANT code, deliberately. The support
+ * for the profile and stats scopes is driven entirely by what TikTok GRANTED,
+ * never by `DISPLAY_SCOPES`, so it costs nothing while unused and works the day
+ * those scopes are added to the app. This suite is what keeps it honest in the
+ * meantime rather than quietly rotting.
  *
  * Makes its own creator and deletes it in a `finally`. Dev only.
  *

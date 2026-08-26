@@ -117,13 +117,9 @@ export function Privacy() {
       <p>Exactly what we store, and nothing beyond this list:</p>
       <ul>
         <li>
-          <strong>Your profile.</strong> Your TikTok display name, your handle, your profile
-          picture, whether your account is verified, the link to your profile, and TikTok&rsquo;s
-          own identifier for your account.
-        </li>
-        <li>
-          <strong>Your account totals.</strong> Your follower count, the total likes across your
-          account, and how many videos you have posted.
+          <strong>Your profile.</strong> Your TikTok display name, your profile picture, and
+          TikTok&rsquo;s own identifier for your account. That is all we ask for, and it is only
+          so the screen can show you which account is connected.
         </li>
         <li>
           <strong>Your videos.</strong> For each of your own videos: its title, thumbnail, link,
@@ -131,8 +127,8 @@ export function Privacy() {
         </li>
       </ul>
       <p>
-        TikTok would also give us your bio and the number of accounts you follow. We do not ask
-        for either, because we do not show them anywhere.
+        We do not ask TikTok for your follower count, your bio, or the number of accounts you
+        follow. We ask for two permissions and no others, and neither of them can reach those.
       </p>
       <ul>
         <li>Connecting is your choice, and nothing else on the platform depends on it.</li>

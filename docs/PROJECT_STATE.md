@@ -2,47 +2,53 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-26 (evening).**
+**Recorded 2026-08-26 (late).**
 
-**HE IS SUBMITTING THE TIKTOK APP FOR REVIEW.** The build below went in
-mid-submission and is on DEV only.
+**ASK HIM ONE QUESTION FIRST: is the TikTok app approved?** He said "it was 2 i
+got approval on it", which is ambiguous between "the app is approved" and "that
+scope pair was accepted". **If it is approved, PARKED 27's key swap is the next
+job and is the last thing between real creators and this feature** — move
+production off the sandbox key `sbaw…6e` onto the app's own `awxg…7g` and its
+secret, and put the prod callback URL on the APP's redirect list, which is
+separate from the sandbox's. Do not start it without a clear yes.
 
-**THE NEXT ACTION IS TO SHIP IT TO PRODUCTION**, because the demo video has to
-be recorded on `wurxmediahub.vercel.app` and prod is still on the two-scope
-build. Ask first: prod changes only when he says so, and this is a prod change.
-The full sequence, and the order matters, is at the top of **PARKED 27**.
+**THE APP IS APPROVED FOR TWO SCOPES: `user.info.basic` and `video.list`.** Not
+four. **The demo video does NOT need re-recording**, and nothing is waiting on
+him except the answer above.
 
-**WHAT CHANGED AND WHY.** His TikTok application asks for FOUR scopes —
-`user.info.basic`, `user.info.profile`, `user.info.stats`, `video.list` — because
-`video.list` alone was refused at the portal and he added all three user.info
-scopes rather than just the one that was needed. The code requested TWO. That
-mismatch is a listed TikTok rejection reason, and the consent screen in the demo
-video would have shown two permissions against an application asking for four.
-Offered both fixes; **he chose to build the extra two rather than trim the
-application**, which is the better answer anyway — a @handle, a verified badge
-and a follower count are things a brand manager judging offers actually wants.
+**WHAT HAPPENED, BECAUSE IT IS THE LESSON OF THE DAY.** A submission dialog
+listed four scopes. The app's own **Scopes** page lists two. I read the dialog,
+concluded the code was under-requesting, and we built and shipped the extra two
+to dev and production. **Requesting a scope the app does not have makes TikTok
+refuse the authorise URL, so Connect was broken on production for about twenty
+minutes, silently** — nothing errors on our side. Reverted, redeployed, and
+proved fixed by signing in on prod and reading the scope off the live authorise
+URL: `user.info.basic, video.list`.
 
-Built, on dev: six columns on `creator_tiktok_connections`, a user/info field
-list derived from the scope TikTok actually GRANTED (with a fallback to the
-basic fields, so existing connections cannot break), the profile block re-read
-on every refresh rather than frozen at connect time, and the card showing the
-@handle, verified badge and a followers / likes / videos strip. Two suites:
-`verify:creator-tiktok` 20 → **27**, plus a new `verify:tiktok-card`, **18**
-checks in a real browser. Both green. `pnpm build` passes, no console errors,
-375 / 768 / 1440 all clean.
+**The asymmetry, which is what to carry forward:** too FEW scopes fails at
+review, weeks later; too MANY breaks the product now, for everybody. **When the
+code and the app disagree, narrow the code first and ask second.** And the
+source of truth is the app's Scopes page — never a dialog, never a recollection.
 
-**THE THREE THINGS THAT WILL BE FORGOTTEN**, all in PARKED 27:
+**WHAT WAS KEPT, AND IT IS NOT WASTE.** Six columns on
+`creator_tiktok_connections`, a user/info field list gated on the scope TikTok
+GRANTED (never on `DISPLAY_SCOPES`), and a totals strip on the card that hides
+itself when the permission is absent. All dormant, all inert until the app has
+those scopes, all correct the day it does. **Do not rebuild it and do not rip it
+out.** What was reverted is only the part that made claims: the request itself,
+the consent list on the card, and `/privacy`.
 
-1. **A sandbox keeps its own scope list**, separate from the app's. Adding a
-   scope to the app does not add it to the sandbox. The sibling trap — the
-   sandbox's own redirect URI list — already cost an afternoon as a misleading
-   `client_key` error.
-2. **He must disconnect and reconnect on production** after the deploy. A token
-   carries the scopes it was minted with forever, so "Code Buddy" will keep
-   showing no totals strip until it is re-minted. That is correct behaviour, not
-   a bug, and it will look like one.
-3. **After TikTok approves, prod switches from the sandbox key `sbaw…6e` to the
-   app's own `awxg…7g`** and its secret. Still not actionable until approval.
+**Two real corrections came out of it and both stand:** `/privacy` had said this
+feature "is not available yet" when it has been live since that morning, and the
+card still said "Connect it to see…" to people who had already connected.
+
+**Guards, both green:** `verify:creator-tiktok` 20 → **29**, including [8] which
+pins `DISPLAY_SCOPES` to the app's Scopes page and fails if the card or
+`/privacy` describes data those scopes cannot reach, and [6] which asserts the
+scope on the **live authorise URL the deployed function builds** — the source
+check is only a proxy for what is actually sent. New `verify:tiktok-card`, **18**
+checks in a real browser, covering the hidden-versus-dashed branch that looks
+identical from the database.
 
 **Still unanswered, asked twice, do not guess:** production is EMPTY apart from
 his admin account (`rashid@wurxmedia.com`, credentials in `C:\Users\RA_shid\.wurx\prod-admin-setup.txt`).
@@ -56,10 +62,11 @@ inventory (which produced **PARKED 29**, five findings, the first being that
 production launch, 58 migrations and 10 Edge Functions; and the creator TikTok
 connection itself.
 
-**FIVE OF MY OWN CHECKS LIED IN THE REASSURING DIRECTION TODAY**, plus one
-statement to him. The full catalogue is in the `checks-that-lie` memory. The
-short version: a check is worthless unless it fails when its subject is absent,
-and **say a thing is done only after the tool call that does it has returned.**
+**SIX OF MY OWN CHECKS OR CLAIMS LIED IN THE REASSURING DIRECTION TODAY.** The
+catalogue is in the `checks-that-lie` memory. Today added two more: a bundle-hash
+comparison that reported production had not deployed when it had (a prod build
+embeds different env values, so its hashes can never match a local dev build),
+and reading a scope list off the wrong page and acting on it.
 
 **Do not re-explore the codebase.** This file, then PARKED, then only what the
 chosen job names.

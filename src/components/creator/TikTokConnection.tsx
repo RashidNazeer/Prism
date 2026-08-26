@@ -74,8 +74,8 @@ export function TikTokConnection() {
               figures, which is the same drift the consent list below fell into.
             */}
             {connected
-              ? 'Your TikTok profile and your own video numbers, in here with the rest of your work.'
-              : 'Connect it to see your own numbers here: your follower count, and the views, likes, comments and shares on every video you post.'}
+              ? 'Your own video numbers, in here with the rest of your work.'
+              : 'Connect it to see how your own videos performed: the views, likes, comments and shares on everything you post.'}
           </p>
         </div>
 
@@ -109,7 +109,7 @@ export function TikTokConnection() {
             trust it.
           */}
           <ul className="text-muted mt-4 grid gap-1.5 text-[0.8125rem]">
-            <li>We read your public profile: your name, handle and follower count.</li>
+            <li>We read your name and profile picture, so we can show you who is connected.</li>
             <li>
               We read your own videos and their view, like, comment and share counts.
             </li>

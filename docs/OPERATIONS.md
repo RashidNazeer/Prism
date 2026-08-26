@@ -1088,13 +1088,31 @@ are not.
 approval; dev runs the production app key (`awxg…`). **After approval, prod must
 switch to the production key** or real creators cannot connect. PARKED 27.
 
+**THE APP IS APPROVED FOR TWO SCOPES: `user.info.basic` and `video.list`.**
+`DISPLAY_SCOPES` must equal that list exactly, and the two ways of drifting fail
+completely differently:
+
+| drift | what happens | when you find out |
+| --- | --- | --- |
+| code asks for FEWER than the app | authorisation works | at review, weeks later, rejected as "requests permissions it does not use" |
+| code asks for MORE than the app | **TikTok refuses the authorise URL; Connect breaks for everyone** | immediately, and silently — nothing errors on our side |
+
+**READ THE APP'S `Scopes` PAGE, NOT A SUBMISSION DIALOG.** On 2026-08-26 a
+submission dialog listed four scopes while the Scopes page listed two. Acting on
+the dialog put a four-scope request on production and broke Connect for about
+twenty minutes.
+
+```powershell
+# What the DEPLOYED function actually sends, which is the only thing TikTok
+# validates. verify:creator-tiktok [6] asserts this on dev; for prod, sign in
+# and read the scope parameter off the authorise URL connect.start returns.
+```
+
 **A SANDBOX KEEPS ITS OWN SCOPE LIST, exactly as it keeps its own redirect URI
-list.** Adding a scope to the app does NOT add it to the sandbox. Both lists
-have now bitten once each: the redirect list produced a misleading `client_key`
-error on the authorise page, and the scope list is the same trap one field over.
-Before recording anything against the sandbox, confirm all four scopes —
-`user.info.basic`, `user.info.profile`, `user.info.stats`, `video.list` — are
-enabled **on the sandbox**, not only on the app.
+list.** Adding a scope to the app does NOT add it to the sandbox, and vice
+versa. The redirect list already produced a misleading `client_key` error on the
+authorise page; the scope list is the same trap one field over. **Check both
+lists before changing either.**
 
 **A WIDER SCOPE LIST DOES NOT REACH AN EXISTING CONNECTION.** A token
 permanently carries the scopes it was minted with, so after adding scopes a

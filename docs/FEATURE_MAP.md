@@ -2421,23 +2421,39 @@ follower count, and the views, likes, comments and shares on their own videos.
 account: connection stored, token stored, video figures correct, audit row
 written.
 
-**FOUR SCOPES, AND THE LIST IS A CONTRACT WITH THREE PARTIES.**
+**TWO SCOPES. `user.info.basic` and `video.list`, and that is what the app is
+approved for.**
 
 | scope | what it gives | where it shows |
 | --- | --- | --- |
 | `user.info.basic` | open id, display name, avatar | the name and face on the card |
-| `user.info.profile` | username, verified, profile link | the @handle and its badge |
-| `user.info.stats` | followers, lifetime likes, video count | the three totals |
 | `video.list` | per-video views, likes, comments, shares | the video rows |
 
-The code, the application on developers.tiktok.com, the consent list on the
-card and `/privacy` must all agree. **The bug that nearly shipped was invisible
-from inside the product:** the application asked for four scopes while
-`DISPLAY_SCOPES` requested two, so the consent screen looked right to everybody
-here while a reviewer comparing it with the application would have seen the
-mismatch at once. TikTok rejects in **both** directions — a scope requested and
-not demonstrated, and a scope on the application the app never uses.
-`verify:creator-tiktok` section [8] now pins the list.
+**`DISPLAY_SCOPES` MUST EQUAL THE APP'S SCOPES PAGE, and the two ways of getting
+it wrong fail completely differently.** Both happened on 2026-08-26, in this
+order, within two hours:
+
+- **FEWER in the code than on the app** → authorisation still works, and the app
+  is rejected at review as "requests permissions it does not use", with the
+  consent screen in the demo video visibly showing fewer permissions than the
+  application asks for. Invisible from inside the product, because the consent
+  screen is generated FROM the code.
+- **MORE in the code than on the app** → **TikTok refuses the authorise URL and
+  the Connect button stops working for everyone, instantly.** No error appears
+  anywhere on our side. This one shipped to production.
+
+**The second was caused by fixing the first from the wrong source.** A
+submission dialog listed four scopes; the app's own **Scopes** page listed two.
+**The Scopes page is the authority.** `verify:creator-tiktok` [8] pins the list,
+and section [6] now asserts the scope on the LIVE authorise URL the deployed
+function builds — the source check is only a proxy for what is actually sent.
+
+**Support for `user.info.profile` and `user.info.stats` is built and dormant.**
+The columns, the field gating and the card's totals strip all exist and are
+driven by the scope TikTok GRANTED, never by `DISPLAY_SCOPES`, so they cost
+nothing while unused. Adding either scope to the app is one line here plus a
+reconnect — and `/privacy` and the consent list on the card must widen in the
+same commit, or the product starts over-claiming.
 
 **THE SECOND TIKTOK INTEGRATION, and it shares nothing with the first.**
 

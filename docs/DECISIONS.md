@@ -1631,3 +1631,35 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   in that pass, deliberately — the videos are what somebody pressed the button
   for, and losing them because TikTok declined one profile field would trade the
   thing they wanted for the thing they did not ask about.
+- 2026-08-26 (late): **The app is approved for TWO scopes, not four. This
+  REVERSES the reversal three entries above**, and the whole sequence is kept
+  because the lesson is in the shape of it rather than in the conclusion.
+
+  What happened: a submission dialog showed `user.info.basic`,
+  `user.info.profile`, `user.info.stats` and `video.list`. The code requested
+  two. I read that as an application/code mismatch, which is a real TikTok
+  rejection reason, and Rashid chose to close it by building the extra two. That
+  shipped to dev and to production.
+
+  It was the wrong reading. The app's own **Scopes** page lists exactly
+  `user.info.basic` and `video.list`, and that is what it was approved for.
+  Requesting a scope the app does not have makes TikTok refuse the authorise URL
+  outright, so **the Connect button on production was broken for about twenty
+  minutes** — silently, because nothing on our side errors.
+
+  **The rule: read the app's Scopes page, never a submission dialog.** And the
+  asymmetry is worth holding onto — asking for too FEW scopes fails at review,
+  weeks later; asking for too MANY breaks the product now, for everybody.
+
+  **What was kept, and why it is not waste.** The columns, the scope-gated field
+  list and the card's totals strip stay in place, dormant. Every one of them is
+  driven by the scope TikTok GRANTED rather than by `DISPLAY_SCOPES`, so they
+  are inert until the app has those scopes and correct the moment it does. What
+  was reverted is the part that made claims: the request itself, the consent
+  list on the card, and `/privacy`, all of which had started describing data we
+  cannot read.
+
+  **What this cost, and what it did not.** No re-recording: the demo video shows
+  two permissions and the video figures, which is exactly what the app asks for.
+  The scope-gated field list, the hidden-not-dashed totals strip, the privacy
+  page correction and two new guards all came out of this and all stand.
