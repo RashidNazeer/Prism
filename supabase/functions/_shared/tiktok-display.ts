@@ -29,9 +29,23 @@ export type DisplayCreds = {
  * other's host returns a generic auth error that reads like a bad secret.
  */
 export function displayCreds(): DisplayCreds {
-  const clientKey = Deno.env.get('TIKTOK_CREATOR_CLIENT_KEY');
-  const clientSecret = Deno.env.get('TIKTOK_CREATOR_CLIENT_SECRET');
-  const redirectUri = Deno.env.get('TIKTOK_CREATOR_REDIRECT_URI');
+  /*
+   * TRIMMED, AND THIS IS NOT DEFENSIVE PROGRAMMING FOR ITS OWN SAKE.
+   *
+   * These are pasted by a human into a dashboard text box, and a copied
+   * credential very often carries a trailing newline. It happened on the first
+   * real attempt here: the client key arrived 17 characters long for a 16
+   * character key, and TikTok's redirect showed `...cme27g%250A` — a
+   * double-encoded \n riding along inside the authorise URL.
+   *
+   * The failure it causes is the worst kind: TikTok answers "client key not
+   * recognised", which reads exactly like a wrong key, so the natural response
+   * is to re-copy the same value and get the same result. One `.trim()` removes
+   * a whole afternoon of that.
+   */
+  const clientKey = Deno.env.get('TIKTOK_CREATOR_CLIENT_KEY')?.trim();
+  const clientSecret = Deno.env.get('TIKTOK_CREATOR_CLIENT_SECRET')?.trim();
+  const redirectUri = Deno.env.get('TIKTOK_CREATOR_REDIRECT_URI')?.trim();
   if (!clientKey || !clientSecret || !redirectUri) {
     throw new Error(
       'TIKTOK_CREATOR_CLIENT_KEY, TIKTOK_CREATOR_CLIENT_SECRET and ' +
