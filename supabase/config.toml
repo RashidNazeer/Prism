@@ -419,6 +419,15 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 # person may have no hub session by the time they land. What makes it safe is
 # the single-use `state` nonce, which only an admin could have minted, not the
 # platform's JWT check. See the header of tiktok-callback/index.ts.
+# The creator half of TikTok, and the same split as the ads pair above: the
+# callback is public because somebody returning from tiktok.com may have no
+# session in that tab, and everything else demands one.
+[functions.tiktok-creator]
+verify_jwt = true
+
+[functions.tiktok-creator-callback]
+verify_jwt = false
+
 [functions.tiktok-callback]
 verify_jwt = false
 

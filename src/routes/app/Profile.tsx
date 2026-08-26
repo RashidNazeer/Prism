@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import { useApplication } from '@/lib/auth/useApplication';
 import { ROLE_LABEL, TIER_LABEL } from '@/lib/tiers';
+import { TikTokConnection } from '@/components/creator/TikTokConnection';
 
 // Moved to src/lib/tiers.ts on 2026-08-11, because the admin creator screens
 // print the same words and two copies of a label is how they drift.
@@ -70,6 +71,16 @@ export function Profile() {
         </div>
       ) : (
         <div className="grid max-w-xl gap-6">
+          {/*
+            THEIR OWN TIKTOK, above the rest.
+
+            It sits first because it is the only thing on this screen a creator
+            has a reason to come back to: their name is set once and forgotten.
+            Nothing else here depends on it, and the card is designed for the
+            disconnected state as much as the connected one.
+          */}
+          <TikTokConnection />
+
           {/* ------------------------------------------------------- name -- */}
           <section className="border-line bg-surface-1 rounded-xl border p-6 shadow-md">
             <h2 className="text-lg font-bold">Your name</h2>

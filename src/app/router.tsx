@@ -269,6 +269,22 @@ export const router = createBrowserRouter([
     HydrateFallback: RouteFallback,
     lazy: lazyRoute(() => import('@/routes/OAuthTikTokCallback'), 'OAuthTikTokCallback'),
   },
+  /*
+   * WHERE TIKTOK SENDS A CREATOR BACK, as opposed to an admin.
+   *
+   * Public for the same reason as its sibling above: somebody returning from
+   * tiktok.com may carry no session in that tab, and a creator who approved
+   * inside TikTok's in-app browser on a phone is exactly who this is for. The
+   * single-use state nonce, burned server side, is what makes it safe.
+   */
+  {
+    path: '/oauth/tiktok-creator/callback',
+    HydrateFallback: RouteFallback,
+    lazy: lazyRoute(
+      () => import('@/routes/OAuthTikTokCreatorCallback'),
+      'OAuthTikTokCreatorCallback'
+    ),
+  },
   {
     path: '/apply',
     HydrateFallback: RouteFallback,
