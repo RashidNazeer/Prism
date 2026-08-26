@@ -35,6 +35,8 @@ import './wurxbase-chrome.css';
  *      inside, and nobody who never opens this screen should pay for any of it.
  */
 
+import { CollabAdFiguresProvider } from './collab-ad-figures';
+
 const WurxBaseApp = lazy(() => import('@/vendor/wurxbase/App'));
 
 export function PaidCollabs() {
@@ -104,9 +106,24 @@ export function PaidCollabs() {
       className="wurxbase-root wurxbase-fence -mx-4 -my-4 sm:-mx-6"
       data-theme={resolved}
     >
-      <Suspense fallback={<div className="wx-skeleton m-4 h-96 rounded-xl" />}>
-        <WurxBaseApp />
-      </Suspense>
+      {/*
+        THE ONE PLACE OUR DATA REACHES THEIR APP, and it only goes one way.
+
+        Their creators hold delivered TikTok video URLs; we hold what those
+        videos cost to advertise and what they sold. This provider does the
+        lookup against OUR database and hands the answers down; the vendored
+        code reads them out of a context and holds no connection of its own.
+
+        That is the arrangement pnpm verify:isolation exists to keep, and the
+        one it names itself: "If it needs something of ours, pass it in as a
+        prop from the route." Their app still cannot name our project, and
+        nothing of ours can name either of theirs.
+      */}
+      <CollabAdFiguresProvider>
+        <Suspense fallback={<div className="wx-skeleton m-4 h-96 rounded-xl" />}>
+          <WurxBaseApp />
+        </Suspense>
+      </CollabAdFiguresProvider>
     </div>
   );
 }

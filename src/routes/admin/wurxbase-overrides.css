@@ -236,3 +236,87 @@
   top: auto;
   bottom: 28px;
 }
+
+/* ============================================================================
+   Ad Spend and ROI, the two columns we added to their creators table and the
+   pair of figures we added to their videos modal.
+
+   DOUBLE CLASS ON THE FENCE, and this is not a typo. Their stylesheet lives in
+   the lazily loaded vendor chunk and is injected AFTER this file, so a rule
+   written `.wurxbase-root .x` ties on specificity and loses to anything of
+   theirs. `.wurxbase-root.wurxbase-root` wins by specificity instead of by
+   order. The symptom when you forget: the rule is provably in the built CSS
+   and has no effect on the screen.
+   ============================================================================ */
+
+.wurxbase-root.wurxbase-root .wx-collab-figure {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The figures under each row in the videos modal. Their own `.vm-row-fields`
+   sits directly above, so this reads as part of the same row rather than as a
+   separate block. */
+.wurxbase-root.wurxbase-root .wx-collab-vm-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--wx-border);
+}
+
+.wurxbase-root.wurxbase-root .wx-collab-vm-figures span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.wurxbase-root.wurxbase-root .wx-collab-vm-figures em {
+  font-style: normal;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--wx-text-faint);
+}
+
+.wurxbase-root.wurxbase-root .wx-collab-vm-figures b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--wx-text);
+}
+
+/* ============================================================================
+   Two extra columns on the brand's creator list, and two on the per-video
+   table inside an expanded creator.
+
+   THE GRID TEMPLATE HAS TO BE RESTATED, not extended: these are CSS grids with
+   an explicit column list, so adding a header div without adding a track makes
+   every later cell land in the wrong column. Their originals are in
+   paidcollabs.css; each list below is theirs plus two.
+
+   DOUBLE CLASS ON THE FENCE. Their stylesheet is injected after this file from
+   the lazily loaded vendor chunk, so `.wurxbase-root .x` ties on specificity
+   and loses. The symptom of forgetting: the rule is provably in the built CSS
+   and has no effect on the screen.
+   ============================================================================ */
+
+/* # · Completed · Creator · Deal · Videos · Total views · New video GMV ·
+   L30 GMV · Items sold · AD SPEND · ROI · Contract · Status · Actions */
+.wurxbase-root.wurxbase-root .pc-ct-head,
+.wurxbase-root.wurxbase-root .pc-ct-row {
+  grid-template-columns:
+    0.36fr 0.74fr 1.42fr .66fr .46fr .5fr .64fr .6fr .46fr .58fr .42fr .44fr 1.02fr .66fr;
+}
+
+/* Video · Views · Engagement · GMV · Items sold · AD SPEND · ROI · Spark code */
+.wurxbase-root.wurxbase-root .pc-vxp-head,
+.wurxbase-root.wurxbase-root .pc-vxp-row {
+  grid-template-columns: 1.7fr .62fr .62fr .55fr .5fr .62fr .44fr .95fr;
+}
+
+.wurxbase-root.wurxbase-root .wx-collab-figure {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

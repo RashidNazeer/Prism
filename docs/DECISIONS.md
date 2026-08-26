@@ -1663,3 +1663,21 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   two permissions and the video figures, which is exactly what the app asks for.
   The scope-gated field list, the hidden-not-dashed totals strip, the privacy
   page correction and two new guards all came out of this and all stand.
+- 2026-08-26: **The vendored WurxBase code is no longer strictly verbatim, and
+  Rashid decided that knowingly.** Adding columns to their creators list cannot
+  be done from outside their file. The alternative offered was a separate panel
+  of ours on the brand page, leaving their code pristine; he chose the columns
+  where he wants to read them. **Every addition is fenced in a
+  `WURX-ADDED ... WURX-END` block**, so pulling a newer upstream version is a
+  find-and-reapply job rather than diff archaeology. Nothing of theirs is edited
+  or deleted; the blocks only add.
+- 2026-08-26: **Paid Collab videos are joined to our ad data by TikTok's video
+  id, not by brand name.** Their links already carry the id and our table is
+  keyed on it, so there is no mapping table to maintain, nothing to fall out of
+  step, and no spelling to get wrong. It also means a brand needs no
+  configuration: connecting its ad account is what makes the figures appear.
+- 2026-08-26: **The totals are per creator, not per brand.** Offered both; he
+  chose per creator, so a brand's list can be read for which creators returned
+  on the spend. A brand-level total is a small addition if it is ever wanted,
+  and would be the one most likely to be misread, since it blends creators on
+  very different deals.

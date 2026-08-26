@@ -3162,6 +3162,19 @@ export type Database = {
       }
     }
     Functions: {
+      ads_totals_for_videos: {
+        Args: { p_item_ids: string[] }
+        Returns: {
+          cost: number
+          currency: string
+          first_day: string
+          gross_revenue: number
+          item_id: string
+          last_day: string
+          mixed_currency: boolean
+          orders: number
+        }[]
+      }
       apply_for_contest: {
         Args: { p_actor_id: string; p_contest_id: string; p_note?: string }
         Returns: Json

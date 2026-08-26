@@ -2541,3 +2541,69 @@ a branch nothing else can reach: the totals strip is HIDDEN without
 and identical from the Edge Function. Needs `pnpm build` then `pnpm preview`.
 It seeds `likes_count: null` on purpose so the dash branch is exercised rather
 than assumed, and asserts 375 / 768 / 1440 with no sideways scroll.
+
+## Ad Spend and ROI inside Paid Collabs (2026-08-26)
+
+**Files:** `supabase/migrations/20260826170848_ads_totals_for_videos.sql` ·
+`src/routes/admin/collab-ad-math.ts` · `src/routes/admin/collab-ad-figures.tsx` ·
+`src/routes/admin/PaidCollabs.tsx` · `src/routes/admin/wurxbase-overrides.css` ·
+`src/vendor/wurxbase/WurxUI.jsx` (WURX-ADDED blocks) ·
+`scripts/check-collab-ads.mjs` · `scripts/check-collab-ads-ui.mjs`
+
+Two columns on a brand's creator list — **Ad spend** and **ROI** — and the same
+two figures against each individual video inside an expanded creator.
+
+**THE JOIN IS TIKTOK'S VIDEO ID, AND NO BRAND NAMES ARE MATCHED.** Rashid
+expected to have to map Paid Collab brand names onto ours and worried about
+spelling. None of that is needed. Their video links carry the numeric TikTok id,
+their own `getTikTokVideoId` already extracts it, and `tiktok_video_daily.item_id`
+IS that number. A video either has ad figures or it does not, exactly. Every
+brand with a connected ad account lights up with no configuration; the rest show
+dashes, which is the honest answer rather than a zero. On dev, 15 of Penetrex's
+41 creators carry real figures.
+
+**The rules that are not obvious.**
+
+1. **ROI IS REVENUE OVER THE SUMS, NEVER AN AVERAGE OF RATIOS.** The migration
+   that created `tiktok_video_daily` says it outright — "a ratio cannot be
+   summed" — and only this version agrees with what TikTok reports. On the test
+   pair (spend 100 → 200 back, spend 1 → 9 back) the correct answer is 2.07x and
+   the plausible wrong one is 5.5x. That is the number somebody would proudly
+   put in a report.
+2. **DEDUPE BY VIDEO ID BEFORE SUMMING COST.** The vendored app warns that the
+   same link can sit in `video_codes` twice after a bulk paste. Counting it
+   twice inflates delivery; charging it twice inflates a brand's real ad spend.
+3. **A DASH IS NOT A ZERO.** No ad data means we cannot answer, which is a
+   different statement from "nothing was spent", and only one of them is a claim.
+4. **The RPC is SECURITY INVOKER**, so the existing policies on
+   `tiktok_video_daily` decide the rows: staff see everything, a creator sees
+   only their own APPROVED videos, and it adds no reach the caller did not
+   already have. A DEFINER function here would have handed every creator the
+   company's ad spend.
+5. **THE SCREEN IS RENDERED BY `WurxUI.jsx`, NOT `App.jsx`.** Both files contain
+   a creators table with similar columns; only WurxUI's is reachable at
+   `/admin/collabs`. The first implementation went into `App.jsx`, built and
+   passed its data tests, and changed nothing on screen. **Open the page and
+   look before choosing an insertion point.**
+6. **THERE ARE TWO PER-VIDEO LAYOUTS.** A brand synced with EUKA gets a table
+   (`.pc-vxp-table`); every other brand gets cards (`.pc-vxm-grid`). Patching
+   only the table ships a feature that works on some brands and silently does
+   nothing on the rest.
+7. **A CSS GRID NEEDS ITS TRACK LIST RESTATED.** Their lists are grids with an
+   explicit `grid-template-columns`, so adding a header cell without adding a
+   track pushes every later column one place along. Our overrides restate both
+   lists, and the UI suite asserts the header cell count, the row cell count and
+   the computed track count all agree.
+
+**The seam, and why the isolation guard still passes.** All our database access
+is in `collab-ad-figures.tsx`, which the route mounts as a provider. The
+vendored file reads the answers from a React context and holds no connection of
+its own — the arrangement `check-isolation.mjs` names itself: "If it needs
+something of ours, pass it in as a prop from the route."
+
+**Guards.** `pnpm verify:collab-ads`, 22 checks, no server needed: the pure
+arithmetic transpiled and run in Node, then the RPC against real rows, then a
+creator trying to read another creator's spend. `pnpm verify:collab-ads-ui`,
+10 checks in a real browser: both headers, header/row/grid-track counts in
+agreement, the computed style proving our CSS won the cascade, and the per-video
+figures in whichever of the two layouts rendered.

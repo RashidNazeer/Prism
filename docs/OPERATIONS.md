@@ -1120,6 +1120,28 @@ creator must **disconnect and reconnect** to get them. Nothing in the product
 can do this for them and nothing warns them — the card simply keeps hiding the
 totals strip, correctly, because the permission genuinely is not there.
 
+## Paid Collabs: the Ad Spend and ROI columns
+
+```powershell
+pnpm verify:collab-ads      # 22 checks, no server. Needs SUPABASE_SERVICE_KEY
+pnpm verify:collab-ads-ui   # 10 checks in a browser. Needs a server AND the key
+```
+
+**THE SCREEN IS `WurxUI.jsx`, NOT `App.jsx`.** Both vendored files contain a
+creators table; only WurxUI's is reachable at `/admin/collabs`. An
+implementation in App.jsx builds, passes every data test, and changes nothing on
+screen. Open the page and look before choosing where to edit.
+
+**Our additions are fenced in `WURX-ADDED ... WURX-END` blocks.** To re-vendor
+after pulling upstream changes, grep for those markers and re-apply them; the
+build's own `verify:isolation` still forbids the vendored code from naming our
+project or importing our Supabase client.
+
+**Their lists are CSS grids, so a new column needs a new TRACK**, restated in
+`wurxbase-overrides.css`. Add a header cell without a track and every later
+column shifts one place along, which looks like a styling wobble and is actually
+a creator's status showing under "Actions".
+
 ## Launching an environment: what a migration does NOT carry
 
 Learned on 2026-08-26, launching production for the first time. `supabase db

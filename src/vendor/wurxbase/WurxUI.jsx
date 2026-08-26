@@ -1,3 +1,25 @@
+/* WURX-ADDED · Ad Spend and ROI ─────────────────────────────────────────────
+   This file is otherwise a VERBATIM copy of the WurxBase app. Every change of
+   ours sits inside a WURX-ADDED ... WURX-END block, so pulling a newer version
+   from upstream is a find-and-reapply job rather than diff archaeology. Nothing
+   of theirs is edited or removed; these blocks only add.
+
+   The import reads OUR ad figures out of a React context that our own route
+   provides. It is NOT our Supabase client and names no project of ours, so this
+   file still cannot reach our database — which is what pnpm verify:isolation
+   asserts on every build. See src/routes/admin/collab-ad-figures.tsx.
+
+   The join needs no brand matching: their video links carry TikTok's numeric
+   video id, and that is the same id our ad figures are keyed on. */
+import {
+  useCollabAdFigures as wxAdsHook,
+  videoIdsOf as wxVideoIds,
+  totalsOf as wxTotals,
+  tiktokVideoId as wxVideoId,
+  money as wxMoney,
+  roiText as wxRoi,
+} from '@/routes/admin/collab-ad-figures';
+/* WURX-END */
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from './supabaseClient';
@@ -1979,6 +2001,11 @@ function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTi
             <div className="pc-num">New video GMV</div>
             <div className="pc-num">L30 GMV</div>
             <div className="pc-num">Items sold</div>
+            {/* WURX-ADDED · from OUR TikTok ads data, summed over this
+                creator's DISTINCT delivered videos. */}
+            <div className="pc-num">Ad spend</div>
+            <div className="pc-num">ROI</div>
+            {/* WURX-END */}
             <div>Contract</div>
             <div>Status</div>
             <div>Actions</div>
@@ -2318,6 +2345,24 @@ function DrilldownCreatorRow({ c, idx, euka, open, onSelect, onSetStatus, onEdit
   const profile = eukaProfileFor(euka, [c.tiktok_account, c.tiktok_account_2]);
   const tier = creatorTier(c, euka);
 
+  /* WURX-ADDED · our ad figures for this creator's videos.
+
+     DEDUPED BY TIKTOK VIDEO ID, which is about money rather than tidiness:
+     the same link can sit in video_codes twice after a bulk paste, and adding
+     its cost twice would inflate a brand's real ad spend.
+
+     ROI is revenue over cost computed from the SUMS, never an average of the
+     per-video ratios. A ratio cannot be summed; only this version agrees with
+     what TikTok itself reports. */
+  const wxAds = wxAdsHook();
+  const wxIds = wxVideoIds(c.video_codes);
+  wxAds.ensure(wxIds);
+  const wxT = wxTotals(wxAds.get, wxIds);
+  const wxNote = wxT.withData && wxT.withData < wxIds.length
+    ? ` · from ${wxT.withData} of ${wxIds.length} videos`
+    : '';
+  /* WURX-END */
+
   /* live performance · summed from this collab's synced video rows */
   const vidRows = (Array.isArray(c.video_codes) ? c.video_codes : []).filter(r => r && String(r.video || '').trim());
   const totViews = vidRows.reduce((s, r) => s + (Number(r.views) || 0), 0);
@@ -2400,6 +2445,28 @@ function DrilldownCreatorRow({ c, idx, euka, open, onSelect, onSetStatus, onEdit
       <div className="pc-cell pc-num" data-label="Items sold">
         {itemsSold > 0 ? <span className="pc-metric">{kNum(itemsSold)}</span> : <span className="pc-handle">-</span>}
       </div>
+      {/* WURX-ADDED · ad spend and ROI for this creator's videos.
+
+          A DASH IS NOT A ZERO. No ad data means we cannot answer, which is a
+          different statement from "nothing was spent" — and a wrong zero about
+          money is the kind somebody acts on. */}
+      <div className="pc-cell pc-num wx-collab-figure" data-label="Ad spend"
+        title={wxT.withData
+          ? 'Ad spend across this creator\'s videos' + wxNote
+          : (wxIds.length ? 'No ad data for these videos' : 'No TikTok video links yet')}>
+        {wxT.withData && !wxT.mixedCurrency
+          ? <span className="pc-metric">{wxMoney(wxT.cost, wxT.currency)}</span>
+          : <span className="pc-handle">-</span>}
+      </div>
+      <div className="pc-cell pc-num wx-collab-figure" data-label="ROI"
+        title={wxT.roi === null
+          ? 'No ad spend, so there is no return to divide by it'
+          : wxMoney(wxT.revenue, wxT.currency) + ' back on ' + wxMoney(wxT.cost, wxT.currency) + wxNote}>
+        {wxT.roi === null
+          ? <span className="pc-handle">-</span>
+          : <span className="pc-metric">{wxRoi(wxT.roi)}</span>}
+      </div>
+      {/* WURX-END */}
       <div className="pc-cell" data-label="Contract">
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <button
@@ -2490,6 +2557,10 @@ function DrilldownCreatorRow({ c, idx, euka, open, onSelect, onSetStatus, onEdit
    "Manage videos" opens the full editor popup (add/edit links & codes). */
 const _cvidFetched = new Set();   // one live refresh per creator per session
 function DrilldownVideosPanel({ c, euka, onUpdateCreator, onManage }) {
+  /* WURX-ADDED · ad figures for the videos this panel lists. */
+  const wxAdsP = wxAdsHook();
+  wxAdsP.ensure(wxVideoIds(c.video_codes));
+  /* WURX-END */
   const [copiedIdx, setCopiedIdx] = useState(-1);
   const [live, setLive] = useState(false);
   const rows = (Array.isArray(c.video_codes) ? c.video_codes : [])
@@ -2591,6 +2662,32 @@ function DrilldownVideosPanel({ c, euka, onUpdateCreator, onManage }) {
                         : <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg><span className="pc-vxm-codetxt">{String(r.adCode).trim()}</span></>}
                     </button>
                   : <div className="pc-vxm-nocode">No ad code yet</div>}
+                {/* WURX-ADDED · the same two figures on the CARD layout.
+
+                    THERE ARE TWO LAYOUTS AND BOTH NEED THIS. Brands on EUKA get
+                    the table below; every other brand gets these cards. Adding
+                    the figures only to the table would have shipped a feature
+                    that worked on some brands and silently did nothing on the
+                    rest — and the brand somebody opened first would decide
+                    which impression they formed of it. */}
+                {(() => {
+                  const vid = wxVideoId(r.video);
+                  const f = vid ? wxAdsP.get(vid) : null;
+                  const roi = f && f.cost > 0 ? f.revenue / f.cost : null;
+                  return (
+                    <div className="wx-collab-vm-figures">
+                      <span>
+                        <em>Ad spend</em>
+                        <b>{f && !f.mixedCurrency ? wxMoney(f.cost, f.currency) : '-'}</b>
+                      </span>
+                      <span>
+                        <em>ROI</em>
+                        <b>{roi === null ? '-' : wxRoi(roi)}</b>
+                      </span>
+                    </div>
+                  );
+                })()}
+                {/* WURX-END */}
               </div>
             ))}
           </div>
@@ -2602,6 +2699,10 @@ function DrilldownVideosPanel({ c, euka, onUpdateCreator, onManage }) {
               <div className="pc-num">Engagement</div>
               <div className="pc-num">GMV</div>
               <div className="pc-num">Items sold</div>
+              {/* WURX-ADDED · the same two figures, per video. */}
+              <div className="pc-num">Ad spend</div>
+              <div className="pc-num">ROI</div>
+              {/* WURX-END */}
               <div>Spark code</div>
             </div>
             {rows.map((r, i) => (
@@ -2634,6 +2735,28 @@ function DrilldownVideosPanel({ c, euka, onUpdateCreator, onManage }) {
                 </div>
                 <div className="pc-num">{Number(r.revenue) > 0 ? <span className="pc-metric-gmv">{fmt$Exact(Math.round(Number(r.revenue)))}</span> : <span className="pc-vxp-dash">-</span>}</div>
                 <div className="pc-num">{Number(r.items) > 0 ? kNum(r.items) : <span className="pc-vxp-dash">-</span>}</div>
+                {/* WURX-ADDED · what THIS video cost to advertise, and what came
+                    back. Keyed on TikTok's own video id, so it is exact. */}
+                {(() => {
+                  const vid = wxVideoId(r.video);
+                  const f = vid ? wxAdsP.get(vid) : null;
+                  const roi = f && f.cost > 0 ? f.revenue / f.cost : null;
+                  return (
+                    <>
+                      <div className="pc-num wx-collab-figure">
+                        {f && !f.mixedCurrency
+                          ? <span className="pc-metric">{wxMoney(f.cost, f.currency)}</span>
+                          : <span className="pc-vxp-dash">-</span>}
+                      </div>
+                      <div className="pc-num wx-collab-figure">
+                        {roi === null
+                          ? <span className="pc-vxp-dash">-</span>
+                          : <span className="pc-metric">{wxRoi(roi)}</span>}
+                      </div>
+                    </>
+                  );
+                })()}
+                {/* WURX-END */}
                 <div>
                   {String(r.adCode || '').trim()
                     ? <button className={`pc-vxp-code ${copiedIdx === i ? 'copied' : ''}`} onClick={() => copy(i, String(r.adCode).trim())} title={`Copy spark code\n${String(r.adCode).trim()}`}>

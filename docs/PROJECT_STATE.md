@@ -2,65 +2,61 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-26 (end of day).**
+**Recorded 2026-08-26 (night).**
 
-**THE TIKTOK APP IS SUBMITTED AND WE ARE WAITING ON TIKTOK.** Nothing about it
-is waiting on us. **PARKED 27** holds every submitted value verbatim, so a
-resubmission never has to re-derive them, and **27b** holds the key swap that
-becomes actionable the moment he says it is approved. **Do not start 27b without
-a clear yes from him.**
+**ASK HIM FOR HIS VERDICT ON THE PAID COLLABS AD COLUMNS**, which are built and
+on DEV only. Two columns on a brand's creator list, **Ad spend** and **ROI**,
+plus the same two figures against each individual video inside an expanded
+creator. **Not shipped to production** — he has not asked for that, and prod
+changes only when he does.
 
-**HE ASKED TO MOVE ON TO SOMETHING ELSE.** Ask what he wants next, and answer
-from `docs/PARKED.md` if he asks what is pending. The live candidates, shortest
-useful summary:
+Proven with real data on dev: **15 of Penetrex's 41 creators carry figures**
+(e.g. Gunnar $119.17 at 1.13x, Aaron $68.17 at 0.66x). Brands without a
+connected ad account show dashes, which is correct.
 
-- **PARKED 29** — five findings from the privacy inventory. The first is that
-  `applications.review_note` is readable by the applicant it is about, which is
-  a real leak of internal notes and the obvious next thing to fix.
-- **PARKED 30a** — production is EMPTY apart from his admin account. He said "we
-  will shift all our data to prod"; his own standing rule is that prod never
-  gets test data, and dev's 41 creators share the password `1234567890`. **Asked
-  twice, never answered. Do not guess.**
-- **PARKED 28** — the three things deliberately left out of brand themes.
-- **PARKED 0** — contest tracking, paused on his call, needs a real data source.
-- **Three builds still have no verdict from him:** Brand World, the multi-colour
-  brand themes, and the rebuilt offers page.
+**THE THING WORTH KNOWING BEFORE TOUCHING IT AGAIN:** the join is TikTok's own
+video id, not brand names. He expected to have to match Paid Collab brands to
+ours and worried about spelling; their links already carry the id and
+`tiktok_video_daily.item_id` is that same number, so there is no mapping table,
+nothing to fall out of step, and a brand needs no configuration at all.
 
-**WHAT SHIPPED TODAY, and the day's lesson.** `/terms` and `/privacy`; the first
-production launch (58 migrations, 10 Edge Functions); the creator TikTok
-connection, live on prod; and a detour that is worth reading once.
+**Two hours were lost to editing the wrong file.** `App.jsx` and `WurxUI.jsx`
+BOTH contain a creators table with similar columns; only **`WurxUI.jsx`** is
+reachable at `/admin/collabs`. The App.jsx version built, passed every data
+test, and changed nothing on screen. **Open the page and look before choosing an
+insertion point.** App.jsx has been reverted to verbatim.
 
-I read FOUR scopes off a TikTok **submission dialog** when the app's own
-**Scopes** page listed two, concluded the code was under-requesting, and we
-built and shipped the extra two to dev and production. Requesting a scope the
-app does not have makes TikTok refuse the authorise URL, so **Connect was broken
-on production for about twenty minutes, silently** — nothing errors on our side.
-Reverted, redeployed, proved fixed by signing into prod and reading the scope off
-the live authorise URL.
+**His standing "not one line" rule for the vendored code now has an explicit
+exception, which he chose knowingly.** Every addition is fenced in a
+`WURX-ADDED ... WURX-END` block so a future re-vendor is find-and-reapply.
+Nine such blocks in `WurxUI.jsx`. DECISIONS has the reasoning.
 
-**The asymmetry to carry forward:** too FEW scopes fails at review, weeks later;
-too MANY breaks the product now, for everybody. **When the code and a third
-party disagree, narrow the code first and ask second**, and read the settings
-page rather than a dialog, a recollection, or my own confidence.
+**Guards:** `verify:collab-ads` 22 checks (arithmetic in Node, then the RPC,
+then a creator trying to read another's spend), `verify:collab-ads-ui` 10 checks
+in a real browser. Both green. Build passes, isolation guard passes.
 
-**What was kept from it, all dormant and all correct:** six columns on
-`creator_tiktok_connections`, a user/info field list gated on the scope TikTok
-GRANTED, and a totals strip that hides itself when the permission is absent.
-Two genuine fixes also came out of it: `/privacy` had claimed the feature "is
-not available yet" while it was live, and the card still said "Connect it to
-see…" to people who had already connected.
+**STILL WAITING ON TIKTOK.** The Display API app was submitted 2026-08-26.
+**PARKED 27** holds every submitted value verbatim; **27b** is the production
+key swap, which becomes actionable the moment he says the app is approved and
+NOT BEFORE. Nothing about it is waiting on us.
 
-**Guards, all green:** `verify:creator-tiktok` **29** (section [8] pins
-`DISPLAY_SCOPES` to the app's Scopes page and fails if the card or `/privacy`
-describes data those scopes cannot reach; section [6] asserts the scope on the
-**live authorise URL the deployed function builds**), `verify:tiktok-card` **18**
-in a real browser, `verify:legal` **31**.
+**Still unanswered, asked twice, do not guess:** production is EMPTY apart from
+his admin account. He said "we will shift all our data to prod"; his own rule is
+that prod never gets test data, and dev's 41 creators share one password.
+**PARKED 30a.**
 
-**SIX OF MY OWN CHECKS OR CLAIMS LIED IN THE REASSURING DIRECTION TODAY.** The
-catalogue is in the `checks-that-lie` memory. Today added: a bundle-hash
-comparison that reported production had not deployed when it had (a prod build
-embeds different env values, so its hashes can never match a local dev build),
-and reading a scope list off the wrong page and acting on it with confidence.
+**Also still without his verdict:** Brand World, the multi-colour brand themes,
+and the rebuilt offers page. **PARKED 29** holds five findings from the privacy
+inventory, the first being that `applications.review_note` is readable by the
+applicant it is about.
+
+**SEVEN OF MY OWN CHECKS OR CLAIMS LIED IN THE REASSURING DIRECTION TODAY**, and
+three more failed a correct product because the TEST was wrong. Both lists are
+in the `checks-that-lie` memory. Today's additions: a scope list read off the
+wrong page and acted on with confidence, a bundle-hash comparison that reported
+production had not deployed when it had, and a Playwright wait on
+`double-star/admin/double-star` that matched the login page it was waiting to
+leave.
 
 **Do not re-explore the codebase.** This file, then PARKED, then only what the
 chosen job names.
