@@ -2405,3 +2405,71 @@ sideways scroll; the home page footer links to both; and the contact address is
 not a placeholder. It waits for the footer to exist before reading it — the
 first version asked at `domcontentloaded` and reported both links missing while
 they sat correctly in the source AND the bundle.
+
+## The creator TikTok connection (2026-08-26)
+
+**Files:** `supabase/migrations/20260825235328_creator_tiktok_connection.sql` ·
+`20260826000638_creator_tiktok_tokens_reachable.sql` ·
+`supabase/functions/_shared/tiktok-display.ts` · `tiktok-creator/` ·
+`tiktok-creator-callback/` · `src/lib/creator/useTikTokAccount.ts` ·
+`src/components/creator/TikTokConnection.tsx` ·
+`src/routes/OAuthTikTokCreatorCallback.tsx` · `scripts/check-creator-tiktok.mjs`
+
+A creator connects their OWN TikTok account and sees views, likes, comments and
+shares for their own videos. **Working end to end on production since
+2026-08-26**, verified with a real account: connection stored, token stored,
+video figures correct, audit row written.
+
+**THE SECOND TIKTOK INTEGRATION, and it shares nothing with the first.**
+
+| | ads (2026-08-17) | creator (2026-08-26) |
+| --- | --- | --- |
+| host | business-api.tiktok.com | open.tiktokapis.com |
+| authorises | a BRAND's ad account | a CREATOR's own account |
+| done by | a Wurx admin | the creator, for themselves |
+| gives | cost, GMV, orders | views, likes, comments, shares |
+
+Different apps, different credentials, different hosts. Do not merge the two
+shared modules. Confusing them cost a whole round of scope applications on
+2026-08-25.
+
+**The rules that are not obvious.**
+
+1. **`private` IS NOT REACHABLE FROM AN EDGE FUNCTION.** The tokens went there
+   first, because a schema PostgREST does not expose looked like the strongest
+   possible protection. It was: `.schema('private')` returns **PGRST106 Invalid
+   schema** for every role, service_role included, because the exposed-schema
+   list is PostgREST *configuration* and is checked before the role is. The
+   callback would have taken a live token, thrown it away, said "Connected", and
+   never been able to revoke the grant it left running at TikTok. Tokens now
+   live in `public.creator_tiktok_tokens` with **RLS on and NO POLICIES**, which
+   denies every user role outright while service_role bypasses RLS. Same
+   protection, actually reachable.
+2. **A CHECK THAT PASSES ON AN EMPTY TABLE IS NOT A CHECK.** The suite asserted
+   "a creator cannot read the token table" and passed — on PGRST106, an error
+   meaning the schema does not exist rather than permission denied — over a
+   table left empty because its own setup insert had failed the same way. It now
+   proves the token is there first and accepts only a real `42501`. **Third time
+   this shape has bitten this repo.**
+3. **Read `user_role`, never `role`,** anywhere a JWT is inspected. `role` is
+   Supabase's own claim and always says `authenticated`.
+4. **`admin.rpc(...)` has no `.catch()`.** It is a Thenable, not a Promise, so
+   `.catch()` throws "not a function" before the request is made and surfaces as
+   a 500 with a non-JSON body. Use try/catch.
+5. **Scope client queries by `creator_id` explicitly.** The owner policy and the
+   staff policy are both PERMISSIVE, so they OR: a staff account left to RLS
+   alone matches every row, and `maybeSingle()` hands them somebody else's
+   connection to display as their own.
+6. **TikTok's `create_time` is unix SECONDS.** Read as milliseconds every video
+   lands in January 1970.
+7. **A withheld figure is `null`, never `0`.** A zero is a number a creator
+   would believe about their own video.
+8. **Trim every pasted credential.** The real client key arrived 17 characters
+   long for a 16 character key — a trailing newline from the paste. TikTok then
+   says "client key not recognised", which reads exactly like a wrong key, so
+   the natural response is to re-copy the same value and fail again.
+
+**Guard.** `pnpm verify:creator-tiktok`, 20 checks: the token is unreachable
+even by its owner, one creator cannot see another, the nonce is burned before
+the TikTok exchange, replays and expiries are refused, and a forged
+`creator_id` in the request body is ignored.

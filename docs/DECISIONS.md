@@ -1571,3 +1571,23 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   "shift all our data" means.** Moving 41 seeded creators who share one password
   into production would be the opposite of his own standing rule, so nothing was
   moved rather than guessing.
+- 2026-08-26: **The creator TikTok connection is creator-facing, deliberately.**
+  The standing rule that creators never see the TikTok connection is about the
+  BRAND's ad account and its spend. A creator linking their OWN account to see
+  their OWN view count is the opposite: they opt in, it is theirs, and they can
+  revoke it from the same screen.
+- 2026-08-26: **Tokens live in `public` with RLS on and no policies, not in a
+  `private` schema.** The private schema is unreachable from an Edge Function —
+  PostgREST refuses any schema not on its exposed list, for service_role too —
+  so the "stronger" option silently broke the whole feature. RLS with an empty
+  policy set denies every user role while service_role bypasses RLS, which is
+  the same protection and actually works.
+- 2026-08-26: **Only `user.info.basic` and `video.list` are requested.** TikTok
+  requires every product and scope to be demonstrated in the demo video, so each
+  extra scope is another thing a first review can reject. Follower counts, if
+  ever wanted, are a revision to a live app rather than a new application.
+- 2026-08-26: **Production runs the SANDBOX TikTok key until the app is
+  approved**, because only sandbox authorisation completes for an unapproved
+  app and the demo video must be recorded on the domain the Website URL names.
+  Swapping to the production key after approval is a required step, recorded in
+  PARKED 27.

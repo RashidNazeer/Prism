@@ -4,53 +4,54 @@
 
 **Recorded 2026-08-26.**
 
-**PRODUCTION IS LIVE.** It launched today, for the first time. 58 migrations, 10
-Edge Functions, auth configured, frontend shipped, and sign-in proven to mint a
-token that carries a real identity. `https://wurxmediahub.vercel.app` works.
+**HE IS ABOUT TO RECORD THE TIKTOK DEMO VIDEO.** The creator TikTok connection
+works end to end on PRODUCTION, proven with his own account: connected as "Code
+Buddy", token stored, a video reading 1241 views / 65 likes / 4 comments / 0
+shares. Nothing is blocking him but pressing record.
 
-**THE FIRST THING TO ASK HIM**, because it was asked twice and never answered
-and nothing should move until it is: he said *"we will shift all our data to
-prod"*, and prod is empty. His own standing rule is *"Prod never gets test
-data"*, and dev's 41 creators all share the password `1234567890`. Which does he
-mean — the real subset (Penetrex, its products, its real TikTok connection and
-the real GMV rows), or something wider? See **PARKED 30a**.
+**If he asks what to put in the TikTok forms**, every value is on the artifact
+sheet he has, and repeated in FEATURE_MAP: name `Wurx Media Hub`, category
+Business, the 115-character description, Login Kit as the only product,
+`video.list` as the only scope, the 832-character review text, and the five
+URLs. **Do not add scopes or products** — TikTok requires every one to be
+demonstrated on camera.
 
-**Where he was when this session ended:** filling in the TikTok **Display API**
-app on developers.tiktok.com (PARKED 27). Everything he needs is worked out:
-category Business, the 115-character description, **Login Kit as the only
-product**, **`video.list` as the only scope**, the 832-character review text,
-and **URL prefix** as the verification method — not Domain, which needs a DNS
-record on `vercel.app` that Vercel owns. He will hand over TikTok's signature
-file; it goes in `public/` and is served verbatim at the domain root (verified).
-`/terms` and `/privacy` now render on prod, which was the thing blocking him.
+**THE ONE THAT WILL BE FORGOTTEN:** production runs the **sandbox** TikTok key
+(`sbaw…`) so the video could be recorded before approval. **After TikTok
+approves the app, prod must switch to the production key** or no real creator
+can connect. PARKED 27.
 
-**Still ahead of him on that app:** the demo video, which cannot be recorded
-until the creator TikTok connection is BUILT — a second OAuth flow, a token
-table with RLS, a connect/disconnect screen and a screen showing view, like,
-comment and share per video. That is a proper roadmap step and has not started.
+**Still unanswered, asked twice:** production is EMPTY apart from his admin
+account. He said "we will shift all our data to prod"; his own standing rule is
+that prod never gets test data, and dev's 41 creators share the password
+`1234567890`. **Ask which he means before moving anything.** PARKED 30a.
 
 **What this session did (2026-08-26).**
 
-1. **`/terms` and `/privacy`**, written from a four-way inventory of the repo
-   rather than a template. That caught a flat falsehood in the first draft
-   ("other creators cannot see your figures" — the leaderboard shows exactly
-   that) and stopped it quoting a retention period nothing implements.
-2. **PARKED 29**, five findings from that inventory. The first is the one to act
-   on: `applications.review_note` is readable by the applicant it is about.
-3. **The production launch**, PARKED 30, with the gotchas in OPERATIONS.
-4. **Three new suites:** `verify:legal` (31), `verify:prod-ready` (30),
-   `verify:signin`. The last two exist because a migration carries the schema
-   and nothing else.
+1. **`/terms` and `/privacy`**, written from a four-way inventory of the repo.
+   That caught a flat falsehood in my first draft — "other creators cannot see
+   your figures", when the leaderboard shows exactly that — and stopped the page
+   quoting a retention period nothing implements. **PARKED 29** holds five
+   findings from that inventory; the first is that `applications.review_note` is
+   readable by the applicant it is about.
+2. **The first production launch.** 58 migrations, 10 Edge Functions, auth
+   configured, frontend last. The access token hook defaults to OFF and fails in
+   total silence. OPERATIONS, "Launching an environment".
+3. **The creator TikTok connection**, PARKED 27, built and working on prod.
+4. **Five new suites:** `verify:legal`, `verify:prod-ready`, `verify:signin`,
+   `verify:creator-tiktok`, `verify:brand-theme`.
 
-**Two mistakes worth not repeating**, both mine, both in verification rather
-than in the product: a check that read `role` instead of `user_role` and
-declared the auth hook dead on a live launch, twice; and a check that treated
-"no error I recognise" as proof an Edge Function was deployed, on a project with
-zero functions on it. **A check that fails safe is fine. A check that passes
-falsely is worse than no check.**
+**FOUR OF MY OWN CHECKS LIED IN THE REASSURING DIRECTION THIS SESSION.** One read
+`role` instead of `user_role` and declared the auth hook dead on a live launch,
+twice. One treated "no error I recognise" as proof an Edge Function was deployed,
+on a project with zero functions. One asserted a token was unreachable while the
+table was empty because its own setup had failed. One read a TikTok 302-to-login
+as "credentials accepted" when TikTok validates nothing at that point. **A check
+that fails safe is fine. A check that passes falsely is worse than no check** —
+and it is the single most repeated mistake in this repo's history.
 
-**Do not re-explore the codebase.** This file, then PARKED 30, then only what it
-names.
+**Do not re-explore the codebase.** This file, then PARKED, then only what the
+chosen job names.
 
 ---
 

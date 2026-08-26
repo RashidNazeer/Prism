@@ -1022,6 +1022,48 @@ transpiles it with raw `tsc` and imports it from plain Node; a sibling import
 emits a specifier with no `.js` on it, Node refuses to resolve it, and the guard
 stops running inside the build without failing it.
 
+## The creator TikTok connection (Display API)
+
+Separate app, separate portal, separate credentials from the ads integration.
+See FEATURE_MAP for the table that tells them apart.
+
+**Secrets, per project.** `TIKTOK_CREATOR_CLIENT_KEY`,
+`TIKTOK_CREATOR_CLIENT_SECRET`, `TIKTOK_CREATOR_REDIRECT_URI`. The key and
+secret come from developers.tiktok.com and are Rashid's to paste; the code
+`.trim()`s all three, because a pasted credential very often carries a newline.
+
+```powershell
+pnpm verify:creator-tiktok   # 20 checks against dev. Needs SUPABASE_SERVICE_KEY
+```
+
+**The admin-only diagnostic**, when TikTok says something unhelpful:
+
+```
+POST /functions/v1/tiktok-creator   { "action": "creds.probe" }
+```
+
+It asks TikTok's token endpoint to redeem a deliberately invalid code and
+reports the answer verbatim, plus the SHAPE of the credentials (length, prefix,
+whether whitespace is riding along) and never their value. **The distinction it
+draws is the whole point:** a complaint about the CODE means the key and secret
+are fine and the problem is elsewhere; a complaint about the CLIENT means they
+are not.
+
+**TWO TIKTOK ERRORS THAT LIE ABOUT WHICH FIELD IS WRONG.**
+
+- On the authorise page, "correct the following: **client_key**" was NOT the
+  client key. Both key/secret pairs were provably valid at the token endpoint.
+  It was **sandbox configuration**: a sandbox keeps its OWN redirect URI list,
+  and adding the callback to the app does not add it to the sandbox.
+- A 302 from the authorise URL to `/login` **proves nothing about the key**.
+  TikTok routes a signed-out visitor to log in BEFORE validating anything, so a
+  probe that reads that as success is wrong. It cost two false "accepted"
+  verdicts here.
+
+**Prod runs the SANDBOX key** (`sbaw…`) so the demo video can be recorded before
+approval; dev runs the production app key (`awxg…`). **After approval, prod must
+switch to the production key** or real creators cannot connect.
+
 ## Launching an environment: what a migration does NOT carry
 
 Learned on 2026-08-26, launching production for the first time. `supabase db

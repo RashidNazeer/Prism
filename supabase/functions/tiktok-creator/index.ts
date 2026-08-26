@@ -37,6 +37,21 @@ const Body = z.discriminatedUnion('action', [
   z.object({ action: z.literal('connect.start') }),
   z.object({ action: z.literal('videos.refresh') }),
   z.object({ action: z.literal('disconnect') }),
+  /*
+   * A DIAGNOSTIC, ADMIN ONLY. Same precedent as `connection.probe` on the ads
+   * function: some questions can only be answered by asking TikTok, and the
+   * credentials live in here rather than anywhere a laptop can reach.
+   *
+   * It asks the token endpoint to redeem a deliberately invalid code. That is
+   * enough to separate the two failures that look identical from outside:
+   *   - a bad client key or secret  -> TikTok complains about the CLIENT
+   *   - good credentials, bad code  -> TikTok complains about the CODE
+   * The second means the credentials are fine and something else is wrong.
+   *
+   * It reports the SHAPE of the credentials, never their value: a length, a
+   * prefix and whether anything invisible is riding along.
+   */
+  z.object({ action: z.literal('creds.probe') }),
 ]);
 
 /** How long a half-finished connection may sit before the nonce dies. */
@@ -106,6 +121,48 @@ Deno.serve(async (req) => {
   }
   const input = parsed.data;
   const creatorId = actor.id; // NEVER from the client.
+
+  /* --------------------------------------------------------- creds.probe -- */
+  if (input.action === 'creds.probe') {
+    if (actor.role !== 'admin') return reply({ error: 'Not allowed' }, 403);
+
+    const raw = {
+      key: Deno.env.get('TIKTOK_CREATOR_CLIENT_KEY') ?? '',
+      secret: Deno.env.get('TIKTOK_CREATOR_CLIENT_SECRET') ?? '',
+      redirect: Deno.env.get('TIKTOK_CREATOR_REDIRECT_URI') ?? '',
+    };
+
+    /* Shape only. A prefix and a length identify a key without revealing it. */
+    const describe = (v: string) => ({
+      length: v.length,
+      trimmedLength: v.trim().length,
+      hasWhitespace: /s/.test(v),
+      prefix: v.trim().slice(0, 4),
+      suffix: v.trim().slice(-2),
+    });
+
+    const answer = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_key: creds.clientKey,
+        client_secret: creds.clientSecret,
+        code: 'deliberately-invalid-code-for-diagnosis',
+        grant_type: 'authorization_code',
+        redirect_uri: creds.redirectUri,
+      }),
+    });
+    const body = await answer.json().catch(() => null);
+
+    return reply({
+      key: describe(raw.key),
+      secret: describe(raw.secret),
+      redirect: raw.redirect,
+      tiktokStatus: answer.status,
+      /* Verbatim, because the exact wording is the whole diagnostic. */
+      tiktok: body,
+    });
+  }
 
   /* ------------------------------------------------------- connect.start -- */
   if (input.action === 'connect.start') {

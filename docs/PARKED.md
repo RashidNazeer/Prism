@@ -851,86 +851,28 @@ today. **Creators must never see the budget or the ROAS target.**
 
 ---
 
-## 27. Per-video engagement needs a SECOND TikTok app, on a different platform
+## 27. DONE 2026-08-26. Per-video engagement, built and working.
 
-**Parked 2026-08-25**, after Rashid applied for scopes and still did not get
-views per video. He was right to be annoyed: the scopes worked, but they were
-never going to deliver that, and it should have been checked before he applied.
+The second TikTok app exists and the flow works end to end **on production**,
+proven with a real account on 2026-08-26: connected as "Code Buddy", token
+stored, one video reading 1241 views / 65 likes / 4 comments / 0 shares, audit
+row written. See FEATURE_MAP, "The creator TikTok connection".
 
-**THE TWO PLATFORMS ARE NOT THE SAME THING, and this is the whole point.**
+**What is left, and it is not code:**
 
-| | what we have | what views need |
-| --- | --- | --- |
-| platform | `business-api.tiktok.com` | `open.tiktokapis.com` |
-| portal | TikTok for Business | developers.tiktok.com |
-| authorises | the BRAND's ad account | the CREATOR's own TikTok |
-| gives | money: cost, GMV, orders, ROI | views, likes, comments, shares |
-
-Applying for more scopes on the app we have cannot reach engagement, because
-engagement is not in that product at all. **This is a second app, a second
-developer account, and a second OAuth flow.** No amount of ticking on the first
-one gets there.
-
-**What the second one gives, per video** (TikTok's own Display API docs, read
-2026-08-25, NOT yet tested by us because there is no app):
-
-```
-endpoint  POST /v2/video/list/     on open.tiktokapis.com
-scope     user.info.basic, video.list
-returns   view_count, like_count, comment_count, share_count,
-          id, title, video_description, duration, cover_image_url, embed_link
-```
-
-**It returns the AUTHENTICATED USER's own videos**, which is exactly our case: a
-creator posts to their own account and pastes us the link. They would connect
-their TikTok once, the way they connect anything else.
-
-**Three things to know before promising it.** `video.list` normally needs app
-review before production. The figures are ORGANIC totals for the whole video,
-not the ad-driven slice, so they will not reconcile with anything in
-`tiktok_video_daily` and must never be presented as if they would. And every
-creator has to authorise individually, so coverage will be partial and the
-screens must be right with the figure missing.
-
-**This is creator-facing, unlike the ads connection.** The rule that creators
-never see the TikTok ads connection is about the BRAND's ad account. A creator
-connecting their own account to show their own view count is the opposite: it is
-theirs, and it is the sort of thing the product is for.
-
-**HOW TO APPLY, read from TikTok's own portal docs on 2026-08-25.** This is a
-DIFFERENT portal from the ads app. Do not look for it in TikTok for Business.
-
-1. **https://developers.tiktok.com** — sign in with a TikTok account.
-2. Profile icon → **Manage apps** → **Connect an app**, and pick an
-   organisation as the owner when prompted.
-3. **Products → Add products**, and add BOTH. Either alone is useless:
-   - **Login Kit**, which is how a creator authorises us
-   - **TikTok API**, which is the Display API that carries the figures
-4. In **Login Kit settings**, set a **redirect URI**. Ours would be
-   `https://wurxmediahubdev.vercel.app/oauth/tiktok-creator/callback` for dev
-   and the wurxmediahub.vercel.app equivalent for prod. It must NOT reuse the
-   ads callback: different platform, different app, different flow.
-5. Request scopes **`user.info.basic`** and **`video.list`**. `user.info.basic`
-   is the baseline every app gets; `video.list` is the one that matters and the
-   one review will actually look at.
-6. **Verify URL properties** for every URL in the app config. This is domain
-   ownership verification and it blocks submission until it is done.
-7. Submit for review. Status goes **Draft → In review → Live**. A first-time app
-   must demonstrate the integration in the portal's **sandbox** before it can be
-   approved, so there is a build step BEFORE the approval, not after.
-
-**What we would have to build, and it is not small:** a second OAuth flow, a
-place to store each creator's token, a refresh path, a screen for a creator to
-connect and disconnect, and a fetch that respects whatever rate limit the Display
-API carries. None of it shares code with the ads connection, because that one
-authorises a brand's ad account through a different host entirely.
-
-**Read the App Review Guidelines before writing any of it**:
-https://developers.tiktok.com/doc/app-review-guidelines/
-
-**Trigger:** when Rashid wants views on a creator's video badly enough to run a
-second app through review. Nothing in the current product depends on it.
-
+- **Record the demo video** on `wurxmediahub.vercel.app`, one take, following the
+  shot list. mp4/mov, under 50 MB.
+- **Submit the app for review.** Every field is worked out; the values live in
+  the artifact sheet and in FEATURE_MAP.
+- **AFTER APPROVAL: switch prod from the sandbox key to the production key**, or
+  real creators cannot connect. Prod deliberately runs `sbaw…` today because
+  only sandbox auth completes before approval.
+- **Then decide where the figures belong.** They are on the profile card because
+  that is what the demo video needed. Whether they also belong beside a
+  submitted video on Content, or on My numbers, is a product question nobody has
+  asked yet. **They must never be presented as reconcilable with
+  `tiktok_video_daily`:** these are organic lifetime totals for a whole video,
+  that is the ad-driven slice, and the card says so in as many words.
 
 ## 28. Brand themes: the three things deliberately left
 
