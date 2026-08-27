@@ -1700,3 +1700,13 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   before the drilldown reports its month, so an ungated first pass fired a
   full-sized all-time query that nothing would display — 357 ids on every brand
   open. One render of patience halves the traffic.
+
+- 2026-08-27: **The app's email goes out on its own subdomain, not on
+  wurxmedia.com.** Rashid asked explicitly that the website's existing Resend
+  sending not be disturbed, and a subdomain is the only answer that guarantees
+  that structurally rather than by care. The risk that decided it runs in the
+  direction people do not expect: the website mails a real opt-in list, and a
+  campaign that collects spam complaints degrades the whole domain, so the
+  casualty would be a password reset a creator needs at eleven at night. Cost:
+  three additive DNS records, and a new subdomain has no sending reputation
+  until it warms up. Quota stays shared, because Resend counts per account.

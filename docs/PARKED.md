@@ -105,36 +105,63 @@ the tokens, the glass utilities and `FilterBar` all exist.
 
 ---
 
-## 1. Resend email setup (DNS fix + API key)
+## 1. Resend email: the DNS is DONE. What is left is a key and a subdomain.
 
-**Status:** PAUSED, 2026-07-29, at Rashid's request to keep development moving
-**Owner:** Rashid
-**Trigger to raise again:** before any feature depends on an email actually
-arriving. That means: password reset going live, email confirmation being turned
-on, approval notifications, or email-code login.
+**Status:** IN PROGRESS 2026-08-27
+**Owner:** Rashid for the Resend dashboard and GoDaddy, Claude for everything after
+**Trigger:** live now — prod cannot take a real creator without email.
 
-wurxmedia.com is verified in Resend, but the setup is half-broken:
+**THE DNS COMPLAINTS IN THE ORIGINAL VERSION OF THIS ITEM ARE ALL FIXED**, and
+were fixed on 2026-08-01 without anybody updating this file. Verified from the
+command line on 2026-08-27 against `wurxmedia.com`:
 
-- The Resend DKIM record is published on the root domain (`@`) where nothing
-  will read it. It belongs at host `resend._domainkey`.
-- The SPF record for the bounce subdomain (`send`) is missing entirely.
-  Should be `v=spf1 include:amazonses.com ~all`.
-- Optional but worth doing: wurxmedia.com has **no SPF record at all**, which
-  weakens the existing Google Workspace mail. Suggested `@` value:
-  `v=spf1 include:_spf.google.com ~all`.
+| record | state |
+| --- | --- |
+| DKIM at `resend._domainkey` | correct, valid RSA key |
+| root SPF | `v=spf1 include:_spf.google.com ~all` |
+| bounce SPF at `send` | `v=spf1 include:amazonses.com ~all` |
+| MX at `send` | `feedback-smtp.us-east-1.amazonses.com` |
+| DMARC | `p=none`, relaxed alignment |
 
-Consequence while parked: emails from wurxmedia.com (including the existing
-rajil@ sender) go out weakly authenticated and are more likely to land in spam.
-Fine for now. **Fatal for login codes**, because a creator who never receives the
-code cannot get in at all.
+**A WARNING ABOUT HOW THAT WAS NEARLY GOT WRONG AGAIN.** The first check on
+2026-08-27 reported the bounce SPF missing, and it was a LOOKUP TIMEOUT that a
+`catch` had turned into "NOT FOUND". Rashid was told a record was missing when
+it was not. **A DNS check must distinguish NXDOMAIN from a failure to ask** —
+query a second resolver before reporting an absence.
 
-Also still needed: a **new Resend API key** with Sending access only, into
-`C:\Users\RA_shid\.wurx\cli-secrets.env` as `RESEND_API_KEY=`.
+**wurxmedia.com is sending live mail to a real list today, and must not be
+disturbed.** Rashid said so explicitly. Nothing about its records, its sender or
+its API key is to be changed.
 
-Agreed sender once live: `Wurx Media <creators@wurxmedia.com>`. No new domain
-setup needed for that address, domain verification covers every address.
+**The decision taken on 2026-08-27: the app sends from its OWN SUBDOMAIN**, so
+the two reputations are separated. The risk runs in the direction people do not
+expect — a marketing campaign that collects complaints degrades the domain, and
+the casualty is a password reset a creator needs urgently. See DECISIONS.
 
-Full step-by-step instructions were given in chat on 2026-07-29.
+**What is left, in order:**
+
+1. **Rashid:** add the subdomain as a second domain in Resend, and its three
+   records at GoDaddy. Purely additive; no existing record is edited.
+   **The GoDaddy trap:** it appends the domain automatically, so the host is
+   entered WITHOUT `.wurxmedia.com`. Pasting the full name creates
+   `...notify.wurxmedia.com.wurxmedia.com` and the domain never verifies.
+2. **Claude:** verify the records from the command line, against two resolvers.
+3. **Rashid:** create a NEW API key, Sending access only, scoped to the new
+   subdomain. **Do not rotate or reuse the existing key**, which the website
+   uses. Into `C:\Users\RA_shid\.wurx\cli-secrets.env` as `RESEND_API_KEY=`,
+   never into a chat message.
+4. **Claude:** Supabase custom SMTP on DEV (`smtp.resend.com`, 587, user
+   `resend`, password the API key), prove a real password reset arrives, then
+   the same on prod.
+5. **Claude:** the approval notification, as an Edge Function on the Resend HTTP
+   API. Item 2 calls it the single most important email in the product.
+6. **Claude, LAST:** turn email confirmation ON. **Doing this before SMTP is
+   proven locks out every new signup**, because the confirmation mail would go
+   through Supabase's built-in sender or not at all.
+
+**Quota is per ACCOUNT, not per domain**, so a subdomain separates reputation but
+not the sending allowance. Resend's free tier is 3,000/month and 100/day, shared
+with the website's list. Worth checking the plan before real volume.
 
 ---
 
