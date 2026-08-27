@@ -998,6 +998,35 @@ on the card and `/privacy` in one commit, then reconnecting.
   `tiktok_video_daily`:** these are organic lifetime totals for a whole video,
   that is the ad-driven slice, and the card says so in as many words.
 
+## 31. WurxBase v382: what the reskin still owes
+
+**Status:** PAUSED
+**Owner:** Claude
+**Raise it when:** Rashid mentions how Paid Collabs looks, or before anybody
+shows that screen to a client.
+
+**a. The Creative angle testing selected row is a solid blue** with underlined
+orange link text on it. The blue is `#1259C3`, from a `PALETTE` array of eight
+categorical colours in `src/vendor/wurxbase/CreativeAngles.jsx` used to tell
+angles apart. **The vendoring pipeline cannot reach it:** it themes colours that
+follow a CSS property name, and a bare array of hex strings has no property to
+key on. Two honest fixes — map that array in `vendor-wurxbase.mjs`, or add a
+swap to `scripts/wurxbase-patches.mjs`, which already supports in-place swaps.
+**Rashid said on 2026-08-27 that he has two changes he wants here. Ask him
+first; this may be one of them.**
+
+**b. One count badge fails contrast in DARK mode**, 1.11:1, on the Performance
+tab. Light is clean on all six tabs. `pnpm verify:collab-contrast` names it.
+
+**c. Their app cannot save its own settings.** `app_settings` returns 401 /
+42501 on every write — their RLS refuses the anon key. Pre-existing, unrelated
+to anything of ours, and harmless: it only means WurxBase cannot persist its own
+preferences from inside our admin. Worth telling Asad rather than fixing here.
+
+**d. Their JSX still holds categorical colour arrays and a few raw hexes**
+that no stylesheet can reach. 447 inline colours in `App.jsx` and 46 in
+`WurxUI.jsx` ARE themed by the pipeline now; what is left is arrays.
+
 ## 28. Brand themes: the three things deliberately left
 
 **Status:** PAUSED
@@ -1088,7 +1117,10 @@ account removes rows and leaves every image. The dev tidy script empties
 orphan. The privacy policy now says we keep things until asked rather than
 inventing a schedule, so this is honest today, but it is not tidy.
 
-**d. The vendored Paid Collabs CSS imports Inter from Google Fonts.** The main
+**d. DONE 2026-08-27. The Google Fonts import is gone**, dropped by
+`scripts/vendor-wurxbase.mjs` on every vendoring, so it cannot come back with
+their next release. Inter is self-hosted here, so nothing changed on screen.
+Original note: **The vendored Paid Collabs CSS imported Inter from Google Fonts.** The main
 product self-hosts every typeface; `src/vendor/wurxbase/App.css` and
 `paidcollabs.css` still `@import` from `fonts.googleapis.com`, and it survives
 into the built CSS. So an admin opening Paid Collabs makes a request to Google.

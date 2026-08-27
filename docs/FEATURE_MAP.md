@@ -2747,3 +2747,30 @@ JSX where no stylesheet can reach it and no class exists to aim at.
 
 Result: light theme clean on all six tabs, dark clean on five with one count
 badge outstanding. `pnpm verify:collab-contrast`.
+
+### Creative angle testing: where the data lives (2026-08-27)
+
+Reported as "showing no data", investigated, **not a bug**. Worth writing down so
+nobody spends an evening on it twice.
+
+An angle test is one row in THEIR `activity_logs`, action `CREATIVE_ANGLE`,
+target `"Brand::YYYY-MM"` — their own comment explains why: *"this belongs in
+its own table, but the project has no DDL access, so it rides in activity_logs
+the way the brand contracts and Discovery marks already do."*
+
+**So it is scoped to ONE brand in ONE month**, deliberately: comparing a
+September hook against a January one measures the season, not the hook. Pick a
+brand and month nobody has saved a test for and the empty state is the correct
+answer. On 2026-08-27 their database held exactly two, `Aurelia::2026-08` and
+`Vidge Pets::2026-07`.
+
+**`fetchAngles()` is called once, from `App.jsx`, and its error is SWALLOWED**
+(`.catch(() => {})`). It writes a `localStorage` mirror and dispatches a
+`wurx-angles` event; the screen reads the mirror, never the network. So a
+failure there is invisible in every direction: no error, no data, and an empty
+state that looks deliberate.
+
+**MEASURING THEIR DATABASE: FILTER FOR A HOST THAT IS NOT OURS.** A probe that
+takes the first `/rest/v1/` request it sees gets OUR project, because our app
+issues its calls first. Doing that reported every one of their tables missing
+and produced a confident, wrong "the table does not exist".

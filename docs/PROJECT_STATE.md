@@ -2,65 +2,74 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-27.**
+**Recorded 2026-08-27 (late) by /precompact.**
 
-**HE IS TESTING THE PAID COLLABS AD COLUMNS**, which are on DEV only and not on
-production. Ask for his verdict; do not ship them to prod unless he says so.
+Rashid asked for this next, in his words: **"were right it's showing for auriela
+in aug i was lookin in july i apologize — two things need to be changed let me
+know after compacting"**.
 
-Two columns on a brand's creator list, **Ad spend** and **ROI**, plus the same
-figures against each video inside an expanded creator. **Month-scoped**, driven
-by Paid Collabs' own month selector — he asked for that after testing the first
-version, which summed lifetime and therefore put a different period in a row of
-monthly numbers. "All Time" removes the bounds.
+**He has TWO changes he wants and has NOT said what they are yet.** They concern
+Paid Collabs, almost certainly the **Creative angle testing** screen, which is
+what he was looking at. Do not guess at them.
 
-Proven on dev: 15 of Penetrex's 41 creators show real August figures (e.g.
-$222.38, $149.71, $98.13). One RPC call to open a brand; ~424 video ids per
-call across a period switch.
+**Before starting, ask him:** "Compaction done. What are the two things you want
+changed on Creative angle testing?" Wait for the answer. Do not begin unprompted
+and do not start any other work in the meantime.
 
-**The join is TikTok's own video id, not brand names.** Their links carry it and
-`tiktok_video_daily.item_id` is the same number, so there is no mapping table
-and a brand needs no configuration — connecting its ad account is what makes
-figures appear.
+**THE THING HE MIGHT MEAN, so you are not surprised:** the selected video row on
+that screen is a solid blue `#1259C3` with underlined orange link text on it.
+That blue comes from a `PALETTE` array in `src/vendor/wurxbase/CreativeAngles.jsx`
+— a categorical list of eight colours used to tell angles apart. **The vendoring
+pipeline cannot reach it**: it themes colours that sit after a CSS property name
+(`background: '#fff'`), and a bare array of hex strings has no property to key
+on. Fixing it means either mapping that array in the pipeline or a WURX swap in
+`scripts/wurxbase-patches.mjs`, which already supports in-place swaps. **This is
+a guess about what he means. Ask.**
 
-**THE BUG THAT COST AN HOUR, and it is a general one.** The figures provider
-cancelled its in-flight fetch on every dependency change, the way a React data
-hook usually should. Changing the month IS a dependency change, so both fetches
-completed, both returned real rows, and **both results were thrown away**: a
-screen of dashes with 200s in the network tab and nothing erroring anywhere. The
-cache is keyed `month|id`, so a late result is still correct for its own key.
-**Cancel when a stale result would be WRONG; never when it would merely be old.**
+**CLOSED, AND DO NOT RE-INVESTIGATE IT:** he reported Creative angle testing
+showing no data. **It was not a bug.** Angles are stored one row per brand AND
+month in THEIR `activity_logs`, action `CREATIVE_ANGLE`, target
+`"Brand::YYYY-MM"`. Their database holds exactly two: `Aurelia::2026-08` and
+`Vidge Pets::2026-07`. He was looking at Penetrex, and then at Aurelia in JULY.
+Aurelia in AUGUST renders correctly, which he confirmed. Nothing to fix.
 
-**Earlier the same night, two hours went to editing the wrong file.** `App.jsx`
-and `WurxUI.jsx` both hold a creators table with near-identical columns; only
-**`WurxUI.jsx`** is reachable at `/admin/collabs`. App.jsx is reverted to
-verbatim. **Open the page and look before choosing an insertion point.**
+**I told him the table did not exist. That was wrong** and cost time: the probe
+took the first `/rest/v1/` request it saw, which came from OUR app, so it
+queried OUR database for THEIR tables and reported all of them missing. **When
+measuring the vendored app's database, filter for a host that is NOT ours.**
 
-**His "not one line" rule for the vendored code now has an explicit exception**,
-chosen knowingly. Ten `WURX-ADDED ... WURX-END` blocks in `WurxUI.jsx`, so a
-re-vendor is find-and-reapply.
+**WHAT SHIPPED TODAY.** WurxBase v382 is vendored in, on **dev only**, commit
+`8b0c50b`. Capability permissions, God Mode settings, creative angle testing,
+per-month brand contracts, SQL Quest, a Performance dashboard. **His Ad spend
+and ROI columns survived intact** — `verify:collab-ads` 30 and
+`verify:collab-ads-ui` 15 both green against the new code.
 
-**Guards:** `verify:collab-ads` 30 checks (arithmetic in Node, the RPC, months
-that must not blend, and a creator trying to read another's spend),
-`verify:collab-ads-ui` 15 checks in a real browser. Both green. Build and the
-isolation guard pass.
+**Vendoring is now a committed pipeline**, because the first one was a throwaway
+codemod and reconstructing it cost most of a day:
 
-**STILL WAITING ON TIKTOK.** The Display API app was submitted 2026-08-26.
-**PARKED 27** holds every submitted value verbatim; **27b** is the production
-key swap, actionable only once he says the app is approved.
+```bash
+node scripts/vendor-wurxbase.mjs "<path to their src/>"
+node scripts/wurxbase-patches.mjs
+pnpm build && pnpm preview
+pnpm verify:collab-contrast     # the one that catches a bad reskin
+```
 
-**Still unanswered, asked twice, do not guess:** production is EMPTY apart from
-his admin account. **PARKED 30a.**
+**HE WAS ANGRY ABOUT THE UI, AND HE WAS RIGHT.** The first reskin shipped
+near-black names on a near-black table and an unusable Reporting screen. The
+guard reported a pass because **it was opening four of the six tabs**. Fixing
+the guard then found four more of my own faults: it skipped every element on a
+gradient, it read `color` on SVG text which is painted by `fill`, the inline
+pass themed only the first colour in a value, and its backreference pointed at
+the wrong capture group so it themed nothing at all while building cleanly.
+Contrast now: **light clean on all six tabs, dark clean on five**, one count
+badge outstanding at 1.11:1.
 
-**Also without his verdict:** Brand World, the multi-colour brand themes, the
-rebuilt offers page. **PARKED 29** holds five privacy-inventory findings, the
-first being that `applications.review_note` is readable by its subject.
+**Still waiting on TikTok** for the Display API review. **PARKED 27** holds every
+submitted value verbatim; **27b** is the production key swap, actionable only
+when he says the app was approved.
 
-**EUKA, asked about on 2026-08-26 and answered:** we have no access to it at
-all. The proxy holding the credentials is on WurxBase's Netlify site and
-`/.netlify/functions/euka` is deliberately 404'd on our domain, so the EUKA
-figures in Paid Collabs are cached in their Supabase rather than live. Nothing
-in their 24,000 lines touches target collaborations. Answering anything more
-needs EUKA credentials or an export from him.
+**Still unanswered, asked twice:** production is empty apart from his admin
+account. **PARKED 30a.**
 
 **Do not re-explore the codebase.** This file, then PARKED, then only what the
 chosen job names.
