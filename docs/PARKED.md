@@ -998,6 +998,96 @@ on the card and `/privacy` in one commit, then reconnecting.
   `tiktok_video_daily`:** these are organic lifetime totals for a whole video,
   that is the ad-driven slice, and the card says so in as many words.
 
+## 34. WurxBase destroys saved data on an ordinary click, in six places
+
+**Status:** PAUSED, needs a decision from Rashid
+**Owner:** Claude
+**Raise it when:** he asks about Paid Collabs reliability, before anybody new is
+given a WurxBase login, or the next time Asad is in a conversation.
+
+Found 2026-08-28 by a 100-agent audit of every write path in
+`src/vendor/wurxbase/`. **Full detail and the fix design:
+`docs/WURXBASE_WRITE_SAFETY.md`.** Rashid has NOT approved any change yet.
+
+**THE SHAPE, one sentence:** their screens read a `localStorage` mirror rather
+than the database, a save writes whatever is in that mirror and then DELETES the
+stored rows it replaces, and the load that fills the mirror swallows its own
+error — so a screen that failed to load looks identical to a screen with nothing
+saved, and the next click makes that emptiness permanent.
+
+**Twenty-seven confirmed, 24 of them live:**
+
+| Area | What happens | Severity |
+|---|---|---|
+| Access Control / users | Opening the user modal on a failed read reseeds five hardcoded accounts, resetting role and password | loses-saved-data |
+| Access Control / users | "Undo my changes" discards every override ever stored on that person, not the ones you just made | loses-saved-data |
+| Access Control / users | Permissions are loaded once and written wholesale, so a parked panel overwrites everyone else's grants | loses-saved-data |
+| Creative angle testing | On a device whose mirror never loaded, "New angle" replaces the team's whole test for that brand+month with one blank angle | loses-saved-data |
+| Creative angle testing | A second tab or a second teammate silently sweeps the row the other one just saved | loses-saved-data |
+| Creative angle testing | A boot fetch that lands after a save overwrites the mirror wholesale, and the next edit makes the reverted state permanent on the server | loses-saved-data |
+| Brand contracts | An empty modal saves nothing over the top of everything, and reports success | loses-saved-data |
+| Brand contracts | The delete runs before the insert, so a failed save destroys the old row while the screen keeps showing it | loses-saved-data |
+| The creator table | Deleting a brand destroys pending applications the user was never shown, and Undo cannot restore them | loses-saved-data |
+| The creator table | Bulk "Hired By" writes to rows scrolled out of view and bypasses the Asad gate that exists on every other hired_by path | loses-saved-data |
+| The creator table | An EUKA video with no usable date deletes the matching stored row, taking a hand-typed ad code with it | loses-saved-data |
+| Discovery, brand order, realtime | scheduleSettingsSave is missing the load guard its sibling has, so mounting the app writes an empty brand_order over the team's saved order | loses-saved-data |
+| Discovery, brand order, realtime | A realtime refetch rewrites the pending debounced patch, silently discarding a brand reorder the user just made | loses-saved-data |
+| Discovery, brand order, realtime | settingsLoadedRef is set to true even when the settings fetch failed, so the guard lies and the next edit writes a partial list over the shared row | loses-saved-data |
+| Discovery, brand order, realtime | saveDiscoveryMark deletes the existing outreach mark before inserting the new one, with no rollback of the delete, and the UI then restores the old colour it just destroyed | loses-saved-data |
+| God Mode / app settings | God Mode brand delete counts approved creators but deletes every status, silently destroying pending applications | loses-saved-data |
+| Access Control / users | After changing someone's role, toggling a switch off and on again deletes their stored override | corrupts-data |
+| Brand contracts | A stale mirror rolls a teammate's newer terms back on the next edit | corrupts-data |
+| Creative angle testing | Deleting the last angle removes the server row entirely, so the promised five-second Undo exists only in memory | annoyance |
+| Creative angle testing | A half-typed figure in a cell is replaced when a late reload lands | annoyance |
+| God Mode / app settings | app_settings brand_order save fires on mount with no load guard at all — an armed OVERWRITE-FROM-EMPTY held back only by RLS | annoyance |
+| God Mode / app settings | settingsLoadedRef is set to true after a FAILED load, and every app_settings write refusal is swallowed to console only | annoyance |
+| God Mode / app settings | Backup > Restore from file silently resets every God Mode setting when given a valid JSON file that is not a backup, and reports success | annoyance |
+| God Mode / app settings | godGet's module cache is never invalidated, so a second tab's save writes back a stale snapshot over the first tab's settings | annoyance |
+
+**NEEDS NOTHING TO GO WRONG FIRST** — these fire on a good day, on a good
+connection, and are the ones to tell Asad about:
+
+- **God Mode brand delete counts approved creators and deletes every status.**
+  The dialog says "permanently removes its 5 creator records"; it also removes
+  every PENDING application for that brand, which the count never included and
+  Undo cannot restore. Same bug reachable from the Brand Drilldown trash icon.
+- **Access Control "Undo my changes" writes `{}`** — every override that person
+  ever had, including ones set months ago by somebody else.
+- **Two tabs, or two people, and the second save silently wins**, on angle
+  tests, contracts and permissions alike. No conflict warning, no trace.
+- **Bulk "Hired By" writes to rows scrolled out of view** — the floating bar
+  keeps its selection across a brand or month change — and skips the Asad-only
+  gate every other `hired_by` path has.
+- **Mounting the app can write an empty brand order over the team's**, because
+  `scheduleSettingsSave` is missing the load guard its sibling has. One shared
+  `app_settings` row, so it is everyone's ordering.
+
+**DELETE-BEFORE-INSERT, so a failed save destroys the old row:** brand contracts
+and Discovery outreach marks both delete first and have no rollback. The contract
+one is the worst of the pair — it then reports "Could not save", and the mirror
+keeps rendering the old terms, so nobody investigates while recovery is still
+possible.
+
+**WHAT WE CAN FIX ON OUR COPY:** only the angle-test path, and the design is
+option C in the doc — a compare-and-swap. The mirror starts carrying the id of
+the row it was built from; before writing, `saveAngles` asks the server which
+row it currently holds using the fetch's own ordering, and refuses if it is not
+the one this screen loaded, healing the mirror and telling the user. It fixes all
+three angle findings, leaves their insert and sweep byte-identical so a
+deliberate delete still deletes, and does not bet on `created_at` having a
+default we cannot read. Two one-line swaps and one anchored insertion.
+
+**`scripts/wurxbase-patches.mjs` can only patch one file today** — `FILE` is
+hardcoded to `WurxUI.jsx` — so it needs a small mechanical generalisation first.
+**And a refused patch currently leaves THEIR unpatched file on disk**, which is
+the dangerous version, so the same change must add a build-time assertion.
+
+**REFUTED, do not re-raise:**
+- **The creator table** — The EUKA auto-sync rebuilds the whole video_codes array from a snapshot taken before a long chain of network awaits
+- **The creator table** — DEAD CODE TODAY — DetailModalV2's video editor truncates the array to the deal's video count and strips every metric field, on open-and-close with no edit
+- **The creator table** — SAFE — the live video popup (CreatorVideosPopup) does write the whole array, but every way it can go stale is closed
+- **Discovery, brand order, realtime** — The Discovery realtime handler replaces the entire marks map with no in-flight or ordering guard, and the delete half of a local save triggers it against a row that is briefly gone
+
 ## 33. NEVER DRIVE THEIR APP WITH A BROWSER ROBOT
 
 **Status:** RULE, not a task
