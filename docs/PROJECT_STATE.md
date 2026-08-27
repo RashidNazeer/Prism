@@ -2,74 +2,55 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-27 (late) by /precompact.**
+**Recorded 2026-08-28 by /precompact. Rashid was about to hit his usage limit.**
 
-Rashid asked for this next, in his words: **"were right it's showing for auriela
-in aug i was lookin in july i apologize — two things need to be changed let me
-know after compacting"**.
+**THE ONE DECISION WAITING ON HIM:** he asked *"can we fix this?"* about the
+angle-test delete (below). He has NOT said go. Ask before patching their code.
 
-**He has TWO changes he wants and has NOT said what they are yet.** They concern
-Paid Collabs, almost certainly the **Creative angle testing** screen, which is
-what he was looking at. Do not guess at them.
+**ALREADY APPROVED AND NOT STARTED:** *sign in to Paid Collabs from our side* —
+our admin route sets their `ch_user` session itself with every capability on,
+under the real person's name so their activity log stays truthful. He chose this
+on 2026-08-27 over asking Asad to raise `usman`. **Nothing in any database
+changes**, ours or theirs; see the Paid Collabs section of FEATURE_MAP for why.
 
-**Before starting, ask him:** "Compaction done. What are the two things you want
-changed on Creative angle testing?" Wait for the answer. Do not begin unprompted
-and do not start any other work in the meantime.
+**WHAT SHIPPED (dev, pushed, `23f5d5b`).** His UI complaint is fixed. The
+vendoring pipeline was throwing away alpha, so their 1.4% row hover became a
+SOLID blue and their 10% hairline became solid gold. 521 see-through colours
+were arriving opaque. Contrast is back to 11 of 12, light clean on all six tabs.
+He has NOT looked at it yet — the test checklist is in the chat: Paid Collabs →
+Reporting → Creative angle testing → a brand with a saved test → open an angle →
+run the mouse down the rows, both themes.
 
-**THE THING HE MIGHT MEAN, so you are not surprised:** the selected video row on
-that screen is a solid blue `#1259C3` with underlined orange link text on it.
-That blue comes from a `PALETTE` array in `src/vendor/wurxbase/CreativeAngles.jsx`
-— a categorical list of eight colours used to tell angles apart. **The vendoring
-pipeline cannot reach it**: it themes colours that sit after a CSS property name
-(`background: '#fff'`), and a bare array of hex strings has no property to key
-on. Fixing it means either mapping that array in the pipeline or a WURX swap in
-`scripts/wurxbase-patches.mjs`, which already supports in-place swaps. **This is
-a guess about what he means. Ask.**
+**IN FLIGHT WHEN THE SESSION ENDED:** a Workflow auditing every vendored
+WurxBase write path for the same overwrite-from-unloaded-state bug, run id
+`wf_a002ff07-7b1`. **A workflow does not survive the session.** If its findings
+are wanted, re-run it: the script is at
+`.claude/projects/.../workflows/scripts/wurxbase-overwrite-audit-wf_a002ff07-7b1.js`.
+Its conclusions were never seen, so do not cite them.
 
-**CLOSED, AND DO NOT RE-INVESTIGATE IT:** he reported Creative angle testing
-showing no data. **It was not a bug.** Angles are stored one row per brand AND
-month in THEIR `activity_logs`, action `CREATIVE_ANGLE`, target
-`"Brand::YYYY-MM"`. Their database holds exactly two: `Aurelia::2026-08` and
-`Vidge Pets::2026-07`. He was looking at Penetrex, and then at Aurelia in JULY.
-Aurelia in AUGUST renders correctly, which he confirmed. Nothing to fix.
+**THE ANGLE-TEST BUG, stated correctly** (an earlier version of this overstated
+it). `saveAngles` in `src/vendor/wurxbase/angleStore.js` deletes with
+`.eq('action','CREATIVE_ANGLE').eq('target','Brand::YYYY-MM')` — ONE brand in
+ONE month, angle rows only. It does **not** touch creators, other brands or
+other months. Saving empty *is* their delete button and that is correct.
 
-**I told him the table did not exist. That was wrong** and cost time: the probe
-took the first `/rest/v1/` request it saw, which came from OUR app, so it
-queried OUR database for THEIR tables and reported all of them missing. **When
-measuring the vendored app's database, filter for a host that is NOT ours.**
+The actual hole: the screen reads a `localStorage` mirror written by a fetch
+whose error is swallowed, so **it cannot tell "nobody saved a test" from "I
+failed to load it"** — and the next click writes that emptiness over real data,
+with no error and no trace, because the delete logs nothing. The fix shape:
+never delete, always insert (an empty "tombstone" row), and let their existing
+newest-row-wins loader decide; plus stop swallowing the fetch error. It must go
+through `scripts/wurxbase-patches.mjs` or the next vendoring erases it, and it
+must fail loudly if their release moves those lines. **PARKED 33.**
 
-**WHAT SHIPPED TODAY.** WurxBase v382 is vendored in, on **dev only**, commit
-`8b0c50b`. Capability permissions, God Mode settings, creative angle testing,
-per-month brand contracts, SQL Quest, a Performance dashboard. **His Ad spend
-and ROI columns survived intact** — `verify:collab-ads` 30 and
-`verify:collab-ads-ui` 15 both green against the new code.
+**CLOSED:** the missing Aurelia August angle test was **Asad deleting it
+deliberately**, confirmed by Rashid. Not a fault, not data loss. The rule in
+PARKED 33 still stands on its own merits: their app has no staging copy and no
+undo, so never drive it with a browser robot — read their database over REST.
 
-**Vendoring is now a committed pipeline**, because the first one was a throwaway
-codemod and reconstructing it cost most of a day:
-
-```bash
-node scripts/vendor-wurxbase.mjs "<path to their src/>"
-node scripts/wurxbase-patches.mjs
-pnpm build && pnpm preview
-pnpm verify:collab-contrast     # the one that catches a bad reskin
-```
-
-**HE WAS ANGRY ABOUT THE UI, AND HE WAS RIGHT.** The first reskin shipped
-near-black names on a near-black table and an unusable Reporting screen. The
-guard reported a pass because **it was opening four of the six tabs**. Fixing
-the guard then found four more of my own faults: it skipped every element on a
-gradient, it read `color` on SVG text which is painted by `fill`, the inline
-pass themed only the first colour in a value, and its backreference pointed at
-the wrong capture group so it themed nothing at all while building cleanly.
-Contrast now: **light clean on all six tabs, dark clean on five**, one count
-badge outstanding at 1.11:1.
-
-**Still waiting on TikTok** for the Display API review. **PARKED 27** holds every
-submitted value verbatim; **27b** is the production key swap, actionable only
-when he says the app was approved.
-
-**Still unanswered, asked twice:** production is empty apart from his admin
-account. **PARKED 30a.**
+**Still waiting on TikTok** for Display API review (PARKED 27; 27b is the prod
+key swap). **Resend** `notify.wurxmedia.com` verification was still pending.
+**PARKED 30a** — the production data question — is still unanswered.
 
 **Do not re-explore the codebase.** This file, then PARKED, then only what the
 chosen job names.
