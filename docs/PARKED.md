@@ -998,6 +998,83 @@ on the card and `/privacy` in one commit, then reconnecting.
   `tiktok_video_daily`:** these are organic lifetime totals for a whole video,
   that is the ad-driven slice, and the card says so in as many words.
 
+## 33. NEVER DRIVE THEIR APP WITH A BROWSER ROBOT
+
+**Status:** RULE, not a task
+**Owner:** Claude
+**Raise it when:** anybody is about to point a Playwright script at
+`/admin/collabs`.
+
+WurxBase talks straight to THEIR production Supabase from the browser, with no
+staging copy and no auth: `bnevtdezskftlrjjgbsg`, publishable key in the
+bundle, every write live. A screenshot script that clicks around that screen is
+not taking screenshots, it is **using the product**, and their code has writes
+on paths that look like reads.
+
+The sharp one is `saveAngles` in `src/vendor/wurxbase/angleStore.js`:
+
+```js
+let sweep = supabase.from('activity_logs').delete().eq('action', ACTION).eq('target', key);
+if (keepId != null) sweep = sweep.neq('id', keepId);   // keepId is null when the list is empty
+await sweep;
+```
+
+**An empty save is an unconditional wipe of that brand-month**, with nothing
+written in its place and no trace left behind. Their screen reads a
+`localStorage` mirror, so a component that commits before the mirror arrives
+commits an empty list.
+
+On 2026-08-27 the `Aurelia::2026-08` angle test rendered at 00:33 PKT and was
+gone at 00:37, while a screenshot script of mine was the only thing on that
+screen. Asad had been working in the app until 00:31, so it cannot be pinned
+either way — which is the point: **there is no way to tell, because their app
+does not log a delete.**
+
+**The rule:** read their database over REST if you need facts. Take screenshots
+of OUR screens. If a shot of theirs is genuinely needed, ask Rashid to open the
+page himself, or accept the screenshot Rashid already sent.
+
+## 32. The vendoring pipeline still mistakes their browns for amber
+
+**Status:** PAUSED
+**Owner:** Claude
+**Raise it when:** the Paid Collabs chrome looks too gold, or before the next
+WurxBase release is vendored in.
+
+`semanticFor` in `scripts/vendor-wurxbase.mjs` decides whether a colour is
+"saying something" from **HSV saturation**, which is a ratio and therefore
+exaggerates wildly in the dark. Their whole chrome is warm dark brown, and
+`#30271C` reads as 0.42 saturated at hue 33 — indistinguishable, to that
+formula, from real amber. So 37 of their brown fills, and a long tail of their
+hairlines, land on `--wx-warning`.
+
+**The correct test is already written down in the comment there:** OKLab chroma.
+Measured across their palette, every neutral sits at or below 0.030 (their
+darkest brown 0.011, their light warm grey 0.030) and every genuinely semantic
+colour at or above 0.105 (deep green `#047857`). A gate at 0.06 sits in open
+space between the two and needs no tuning.
+
+**WHY IT IS NOT SWITCHED ON.** Background and ink are themed as separate
+declarations that never see each other, so a legible pair is luck rather than
+design. Their Print PDF button is dark brown carrying pale cream: today both
+halves go pale and it reads at 3:1. Correct the gate and the background becomes
+a solid accent while the ink stays `--wx-text-muted` — **1.1:1** — and the same
+happens to a count pill on Creators, a KPI pill, and a chip on Performance.
+Tried on 2026-08-27: contrast went from 1 failure to 7.
+
+**So the fix is not a better classifier, it is pairing.** Two honest routes:
+
+1. `themeInlineStyles` already sees a whole `style={{...}}` object at once.
+   When the background in that object resolves to a strong token and the colour
+   resolves to a muted or faint ink, the ink should become `--wx-on-accent`.
+   That covers the inline half, which is where all four regressions were.
+2. For CSS rules, let `pnpm verify:collab-contrast` drive it: it already names
+   the element and both colours, so each survivor becomes a `SWAPS` entry in
+   `scripts/wurxbase-patches.mjs`.
+
+**Do not just flip the gate.** It is a one-line change that looks obviously
+right and breaks four screens.
+
 ## 31. WurxBase v382: what the reskin still owes
 
 **Status:** PAUSED
@@ -1005,7 +1082,15 @@ on the card and `/privacy` in one commit, then reconnecting.
 **Raise it when:** Rashid mentions how Paid Collabs looks, or before anybody
 shows that screen to a client.
 
-**a. The Creative angle testing selected row is a solid blue** with underlined
+**a. DONE 2026-08-27, and it was not what this entry said it was.** The blue
+was not the `PALETTE` array at all: `.cx-tr:hover` in their stylesheet is
+`rgba(20,17,12,.014)`, a 1.4% wash, and the pipeline was throwing the alpha
+away and painting it as a solid `--wx-info`. Fixed at the source in
+`parseColour`/`withAlpha`, and the row hover is now ours in
+`wurxbase-overrides.css`, because a faithful 1.4% wash is no hover at all on
+our ground. The `PALETTE` array is still unreachable by the pipeline and still
+tints the angle NUMBER badge, which is correct and wanted.
+Original note: **The Creative angle testing selected row was a solid blue** with underlined
 orange link text on it. The blue is `#1259C3`, from a `PALETTE` array of eight
 categorical colours in `src/vendor/wurxbase/CreativeAngles.jsx` used to tell
 angles apart. **The vendoring pipeline cannot reach it:** it themes colours that

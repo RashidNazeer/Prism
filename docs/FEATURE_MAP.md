@@ -2774,3 +2774,37 @@ state that looks deliberate.
 takes the first `/rest/v1/` request it sees gets OUR project, because our app
 issues its calls first. Doing that reported every one of their tables missing
 and produced a confident, wrong "the table does not exist".
+
+### Paid Collabs writes: there is nothing to enable (2026-08-27)
+
+Rashid asked whether the admin could be given write access to Paid Collabs
+without touching our database. **It already has it, and our database is not
+involved at any point.**
+
+WurxBase talks straight from the browser to THEIR Supabase project
+`bnevtdezskftlrjjgbsg`, with a publishable key that ships in our bundle and
+theirs. **Their app never authenticates to Supabase** — there is not one
+`supabase.auth` call in their whole codebase. Their login checks a row in
+`app_users` and puts the user in `sessionStorage` as `ch_user`. So the key IS
+the permission model, and it permits everything: INSERT, UPDATE and DELETE on
+`activity_logs` all succeed, and INSERT into `creators` gets past permissions
+and fails only on a missing NOT NULL column.
+
+**What actually limits an admin is `can(user, key)` in `access.js`, which is
+pure client-side.** Role `admin` — which is what `usman` is — does NOT include
+`canEditVideos`, `canDelete`, `canGodMode`, `canManageUsers` or `canGrantAccess`.
+Only `asad` is `superadmin`. Their `custom_perms` already grant `usman`
+`canEditAngles` and `canEditAdSpend`.
+
+**`app_users` is world-readable with that key, passwords included**, along with
+all 1241 creators and every money figure. Their exposure, not one we introduced,
+but Asad should hear it.
+
+`PaidCollabs.jsx` points at a SECOND project, `pfkpgmpicjcirnogxkac`, which no
+longer exists (NXDOMAIN on the system resolver and on 8.8.8.8, with the live
+project as a control). Nothing imports that file, so nothing is broken by it.
+
+**`Prefer: tx=rollback` IS NOT HONOURED BY SUPABASE.** It is a real PostgREST
+feature and it is not enabled here: both a probe INSERT and a probe UPDATE came
+back 201/200 and were COMMITTED. Verify a "rolled back" write by reading the
+row afterwards, or do not send it. Both were found and undone.
