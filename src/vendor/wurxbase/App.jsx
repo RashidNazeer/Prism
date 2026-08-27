@@ -148,10 +148,10 @@ const AVATAR_GRADIENTS = [
 ];
 
 const DEFAULT_TEAM = [
-  { id: 'aris',   name: 'Aris',   color: '#1D4ED8', bg: '#DBEAFE' },
-  { id: 'emily',  name: 'Emily',  color: '#9D174D', bg: '#FCE7F3' },
-  { id: 'myles',  name: 'Myles',  color: '#374151', bg: '#F3F4F6' },
-  { id: 'khushi', name: 'Khushi', color: '#991B1B', bg: '#FEE2E2' },
+  { id: 'aris',   name: 'Aris',   color: 'var(--wx-text-faint)', bg: '#DBEAFE' },
+  { id: 'emily',  name: 'Emily',  color: 'var(--wx-text-faint)', bg: '#FCE7F3' },
+  { id: 'myles',  name: 'Myles',  color: 'var(--wx-text-faint)', bg: '#F3F4F6' },
+  { id: 'khushi', name: 'Khushi', color: 'var(--wx-danger)', bg: '#FEE2E2' },
 ];
 
 const PAYMENT_OPTIONS = ['Paid', 'Not Yet'];
@@ -1594,7 +1594,7 @@ function GalleryCard({ creator, idx, onClick }) {
     >
       {/* Hero strip · gradient avatar background */}
       <div className="tw-relative tw-h-[110px] tw-overflow-hidden" style={{ background: grad }}>
-        <div className="tw-absolute tw-inset-0 tw-pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 80% at 80% 0%, rgba(255,255,255,0.32), transparent 60%), radial-gradient(ellipse 70% 80% at 0% 100%, rgba(0,0,0,0.32), transparent 60%)' }} />
+        <div className="tw-absolute tw-inset-0 tw-pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 80% at 80% 0%, var(--wx-surface-1), transparent 60%), radial-gradient(ellipse 70% 80% at 0% 100%, var(--wx-accent), transparent 60%)' }} />
         <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.7) 1px, transparent 0)', backgroundSize: '20px 20px' }} />
         {/* Top row: status pill + brand pill */}
         <div className="tw-relative tw-z-10 tw-flex tw-items-start tw-justify-between tw-p-2.5">
@@ -1787,8 +1787,8 @@ function StatsViewV2({ creators, onSelectBrand }) {
         {/* ── Budget Allocation Trend · Premium glassy bar chart ── */}
         <div className="tw-relative tw-overflow-hidden tw-rounded-[28px] tw-shadow-oneui_lg tw-bg-gradient-to-br tw-from-slate-900 tw-via-[#0E1F4D] tw-to-slate-900 tw-p-5 md:tw-p-6">
           {/* Decorative orbs */}
-          <div className="tw-absolute tw--top-20 tw--right-20 tw-w-[260px] tw-h-[260px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.4), transparent 70%)', filter: 'blur(40px)' }} />
-          <div className="tw-absolute tw--bottom-24 tw--left-16 tw-w-[260px] tw-h-[260px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.4), transparent 70%)', filter: 'blur(40px)' }} />
+          <div className="tw-absolute tw--top-20 tw--right-20 tw-w-[260px] tw-h-[260px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, var(--wx-success-soft), transparent 70%)', filter: 'blur(40px)' }} />
+          <div className="tw-absolute tw--bottom-24 tw--left-16 tw-w-[260px] tw-h-[260px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, var(--wx-accent), transparent 70%)', filter: 'blur(40px)' }} />
           <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.5) 1px, transparent 0)', backgroundSize: '24px 24px' }} />
 
           {/* Header */}
@@ -1875,7 +1875,7 @@ function StatsViewV2({ creators, onSelectBrand }) {
                         }}
                       >
                         {/* Glossy top highlight */}
-                        <div className="tw-absolute tw-top-0 tw-left-0 tw-right-0 tw-h-[35%] tw-rounded-t-[10px] tw-pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.35), transparent)' }} />
+                        <div className="tw-absolute tw-top-0 tw-left-0 tw-right-0 tw-h-[35%] tw-rounded-t-[10px] tw-pointer-events-none" style={{ background: 'linear-gradient(180deg, var(--wx-surface-1), transparent)' }} />
                         {/* Inner shimmer line */}
                         <div className="tw-absolute tw-top-0 tw-left-1/4 tw-right-1/4 tw-h-px tw-bg-white/40" />
                         {isPeak && <div className="tw-absolute tw-top-1.5 tw-left-1/2 -tw-translate-x-1/2 tw-text-[12px]">⭐</div>}
@@ -1890,7 +1890,7 @@ function StatsViewV2({ creators, onSelectBrand }) {
               {trendAvg > 0 && (
                 <div className="tw-absolute tw-left-0 tw-right-0 tw-pointer-events-none" style={{ bottom: `${24 + (trendAvg / trendMax) * 200}px` }}>
                   <div className="tw-flex tw-items-center tw-gap-2 tw-px-1">
-                    <div className="tw-flex-1 tw-h-px tw-bg-white/30" style={{ background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.4) 0 6px, transparent 6px 12px)' }} />
+                    <div className="tw-flex-1 tw-h-px tw-bg-white/30" style={{ background: 'repeating-linear-gradient(90deg, var(--wx-surface-1) 0 6px, transparent 6px 12px)' }} />
                     <span className="tw-text-[9.5px] tw-font-bold tw-text-white/60 tw-bg-slate-900/40 tw-px-1.5 tw-rounded-full">avg</span>
                   </div>
                 </div>
@@ -2246,7 +2246,7 @@ function Donut({ data, total }) {
         return el;
       })}
       <text x={c} y={c - 2} textAnchor="middle" className="tw-fill-oneui-ink" style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.5px' }}>{total}</text>
-      <text x={c} y={c + 14} textAnchor="middle" style={{ fontSize: 9, fontWeight: 700, fill: '#64748B', textTransform: 'uppercase', letterSpacing: 1 }}>deals</text>
+      <text x={c} y={c + 14} textAnchor="middle" style={{ fontSize: 9, fontWeight: 700, fill: 'var(--wx-text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>deals</text>
     </svg>
   );
 }
@@ -2404,8 +2404,8 @@ function CreatorsViewV2({ creators, activeBrand, onCardClick, onTierUpgrade }) {
 
         {/* ── HERO STRIP ── */}
         <div className="tw-relative tw-overflow-hidden tw-rounded-[28px] tw-bg-gradient-to-br tw-from-[#0F172A] tw-via-[#1E1B4B] tw-to-[#0F172A] tw-p-5 md:tw-p-6 tw-shadow-oneui_lg">
-          <div className="tw-absolute tw--top-24 tw--left-12 tw-w-[300px] tw-h-[300px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.45), transparent 70%)', filter: 'blur(40px)' }} />
-          <div className="tw-absolute tw--bottom-24 tw--right-12 tw-w-[300px] tw-h-[300px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, rgba(236,72,153,0.4), transparent 70%)', filter: 'blur(40px)' }} />
+          <div className="tw-absolute tw--top-24 tw--left-12 tw-w-[300px] tw-h-[300px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, var(--wx-accent), transparent 70%)', filter: 'blur(40px)' }} />
+          <div className="tw-absolute tw--bottom-24 tw--right-12 tw-w-[300px] tw-h-[300px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, var(--wx-accent), transparent 70%)', filter: 'blur(40px)' }} />
           <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.5) 1px, transparent 0)', backgroundSize: '22px 22px' }} />
 
           <div className="tw-relative tw-z-10 tw-flex tw-items-start tw-justify-between tw-flex-wrap tw-gap-4">
@@ -2557,12 +2557,12 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
     return Math.round((paid * 0.35) + (deliver * 0.30) + (roasH * 0.35));
   }, [c.paidPct, c.deliveryPct, c.roas]);
 
-  const grade = scoreVal >= 90 ? { letter: 'S', color: '#FBBF24', glow: '#F59E0B' }
-    : scoreVal >= 75 ? { letter: 'A', color: '#34D399', glow: '#10B981' }
-    : scoreVal >= 60 ? { letter: 'B', color: '#60A5FA', glow: '#2563EB' }
-    : scoreVal >= 45 ? { letter: 'C', color: '#A78BFA', glow: '#7C3AED' }
-    : scoreVal >= 30 ? { letter: 'D', color: '#FB923C', glow: '#EA580C' }
-    : { letter: 'E', color: '#F87171', glow: '#DC2626' };
+  const grade = scoreVal >= 90 ? { letter: 'S', color: 'var(--wx-warning)', glow: '#F59E0B' }
+    : scoreVal >= 75 ? { letter: 'A', color: 'var(--wx-success)', glow: '#10B981' }
+    : scoreVal >= 60 ? { letter: 'B', color: 'var(--wx-text-muted)', glow: '#2563EB' }
+    : scoreVal >= 45 ? { letter: 'C', color: 'var(--wx-text-muted)', glow: '#7C3AED' }
+    : scoreVal >= 30 ? { letter: 'D', color: 'var(--wx-warning)', glow: '#EA580C' }
+    : { letter: 'E', color: 'var(--wx-danger)', glow: '#DC2626' };
 
   // Per-status counts for filter pill badges
   const counts = useMemo(() => {
@@ -2600,31 +2600,31 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
       className="cdm-v2 tw-fixed tw-inset-0 tw-z-[1900] tw-flex tw-items-end md:tw-items-center tw-justify-center tw-p-0 md:tw-p-4"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       style={{
-        background: 'rgba(15,23,42,0.42)',
+        background: 'var(--wx-accent)',
         backdropFilter: 'blur(14px) saturate(140%)',
         WebkitBackdropFilter: 'blur(14px) saturate(140%)',
         animation: 'bsv2-fade 0.24s ease',
         fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-        color: '#0F172A',
+        color: 'var(--wx-text)',
       }}
     >
       <div
         className="tw-relative tw-w-full md:tw-max-w-[520px] tw-rounded-t-[36px] md:tw-rounded-[36px] tw-overflow-hidden tw-flex tw-flex-col"
         style={{
           maxHeight: '92vh',
-          background: '#F2F2F7',
+          background: 'var(--wx-bg)',
           boxShadow: '0 32px 80px rgba(15,23,42,0.22), 0 4px 12px rgba(15,23,42,0.06)',
           animation: 'bsv2-pop 0.42s cubic-bezier(0.33,1,0.68,1)',
         }}
       >
         {/* Mobile pull handle */}
         <div className="tw-flex tw-justify-center tw-pt-3 tw-pb-2 md:tw-hidden">
-          <div style={{ width: 38, height: 5, borderRadius: 999, background: 'rgba(15,23,42,0.18)' }} />
+          <div style={{ width: 38, height: 5, borderRadius: 999, background: 'var(--wx-accent)' }} />
         </div>
 
         {/* ── HERO: clean white card, iOS Settings style ── */}
         <div style={{
-          background: '#FFFFFF',
+          background: 'var(--wx-surface-1)',
           padding: '20px 22px 22px',
           position: 'relative',
         }}>
@@ -2636,7 +2636,7 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
               position: 'absolute', top: 16, right: 16,
               width: 32, height: 32, borderRadius: 999,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: '#F2F2F7', color: '#8E8E93',
+              background: 'var(--wx-bg)', color: 'var(--wx-text-faint)',
               transition: 'background 0.15s ease, color 0.15s ease',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = '#E5E5EA'; e.currentTarget.style.color = '#1C1C1E'; }}
@@ -2666,8 +2666,8 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
               )}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: '#1C1C1E', letterSpacing: '-0.5px', lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-              {c.handle && <div style={{ fontSize: 13, fontWeight: 500, color: '#8E8E93', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.handle}</div>}
+              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--wx-text)', letterSpacing: '-0.5px', lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+              {c.handle && <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--wx-text-faint)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.handle}</div>}
               {tierMeta && (
                 <div style={{ marginTop: 6 }}>
                   <span style={{
@@ -2686,14 +2686,14 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
           {/* Stats · 4 columns separated by hairlines */}
           <div style={{
             marginTop: 18,
-            background: '#F2F2F7',
+            background: 'var(--wx-bg)',
             borderRadius: 16,
             display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
             overflow: 'hidden',
           }}>
             {[
-              { label: 'Deals',  value: c.deals,                                                color: '#1C1C1E' },
-              { label: 'Budget', value: fmt$(c.allocated),                                      color: '#1C1C1E' },
+              { label: 'Deals',  value: c.deals,                                                color: 'var(--wx-text)' },
+              { label: 'Budget', value: fmt$(c.allocated),                                      color: 'var(--wx-text)' },
               { label: 'GMV',    value: c.gmv > 0 ? fmt$(c.gmv) : '-',                          color: c.gmv > 0 ? '#34C759' : '#8E8E93' },
               { label: 'ROAS',   value: c.roas != null ? `${c.roas.toFixed(2)}×` : '-',         color: c.roas == null ? '#8E8E93' : c.roas >= 2 ? '#34C759' : c.roas >= 1 ? '#007AFF' : '#FF3B30' },
             ].map((s, i) => (
@@ -2703,7 +2703,7 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
                 borderLeft: i > 0 ? '0.5px solid #D1D1D6' : 'none',
               }}>
                 <div style={{ fontSize: 15.5, fontWeight: 800, color: s.color, letterSpacing: '-0.3px', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
-                <div style={{ fontSize: 10.5, fontWeight: 600, color: '#8E8E93', marginTop: 4, letterSpacing: '0.02em' }}>{s.label}</div>
+                <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--wx-text-faint)', marginTop: 4, letterSpacing: '0.02em' }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -2755,20 +2755,20 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 18px 22px', overscrollBehavior: 'contain' }}>
           {sortedDeals.length === 0 ? (
             <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-              <div style={{ width: 56, height: 56, borderRadius: 999, background: '#E5E5EA', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--wx-surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               </div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#1C1C1E' }}>No deals match</div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#8E8E93', marginTop: 4 }}>Try a different filter</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--wx-text)' }}>No deals match</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--wx-text-faint)', marginTop: 4 }}>Try a different filter</div>
             </div>
           ) : (
             <>
               {/* Section header */}
               <div style={{ padding: '6px 4px 8px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#1C1C1E', letterSpacing: '-0.1px' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.1px' }}>
                   {sortedDeals.length} {sortedDeals.length === 1 ? 'deal' : 'deals'}
                 </span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#8E8E93' }}>Tap to view</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--wx-text-faint)' }}>Tap to view</span>
               </div>
 
               {/* iOS-grouped white container with internal hairlines */}
@@ -2789,19 +2789,19 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
                   // Status icon definition (24px circle with vector glyph)
                   const statusIcon = isPaid ? {
                       bg: '#34C759', glyph: <polyline points="20 6 9 17 4 12"/>, sw: 3.4,
-                      label: 'Paid', color: '#1F8D44',
+                      label: 'Paid', color: 'var(--wx-success)',
                     } : isUnpaid ? {
                       bg: '#FF3B30', glyph: <><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>, sw: 2.4,
-                      label: 'Unpaid', color: '#C92516',
+                      label: 'Unpaid', color: 'var(--wx-danger)',
                     } : isInProg ? {
                       bg: '#FF9500', glyph: <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>, sw: 2.4,
-                      label: 'In Progress', color: '#B96A00',
+                      label: 'In Progress', color: 'var(--wx-warning)',
                     } : isDone ? {
                       bg: '#007AFF', glyph: <polygon points="6 4 20 12 6 20" />, sw: 0,
-                      label: 'Done', color: '#0058C4',
+                      label: 'Done', color: 'var(--wx-text-faint)',
                     } : {
                       bg: '#8E8E93', glyph: <circle cx="12" cy="12" r="3"/>, sw: 0,
-                      label: 'Open', color: '#3A3A3C',
+                      label: 'Open', color: 'var(--wx-text)',
                     };
 
                   return (
@@ -2837,26 +2837,26 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
                         <div style={{ flex: 1, minWidth: 0 }}>
                           {/* Top: brand · status */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                            {d.brand && <span style={{ fontSize: 12.5, fontWeight: 700, color: '#1C1C1E', letterSpacing: '-0.1px' }}>{d.brand}</span>}
-                            {d.brand && <span style={{ width: 2, height: 2, borderRadius: 999, background: '#C7C7CC' }} />}
+                            {d.brand && <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.1px' }}>{d.brand}</span>}
+                            {d.brand && <span style={{ width: 2, height: 2, borderRadius: 999, background: 'var(--wx-surface-3)' }} />}
                             <span style={{ fontSize: 11.5, fontWeight: 700, color: statusIcon.color, letterSpacing: '0.02em' }}>{statusIcon.label}</span>
                           </div>
                           {/* Headline */}
                           <div style={{
-                            fontSize: 14.5, fontWeight: 700, color: '#1C1C1E', letterSpacing: '-0.2px', lineHeight: 1.3,
+                            fontSize: 14.5, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.2px', lineHeight: 1.3,
                             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                           }}>
-                            {d.deal || <span style={{ color: '#8E8E93', fontWeight: 500, fontStyle: 'italic' }}>No description</span>}
+                            {d.deal || <span style={{ color: 'var(--wx-text-faint)', fontWeight: 500, fontStyle: 'italic' }}>No description</span>}
                           </div>
                           {/* Sub-meta */}
-                          <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontWeight: 500, color: '#8E8E93', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontWeight: 500, color: 'var(--wx-text-faint)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {d.hiring_date && <span>{formatDate(d.hiring_date)}</span>}
-                            {d.hiring_date && videos > 0 && <span style={{ color: '#C7C7CC' }}>·</span>}
+                            {d.hiring_date && videos > 0 && <span style={{ color: 'var(--wx-text-muted)' }}>·</span>}
                             {videos > 0 && <span>{videos} {videos === 1 ? 'video' : 'videos'}</span>}
                             {d.hired_by && (
                               <>
-                                <span style={{ color: '#C7C7CC' }}>·</span>
-                                <span>by <strong style={{ color: '#1C1C1E', fontWeight: 700 }}>{d.hired_by}</strong></span>
+                                <span style={{ color: 'var(--wx-text-muted)' }}>·</span>
+                                <span>by <strong style={{ color: 'var(--wx-text)', fontWeight: 700 }}>{d.hired_by}</strong></span>
                               </>
                             )}
                           </div>
@@ -2865,7 +2865,7 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
                         {/* Amount + chevron */}
                         <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
                           {amount > 0 && (
-                            <div style={{ fontSize: 16, fontWeight: 800, color: '#1C1C1E', letterSpacing: '-0.4px', fontVariantNumeric: 'tabular-nums' }}>{fmt$(amount)}</div>
+                            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--wx-text)', letterSpacing: '-0.4px', fontVariantNumeric: 'tabular-nums' }}>{fmt$(amount)}</div>
                           )}
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                         </div>
@@ -3074,8 +3074,8 @@ function CreatorAggregateCard({ c, idx, onClick, fmt$, isSelected, onToggleSelec
           boxShadow: '0 4px 12px rgba(15,23,42,0.16), inset 0 1px 2px rgba(255,255,255,0.4)',
         }}>{initial}</div>
         <div style={{ flex: 1, minWidth: 0, paddingRight: 36 }}>
-          <div style={{ fontSize: 17, fontWeight: 800, color: '#1C1C1E', letterSpacing: '-0.4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-          {c.handle && <div style={{ fontSize: 12.5, fontWeight: 500, color: '#8E8E93', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.handle}</div>}
+          <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--wx-text)', letterSpacing: '-0.4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+          {c.handle && <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--wx-text-faint)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.handle}</div>}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -3085,7 +3085,7 @@ function CreatorAggregateCard({ c, idx, onClick, fmt$, isSelected, onToggleSelec
               color: tierMeta.label === 'Elite' ? '#451A03' : 'white',
               boxShadow: `0 2px 5px ${tierMeta.from}40`,
             }}>{tierMeta.emoji} {tierMeta.label}</span>
-            <span style={{ fontSize: 11.5, fontWeight: 600, color: '#8E8E93' }}>{c.deals} {c.deals === 1 ? 'deal' : 'deals'}{c.brandsArr.length > 0 ? ` · ${c.brandsArr.length} ${c.brandsArr.length === 1 ? 'brand' : 'brands'}` : ''}</span>
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-faint)' }}>{c.deals} {c.deals === 1 ? 'deal' : 'deals'}{c.brandsArr.length > 0 ? ` · ${c.brandsArr.length} ${c.brandsArr.length === 1 ? 'brand' : 'brands'}` : ''}</span>
           </div>
         </div>
       </div>
@@ -3093,15 +3093,15 @@ function CreatorAggregateCard({ c, idx, onClick, fmt$, isSelected, onToggleSelec
       {/* iOS-style stats group · 4 columns */}
       <div style={{
         margin: '0 14px',
-        background: '#F2F2F7',
+        background: 'var(--wx-bg)',
         borderRadius: 14,
         display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
         overflow: 'hidden',
       }}>
         {[
-          { label: 'Budget', value: fmt$(c.allocated),                                color: '#1C1C1E' },
-          { label: 'Paid',   value: fmt$(c.paid),                                     color: '#1F8D44',  sub: `${c.paidPct}%` },
-          { label: 'Videos', value: `${c.videosDelivered}/${c.videosCommitted}`,      color: '#5856D6',  sub: `${c.deliveryPct}%` },
+          { label: 'Budget', value: fmt$(c.allocated),                                color: 'var(--wx-text)' },
+          { label: 'Paid',   value: fmt$(c.paid),                                     color: 'var(--wx-success)',  sub: `${c.paidPct}%` },
+          { label: 'Videos', value: `${c.videosDelivered}/${c.videosCommitted}`,      color: 'var(--wx-text-muted)',  sub: `${c.deliveryPct}%` },
           { label: 'ROAS',   value: c.roas != null ? `${c.roas.toFixed(2)}×` : '-',   color: c.roas == null ? '#8E8E93' : c.roas >= 2 ? '#1F8D44' : c.roas >= 1 ? '#0058C4' : '#C92516' },
         ].map((s, i) => (
           <div key={s.label} style={{
@@ -3110,7 +3110,7 @@ function CreatorAggregateCard({ c, idx, onClick, fmt$, isSelected, onToggleSelec
             borderLeft: i > 0 ? '0.5px solid #D1D1D6' : 'none',
           }}>
             <div style={{ fontSize: 14.5, fontWeight: 800, color: s.color, letterSpacing: '-0.3px', lineHeight: 1, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.value}</div>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#8E8E93', marginTop: 3, letterSpacing: '0.02em' }}>{s.label}{s.sub ? ` · ${s.sub}` : ''}</div>
+            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--wx-text-faint)', marginTop: 3, letterSpacing: '0.02em' }}>{s.label}{s.sub ? ` · ${s.sub}` : ''}</div>
           </div>
         ))}
       </div>
@@ -3128,7 +3128,7 @@ function CreatorAggregateCard({ c, idx, onClick, fmt$, isSelected, onToggleSelec
             <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: c.profit >= 0 ? '#1F8D44' : '#C92516' }}>
               {c.gmv > 0 ? 'GMV' : 'Ad Spent'}
             </div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#1C1C1E', letterSpacing: '-0.4px', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--wx-text)', letterSpacing: '-0.4px', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
               {fmt$(c.gmv > 0 ? c.gmv : c.adSpent)}
             </div>
           </div>
@@ -3152,11 +3152,11 @@ function CreatorAggregateCard({ c, idx, onClick, fmt$, isSelected, onToggleSelec
             <span key={b} style={{
               display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 10px', borderRadius: 999,
               fontSize: 11, fontWeight: 700, letterSpacing: '-0.1px',
-              background: '#F2F2F7', color: '#3A3A3C',
+              background: 'var(--wx-bg)', color: 'var(--wx-text)',
             }}>{b}</span>
           ))}
           {c.brandsArr.length > 4 && (
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#8E8E93' }}>+{c.brandsArr.length - 4}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--wx-text-faint)' }}>+{c.brandsArr.length - 4}</span>
           )}
         </div>
       )}
@@ -3536,7 +3536,7 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, curre
               while (plot.length && plot[plot.length - 1].gmv === 0 && plot[plot.length - 1].ad === 0) plot.pop();
               const skipped = gmvTrend.length - plot.length;
               if (plot.length < 2) {
-                return <div className="tw-text-[11px] tw-italic tw-py-10 tw-text-center" style={{ color: 'rgba(245,233,214,0.5)' }}>
+                return <div className="tw-text-[11px] tw-italic tw-py-10 tw-text-center" style={{ color: 'var(--wx-text-muted)' }}>
                   Not enough months with figures to draw a trend yet.
                 </div>;
               }
@@ -3581,9 +3581,9 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, curre
                         <line x1={P.l} x2={P.l + iw} y1={P.t + ih * f} y2={P.t + ih * f}
                           stroke="rgba(245,233,214,0.10)" strokeWidth="1" strokeDasharray={f === 1 ? '0' : '3 5'} />
                         <text x={P.l - 8} y={P.t + ih * f + 3.5} textAnchor="end"
-                          style={{ fontSize: 8.5, fontWeight: 800, fill: 'rgba(110,231,183,0.72)' }}>{kd(maxG * (1 - f))}</text>
+                          style={{ fontSize: 8.5, fontWeight: 800, fill: 'var(--wx-text-muted)' }}>{kd(maxG * (1 - f))}</text>
                         <text x={P.l + iw + 8} y={P.t + ih * f + 3.5} textAnchor="start"
-                          style={{ fontSize: 8.5, fontWeight: 800, fill: 'rgba(245,233,214,0.34)' }}>{kd(maxA * (1 - f))}</text>
+                          style={{ fontSize: 8.5, fontWeight: 800, fill: 'var(--wx-text-muted)' }}>{kd(maxA * (1 - f))}</text>
                       </g>
                     ))}
 
@@ -3610,7 +3610,7 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, curre
 
                     <text x={x(last)} y={Math.max(pts[last][1] - 9, 10)}
                       textAnchor={last === plot.length - 1 ? 'end' : 'middle'}
-                      style={{ fontSize: 10, fontWeight: 900, fill: '#6EE7B7' }}>
+                      style={{ fontSize: 10, fontWeight: 900, fill: 'var(--wx-text-muted)' }}>
                       {fmt$Round(plot[last].gmv)}
                     </text>
 
@@ -3646,19 +3646,19 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, curre
         <div className="tw-flex tw-items-center tw-justify-between tw-gap-3 tw-flex-wrap">
           <div className="tw-min-w-0">
             <div className="tw-flex tw-items-center tw-gap-2 tw-flex-wrap">
-              <span className="tw-text-[21px] md:tw-text-[23px] tw-font-extrabold tw-tracking-[-0.6px]" style={{ color: '#14110C' }}>{activeBrand === 'All' ? 'All Brands' : activeBrand}</span>
-              <span className="tw-h-[22px] tw-px-2.5 tw-rounded-full tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1px] tw-flex tw-items-center" style={{ background: 'linear-gradient(180deg,#FFFFFF,#F4EFE3)', color: '#57534E', border: '1px solid rgba(48,39,28,0.12)' }}>Executive Report</span>
+              <span className="tw-text-[21px] md:tw-text-[23px] tw-font-extrabold tw-tracking-[-0.6px]" style={{ color: 'var(--wx-text)' }}>{activeBrand === 'All' ? 'All Brands' : activeBrand}</span>
+              <span className="tw-h-[22px] tw-px-2.5 tw-rounded-full tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1px] tw-flex tw-items-center" style={{ background: 'linear-gradient(180deg,var(--wx-surface-1),var(--wx-surface-2))', color: 'var(--wx-text-faint)', border: '1px solid var(--wx-warning)' }}>Executive Report</span>
             </div>
-            <div className="tw-text-[11.5px] tw-font-semibold tw-mt-0.5" style={{ color: '#8A857B' }}>
+            <div className="tw-text-[11.5px] tw-font-semibold tw-mt-0.5" style={{ color: 'var(--wx-text-faint)' }}>
               {periodLabel}{activeBrand === 'All' && brandBreakdown.length > 0 && <> · {brandBreakdown.length} brands</>} · Generated {generatedAt}
             </div>
           </div>
           <div className="tw-flex tw-items-center tw-gap-2 print-hide">
-            {can(currentUser, 'canExportCsv') && <button onClick={onExportCsv} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-bg-white hover:tw-bg-gray-50 tw-text-[11.5px] tw-font-bold tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ color: '#3C4043', border: '1px solid rgba(20,17,12,0.12)' }}>
+            {can(currentUser, 'canExportCsv') && <button onClick={onExportCsv} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-bg-white hover:tw-bg-gray-50 tw-text-[11.5px] tw-font-bold tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ color: 'var(--wx-text-muted)', border: '1px solid var(--wx-warning)' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               CSV
             </button>}
-            {can(currentUser, 'canPrintReport') && <button onClick={handlePrint} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-text-[11.5px] tw-font-extrabold tw-border-0 tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ background: 'linear-gradient(135deg,#4A3A28 0%,#2A2118 100%)', color: '#F5E9D6', boxShadow: '0 3px 10px rgba(48,39,28,0.28)' }}>
+            {can(currentUser, 'canPrintReport') && <button onClick={handlePrint} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-text-[11.5px] tw-font-extrabold tw-border-0 tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ background: 'linear-gradient(135deg,var(--wx-warning-soft) 0%,var(--wx-warning-soft) 100%)', color: 'var(--wx-text-muted)', boxShadow: '0 3px 10px rgba(48,39,28,0.28)' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
               Print PDF
             </button>}
@@ -4171,27 +4171,27 @@ function SystemHealthV2({ onClose, currentUser, creatorsLive = [] }) {
       style={{
         position: 'fixed', inset: 0, zIndex: 1900,
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-        background: 'rgba(48,39,28,0.50)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        background: 'var(--wx-warning-soft)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
         fontFamily: 'inherit',
       }}
     >
       <div style={{
         position: 'relative', width: '100%', maxWidth: 640, maxHeight: '92vh',
-        background: '#F8F7F4', borderRadius: 22,
+        background: 'var(--wx-bg)', borderRadius: 22,
         boxShadow: '0 32px 80px rgba(48,39,28,0.25), 0 8px 24px rgba(48,39,28,0.10)',
         animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
       }}>
         {/* ── Header · dark coffee ── */}
-        <div style={{ background: '#30271C', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ background: 'var(--wx-warning-soft)', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: '#F5E9D6' }}>System Health</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(245,233,214,0.55)', marginTop: 2 }}>Real-time database &amp; app performance</div>
+            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>System Health</div>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>Real-time database &amp; app performance</div>
           </div>
-          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
+          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -4199,10 +4199,10 @@ function SystemHealthV2({ onClose, currentUser, creatorsLive = [] }) {
         </div>
 
         {/* Sparkline strip */}
-        <div style={{ padding: '14px 22px', background: 'linear-gradient(135deg, #FDFAF4 0%, #F5EFE2 100%)', borderBottom: '1px solid #E7E2D7', display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ padding: '14px 22px', background: 'linear-gradient(135deg, var(--wx-surface-1) 0%, var(--wx-surface-2) 100%)', borderBottom: '1px solid var(--wx-border)', display: 'flex', alignItems: 'center', gap: 14 }}>
           <div>
-            <div style={{ fontSize: 10, fontWeight: 800, color: '#9C8F7C', textTransform: 'uppercase', letterSpacing: 0.6 }}>Latency · 5s</div>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: '#30271C', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{lastPing != null ? `${lastPing}ms` : '-'}</div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--wx-text-muted)', textTransform: 'uppercase', letterSpacing: 0.6 }}>Latency · 5s</div>
+            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-warning)', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{lastPing != null ? `${lastPing}ms` : '-'}</div>
           </div>
           <svg width="240" height="44" viewBox="0 0 220 50" style={{ flex: 1 }}>
             <path d={sparkPath} fill="none" stroke="#30271C" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
@@ -4767,43 +4767,43 @@ function SqlPlaygroundV2({ onClose, currentUser }) {
       style={{
         position: 'fixed', inset: 0, zIndex: 1900,
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-        background: 'rgba(48,39,28,0.50)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        background: 'var(--wx-warning-soft)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
         fontFamily: 'inherit',
       }}
     >
       <div style={{
         position: 'relative', width: '100%', maxWidth: 1100, height: '92vh',
-        background: '#F8F7F4', borderRadius: 22,
+        background: 'var(--wx-bg)', borderRadius: 22,
         boxShadow: '0 32px 80px rgba(48,39,28,0.25), 0 8px 24px rgba(48,39,28,0.10)',
         animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
       }}>
         {/* ── Header · dark coffee ── */}
-        <div style={{ background: '#30271C', padding: '14px 22px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ background: 'var(--wx-warning-soft)', padding: '14px 22px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.3px', color: '#F5E9D6' }}>SQL Playground</div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(245,233,214,0.55)', marginTop: 2, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-              <span style={{ width: 6, height: 6, borderRadius: 999, background: '#22C55E', display: 'inline-block' }} />
+            <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.3px', color: 'var(--wx-text-muted)' }}>SQL Playground</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--wx-success-soft)', display: 'inline-block' }} />
               Read-only · {currentUser?.display}
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <button onClick={() => setShowSchema(s => !s)} title="Toggle schema" style={{ height: 32, padding: '0 12px', borderRadius: 999, border: 0, cursor: 'pointer', background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', fontSize: 11.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5, lineHeight: 1, fontFamily: 'inherit' }}
+            <button onClick={() => setShowSchema(s => !s)} title="Toggle schema" style={{ height: 32, padding: '0 12px', borderRadius: 999, border: 0, cursor: 'pointer', background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', fontSize: 11.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5, lineHeight: 1, fontFamily: 'inherit' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,233,214,0.18)'}
               onMouseLeave={e => e.currentTarget.style.background = 'rgba(245,233,214,0.10)'}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
               Schema
             </button>
-            <button onClick={() => setShowHistory(s => !s)} title="History" style={{ height: 32, padding: '0 12px', borderRadius: 999, border: 0, cursor: 'pointer', background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', fontSize: 11.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5, lineHeight: 1, fontFamily: 'inherit' }}
+            <button onClick={() => setShowHistory(s => !s)} title="History" style={{ height: 32, padding: '0 12px', borderRadius: 999, border: 0, cursor: 'pointer', background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', fontSize: 11.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5, lineHeight: 1, fontFamily: 'inherit' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,233,214,0.18)'}
               onMouseLeave={e => e.currentTarget.style.background = 'rgba(245,233,214,0.10)'}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               History
             </button>
-            <button onClick={onClose} title="Close" style={{ width: 32, height: 32, borderRadius: 999, border: 0, cursor: 'pointer', background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+            <button onClick={onClose} title="Close" style={{ width: 32, height: 32, borderRadius: 999, border: 0, cursor: 'pointer', background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,233,214,0.18)'}
               onMouseLeave={e => e.currentTarget.style.background = 'rgba(245,233,214,0.10)'}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -5275,15 +5275,15 @@ function JoinRequestScreen({ onBack }) {
   }
 
   return (
-    <div className="tw-fixed tw-inset-0 tw-overflow-hidden tw-font-sans" style={{ background: 'radial-gradient(ellipse at 100% 0%, #FCD34D 0%, #FB923C 25%, #EC4899 55%, #7C3AED 90%)' }}>
+    <div className="tw-fixed tw-inset-0 tw-overflow-hidden tw-font-sans" style={{ background: 'radial-gradient(ellipse at 100% 0%, var(--wx-warning-soft) 0%, var(--wx-warning-soft) 25%, var(--wx-accent) 55%, var(--wx-accent) 90%)' }}>
       {/* ── Aurora ribbons background ── */}
       <div aria-hidden className="tw-absolute tw-inset-0 tw-pointer-events-none tw-overflow-hidden">
         {/* Aurora flowing layers */}
-        <div className="tw-absolute tw-inset-0" style={{ background: 'conic-gradient(from 220deg at 30% 20%, rgba(255,237,213,0.4), rgba(251,113,133,0.3) 30%, rgba(217,70,239,0.4) 50%, rgba(124,58,237,0.4) 70%, rgba(255,237,213,0.4) 100%)', filter: 'blur(80px)', animation: 'jr-aurora 28s ease-in-out infinite' }} />
+        <div className="tw-absolute tw-inset-0" style={{ background: 'conic-gradient(from 220deg at 30% 20%, var(--wx-surface-2), var(--wx-danger-soft) 30%, var(--wx-accent) 50%, var(--wx-accent) 70%, var(--wx-surface-2) 100%)', filter: 'blur(80px)', animation: 'jr-aurora 28s ease-in-out infinite' }} />
         {/* Soft sunset glow ribbons */}
-        <div className="tw-absolute tw--top-20 tw-left-1/4 tw-w-[600px] tw-h-[400px] tw-rounded-full tw-opacity-50" style={{ background: 'radial-gradient(ellipse, rgba(252,211,77,0.6), transparent 65%)', filter: 'blur(50px)', animation: 'jr-ribbon-a 18s ease-in-out infinite' }} />
-        <div className="tw-absolute tw-bottom-0 tw--right-32 tw-w-[600px] tw-h-[500px] tw-rounded-full tw-opacity-50" style={{ background: 'radial-gradient(ellipse, rgba(192,132,252,0.6), transparent 65%)', filter: 'blur(60px)', animation: 'jr-ribbon-b 22s ease-in-out infinite' }} />
-        <div className="tw-absolute tw-top-1/3 tw--left-20 tw-w-[500px] tw-h-[500px] tw-rounded-full tw-opacity-40" style={{ background: 'radial-gradient(circle, rgba(244,114,182,0.65), transparent 65%)', filter: 'blur(60px)', animation: 'jr-ribbon-c 25s ease-in-out infinite' }} />
+        <div className="tw-absolute tw--top-20 tw-left-1/4 tw-w-[600px] tw-h-[400px] tw-rounded-full tw-opacity-50" style={{ background: 'radial-gradient(ellipse, var(--wx-warning-soft), transparent 65%)', filter: 'blur(50px)', animation: 'jr-ribbon-a 18s ease-in-out infinite' }} />
+        <div className="tw-absolute tw-bottom-0 tw--right-32 tw-w-[600px] tw-h-[500px] tw-rounded-full tw-opacity-50" style={{ background: 'radial-gradient(ellipse, var(--wx-surface-3), transparent 65%)', filter: 'blur(60px)', animation: 'jr-ribbon-b 22s ease-in-out infinite' }} />
+        <div className="tw-absolute tw-top-1/3 tw--left-20 tw-w-[500px] tw-h-[500px] tw-rounded-full tw-opacity-40" style={{ background: 'radial-gradient(circle, var(--wx-surface-3), transparent 65%)', filter: 'blur(60px)', animation: 'jr-ribbon-c 25s ease-in-out infinite' }} />
         {/* Cream noise overlay for filmic feel */}
         <div className="tw-absolute tw-inset-0 tw-opacity-[0.06]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '20px 20px' }} />
       </div>
@@ -5410,8 +5410,8 @@ function JoinRequestScreen({ onBack }) {
                 {/* Submit button · sunset gradient */}
                 <button type="submit" disabled={submitting}
                   className="tw-relative tw-w-full tw-mt-3 tw-rounded-2xl tw-text-white tw-text-[14.5px] tw-font-extrabold tw-tracking-[-0.2px] tw-flex tw-items-center tw-justify-center tw-gap-2 tw-border-0 tw-cursor-pointer hover:-tw-translate-y-0.5 active:tw-scale-[0.98] disabled:tw-opacity-70 disabled:tw-cursor-wait tw-transition tw-duration-200 tw-ease-oneui tw-overflow-hidden"
-                  style={{ height: 50, background: 'linear-gradient(135deg, #F59E0B 0%, #F43F5E 50%, #C026D3 100%)', boxShadow: '0 10px 28px rgba(244,63,94,0.45), 0 4px 12px rgba(192,38,211,0.35)' }}>
-                  <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-30" style={{ background: 'linear-gradient(135deg, transparent 35%, rgba(255,255,255,0.5) 50%, transparent 65%)' }} />
+                  style={{ height: 50, background: 'linear-gradient(135deg, var(--wx-warning-soft) 0%, var(--wx-danger-soft) 50%, var(--wx-accent) 100%)', boxShadow: '0 10px 28px rgba(244,63,94,0.45), 0 4px 12px rgba(192,38,211,0.35)' }}>
+                  <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-30" style={{ background: 'linear-gradient(135deg, transparent 35%, var(--wx-surface-1) 50%, transparent 65%)' }} />
                   <span className="tw-relative tw-z-10 tw-flex tw-items-center tw-gap-2">
                     {submitting ? (
                       <>
@@ -5543,7 +5543,7 @@ function LoginScreen({ onLogin, onJoinRequest }) {
   }
 
   return (
-    <div className="tw-fixed tw-inset-0 tw-overflow-y-auto tw-font-sans" style={{ background: 'linear-gradient(180deg, #FDFAF4 0%, #F5EFE2 100%)' }}>
+    <div className="tw-fixed tw-inset-0 tw-overflow-y-auto tw-font-sans" style={{ background: 'linear-gradient(180deg, var(--wx-surface-1) 0%, var(--wx-surface-2) 100%)' }}>
       {/* Soft warm wash + subtle dot grid */}
       <div aria-hidden className="tw-absolute tw-inset-0 tw-pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(48,39,28,0.05) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
 
@@ -5554,12 +5554,12 @@ function LoginScreen({ onLogin, onJoinRequest }) {
           <div className="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 tw-bg-white tw-rounded-[24px] tw-overflow-hidden" style={{ boxShadow: '0 40px 80px rgba(48,39,28,0.16), 0 8px 24px rgba(48,39,28,0.08), 0 0 0 1px rgba(48,39,28,0.06)' }}>
 
             {/* ── LEFT · Dark coffee brand panel ── */}
-            <div className="tw-relative tw-p-8 md:tw-p-10 tw-flex tw-flex-col tw-min-h-[420px] md:tw-min-h-[520px]" style={{ background: 'linear-gradient(165deg, #3A3023 0%, #30271C 55%, #281F15 100%)', color: '#F5E9D6' }}>
+            <div className="tw-relative tw-p-8 md:tw-p-10 tw-flex tw-flex-col tw-min-h-[420px] md:tw-min-h-[520px]" style={{ background: 'linear-gradient(165deg, var(--wx-warning-soft) 0%, var(--wx-warning-soft) 55%, var(--wx-warning-soft) 100%)', color: 'var(--wx-text-muted)' }}>
               {/* Subtle cream wash in corner */}
-              <div aria-hidden className="tw-absolute tw--top-32 tw--right-32 tw-w-80 tw-h-80 tw-rounded-full tw-pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(245,233,214,0.08), transparent 70%)' }} />
+              <div aria-hidden className="tw-absolute tw--top-32 tw--right-32 tw-w-80 tw-h-80 tw-rounded-full tw-pointer-events-none" style={{ background: 'radial-gradient(circle, var(--wx-surface-2), transparent 70%)' }} />
 
               <div className="tw-relative tw-z-10 tw-flex tw-items-center tw-gap-3">
-                <div className="tw-w-12 tw-h-12 tw-rounded-[13px] tw-flex tw-items-center tw-justify-center" style={{ background: '#F5E9D6', color: '#30271C' }}>
+                <div className="tw-w-12 tw-h-12 tw-rounded-[13px] tw-flex tw-items-center tw-justify-center" style={{ background: 'var(--wx-surface-2)', color: 'var(--wx-warning)' }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
                     <path d="M3 7l9-4 9 4-9 4-9-4z" />
                     <path d="M3 12l9 4 9-4" />
@@ -5567,8 +5567,8 @@ function LoginScreen({ onLogin, onJoinRequest }) {
                   </svg>
                 </div>
                 <div>
-                  <div className="tw-text-[20px] tw-font-extrabold tw-tracking-[-0.4px]" style={{ color: '#F5E9D6' }}>Wurx Base</div>
-                  <div className="tw-text-[12px] tw-font-semibold" style={{ color: 'rgba(245,233,214,0.55)' }}>Paid Collaborations</div>
+                  <div className="tw-text-[20px] tw-font-extrabold tw-tracking-[-0.4px]" style={{ color: 'var(--wx-text-muted)' }}>Wurx Base</div>
+                  <div className="tw-text-[12px] tw-font-semibold" style={{ color: 'var(--wx-text-muted)' }}>Paid Collaborations</div>
                 </div>
               </div>
 
@@ -5580,28 +5580,28 @@ function LoginScreen({ onLogin, onJoinRequest }) {
                   [<svg key="i" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>, 'One-click signed contracts'],
                 ].map(([icon, label], i) => (
                   <div key={i} className="tw-flex tw-items-center tw-gap-3">
-                    <span className="tw-w-[30px] tw-h-[30px] tw-rounded-[9px] tw-flex tw-items-center tw-justify-center tw-flex-shrink-0" style={{ background: 'rgba(245,233,214,0.10)', border: '1px solid rgba(245,233,214,0.16)', color: '#F5E9D6' }}>
+                    <span className="tw-w-[30px] tw-h-[30px] tw-rounded-[9px] tw-flex tw-items-center tw-justify-center tw-flex-shrink-0" style={{ background: 'var(--wx-surface-2)', border: '1px solid var(--wx-border)', color: 'var(--wx-text-muted)' }}>
                       {icon}
                     </span>
-                    <span className="tw-text-[12.5px] tw-font-semibold" style={{ color: 'rgba(245,233,214,0.82)' }}>{label}</span>
+                    <span className="tw-text-[12.5px] tw-font-semibold" style={{ color: 'var(--wx-text-muted)' }}>{label}</span>
                   </div>
                 ))}
               </div>
 
               {/* second ambient wash · bottom-left depth */}
-              <div aria-hidden className="tw-absolute tw--bottom-24 tw--left-24 tw-w-64 tw-h-64 tw-rounded-full tw-pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(245,233,214,0.06), transparent 70%)' }} />
+              <div aria-hidden className="tw-absolute tw--bottom-24 tw--left-24 tw-w-64 tw-h-64 tw-rounded-full tw-pointer-events-none" style={{ background: 'radial-gradient(circle, var(--wx-surface-2), transparent 70%)' }} />
 
               <div className="tw-relative tw-z-10 tw-mt-auto tw-pt-10">
-                <div className="tw-text-[28px] md:tw-text-[32px] tw-font-extrabold tw-leading-[1.15] tw-tracking-[-0.7px]" style={{ color: '#F5E9D6' }}>
+                <div className="tw-text-[28px] md:tw-text-[32px] tw-font-extrabold tw-leading-[1.15] tw-tracking-[-0.7px]" style={{ color: 'var(--wx-text-muted)' }}>
                   Track every deal,<br/>brand and creator.
                 </div>
-                <div className="tw-text-[13.5px] tw-font-medium tw-mt-4 tw-leading-relaxed" style={{ color: 'rgba(245,233,214,0.65)', maxWidth: 360 }}>
+                <div className="tw-text-[13.5px] tw-font-medium tw-mt-4 tw-leading-relaxed" style={{ color: 'var(--wx-text-muted)', maxWidth: 360 }}>
                   One workspace for paid collaborations · brand budgets, creator deals, video deliverables and monthly GMV/Ad performance.
                 </div>
 
                 <div className="tw-flex tw-flex-wrap tw-gap-2 tw-mt-7">
                   {['Brands', 'Creators', 'Performance', 'Reporting'].map(t => (
-                    <span key={t} className="tw-inline-flex tw-items-center tw-h-7 tw-px-3 tw-rounded-full tw-text-[11px] tw-font-bold" style={{ background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', border: '1px solid rgba(245,233,214,0.18)' }}>{t}</span>
+                    <span key={t} className="tw-inline-flex tw-items-center tw-h-7 tw-px-3 tw-rounded-full tw-text-[11px] tw-font-bold" style={{ background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', border: '1px solid var(--wx-border)' }}>{t}</span>
                   ))}
                 </div>
               </div>
@@ -5609,15 +5609,15 @@ function LoginScreen({ onLogin, onJoinRequest }) {
 
             {/* ── RIGHT · Sign in form ── */}
             <div className="tw-p-8 md:tw-p-10 tw-flex tw-flex-col tw-justify-center">
-              <h2 className="tw-m-0 tw-text-[26px] tw-font-extrabold tw-tracking-[-0.6px]" style={{ color: '#1F1F1F' }}>Welcome back</h2>
-              <p className="tw-text-[13.5px] tw-font-medium tw-mt-1.5 tw-mb-7" style={{ color: '#6B7280' }}>Sign in to your Wurx workspace.</p>
+              <h2 className="tw-m-0 tw-text-[26px] tw-font-extrabold tw-tracking-[-0.6px]" style={{ color: 'var(--wx-text)' }}>Welcome back</h2>
+              <p className="tw-text-[13.5px] tw-font-medium tw-mt-1.5 tw-mb-7" style={{ color: 'var(--wx-text-muted)' }}>Sign in to your Wurx workspace.</p>
 
               <form onSubmit={attempt} className="tw-flex tw-flex-col tw-gap-4">
                 {/* Username */}
                 <div>
-                  <label className="tw-block tw-text-[10.5px] tw-font-bold tw-uppercase tw-tracking-[0.5px] tw-mb-1.5" style={{ color: '#6B7280' }}>Username</label>
+                  <label className="tw-block tw-text-[10.5px] tw-font-bold tw-uppercase tw-tracking-[0.5px] tw-mb-1.5" style={{ color: 'var(--wx-text-muted)' }}>Username</label>
                   <div className="tw-relative">
-                    <span className="tw-absolute tw-left-3.5 tw-top-1/2 -tw-translate-y-1/2 tw-pointer-events-none" style={{ color: '#9CA3AF' }}>
+                    <span className="tw-absolute tw-left-3.5 tw-top-1/2 -tw-translate-y-1/2 tw-pointer-events-none" style={{ color: 'var(--wx-text-muted)' }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     </span>
                     <input
@@ -5629,7 +5629,7 @@ function LoginScreen({ onLogin, onJoinRequest }) {
                       autoComplete="username"
                       disabled={isProcessing}
                       className="tw-w-full tw-pl-11 tw-pr-4 tw-outline-none tw-text-[14px] tw-font-medium tw-transition"
-                      style={{ height: 46, fontFamily: 'inherit', color: '#1F1F1F', background: '#F8F7F4', border: '1px solid #E7E2D7', borderRadius: 12 }}
+                      style={{ height: 46, fontFamily: 'inherit', color: 'var(--wx-text)', background: 'var(--wx-bg)', border: '1px solid var(--wx-border)', borderRadius: 12 }}
                       onFocus={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#30271C'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(48,39,28,0.10)'; }}
                       onBlur={e => { e.currentTarget.style.background = '#F8F7F4'; e.currentTarget.style.borderColor = '#E7E2D7'; e.currentTarget.style.boxShadow = 'none'; }}
                     />
@@ -5639,14 +5639,14 @@ function LoginScreen({ onLogin, onJoinRequest }) {
                 {/* Password */}
                 <div>
                   <div className="tw-flex tw-items-center tw-justify-between tw-mb-1.5">
-                    <label className="tw-text-[10.5px] tw-font-bold tw-uppercase tw-tracking-[0.5px]" style={{ color: '#6B7280' }}>Password</label>
+                    <label className="tw-text-[10.5px] tw-font-bold tw-uppercase tw-tracking-[0.5px]" style={{ color: 'var(--wx-text-muted)' }}>Password</label>
                     <button type="button" onClick={() => setShowForgotPopup(true)}
-                      className="tw-bg-transparent tw-border-0 tw-cursor-pointer tw-text-[11px] tw-font-bold" style={{ color: '#30271C' }}>
+                      className="tw-bg-transparent tw-border-0 tw-cursor-pointer tw-text-[11px] tw-font-bold" style={{ color: 'var(--wx-warning)' }}>
                       Forgot?
                     </button>
                   </div>
                   <div className="tw-relative">
-                    <span className="tw-absolute tw-left-3.5 tw-top-1/2 -tw-translate-y-1/2 tw-pointer-events-none" style={{ color: '#9CA3AF' }}>
+                    <span className="tw-absolute tw-left-3.5 tw-top-1/2 -tw-translate-y-1/2 tw-pointer-events-none" style={{ color: 'var(--wx-text-muted)' }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     </span>
                     <input
@@ -5657,13 +5657,13 @@ function LoginScreen({ onLogin, onJoinRequest }) {
                       autoComplete="current-password"
                       disabled={isProcessing}
                       className="tw-w-full tw-pl-11 tw-pr-11 tw-outline-none tw-text-[14px] tw-font-medium tw-transition"
-                      style={{ height: 46, fontFamily: 'inherit', color: '#1F1F1F', background: '#F8F7F4', border: '1px solid #E7E2D7', borderRadius: 12 }}
+                      style={{ height: 46, fontFamily: 'inherit', color: 'var(--wx-text)', background: 'var(--wx-bg)', border: '1px solid var(--wx-border)', borderRadius: 12 }}
                       onFocus={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#30271C'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(48,39,28,0.10)'; }}
                       onBlur={e => { e.currentTarget.style.background = '#F8F7F4'; e.currentTarget.style.borderColor = '#E7E2D7'; e.currentTarget.style.boxShadow = 'none'; }}
                     />
                     <button type="button" onClick={() => setShowPw(s => !s)} tabIndex={-1}
                       className="tw-absolute tw-right-2 tw-top-1/2 -tw-translate-y-1/2 tw-w-8 tw-h-8 tw-rounded-full tw-bg-transparent tw-border-0 tw-flex tw-items-center tw-justify-center tw-cursor-pointer tw-transition"
-                      style={{ color: '#9CA3AF' }}
+                      style={{ color: 'var(--wx-text-muted)' }}
                       onMouseEnter={e => { e.currentTarget.style.background = 'rgba(48,39,28,0.06)'; e.currentTarget.style.color = '#1F1F1F'; }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}
                     >
@@ -5678,13 +5678,13 @@ function LoginScreen({ onLogin, onJoinRequest }) {
                 {/* Sign in CTA */}
                 <button type="submit" disabled={isProcessing}
                   className="tw-mt-2 tw-w-full tw-rounded-[12px] tw-text-[14px] tw-font-bold tw-tracking-[-0.1px] tw-flex tw-items-center tw-justify-center tw-gap-2 tw-border-0 tw-cursor-pointer disabled:tw-opacity-60 disabled:tw-cursor-wait tw-transition"
-                  style={{ height: 48, background: '#30271C', color: '#F5E9D6', boxShadow: '0 8px 22px rgba(48,39,28,0.22)' }}
+                  style={{ height: 48, background: 'var(--wx-warning-soft)', color: 'var(--wx-text-muted)', boxShadow: '0 8px 22px rgba(48,39,28,0.22)' }}
                   onMouseEnter={e => { if (!isProcessing) e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(48,39,28,0.30)'; }}
                   onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 22px rgba(48,39,28,0.22)'; }}
                 >
                   {isProcessing ? (
                     <>
-                      <span className="tw-w-3.5 tw-h-3.5 tw-border-2 tw-rounded-full tw-animate-spin" style={{ borderColor: 'rgba(245,233,214,0.30)', borderTopColor: '#F5E9D6' }} />
+                      <span className="tw-w-3.5 tw-h-3.5 tw-border-2 tw-rounded-full tw-animate-spin" style={{ borderColor: 'var(--wx-border)', borderTopColor: '#F5E9D6' }} />
                       Signing in
                     </>
                   ) : (
@@ -5698,15 +5698,15 @@ function LoginScreen({ onLogin, onJoinRequest }) {
 
               {/* Divider */}
               <div className="tw-flex tw-items-center tw-gap-3 tw-my-5">
-                <div className="tw-flex-1 tw-h-px" style={{ background: '#E7E2D7' }} />
-                <span className="tw-text-[10px] tw-font-bold tw-uppercase tw-tracking-[0.6px]" style={{ color: '#9CA3AF' }}>Or</span>
-                <div className="tw-flex-1 tw-h-px" style={{ background: '#E7E2D7' }} />
+                <div className="tw-flex-1 tw-h-px" style={{ background: 'var(--wx-surface-3)' }} />
+                <span className="tw-text-[10px] tw-font-bold tw-uppercase tw-tracking-[0.6px]" style={{ color: 'var(--wx-text-muted)' }}>Or</span>
+                <div className="tw-flex-1 tw-h-px" style={{ background: 'var(--wx-surface-3)' }} />
               </div>
 
               {/* Request to join */}
               <button onClick={onJoinRequest}
                 className="tw-w-full tw-rounded-[12px] tw-text-[13px] tw-font-bold tw-tracking-[-0.1px] tw-cursor-pointer tw-transition tw-flex tw-items-center tw-justify-center tw-gap-1.5"
-                style={{ height: 42, background: 'transparent', color: '#30271C', border: '1px solid #E7E2D7' }}
+                style={{ height: 42, background: 'transparent', color: 'var(--wx-warning)', border: '1px solid var(--wx-border)' }}
                 onMouseEnter={e => { e.currentTarget.style.background = '#F8F7F4'; e.currentTarget.style.borderColor = '#30271C'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E7E2D7'; }}
               >
@@ -5717,7 +5717,7 @@ function LoginScreen({ onLogin, onJoinRequest }) {
           </div>
 
           {/* Footer */}
-          <div className="tw-mt-5 tw-text-center tw-text-[11px] tw-font-medium" style={{ color: '#9C8F7C' }}>
+          <div className="tw-mt-5 tw-text-center tw-text-[11px] tw-font-medium" style={{ color: 'var(--wx-text-muted)' }}>
             Secure workspace · © Wurx Media
           </div>
         </div>
@@ -5725,15 +5725,15 @@ function LoginScreen({ onLogin, onJoinRequest }) {
 
       {/* ── ACCESS DENIED · cleaner Wurx-style popup ── */}
       {showMemeError && (
-        <div className="tw-fixed tw-inset-0 tw-z-[2000] tw-flex tw-items-center tw-justify-center tw-p-4 tw-font-sans" style={{ background: 'rgba(48,39,28,0.55)', backdropFilter: 'blur(6px)' }} onClick={() => setShowMemeError(false)}>
+        <div className="tw-fixed tw-inset-0 tw-z-[2000] tw-flex tw-items-center tw-justify-center tw-p-4 tw-font-sans" style={{ background: 'var(--wx-warning-soft)', backdropFilter: 'blur(6px)' }} onClick={() => setShowMemeError(false)}>
           <div onClick={e => e.stopPropagation()} className="tw-relative tw-w-full tw-max-w-[400px] tw-bg-white tw-rounded-[20px] tw-overflow-hidden" style={{ animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)', boxShadow: '0 24px 60px rgba(48,39,28,0.30)' }}>
             <div className="tw-p-7">
-              <div className="tw-w-12 tw-h-12 tw-rounded-[14px] tw-flex tw-items-center tw-justify-center tw-mb-4" style={{ background: '#FEE2E2', color: '#B91C1C' }}>
+              <div className="tw-w-12 tw-h-12 tw-rounded-[14px] tw-flex tw-items-center tw-justify-center tw-mb-4" style={{ background: 'var(--wx-surface-2)', color: 'var(--wx-danger)' }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </div>
-              <div className="tw-text-[20px] tw-font-extrabold tw-tracking-[-0.4px]" style={{ color: '#1F1F1F' }}>Access denied</div>
-              <div className="tw-text-[13px] tw-font-medium tw-mt-1.5 tw-mb-5" style={{ color: '#6B7280' }}>Username or password is incorrect. Try again, or contact your admin.</div>
-              <button onClick={() => setShowMemeError(false)} className="tw-w-full tw-h-11 tw-rounded-[12px] tw-text-[13.5px] tw-font-bold tw-border-0 tw-cursor-pointer tw-transition" style={{ background: '#30271C', color: '#F5E9D6' }}>
+              <div className="tw-text-[20px] tw-font-extrabold tw-tracking-[-0.4px]" style={{ color: 'var(--wx-text)' }}>Access denied</div>
+              <div className="tw-text-[13px] tw-font-medium tw-mt-1.5 tw-mb-5" style={{ color: 'var(--wx-text-muted)' }}>Username or password is incorrect. Try again, or contact your admin.</div>
+              <button onClick={() => setShowMemeError(false)} className="tw-w-full tw-h-11 tw-rounded-[12px] tw-text-[13.5px] tw-font-bold tw-border-0 tw-cursor-pointer tw-transition" style={{ background: 'var(--wx-warning-soft)', color: 'var(--wx-text-muted)' }}>
                 Try again
               </button>
             </div>
@@ -5743,27 +5743,27 @@ function LoginScreen({ onLogin, onJoinRequest }) {
 
       {/* ── FORGOT PASSWORD · cleaner Wurx-style popup ── */}
       {showForgotPopup && (
-        <div className="tw-fixed tw-inset-0 tw-z-[2000] tw-flex tw-items-center tw-justify-center tw-p-4 tw-font-sans" style={{ background: 'rgba(48,39,28,0.55)', backdropFilter: 'blur(6px)' }} onClick={() => setShowForgotPopup(false)}>
+        <div className="tw-fixed tw-inset-0 tw-z-[2000] tw-flex tw-items-center tw-justify-center tw-p-4 tw-font-sans" style={{ background: 'var(--wx-warning-soft)', backdropFilter: 'blur(6px)' }} onClick={() => setShowForgotPopup(false)}>
           <div onClick={e => e.stopPropagation()} className="tw-relative tw-w-full tw-max-w-[400px] tw-bg-white tw-rounded-[20px] tw-overflow-hidden" style={{ animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)', boxShadow: '0 24px 60px rgba(48,39,28,0.30)' }}>
             <div className="tw-p-7">
-              <div className="tw-w-12 tw-h-12 tw-rounded-[14px] tw-flex tw-items-center tw-justify-center tw-mb-4" style={{ background: '#F5E9D6', color: '#30271C' }}>
+              <div className="tw-w-12 tw-h-12 tw-rounded-[14px] tw-flex tw-items-center tw-justify-center tw-mb-4" style={{ background: 'var(--wx-surface-2)', color: 'var(--wx-warning)' }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
               </div>
-              <div className="tw-text-[20px] tw-font-extrabold tw-tracking-[-0.4px]" style={{ color: '#1F1F1F' }}>Reset password</div>
-              <div className="tw-text-[13px] tw-font-medium tw-mt-1.5 tw-mb-5" style={{ color: '#6B7280' }}>Message your workspace admin to reset your password.</div>
-              <div className="tw-rounded-[12px] tw-p-3.5 tw-mb-5 tw-space-y-2" style={{ background: '#F8F7F4', border: '1px solid #E7E2D7' }}>
+              <div className="tw-text-[20px] tw-font-extrabold tw-tracking-[-0.4px]" style={{ color: 'var(--wx-text)' }}>Reset password</div>
+              <div className="tw-text-[13px] tw-font-medium tw-mt-1.5 tw-mb-5" style={{ color: 'var(--wx-text-muted)' }}>Message your workspace admin to reset your password.</div>
+              <div className="tw-rounded-[12px] tw-p-3.5 tw-mb-5 tw-space-y-2" style={{ background: 'var(--wx-bg)', border: '1px solid var(--wx-border)' }}>
                 {[
                   { k: 'Step 1', v: 'DM Asad on WhatsApp' },
                   { k: 'Step 2', v: 'Confirm your username' },
                   { k: 'Step 3', v: 'Receive new password' },
                 ].map(s => (
                   <div key={s.k} className="tw-flex tw-justify-between tw-items-center tw-gap-3">
-                    <span className="tw-text-[10.5px] tw-font-bold tw-uppercase tw-tracking-wider" style={{ color: '#9C8F7C' }}>{s.k}</span>
-                    <span className="tw-text-[12.5px] tw-font-semibold" style={{ color: '#1F1F1F' }}>{s.v}</span>
+                    <span className="tw-text-[10.5px] tw-font-bold tw-uppercase tw-tracking-wider" style={{ color: 'var(--wx-text-muted)' }}>{s.k}</span>
+                    <span className="tw-text-[12.5px] tw-font-semibold" style={{ color: 'var(--wx-text)' }}>{s.v}</span>
                   </div>
                 ))}
               </div>
-              <button onClick={() => setShowForgotPopup(false)} className="tw-w-full tw-h-11 tw-rounded-[12px] tw-text-[13.5px] tw-font-bold tw-border-0 tw-cursor-pointer tw-transition" style={{ background: '#30271C', color: '#F5E9D6' }}>
+              <button onClick={() => setShowForgotPopup(false)} className="tw-w-full tw-h-11 tw-rounded-[12px] tw-text-[13.5px] tw-font-bold tw-border-0 tw-cursor-pointer tw-transition" style={{ background: 'var(--wx-warning-soft)', color: 'var(--wx-text-muted)' }}>
                 Got it
               </button>
             </div>
@@ -6071,11 +6071,11 @@ function DetailModalV2({ creator, onClose, onEdit, onDelete, onUpdate, perms = {
         <div data-sheet-hero className="tw-relative tw-overflow-hidden" style={{ background: gradient, height: 200 }}>
           {/* Atmospheric multi-layer overlays */}
           <div className="tw-absolute tw-inset-0 tw-pointer-events-none" style={{
-            background: 'radial-gradient(ellipse 80% 90% at 85% 10%, rgba(255,255,255,0.38), transparent 55%), radial-gradient(ellipse 80% 90% at 15% 95%, rgba(0,0,0,0.42), transparent 60%)'
+            background: 'radial-gradient(ellipse 80% 90% at 85% 10%, var(--wx-surface-1), transparent 55%), radial-gradient(ellipse 80% 90% at 15% 95%, var(--wx-accent), transparent 60%)'
           }} />
           {/* Diagonal sheen */}
           <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-20" style={{
-            background: 'linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%)'
+            background: 'linear-gradient(135deg, transparent 30%, var(--wx-surface-1) 50%, transparent 70%)'
           }} />
           {/* Soft mesh */}
           <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-25" style={{
@@ -6083,7 +6083,7 @@ function DetailModalV2({ creator, onClose, onEdit, onDelete, onUpdate, perms = {
             backgroundSize: '20px 20px'
           }} />
           {/* Bottom fade so name area is darker for contrast */}
-          <div className="tw-absolute tw-inset-x-0 tw-bottom-0 tw-h-[55%] tw-pointer-events-none" style={{ background: 'linear-gradient(180deg, transparent, rgba(0,0,0,0.55))' }} />
+          <div className="tw-absolute tw-inset-x-0 tw-bottom-0 tw-h-[55%] tw-pointer-events-none" style={{ background: 'linear-gradient(180deg, transparent, var(--wx-accent))' }} />
 
           {/* Top bar: hire date pill + close */}
           <div className="tw-relative tw-z-10 tw-flex tw-items-start tw-justify-between tw-gap-2 tw-px-5 tw-pt-4">
@@ -7050,32 +7050,32 @@ function LeaderboardModalV2({ creators, hiredByTeam, onClose }) {
     <div
       className="tw-fixed tw-inset-0 tw-z-[1900] tw-flex tw-items-center tw-justify-center tw-p-4 sm:tw-p-6"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-      style={{ animation: 'sp-fade 0.22s ease', background: 'rgba(48,39,28,0.50)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+      style={{ animation: 'sp-fade 0.22s ease', background: 'var(--wx-warning-soft)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
     >
       <div style={{
         position: 'relative', width: '100%', maxWidth: 560, maxHeight: '92vh',
-        background: '#F8F7F4', borderRadius: 22,
+        background: 'var(--wx-bg)', borderRadius: 22,
         boxShadow: '0 32px 80px rgba(48,39,28,0.25), 0 8px 24px rgba(48,39,28,0.10)',
         animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)',
         overflow: 'hidden', display: 'flex', flexDirection: 'column',
         fontFamily: 'inherit',
       }}>
         {/* ── Header · dark coffee ── */}
-        <div style={{ background: '#30271C', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ background: 'var(--wx-warning-soft)', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
             </svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: '#F5E9D6' }}>Leaderboard</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(245,233,214,0.55)', marginTop: 2 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>Leaderboard</div>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>
               {month
                 ? `Hired-by performance · ${monthLabelShort(month)}${prevMonth ? ` vs ${monthLabelShort(prevMonth)}` : ''}`
                 : 'Hired-by performance across all deals'}
             </div>
           </div>
-          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
+          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -7083,7 +7083,7 @@ function LeaderboardModalV2({ creators, hiredByTeam, onClose }) {
         </div>
 
         {/* ── Period strip · all time + the last 12 active months ── */}
-        <div style={{ background: '#fff', borderBottom: '1px solid #E7E2D7', padding: '10px 0 10px 22px' }}>
+        <div style={{ background: 'var(--wx-surface-1)', borderBottom: '1px solid var(--wx-border)', padding: '10px 0 10px 22px' }}>
           <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingRight: 22, scrollbarWidth: 'none' }}>
             {[{ id: '', label: 'All time' }, ...months.map(m => ({ id: m, label: monthLabelShort(m) }))].map(p => {
               const active = month === p.id;
@@ -7103,19 +7103,19 @@ function LeaderboardModalV2({ creators, hiredByTeam, onClose }) {
 
         {/* ── Top performer hero ── */}
         {top && (
-          <div style={{ padding: '18px 22px 16px', background: 'linear-gradient(135deg, #FDFAF4 0%, #F5EFE2 100%)', borderBottom: '1px solid #E7E2D7' }}>
+          <div style={{ padding: '18px 22px 16px', background: 'linear-gradient(135deg, var(--wx-surface-1) 0%, var(--wx-surface-2) 100%)', borderBottom: '1px solid var(--wx-border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
                 <span style={{ width: 56, height: 56, borderRadius: 999, background: top.bg, color: top.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{(top.name || '?')[0].toUpperCase()}</span>
-                <span style={{ position: 'absolute', bottom: -2, right: -2, width: 22, height: 22, borderRadius: 999, background: '#30271C', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, lineHeight: 1, border: '2px solid #FDFAF4' }}>#1</span>
+                <span style={{ position: 'absolute', bottom: -2, right: -2, width: 22, height: 22, borderRadius: 999, background: 'var(--wx-warning-soft)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, lineHeight: 1, border: '2px solid var(--wx-border)' }}>#1</span>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 10.5, fontWeight: 800, color: '#9C8F7C', textTransform: 'uppercase', letterSpacing: 0.6 }}>Leading by {tabs.find(t => t.id === metric).label}{month ? ` · ${monthLabelShort(month)}` : ''}</div>
-                <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.4px', color: '#1F1F1F', marginTop: 1 }}>{top.name}</div>
-                <div style={{ fontSize: 11.5, fontWeight: 600, color: '#6B7280', marginTop: 2 }}>{top.deals} deal{top.deals !== 1 ? 's' : ''} · {top.paidCount} paid · {top.videosDone} delivered</div>
+                <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--wx-text-muted)', textTransform: 'uppercase', letterSpacing: 0.6 }}>Leading by {tabs.find(t => t.id === metric).label}{month ? ` · ${monthLabelShort(month)}` : ''}</div>
+                <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text)', marginTop: 1 }}>{top.name}</div>
+                <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>{top.deals} deal{top.deals !== 1 ? 's' : ''} · {top.paidCount} paid · {top.videosDone} delivered</div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.5px', color: '#30271C', fontVariantNumeric: 'tabular-nums' }}>{fmt(top)}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.5px', color: 'var(--wx-warning)', fontVariantNumeric: 'tabular-nums' }}>{fmt(top)}</div>
                 {(() => {
                   const mv = movement(top.name);
                   if (!mv) return null;
@@ -7128,7 +7128,7 @@ function LeaderboardModalV2({ creators, hiredByTeam, onClose }) {
 
         {/* ── Metric tabs · neutral pill toggle ── */}
         <div style={{ padding: '14px 22px 0' }}>
-          <div style={{ display: 'flex', gap: 4, background: '#fff', borderRadius: 999, padding: 4, border: '1px solid #E7E2D7' }}>
+          <div style={{ display: 'flex', gap: 4, background: 'var(--wx-surface-1)', borderRadius: 999, padding: 4, border: '1px solid var(--wx-border)' }}>
             {tabs.map(t => {
               const active = metric === t.id;
               return (
@@ -7149,17 +7149,17 @@ function LeaderboardModalV2({ creators, hiredByTeam, onClose }) {
         <div style={{ flex: 1, overflowY: 'auto', padding: '14px 22px 22px' }}>
           {sorted.length === 0 ? (
             <div style={{ padding: '60px 16px', textAlign: 'center' }}>
-              <div style={{ width: 56, height: 56, borderRadius: 999, background: '#F4F2EE', color: '#9C8F7C', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--wx-bg)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#1F1F1F', letterSpacing: '-0.2px' }}>No rankings yet</div>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#9C8F7C', marginTop: 4 }}>Assign "Hired By" to creators to see leaderboard</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.2px' }}>No rankings yet</div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--wx-text-muted)', marginTop: 4 }}>Assign "Hired By" to creators to see leaderboard</div>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {/* Nobody scored on this metric · say so instead of a wall of -100% */}
               {maxVal === 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', marginBottom: 2, borderRadius: 12, background: '#FBF6EA', border: '1px solid #EADFC6', color: '#8A6D2F', fontSize: 11.5, fontWeight: 600, lineHeight: 1.45 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', marginBottom: 2, borderRadius: 12, background: 'var(--wx-bg)', border: '1px solid var(--wx-border)', color: 'var(--wx-warning)', fontSize: 11.5, fontWeight: 600, lineHeight: 1.45 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   <span>No {tabs.find(t => t.id === metric).label} recorded for {month ? monthLabelShort(month) : 'this period'} yet{metric === 'gmv' ? ' · EUKA month data may not be synced' : ''}.</span>
                 </div>
@@ -7207,22 +7207,22 @@ function LbCardV2({ s, rank, pct, display, mv, prev }) {
       display: 'flex', alignItems: 'center', gap: 12,
       padding: '12px 14px',
       borderRadius: 14,
-      background: '#fff',
+      background: 'var(--wx-surface-1)',
       border: '1px solid ' + (isTop ? '#30271C' : '#E7E2D7'),
       transition: 'border-color .15s',
     }}>
       <div style={{ width: 26, height: 26, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11.5, fontWeight: 800, color: isTop ? '#30271C' : '#9C8F7C', fontVariantNumeric: 'tabular-nums' }}>#{rank + 1}</div>
       <div style={{ width: 38, height: 38, borderRadius: 999, background: s.bg, color: s.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, lineHeight: 1, flexShrink: 0 }}>{(s.name || '?')[0].toUpperCase()}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 700, color: '#1F1F1F', letterSpacing: '-0.2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#9C8F7C', marginTop: 2 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>
           <span>{s.deals} deal{s.deals !== 1 ? 's' : ''}</span>
-          <span style={{ width: 3, height: 3, borderRadius: 999, background: '#9C8F7C', opacity: 0.6 }} />
+          <span style={{ width: 3, height: 3, borderRadius: 999, background: 'var(--wx-accent)', opacity: 0.6 }} />
           <span>{s.paidCount} paid</span>
-          <span style={{ width: 3, height: 3, borderRadius: 999, background: '#9C8F7C', opacity: 0.6 }} />
+          <span style={{ width: 3, height: 3, borderRadius: 999, background: 'var(--wx-accent)', opacity: 0.6 }} />
           <span>{s.videosDone} delivered</span>
         </div>
-        <div style={{ marginTop: 6, height: 4, borderRadius: 999, background: '#F2EEE7', overflow: 'hidden' }}>
+        <div style={{ marginTop: 6, height: 4, borderRadius: 999, background: 'var(--wx-surface-2)', overflow: 'hidden' }}>
           <div style={{ height: '100%', borderRadius: 999, background: s.color, width: pct + '%', transition: 'width .5s cubic-bezier(.4,.0,.2,1)' }} />
         </div>
       </div>
@@ -8958,7 +8958,7 @@ function BottomSheet({ editCreator, allBrands, onSave, onClose, hiredByTeam, can
                   <label className="form-label">
                     Deadline
                     {form.deadline && new Date(form.deadline) < new Date() && (
-                      <span style={{ marginLeft: 8, fontSize: 11, color: '#EF4444', fontWeight: 700 }}>⚠ Overdue</span>
+                      <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--wx-danger)', fontWeight: 700 }}>⚠ Overdue</span>
                     )}
                   </label>
                   <input className="form-input" type="date" value={form.deadline || ''}
@@ -9526,7 +9526,7 @@ function BottomSheetV2({ editCreator, allBrands, onSave, onClose, hiredByTeam, c
                 {/* Lifetime / Total GMV */}
                 <div className="tw-mt-2 tw-relative tw-overflow-hidden tw-rounded-2xl tw-bg-gradient-to-br tw-from-blue-500 tw-via-indigo-600 tw-to-violet-700 tw-p-3 tw-shadow-md">
                   <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-15" style={{ backgroundImage: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.6) 1px, transparent 1px)', backgroundSize: '14px 14px' }} />
-                  <div className="tw-absolute tw--top-6 tw--right-3 tw-w-16 tw-h-16 tw-rounded-full tw-opacity-30 tw-pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.6), transparent 70%)' }} />
+                  <div className="tw-absolute tw--top-6 tw--right-3 tw-w-16 tw-h-16 tw-rounded-full tw-opacity-30 tw-pointer-events-none" style={{ background: 'radial-gradient(circle, var(--wx-surface-1), transparent 70%)' }} />
                   <div className="tw-relative tw-z-10 tw-flex tw-items-center tw-justify-between tw-gap-2">
                     <div className="tw-flex tw-items-center tw-gap-2">
                       <div className="tw-w-7 tw-h-7 tw-rounded-full tw-bg-white/22 tw-backdrop-blur tw-flex tw-items-center tw-justify-center tw-text-white tw-text-[14px]">🏆</div>
@@ -9676,12 +9676,12 @@ function BottomSheetV2({ editCreator, allBrands, onSave, onClose, hiredByTeam, c
 /* ─── SettingsPanel ──────────────────────────────────────── */
 const ROLES = ['superadmin', 'ipc', 'apc', 'admin', 'viewer', 'client'];
 const ROLE_META = {
-  superadmin: { label: 'Super Admin', color: '#4F46E5', bg: '#EEF2FF' },
-  ipc:        { label: 'IPC',         color: '#059669', bg: '#ECFDF5' },
-  apc:        { label: 'APC',         color: '#D97706', bg: '#FFFBEB' },
-  admin:      { label: 'Admin',       color: '#DC2626', bg: '#FEF2F2' },
-  viewer:     { label: 'Viewer',      color: '#0369A1', bg: '#E0F2FE' },
-  client:     { label: 'Client',      color: '#7C3AED', bg: '#F5F3FF' },
+  superadmin: { label: 'Super Admin', color: 'var(--wx-text-faint)', bg: '#EEF2FF' },
+  ipc:        { label: 'IPC',         color: 'var(--wx-success)', bg: '#ECFDF5' },
+  apc:        { label: 'APC',         color: 'var(--wx-warning)', bg: '#FFFBEB' },
+  admin:      { label: 'Admin',       color: 'var(--wx-danger)', bg: '#FEF2F2' },
+  viewer:     { label: 'Viewer',      color: 'var(--wx-text-faint)', bg: '#E0F2FE' },
+  client:     { label: 'Client',      color: 'var(--wx-text-muted)', bg: '#F5F3FF' },
 };
 
 /* ─── SettingsPanelV2 · Tailwind + new One UI concept ─── */
@@ -9719,7 +9719,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
   // No rainbow colors per-row · the section grouping is the visual structure.
   const iconChipStyle = {
     width: 38, height: 38, borderRadius: 11, flexShrink: 0,
-    background: '#F4F2EE', color: '#30271C',
+    background: 'var(--wx-bg)', color: 'var(--wx-warning)',
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
   };
 
@@ -9800,14 +9800,14 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
     <div
       className="tw-fixed tw-inset-0 tw-z-[1000] tw-flex tw-items-center tw-justify-center tw-p-4 sm:tw-p-6"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-      style={{ animation: 'sp-fade 0.22s ease-out', background: 'rgba(48,39,28,0.50)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+      style={{ animation: 'sp-fade 0.22s ease-out', background: 'var(--wx-warning-soft)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
     >
       <div
         ref={ref}
         className="tw-relative tw-w-full tw-flex tw-flex-col tw-font-sans"
         style={{
           maxWidth: 560, maxHeight: '92vh',
-          background: '#F8F7F4', borderRadius: 22,
+          background: 'var(--wx-bg)', borderRadius: 22,
           boxShadow: '0 32px 80px rgba(48,39,28,0.25), 0 8px 24px rgba(48,39,28,0.10)',
           animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)',
           overflow: 'hidden',
@@ -9815,7 +9815,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
       >
         {/* ── Header · dark coffee bar with cream text ── */}
         <div style={{
-          background: '#30271C', padding: '16px 22px 14px',
+          background: 'var(--wx-warning-soft)', padding: '16px 22px 14px',
           display: 'flex', alignItems: 'center', gap: 12,
         }}>
           {view !== 'home' && (
@@ -9825,7 +9825,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
               style={{
                 width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', transition: 'background .15s',
+                background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', transition: 'background .15s',
               }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}
@@ -9834,10 +9834,10 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
             </button>
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: '#F5E9D6' }}>
+            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>
               {view === 'home' ? 'Settings' : 'Hired By Team'}
             </div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(245,233,214,0.55)', marginTop: 2 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>
               {view === 'home' ? 'Workspace preferences & administration' : 'Manage your team members'}
             </div>
           </div>
@@ -9847,7 +9847,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
             style={{
               width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', transition: 'background .15s',
+              background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', transition: 'background .15s',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}
@@ -9862,13 +9862,13 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
             {/* Profile card — warm cream with role chip */}
             <div style={{
               padding: 18, borderRadius: 18,
-              background: 'linear-gradient(135deg, #FDFAF4 0%, #F5EFE2 100%)',
-              border: '1px solid #E7E2D7',
+              background: 'linear-gradient(135deg, var(--wx-surface-1) 0%, var(--wx-surface-2) 100%)',
+              border: '1px solid var(--wx-border)',
               display: 'flex', alignItems: 'center', gap: 14,
             }}>
               <div style={{
                 width: 52, height: 52, borderRadius: 999,
-                background: '#30271C', color: '#F5E9D6',
+                background: 'var(--wx-warning-soft)', color: 'var(--wx-text-muted)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
               }}>
@@ -9878,21 +9878,21 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
                 </svg>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.3px', color: '#1F1F1F', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentUser?.display}</div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', marginTop: 1 }}>@{currentUser?.username}</div>
+                <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.3px', color: 'var(--wx-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentUser?.display}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 1 }}>@{currentUser?.username}</div>
                 <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 10px',
-                    borderRadius: 999, background: '#30271C', color: '#F5E9D6',
+                    borderRadius: 999, background: 'var(--wx-warning-soft)', color: 'var(--wx-text-muted)',
                     fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.4, lineHeight: 1,
                   }}>{meMeta.label}</span>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: 5, height: 22, padding: '0 10px',
-                    borderRadius: 999, background: 'rgba(34,197,94,0.10)', color: '#15803D',
+                    borderRadius: 999, background: 'var(--wx-success-soft)', color: 'var(--wx-success)',
                     fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.4, lineHeight: 1,
-                    border: '1px solid rgba(34,197,94,0.30)',
+                    border: '1px solid var(--wx-success)',
                   }}>
-                    <span style={{ width: 6, height: 6, borderRadius: 999, background: '#22C55E', display: 'inline-block' }} />
+                    <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--wx-success-soft)', display: 'inline-block' }} />
                     Online
                   </span>
                 </div>
@@ -9903,13 +9903,13 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
             {sections.map(section => (
               <div key={section.title} style={{ marginTop: 18 }}>
                 <div style={{
-                  fontSize: 10.5, fontWeight: 800, color: '#9C8F7C',
+                  fontSize: 10.5, fontWeight: 800, color: 'var(--wx-text-muted)',
                   textTransform: 'uppercase', letterSpacing: 0.6,
                   padding: '0 4px 8px',
                 }}>{section.title}</div>
                 <div style={{
-                  background: '#fff', borderRadius: 16,
-                  border: '1px solid #E7E2D7',
+                  background: 'var(--wx-surface-1)', borderRadius: 16,
+                  border: '1px solid var(--wx-border)',
                   overflow: 'hidden',
                 }}>
                   {section.items.map((item, i) => (
@@ -9930,13 +9930,13 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
                     >
                       <div style={iconChipStyle}>{item.icon}</div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13.5, fontWeight: 700, color: '#1F1F1F', letterSpacing: '-0.1px' }}>{item.label}</div>
-                        {item.sub && <div style={{ fontSize: 11.5, fontWeight: 500, color: '#9C8F7C', marginTop: 2 }}>{item.sub}</div>}
+                        <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.1px' }}>{item.label}</div>
+                        {item.sub && <div style={{ fontSize: 11.5, fontWeight: 500, color: 'var(--wx-text-muted)', marginTop: 2 }}>{item.sub}</div>}
                       </div>
                       {item.value ? (
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', textAlign: 'right', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.value}</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--wx-text-muted)', textAlign: 'right', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.value}</span>
                       ) : item.action ? (
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#9C8F7C', flexShrink: 0 }}><polyline points="9 18 15 12 9 6"/></svg>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--wx-text-muted)', flexShrink: 0 }}><polyline points="9 18 15 12 9 6"/></svg>
                       ) : null}
                     </button>
                   ))}
@@ -9949,8 +9949,8 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
               onClick={() => { if (window.confirm('Sign out of Wurx Base?')) onLogout(); }}
               style={{
                 width: '100%', marginTop: 22, height: 48,
-                borderRadius: 14, border: '1px solid rgba(220,38,38,0.20)',
-                background: 'rgba(220,38,38,0.06)', color: '#B91C1C',
+                borderRadius: 14, border: '1px solid var(--wx-danger)',
+                background: 'var(--wx-danger-soft)', color: 'var(--wx-danger)',
                 fontSize: 13.5, fontWeight: 700, letterSpacing: '-0.1px',
                 cursor: 'pointer',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -9966,9 +9966,9 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
 
           {/* Team management view */}
           {view === 'team' && <div>
-            <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E7E2D7', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--wx-surface-1)', borderRadius: 16, border: '1px solid var(--wx-border)', overflow: 'hidden' }}>
               {hiredByTeam.length === 0 && (
-                <div style={{ padding: '22px 18px', textAlign: 'center', color: '#9C8F7C', fontSize: 13, fontWeight: 600 }}>No team members yet</div>
+                <div style={{ padding: '22px 18px', textAlign: 'center', color: 'var(--wx-text-muted)', fontSize: 13, fontWeight: 600 }}>No team members yet</div>
               )}
               {hiredByTeam.map((m, i) => (
                 <div key={m.id} style={{
@@ -9988,7 +9988,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
                     disabled={!isSuperAdmin}
                     style={{
                       flex: 1, minWidth: 0, background: 'transparent', border: 0, outline: 'none',
-                      fontSize: 14, fontWeight: 700, color: '#1F1F1F', letterSpacing: '-0.1px',
+                      fontSize: 14, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.1px',
                       fontFamily: 'inherit',
                     }}
                   />
@@ -9998,7 +9998,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
                       title="Remove"
                       style={{
                         width: 30, height: 30, borderRadius: 999, border: 0, cursor: 'pointer',
-                        background: 'rgba(220,38,38,0.08)', color: '#B91C1C',
+                        background: 'var(--wx-danger-soft)', color: 'var(--wx-danger)',
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                         flexShrink: 0, transition: 'background .15s',
                       }}
@@ -10021,8 +10021,8 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
                   placeholder="Add new team member"
                   style={{
                     flex: 1, height: 44, padding: '0 14px', borderRadius: 12,
-                    background: '#fff', border: '1px solid #E7E2D7',
-                    fontSize: 13.5, fontWeight: 600, color: '#1F1F1F',
+                    background: 'var(--wx-surface-1)', border: '1px solid var(--wx-border)',
+                    fontSize: 13.5, fontWeight: 600, color: 'var(--wx-text)',
                     outline: 'none', fontFamily: 'inherit',
                     transition: 'border-color .15s, box-shadow .15s',
                   }}
@@ -10034,7 +10034,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
                   disabled={!newName.trim()}
                   style={{
                     height: 44, padding: '0 18px', borderRadius: 12, border: 0,
-                    background: '#30271C', color: '#F5E9D6',
+                    background: 'var(--wx-warning-soft)', color: 'var(--wx-text-muted)',
                     fontSize: 13, fontWeight: 700,
                     cursor: newName.trim() ? 'pointer' : 'not-allowed',
                     opacity: newName.trim() ? 1 : 0.5,
@@ -10048,13 +10048,13 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
 
         {/* Confirm delete */}
         {confirmDel && (
-          <div onClick={() => setConfirmDel(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(48,39,28,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 22 }}>
-            <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 18, padding: 22, width: '100%', maxWidth: 340, boxShadow: '0 24px 60px rgba(48,39,28,0.30)' }}>
-              <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.3px', color: '#1F1F1F' }}>Remove member?</div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#6B7280', marginTop: 6, marginBottom: 16 }}>Remove <strong style={{ color: '#1F1F1F' }}>{confirmDel.name}</strong> from the team?</div>
+          <div onClick={() => setConfirmDel(null)} style={{ position: 'absolute', inset: 0, background: 'var(--wx-warning-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 22 }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: 'var(--wx-surface-1)', borderRadius: 18, padding: 22, width: '100%', maxWidth: 340, boxShadow: '0 24px 60px rgba(48,39,28,0.30)' }}>
+              <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.3px', color: 'var(--wx-text)' }}>Remove member?</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--wx-text-muted)', marginTop: 6, marginBottom: 16 }}>Remove <strong style={{ color: 'var(--wx-text)' }}>{confirmDel.name}</strong> from the team?</div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => setConfirmDel(null)} style={{ flex: 1, height: 42, borderRadius: 11, border: '1px solid #E7E2D7', background: '#fff', color: '#1F1F1F', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
-                <button onClick={() => deleteMember(confirmDel.id)} style={{ flex: 1, height: 42, borderRadius: 11, border: 0, background: '#B91C1C', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Remove</button>
+                <button onClick={() => setConfirmDel(null)} style={{ flex: 1, height: 42, borderRadius: 11, border: '1px solid var(--wx-border)', background: 'var(--wx-surface-1)', color: 'var(--wx-text)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={() => deleteMember(confirmDel.id)} style={{ flex: 1, height: 42, borderRadius: 11, border: 0, background: 'var(--wx-danger-soft)', color: 'var(--wx-text-muted)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Remove</button>
               </div>
             </div>
           </div>
@@ -10461,13 +10461,13 @@ function UMDialog({ onClose, title, sub, children }) {
     <div onClick={onClose} style={{
       position: 'absolute', inset: 0, zIndex: 30,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 22, background: 'rgba(48,39,28,0.45)',
+      padding: 22, background: 'var(--wx-warning-soft)',
       backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
       borderRadius: 22, animation: 'sp-fade 0.18s ease',
     }}>
       <div onClick={e => e.stopPropagation()} style={{
         width: '100%', maxWidth: 400,
-        background: '#fff', borderRadius: 18,
+        background: 'var(--wx-surface-1)', borderRadius: 18,
         boxShadow: '0 24px 60px rgba(48,39,28,0.28), 0 6px 16px rgba(48,39,28,0.10)',
         padding: '20px 22px 18px',
         animation: 'sp-pop 0.24s cubic-bezier(0.33,1,0.68,1)',
@@ -10475,8 +10475,8 @@ function UMDialog({ onClose, title, sub, children }) {
         fontFamily: 'inherit',
       }}>
         <div>
-          <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.4px', color: '#1F1F1F', lineHeight: 1.2 }}>{title}</div>
-          {sub && <div style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', marginTop: 4 }}>{sub}</div>}
+          <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text)', lineHeight: 1.2 }}>{title}</div>
+          {sub && <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 4 }}>{sub}</div>}
         </div>
         {children}
       </div>
@@ -10492,8 +10492,8 @@ function UMInput({ placeholder, value, onChange, type = 'text' }) {
       onChange={e => onChange(e.target.value)}
       style={{
         height: 42, padding: '0 14px', borderRadius: 11,
-        background: '#F8F7F4', border: '1px solid #E7E2D7',
-        fontSize: 13, fontWeight: 600, color: '#1F1F1F',
+        background: 'var(--wx-bg)', border: '1px solid var(--wx-border)',
+        fontSize: 13, fontWeight: 600, color: 'var(--wx-text)',
         outline: 'none', fontFamily: 'inherit',
         transition: 'border-color .15s, box-shadow .15s, background .15s',
       }}
@@ -10529,8 +10529,8 @@ function UMBtnGhost({ onClick, children, disabled }) {
   return (
     <button onClick={onClick} disabled={disabled} style={{
       flex: 1, height: 42, borderRadius: 11,
-      background: '#fff', border: '1px solid #E7E2D7',
-      color: '#1F1F1F', fontSize: 13, fontWeight: 700,
+      background: 'var(--wx-surface-1)', border: '1px solid var(--wx-border)',
+      color: 'var(--wx-text)', fontSize: 13, fontWeight: 700,
       cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1,
       transition: 'background .12s, border-color .12s', fontFamily: 'inherit',
     }}
@@ -10543,8 +10543,8 @@ function UMBtnPrimary({ onClick, children, disabled }) {
   return (
     <button onClick={onClick} disabled={disabled} style={{
       flex: 1, height: 42, borderRadius: 11,
-      background: '#30271C', border: 0,
-      color: '#F5E9D6', fontSize: 13, fontWeight: 700,
+      background: 'var(--wx-warning-soft)', border: 0,
+      color: 'var(--wx-text-muted)', fontSize: 13, fontWeight: 700,
       cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1,
       transition: 'transform .12s, box-shadow .15s', fontFamily: 'inherit',
       boxShadow: '0 4px 12px rgba(48,39,28,0.18)',
@@ -10555,8 +10555,8 @@ function UMBtnDanger({ onClick, children, disabled }) {
   return (
     <button onClick={onClick} disabled={disabled} style={{
       flex: 1, height: 42, borderRadius: 11,
-      background: '#B91C1C', border: 0,
-      color: '#fff', fontSize: 13, fontWeight: 700,
+      background: 'var(--wx-danger-soft)', border: 0,
+      color: 'var(--wx-text-muted)', fontSize: 13, fontWeight: 700,
       cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1,
       transition: 'background .15s', fontFamily: 'inherit',
       boxShadow: '0 4px 12px rgba(185,28,28,0.22)',
@@ -10676,33 +10676,33 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
         position: 'fixed', inset: 0, zIndex: 990,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 16,
-        background: 'rgba(48,39,28,0.50)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        background: 'var(--wx-warning-soft)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
         fontFamily: 'inherit',
       }}
     >
       <div ref={ref}
         style={{
           position: 'relative', width: '100%', maxWidth: 820, maxHeight: '92vh',
-          background: '#F8F7F4', borderRadius: 22,
+          background: 'var(--wx-bg)', borderRadius: 22,
           boxShadow: '0 32px 80px rgba(48,39,28,0.25), 0 8px 24px rgba(48,39,28,0.10)',
           animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)',
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
 
         {/* ── Header · dark coffee ── */}
-        <div style={{ background: '#30271C', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ background: 'var(--wx-warning-soft)', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: '#F5E9D6' }}>Team</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(245,233,214,0.55)', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <span><strong style={{ color: '#F5E9D6' }}>{appUsers.length}</strong> members</span>
-              <span><strong style={{ color: '#22C55E' }}>{onlineCount}</strong> online</span>
-              {pendingReqs.length > 0 && <span><strong style={{ color: '#F59E0B' }}>{pendingReqs.length}</strong> pending</span>}
+            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>Team</div>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <span><strong style={{ color: 'var(--wx-text-muted)' }}>{appUsers.length}</strong> members</span>
+              <span><strong style={{ color: 'var(--wx-success)' }}>{onlineCount}</strong> online</span>
+              {pendingReqs.length > 0 && <span><strong style={{ color: 'var(--wx-warning)' }}>{pendingReqs.length}</strong> pending</span>}
             </div>
           </div>
-          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
+          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -10711,7 +10711,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
 
         {/* ── Toolbar · pill tabs + search + add ── */}
         <div style={{ padding: '14px 22px 12px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: 4, background: '#fff', borderRadius: 999, padding: 4, border: '1px solid #E7E2D7' }}>
+          <div style={{ display: 'flex', gap: 4, background: 'var(--wx-surface-1)', borderRadius: 999, padding: 4, border: '1px solid var(--wx-border)' }}>
             {[{id:'members', l:'Members', n:appUsers.length}, {id:'requests', l:'Requests', n:pendingReqs.length}].map(t => {
               const active = tab === t.id;
               return (
@@ -10730,14 +10730,14 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
             })}
           </div>
           {tab === 'members' && (<>
-            <div style={{ flex: 1, minWidth: 180, display: 'flex', alignItems: 'center', gap: 8, height: 36, padding: '0 14px', borderRadius: 999, background: '#fff', border: '1px solid #E7E2D7' }}>
+            <div style={{ flex: 1, minWidth: 180, display: 'flex', alignItems: 'center', gap: 8, height: 36, padding: '0 14px', borderRadius: 999, background: 'var(--wx-surface-1)', border: '1px solid var(--wx-border)' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9C8F7C" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search members"
-                style={{ flex: 1, background: 'transparent', border: 0, outline: 'none', fontSize: 12.5, fontWeight: 600, color: '#1F1F1F', fontFamily: 'inherit' }} />
+                style={{ flex: 1, background: 'transparent', border: 0, outline: 'none', fontSize: 12.5, fontWeight: 600, color: 'var(--wx-text)', fontFamily: 'inherit' }} />
             </div>
             <button onClick={() => setShowAdd(true)} style={{
               height: 36, padding: '0 14px', borderRadius: 999, border: 0, cursor: 'pointer',
-              background: '#30271C', color: '#F5E9D6',
+              background: 'var(--wx-warning-soft)', color: 'var(--wx-text-muted)',
               fontSize: 12.5, fontWeight: 700, letterSpacing: '-0.1px',
               display: 'inline-flex', alignItems: 'center', gap: 6, lineHeight: 1,
               fontFamily: 'inherit', transition: 'transform .12s',
@@ -10827,7 +10827,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
             <UMInput placeholder="Display name" value={newUser.display} onChange={v => setNewUser(f => ({ ...f, display: v }))} />
             <UMInput placeholder="Password" value={newUser.password} onChange={v => setNewUser(f => ({ ...f, password: v }))} />
             <UMRolePicker value={newUser.role} onChange={v => setNewUser(f => ({ ...f, role: v }))} />
-            {addError && <div style={{ fontSize: 12, fontWeight: 600, color: '#B91C1C', marginTop: 2 }}>⚠ {addError}</div>}
+            {addError && <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--wx-danger)', marginTop: 2 }}>⚠ {addError}</div>}
             <UMActions>
               <UMBtnGhost onClick={() => setShowAdd(false)}>Cancel</UMBtnGhost>
               <UMBtnPrimary onClick={addUser} disabled={saving}>{saving ? 'Creating…' : 'Create'}</UMBtnPrimary>
@@ -10841,7 +10841,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
             <UMInput placeholder="Display name" value={editForm.display || ''} onChange={v => setEditForm(f => ({ ...f, display: v }))} />
             <UMInput placeholder="Password" value={editForm.password || ''} onChange={v => setEditForm(f => ({ ...f, password: v }))} />
             <UMRolePicker value={editForm.role} onChange={v => setEditForm(f => ({ ...f, role: v }))} />
-            {editError && <div style={{ fontSize: 12, fontWeight: 600, color: '#B91C1C', marginTop: 2 }}>⚠ {editError}</div>}
+            {editError && <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--wx-danger)', marginTop: 2 }}>⚠ {editError}</div>}
             <UMActions>
               <UMBtnGhost onClick={() => setEditing(null)}>Cancel</UMBtnGhost>
               <UMBtnPrimary onClick={saveEdit} disabled={saving}>{saving ? 'Saving…' : 'Save'}</UMBtnPrimary>
@@ -10852,7 +10852,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
         {/* ── Confirm Delete ── */}
         {confirmDel && (
           <UMDialog onClose={() => setConfirmDel(null)} title="Remove member?" sub={`${confirmDel.display} · @${confirmDel.username}`}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: '#6B7280', marginTop: 4, marginBottom: 4 }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--wx-text-muted)', marginTop: 4, marginBottom: 4 }}>
               This will permanently remove their access to the workspace.
             </div>
             <UMActions>
@@ -10876,15 +10876,15 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
         {/* ── Created creds ── */}
         {createdCreds && (
           <UMDialog onClose={() => setCreatedCreds(null)} title="Account created" sub={`Share these credentials with ${createdCreds.display}`}>
-            <div style={{ background: '#F8F7F4', border: '1px solid #E7E2D7', borderRadius: 12, padding: 14, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ background: 'var(--wx-bg)', border: '1px solid var(--wx-border)', borderRadius: 12, padding: 14, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                <span style={{ fontSize: 10.5, fontWeight: 800, color: '#9C8F7C', textTransform: 'uppercase', letterSpacing: 0.5 }}>Username</span>
-                <span style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace', fontSize: 13, fontWeight: 700, color: '#1F1F1F' }}>{createdCreds.username}</span>
+                <span style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--wx-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Username</span>
+                <span style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace', fontSize: 13, fontWeight: 700, color: 'var(--wx-text)' }}>{createdCreds.username}</span>
               </div>
-              <div style={{ height: 1, background: '#E7E2D7' }} />
+              <div style={{ height: 1, background: 'var(--wx-surface-3)' }} />
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                <span style={{ fontSize: 10.5, fontWeight: 800, color: '#9C8F7C', textTransform: 'uppercase', letterSpacing: 0.5 }}>Password</span>
-                <span style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace', fontSize: 13, fontWeight: 700, color: '#B91C1C' }}>{createdCreds.password}</span>
+                <span style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--wx-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Password</span>
+                <span style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace', fontSize: 13, fontWeight: 700, color: 'var(--wx-danger)' }}>{createdCreds.password}</span>
               </div>
             </div>
             <UMActions>
@@ -11081,12 +11081,12 @@ function UserManagementModal({ onClose, currentUser, onlineUsers, allBrands = []
             </div>
             <div className="um-header-stat-divider"/>
             <div className="um-header-stat">
-              <span className="um-header-stat-num" style={{ color: '#4ADE80' }}>{onlineCount}</span>
+              <span className="um-header-stat-num" style={{ color: 'var(--wx-success)' }}>{onlineCount}</span>
               <span className="um-header-stat-label">Online</span>
             </div>
             <div className="um-header-stat-divider"/>
             <div className="um-header-stat">
-              <span className="um-header-stat-num" style={{ color: '#FBBF24' }}>{pendingReqs.length}</span>
+              <span className="um-header-stat-num" style={{ color: 'var(--wx-warning)' }}>{pendingReqs.length}</span>
               <span className="um-header-stat-label">Pending</span>
             </div>
             <button className="um-close-x" onClick={onClose}>
@@ -11264,7 +11264,7 @@ function UserManagementModal({ onClose, currentUser, onlineUsers, allBrands = []
                                     }
                                   </button>
                                   <button className="um-pw-icon-btn" title={copiedId === editingId ? 'Copied!' : 'Copy'}
-                                    style={copiedId === editingId ? { color: '#16A34A', borderColor: '#86EFAC', background: '#F0FDF4' } : {}}
+                                    style={copiedId === editingId ? { color: 'var(--wx-success)', borderColor: 'var(--wx-success)', background: 'var(--wx-bg)' } : {}}
                                     onClick={() => { navigator.clipboard.writeText(editForm.password).then(() => { setCopiedId(editingId); setTimeout(() => setCopiedId(null), 1800); }); }}>
                                     {copiedId === editingId
                                       ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -11409,8 +11409,8 @@ function UserManagementModal({ onClose, currentUser, onlineUsers, allBrands = []
                   {(pendingApproval.req.name || '?')[0].toUpperCase()}
                 </div>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: '#0F172A', fontFamily: 'Inter' }}>{pendingApproval.req.name}</div>
-                  <div style={{ fontSize: 12, color: '#64748B', fontFamily: 'Inter' }}>@{pendingApproval.req.username} · {pendingApproval.req.email}</div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--wx-text)', fontFamily: 'Inter' }}>{pendingApproval.req.name}</div>
+                  <div style={{ fontSize: 12, color: 'var(--wx-text-muted)', fontFamily: 'Inter' }}>@{pendingApproval.req.username} · {pendingApproval.req.email}</div>
                 </div>
               </div>
               <div className="um-dialog-fields">
@@ -11454,7 +11454,7 @@ function UserManagementModal({ onClose, currentUser, onlineUsers, allBrands = []
                   <div className="um-dialog-sub">This cannot be undone</div>
                 </div>
               </div>
-              <p style={{ fontSize: 14, color: '#334155', fontFamily: 'Inter', margin: '0 0 6px', lineHeight: 1.5 }}>
+              <p style={{ fontSize: 14, color: 'var(--wx-text-faint)', fontFamily: 'Inter', margin: '0 0 6px', lineHeight: 1.5 }}>
                 <strong>{confirmDel.display}</strong> (@{confirmDel.username}) will lose all access immediately.
               </p>
               <div className="um-dialog-actions">
@@ -11470,7 +11470,7 @@ function UserManagementModal({ onClose, currentUser, onlineUsers, allBrands = []
           <div className="um-dialog-overlay" onClick={() => setCreatedCreds(null)}>
             <div className="um-dialog" onClick={e => e.stopPropagation()}>
               <div className="um-dialog-header">
-                <div className="um-dialog-icon" style={{ background: 'linear-gradient(135deg,#6366F1,#8B5CF6)' }}>
+                <div className="um-dialog-icon" style={{ background: 'linear-gradient(135deg,var(--wx-accent),var(--wx-stage-live))' }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                 </div>
                 <div>
@@ -11504,7 +11504,7 @@ function UserManagementModal({ onClose, currentUser, onlineUsers, allBrands = []
           <div className="um-dialog-overlay" onClick={() => { setShowAddForm(false); setAddError(''); setNewUser({ username: '', display: '', password: '', role: 'admin', brand_access: [] }); }}>
             <div className="um-dialog um-add-dialog" onClick={e => e.stopPropagation()}>
               <div className="um-dialog-header">
-                <div className="um-dialog-icon" style={{ background: 'linear-gradient(135deg, #6366F1, #4F46E5)' }}>
+                <div className="um-dialog-icon" style={{ background: 'linear-gradient(135deg, var(--wx-accent), var(--wx-accent))' }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </div>
                 <div>
@@ -11514,17 +11514,17 @@ function UserManagementModal({ onClose, currentUser, onlineUsers, allBrands = []
               </div>
               <div className="um-add-dialog-grid">
                 <div className="um-edit-section">
-                  <label className="um-field-label">Username <span style={{color:'#EF4444'}}>*</span></label>
+                  <label className="um-field-label">Username <span style={{color: 'var(--wx-danger)'}}>*</span></label>
                   <input className="um-input" placeholder="e.g. ahmed_ipc" value={newUser.username}
                     onChange={e => setNewUser(f => ({ ...f, username: e.target.value }))} />
                 </div>
                 <div className="um-edit-section">
-                  <label className="um-field-label">Display Name <span style={{color:'#EF4444'}}>*</span></label>
+                  <label className="um-field-label">Display Name <span style={{color: 'var(--wx-danger)'}}>*</span></label>
                   <input className="um-input" placeholder="Full name" value={newUser.display}
                     onChange={e => setNewUser(f => ({ ...f, display: e.target.value }))} />
                 </div>
                 <div className="um-edit-section" style={{ gridColumn: '1 / -1' }}>
-                  <label className="um-field-label">Password <span style={{color:'#EF4444'}}>*</span></label>
+                  <label className="um-field-label">Password <span style={{color: 'var(--wx-danger)'}}>*</span></label>
                   <input className="um-input" type="text" placeholder="Set a password" value={newUser.password}
                     onChange={e => setNewUser(f => ({ ...f, password: e.target.value }))} />
                 </div>
@@ -11561,15 +11561,15 @@ function UserManagementModal({ onClose, currentUser, onlineUsers, allBrands = []
 
 /* ─── ActivityLogsPanel ──────────────────────────────────── */
 const LOG_META = {
-  LOGIN:             { icon: '🔑', color: '#4F46E5', bg: '#EEF2FF' },
-  LOGOUT:            { icon: '🚪', color: '#64748B', bg: '#F1F5F9' },
-  CREATOR_ADD:       { icon: '✨', color: '#059669', bg: '#ECFDF5' },
-  CREATOR_UPDATE:    { icon: '✏️', color: '#D97706', bg: '#FFFBEB' },
-  CREATOR_DELETE:    { icon: '🗑️', color: '#DC2626', bg: '#FEF2F2' },
-  BULK_DELETE:       { icon: '🗑️', color: '#DC2626', bg: '#FEF2F2' },
-  BULK_STATUS_EDIT:  { icon: '⚡', color: '#7C3AED', bg: '#F5F3FF' },
-  BRAND_DELETE:      { icon: '🏷️', color: '#DC2626', bg: '#FEF2F2' },
-  EXPORT_CSV:        { icon: '📥', color: '#2563EB', bg: '#EFF6FF' },
+  LOGIN:             { icon: '🔑', color: 'var(--wx-text-faint)', bg: '#EEF2FF' },
+  LOGOUT:            { icon: '🚪', color: 'var(--wx-text-muted)', bg: '#F1F5F9' },
+  CREATOR_ADD:       { icon: '✨', color: 'var(--wx-success)', bg: '#ECFDF5' },
+  CREATOR_UPDATE:    { icon: '✏️', color: 'var(--wx-warning)', bg: '#FFFBEB' },
+  CREATOR_DELETE:    { icon: '🗑️', color: 'var(--wx-danger)', bg: '#FEF2F2' },
+  BULK_DELETE:       { icon: '🗑️', color: 'var(--wx-danger)', bg: '#FEF2F2' },
+  BULK_STATUS_EDIT:  { icon: '⚡', color: 'var(--wx-text-muted)', bg: '#F5F3FF' },
+  BRAND_DELETE:      { icon: '🏷️', color: 'var(--wx-danger)', bg: '#FEF2F2' },
+  EXPORT_CSV:        { icon: '📥', color: 'var(--wx-text-muted)', bg: '#EFF6FF' },
 };
 
 /* ─── BulkStatusModal ────────────────────────────────────── */
@@ -11592,7 +11592,7 @@ function BulkStatusModal({ count, onSave, onClose }) {
             <div className="bsm-options">
               {[['', 'No change', ''], ['Paid', 'Paid ✓', '#059669'], ['Not Yet', 'Not Yet', '#DC2626']].map(([v, label, col]) => (
                 <button key={v} className={`bsm-opt${payment === v ? ' active' : ''}`}
-                  style={payment === v && col ? { background: col, color: '#fff', borderColor: col } : {}}
+                  style={payment === v && col ? { background: col, color: 'var(--wx-text-muted)', borderColor: col } : {}}
                   onClick={() => setPayment(p => p === v ? '' : v)}>
                   {label}
                 </button>
@@ -11604,7 +11604,7 @@ function BulkStatusModal({ count, onSave, onClose }) {
             <div className="bsm-options">
               {[['', 'No change', ''], ['Done', 'Done ✓', '#059669'], ['In Progress', 'In Progress', '#D97706']].map(([v, label, col]) => (
                 <button key={v} className={`bsm-opt${videos === v ? ' active' : ''}`}
-                  style={videos === v && col ? { background: col, color: '#fff', borderColor: col } : {}}
+                  style={videos === v && col ? { background: col, color: 'var(--wx-text-muted)', borderColor: col } : {}}
                   onClick={() => setVideos(p => p === v ? '' : v)}>
                   {label}
                 </button>
@@ -11667,32 +11667,32 @@ function LogEntry({ log, hideTop }) {
     }}>
       <div style={{
         width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-        background: '#F4F2EE', color: '#30271C',
+        background: 'var(--wx-bg)', color: 'var(--wx-warning)',
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: '#1F1F1F', letterSpacing: '-0.1px', lineHeight: 1.4 }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--wx-text)', letterSpacing: '-0.1px', lineHeight: 1.4 }}>
           <span style={{ fontWeight: 700 }}>{log.user_display}</span>{' '}
-          <span style={{ color: '#6B7280' }}>{logLabel(log)}</span>
+          <span style={{ color: 'var(--wx-text-muted)' }}>{logLabel(log)}</span>
         </div>
-        {sub && <div style={{ fontSize: 11.5, fontWeight: 600, color: '#9C8F7C', marginTop: 3 }}>{sub}</div>}
+        {sub && <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 3 }}>{sub}</div>}
         {log.action === 'CREATOR_UPDATE' && log.details?.changes?.length > 0 && (
-          <div style={{ marginTop: 6, padding: 8, borderRadius: 8, background: '#F8F7F4', border: '1px solid #E7E2D7' }}>
+          <div style={{ marginTop: 6, padding: 8, borderRadius: 8, background: 'var(--wx-bg)', border: '1px solid var(--wx-border)' }}>
             {log.details.changes.map((ch, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, marginTop: i > 0 ? 4 : 0 }}>
-                <span style={{ color: '#9C8F7C', textTransform: 'uppercase', fontSize: 10, letterSpacing: 0.3, minWidth: 60 }}>{ch.field}</span>
-                <span style={{ color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 100 }}>{ch.from || '-'}</span>
+                <span style={{ color: 'var(--wx-text-muted)', textTransform: 'uppercase', fontSize: 10, letterSpacing: 0.3, minWidth: 60 }}>{ch.field}</span>
+                <span style={{ color: 'var(--wx-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 100 }}>{ch.from || '-'}</span>
                 <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#9C8F7C" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                <span style={{ color: '#1F1F1F', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{ch.to || '-'}</span>
+                <span style={{ color: 'var(--wx-text)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{ch.to || '-'}</span>
               </div>
             ))}
           </div>
         )}
-        <div style={{ fontSize: 10.5, fontWeight: 600, color: '#9C8F7C', marginTop: 5, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 5, display: 'flex', alignItems: 'center', gap: 6 }}>
           {timeAgo(log.created_at)}
-          <span style={{ width: 2, height: 2, borderRadius: 999, background: '#9C8F7C', opacity: 0.5 }} />
+          <span style={{ width: 2, height: 2, borderRadius: 999, background: 'var(--wx-accent)', opacity: 0.5 }} />
           <span>{new Date(log.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
         </div>
       </div>
@@ -12134,7 +12134,7 @@ function ActivityLogsPanel({ onClose }) {
         position: 'fixed', inset: 0, zIndex: 1900,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 16,
-        background: 'rgba(48,39,28,0.50)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        background: 'var(--wx-warning-soft)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
         animation: 'sp-fade 0.22s ease',
         fontFamily: 'inherit',
       }}
@@ -12143,24 +12143,24 @@ function ActivityLogsPanel({ onClose }) {
         onClick={e => e.stopPropagation()}
         style={{
           position: 'relative', width: '100%', maxWidth: 560, maxHeight: '92vh',
-          background: '#F8F7F4', borderRadius: 22,
+          background: 'var(--wx-bg)', borderRadius: 22,
           boxShadow: '0 32px 80px rgba(48,39,28,0.25), 0 8px 24px rgba(48,39,28,0.10)',
           animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)',
           overflow: 'hidden', display: 'flex', flexDirection: 'column',
         }}
       >
         {/* ── Header · dark coffee ── */}
-        <div style={{ background: '#30271C', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ background: 'var(--wx-warning-soft)', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: '#F5E9D6' }}>Activity Logs</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(245,233,214,0.55)', marginTop: 2 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>Activity Logs</div>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>
               {loading ? 'Loading…' : error ? 'Error loading' : `${filtered.length} entr${filtered.length === 1 ? 'y' : 'ies'}`}
             </div>
           </div>
-          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
+          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -12169,7 +12169,7 @@ function ActivityLogsPanel({ onClose }) {
 
         {/* ── Filter pills ── */}
         <div style={{ padding: '14px 22px 0' }}>
-          <div style={{ display: 'flex', gap: 4, background: '#fff', borderRadius: 999, padding: 4, border: '1px solid #E7E2D7' }}>
+          <div style={{ display: 'flex', gap: 4, background: 'var(--wx-surface-1)', borderRadius: 999, padding: 4, border: '1px solid var(--wx-border)' }}>
             {tabs.map(t => {
               const active = filter === t.id;
               return (
@@ -12190,31 +12190,31 @@ function ActivityLogsPanel({ onClose }) {
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 22px 22px' }}>
           {loading ? (
             <div style={{ padding: '60px 16px', textAlign: 'center' }}>
-              <span style={{ display: 'inline-block', width: 24, height: 24, borderRadius: 999, border: '2.5px solid #E7E2D7', borderTopColor: '#30271C', animation: 'spin 0.8s linear infinite' }} />
+              <span style={{ display: 'inline-block', width: 24, height: 24, borderRadius: 999, border: '2.5px solid var(--wx-border)', borderTopColor: '#30271C', animation: 'spin 0.8s linear infinite' }} />
             </div>
           ) : error ? (
             <div style={{ padding: '40px 16px', textAlign: 'center' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 999, background: 'rgba(220,38,38,0.10)', color: '#B91C1C', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 999, background: 'var(--wx-danger-soft)', color: 'var(--wx-danger)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#1F1F1F', letterSpacing: '-0.2px' }}>Could not load logs</div>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#9C8F7C', marginTop: 4 }}>Make sure the <strong style={{ color: '#1F1F1F' }}>activity_logs</strong> table exists in Supabase.</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.2px' }}>Could not load logs</div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--wx-text-muted)', marginTop: 4 }}>Make sure the <strong style={{ color: 'var(--wx-text)' }}>activity_logs</strong> table exists in Supabase.</div>
             </div>
           ) : filtered.length === 0 ? (
             <div style={{ padding: '60px 16px', textAlign: 'center' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 999, background: '#F4F2EE', color: '#9C8F7C', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 999, background: 'var(--wx-bg)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#1F1F1F', letterSpacing: '-0.2px' }}>No activity yet</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.2px' }}>No activity yet</div>
             </div>
           ) : (
             grouped.map(group => (
               <React.Fragment key={group.label}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0 10px', marginTop: 4 }}>
-                  <span style={{ fontSize: 10.5, fontWeight: 800, color: '#9C8F7C', textTransform: 'uppercase', letterSpacing: 0.6 }}>{group.label}</span>
-                  <span style={{ flex: 1, height: 1, background: '#E7E2D7' }} />
+                  <span style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--wx-text-muted)', textTransform: 'uppercase', letterSpacing: 0.6 }}>{group.label}</span>
+                  <span style={{ flex: 1, height: 1, background: 'var(--wx-surface-3)' }} />
                 </div>
-                <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E7E2D7', overflow: 'hidden', marginBottom: 8 }}>
+                <div style={{ background: 'var(--wx-surface-1)', borderRadius: 16, border: '1px solid var(--wx-border)', overflow: 'hidden', marginBottom: 8 }}>
                   {group.items.map((log, i) => <LogEntry key={log.id} log={log} hideTop={i === 0} />)}
                 </div>
               </React.Fragment>
@@ -12256,9 +12256,9 @@ function CountUp({ value, prefix = '', suffix = '', duration = 700 }) {
 /* ─── KanbanBoard ───────────────────────────────────────── */
 function KanbanBoard({ creators, onUpdate, onCardClick }) {
   const COLS = [
-    { id: 'in_progress', label: 'In Progress', color: '#D97706', bg: '#FFFBEB' },
-    { id: 'delivered', label: 'Delivered', color: '#0066FF', bg: '#EFF6FF' },
-    { id: 'paid', label: 'Paid', color: '#059669', bg: '#F0FDF4' },
+    { id: 'in_progress', label: 'In Progress', color: 'var(--wx-warning)', bg: '#FFFBEB' },
+    { id: 'delivered', label: 'Delivered', color: 'var(--wx-text-muted)', bg: '#EFF6FF' },
+    { id: 'paid', label: 'Paid', color: 'var(--wx-success)', bg: '#F0FDF4' },
   ];
 
   function getCol(c) {
@@ -12505,7 +12505,7 @@ function BrandCompareModalV2({ creators, allBrands, onClose }) {
     const aWins = neutral ? av > 0 : av > bv;
     const bWins = neutral ? bv > 0 : bv > av;
     const bar = (v, win, color) => (
-      <div style={{ height: 8, borderRadius: 999, background: '#F2EEE7', overflow: 'hidden' }}>
+      <div style={{ height: 8, borderRadius: 999, background: 'var(--wx-surface-2)', overflow: 'hidden' }}>
         <div style={{ height: '100%', borderRadius: 999, width: (v / max) * 100 + '%', background: color, opacity: win ? 1 : 0.34, transition: 'width .45s cubic-bezier(.4,0,.2,1)' }} />
       </div>
     );
@@ -12513,7 +12513,7 @@ function BrandCompareModalV2({ creators, allBrands, onClose }) {
       <div style={{ display: 'grid', gridTemplateColumns: '86px 1fr 104px 1fr 86px', alignItems: 'center', gap: 10, padding: '9px 0' }}>
         <div style={{ textAlign: 'right', fontSize: 13.5, fontWeight: 800, letterSpacing: '-0.2px', fontVariantNumeric: 'tabular-nums', color: aWins ? '#1F1F1F' : '#9C8F7C' }}>{fmt(av)}</div>
         <div style={{ direction: 'rtl' }}>{bar(av, aWins, colorA)}</div>
-        <div style={{ textAlign: 'center', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, color: '#9C8F7C' }}>{label}</div>
+        <div style={{ textAlign: 'center', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--wx-text-muted)' }}>{label}</div>
         <div>{bar(bv, bWins, colorB)}</div>
         <div style={{ textAlign: 'left', fontSize: 13.5, fontWeight: 800, letterSpacing: '-0.2px', fontVariantNumeric: 'tabular-nums', color: bWins ? '#1F1F1F' : '#9C8F7C' }}>{fmt(bv)}</div>
       </div>
@@ -12532,26 +12532,26 @@ function BrandCompareModalV2({ creators, allBrands, onClose }) {
   return (
     <div
       className="tw-fixed tw-inset-0 tw-z-[950] tw-flex tw-items-center tw-justify-center tw-p-4 sm:tw-p-6"
-      style={{ animation: 'sp-fade 0.22s ease', background: 'rgba(48,39,28,0.50)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+      style={{ animation: 'sp-fade 0.22s ease', background: 'var(--wx-warning-soft)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={{
         position: 'relative', width: '100%', maxWidth: 680, maxHeight: '92vh',
-        background: '#F8F7F4', borderRadius: 22,
+        background: 'var(--wx-bg)', borderRadius: 22,
         boxShadow: '0 32px 80px rgba(48,39,28,0.25), 0 8px 24px rgba(48,39,28,0.10)',
         animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)',
         overflow: 'hidden', display: 'flex', flexDirection: 'column', fontFamily: 'inherit',
       }}>
         {/* ── Header · dark coffee ── */}
-        <div style={{ background: '#30271C', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ background: 'var(--wx-warning-soft)', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3l-7.5 7.5"/><path d="M3 21l7.5-7.5"/></svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: '#F5E9D6' }}>Compare Brands</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(245,233,214,0.55)', marginTop: 2 }}>GMV, spend and delivery side by side · {periodLabel()}</div>
+            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>Compare Brands</div>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>GMV, spend and delivery side by side · {periodLabel()}</div>
           </div>
-          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
+          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -12559,7 +12559,7 @@ function BrandCompareModalV2({ creators, allBrands, onClose }) {
         </div>
 
         {/* ── Period strip ── */}
-        <div style={{ background: '#fff', borderBottom: '1px solid #E7E2D7', padding: '10px 22px' }}>
+        <div style={{ background: 'var(--wx-surface-1)', borderBottom: '1px solid var(--wx-border)', padding: '10px 22px' }}>
           <div style={{ display: 'flex', gap: 6 }}>
             {[['month','This month'],['last','Last month'],['all','All time'],['custom','Pick month']].map(([k, lbl]) => {
               const active = period === k;
@@ -12579,7 +12579,7 @@ function BrandCompareModalV2({ creators, allBrands, onClose }) {
             <select
               value={`${customYear}-${customMonth}`}
               onChange={e => { const [y, m] = e.target.value.split('-'); setCustomYear(+y); setCustomMonth(+m); }}
-              style={{ marginTop: 8, width: '100%', height: 34, padding: '0 10px', borderRadius: 10, border: '1px solid #E7E2D7', background: '#FBFAF7', fontSize: 12.5, fontWeight: 700, color: '#1F1F1F', cursor: 'pointer', outline: 'none', fontFamily: 'inherit' }}
+              style={{ marginTop: 8, width: '100%', height: 34, padding: '0 10px', borderRadius: 10, border: '1px solid var(--wx-border)', background: 'var(--wx-surface-1)', fontSize: 12.5, fontWeight: 700, color: 'var(--wx-text)', cursor: 'pointer', outline: 'none', fontFamily: 'inherit' }}
             >
               {monthOptions.map(o => (<option key={`${o.y}-${o.m}`} value={`${o.y}-${o.m}`}>{o.label}</option>))}
             </select>
@@ -12589,62 +12589,62 @@ function BrandCompareModalV2({ creators, allBrands, onClose }) {
         {/* ── Body · scrollable ── */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '14px 22px 22px' }}>
           {/* Brand pickers */}
-          <div style={{ background: '#fff', border: '1px solid #E7E2D7', borderRadius: 16, padding: 14, display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 12, alignItems: 'end' }}>
+          <div style={{ background: 'var(--wx-surface-1)', border: '1px solid var(--wx-border)', borderRadius: 16, padding: 14, display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 12, alignItems: 'end' }}>
             <BrandPickerV2 value={brandA} onChange={setBrandA} brands={allBrands} label="Brand A" color={colorA} />
-            <div style={{ width: 38, height: 38, borderRadius: 999, background: '#30271C', color: '#F5E9D6', fontSize: 10.5, fontWeight: 800, letterSpacing: 0.6, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 3 }}>VS</div>
+            <div style={{ width: 38, height: 38, borderRadius: 999, background: 'var(--wx-warning-soft)', color: 'var(--wx-text-muted)', fontSize: 10.5, fontWeight: 800, letterSpacing: 0.6, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 3 }}>VS</div>
             <BrandPickerV2 value={brandB} onChange={setBrandB} brands={allBrands} label="Brand B" color={colorB} />
           </div>
 
           {!ready ? (
             <div style={{ padding: '56px 16px', textAlign: 'center' }}>
-              <div style={{ width: 56, height: 56, borderRadius: 999, background: '#F4F2EE', color: '#9C8F7C', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--wx-bg)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3l-7.5 7.5"/><path d="M3 21l7.5-7.5"/></svg>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#1F1F1F', letterSpacing: '-0.2px' }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.2px' }}>
                 {brandA === brandB && brandA ? 'Pick two different brands' : 'Pick two brands'}
               </div>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#9C8F7C', marginTop: 4 }}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--wx-text-muted)', marginTop: 4 }}>
                 {!brandA && !brandB ? 'Choose Brand A and Brand B above' : brandA === brandB ? 'A and B are the same right now' : 'One more to go'}
               </div>
             </div>
           ) : (<>
             {/* Headline · GMV lead */}
             {gmvLead && (
-              <div style={{ marginTop: 12, padding: '14px 16px', borderRadius: 16, background: 'linear-gradient(135deg, #FDFAF4 0%, #F5EFE2 100%)', border: '1px solid #E7E2D7', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ marginTop: 12, padding: '14px 16px', borderRadius: 16, background: 'linear-gradient(135deg, var(--wx-surface-1) 0%, var(--wx-surface-2) 100%)', border: '1px solid var(--wx-border)', display: 'flex', alignItems: 'center', gap: 12 }}>
                 <span style={{ width: 40, height: 40, borderRadius: 999, background: gmvLead.c + '22', color: gmvLead.c, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 800, flexShrink: 0 }}>{(gmvLead.n || '?')[0].toUpperCase()}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 10.5, fontWeight: 800, color: '#9C8F7C', textTransform: 'uppercase', letterSpacing: 0.6 }}>Ahead on GMV</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.4px', color: '#1F1F1F', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{gmvLead.n}</div>
-                  <div style={{ fontSize: 11.5, fontWeight: 600, color: '#6B7280', marginTop: 2 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--wx-text-muted)', textTransform: 'uppercase', letterSpacing: 0.6 }}>Ahead on GMV</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{gmvLead.n}</div>
+                  <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>
                     {gmvLead.gap > 0 ? `+${money(gmvLead.gap)} more` : 'Level on GMV'}{gmvLead.x > 1 ? ` · ${gmvLead.x.toFixed(1)}× the other` : ''}
                   </div>
                 </div>
-                <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: '-0.5px', color: '#30271C', fontVariantNumeric: 'tabular-nums' }}>{money(gmvLead.v)}</div>
+                <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: '-0.5px', color: 'var(--wx-warning)', fontVariantNumeric: 'tabular-nums' }}>{money(gmvLead.v)}</div>
               </div>
             )}
 
             {/* Brand name rail */}
             <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 10, padding: '0 2px' }}>
               <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 800, letterSpacing: '-0.3px', color: colorA, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{brandA}</div>
-              <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.6, color: '#9C8F7C', padding: '3px 10px', borderRadius: 999, background: '#EFEBE3', whiteSpace: 'nowrap' }}>{sA.count + sB.count} creators</div>
+              <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.6, color: 'var(--wx-text-muted)', padding: '3px 10px', borderRadius: 999, background: 'var(--wx-surface-2)', whiteSpace: 'nowrap' }}>{sA.count + sB.count} creators</div>
               <div style={{ textAlign: 'left', fontSize: 14, fontWeight: 800, letterSpacing: '-0.3px', color: colorB, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{brandB}</div>
             </div>
 
             {sA.count === 0 && sB.count === 0 && sA.gmv === 0 && sB.gmv === 0 ? (
-              <div style={{ marginTop: 14, padding: '40px 16px', textAlign: 'center', fontSize: 13, fontWeight: 600, color: '#9C8F7C', background: '#fff', border: '1px solid #E7E2D7', borderRadius: 16 }}>
+              <div style={{ marginTop: 14, padding: '40px 16px', textAlign: 'center', fontSize: 13, fontWeight: 600, color: 'var(--wx-text-muted)', background: 'var(--wx-surface-1)', border: '1px solid var(--wx-border)', borderRadius: 16 }}>
                 Nothing recorded for either brand in {periodLabel()}
               </div>
             ) : (
-              <div style={{ marginTop: 10, background: '#fff', border: '1px solid #E7E2D7', borderRadius: 16, padding: '6px 16px' }}>
+              <div style={{ marginTop: 10, background: 'var(--wx-surface-1)', border: '1px solid var(--wx-border)', borderRadius: 16, padding: '6px 16px' }}>
                 {ROWS.map((r, i) => (
-                  <div key={r.label} style={i > 0 ? { borderTop: '1px solid #F2EEE7' } : undefined}>
+                  <div key={r.label} style={i > 0 ? { borderTop: '1px solid var(--wx-border)' } : undefined}>
                     <CmpRow label={r.label} av={sA[r.a] || 0} bv={sB[r.a] || 0} fmt={r.fmt} neutral={r.neutral} />
                   </div>
                 ))}
               </div>
             )}
 
-            <div style={{ marginTop: 10, fontSize: 10.5, fontWeight: 600, color: '#9C8F7C', textAlign: 'center', lineHeight: 1.5 }}>
+            <div style={{ marginTop: 10, fontSize: 10.5, fontWeight: 600, color: 'var(--wx-text-muted)', textAlign: 'center', lineHeight: 1.5 }}>
               GMV and ad spend come from EUKA month data · deal figures are scoped by hiring date
             </div>
           </>)}
@@ -12667,11 +12667,11 @@ function BrandPickerV2({ value, onChange, brands, label, color }) {
 
   return (
     <div style={{ position: 'relative' }} ref={wrapRef}>
-      <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.6, color: '#9C8F7C', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.6, color: 'var(--wx-text-muted)', marginBottom: 6 }}>{label}</div>
       {value ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 38, padding: '0 6px 0 10px', borderRadius: 999, background: `${color}1F` }}>
           <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: 800, letterSpacing: '-0.2px', color }}>{value}</span>
-          <button onClick={() => { onChange(''); setSearch(''); }} title="Clear" style={{ width: 24, height: 24, borderRadius: 999, background: '#fff', color: '#6B7280', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: 0, cursor: 'pointer', flexShrink: 0, transition: 'background .15s, color .15s' }}
+          <button onClick={() => { onChange(''); setSearch(''); }} title="Clear" style={{ width: 24, height: 24, borderRadius: 999, background: 'var(--wx-surface-1)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: 0, cursor: 'pointer', flexShrink: 0, transition: 'background .15s, color .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = '#B4362F'; e.currentTarget.style.color = '#fff'; }}
             onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#6B7280'; }}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -12683,15 +12683,15 @@ function BrandPickerV2({ value, onChange, brands, label, color }) {
           onFocus={() => setOpen(true)}
           onChange={e => { setSearch(e.target.value); setOpen(true); }}
           placeholder="Search brand…"
-          style={{ width: '100%', height: 38, padding: '0 14px', borderRadius: 999, background: '#FBFAF7', border: '1px solid #E7E2D7', outline: 'none', fontSize: 13, fontWeight: 600, color: '#1F1F1F', fontFamily: 'inherit', transition: 'border-color .15s, box-shadow .15s' }}
+          style={{ width: '100%', height: 38, padding: '0 14px', borderRadius: 999, background: 'var(--wx-surface-1)', border: '1px solid var(--wx-border)', outline: 'none', fontSize: 13, fontWeight: 600, color: 'var(--wx-text)', fontFamily: 'inherit', transition: 'border-color .15s, box-shadow .15s' }}
           onFocusCapture={e => { e.currentTarget.style.borderColor = '#30271C'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(48,39,28,0.08)'; }}
           onBlur={e => { e.currentTarget.style.borderColor = '#E7E2D7'; e.currentTarget.style.boxShadow = 'none'; }}
         />
       )}
       {open && !value && filtered.length > 0 && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 6, background: '#fff', borderRadius: 14, border: '1px solid #E7E2D7', boxShadow: '0 16px 40px rgba(48,39,28,0.16)', maxHeight: 240, overflowY: 'auto', zIndex: 30, padding: 5 }}>
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 6, background: 'var(--wx-surface-1)', borderRadius: 14, border: '1px solid var(--wx-border)', boxShadow: '0 16px 40px rgba(48,39,28,0.16)', maxHeight: 240, overflowY: 'auto', zIndex: 30, padding: 5 }}>
           {filtered.slice(0, 12).map(b => (
-            <button key={b} onMouseDown={() => { onChange(b); setSearch(''); setOpen(false); }} style={{ width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 10, fontSize: 12.5, fontWeight: 600, color: '#1F1F1F', border: 0, background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', transition: 'background .12s' }}
+            <button key={b} onMouseDown={() => { onChange(b); setSearch(''); setOpen(false); }} style={{ width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 10, fontSize: 12.5, fontWeight: 600, color: 'var(--wx-text)', border: 0, background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', transition: 'background .12s' }}
               onMouseEnter={e => { e.currentTarget.style.background = '#F4F2EE'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
               {b}
@@ -13123,7 +13123,7 @@ export default function App() {
       if (!saved || !Array.isArray(saved)) return DEFAULT_TEAM;
       // Handle old string-array format ['Aris','Emily'...]
       if (saved.length && typeof saved[0] === 'string') {
-        return saved.map(n => DEFAULT_TEAM.find(d => d.name === n) || { id: n.toLowerCase(), name: n, color: '#374151', bg: '#F3F4F6' });
+        return saved.map(n => DEFAULT_TEAM.find(d => d.name === n) || { id: n.toLowerCase(), name: n, color: 'var(--wx-text-faint)', bg: '#F3F4F6' });
       }
       // Ensure every object has required fields
       return saved.filter(m => m && m.name);
@@ -13586,7 +13586,7 @@ export default function App() {
       if (Array.isArray(data.hired_by_team) && data.hired_by_team.length) {
         const saved = data.hired_by_team;
         if (typeof saved[0] === 'string') {
-          setHiredByTeam(saved.map(n => DEFAULT_TEAM.find(d => d.name === n) || { id: n.toLowerCase(), name: n, color: '#374151', bg: '#F3F4F6' }));
+          setHiredByTeam(saved.map(n => DEFAULT_TEAM.find(d => d.name === n) || { id: n.toLowerCase(), name: n, color: 'var(--wx-text-faint)', bg: '#F3F4F6' }));
         } else {
           setHiredByTeam(saved.filter(m => m && m.name));
         }
@@ -14381,7 +14381,7 @@ export default function App() {
   }
 
   return (
-    <div className="app-root" style={{ background: 'var(--pc-bg, #FAFAFA)' }}>
+    <div className="app-root" style={{ background: 'var(--pc-bg, var(--wx-surface-1))' }}>
       {/* ═══ OLD CHROME HIDDEN · replaced by WurxUI shell ═══ */}
       {false && (<>
       {/* TOPBAR · Samsung One UI v2 */}

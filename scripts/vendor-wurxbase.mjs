@@ -141,13 +141,50 @@ const CURATED = {
   },
 };
 
-/* Which tokens a role may resolve to, for the perceptual fallback. */
+/*
+ * WHAT THE PERCEPTUAL FALLBACK MAY CHOOSE, and the omission is deliberate.
+ *
+ * NO SEMANTIC TOKENS HERE. `--wx-info`, `--wx-success`, `--wx-danger` and the
+ * stage colours mean something: they are reserved for state, and using one as
+ * the nearest match for an arbitrary hue is how a brand blue became our INFO
+ * blue and put an off-palette gradient across the reporting screen. A colour
+ * that is not semantic resolves to a neutral or to the accent, full stop.
+ *
+ * A genuinely semantic colour still reaches its token, through `semanticFor`
+ * below, which decides on HUE rather than on distance.
+ */
 const ROLE_TOKENS = {
-  ink: ['--wx-text', '--wx-text-muted', '--wx-text-faint', '--wx-accent', '--wx-danger', '--wx-success', '--wx-warning', '--wx-info'],
-  fill: ['--wx-bg', '--wx-surface-1', '--wx-surface-2', '--wx-surface-3', '--wx-accent', '--wx-danger', '--wx-success', '--wx-warning', '--wx-info'],
+  ink: ['--wx-text', '--wx-text-muted', '--wx-text-faint', '--wx-accent'],
+  fill: ['--wx-bg', '--wx-surface-1', '--wx-surface-2', '--wx-surface-3', '--wx-accent'],
   line: ['--wx-border', '--wx-border-strong', '--wx-border-interactive', '--wx-accent'],
   svg: ['--wx-text', '--wx-text-muted', '--wx-accent'],
 };
+
+/**
+ * Is this colour saying something, or just decorating?
+ *
+ * A saturated red, green or amber carries meaning in a dashboard and should
+ * land on the matching token. Everything else — their blues, purples, pinks —
+ * is brand decoration, and OUR brand is gold, so it resolves to the accent
+ * rather than to whichever semantic token happens to sit nearest.
+ */
+function semanticFor(rgb, r) {
+  const [rr, gg, bb] = rgb;
+  const max = Math.max(rr, gg, bb), min = Math.min(rr, gg, bb);
+  const sat = max === 0 ? 0 : (max - min) / max;
+  if (sat < 0.35) return null;                       // grey enough to be neutral
+  let h = 0;
+  if (max === min) h = 0;
+  else if (max === rr) h = ((gg - bb) / (max - min)) * 60;
+  else if (max === gg) h = (2 + (bb - rr) / (max - min)) * 60;
+  else h = (4 + (rr - gg) / (max - min)) * 60;
+  if (h < 0) h += 360;
+  const soft = r === 'fill';
+  if (h < 20 || h >= 345) return soft ? '--wx-danger-soft' : '--wx-danger';
+  if (h >= 20 && h < 50) return soft ? '--wx-warning-soft' : '--wx-warning';
+  if (h >= 90 && h < 165) return soft ? '--wx-success-soft' : '--wx-success';
+  return null;                                        // blue, purple, pink: decoration
+}
 
 function role(prop) {
   /*
@@ -346,6 +383,8 @@ function themeValue(prop, value, learned, pal, vars) {
     const rgb = parseColour(c);
     const choices = ROLE_TOKENS[r];
     if (!rgb || !choices) { stats.kept++; return c; }
+    const sem = (r === 'fill' || r === 'ink' || r === 'line') ? semanticFor(rgb, r) : null;
+    if (sem) { stats.nearest++; nearestLog.set(`${r}|${normC(c)} -> ${sem}`, (nearestLog.get(`${r}|${normC(c)} -> ${sem}`) ?? 0) + 1); return `var(${sem})`; }
     const lab = oklab(rgb);
     let best = null, bestD = Infinity;
     for (const t of choices) {
@@ -474,6 +513,55 @@ function transformCss(theirCss, ourCss, pal) {
 /* 4. RUN                                                                     */
 /* ========================================================================== */
 
+/**
+ * Colours hardcoded into `style={{}}` objects in their JSX.
+ *
+ * NO STYLESHEET SWEEP CAN SEE THESE, and an inline style beats any rule we
+ * write short of `!important` on every one. `CreativeAngles` paints its
+ * selected row `#1259C3` inline, which is why a brand-blue band appeared in the
+ * middle of a gold product no matter what the CSS said.
+ *
+ * Matched by the PROPERTY NAME immediately before the colour, so a hex used for
+ * anything other than a style is left alone. React accepts `var(--wx-*)` in an
+ * inline style exactly like any other value.
+ */
+const STYLE_PROP = String.raw`(background|backgroundColor|color|borderColor|border|borderTop|borderBottom|borderLeft|borderRight|outline|boxShadow|fill|stroke)`;
+
+function themeInlineStyles(src, learned, pal, vars) {
+  /*
+   * THE WHOLE VALUE, NOT JUST THE FIRST COLOUR IN IT.
+   *
+   * The first version matched from the property name to the first colour,
+   * so a two-stop gradient had its first stop themed and its second left
+   * raw: warning-soft at 0% and a hardcoded #2A2118 at 100%. That is a
+   * permanently dark pill behind theme-coloured ink, which is invisible in
+   * light mode. Capture the quoted value whole, then map every colour in it.
+   *
+   * Single and double quotes only. A template literal in a style value can
+   * contain interpolation, and rewriting inside one risks changing code
+   * rather than colour.
+   */
+  /* `\2` is the QUOTE. STYLE_PROP is a capture group of its own, so it takes
+     group 1 and the quote is group 2; `\1` asked the value to be closed by
+     the property name, matched nothing, and themed none of the 468 inline
+     colours while still building cleanly. */
+  const re = new RegExp('\\b' + STYLE_PROP + '\\s*:\\s*([\'"])((?:[^\'"\\\\]|\\\\.)*)\\2', 'g');
+  const COL = /#[0-9a-fA-F]{3,8}|rgba?\([^)]*\)/g;
+  let changed = 0;
+  const out = src.replace(re, (whole, prop, q, value) => {
+    const cssProp = prop.replace(/([A-Z])/g, '-$1').toLowerCase();
+    let touched = false;
+    const next = value.replace(COL, (colour) => {
+      const themed = themeValue(cssProp, colour, learned, pal, vars);
+      if (themed !== colour) { touched = true; changed += 1; }
+      return themed;
+    });
+    if (!touched) return whole;
+    return prop + ': ' + q + next + q;
+  });
+  return { out, changed };
+}
+
 const JSX_TO_JSX = new Set(['App.js', 'WurxUI.js', 'PaidCollabs.js', 'AccessControl.js', 'GodMode.js', 'CreativeAngles.js', 'SqlQuest.js']);
 const PLAIN_JS = new Set(['access.js', 'angleStore.js', 'brandContract.js', 'godSettings.js', 'contractPdf.js', 'supabaseClient.js']);
 const COPY_CSS = new Set(['responsive.css', 'theme.css']);
@@ -485,8 +573,11 @@ for (const f of readdirSync(SRC)) {
   const from = join(SRC, f);
   if (JSX_TO_JSX.has(f)) {
     const to = join(DEST, basename(f, '.js') + '.jsx');
-    writeFileSync(to, read(from));
-    console.log(`  js  ${f.padEnd(20)} -> ${basename(to)}`);
+    const pal2 = palette();
+    const ref = gitHead(`${DEST}/paidcollabs.css`) + '\n' + gitHead(`${DEST}/App.css`);
+    const { out, changed } = themeInlineStyles(read(from), learn('', ref), pal2, learnVars(ref));
+    writeFileSync(to, out);
+    console.log(`  js  ${f.padEnd(20)} -> ${basename(to)}${changed ? `, ${changed} inline colour(s) themed` : ''}`);
   } else if (PLAIN_JS.has(f)) {
     writeFileSync(join(DEST, f), read(from));
     console.log(`  js  ${f.padEnd(20)} -> ${f}`);

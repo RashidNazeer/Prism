@@ -80,13 +80,30 @@ const PROBE = () => {
     while (n && n !== document.documentElement) {
       const cs = getComputedStyle(n);
       /*
-       * A GRADIENT IS NOT MEASURABLE FROM getComputedStyle, and pretending
-       * otherwise invents failures. `.pc-tab.active` is a gold pill with dark
-       * text; its backgroundColor is transparent, so walking past it compared
-       * the text against the page behind and reported 1:1 on every tab, in
-       * both themes, four times a run. Reported as unmeasured instead.
+       * A GRADIENT IS MEASURED AT ITS STOPS, not skipped.
+       *
+       * `getComputedStyle` gives no single colour for one, and the first
+       * version therefore reported every gradient-backed element as
+       * "unmeasured" and PASSED. That is how an unreadable hero card shipped:
+       * 49 elements on the reporting screen were sitting on a gradient, and the
+       * guard counted all 49 as fine. The stops are right there in the computed
+       * value, so each one is composited and the WORST is what counts.
        */
-      if (cs.backgroundImage && cs.backgroundImage !== 'none') return null;
+      if (cs.backgroundImage && cs.backgroundImage !== 'none') {
+        const stops = cs.backgroundImage.match(/rgba?\([^)]*\)/g);
+        if (!stops || !stops.length) return null;         // a url() or similar
+        const parsed = stops.map(parse).filter((c) => c && c.a > 0);
+        if (!parsed.length) return null;
+        /* Composite each stop over whatever is behind the gradient itself. */
+        let under = [0, 0, 0];
+        let p = n.parentElement;
+        while (p && p !== document.documentElement) {
+          const pc = parse(getComputedStyle(p).backgroundColor);
+          if (pc && pc.a >= 0.999) { under = pc.rgb; break; }
+          p = p.parentElement;
+        }
+        return { stops: parsed.map((c) => over(c, under)) };
+      }
       const c = parse(cs.backgroundColor);
       if (c && c.a > 0) {
         stack.push(c);
@@ -113,17 +130,36 @@ const PROBE = () => {
     if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) < 0.15) continue;
     const box = el.getBoundingClientRect();
     if (box.width < 4 || box.height < 4) continue;
-    const fg = parse(cs.color);
+    /*
+     * SVG TEXT IS PAINTED BY `fill`, NOT `color`.
+     *
+     * Reading `color` on a <text> gives whatever it inherited and has
+     * nothing to do with what is on screen. It reported twelve chart labels
+     * as white on white while their `fill` was a perfectly readable muted
+     * token: twelve invented failures, on the one screen with real ones.
+     */
+    const isSvgText = el.ownerSVGElement != null || el.tagName === 'text' || el.tagName === 'tspan';
+    const fg = parse(isSvgText ? cs.fill : cs.color);
     if (!fg || fg.a < 0.15) continue;
-    const bg = behind(el);
-    if (!bg) { out.push({ unmeasured: true, text: text.slice(0, 24) }); continue; }
-    const f = over(fg, bg);
-    const L1 = lum(f), L2 = lum(bg);
-    const ratio = (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05);
+    const bgAny = behind(el);
+    if (!bgAny) { out.push({ unmeasured: true, text: text.slice(0, 24) }); continue; }
+
+    /* A gradient gives several grounds; the text has to survive the worst. */
+    const grounds = bgAny.stops ? bgAny.stops : [bgAny];
+    let ratio = Infinity;
+    let bg = grounds[0];
+    for (const g of grounds) {
+      const f = over(fg, g);
+      const L1 = lum(f), L2 = lum(g);
+      const r = (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05);
+      if (r < ratio) { ratio = r; bg = g; }
+    }
+    ratio = Math.round(ratio * 100) / 100;
     out.push({
       text: text.slice(0, 32),
-      ratio: Math.round(ratio * 100) / 100,
-      fg: cs.color,
+      ratio,
+      onGradient: Boolean(bgAny.stops),
+      fg: isSvgText ? cs.fill : cs.color,
       bg: `rgb(${bg.map(Math.round).join(',')})`,
       size: Math.round(parseFloat(cs.fontSize)),
       cls: (el.className || '').toString().split(' ').slice(0, 2).join(' '),
@@ -173,7 +209,17 @@ try {
     await page.waitForTimeout(3200);
 
     console.log(`\n[${theme}]`);
-    for (const tab of ['Brands', 'Creators', 'Performance', 'Leaderboard']) {
+    /*
+     * EVERY TAB, AND THE OMISSION HERE IS WHY A BAD RESKIN SHIPPED.
+     *
+     * The first version checked four of the six and reported "8 checks passed",
+     * which read as "the reskin is verified". Reporting and Discovery were
+     * never opened, and Reporting was the worst screen in the build: unreadable
+     * text on a brown hero and an off-palette blue footer. A guard that covers
+     * part of a surface and reports a pass is worse than no guard, because it
+     * is believed.
+     */
+    for (const tab of ['Brands', 'Creators', 'Performance', 'Reporting', 'Leaderboard', 'Discovery']) {
       const b = page.getByRole('button', { name: new RegExp(`^${tab}$`, 'i') }).first();
       if (await b.count()) { await b.click(); await page.waitForTimeout(2200); }
 
@@ -181,6 +227,13 @@ try {
       const unmeasured = all.filter((r) => r.unmeasured).length;
       const results = all.filter((r) => !r.unmeasured);
       if (results.length === 0) { bad(`${tab}: nothing measurable rendered, so this check is vacuous`); continue; }
+
+      /* Sub-views inside a tab are part of that tab. Reporting hides a whole
+         second screen behind "Creative angle testing". */
+      for (const sub of ['Creative angle testing']) {
+        const sb = page.getByRole('button', { name: new RegExp(sub, 'i') }).first();
+        if (await sb.count()) { await sb.click(); await page.waitForTimeout(2000); }
+      }
 
       const failures = results.filter((r) => r.ratio < FAIL_BELOW);
       const warns = results.filter((r) => r.ratio >= FAIL_BELOW && r.ratio < WARN_BELOW);

@@ -320,3 +320,87 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+/* ============================================================================
+   THE REPORTING SCREEN, which nobody had looked at.
+
+   Found on 2026-08-27 by extending the contrast guard to all six tabs; it had
+   been checking four and reporting a pass. Most of what follows is NOT new —
+   `.rp-say`, `.bx-foot` and the aura are byte-identical to what shipped in
+   August — it simply had never been opened.
+
+   DOUBLE CLASS ON THE FENCE. Their stylesheet is injected after this file from
+   the lazily loaded vendor chunk, so a single `.wurxbase-root` ties on
+   specificity and loses.
+   ============================================================================ */
+
+/* The hero board. v382 fills it with a colour, and mapping their hue onto our
+   accent made a brown slab with muted text on it: 13 elements at 1.06:1. A
+   surface is the right ground for a card whose job is to carry text, and every
+   text token then works on it without argument. */
+.wurxbase-root.wurxbase-root .rp-board {
+  background: var(--wx-surface-2) !important;
+  border: 1px solid var(--wx-border);
+}
+
+/* Their soft corner glow. Mapped to a solid surface token it became an opaque
+   disc sitting on top of the chart. Restored to what it was for: a hint. */
+.wurxbase-root.wurxbase-root .rp-board-aura {
+  background: radial-gradient(circle, var(--wx-accent-soft) 0%, transparent 70%) !important;
+  opacity: 0.6;
+}
+
+.wurxbase-root.wurxbase-root .rp-say {
+  color: var(--wx-text) !important;
+}
+.wurxbase-root.wurxbase-root .rp-say-sub,
+.wurxbase-root.wurxbase-root .rep-legend {
+  color: var(--wx-text-muted) !important;
+}
+
+/* The totals row. It was built on --wx-info, which is a SEMANTIC token meaning
+   "information" and has no business being a brand fill — it put a blue band
+   across a gold product. Accent, and the ink that is designed to sit on it. */
+.wurxbase-root.wurxbase-root .bx-foot {
+  background: linear-gradient(150deg, var(--wx-accent-active), var(--wx-accent)) !important;
+  color: var(--wx-on-accent) !important;
+}
+.wurxbase-root.wurxbase-root .bx-foot span,
+.wurxbase-root.wurxbase-root .bx-foot b {
+  color: var(--wx-on-accent) !important;
+}
+
+/* Chart axis labels are SVG text, so they take `fill`, not `color`, and a
+   sweep that only knows about `color` leaves them white on a white ground. */
+.wurxbase-root.wurxbase-root .rp-board-chart text,
+.wurxbase-root.wurxbase-root .rep-chart text {
+  fill: var(--wx-text-muted) !important;
+}
+
+/* Small count pills that inherited a faint ink onto a strong fill. */
+.wurxbase-root.wurxbase-root .pc-kpipill-btn span {
+  color: var(--wx-text) !important;
+}
+
+/* SVG chart labels take `fill`, never `color`. The earlier selector guessed the
+   wrong container; this one is anchored on the board itself. */
+.wurxbase-root.wurxbase-root .rp-board svg text,
+.wurxbase-root.wurxbase-root .rp-board svg tspan {
+  fill: var(--wx-text-muted) !important;
+}
+
+/* `small` inside the totals row did not inherit the ink set on its parent. */
+.wurxbase-root.wurxbase-root .bx-foot small,
+.wurxbase-root.wurxbase-root .bx-foot em,
+.wurxbase-root.wurxbase-root .bx-foot i {
+  color: var(--wx-on-accent) !important;
+}
+
+/* The KPI count pills keep a dark fill in BOTH themes, so their ink has to be
+   pinned rather than left to inherit a theme-dependent text token. */
+.wurxbase-root.wurxbase-root .pc-kpipill-btn,
+.wurxbase-root.wurxbase-root .pc-kpipill-btn span,
+.wurxbase-root.wurxbase-root .pc-kpipill-btn b {
+  background-color: var(--wx-surface-2) !important;
+  color: var(--wx-text) !important;
+}

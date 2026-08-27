@@ -190,11 +190,11 @@ function patchUIState(patch) {
 }
 function hiredByPalette(name) {
   switch ((name || '').trim()) {
-    case 'Aris':   return { fg: '#171717', bg: '#F4F4F5', border: '#D4D4D8' };  // soft black on warm gray
-    case 'Emily':  return { fg: '#C2185B', bg: '#FCE4EC', border: '#F5BAD0' };  // pink (unchanged)
-    case 'Myles':  return { fg: '#6D28D9', bg: '#EDE9FE', border: '#A78BFA' };  // rich violet / purple
-    case 'Khushi': return { fg: '#9C5C5C', bg: '#F8E7E1', border: '#E8C8BF' };  // pinkish-brown (rosewood)
-    default:       return { fg: '#5C5C5E', bg: '#F5F5F7', border: '#E0E0E2' };  // neutral gray
+    case 'Aris':   return { fg: '#171717', bg: '#F4F4F5', border: 'var(--wx-border-strong)' };  // soft black on warm gray
+    case 'Emily':  return { fg: '#C2185B', bg: '#FCE4EC', border: 'var(--wx-border-strong)' };  // pink (unchanged)
+    case 'Myles':  return { fg: '#6D28D9', bg: '#EDE9FE', border: 'var(--wx-border-interactive)' };  // rich violet / purple
+    case 'Khushi': return { fg: '#9C5C5C', bg: '#F8E7E1', border: 'var(--wx-border-strong)' };  // pinkish-brown (rosewood)
+    default:       return { fg: '#5C5C5E', bg: '#F5F5F7', border: 'var(--wx-border)' };  // neutral gray
   }
 }
 const AVATAR_GRADIENTS = [
@@ -877,7 +877,7 @@ export default function WurxUI({
     <div className="pc-app" style={{ paddingTop: 6, paddingBottom: 32 }}>
       <div className="pc-shell">
         {/* ═══ HEADER ROW 1 · dark brown bar · brand · actions · profile ═══ */}
-        <header className="pc-header pc-header-dark" style={{ gap: 10, background: 'linear-gradient(180deg, #352B1F 0%, #30271C 100%)', border: '1px solid #3D3325', boxShadow: 'inset 0 1px 0 rgba(245,233,214,0.07), 0 6px 18px rgba(48,39,28,0.28)', padding: '2px 16px 2px 18px', marginBottom: 10, position: 'relative' }}>
+        <header className="pc-header pc-header-dark" style={{ gap: 10, background: 'linear-gradient(180deg, var(--wx-warning-soft) 0%, var(--wx-warning-soft) 100%)', border: '1px solid var(--wx-warning)', boxShadow: 'inset 0 1px 0 rgba(245,233,214,0.07), 0 6px 18px rgba(48,39,28,0.28)', padding: '2px 16px 2px 18px', marginBottom: 10, position: 'relative' }}>
           <div className="pc-brand" style={{ gap: 12 }}>
             <span className="pc-brand-logo" style={{ width: 60, height: 60, padding: 0, background: 'transparent', boxShadow: 'none', overflow: 'hidden', borderRadius: 13, flex: '0 0 60px' }}>
               <img
@@ -886,9 +886,9 @@ export default function WurxUI({
                 style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 onError={e => { e.currentTarget.style.display = 'none'; const sib = e.currentTarget.nextElementSibling; if (sib) sib.style.display = 'flex'; }}
               />
-              <span style={{ display: 'none', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,#F5E9D6,#D9C5A4)', color: '#30271C', fontSize: 22, fontWeight: 900, letterSpacing: '-0.5px', borderRadius: 13 }}>W</span>
+              <span style={{ display: 'none', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,var(--wx-surface-2),var(--wx-surface-3))', color: 'var(--wx-warning)', fontSize: 22, fontWeight: 900, letterSpacing: '-0.5px', borderRadius: 13 }}>W</span>
             </span>
-            <span className="pc-brand-sub" style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.2px', color: '#F5E9D6', paddingLeft: 12, borderLeft: '1px solid rgba(245,233,214,0.20)', whiteSpace: 'nowrap' }}>Paid Collaborations</span>
+            <span className="pc-brand-sub" style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.2px', color: 'var(--wx-text-muted)', paddingLeft: 12, borderLeft: '1px solid var(--wx-border)', whiteSpace: 'nowrap' }}>Paid Collaborations</span>
           </div>
 
           {/* Centered app title · absolutely centered so side widths never shift it */}
@@ -906,29 +906,29 @@ export default function WurxUI({
               <button onClick={onOpenPendingApprovals} title={`${pendingApprovalsCount} pending`} style={{
                 position: 'relative', width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(245,233,214,0.10)', color: '#FFB04D', transition: 'background 0.15s',
+                background: 'var(--wx-surface-2)', color: 'var(--wx-warning)', transition: 'background 0.15s',
               }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.16)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                <span style={{ position: 'absolute', top: 5, right: 5, minWidth: 17, height: 17, padding: '0 5px', borderRadius: 999, background: '#FFB04D', color: '#30271C', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{pendingApprovalsCount > 9 ? '9+' : pendingApprovalsCount}</span>
+                <span style={{ position: 'absolute', top: 5, right: 5, minWidth: 17, height: 17, padding: '0 5px', borderRadius: 999, background: 'var(--wx-warning-soft)', color: 'var(--wx-warning)', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{pendingApprovalsCount > 9 ? '9+' : pendingApprovalsCount}</span>
               </button>
             )}
             <PresenceAvatars currentUser={currentUser} />
             <button className="pc-head-bell" onClick={onOpenNotifications} title="Notifications" style={{
               position: 'relative', width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', transition: 'background 0.15s',
+              background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', transition: 'background 0.15s',
             }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.16)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-              {notificationsCount > 0 && <span style={{ position: 'absolute', top: 8, right: 8, width: 9, height: 9, borderRadius: 999, background: '#FF6B6B', boxShadow: '0 0 0 2px #30271C' }} />}
+              {notificationsCount > 0 && <span style={{ position: 'absolute', top: 8, right: 8, width: 9, height: 9, borderRadius: 999, background: 'var(--wx-danger-soft)', boxShadow: '0 0 0 2px #30271C' }} />}
             </button>
             <button className="pc-head-logs" onClick={onOpenLogs} title="Activity Logs" style={{
               width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', transition: 'background 0.15s',
+              background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', transition: 'background 0.15s',
             }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.16)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </button>
-            <div className="pc-head-sep" style={{ width: 1, height: 30, background: 'rgba(245,233,214,0.18)', margin: '0 5px' }} />
+            <div className="pc-head-sep" style={{ width: 1, height: 30, background: 'var(--wx-surface-2)', margin: '0 5px' }} />
             {(() => {
               const isViewer = currentUser?.role === 'viewer';
               const Tag = isViewer ? 'div' : 'button';
@@ -941,7 +941,7 @@ export default function WurxUI({
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 9,
                     height: 44, padding: '0 14px 0 5px', borderRadius: 999,
-                    background: 'rgba(245,233,214,0.10)', border: 0,
+                    background: 'var(--wx-surface-2)', border: 0,
                     cursor: interactive ? 'pointer' : 'default',
                     transition: 'background 0.15s ease',
                   }}
@@ -955,8 +955,8 @@ export default function WurxUI({
                     </svg>
                   </span>
                   <span className="pc-userchip-txt" style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, alignItems: 'flex-start' }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: '#F5E9D6', letterSpacing: '-0.1px' }}>{currentUser?.display || 'User'}</span>
-                    <span style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(245,233,214,0.60)' }}>{isViewer ? 'Viewer' : (currentUser?.role || '')}</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--wx-text-muted)', letterSpacing: '-0.1px' }}>{currentUser?.display || 'User'}</span>
+                    <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)' }}>{isViewer ? 'Viewer' : (currentUser?.role || '')}</span>
                   </span>
                 </Tag>
               );
@@ -964,7 +964,7 @@ export default function WurxUI({
             <button className="pc-head-out" onClick={onSignOut} title="Sign out" style={{
               width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(255,107,107,0.12)', color: '#FF6B6B', transition: 'background 0.15s',
+              background: 'var(--wx-danger-soft)', color: 'var(--wx-danger)', transition: 'background 0.15s',
             }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,107,107,0.22)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,107,107,0.12)'; }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             </button>
@@ -2847,7 +2847,7 @@ function DrilldownCreatorRow({ c, idx, euka, open, onSelect, onSetStatus, onEdit
       <div className="pc-cell pc-num" data-label="Videos">
         {videoCount > 0 ? (
           <div className="pc-vidprog">
-            <span className="pc-vidprog-n" style={filled >= videoCount ? { color: '#0E7A3A' } : undefined}>
+            <span className="pc-vidprog-n" style={filled >= videoCount ? { color: 'var(--wx-success)' } : undefined}>
               {filled}<span className="pc-vidprog-of">/{videoCount}</span>
               {(() => {
                 /* delivery-risk intelligence · collab window closing or closed */
@@ -3448,8 +3448,8 @@ function BudgetEditor({ brand, month: initialMonth, currentBudget, currentRecord
             {restoredFrom && (
               <div style={{
                 marginTop: 6, padding: '6px 10px',
-                background: 'rgba(46,125,50,0.10)',
-                border: '1px solid rgba(46,125,50,0.28)',
+                background: 'var(--wx-success-soft)',
+                border: '1px solid var(--wx-success)',
                 color: 'var(--pc-success-fg)',
                 borderRadius: 10,
                 fontSize: 11.5, fontWeight: 700,
@@ -3926,7 +3926,7 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
                 <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 28, padding: '0 11px 0 12px', borderRadius: 999, background: 'var(--pc-warn-bg)', color: 'var(--pc-warn-fg)', fontSize: 12, fontWeight: 700 }} title={p.url || p.name}>
                   <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--pc-warn-fg)' }} />
                   {p.name || p.url}
-                  <button type="button" onClick={() => removeProd(i)} style={{ width: 18, height: 18, borderRadius: 999, border: 0, background: 'rgba(0,0,0,0.08)', color: 'inherit', cursor: 'pointer', fontSize: 12, lineHeight: 1, marginLeft: 2 }}>×</button>
+                  <button type="button" onClick={() => removeProd(i)} style={{ width: 18, height: 18, borderRadius: 999, border: 0, background: 'var(--wx-accent)', color: 'inherit', cursor: 'pointer', fontSize: 12, lineHeight: 1, marginLeft: 2 }}>×</button>
                 </span>
               ))}
             </div>
@@ -4919,7 +4919,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
               <span style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 minWidth: 18, height: 18, padding: '0 6px', borderRadius: 99,
-                background: 'var(--pc-accent)', color: '#fff',
+                background: 'var(--pc-accent)', color: 'var(--wx-text-muted)',
                 fontSize: 10.5, fontWeight: 800, lineHeight: 1,
               }}>{activeFilterCount}</span>
             )}
@@ -5126,7 +5126,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
             background: 'var(--pc-accent)', color: 'white',
             fontSize: 12.5, fontWeight: 700,
           }}>
-            <span style={{ minWidth: 18, height: 18, borderRadius: 999, background: 'rgba(255,255,255,0.25)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>{sel.size}</span>
+            <span style={{ minWidth: 18, height: 18, borderRadius: 999, background: 'var(--wx-surface-1)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>{sel.size}</span>
             selected
           </span>
 
@@ -6589,7 +6589,7 @@ function KpiPill({ label, value, onClick, title }) {
       <span style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         minWidth: 28, height: 26, padding: '0 10px', borderRadius: 999,
-        background: 'linear-gradient(135deg,#4A3A28 0%,#2A2118 100%)', color: '#F5E9D6',
+        background: 'linear-gradient(135deg,var(--wx-warning-soft) 0%,var(--wx-warning-soft) 100%)', color: 'var(--wx-text-muted)',
         fontSize: 12.5, fontWeight: 800, fontVariantNumeric: 'tabular-nums',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12)',
       }}>{value}</span>
@@ -7121,13 +7121,13 @@ function PerfBrandSection({ title, zone, tone, list, dragging, isOver, onEnter, 
         fontSize: 11.5, fontWeight: 800, letterSpacing: 1,
         marginBottom: 10,
         boxShadow: '0 1px 2px rgba(15,23,42,0.05), 0 4px 12px -6px rgba(15,23,42,0.10)',
-        border: '1px solid rgba(48,39,28,0.05)',
+        border: '1px solid var(--wx-warning)',
       }}>
         <span style={{ width: 7, height: 7, borderRadius: 99, background: accent, display: 'inline-block', boxShadow: `0 0 0 3px ${accent}22` }} />
         <span style={{ textTransform: 'uppercase' }}>{title}</span>
         <span style={{
           minWidth: 22, height: 20, padding: '0 7px', borderRadius: 999,
-          background: countBg, color: '#fff',
+          background: 'var(--wx-accent-soft)', color: 'var(--wx-text)',
           fontSize: 10.5, fontWeight: 800, letterSpacing: 0,
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         }}>{list.length}</span>
@@ -8094,9 +8094,9 @@ function PresenceAvatars({ currentUser }) {
         return (
           <span key={p.id} style={{
             width: 26, height: 26, borderRadius: 999,
-            background: grad, color: '#fff',
+            background: grad, color: 'var(--wx-text-muted)',
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            border: '2px solid #30271C',
+            border: '2px solid var(--wx-warning)',
             marginLeft: i === 0 ? 0 : -8,
             position: 'relative',
             zIndex: shown.length - i,
@@ -8109,7 +8109,7 @@ function PresenceAvatars({ currentUser }) {
             <span aria-hidden style={{
               position: 'absolute', right: -1, bottom: -1,
               width: 8, height: 8, borderRadius: 999,
-              background: '#22C55E', border: '2px solid #30271C',
+              background: 'var(--wx-success-soft)', border: '2px solid var(--wx-warning)',
             }} />
           </span>
         );
@@ -8117,10 +8117,10 @@ function PresenceAvatars({ currentUser }) {
       {extra > 0 && (
         <span style={{
           minWidth: 26, height: 26, padding: '0 6px',
-          borderRadius: 999, background: 'rgba(245,233,214,0.18)',
-          color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          borderRadius: 999, background: 'var(--wx-surface-2)',
+          color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 11, fontWeight: 800,
-          border: '2px solid #30271C',
+          border: '2px solid var(--wx-warning)',
           marginLeft: -8, position: 'relative', lineHeight: 1,
         }}>+{extra}</span>
       )}

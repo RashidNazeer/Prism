@@ -245,13 +245,13 @@ to {opacity: 1; transform: translateY(0);} }
 .wurxbase-root .pc-ct-divider-count {display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 17px; padding: 0 6px; border-radius: 99px; background: color-mix(in srgb, var(--wx-bg) 6%, transparent); font-size: 9.5px; font-weight: 800; font-variant-numeric: tabular-nums;}
 /* Status tints — match WurxStatusDropdown's progress / pending / sent palette.
    Line gradient + pill bg + count badge all colored from the same hue family. */
-.wurxbase-root .pc-ct-divider-pending  .pc-ct-divider-line {background: linear-gradient(to right, transparent, var(--wx-surface-3) 12%, var(--wx-surface-3) 88%, transparent); height: 1.5px;}
+.wurxbase-root .pc-ct-divider-pending  .pc-ct-divider-line {background: linear-gradient(to right, transparent, var(--wx-warning-soft) 12%, var(--wx-warning-soft) 88%, transparent); height: 1.5px;}
 .wurxbase-root .pc-ct-divider-pending  .pc-ct-divider-label {background: var(--wx-warning); color: var(--wx-on-accent); border-color: var(--wx-warning);}
 .wurxbase-root .pc-ct-divider-pending  .pc-ct-divider-count {background: var(--wx-warning); color: var(--wx-danger);}
 .wurxbase-root .pc-ct-divider-progress .pc-ct-divider-line {background: linear-gradient(to right, transparent, color-mix(in srgb, var(--wx-accent) 38%, transparent) 12%, color-mix(in srgb, var(--wx-accent) 38%, transparent) 88%, transparent); height: 1.5px;}
 .wurxbase-root .pc-ct-divider-progress .pc-ct-divider-label {background: color-mix(in srgb, var(--wx-accent) 10%, transparent); color: var(--pc-accent); border-color: color-mix(in srgb, var(--wx-accent) 42%, transparent);}
 .wurxbase-root .pc-ct-divider-progress .pc-ct-divider-count {background: color-mix(in srgb, var(--wx-accent) 20%, transparent); color: var(--pc-accent);}
-.wurxbase-root .pc-ct-divider-sent     .pc-ct-divider-line {background: linear-gradient(to right, transparent, var(--wx-success) 12%, var(--wx-success) 88%, transparent); height: 1.5px;}
+.wurxbase-root .pc-ct-divider-sent     .pc-ct-divider-line {background: linear-gradient(to right, transparent, var(--wx-success-soft) 12%, var(--wx-success-soft) 88%, transparent); height: 1.5px;}
 .wurxbase-root .pc-ct-divider-sent     .pc-ct-divider-label {background: var(--wx-success); color: var(--pc-success-fg); border-color: var(--wx-success);}
 .wurxbase-root .pc-ct-divider-sent     .pc-ct-divider-count {background: var(--wx-success); color: var(--wx-on-accent);}
 .wurxbase-root .pc-cname {font-weight: 600;}
@@ -421,7 +421,7 @@ to {opacity: 1; transform: translateY(0);} }
 .wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot):hover .pc-mx-frozen {background: var(--pc-card-2);}
 /* Rank chip — premium pill with soft cream bg, brand-accent on hover */
 .wurxbase-root .pc-mx-rank {display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: var(--pc-card-2); border: 1px solid var(--pc-divider); color: var(--wx-text-muted); font-size: 11px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.1px; transition: all .18s cubic-bezier(0.4,0,0.2,1);}
-.wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):hover .pc-mx-rank {background: linear-gradient(180deg,var(--wx-warning) 0%,var(--wx-info) 100%); color: var(--wx-text); border-color: transparent; box-shadow: 0 2px 6px rgba(48,39,28,0.25); transform: scale(1.05);}
+.wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):hover .pc-mx-rank {background: linear-gradient(180deg,var(--wx-warning) 0%,var(--wx-warning-soft) 100%); color: var(--wx-text); border-color: transparent; box-shadow: 0 2px 6px rgba(48,39,28,0.25); transform: scale(1.05);}
 
 /* ═══ v181 · A-to-Z REDESIGN — Premium row cards with entrance motion ═══ */
 @keyframes pcCardIn{
@@ -2843,12 +2843,12 @@ to {opacity: 1;} }
 .wurxbase-root .pc-uc-segbtn.on b {background: var(--wx-surface-2);}
 /* each tier keeps the colour it already has on the row badges, so the
    filter and the table read as the same language */
-.wurxbase-root .pc-uc-segbtn.on.t-l0 {background: var(--wx-info);}
+.wurxbase-root .pc-uc-segbtn.on.t-l0 {background: var(--wx-accent);}
 .wurxbase-root .pc-uc-segbtn.on.t-l1 {background: var(--wx-accent);}
-.wurxbase-root .pc-uc-segbtn.on.t-l2 {background: var(--wx-info);}
+.wurxbase-root .pc-uc-segbtn.on.t-l2 {background: var(--wx-accent);}
 .wurxbase-root .pc-uc-segbtn.on.t-l3 {background: var(--wx-success);}
-.wurxbase-root .pc-uc-segbtn.on.t-l4 {background: var(--wx-info);}
-.wurxbase-root .pc-uc-segbtn.on.t-l5 {background: var(--wx-accent);}
+.wurxbase-root .pc-uc-segbtn.on.t-l4 {background: var(--wx-accent);}
+.wurxbase-root .pc-uc-segbtn.on.t-l5 {background: var(--wx-warning-soft);}
 .wurxbase-root .pc-uc-segbtn.on.t-l6 {background: var(--wx-danger);}
 .wurxbase-root .pc-uc-reset {flex-shrink: 0; height: 27px; padding: 0 12px; border-radius: 999px; cursor: pointer; border: 1px dashed var(--pc-divider); background: transparent; color: var(--pc-text-2); font-family: inherit; font-size: 11.5px; font-weight: 700;}
 .wurxbase-root .pc-uc-reset:hover {color: var(--pc-text); border-color: var(--wx-accent);}
@@ -3369,8 +3369,8 @@ to {opacity: 1;} }
 .wurxbase-root .gm-ttl b {display: block; font-size: 17px; font-weight: 900; letter-spacing: -.4px;}
 .wurxbase-root .gm-ttl small {display: block; margin-top: 1px; font-size: 11px; font-weight: 600; color: var(--wx-text-muted);}
 .wurxbase-root .gm-who {flex: 0 0 auto; height: 24px; padding: 0 11px; border-radius: 999px; display: inline-flex; align-items: center; background: var(--wx-surface-2); border: 1px solid var(--wx-border); font-size: 10.5px; font-weight: 800; color: var(--wx-text-muted);}
-.wurxbase-root .gm-x {flex: 0 0 auto; width: 31px; height: 31px; border-radius: 999px; border: 0; cursor: pointer; background: var(--wx-surface-2); color: var(--wx-on-accent); display: inline-flex; align-items: center; justify-content: center;}
-.wurxbase-root .gm-x:hover {background: var(--wx-surface-2);}
+.wurxbase-root .gm-x {flex: 0 0 auto; width: 31px; height: 31px; border-radius: 999px; border: 0; cursor: pointer; background: var(--wx-surface-2); color: var(--wx-text); display: inline-flex; align-items: center; justify-content: center;}
+.wurxbase-root .gm-x:hover {background: var(--wx-surface-3);}
 .wurxbase-root .gm-tabs {display: flex; gap: 5px; padding: 11px 20px; background: var(--wx-surface-1); border-bottom: 1px solid var(--wx-border);}
 .wurxbase-root .gm-tab {height: 31px; padding: 0 14px; border-radius: 999px; border: 0; cursor: pointer; font-family: inherit; background: var(--wx-surface-2); color: var(--wx-text-muted); font-size: 12px; font-weight: 800; letter-spacing: -.1px; transition: background .15s, color .15s, transform .12s;}
 .wurxbase-root .gm-tab:hover {color: var(--wx-text);}
@@ -3549,7 +3549,7 @@ to {opacity: 1;} }
    ═══════════════════════════════════════════════════════════════ */
 .wurxbase-root .gm-box {max-width: 880px;}
 .wurxbase-root .gm-tabs {position: sticky; top: 0; z-index: 3; padding: 12px 20px; gap: 6px;}
-.wurxbase-root .gm-body {background: var(--wx-surface-2); padding: 18px 20px 24px;}
+.wurxbase-root .gm-body {background: var(--wx-bg); padding: 18px 20px 24px;}
 .wurxbase-root .gm-sec {border-radius: 20px; padding: 17px 19px 18px; box-shadow: 0 0 0 1px rgba(20,17,12,.055);}
 .wurxbase-root .gm-sec + .gm-sec {margin-top: 12px;}
 .wurxbase-root .gm-sec-h b {font-size: 13.5px;}

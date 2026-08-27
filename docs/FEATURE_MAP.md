@@ -2710,3 +2710,40 @@ still pass against the new code.
 **Also fixed while the file was open:** the Google Fonts `@import` is dropped by
 the pipeline, which closes **PARKED 29(d)** — Inter is self-hosted here, so
 nothing changes on screen and no admin's browser talks to Google any more.
+
+### The reskin guard, second pass (2026-08-27, evening)
+
+**Rashid opened the Reporting tab and it was unusable** — muted text on a brown
+slab, an opaque disc across the chart, an off-palette blue totals band. The
+guard had reported a pass, because **it was checking four of the six tabs**.
+Reporting and Discovery were never opened. A guard that covers part of a surface
+and reports a pass is worse than no guard, because it is believed.
+
+Four more failures of the same family, all found by fixing the guard rather than
+by looking harder:
+
+1. **It skipped every element on a gradient**, calling them "unmeasured" and
+   passing. 49 of them were on the reporting screen — exactly where the problem
+   was. Gradients are now measured at their colour stops, worst stop wins.
+2. **It read `color` on SVG text.** SVG is painted by `fill`, so twelve chart
+   labels were reported as white-on-white while their `fill` was perfectly
+   readable. Twelve invented failures on the one screen with real ones.
+3. **The inline-style pass themed only the FIRST colour in a value**, so a
+   two-stop gradient kept its second stop: `var(--wx-warning-soft) 0%,
+   #2A2118 100%`, a permanently dark pill behind theme-coloured ink.
+4. **The backreference in that pass pointed at the wrong group.** `STYLE_PROP`
+   is itself a capture group, so the quote is group 2 and `\1` asked the value
+   to be closed by the property NAME. It matched nothing, themed none of the 468
+   inline colours, and built cleanly.
+
+**Semantic tokens are no longer candidates for the perceptual fallback.**
+`--wx-info` means "information"; using it as the nearest match for their brand
+blue is what put a blue band across a gold product. A non-semantic colour
+resolves to a neutral or the accent, and a genuinely semantic one is routed by
+HUE through `semanticFor`.
+
+**The patch script gained in-place SWAPS**, for a colour written inline in their
+JSX where no stylesheet can reach it and no class exists to aim at.
+
+Result: light theme clean on all six tabs, dark clean on five with one count
+badge outstanding. `pnpm verify:collab-contrast`.

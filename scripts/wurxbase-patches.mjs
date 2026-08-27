@@ -89,6 +89,35 @@ const PATCHES = [
   }
 ];
 
+/*
+ * REPLACEMENTS, as opposed to insertions.
+ *
+ * A colour written inline in their JSX cannot be corrected from a stylesheet:
+ * an inline style beats any rule we could write, and the element carries no
+ * class to aim at. So the value is swapped here, where it survives the next
+ * re-vendor instead of being silently lost.
+ */
+const SWAPS = [
+  {
+    name: 'group count badge ink',
+    /* A saturated fill with muted ink on it: 1.03:1 on the Performance tab, in
+       both themes. The count beside a group title does not need its own hue,
+       and a soft accent chip is legible on either ground. */
+    from: "background: countBg, color: 'var(--wx-text-muted)',",
+    to: "background: 'var(--wx-accent-soft)', color: 'var(--wx-text)',",
+  },
+];
+
+for (const sw of SWAPS) {
+  if (src.includes(sw.to)) { console.log(`  skip  ${sw.name} (already swapped)`); already++; continue; }
+  const n = src.split(sw.from).length - 1;
+  if (n === 0) { fail(`${sw.name}: nothing to swap; their code changed`); continue; }
+  if (n > 1) { fail(`${sw.name}: ${n} occurrences, refusing to guess`); continue; }
+  src = src.replace(sw.from, sw.to);
+  console.log(`  ok    ${sw.name} (swapped)`);
+  applied++;
+}
+
 for (const p of PATCHES) {
   const marker = p.body.split('\n')[0].trim();
   if (src.includes(marker)) { console.log(`  skip  ${p.name} (already present)`); already++; continue; }
