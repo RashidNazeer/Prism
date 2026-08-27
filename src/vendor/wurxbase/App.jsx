@@ -1594,7 +1594,7 @@ function GalleryCard({ creator, idx, onClick }) {
     >
       {/* Hero strip · gradient avatar background */}
       <div className="tw-relative tw-h-[110px] tw-overflow-hidden" style={{ background: grad }}>
-        <div className="tw-absolute tw-inset-0 tw-pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 80% at 80% 0%, var(--wx-surface-1), transparent 60%), radial-gradient(ellipse 70% 80% at 0% 100%, var(--wx-accent), transparent 60%)' }} />
+        <div className="tw-absolute tw-inset-0 tw-pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 80% at 80% 0%, color-mix(in srgb, var(--wx-surface-1) 32%, transparent), transparent 60%), radial-gradient(ellipse 70% 80% at 0% 100%, color-mix(in srgb, var(--wx-accent) 32%, transparent), transparent 60%)' }} />
         <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.7) 1px, transparent 0)', backgroundSize: '20px 20px' }} />
         {/* Top row: status pill + brand pill */}
         <div className="tw-relative tw-z-10 tw-flex tw-items-start tw-justify-between tw-p-2.5">
@@ -1787,8 +1787,8 @@ function StatsViewV2({ creators, onSelectBrand }) {
         {/* ── Budget Allocation Trend · Premium glassy bar chart ── */}
         <div className="tw-relative tw-overflow-hidden tw-rounded-[28px] tw-shadow-oneui_lg tw-bg-gradient-to-br tw-from-slate-900 tw-via-[#0E1F4D] tw-to-slate-900 tw-p-5 md:tw-p-6">
           {/* Decorative orbs */}
-          <div className="tw-absolute tw--top-20 tw--right-20 tw-w-[260px] tw-h-[260px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, var(--wx-success-soft), transparent 70%)', filter: 'blur(40px)' }} />
-          <div className="tw-absolute tw--bottom-24 tw--left-16 tw-w-[260px] tw-h-[260px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, var(--wx-accent), transparent 70%)', filter: 'blur(40px)' }} />
+          <div className="tw-absolute tw--top-20 tw--right-20 tw-w-[260px] tw-h-[260px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--wx-success-soft) 40%, transparent), transparent 70%)', filter: 'blur(40px)' }} />
+          <div className="tw-absolute tw--bottom-24 tw--left-16 tw-w-[260px] tw-h-[260px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--wx-accent) 40%, transparent), transparent 70%)', filter: 'blur(40px)' }} />
           <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.5) 1px, transparent 0)', backgroundSize: '24px 24px' }} />
 
           {/* Header */}
@@ -1875,7 +1875,7 @@ function StatsViewV2({ creators, onSelectBrand }) {
                         }}
                       >
                         {/* Glossy top highlight */}
-                        <div className="tw-absolute tw-top-0 tw-left-0 tw-right-0 tw-h-[35%] tw-rounded-t-[10px] tw-pointer-events-none" style={{ background: 'linear-gradient(180deg, var(--wx-surface-1), transparent)' }} />
+                        <div className="tw-absolute tw-top-0 tw-left-0 tw-right-0 tw-h-[35%] tw-rounded-t-[10px] tw-pointer-events-none" style={{ background: 'linear-gradient(180deg, color-mix(in srgb, var(--wx-surface-1) 35%, transparent), transparent)' }} />
                         {/* Inner shimmer line */}
                         <div className="tw-absolute tw-top-0 tw-left-1/4 tw-right-1/4 tw-h-px tw-bg-white/40" />
                         {isPeak && <div className="tw-absolute tw-top-1.5 tw-left-1/2 -tw-translate-x-1/2 tw-text-[12px]">⭐</div>}
@@ -1890,7 +1890,7 @@ function StatsViewV2({ creators, onSelectBrand }) {
               {trendAvg > 0 && (
                 <div className="tw-absolute tw-left-0 tw-right-0 tw-pointer-events-none" style={{ bottom: `${24 + (trendAvg / trendMax) * 200}px` }}>
                   <div className="tw-flex tw-items-center tw-gap-2 tw-px-1">
-                    <div className="tw-flex-1 tw-h-px tw-bg-white/30" style={{ background: 'repeating-linear-gradient(90deg, var(--wx-surface-1) 0 6px, transparent 6px 12px)' }} />
+                    <div className="tw-flex-1 tw-h-px tw-bg-white/30" style={{ background: 'repeating-linear-gradient(90deg, color-mix(in srgb, var(--wx-surface-1) 40%, transparent) 0 6px, transparent 6px 12px)' }} />
                     <span className="tw-text-[9.5px] tw-font-bold tw-text-white/60 tw-bg-slate-900/40 tw-px-1.5 tw-rounded-full">avg</span>
                   </div>
                 </div>
@@ -2404,8 +2404,8 @@ function CreatorsViewV2({ creators, activeBrand, onCardClick, onTierUpgrade }) {
 
         {/* ── HERO STRIP ── */}
         <div className="tw-relative tw-overflow-hidden tw-rounded-[28px] tw-bg-gradient-to-br tw-from-[#0F172A] tw-via-[#1E1B4B] tw-to-[#0F172A] tw-p-5 md:tw-p-6 tw-shadow-oneui_lg">
-          <div className="tw-absolute tw--top-24 tw--left-12 tw-w-[300px] tw-h-[300px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, var(--wx-accent), transparent 70%)', filter: 'blur(40px)' }} />
-          <div className="tw-absolute tw--bottom-24 tw--right-12 tw-w-[300px] tw-h-[300px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, var(--wx-accent), transparent 70%)', filter: 'blur(40px)' }} />
+          <div className="tw-absolute tw--top-24 tw--left-12 tw-w-[300px] tw-h-[300px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--wx-accent) 45%, transparent), transparent 70%)', filter: 'blur(40px)' }} />
+          <div className="tw-absolute tw--bottom-24 tw--right-12 tw-w-[300px] tw-h-[300px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--wx-accent) 40%, transparent), transparent 70%)', filter: 'blur(40px)' }} />
           <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.5) 1px, transparent 0)', backgroundSize: '22px 22px' }} />
 
           <div className="tw-relative tw-z-10 tw-flex tw-items-start tw-justify-between tw-flex-wrap tw-gap-4">
@@ -2600,7 +2600,7 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
       className="cdm-v2 tw-fixed tw-inset-0 tw-z-[1900] tw-flex tw-items-end md:tw-items-center tw-justify-center tw-p-0 md:tw-p-4"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       style={{
-        background: 'var(--wx-accent)',
+        background: 'color-mix(in srgb, var(--wx-accent) 42%, transparent)',
         backdropFilter: 'blur(14px) saturate(140%)',
         WebkitBackdropFilter: 'blur(14px) saturate(140%)',
         animation: 'bsv2-fade 0.24s ease',
@@ -2619,7 +2619,7 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
       >
         {/* Mobile pull handle */}
         <div className="tw-flex tw-justify-center tw-pt-3 tw-pb-2 md:tw-hidden">
-          <div style={{ width: 38, height: 5, borderRadius: 999, background: 'var(--wx-accent)' }} />
+          <div style={{ width: 38, height: 5, borderRadius: 999, background: 'color-mix(in srgb, var(--wx-accent) 18%, transparent)' }} />
         </div>
 
         {/* ── HERO: clean white card, iOS Settings style ── */}
@@ -3536,7 +3536,7 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, curre
               while (plot.length && plot[plot.length - 1].gmv === 0 && plot[plot.length - 1].ad === 0) plot.pop();
               const skipped = gmvTrend.length - plot.length;
               if (plot.length < 2) {
-                return <div className="tw-text-[11px] tw-italic tw-py-10 tw-text-center" style={{ color: 'var(--wx-text-muted)' }}>
+                return <div className="tw-text-[11px] tw-italic tw-py-10 tw-text-center" style={{ color: 'color-mix(in srgb, var(--wx-text-muted) 50%, transparent)' }}>
                   Not enough months with figures to draw a trend yet.
                 </div>;
               }
@@ -3581,9 +3581,9 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, curre
                         <line x1={P.l} x2={P.l + iw} y1={P.t + ih * f} y2={P.t + ih * f}
                           stroke="rgba(245,233,214,0.10)" strokeWidth="1" strokeDasharray={f === 1 ? '0' : '3 5'} />
                         <text x={P.l - 8} y={P.t + ih * f + 3.5} textAnchor="end"
-                          style={{ fontSize: 8.5, fontWeight: 800, fill: 'var(--wx-text-muted)' }}>{kd(maxG * (1 - f))}</text>
+                          style={{ fontSize: 8.5, fontWeight: 800, fill: 'color-mix(in srgb, var(--wx-text-muted) 72%, transparent)' }}>{kd(maxG * (1 - f))}</text>
                         <text x={P.l + iw + 8} y={P.t + ih * f + 3.5} textAnchor="start"
-                          style={{ fontSize: 8.5, fontWeight: 800, fill: 'var(--wx-text-muted)' }}>{kd(maxA * (1 - f))}</text>
+                          style={{ fontSize: 8.5, fontWeight: 800, fill: 'color-mix(in srgb, var(--wx-text-muted) 34%, transparent)' }}>{kd(maxA * (1 - f))}</text>
                       </g>
                     ))}
 
@@ -3647,14 +3647,14 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, curre
           <div className="tw-min-w-0">
             <div className="tw-flex tw-items-center tw-gap-2 tw-flex-wrap">
               <span className="tw-text-[21px] md:tw-text-[23px] tw-font-extrabold tw-tracking-[-0.6px]" style={{ color: 'var(--wx-text)' }}>{activeBrand === 'All' ? 'All Brands' : activeBrand}</span>
-              <span className="tw-h-[22px] tw-px-2.5 tw-rounded-full tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1px] tw-flex tw-items-center" style={{ background: 'linear-gradient(180deg,var(--wx-surface-1),var(--wx-surface-2))', color: 'var(--wx-text-faint)', border: '1px solid var(--wx-warning)' }}>Executive Report</span>
+              <span className="tw-h-[22px] tw-px-2.5 tw-rounded-full tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1px] tw-flex tw-items-center" style={{ background: 'linear-gradient(180deg,var(--wx-surface-1),var(--wx-surface-2))', color: 'var(--wx-text-faint)', border: '1px solid color-mix(in srgb, var(--wx-warning) 12%, transparent)' }}>Executive Report</span>
             </div>
             <div className="tw-text-[11.5px] tw-font-semibold tw-mt-0.5" style={{ color: 'var(--wx-text-faint)' }}>
               {periodLabel}{activeBrand === 'All' && brandBreakdown.length > 0 && <> · {brandBreakdown.length} brands</>} · Generated {generatedAt}
             </div>
           </div>
           <div className="tw-flex tw-items-center tw-gap-2 print-hide">
-            {can(currentUser, 'canExportCsv') && <button onClick={onExportCsv} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-bg-white hover:tw-bg-gray-50 tw-text-[11.5px] tw-font-bold tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ color: 'var(--wx-text-muted)', border: '1px solid var(--wx-warning)' }}>
+            {can(currentUser, 'canExportCsv') && <button onClick={onExportCsv} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-bg-white hover:tw-bg-gray-50 tw-text-[11.5px] tw-font-bold tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ color: 'var(--wx-text-muted)', border: '1px solid color-mix(in srgb, var(--wx-warning) 12%, transparent)' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               CSV
             </button>}
@@ -4171,7 +4171,7 @@ function SystemHealthV2({ onClose, currentUser, creatorsLive = [] }) {
       style={{
         position: 'fixed', inset: 0, zIndex: 1900,
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-        background: 'var(--wx-warning-soft)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        background: 'color-mix(in srgb, var(--wx-warning-soft) 50%, transparent)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
         fontFamily: 'inherit',
       }}
     >
@@ -4184,14 +4184,14 @@ function SystemHealthV2({ onClose, currentUser, creatorsLive = [] }) {
       }}>
         {/* ── Header · dark coffee ── */}
         <div style={{ background: 'var(--wx-warning-soft)', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>System Health</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>Real-time database &amp; app performance</div>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'color-mix(in srgb, var(--wx-text-muted) 55%, transparent)', marginTop: 2 }}>Real-time database &amp; app performance</div>
           </div>
-          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
+          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -4767,7 +4767,7 @@ function SqlPlaygroundV2({ onClose, currentUser }) {
       style={{
         position: 'fixed', inset: 0, zIndex: 1900,
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-        background: 'var(--wx-warning-soft)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        background: 'color-mix(in srgb, var(--wx-warning-soft) 50%, transparent)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
         fontFamily: 'inherit',
       }}
     >
@@ -4780,30 +4780,30 @@ function SqlPlaygroundV2({ onClose, currentUser }) {
       }}>
         {/* ── Header · dark coffee ── */}
         <div style={{ background: 'var(--wx-warning-soft)', padding: '14px 22px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.3px', color: 'var(--wx-text-muted)' }}>SQL Playground</div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'color-mix(in srgb, var(--wx-text-muted) 55%, transparent)', marginTop: 2, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
               <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--wx-success-soft)', display: 'inline-block' }} />
               Read-only · {currentUser?.display}
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <button onClick={() => setShowSchema(s => !s)} title="Toggle schema" style={{ height: 32, padding: '0 12px', borderRadius: 999, border: 0, cursor: 'pointer', background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', fontSize: 11.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5, lineHeight: 1, fontFamily: 'inherit' }}
+            <button onClick={() => setShowSchema(s => !s)} title="Toggle schema" style={{ height: 32, padding: '0 12px', borderRadius: 999, border: 0, cursor: 'pointer', background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', fontSize: 11.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5, lineHeight: 1, fontFamily: 'inherit' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,233,214,0.18)'}
               onMouseLeave={e => e.currentTarget.style.background = 'rgba(245,233,214,0.10)'}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
               Schema
             </button>
-            <button onClick={() => setShowHistory(s => !s)} title="History" style={{ height: 32, padding: '0 12px', borderRadius: 999, border: 0, cursor: 'pointer', background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', fontSize: 11.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5, lineHeight: 1, fontFamily: 'inherit' }}
+            <button onClick={() => setShowHistory(s => !s)} title="History" style={{ height: 32, padding: '0 12px', borderRadius: 999, border: 0, cursor: 'pointer', background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', fontSize: 11.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5, lineHeight: 1, fontFamily: 'inherit' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,233,214,0.18)'}
               onMouseLeave={e => e.currentTarget.style.background = 'rgba(245,233,214,0.10)'}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               History
             </button>
-            <button onClick={onClose} title="Close" style={{ width: 32, height: 32, borderRadius: 999, border: 0, cursor: 'pointer', background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+            <button onClick={onClose} title="Close" style={{ width: 32, height: 32, borderRadius: 999, border: 0, cursor: 'pointer', background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,233,214,0.18)'}
               onMouseLeave={e => e.currentTarget.style.background = 'rgba(245,233,214,0.10)'}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -5279,11 +5279,11 @@ function JoinRequestScreen({ onBack }) {
       {/* ── Aurora ribbons background ── */}
       <div aria-hidden className="tw-absolute tw-inset-0 tw-pointer-events-none tw-overflow-hidden">
         {/* Aurora flowing layers */}
-        <div className="tw-absolute tw-inset-0" style={{ background: 'conic-gradient(from 220deg at 30% 20%, var(--wx-surface-2), var(--wx-danger-soft) 30%, var(--wx-accent) 50%, var(--wx-accent) 70%, var(--wx-surface-2) 100%)', filter: 'blur(80px)', animation: 'jr-aurora 28s ease-in-out infinite' }} />
+        <div className="tw-absolute tw-inset-0" style={{ background: 'conic-gradient(from 220deg at 30% 20%, color-mix(in srgb, var(--wx-surface-2) 40%, transparent), color-mix(in srgb, var(--wx-danger-soft) 30%, transparent) 30%, color-mix(in srgb, var(--wx-accent) 40%, transparent) 50%, color-mix(in srgb, var(--wx-accent) 40%, transparent) 70%, color-mix(in srgb, var(--wx-surface-2) 40%, transparent) 100%)', filter: 'blur(80px)', animation: 'jr-aurora 28s ease-in-out infinite' }} />
         {/* Soft sunset glow ribbons */}
-        <div className="tw-absolute tw--top-20 tw-left-1/4 tw-w-[600px] tw-h-[400px] tw-rounded-full tw-opacity-50" style={{ background: 'radial-gradient(ellipse, var(--wx-warning-soft), transparent 65%)', filter: 'blur(50px)', animation: 'jr-ribbon-a 18s ease-in-out infinite' }} />
-        <div className="tw-absolute tw-bottom-0 tw--right-32 tw-w-[600px] tw-h-[500px] tw-rounded-full tw-opacity-50" style={{ background: 'radial-gradient(ellipse, var(--wx-surface-3), transparent 65%)', filter: 'blur(60px)', animation: 'jr-ribbon-b 22s ease-in-out infinite' }} />
-        <div className="tw-absolute tw-top-1/3 tw--left-20 tw-w-[500px] tw-h-[500px] tw-rounded-full tw-opacity-40" style={{ background: 'radial-gradient(circle, var(--wx-surface-3), transparent 65%)', filter: 'blur(60px)', animation: 'jr-ribbon-c 25s ease-in-out infinite' }} />
+        <div className="tw-absolute tw--top-20 tw-left-1/4 tw-w-[600px] tw-h-[400px] tw-rounded-full tw-opacity-50" style={{ background: 'radial-gradient(ellipse, color-mix(in srgb, var(--wx-warning-soft) 60%, transparent), transparent 65%)', filter: 'blur(50px)', animation: 'jr-ribbon-a 18s ease-in-out infinite' }} />
+        <div className="tw-absolute tw-bottom-0 tw--right-32 tw-w-[600px] tw-h-[500px] tw-rounded-full tw-opacity-50" style={{ background: 'radial-gradient(ellipse, color-mix(in srgb, var(--wx-surface-3) 60%, transparent), transparent 65%)', filter: 'blur(60px)', animation: 'jr-ribbon-b 22s ease-in-out infinite' }} />
+        <div className="tw-absolute tw-top-1/3 tw--left-20 tw-w-[500px] tw-h-[500px] tw-rounded-full tw-opacity-40" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--wx-surface-3) 65%, transparent), transparent 65%)', filter: 'blur(60px)', animation: 'jr-ribbon-c 25s ease-in-out infinite' }} />
         {/* Cream noise overlay for filmic feel */}
         <div className="tw-absolute tw-inset-0 tw-opacity-[0.06]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '20px 20px' }} />
       </div>
@@ -5411,7 +5411,7 @@ function JoinRequestScreen({ onBack }) {
                 <button type="submit" disabled={submitting}
                   className="tw-relative tw-w-full tw-mt-3 tw-rounded-2xl tw-text-white tw-text-[14.5px] tw-font-extrabold tw-tracking-[-0.2px] tw-flex tw-items-center tw-justify-center tw-gap-2 tw-border-0 tw-cursor-pointer hover:-tw-translate-y-0.5 active:tw-scale-[0.98] disabled:tw-opacity-70 disabled:tw-cursor-wait tw-transition tw-duration-200 tw-ease-oneui tw-overflow-hidden"
                   style={{ height: 50, background: 'linear-gradient(135deg, var(--wx-warning-soft) 0%, var(--wx-danger-soft) 50%, var(--wx-accent) 100%)', boxShadow: '0 10px 28px rgba(244,63,94,0.45), 0 4px 12px rgba(192,38,211,0.35)' }}>
-                  <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-30" style={{ background: 'linear-gradient(135deg, transparent 35%, var(--wx-surface-1) 50%, transparent 65%)' }} />
+                  <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-30" style={{ background: 'linear-gradient(135deg, transparent 35%, color-mix(in srgb, var(--wx-surface-1) 50%, transparent) 50%, transparent 65%)' }} />
                   <span className="tw-relative tw-z-10 tw-flex tw-items-center tw-gap-2">
                     {submitting ? (
                       <>
@@ -5556,7 +5556,7 @@ function LoginScreen({ onLogin, onJoinRequest }) {
             {/* ── LEFT · Dark coffee brand panel ── */}
             <div className="tw-relative tw-p-8 md:tw-p-10 tw-flex tw-flex-col tw-min-h-[420px] md:tw-min-h-[520px]" style={{ background: 'linear-gradient(165deg, var(--wx-warning-soft) 0%, var(--wx-warning-soft) 55%, var(--wx-warning-soft) 100%)', color: 'var(--wx-text-muted)' }}>
               {/* Subtle cream wash in corner */}
-              <div aria-hidden className="tw-absolute tw--top-32 tw--right-32 tw-w-80 tw-h-80 tw-rounded-full tw-pointer-events-none" style={{ background: 'radial-gradient(circle, var(--wx-surface-2), transparent 70%)' }} />
+              <div aria-hidden className="tw-absolute tw--top-32 tw--right-32 tw-w-80 tw-h-80 tw-rounded-full tw-pointer-events-none" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--wx-surface-2) 8%, transparent), transparent 70%)' }} />
 
               <div className="tw-relative tw-z-10 tw-flex tw-items-center tw-gap-3">
                 <div className="tw-w-12 tw-h-12 tw-rounded-[13px] tw-flex tw-items-center tw-justify-center" style={{ background: 'var(--wx-surface-2)', color: 'var(--wx-warning)' }}>
@@ -5568,7 +5568,7 @@ function LoginScreen({ onLogin, onJoinRequest }) {
                 </div>
                 <div>
                   <div className="tw-text-[20px] tw-font-extrabold tw-tracking-[-0.4px]" style={{ color: 'var(--wx-text-muted)' }}>Wurx Base</div>
-                  <div className="tw-text-[12px] tw-font-semibold" style={{ color: 'var(--wx-text-muted)' }}>Paid Collaborations</div>
+                  <div className="tw-text-[12px] tw-font-semibold" style={{ color: 'color-mix(in srgb, var(--wx-text-muted) 55%, transparent)' }}>Paid Collaborations</div>
                 </div>
               </div>
 
@@ -5580,28 +5580,28 @@ function LoginScreen({ onLogin, onJoinRequest }) {
                   [<svg key="i" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>, 'One-click signed contracts'],
                 ].map(([icon, label], i) => (
                   <div key={i} className="tw-flex tw-items-center tw-gap-3">
-                    <span className="tw-w-[30px] tw-h-[30px] tw-rounded-[9px] tw-flex tw-items-center tw-justify-center tw-flex-shrink-0" style={{ background: 'var(--wx-surface-2)', border: '1px solid var(--wx-border)', color: 'var(--wx-text-muted)' }}>
+                    <span className="tw-w-[30px] tw-h-[30px] tw-rounded-[9px] tw-flex tw-items-center tw-justify-center tw-flex-shrink-0" style={{ background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--wx-border) 16%, transparent)', color: 'var(--wx-text-muted)' }}>
                       {icon}
                     </span>
-                    <span className="tw-text-[12.5px] tw-font-semibold" style={{ color: 'var(--wx-text-muted)' }}>{label}</span>
+                    <span className="tw-text-[12.5px] tw-font-semibold" style={{ color: 'color-mix(in srgb, var(--wx-text-muted) 82%, transparent)' }}>{label}</span>
                   </div>
                 ))}
               </div>
 
               {/* second ambient wash · bottom-left depth */}
-              <div aria-hidden className="tw-absolute tw--bottom-24 tw--left-24 tw-w-64 tw-h-64 tw-rounded-full tw-pointer-events-none" style={{ background: 'radial-gradient(circle, var(--wx-surface-2), transparent 70%)' }} />
+              <div aria-hidden className="tw-absolute tw--bottom-24 tw--left-24 tw-w-64 tw-h-64 tw-rounded-full tw-pointer-events-none" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--wx-surface-2) 6%, transparent), transparent 70%)' }} />
 
               <div className="tw-relative tw-z-10 tw-mt-auto tw-pt-10">
                 <div className="tw-text-[28px] md:tw-text-[32px] tw-font-extrabold tw-leading-[1.15] tw-tracking-[-0.7px]" style={{ color: 'var(--wx-text-muted)' }}>
                   Track every deal,<br/>brand and creator.
                 </div>
-                <div className="tw-text-[13.5px] tw-font-medium tw-mt-4 tw-leading-relaxed" style={{ color: 'var(--wx-text-muted)', maxWidth: 360 }}>
+                <div className="tw-text-[13.5px] tw-font-medium tw-mt-4 tw-leading-relaxed" style={{ color: 'color-mix(in srgb, var(--wx-text-muted) 65%, transparent)', maxWidth: 360 }}>
                   One workspace for paid collaborations · brand budgets, creator deals, video deliverables and monthly GMV/Ad performance.
                 </div>
 
                 <div className="tw-flex tw-flex-wrap tw-gap-2 tw-mt-7">
                   {['Brands', 'Creators', 'Performance', 'Reporting'].map(t => (
-                    <span key={t} className="tw-inline-flex tw-items-center tw-h-7 tw-px-3 tw-rounded-full tw-text-[11px] tw-font-bold" style={{ background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', border: '1px solid var(--wx-border)' }}>{t}</span>
+                    <span key={t} className="tw-inline-flex tw-items-center tw-h-7 tw-px-3 tw-rounded-full tw-text-[11px] tw-font-bold" style={{ background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', border: '1px solid color-mix(in srgb, var(--wx-border) 18%, transparent)' }}>{t}</span>
                   ))}
                 </div>
               </div>
@@ -5684,7 +5684,7 @@ function LoginScreen({ onLogin, onJoinRequest }) {
                 >
                   {isProcessing ? (
                     <>
-                      <span className="tw-w-3.5 tw-h-3.5 tw-border-2 tw-rounded-full tw-animate-spin" style={{ borderColor: 'var(--wx-border)', borderTopColor: '#F5E9D6' }} />
+                      <span className="tw-w-3.5 tw-h-3.5 tw-border-2 tw-rounded-full tw-animate-spin" style={{ borderColor: 'color-mix(in srgb, var(--wx-border) 30%, transparent)', borderTopColor: '#F5E9D6' }} />
                       Signing in
                     </>
                   ) : (
@@ -5725,7 +5725,7 @@ function LoginScreen({ onLogin, onJoinRequest }) {
 
       {/* ── ACCESS DENIED · cleaner Wurx-style popup ── */}
       {showMemeError && (
-        <div className="tw-fixed tw-inset-0 tw-z-[2000] tw-flex tw-items-center tw-justify-center tw-p-4 tw-font-sans" style={{ background: 'var(--wx-warning-soft)', backdropFilter: 'blur(6px)' }} onClick={() => setShowMemeError(false)}>
+        <div className="tw-fixed tw-inset-0 tw-z-[2000] tw-flex tw-items-center tw-justify-center tw-p-4 tw-font-sans" style={{ background: 'color-mix(in srgb, var(--wx-warning-soft) 55%, transparent)', backdropFilter: 'blur(6px)' }} onClick={() => setShowMemeError(false)}>
           <div onClick={e => e.stopPropagation()} className="tw-relative tw-w-full tw-max-w-[400px] tw-bg-white tw-rounded-[20px] tw-overflow-hidden" style={{ animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)', boxShadow: '0 24px 60px rgba(48,39,28,0.30)' }}>
             <div className="tw-p-7">
               <div className="tw-w-12 tw-h-12 tw-rounded-[14px] tw-flex tw-items-center tw-justify-center tw-mb-4" style={{ background: 'var(--wx-surface-2)', color: 'var(--wx-danger)' }}>
@@ -5743,7 +5743,7 @@ function LoginScreen({ onLogin, onJoinRequest }) {
 
       {/* ── FORGOT PASSWORD · cleaner Wurx-style popup ── */}
       {showForgotPopup && (
-        <div className="tw-fixed tw-inset-0 tw-z-[2000] tw-flex tw-items-center tw-justify-center tw-p-4 tw-font-sans" style={{ background: 'var(--wx-warning-soft)', backdropFilter: 'blur(6px)' }} onClick={() => setShowForgotPopup(false)}>
+        <div className="tw-fixed tw-inset-0 tw-z-[2000] tw-flex tw-items-center tw-justify-center tw-p-4 tw-font-sans" style={{ background: 'color-mix(in srgb, var(--wx-warning-soft) 55%, transparent)', backdropFilter: 'blur(6px)' }} onClick={() => setShowForgotPopup(false)}>
           <div onClick={e => e.stopPropagation()} className="tw-relative tw-w-full tw-max-w-[400px] tw-bg-white tw-rounded-[20px] tw-overflow-hidden" style={{ animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)', boxShadow: '0 24px 60px rgba(48,39,28,0.30)' }}>
             <div className="tw-p-7">
               <div className="tw-w-12 tw-h-12 tw-rounded-[14px] tw-flex tw-items-center tw-justify-center tw-mb-4" style={{ background: 'var(--wx-surface-2)', color: 'var(--wx-warning)' }}>
@@ -6071,11 +6071,11 @@ function DetailModalV2({ creator, onClose, onEdit, onDelete, onUpdate, perms = {
         <div data-sheet-hero className="tw-relative tw-overflow-hidden" style={{ background: gradient, height: 200 }}>
           {/* Atmospheric multi-layer overlays */}
           <div className="tw-absolute tw-inset-0 tw-pointer-events-none" style={{
-            background: 'radial-gradient(ellipse 80% 90% at 85% 10%, var(--wx-surface-1), transparent 55%), radial-gradient(ellipse 80% 90% at 15% 95%, var(--wx-accent), transparent 60%)'
+            background: 'radial-gradient(ellipse 80% 90% at 85% 10%, color-mix(in srgb, var(--wx-surface-1) 38%, transparent), transparent 55%), radial-gradient(ellipse 80% 90% at 15% 95%, color-mix(in srgb, var(--wx-accent) 42%, transparent), transparent 60%)'
           }} />
           {/* Diagonal sheen */}
           <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-20" style={{
-            background: 'linear-gradient(135deg, transparent 30%, var(--wx-surface-1) 50%, transparent 70%)'
+            background: 'linear-gradient(135deg, transparent 30%, color-mix(in srgb, var(--wx-surface-1) 18%, transparent) 50%, transparent 70%)'
           }} />
           {/* Soft mesh */}
           <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-25" style={{
@@ -6083,7 +6083,7 @@ function DetailModalV2({ creator, onClose, onEdit, onDelete, onUpdate, perms = {
             backgroundSize: '20px 20px'
           }} />
           {/* Bottom fade so name area is darker for contrast */}
-          <div className="tw-absolute tw-inset-x-0 tw-bottom-0 tw-h-[55%] tw-pointer-events-none" style={{ background: 'linear-gradient(180deg, transparent, var(--wx-accent))' }} />
+          <div className="tw-absolute tw-inset-x-0 tw-bottom-0 tw-h-[55%] tw-pointer-events-none" style={{ background: 'linear-gradient(180deg, transparent, color-mix(in srgb, var(--wx-accent) 55%, transparent))' }} />
 
           {/* Top bar: hire date pill + close */}
           <div className="tw-relative tw-z-10 tw-flex tw-items-start tw-justify-between tw-gap-2 tw-px-5 tw-pt-4">
@@ -7050,7 +7050,7 @@ function LeaderboardModalV2({ creators, hiredByTeam, onClose }) {
     <div
       className="tw-fixed tw-inset-0 tw-z-[1900] tw-flex tw-items-center tw-justify-center tw-p-4 sm:tw-p-6"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-      style={{ animation: 'sp-fade 0.22s ease', background: 'var(--wx-warning-soft)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+      style={{ animation: 'sp-fade 0.22s ease', background: 'color-mix(in srgb, var(--wx-warning-soft) 50%, transparent)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
     >
       <div style={{
         position: 'relative', width: '100%', maxWidth: 560, maxHeight: '92vh',
@@ -7062,20 +7062,20 @@ function LeaderboardModalV2({ creators, hiredByTeam, onClose }) {
       }}>
         {/* ── Header · dark coffee ── */}
         <div style={{ background: 'var(--wx-warning-soft)', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
             </svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>Leaderboard</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'color-mix(in srgb, var(--wx-text-muted) 55%, transparent)', marginTop: 2 }}>
               {month
                 ? `Hired-by performance · ${monthLabelShort(month)}${prevMonth ? ` vs ${monthLabelShort(prevMonth)}` : ''}`
                 : 'Hired-by performance across all deals'}
             </div>
           </div>
-          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
+          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -9526,7 +9526,7 @@ function BottomSheetV2({ editCreator, allBrands, onSave, onClose, hiredByTeam, c
                 {/* Lifetime / Total GMV */}
                 <div className="tw-mt-2 tw-relative tw-overflow-hidden tw-rounded-2xl tw-bg-gradient-to-br tw-from-blue-500 tw-via-indigo-600 tw-to-violet-700 tw-p-3 tw-shadow-md">
                   <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-15" style={{ backgroundImage: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.6) 1px, transparent 1px)', backgroundSize: '14px 14px' }} />
-                  <div className="tw-absolute tw--top-6 tw--right-3 tw-w-16 tw-h-16 tw-rounded-full tw-opacity-30 tw-pointer-events-none" style={{ background: 'radial-gradient(circle, var(--wx-surface-1), transparent 70%)' }} />
+                  <div className="tw-absolute tw--top-6 tw--right-3 tw-w-16 tw-h-16 tw-rounded-full tw-opacity-30 tw-pointer-events-none" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--wx-surface-1) 60%, transparent), transparent 70%)' }} />
                   <div className="tw-relative tw-z-10 tw-flex tw-items-center tw-justify-between tw-gap-2">
                     <div className="tw-flex tw-items-center tw-gap-2">
                       <div className="tw-w-7 tw-h-7 tw-rounded-full tw-bg-white/22 tw-backdrop-blur tw-flex tw-items-center tw-justify-center tw-text-white tw-text-[14px]">🏆</div>
@@ -9800,7 +9800,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
     <div
       className="tw-fixed tw-inset-0 tw-z-[1000] tw-flex tw-items-center tw-justify-center tw-p-4 sm:tw-p-6"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-      style={{ animation: 'sp-fade 0.22s ease-out', background: 'var(--wx-warning-soft)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+      style={{ animation: 'sp-fade 0.22s ease-out', background: 'color-mix(in srgb, var(--wx-warning-soft) 50%, transparent)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
     >
       <div
         ref={ref}
@@ -9825,7 +9825,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
               style={{
                 width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', transition: 'background .15s',
+                background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', transition: 'background .15s',
               }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}
@@ -9837,7 +9837,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
             <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>
               {view === 'home' ? 'Settings' : 'Hired By Team'}
             </div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'color-mix(in srgb, var(--wx-text-muted) 55%, transparent)', marginTop: 2 }}>
               {view === 'home' ? 'Workspace preferences & administration' : 'Manage your team members'}
             </div>
           </div>
@@ -9847,7 +9847,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
             style={{
               width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', transition: 'background .15s',
+              background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', transition: 'background .15s',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}
@@ -9888,9 +9888,9 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
                   }}>{meMeta.label}</span>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: 5, height: 22, padding: '0 10px',
-                    borderRadius: 999, background: 'var(--wx-success-soft)', color: 'var(--wx-success)',
+                    borderRadius: 999, background: 'color-mix(in srgb, var(--wx-success-soft) 10%, transparent)', color: 'var(--wx-success)',
                     fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.4, lineHeight: 1,
-                    border: '1px solid var(--wx-success)',
+                    border: '1px solid color-mix(in srgb, var(--wx-success) 30%, transparent)',
                   }}>
                     <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--wx-success-soft)', display: 'inline-block' }} />
                     Online
@@ -9949,8 +9949,8 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
               onClick={() => { if (window.confirm('Sign out of Wurx Base?')) onLogout(); }}
               style={{
                 width: '100%', marginTop: 22, height: 48,
-                borderRadius: 14, border: '1px solid var(--wx-danger)',
-                background: 'var(--wx-danger-soft)', color: 'var(--wx-danger)',
+                borderRadius: 14, border: '1px solid color-mix(in srgb, var(--wx-danger) 20%, transparent)',
+                background: 'color-mix(in srgb, var(--wx-danger-soft) 6%, transparent)', color: 'var(--wx-danger)',
                 fontSize: 13.5, fontWeight: 700, letterSpacing: '-0.1px',
                 cursor: 'pointer',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -9998,7 +9998,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
                       title="Remove"
                       style={{
                         width: 30, height: 30, borderRadius: 999, border: 0, cursor: 'pointer',
-                        background: 'var(--wx-danger-soft)', color: 'var(--wx-danger)',
+                        background: 'color-mix(in srgb, var(--wx-danger-soft) 8%, transparent)', color: 'var(--wx-danger)',
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                         flexShrink: 0, transition: 'background .15s',
                       }}
@@ -10048,7 +10048,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
 
         {/* Confirm delete */}
         {confirmDel && (
-          <div onClick={() => setConfirmDel(null)} style={{ position: 'absolute', inset: 0, background: 'var(--wx-warning-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 22 }}>
+          <div onClick={() => setConfirmDel(null)} style={{ position: 'absolute', inset: 0, background: 'color-mix(in srgb, var(--wx-warning-soft) 45%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 22 }}>
             <div onClick={e => e.stopPropagation()} style={{ background: 'var(--wx-surface-1)', borderRadius: 18, padding: 22, width: '100%', maxWidth: 340, boxShadow: '0 24px 60px rgba(48,39,28,0.30)' }}>
               <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.3px', color: 'var(--wx-text)' }}>Remove member?</div>
               <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--wx-text-muted)', marginTop: 6, marginBottom: 16 }}>Remove <strong style={{ color: 'var(--wx-text)' }}>{confirmDel.name}</strong> from the team?</div>
@@ -10461,7 +10461,7 @@ function UMDialog({ onClose, title, sub, children }) {
     <div onClick={onClose} style={{
       position: 'absolute', inset: 0, zIndex: 30,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 22, background: 'var(--wx-warning-soft)',
+      padding: 22, background: 'color-mix(in srgb, var(--wx-warning-soft) 45%, transparent)',
       backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
       borderRadius: 22, animation: 'sp-fade 0.18s ease',
     }}>
@@ -10676,7 +10676,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
         position: 'fixed', inset: 0, zIndex: 990,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 16,
-        background: 'var(--wx-warning-soft)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        background: 'color-mix(in srgb, var(--wx-warning-soft) 50%, transparent)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
         fontFamily: 'inherit',
       }}
     >
@@ -10691,18 +10691,18 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
 
         {/* ── Header · dark coffee ── */}
         <div style={{ background: 'var(--wx-warning-soft)', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>Team</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'color-mix(in srgb, var(--wx-text-muted) 55%, transparent)', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <span><strong style={{ color: 'var(--wx-text-muted)' }}>{appUsers.length}</strong> members</span>
               <span><strong style={{ color: 'var(--wx-success)' }}>{onlineCount}</strong> online</span>
               {pendingReqs.length > 0 && <span><strong style={{ color: 'var(--wx-warning)' }}>{pendingReqs.length}</strong> pending</span>}
             </div>
           </div>
-          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
+          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -12134,7 +12134,7 @@ function ActivityLogsPanel({ onClose }) {
         position: 'fixed', inset: 0, zIndex: 1900,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 16,
-        background: 'var(--wx-warning-soft)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        background: 'color-mix(in srgb, var(--wx-warning-soft) 50%, transparent)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
         animation: 'sp-fade 0.22s ease',
         fontFamily: 'inherit',
       }}
@@ -12151,16 +12151,16 @@ function ActivityLogsPanel({ onClose }) {
       >
         {/* ── Header · dark coffee ── */}
         <div style={{ background: 'var(--wx-warning-soft)', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>Activity Logs</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'color-mix(in srgb, var(--wx-text-muted) 55%, transparent)', marginTop: 2 }}>
               {loading ? 'Loading…' : error ? 'Error loading' : `${filtered.length} entr${filtered.length === 1 ? 'y' : 'ies'}`}
             </div>
           </div>
-          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
+          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -12194,7 +12194,7 @@ function ActivityLogsPanel({ onClose }) {
             </div>
           ) : error ? (
             <div style={{ padding: '40px 16px', textAlign: 'center' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 999, background: 'var(--wx-danger-soft)', color: 'var(--wx-danger)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 999, background: 'color-mix(in srgb, var(--wx-danger-soft) 10%, transparent)', color: 'var(--wx-danger)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </div>
               <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.2px' }}>Could not load logs</div>
@@ -12532,7 +12532,7 @@ function BrandCompareModalV2({ creators, allBrands, onClose }) {
   return (
     <div
       className="tw-fixed tw-inset-0 tw-z-[950] tw-flex tw-items-center tw-justify-center tw-p-4 sm:tw-p-6"
-      style={{ animation: 'sp-fade 0.22s ease', background: 'var(--wx-warning-soft)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+      style={{ animation: 'sp-fade 0.22s ease', background: 'color-mix(in srgb, var(--wx-warning-soft) 50%, transparent)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={{
@@ -12544,14 +12544,14 @@ function BrandCompareModalV2({ creators, allBrands, onClose }) {
       }}>
         {/* ── Header · dark coffee ── */}
         <div style={{ background: 'var(--wx-warning-soft)', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3l-7.5 7.5"/><path d="M3 21l7.5-7.5"/></svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>Compare Brands</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>GMV, spend and delivery side by side · {periodLabel()}</div>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'color-mix(in srgb, var(--wx-text-muted) 55%, transparent)', marginTop: 2 }}>GMV, spend and delivery side by side · {periodLabel()}</div>
           </div>
-          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
+          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>

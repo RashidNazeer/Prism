@@ -888,7 +888,7 @@ export default function WurxUI({
               />
               <span style={{ display: 'none', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,var(--wx-surface-2),var(--wx-surface-3))', color: 'var(--wx-warning)', fontSize: 22, fontWeight: 900, letterSpacing: '-0.5px', borderRadius: 13 }}>W</span>
             </span>
-            <span className="pc-brand-sub" style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.2px', color: 'var(--wx-text-muted)', paddingLeft: 12, borderLeft: '1px solid var(--wx-border)', whiteSpace: 'nowrap' }}>Paid Collaborations</span>
+            <span className="pc-brand-sub" style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.2px', color: 'var(--wx-text-muted)', paddingLeft: 12, borderLeft: '1px solid color-mix(in srgb, var(--wx-border) 20%, transparent)', whiteSpace: 'nowrap' }}>Paid Collaborations</span>
           </div>
 
           {/* Centered app title · absolutely centered so side widths never shift it */}
@@ -906,7 +906,7 @@ export default function WurxUI({
               <button onClick={onOpenPendingApprovals} title={`${pendingApprovalsCount} pending`} style={{
                 position: 'relative', width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: 'var(--wx-surface-2)', color: 'var(--wx-warning)', transition: 'background 0.15s',
+                background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-warning)', transition: 'background 0.15s',
               }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.16)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                 <span style={{ position: 'absolute', top: 5, right: 5, minWidth: 17, height: 17, padding: '0 5px', borderRadius: 999, background: 'var(--wx-warning-soft)', color: 'var(--wx-warning)', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{pendingApprovalsCount > 9 ? '9+' : pendingApprovalsCount}</span>
@@ -916,7 +916,7 @@ export default function WurxUI({
             <button className="pc-head-bell" onClick={onOpenNotifications} title="Notifications" style={{
               position: 'relative', width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', transition: 'background 0.15s',
+              background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', transition: 'background 0.15s',
             }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.16)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
               {notificationsCount > 0 && <span style={{ position: 'absolute', top: 8, right: 8, width: 9, height: 9, borderRadius: 999, background: 'var(--wx-danger-soft)', boxShadow: '0 0 0 2px #30271C' }} />}
@@ -924,11 +924,11 @@ export default function WurxUI({
             <button className="pc-head-logs" onClick={onOpenLogs} title="Activity Logs" style={{
               width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              background: 'var(--wx-surface-2)', color: 'var(--wx-text-muted)', transition: 'background 0.15s',
+              background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', transition: 'background 0.15s',
             }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.16)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </button>
-            <div className="pc-head-sep" style={{ width: 1, height: 30, background: 'var(--wx-surface-2)', margin: '0 5px' }} />
+            <div className="pc-head-sep" style={{ width: 1, height: 30, background: 'color-mix(in srgb, var(--wx-surface-2) 18%, transparent)', margin: '0 5px' }} />
             {(() => {
               const isViewer = currentUser?.role === 'viewer';
               const Tag = isViewer ? 'div' : 'button';
@@ -941,7 +941,7 @@ export default function WurxUI({
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 9,
                     height: 44, padding: '0 14px 0 5px', borderRadius: 999,
-                    background: 'var(--wx-surface-2)', border: 0,
+                    background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', border: 0,
                     cursor: interactive ? 'pointer' : 'default',
                     transition: 'background 0.15s ease',
                   }}
@@ -956,7 +956,7 @@ export default function WurxUI({
                   </span>
                   <span className="pc-userchip-txt" style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, alignItems: 'flex-start' }}>
                     <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--wx-text-muted)', letterSpacing: '-0.1px' }}>{currentUser?.display || 'User'}</span>
-                    <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)' }}>{isViewer ? 'Viewer' : (currentUser?.role || '')}</span>
+                    <span style={{ fontSize: 11.5, fontWeight: 600, color: 'color-mix(in srgb, var(--wx-text-muted) 60%, transparent)' }}>{isViewer ? 'Viewer' : (currentUser?.role || '')}</span>
                   </span>
                 </Tag>
               );
@@ -964,7 +964,7 @@ export default function WurxUI({
             <button className="pc-head-out" onClick={onSignOut} title="Sign out" style={{
               width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              background: 'var(--wx-danger-soft)', color: 'var(--wx-danger)', transition: 'background 0.15s',
+              background: 'color-mix(in srgb, var(--wx-danger-soft) 12%, transparent)', color: 'var(--wx-danger)', transition: 'background 0.15s',
             }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,107,107,0.22)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,107,107,0.12)'; }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             </button>
@@ -3448,8 +3448,8 @@ function BudgetEditor({ brand, month: initialMonth, currentBudget, currentRecord
             {restoredFrom && (
               <div style={{
                 marginTop: 6, padding: '6px 10px',
-                background: 'var(--wx-success-soft)',
-                border: '1px solid var(--wx-success)',
+                background: 'color-mix(in srgb, var(--wx-success-soft) 10%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--wx-success) 28%, transparent)',
                 color: 'var(--pc-success-fg)',
                 borderRadius: 10,
                 fontSize: 11.5, fontWeight: 700,
@@ -3926,7 +3926,7 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
                 <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 28, padding: '0 11px 0 12px', borderRadius: 999, background: 'var(--pc-warn-bg)', color: 'var(--pc-warn-fg)', fontSize: 12, fontWeight: 700 }} title={p.url || p.name}>
                   <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--pc-warn-fg)' }} />
                   {p.name || p.url}
-                  <button type="button" onClick={() => removeProd(i)} style={{ width: 18, height: 18, borderRadius: 999, border: 0, background: 'var(--wx-accent)', color: 'inherit', cursor: 'pointer', fontSize: 12, lineHeight: 1, marginLeft: 2 }}>×</button>
+                  <button type="button" onClick={() => removeProd(i)} style={{ width: 18, height: 18, borderRadius: 999, border: 0, background: 'color-mix(in srgb, var(--wx-accent) 8%, transparent)', color: 'inherit', cursor: 'pointer', fontSize: 12, lineHeight: 1, marginLeft: 2 }}>×</button>
                 </span>
               ))}
             </div>
@@ -5126,7 +5126,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
             background: 'var(--pc-accent)', color: 'white',
             fontSize: 12.5, fontWeight: 700,
           }}>
-            <span style={{ minWidth: 18, height: 18, borderRadius: 999, background: 'var(--wx-surface-1)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>{sel.size}</span>
+            <span style={{ minWidth: 18, height: 18, borderRadius: 999, background: 'color-mix(in srgb, var(--wx-surface-1) 25%, transparent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>{sel.size}</span>
             selected
           </span>
 
@@ -7121,7 +7121,7 @@ function PerfBrandSection({ title, zone, tone, list, dragging, isOver, onEnter, 
         fontSize: 11.5, fontWeight: 800, letterSpacing: 1,
         marginBottom: 10,
         boxShadow: '0 1px 2px rgba(15,23,42,0.05), 0 4px 12px -6px rgba(15,23,42,0.10)',
-        border: '1px solid var(--wx-warning)',
+        border: '1px solid color-mix(in srgb, var(--wx-warning) 5%, transparent)',
       }}>
         <span style={{ width: 7, height: 7, borderRadius: 99, background: accent, display: 'inline-block', boxShadow: `0 0 0 3px ${accent}22` }} />
         <span style={{ textTransform: 'uppercase' }}>{title}</span>
@@ -8117,7 +8117,7 @@ function PresenceAvatars({ currentUser }) {
       {extra > 0 && (
         <span style={{
           minWidth: 26, height: 26, padding: '0 6px',
-          borderRadius: 999, background: 'var(--wx-surface-2)',
+          borderRadius: 999, background: 'color-mix(in srgb, var(--wx-surface-2) 18%, transparent)',
           color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 11, fontWeight: 800,
           border: '2px solid var(--wx-warning)',

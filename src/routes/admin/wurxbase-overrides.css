@@ -404,3 +404,46 @@
   background-color: var(--wx-surface-2) !important;
   color: var(--wx-text) !important;
 }
+
+/* ── Creative angle testing: the video rows ──────────────────────────────────
+   Their row hover is `rgba(20,17,12,.014)`, a 1.4% wash. That is a reasonable
+   nudge on their white sheet and it is nothing at all on ours in either theme,
+   so a row that is meant to answer the pointer answers it invisibly. The
+   vendoring pipeline now carries their alpha through faithfully, which is
+   correct and which is exactly why this has to be said here instead: it is a
+   design decision about OUR surfaces, not a mapping of theirs.
+
+   A row hover is `--wx-surface-2`, the same as every other hoverable row in
+   the product. */
+.wurxbase-root.wurxbase-root .cx-tr:hover {
+  background: var(--wx-surface-2);
+}
+
+/* The typed figures. Theirs are white boxes with a 10% neutral hairline, which
+   reskins to a warm hairline on our ground — right, but at 38px tall and
+   13px radius they read as three heavy pills per row rather than as numbers.
+   Quieter box, and the ROW is what separates one video from the next. */
+.wurxbase-root.wurxbase-root .cx-cell {
+  height: 34px;
+  border-radius: 8px;
+  background: var(--wx-surface-1);
+  border-color: var(--wx-border);
+}
+.wurxbase-root.wurxbase-root .cx-cell.auto {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--wx-border) 60%, transparent);
+}
+.wurxbase-root.wurxbase-root .cx-cell:focus-within {
+  border-color: var(--wx-border-interactive);
+  background: var(--wx-surface-2);
+}
+/* A figure is a number: tabular, so columns of them line up down the table.
+   The field is pinned transparent as well: something in our own stack paints a
+   number input, and the result was a filled block sitting inside the bordered
+   box — a box inside a box, three times per row. */
+.wurxbase-root.wurxbase-root .cx-cell input {
+  font-variant-numeric: tabular-nums;
+  background: transparent;
+  appearance: textfield;
+  -webkit-appearance: textfield;
+}

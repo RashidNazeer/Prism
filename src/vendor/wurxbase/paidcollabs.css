@@ -191,7 +191,7 @@
 /* Chips replace the plain description line — no dot separator needed */
 .wurxbase-root .pc-dd-head.pc-dd-head-perf .pc-dd-info::after {display: none;}
 .wurxbase-root .pc-dd-chips {display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap;}
-.wurxbase-root .pc-dd-chip {display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; background: linear-gradient(180deg,var(--wx-bg) 0%,var(--wx-surface-2) 100%); border: 1px solid var(--wx-warning); color: var(--wx-text); font-size: 11px; font-weight: 700; letter-spacing: -0.1px; line-height: 1; white-space: nowrap; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);}
+.wurxbase-root .pc-dd-chip {display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; background: linear-gradient(180deg,var(--wx-bg) 0%,var(--wx-surface-2) 100%); border: 1px solid color-mix(in srgb, var(--wx-warning) 8%, transparent); color: var(--wx-text); font-size: 11px; font-weight: 700; letter-spacing: -0.1px; line-height: 1; white-space: nowrap; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);}
 .wurxbase-root .pc-dd-chip-dark {background: linear-gradient(135deg,var(--wx-warning) 0%,var(--wx-warning) 100%); border-color: transparent; color: var(--wx-on-accent); font-weight: 800; text-transform: uppercase; font-size: 9.5px; letter-spacing: 1px; box-shadow: 0 2px 6px rgba(48,39,28,0.25);}
 .wurxbase-root .pc-dd-chip-gmv {background: var(--wx-success-soft); border-color: color-mix(in srgb, var(--wx-success) 20%, transparent); color: var(--wx-success); font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.2px;}
 /* Gentle hover lift on the identity pill — it's the section's anchor */
@@ -245,15 +245,15 @@ to {opacity: 1; transform: translateY(0);} }
 .wurxbase-root .pc-ct-divider-count {display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 17px; padding: 0 6px; border-radius: 99px; background: color-mix(in srgb, var(--wx-bg) 6%, transparent); font-size: 9.5px; font-weight: 800; font-variant-numeric: tabular-nums;}
 /* Status tints — match WurxStatusDropdown's progress / pending / sent palette.
    Line gradient + pill bg + count badge all colored from the same hue family. */
-.wurxbase-root .pc-ct-divider-pending  .pc-ct-divider-line {background: linear-gradient(to right, transparent, var(--wx-warning-soft) 12%, var(--wx-warning-soft) 88%, transparent); height: 1.5px;}
-.wurxbase-root .pc-ct-divider-pending  .pc-ct-divider-label {background: var(--wx-warning); color: var(--wx-on-accent); border-color: var(--wx-warning);}
-.wurxbase-root .pc-ct-divider-pending  .pc-ct-divider-count {background: var(--wx-warning); color: var(--wx-danger);}
+.wurxbase-root .pc-ct-divider-pending  .pc-ct-divider-line {background: linear-gradient(to right, transparent, color-mix(in srgb, var(--wx-warning-soft) 45%, transparent) 12%, color-mix(in srgb, var(--wx-warning-soft) 45%, transparent) 88%, transparent); height: 1.5px;}
+.wurxbase-root .pc-ct-divider-pending  .pc-ct-divider-label {background: color-mix(in srgb, var(--wx-warning) 12%, transparent); color: var(--wx-on-accent); border-color: color-mix(in srgb, var(--wx-warning) 45%, transparent);}
+.wurxbase-root .pc-ct-divider-pending  .pc-ct-divider-count {background: color-mix(in srgb, var(--wx-warning) 20%, transparent); color: var(--wx-danger);}
 .wurxbase-root .pc-ct-divider-progress .pc-ct-divider-line {background: linear-gradient(to right, transparent, color-mix(in srgb, var(--wx-accent) 38%, transparent) 12%, color-mix(in srgb, var(--wx-accent) 38%, transparent) 88%, transparent); height: 1.5px;}
 .wurxbase-root .pc-ct-divider-progress .pc-ct-divider-label {background: color-mix(in srgb, var(--wx-accent) 10%, transparent); color: var(--pc-accent); border-color: color-mix(in srgb, var(--wx-accent) 42%, transparent);}
 .wurxbase-root .pc-ct-divider-progress .pc-ct-divider-count {background: color-mix(in srgb, var(--wx-accent) 20%, transparent); color: var(--pc-accent);}
-.wurxbase-root .pc-ct-divider-sent     .pc-ct-divider-line {background: linear-gradient(to right, transparent, var(--wx-success-soft) 12%, var(--wx-success-soft) 88%, transparent); height: 1.5px;}
-.wurxbase-root .pc-ct-divider-sent     .pc-ct-divider-label {background: var(--wx-success); color: var(--pc-success-fg); border-color: var(--wx-success);}
-.wurxbase-root .pc-ct-divider-sent     .pc-ct-divider-count {background: var(--wx-success); color: var(--wx-on-accent);}
+.wurxbase-root .pc-ct-divider-sent     .pc-ct-divider-line {background: linear-gradient(to right, transparent, color-mix(in srgb, var(--wx-success-soft) 38%, transparent) 12%, color-mix(in srgb, var(--wx-success-soft) 38%, transparent) 88%, transparent); height: 1.5px;}
+.wurxbase-root .pc-ct-divider-sent     .pc-ct-divider-label {background: color-mix(in srgb, var(--wx-success) 10%, transparent); color: var(--pc-success-fg); border-color: color-mix(in srgb, var(--wx-success) 42%, transparent);}
+.wurxbase-root .pc-ct-divider-sent     .pc-ct-divider-count {background: color-mix(in srgb, var(--wx-success) 24%, transparent); color: var(--wx-on-accent);}
 .wurxbase-root .pc-cname {font-weight: 600;}
 .wurxbase-root .pc-handle {color: var(--pc-text-2); font-size: 13px;}
 .wurxbase-root .pc-content-cell {display: inline-flex; align-items: center; gap: 6px; color: var(--pc-accent); font-weight: 600; font-size: 13px;}
@@ -351,7 +351,7 @@ to {opacity: 1; transform: translateY(0);} }
 /* Matrix wrap · scrolls in BOTH directions. Height grows to fill viewport
    (leaves ~220px for the page chrome above — drilldown header + KPI cards). */
 /* Canvas · v186 · matches Creators tab pc-card · clean white with subtle shadow */
-.wurxbase-root .pc-matrix-wrap {overflow: auto; max-height: calc(100vh - 220px); min-height: 320px; background: var(--wx-surface-1); border-radius: 16px; border: 1px solid var(--wx-accent); box-shadow: 0 1px 2px rgba(15,23,42,0.04),
+.wurxbase-root .pc-matrix-wrap {overflow: auto; max-height: calc(100vh - 220px); min-height: 320px; background: var(--wx-surface-1); border-radius: 16px; border: 1px solid color-mix(in srgb, var(--wx-warning) 6%, transparent); box-shadow: 0 1px 2px rgba(15,23,42,0.04),
     0 14px 34px -22px rgba(15,23,42,0.18); padding: 0;}
 .wurxbase-root .pc-matrix-wrap::-webkit-scrollbar {height: 10px; width: 10px;}
 .wurxbase-root .pc-matrix-wrap::-webkit-scrollbar-thumb {background: var(--pc-divider); border-radius: 8px; border: 2px solid var(--pc-card);}
@@ -368,8 +368,8 @@ to {opacity: 1; transform: translateY(0);} }
    scaled down · 72px tall (was 102) · numbers 14px · compact padding.
    Per-tile dot accent · refined dividers. */
 /* Sticky header · flat pattern (Creators tab style), tiles inside stay premium */
-.wurxbase-root .pc-mx > .pc-mx-row.pc-mx-head {position: sticky; top: 0; z-index: 7; background: radial-gradient(ellipse 700px 200px at 18% 0%, var(--wx-surface-3) 0%, transparent 55%),
-    radial-gradient(ellipse 500px 160px at 88% 100%, var(--wx-surface-3) 0%, transparent 55%),
+.wurxbase-root .pc-mx > .pc-mx-row.pc-mx-head {position: sticky; top: 0; z-index: 7; background: radial-gradient(ellipse 700px 200px at 18% 0%, color-mix(in srgb, var(--wx-surface-3) 22%, transparent) 0%, transparent 55%),
+    radial-gradient(ellipse 500px 160px at 88% 100%, color-mix(in srgb, var(--wx-surface-3) 18%, transparent) 0%, transparent 55%),
     linear-gradient(180deg, var(--wx-surface-1) 0%, var(--wx-bg) 100%); backdrop-filter: saturate(200%) blur(24px); -webkit-backdrop-filter: saturate(200%) blur(24px); box-shadow: inset 0 -1.5px 0 var(--pc-divider),
     0 2px 6px -3px rgba(15,23,42,0.04); border: none; align-items: stretch; min-height: 66px; padding: 6px 12px !important; margin: 0; border-radius: 0;}
 /* Top brand-color hairline stripe · the "luxury detail" */
@@ -380,8 +380,8 @@ to {opacity: 1; transform: translateY(0);} }
 .wurxbase-root .pc-mxh {display: flex; align-items: center; font-size: 12.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; color: var(--pc-text); line-height: 1.2;}
 .wurxbase-root .pc-mxh.pc-mxh-c {justify-content: center; text-align: center;}
 /* ── Compact premium month tile · v186 ── */
-.wurxbase-root .pc-mxh-tile {display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 7px 5px 6px; margin: 3px 3px; background: linear-gradient(180deg, var(--wx-surface-1) 0%, var(--wx-surface-2) 100%); border: 1px solid var(--wx-warning); border-radius: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.65); position: relative; transition: background .22s cubic-bezier(0.4,0,0.2,1), border-color .22s ease, transform .22s ease, box-shadow .22s ease;}
-.wurxbase-root .pc-mxh-tile:hover {background: color-mix(in srgb, var(--wx-bg) 5%, transparent); border-color: var(--wx-warning); transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.7),
+.wurxbase-root .pc-mxh-tile {display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 7px 5px 6px; margin: 3px 3px; background: linear-gradient(180deg, color-mix(in srgb, var(--wx-surface-1) 85%, transparent) 0%, color-mix(in srgb, var(--wx-surface-2) 40%, transparent) 100%); border: 1px solid color-mix(in srgb, var(--wx-warning) 8%, transparent); border-radius: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.65); position: relative; transition: background .22s cubic-bezier(0.4,0,0.2,1), border-color .22s ease, transform .22s ease, box-shadow .22s ease;}
+.wurxbase-root .pc-mxh-tile:hover {background: color-mix(in srgb, var(--wx-bg) 5%, transparent); border-color: color-mix(in srgb, var(--wx-warning) 14%, transparent); transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.7),
     0 6px 14px -6px rgba(48,39,28,0.18);}
 .wurxbase-root .pc-mxh-tile-name {font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.3px; color: var(--wx-text-muted); line-height: 1; display: inline-flex; align-items: center; gap: 4px;}
 .wurxbase-root .pc-mxh-tile-name::before {content: ''; width: 4px; height: 4px; border-radius: 50%; background: linear-gradient(135deg, var(--wx-success) 0%, var(--wx-danger) 100%); opacity: 0.9; box-shadow: 0 0 0 2px rgba(255,255,255,0.6);}
@@ -390,8 +390,8 @@ to {opacity: 1; transform: translateY(0);} }
 .wurxbase-root .pc-mxh-tile-gmv {font-size: 12.5px; font-weight: 900; color: var(--wx-success); font-variant-numeric: tabular-nums; letter-spacing: -0.5px; line-height: 1.05;}
 .wurxbase-root .pc-mxh-tile-ad {font-size: 10px; font-weight: 700; color: var(--wx-danger); font-variant-numeric: tabular-nums; letter-spacing: -0.3px; line-height: 1.05; opacity: 0.92;}
 /* ── Right grand-total tiles · compact premium summary chips ── */
-.wurxbase-root .pc-mxh-tile-total {background: var(--wx-accent-soft); border: 1px solid var(--wx-warning); border-radius: 11px; padding: 7px 5px 7px; gap: 4px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);}
-.wurxbase-root .pc-mxh-tile-total:hover {background: var(--wx-accent-soft); border-color: color-mix(in srgb, var(--wx-warning) 15%, transparent); transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.7),
+.wurxbase-root .pc-mxh-tile-total {background: linear-gradient(180deg, color-mix(in srgb, var(--wx-surface-1) 85%, transparent) 0%, color-mix(in srgb, var(--wx-surface-2) 45%, transparent) 100%); border: 1px solid color-mix(in srgb, var(--wx-warning) 10%, transparent); border-radius: 11px; padding: 7px 5px 7px; gap: 4px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);}
+.wurxbase-root .pc-mxh-tile-total:hover {background: linear-gradient(180deg, var(--wx-surface-1) 0%, color-mix(in srgb, var(--wx-surface-2) 65%, transparent) 100%); border-color: color-mix(in srgb, var(--wx-warning) 15%, transparent); transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.7),
     0 6px 14px -6px rgba(48,39,28,0.20);}
 /* Group-leading brand-gradient accent bar between month/totals sections */
 .wurxbase-root .pc-mxh-tile-total:first-of-type::after {content: ''; position: absolute; top: 12px; bottom: 12px; left: -8px; width: 2px; background: linear-gradient(180deg, var(--wx-success) 0%, var(--wx-warning) 50%, var(--wx-danger) 100%); border-radius: 2px; opacity: 0.6; z-index: 2;}
@@ -409,13 +409,13 @@ to {opacity: 1; transform: translateY(0);} }
 .wurxbase-root .pc-mx-row {padding: 0 14px; font-size: 12.5px; position: relative; background: var(--pc-card); gap: 0; min-height: 38px; transition: background .12s ease;}
 /* ── Frozen left pane (#, Name, Username) ──────────────────────
    Single sticky wrapper · no per-cell math, no row/column overlap. */
-.wurxbase-root .pc-mx-frozen {display: grid; grid-template-columns: 28px 1fr 1fr; align-items: center; gap: 9px; position: sticky; left: 0; z-index: 3; background: var(--wx-surface-1); padding: 4px 12px 4px 0; margin-left: -12px; padding-left: 12px; border-right: 1px solid var(--wx-warning); border-radius: 0; transition: background .15s ease;}
+.wurxbase-root .pc-mx-frozen {display: grid; grid-template-columns: 28px 1fr 1fr; align-items: center; gap: 9px; position: sticky; left: 0; z-index: 3; background: var(--wx-surface-1); padding: 4px 12px 4px 0; margin-left: -12px; padding-left: 12px; border-right: 1px solid color-mix(in srgb, var(--wx-warning) 6%, transparent); border-radius: 0; transition: background .15s ease;}
 .wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot):hover .pc-mx-frozen {background: var(--pc-card-2);}
 /* Soft fade on the right edge while frozen pane sticks */
 .wurxbase-root .pc-mx-frozen::after {content: ''; position: absolute; top: 0; bottom: 0; right: -12px; width: 12px; background: linear-gradient(to right, color-mix(in srgb, var(--wx-accent) 6%, transparent), transparent); pointer-events: none;}
 /* Header version sits ABOVE body frozen panes at the top-left corner */
-.wurxbase-root .pc-mx-frozen-head {z-index: 6; background: radial-gradient(ellipse 260px 140px at 0% 0%, var(--wx-surface-3) 0%, transparent 60%),
-    linear-gradient(180deg, var(--wx-surface-1) 0%, var(--wx-bg) 100%); backdrop-filter: saturate(200%) blur(24px); -webkit-backdrop-filter: saturate(200%) blur(24px); align-items: center !important; border-right: 1px solid var(--wx-warning) !important; border-radius: 0 !important;}
+.wurxbase-root .pc-mx-frozen-head {z-index: 6; background: radial-gradient(ellipse 260px 140px at 0% 0%, color-mix(in srgb, var(--wx-surface-3) 20%, transparent) 0%, transparent 60%),
+    linear-gradient(180deg, var(--wx-surface-1) 0%, var(--wx-bg) 100%); backdrop-filter: saturate(200%) blur(24px); -webkit-backdrop-filter: saturate(200%) blur(24px); align-items: center !important; border-right: 1px solid color-mix(in srgb, var(--wx-warning) 6%, transparent) !important; border-radius: 0 !important;}
 .wurxbase-root .pc-mx-frozen-head::after {background: linear-gradient(to right, color-mix(in srgb, var(--wx-warning) 6%, transparent), transparent) !important;}
 /* Hover keeps the frozen pane bg in sync */
 .wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot):hover .pc-mx-frozen {background: var(--pc-card-2);}
@@ -442,14 +442,14 @@ to {opacity: 1; transform: translateY(0);}
 .wurxbase-root .pc-mx-num {text-align: center; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 11.5px; white-space: nowrap; letter-spacing: -0.2px;}
 .wurxbase-root .pc-mx-num.strong {font-weight: 900; font-size: 15.5px; letter-spacing: -0.55px; display: flex; align-items: center; justify-content: center; height: 100%; transition: transform .22s cubic-bezier(0.4,0,0.2,1);}
 /* Right 3 total cells · HERO STATS in matching rounded containers */
-.wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot) > div:nth-last-child(3), .wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot) > div:nth-last-child(2), .wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot) > div:nth-last-child(1) {font-size: 13.5px; font-weight: 900; letter-spacing: -0.5px; margin: 3px 3px; padding: 0 5px; border-radius: 9px; background: linear-gradient(180deg, var(--wx-surface-2) 0%, var(--wx-surface-2) 100%); border: 1px solid var(--wx-warning); box-shadow: inset 0 1px 0 rgba(255,255,255,0.55); transition: background .18s ease, transform .22s cubic-bezier(0.4,0,0.2,1);}
-.wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot):hover > div:nth-last-child(3), .wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot):hover > div:nth-last-child(2), .wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot):hover > div:nth-last-child(1) {background: linear-gradient(180deg, var(--wx-surface-2) 0%, var(--wx-surface-2) 100%);}
+.wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot) > div:nth-last-child(3), .wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot) > div:nth-last-child(2), .wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot) > div:nth-last-child(1) {font-size: 13.5px; font-weight: 900; letter-spacing: -0.5px; margin: 3px 3px; padding: 0 5px; border-radius: 9px; background: linear-gradient(180deg, color-mix(in srgb, var(--wx-surface-2) 38%, transparent) 0%, color-mix(in srgb, var(--wx-surface-2) 14%, transparent) 100%); border: 1px solid color-mix(in srgb, var(--wx-warning) 6%, transparent); box-shadow: inset 0 1px 0 rgba(255,255,255,0.55); transition: background .18s ease, transform .22s cubic-bezier(0.4,0,0.2,1);}
+.wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot):hover > div:nth-last-child(3), .wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot):hover > div:nth-last-child(2), .wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot):hover > div:nth-last-child(1) {background: linear-gradient(180deg, color-mix(in srgb, var(--wx-surface-2) 55%, transparent) 0%, color-mix(in srgb, var(--wx-surface-2) 22%, transparent) 100%);}
 .wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot):hover > div:nth-last-child(2) {transform: scale(1.04);}
 .wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot):hover > div:nth-last-child(1) {transform: scale(1.04);}
 /* Rightmost cell rounds the right edge of the card */
 .wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot) > div:nth-last-child(1) {border-radius: 0 14px 14px 0;}
 /* Compact Numbers-style pill inputs · v186 */
-.wurxbase-root .pc-mx-input {width: 100%; min-width: 0; height: 26px; box-sizing: border-box; border: 1px solid transparent; border-radius: 7px; background: linear-gradient(180deg, var(--wx-surface-2) 0%, var(--wx-surface-2) 100%); padding: 0 6px; font-size: 11.5px; font-weight: 800; text-align: center; color: var(--wx-success); outline: none; font-variant-numeric: tabular-nums; letter-spacing: -0.2px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.60),
+.wurxbase-root .pc-mx-input {width: 100%; min-width: 0; height: 26px; box-sizing: border-box; border: 1px solid transparent; border-radius: 7px; background: linear-gradient(180deg, color-mix(in srgb, var(--wx-surface-2) 55%, transparent) 0%, color-mix(in srgb, var(--wx-surface-2) 30%, transparent) 100%); padding: 0 6px; font-size: 11.5px; font-weight: 800; text-align: center; color: var(--wx-success); outline: none; font-variant-numeric: tabular-nums; letter-spacing: -0.2px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.60),
     inset 0 -1px 0 rgba(48,39,28,0.03); transition: all .18s cubic-bezier(0.4,0,0.2,1); -moz-appearance: textfield; appearance: textfield;}
 .wurxbase-root .pc-mx-input.ad {background: linear-gradient(180deg, color-mix(in srgb, var(--wx-danger-soft) 60%, transparent) 0%, color-mix(in srgb, var(--wx-danger-soft) 30%, transparent) 100%); color: var(--wx-danger);}
 .wurxbase-root .pc-mx-input::-webkit-outer-spin-button, .wurxbase-root .pc-mx-input::-webkit-inner-spin-button {-webkit-appearance: none; margin: 0;}
@@ -472,8 +472,8 @@ to {opacity: 1; transform: translateY(0);}
 .wurxbase-root .pc-mx-foot:hover {transform: none; box-shadow: none;}
 /* ── Month-pair · v183 · each month is a VISIBLE ROUNDED CONTAINER so
    May's inputs are clearly separated from June's inputs, and so on. ── */
-.wurxbase-root .pc-mx-month-pair {display: grid; grid-template-columns: 1fr 1fr; gap: 4px; align-items: center; padding: 3px 5px; margin: 3px 3px; background: linear-gradient(180deg, var(--wx-surface-2) 0%, var(--wx-surface-2) 100%); border: 1px solid var(--wx-warning); border-radius: 9px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.55); transition: background .18s ease, border-color .18s ease;}
-.wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot):hover .pc-mx-month-pair {background: linear-gradient(180deg, var(--wx-surface-2) 0%, var(--wx-surface-2) 100%); border-color: var(--wx-warning);}
+.wurxbase-root .pc-mx-month-pair {display: grid; grid-template-columns: 1fr 1fr; gap: 4px; align-items: center; padding: 3px 5px; margin: 3px 3px; background: linear-gradient(180deg, color-mix(in srgb, var(--wx-surface-2) 38%, transparent) 0%, color-mix(in srgb, var(--wx-surface-2) 14%, transparent) 100%); border: 1px solid color-mix(in srgb, var(--wx-warning) 6%, transparent); border-radius: 9px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.55); transition: background .18s ease, border-color .18s ease;}
+.wurxbase-root .pc-mx > .pc-mx-row:not(.pc-mx-head):not(.pc-mx-foot):hover .pc-mx-month-pair {background: linear-gradient(180deg, color-mix(in srgb, var(--wx-surface-2) 55%, transparent) 0%, color-mix(in srgb, var(--wx-surface-2) 22%, transparent) 100%); border-color: color-mix(in srgb, var(--wx-warning) 10%, transparent);}
 .wurxbase-root .pc-mx-month-pair .pc-mx-input {height: 28px; background: transparent; border: 1px solid transparent; color: var(--wx-success); font-weight: 600; font-size: 12px; border-radius: 7px; padding: 0 6px;}
 .wurxbase-root .pc-mx-month-pair .pc-mx-input::placeholder {color: var(--pc-text-3); font-weight: 500;}
 /* Quiet hint: a calm hairline border on hover so users can find cells */
@@ -1270,7 +1270,7 @@ to {transform: rotate(360deg);} }
     0 10px 28px -18px rgba(15,23,42,0.14); overflow: hidden; padding: 16px 18px 15px;}
 /* ambient corner glow in the card's own color */
 .wurxbase-root .pc-kpi::before {content: ''; position: absolute; inset: 0; background: radial-gradient(150px 100px at 10% 0%,
-    color-mix(in srgb, var(--kpi-color, var(--wx-border)) 13%, transparent), transparent 72%); pointer-events: none;}
+    color-mix(in srgb, var(--kpi-color, color-mix(in srgb, var(--kpi-color, var(--wx-border)) 12%, transparent)) 13%, transparent), transparent 72%); pointer-events: none;}
 .wurxbase-root .pc-kpi > * {position: relative; z-index: 1;}
 .wurxbase-root .pc-kpi:hover {transform: translateY(-2px); border-color: color-mix(in srgb, var(--wx-warning) 10%, transparent); box-shadow: inset 0 1px 0 rgba(255,255,255,0.85),
     0 1px 2px rgba(15,23,42,0.04),
@@ -1344,7 +1344,7 @@ to {transform: rotate(360deg);} }
 .wurxbase-root .pc-cf-paper {background: var(--wx-surface-1); border: 1px solid color-mix(in srgb, var(--wx-warning) 10%, transparent); border-radius: 14px; box-shadow: 0 1px 2px rgba(15,23,42,0.05),
     0 14px 34px -20px rgba(15,23,42,0.20); padding: 26px 28px 20px; min-width: 0;}
 .wurxbase-root .pc-cf-papertitle {text-align: center; font-size: 16.5px; font-weight: 900; letter-spacing: 0.4px; color: var(--wx-text); margin-bottom: 10px;}
-.wurxbase-root .pc-cf-papermeta {display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; font-size: 11.5px; color: var(--wx-text); padding-bottom: 14px; margin-bottom: 16px; border-bottom: 1px solid var(--wx-warning);}
+.wurxbase-root .pc-cf-papermeta {display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; font-size: 11.5px; color: var(--wx-text); padding-bottom: 14px; margin-bottom: 16px; border-bottom: 1px solid color-mix(in srgb, var(--wx-warning) 10%, transparent);}
 .wurxbase-root .pc-cf-papermeta b {color: var(--wx-text);}
 /* sections · seamless inline editing */
 .wurxbase-root .pc-cf-section {margin-bottom: 14px;}
@@ -1355,7 +1355,7 @@ to {transform: rotate(360deg);} }
 .wurxbase-root .pc-cf-text:hover {background: var(--wx-accent-soft) !important;}
 .wurxbase-root .pc-cf-text:focus {background: var(--wx-success-soft) !important; border-color: var(--wx-success) !important; box-shadow: 0 0 0 4px rgba(14,122,58,0.10) !important;}
 /* signature preview strip */
-.wurxbase-root .pc-cf-sig {margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--wx-warning); display: flex; flex-direction: column; gap: 6px; font-size: 11.5px; color: var(--wx-text);}
+.wurxbase-root .pc-cf-sig {margin-top: 6px; padding-top: 14px; border-top: 1px solid color-mix(in srgb, var(--wx-warning) 10%, transparent); display: flex; flex-direction: column; gap: 6px; font-size: 11.5px; color: var(--wx-text);}
 .wurxbase-root .pc-cf-sig b {color: var(--wx-text);}
 /* footer · sticky action bar */
 .wurxbase-root .pc-cf-foot {position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; gap: 8px; padding: 14px 20px; background: color-mix(in srgb, var(--wx-surface-1) 94%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-top: 1px solid color-mix(in srgb, var(--wx-warning) 8%, transparent); border-radius: 0 0 22px 22px;}
@@ -1386,7 +1386,7 @@ to {transform: rotate(360deg);} }
 /* sidebar groups */
 .wurxbase-root .pc-cf-group {margin-bottom: 14px;}
 .wurxbase-root .pc-cf-group:last-of-type {margin-bottom: 6px;}
-.wurxbase-root .pc-cf-group .pc-cf-sidetitle {margin-bottom: 7px; padding-bottom: 5px; border-bottom: 1px solid var(--wx-warning);}
+.wurxbase-root .pc-cf-group .pc-cf-sidetitle {margin-bottom: 7px; padding-bottom: 5px; border-bottom: 1px solid color-mix(in srgb, var(--wx-warning) 7%, transparent);}
 /* remove the old auto badge noise · only custom/editing states show */
 .wurxbase-root .pc-cf-secauto {display: none;}
 /* paper breathing */
@@ -1414,7 +1414,7 @@ to {transform: rotate(360deg);} }
 /* ════════ v225 · CONTRACT EDITOR · sidebar + paper polish ════════ */
 /* ── Sidebar group titles · line — pill — line ── */
 .wurxbase-root .pc-cf-group .pc-cf-sidetitle {display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 0; border-bottom: none;}
-.wurxbase-root .pc-cf-group .pc-cf-sidetitle::before, .wurxbase-root .pc-cf-group .pc-cf-sidetitle::after {content: ''; flex: 1; height: 1px; background: var(--wx-warning);}
+.wurxbase-root .pc-cf-group .pc-cf-sidetitle::before, .wurxbase-root .pc-cf-group .pc-cf-sidetitle::after {content: ''; flex: 1; height: 1px; background: color-mix(in srgb, var(--wx-warning) 13%, transparent);}
 .wurxbase-root .pc-cf-group .pc-cf-sidetitle span {display: inline-flex; align-items: center; height: 22px; padding: 0 12px; border-radius: 999px; background: linear-gradient(180deg,var(--wx-surface-1) 0%,var(--wx-warning-soft) 100%); border: 1px solid color-mix(in srgb, var(--wx-warning) 12%, transparent); color: var(--wx-text); font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.7); white-space: nowrap;}
 /* sidebar surface refined */
 .wurxbase-root .pc-cf-side {background: linear-gradient(180deg,var(--wx-warning-soft) 0%,var(--wx-warning-soft) 100%); border-color: color-mix(in srgb, var(--wx-warning) 9%, transparent);}
@@ -1486,7 +1486,7 @@ to {transform: rotate(360deg);} }
     0 12px 30px -18px rgba(15,23,42,0.16); overflow: hidden;}
 /* ambient corner glow (kpi color) · slightly stronger */
 .wurxbase-root .pc-kpi::before {content: ''; position: absolute; inset: 0; background: radial-gradient(170px 110px at 8% 0%,
-    color-mix(in srgb, var(--kpi-color, var(--wx-border)) 16%, transparent), transparent 70%); pointer-events: none;}
+    color-mix(in srgb, var(--kpi-color, color-mix(in srgb, var(--kpi-color, var(--wx-border)) 12%, transparent)) 16%, transparent), transparent 70%); pointer-events: none;}
 /* decorative ring · bottom-right geometry accent */
 .wurxbase-root .pc-kpi::after {content: ''; position: absolute; right: -26px; bottom: -34px; width: 110px; height: 110px; border-radius: 50%; border: 1.5px solid color-mix(in srgb, var(--kpi-color, var(--wx-border)) 16%, transparent); pointer-events: none;}
 .wurxbase-root .pc-kpi > * {position: relative; z-index: 1;}
@@ -2747,14 +2747,14 @@ to {opacity: 1;} }
 /* ═══════════════════════════════════════════════════════════════
    v290 · Unique Creators overlay (one row per person)
    ═══════════════════════════════════════════════════════════════ */
-.wurxbase-root .pc-uc-root {position: fixed; inset: 0; z-index: 1950; display: flex; align-items: center; justify-content: center; padding: 20px; background: var(--wx-accent); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: pc-fade .2s ease;}
+.wurxbase-root .pc-uc-root {position: fixed; inset: 0; z-index: 1950; display: flex; align-items: center; justify-content: center; padding: 20px; background: color-mix(in srgb, var(--wx-accent) 50%, transparent); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: pc-fade .2s ease;}
 .wurxbase-root .pc-uc-box {width: 100%; max-width: 1180px; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; background: var(--pc-bg, var(--wx-bg)); border-radius: 22px; box-shadow: 0 32px 80px rgba(48,39,28,.28), 0 8px 24px rgba(48,39,28,.10); animation: pc-rise .3s var(--pc-ease);}
 .wurxbase-root .pc-uc-top {position: relative; padding: 16px 22px 13px; background: var(--wx-warning); color: var(--wx-on-accent);}
 .wurxbase-root .pc-uc-ttl {display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 800; letter-spacing: -.4px;}
-.wurxbase-root .pc-uc-ttl b {min-width: 30px; height: 24px; padding: 0 9px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--wx-surface-2); color: var(--wx-on-accent); font-size: 12.5px; font-weight: 800; font-variant-numeric: tabular-nums;}
-.wurxbase-root .pc-uc-sub {margin-top: 3px; font-size: 11.5px; font-weight: 600; color: var(--wx-text-muted);}
-.wurxbase-root .pc-uc-x {position: absolute; top: 15px; right: 18px; width: 32px; height: 32px; border-radius: 999px; border: 0; cursor: pointer; background: var(--wx-surface-2); color: var(--wx-on-accent); display: inline-flex; align-items: center; justify-content: center; transition: background .15s;}
-.wurxbase-root .pc-uc-x:hover {background: var(--wx-surface-2);}
+.wurxbase-root .pc-uc-ttl b {min-width: 30px; height: 24px; padding: 0 9px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--wx-surface-2) 14%, transparent); color: var(--wx-on-accent); font-size: 12.5px; font-weight: 800; font-variant-numeric: tabular-nums;}
+.wurxbase-root .pc-uc-sub {margin-top: 3px; font-size: 11.5px; font-weight: 600; color: color-mix(in srgb, var(--wx-text-muted) 55%, transparent);}
+.wurxbase-root .pc-uc-x {position: absolute; top: 15px; right: 18px; width: 32px; height: 32px; border-radius: 999px; border: 0; cursor: pointer; background: color-mix(in srgb, var(--wx-surface-2) 10%, transparent); color: var(--wx-on-accent); display: inline-flex; align-items: center; justify-content: center; transition: background .15s;}
+.wurxbase-root .pc-uc-x:hover {background: color-mix(in srgb, var(--wx-surface-2) 20%, transparent);}
 .wurxbase-root .pc-uc-tools {display: flex; align-items: center; gap: 10px; padding: 12px 22px; background: var(--wx-surface-1); border-bottom: 1px solid var(--pc-divider);}
 .wurxbase-root .pc-uc-search {flex: 1; min-width: 0; height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--pc-divider); background: var(--pc-card-2); font-family: inherit; font-size: 13px; font-weight: 600; color: var(--pc-text); outline: none; transition: border-color .15s, box-shadow .15s, background .15s;}
 .wurxbase-root .pc-uc-search:focus {border-color: var(--wx-warning); background: var(--wx-surface-1); box-shadow: 0 0 0 3px rgba(48,39,28,.08);}
@@ -2775,12 +2775,12 @@ to {opacity: 1;} }
 .wurxbase-root .pc-uc-foot {display: flex; align-items: center; gap: 9px; padding: 12px 22px; background: var(--pc-card-2); border-top: 1px solid var(--pc-divider);}
 .wurxbase-root .pc-uc-footlab {flex: 1; font-size: 12px; font-weight: 700; color: var(--pc-text-2); font-variant-numeric: tabular-nums;}
 .wurxbase-root .pc-uc-btn {height: 34px; padding: 0 15px; border-radius: 999px; cursor: pointer; font-family: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: -.1px; border: 1px solid var(--pc-divider); background: var(--wx-surface-1); color: var(--pc-text); transition: transform .12s, background .15s, border-color .15s;}
-.wurxbase-root .pc-uc-btn:hover {transform: translateY(-1px); border-color: var(--wx-accent);}
+.wurxbase-root .pc-uc-btn:hover {transform: translateY(-1px); border-color: color-mix(in srgb, var(--wx-accent) 28%, transparent);}
 .wurxbase-root .pc-uc-btn.primary {border: 0; background: var(--wx-warning); color: var(--wx-on-accent);}
 .wurxbase-root .pc-uc-btn.primary:hover {background: var(--wx-info);}
 /* the pill that opens all this · make it read as pressable */
 .wurxbase-root .pc-kpipill-btn {transition: transform .12s, box-shadow .15s, border-color .15s;}
-.wurxbase-root .pc-kpipill-btn:hover {transform: translateY(-1px); border-color: var(--wx-accent); box-shadow: 0 6px 16px rgba(48,39,28,.10);}
+.wurxbase-root .pc-kpipill-btn:hover {transform: translateY(-1px); border-color: color-mix(in srgb, var(--wx-accent) 26%, transparent); box-shadow: 0 6px 16px rgba(48,39,28,.10);}
 .wurxbase-root .pc-kpipill-btn:active {transform: translateY(0) scale(.98);}
 
 @media (max-width:900px){
@@ -2836,11 +2836,11 @@ to {opacity: 1;} }
 .wurxbase-root .pc-uc-flabel {flex-shrink: 0; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; color: var(--pc-text-3, var(--wx-text-muted));}
 .wurxbase-root .pc-uc-seg {display: flex; align-items: center; gap: 4px; flex-wrap: wrap; padding: 4px; border-radius: 999px; background: var(--pc-card-2); border: 1px solid var(--pc-divider);}
 .wurxbase-root .pc-uc-segbtn {display: inline-flex; align-items: center; gap: 5px; height: 27px; padding: 0 11px; border-radius: 999px; border: 0; cursor: pointer; background: transparent; color: var(--pc-text-2); font-family: inherit; font-size: 11.5px; font-weight: 800; letter-spacing: -.1px; transition: background .14s, color .14s, transform .12s;}
-.wurxbase-root .pc-uc-segbtn:hover {color: var(--pc-text); background: var(--wx-accent);}
+.wurxbase-root .pc-uc-segbtn:hover {color: var(--pc-text); background: color-mix(in srgb, var(--wx-accent) 5%, transparent);}
 .wurxbase-root .pc-uc-segbtn:active {transform: scale(.96);}
-.wurxbase-root .pc-uc-segbtn b {min-width: 15px; padding: 0 4px; height: 15px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--wx-accent); color: inherit; font-size: 9.5px; font-weight: 800; font-variant-numeric: tabular-nums;}
+.wurxbase-root .pc-uc-segbtn b {min-width: 15px; padding: 0 4px; height: 15px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--wx-accent) 9%, transparent); color: inherit; font-size: 9.5px; font-weight: 800; font-variant-numeric: tabular-nums;}
 .wurxbase-root .pc-uc-segbtn.on {background: var(--wx-warning); color: var(--wx-on-accent); box-shadow: 0 2px 8px rgba(48,39,28,.24);}
-.wurxbase-root .pc-uc-segbtn.on b {background: var(--wx-surface-2);}
+.wurxbase-root .pc-uc-segbtn.on b {background: color-mix(in srgb, var(--wx-surface-2) 22%, transparent);}
 /* each tier keeps the colour it already has on the row badges, so the
    filter and the table read as the same language */
 .wurxbase-root .pc-uc-segbtn.on.t-l0 {background: var(--wx-accent);}
@@ -2851,7 +2851,7 @@ to {opacity: 1;} }
 .wurxbase-root .pc-uc-segbtn.on.t-l5 {background: var(--wx-warning-soft);}
 .wurxbase-root .pc-uc-segbtn.on.t-l6 {background: var(--wx-danger);}
 .wurxbase-root .pc-uc-reset {flex-shrink: 0; height: 27px; padding: 0 12px; border-radius: 999px; cursor: pointer; border: 1px dashed var(--pc-divider); background: transparent; color: var(--pc-text-2); font-family: inherit; font-size: 11.5px; font-weight: 700;}
-.wurxbase-root .pc-uc-reset:hover {color: var(--pc-text); border-color: var(--wx-accent);}
+.wurxbase-root .pc-uc-reset:hover {color: var(--pc-text); border-color: color-mix(in srgb, var(--wx-accent) 30%, transparent);}
 /* ── table polish ── */
 .wurxbase-root .pc-uc-head, .wurxbase-root .pc-uc-row {padding: 0 20px;}
 .wurxbase-root .pc-uc-head {height: 42px;}
@@ -2944,7 +2944,7 @@ to {opacity: 1;} }
 .wurxbase-root .pf-kpis {display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 12px;}
 .wurxbase-root .pf-kpi {position: relative; overflow: hidden; background: var(--pc-card); border: 1px solid var(--pc-divider); border-radius: 16px; padding: 15px 17px 14px; transition: transform .2s var(--pc-ease), box-shadow .2s ease, border-color .15s;}
 .wurxbase-root .pf-kpi::before {content: ''; position: absolute; left: 0; top: 0; width: 100%; height: 3px; background: var(--pf-accent,var(--wx-warning)); opacity: .85;}
-.wurxbase-root .pf-kpi:hover {transform: translateY(-2px); box-shadow: 0 12px 28px rgba(15,23,42,.07); border-color: var(--wx-accent);}
+.wurxbase-root .pf-kpi:hover {transform: translateY(-2px); box-shadow: 0 12px 28px rgba(15,23,42,.07); border-color: color-mix(in srgb, var(--wx-accent) 14%, transparent);}
 .wurxbase-root .pf-kpi-l {font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.1px; color: var(--pc-text-2);}
 .wurxbase-root .pf-kpi-v {margin-top: 7px; font-size: 27px; font-weight: 900; letter-spacing: -1px; color: var(--pc-text); font-variant-numeric: tabular-nums; line-height: 1.05;}
 .wurxbase-root .pf-kpi-f {margin-top: 8px; display: flex; align-items: center; gap: 7px; flex-wrap: wrap;}
@@ -2968,7 +2968,7 @@ to {opacity: 1;} }
 .wurxbase-root .pf-ax {font-size: 9.5px; font-weight: 700; fill: var(--wx-text-muted);}
 .wurxbase-root .pf-ax.ad {fill: var(--wx-text-muted);}
 .wurxbase-root .pf-bar {fill: var(--wx-text-muted);}
-.wurxbase-root .pf-area {fill: var(--wx-accent); stroke: none;}
+.wurxbase-root .pf-area {fill: color-mix(in srgb, var(--wx-accent) 10%, transparent); stroke: none;}
 .wurxbase-root .pf-line {fill: none; stroke: var(--wx-accent); stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round;}
 .wurxbase-root .pf-dot {fill: var(--wx-text-muted); stroke: var(--wx-accent); stroke-width: 2.4;}
 .wurxbase-root .pf-dot.now {fill: var(--wx-text-muted); stroke: var(--wx-text-muted); stroke-width: 3;}
@@ -3057,7 +3057,7 @@ to {opacity: 1;} }
 .wurxbase-root .rbt-row {display: grid; grid-template-columns: 38px minmax(190px,1.5fr) 1.05fr .8fr .62fr .8fr .9fr .95fr; align-items: center; gap: 0; min-width: 900px; padding: 0 20px; text-align: center;}
 .wurxbase-root .rbt-row > * {padding: 0 8px; min-width: 0;}
 .wurxbase-root .rbt-l {text-align: left;}
-.wurxbase-root .rbt-hrow {height: 38px; background: var(--wx-surface-1); border-top: 1px solid var(--wx-accent); border-bottom: 1px solid var(--wx-accent); font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: .8px; color: var(--wx-text-faint);}
+.wurxbase-root .rbt-hrow {height: 38px; background: var(--wx-surface-1); border-top: 1px solid color-mix(in srgb, var(--wx-accent) 7%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--wx-accent) 7%, transparent); font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: .8px; color: var(--wx-text-faint);}
 .wurxbase-root .rbt-brow {min-height: 56px; border-bottom: 1px solid var(--wx-border); font-size: 12.5px; transition: background .13s;}
 .wurxbase-root .rbt-brow:hover {background: var(--wx-surface-1);}
 .wurxbase-root .rbt-rank {font-size: 11px; font-weight: 800; color: var(--wx-text-faint); font-variant-numeric: tabular-nums;}
@@ -3082,7 +3082,7 @@ to {opacity: 1;} }
 .wurxbase-root .rbt-pl.pos {color: var(--wx-success);}
 .wurxbase-root .rbt-pl.neg {color: var(--wx-danger);}
 .wurxbase-root .rbt-dash {color: var(--wx-text-muted); font-weight: 600;}
-.wurxbase-root .rbt-trow {min-height: 52px; background: var(--wx-surface-1); border-top: 1.5px solid var(--wx-accent); font-size: 13px; font-weight: 900;}
+.wurxbase-root .rbt-trow {min-height: 52px; background: var(--wx-surface-1); border-top: 1.5px solid color-mix(in srgb, var(--wx-accent) 12%, transparent); font-size: 13px; font-weight: 900;}
 .wurxbase-root .rbt-trow .rbt-l {font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: var(--wx-text-faint);}
 /* ═══════════════════════════════════════════════════════════════
    v301 · Reporting · Now Brief + bento
@@ -3092,13 +3092,13 @@ to {opacity: 1;} }
    ═══════════════════════════════════════════════════════════════ */
 /* ── the brief ── */
 .wurxbase-root .rb-brief {position: relative; overflow: hidden; border-radius: 28px; padding: 22px 26px 20px; background: linear-gradient(135deg,var(--wx-accent) 0%,var(--wx-accent) 52%,var(--wx-info) 100%); color: var(--wx-on-accent); box-shadow: 0 18px 44px -22px rgba(42,33,24,.75);}
-.wurxbase-root .rb-brief-glow {position: absolute; inset: auto -60px -140px auto; width: 340px; height: 340px; border-radius: 999px; pointer-events: none; background: radial-gradient(circle, var(--wx-success) 0%, var(--wx-success) 70%);}
+.wurxbase-root .rb-brief-glow {position: absolute; inset: auto -60px -140px auto; width: 340px; height: 340px; border-radius: 999px; pointer-events: none; background: radial-gradient(circle, color-mix(in srgb, var(--wx-success-soft) 30%, transparent) 0%, transparent 70%);}
 .wurxbase-root .rb-brief-in {position: relative;}
-.wurxbase-root .rb-brief-eyebrow {display: inline-block; font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.4px; color: var(--wx-text-muted);}
+.wurxbase-root .rb-brief-eyebrow {display: inline-block; font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.4px; color: color-mix(in srgb, var(--wx-text-muted) 50%, transparent);}
 .wurxbase-root .rb-brief-line {margin: 7px 0 0; font-size: clamp(20px,2.4vw,29px); font-weight: 900; letter-spacing: -1px; line-height: 1.12; color: var(--wx-text-muted); max-width: 22ch;}
-.wurxbase-root .rb-brief-sub {margin: 7px 0 0; font-size: 13px; font-weight: 600; line-height: 1.5; color: var(--wx-text-muted); max-width: 62ch;}
+.wurxbase-root .rb-brief-sub {margin: 7px 0 0; font-size: 13px; font-weight: 600; line-height: 1.5; color: color-mix(in srgb, var(--wx-text-muted) 72%, transparent); max-width: 62ch;}
 .wurxbase-root .rb-brief-chips {display: flex; flex-wrap: wrap; gap: 7px; margin-top: 15px;}
-.wurxbase-root .rb-chip {display: inline-flex; align-items: baseline; gap: 5px; height: 29px; padding: 0 13px; border-radius: 999px; background: var(--wx-surface-2); border: 1px solid var(--wx-border); font-size: 10.5px; font-weight: 700; color: var(--wx-text-muted); backdrop-filter: blur(6px);}
+.wurxbase-root .rb-chip {display: inline-flex; align-items: baseline; gap: 5px; height: 29px; padding: 0 13px; border-radius: 999px; background: color-mix(in srgb, var(--wx-surface-2) 9%, transparent); border: 1px solid color-mix(in srgb, var(--wx-border) 13%, transparent); font-size: 10.5px; font-weight: 700; color: color-mix(in srgb, var(--wx-text-muted) 62%, transparent); backdrop-filter: blur(6px);}
 .wurxbase-root .rb-chip b {font-size: 13px; font-weight: 900; color: var(--wx-text-muted); font-variant-numeric: tabular-nums;}
 .wurxbase-root .rb-chip.good b {color: var(--wx-success);}
 .wurxbase-root .rb-chip.bad b {color: var(--wx-text-muted);}
@@ -3189,35 +3189,35 @@ to {opacity: 1;} }
    sentence, the hero figure, the chart and the supporting metrics, and
    each number appears exactly once.
    ═══════════════════════════════════════════════════════════════ */
-.wurxbase-root .rp-board {position: relative; overflow: hidden; border-radius: 30px; background: radial-gradient(120% 140% at 88% -10%, var(--wx-accent) 0%, var(--wx-accent) 58%),
-    linear-gradient(158deg,var(--wx-surface-3) 0%,var(--wx-info) 60%,var(--wx-info) 100%); box-shadow: 0 26px 60px -30px rgba(28,21,14,.85), inset 0 1px 0 rgba(245,233,214,.06); color: var(--wx-on-accent);}
-.wurxbase-root .rp-board-aura {position: absolute; right: -90px; top: -120px; width: 420px; height: 420px; border-radius: 999px; pointer-events: none; background: radial-gradient(circle, var(--wx-surface-3) 0%, var(--wx-surface-3) 68%);}
+.wurxbase-root .rp-board {position: relative; overflow: hidden; border-radius: 30px; background: radial-gradient(120% 140% at 88% -10%, var(--wx-warning-soft) 0%, transparent 58%),
+    linear-gradient(158deg,var(--wx-surface-3) 0%,var(--wx-warning-soft) 60%,var(--wx-warning-soft) 100%); box-shadow: 0 26px 60px -30px rgba(28,21,14,.85), inset 0 1px 0 rgba(245,233,214,.06); color: var(--wx-on-accent);}
+.wurxbase-root .rp-board-aura {position: absolute; right: -90px; top: -120px; width: 420px; height: 420px; border-radius: 999px; pointer-events: none; background: radial-gradient(circle, color-mix(in srgb, var(--wx-success-soft) 20%, transparent) 0%, transparent 68%);}
 .wurxbase-root .rp-board-top {position: relative; display: grid; grid-template-columns: minmax(300px,0.86fr) minmax(0,1.14fr); gap: 26px; align-items: center; padding: 26px 30px 20px;}
 .wurxbase-root .rp-board-say {min-width: 0;}
-.wurxbase-root .rp-eyebrow {display: inline-flex; align-items: center; height: 23px; padding: 0 11px; border-radius: 999px; background: var(--wx-surface-2); border: 1px solid var(--wx-border); font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.3px; color: var(--wx-text-muted);}
+.wurxbase-root .rp-eyebrow {display: inline-flex; align-items: center; height: 23px; padding: 0 11px; border-radius: 999px; background: color-mix(in srgb, var(--wx-surface-2) 8%, transparent); border: 1px solid color-mix(in srgb, var(--wx-border) 11%, transparent); font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.3px; color: color-mix(in srgb, var(--wx-text-muted) 62%, transparent);}
 .wurxbase-root .rp-say {margin: 12px 0 0; font-size: clamp(21px,2.5vw,31px); font-weight: 900; letter-spacing: -1.1px; line-height: 1.1; color: var(--wx-text-muted); max-width: 20ch;}
-.wurxbase-root .rp-say-sub {margin: 8px 0 0; font-size: 12.5px; font-weight: 600; line-height: 1.55; color: var(--wx-text-muted); max-width: 46ch;}
+.wurxbase-root .rp-say-sub {margin: 8px 0 0; font-size: 12.5px; font-weight: 600; line-height: 1.55; color: color-mix(in srgb, var(--wx-text-muted) 60%, transparent); max-width: 46ch;}
 .wurxbase-root .rp-hero {display: flex; align-items: flex-end; gap: 12px; margin-top: 20px; flex-wrap: wrap;}
 .wurxbase-root .rp-hero-num {font-size: clamp(34px,4.4vw,52px); font-weight: 900; letter-spacing: -2.4px; line-height: .92; color: var(--wx-text-muted); font-variant-numeric: tabular-nums;}
-.wurxbase-root .rp-hero-tag {display: flex; flex-direction: column; gap: 4px; padding-bottom: 4px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.3px; color: var(--wx-text-muted);}
+.wurxbase-root .rp-hero-tag {display: flex; flex-direction: column; gap: 4px; padding-bottom: 4px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.3px; color: color-mix(in srgb, var(--wx-text-muted) 45%, transparent);}
 .wurxbase-root .rp-hero-tag i {font-style: normal; text-transform: none; letter-spacing: 0; display: inline-flex; align-items: center; height: 19px; padding: 0 8px; border-radius: 999px; font-size: 10.5px; font-weight: 900; font-variant-numeric: tabular-nums; white-space: nowrap;}
-.wurxbase-root .rp-hero-tag i.up {background: var(--wx-surface-3); color: var(--wx-success);}
-.wurxbase-root .rp-hero-tag i.down {background: var(--wx-danger); color: var(--wx-text-muted);}
+.wurxbase-root .rp-hero-tag i.up {background: color-mix(in srgb, var(--wx-surface-3) 16%, transparent); color: var(--wx-success);}
+.wurxbase-root .rp-hero-tag i.down {background: color-mix(in srgb, var(--wx-danger) 16%, transparent); color: var(--wx-text-muted);}
 .wurxbase-root .rp-board-chart {min-width: 0;}
 /* supporting metrics · one line, hairline separated, inside the same card */
-.wurxbase-root .rp-strip {position: relative; display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border-top: 1px solid var(--wx-border);}
-.wurxbase-root .rp-strip-cell {padding: 15px 22px 17px; min-width: 0; border-left: 1px solid var(--wx-border);}
+.wurxbase-root .rp-strip {position: relative; display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border-top: 1px solid color-mix(in srgb, var(--wx-border) 9%, transparent);}
+.wurxbase-root .rp-strip-cell {padding: 15px 22px 17px; min-width: 0; border-left: 1px solid color-mix(in srgb, var(--wx-border) 9%, transparent);}
 .wurxbase-root .rp-strip-cell:first-child {border-left: 0; padding-left: 30px;}
 .wurxbase-root .rp-strip-cell:last-child {padding-right: 30px;}
-.wurxbase-root .rp-s-l {display: block; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.2px; color: var(--wx-text-muted);}
+.wurxbase-root .rp-s-l {display: block; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.2px; color: color-mix(in srgb, var(--wx-text-muted) 42%, transparent);}
 .wurxbase-root .rp-s-v {display: block; margin-top: 6px; font-size: 22px; font-weight: 900; letter-spacing: -.9px; color: var(--wx-text-muted); font-variant-numeric: tabular-nums; line-height: 1;}
 .wurxbase-root .rp-s-v.good {color: var(--wx-success);}
 .wurxbase-root .rp-s-v.bad {color: var(--wx-text-muted);}
 .wurxbase-root .rp-s-v.warn {color: var(--wx-warning);}
-.wurxbase-root .rp-s-bar {display: block; height: 3px; border-radius: 999px; background: var(--wx-surface-2); margin-top: 8px; overflow: hidden;}
+.wurxbase-root .rp-s-bar {display: block; height: 3px; border-radius: 999px; background: color-mix(in srgb, var(--wx-surface-2) 12%, transparent); margin-top: 8px; overflow: hidden;}
 .wurxbase-root .rp-s-bar i {display: block; height: 100%; border-radius: 999px; background: var(--wx-info); transition: width .7s cubic-bezier(.2,.8,.3,1);}
 .wurxbase-root .rp-s-bar.owed i {background: var(--wx-surface-3);}
-.wurxbase-root .rp-s-s {display: block; margin-top: 6px; font-size: 10px; font-weight: 600; color: var(--wx-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+.wurxbase-root .rp-s-s {display: block; margin-top: 6px; font-size: 10px; font-weight: 600; color: color-mix(in srgb, var(--wx-text-muted) 42%, transparent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 /* ── the row of three ── */
 .wurxbase-root .rp-row3 {display: grid; grid-template-columns: minmax(0,1.25fr) minmax(0,1fr) minmax(0,.85fr); gap: 12px;}
 .wurxbase-root .rp-card {background: var(--wx-surface-1); border-radius: 22px; padding: 16px 18px 15px; box-shadow: 0 0 0 1px rgba(20,17,12,.06), 0 2px 4px -2px rgba(20,17,12,.05); display: flex; flex-direction: column; transition: box-shadow .22s cubic-bezier(.2,.6,.2,1), transform .22s cubic-bezier(.2,.6,.2,1);}
@@ -3267,12 +3267,12 @@ to {opacity: 1;} }
 .wurxbase-root .rp-board-top {grid-template-columns: 1fr; gap: 14px;}
 .wurxbase-root .rp-strip {grid-template-columns: 1fr 1fr;}
 .wurxbase-root .rp-strip-cell:nth-child(3) {border-left: 0; padding-left: 30px;}
-.wurxbase-root .rp-strip-cell:nth-child(3), .wurxbase-root .rp-strip-cell:nth-child(4) {border-top: 1px solid var(--wx-border);}
+.wurxbase-root .rp-strip-cell:nth-child(3), .wurxbase-root .rp-strip-cell:nth-child(4) {border-top: 1px solid color-mix(in srgb, var(--wx-border) 9%, transparent);}
 .wurxbase-root .rp-row3 {grid-template-columns: 1fr;}
 }
 @media (max-width:620px){
 .wurxbase-root .rp-strip {grid-template-columns: 1fr;}
-.wurxbase-root .rp-strip-cell {border-left: 0; border-top: 1px solid var(--wx-border); padding-left: 30px;}
+.wurxbase-root .rp-strip-cell {border-left: 0; border-top: 1px solid color-mix(in srgb, var(--wx-border) 9%, transparent); padding-left: 30px;}
 }
 /* ═══════════════════════════════════════════════════════════════
    v303 · Reporting · brand breakdown as capsules
@@ -3328,8 +3328,8 @@ to {opacity: 1;} }
 /* totals ride on the dark surface so they read as a summary, not a row */
 .wurxbase-root .bx-foot {margin-top: 8px; padding: 14px 18px; border-radius: 20px; background: linear-gradient(150deg,var(--wx-surface-3),var(--wx-info)); color: var(--wx-on-accent); box-shadow: 0 10px 26px -16px rgba(28,21,14,.9);}
 .wurxbase-root .bx-foot > * {padding: 0 8px;}
-.wurxbase-root .bx-f-l {text-align: left; grid-column: span 2; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.2px; color: var(--wx-text-muted);}
-.wurxbase-root .bx-f-c small {display: block; font-size: 8.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: var(--wx-text-muted);}
+.wurxbase-root .bx-f-l {text-align: left; grid-column: span 2; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.2px; color: color-mix(in srgb, var(--wx-text-muted) 50%, transparent);}
+.wurxbase-root .bx-f-c small {display: block; font-size: 8.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: color-mix(in srgb, var(--wx-text-muted) 42%, transparent);}
 .wurxbase-root .bx-f-c b {display: block; margin-top: 3px; font-size: 15px; font-weight: 900; letter-spacing: -.4px; color: var(--wx-text-muted); font-variant-numeric: tabular-nums;}
 .wurxbase-root .bx-f-c.pos b {color: var(--wx-success);}
 .wurxbase-root .bx-f-c.neg b {color: var(--wx-text-muted);}
@@ -3339,7 +3339,7 @@ to {opacity: 1;} }
 .wurxbase-root .rp-strip {grid-template-columns: repeat(3,minmax(0,1fr));}
 @media (max-width:1080px){
 .wurxbase-root .rp-strip {grid-template-columns: 1fr;}
-.wurxbase-root .rp-strip-cell {border-left: 0; border-top: 1px solid var(--wx-border); padding-left: 30px;}
+.wurxbase-root .rp-strip-cell {border-left: 0; border-top: 1px solid color-mix(in srgb, var(--wx-border) 9%, transparent); padding-left: 30px;}
 .wurxbase-root .rp-row3 {grid-template-columns: 1fr;}
 }
 /* ═══════════════════════════════════════════════════════════════
@@ -3361,16 +3361,16 @@ to {opacity: 1;} }
 /* reduced motion · a real accessibility setting, not decoration */
 .wurxbase-root[data-god-motion="reduced"] *, .wurxbase-root[data-god-motion="reduced"] *::before, .wurxbase-root[data-god-motion="reduced"] *::after {animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important;}
 /* ── the panel ── */
-.wurxbase-root .gm-root {position: fixed; inset: 0; z-index: 2100; display: flex; align-items: center; justify-content: center; padding: 18px; background: var(--wx-info); backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px); animation: pc-fade .2s ease;}
+.wurxbase-root .gm-root {position: fixed; inset: 0; z-index: 2100; display: flex; align-items: center; justify-content: center; padding: 18px; background: color-mix(in srgb, var(--wx-info) 58%, transparent); backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px); animation: pc-fade .2s ease;}
 .wurxbase-root .gm-box {width: 100%; max-width: 840px; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; border-radius: 28px; background: var(--wx-surface-1); box-shadow: 0 34px 80px -30px rgba(24,18,10,.8); animation: pc-rise .3s cubic-bezier(.2,.8,.3,1);}
 .wurxbase-root .gm-top {display: flex; align-items: center; gap: 13px; padding: 17px 20px 15px; background: linear-gradient(140deg,var(--wx-surface-3),var(--wx-info)); color: var(--wx-on-accent);}
 .wurxbase-root .gm-mark {flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; height: 26px; padding: 0 10px; border-radius: 8px; background: linear-gradient(135deg,var(--wx-surface-3),var(--wx-warning)); color: var(--wx-text); font-size: 10.5px; font-weight: 900; letter-spacing: 1.4px;}
 .wurxbase-root .gm-ttl {flex: 1; min-width: 0;}
 .wurxbase-root .gm-ttl b {display: block; font-size: 17px; font-weight: 900; letter-spacing: -.4px;}
-.wurxbase-root .gm-ttl small {display: block; margin-top: 1px; font-size: 11px; font-weight: 600; color: var(--wx-text-muted);}
-.wurxbase-root .gm-who {flex: 0 0 auto; height: 24px; padding: 0 11px; border-radius: 999px; display: inline-flex; align-items: center; background: var(--wx-surface-2); border: 1px solid var(--wx-border); font-size: 10.5px; font-weight: 800; color: var(--wx-text-muted);}
-.wurxbase-root .gm-x {flex: 0 0 auto; width: 31px; height: 31px; border-radius: 999px; border: 0; cursor: pointer; background: var(--wx-surface-2); color: var(--wx-text); display: inline-flex; align-items: center; justify-content: center;}
-.wurxbase-root .gm-x:hover {background: var(--wx-surface-3);}
+.wurxbase-root .gm-ttl small {display: block; margin-top: 1px; font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--wx-text-muted) 55%, transparent);}
+.wurxbase-root .gm-who {flex: 0 0 auto; height: 24px; padding: 0 11px; border-radius: 999px; display: inline-flex; align-items: center; background: color-mix(in srgb, var(--wx-surface-2) 10%, transparent); border: 1px solid color-mix(in srgb, var(--wx-border) 14%, transparent); font-size: 10.5px; font-weight: 800; color: color-mix(in srgb, var(--wx-text-muted) 72%, transparent);}
+.wurxbase-root .gm-x {flex: 0 0 auto; width: 31px; height: 31px; border-radius: 999px; border: 0; cursor: pointer; background: color-mix(in srgb, var(--wx-surface-2) 10%, transparent); color: var(--wx-text); display: inline-flex; align-items: center; justify-content: center;}
+.wurxbase-root .gm-x:hover {background: color-mix(in srgb, var(--wx-surface-3) 20%, transparent);}
 .wurxbase-root .gm-tabs {display: flex; gap: 5px; padding: 11px 20px; background: var(--wx-surface-1); border-bottom: 1px solid var(--wx-border);}
 .wurxbase-root .gm-tab {height: 31px; padding: 0 14px; border-radius: 999px; border: 0; cursor: pointer; font-family: inherit; background: var(--wx-surface-2); color: var(--wx-text-muted); font-size: 12px; font-weight: 800; letter-spacing: -.1px; transition: background .15s, color .15s, transform .12s;}
 .wurxbase-root .gm-tab:hover {color: var(--wx-text);}
@@ -3485,23 +3485,23 @@ to {opacity: 1;} }
 /* ═══════════════════════════════════════════════════════════════
    v306 · Brand contract · terms the whole brand inherits
    ═══════════════════════════════════════════════════════════════ */
-.wurxbase-root .bc-root {position: fixed; inset: 0; z-index: 2050; display: flex; align-items: center; justify-content: center; padding: 18px; background: var(--wx-info); backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px); animation: pc-fade .2s ease;}
+.wurxbase-root .bc-root {position: fixed; inset: 0; z-index: 2050; display: flex; align-items: center; justify-content: center; padding: 18px; background: color-mix(in srgb, var(--wx-info) 56%, transparent); backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px); animation: pc-fade .2s ease;}
 .wurxbase-root .bc-box {width: 100%; max-width: 720px; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; border-radius: 26px; background: var(--wx-surface-1); box-shadow: 0 34px 80px -32px rgba(24,18,10,.8); animation: pc-rise .3s cubic-bezier(.2,.8,.3,1);}
 .wurxbase-root .bc-top {display: flex; align-items: center; gap: 12px; padding: 17px 20px 15px; background: linear-gradient(140deg,var(--wx-surface-3),var(--wx-info)); color: var(--wx-on-accent);}
 .wurxbase-root .bc-badge {flex: 0 0 auto; height: 24px; padding: 0 10px; border-radius: 7px; display: inline-flex; align-items: center; background: linear-gradient(135deg,var(--wx-surface-3),var(--wx-success)); color: var(--wx-text); font-size: 9.5px; font-weight: 900; letter-spacing: 1.3px;}
 .wurxbase-root .bc-ttl {flex: 1; min-width: 0;}
 .wurxbase-root .bc-ttl b {display: block; font-size: 16.5px; font-weight: 900; letter-spacing: -.4px;}
-.wurxbase-root .bc-ttl small {display: block; margin-top: 1px; font-size: 11px; font-weight: 600; color: var(--wx-text-muted);}
-.wurxbase-root .bc-x {flex: 0 0 auto; width: 30px; height: 30px; border-radius: 999px; border: 0; cursor: pointer; background: var(--wx-surface-2); color: var(--wx-on-accent); display: inline-flex; align-items: center; justify-content: center;}
-.wurxbase-root .bc-x:hover {background: var(--wx-surface-2);}
+.wurxbase-root .bc-ttl small {display: block; margin-top: 1px; font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--wx-text-muted) 55%, transparent);}
+.wurxbase-root .bc-x {flex: 0 0 auto; width: 30px; height: 30px; border-radius: 999px; border: 0; cursor: pointer; background: color-mix(in srgb, var(--wx-surface-2) 10%, transparent); color: var(--wx-on-accent); display: inline-flex; align-items: center; justify-content: center;}
+.wurxbase-root .bc-x:hover {background: color-mix(in srgb, var(--wx-surface-3) 20%, transparent);}
 .wurxbase-root .bc-reach {display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 11px 20px; background: var(--wx-bg); border-bottom: 1px solid var(--wx-border); font-size: 11.5px; font-weight: 700; color: var(--wx-success);}
 .wurxbase-root .bc-reach b {font-size: 14px; font-weight: 900;}
 .wurxbase-root .bc-note {color: var(--wx-text-muted); background: var(--wx-bg); padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 700;}
 .wurxbase-root .bc-tabs {display: flex; gap: 5px; padding: 11px 20px; background: var(--wx-surface-1); border-bottom: 1px solid var(--wx-border);}
 .wurxbase-root .bc-tab {height: 31px; padding: 0 15px; border-radius: 999px; border: 0; cursor: pointer; font-family: inherit; background: var(--wx-surface-2); color: var(--wx-text-muted); font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; transition: background .15s, color .15s;}
 .wurxbase-root .bc-tab.on {background: var(--wx-surface-3); color: var(--wx-on-accent);}
-.wurxbase-root .bc-tab i {font-style: normal; min-width: 17px; height: 17px; padding: 0 5px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--wx-info); font-size: 9.5px; font-weight: 900;}
-.wurxbase-root .bc-tab.on i {background: var(--wx-surface-2);}
+.wurxbase-root .bc-tab i {font-style: normal; min-width: 17px; height: 17px; padding: 0 5px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--wx-info) 9%, transparent); font-size: 9.5px; font-weight: 900;}
+.wurxbase-root .bc-tab.on i {background: color-mix(in srgb, var(--wx-surface-2) 25%, transparent);}
 .wurxbase-root .bc-body {flex: 1; overflow-y: auto; padding: 15px 20px 20px;}
 .wurxbase-root .bc-lead {margin: 0 0 13px; font-size: 12px; font-weight: 600; color: var(--wx-text-muted); line-height: 1.55;}
 .wurxbase-root .bc-field {display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 7px; border-radius: 15px; background: var(--wx-surface-1); box-shadow: 0 0 0 1px rgba(20,17,12,.06); transition: box-shadow .15s;}
@@ -3571,18 +3571,18 @@ to {opacity: 1;} }
 .wurxbase-root .gm-brandmark {display: flex; align-items: center; gap: 10px; padding: 0 6px 16px;}
 .wurxbase-root .gm-brandmark > div {min-width: 0;}
 .wurxbase-root .gm-brandmark b {display: block; font-size: 14.5px; font-weight: 900; letter-spacing: -.3px;}
-.wurxbase-root .gm-brandmark small {display: block; font-size: 10.5px; font-weight: 600; color: var(--wx-text-muted);}
+.wurxbase-root .gm-brandmark small {display: block; font-size: 10.5px; font-weight: 600; color: color-mix(in srgb, var(--wx-text-muted) 50%, transparent);}
 .wurxbase-root .gm-mark {flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; height: 25px; padding: 0 9px; border-radius: 8px; background: linear-gradient(135deg,var(--wx-surface-3),var(--wx-warning)); color: var(--wx-text); font-size: 10px; font-weight: 900; letter-spacing: 1.3px;}
 .wurxbase-root .gm-nav {display: flex; flex-direction: column; gap: 2px; overflow-y: auto;}
-.wurxbase-root .gm-navb {display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; padding: 10px 11px; border: 0; border-radius: 13px; cursor: pointer; font-family: inherit; background: transparent; color: var(--wx-text-muted); transition: background .16s, color .16s;}
+.wurxbase-root .gm-navb {display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; padding: 10px 11px; border: 0; border-radius: 13px; cursor: pointer; font-family: inherit; background: transparent; color: color-mix(in srgb, var(--wx-text-muted) 62%, transparent); transition: background .16s, color .16s;}
 .wurxbase-root .gm-navb svg {flex: 0 0 auto; opacity: .75;}
 .wurxbase-root .gm-navb span {min-width: 0;}
 .wurxbase-root .gm-navb b {display: block; font-size: 12.5px; font-weight: 800; letter-spacing: -.1px;}
 .wurxbase-root .gm-navb small {display: block; font-size: 9.5px; font-weight: 600; opacity: .62; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-.wurxbase-root .gm-navb:hover {background: var(--wx-surface-2); color: var(--wx-on-accent);}
-.wurxbase-root .gm-navb.on {background: var(--wx-surface-2); color: var(--wx-text-muted);}
+.wurxbase-root .gm-navb:hover {background: color-mix(in srgb, var(--wx-surface-2) 7%, transparent); color: var(--wx-on-accent);}
+.wurxbase-root .gm-navb.on {background: color-mix(in srgb, var(--wx-surface-2) 13%, transparent); color: var(--wx-text-muted);}
 .wurxbase-root .gm-navb.on svg {opacity: 1; color: var(--wx-warning);}
-.wurxbase-root .gm-railfoot {margin-top: auto; padding: 12px 8px 0; border-top: 1px solid var(--wx-border); font-size: 9.5px; font-weight: 700; color: var(--wx-text-muted); line-height: 1.5;}
+.wurxbase-root .gm-railfoot {margin-top: auto; padding: 12px 8px 0; border-top: 1px solid color-mix(in srgb, var(--wx-border) 10%, transparent); font-size: 9.5px; font-weight: 700; color: color-mix(in srgb, var(--wx-text-muted) 38%, transparent); line-height: 1.5;}
 /* ── canvas ── */
 .wurxbase-root .gm-main {display: flex; flex-direction: column; min-width: 0; background: var(--wx-bg);}
 .wurxbase-root .gm-head {display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 24px 15px; background: var(--wx-surface-1); border-bottom: 1px solid var(--wx-border);}
@@ -3704,13 +3704,13 @@ to {opacity: 1;} }
 .wurxbase-root .ca-pool-done {padding: 14px 4px; font-size: 11.5px; font-weight: 700; color: var(--wx-text-muted);}
 .wurxbase-root .ca-more {align-self: center; font-size: 11px; font-weight: 800; color: var(--wx-text-muted);}
 /* ── picker ── */
-.wurxbase-root .ca-pick-root {position: fixed; inset: 0; z-index: 2060; display: flex; align-items: center; justify-content: center; padding: 18px; background: var(--wx-info); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: pc-fade .2s ease;}
+.wurxbase-root .ca-pick-root {position: fixed; inset: 0; z-index: 2060; display: flex; align-items: center; justify-content: center; padding: 18px; background: color-mix(in srgb, var(--wx-info) 56%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: pc-fade .2s ease;}
 .wurxbase-root .ca-pick {width: 100%; max-width: 860px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; border-radius: 24px; background: var(--wx-surface-1); box-shadow: 0 34px 80px -32px rgba(24,18,10,.8); animation: pc-rise .3s cubic-bezier(.2,.8,.3,1);}
 .wurxbase-root .ca-pick-top {display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px 14px; background: linear-gradient(140deg,var(--wx-surface-3),var(--wx-info)); color: var(--wx-on-accent);}
 .wurxbase-root .ca-pick-top b {display: block; font-size: 15.5px; font-weight: 900; letter-spacing: -.3px;}
-.wurxbase-root .ca-pick-top small {display: block; margin-top: 1px; font-size: 11px; font-weight: 600; color: var(--wx-text-muted);}
-.wurxbase-root .ca-pick-x {width: 30px; height: 30px; border-radius: 999px; border: 0; cursor: pointer; background: var(--wx-surface-2); color: var(--wx-on-accent); font-size: 12px; font-weight: 800;}
-.wurxbase-root .ca-pick-x:hover {background: var(--wx-surface-2);}
+.wurxbase-root .ca-pick-top small {display: block; margin-top: 1px; font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--wx-text-muted) 55%, transparent);}
+.wurxbase-root .ca-pick-x {width: 30px; height: 30px; border-radius: 999px; border: 0; cursor: pointer; background: color-mix(in srgb, var(--wx-surface-2) 10%, transparent); color: var(--wx-on-accent); font-size: 12px; font-weight: 800;}
+.wurxbase-root .ca-pick-x:hover {background: color-mix(in srgb, var(--wx-surface-3) 20%, transparent);}
 .wurxbase-root .ca-pick-tools {display: flex; gap: 10px; padding: 12px 20px; background: var(--wx-surface-1); border-bottom: 1px solid var(--wx-border);}
 .wurxbase-root .ca-pick-tools input {flex: 1; min-width: 0; height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--wx-border); background: var(--wx-surface-1); font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--wx-text); outline: none;}
 .wurxbase-root .ca-seg {display: inline-flex; gap: 3px; padding: 3px; border-radius: 999px; background: var(--wx-surface-2);}
@@ -3743,8 +3743,8 @@ to {opacity: 1;} }
 .wurxbase-root .ca-bchip {display: inline-flex; align-items: center; gap: 6px; height: 31px; padding: 0 13px; border-radius: 999px; cursor: pointer; font-family: inherit; border: 1px solid var(--wx-border); background: var(--wx-surface-1); color: var(--wx-text); font-size: 12px; font-weight: 800; transition: background .15s, color .15s, border-color .15s, transform .12s;}
 .wurxbase-root .ca-bchip:hover {transform: translateY(-1px); color: var(--wx-text); border-color: var(--wx-border-strong);}
 .wurxbase-root .ca-bchip.on {background: var(--wx-surface-3); border-color: var(--wx-border-strong); color: var(--wx-on-accent);}
-.wurxbase-root .ca-bchip i {font-style: normal; min-width: 18px; height: 16px; padding: 0 5px; border-radius: 999px; background: var(--wx-info); font-size: 9.5px; font-weight: 900; display: inline-flex; align-items: center; justify-content: center;}
-.wurxbase-root .ca-bchip.on i {background: var(--wx-surface-2);}
+.wurxbase-root .ca-bchip i {font-style: normal; min-width: 18px; height: 16px; padding: 0 5px; border-radius: 999px; background: color-mix(in srgb, var(--wx-info) 8%, transparent); font-size: 9.5px; font-weight: 900; display: inline-flex; align-items: center; justify-content: center;}
+.wurxbase-root .ca-bchip.on i {background: color-mix(in srgb, var(--wx-surface-2) 22%, transparent);}
 /* ═══════════════════════════════════════════════════════════════
    v311 · Creative angle testing · One UI
    Big soft squircles, one accent per card, and air between things.
@@ -3761,7 +3761,7 @@ to {opacity: 1;} }
    stay on the outside, so a shut angle still reports.
    ═══════════════════════════════════════════════════════════════ */
 /* ── the switch ─────────────────────────────────────────────── */
-.wurxbase-root .rp-seg {position: relative; display: grid; grid-template-columns: 1fr 1fr; width: 100%; padding: 5px; border-radius: 999px; background: var(--wx-surface-2); border: 1px solid var(--wx-accent); box-shadow: inset 0 1px 2px rgba(20,17,12,.05);}
+.wurxbase-root .rp-seg {position: relative; display: grid; grid-template-columns: 1fr 1fr; width: 100%; padding: 5px; border-radius: 999px; background: var(--wx-surface-2); border: 1px solid color-mix(in srgb, var(--wx-accent) 6%, transparent); box-shadow: inset 0 1px 2px rgba(20,17,12,.05);}
 .wurxbase-root .rp-seg-ink {position: absolute; top: 5px; left: 5px; width: calc(50% - 5px); height: calc(100% - 10px); border-radius: 999px; background: var(--wx-surface-1); box-shadow: 0 3px 12px -2px rgba(20,17,12,.2), 0 0 0 1px rgba(20,17,12,.04); transition: transform .44s cubic-bezier(.22,.9,.24,1);}
 .wurxbase-root .rp-seg-b {position: relative; z-index: 1; height: 44px; border: 0; background: transparent; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 9px; font-family: inherit; font-size: 13.5px; font-weight: 800; letter-spacing: -.2px; color: var(--wx-text-faint); transition: color .22s, transform .18s; border-radius: 999px; padding: 0 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 .wurxbase-root .rp-seg-b svg {flex: 0 0 auto; opacity: .65; transition: opacity .22s, transform .3s cubic-bezier(.2,.9,.25,1);}
@@ -3773,7 +3773,7 @@ to {opacity: 1;} }
 .wurxbase-root .cx {margin: 2px 0 0;}
 /* the section announces itself on its own surface · it used to be two
    lines of loose text with the controls floating beside them */
-.wurxbase-root .cx-head {display: flex; align-items: center; gap: 15px; flex-wrap: wrap; padding: 17px 18px; margin-bottom: 14px; border-radius: 26px; background: var(--wx-surface-1); border: 1px solid var(--wx-accent); box-shadow: 0 1px 2px rgba(20,17,12,.04), 0 14px 30px -26px rgba(20,17,12,.5);}
+.wurxbase-root .cx-head {display: flex; align-items: center; gap: 15px; flex-wrap: wrap; padding: 17px 18px; margin-bottom: 14px; border-radius: 26px; background: var(--wx-surface-1); border: 1px solid color-mix(in srgb, var(--wx-accent) 7%, transparent); box-shadow: 0 1px 2px rgba(20,17,12,.04), 0 14px 30px -26px rgba(20,17,12,.5);}
 .wurxbase-root .cx-h-ic {flex: 0 0 auto; width: 46px; height: 46px; border-radius: 15px; display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(140deg,var(--wx-accent) 0%,var(--wx-info) 100%); color: var(--wx-on-accent); box-shadow: 0 6px 16px -8px rgba(33,26,18,.9);}
 .wurxbase-root .cx-h-r {display: flex; align-items: center; gap: 10px; flex-wrap: wrap;}
 .wurxbase-root .cx-h-l {flex: 1; min-width: 190px;}
@@ -3790,23 +3790,23 @@ to {opacity: 1;} }
 .wurxbase-root .cx-new {flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; height: 44px; padding: 0 20px; border-radius: 999px; border: 0; cursor: pointer; background: var(--wx-surface-3); color: var(--wx-on-accent); font-family: inherit; font-size: 13px; font-weight: 800; box-shadow: 0 4px 14px -6px rgba(44,35,25,.7); transition: transform .16s cubic-bezier(.2,.8,.3,1), background .16s, box-shadow .16s;}
 .wurxbase-root .cx-new:hover {background: var(--wx-accent); transform: translateY(-1px); box-shadow: 0 8px 20px -8px rgba(44,35,25,.75);}
 .wurxbase-root .cx-new:active {transform: scale(.97);}
-.wurxbase-root .cx-note {margin: 0 4px 12px; padding: 11px 16px; border-radius: 16px; background: var(--wx-bg); border: 1px solid var(--wx-accent); font-size: 12px; font-weight: 800; color: var(--wx-success); animation: cxFade .24s ease both;}
+.wurxbase-root .cx-note {margin: 0 4px 12px; padding: 11px 16px; border-radius: 16px; background: var(--wx-bg); border: 1px solid color-mix(in srgb, var(--wx-accent) 16%, transparent); font-size: 12px; font-weight: 800; color: var(--wx-success); animation: cxFade .24s ease both;}
 @keyframes cxFade{
 from {opacity: 0; transform: translateY(-4px);} }
-.wurxbase-root .cx-blank {display: flex; flex-direction: column; align-items: center; gap: 9px; text-align: center; padding: 56px 28px; border-radius: 28px; background: var(--wx-surface-1); border: 1px dashed var(--wx-accent);}
+.wurxbase-root .cx-blank {display: flex; flex-direction: column; align-items: center; gap: 9px; text-align: center; padding: 56px 28px; border-radius: 28px; background: var(--wx-surface-1); border: 1px dashed color-mix(in srgb, var(--wx-accent) 14%, transparent);}
 .wurxbase-root .cx-blank b {font-size: 16px; font-weight: 900; color: var(--wx-text); letter-spacing: -.4px;}
 .wurxbase-root .cx-blank span {max-width: 460px; font-size: 12.5px; font-weight: 600; line-height: 1.65; color: var(--wx-text-muted);}
 .wurxbase-root .cx-blank .cx-new {margin-top: 10px;}
 /* ── brand chooser · One UI sheet, not a system dropdown ─────── */
 .wurxbase-root .cx-bm {position: relative; flex: 0 0 auto;}
-.wurxbase-root .cx-bm-b {display: flex; align-items: center; gap: 9px; height: 44px; padding: 0 14px 0 18px; border-radius: 999px; border: 1px solid var(--wx-accent); background: var(--wx-surface-1); cursor: pointer; font-family: inherit; box-shadow: 0 1px 2px rgba(20,17,12,.05); transition: border-color .18s, box-shadow .18s, transform .14s;}
-.wurxbase-root .cx-bm-b:hover {border-color: var(--wx-accent); transform: translateY(-1px);}
+.wurxbase-root .cx-bm-b {display: flex; align-items: center; gap: 9px; height: 44px; padding: 0 14px 0 18px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--wx-accent) 10%, transparent); background: var(--wx-surface-1); cursor: pointer; font-family: inherit; box-shadow: 0 1px 2px rgba(20,17,12,.05); transition: border-color .18s, box-shadow .18s, transform .14s;}
+.wurxbase-root .cx-bm-b:hover {border-color: color-mix(in srgb, var(--wx-accent) 20%, transparent); transform: translateY(-1px);}
 .wurxbase-root .cx-bm-b b {font-size: 13.5px; font-weight: 800; color: var(--wx-text); letter-spacing: -.2px;}
 .wurxbase-root .cx-bm-b i {font-style: normal; height: 20px; min-width: 20px; padding: 0 7px; border-radius: 999px; background: var(--wx-surface-2); color: var(--wx-text-faint); font-size: 10px; font-weight: 900; display: inline-flex; align-items: center; justify-content: center;}
 .wurxbase-root .cx-bm-b svg {color: var(--wx-text-faint); transition: transform .3s cubic-bezier(.2,.9,.25,1);}
 .wurxbase-root .cx-bm.open .cx-bm-b {border-color: var(--wx-border-strong); box-shadow: 0 0 0 3px rgba(44,35,25,.09);}
 .wurxbase-root .cx-bm.open .cx-bm-b svg {transform: rotate(180deg); color: var(--wx-text);}
-.wurxbase-root .cx-bm-pop {position: absolute; z-index: 60; top: calc(100% + 9px); right: 0; min-width: 270px; max-height: 340px; overflow: auto; padding: 8px; background: var(--wx-surface-1); border: 1px solid var(--wx-accent); border-radius: 22px; box-shadow: 0 24px 60px -22px rgba(20,17,12,.42), 0 2px 6px rgba(20,17,12,.06); animation: cxPop .22s cubic-bezier(.2,.9,.25,1) both;}
+.wurxbase-root .cx-bm-pop {position: absolute; z-index: 60; top: calc(100% + 9px); right: 0; min-width: 270px; max-height: 340px; overflow: auto; padding: 8px; background: var(--wx-surface-1); border: 1px solid color-mix(in srgb, var(--wx-accent) 8%, transparent); border-radius: 22px; box-shadow: 0 24px 60px -22px rgba(20,17,12,.42), 0 2px 6px rgba(20,17,12,.06); animation: cxPop .22s cubic-bezier(.2,.9,.25,1) both;}
 @keyframes cxPop{
 from {opacity: 0; transform: translateY(-7px) scale(.97);} }
 .wurxbase-root .cx-bm-o {width: 100%; display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 12px; border: 0; border-radius: 16px; background: transparent; cursor: pointer; font-family: inherit; text-align: left; transition: background .15s;}
@@ -3817,9 +3817,9 @@ from {opacity: 0; transform: translateY(-7px) scale(.97);} }
 .wurxbase-root .cx-bm-o svg {color: var(--wx-success); flex: 0 0 auto;}
 /* ── the list of angles ─────────────────────────────────────── */
 .wurxbase-root .cx-list {display: flex; flex-direction: column; gap: 14px;}
-.wurxbase-root .cx-card {background: var(--wx-surface-1); border: 1px solid var(--wx-accent); border-radius: 28px; box-shadow: 0 1px 2px rgba(20,17,12,.04), 0 14px 30px -24px rgba(20,17,12,.5); transition: box-shadow .26s, border-color .26s;}
+.wurxbase-root .cx-card {background: var(--wx-surface-1); border: 1px solid color-mix(in srgb, var(--wx-accent) 7%, transparent); border-radius: 28px; box-shadow: 0 1px 2px rgba(20,17,12,.04), 0 14px 30px -24px rgba(20,17,12,.5); transition: box-shadow .26s, border-color .26s;}
 .wurxbase-root .cx-card:hover {box-shadow: 0 1px 2px rgba(20,17,12,.05), 0 20px 40px -26px rgba(20,17,12,.6);}
-.wurxbase-root .cx-card.open {border-color: var(--wx-accent);}
+.wurxbase-root .cx-card.open {border-color: color-mix(in srgb, var(--wx-accent) 11%, transparent);}
 .wurxbase-root .cx-c-head {padding: 17px 20px 16px; cursor: pointer; -webkit-user-select: none; user-select: none;}
 .wurxbase-root .cx-c-line {display: flex; align-items: center; gap: 10px;}
 .wurxbase-root .cx-num {flex: 0 0 auto; width: 26px; height: 26px; border-radius: 9px; background: var(--cx,var(--wx-surface-3)); color: var(--wx-on-accent); display: inline-flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 900; letter-spacing: -.3px; box-shadow: 0 2px 7px -2px var(--cx,#2C2319);}
@@ -3836,7 +3836,7 @@ from {opacity: 0; transform: translateY(-7px) scale(.97);} }
 /* the five figures · outside the drawer on purpose */
 .wurxbase-root .cx-sum {display: grid; grid-template-columns: repeat(5,1fr); margin-top: 14px; padding: 13px 6px; border-radius: 20px; background: var(--wx-surface-1);}
 .wurxbase-root .cx-sum span {position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0;}
-.wurxbase-root .cx-sum span + span::before {content: ''; position: absolute; left: 0; top: 3px; bottom: 3px; width: 1px; background: var(--wx-info);}
+.wurxbase-root .cx-sum span + span::before {content: ''; position: absolute; left: 0; top: 3px; bottom: 3px; width: 1px; background: color-mix(in srgb, var(--wx-info) 7%, transparent);}
 .wurxbase-root .cx-sum b {font-size: 17px; font-weight: 900; letter-spacing: -.6px; color: var(--wx-text); line-height: 1.15;}
 .wurxbase-root .cx-sum b.g {color: var(--wx-success);}
 .wurxbase-root .cx-sum b.a {color: var(--wx-danger);}
@@ -3856,8 +3856,8 @@ from {opacity: 0; transform: translateY(-7px) scale(.97);} }
    every other angle off the screen · the headers stay pinned */
 .wurxbase-root .cx-tbl.long {max-height: 436px; overflow-y: auto; padding-right: 8px; scrollbar-width: thin; scrollbar-color: rgba(20,17,12,.2) transparent; -webkit-mask-image: linear-gradient(180deg,#000 calc(100% - 26px),transparent 100%); mask-image: linear-gradient(180deg,#000 calc(100% - 26px),transparent 100%);}
 .wurxbase-root .cx-tbl.long::-webkit-scrollbar {width: 7px;}
-.wurxbase-root .cx-tbl.long::-webkit-scrollbar-thumb {background: var(--wx-info); border-radius: 99px;}
-.wurxbase-root .cx-tbl.long::-webkit-scrollbar-thumb:hover {background: var(--wx-info);}
+.wurxbase-root .cx-tbl.long::-webkit-scrollbar-thumb {background: color-mix(in srgb, var(--wx-info) 16%, transparent); border-radius: 99px;}
+.wurxbase-root .cx-tbl.long::-webkit-scrollbar-thumb:hover {background: color-mix(in srgb, var(--wx-info) 30%, transparent);}
 .wurxbase-root .cx-tbl.long .cx-th {position: sticky; top: 0; z-index: 2; background: var(--wx-surface-1); padding-top: 6px;}
 /* the drawer's own toolbar · only appears when the list is long enough
    to need one */
@@ -3869,23 +3869,23 @@ from {opacity: 0; transform: translateY(-7px) scale(.97);} }
 .wurxbase-root .cx-dfind:focus-within {background: var(--wx-surface-1); border-color: var(--wx-border-strong); box-shadow: 0 0 0 3px rgba(44,35,25,.08);}
 .wurxbase-root .cx-dfind > button {flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; border: 0; cursor: pointer; background: var(--wx-surface-3); color: var(--wx-text); display: inline-flex; align-items: center; justify-content: center;}
 .wurxbase-root .cx-dfind > button:hover {background: var(--wx-surface-3); color: var(--wx-text);}
-.wurxbase-root .cx-dchip {flex: 0 0 auto; height: 40px; padding: 0 16px; border-radius: 999px; cursor: pointer; border: 1.5px solid var(--wx-accent); background: var(--wx-bg); color: var(--wx-danger); font-family: inherit; font-size: 12px; font-weight: 800; transition: background .16s, color .16s, border-color .16s;}
+.wurxbase-root .cx-dchip {flex: 0 0 auto; height: 40px; padding: 0 16px; border-radius: 999px; cursor: pointer; border: 1.5px solid color-mix(in srgb, var(--wx-accent) 24%, transparent); background: var(--wx-bg); color: var(--wx-danger); font-family: inherit; font-size: 12px; font-weight: 800; transition: background .16s, color .16s, border-color .16s;}
 .wurxbase-root .cx-dchip:hover:not(:disabled) {background: var(--wx-surface-2);}
 .wurxbase-root .cx-dchip.on {background: var(--wx-danger); border-color: var(--wx-accent); color: var(--wx-on-accent);}
 .wurxbase-root .cx-dchip:disabled {opacity: 1; cursor: default; background: var(--wx-warning-soft); border-color: transparent; color: var(--wx-text-muted);}
 .wurxbase-root .cx-dcount {font-size: 11px; font-weight: 800; color: var(--wx-text-muted); margin-left: auto;}
 .wurxbase-root .cx-dnone {padding: 26px 0; text-align: center; font-size: 12px; font-weight: 700; color: var(--wx-text-muted);}
-.wurxbase-root .cx-tr {display: grid; grid-template-columns: minmax(0,1fr) 104px 120px 120px 32px; gap: 11px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--wx-accent);}
+.wurxbase-root .cx-tr {display: grid; grid-template-columns: minmax(0,1fr) 104px 120px 120px 32px; gap: 11px; align-items: center; padding: 9px 0; border-bottom: 1px solid color-mix(in srgb, var(--wx-accent) 5%, transparent);}
 /* views sits a clear step away from the money columns · they were reading
    as one block before */
 .wurxbase-root .cx-cell.views, .wurxbase-root .cx-th span.views {margin-right: 13px;}
 .wurxbase-root .cx-tr:last-child {border-bottom: 0;}
-.wurxbase-root .cx-th {padding: 2px 0 9px; border-bottom: 1px solid var(--wx-accent);}
+.wurxbase-root .cx-th {padding: 2px 0 9px; border-bottom: 1px solid color-mix(in srgb, var(--wx-accent) 8%, transparent);}
 .wurxbase-root .cx-th span {font-size: 9px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: var(--wx-text-muted);}
 .wurxbase-root .cx-th span.n {text-align: center;}
 .wurxbase-root .cx-tr.gone {opacity: .5;}
 .wurxbase-root .cx-who {display: flex; align-items: center; gap: 11px; min-width: 0; text-decoration: none;}
-.wurxbase-root .cx-who img {width: 38px; height: 50px; border-radius: 11px; object-fit: cover; flex: 0 0 auto; background: var(--wx-surface-2); border: 1px solid var(--wx-accent);}
+.wurxbase-root .cx-who img {width: 38px; height: 50px; border-radius: 11px; object-fit: cover; flex: 0 0 auto; background: var(--wx-surface-2); border: 1px solid color-mix(in srgb, var(--wx-accent) 6%, transparent);}
 .wurxbase-root .cx-who i {width: 38px; height: 50px; border-radius: 11px; flex: 0 0 auto; background: var(--wx-surface-2); display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-size: 13px; color: var(--wx-text-muted);}
 .wurxbase-root .cx-who > span {flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0;}
 .wurxbase-root .cx-who b {font-size: 13px; font-weight: 800; color: var(--wx-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
@@ -3893,37 +3893,37 @@ from {opacity: 0; transform: translateY(-7px) scale(.97);} }
 .wurxbase-root .cx-who:hover b {color: var(--wx-accent);}
 /* views is typed the same way as the money · a different tint keeps it
    from reading as a third currency column */
-.wurxbase-root .cx-cell.views {background: var(--wx-bg); border-color: var(--wx-accent);}
+.wurxbase-root .cx-cell.views {background: var(--wx-bg); border-color: color-mix(in srgb, var(--wx-accent) 12%, transparent);}
 .wurxbase-root .cx-cell.views input {color: var(--wx-info);}
-.wurxbase-root .cx-cell.views.auto {background: var(--wx-surface-1); border-style: dashed; border-color: var(--wx-accent);}
+.wurxbase-root .cx-cell.views.auto {background: var(--wx-surface-1); border-style: dashed; border-color: color-mix(in srgb, var(--wx-accent) 14%, transparent);}
 .wurxbase-root .cx-cell.views.auto input {color: var(--wx-text-faint); font-weight: 700;}
 .wurxbase-root .cx-cell i:empty {display: none;}
 .wurxbase-root .cx-k {display: none;}
-.wurxbase-root .cx-cell {display: flex; align-items: center; height: 38px; padding: 0 9px 0 11px; border-radius: 13px; background: var(--wx-surface-1); border: 1.5px solid var(--wx-accent); transition: border-color .18s, box-shadow .18s, background .18s;}
+.wurxbase-root .cx-cell {display: flex; align-items: center; height: 38px; padding: 0 9px 0 11px; border-radius: 13px; background: var(--wx-surface-1); border: 1.5px solid color-mix(in srgb, var(--wx-accent) 10%, transparent); transition: border-color .18s, box-shadow .18s, background .18s;}
 .wurxbase-root .cx-cell i {font-style: normal; font-size: 11px; font-weight: 900; color: var(--wx-text-muted); margin-right: 3px;}
 .wurxbase-root .cx-cell input {width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; text-align: right; font-family: inherit; font-size: 13.5px; font-weight: 800; color: var(--wx-text); -moz-appearance: textfield;}
 /* an empty box must not read as a typed zero */
 .wurxbase-root .cx-cell input::placeholder {color: var(--wx-text-muted); font-weight: 700;}
 .wurxbase-root .cx-cell input::-webkit-outer-spin-button, .wurxbase-root .cx-cell input::-webkit-inner-spin-button {-webkit-appearance: none; margin: 0;}
 .wurxbase-root .cx-cell:focus-within {border-color: var(--wx-border-strong); box-shadow: 0 0 0 3px rgba(44,35,25,.10); background: var(--wx-surface-1);}
-.wurxbase-root .cx-cell.gmv {background: var(--wx-bg); border-color: var(--wx-accent);}
+.wurxbase-root .cx-cell.gmv {background: var(--wx-bg); border-color: color-mix(in srgb, var(--wx-accent) 22%, transparent);}
 .wurxbase-root .cx-cell.gmv i {color: var(--wx-text-muted);}
 .wurxbase-root .cx-cell.gmv input {color: var(--wx-success);}
 /* fetched from EUKA · dashed and quiet, because it is not yours to type */
-.wurxbase-root .cx-cell.gmv.auto {background: var(--wx-surface-1); border-style: dashed; border-color: var(--wx-accent);}
+.wurxbase-root .cx-cell.gmv.auto {background: var(--wx-surface-1); border-style: dashed; border-color: color-mix(in srgb, var(--wx-accent) 14%, transparent);}
 .wurxbase-root .cx-cell.gmv.auto i {color: var(--wx-text-muted);}
 .wurxbase-root .cx-cell.gmv.auto input {color: var(--wx-text-faint); font-weight: 700;}
-.wurxbase-root .cx-cell.ad {background: var(--wx-bg); border-color: var(--wx-accent);}
+.wurxbase-root .cx-cell.ad {background: var(--wx-bg); border-color: color-mix(in srgb, var(--wx-accent) 20%, transparent);}
 .wurxbase-root .cx-cell.ad i {color: var(--wx-text-muted);}
 .wurxbase-root .cx-cell.ad input {color: var(--wx-danger);}
 .wurxbase-root .cx-rm {width: 28px; height: 28px; border-radius: 50%; border: 0; cursor: pointer; background: transparent; color: var(--wx-text-muted); display: inline-flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .16s, background .16s, color .16s;}
 .wurxbase-root .cx-tr:hover .cx-rm {opacity: 1;}
 .wurxbase-root .cx-rm:hover {background: var(--wx-bg); color: var(--wx-danger);}
-.wurxbase-root .cx-addv {width: 100%; margin-top: 14px; height: 44px; border-radius: 16px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px dashed var(--wx-accent); background: var(--wx-surface-1); font-family: inherit; font-size: 12.5px; font-weight: 800; color: var(--wx-text); transition: background .16s, border-color .16s, color .16s;}
-.wurxbase-root .cx-addv:hover:not(:disabled) {background: var(--wx-surface-2); border-color: var(--wx-accent); color: var(--wx-text);}
+.wurxbase-root .cx-addv {width: 100%; margin-top: 14px; height: 44px; border-radius: 16px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px dashed color-mix(in srgb, var(--wx-accent) 16%, transparent); background: var(--wx-surface-1); font-family: inherit; font-size: 12.5px; font-weight: 800; color: var(--wx-text); transition: background .16s, border-color .16s, color .16s;}
+.wurxbase-root .cx-addv:hover:not(:disabled) {background: var(--wx-surface-2); border-color: color-mix(in srgb, var(--wx-accent) 30%, transparent); color: var(--wx-text);}
 .wurxbase-root .cx-addv:disabled {opacity: .45; cursor: default;}
 /* ── the picker ─────────────────────────────────────────────── */
-.wurxbase-root .cx-pk-root {position: fixed; inset: 0; z-index: 900; background: var(--wx-info); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 24px; animation: cxFade .2s ease both;}
+.wurxbase-root .cx-pk-root {position: fixed; inset: 0; z-index: 900; background: color-mix(in srgb, var(--wx-info) 46%, transparent); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 24px; animation: cxFade .2s ease both;}
 .wurxbase-root .cx-pk {width: min(980px,100%); max-height: 88vh; display: flex; flex-direction: column; background: var(--wx-surface-1); border-radius: 32px; overflow: hidden; box-shadow: 0 48px 100px -34px rgba(20,17,12,.66), 0 0 0 1px rgba(20,17,12,.05); animation: cxSheet .32s cubic-bezier(.2,.9,.25,1) both;}
 @keyframes cxSheet{
 from {opacity: 0; transform: translateY(16px) scale(.975);} }
@@ -3951,7 +3951,7 @@ from {opacity: 0; transform: translateY(16px) scale(.975);} }
 .wurxbase-root .cx-pk-sort.on {background: var(--wx-surface-1); color: var(--wx-text); box-shadow: 0 2px 7px rgba(20,17,12,.13);}
 .wurxbase-root .cx-pk-bar {display: flex; align-items: center; gap: 12px; padding: 0 26px 12px; font-size: 11px; font-weight: 800; color: var(--wx-text-muted);}
 .wurxbase-root .cx-pk-bar > span {flex: 1;}
-.wurxbase-root .cx-pk-all {height: 30px; padding: 0 14px; border-radius: 999px; cursor: pointer; border: 1px solid var(--wx-accent); background: var(--wx-surface-1); color: var(--wx-text); font-family: inherit; font-size: 11px; font-weight: 800; transition: background .15s, color .15s;}
+.wurxbase-root .cx-pk-all {height: 30px; padding: 0 14px; border-radius: 999px; cursor: pointer; border: 1px solid color-mix(in srgb, var(--wx-accent) 12%, transparent); background: var(--wx-surface-1); color: var(--wx-text); font-family: inherit; font-size: 11px; font-weight: 800; transition: background .15s, color .15s;}
 .wurxbase-root .cx-pk-all:hover:not(:disabled) {background: var(--wx-surface-2); color: var(--wx-text);}
 .wurxbase-root .cx-pk-all:disabled {opacity: .4; cursor: default;}
 .wurxbase-root .cx-pk-grid {flex: 1; overflow: auto; padding: 2px 26px 10px; display: grid; grid-template-columns: repeat(auto-fill,minmax(132px,1fr)); gap: 16px 14px; align-content: start;}
@@ -3959,16 +3959,16 @@ from {opacity: 0; transform: translateY(16px) scale(.975);} }
 .wurxbase-root .cx-pk-none b {font-size: 14px; font-weight: 900; color: var(--wx-text);}
 .wurxbase-root .cx-pk-none span {font-size: 12px; font-weight: 600; color: var(--wx-text-muted);}
 .wurxbase-root .cx-pk-v {cursor: pointer; -webkit-user-select: none; user-select: none;}
-.wurxbase-root .cx-pk-shot {position: relative; width: 100%; aspect-ratio: 3/4; border-radius: 18px; overflow: hidden; background: var(--wx-surface-2); border: 1px solid var(--wx-accent); transition: transform .2s cubic-bezier(.2,.8,.3,1), box-shadow .2s;}
+.wurxbase-root .cx-pk-shot {position: relative; width: 100%; aspect-ratio: 3/4; border-radius: 18px; overflow: hidden; background: var(--wx-surface-2); border: 1px solid color-mix(in srgb, var(--wx-accent) 6%, transparent); transition: transform .2s cubic-bezier(.2,.8,.3,1), box-shadow .2s;}
 .wurxbase-root .cx-pk-shot img {width: 100%; height: 100%; object-fit: cover; display: block;}
 .wurxbase-root .cx-pk-shot > i {width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-style: normal; font-size: 18px; color: var(--wx-text-muted);}
-.wurxbase-root .cx-pk-veil {position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(180deg,var(--wx-info) 0%,var(--wx-info) 42%,var(--wx-info) 100%); opacity: .85; transition: opacity .2s;}
+.wurxbase-root .cx-pk-veil {position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(180deg,color-mix(in srgb, var(--wx-warning-soft) 30%, transparent) 0%,transparent 42%,color-mix(in srgb, var(--wx-warning-soft) 34%, transparent) 100%); opacity: .85; transition: opacity .2s;}
 .wurxbase-root .cx-pk-v:hover .cx-pk-shot {transform: translateY(-3px); box-shadow: 0 14px 26px -14px rgba(20,17,12,.55);}
 /* watch before you file · this one thing must never toggle selection */
 .wurxbase-root .cx-pk-play {position: absolute; left: 8px; bottom: 8px; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; background: var(--wx-surface-1); color: var(--wx-text); box-shadow: 0 3px 10px rgba(20,17,12,.34); transition: transform .16s cubic-bezier(.2,.8,.3,1), background .16s;}
 .wurxbase-root .cx-pk-play:hover {transform: scale(1.12); background: var(--wx-surface-1);}
 .wurxbase-root .cx-pk-play:active {transform: scale(.94);}
-.wurxbase-root .cx-pk-tick {position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--wx-surface-1); border: 1.6px solid var(--wx-border); color: transparent; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); transition: background .18s, color .18s, border-color .18s, transform .18s;}
+.wurxbase-root .cx-pk-tick {position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--wx-surface-1) 28%, transparent); border: 1.6px solid var(--wx-border); color: transparent; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); transition: background .18s, color .18s, border-color .18s, transform .18s;}
 .wurxbase-root .cx-pk-v.on .cx-pk-tick {background: var(--wx-bg); border-color: var(--wx-border-strong); color: var(--wx-on-accent); transform: scale(1.06);}
 .wurxbase-root .cx-pk-v.on .cx-pk-shot {border-color: var(--wx-border-strong); box-shadow: 0 0 0 3px #14110C, 0 14px 26px -14px rgba(20,17,12,.55);}
 .wurxbase-root .cx-pk-v.on .cx-pk-veil {opacity: .55;}
@@ -3981,11 +3981,11 @@ from {opacity: 0; transform: translateY(16px) scale(.975);} }
 /* choosing WHICH angle · with more than one angle this is the real
    decision of the step, so it sits above the footer at full width with
    one button per angle in that angle's own colour */
-.wurxbase-root .cx-pk-send {padding: 14px 26px 4px; border-top: 1px solid var(--wx-accent); background: var(--wx-surface-1);}
+.wurxbase-root .cx-pk-send {padding: 14px 26px 4px; border-top: 1px solid color-mix(in srgb, var(--wx-accent) 6%, transparent); background: var(--wx-surface-1);}
 .wurxbase-root .cx-pk-send-h {display: block; margin-bottom: 10px; font-size: 11px; font-weight: 900; letter-spacing: .4px; text-transform: uppercase; color: var(--wx-text-muted); transition: color .2s, font-size .2s;}
 .wurxbase-root .cx-pk-send.live .cx-pk-send-h {color: var(--wx-text); letter-spacing: -.1px; text-transform: none; font-size: 13.5px;}
 .wurxbase-root .cx-pk-targets {display: flex; gap: 9px; flex-wrap: wrap;}
-.wurxbase-root .cx-pk-target {flex: 1 1 168px; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 10px 14px 10px 11px; border-radius: 17px; cursor: pointer; font-family: inherit; text-align: left; border: 1.5px solid var(--wx-accent); background: var(--wx-surface-1); transition: border-color .16s, box-shadow .16s, transform .14s, background .16s, opacity .16s;}
+.wurxbase-root .cx-pk-target {flex: 1 1 168px; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 10px 14px 10px 11px; border-radius: 17px; cursor: pointer; font-family: inherit; text-align: left; border: 1.5px solid color-mix(in srgb, var(--wx-accent) 10%, transparent); background: var(--wx-surface-1); transition: border-color .16s, box-shadow .16s, transform .14s, background .16s, opacity .16s;}
 .wurxbase-root .cx-pk-target i {flex: 0 0 auto; width: 28px; height: 28px; border-radius: 10px; background: var(--cx,var(--wx-surface-3)); color: var(--wx-on-accent); font-style: normal; font-size: 13px; font-weight: 900; display: inline-flex; align-items: center; justify-content: center; transition: transform .16s cubic-bezier(.2,.9,.3,1);}
 .wurxbase-root .cx-pk-target span {flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px;}
 .wurxbase-root .cx-pk-target b {font-size: 13px; font-weight: 800; color: var(--wx-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
@@ -3995,16 +3995,16 @@ from {opacity: 0; transform: translateY(16px) scale(.975);} }
 .wurxbase-root .cx-pk-target:hover:not(:disabled) i {transform: scale(1.1);}
 .wurxbase-root .cx-pk-target:active:not(:disabled) {transform: translateY(0) scale(.985);}
 .wurxbase-root .cx-pk-target:disabled {opacity: .42; cursor: default;}
-.wurxbase-root .cx-pk-foot {display: flex; align-items: center; gap: 10px; padding: 15px 26px 20px; border-top: 1px solid var(--wx-accent); background: var(--wx-surface-1);}
+.wurxbase-root .cx-pk-foot {display: flex; align-items: center; gap: 10px; padding: 15px 26px 20px; border-top: 1px solid color-mix(in srgb, var(--wx-accent) 6%, transparent); background: var(--wx-surface-1);}
 .wurxbase-root .cx-pk-foot > span {flex: 1; font-size: 12px; font-weight: 800; color: var(--wx-text-muted);}
-.wurxbase-root .cx-btn {height: 44px; padding: 0 24px; border-radius: 999px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 800; border: 1px solid var(--wx-accent); background: var(--wx-surface-1); color: var(--wx-text); transition: background .16s, transform .14s, box-shadow .16s;}
+.wurxbase-root .cx-btn {height: 44px; padding: 0 24px; border-radius: 999px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 800; border: 1px solid color-mix(in srgb, var(--wx-accent) 12%, transparent); background: var(--wx-surface-1); color: var(--wx-text); transition: background .16s, transform .14s, box-shadow .16s;}
 .wurxbase-root .cx-btn:hover {background: var(--wx-surface-2);}
 .wurxbase-root .cx-btn:active {transform: scale(.97);}
 .wurxbase-root .cx-btn.on {background: var(--wx-surface-3); border-color: var(--wx-border-strong); color: var(--wx-on-accent); box-shadow: 0 4px 14px -6px rgba(44,35,25,.7);}
 .wurxbase-root .cx-btn.on:hover:not(:disabled) {background: var(--wx-accent);}
 .wurxbase-root .cx-btn:disabled {opacity: .4; cursor: default; box-shadow: none;}
 /* ── the confirm sheet ─────────────────────────────────────── */
-.wurxbase-root .cx-cf-root {position: fixed; inset: 0; z-index: 940; background: var(--wx-info); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 24px; animation: cxFade .2s ease both;}
+.wurxbase-root .cx-cf-root {position: fixed; inset: 0; z-index: 940; background: color-mix(in srgb, var(--wx-info) 46%, transparent); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 24px; animation: cxFade .2s ease both;}
 .wurxbase-root .cx-cf {width: min(410px,100%); padding: 30px 28px 24px; text-align: center; background: var(--wx-surface-1); border-radius: 30px; box-shadow: 0 44px 90px -30px rgba(20,17,12,.62), 0 0 0 1px rgba(20,17,12,.05); animation: cxSheet .32s cubic-bezier(.2,.9,.25,1) both;}
 .wurxbase-root .cx-cf-ic {width: 66px; height: 66px; margin: 0 auto 16px; border-radius: 22px; display: flex; align-items: center; justify-content: center; color: var(--wx-on-accent); animation: cxWobble .6s cubic-bezier(.3,1.4,.5,1) .06s both;}
 @keyframes cxWobble{
@@ -4024,27 +4024,27 @@ from {opacity: 0; transform: translateY(16px) scale(.975);} }
 .wurxbase-root .cx-undo {position: fixed; z-index: 950; left: 50%; bottom: 28px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; overflow: hidden; padding: 13px 13px 13px 17px; border-radius: 999px; background: var(--wx-info); color: var(--wx-on-accent); box-shadow: 0 20px 44px -16px rgba(20,17,12,.7); animation: cxRise .34s cubic-bezier(.2,.9,.25,1) both;}
 @keyframes cxRise{
 from {opacity: 0; transform: translate(-50%,16px);} }
-.wurxbase-root .cx-undo-ic {display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: var(--wx-surface-2); color: var(--wx-on-accent);}
+.wurxbase-root .cx-undo-ic {display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: color-mix(in srgb, var(--wx-surface-2) 13%, transparent); color: var(--wx-on-accent);}
 .wurxbase-root .cx-undo b {font-size: 13px; font-weight: 800; letter-spacing: -.2px; white-space: nowrap;}
 .wurxbase-root .cx-undo > button {height: 34px; padding: 0 18px; border-radius: 999px; border: 0; cursor: pointer; background: var(--wx-surface-2); color: var(--wx-text); font-family: inherit; font-size: 12.5px; font-weight: 900; transition: transform .14s, background .16s;}
 .wurxbase-root .cx-undo > button:hover {background: var(--wx-surface-1);}
 .wurxbase-root .cx-undo > button:active {transform: scale(.95);}
-.wurxbase-root .cx-undo-bar {position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--wx-surface-2); transform-origin: left center; animation: cxDrain 5s linear both;}
+.wurxbase-root .cx-undo-bar {position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: color-mix(in srgb, var(--wx-surface-2) 55%, transparent); transform-origin: left center; animation: cxDrain 5s linear both;}
 @keyframes cxDrain{
 from {transform: scaleX(1);}
 to {transform: scaleX(0);} }
 /* read-only · the figures stay, the ways of changing them go */
 .wurxbase-root .cx-ro {display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 15px; border-radius: 999px; background: var(--wx-warning-soft); color: var(--wx-text-faint); font-size: 11.5px; font-weight: 800;}
-.wurxbase-root .cx-cell.locked {background: var(--wx-surface-1); border-style: dashed; border-color: var(--wx-accent);}
+.wurxbase-root .cx-cell.locked {background: var(--wx-surface-1); border-style: dashed; border-color: color-mix(in srgb, var(--wx-accent) 10%, transparent);}
 .wurxbase-root .cx-cell.locked input {color: var(--wx-text-faint); font-weight: 700; cursor: default;}
-.wurxbase-root .cx-cell.locked:focus-within {border-color: var(--wx-accent); box-shadow: none;}
+.wurxbase-root .cx-cell.locked:focus-within {border-color: color-mix(in srgb, var(--wx-accent) 10%, transparent); box-shadow: none;}
 .wurxbase-root .cx-name[readonly] {cursor: default;}
 .wurxbase-root .cx-name[readonly]:hover, .wurxbase-root .cx-name[readonly]:focus {background: transparent; box-shadow: none;}
 /* the same "watch it" affordance on a filed row */
 .wurxbase-root .cx-go {flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; background: var(--wx-surface-2); color: var(--wx-text-muted); opacity: 0; transition: opacity .16s, background .16s, color .16s;}
 .wurxbase-root .cx-tr:hover .cx-go {opacity: 1;}
 .wurxbase-root .cx-who:hover .cx-go {background: var(--wx-surface-2); color: var(--wx-accent);}
-.wurxbase-root .cx-tr:hover {background: var(--wx-info);}
+.wurxbase-root .cx-tr:hover {background: color-mix(in srgb, var(--wx-info) 1%, transparent);}
 
 @media (max-width:820px){
 .wurxbase-root .cx-tr {grid-template-columns: minmax(0,1fr) 62px 100px 100px 28px; gap: 8px;}
@@ -4080,7 +4080,7 @@ to {transform: scaleX(0);} }
    children of a scrolling column, so they shrank to nothing and the
    rows were clipped out of sight. flex:0 0 auto is the fix.
    ═══════════════════════════════════════════════════════════════ */
-.wurxbase-root .ac-root {position: fixed; inset: 0; z-index: 1200; background: var(--wx-info); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; padding: 22px; animation: cxFade .2s ease both;}
+.wurxbase-root .ac-root {position: fixed; inset: 0; z-index: 1200; background: color-mix(in srgb, var(--wx-info) 52%, transparent); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; padding: 22px; animation: cxFade .2s ease both;}
 .wurxbase-root .ac {width: min(1120px,100%); height: min(820px,94vh); display: flex; flex-direction: column; background: var(--wx-surface-1); border-radius: 32px; overflow: hidden; box-shadow: 0 48px 100px -34px rgba(20,17,12,.7), 0 0 0 1px rgba(20,17,12,.05); animation: cxSheet .32s cubic-bezier(.2,.9,.25,1) both;}
 .wurxbase-root .ac-top {display: flex; align-items: flex-start; gap: 14px; padding: 22px 24px 18px;}
 .wurxbase-root .ac-top-ic {flex: 0 0 auto; width: 44px; height: 44px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(140deg,var(--wx-accent) 0%,var(--wx-info) 100%); color: var(--wx-on-accent); box-shadow: 0 6px 16px -8px rgba(33,26,18,.9);}
@@ -4095,12 +4095,12 @@ to {transform: scaleX(0);} }
 .wurxbase-root .ac-step.foot i {background: var(--wx-success);}
 .wurxbase-root .ac-body {flex: 1; min-height: 0; display: grid; grid-template-columns: 262px minmax(0,1fr);}
 /* ── step 1 · the people ── */
-.wurxbase-root .ac-side {border-right: 1px solid var(--wx-accent); padding: 2px 12px 16px; overflow: auto; display: flex; flex-direction: column; gap: 4px; background: var(--wx-surface-1);}
+.wurxbase-root .ac-side {border-right: 1px solid color-mix(in srgb, var(--wx-accent) 7%, transparent); padding: 2px 12px 16px; overflow: auto; display: flex; flex-direction: column; gap: 4px; background: var(--wx-surface-1);}
 .wurxbase-root .ac-side .ac-step {padding: 10px 8px 8px;}
 .wurxbase-root .ac-side-none {padding: 16px 10px; font-size: 12px; font-weight: 700; color: var(--wx-text-muted);}
 .wurxbase-root .ac-u {flex: 0 0 auto; display: flex; align-items: center; gap: 11px; width: 100%; padding: 10px 11px; border: 1.5px solid transparent; border-radius: 16px; background: transparent; cursor: pointer; text-align: left; font-family: inherit; transition: background .15s, border-color .15s;}
 .wurxbase-root .ac-u:hover {background: var(--wx-surface-2);}
-.wurxbase-root .ac-u.on {background: var(--wx-surface-1); border-color: var(--wx-accent); box-shadow: 0 2px 8px -4px rgba(20,17,12,.3);}
+.wurxbase-root .ac-u.on {background: var(--wx-surface-1); border-color: color-mix(in srgb, var(--wx-accent) 12%, transparent); box-shadow: 0 2px 8px -4px rgba(20,17,12,.3);}
 .wurxbase-root .ac-u-face {flex: 0 0 auto; width: 36px; height: 36px; border-radius: 12px; color: var(--wx-on-accent); display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900;}
 .wurxbase-root .ac-u-say {flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;}
 .wurxbase-root .ac-u-say b {font-size: 13.5px; font-weight: 800; color: var(--wx-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
@@ -4121,21 +4121,21 @@ to {transform: scaleX(0);} }
 .wurxbase-root .ac-tally i.no {background: var(--wx-warning-soft); color: var(--wx-text-faint);}
 .wurxbase-root .ac-tally i.hand {background: var(--wx-bg); color: var(--wx-warning);}
 /* the role band · a starting point, said out loud */
-.wurxbase-root .ac-roleband {display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 2px 24px 14px; padding: 13px 16px; border-radius: 20px; background: var(--wx-surface-1); border: 1px solid var(--wx-accent);}
+.wurxbase-root .ac-roleband {display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 2px 24px 14px; padding: 13px 16px; border-radius: 20px; background: var(--wx-surface-1); border: 1px solid color-mix(in srgb, var(--wx-accent) 6%, transparent);}
 .wurxbase-root .ac-roleband-say {flex: 1; min-width: 170px;}
 .wurxbase-root .ac-roleband-say b {display: block; font-size: 12.5px; font-weight: 900; color: var(--wx-text);}
 .wurxbase-root .ac-roleband-say small {display: block; margin-top: 2px; font-size: 11.5px; font-weight: 600; color: var(--wx-text-muted);}
 .wurxbase-root .ac-roles {display: flex; gap: 5px; flex-wrap: wrap;}
-.wurxbase-root .ac-role {height: 31px; padding: 0 13px; border-radius: 999px; cursor: pointer; font-family: inherit; border: 1.5px solid var(--wx-accent); background: var(--wx-surface-1); color: var(--wx-text-faint); font-size: 11.5px; font-weight: 800; text-transform: capitalize; transition: all .16s;}
-.wurxbase-root .ac-role:hover {color: var(--wx-text); border-color: var(--wx-accent);}
+.wurxbase-root .ac-role {height: 31px; padding: 0 13px; border-radius: 999px; cursor: pointer; font-family: inherit; border: 1.5px solid color-mix(in srgb, var(--wx-accent) 12%, transparent); background: var(--wx-surface-1); color: var(--wx-text-faint); font-size: 11.5px; font-weight: 800; text-transform: capitalize; transition: all .16s;}
+.wurxbase-root .ac-role:hover {color: var(--wx-text); border-color: color-mix(in srgb, var(--wx-accent) 30%, transparent);}
 .wurxbase-root .ac-role.on {color: var(--wx-on-accent);}
 /* ── step 2 · the switches ── */
 .wurxbase-root .ac-step2 {display: flex; align-items: center; gap: 12px; padding: 0 24px 12px; flex-wrap: wrap;}
 .wurxbase-root .ac-step2 .ac-step {flex: 1; min-width: 200px;}
 .wurxbase-root .ac-quicks {display: flex; gap: 6px; flex-wrap: wrap;}
-.wurxbase-root .ac-quick {height: 34px; padding: 0 14px; border-radius: 999px; cursor: pointer; font-family: inherit; border: 1px solid var(--wx-accent); background: var(--wx-surface-1); color: var(--wx-text); font-size: 11.5px; font-weight: 800; transition: background .16s, color .16s, opacity .16s;}
+.wurxbase-root .ac-quick {height: 34px; padding: 0 14px; border-radius: 999px; cursor: pointer; font-family: inherit; border: 1px solid color-mix(in srgb, var(--wx-accent) 12%, transparent); background: var(--wx-surface-1); color: var(--wx-text); font-size: 11.5px; font-weight: 800; transition: background .16s, color .16s, opacity .16s;}
 .wurxbase-root .ac-quick:hover:not(:disabled) {background: var(--wx-surface-2); color: var(--wx-text);}
-.wurxbase-root .ac-quick.warn {color: var(--wx-danger); border-color: var(--wx-accent); background: var(--wx-bg);}
+.wurxbase-root .ac-quick.warn {color: var(--wx-danger); border-color: color-mix(in srgb, var(--wx-accent) 24%, transparent); background: var(--wx-bg);}
 .wurxbase-root .ac-quick.warn:hover:not(:disabled) {background: var(--wx-surface-2);}
 .wurxbase-root .ac-quick:disabled {opacity: .4; cursor: default;}
 .wurxbase-root .ac-find {display: flex; align-items: center; gap: 9px; height: 44px; margin: 0 24px 12px; padding: 0 8px 0 16px; border-radius: 999px; background: var(--wx-warning-soft); border: 1.5px solid transparent; transition: background .18s, border-color .18s, box-shadow .18s;}
@@ -4147,8 +4147,8 @@ to {transform: scaleX(0);} }
 .wurxbase-root .ac-find > button:hover {background: var(--wx-surface-3); color: var(--wx-text);}
 .wurxbase-root .ac-groups {flex: 1; min-height: 0; overflow: auto; padding: 0 24px 22px; display: flex; flex-direction: column; gap: 11px;}
 /* the v313 bug · without this every drawer is squeezed to nothing */
-.wurxbase-root .ac-g {flex: 0 0 auto; border: 1px solid var(--wx-accent); border-radius: 22px; background: var(--wx-surface-1); transition: border-color .2s, box-shadow .2s;}
-.wurxbase-root .ac-g.open {border-color: var(--wx-accent); box-shadow: 0 8px 22px -18px rgba(20,17,12,.6);}
+.wurxbase-root .ac-g {flex: 0 0 auto; border: 1px solid color-mix(in srgb, var(--wx-accent) 8%, transparent); border-radius: 22px; background: var(--wx-surface-1); transition: border-color .2s, box-shadow .2s;}
+.wurxbase-root .ac-g.open {border-color: color-mix(in srgb, var(--wx-accent) 13%, transparent); box-shadow: 0 8px 22px -18px rgba(20,17,12,.6);}
 .wurxbase-root .ac-g-top {display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; -webkit-user-select: none; user-select: none; border-radius: 22px; transition: background .15s;}
 .wurxbase-root .ac-g-top:hover {background: var(--wx-surface-1);}
 .wurxbase-root .ac-g-chev {flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; background: var(--wx-warning-soft); color: var(--wx-text); display: inline-flex; align-items: center; justify-content: center;}
@@ -4163,7 +4163,7 @@ to {transform: scaleX(0);} }
 .wurxbase-root .ac-drawer {display: grid; grid-template-rows: 0fr; transition: grid-template-rows .38s cubic-bezier(.22,.9,.24,1);}
 .wurxbase-root .ac-g.open .ac-drawer {grid-template-rows: 1fr;}
 .wurxbase-root .ac-rows {overflow: hidden; min-height: 0; display: flex; flex-direction: column;}
-.wurxbase-root .ac-row {display: flex; align-items: center; gap: 14px; padding: 13px 16px; cursor: pointer; border-top: 1px solid var(--wx-accent); transition: background .14s;}
+.wurxbase-root .ac-row {display: flex; align-items: center; gap: 14px; padding: 13px 16px; cursor: pointer; border-top: 1px solid color-mix(in srgb, var(--wx-accent) 6%, transparent); transition: background .14s;}
 .wurxbase-root .ac-row:hover {background: var(--wx-surface-1);}
 .wurxbase-root .ac-row-say {flex: 1; min-width: 0;}
 .wurxbase-root .ac-row-say b {display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 800; color: var(--wx-text); transition: color .16s;}
@@ -4181,12 +4181,12 @@ to {transform: scaleX(0);} }
 .wurxbase-root .ac-sw.sm {width: 44px; height: 26px;}
 .wurxbase-root .ac-sw.sm i {width: 20px; height: 20px;}
 .wurxbase-root .ac-sw.sm.on i {transform: translateX(18px);}
-.wurxbase-root .ac-foot {display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-top: 1px solid var(--wx-accent); background: var(--wx-surface-1);}
+.wurxbase-root .ac-foot {display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-top: 1px solid color-mix(in srgb, var(--wx-accent) 7%, transparent); background: var(--wx-surface-1);}
 .wurxbase-root .ac-foot-sp {flex: 1;}
 .wurxbase-root .ac-note {font-size: 12px; font-weight: 800; color: var(--wx-success);}
 .wurxbase-root .ac-note.bad {color: var(--wx-danger);}
 .wurxbase-root .ac-dirty {height: 25px; padding: 0 12px; border-radius: 999px; background: var(--wx-bg); color: var(--wx-warning); font-size: 11px; font-weight: 900; display: inline-flex; align-items: center;}
-.wurxbase-root .ac-btn {height: 44px; padding: 0 24px; border-radius: 999px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 800; border: 1px solid var(--wx-accent); background: var(--wx-surface-1); color: var(--wx-text); transition: background .16s, transform .14s;}
+.wurxbase-root .ac-btn {height: 44px; padding: 0 24px; border-radius: 999px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 800; border: 1px solid color-mix(in srgb, var(--wx-accent) 12%, transparent); background: var(--wx-surface-1); color: var(--wx-text); transition: background .16s, transform .14s;}
 .wurxbase-root .ac-btn:hover {background: var(--wx-surface-2);}
 .wurxbase-root .ac-btn:active {transform: scale(.97);}
 .wurxbase-root .ac-btn.on {background: var(--wx-surface-3); border-color: var(--wx-border-strong); color: var(--wx-on-accent); box-shadow: 0 4px 14px -6px rgba(44,35,25,.7);}
@@ -4196,7 +4196,7 @@ to {transform: scaleX(0);} }
 @media (max-width:900px){
 .wurxbase-root .ac {height: 95vh; border-radius: 24px;}
 .wurxbase-root .ac-body {grid-template-columns: 1fr; grid-template-rows: auto minmax(0,1fr);}
-.wurxbase-root .ac-side {flex-direction: row; border-right: 0; border-bottom: 1px solid var(--wx-accent); overflow-x: auto; padding: 10px 12px; gap: 8px;}
+.wurxbase-root .ac-side {flex-direction: row; border-right: 0; border-bottom: 1px solid color-mix(in srgb, var(--wx-accent) 7%, transparent); overflow-x: auto; padding: 10px 12px; gap: 8px;}
 .wurxbase-root .ac-side .ac-step {display: none;}
 .wurxbase-root .ac-u {width: auto; flex: 0 0 auto;}
 .wurxbase-root .ac-u-go {display: none;}
@@ -4307,7 +4307,7 @@ to {transform: scaleX(0);} }
 .wurxbase-root .rp-say {font-size: 26px !important;}
 .wurxbase-root .rp-hero-num {font-size: 38px !important;}
 .wurxbase-root .rp-strip {grid-template-columns: 1fr !important;}
-.wurxbase-root .rp-strip-cell {border-left: 0 !important; border-top: 1px solid var(--wx-border);}
+.wurxbase-root .rp-strip-cell {border-left: 0 !important; border-top: 1px solid color-mix(in srgb, var(--wx-border) 10%, transparent);}
 .wurxbase-root .rp-row3 {grid-template-columns: 1fr !important;}
 .wurxbase-root .report-print-root {padding-bottom: 110px !important;}
 }
@@ -4350,7 +4350,7 @@ to {transform: scaleX(0);} }
   @keyframes respSheet{
 from {opacity: 0; transform: translateY(30px);} }
 /* a grab handle, so it reads as a sheet */
-.wurxbase-root .cx-pk::before, .wurxbase-root .ac::before {content: ''; display: block; width: 38px; height: 4px; border-radius: 99px; background: var(--wx-info); margin: 9px auto 0; flex: 0 0 auto;}
+.wurxbase-root .cx-pk::before, .wurxbase-root .ac::before {content: ''; display: block; width: 38px; height: 4px; border-radius: 99px; background: color-mix(in srgb, var(--wx-info) 16%, transparent); margin: 9px auto 0; flex: 0 0 auto;}
 .wurxbase-root .cx-undo {bottom: 88px;}
 }
 

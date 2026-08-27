@@ -171,6 +171,26 @@ const ROLE_TOKENS = {
 function semanticFor(rgb, r) {
   const [rr, gg, bb] = rgb;
   const max = Math.max(rr, gg, bb), min = Math.min(rr, gg, bb);
+  /*
+   * THIS GATE IS WRONG AND IS DELIBERATELY LEFT WRONG. See PARKED 32.
+   *
+   * HSV saturation is a ratio, so it exaggerates wildly in the dark. Their
+   * whole chrome is warm dark browns, and `#30271C` reads as 0.42 saturated at
+   * hue 33 — indistinguishable, to this formula, from real amber. So their
+   * brown surfaces land on `--wx-warning`. OKLab chroma separates the two with
+   * an enormous margin: measured across their palette every neutral sits at or
+   * below 0.030 and every genuinely semantic colour at or above 0.105, so
+   * `Math.hypot(...oklab(rgb).slice(1)) < 0.06` is the correct test and needs
+   * no tuning.
+   *
+   * IT CANNOT BE SWITCHED ON ALONE. Background and ink are mapped as separate
+   * declarations that never see each other, so a pair only stays legible by
+   * luck. Their Print PDF button is dark brown with pale cream on it; today
+   * both sides go pale and it reads. Correct the gate and the background
+   * becomes a solid accent while the ink stays muted — 1.1:1 — and the same
+   * happens on three other screens. The fix has to pair the two, not just
+   * classify better.
+   */
   const sat = max === 0 ? 0 : (max - min) / max;
   if (sat < 0.35) return null;                       // grey enough to be neutral
   let h = 0;
@@ -226,6 +246,97 @@ function parseColour(c) {
   }
   return null;
 }
+/*
+ * HOW SEE-THROUGH WAS IT?
+ *
+ * `parseColour` deliberately throws the alpha away, because the perceptual
+ * match only makes sense on an opaque colour. Nothing used to put it back,
+ * and that is the whole reason the reskin looked the way it did: their row
+ * hover is `rgba(20,17,12,.014)`, a wash you can barely see, and it came out
+ * of the pipeline as a SOLID fill. A 1.4% tint and a 100% flood are the same
+ * colour to a matcher that cannot see alpha.
+ *
+ * So the alpha is read separately here and re-applied to whatever token the
+ * match lands on. A faint thing stays faint.
+ */
+function alphaOf(c) {
+  c = c.trim().toLowerCase();
+  let m = /^#[0-9a-f]{3}([0-9a-f])$/.exec(c);
+  if (m) return parseInt(m[1] + m[1], 16) / 255;
+  m = /^#[0-9a-f]{6}([0-9a-f]{2})$/.exec(c);
+  if (m) return parseInt(m[1], 16) / 255;
+  m = /^rgba?\(([^)]+)\)$/.exec(c) || /^hsla?\(([^)]+)\)$/.exec(c);
+  if (m) {
+    const p = m[1].split(/[,\s/]+/).filter(Boolean);
+    if (p.length >= 4) {
+      const raw = p[3];
+      const n = parseFloat(raw);
+      if (Number.isFinite(n)) return raw.includes('%') ? n / 100 : n;
+    }
+  }
+  return 1;
+}
+
+/* Pull one complete `name(...)` expression out of a value, counting brackets
+   so a nested `var()` does not end it early. Returns null if it is not there. */
+function balanced(value, name) {
+  const at = value.toLowerCase().indexOf(name + '(');
+  if (at < 0) return null;
+  let depth = 0;
+  for (let i = at + name.length; i < value.length; i++) {
+    if (value[i] === '(') depth++;
+    else if (value[i] === ')' && --depth === 0) return value.slice(at, i + 1);
+  }
+  return null;
+}
+
+/* Re-apply an alpha to a token reference. `color-mix` is the only way to say
+   "this token, but see-through" without hardcoding the colour and losing the
+   theme with it. */
+function withAlpha(tokenRef, a) {
+  if (a >= 1) return tokenRef;
+  if (a <= 0) return 'transparent';
+  const pct = Math.max(1, Math.round(a * 100));
+  return `color-mix(in srgb, ${tokenRef} ${pct}%, transparent)`;
+}
+
+/*
+ * WHEN OUR STORED DECISION IS NOT A DECISION, JUST AN OLD MISTAKE.
+ *
+ * Passes 1 and 2 both rest on the same idea: where a rule existed before,
+ * somebody looked at it and chose a token, and that beats any amount of
+ * colour-distance reasoning. That holds right up until the previous run was
+ * wrong — and then it is the mechanism that makes the mistake permanent,
+ * because the reference is read from `git show HEAD:` and HEAD is the last
+ * run's output. The v382 reskin shipped a 1.4% wash as a solid blue, and a
+ * re-run would have handed it straight back, verbatim, as a considered choice.
+ *
+ * So a stored value is trusted unless it claims something their colour cannot
+ * support, and the bar for "cannot" is deliberately low: ONE claim, checkable
+ * with no judgement in it at all — an OPAQUE token standing where their colour
+ * is see-through. A fill is either transparent or it is not.
+ *
+ * IT DELIBERATELY DOES NOT SECOND-GUESS THE HUE. The first version of this
+ * also threw out a semantic token whenever the source colour was too grey to
+ * be semantic, and that overruled 515 stored values — including
+ * `.pc-bt-sort.on`, whose `--wx-warning` background is a deliberate choice
+ * made on a neutral source, and which this script's own comment records as a
+ * mistake somebody already made once. It re-broke four screens. Choosing to
+ * make a neutral thing loud is a design decision; a person is allowed to make
+ * it and a colour-distance rule is not allowed to undo it.
+ *
+ * Getting the hue right belongs at DERIVATION, in `semanticFor`, where there
+ * is no human decision to overrule.
+ */
+function contradicts(theirValue, ourValue) {
+  if (!/var\(--wx-/.test(ourValue)) return false;
+  if (/color-mix|rgba?\(|hsla?\(/i.test(ourValue)) return false;   // already see-through
+  for (const c of theirValue.match(COLOUR_G) || []) {
+    if (parseColour(c) && alphaOf(c) < 0.9) return true;
+  }
+  return false;
+}
+
 const lin = (v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
 function oklab(rgb) {
   const [r, g, b] = rgb.map(lin);
@@ -240,7 +351,19 @@ function oklab(rgb) {
 }
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
-/* Our palette, read from the dark block of tokens.css. */
+/*
+ * OUR PALETTE, IN ITS LIGHT VALUES — and the comment used to say "dark", which
+ * was simply untrue. The slice runs from `:root` to the first `@media`, and
+ * `[data-theme='light']` sits inside that span, so its definitions overwrite
+ * the dark ones and the matcher has always compared against light.
+ *
+ * Left as it is, now that it is understood, because it is the right end to
+ * match from: THEIR design is a light one — white cards, near-black text,
+ * cream chrome — so lining their colours up against our light values maps like
+ * to like, and the token then flips correctly in dark mode on its own. Match
+ * their white card against our DARK surface and it lands on whatever happens
+ * to be nearest in the wrong half of the range.
+ */
 function palette() {
   const css = read('src/styles/tokens.css');
   const block = css.slice(css.indexOf(':root'), css.indexOf('@media'));
@@ -320,7 +443,24 @@ function learn(theirCss, ourCss) {
       const toks = myVal.match(/var\((--wx-[a-z0-9-]+)\)/g) || [];
       if (cols.length === 1 && toks.length === 1) {
         const key = `${role(prop)}|${normC(cols[0])}`;
-        if (!learned.has(key)) learned.set(key, toks[0]);
+        /*
+         * WHAT IS LEARNED IS THE TOKEN, AND ONLY THE TOKEN.
+         *
+         * This map is keyed by colour, so it is global: every occurrence of
+         * that colour anywhere gets this answer. Refusing to learn from a rule
+         * therefore does not leave the key empty — it hands it to whichever
+         * OTHER rule mentions the same colour next, whose choice may be worse.
+         * Filtering here re-pointed `#F5E9D6` from `--wx-warning-soft` to the
+         * solid accent and put grey text on gold across the report header.
+         * So nothing is filtered out here. Opacity is corrected per
+         * declaration, at the point of use, where it cannot move a key.
+         *
+         * THE EXPRESSION ONLY, never the rest of the declaration: what gets
+         * stored is substituted for a colour INSIDE another value, so a stored
+         * `... !important` lands in front of the original one and lightningcss
+         * rejects the whole stylesheet at build.
+         */
+        if (!learned.has(key)) learned.set(key, balanced(myVal, 'color-mix') ?? toks[0]);
       }
     }
   }
@@ -357,7 +497,7 @@ function fenceSelector(sel) {
     .join(', ');
 }
 
-const stats = { verbatim: 0, learned: 0, curated: 0, nearest: 0, kept: 0 };
+const stats = { verbatim: 0, learned: 0, curated: 0, nearest: 0, kept: 0, translucent: 0, redecided: 0 };
 const nearestLog = new Map();
 
 function themeValue(prop, value, learned, pal, vars) {
@@ -376,15 +516,36 @@ function themeValue(prop, value, learned, pal, vars) {
   if (r === 'shadow' || r === 'other') { stats.kept += (value.match(COLOUR_G) || []).length; return value; }
 
   return value.replace(COLOUR_G, (c) => {
+    const a0 = alphaOf(c);
+    if (a0 < 1) stats.translucent++;
     const key = `${r}|${normC(c)}`;
-    if (learned.has(key)) { stats.learned++; return learned.get(key); }
+    if (learned.has(key)) {
+      stats.learned++;
+      const v = learned.get(key);
+      /*
+       * THE LEARNED MAP KNOWS WHICH TOKEN, NOT HOW SEE-THROUGH.
+       *
+       * Its keys do carry the alpha, so in principle its answer is already
+       * the answer for this exact colour — but it was learned from a run that
+       * could not see alpha at all, so a bare opaque token standing against a
+       * see-through colour is that run's bug, not last time's decision. The
+       * hue is kept, which is the part a person may have chosen; only the
+       * opacity is restored. An entry that is already a colour-mix carries
+       * its own opacity and is left exactly as it is.
+       */
+      return /color-mix/i.test(v) ? v : withAlpha(v, a0);
+    }
+    /* CURATED is hand-written and its keys spell out the alpha, so its answer
+       is final: `rgba(255,255,255,0.06) -> --wx-border` is somebody saying
+       "that faint white line is our border colour", not an oversight. */
     const cur = CURATED[r]?.[normC(c)];
     if (cur) { stats.curated++; return `var(${cur})`; }
     const rgb = parseColour(c);
     const choices = ROLE_TOKENS[r];
     if (!rgb || !choices) { stats.kept++; return c; }
+    const a = a0;
     const sem = (r === 'fill' || r === 'ink' || r === 'line') ? semanticFor(rgb, r) : null;
-    if (sem) { stats.nearest++; nearestLog.set(`${r}|${normC(c)} -> ${sem}`, (nearestLog.get(`${r}|${normC(c)} -> ${sem}`) ?? 0) + 1); return `var(${sem})`; }
+    if (sem) { stats.nearest++; nearestLog.set(`${r}|${normC(c)} -> ${sem}`, (nearestLog.get(`${r}|${normC(c)} -> ${sem}`) ?? 0) + 1); return withAlpha(`var(${sem})`, a); }
     const lab = oklab(rgb);
     let best = null, bestD = Infinity;
     for (const t of choices) {
@@ -396,7 +557,7 @@ function themeValue(prop, value, learned, pal, vars) {
     if (!best) { stats.kept++; return c; }
     stats.nearest++;
     nearestLog.set(key, (nearestLog.get(key) ?? 0) + 1);
-    return `var(${best})`;
+    return withAlpha(`var(${best})`, a);
   });
 }
 
@@ -492,10 +653,11 @@ function transformCss(theirCss, ourCss, pal) {
         const pre = lead.length ? lead.join(' ') + ' ' : '';
 
         const mine = previously?.get(p);
-        if (mine !== undefined && /var\(--wx-/.test(mine)) {
+        if (mine !== undefined && /var\(--wx-/.test(mine) && !contradicts(val, mine)) {
           stats.verbatim++;
           return `${pre}${prop}: ${mine}`;
         }
+        if (mine !== undefined && contradicts(val, mine)) stats.redecided++;
         return `${pre}${prop}: ${themeValue(p, val.trim(), learned, pal, vars)}`;
       })
       .filter(Boolean);
@@ -611,7 +773,9 @@ for (const f of THEME_CSS) {
 
 console.log(
   `\ntotals: kept ours ${stats.verbatim}  learned ${stats.learned}  curated ${stats.curated}  ` +
-    `nearest ${stats.nearest}  untouched ${stats.kept}`
+    `nearest ${stats.nearest}  untouched ${stats.kept}\n` +
+    `        of the matched colours, ${stats.translucent} were see-through and kept their alpha\n` +
+    `        ${stats.redecided} stored decisions were overruled: the source colour could not support them`
 );
 if (nearestLog.size) {
   console.log(`\nfell through to the perceptual fallback (${nearestLog.size} distinct) - the ones worth eyeballing:`);
