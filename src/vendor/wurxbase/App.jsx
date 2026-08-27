@@ -2,11 +2,18 @@ import React, {
   useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo
 } from 'react';
 import { createPortal } from 'react-dom';
+import SqlQuest from './SqlQuest';
+import GodMode, { applyGod, loadGod } from './GodMode';
+import { fetchBrandContracts } from './brandContract';
+import CreativeAngles from './CreativeAngles';
+import AccessControl from './AccessControl';
+import { can } from './access';
+import { fetchAngles } from './angleStore';
 import './App.css';
 import './responsive.css';
 import './theme.css';
 import './tailwind.css';
-import { supabase } from './supabaseClient';
+import { supabase, selectAll } from './supabaseClient';
 import WurxUI from './WurxUI';
 
 /* ─── Constants ──────────────────────────────────────────── */
@@ -212,6 +219,10 @@ function getPerms(role, customPerms = null) {
   if (!customPerms || Object.keys(customPerms).length === 0) return base;
   return { ...base, ...customPerms };
 }
+
+/* Anything gated on a capability asks through here, so a grant made in
+   Access control is felt the moment that person signs in. */
+function allowed(user, key) { return can(user, key); }
 
 function relativeTime(ts) {
   if (!ts) return 'Never';
@@ -3174,13 +3185,66 @@ function StatTile({ label, value, sub, color, pct }) {
   );
 }
 
+/* A ring reads "how far along" before you have parsed the number, so the
+   two ratios that have a meaningful ceiling get one: 100% delivered, and
+   3x ROAS as a practical top of scale. */
+function Ring({ value, color, center }) {
+  const R = 34, C = 2 * Math.PI * R;
+  const v = Math.max(0, Math.min(1, Number(value) || 0));
+  return (
+    <svg viewBox="0 0 88 88" className="rb-ring">
+      <circle cx="44" cy="44" r={R} className="rb-ring-bg" />
+      <circle cx="44" cy="44" r={R} stroke={color}
+        strokeDasharray={(C * v).toFixed(1) + " " + C.toFixed(1)}
+        className="rb-ring-fg" />
+      <text x="44" y="49" textAnchor="middle" className="rb-ring-num">{center}</text>
+    </svg>
+  );
+}
+
+/* ─── Reporting · one stat, told in three lines ───────────────────
+   Small caps label, the figure at full weight, then how it moved. The
+   accent stripe is the only colour on the card so six of them in a row
+   stay scannable instead of turning into a paint chart. */
+function fmt$Round(n) {
+  return '$' + Math.round(Number(n) || 0).toLocaleString('en-US');
+}
+function RepStat({ label, value, sub, delta, neutral, bar, accent }) {
+  const up = delta != null && delta >= 0;
+  return (
+    <div className="rep-stat" style={{ '--rep-accent': accent }}>
+      <div className="rep-stat-l">{label}</div>
+      <div className="rep-stat-v">{value}</div>
+      {bar != null && (
+        <div className="rep-stat-bar"><i style={{ width: Math.min(100, bar) + '%' }} /></div>
+      )}
+      <div className="rep-stat-f">
+        {delta != null && isFinite(delta) && (
+          /* On ad spend a rise is neither good nor bad on its own — ROAS is
+             the row that judges it — so that one chip stays neutral. */
+          <span className={'rep-delta ' + (neutral ? 'flat' : up ? 'up' : 'down')}>
+            {up ? '↑' : '↓'} {up ? '+' : ''}{Math.round(delta)}%
+          </span>
+        )}
+        {sub && <span className="rep-stat-s">{sub}</span>}
+      </div>
+    </div>
+  );
+}
+
 /* ─── ReportingViewV2 · premium executive report ─── */
-function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, onExportCsv }) {
+function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, currentUser, onExportCsv }) {
   // `creators` = hire-date filtered list (matches Brands tab scope).
   // `allCreators` = full pool restricted only to Active brands. Used solely for
   // GMV / Ad Spent / ROAS so reporting numbers mirror Performance tab brand rows -
   // e.g. May data entered for an April-hired creator still rolls into May Reporting.
   const gmvPool = allCreators || creators;
+
+  /* Two jobs live in this tab and they are read at different moments:
+     the executive report is what you send out, the angle test is what
+     you work in. Stacking them made one long scroll where the test sat
+     below the fold, so they are now two panes of one switch. */
+  const [repTab, setRepTab] = useState('report');
 
   // Brand parity: parse all 3 deal formats Brands tab understands. The top-level
   // parseDeal only catches "for N" · so deals like "5 videos $100", "$200/5",
@@ -3350,6 +3414,12 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, onExp
     })).sort((a, b) => (b.gmv - a.gmv) || a.brand.localeCompare(b.brand));
   }, [creators, gmvPool, dateFilter]);
 
+  /* The month this section works in · a creative test lives inside one
+     cycle, so year and all-time views deliberately leave it empty. */
+  const angleMonth = (dateFilter && dateFilter.mode === 'month')
+    ? `${dateFilter.year}-${String(dateFilter.month + 1).padStart(2, '0')}`
+    : '';
+
   const periodLabel = (() => {
     if (!dateFilter || dateFilter.mode === 'all') return 'All time';
     if (dateFilter.mode === 'year') return `${dateFilter.year}`;
@@ -3386,14 +3456,21 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, onExp
     for (let i = 5; i >= 0; i--) {
       const d = new Date(anchor.getFullYear(), anchor.getMonth() - i, 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      let gmv = 0;
+      let gmv = 0, ad = 0;
       src.forEach(c => {
         const mo = c.monthly || {};
         Object.keys(mo).forEach(k => {
-          if (k === key || k.startsWith(`${key}@`)) gmv += Number(mo[k]?.gmv) || 0;
+          if (k === key || k.startsWith(`${key}@`)) {
+            gmv += Number(mo[k]?.gmv) || 0;
+            ad += Number(mo[k]?.adSpent) || 0;
+          }
         });
       });
-      months.push({ key, label: d.toLocaleDateString('en-US', { month: 'short' }), gmv });
+      months.push({
+        key, gmv, ad,
+        label: d.toLocaleDateString('en-US', { month: 'short' }),
+        full: d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+      });
     }
     return months;
   }, [allCreators, creators, dateFilter]);
@@ -3403,6 +3480,161 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, onExp
     if (!prev) return null;
     return ((cur - prev) / prev) * 100;
   }, [gmvTrend]);
+
+  /* Movement for the tile rail · measured between the last two months of the
+     trend window, and only where the earlier month actually has a figure to
+     compare against. */
+  const mom = useMemo(() => {
+    /* Compare the last two months that actually CARRY figures, not simply the
+       last two slots. The current month is usually still empty — measuring
+       against it reported a flat "-100%" on every tile, which reads as a
+       collapse when really nothing has been entered yet. */
+    const filled = gmvTrend.filter(m => m.gmv > 0 || m.ad > 0);
+    if (filled.length < 2) return {};
+    const cur = filled[filled.length - 1], prev = filled[filled.length - 2];
+    const pc = (a, b) => (b > 0 ? Math.round(((a - b) / b) * 100) : null);
+    const cr = cur.ad > 0 ? cur.gmv / cur.ad : null;
+    const pr = prev.ad > 0 ? prev.gmv / prev.ad : null;
+    return {
+      gmv: pc(cur.gmv, prev.gmv),
+      ad: pc(cur.ad, prev.ad),
+      roas: (cr != null && pr != null) ? pc(cr, pr) : null,
+      label: prev.full,
+      curLabel: cur.full,
+    };
+  }, [gmvTrend]);
+
+  /* The sentence at the top · assembled from the same figures shown below,
+     so it can never drift from them. Written as something a person would
+     actually say, which is the whole point of a brief. */
+  const brief = useMemo(() => {
+    const top = [...brandBreakdown].sort((a, b) => b.gmv - a.gmv)[0];
+    const scope = activeBrand === 'All' ? 'across every brand' : activeBrand;
+    let headline, detail;
+    if (!stats.totalGMV && !stats.totalAdSpent) {
+      headline = 'Nothing recorded for this period yet.';
+      detail = `${stats.totalCreators} deals are on the books, but no GMV or ad spend has been entered against them.`;
+    } else if (top && top.gmv > 0 && activeBrand === 'All') {
+      const shareP = stats.totalGMV > 0 ? Math.round((top.gmv / stats.totalGMV) * 100) : 0;
+      headline = `${top.brand} is carrying this period.`;
+      detail = `${fmt$Round(top.gmv)} of ${fmt$Round(stats.totalGMV)} GMV, ${shareP}% of everything ${scope}`
+        + (top.roas != null ? `, at ${top.roas.toFixed(2)}× on ads.` : '.');
+    } else {
+      headline = stats.roas == null ? 'Sales recorded, no ad spend behind them.'
+        : stats.roas >= 1 ? 'Ads are paying for themselves.' : 'Ads are costing more than they return.';
+      detail = `${fmt$Round(stats.totalGMV)} GMV on ${fmt$Round(stats.totalAdSpent)} of spend ${scope}.`;
+    }
+    return { headline, detail };
+  }, [stats, brandBreakdown, activeBrand]);
+
+  const chart = (() => {
+              /* Drop trailing months that hold nothing. The window always ends
+                 on the current month, which normally has no figures entered
+                 yet — plotting it pulled the line down to zero and read as a
+                 collapse rather than as "not filled in". */
+              let plot = gmvTrend.slice();
+              while (plot.length && plot[plot.length - 1].gmv === 0 && plot[plot.length - 1].ad === 0) plot.pop();
+              const skipped = gmvTrend.length - plot.length;
+              if (plot.length < 2) {
+                return <div className="tw-text-[11px] tw-italic tw-py-10 tw-text-center" style={{ color: 'rgba(245,233,214,0.5)' }}>
+                  Not enough months with figures to draw a trend yet.
+                </div>;
+              }
+
+              /* Everything — bars, line, dots and the month names — is drawn
+                 from the SAME x(i). The labels used to live in a separate flex
+                 row spanning edge to edge while the plot was inset, so no
+                 point ever sat above its own month. */
+              const W = 620, H = 168;
+              const P = { l: 46, r: 46, t: 22, b: 30 };
+              const iw = W - P.l - P.r, ih = H - P.t - P.b;
+              const maxG = Math.max(...plot.map(d => d.gmv), 1);
+              const maxA = Math.max(...plot.map(d => d.ad), 1);
+              const barW = Math.min(30, (iw / plot.length) * 0.44);
+              const inset = barW / 2 + 4;
+              const span = Math.max(iw - inset * 2, 1);
+              const x = i => P.l + inset + (plot.length === 1 ? span / 2 : (i * span) / (plot.length - 1));
+              const yG = v => P.t + ih - (v / maxG) * ih;
+              const pts = plot.map((d, i) => [x(i), yG(d.gmv)]);
+              const line = pts.map((pt, i) => {
+                if (i === 0) return `M${pt[0].toFixed(1)},${pt[1].toFixed(1)}`;
+                const pr = pts[i - 1];
+                const cx = ((pr[0] + pt[0]) / 2).toFixed(1);
+                return `C${cx},${pr[1].toFixed(1)} ${cx},${pt[1].toFixed(1)} ${pt[0].toFixed(1)},${pt[1].toFixed(1)}`;
+              }).join(' ');
+              const area = `${line} L${pts[pts.length - 1][0].toFixed(1)},${P.t + ih} L${pts[0][0].toFixed(1)},${P.t + ih} Z`;
+              const last = plot.length - 1;
+              const kd = v => (Math.abs(v) >= 1000 ? '$' + (v / 1000).toFixed(v >= 10000 ? 0 : 1).replace(/\.0$/, '') + 'k' : '$' + Math.round(v));
+
+              return (
+                <>
+                  <svg viewBox={`0 0 ${W} ${H}`} className="tw-w-full tw-mt-1.5" style={{ height: 186 }}>
+                    <defs>
+                      <linearGradient id="repAreaC" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#34D399" stopOpacity="0.30" />
+                        <stop offset="100%" stopColor="#34D399" stopOpacity="0.02" />
+                      </linearGradient>
+                    </defs>
+
+                    {[0, 0.5, 1].map(f => (
+                      <g key={f}>
+                        <line x1={P.l} x2={P.l + iw} y1={P.t + ih * f} y2={P.t + ih * f}
+                          stroke="rgba(245,233,214,0.10)" strokeWidth="1" strokeDasharray={f === 1 ? '0' : '3 5'} />
+                        <text x={P.l - 8} y={P.t + ih * f + 3.5} textAnchor="end"
+                          style={{ fontSize: 8.5, fontWeight: 800, fill: 'rgba(110,231,183,0.72)' }}>{kd(maxG * (1 - f))}</text>
+                        <text x={P.l + iw + 8} y={P.t + ih * f + 3.5} textAnchor="start"
+                          style={{ fontSize: 8.5, fontWeight: 800, fill: 'rgba(245,233,214,0.34)' }}>{kd(maxA * (1 - f))}</text>
+                      </g>
+                    ))}
+
+                    {plot.map((d, i) => {
+                      const h = (d.ad / maxA) * ih;
+                      return (
+                        <rect key={'b' + d.key} x={x(i) - barW / 2} y={P.t + ih - h} width={barW}
+                          height={Math.max(h, d.ad > 0 ? 2 : 0)} rx="3" fill="rgba(245,233,214,0.13)">
+                          <title>{d.full} · {fmt$Round(d.ad)} ad spend</title>
+                        </rect>
+                      );
+                    })}
+
+                    <path d={area} fill="url(#repAreaC)" />
+                    <path d={line} fill="none" stroke="#34D399" strokeWidth="2.4"
+                      strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+
+                    {pts.map((pt, i) => (
+                      <circle key={'d' + plot[i].key} cx={pt[0]} cy={pt[1]} r={i === last ? 4.5 : 3}
+                        fill={i === last ? '#34D399' : '#241C13'} stroke="#34D399" strokeWidth="2">
+                        <title>{plot[i].full} · {fmt$Round(plot[i].gmv)} GMV</title>
+                      </circle>
+                    ))}
+
+                    <text x={x(last)} y={Math.max(pts[last][1] - 9, 10)}
+                      textAnchor={last === plot.length - 1 ? 'end' : 'middle'}
+                      style={{ fontSize: 10, fontWeight: 900, fill: '#6EE7B7' }}>
+                      {fmt$Round(plot[last].gmv)}
+                    </text>
+
+                    {/* month names, drawn on the same scale as the data */}
+                    {plot.map((d, i) => (
+                      <text key={'l' + d.key} x={x(i)} y={H - 10} textAnchor="middle"
+                        style={{ fontSize: 9, fontWeight: 800, fill: i === last ? '#6EE7B7' : 'rgba(245,233,214,0.42)' }}>
+                        {d.full}
+                      </text>
+                    ))}
+                  </svg>
+
+                  <div className="rep-legend">
+                    <i className="rep-lg bar" />Ad spend
+                    <i className="rep-lg line" />GMV
+                    {skipped > 0 && (
+                      <span className="rep-note">
+                        {gmvTrend[gmvTrend.length - 1].full} not recorded yet
+                      </span>
+                    )}
+                  </div>
+                </>
+              );
+            })();
 
   return (
     <div className="tw-px-4 md:tw-px-6 tw-pb-24 md:tw-pb-12 tw-font-sans report-print-root">
@@ -3422,271 +3654,275 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, onExp
             </div>
           </div>
           <div className="tw-flex tw-items-center tw-gap-2 print-hide">
-            <button onClick={onExportCsv} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-bg-white hover:tw-bg-gray-50 tw-text-[11.5px] tw-font-bold tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ color: '#3C4043', border: '1px solid rgba(20,17,12,0.12)' }}>
+            {can(currentUser, 'canExportCsv') && <button onClick={onExportCsv} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-bg-white hover:tw-bg-gray-50 tw-text-[11.5px] tw-font-bold tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ color: '#3C4043', border: '1px solid rgba(20,17,12,0.12)' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               CSV
-            </button>
-            <button onClick={handlePrint} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-text-[11.5px] tw-font-extrabold tw-border-0 tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ background: 'linear-gradient(135deg,#4A3A28 0%,#2A2118 100%)', color: '#F5E9D6', boxShadow: '0 3px 10px rgba(48,39,28,0.28)' }}>
+            </button>}
+            {can(currentUser, 'canPrintReport') && <button onClick={handlePrint} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-text-[11.5px] tw-font-extrabold tw-border-0 tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ background: 'linear-gradient(135deg,#4A3A28 0%,#2A2118 100%)', color: '#F5E9D6', boxShadow: '0 3px 10px rgba(48,39,28,0.28)' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
               Print PDF
-            </button>
+            </button>}
           </div>
         </div>
 
-        {/* ── stat row · 4 small cards · Net Profit was removed ── */}
-        <div className="tw-grid tw-grid-cols-2 md:tw-grid-cols-4 tw-gap-2.5">
-          <div className="tw-rounded-[16px] tw-p-3.5 tw-ring-1 tw-ring-emerald-200/70 tw-transition-all tw-duration-200 hover:tw--translate-y-[2px] hover:tw-shadow-oneui" style={{ background: 'linear-gradient(180deg,#ECFDF5 0%,#FFFFFF 80%)' }}>
-            <div className="tw-flex tw-items-center tw-justify-between tw-gap-1">
-              <span className="tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1.2px] tw-text-emerald-700">GMV</span>
-              {trendDelta != null && (
-                <span className={`tw-text-[9.5px] tw-font-extrabold tw-tabular-nums ${trendDelta >= 0 ? 'tw-text-emerald-600' : 'tw-text-rose-600'}`}>{trendDelta >= 0 ? '↑' : '↓'}{Math.abs(trendDelta).toFixed(0)}%</span>
-              )}
-            </div>
-            <div className="tw-text-[19px] tw-font-extrabold tw-tabular-nums tw-tracking-[-0.6px] tw-mt-1.5" style={{ color: '#0B1F14' }}>{fmt$(stats.totalGMV)}</div>
-            <div className="tw-text-[9.5px] tw-font-bold tw-mt-0.5" style={{ color: '#7C8B82' }}>{stats.creatorsWithGmv} creators sold</div>
-          </div>
-          <div className="tw-bg-white tw-rounded-[16px] tw-p-3.5 tw-ring-1 tw-ring-black/[0.06] tw-transition-all tw-duration-200 hover:tw--translate-y-[2px] hover:tw-shadow-oneui">
-            <div className="tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1.2px]" style={{ color: '#8A857B' }}>Ad Spent</div>
-            <div className="tw-text-[19px] tw-font-extrabold tw-tabular-nums tw-tracking-[-0.6px] tw-mt-1.5" style={{ color: '#E11D48' }}>{fmt$(stats.totalAdSpent)}</div>
-            <div className="tw-text-[9.5px] tw-font-bold tw-mt-0.5" style={{ color: '#B0AA9E' }}>{periodLabel}</div>
-          </div>
-          <div className="tw-bg-white tw-rounded-[16px] tw-p-3.5 tw-ring-1 tw-ring-black/[0.06] tw-transition-all tw-duration-200 hover:tw--translate-y-[2px] hover:tw-shadow-oneui">
-            <div className="tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1.2px]" style={{ color: '#8A857B' }}>ROAS</div>
-            <div className="tw-text-[19px] tw-font-extrabold tw-tabular-nums tw-tracking-[-0.6px] tw-mt-1.5" style={{ color: stats.roas == null ? '#B0AA9E' : roasGood ? '#059669' : '#E11D48' }}>{stats.roas != null ? `${stats.roas.toFixed(2)}×` : '-'}</div>
-            <div className="tw-text-[9.5px] tw-font-bold tw-mt-0.5" style={{ color: '#B0AA9E' }}>{roasTier === 'gold' ? 'excellent' : roasGood ? 'profitable' : stats.roas != null ? 'below 1×' : '-'}</div>
-          </div>
-          <div className="tw-bg-white tw-rounded-[16px] tw-p-3.5 tw-ring-1 tw-ring-black/[0.06] tw-transition-all tw-duration-200 hover:tw--translate-y-[2px] hover:tw-shadow-oneui">
-            <div className="tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1.2px]" style={{ color: '#8A857B' }}>Delivered</div>
-            <div className="tw-text-[19px] tw-font-extrabold tw-tabular-nums tw-tracking-[-0.6px] tw-mt-1.5" style={{ color: '#14110C' }}>{stats.deliveredPct}%</div>
-            <div className="tw-h-[4px] tw-rounded-full tw-overflow-hidden tw-mt-1.5" style={{ background: '#EDEFF1' }}>
-              <div className="tw-h-full tw-rounded-full tw-bg-emerald-500 tw-transition-all tw-duration-700" style={{ width: `${stats.deliveredPct}%` }} />
-            </div>
-            <div className="tw-text-[9.5px] tw-font-bold tw-tabular-nums tw-mt-1" style={{ color: '#B0AA9E' }}>{stats.totalVideosCompleted}/{stats.totalVideosCommitted} videos</div>
-          </div>
+        {/* two panes, one switch · full bleed so it reads as the spine of
+            the tab rather than a control floating in the corner */}
+        <div className="rp-seg print-hide" role="tablist">
+          <span className="rp-seg-ink" style={{ transform: repTab === 'report' ? 'translateX(0%)' : 'translateX(100%)' }} aria-hidden />
+          <button role="tab" aria-selected={repTab === 'report'}
+            className={'rp-seg-b' + (repTab === 'report' ? ' on' : '')}
+            onClick={() => setRepTab('report')}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="m7 14 3.5-4 3 3L19 7" />
+            </svg>
+            Reporting
+          </button>
+          <button role="tab" aria-selected={repTab === 'angles'}
+            className={'rp-seg-b' + (repTab === 'angles' ? ' on' : '')}
+            onClick={() => setRepTab('angles')}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 3h6M10 3v6L5.2 17.4A2 2 0 0 0 6.9 20.5h10.2a2 2 0 0 0 1.7-3.1L14 9V3" /><path d="M8 15h8" />
+            </svg>
+            Creative angle testing
+          </button>
         </div>
 
-        {/* ── chart + money row ── */}
-        <div className="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 tw-gap-2.5">
-          {/* trend card */}
-          <div className="md:tw-col-span-2 tw-bg-white tw-rounded-[16px] tw-p-4 tw-ring-1 tw-ring-black/[0.06] tw-transition-all tw-duration-200 hover:tw--translate-y-[2px] hover:tw-shadow-oneui">
-            <div className="tw-flex tw-items-center tw-justify-between tw-gap-2">
-              <span className="tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1.2px]" style={{ color: '#8A857B' }}>GMV Trend · 6 months</span>
-              {trendDelta != null && (
-                <span className={`tw-inline-flex tw-items-center tw-gap-1 tw-h-[20px] tw-px-2 tw-rounded-full tw-text-[10px] tw-font-extrabold tw-tabular-nums ${trendDelta >= 0 ? 'tw-bg-emerald-50 tw-text-emerald-700' : 'tw-bg-rose-50 tw-text-rose-700'}`}>
-                  {trendDelta >= 0 ? '↑' : '↓'} {Math.abs(trendDelta).toFixed(0)}% vs {gmvTrend[gmvTrend.length - 2]?.label}
+        {repTab === 'report' && (<>
+
+        {/* ═══════════════════════════════════════════════════════════
+            THE BOARD · one surface, one arrangement
+            The previous version showed GMV in a chip AND again in a tile,
+            ROAS in a chip AND again in a ring — the same figure twice in two
+            different visual languages, which is what made it read as
+            scattered. Each number now appears exactly once, and the headline,
+            the hero figure, the chart and the supporting metrics all sit on
+            the SAME surface so the eye never has to change gear.
+            ═══════════════════════════════════════════════════════════ */}
+        <div className="rp-board">
+          <div className="rp-board-aura" aria-hidden />
+
+          <div className="rp-board-top">
+            <div className="rp-board-say">
+              <span className="rp-eyebrow">{periodLabel}{activeBrand !== 'All' && ` · ${activeBrand}`}</span>
+              <h2 className="rp-say">{brief.headline}</h2>
+              <p className="rp-say-sub">{brief.detail}</p>
+
+              <div className="rp-hero">
+                <span className="rp-hero-num">{fmt$Round(stats.totalGMV)}</span>
+                <span className="rp-hero-tag">
+                  GMV
+                  {mom.gmv != null && (
+                    <i className={mom.gmv >= 0 ? 'up' : 'down'}>
+                      {mom.gmv >= 0 ? '↑' : '↓'}{Math.abs(mom.gmv)}% vs {mom.label}
+                    </i>
+                  )}
                 </span>
-              )}
+              </div>
             </div>
-            {(() => {
-              const vals = gmvTrend.map(t => t.gmv);
-              if (!vals.some(v => v > 0)) return <div className="tw-text-[11px] tw-italic tw-py-8 tw-text-center" style={{ color: '#B0AA9E' }}>No GMV in this window yet.</div>;
-              const W = 560, H = 96, P = 8;
-              const max = Math.max(...vals, 1);
-              const stepX = (W - P * 2) / (vals.length - 1);
-              const pts = vals.map((v, i) => [P + i * stepX, H - P - (v / max) * (H - P * 2)]);
-              const line = pts.map((p, i) => {
-                if (i === 0) return `M${p[0].toFixed(1)},${p[1].toFixed(1)}`;
-                const pr = pts[i - 1];
-                const cx = ((pr[0] + p[0]) / 2).toFixed(1);
-                return `C${cx},${pr[1].toFixed(1)} ${cx},${p[1].toFixed(1)} ${p[0].toFixed(1)},${p[1].toFixed(1)}`;
-              }).join(' ');
-              const area = `${line} L${pts[pts.length - 1][0].toFixed(1)},${H} L${pts[0][0].toFixed(1)},${H} Z`;
-              return (
-                <>
-                  <svg viewBox={`0 0 ${W} ${H}`} className="tw-w-full tw-mt-2" style={{ height: 104 }} preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="repAreaC" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#10B981" stopOpacity="0.28" />
-                        <stop offset="100%" stopColor="#10B981" stopOpacity="0.01" />
-                      </linearGradient>
-                    </defs>
-                    {[0.5].map(f => (
-                      <line key={f} x1={P} x2={W - P} y1={H - P - f * (H - P * 2)} y2={H - P - f * (H - P * 2)} stroke="rgba(20,17,12,0.06)" strokeWidth="1" strokeDasharray="3 5" />
-                    ))}
-                    <path d={area} fill="url(#repAreaC)" />
-                    <path d={line} fill="none" stroke="#059669" strokeWidth="2.2" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-                    {pts.map((p, i) => (
-                      <circle key={i} cx={p[0]} cy={p[1]} r={i === pts.length - 1 ? 4.5 : 3} fill={i === pts.length - 1 ? '#059669' : '#FFFFFF'} stroke="#059669" strokeWidth="2">
-                        <title>{gmvTrend[i].label} · {fmt$(gmvTrend[i].gmv)}</title>
-                      </circle>
-                    ))}
-                  </svg>
-                  <div className="tw-flex tw-justify-between tw-mt-1 tw-px-0.5">
-                    {gmvTrend.map((t, i) => (
-                      <span key={t.key} className="tw-text-[9px] tw-font-bold tw-tabular-nums" style={{ color: i === gmvTrend.length - 1 ? '#059669' : '#B0AA9E' }} title={fmt$(t.gmv)}>{t.label}</span>
-                    ))}
-                  </div>
-                </>
-              );
-            })()}
+
+            <div className="rp-board-chart">{chart}</div>
           </div>
 
-          {/* money flow card */}
-          <div className="tw-bg-white tw-rounded-[16px] tw-p-4 tw-ring-1 tw-ring-black/[0.06] tw-transition-all tw-duration-200 hover:tw--translate-y-[2px] hover:tw-shadow-oneui">
-            <div className="tw-flex tw-items-center tw-justify-between tw-gap-2">
-              <span className="tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1.2px]" style={{ color: '#8A857B' }}>Money Flow</span>
-              <span className="tw-text-[9.5px] tw-font-extrabold tw-tabular-nums" style={{ color: '#B0AA9E' }}>{stats.collectedPct}% paid</span>
+          {/* the supporting cast · read left to right as one sentence:
+              this much spend, at this return, delivering this much, with
+              this much still owed */}
+          <div className="rp-strip">
+            <div className="rp-strip-cell">
+              <span className="rp-s-l">Ad spend</span>
+              <span className="rp-s-v">{fmt$Round(stats.totalAdSpent)}</span>
+              <span className="rp-s-s">
+                {mom.ad != null ? `${mom.ad >= 0 ? '+' : ''}${mom.ad}% vs ${mom.label}` : 'behind creator content'}
+              </span>
             </div>
-            <div className="tw-text-[9.5px] tw-font-extrabold tw-uppercase tw-tracking-[1px] tw-mt-3" style={{ color: '#7C3AED' }}>Allocated</div>
-            <div className="tw-text-[21px] tw-font-extrabold tw-tabular-nums tw-tracking-[-0.6px] tw-mt-0.5" style={{ color: '#14110C' }}>{fmt$(stats.amountAllocated)}</div>
-            <div className="tw-h-[7px] tw-rounded-full tw-overflow-hidden tw-mt-2.5 tw-flex" style={{ background: '#F1EDE4' }}>
-              <div className="tw-h-full tw-bg-emerald-500 tw-transition-all tw-duration-700" style={{ width: `${stats.collectedPct}%` }} />
-              <div className="tw-h-full tw-bg-rose-300 tw-transition-all tw-duration-700" style={{ width: `${100 - stats.collectedPct}%` }} />
+            <div className="rp-strip-cell">
+              <span className="rp-s-l">Return on spend</span>
+              <span className={'rp-s-v ' + (stats.roas == null ? '' : stats.roas >= 1 ? 'good' : 'bad')}>
+                {stats.roas != null ? stats.roas.toFixed(2) + '×' : '-'}
+              </span>
+              <span className="rp-s-s">
+                {stats.roas == null ? 'no ad spend' : stats.roas >= 2 ? 'strong return' : stats.roas >= 1 ? 'above break-even' : 'below break-even'}
+              </span>
             </div>
-            <div className="tw-flex tw-flex-col tw-gap-1.5 tw-mt-2.5">
-              <div className="tw-flex tw-items-center tw-justify-between">
-                <span className="tw-flex tw-items-center tw-gap-1.5 tw-text-[10.5px] tw-font-bold" style={{ color: '#57534E' }}><span className="tw-w-1.5 tw-h-1.5 tw-rounded-full tw-bg-emerald-500" />Paid</span>
-                <span className="tw-text-[11.5px] tw-font-extrabold tw-tabular-nums" style={{ color: '#14110C' }}>{fmt$(stats.amountPaid)}</span>
-              </div>
-              <div className="tw-flex tw-items-center tw-justify-between">
-                <span className="tw-flex tw-items-center tw-gap-1.5 tw-text-[10.5px] tw-font-bold" style={{ color: '#57534E' }}><span className="tw-w-1.5 tw-h-1.5 tw-rounded-full tw-bg-rose-400" />Outstanding</span>
-                <span className="tw-text-[11.5px] tw-font-extrabold tw-tabular-nums" style={{ color: '#14110C' }}>{fmt$(stats.amountOutstanding)}</span>
-              </div>
+            <div className="rp-strip-cell">
+              <span className="rp-s-l">Videos delivered</span>
+              <span className="rp-s-v">{stats.deliveredPct}%</span>
+              <span className="rp-s-bar"><i style={{ width: Math.min(100, stats.deliveredPct) + '%' }} /></span>
+              <span className="rp-s-s">{stats.totalVideosCompleted} of {stats.totalVideosCommitted}</span>
             </div>
           </div>
         </div>
 
-        {/* ── leaderboard + extremes row ── */}
-        <div className="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 tw-gap-2.5">
-          {/* leaderboard */}
-          <div className="md:tw-col-span-2 tw-bg-white tw-rounded-[16px] tw-p-4 tw-ring-1 tw-ring-black/[0.06] tw-transition-all tw-duration-200 hover:tw--translate-y-[2px] hover:tw-shadow-oneui">
-            <div className="tw-flex tw-items-center tw-justify-between tw-mb-2.5">
-              <span className="tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1.2px]" style={{ color: '#8A857B' }}>Leaderboard</span>
-              <span className="tw-text-[9.5px] tw-font-bold" style={{ color: '#B0AA9E' }}>Top {Math.min(5, topByGMV.length)} by GMV</span>
-            </div>
+        {/* ═══ one row of three · people, unit economics, the two extremes ═══ */}
+        <div className="rp-row3">
+          <section className="rp-card rp-people">
+            <header className="rp-c-head">
+              <span className="rp-c-title">Top creators</span>
+              <span className="rp-c-note">by GMV</span>
+            </header>
             {topByGMV.length === 0 ? (
-              <div className="tw-text-[11px] tw-italic tw-py-5 tw-text-center" style={{ color: '#B0AA9E' }}>No GMV recorded in this period yet.</div>
-            ) : topByGMV.slice(0, 5).map((c, i) => {
-              const gmv = periodGmv(c);
-              const adSpent = periodAd(c);
-              const cRoas = adSpent > 0 ? gmv / adSpent : null;
+              <div className="rp-empty">No creator GMV in this period</div>
+            ) : topByGMV.map((c, i) => {
+              const g = periodGmv(c), a = periodAd(c);
+              const r = a > 0 ? g / a : null;
+              const top = topByGMV[0] ? periodGmv(topByGMV[0]) : 0;
               return (
-                <div key={c.id} className="tw-flex tw-items-center tw-gap-3 tw-py-2" style={{ borderBottom: i < Math.min(5, topByGMV.length) - 1 ? '1px solid rgba(20,17,12,0.05)' : 'none' }}>
-                  <span
-                    className="tw-w-6 tw-h-6 tw-rounded-[7px] tw-flex tw-items-center tw-justify-center tw-text-[10px] tw-font-extrabold tw-tabular-nums tw-flex-shrink-0"
-                    style={i === 0
-                      ? { background: 'linear-gradient(135deg,#4A3A28 0%,#2A2118 100%)', color: '#F5E9D6' }
-                      : { background: '#F4EFE3', color: '#57534E', border: '1px solid rgba(48,39,28,0.10)' }}
-                  >{i + 1}</span>
-                  <span className="tw-w-8 tw-h-8 tw-rounded-full tw-text-white tw-text-[12px] tw-font-extrabold tw-flex tw-items-center tw-justify-center tw-leading-none tw-flex-shrink-0" style={{ background: getGradient(c.name || '?') }}>{(c.name || '?')[0].toUpperCase()}</span>
-                  <div className="tw-flex-1 tw-min-w-0">
-                    <div className="tw-text-[12.5px] tw-font-extrabold tw-truncate" style={{ color: '#14110C' }}>{c.name}</div>
-                    <div className="tw-text-[10px] tw-font-semibold" style={{ color: '#8A857B' }}>{c.brand || '-'}{adSpent > 0 && <> · Ad {fmt$(adSpent)}</>}</div>
-                  </div>
-                  {cRoas != null && <span className={`tw-text-[10px] tw-font-extrabold tw-tabular-nums tw-flex-shrink-0 ${cRoas >= 1 ? 'tw-text-emerald-600' : 'tw-text-rose-600'}`}>{cRoas.toFixed(2)}×</span>}
-                  <span className="tw-text-[13.5px] tw-font-extrabold tw-tabular-nums tw-flex-shrink-0" style={{ color: '#059669' }}>{fmt$(gmv)}</span>
+                <div key={c.id} className="rp-p-row">
+                  <span className="rp-p-n">{i + 1}</span>
+                  <span className="rp-p-m">
+                    <b>{c.name}</b>
+                    <small>{c.brand || 'no brand'}{a > 0 ? ` · ${fmt$Round(a)} ad` : ''}</small>
+                    {/* bar against the leader · ranks without reading digits */}
+                    <i className="rp-p-bar"><em style={{ width: (top > 0 ? (g / top) * 100 : 0) + '%' }} /></i>
+                  </span>
+                  <span className="rp-p-r">
+                    <b>{fmt$Round(g)}</b>
+                    {r != null && <small className={r >= 2 ? 'great' : r >= 1 ? 'ok' : 'bad'}>{r.toFixed(2)}×</small>}
+                  </span>
                 </div>
               );
             })}
-          </div>
+          </section>
 
-          {/* ROAS extremes */}
-          <div className="tw-bg-white tw-rounded-[16px] tw-p-4 tw-ring-1 tw-ring-black/[0.06] tw-transition-all tw-duration-200 hover:tw--translate-y-[2px] hover:tw-shadow-oneui">
-            <div className="tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1.2px] tw-mb-3" style={{ color: '#8A857B' }}>ROAS Extremes</div>
-            {!stats.topROASCreator ? (
-              <div className="tw-text-[11px] tw-italic tw-py-5 tw-text-center" style={{ color: '#B0AA9E' }}>No GMV/Ad data to compare yet.</div>
-            ) : (
-              <div className="tw-flex tw-flex-col tw-gap-2.5">
-                {[
-                  { tag: 'Best', d: stats.topROASCreator, cls: 'tw-text-emerald-600', bg: '#ECFDF5', ring: 'rgba(16,185,129,0.25)', bar: 'linear-gradient(90deg,#34D399,#059669)', track: '#D1FAE5' },
-                  ...(stats.worstROASCreator && stats.worstROASCreator.creator.id !== stats.topROASCreator.creator.id
-                    ? [{ tag: 'Lowest', d: stats.worstROASCreator, cls: 'tw-text-rose-600', bg: '#FFF1F2', ring: 'rgba(244,63,94,0.22)', bar: 'linear-gradient(90deg,#FDA4AF,#F43F5E)', track: '#FFE4E6' }]
-                    : []),
-                ].map(({ tag, d, cls, bg, ring, bar, track }) => (
-                  <div key={tag} className="tw-rounded-[13px] tw-p-2.5" style={{ background: bg, border: `1px solid ${ring}` }}>
-                    <div className="tw-flex tw-items-center tw-gap-2">
-                      <span className="tw-w-7 tw-h-7 tw-rounded-full tw-text-white tw-text-[11px] tw-font-extrabold tw-flex tw-items-center tw-justify-center tw-leading-none tw-flex-shrink-0" style={{ background: getGradient(d.creator.name || '?') }}>{(d.creator.name || '?')[0].toUpperCase()}</span>
-                      <div className="tw-flex-1 tw-min-w-0">
-                        <div className={`tw-text-[8.5px] tw-font-extrabold tw-uppercase tw-tracking-[1px] ${cls}`}>{tag}</div>
-                        <div className="tw-text-[11.5px] tw-font-extrabold tw-truncate" style={{ color: '#14110C' }}>{d.creator.name}</div>
-                      </div>
-                      <span className={`tw-text-[14px] tw-font-extrabold tw-tabular-nums ${cls}`}>{d.roas.toFixed(2)}×</span>
-                    </div>
-                    <div className="tw-h-[5px] tw-rounded-full tw-overflow-hidden tw-mt-2" style={{ background: track }}>
-                      <div className="tw-h-full tw-rounded-full tw-transition-all tw-duration-700" style={{ width: `${Math.max(6, Math.min(d.roas / 3, 1) * 100)}%`, background: bar }} />
-                    </div>
-                    <div className="tw-text-[9px] tw-font-bold tw-tabular-nums tw-mt-1.5" style={{ color: '#8A857B' }}>GMV {fmt$(d.gmv)} · Ad {fmt$(d.ad)}</div>
-                  </div>
-                ))}
+          <section className="rp-card rp-ends">
+            <header className="rp-c-head">
+              <span className="rp-c-title">The two ends</span>
+              <span className="rp-c-note">ROAS</span>
+            </header>
+            {stats.topROASCreator ? (
+              <div className="rp-end best">
+                <span className="rp-end-tag">Best</span>
+                <b>{stats.topROASCreator.creator.name}</b>
+                <span className="rp-end-v">{stats.topROASCreator.roas.toFixed(2)}×</span>
+                <small>{fmt$Round(stats.topROASCreator.gmv)} on {fmt$Round(stats.topROASCreator.ad)}</small>
+              </div>
+            ) : <div className="rp-empty">Not enough ad spend to rank</div>}
+            {stats.worstROASCreator && (
+              <div className="rp-end worst">
+                <span className="rp-end-tag">Lowest</span>
+                <b>{stats.worstROASCreator.creator.name}</b>
+                <span className="rp-end-v">{stats.worstROASCreator.roas.toFixed(2)}×</span>
+                <small>{fmt$Round(stats.worstROASCreator.gmv)} on {fmt$Round(stats.worstROASCreator.ad)}</small>
               </div>
             )}
-          </div>
+          </section>
         </div>
 
-        {/* ── Brand breakdown table (only when "All") · alphabetical, premium spacing ── */}
-        {activeBrand === 'All' && brandBreakdown.length > 0 && (
-          <div className="tw-bg-white tw-rounded-[24px] tw-shadow-oneui tw-ring-1 tw-ring-black/[0.05] tw-overflow-hidden report-brand-table">
-            <div className="tw-flex tw-items-center tw-gap-3 tw-px-6 tw-pt-5 tw-pb-4">
-              <span className="tw-h-[22px] tw-px-3 tw-rounded-full tw-text-[9.5px] tw-font-extrabold tw-uppercase tw-tracking-[1px] tw-flex tw-items-center tw-flex-shrink-0" style={{ background: 'linear-gradient(180deg,#FFFFFF,#F4EFE3)', color: '#57534E', border: '1px solid rgba(48,39,28,0.12)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)' }}>Brand Breakdown</span>
-              <div className="tw-h-px tw-flex-1" style={{ background: 'rgba(48,39,28,0.10)' }} />
-              <span className="tw-h-7 tw-px-3 tw-rounded-full tw-text-[11.5px] tw-font-extrabold tw-flex tw-items-center tw-tabular-nums" style={{ background: '#F4EFE3', color: '#57534E', border: '1px solid rgba(48,39,28,0.10)' }}>{brandBreakdown.length} brands · A → Z</span>
-            </div>
-            <div className="tw-overflow-x-auto">
-              <table className="tw-w-full tw-text-[12.5px] tw-border-collapse">
-                <thead style={{ background: '#F1F3F4' }}>
-                  <tr style={{ borderTop: '1px solid #C9CCD1', borderBottom: '1px solid #C9CCD1' }}>
-                    <th className="tw-text-left tw-pl-6 tw-pr-4 tw-py-3 tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-whitespace-nowrap" style={{ color: '#3C4043' }}>Brand</th>
-                    <th className="tw-text-center tw-px-4 tw-py-3 tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-whitespace-nowrap" style={{ color: '#3C4043' }}>Deals</th>
-                    <th className="tw-text-center tw-px-4 tw-py-3 tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-whitespace-nowrap" style={{ color: '#3C4043' }}>Allocated</th>
-                    <th className="tw-text-center tw-px-4 tw-py-3 tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-whitespace-nowrap" style={{ color: '#3C4043' }}>Paid</th>
-                    <th className="tw-text-center tw-px-4 tw-py-3 tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-whitespace-nowrap" style={{ color: '#3C4043' }}>GMV</th>
-                    <th className="tw-text-center tw-px-4 tw-py-3 tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-whitespace-nowrap" style={{ color: '#3C4043' }}>Ad Spent</th>
-                    <th className="tw-text-center tw-px-4 tw-py-3 tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-whitespace-nowrap" style={{ color: '#3C4043' }}>ROAS</th>
-                    <th className="tw-text-center tw-pr-6 tw-pl-4 tw-py-3 tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-whitespace-nowrap" style={{ color: '#3C4043' }}>Profit / Loss</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {brandBreakdown.map((b, i) => (
-                    <tr key={b.brand} className="tw-transition" style={{ borderBottom: '1px solid #E1E3E6' }} onMouseEnter={e => { e.currentTarget.style.background = '#F6F8F9'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
-                      <td className="tw-pl-6 tw-pr-4 tw-py-3.5 tw-whitespace-nowrap">
-                        <div className="tw-flex tw-items-center tw-gap-2.5">
-                          <span className="tw-w-7 tw-h-7 tw-rounded-full tw-text-white tw-text-[11px] tw-font-extrabold tw-flex tw-items-center tw-justify-center tw-leading-none tw-shadow-sm tw-flex-shrink-0" style={{ background: getGradient(b.brand), paddingTop: 1 }}>{b.brand[0].toUpperCase()}</span>
-                          <span className="tw-font-extrabold tw-text-[13px] tw-tracking-[-0.2px]" style={{ color: '#1F1F1F' }}>{b.brand}</span>
-                        </div>
-                      </td>
-                      <td className="tw-text-center tw-px-4 tw-py-3.5 tw-font-extrabold tw-text-slate-800 tw-tabular-nums tw-whitespace-nowrap">{b.count}</td>
-                      <td className="tw-text-center tw-px-4 tw-py-3.5 tw-font-bold tw-text-violet-700 tw-tabular-nums tw-whitespace-nowrap">{fmt$(b.allocated)}</td>
-                      <td className="tw-text-center tw-px-4 tw-py-3.5 tw-font-extrabold tw-text-emerald-700 tw-tabular-nums tw-whitespace-nowrap">{fmt$(b.paid)}</td>
-                      <td className="rep-gmv tw-text-center tw-px-4 tw-py-3.5 tw-tabular-nums tw-whitespace-nowrap">{b.gmv > 0 ? fmt$(b.gmv) : <span className="rep-gmv-none">-</span>}</td>
-                      <td className="tw-text-center tw-px-4 tw-py-3.5 tw-font-extrabold tw-text-rose-700 tw-tabular-nums tw-whitespace-nowrap">{b.adSpent > 0 ? fmt$(b.adSpent) : <span className="tw-text-oneui-mute/60 tw-font-medium">-</span>}</td>
-                      <td className={`tw-text-center tw-px-4 tw-py-3.5 tw-font-extrabold tw-tabular-nums tw-whitespace-nowrap ${b.roas == null ? 'tw-text-oneui-mute/60 tw-font-medium' : b.roas >= 1 ? 'tw-text-emerald-700' : 'tw-text-rose-700'}`}>
-                        {b.roas != null ? (
-                          <span className={`tw-inline-flex tw-items-center tw-gap-1 tw-h-6 tw-px-2 tw-rounded-full tw-text-[11px] ${b.roas >= 1 ? 'tw-bg-emerald-50 tw-ring-1 tw-ring-emerald-200' : 'tw-bg-rose-50 tw-ring-1 tw-ring-rose-200'}`}>
-                            {b.roas.toFixed(2)}×
+        {/* ═══ BRAND BREAKDOWN ═══
+            Rows are separate capsules rather than lines in a grid. A ruled
+            table asks you to trace across a line; a capsule is one object you
+            take in at once, which is the whole reason phone UIs moved to them.
+            The three biggest earners carry a coloured rail so the shape of the
+            month is visible before a single figure is read. */}
+        {activeBrand === 'All' && brandBreakdown.length > 0 && (() => {
+          const rows = [...brandBreakdown].sort((a, b) => (b.gmv - a.gmv) || (b.allocated - a.allocated));
+          const topGmv = rows.reduce((m, r) => Math.max(m, r.gmv || 0), 0);
+          const earning = rows.filter(r => r.gmv > 0).length;
+          return (
+            <div className="bx report-brand-table">
+              <div className="bx-top">
+                <div>
+                  <span className="bx-title">Brand breakdown</span>
+                  <span className="bx-sub">{rows.length} brands, {earning} with GMV recorded</span>
+                </div>
+                <span className="bx-flag">Ranked by GMV</span>
+              </div>
+
+              <div className="bx-scroll">
+                <div className="bx-head">
+                  <div />
+                  <div className="bx-l">Brand</div>
+                  <div>GMV</div>
+                  <div>Ad spend</div>
+                  <div>ROAS</div>
+                  <div>Paid</div>
+                  <div>Profit</div>
+                </div>
+
+                <div className="bx-list">
+                  {rows.map((b, i) => {
+                    const share = topGmv > 0 ? Math.round((b.gmv / topGmv) * 100) : 0;
+                    const paidPct = b.allocated > 0 ? Math.round((b.paid / b.allocated) * 100) : 0;
+                    const live = b.gmv > 0 || b.adSpent > 0;
+                    return (
+                      <article key={b.brand} className={'bx-row' + (i < 3 ? ' lead' : '') + (live ? '' : ' quiet')}>
+                        <span className="bx-rail" style={{ background: getGradient(b.brand) }} aria-hidden />
+                        <span className={'bx-rank r' + (i < 3 ? i + 1 : 'n')}>{i + 1}</span>
+
+                        <span className="bx-brand">
+                          <span className="bx-face" style={{ background: getGradient(b.brand) }}>{b.brand[0].toUpperCase()}</span>
+                          <span className="bx-bmeta">
+                            <b>{b.brand}</b>
+                            <small>{b.count} deal{b.count === 1 ? '' : 's'}{b.videosDone > 0 ? ` · ${b.videosDone} videos` : ''}</small>
                           </span>
-                        ) : '-'}
-                      </td>
-                      <td className={`tw-text-center tw-pr-6 tw-pl-4 tw-py-3.5 tw-font-extrabold tw-tabular-nums tw-whitespace-nowrap ${b.profit >= 0 ? 'tw-text-emerald-700' : 'tw-text-rose-700'}`}>{(b.gmv > 0 || b.adSpent > 0) ? `${b.profit >= 0 ? '+' : '−'}${fmt$(Math.abs(b.profit))}` : <span className="tw-text-oneui-mute/60 tw-font-medium">-</span>}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot style={{ background: '#F1F3F4', borderTop: '2px solid #C9CCD1' }}>
-                  <tr>
-                    <td className="tw-pl-6 tw-pr-4 tw-py-4 tw-text-[11px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-whitespace-nowrap" style={{ color: '#3C4043' }}>Total</td>
-                    <td className="tw-text-center tw-px-4 tw-py-4 tw-font-extrabold tw-text-slate-800 tw-tabular-nums tw-whitespace-nowrap">{stats.totalCreators}</td>
-                    <td className="tw-text-center tw-px-4 tw-py-4 tw-font-extrabold tw-text-violet-800 tw-tabular-nums tw-whitespace-nowrap">{fmt$(stats.amountAllocated)}</td>
-                    <td className="tw-text-center tw-px-4 tw-py-4 tw-font-extrabold tw-text-emerald-800 tw-tabular-nums tw-whitespace-nowrap">{fmt$(stats.amountPaid)}</td>
-                    <td className="rep-gmv rep-gmv-total tw-text-center tw-px-4 tw-py-4 tw-tabular-nums tw-whitespace-nowrap">{fmt$(stats.totalGMV)}</td>
-                    <td className="tw-text-center tw-px-4 tw-py-4 tw-font-extrabold tw-text-rose-800 tw-tabular-nums tw-whitespace-nowrap">{fmt$(stats.totalAdSpent)}</td>
-                    <td className="tw-text-center tw-px-4 tw-py-4 tw-tabular-nums tw-whitespace-nowrap">
-                      {stats.roas != null ? (
-                        <span className={`tw-inline-flex tw-items-center tw-gap-1 tw-h-7 tw-px-2.5 tw-rounded-full tw-text-[12px] tw-font-extrabold ${roasGood ? 'tw-bg-emerald-100 tw-text-emerald-800 tw-ring-1 tw-ring-emerald-300' : 'tw-bg-rose-100 tw-text-rose-800 tw-ring-1 tw-ring-rose-300'}`}>
-                          {stats.roas.toFixed(2)}×
                         </span>
-                      ) : <span className="tw-text-slate-500 tw-font-extrabold">-</span>}
-                    </td>
-                    <td className={`tw-text-center tw-pr-6 tw-pl-4 tw-py-4 tw-font-extrabold tw-tabular-nums tw-text-[14px] tw-whitespace-nowrap ${stats.profit >= 0 ? 'tw-text-emerald-800' : 'tw-text-rose-800'}`}>{stats.profit >= 0 ? '+' : '−'}{fmt$(Math.abs(stats.profit))}</td>
-                  </tr>
-                </tfoot>
-              </table>
+
+                        <span className="bx-gmv">
+                          {b.gmv > 0 ? (<>
+                            <b>{fmt$Round(b.gmv)}</b>
+                            <i className="bx-fill"><em style={{ width: share + '%' }} /></i>
+                          </>) : <span className="bx-none">not recorded</span>}
+                        </span>
+
+                        <span className="bx-ad">{b.adSpent > 0 ? fmt$Round(b.adSpent) : <span className="bx-none">-</span>}</span>
+
+                        <span className="bx-roasw">
+                          {b.roas != null
+                            ? <span className={'bx-roas ' + (b.roas >= 2 ? 'great' : b.roas >= 1 ? 'ok' : 'bad')}>{b.roas.toFixed(2)}×</span>
+                            : <span className="bx-none">-</span>}
+                        </span>
+
+                        <span className="bx-paid">
+                          <b>{fmt$Round(b.paid)}</b>
+                          <i className="bx-fill paid"><em style={{ width: paidPct + '%' }} /></i>
+                          <small>{paidPct}% of {fmt$Round(b.allocated)}</small>
+                        </span>
+
+                        <span className={'bx-pl ' + (!live ? 'off' : b.profit >= 0 ? 'pos' : 'neg')}>
+                          {live ? (b.profit >= 0 ? '+' : '−') + fmt$Round(Math.abs(b.profit)) : <span className="bx-none">-</span>}
+                        </span>
+                      </article>
+                    );
+                  })}
+                </div>
+
+                <div className="bx-foot">
+                  <span className="bx-f-l">All brands</span>
+                  <span className="bx-f-c"><small>GMV</small><b>{fmt$Round(stats.totalGMV)}</b></span>
+                  <span className="bx-f-c"><small>Ad spend</small><b>{fmt$Round(stats.totalAdSpent)}</b></span>
+                  <span className="bx-f-c"><small>ROAS</small><b>{stats.roas != null ? stats.roas.toFixed(2) + '×' : '-'}</b></span>
+                  <span className="bx-f-c"><small>Paid</small><b>{fmt$Round(stats.amountPaid)}</b></span>
+                  <span className={'bx-f-c ' + (stats.profit >= 0 ? 'pos' : 'neg')}>
+                    <small>Profit</small><b>{(stats.profit >= 0 ? '+' : '−') + fmt$Round(Math.abs(stats.profit))}</b>
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ── Footer ── */}
         <div className="tw-text-center tw-text-[11px] tw-font-semibold tw-text-oneui-mute tw-py-3">
           Creator Hub · Executive Report · {periodLabel} · {activeBrand === 'All' ? 'All Brands' : activeBrand}
         </div>
+        </>)}
+
+        {/* ═══ CREATIVE ANGLE TESTING ═══
+            Which hook is working, for one brand in one month. Views come off
+            the videos themselves, and so does GMV wherever EUKA reports it,
+            so they always match the Brands tab. Ad spend is typed per video,
+            and so is GMV for the brands EUKA does not cover. */}
+        {repTab === 'angles' && (
+          <CreativeAngles
+            creators={allCreators || creators}
+            brand={activeBrand}
+            month={angleMonth}
+            monthLabel={periodLabel}
+            currentUser={currentUser}
+            money={fmt$Round}
+            canEdit={can(currentUser, 'canEditAngles')}
+            canType={can(currentUser, 'canEditAdSpend')}
+          />
+        )}
       </div>
     </div>
   );
@@ -9449,7 +9685,7 @@ const ROLE_META = {
 };
 
 /* ─── SettingsPanelV2 · Tailwind + new One UI concept ─── */
-function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, onOpenLogs, onOpenUserMgmt, onCompare, canCompare, onOpenLeaderboard, onLogout, onOpenSql }) {
+function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, onOpenLogs, onOpenUserMgmt, onCompare, canCompare, onOpenLeaderboard, onLogout, onOpenSql, onOpenGod, onOpenAccess }) {
   const [view, setView] = useState('home'); // home | team
   const [newName, setNewName] = useState('');
   const [confirmDel, setConfirmDel] = useState(null);
@@ -9496,45 +9732,56 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
           sub: `${hiredByTeam.length} member${hiredByTeam.length !== 1 ? 's' : ''}`,
           icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>),
           action: () => setView('team'),
+          hide: !allowed(currentUser, 'canManageTeam'),
         },
         {
           id: 'leaderboard', label: 'Team Leaderboard', sub: 'Hired-by performance',
           icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>),
           action: () => { onClose(); onOpenLeaderboard(); },
         },
-        canCompare && {
+        canCompare && allowed(currentUser, 'canCompareBrands') && {
           id: 'compare', label: 'Compare Brands', sub: 'Side-by-side analytics',
           icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="7" height="14" rx="1.5"/><rect x="14" y="3" width="7" height="17" rx="1.5"/></svg>),
           action: () => { onClose(); onCompare(); },
         },
-      ].filter(Boolean),
+      ].filter(Boolean).filter(i => !i.hide),
     },
-    isSuperAdmin && {
+    (isSuperAdmin || allowed(currentUser, 'canManageUsers') || allowed(currentUser, 'canGrantAccess') || allowed(currentUser, 'canSeeLogs')) && {
       title: 'Administration',
       items: [
-        {
+        allowed(currentUser, 'canGrantAccess') && {
+          id: 'access', label: 'Access Control', sub: 'Decide what each person can reach',
+          icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.4"/></svg>),
+          action: () => { onClose(); onOpenAccess(); },
+        },
+        allowed(currentUser, 'canManageUsers') && {
           id: 'users', label: 'User Management', sub: 'Roles, access, permissions',
           icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>),
           action: () => { onClose(); onOpenUserMgmt(); },
         },
-        {
+        allowed(currentUser, 'canSeeLogs') && {
           id: 'logs', label: 'Activity Logs', sub: 'Workspace audit trail',
           icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>),
           action: () => { onClose(); onOpenLogs(); },
         },
-      ],
+      ].filter(Boolean),
     },
     /* System Health was removed · the diagnostics it showed were not used
        in practice and the panel only added noise to Settings. */
-    isSuperAdmin && onOpenSql && {
-      title: 'Developer',
+    (allowed(currentUser, 'canGodMode') || allowed(currentUser, 'canSqlQuest')) && {
+      title: 'Superadmin',
       items: [
-        {
-          id: 'sql', label: 'SQL Playground', sub: 'Read-only DB query tool',
-          icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>),
+        allowed(currentUser, 'canGodMode') && {
+          id: 'god', label: 'God Mode', sub: 'Appearance, navigation, brand surgery',
+          icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l2.6 6.2 6.7.5-5.1 4.4 1.6 6.5L12 16.1 6.2 19.6l1.6-6.5L2.7 8.7l6.7-.5z"/></svg>),
+          action: () => { onClose(); onOpenGod(); },
+        },
+        allowed(currentUser, 'canSqlQuest') && {
+          id: 'sql', label: 'SQL Quest', sub: 'Learn SQL by playing · 11 levels',
+          icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="12" rx="4"/><line x1="7" y1="12" x2="11" y2="12"/><line x1="9" y1="10" x2="9" y2="14"/><circle cx="16" cy="11" r="1"/><circle cx="18.5" cy="13.5" r="1"/></svg>),
           action: () => { onClose(); onOpenSql(); },
         },
-      ],
+      ].filter(Boolean),
     },
     {
       title: 'About',
@@ -11824,6 +12071,8 @@ function ActivityLogsPanel({ onClose }) {
       .from('activity_logs')
       .select('*')
       .neq('action', 'DISCOVERY_MARK')
+      .neq('action', 'BRAND_CONTRACT')
+      .neq('action', 'CREATIVE_ANGLE')
       .order('created_at', { ascending: false })
       .limit(200);
     if (err) { setError(err.message); setLoading(false); return; }
@@ -12241,7 +12490,7 @@ function BrandCompareModalV2({ creators, allBrands, onClose }) {
     /* Ad spend has no winner · spending more is neither good nor bad on its own,
        ROAS is the row that judges it. */
     { label: 'Ad spend',   a: 'adSpent',     fmt: money, neutral: true },
-    { label: 'ROAS',       a: 'roas',        fmt: v => v > 0 ? v.toFixed(2) + '×' : '—' },
+    { label: 'ROAS',       a: 'roas',        fmt: v => v > 0 ? v.toFixed(2) + '×' : '-' },
     { label: 'Creators',   a: 'count',       fmt: v => String(v) },
     { label: 'Budget',     a: 'totalAmount', fmt: money },
     { label: 'Paid out',   a: 'totalPaid',   fmt: money },
@@ -12756,6 +13005,16 @@ export default function App() {
   const [viewMode, setViewMode] = useState('table');
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showSqlPlayground, setShowSqlPlayground] = useState(false);
+  const [showGod, setShowGod] = useState(false);
+  const [showAccess, setShowAccess] = useState(false);
+  /* appearance is CSS variables, so it has to be on <html> before the
+     first paint of every session, not only when the panel is opened */
+  useEffect(() => { applyGod(loadGod()); }, []);
+  /* brand contracts live in activity_logs and are shared by the team,
+     so they are pulled once at boot into the local mirror */
+  useEffect(() => { fetchBrandContracts().catch(() => {}); }, []);
+  /* creative angles are team-shared too, so they load once at boot */
+  useEffect(() => { fetchAngles().catch(() => {}); }, []);
   const [colOrder, setColOrder] = useState(() => {
     try { const s = JSON.parse(localStorage.getItem('ch_col_order') || 'null'); return Array.isArray(s) && s.every(k => DEFAULT_COL_ORDER.includes(k)) ? s : DEFAULT_COL_ORDER; } catch { return DEFAULT_COL_ORDER; }
   });
@@ -13046,13 +13305,19 @@ export default function App() {
   const fetchCreators = useCallback(async () => {
     setLoading(true);
     // Main list: only approved creators. Pending ones live in the review queue.
-    const { data, error } = await supabase
+    /* Paged · this table is past 1000 rows and PostgREST hard-caps a single
+       response there, so an unpaged select silently dropped the oldest deals
+       and made the KPI counts drift as new ones were added. `id` is the
+       tiebreaker that keeps page boundaries stable when hiring_date repeats
+       or is null. */
+    const { data, error } = await selectAll(() => supabase
       .from('creators')
       .select('*')
       .not('name', 'is', null)
       .neq('name', '')
       .or('status.eq.approved,status.is.null')
-      .order('hiring_date', { ascending: false });
+      .order('hiring_date', { ascending: false })
+      .order('id', { ascending: true }));
 
     if (!error && data) {
       setCreators(data);
@@ -14713,6 +14978,7 @@ export default function App() {
           const scopedAll = (allCreators || filteredCreators).filter(inActive);
           return (
             <ReportingViewV2
+              currentUser={currentUser}
               creators={scoped}
               allCreators={scopedAll}
               activeBrand="All"
@@ -14758,6 +15024,7 @@ export default function App() {
       ) : viewMode === 'reporting' ? (
         <div className="tw-pt-3 md:tw-pt-4">
           <ReportingViewV2
+              currentUser={currentUser}
             creators={sortedCreators}
             activeBrand={activeBrand}
             dateFilter={dateFilter}
@@ -15123,13 +15390,29 @@ export default function App() {
           canCompare={allBrands.length >= 2}
           onCompare={() => setShowCompare(true)}
           onLogout={handleLogout}
-          onOpenSql={currentUser?.role === 'superadmin' ? (() => { setShowSettings(false); setShowSqlPlayground(true); }) : null}
+          onOpenSql={can(currentUser, 'canSqlQuest') ? (() => { setShowSettings(false); setShowSqlPlayground(true); }) : null}
+          onOpenGod={() => { setShowSettings(false); setShowGod(true); }}
+          onOpenAccess={() => { setShowSettings(false); setShowAccess(true); }}
         />
       )}
 
-      {/* SQL Playground V2 (superadmin only) */}
-      {showSqlPlayground && currentUser?.role === 'superadmin' && (
-        <SqlPlaygroundV2 currentUser={currentUser} onClose={() => setShowSqlPlayground(false)} />
+      {/* Access control · who is allowed to reach what */}
+      {showAccess && can(currentUser, 'canGrantAccess') && (
+        <AccessControl currentUser={currentUser} onClose={() => setShowAccess(false)} />
+      )}
+
+      {showGod && can(currentUser, 'canGodMode') && (
+        <GodMode
+          creators={creators}
+          allBrands={allBrands}
+          currentUser={currentUser}
+          onRefresh={fetchCreators}
+          onClose={() => setShowGod(false)}
+        />
+      )}
+
+      {showSqlPlayground && can(currentUser, 'canSqlQuest') && (
+        <SqlQuest onClose={() => setShowSqlPlayground(false)} />
       )}
 
       {/* Delete confirm modal */}

@@ -47,6 +47,8 @@
     "verify:tiktok-card": "node scripts/check-tiktok-card.mjs",
     "verify:collab-ads": "node scripts/check-collab-ads.mjs",
     "verify:collab-ads-ui": "node scripts/check-collab-ads-ui.mjs",
+    "verify:collab-contrast": "node scripts/check-collab-contrast.mjs",
+    "vendor:wurxbase": "node scripts/vendor-wurxbase.mjs",
     "check:brand-theme": "node scripts/check-brand-theme.mjs"
   },
   "dependencies": {

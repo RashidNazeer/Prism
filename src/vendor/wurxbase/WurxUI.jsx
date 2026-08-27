@@ -21,9 +21,14 @@ import {
 } from '@/routes/admin/collab-ad-figures';
 /* WURX-END */
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import { can } from './access';
 import { createPortal } from 'react-dom';
-import { supabase } from './supabaseClient';
+import { supabase, selectAll } from './supabaseClient';
+import { godGet, godMoney, godDateParts, colTemplate, colStyle,
+  visibleCols } from './godSettings';
 import { generateContractPdf, defaultContractFields, CONTRACT_SECTIONS, renderContractPdf } from './contractPdf';
+import { mergeContract, getBrandContract, saveBrandContract,
+  fetchBrandContracts } from './brandContract';
 import './paidcollabs.css';
 
 /* ════════════════════════════════════════════════════════════════
@@ -203,21 +208,31 @@ const AVATAR_GRADIENTS = [
 ];
 
 // Full money format · always 2 decimals + thousands separators · "3,159.67"
-function fmt$(n) {
-  return '$' + Number(n || 0).toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
+/* All three money formatters now go through God Mode, so the currency
+   symbol, compact notation and cents settings reach every screen from one
+   place instead of being decided at each call site. */
+function fmt$(n) { return godMoney(n); }
 /* Brands-section formatter · drops trailing .00 when amount is a whole
    number, keeps real cents otherwise. $1234.00 → "$1,234"  ·  $1234.56 → "$1,234.56" */
-function fmt$Exact(n) {
-  const v = Math.round(Number(n || 0) * 100) / 100;
-  const hasCents = Math.floor(v) !== v;
-  return '$' + v.toLocaleString('en-US', {
-    minimumFractionDigits: hasCents ? 2 : 0,
-    maximumFractionDigits: 2,
-  });
+function fmt$Exact(n) { return godMoney(n); }
+/* Deal sizes and per-video rates are always whole dollars in practice ·
+   printing "$40.00" down a column is just noise. */
+function fmt$Round(n) { return godMoney(n); }
+/* Contact numbers get typed every which way — 3105608722, 310-560-8722,
+   +13105608722, (310)5608722 — and the column reads like noise. Strip to
+   digits and re-print US numbers in one shape.
+
+   Anything that is NOT a 10-digit US number (or 11 digits starting with 1)
+   is returned EXACTLY as it was entered. Guessing a US shape for an
+   international number would silently corrupt a real phone number, which
+   is far worse than an untidy column. */
+function fmtPhone(raw) {
+  const s = String(raw == null ? '' : raw).trim();
+  if (!s) return '';
+  const d = s.replace(/\D/g, '');
+  if (d.length === 10) return `+1 (${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+  if (d.length === 11 && d[0] === '1') return `+1 (${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7)}`;
+  return s;
 }
 function initial(s) { return ((s || '').trim()[0] || '?').toUpperCase(); }
 function gradFor(name) {
@@ -466,7 +481,10 @@ export default function WurxUI({
 }) {
   // Restore last UI state on mount so refresh keeps the user where they were
   const __initialState = useMemo(() => loadUIState(), []);
-  const [tab, setTab] = useState(__initialState.tab || 'brands');
+  /* Whatever tab you were last on wins on a refresh · the God Mode
+     "opening tab" is the fallback for a fresh session, which is what
+     that setting actually means. */
+  const [tab, setTab] = useState(() => __initialState.tab || godGet().home || 'brands');
 
   /* ── EUKA L30 GMV · per-store fetch with progressive merge ──
      One store's export takes ~7 s, so we pull stores one URL each
@@ -701,6 +719,14 @@ export default function WurxUI({
   const [month, setMonth] = useState(__initialState.month || currentMonthKey()); // default = current month
   const [allTime, setAllTime] = useState(__initialState.allTime === true);
   useEffect(() => { patchUIState({ tab }); }, [tab]);
+  /* God Mode writes to localStorage from a different component tree, so
+     it announces itself and the nav re-reads on the next render. */
+  const [godRev, setGodRev] = useState(0);
+  useEffect(() => {
+    const bump = () => setGodRev(v => v + 1);
+    window.addEventListener('wurx-god-changed', bump);
+    return () => window.removeEventListener('wurx-god-changed', bump);
+  }, []);
   useEffect(() => { patchUIState({ month }); }, [month]);
   useEffect(() => { patchUIState({ allTime }); }, [allTime]);
   // Afflix-style creator editor state: { mode: 'add'|'edit', creator?, defaultBrand? }
@@ -789,14 +815,60 @@ export default function WurxUI({
     return set;
   }, [creators, brandState]);
 
-  const TABS = [
-    { id: 'brands',      label: 'Brands' },
-    { id: 'creators',    label: 'Creators' },
-    { id: 'performance', label: 'Performance' },
-    { id: 'reporting',   label: 'Reporting' },
-    { id: 'leaderboard', label: 'Leaderboard' },
-    { id: 'discovery',   label: 'Discovery' },
-  ];
+  /* God Mode can reorder these and switch some off. Read at render time so
+     the change lands the moment the panel is closed. Anything the settings
+     do not mention still appears, so adding a tab to the app never needs a
+     matching settings edit. */
+  const TABS = useMemo(() => {
+    const ALL = [
+      { id: 'brands',      label: 'Brands',      cap: 'tabBrands' },
+      { id: 'creators',    label: 'Creators',    cap: 'tabCreators' },
+      { id: 'performance', label: 'Performance', cap: 'tabPerformance' },
+      { id: 'reporting',   label: 'Reporting',   cap: 'tabReporting' },
+      { id: 'leaderboard', label: 'Leaderboard', cap: 'tabLeaderboard' },
+      { id: 'discovery',   label: 'Discovery',   cap: 'tabDiscovery' },
+    ].filter(t => can(currentUser, t.cap));
+    let g = {};
+    try { g = JSON.parse(localStorage.getItem('wurx_godmode_v1')) || {}; } catch (e) {}
+    const hidden = Array.isArray(g.hidden) ? g.hidden : [];
+    const wanted = Array.isArray(g.tabs) && g.tabs.length ? g.tabs : ALL.map(t => t.id);
+    const ordered = [
+      ...wanted.map(id => ALL.find(t => t.id === id)).filter(Boolean),
+      ...ALL.filter(t => !wanted.includes(t.id)),
+    ];
+    const labels = g.labels || {};
+    const out = ordered
+      .filter(t => !hidden.includes(t.id))
+      .map(t => ({ ...t, label: (labels[t.id] || '').trim() || t.label }));
+    return out.length ? out : ALL;
+    /* godRev is not read inside · it is the signal that the stored
+       settings changed, which is the only thing that can alter this. */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [godRev, currentUser]);
+
+  useEffect(() => {
+    if (TABS.length && !TABS.some(t => t.id === tab)) setTab(TABS[0].id);
+  }, [TABS, tab]);
+
+  /* On a phone the tab rail scrolls, so the live tab can sit off the
+     right edge. Nudge the RAIL, never the element: scrollIntoView walks
+     up to the nearest scrollable ancestor and will happily move the
+     whole page, and doing that on every render is what made the app
+     feel like it had lost its scroll. scrollLeft cannot leave the rail. */
+  const tabsRailRef = useRef(null);
+  useEffect(() => {
+    const rail = tabsRailRef.current;
+    if (!rail) return;
+    const active = rail.querySelector('.pc-tab.active');
+    if (!active) return;
+    if (rail.scrollWidth <= rail.clientWidth + 4) return;   // nothing to scroll
+    const want = active.offsetLeft - (rail.clientWidth - active.offsetWidth) / 2;
+    const max = rail.scrollWidth - rail.clientWidth;
+    const to = Math.max(0, Math.min(max, want));
+    if (Math.abs(rail.scrollLeft - to) < 4) return;
+    try { rail.scrollTo({ left: to, behavior: 'smooth' }); }
+    catch (e) { rail.scrollLeft = to; }
+  }, [tab]);
 
   const userInitial = ((currentUser?.display || '?')[0] || '?').toUpperCase();
   const userGrad = gradFor(currentUser?.display);
@@ -816,7 +888,7 @@ export default function WurxUI({
               />
               <span style={{ display: 'none', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,#F5E9D6,#D9C5A4)', color: '#30271C', fontSize: 22, fontWeight: 900, letterSpacing: '-0.5px', borderRadius: 13 }}>W</span>
             </span>
-            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.2px', color: '#F5E9D6', paddingLeft: 12, borderLeft: '1px solid rgba(245,233,214,0.20)', whiteSpace: 'nowrap' }}>Paid Collaborations</span>
+            <span className="pc-brand-sub" style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.2px', color: '#F5E9D6', paddingLeft: 12, borderLeft: '1px solid rgba(245,233,214,0.20)', whiteSpace: 'nowrap' }}>Paid Collaborations</span>
           </div>
 
           {/* Centered app title · absolutely centered so side widths never shift it */}
@@ -829,7 +901,7 @@ export default function WurxUI({
           <div style={{ flex: 1 }} />
 
           {/* Actions · light treatment for visibility on dark coffee bg */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div className="pc-head-actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {isSuper && pendingApprovalsCount > 0 && (
               <button onClick={onOpenPendingApprovals} title={`${pendingApprovalsCount} pending`} style={{
                 position: 'relative', width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
@@ -841,7 +913,7 @@ export default function WurxUI({
               </button>
             )}
             <PresenceAvatars currentUser={currentUser} />
-            <button onClick={onOpenNotifications} title="Notifications" style={{
+            <button className="pc-head-bell" onClick={onOpenNotifications} title="Notifications" style={{
               position: 'relative', width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', transition: 'background 0.15s',
@@ -849,20 +921,21 @@ export default function WurxUI({
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
               {notificationsCount > 0 && <span style={{ position: 'absolute', top: 8, right: 8, width: 9, height: 9, borderRadius: 999, background: '#FF6B6B', boxShadow: '0 0 0 2px #30271C' }} />}
             </button>
-            <button onClick={onOpenLogs} title="Activity Logs" style={{
+            <button className="pc-head-logs" onClick={onOpenLogs} title="Activity Logs" style={{
               width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', transition: 'background 0.15s',
             }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.16)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </button>
-            <div style={{ width: 1, height: 30, background: 'rgba(245,233,214,0.18)', margin: '0 5px' }} />
+            <div className="pc-head-sep" style={{ width: 1, height: 30, background: 'rgba(245,233,214,0.18)', margin: '0 5px' }} />
             {(() => {
               const isViewer = currentUser?.role === 'viewer';
               const Tag = isViewer ? 'div' : 'button';
               const interactive = !isViewer;
               return (
                 <Tag
+                  className="pc-userchip"
                   onClick={interactive ? onOpenSettings : undefined}
                   title={interactive ? 'Profile · Settings' : `Signed in as ${currentUser?.display || 'User'}`}
                   style={{
@@ -881,14 +954,14 @@ export default function WurxUI({
                       <circle cx="12" cy="7" r="4" />
                     </svg>
                   </span>
-                  <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, alignItems: 'flex-start' }}>
+                  <span className="pc-userchip-txt" style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, alignItems: 'flex-start' }}>
                     <span style={{ fontSize: 14, fontWeight: 700, color: '#F5E9D6', letterSpacing: '-0.1px' }}>{currentUser?.display || 'User'}</span>
                     <span style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(245,233,214,0.60)' }}>{isViewer ? 'Viewer' : (currentUser?.role || '')}</span>
                   </span>
                 </Tag>
               );
             })()}
-            <button onClick={onSignOut} title="Sign out" style={{
+            <button className="pc-head-out" onClick={onSignOut} title="Sign out" style={{
               width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               background: 'rgba(255,107,107,0.12)', color: '#FF6B6B', transition: 'background 0.15s',
@@ -900,9 +973,10 @@ export default function WurxUI({
 
         {/* ═══ TAB BAR + month filter controls ═══ */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
-          <div className="pc-tabs" style={{ marginTop: 0, flex: 1, minWidth: 0 }}>
+          <div className="pc-tabs" ref={tabsRailRef} style={{ marginTop: 0, flex: 1, minWidth: 0 }}>
             {TABS.map(t => (
-              <button key={t.id} className={`pc-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.label}</button>
+              <button key={t.id} className={`pc-tab ${tab === t.id ? 'active' : ''}`}
+                onClick={() => setTab(t.id)}>{t.label}</button>
             ))}
           </div>
 
@@ -944,7 +1018,7 @@ export default function WurxUI({
         </div>
 
         {tab === 'brands' && (
-          <BrandsTab creators={filtered} allCreators={creators} budgets={budgets} refetchBudgets={refetchBudgets} month={allTime ? '' : month} allTime={allTime} isSuper={isSuper} perms={perms} eukaL30={eukaL30} onSelectCreator={onSelectCreator} onAddCreator={openAddCreator} onEditCreator={openEditCreator} onDeleteBrand={onDeleteBrand} onSetCreatorStatus={onSetCreatorStatus} onUpdateCreator={onUpdateCreator} />
+          <BrandsTab creators={filtered} allCreators={creators} budgets={budgets} refetchBudgets={refetchBudgets} month={allTime ? '' : month} allTime={allTime} isSuper={isSuper} perms={perms} eukaL30={eukaL30} currentUser={currentUser} onSelectCreator={onSelectCreator} onAddCreator={openAddCreator} onEditCreator={openEditCreator} onDeleteBrand={onDeleteBrand} onSetCreatorStatus={onSetCreatorStatus} onUpdateCreator={onUpdateCreator} />
         )}
         {tab === 'creators' && (
           <CreatorsTab
@@ -1043,7 +1117,7 @@ export default function WurxUI({
 }
 
 /* ════════ BRANDS TAB ════════ */
-function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allTime, isSuper, perms, eukaL30, onSelectCreator, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator }) {
+function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allTime, isSuper, perms, eukaL30, currentUser, onSelectCreator, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator }) {
   const [search, setSearch] = useState('');
   // Track only brand name (string), so re-renders pick up live data from brandRows automatically
   const [drillBrandName, setDrillBrandName] = useState(() => loadUIState().brandsDrill || null);
@@ -1223,7 +1297,9 @@ function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allT
   if (drillBrand) {
     return <BrandDrilldown
       brand={drillBrand}
+      currentUser={currentUser}
       creators={creators.filter(c => (c.brand || '').trim() === drillBrand.brand)}
+      brandCreators={(allCreators || creators).filter(c => (c.brand || '').trim() === drillBrand.brand)}
       budgets={budgets}
       refetchBudgets={refetchBudgets}
       month={month}
@@ -1728,7 +1804,7 @@ function BrandFace({ brand }) {
   return <span className="pc-ava" style={{ background: gradFor(brand) }}>{initial(brand)}</span>;
 }
 
-function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTime, eukaL30, onBack, onSelectCreator, canEdit, canAdd, canDeleteBrand, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator }) {
+function BrandDrilldown({ brand, creators, brandCreators, budgets, refetchBudgets, month, allTime, eukaL30, currentUser, onBack, onSelectCreator, canEdit, canAdd, canDeleteBrand, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator }) {
   /* WURX-ADDED · tell our ad figures which month is on screen.
 
      THIS IS THE WHOLE REASON THE COLUMNS MATCH THE ROW THEY SIT IN. Everything
@@ -1745,7 +1821,6 @@ function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTi
     wxSetMonth(allTime ? '' : (month || ''));
   }, [wxSetMonth, allTime, month]);
   /* WURX-END */
-
   /* ── EUKA posted-videos sync · pulls this brand's creator_videos export,
      matches handles to onboarded creators, merges NEW links into each
      creator's video_codes (existing rows never touched · dedupe by video id).
@@ -1846,6 +1921,19 @@ function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTi
   };
   const [showBudget, setShowBudget] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
+  const [showBrandContract, setShowBrandContract] = useState(false);
+  /* repaint the dot on the button when the terms are saved from the modal */
+  const [bcRev, setBcRev] = useState(0);
+  useEffect(() => {
+    const on = () => setBcRev(v => v + 1);
+    window.addEventListener('wurx-brand-contracts', on);
+    return () => window.removeEventListener('wurx-brand-contracts', on);
+  }, []);
+  const brandContractOn = useMemo(() => {
+    const bc = getBrandContract(brand.brand, month);
+    return !!(bc && (Object.keys(bc.fields || {}).length || Object.keys(bc.custom || {}).length));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brand.brand, month, bcRev]);
   const [videosCreatorId, setVideosCreatorId] = useState(null);  // store ID so popup re-reads live data on every render
   const [expandedId, setExpandedId] = useState(null);            // inline row expansion (EUKA-style video sub-table)
   // Look up the LIVE creator data from props each render · so saves reflect immediately and refresh shows persisted values
@@ -1913,6 +2001,21 @@ function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTi
             </svg>
             Notes{notesHas ? ' •' : ''}
           </button>
+          {canEdit && (
+            <button className={`pc-btn pc-btn-sm ${brandContractOn ? 'pc-btn-accentlight' : 'pc-btn-ghost'}`}
+              onClick={() => setShowBrandContract(true)}
+              disabled={allTime || !month}
+              title={allTime || !month
+                ? 'Pick a month first · a contract covers one cycle'
+                : 'Terms every creator added this month inherits'}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 12h6M9 16h4" />
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              Contract{brandContractOn ? ' •' : ''}
+            </button>
+          )}
           {canEdit && (
             <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={() => setShowBudget(true)}>Edit budget</button>
           )}
@@ -2081,6 +2184,17 @@ function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTi
           onClose={() => setShowBudget(false)}
         />
       )}
+      {showBrandContract && (
+        <BrandContractModal
+          brand={brand.brand}
+          month={month}
+          monthLabel={monthLabel(month)}
+          creators={brandCreators || creators}
+          currentUser={currentUser}
+          onClose={() => setShowBrandContract(false)}
+        />
+      )}
+
       {showNotes && (
         <NotesDrawer
           brand={brand.brand}
@@ -2121,6 +2235,268 @@ function saveContractEdits(creatorId, data) {
   try { localStorage.setItem(CONTRACT_EDITS_KEY, JSON.stringify(all)); } catch { /* full */ }
 }
 
+/* ════════════════════════════════════════════════════════════════
+   BrandContractModal · terms set once, inherited by the whole brand
+
+   Only the fields you deliberately switch on are saved. A field left
+   off is not written at all, so each creator keeps deriving it from
+   their own deal · which is why "Videos" and "Payment" are not offered
+   here: those belong to the individual agreement, never to the brand.
+   ════════════════════════════════════════════════════════════════ */
+const BRAND_CONTRACT_FIELDS = [
+  ['paymentMethod', 'Payment method', 'PayPal', 'text'],
+  ['paymentProvider', 'Payment provider', 'EUKA', 'text'],
+  ['periodStart', 'Period start', '', 'date'],
+  ['periodEnd', 'Period end', '', 'date'],
+  ['cycleClose', 'Payment cycle closes', '', 'date'],
+  ['signerName', 'Brand signer', 'Aris', 'text'],
+];
+
+/* Contracts read dates as long prose ("August 2, 2026") but a date field
+   is the only sane way to pick one. These convert between the two so the
+   picker stays a picker and the document keeps its wording.
+   Effective date is deliberately not offered at brand level: it is the
+   day a particular creator's agreement starts, so a single brand-wide
+   value would be wrong for everyone but the first signing. */
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+function longToISO(v) {
+  const t = String(v || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
+  const m = t.match(/^([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})$/);
+  if (!m) return '';
+  const mi = MONTH_NAMES.findIndex(x => x.toLowerCase() === m[1].toLowerCase());
+  if (mi < 0) return '';
+  return `${m[3]}-${String(mi + 1).padStart(2, '0')}-${String(m[2]).padStart(2, '0')}`;
+}
+function isoToLong(v) {
+  const m = String(v || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return String(v || '');
+  return `${MONTH_NAMES[Number(m[2]) - 1]} ${Number(m[3])}, ${m[1]}`;
+}
+
+function BrandContractModal({ brand, month, monthLabel, creators, currentUser, onClose }) {
+  const existing = useMemo(() => getBrandContract(brand, month) || {}, [brand, month]);
+  const [fields, setFields] = useState(() => ({ ...(existing.fields || {}) }));
+  const [custom, setCustom] = useState(() => ({ ...(existing.custom || {}) }));
+  const [tab, setTab] = useState('terms');
+  const [editIdx, setEditIdx] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState(null);
+
+  const on = (k) => Object.prototype.hasOwnProperty.call(fields, k);
+  const toggle = (k, dflt) => setFields(prev => {
+    const next = { ...prev };
+    if (Object.prototype.hasOwnProperty.call(next, k)) delete next[k];
+    else next[k] = dflt;
+    return next;
+  });
+  const setVal = (k, v) => setFields(prev => ({ ...prev, [k]: v }));
+
+  /* The creators of this brand in THIS month. A contract carries period
+     dates, so it belongs to one cycle · applying it to every month would
+     stamp these dates onto creators hired long before or after. */
+  const list = useMemo(
+    () => creators.filter(c => (c.brand || '').trim() === brand
+      && monthKey(c.hiring_date) === month),
+    [creators, brand, month]);
+
+  /* How many carry a personal edit today. Saving overrules those for the
+     fields this brand fixes, so the number is context rather than a
+     limit. */
+  const reach = useMemo(() => {
+    const edits = loadContractEdits();
+    let touched = 0;
+    list.forEach(c => {
+      const e = edits[c.id];
+      if (e && e.fields && Object.keys(e.fields).length) touched += 1;
+    });
+    return { total: list.length, touched };
+  }, [list]);
+
+  const activeKeys = Object.keys(fields);
+  const sectionCount = Object.keys(custom).length;
+
+  async function save() {
+    setBusy(true);
+    try {
+      await saveBrandContract(brand, month, { fields, custom }, currentUser);
+      /* The brand contract is the authority for whatever it fixes, so a
+         creator who had edited one of these fields is brought back onto
+         the brand value. Anything the brand does NOT fix is left exactly
+         as that creator set it, which is what keeps per-creator editing
+         useful. */
+      const keys = Object.keys(fields);
+      const sects = Object.keys(custom);
+      if (keys.length || sects.length) {
+        const edits = loadContractEdits();
+        list.forEach(c => {
+          const e = edits[c.id];
+          if (!e) return;
+          const f = { ...(e.fields || {}) };
+          const cu = { ...(e.custom || {}) };
+          keys.forEach(k => { delete f[k]; });
+          sects.forEach(k => { delete cu[k]; });
+          const empty = !Object.keys(f).length && !Object.keys(cu).length;
+          saveContractEdits(c.id, empty ? null : { fields: f, custom: cu });
+        });
+      }
+      setMsg({ tone: 'good', text: `Saved. ${list.length} creator${list.length === 1 ? '' : 's'} on ${brand} in ${monthLabel} now use these terms.` });
+      setTimeout(() => onClose(), 1400);
+    } catch (e) {
+      setMsg({ tone: 'bad', text: 'Could not save: ' + (e.message || 'unknown error') });
+      setBusy(false);
+    }
+  }
+  async function clearAll() {
+    setBusy(true);
+    try {
+      await saveBrandContract(brand, month, { fields: {}, custom: {} }, currentUser);
+      setFields({}); setCustom({});
+      setMsg({ tone: 'good', text: 'Brand contract cleared. Creators fall back to their own terms.' });
+      setBusy(false);
+    } catch (e) { setMsg({ tone: 'bad', text: 'Could not clear: ' + (e.message || '') }); setBusy(false); }
+  }
+
+  /* preview text uses a stand-in creator so the wording reads naturally */
+  const previewFields = useMemo(() => {
+    const sample = list[0];
+    const base = defaultContractFields({
+      brand,
+      name: sample ? (sample.name || 'Creator') : 'Creator',
+      username: sample ? tiktokHandle(sample.tiktok_account || '') : '@creator',
+      videos: sample ? parseDealVideos(sample.deal) : 5,
+      amount: sample ? parseDealAmount(sample.deal) : 250,
+      hiringDate: sample ? sample.hiring_date : '',
+    });
+    return { ...base, ...fields };
+  }, [brand, list, fields]);
+
+  return (
+    <div className="bc-root" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bc-box">
+        <div className="bc-top">
+          <span className="bc-badge">GLOBAL</span>
+          <div className="bc-ttl">
+            <b>{brand} contract</b>
+            <small>{monthLabel} cycle · every creator added this month inherits it</small>
+          </div>
+          <button className="bc-x" onClick={onClose} title="Close">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+          </button>
+        </div>
+
+        <div className="bc-reach">
+          <span>Applies to <b>{reach.total}</b> creator{reach.total === 1 ? '' : 's'} added in {monthLabel}</span>
+          {reach.touched > 0 && (
+            <span className="bc-note">
+              {reach.touched} {reach.touched === 1 ? 'has an' : 'have'} edited contract{reach.touched === 1 ? '' : 's'} · saving overrules them on these fields
+            </span>
+          )}
+        </div>
+
+        <div className="bc-tabs">
+          <button className={'bc-tab' + (tab === 'terms' ? ' on' : '')} onClick={() => setTab('terms')}>
+            Terms{activeKeys.length > 0 && <i>{activeKeys.length}</i>}
+          </button>
+          <button className={'bc-tab' + (tab === 'text' ? ' on' : '')} onClick={() => setTab('text')}>
+            Clauses{sectionCount > 0 && <i>{sectionCount}</i>}
+          </button>
+        </div>
+
+        <div className="bc-body">
+          {tab === 'terms' && (
+            <>
+              <p className="bc-lead">
+                Switch on only what this cycle fixes. Saving pushes those values onto the{' '}
+                {reach.total} creator{reach.total === 1 ? '' : 's'} added to {brand} in {monthLabel}.
+                Anything left off keeps coming from each creator's own deal, and you can still
+                edit any single creator afterwards.
+              </p>
+              {BRAND_CONTRACT_FIELDS.map(([k, label, dflt, type]) => {
+                const isDate = type === 'date';
+                const fallback = isDate ? isoToLong(new Date().toISOString().slice(0, 10)) : dflt;
+                return (
+                  <div key={k} className={'bc-field' + (on(k) ? ' on' : '')}>
+                    <button className={'bc-switch' + (on(k) ? ' on' : '')} onClick={() => toggle(k, fallback)}><i /></button>
+                    <div className="bc-f-l">
+                      <b>{label}</b>
+                      {!on(k) && <small>from each creator's deal</small>}
+                    </div>
+                    {on(k) && (isDate ? (
+                      <span className="bc-datewrap">
+                        <input className="bc-input bc-date" type="date"
+                          value={longToISO(fields[k])}
+                          onChange={e => setVal(k, e.target.value ? isoToLong(e.target.value) : '')} />
+                        <em>{fields[k] || 'pick a date'}</em>
+                      </span>
+                    ) : (
+                      <input className="bc-input" value={fields[k]} placeholder={dflt}
+                        onChange={e => setVal(k, e.target.value)} />
+                    ))}
+                  </div>
+                );
+              })}
+            </>
+          )}
+
+          {tab === 'text' && (
+            <>
+              <p className="bc-lead">
+                Rewrite a clause for the whole brand. An untouched clause still generates
+                itself from each creator's own figures.
+              </p>
+              {CONTRACT_SECTIONS.map((d, i) => {
+                const isCustom = custom[i] != null;
+                const body = isCustom ? custom[i] : d.tmpl(previewFields);
+                return (
+                  <div key={i} className={'bc-sec' + (isCustom ? ' on' : '')}>
+                    <div className="bc-sec-h">
+                      <b>{d.title}</b>
+                      {isCustom && <span className="bc-tag">brand wording</span>}
+                      <span className="bc-sec-a">
+                        {editIdx === i ? (
+                          <button onClick={() => setEditIdx(null)}>Done</button>
+                        ) : (
+                          <button onClick={() => { setEditIdx(i); if (!isCustom) setCustom(p2 => ({ ...p2, [i]: body })); }}>Edit</button>
+                        )}
+                        {isCustom && (
+                          <button className="bad" onClick={() => {
+                            setCustom(p2 => { const nx = { ...p2 }; delete nx[i]; return nx; });
+                            if (editIdx === i) setEditIdx(null);
+                          }}>Reset</button>
+                        )}
+                      </span>
+                    </div>
+                    {editIdx === i ? (
+                      <textarea className="bc-area" value={custom[i] != null ? custom[i] : body}
+                        onChange={e => setCustom(p2 => ({ ...p2, [i]: e.target.value }))} />
+                    ) : (
+                      <p className="bc-sec-b">{body}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          )}
+        </div>
+
+        <div className="bc-foot">
+          {msg && <span className={'bc-msg ' + msg.tone}>{msg.text}</span>}
+          <span className="bc-spacer" />
+          {(activeKeys.length > 0 || sectionCount > 0) && (
+            <button className="bc-btn" disabled={busy} onClick={clearAll}>Clear brand contract</button>
+          )}
+          <button className="bc-btn" onClick={onClose}>Cancel</button>
+          <button className="bc-btn primary" disabled={busy} onClick={save}>
+            {busy ? 'Saving...' : 'Save for ' + brand}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const CONTRACT_FIELD_DEFS = [
   ['brand', 'Brand'], ['creatorName', 'Creator name'], ['username', 'TikTok username'],
   ['videos', 'Videos (count)'], ['amount', 'Payment (USD)'],
@@ -2141,8 +2517,28 @@ function ContractEditModal({ creator: c, onClose }) {
   }), [c]);
 
   const saved = useMemo(() => loadContractEdits()[c.id] || null, [c.id]);
-  const [fields, setFields] = useState(() => ({ ...defaultContractFields(info), ...(saved?.fields || {}) }));
-  const [custom, setCustom] = useState(() => saved?.custom || {});   // {sectionIdx: bodyText}
+  /* Base terms, then whatever the brand has set, then this creator's own
+     edits. A creator who has never been touched therefore picks up the
+     brand contract automatically, and one who has been edited keeps what
+     was set for them. */
+  /* a creator inherits the contract of the month they were hired in */
+  const hireMonth = monthKey(c.hiring_date);
+  const merged = useMemo(
+    () => mergeContract(defaultContractFields(info), c.brand, hireMonth, saved),
+    [info, c.brand, hireMonth, saved]);
+  /* the brand terms can be saved from another panel while this is open */
+  useEffect(() => {
+    const on = () => {
+      const m = mergeContract(defaultContractFields(info), c.brand, hireMonth, loadContractEdits()[c.id] || null);
+      setFields(m.fields);
+      setCustom(m.custom);
+    };
+    window.addEventListener('wurx-brand-contracts', on);
+    return () => window.removeEventListener('wurx-brand-contracts', on);
+  }, [c.id, c.brand, hireMonth, info]);
+  const [fields, setFields] = useState(() => merged.fields);
+  const [custom, setCustom] = useState(() => merged.custom);
+  const brandKeys = useMemo(() => Object.keys(merged.fromBrand || {}), [merged]);
   const [editIdx, setEditIdx] = useState(null);                      // section in edit mode
   const setField = (k, v) => setFields(prev => ({ ...prev, [k]: v }));
 
@@ -2181,15 +2577,37 @@ function ContractEditModal({ creator: c, onClose }) {
       isCustom: custom[i] != null,
     })), [fields, custom]);
 
-  // Persist edits per creator (so reopening keeps everything)
+  /* Persist ONLY what this creator genuinely differs on.
+     This used to write the whole merged object the moment the editor
+     opened, which quietly gave every creator a full personal snapshot
+     and made the brand contract unable to ever reach them again. Storing
+     a diff means an untouched creator keeps following the brand, and a
+     later change to the brand terms still lands on them. */
   useEffect(() => {
-    saveContractEdits(c.id, { fields, custom });
-  }, [c.id, fields, custom]);
+    const baseline = mergeContract(defaultContractFields(info), c.brand, hireMonth, null);
+    const fDiff = {};
+    Object.keys(fields).forEach(k => {
+      if (String(fields[k] ?? '') !== String(baseline.fields[k] ?? '')) fDiff[k] = fields[k];
+    });
+    const cDiff = {};
+    Object.keys(custom).forEach(i => {
+      const inherited = baseline.custom[i] != null
+        ? baseline.custom[i]
+        : CONTRACT_SECTIONS[i].tmpl(baseline.fields);
+      if (String(custom[i]) !== String(inherited)) cDiff[i] = custom[i];
+    });
+    const empty = !Object.keys(fDiff).length && !Object.keys(cDiff).length;
+    saveContractEdits(c.id, empty ? null : { fields: fDiff, custom: cDiff });
+  }, [c.id, c.brand, hireMonth, info, fields, custom]);
 
   const resetAll = () => {
     saveContractEdits(c.id, null);
-    setFields(defaultContractFields(info));
-    setCustom({});
+    /* back to "no personal edits" · which still means the brand terms,
+       not the bare defaults, otherwise a reset would silently opt this
+       creator out of the brand contract */
+    const m = mergeContract(defaultContractFields(info), c.brand, hireMonth, null);
+    setFields(m.fields);
+    setCustom(m.custom);
   };
 
   return (
@@ -2361,7 +2779,6 @@ function DrilldownCreatorRow({ c, idx, euka, open, onSelect, onSetStatus, onEdit
 
   const profile = eukaProfileFor(euka, [c.tiktok_account, c.tiktok_account_2]);
   const tier = creatorTier(c, euka);
-
   /* WURX-ADDED · our ad figures for this creator's videos.
 
      DEDUPED BY TIKTOK VIDEO ID, which is about money rather than tidiness:
@@ -2497,13 +2914,18 @@ function DrilldownCreatorRow({ c, idx, euka, open, onSelect, onSetStatus, onEdit
                 username: handle1 || handle2 || '',
                 videos: videoCount, amount, hiringDate: c.hiring_date,
               };
-              if (saved && (saved.fields || saved.custom)) {
-                const fields = { ...defaultContractFields(info), ...(saved.fields || {}) };
+              /* Same three-layer merge the editor shows, so the file that
+                 downloads is exactly what is on screen · including the
+                 brand terms for a creator who was never edited. */
+              const m = mergeContract(defaultContractFields(info), c.brand, monthKey(c.hiring_date), saved);
+              const hasAny = Object.keys(m.fromBrand || {}).length
+                || (saved && (saved.fields || saved.custom));
+              if (hasAny) {
                 const sections = CONTRACT_SECTIONS.map((d, i) => ({
                   title: d.title,
-                  body: saved.custom && saved.custom[i] != null ? saved.custom[i] : d.tmpl(fields),
+                  body: m.custom[i] != null ? m.custom[i] : d.tmpl(m.fields),
                 }));
-                renderContractPdf(fields, sections);
+                renderContractPdf(m.fields, sections);
               } else {
                 generateContractPdf(info);
               }
@@ -3317,7 +3739,7 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
       brand: f.brand.trim(),
       tiktok_account: cleanTiktoks[0] || '',
       tiktok_account_2: cleanTiktoks[1] || '',
-      whatsapp_number: f.phone.trim(),
+      whatsapp_number: fmtPhone(f.phone),
       email: f.email.trim(),
       category: f.category.trim(),
       deal: dealText,
@@ -3463,7 +3885,9 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
 
         {/* Phone + Email (2-col) */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <div className="pc-field"><label>Phone</label><input className="pc-input" placeholder="WhatsApp number" value={f.phone} onChange={e => set('phone', e.target.value)} /></div>
+          <div className="pc-field"><label>Phone</label><input className="pc-input" placeholder="WhatsApp number" value={f.phone}
+            onChange={e => set('phone', e.target.value)}
+            onBlur={e => set('phone', fmtPhone(e.target.value))} /></div>
           <div className="pc-field"><label>Email</label><input className="pc-input" placeholder="email" value={f.email} onChange={e => set('email', e.target.value)} /></div>
         </div>
 
@@ -4158,11 +4582,25 @@ function NotesDrawer({ brand, month, initial, onSaved, onClose }) {
 }
 
 /* ════════ CREATORS TAB ════════ */
-function formatHireDateShort(d) {
-  if (!d) return '-';
-  const parts = String(d).split('-');
-  if (parts.length < 3) return d;
-  return `${MONTHS[parseInt(parts[1], 10) - 1] || '?'} ${parseInt(parts[2], 10)}`;
+/* "2025-08-20" → Aug 20 with a small, quiet '25.
+   The year only matters when scanning across years, so it is present but
+   never competes with the day for attention. */
+function HireDate({ d }) {
+  const p = godDateParts(d);
+  if (!p) return <span className="pc-handle">-</span>;
+  return <span className="pc-hdate">{p.main}{p.year && <i>{p.year}</i>}</span>;
+}
+
+/* Every place that renders from God Mode settings subscribes here, so a
+   change in the panel repaints the table instead of waiting for a reload. */
+function useGod() {
+  const [, bump] = useState(0);
+  useEffect(() => {
+    const on = () => bump(v => v + 1);
+    window.addEventListener('wurx-god-changed', on);
+    return () => window.removeEventListener('wurx-god-changed', on);
+  }, []);
+  return godGet();
 }
 
 function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, onUpdateCreator, onEditCreator }) {
@@ -4223,6 +4661,10 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
     return [{ key: month, label: monthLabel(month), rows: sorted }];
   }, [filtered, allTime, month]);
 
+  const [showUnique, setShowUnique] = useState(false);
+  /* re-read on the God Mode signal so column and format changes land
+     without a reload */
+  const god = useGod();
   const uniqueCount = useMemo(() => {
     const set = new Set();
     filtered.forEach(c => set.add((c.name || '').trim().toLowerCase()));
@@ -4308,7 +4750,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
         c.name || '', c.tiktok_account || '', c.brand || '', c.category || '',
         c.deal || '', parseDealAmount(c.deal) || '', parseDealVideos(c.deal) || '',
         c.payment_status || '', c.hired_by || '', c.hiring_date || '',
-        c.email || '', c.whatsapp_number || '', c.paypal || '', c.zelle || '',
+        c.email || '', fmtPhone(c.whatsapp_number), c.paypal || '', c.zelle || '',
       ].map(esc).join(','));
     });
     const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
@@ -4349,7 +4791,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
         if (h) p.handles.add(h);
       });
       if (!p.contact) {
-        const ph = String(c.whatsapp_number || '').trim();
+        const ph = fmtPhone(c.whatsapp_number);
         if (ph) p.contact = ph;
       }
       if (!p.email) {
@@ -4428,7 +4870,9 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
     <>
       {/* KPI pills */}
       <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-        <KpiPill label="Unique Creators" value={uniqueCount} />
+        <KpiPill label="Unique Creators" value={uniqueCount}
+          title="Open the list · one row per person"
+          onClick={() => setShowUnique(true)} />
         <KpiPill label="Total Deals" value={filtered.length} />
         <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           {tierCounts && (
@@ -4602,9 +5046,6 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
           })()}
         </div>
 
-        <span style={{ display: 'inline-flex', alignItems: 'center', height: 36, padding: '0 14px', borderRadius: 999, background: 'var(--pc-card-2)', color: 'var(--pc-text-2)', fontSize: 12.5, fontWeight: 700, letterSpacing: '-0.1px', border: '1px solid var(--pc-divider)' }}>
-          {filtered.length} creators · {allTime ? 'all months' : monthLabel(month)}
-        </span>
       </div>
 
       {filtered.length === 0 ? (
@@ -4612,22 +5053,11 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
       ) : (
         <div className="pc-card">
           {/* Sticky table header · 12 columns (added Hired By at right) */}
-          <div className="pc-cv-head" style={{ gridTemplateColumns: '34px 50px 1.15fr 0.88fr 0.9fr 0.8fr 0.85fr 0.7fr 0.82fr 0.55fr 0.72fr 1fr 0.7fr', textAlign: 'center' }}>
+          <div className="pc-cv-head" style={{ gridTemplateColumns: colTemplate(god), textAlign: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <input type="checkbox" checked={allSelected} onChange={toggleAllVisible} onClick={e => e.stopPropagation()} style={{ width: 16, height: 16, cursor: 'pointer' }} />
             </div>
-            <div>#</div>
-            <div>Name</div>
-            <div>Contact</div>
-            <div>TikTok</div>
-            <div>Category</div>
-            <div>Brand</div>
-            <div>Onboarded</div>
-            <div>Deal</div>
-            <div>Rate/Vid</div>
-            <div>L30 GMV</div>
-            <div>Status</div>
-            <div>Hired By</div>
+            {visibleCols(god).map(c => <div key={c.id}>{c.label}</div>)}
           </div>
 
           {grouped.map(g => {
@@ -4672,6 +5102,10 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
             );
           })}
         </div>
+      )}
+
+      {showUnique && (
+        <UniqueCreatorsModal rows={filtered} euka={eukaL30} onClose={() => setShowUnique(false)} />
       )}
 
       {/* Bulk action bar · floating bottom pill */}
@@ -4836,12 +5270,15 @@ const DISCOVERY_MARK_KEY = 'wurx_discovery_marks_v1';
 const getDiscoveryMarks = _lsMapReader(DISCOVERY_MARK_KEY);
 
 async function fetchDiscoveryMarks() {
-  const { data, error } = await supabase
+  /* Paged · a .limit() above 1000 is silently clamped by the server, so
+     once outreach passes a thousand marks a plain limit would quietly stop
+     returning the older ones. */
+  const { data, error } = await selectAll(() => supabase
     .from('activity_logs')
     .select('id,target,details,user_display,created_at')
     .eq('action', 'DISCOVERY_MARK')
     .order('created_at', { ascending: false })
-    .limit(5000);
+    .order('id', { ascending: true }));
   if (error) throw error;
   const map = {};
   (data || []).forEach(row => {
@@ -4871,14 +5308,16 @@ async function saveDiscoveryMark(handle, colorId, actor) {
   if (error) throw error;
 }
 
+/* Outreach states a creator can be marked with. Dropping an entry here also
+   drops its filter button and its swatch in the mark menu · any row already
+   saved under a removed id keeps its activity_logs record but reads as
+   unmarked, so remove one only when that is intended. */
 const MARK_COLORS = [
   { id: 'sent',    label: 'Messaged',       hex: '#0E7A3A' },
-  { id: 'replied', label: 'Replied',        hex: '#1259C3' },
   { id: 'follow',  label: 'Follow up',      hex: '#D97706' },
   { id: 'warm',    label: 'Interested',     hex: '#8B5CF6' },
   { id: 'review',  label: 'Under review',   hex: '#0E7490' },
   { id: 'reject',  label: 'Rejected',       hex: '#BE185D' },
-  { id: 'no',      label: 'Not interested', hex: '#A8201A' },
 ];
 
 function DiscoveryTab({ creators, currentUser }) {
@@ -4891,7 +5330,8 @@ function DiscoveryTab({ creators, currentUser }) {
   const [minFollowers, setMinFollowers] = useState(0);
   const [sortKey, setSortKey] = useState('gmv');
   const [copied, setCopied] = useState('');
-  const [limit, setLimit] = useState(100);
+  /* how many rows Discovery paints at a time · God Mode owns the default */
+  const [limit, setLimit] = useState(() => Number(godGet().discoverySize) || 40);
   /* marks · localStorage mirror paints instantly, DB is the truth */
   const [marks, setMarks] = useState(() => getDiscoveryMarks());
   const [markOpen, setMarkOpen] = useState('');
@@ -5509,7 +5949,7 @@ const LB_TOPS = [3, 5, 10, 20, 50, 0];   // 0 = everyone
 
 function LeaderboardTab({ creators, allCreators, month, allTime, onPickMonth }) {
   const [metricId, setMetricId] = useState('deals');
-  const [topN, setTopN] = useState(10);
+  const [topN, setTopN] = useState(() => Number(godGet().leaderTop) || 10);
   const [brandFilter, setBrandFilter] = useState('all');
   const [copied, setCopied] = useState('');
 
@@ -5814,14 +6254,336 @@ function LeaderboardTab({ creators, allCreators, month, allTime, onPickMonth }) 
   );
 }
 
-function KpiPill({ label, value }) {
+/* Sortable column header · shows which way the active column runs */
+function Th({ k, sort, on, title, children }) {
+  const active = sort && sort.key === k;
   return (
-    <span style={{
+    <button type="button" className={'pc-uc-th' + (active ? ' on' : '')}
+      onClick={() => on(k)} title={title || `Sort by ${children}`}>
+      {children}
+      <span className="pc-uc-arrow" aria-hidden>
+        {active ? (sort.dir === 'asc' ? '▲' : '▼') : '⇅'}
+      </span>
+    </button>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   UniqueCreatorsModal · one row per PERSON
+   The Creators table is deal-shaped: somebody who worked four brands
+   is four rows there. This is that same set collapsed to people, which
+   is what the "Unique Creators" pill counts.
+
+   Grouped on the lowercased name — deliberately the SAME key the pill
+   uses, so the row count here always equals the number on the pill.
+   (creatorDedupKey() matches on handle first and would give a different
+   total, which is exactly the mismatch to avoid.)
+
+   Deal, Brand and Status are left out on purpose: they describe one
+   collab, not a person. Where a person-level value still has to come
+   from a single deal, the rule is stated on the column header:
+     · Onboarded  → their EARLIEST hire date (first time we worked with them)
+     · Rate/Vid   → their LATEST rate (what they cost now)
+   ════════════════════════════════════════════════════════════════ */
+function UniqueCreatorsModal({ rows, euka, onClose }) {
+  const [sel, setSel] = useState(() => new Set());
+  const [q, setQ] = useState('');
+  const [copied, setCopied] = useState(false);
+  /* null = the default order (most recently active first) · clicking any
+     column header takes over from there */
+  const [sort, setSort] = useState(null);
+  const [tier, setTier] = useState(null);   // 'L3' | 'none' (no EUKA match) | null
+
+  const people = useMemo(() => {
+    const map = new Map();
+    rows.forEach(c => {
+      const key = (c.name || '').trim().toLowerCase();
+      if (!key) return;
+      if (!map.has(key)) map.set(key, {
+        key, name: '', handles: [], contact: '', email: '', category: '',
+        tier: '', l30: 0, first: '', last: '', rate: 0, hiredBy: '', deals: 0,
+      });
+      const p = map.get(key);
+      p.deals += 1;
+
+      const nm = String(c.name || '').trim();
+      if (nm.length > p.name.length) p.name = nm;
+
+      [c.tiktok_account, c.tiktok_account_2].forEach(t => {
+        if (!t) return;
+        const h = tiktokHandle(t).replace(/^@/, '').trim();
+        if (h && !p.handles.includes(h)) p.handles.push(h);
+      });
+
+      if (!p.contact)  p.contact  = fmtPhone(c.whatsapp_number);
+      if (!p.email)    p.email    = String(c.email || '').trim();
+      if (!p.category) p.category = String(c.category || '').trim();
+      if (!p.tier)     p.tier     = creatorTier(c, euka) || '';
+
+      const l = creatorL30(c, euka) || 0;
+      if (l > p.l30) p.l30 = l;
+
+      const d = String(c.hiring_date || '').slice(0, 10);
+      if (d) {
+        if (!p.first || d < p.first) p.first = d;
+        /* latest deal wins for the "what do they cost now" figures */
+        if (!p.last || d >= p.last) {
+          p.last = d;
+          if (c.hired_by) p.hiredBy = c.hired_by;
+          const amt = parseDealAmount(c.deal) || 0;
+          const vid = parseDealVideos(c.deal) || 0;
+          if (amt > 0 && vid > 0) p.rate = Math.round(amt / vid);
+        }
+      } else if (!p.rate) {
+        /* no date at all · still take a rate rather than showing nothing */
+        const amt = parseDealAmount(c.deal) || 0;
+        const vid = parseDealVideos(c.deal) || 0;
+        if (amt > 0 && vid > 0) p.rate = Math.round(amt / vid);
+        if (!p.hiredBy && c.hired_by) p.hiredBy = c.hired_by;
+      }
+    });
+    return [...map.values()].sort((a, b) =>
+      String(b.last).localeCompare(String(a.last)) || a.name.localeCompare(b.name));
+  }, [rows, euka]);
+
+  /* Search first · the tier buttons count over THIS list, not the final one,
+     so picking L5 never makes the other tier buttons collapse to zero and
+     strand you (the same trap the Discovery tier filter fell into). */
+  const searched = useMemo(() => {
+    const needle = q.trim().toLowerCase().replace(/^@/, '');
+    if (!needle) return people;
+    return people.filter(p =>
+      p.name.toLowerCase().includes(needle)
+      || p.handles.some(h => h.toLowerCase().includes(needle))
+      || (p.category || '').toLowerCase().includes(needle));
+  }, [people, q]);
+
+  const tierTally = useMemo(() => {
+    const t = { none: 0 };
+    searched.forEach(p => { if (p.tier) t[p.tier] = (t[p.tier] || 0) + 1; else t.none += 1; });
+    return t;
+  }, [searched]);
+  const tierKeys = useMemo(
+    () => Object.keys(tierTally).filter(k => k !== 'none' && tierTally[k] > 0).sort(),
+    [tierTally]);
+
+  const shown = useMemo(() => {
+    const list = !tier ? searched
+      : searched.filter(p => (tier === 'none' ? !p.tier : p.tier === tier));
+    if (!sort) return list;
+
+    const get = {
+      name:     p => p.name.toLowerCase(),
+      contact:  p => p.contact || '',
+      handle:   p => (p.handles[0] || '').toLowerCase(),
+      category: p => (p.category || '').toLowerCase(),
+      first:    p => p.first || '',          // YYYY-MM-DD sorts as text
+      rate:     p => p.rate || 0,
+      l30:      p => p.l30 || 0,
+      hiredBy:  p => (p.hiredBy || '').toLowerCase(),
+    }[sort.key];
+    if (!get) return list;
+
+    /* Blanks always sink to the bottom · a column sorted "highest first"
+       that opens with a screen of dashes is useless either way. */
+    const isBlank = v => v === '' || v === 0 || v == null;
+    return [...list].sort((a, b) => {
+      const A = get(a), B = get(b);
+      if (isBlank(A) !== isBlank(B)) return isBlank(A) ? 1 : -1;
+      const c = typeof A === 'number' ? A - B : String(A).localeCompare(String(B));
+      return sort.dir === 'desc' ? -c : c;
+    });
+  }, [searched, tier, sort]);
+
+  /* Numbers and dates are most useful biggest-first, text A-Z · so each
+     column starts on the direction people actually want, and a second
+     click flips it. */
+  const NUMERIC = ['first', 'rate', 'l30'];
+  const clickSort = (key) => setSort(prev => (
+    prev && prev.key === key
+      ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+      : { key, dir: NUMERIC.includes(key) ? 'desc' : 'asc' }
+  ));
+
+  const allSelected = shown.length > 0 && shown.every(p => sel.has(p.key));
+  const toggle = (k) => setSel(prev => {
+    const nx = new Set(prev);
+    if (nx.has(k)) nx.delete(k); else nx.add(k);
+    return nx;
+  });
+  const toggleAll = () => setSel(prev => {
+    const nx = new Set(prev);
+    if (allSelected) shown.forEach(p => nx.delete(p.key));
+    else shown.forEach(p => nx.add(p.key));
+    return nx;
+  });
+
+  /* Selection drives both actions · with nothing ticked they act on
+     everything currently listed, which is what a "download this list"
+     button is expected to do. */
+  const target = sel.size > 0 ? shown.filter(p => sel.has(p.key)) : shown;
+
+  function copyUsernames() {
+    const txt = target.map(p => (p.handles[0] ? '@' + p.handles[0] : '')).filter(Boolean).join('\n');
+    if (!txt) return;
+    navigator.clipboard?.writeText(txt).then(() => {
+      setCopied(true); setTimeout(() => setCopied(false), 1600);
+    });
+  }
+  function exportCsv() {
+    if (!target.length) return;
+    const esc = v => {
+      const t = String(v == null ? '' : v);
+      return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+    };
+    const head = ['Name', 'Username', 'Contact', 'Email', 'Category', 'Tier', 'Onboarded', 'Rate per video', 'L30 GMV', 'Hired By', 'Collabs'];
+    const lines = [head.join(',')];
+    target.forEach(p => lines.push([
+      p.name, p.handles[0] ? '@' + p.handles[0] : '', p.contact, p.email,
+      p.category, p.tier, p.first, p.rate || '', Math.round(p.l30) || '',
+      p.hiredBy, p.deals,
+    ].map(esc).join(',')));
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'wurx-unique-creators-' + new Date().toISOString().slice(0, 10) + '-' + target.length + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }
+
+  const GRID = '40px 46px 1.3fr 0.95fr 1.05fr 0.9fr 0.9fr 0.62fr 0.75fr 0.62fr';
+
+  return (
+    <div className="pc-uc-root" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="pc-uc-box">
+        <div className="pc-uc-top">
+          <div className="pc-uc-ttl">
+            <span>Unique Creators</span>
+            <b>{people.length}</b>
+          </div>
+          <div className="pc-uc-sub">One row per person · a creator working several brands is counted once</div>
+          <button className="pc-uc-x" onClick={onClose} title="Close">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+          </button>
+        </div>
+
+        <div className="pc-uc-tools">
+          <div className="pc-uc-toolrow">
+            <span className="pc-uc-searchwrap">
+              <svg className="pc-uc-sicon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.7" y2="16.7" /></svg>
+              <input className="pc-uc-search" value={q} onChange={e => setQ(e.target.value)}
+                placeholder="Search name, @handle or category…" />
+              {q && <button className="pc-uc-clear" onClick={() => setQ('')} title="Clear search">✕</button>}
+            </span>
+            <span className="pc-uc-count">
+              <b>{shown.length}</b> shown{sel.size > 0 && <em> · {sel.size} selected</em>}
+            </span>
+          </div>
+
+          <div className="pc-uc-toolrow">
+            <span className="pc-uc-flabel">EUKA tier</span>
+            <div className="pc-uc-seg">
+              <button className={'pc-uc-segbtn' + (!tier ? ' on' : '')} onClick={() => setTier(null)}>
+                All<b>{searched.length}</b>
+              </button>
+              {tierKeys.map(t => (
+                <button key={t} className={'pc-uc-segbtn t-' + t.toLowerCase() + (tier === t ? ' on' : '')}
+                  onClick={() => setTier(tier === t ? null : t)}>
+                  {t}<b>{tierTally[t]}</b>
+                </button>
+              ))}
+              {tierTally.none > 0 && (
+                <button className={'pc-uc-segbtn' + (tier === 'none' ? ' on' : '')}
+                  onClick={() => setTier(tier === 'none' ? null : 'none')}
+                  title="No matching EUKA creator profile">
+                  Unmatched<b>{tierTally.none}</b>
+                </button>
+              )}
+            </div>
+            {(tier || sort) && (
+              <button className="pc-uc-reset" onClick={() => { setTier(null); setSort(null); }}>Reset</button>
+            )}
+          </div>
+        </div>
+
+        <div className="pc-uc-scroll">
+          <div className="pc-uc-head" style={{ gridTemplateColumns: GRID }}>
+            <div><input type="checkbox" checked={allSelected} onChange={toggleAll} /></div>
+            <div>#</div>
+            <Th k="name"     sort={sort} on={clickSort}>Name</Th>
+            <Th k="contact"  sort={sort} on={clickSort}>Contact</Th>
+            <Th k="handle"   sort={sort} on={clickSort}>TikTok</Th>
+            <Th k="category" sort={sort} on={clickSort}>Category</Th>
+            <Th k="first"    sort={sort} on={clickSort} title="First time this creator was onboarded">Onboarded</Th>
+            <Th k="rate"     sort={sort} on={clickSort} title="Rate from their most recent deal">Rate/Vid</Th>
+            <Th k="l30"      sort={sort} on={clickSort}>L30 GMV</Th>
+            <Th k="hiredBy"  sort={sort} on={clickSort}>Hired By</Th>
+          </div>
+          {shown.length === 0 ? (
+            <div className="pc-uc-empty">
+              <div className="pc-uc-emptyt">No creators here</div>
+              <div className="pc-uc-emptys">
+                {tier ? 'Nobody in this tier' + (q ? ' matches that search' : '') : 'Nothing matches that search'}
+              </div>
+            </div>
+          ) : shown.map((p, i) => (
+            <div key={p.key} className={'pc-uc-row' + (sel.has(p.key) ? ' on' : '')}
+              style={{ gridTemplateColumns: GRID }} onClick={() => toggle(p.key)}>
+              <div onClick={e => e.stopPropagation()}>
+                <input type="checkbox" checked={sel.has(p.key)} onChange={() => toggle(p.key)} />
+              </div>
+              <div className="pc-uc-n">{i + 1}</div>
+              <div className="pc-uc-name">
+                <CreatorFace handle={p.handles[0]} name={p.name} size={26} />
+                <span className="pc-uc-nm">{p.name}</span>
+                {p.tier && <span className={'pc-tierbadge ' + String(p.tier).toLowerCase()}>{p.tier}</span>}
+              </div>
+              <div className="pc-uc-mut"><span className="pc-uc-txt">{p.contact || '-'}</span></div>
+              <div>
+                {p.handles[0]
+                  ? <a className="pc-handle" href={tiktokUrl(p.handles[0])} target="_blank" rel="noreferrer"
+                    onClick={e => e.stopPropagation()}>@{p.handles[0]}
+                    {p.handles.length > 1 && <span className="pc-more"> +{p.handles.length - 1}</span>}
+                  </a>
+                  : <span className="pc-handle">-</span>}
+              </div>
+              <div className="pc-uc-mut pc-uc-cat"><span className="pc-uc-txt">{p.category || '-'}</span></div>
+              <div className="pc-uc-mut"><span className="pc-uc-txt"><HireDate d={p.first} /></span></div>
+              <div>{p.rate > 0 ? <span className="pc-money">{fmt$Round(p.rate)}</span> : <span className="pc-handle">-</span>}</div>
+              <div>{p.l30 > 0 ? <span className="pc-metric pc-metric-gmv">{fmt$Exact(Math.round(p.l30))}</span> : <span className="pc-handle">-</span>}</div>
+              <div><HiredByTag who={p.hiredBy} /></div>
+            </div>
+          ))}
+        </div>
+
+        <div className="pc-uc-foot">
+          <span className="pc-uc-footlab">
+            {sel.size > 0 ? sel.size + ' selected' : shown.length + ' creators'}
+          </span>
+          <button className="pc-uc-btn" onClick={copyUsernames}>
+            {copied ? 'Copied' : 'Copy usernames'}
+          </button>
+          <button className="pc-uc-btn primary" onClick={exportCsv}>Download CSV</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function KpiPill({ label, value, onClick, title }) {
+  const Tag = onClick ? 'button' : 'span';
+  return (
+    <Tag
+      onClick={onClick}
+      title={title}
+      className={onClick ? 'pc-kpipill-btn' : undefined}
+      style={{
       display: 'inline-flex', alignItems: 'center', gap: 10,
       height: 36, padding: '0 6px 0 16px', borderRadius: 999,
       background: 'var(--pc-card)', border: '1px solid var(--pc-divider)',
       boxShadow: 'var(--pc-shadow)',
       fontSize: 13, fontWeight: 700, letterSpacing: '-0.1px', color: 'var(--pc-text)',
+      fontFamily: 'inherit', cursor: onClick ? 'pointer' : 'default',
     }}>
       {label}
       <span style={{
@@ -5831,7 +6593,7 @@ function KpiPill({ label, value }) {
         fontSize: 12.5, fontWeight: 800, fontVariantNumeric: 'tabular-nums',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12)',
       }}>{value}</span>
-    </span>
+    </Tag>
   );
 }
 
@@ -5839,6 +6601,7 @@ const cellCenter = { display: 'flex', alignItems: 'center', justifyContent: 'cen
 const cellEllipsis = { maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
 
 function CreatorsTabRow({ c, idx, selected, euka, onToggle, onOpen, onSetStatus }) {
+  const god = useGod();
   const amount = parseDealAmount(c.deal);
   const videoCount = parseDealVideos(c.deal);
   const ratePerVid = videoCount > 0 ? amount / videoCount : 0;
@@ -5846,22 +6609,24 @@ function CreatorsTabRow({ c, idx, selected, euka, onToggle, onOpen, onSetStatus 
   const url = c.tiktok_account ? tiktokUrl(c.tiktok_account) : null;
   const handle2 = c.tiktok_account_2 ? tiktokHandle(c.tiktok_account_2) : '';
   const url2 = c.tiktok_account_2 ? tiktokUrl(c.tiktok_account_2) : null;
-  const contact = c.whatsapp_number || c.email || '';
+  /* formatted at render time, so records saved before this looked right too */
+  const contact = c.whatsapp_number ? fmtPhone(c.whatsapp_number) : (c.email || '');
   const tier = creatorTier(c, euka);
   return (
-    <div className={`pc-cv-row ${selected ? 'sel' : ''}`} onClick={onOpen} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') onOpen(); }} style={{ gridTemplateColumns: '34px 50px 1.15fr 0.88fr 0.9fr 0.8fr 0.85fr 0.7fr 0.82fr 0.55fr 0.72fr 1fr 0.7fr' }}>
+    <div className={`pc-cv-row ${selected ? 'sel' : ''}`} onClick={onOpen} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') onOpen(); }} style={{ gridTemplateColumns: colTemplate(god) }}>
       <div className="pc-cv-check" onClick={e => e.stopPropagation()} style={cellCenter}>
         <input type="checkbox" checked={selected} onChange={onToggle} style={{ width: 16, height: 16, cursor: 'pointer' }} />
       </div>
-      <div className="pc-cell" data-label="#" style={cellCenter}><span className="pc-idx">#{idx}</span></div>
-      <div className="pc-cell" data-label="Name" style={{ display: 'flex', alignItems: 'center' }}>
+      <div className="pc-cell" data-label="#" style={{ ...cellCenter, ...colStyle("#", god) }}><span className="pc-idx">#{idx}</span></div>
+      <div className="pc-cell" data-label="Name" style={{ ...colStyle("Name", god),  display: 'flex', alignItems: 'center', gap: 8 }}>
+        <CreatorFace handle={handle || handle2} name={c.name} size={26} />
         <span className="pc-cname" style={{ ...cellEllipsis, flex: 1, minWidth: 0 }}>{c.name || '-'}</span>
-        {tier && <span className={`pc-tierbadge ${String(tier).toLowerCase()}`} title={`EUKA creator tier ${tier}`} style={{ flexShrink: 0, marginLeft: 6 }}>{tier}</span>}
+        {tier && <span className={`pc-tierbadge ${String(tier).toLowerCase()}`} title={`EUKA creator tier ${tier}`} style={{ flexShrink: 0 }}>{tier}</span>}
       </div>
-      <div className="pc-cell" data-label="Contact" style={{ ...cellCenter, fontSize: 12.5, color: 'var(--pc-text-2)', overflow: 'hidden' }}>
+      <div className="pc-cell" data-label="Contact" style={{ ...colStyle("Contact", god),  ...cellCenter, fontSize: 12.5, color: 'var(--pc-text-2)', overflow: 'hidden' }}>
         <span style={cellEllipsis}>{contact || <span className="pc-handle">-</span>}</span>
       </div>
-      <div className="pc-cell" data-label="TikTok" style={cellCenter}>
+      <div className="pc-cell" data-label="TikTok" style={{ ...cellCenter, ...colStyle("TikTok", god) }}>
         {handle
           ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
               <a className="pc-handle" href={url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--pc-accent)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis' }}>{handle}</a>
@@ -5871,25 +6636,25 @@ function CreatorsTabRow({ c, idx, selected, euka, onToggle, onOpen, onSetStatus 
             </span>
           : <span className="pc-handle">-</span>}
       </div>
-      <div className="pc-cell" data-label="Category" style={cellCenter}>{c.category ? <span className="pc-cat" title={c.category}>{c.category}</span> : <span className="pc-handle">-</span>}</div>
-      <div className="pc-cell" data-label="Brand" style={{ ...cellCenter, fontWeight: 600 }}>{c.brand || <span className="pc-handle">-</span>}</div>
-      <div className="pc-cell" data-label="Onboarded" style={{ ...cellCenter, fontSize: 12.5, color: 'var(--pc-text-2)' }}>{formatHireDateShort(c.hiring_date)}</div>
-      <div className="pc-cell" data-label="Deal" style={cellCenter}>
+      <div className="pc-cell" data-label="Category" style={{ ...cellCenter, ...colStyle("Category", god) }}>{c.category ? <span className="pc-cat" title={c.category}>{c.category}</span> : <span className="pc-handle">-</span>}</div>
+      <div className="pc-cell" data-label="Brand" style={{ ...colStyle("Brand", god),  ...cellCenter, fontWeight: 600 }}>{c.brand || <span className="pc-handle">-</span>}</div>
+      <div className="pc-cell" data-label="Onboarded" style={{ ...colStyle("Onboarded", god),  ...cellCenter, fontSize: 12.5, color: 'var(--pc-text-2)' }}><HireDate d={c.hiring_date} /></div>
+      <div className="pc-cell" data-label="Deal" style={{ ...cellCenter, ...colStyle("Deal", god) }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
-          {amount > 0 ? <span className="pc-money">{fmt$(amount)}</span> : <span className="pc-handle">-</span>}
+          {amount > 0 ? <span className="pc-money">{fmt$Round(amount)}</span> : <span className="pc-handle">-</span>}
           {videoCount > 0 && (
             <span style={{ display: 'inline-flex', alignItems: 'center', height: 18, padding: '0 6px', borderRadius: 999, background: 'var(--pc-accent-light)', color: 'var(--pc-accent)', fontSize: 10.5, fontWeight: 800, letterSpacing: '0.02em', fontVariantNumeric: 'tabular-nums' }}>{videoCount}v</span>
           )}
         </span>
       </div>
-      <div className="pc-cell" data-label="Rate/Vid" style={cellCenter}>{ratePerVid > 0 ? <span className="pc-money">{fmt$(ratePerVid)}</span> : <span className="pc-handle">-</span>}</div>
-      <div className="pc-cell" data-label="L30 GMV" style={cellCenter}>
+      <div className="pc-cell" data-label="Rate/Vid" style={{ ...cellCenter, ...colStyle("Rate/Vid", god) }}>{ratePerVid > 0 ? <span className="pc-money">{fmt$Round(ratePerVid)}</span> : <span className="pc-handle">-</span>}</div>
+      <div className="pc-cell" data-label="L30 GMV" style={{ ...cellCenter, ...colStyle("L30 GMV", god) }}>
         <EukaL30Cell euka={euka} c={c} handles={[c.tiktok_account, c.tiktok_account_2]} />
       </div>
-      <div className="pc-cell" data-label="Status" style={cellCenter} onClick={e => e.stopPropagation()}>
+      <div className="pc-cell" data-label="Status" style={{ ...cellCenter, ...colStyle("Status", god) }} onClick={e => e.stopPropagation()}>
         <WurxStatusDropdown c={c} onChange={(patch) => onSetStatus(c.id, patch)} />
       </div>
-      <div className="pc-cell" data-label="Hired By" style={cellCenter}>
+      <div className="pc-cell" data-label="Hired By" style={{ ...cellCenter, ...colStyle("Hired By", god) }}>
         {c.hired_by ? (() => {
           const col = hiredByPalette(c.hired_by);
           return (
@@ -5908,6 +6673,183 @@ function CreatorsTabRow({ c, idx, selected, euka, onToggle, onOpen, onSetStatus 
       </div>
     </div>
   );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Performance tab · presentation pieces
+   Label → big number → movement chip, the shape an analytics report is
+   read in: what it is, how big, which way it is going.
+   ════════════════════════════════════════════════════════════════ */
+
+function PfDelta({ pct, invert }) {
+  if (pct == null || !isFinite(pct)) return null;
+  const up = pct >= 0;
+  /* On ad spend a rise is not automatically good, so the arrow still
+     points up but the colour stays neutral. */
+  const tone = invert ? 'flat' : (up ? 'up' : 'down');
+  return (
+    <span className={'pf-delta ' + tone}>
+      {up ? '↑' : '↓'} {up ? '+' : ''}{pct}%
+    </span>
+  );
+}
+
+function PfKpi({ label, value, sub, delta, invert, accent }) {
+  return (
+    <div className="pf-kpi" style={accent ? { '--pf-accent': accent } : undefined}>
+      <div className="pf-kpi-l">{label}</div>
+      <div className="pf-kpi-v">{value}</div>
+      <div className="pf-kpi-f">
+        <PfDelta pct={delta} invert={invert} />
+        {sub && <span className="pf-kpi-s">{sub}</span>}
+      </div>
+    </div>
+  );
+}
+
+/* GMV as a line over ad spend as bars · the two numbers only mean
+   something next to each other, which a single combined chart shows and
+   two separate ones do not. */
+function PfTrend({ series }) {
+  const W = 760, H = 250;
+  const P = { l: 56, r: 58, t: 30, b: 34 };
+  const iw = W - P.l - P.r, ih = H - P.t - P.b;
+  if (!series.length) {
+    return <div className="pf-card pf-chart"><div className="pf-empty">No month data recorded yet</div></div>;
+  }
+  const maxG = Math.max(...series.map(s => s.gmv), 1);
+  const maxA = Math.max(...series.map(s => s.ad), 1);
+  const yG = v => P.t + ih - (v / maxG) * ih;
+  const barW = Math.min(42, (iw / Math.max(series.length, 1)) * 0.5);
+  /* Inset the plot so the first and last bar cannot sit under the axis
+     figures printed in the gutters on either side. */
+  const inset = barW / 2 + 10;
+  const span = Math.max(iw - inset * 2, 1);
+  const x = i => P.l + inset + (series.length === 1 ? span / 2 : (i * span) / (series.length - 1));
+
+  const pts = series.map((s, i) => [x(i), yG(s.gmv)]);
+  const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  const area = line + ` L${pts[pts.length - 1][0].toFixed(1)} ${(P.t + ih).toFixed(1)} L${pts[0][0].toFixed(1)} ${(P.t + ih).toFixed(1)} Z`;
+  const last = series.length - 1;
+
+  return (
+    <div className="pf-card pf-chart">
+      <div className="pf-card-top">
+        <span className="pf-card-t">GMV &amp; Ad spend · last {series.length} months</span>
+        <span className="pf-legend">
+          <i className="pf-lg bar" />Ad spend
+          <i className="pf-lg line" />GMV
+          <i className="pf-lg now" />Latest
+        </span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="pf-svg" preserveAspectRatio="xMidYMid meet">
+        {[0, 0.25, 0.5, 0.75, 1].map(f => (
+          <g key={f}>
+            <line x1={P.l} x2={P.l + iw} y1={P.t + ih * f} y2={P.t + ih * f} className="pf-grid" />
+            <text x={P.l - 10} y={P.t + ih * f + 4} className="pf-ax" textAnchor="end">
+              {fmt$Compact(maxG * (1 - f))}
+            </text>
+            <text x={P.l + iw + 10} y={P.t + ih * f + 4} className="pf-ax ad" textAnchor="start">
+              {fmt$Compact(maxA * (1 - f))}
+            </text>
+          </g>
+        ))}
+        {series.map((s, i) => {
+          const h = (s.ad / maxA) * ih;
+          return <rect key={s.mk} x={x(i) - barW / 2} y={P.t + ih - h} width={barW}
+            height={Math.max(h, s.ad > 0 ? 2 : 0)} rx="4" className="pf-bar" />;
+        })}
+        <path d={area} className="pf-area" />
+        <path d={line} className="pf-line" />
+        {series.map((s, i) => (
+          <g key={s.mk}>
+            <circle cx={x(i)} cy={yG(s.gmv)} r={i === last ? 6 : 4}
+              className={'pf-dot' + (i === last ? ' now' : '')} />
+            {(i === last || i === 0 || s.gmv === maxG) && (
+              <text x={x(i)} y={yG(s.gmv) - 13} className="pf-pt" textAnchor="middle">
+                {fmt$Compact(s.gmv)}
+              </text>
+            )}
+          </g>
+        ))}
+        {series.map((s, i) => (
+          <text key={s.mk} x={x(i)} y={H - 12} className="pf-ax" textAnchor="middle">
+            {monthShortLabel(s.mk)}
+          </text>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+/* ROAS as a dial · "is a dollar of ads coming back as more than a dollar"
+   is a pass/fail question, and a dial answers it faster than a figure. */
+function PfGauge({ roas, gmv, ad }) {
+  const MAX = 5;
+  const v = roas == null ? 0 : Math.max(0, Math.min(MAX, roas));
+  const R = 78, CX = 100, CY = 100, SW = 17;
+  const pol = (deg) => {
+    const r = (Math.PI / 180) * deg;
+    return [CX + R * Math.cos(r), CY + R * Math.sin(r)];
+  };
+  const arc = (from, to) => {
+    const [x1, y1] = pol(from), [x2, y2] = pol(to);
+    return `M${x1.toFixed(1)} ${y1.toFixed(1)} A${R} ${R} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+  };
+  const end = 180 + (v / MAX) * 180;
+  const band = roas == null ? 'none' : roas >= 2 ? 'great' : roas >= 1 ? 'ok' : 'bad';
+  const verdict = roas == null ? 'no ad spend recorded'
+    : roas >= 2 ? 'strong return'
+      : roas >= 1 ? 'above break-even'
+        : 'below break-even';
+
+  return (
+    <div className="pf-card pf-gauge">
+      <div className="pf-card-top"><span className="pf-card-t">Return on ad spend</span></div>
+      <svg viewBox="0 0 200 132" className="pf-gsvg">
+        <path d={arc(180, 360)} className="pf-gtrack" strokeWidth={SW} />
+        {roas != null && <path d={arc(180, end)} className={'pf-gfill ' + band} strokeWidth={SW} />}
+        <text x={CX} y={CY - 6} className="pf-gnum" textAnchor="middle">
+          {roas != null ? roas.toFixed(2) + '×' : '-'}
+        </text>
+        <text x={CX} y={CY + 14} className="pf-gsub" textAnchor="middle">{verdict}</text>
+        <text x={CX - R} y={CY + 22} className="pf-ax" textAnchor="middle">0</text>
+        <text x={CX + R} y={CY + 22} className="pf-ax" textAnchor="middle">{MAX}</text>
+      </svg>
+      <div className="pf-gfoot">
+        <span><b>{fmt$Compact(gmv)}</b> GMV</span>
+        <span className="pf-gsep" />
+        <span><b>{fmt$Compact(ad)}</b> ad spend</span>
+      </div>
+    </div>
+  );
+}
+
+function PfSection({ n, title, sub, right }) {
+  return (
+    <div className="pf-sec">
+      <div className="pf-sec-l">
+        <span className="pf-sec-n">{n}</span>
+        <div>
+          <h3 className="pf-sec-t">{title}</h3>
+          {sub && <div className="pf-sec-s">{sub}</div>}
+        </div>
+      </div>
+      {right}
+    </div>
+  );
+}
+
+/* $1,672.14 → "$1.7K" · axis and dial labels have no room for full figures */
+function fmt$Compact(n) {
+  const v = Math.round(Number(n) || 0);
+  if (Math.abs(v) >= 1000000) return '$' + (v / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (Math.abs(v) >= 1000) return '$' + (v / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return '$' + v;
+}
+function monthShortLabel(mk) {
+  const [y, m] = String(mk).split('-');
+  return (MONTHS[parseInt(m, 10) - 1] || m) + ' ' + String(y).slice(2);
 }
 
 /* ════════ PERFORMANCE TAB ════════
@@ -5934,7 +6876,7 @@ function PerformanceTab({ creators, allCreators, allTime, month, onUpdateCreator
   const brands = useMemo(() => {
     const map = {};
     const ensure = (b) => {
-      if (!map[b]) map[b] = { brand: b, gmv: 0, ad: 0, l30: 0, names: new Set(), videosDelivered: 0, lastActive: '' };
+      if (!map[b]) map[b] = { brand: b, gmv: 0, ad: 0, l30: 0, names: new Set(), l30seen: new Set(), videosDelivered: 0, lastActive: '', months: {} };
       return map[b];
     };
     const touch = (row, mk) => { if (mk && mk > row.lastActive) row.lastActive = mk; };
@@ -5946,9 +6888,14 @@ function PerformanceTab({ creators, allCreators, allTime, month, onUpdateCreator
       const row = ensure(b);
       row.gmv += sumMonthly(c, 'gmv');
       row.ad  += sumMonthly(c, 'adSpent');
-      row.l30 += Number((c.monthly || {}).l30) || 0;
       const k = creatorDedupKey(c);
       if (k) row.names.add(k);
+      /* L30 is a property of the PERSON, and the nightly sync stores it under
+         monthly.euka. Reading monthly.l30 (which nothing writes) was why the
+         tile sat at $0, and adding it per deal row would count a creator
+         working four brands four times. */
+      const l30v = Number(((c.monthly || {}).euka || {}).l30) || Number((c.monthly || {}).l30) || 0;
+      if (l30v > 0 && k && !row.l30seen.has(k)) { row.l30seen.add(k); row.l30 += l30v; }
       /* Most recent month this brand actually did something · a month cell
          carrying money, or a creator hired that month. Drives active vs
          inactive below so a brand that stopped months ago drops out. */
@@ -5959,7 +6906,11 @@ function PerformanceTab({ creators, allCreators, allTime, month, onUpdateCreator
         const mk = kk.split('@')[0];
         if (!/^\d{4}-\d{2}$/.test(mk)) return;
         const cell = m[kk] || {};
-        if ((Number(cell.gmv) || 0) > 0 || (Number(cell.adSpent) || 0) > 0) touch(row, mk);
+        const g = Number(cell.gmv) || 0, ad = Number(cell.adSpent) || 0;
+        if (g > 0 || ad > 0) touch(row, mk);
+        if (!row.months[mk]) row.months[mk] = { gmv: 0, ad: 0 };
+        row.months[mk].gmv += g;
+        row.months[mk].ad += ad;
       });
     });
 
@@ -5972,9 +6923,48 @@ function PerformanceTab({ creators, allCreators, allTime, month, onUpdateCreator
       row.videosDelivered += deliveredVideoCount(c);
     });
 
-    return Object.values(map)
-      .map(b => ({ ...b, uniqueCreators: b.names.size, roas: b.ad > 0 ? b.gmv / b.ad : null }));
+    return Object.values(map).map(b => {
+      /* Movement is measured between the last two months this brand actually
+         earned in · comparing against a silent month would read as a total
+         collapse when really nothing was recorded. */
+      const earned = Object.keys(b.months).filter(k => b.months[k].gmv > 0).sort();
+      let delta = null;
+      if (earned.length >= 2) {
+        const cur = b.months[earned[earned.length - 1]].gmv;
+        const prev = b.months[earned[earned.length - 2]].gmv;
+        if (prev > 0) delta = Math.round(((cur - prev) / prev) * 100);
+      }
+      return { ...b, uniqueCreators: b.names.size, roas: b.ad > 0 ? b.gmv / b.ad : null, delta };
+    });
   }, [source, creators]);
+
+  /* One row per month across every brand · drives the trend chart and the
+     movement chips on the tiles. */
+  const series = useMemo(() => {
+    const m = {};
+    brands.forEach(b => Object.entries(b.months).forEach(([mk, v]) => {
+      if (!m[mk]) m[mk] = { gmv: 0, ad: 0 };
+      m[mk].gmv += v.gmv; m[mk].ad += v.ad;
+    }));
+    return Object.keys(m).sort()
+      .filter(k => m[k].gmv > 0 || m[k].ad > 0)
+      .slice(-8)
+      .map(k => ({ mk: k, ...m[k] }));
+  }, [brands]);
+
+  const mom = useMemo(() => {
+    if (series.length < 2) return {};
+    const cur = series[series.length - 1], prev = series[series.length - 2];
+    const pc = (a, b) => (b > 0 ? Math.round(((a - b) / b) * 100) : null);
+    const cr = cur.ad > 0 ? cur.gmv / cur.ad : null;
+    const pr = prev.ad > 0 ? prev.gmv / prev.ad : null;
+    return {
+      gmv: pc(cur.gmv, prev.gmv),
+      ad: pc(cur.ad, prev.ad),
+      roas: (cr != null && pr != null && pr > 0) ? Math.round(((cr - pr) / pr) * 100) : null,
+      label: monthShortLabel(prev.mk),
+    };
+  }, [series]);
 
   /* Brands live in the month-scoped `creators` pool exactly when the Brands
      tab shows them for the month being viewed · that keeps the two tabs in
@@ -6001,7 +6991,7 @@ function PerformanceTab({ creators, allCreators, allTime, month, onUpdateCreator
      Otherwise: active if the Brands tab lists it for this month, or it did
      something within the last 2 months · anything quieter than that drops
      to inactive instead of sitting in Active forever on old all-time data. */
-  const BRAND_STALE_MONTHS = 2;
+  const BRAND_STALE_MONTHS = Number(godGet().staleMonths) || 2;
   const isActive = (b) => liveThisMonth.has(b.brand) || monthsBack(b.lastActive) <= BRAND_STALE_MONTHS;
   const sectionOf = (b) => brandState[b.brand] || (isActive(b) ? 'active' : 'inactive');
 
@@ -7098,7 +8088,7 @@ function PresenceAvatars({ currentUser }) {
   const shown = peers.slice(0, 3);
   const extra = peers.length - shown.length;
   return (
-    <div title={peers.map(p => p.display).join(', ') + ' viewing now'} style={{ display: 'inline-flex', alignItems: 'center', marginRight: 4 }}>
+    <div className="pc-presence" title={peers.map(p => p.display).join(', ') + ' viewing now'} style={{ display: 'inline-flex', alignItems: 'center', marginRight: 4 }}>
       {shown.map((p, i) => {
         const grad = gradFor(p.display || '?');
         return (

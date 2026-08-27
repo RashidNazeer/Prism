@@ -1710,3 +1710,18 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   casualty would be a password reset a creator needs at eleven at night. Cost:
   three additive DNS records, and a new subdomain has no sending reputation
   until it warms up. Quota stays shared, because Resend counts per account.
+- 2026-08-27: **Vendoring WurxBase is a committed, repeatable pipeline**, not a
+  codemod somebody runs once and throws away. Reconstructing the first one from
+  its own output cost most of a day and was only possible because our copy still
+  held the answers; it would not have been possible a second time.
+- 2026-08-27: **An existing themed declaration is preserved verbatim on a
+  re-vendor.** Where a rule existed before, a person chose that token, and no
+  colour-distance reasoning beats it — inference re-derived `.pc-bt-sort.on` as
+  `--wx-on-accent` where the human had chosen `--wx-warning`, which is white
+  text on a white header. It also means a colour THEY changed is overridden by
+  ours, which is the point of a reskin rather than a loss.
+- 2026-08-27: **The reskin is guarded by measuring the rendered page, not the
+  stylesheet.** A mis-mapped colour is not an error: the page renders, every
+  functional check passes, and the text is simply invisible. Only compositing
+  what is actually painted behind each label can catch it, and it caught 862
+  failures on one tab that nothing else noticed.

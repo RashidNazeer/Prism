@@ -2639,3 +2639,74 @@ the video ids inside every request body, because a flat request count cannot
 tell batching from per-row fetching once the row count changes underneath it.
 Measured on dev: one request to open a brand, and 424 ids per call across a
 period switch.
+
+## Vendoring a WurxBase release (2026-08-27)
+
+**Files:** `scripts/vendor-wurxbase.mjs` · `scripts/wurxbase-patches.mjs` ·
+`scripts/check-collab-contrast.mjs`
+
+```bash
+node scripts/vendor-wurxbase.mjs "<path to their src/>"
+node scripts/wurxbase-patches.mjs          # re-applies OUR Ad spend / ROI blocks
+pnpm build && pnpm preview                 # then, in another shell:
+pnpm verify:collab-contrast                # the one that catches a bad reskin
+pnpm verify:collab-ads && pnpm verify:collab-ads-ui
+```
+
+**WHY THIS IS A COMMITTED PIPELINE NOW.** The first vendoring in August 2026 was
+a one-off codemod that was never kept. When v382 arrived the whole transform had
+to be reconstructed from its own output, which only worked because our copy
+still carried the answers. It will not be reconstructible twice.
+
+**THE COLOUR MAPPING IS FOUR PASSES, IN DESCENDING CONFIDENCE.**
+
+| pass | what it is | v382 |
+| --- | --- | --- |
+| verbatim | the selector+property existed before, so OUR value is kept exactly | 3,995 |
+| learned | their colour lined up against our token elsewhere in the file | 754 |
+| curated | a hand-written table for what their new UI introduced | 510 |
+| nearest | perceptual, in OKLab, restricted to tokens of the same ROLE | 474 |
+
+Only the last can be wrong, so it is counted and printed. **The reference copy
+is read from `git show HEAD:`, never from the working tree** — read it from
+disk and the second run learns from the first run's mistakes, which then look
+like decisions and are re-applied forever.
+
+**Three bugs this found, all of which produce valid CSS and a broken screen.**
+
+1. **A comment between two declarations glues itself to the next property.**
+   Splitting a rule body on `;` leaves the previous line's trailing comment in
+   front of the next property name, so `--sheet-head-bg` arrived as
+   `"<comment> --sheet-head-bg"`, stopped starting with `--`, was filed as an
+   unknown role and kept its raw `#F1F3F4`. A light spreadsheet header inside
+   the dark theme, and nothing anywhere errored.
+2. **A CUSTOM PROPERTY CARRIES ITS ROLE ONLY IN ITS NAME.** Everything starting
+   with `--` was first filed as "other" and left untouched, so their entire
+   variable layer kept its original colours: near-black creator names on a
+   near-black table. **862 text elements below 3:1 on one tab.**
+3. **A namespace is not a role.** `sheet` was in the fill list, so every
+   `--sheet-*` variable resolved to a fill, including `--sheet-line`.
+
+**`pnpm verify:collab-contrast` is the guard, and it is the only honest one.**
+It renders the page in BOTH themes, walks every text node, resolves what is
+actually painted behind it — compositing translucent layers bottom-up — and
+fails below 3:1. Source CSS cannot answer this: it cannot tell you what ends up
+on top of what. It also reports elements sitting on a GRADIENT as unmeasured
+rather than guessing, because `getComputedStyle` gives no colour for one and
+pretending otherwise invented four failures a run on a perfectly good gold pill.
+
+**What v382 brought:** capability-based permissions (`access.js`,
+`AccessControl.jsx`), God Mode settings with configurable columns
+(`godSettings.js`, `GodMode.jsx`), creative angle testing (`CreativeAngles.jsx`,
+`angleStore.js`), per-month brand contracts (`brandContract.js`), SQL Quest
+replacing the read-only SQL playground (`SqlQuest.jsx`), and a Performance
+dashboard inside `WurxUI.jsx`. Their `PaidCollabs.jsx` is unchanged.
+
+**Our Ad spend and ROI columns survived untouched**, re-applied by the patch
+script at anchors that all still existed; only `BrandDrilldown` had changed, by
+gaining two props. `verify:collab-ads` 30 and `verify:collab-ads-ui` 15 both
+still pass against the new code.
+
+**Also fixed while the file was open:** the Google Fonts `@import` is dropped by
+the pipeline, which closes **PARKED 29(d)** — Inter is self-hosted here, so
+nothing changes on screen and no admin's browser talks to Google any more.
