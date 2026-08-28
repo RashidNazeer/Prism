@@ -14,7 +14,25 @@
  */
 
 declare module '@/vendor/wurxbase/App' {
-  const App: React.ComponentType;
+  /*
+   * The three props our route passes in. Everything else the vendored app
+   * needs it owns itself; these exist because the SHELL is ours now — the six
+   * tabs are six routes in our sidebar, so the tab has to come from the URL,
+   * and the header is portaled into our top bar rather than drawn as a second
+   * bar underneath it.
+   *
+   * All optional: unembedded and uncontrolled, App still renders the
+   * standalone dashboard it was written as.
+   */
+  export interface WurxBaseAppProps {
+    /** One of brands | creators | performance | reporting | leaderboard | discovery. */
+    tab?: string;
+    /** Called when something inside the app changes tab, e.g. a brand drilldown. */
+    onTabChange?: (tab: string) => void;
+    /** Hides its own tab rail and moves its header into our top bar. */
+    embedded?: boolean;
+  }
+  const App: React.ComponentType<WurxBaseAppProps>;
   export default App;
 }
 

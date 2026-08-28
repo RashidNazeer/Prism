@@ -456,7 +456,70 @@ function formatHireDate(d) {
 }
 
 /* ════════ MAIN SHELL ════════ */
+/*
+ * THEIR TOP BAR, MOVED INTO OURS.
+ *
+ * Rashid, 2026-08-28: *"the header as u see should be at top replace our simple
+ * header... no need to have logo because we already have in left side, the
+ * notification and clock should obviulsy exist... i want to give it native look
+ * of our own app now"*.
+ *
+ * Rather than cut their header apart and rebuild half of it in our shell, the
+ * whole element is PORTALED into a slot our top bar renders, and CSS strips it
+ * down to the three things he asked to keep: the WURX CREATORS DATABASE
+ * wordmark, the bell and the clock. The logo, the app name, the user chip and
+ * the sign-out button all go, because our own shell already carries every one
+ * of them a few pixels to the left.
+ *
+ * WHY A PORTAL AND NOT A PROP. The bell opens their notification panel and the
+ * clock opens their activity log; both are state deep inside this component and
+ * inside a lazily-loaded chunk. Passing callbacks up through our route to our
+ * shell would mean our shell holding a handle on their internals. A portal
+ * moves the DOM and leaves the ownership exactly where it was.
+ *
+ * IF THE SLOT IS NOT THERE the header renders where it always did, which is
+ * what happens for anyone running this file outside our shell. It degrades to
+ * the app it used to be rather than to nothing.
+ */
+function ChromeSlot({ embedded, children }) {
+  const [slot, setSlot] = useState(() =>
+    typeof document === 'undefined' ? null : document.getElementById('wurxbase-topbar-slot'));
+
+  useEffect(() => {
+    if (!embedded || slot) return undefined;
+    /* Our shell renders the slot above this in the tree, so it is normally
+       there on the first pass. One retry on the next frame covers the case
+       where this chunk finishes loading first. */
+    let raf = requestAnimationFrame(() => setSlot(document.getElementById('wurxbase-topbar-slot')));
+    return () => cancelAnimationFrame(raf);
+  }, [embedded, slot]);
+
+  if (!embedded) return children;
+  if (!slot) return null;
+  return createPortal(children, slot);
+}
+
 export default function WurxUI({
+  /*
+   * EMBEDDED CHROME, added 2026-08-28.
+   *
+   * Rashid: *"pull them out and create new menus item on main menu as Paid
+   * Collabs and put all these tabs there as menu item section... we need to
+   * remove those tabs from top also the header... i want to give it native
+   * look of our own app now"*.
+   *
+   * So when `embedded` is on, this component stops drawing its own top bar
+   * and its own tab rail. The tab arrives as a prop from the route and changes
+   * by calling back, and the two chrome buttons worth keeping — notifications
+   * and the activity log — are portaled into OUR top bar instead.
+   *
+   * It stays optional. Uncontrolled and unembedded, this file still renders
+   * the standalone app it was written as, which is what makes the change safe
+   * to reason about: nothing was deleted, one branch was added.
+   */
+  tab: tabProp,
+  onTabChange,
+  embedded = false,
   creators,
   currentUser,
   perms,
@@ -484,7 +547,19 @@ export default function WurxUI({
   /* Whatever tab you were last on wins on a refresh · the God Mode
      "opening tab" is the fallback for a fresh session, which is what
      that setting actually means. */
-  const [tab, setTab] = useState(() => __initialState.tab || godGet().home || 'brands');
+  const [ownTab, setOwnTab] = useState(() => __initialState.tab || godGet().home || 'brands');
+  /* Controlled when the route drives it, uncontrolled otherwise. Everything
+     below calls setTab and does not care which of the two it is. */
+  const controlled = typeof tabProp === 'string' && !!onTabChange;
+  const tab = controlled ? tabProp : ownTab;
+  const setTab = useCallback(
+    (next) => {
+      const value = typeof next === 'function' ? next(tab) : next;
+      if (controlled) onTabChange(value);
+      else setOwnTab(value);
+    },
+    [controlled, onTabChange, tab],
+  );
 
   /* ── EUKA L30 GMV · per-store fetch with progressive merge ──
      One store's export takes ~7 s, so we pull stores one URL each
@@ -877,7 +952,8 @@ export default function WurxUI({
     <div className="pc-app" style={{ paddingTop: 6, paddingBottom: 32 }}>
       <div className="pc-shell">
         {/* ═══ HEADER ROW 1 · dark brown bar · brand · actions · profile ═══ */}
-        <header className="pc-header pc-header-dark" style={{ gap: 10, background: 'linear-gradient(180deg, var(--wx-warning-soft) 0%, var(--wx-warning-soft) 100%)', border: '1px solid var(--wx-warning)', boxShadow: 'inset 0 1px 0 rgba(245,233,214,0.07), 0 6px 18px rgba(48,39,28,0.28)', padding: '2px 16px 2px 18px', marginBottom: 10, position: 'relative' }}>
+        <ChromeSlot embedded={embedded}>
+        <header className={'pc-header pc-header-dark' + (embedded ? ' pc-header-embedded' : '')} style={{ gap: 10, background: 'linear-gradient(180deg, var(--wx-warning-soft) 0%, var(--wx-warning-soft) 100%)', border: '1px solid var(--wx-warning)', boxShadow: 'inset 0 1px 0 rgba(245,233,214,0.07), 0 6px 18px rgba(48,39,28,0.28)', padding: '2px 16px 2px 18px', marginBottom: 10, position: 'relative' }}>
           <div className="pc-brand" style={{ gap: 12 }}>
             <span className="pc-brand-logo" style={{ width: 60, height: 60, padding: 0, background: 'transparent', boxShadow: 'none', overflow: 'hidden', borderRadius: 13, flex: '0 0 60px' }}>
               <img
@@ -970,15 +1046,22 @@ export default function WurxUI({
             </button>
           </div>
         </header>
+        </ChromeSlot>
 
-        {/* ═══ TAB BAR + month filter controls ═══ */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
+        {/* ═══ TAB BAR + month filter controls ═══
+             Embedded, the six tabs are six rows in our sidebar and six routes,
+             so the rail is not drawn at all — two navigations for one thing is
+             worse than either. The month controls stay: they filter the screen
+             you are already on, which is not navigation. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: embedded ? 0 : 16, flexWrap: 'wrap' }}>
+          {embedded ? <div style={{ flex: 1, minWidth: 0 }} /> : (
           <div className="pc-tabs" ref={tabsRailRef} style={{ marginTop: 0, flex: 1, minWidth: 0 }}>
             {TABS.map(t => (
               <button key={t.id} className={`pc-tab ${tab === t.id ? 'active' : ''}`}
                 onClick={() => setTab(t.id)}>{t.label}</button>
             ))}
           </div>
+          )}
 
           {/* Right-side filter cluster: month nav + All Time */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>

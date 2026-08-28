@@ -200,6 +200,27 @@ export function AppShell({ children }: { children: ReactNode }) {
             ) : null}
           </div>
 
+          {/*
+            WHERE PAID COLLABS PUTS ITS OWN CHROME.
+
+            Rashid, 2026-08-28, on the embedded WurxBase screen: *"the header as
+            u see should be at top replace our simple header but the replacement
+            means simple write wurx creator database in same way as we have for
+            our wurxbase no need to have logo because we already have in left
+            side the notification and clock should obviulsy exist... i want to
+            give it native look of our own app now"*.
+
+            So that screen's header is PORTALED in here rather than drawn as a
+            second bar under this one. It arrives already carrying its wordmark,
+            its bell and its activity clock; `wurxbase-chrome.css` strips off
+            the logo, the app name, the user chip and the sign-out that our own
+            shell already provides three inches to the left.
+
+            An empty div on every other screen, which costs nothing and keeps
+            this file from knowing anything about that route.
+          */}
+          <div id="wurxbase-topbar-slot" className="contents" />
+
           <div className="flex items-center gap-2">
             <TextSizeMenu />
             <ThemeToggle />

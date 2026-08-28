@@ -1,4 +1,5 @@
-import { Suspense, lazy, useEffect, useRef } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useRef } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import { useTheme } from '@/components/theme/theme-context';
 // Both win on specificity rather than on order. See the header of each file:
 // the vendored CSS ships in a lazily loaded chunk, so "loaded after theirs" is
@@ -38,6 +39,17 @@ import './wurxbase-chrome.css';
 import { CollabAdFiguresProvider } from './collab-ad-figures';
 
 const WurxBaseApp = lazy(() => import('@/vendor/wurxbase/App'));
+
+/*
+ * THE SIX TABS ARE SIX ROUTES NOW.
+ *
+ * Rashid asked for them as sidebar rows rather than pills inside the embedded
+ * app, so the tab has to come from the URL. This list is the contract between
+ * src/lib/nav.ts (which links to them) and the vendored screen (which knows
+ * these ids as its own tab names). If they ever disagree the fallback below
+ * lands on Brands rather than on a blank screen.
+ */
+const COLLAB_TABS = ['brands', 'creators', 'performance', 'reporting', 'leaderboard', 'discovery'];
 
 export function PaidCollabs() {
   const { resolved } = useTheme();
@@ -100,6 +112,24 @@ export function PaidCollabs() {
     };
   }, [resolved]);
 
+  /*
+   * The tab is the route. `replace` on the correction so a mistyped URL does
+   * not leave a dead entry in the back button, and `push` when their app
+   * changes tab itself, because that IS navigation and should be undoable.
+   */
+  const { tab: tabParam } = useParams();
+  const navigate = useNavigate();
+  const tab = COLLAB_TABS.includes(String(tabParam)) ? String(tabParam) : 'brands';
+  useEffect(() => {
+    if (tabParam !== tab) navigate(`/admin/collabs/${tab}`, { replace: true });
+  }, [tabParam, tab, navigate]);
+  const handleTabChange = useCallback(
+    (next: string) => {
+      if (next && next !== tab) navigate(`/admin/collabs/${next}`);
+    },
+    [navigate, tab],
+  );
+
   return (
     <div
       ref={fence}
@@ -121,7 +151,7 @@ export function PaidCollabs() {
       */}
       <CollabAdFiguresProvider>
         <Suspense fallback={<div className="wx-skeleton m-4 h-96 rounded-xl" />}>
-          <WurxBaseApp />
+          <WurxBaseApp tab={tab} onTabChange={handleTabChange} embedded />
         </Suspense>
       </CollabAdFiguresProvider>
     </div>

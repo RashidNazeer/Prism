@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, Navigate } from 'react-router';
 import { RouteFallback } from '@/components/layout/RouteFallback';
 import { ShellLayout } from '@/components/layout/ShellLayout';
 import { WorldLayout } from '@/components/layout/WorldLayout';
@@ -508,8 +508,23 @@ export const router = createBrowserRouter([
         path: '/admin/tiktok',
         element: <AdminTikTok />,
       },
+      /*
+       * Paid Collabs is six sidebar rows now, not one row with a tab rail
+       * inside it. The tab is the ROUTE, so the browser back button, a
+       * bookmark and a link into Reporting all work like every other screen in
+       * the product — none of which was true while the tab lived in component
+       * state.
+       *
+       * /admin/collabs on its own redirects to Brands rather than 404ing: it
+       * is what the sidebar pointed at until today and what any saved link
+       * still says.
+       */
       {
         path: '/admin/collabs',
+        element: <Navigate to="/admin/collabs/brands" replace />,
+      },
+      {
+        path: '/admin/collabs/:tab',
         element: <AdminPaidCollabs />,
       },
       {

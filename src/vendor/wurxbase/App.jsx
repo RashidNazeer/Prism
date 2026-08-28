@@ -12907,7 +12907,7 @@ function applyPrefsToDOM(p) {
   root.setAttribute('data-motion', p.motion);
 }
 
-export default function App() {
+export default function App({ tab, onTabChange, embedded = false } = {}) {
   // UI preferences (live)
   const [uiPrefs, setUiPrefs] = useState(loadPrefs);
   useEffect(() => { applyPrefsToDOM(uiPrefs); savePrefs(uiPrefs); }, [uiPrefs]);
@@ -14858,6 +14858,9 @@ export default function App() {
           Brands · Creators · Performance · Reporting
       ═══════════════════════════════════════════════════════════════ */}
       <WurxUI
+        tab={tab}
+        onTabChange={onTabChange}
+        embedded={embedded}
         creators={creators}
         currentUser={currentUser}
         perms={perms}

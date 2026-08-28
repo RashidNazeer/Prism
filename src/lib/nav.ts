@@ -1,6 +1,9 @@
 import {
   Award,
+  BarChart3,
   Building2,
+  Compass,
+  FileBarChart,
   Gift,
   HandCoins,
   Handshake,
@@ -165,17 +168,54 @@ const ADMIN: NavGroup[] = [
       // Named for what it is to an admin, not for the protocol underneath:
       // nobody manages "an OAuth integration", they connect TikTok.
       { label: 'TikTok', icon: Plug, to: '/admin/tiktok' },
-      /*
-       * WurxBase, brought in whole and unchanged. STAFF ONLY, and it is in the
-       * ADMIN list alone: no creator nav mentions it and no creator route
-       * reaches it. It carries brand budgets and creator payment details, so
-       * that is not a preference.
-       */
-      { label: 'Paid Collabs', icon: HandCoins, to: '/admin/collabs' },
       // Read when something needs explaining, not when something needs
       // deciding, which is why it is here and not with the queues.
       { label: 'Activity', icon: History, to: '/admin/activity' },
       { label: 'Uploads', icon: Upload, soon: 'Later' },
+    ],
+  },
+  {
+    /*
+     * PAID COLLABS IS A SECTION NOW, not one row that opens an app with its own
+     * tabs inside it.
+     *
+     * Rashid, 2026-08-28, looking at the six pills across the top of the
+     * embedded screen: *"pull them out and create new menus item on main menu
+     * as Paid Collabs and put all these tabs there as menu item section we will
+     * navigate from there so we need to remove those tabs from top... i want to
+     * give it native look of our own app now"*.
+     *
+     * A heading over six links earns its row by the rule at the top of this
+     * file, and it removes a whole second navigation system from the product:
+     * before this, finding Reporting meant knowing that Paid Collabs was a row
+     * in Data that opened something with a tab rail of its own.
+     *
+     * THE NAMES ARE THEIRS, deliberately. "Creators" and "Brands" already
+     * appear elsewhere in this menu meaning our own creators and our own brand
+     * hubs, and these are neither — they are the paid-deal tracker's. The
+     * heading is what tells them apart, which is exactly what a heading is for,
+     * and renaming them would break the one thing every person using that
+     * screen already knows.
+     *
+     * STAFF ONLY, and in the ADMIN list alone: no creator nav mentions these
+     * and no creator route reaches them. They carry brand budgets and creator
+     * payment details, so that is not a preference.
+     */
+    label: 'Paid Collabs',
+    items: [
+      { label: 'Brands', icon: HandCoins, to: '/admin/collabs/brands' },
+      { label: 'Creators', icon: Users, to: '/admin/collabs/creators' },
+      { label: 'Performance', icon: BarChart3, to: '/admin/collabs/performance' },
+      {
+        label: 'Reporting',
+        icon: FileBarChart,
+        to: '/admin/collabs/reporting',
+        // Creative angle testing is a sub-tab of Reporting, so the row stays
+        // lit while somebody is inside it.
+        activePrefixes: ['/admin/collabs/reporting'],
+      },
+      { label: 'Leaderboard', icon: Award, to: '/admin/collabs/leaderboard' },
+      { label: 'Discovery', icon: Compass, to: '/admin/collabs/discovery' },
     ],
   },
 ];
