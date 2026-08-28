@@ -36,3 +36,16 @@ declare module '@/vendor/wurxbase/App' {
   export default App;
 }
 
+
+declare module '@/vendor/wurxbase/access' {
+  /*
+   * The capability model, read by OUR sidebar so it can stop offering rows a
+   * person cannot open. A pure function over a role name and a capability key —
+   * no client, no network. `src/lib/wurxbase-identity.ts` is the only thing
+   * that imports it.
+   */
+  export function defaultFor(role: string, key: string): boolean;
+  export function can(user: unknown, key: string): boolean;
+  export const ALL_CAPS: string[];
+  export const ROLE_LIST: string[];
+}

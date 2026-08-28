@@ -2846,3 +2846,50 @@ real constraints. See PARKED 34.
 their login screen still reads it to check a password in the browser. It is no
 more exposed than before — the key that could read it shipped in the page source
 — and it goes away with the sign-in-from-our-side step.
+
+### Paid Collabs: one sign-in, and rows that mean what they say (2026-08-28)
+
+**There is no second login.** Rashid: *"when admin is already in app no need of
+signin obviously so remove it"*. Their screen checked a typed password against
+`app_users.password` — plaintext, in a table anyone with the browser key could
+read — so it was never the boundary. Our own sign-in and the RLS on the
+`wurxbase` schema are.
+
+**`src/lib/wurxbase-identity.ts` is the whole bridge**, and the only place the
+mapping lives:
+
+| our role | theirs | what that means |
+| --- | --- | --- |
+| `admin` | `superadmin` | everything, God Mode and user management included |
+| `ops` | `admin` | every tab and every daily action; no God Mode, no managing users, no hard delete |
+
+Nobody else reaches the route — it is behind `allow={['ops','admin']}`.
+
+**THE MOUNT WAITS FOR THE IDENTITY, and skipping that is a race you lose.**
+Their `App` reads `ch_user` from `sessionStorage` in a `useState` initialiser —
+once, at mount, never again. Writing the session in an effect let the chunk
+mount first, find nothing, and render their login screen, which then persists
+because nothing re-reads the key. The route holds the skeleton until
+`isPending` clears. `isPending` and not `data`, so a profile that fails to load
+still mounts the app and degrades to their login screen rather than to a
+skeleton that never resolves.
+
+**THE ARRIVAL ROW IS WRITTEN BY US NOW.** Their login was the only thing
+writing a `LOGIN` row to `wurxbase.activity_logs`, and that row is how anyone
+reading the log later knows who was in Paid Collabs that day. The route writes
+it once per browser session — the same cadence their login had — with the real
+person's name, and swallows failures because a footnote must not cost somebody
+their screen.
+
+**THE SIDEBAR ONLY OFFERS ROWS THAT OPEN.** Rashid, on tabs a person lacks:
+*"if it was u remove it i dont want any leak"*. `navForRole` prunes the Paid
+Collabs group through `wurxbaseTabsFor`, and drops the heading if nothing
+survives. It does NOT know about per-person `custom_perms` or a God Mode tab
+hidden for the workspace — both live in their database and would make the
+sidebar depend on a fetch. The route still falls back to the first permitted
+tab, so those cases degrade to the old behaviour rather than to something
+broken.
+
+**`pnpm verify:wurxbase-signin`** proves it: no second screen, the app renders
+straight away, the session names the real person, our admin maps to their
+superadmin, and zero console errors.

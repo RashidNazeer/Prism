@@ -1,5 +1,9 @@
-import { Suspense, lazy, useCallback, useEffect, useRef } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { getSupabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/auth/auth-context';
+import { useProfile } from '@/lib/auth/useProfile';
+import { wurxbaseRoleFor, wurxbaseSession, wurxbaseTabsFor } from '@/lib/wurxbase-identity';
 import { useTheme } from '@/components/theme/theme-context';
 // Both win on specificity rather than on order. See the header of each file:
 // the vendored CSS ships in a lazily loaded chunk, so "loaded after theirs" is
@@ -39,17 +43,6 @@ import './wurxbase-chrome.css';
 import { CollabAdFiguresProvider } from './collab-ad-figures';
 
 const WurxBaseApp = lazy(() => import('@/vendor/wurxbase/App'));
-
-/*
- * THE SIX TABS ARE SIX ROUTES NOW.
- *
- * Rashid asked for them as sidebar rows rather than pills inside the embedded
- * app, so the tab has to come from the URL. This list is the contract between
- * src/lib/nav.ts (which links to them) and the vendored screen (which knows
- * these ids as its own tab names). If they ever disagree the fallback below
- * lands on Brands rather than on a blank screen.
- */
-const COLLAB_TABS = ['brands', 'creators', 'performance', 'reporting', 'leaderboard', 'discovery'];
 
 export function PaidCollabs() {
   const { resolved } = useTheme();
@@ -117,9 +110,93 @@ export function PaidCollabs() {
    * not leave a dead entry in the back button, and `push` when their app
    * changes tab itself, because that IS navigation and should be undoable.
    */
+  /*
+   * NO SECOND SIGN-IN.
+   *
+   * Rashid: *"when admin is already in app no need of signin obviously so
+   * remove it"*. Their login screen checked a typed password against a
+   * plaintext column, which was never the boundary — our own sign-in and the
+   * RLS under the `wurxbase` schema are. So the session their app reads is
+   * written here, from the person who is already signed in, BEFORE the lazy
+   * chunk mounts and looks for it.
+   *
+   * Their `logActivity` stamps `user_id` and `user_display` onto every
+   * audit row, so this is also what makes that trail truthful: it now names the
+   * actual person rather than whichever shared account was typed in.
+   *
+   * `useLayoutEffect`, not `useEffect`: their App reads sessionStorage in a
+   * `useState` initialiser, and an effect that runs after paint would let it
+   * decide nobody is signed in and render the login screen for one frame.
+   */
+  const { user } = useAuth();
+  const { data: profile, isPending: profilePending } = useProfile();
+  useLayoutEffect(() => {
+    if (!user?.id) return;
+    try {
+      sessionStorage.setItem(
+        'ch_user',
+        JSON.stringify(
+          wurxbaseSession({
+            id: user.id,
+            displayName: profile?.display_name,
+            email: user.email,
+            role: profile?.role,
+          }),
+        ),
+      );
+    } catch {
+      /* A browser with storage blocked falls back to their login screen, which
+         is the old behaviour rather than a broken screen. */
+    }
+  }, [user?.id, user?.email, profile?.display_name, profile?.role]);
+
+  /* Written by the layout effect above; the app may not mount before it is
+     true, or their one-shot read of sessionStorage finds an empty key. */
+  const identityReady = Boolean(user?.id) && !profilePending;
+
+  /*
+   * THEIR AUDIT TRAIL KEEPS ITS ARRIVAL RECORD.
+   *
+   * Removing their login screen removed the only thing that wrote a LOGIN row
+   * to `wurxbase.activity_logs`, and that row was not decoration: it is how
+   * anybody looking at the log later knows who was in Paid Collabs on a given
+   * day. Losing it would have made every later CREATOR_UPDATE sit in the log
+   * with no record of who arrived to make it.
+   *
+   * Once per browser session, not once per navigation — the same cadence their
+   * login had. Failures are swallowed on purpose: this is a footnote, and an
+   * admin who cannot write a log line should still get their screen.
+   */
+  useEffect(() => {
+    if (!identityReady || !user?.id) return;
+    const MARK = 'wurxbase_session_logged';
+    try {
+      if (sessionStorage.getItem(MARK)) return;
+      sessionStorage.setItem(MARK, '1');
+    } catch {
+      return;
+    }
+    const display =
+      (profile?.display_name || '').trim() || (user.email || '').split('@')[0] || 'Wurx staff';
+    void getSupabase()
+      .schema('wurxbase')
+      .from('activity_logs')
+      .insert({
+        user_id: user.id,
+        user_display: display,
+        action: 'LOGIN',
+        target: null,
+        details: { via: 'wurxmediahub', role: wurxbaseRoleFor(profile?.role) },
+      })
+      .then(() => undefined, () => undefined);
+  }, [identityReady, user?.id, user?.email, profile?.display_name, profile?.role]);
+
   const { tab: tabParam } = useParams();
   const navigate = useNavigate();
-  const tab = COLLAB_TABS.includes(String(tabParam)) ? String(tabParam) : 'brands';
+  /* Fall back to the first tab this person may actually open, not blindly to
+     Brands — a viewer has no Discovery and, one day, may have no Brands. */
+  const allowed = wurxbaseTabsFor(profile?.role);
+  const tab = allowed.includes(String(tabParam)) ? String(tabParam) : (allowed[0] ?? 'brands');
   useEffect(() => {
     if (tabParam !== tab) navigate(`/admin/collabs/${tab}`, { replace: true });
   }, [tabParam, tab, navigate]);
@@ -151,7 +228,26 @@ export function PaidCollabs() {
       */}
       <CollabAdFiguresProvider>
         <Suspense fallback={<div className="wx-skeleton m-4 h-96 rounded-xl" />}>
-          <WurxBaseApp tab={tab} onTabChange={handleTabChange} embedded />
+          {/*
+            NOT MOUNTED UNTIL WE KNOW WHO IS HERE.
+
+            Their App reads `ch_user` out of sessionStorage in a `useState`
+            initialiser — once, at mount, and never again. Writing the session
+            in an effect is therefore a race we lose whenever the profile query
+            has not settled yet: the chunk mounts, finds nothing, and renders
+            their login screen. Which is exactly what happened, and the login
+            screen then persists because nothing re-reads the key.
+
+            So the skeleton stays until the identity is settled. `isPending`
+            rather than `data`, so a profile that fails to load still mounts
+            the app — degrading to their login screen, which is the old
+            behaviour, rather than to a skeleton that never resolves.
+          */}
+          {identityReady ? (
+            <WurxBaseApp tab={tab} onTabChange={handleTabChange} embedded />
+          ) : (
+            <div className="wx-skeleton m-4 h-96 rounded-xl" />
+          )}
         </Suspense>
       </CollabAdFiguresProvider>
     </div>

@@ -65,7 +65,9 @@ const { data: users, error: uErr } = await admin
   .order('id');
 if (uErr) throw new Error(`could not read wurxbase.app_users: ${uErr.message}`);
 const who = users.find((u) => u.role === 'superadmin') || users[0];
-if (!who?.password) throw new Error('no usable WurxBase account found in the migrated app_users');
+/* Not used to sign in any more — nothing does. Read as evidence that
+   app_users came across intact and is reachable under RLS. */
+if (!who?.id) throw new Error('wurxbase.app_users looks empty; the copy did not land');
 
 const before = await admin.from('activity_logs').select('*', { count: 'exact', head: true });
 const logsBefore = before.count ?? 0;
@@ -111,24 +113,19 @@ try {
   await page.goto(`${BASE}/admin/collabs`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(3000);
 
-  /* Their own login screen, inside our admin. */
-  const userField = page.locator('.wurxbase-root input').first();
-  if (await userField.count()) {
-    const fields = page.locator('.wurxbase-root input');
-    if ((await fields.count()) >= 2) {
-      await fields.nth(0).fill(who.username || who.id);
-      await fields.nth(1).fill(who.password);
-      const go = page.locator('.wurxbase-root').getByRole('button', { name: /sign in|log ?in|enter/i }).first();
-      if (await go.count()) await go.click();
-      else await fields.nth(1).press('Enter');
-      await page.waitForTimeout(6000);
-    }
-  }
+  /*
+   * NO LOGIN STEP. This used to type a username and password into their own
+   * sign-in screen; that screen was removed on 2026-08-28 because the person is
+   * already signed in to our app, and the session is written from their real
+   * identity before the chunk mounts. Leaving the old steps here would have
+   * typed "Asad" into the month picker, which is what it did on the first run
+   * after the change.
+   */
   await page.waitForTimeout(4000);
 
   const text = (await page.locator('.wurxbase-root').innerText()).replace(/\s+/g, ' ');
-  const signedIn = !/sign in|password/i.test(text.slice(0, 400)) || /brands|creators|performance/i.test(text);
-  check(signedIn, 'WurxBase signs in against our app_users', signedIn ? '' : text.slice(0, 120));
+  const askedAgain = /sign in|username|password/i.test(text.slice(0, 500));
+  check(!askedAgain, 'no second sign-in — our session carries into Paid Collabs', askedAgain ? text.slice(0, 110) : '');
 
   /* Did the creator rows actually arrive? */
   const rows = await page

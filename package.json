@@ -51,7 +51,8 @@
     "vendor:wurxbase": "node scripts/vendor-wurxbase.mjs",
     "check:brand-theme": "node scripts/check-brand-theme.mjs",
     "verify:wurxbase": "node scripts/check-wurxbase-migration.mjs",
-    "wurxbase:copy": "node scripts/wurxbase-copy-data.mjs"
+    "wurxbase:copy": "node scripts/wurxbase-copy-data.mjs",
+    "verify:wurxbase-signin": "node scripts/check-wurxbase-signin.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

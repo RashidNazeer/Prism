@@ -22,6 +22,11 @@ import {
   Video,
 } from 'lucide-react';
 import type { AppRole } from '@/lib/auth/auth-context';
+import { wurxbaseTabsFor } from '@/lib/wurxbase-identity';
+
+/** The heading the Paid Collabs rows sit under. Named once so the group and the
+ *  filter that prunes it cannot drift apart. */
+const COLLABS_GROUP = 'Paid Collabs';
 
 /**
  * The sidebar, in one place.
@@ -201,7 +206,7 @@ const ADMIN: NavGroup[] = [
      * and no creator route reaches them. They carry brand budgets and creator
      * payment details, so that is not a preference.
      */
-    label: 'Paid Collabs',
+    label: COLLABS_GROUP,
     items: [
       { label: 'Brands', icon: HandCoins, to: '/admin/collabs/brands' },
       { label: 'Creators', icon: Users, to: '/admin/collabs/creators' },
@@ -310,10 +315,53 @@ const STUDIO: NavGroup[] = [
 ];
 
 export function navForRole(role: AppRole | undefined): NavGroup[] {
-  if (role === 'admin' || role === 'ops') return ADMIN;
+  /*
+   * A MENU ROW MUST NOT LIE ABOUT WHAT IT OPENS.
+   *
+   * Rashid, asked whether to hide Paid Collabs rows a person cannot open:
+   * *"if it was u remove it i dont want any leak"*.
+   *
+   * The six tabs became six rows on 2026-08-28, and rows are drawn from this
+   * static list while the tab a person may actually open is decided by their
+   * WurxBase capability. All six were offered to everybody, and clicking one
+   * you lacked bounced you to Brands with no explanation. Before the move the
+   * row simply was not in the rail, which is the behaviour restored here.
+   */
+  if (role === 'admin' || role === 'ops') return withCollabTabs(ADMIN, role);
   if (role === 'creative_strategist') return STUDIO;
   if (role === 'creator') return CREATOR;
   return APPLICANT;
+}
+
+/**
+ * Drop the Paid Collabs rows this person cannot open, and the heading with them
+ * if none survive.
+ *
+ * The six tabs are drawn from a static list here, while WHICH of them opens is
+ * decided by the person's WurxBase capability. Offering all six to everybody
+ * meant clicking one you lacked bounced you to Brands with no explanation —
+ * a menu row lying about what it opens. Before the tabs moved into this sidebar
+ * the row simply was not in their rail, which is the behaviour restored here.
+ *
+ * A cheap identity map when nothing is filtered, so the common case allocates
+ * nothing and the array stays reference-stable for anything memoising on it.
+ */
+function withCollabTabs(groups: NavGroup[], role: AppRole | undefined): NavGroup[] {
+  const allowed = new Set(wurxbaseTabsFor(role));
+  const slug = (to: string | undefined) => (to ?? '').replace('/admin/collabs/', '');
+
+  let changed = false;
+  const out = groups
+    .map((group) => {
+      if (group.label !== COLLABS_GROUP) return group;
+      const items = group.items.filter((item) => allowed.has(slug(item.to)));
+      if (items.length === group.items.length) return group;
+      changed = true;
+      return { ...group, items };
+    })
+    .filter((group) => group.items.length > 0);
+
+  return changed || out.length !== groups.length ? out : groups;
 }
 
 /** True when this item is the screen currently on show. */
