@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
-  getAngles, getAngleMeta, saveAngles, newAngleId, brandVideos, angleStats, videoFig, pruneAngle,
+  getAngles, getAngleMeta, saveAngles, fetchAngles, newAngleId, brandVideos, angleStats, videoFig, pruneAngle,
 } from './angleStore';
 
 /* ════════════════════════════════════════════════════════════════
@@ -134,7 +134,30 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
       setMeta({ savedBy: (currentUser && currentUser.display) || '', savedAt: (res && res.savedAt) || new Date().toISOString() });
       if (msg) { setNote(msg); setTimeout(() => setNote(null), 2200); }
     } catch (e) {
-      setNote('Could not save'); setTimeout(() => setNote(null), 2600);
+      /*
+       * A REFUSAL IS NOT A FAILURE, AND MUST NOT READ LIKE ONE.
+       *
+       * The store now conditions every write on the revision this screen
+       * loaded, so a save can come back refused for a reason that is nobody's
+       * mistake: somebody else saved first, or this browser never managed to
+       * load the test at all. Both used to end here as "Could not save", which
+       * says the right thing about the write and the wrong thing about what to
+       * do next — and in the second case the old code would already have
+       * deleted the team's work by the time it printed anything.
+       *
+       * So say which it was. The reload is genuinely a repair now: it pulls
+       * what the server actually holds, and the conflicting edit is one
+       * keystroke to redo rather than an afternoon to reconstruct.
+       */
+      if (e && e.conflict) {
+        setNote(e.current
+          ? 'Changed by ' + (e.current.savedBy || 'someone else') + ' while you had this open. Reloaded.'
+          : 'This test could not be loaded, so nothing was changed. Reloaded.');
+        setTimeout(() => setNote(null), 5200);
+        await fetchAngles().catch(() => {});
+      } else {
+        setNote('Could not save'); setTimeout(() => setNote(null), 2600);
+      }
       reload();
     } finally {
       setSaving(false);

@@ -41,26 +41,49 @@ export function getAngles(brand, month) {
 }
 
 export async function fetchAngles() {
+  /* `revision` comes back with every row and is carried into the mirror,
+     because it is what `saveAngles` conditions its write on. A mirror without
+     it cannot save at all, which is deliberate: better a refusal than a
+     blind overwrite. */
   const { data, error } = await selectAll(() => supabase
     .from('activity_logs')
-    .select('id,target,details,user_display,created_at')
+    .select('id,target,details,user_display,created_at,updated_at,revision')
     .eq('action', ACTION)
-    .order('created_at', { ascending: false })
-    .order('id', { ascending: true }));
+    .order('target', { ascending: true }));
   if (error) throw error;
   const map = {};
   (data || []).forEach(row => {
     const key = String(row.target || '').trim();
-    if (!key || map[key]) return;              // newest row per key wins
+    if (!key || map[key]) return;
     let d = row.details;
     if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = null; } }
     if (d && Array.isArray(d.angles)) {
-      map[key] = { angles: d.angles, savedBy: row.user_display || '', savedAt: row.created_at };
+      map[key] = {
+        angles: d.angles,
+        savedBy: row.user_display || '',
+        /* The row is edited in place now, so `created_at` is when the test was
+           STARTED. What the screen means by "saved" is the last write. */
+        savedAt: row.updated_at || row.created_at,
+        revision: row.revision,
+      };
     }
   });
   putMirror(map);
   window.dispatchEvent(new Event('wurx-angles'));
   return map;
+}
+
+/*
+ * Thrown when the row moved under us. Carries the server's copy so the caller
+ * can show what is actually stored rather than just refusing.
+ */
+export class AngleConflict extends Error {
+  constructor(current) {
+    super('This test was changed somewhere else while you had it open.');
+    this.name = 'AngleConflict';
+    this.conflict = true;
+    this.current = current;
+  }
 }
 
 export async function saveAngles(brand, month, angles, user) {
@@ -69,34 +92,109 @@ export async function saveAngles(brand, month, angles, user) {
 
   const list = Array.isArray(angles) ? angles : [];
 
-  /* Write the new row BEFORE clearing the old one. Deleting first left a
-     window where a failed insert would take the whole test with it, and
-     these figures are typed by hand, so losing them costs real work. */
-  let keepId = null;
-  if (list.length) {
+  /*
+   * ═══ A CONDITIONAL UPDATE, NOT A WRITE-THEN-SWEEP ═══
+   *
+   * This used to insert a new row and then DELETE every older row with the
+   * same target. Three ways that lost real work, all of them silent:
+   *
+   *   - an empty list wrote nothing and deleted everything, so a screen whose
+   *     load had failed wiped the team's test on the next click;
+   *   - a stale tab swept a colleague's newer row and left its own;
+   *   - nothing distinguished "nobody has saved a test" from "I could not
+   *     read it", because `fetchAngles` swallows its error upstream.
+   *
+   * Now there is exactly one row per brand+month — enforced by a partial
+   * unique index, not by a convention — and a save is an UPDATE conditioned
+   * on the revision this screen loaded. Postgres decides, atomically: either
+   * this writer had the current row and it moves to the next revision, or zero
+   * rows match and we refuse. No DELETE anywhere in the path, so a failed
+   * write can no longer destroy what was there.
+   *
+   * DELETING THE LAST ANGLE STILL DELETES. That is a real user action, and it
+   * is the ONE place a delete belongs — but it is now also conditioned on the
+   * revision, so it cannot be performed by a screen that never loaded.
+   */
+  const mirror = getAllAngles();
+  const known = mirror[key];
+  const expected = known && Number.isFinite(known.revision) ? known.revision : null;
+
+  const stamp = new Date().toISOString();
+  const who = {
+    user_id: (user && user.id) || null,
+    user_display: (user && user.display) || 'system',
+  };
+
+  /* Nothing stored for this subject yet, as far as this screen knows. */
+  if (expected == null) {
+    if (!list.length) {
+      /* An empty save with no loaded revision is the exact shape of the bug:
+         a screen that never loaded, asking to delete a test it cannot see.
+         There is nothing legitimate to do, so do nothing. */
+      const { data: exists } = await supabase.from('activity_logs')
+        .select('id').eq('action', ACTION).eq('target', key).maybeSingle();
+      if (exists) throw new AngleConflict(null);
+      return { angles: [], savedAt: stamp };
+    }
     const { data, error } = await supabase.from('activity_logs').insert({
-      action: ACTION,
-      target: key,
-      details: { angles: list },
-      user_id: (user && user.id) || null,
-      user_display: (user && user.display) || 'system',
-    }).select('id').single();
-    if (error) throw error;
-    keepId = data && data.id;
+      action: ACTION, target: key, details: { angles: list },
+      updated_at: stamp, revision: 1, ...who,
+    }).select('revision,updated_at').single();
+    /* 23505 is the unique index: somebody created this subject between our
+       read and our write. Not an error to show as one — reload and retry. */
+    if (error) {
+      if (error.code === '23505') throw new AngleConflict(await currentRow(key));
+      throw error;
+    }
+    return commitMirror(key, list, user, data.updated_at || stamp, data.revision);
   }
 
-  /* one row per brand+month · everything older than the one just written */
-  let sweep = supabase.from('activity_logs').delete().eq('action', ACTION).eq('target', key);
-  if (keepId != null) sweep = sweep.neq('id', keepId);
-  await sweep;
+  /* Deleting the last angle: a real action, still conditioned. */
+  if (!list.length) {
+    const { data, error } = await supabase.from('activity_logs')
+      .delete().eq('action', ACTION).eq('target', key).eq('revision', expected)
+      .select('id');
+    if (error) throw error;
+    if (!data || !data.length) throw new AngleConflict(await currentRow(key));
+    const map = getAllAngles();
+    delete map[key];
+    putMirror(map);
+    window.dispatchEvent(new Event('wurx-angles'));
+    return { angles: [], savedAt: stamp };
+  }
 
-  const savedAt = new Date().toISOString();
+  const { data, error } = await supabase.from('activity_logs')
+    .update({ details: { angles: list }, updated_at: stamp, revision: expected + 1, ...who })
+    .eq('action', ACTION).eq('target', key).eq('revision', expected)
+    .select('revision,updated_at');
+  if (error) throw error;
+  if (!data || !data.length) throw new AngleConflict(await currentRow(key));
+
+  return commitMirror(key, list, user, data[0].updated_at || stamp, data[0].revision);
+}
+
+/* What the server actually holds for this subject, for a conflict message. */
+async function currentRow(key) {
+  const { data } = await supabase.from('activity_logs')
+    .select('details,user_display,updated_at,created_at,revision')
+    .eq('action', ACTION).eq('target', key).maybeSingle();
+  if (!data) return null;
+  let d = data.details;
+  if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = null; } }
+  return {
+    angles: (d && Array.isArray(d.angles)) ? d.angles : [],
+    savedBy: data.user_display || '',
+    savedAt: data.updated_at || data.created_at,
+    revision: data.revision,
+  };
+}
+
+function commitMirror(key, list, user, savedAt, revision) {
   const map = getAllAngles();
-  if (list.length) map[key] = { angles: list, savedBy: (user && user.display) || '', savedAt };
-  else delete map[key];
+  map[key] = { angles: list, savedBy: (user && user.display) || '', savedAt, revision };
   putMirror(map);
   window.dispatchEvent(new Event('wurx-angles'));
-  return { angles: list, savedAt };
+  return { angles: list, savedAt, revision };
 }
 
 /* who last wrote this brand+month, and when · the section shows it so the

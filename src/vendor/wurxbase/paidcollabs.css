@@ -453,7 +453,7 @@ to {opacity: 1; transform: translateY(0);}
     inset 0 -1px 0 rgba(48,39,28,0.03); transition: all .18s cubic-bezier(0.4,0,0.2,1); -moz-appearance: textfield; appearance: textfield;}
 .wurxbase-root .pc-mx-input.ad {background: linear-gradient(180deg, color-mix(in srgb, var(--wx-danger-soft) 60%, transparent) 0%, color-mix(in srgb, var(--wx-danger-soft) 30%, transparent) 100%); color: var(--wx-danger);}
 .wurxbase-root .pc-mx-input::-webkit-outer-spin-button, .wurxbase-root .pc-mx-input::-webkit-inner-spin-button {-webkit-appearance: none; margin: 0;}
-.wurxbase-root .pc-mx-input::placeholder {color: color-mix(in srgb, var(--wx-text) 22%, transparent); font-weight: 600;}
+.wurxbase-root .pc-mx-input::placeholder {color: var(--wx-text); font-weight: 600;}
 .wurxbase-root .pc-mx-2l {white-space: normal !important; line-height: 1.18; font-size: 10.5px !important;}
 .wurxbase-root .pc-mx-input:hover {background: var(--wx-success-soft); border-color: color-mix(in srgb, var(--wx-success) 25%, transparent);}
 .wurxbase-root .pc-mx-input.ad:hover {background: var(--wx-danger-soft); border-color: color-mix(in srgb, var(--wx-danger) 25%, transparent);}
@@ -2752,7 +2752,7 @@ to {opacity: 1;} }
 .wurxbase-root .pc-uc-top {position: relative; padding: 16px 22px 13px; background: var(--wx-warning); color: var(--wx-on-accent);}
 .wurxbase-root .pc-uc-ttl {display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 800; letter-spacing: -.4px;}
 .wurxbase-root .pc-uc-ttl b {min-width: 30px; height: 24px; padding: 0 9px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--wx-surface-2) 14%, transparent); color: var(--wx-on-accent); font-size: 12.5px; font-weight: 800; font-variant-numeric: tabular-nums;}
-.wurxbase-root .pc-uc-sub {margin-top: 3px; font-size: 11.5px; font-weight: 600; color: color-mix(in srgb, var(--wx-text-muted) 55%, transparent);}
+.wurxbase-root .pc-uc-sub {margin-top: 3px; font-size: 11.5px; font-weight: 600; color: var(--wx-text-muted);}
 .wurxbase-root .pc-uc-x {position: absolute; top: 15px; right: 18px; width: 32px; height: 32px; border-radius: 999px; border: 0; cursor: pointer; background: color-mix(in srgb, var(--wx-surface-2) 10%, transparent); color: var(--wx-on-accent); display: inline-flex; align-items: center; justify-content: center; transition: background .15s;}
 .wurxbase-root .pc-uc-x:hover {background: color-mix(in srgb, var(--wx-surface-2) 20%, transparent);}
 .wurxbase-root .pc-uc-tools {display: flex; align-items: center; gap: 10px; padding: 12px 22px; background: var(--wx-surface-1); border-bottom: 1px solid var(--pc-divider);}
@@ -3094,11 +3094,11 @@ to {opacity: 1;} }
 .wurxbase-root .rb-brief {position: relative; overflow: hidden; border-radius: 28px; padding: 22px 26px 20px; background: linear-gradient(135deg,var(--wx-accent) 0%,var(--wx-accent) 52%,var(--wx-info) 100%); color: var(--wx-on-accent); box-shadow: 0 18px 44px -22px rgba(42,33,24,.75);}
 .wurxbase-root .rb-brief-glow {position: absolute; inset: auto -60px -140px auto; width: 340px; height: 340px; border-radius: 999px; pointer-events: none; background: radial-gradient(circle, color-mix(in srgb, var(--wx-success-soft) 30%, transparent) 0%, transparent 70%);}
 .wurxbase-root .rb-brief-in {position: relative;}
-.wurxbase-root .rb-brief-eyebrow {display: inline-block; font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.4px; color: color-mix(in srgb, var(--wx-text-muted) 50%, transparent);}
+.wurxbase-root .rb-brief-eyebrow {display: inline-block; font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.4px; color: var(--wx-text-muted);}
 .wurxbase-root .rb-brief-line {margin: 7px 0 0; font-size: clamp(20px,2.4vw,29px); font-weight: 900; letter-spacing: -1px; line-height: 1.12; color: var(--wx-text-muted); max-width: 22ch;}
-.wurxbase-root .rb-brief-sub {margin: 7px 0 0; font-size: 13px; font-weight: 600; line-height: 1.5; color: color-mix(in srgb, var(--wx-text-muted) 72%, transparent); max-width: 62ch;}
+.wurxbase-root .rb-brief-sub {margin: 7px 0 0; font-size: 13px; font-weight: 600; line-height: 1.5; color: var(--wx-text-muted); max-width: 62ch;}
 .wurxbase-root .rb-brief-chips {display: flex; flex-wrap: wrap; gap: 7px; margin-top: 15px;}
-.wurxbase-root .rb-chip {display: inline-flex; align-items: baseline; gap: 5px; height: 29px; padding: 0 13px; border-radius: 999px; background: color-mix(in srgb, var(--wx-surface-2) 9%, transparent); border: 1px solid color-mix(in srgb, var(--wx-border) 13%, transparent); font-size: 10.5px; font-weight: 700; color: color-mix(in srgb, var(--wx-text-muted) 62%, transparent); backdrop-filter: blur(6px);}
+.wurxbase-root .rb-chip {display: inline-flex; align-items: baseline; gap: 5px; height: 29px; padding: 0 13px; border-radius: 999px; background: color-mix(in srgb, var(--wx-surface-2) 9%, transparent); border: 1px solid color-mix(in srgb, var(--wx-border) 13%, transparent); font-size: 10.5px; font-weight: 700; color: var(--wx-text-muted); backdrop-filter: blur(6px);}
 .wurxbase-root .rb-chip b {font-size: 13px; font-weight: 900; color: var(--wx-text-muted); font-variant-numeric: tabular-nums;}
 .wurxbase-root .rb-chip.good b {color: var(--wx-success);}
 .wurxbase-root .rb-chip.bad b {color: var(--wx-text-muted);}
@@ -3194,12 +3194,12 @@ to {opacity: 1;} }
 .wurxbase-root .rp-board-aura {position: absolute; right: -90px; top: -120px; width: 420px; height: 420px; border-radius: 999px; pointer-events: none; background: radial-gradient(circle, color-mix(in srgb, var(--wx-success-soft) 20%, transparent) 0%, transparent 68%);}
 .wurxbase-root .rp-board-top {position: relative; display: grid; grid-template-columns: minmax(300px,0.86fr) minmax(0,1.14fr); gap: 26px; align-items: center; padding: 26px 30px 20px;}
 .wurxbase-root .rp-board-say {min-width: 0;}
-.wurxbase-root .rp-eyebrow {display: inline-flex; align-items: center; height: 23px; padding: 0 11px; border-radius: 999px; background: color-mix(in srgb, var(--wx-surface-2) 8%, transparent); border: 1px solid color-mix(in srgb, var(--wx-border) 11%, transparent); font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.3px; color: color-mix(in srgb, var(--wx-text-muted) 62%, transparent);}
+.wurxbase-root .rp-eyebrow {display: inline-flex; align-items: center; height: 23px; padding: 0 11px; border-radius: 999px; background: color-mix(in srgb, var(--wx-surface-2) 8%, transparent); border: 1px solid color-mix(in srgb, var(--wx-border) 11%, transparent); font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.3px; color: var(--wx-text-muted);}
 .wurxbase-root .rp-say {margin: 12px 0 0; font-size: clamp(21px,2.5vw,31px); font-weight: 900; letter-spacing: -1.1px; line-height: 1.1; color: var(--wx-text-muted); max-width: 20ch;}
-.wurxbase-root .rp-say-sub {margin: 8px 0 0; font-size: 12.5px; font-weight: 600; line-height: 1.55; color: color-mix(in srgb, var(--wx-text-muted) 60%, transparent); max-width: 46ch;}
+.wurxbase-root .rp-say-sub {margin: 8px 0 0; font-size: 12.5px; font-weight: 600; line-height: 1.55; color: var(--wx-text-muted); max-width: 46ch;}
 .wurxbase-root .rp-hero {display: flex; align-items: flex-end; gap: 12px; margin-top: 20px; flex-wrap: wrap;}
 .wurxbase-root .rp-hero-num {font-size: clamp(34px,4.4vw,52px); font-weight: 900; letter-spacing: -2.4px; line-height: .92; color: var(--wx-text-muted); font-variant-numeric: tabular-nums;}
-.wurxbase-root .rp-hero-tag {display: flex; flex-direction: column; gap: 4px; padding-bottom: 4px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.3px; color: color-mix(in srgb, var(--wx-text-muted) 45%, transparent);}
+.wurxbase-root .rp-hero-tag {display: flex; flex-direction: column; gap: 4px; padding-bottom: 4px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.3px; color: var(--wx-text-muted);}
 .wurxbase-root .rp-hero-tag i {font-style: normal; text-transform: none; letter-spacing: 0; display: inline-flex; align-items: center; height: 19px; padding: 0 8px; border-radius: 999px; font-size: 10.5px; font-weight: 900; font-variant-numeric: tabular-nums; white-space: nowrap;}
 .wurxbase-root .rp-hero-tag i.up {background: color-mix(in srgb, var(--wx-surface-3) 16%, transparent); color: var(--wx-success);}
 .wurxbase-root .rp-hero-tag i.down {background: color-mix(in srgb, var(--wx-danger) 16%, transparent); color: var(--wx-text-muted);}
@@ -3209,7 +3209,7 @@ to {opacity: 1;} }
 .wurxbase-root .rp-strip-cell {padding: 15px 22px 17px; min-width: 0; border-left: 1px solid color-mix(in srgb, var(--wx-border) 9%, transparent);}
 .wurxbase-root .rp-strip-cell:first-child {border-left: 0; padding-left: 30px;}
 .wurxbase-root .rp-strip-cell:last-child {padding-right: 30px;}
-.wurxbase-root .rp-s-l {display: block; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.2px; color: color-mix(in srgb, var(--wx-text-muted) 42%, transparent);}
+.wurxbase-root .rp-s-l {display: block; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.2px; color: var(--wx-text-muted);}
 .wurxbase-root .rp-s-v {display: block; margin-top: 6px; font-size: 22px; font-weight: 900; letter-spacing: -.9px; color: var(--wx-text-muted); font-variant-numeric: tabular-nums; line-height: 1;}
 .wurxbase-root .rp-s-v.good {color: var(--wx-success);}
 .wurxbase-root .rp-s-v.bad {color: var(--wx-text-muted);}
@@ -3217,7 +3217,7 @@ to {opacity: 1;} }
 .wurxbase-root .rp-s-bar {display: block; height: 3px; border-radius: 999px; background: color-mix(in srgb, var(--wx-surface-2) 12%, transparent); margin-top: 8px; overflow: hidden;}
 .wurxbase-root .rp-s-bar i {display: block; height: 100%; border-radius: 999px; background: var(--wx-info); transition: width .7s cubic-bezier(.2,.8,.3,1);}
 .wurxbase-root .rp-s-bar.owed i {background: var(--wx-surface-3);}
-.wurxbase-root .rp-s-s {display: block; margin-top: 6px; font-size: 10px; font-weight: 600; color: color-mix(in srgb, var(--wx-text-muted) 42%, transparent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+.wurxbase-root .rp-s-s {display: block; margin-top: 6px; font-size: 10px; font-weight: 600; color: var(--wx-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 /* ── the row of three ── */
 .wurxbase-root .rp-row3 {display: grid; grid-template-columns: minmax(0,1.25fr) minmax(0,1fr) minmax(0,.85fr); gap: 12px;}
 .wurxbase-root .rp-card {background: var(--wx-surface-1); border-radius: 22px; padding: 16px 18px 15px; box-shadow: 0 0 0 1px rgba(20,17,12,.06), 0 2px 4px -2px rgba(20,17,12,.05); display: flex; flex-direction: column; transition: box-shadow .22s cubic-bezier(.2,.6,.2,1), transform .22s cubic-bezier(.2,.6,.2,1);}
@@ -3328,8 +3328,8 @@ to {opacity: 1;} }
 /* totals ride on the dark surface so they read as a summary, not a row */
 .wurxbase-root .bx-foot {margin-top: 8px; padding: 14px 18px; border-radius: 20px; background: linear-gradient(150deg,var(--wx-surface-3),var(--wx-info)); color: var(--wx-on-accent); box-shadow: 0 10px 26px -16px rgba(28,21,14,.9);}
 .wurxbase-root .bx-foot > * {padding: 0 8px;}
-.wurxbase-root .bx-f-l {text-align: left; grid-column: span 2; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.2px; color: color-mix(in srgb, var(--wx-text-muted) 50%, transparent);}
-.wurxbase-root .bx-f-c small {display: block; font-size: 8.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: color-mix(in srgb, var(--wx-text-muted) 42%, transparent);}
+.wurxbase-root .bx-f-l {text-align: left; grid-column: span 2; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.2px; color: var(--wx-text-muted);}
+.wurxbase-root .bx-f-c small {display: block; font-size: 8.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: var(--wx-text-muted);}
 .wurxbase-root .bx-f-c b {display: block; margin-top: 3px; font-size: 15px; font-weight: 900; letter-spacing: -.4px; color: var(--wx-text-muted); font-variant-numeric: tabular-nums;}
 .wurxbase-root .bx-f-c.pos b {color: var(--wx-success);}
 .wurxbase-root .bx-f-c.neg b {color: var(--wx-text-muted);}
@@ -3367,8 +3367,8 @@ to {opacity: 1;} }
 .wurxbase-root .gm-mark {flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; height: 26px; padding: 0 10px; border-radius: 8px; background: linear-gradient(135deg,var(--wx-surface-3),var(--wx-warning)); color: var(--wx-text); font-size: 10.5px; font-weight: 900; letter-spacing: 1.4px;}
 .wurxbase-root .gm-ttl {flex: 1; min-width: 0;}
 .wurxbase-root .gm-ttl b {display: block; font-size: 17px; font-weight: 900; letter-spacing: -.4px;}
-.wurxbase-root .gm-ttl small {display: block; margin-top: 1px; font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--wx-text-muted) 55%, transparent);}
-.wurxbase-root .gm-who {flex: 0 0 auto; height: 24px; padding: 0 11px; border-radius: 999px; display: inline-flex; align-items: center; background: color-mix(in srgb, var(--wx-surface-2) 10%, transparent); border: 1px solid color-mix(in srgb, var(--wx-border) 14%, transparent); font-size: 10.5px; font-weight: 800; color: color-mix(in srgb, var(--wx-text-muted) 72%, transparent);}
+.wurxbase-root .gm-ttl small {display: block; margin-top: 1px; font-size: 11px; font-weight: 600; color: var(--wx-text-muted);}
+.wurxbase-root .gm-who {flex: 0 0 auto; height: 24px; padding: 0 11px; border-radius: 999px; display: inline-flex; align-items: center; background: color-mix(in srgb, var(--wx-surface-2) 10%, transparent); border: 1px solid color-mix(in srgb, var(--wx-border) 14%, transparent); font-size: 10.5px; font-weight: 800; color: var(--wx-text-muted);}
 .wurxbase-root .gm-x {flex: 0 0 auto; width: 31px; height: 31px; border-radius: 999px; border: 0; cursor: pointer; background: color-mix(in srgb, var(--wx-surface-2) 10%, transparent); color: var(--wx-text); display: inline-flex; align-items: center; justify-content: center;}
 .wurxbase-root .gm-x:hover {background: color-mix(in srgb, var(--wx-surface-3) 20%, transparent);}
 .wurxbase-root .gm-tabs {display: flex; gap: 5px; padding: 11px 20px; background: var(--wx-surface-1); border-bottom: 1px solid var(--wx-border);}
@@ -3491,7 +3491,7 @@ to {opacity: 1;} }
 .wurxbase-root .bc-badge {flex: 0 0 auto; height: 24px; padding: 0 10px; border-radius: 7px; display: inline-flex; align-items: center; background: linear-gradient(135deg,var(--wx-surface-3),var(--wx-success)); color: var(--wx-text); font-size: 9.5px; font-weight: 900; letter-spacing: 1.3px;}
 .wurxbase-root .bc-ttl {flex: 1; min-width: 0;}
 .wurxbase-root .bc-ttl b {display: block; font-size: 16.5px; font-weight: 900; letter-spacing: -.4px;}
-.wurxbase-root .bc-ttl small {display: block; margin-top: 1px; font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--wx-text-muted) 55%, transparent);}
+.wurxbase-root .bc-ttl small {display: block; margin-top: 1px; font-size: 11px; font-weight: 600; color: var(--wx-text-muted);}
 .wurxbase-root .bc-x {flex: 0 0 auto; width: 30px; height: 30px; border-radius: 999px; border: 0; cursor: pointer; background: color-mix(in srgb, var(--wx-surface-2) 10%, transparent); color: var(--wx-on-accent); display: inline-flex; align-items: center; justify-content: center;}
 .wurxbase-root .bc-x:hover {background: color-mix(in srgb, var(--wx-surface-3) 20%, transparent);}
 .wurxbase-root .bc-reach {display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 11px 20px; background: var(--wx-bg); border-bottom: 1px solid var(--wx-border); font-size: 11.5px; font-weight: 700; color: var(--wx-success);}
@@ -3571,10 +3571,10 @@ to {opacity: 1;} }
 .wurxbase-root .gm-brandmark {display: flex; align-items: center; gap: 10px; padding: 0 6px 16px;}
 .wurxbase-root .gm-brandmark > div {min-width: 0;}
 .wurxbase-root .gm-brandmark b {display: block; font-size: 14.5px; font-weight: 900; letter-spacing: -.3px;}
-.wurxbase-root .gm-brandmark small {display: block; font-size: 10.5px; font-weight: 600; color: color-mix(in srgb, var(--wx-text-muted) 50%, transparent);}
+.wurxbase-root .gm-brandmark small {display: block; font-size: 10.5px; font-weight: 600; color: var(--wx-text-muted);}
 .wurxbase-root .gm-mark {flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; height: 25px; padding: 0 9px; border-radius: 8px; background: linear-gradient(135deg,var(--wx-surface-3),var(--wx-warning)); color: var(--wx-text); font-size: 10px; font-weight: 900; letter-spacing: 1.3px;}
 .wurxbase-root .gm-nav {display: flex; flex-direction: column; gap: 2px; overflow-y: auto;}
-.wurxbase-root .gm-navb {display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; padding: 10px 11px; border: 0; border-radius: 13px; cursor: pointer; font-family: inherit; background: transparent; color: color-mix(in srgb, var(--wx-text-muted) 62%, transparent); transition: background .16s, color .16s;}
+.wurxbase-root .gm-navb {display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; padding: 10px 11px; border: 0; border-radius: 13px; cursor: pointer; font-family: inherit; background: transparent; color: var(--wx-text-muted); transition: background .16s, color .16s;}
 .wurxbase-root .gm-navb svg {flex: 0 0 auto; opacity: .75;}
 .wurxbase-root .gm-navb span {min-width: 0;}
 .wurxbase-root .gm-navb b {display: block; font-size: 12.5px; font-weight: 800; letter-spacing: -.1px;}
@@ -3582,7 +3582,7 @@ to {opacity: 1;} }
 .wurxbase-root .gm-navb:hover {background: color-mix(in srgb, var(--wx-surface-2) 7%, transparent); color: var(--wx-on-accent);}
 .wurxbase-root .gm-navb.on {background: color-mix(in srgb, var(--wx-surface-2) 13%, transparent); color: var(--wx-text-muted);}
 .wurxbase-root .gm-navb.on svg {opacity: 1; color: var(--wx-warning);}
-.wurxbase-root .gm-railfoot {margin-top: auto; padding: 12px 8px 0; border-top: 1px solid color-mix(in srgb, var(--wx-border) 10%, transparent); font-size: 9.5px; font-weight: 700; color: color-mix(in srgb, var(--wx-text-muted) 38%, transparent); line-height: 1.5;}
+.wurxbase-root .gm-railfoot {margin-top: auto; padding: 12px 8px 0; border-top: 1px solid color-mix(in srgb, var(--wx-border) 10%, transparent); font-size: 9.5px; font-weight: 700; color: var(--wx-text-muted); line-height: 1.5;}
 /* ── canvas ── */
 .wurxbase-root .gm-main {display: flex; flex-direction: column; min-width: 0; background: var(--wx-bg);}
 .wurxbase-root .gm-head {display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 24px 15px; background: var(--wx-surface-1); border-bottom: 1px solid var(--wx-border);}
@@ -3708,7 +3708,7 @@ to {opacity: 1;} }
 .wurxbase-root .ca-pick {width: 100%; max-width: 860px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; border-radius: 24px; background: var(--wx-surface-1); box-shadow: 0 34px 80px -32px rgba(24,18,10,.8); animation: pc-rise .3s cubic-bezier(.2,.8,.3,1);}
 .wurxbase-root .ca-pick-top {display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px 14px; background: linear-gradient(140deg,var(--wx-surface-3),var(--wx-info)); color: var(--wx-on-accent);}
 .wurxbase-root .ca-pick-top b {display: block; font-size: 15.5px; font-weight: 900; letter-spacing: -.3px;}
-.wurxbase-root .ca-pick-top small {display: block; margin-top: 1px; font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--wx-text-muted) 55%, transparent);}
+.wurxbase-root .ca-pick-top small {display: block; margin-top: 1px; font-size: 11px; font-weight: 600; color: var(--wx-text-muted);}
 .wurxbase-root .ca-pick-x {width: 30px; height: 30px; border-radius: 999px; border: 0; cursor: pointer; background: color-mix(in srgb, var(--wx-surface-2) 10%, transparent); color: var(--wx-on-accent); font-size: 12px; font-weight: 800;}
 .wurxbase-root .ca-pick-x:hover {background: color-mix(in srgb, var(--wx-surface-3) 20%, transparent);}
 .wurxbase-root .ca-pick-tools {display: flex; gap: 10px; padding: 12px 20px; background: var(--wx-surface-1); border-bottom: 1px solid var(--wx-border);}

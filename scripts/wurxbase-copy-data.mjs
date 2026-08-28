@@ -153,9 +153,23 @@ for (const { name, order } of TABLES) {
     }
   }
   const ours = await countOf(OURS.url, name, ourHeaders);
-  const ok = theirs === ours;
+  /*
+   * A SOURCE TABLE WITH NO ROWS IS NOT A MISMATCH.
+   *
+   * `app_settings` is empty over there and holds one row here, because their
+   * own `fetchSettings` upserts `{ id: 1 }` the first time it finds nothing.
+   * Ours is therefore a row THEIR code wrote, not drift. Comparing counts
+   * flagged it FAIL on every run, and a check that cries wolf gets ignored
+   * exactly when it is telling the truth.
+   *
+   * Nothing can be lost when the source is empty, so there is nothing to
+   * assert. Say what is there and move on.
+   */
+  const sourceEmpty = theirs === 0;
+  const ok = sourceEmpty || theirs === ours;
   summary.push({ name, theirs, ours, ok });
-  console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${name.padEnd(24)} theirs ${String(theirs).padStart(5)}   ours ${String(ours).padStart(5)}`);
+  const note = sourceEmpty && ours > 0 ? '   (source empty; ours holds ' + ours + ' written here)' : '';
+  console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${name.padEnd(24)} theirs ${String(theirs).padStart(5)}   ours ${String(ours).padStart(5)}${note}`);
 }
 
 const bad = summary.filter((s) => !s.ok);

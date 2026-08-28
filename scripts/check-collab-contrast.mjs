@@ -59,11 +59,46 @@ const PROBE = () => {
     });
     return 0.2126 * s[0] + 0.7152 * s[1] + 0.0722 * s[2];
   };
+  /*
+   * TWO COLOUR FORMS COME BACK FROM getComputedStyle, AND ONLY ONE WAS READ.
+   *
+   * Chromium resolves `color-mix()` to `color(srgb 0.78 0.57 0.29 / 0.14)`,
+   * not to `rgba()`. This only matched `rgba()`, so every colour-mix
+   * background returned null and was treated as ABSENT — the walk carried on
+   * past it to whatever was underneath, and the element was measured against
+   * the wrong thing entirely.
+   *
+   * That was survivable while colour-mix was rare. It stopped being survivable
+   * on 2026-08-28, when the vendoring pipeline was taught to preserve alpha and
+   * several hundred backgrounds became colour-mixes overnight. Their greeting
+   * banner is the one that gave it away: a 96% ACCENT card measured as
+   * `rgb(16,14,12) on rgb(16,14,12)` — the page colour, twice, because the
+   * card itself was invisible to this function.
+   *
+   * `unparseable` is returned rather than null when a background is plainly
+   * there but in a form this cannot read. Skipping it silently is the whole
+   * failure; the caller reports it instead.
+   */
   const parse = (str) => {
-    const m = /rgba?\(([^)]+)\)/.exec(str || '');
-    if (!m) return null;
-    const p = m[1].split(/[,\s/]+/).filter(Boolean).map(Number);
-    return { rgb: p.slice(0, 3), a: p.length > 3 ? p[3] : 1 };
+    const v = String(str || '').trim();
+    if (!v || v === 'none' || v === 'transparent') return null;
+
+    const rgb = /rgba?\(([^)]+)\)/.exec(v);
+    if (rgb) {
+      const p = rgb[1].split(/[,\s/]+/).filter(Boolean).map(Number);
+      return { rgb: p.slice(0, 3), a: p.length > 3 ? p[3] : 1 };
+    }
+
+    /* color(srgb r g b / a) — components are 0..1, alpha optional. */
+    const fn = /color\(\s*srgb\s+([^)]+)\)/.exec(v);
+    if (fn) {
+      const p = fn[1].split(/[\s/]+/).filter(Boolean).map(Number);
+      if (p.length >= 3 && p.slice(0, 3).every((n) => Number.isFinite(n))) {
+        return { rgb: p.slice(0, 3).map((n) => n * 255), a: p.length > 3 && Number.isFinite(p[3]) ? p[3] : 1 };
+      }
+    }
+
+    return { unparseable: v.slice(0, 40) };
   };
   const over = (fg, bg) => fg.rgb.map((v, i) => v * fg.a + bg[i] * (1 - fg.a));
 
@@ -90,21 +125,22 @@ const PROBE = () => {
        * value, so each one is composited and the WORST is what counts.
        */
       if (cs.backgroundImage && cs.backgroundImage !== 'none') {
-        const stops = cs.backgroundImage.match(/rgba?\([^)]*\)/g);
+        const stops = cs.backgroundImage.match(/rgba?\([^)]*\)|color\(srgb[^)]*\)/g);
         if (!stops || !stops.length) return null;         // a url() or similar
-        const parsed = stops.map(parse).filter((c) => c && c.a > 0);
+        const parsed = stops.map(parse).filter((c) => c && !c.unparseable && c.a > 0);
         if (!parsed.length) return null;
         /* Composite each stop over whatever is behind the gradient itself. */
         let under = [0, 0, 0];
         let p = n.parentElement;
         while (p && p !== document.documentElement) {
           const pc = parse(getComputedStyle(p).backgroundColor);
-          if (pc && pc.a >= 0.999) { under = pc.rgb; break; }
+          if (pc && !pc.unparseable && pc.a >= 0.999) { under = pc.rgb; break; }
           p = p.parentElement;
         }
         return { stops: parsed.map((c) => over(c, under)) };
       }
       const c = parse(cs.backgroundColor);
+      if (c && c.unparseable) return { unreadable: c.unparseable };
       if (c && c.a > 0) {
         stack.push(c);
         if (c.a >= 0.999) break;
@@ -126,6 +162,21 @@ const PROBE = () => {
       .join(' ')
       .trim();
     if (!text || text.length < 2) continue;
+    /*
+     * AN EMOJI IS A PICTURE, NOT TEXT.
+     *
+     * It paints its own colours and ignores `color` entirely, so measuring the
+     * contrast between its inherited ink and its background is meaningless —
+     * the same mistake as reading `color` on SVG text, which takes `fill`.
+     * Their greeting banner is a lone `👋` on a coloured card and reported
+     * 1:1 against its own background, on whichever tab happened to be open
+     * while the banner was still up. Two symptoms of one bad measurement: a
+     * failure that is not real, and a guard that moves between runs.
+     *
+     * Only when the whole label is pictographic. "⚠️ Budget exceeded" still
+     * gets measured, because the words in it are genuinely text.
+     */
+    if (!/[\p{L}\p{N}]/u.test(text)) continue;
     const cs = getComputedStyle(el);
     if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) < 0.15) continue;
     const box = el.getBoundingClientRect();
@@ -140,9 +191,12 @@ const PROBE = () => {
      */
     const isSvgText = el.ownerSVGElement != null || el.tagName === 'text' || el.tagName === 'tspan';
     const fg = parse(isSvgText ? cs.fill : cs.color);
-    if (!fg || fg.a < 0.15) continue;
+    if (!fg || fg.unparseable || fg.a < 0.15) continue;
     const bgAny = behind(el);
     if (!bgAny) { out.push({ unmeasured: true, text: text.slice(0, 24) }); continue; }
+    /* A background this cannot read is NOT a background it may ignore. Say so
+       loudly; an unmeasured thing is not a passing thing. */
+    if (bgAny.unreadable) { out.push({ unreadable: bgAny.unreadable, text: text.slice(0, 24) }); continue; }
 
     /* A gradient gives several grounds; the text has to survive the worst. */
     const grounds = bgAny.stops ? bgAny.stops : [bgAny];
@@ -257,7 +311,20 @@ try {
 
       const all = await page.evaluate(PROBE);
       const unmeasured = all.filter((r) => r.unmeasured).length;
-      const results = all.filter((r) => !r.unmeasured);
+      /* A colour form this cannot parse is a HOLE in the measurement, not a
+         pass. It fails the tab, because the alternative is the thing that has
+         gone wrong here three times: reporting green over a surface nobody
+         looked at. */
+      const unreadable = all.filter((r) => r.unreadable);
+      if (unreadable.length) {
+        const forms = [...new Set(unreadable.map((r) => r.unreadable))].slice(0, 3);
+        bad(`${tab}: ${unreadable.length} element(s) sit on a colour this guard cannot parse`,
+            `${forms.join(' | ')}
+        Teach parse() that form rather than letting it pass unmeasured.`);
+        lastPrint = null;
+        continue;
+      }
+      const results = all.filter((r) => !r.unmeasured && !r.unreadable);
       if (results.length === 0) { bad(`${tab}: nothing measurable rendered, so this check is vacuous`); continue; }
 
       /* What this screen actually says, cheaply. Identical to the previous tab
