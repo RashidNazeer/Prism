@@ -453,10 +453,36 @@
   /* Creates the containing block. `translateZ(0)` rather than `translate(0)`
      so it also gets its own compositor layer and their animations stay smooth. */
   transform: translateZ(0);
-  /* Their shell asks for full height; give it a real one to fill rather than
-     the zero it would otherwise inherit. */
-  min-height: calc(100dvh - 8rem);
   contain: layout paint;
+
+  /*
+   * THE FENCE IS EXACTLY THE VIEWPORT, AND THEIR APP SCROLLS INSIDE IT.
+   *
+   * Changed 2026-08-28. It used to be `min-height`, so the element grew to
+   * whatever their content needed — 7,607px on the Creators tab. Being the
+   * containing block, that is also the box every `position: fixed` descendant
+   * is measured against, and their modal overlays are `inset: 0` centred. So
+   * the Unique Creators panel opened 3,413px down the page: the screen dimmed,
+   * and the dialog was nowhere. Rashid: *"when i click unique creators look how
+   * does it look like this is very bad"*. Every modal in Paid Collabs had it.
+   *
+   * The containment cannot simply be dropped — it is what stops their fixed
+   * FOOTER, bulk bar and mobile nav covering our sidebar, which is the bug it
+   * was added for and which a browser test caught by failing to click
+   * "Dashboard" for thirty seconds.
+   *
+   * Making the fence viewport-sized fixes both at once: their overlays cover
+   * exactly what is on screen, their chrome still cannot escape, and their
+   * sticky table headers stick to something the size they were written for.
+   * Their app was a full-window application that scrolled itself; this gives it
+   * back that shape inside our shell.
+   *
+   * `3.5rem` is our top bar (`h-14`), in rem so it tracks the text-size
+   * setting rather than pinning to 56 physical pixels while the bar grows.
+   */
+  height: calc(100dvh - 3.5rem);
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 /* The design's primary action: a gradient fill rather than a flat one. */

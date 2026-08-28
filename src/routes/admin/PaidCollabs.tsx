@@ -193,13 +193,28 @@ export function PaidCollabs() {
 
   const { tab: tabParam } = useParams();
   const navigate = useNavigate();
-  /* Fall back to the first tab this person may actually open, not blindly to
-     Brands — a viewer has no Discovery and, one day, may have no Brands. */
+  /*
+   * Fall back to the first tab this person may actually open, not blindly to
+   * Brands — a viewer has no Discovery and, one day, may have no Brands.
+   *
+   * NOT WHILE THE PROFILE IS STILL LOADING. Until it lands, `profile?.role` is
+   * undefined, which resolves to their weakest role, which has no Discovery —
+   * so an admin opening /admin/collabs/discovery got bounced to Brands before
+   * the app had any idea who they were. The contrast guard caught it by asking
+   * for the sixth screen and being handed the first, which is exactly the
+   * silent redirect this fallback was added to stop.
+   */
+  const requested = String(tabParam);
   const allowed = wurxbaseTabsFor(profile?.role);
-  const tab = allowed.includes(String(tabParam)) ? String(tabParam) : (allowed[0] ?? 'brands');
+  const tab = profilePending
+    ? requested
+    : allowed.includes(requested)
+      ? requested
+      : (allowed[0] ?? 'brands');
   useEffect(() => {
+    if (profilePending) return;
     if (tabParam !== tab) navigate(`/admin/collabs/${tab}`, { replace: true });
-  }, [tabParam, tab, navigate]);
+  }, [tabParam, tab, navigate, profilePending]);
   const handleTabChange = useCallback(
     (next: string) => {
       if (next && next !== tab) navigate(`/admin/collabs/${next}`);

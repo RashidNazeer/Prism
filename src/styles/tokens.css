@@ -47,6 +47,20 @@
   --wx-on-accent: #100e0c; /* 6.87:1 sitting on the gold fill */
 
   /*
+   * A SCRIM IS THE PAGE DIMMED, so it is dark in BOTH themes.
+   *
+   * This is the one place where "dark and light are equal citizens" does NOT
+   * mean "flip it". A modal backdrop exists to take light away from what is
+   * behind it; the light-mode value is a paler dark, not a light. Reach for
+   * `--wx-bg` here and light mode washes the page out instead of dimming it,
+   * which is exactly the bug this token was added to fix.
+   *
+   * Warm rather than neutral black, so it sits in the same family as the rest
+   * of the palette instead of reading as a grey film over a cream page.
+   */
+  --wx-scrim: rgba(16, 14, 12, 0.62);
+
+  /*
    * The three money states, and the only colours allowed to encode where a
    * creator's work has got to. Every one of the seven pipeline stages belongs
    * to exactly one of them (see src/lib/offer-stages.ts), so a creator can add
@@ -149,6 +163,10 @@
   --wx-accent-soft: rgba(138, 95, 31, 0.1);
   --wx-accent-ring: rgba(138, 95, 31, 0.4);
   --wx-on-accent: #ffffff; /* 5.45:1 on the gold fill */
+
+  /* Lighter than the dark theme's, because there is more light to take away
+     and a cream page under 62% black reads as switched off. */
+  --wx-scrim: rgba(38, 31, 24, 0.42);
 
   /* The three money states. Each one is darkened from the design's value by
      just enough to clear WCAG AA on a nested card, which is the tightest

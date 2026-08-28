@@ -578,24 +578,31 @@
 }
 
 /*
-  EVERY FULL-SCREEN SCRIM WAS BLUE. A modal backdrop is the page dimmed, which
-  is --wx-bg at some alpha; --wx-info is the colour we reserve for saying
-  something informational, and six overlays wearing it made every dialog in
-  Paid Collabs look like an alert. Each keeps its own alpha, so the weight of
-  each dialog is unchanged — only the hue.
+  EVERY FULL-SCREEN SCRIM WAS THE WRONG COLOUR, and my first fix for it was
+  wrong too.
+
+  They were painted with --wx-info, the blue we reserve for saying something
+  informational, so every dialog in Paid Collabs read as an alert. I replaced
+  that with --wx-bg at each one's original alpha — which is right in dark mode
+  and wrong in light, where --wx-bg is near-white and a 56% wash of it WASHES
+  THE PAGE OUT rather than dimming it.
+
+  A scrim is the page dimmed. It is dark in both themes, which makes it the one
+  thing in this palette that does not flip, so it is now its own token —
+  --wx-scrim — rather than something borrowed. See tokens.css.
+
+  The Unique Creators overlay (.pc-uc-root) joins them: it was a 50% GOLD wash
+  over the whole screen, which is what Rashid was looking at when he said "look
+  how does it look like this is very bad". Their original was a 50% dark brown;
+  the vendoring kept the alpha and lost the hue.
 */
-.wurxbase-root.wurxbase-root .bc-root {
-  background: color-mix(in srgb, var(--wx-bg) 56%, transparent);
-}
-.wurxbase-root.wurxbase-root .gm-root {
-  background: color-mix(in srgb, var(--wx-bg) 58%, transparent);
-}
+.wurxbase-root.wurxbase-root .bc-root,
+.wurxbase-root.wurxbase-root .gm-root,
 .wurxbase-root.wurxbase-root .cx-pk-root,
-.wurxbase-root.wurxbase-root .cx-cf-root {
-  background: color-mix(in srgb, var(--wx-bg) 46%, transparent);
-}
-.wurxbase-root.wurxbase-root .ac-root {
-  background: color-mix(in srgb, var(--wx-bg) 52%, transparent);
+.wurxbase-root.wurxbase-root .cx-cf-root,
+.wurxbase-root.wurxbase-root .ac-root,
+.wurxbase-root.wurxbase-root .pc-uc-root {
+  background: var(--wx-scrim);
 }
 
 /*
@@ -610,4 +617,27 @@
 .wurxbase-root.wurxbase-root .pc-btn-primary:hover:not(:disabled) {
   background: var(--wx-accent-hover) !important;
   color: var(--wx-on-accent) !important;
+}
+
+
+/*
+  THE UNIQUE CREATORS PANEL, the rest of it.
+
+  Its overlay is handled with the other scrims above. Everything else in the
+  panel had the same amber-for-gold substitution the primary buttons had: the
+  header band, the confirm button and the selected segment of the tier filter
+  all painted `--wx-warning`, which is the colour this product uses to say
+  something needs attention. A list of creators does not.
+*/
+.wurxbase-root.wurxbase-root .pc-uc-top,
+.wurxbase-root.wurxbase-root .pc-uc-btn.primary,
+.wurxbase-root.wurxbase-root .pc-uc-segbtn.on {
+  background: var(--wx-accent);
+  color: var(--wx-on-accent);
+}
+
+/* The line under the panel title sat on that band as faded muted ink, which is
+   a text colour for a surface, not for a gold fill. */
+.wurxbase-root.wurxbase-root .pc-uc-sub {
+  color: color-mix(in srgb, var(--wx-on-accent) 78%, transparent);
 }
