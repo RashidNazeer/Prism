@@ -889,42 +889,110 @@ themselves, both carry their own guard as well and both name what they will
 remove before doing it: `wipe-offers-contests.mjs` and `seed-penetrex.mjs
 --clean`.
 
-### The two platforms cannot reach each other's data
+### One database, one client, one schema
 
-Rashid asked for certainty rather than a promise: deleting from WurxBase's UI
-must only ever affect WurxBase's data, and the same the other way round.
+**Changed on 2026-08-28, and this section used to say the opposite.** Until then
+there were two products on two Supabase projects, and `verify:isolation`
+forbade the vendored app from importing our client at all. Rashid consolidated:
+*"now there is only one main copy and that is our own copy in this app we are
+moving everything here... I want to have only one app being managed from one
+side."*
 
-**They are separate Postgres databases in separate Supabase projects.** There is
-no shared table, no cross-database foreign key and no cascade that can span
-them, so a DELETE on one side is *physically* incapable of reaching the other.
-The only way to break that is for code on one side to hold a connection to the
-other, and `pnpm verify:isolation` forbids exactly that. It runs inside
-`pnpm build`, so it cannot be forgotten.
+**WurxBase's eight tables now live in the `wurxbase` SCHEMA of our own
+project.** Separation by project is gone; separation by schema replaces it.
 
-| database | project | reached by |
+| what | where | reached by |
 | --- | --- | --- |
-| WurxMediaHub | `npznoiotslruqovorrec` | our code only |
-| WurxBase | `bnevtdezskftlrjjgbsg` | the vendored app only |
-| Paid Collaborations | `pfkpgmpicjcirnogxkac` | the vendored app only |
+| WurxMediaHub | `public` on `npznoiotslruqovorrec` | our code |
+| WurxBase | `wurxbase` on the same project | the vendored app, through one seam |
+| ~~WurxBase's old project~~ | `bnevtdezskftlrjjgbsg` | retired, data copied out |
+| ~~Paid Collaborations~~ | `pfkpgmpicjcirnogxkac` | the project no longer exists |
 
-Verified by hand as well as by the guard:
+**The seam is `src/vendor/wurxbase/supabaseClient.js` and nothing else.** It
+borrows the one application client and scopes it: `getSupabase().schema('wurxbase')`.
+That is why their ninety-two `.from('creators')` calls needed no rewrite, and
+why their `creators` can never be confused with our `profiles`.
 
-- the vendored code names **only** its own two projects, and never imports our
-  Supabase client;
-- our `src/`, `scripts/` and `supabase/` name **neither** of theirs;
-- **their in-app SQL console is read-only and scoped to their own project**: it
-  hardcodes their URL, sends GET only, rejects
-  `INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|GRANT|REVOKE|COPY|EXECUTE`
-  with a regex, appends `LIMIT 1000` and times out at ten seconds.
+```js
+export const supabase = {
+  from:    (t) => getSupabase().schema('wurxbase').from(t),
+  channel: (...a) => getSupabase().channel(...a),   // realtime is on the root client
+};
+```
 
-The guard was tested by breaking it in both directions and watching the build
-fail, rather than by trusting a green light.
+**`pnpm verify:isolation` now asserts the new rule** and still runs inside
+`pnpm build`:
 
-**What this does NOT protect against**, and it is worth being straight about:
-their tables are still writable by anyone holding their publishable key, which
-ships in both bundles. Isolation means our side cannot hurt their data; it does
-not make their data safe from the open policies on their own project, and there
-is no point-in-time recovery on it.
+1. nothing anywhere names a retired project or its old publishable key;
+2. the vendored code constructs no client of its own (one client, or two race to
+   refresh the same token and people get logged out at random);
+3. only the seam imports ours;
+4. no vendored realtime filter still says `schema: 'public'` — it would
+   subscribe to OUR table of the same name and deliver nothing, silently.
+
+#### The two settings that are not in git
+
+**PostgREST must be told the schema exists.** Tables and grants are not enough;
+without this every request 404s.
+
+```powershell
+# read it first, then add to the list rather than replacing it
+Invoke-RestMethod -Method GET -Uri "https://api.supabase.com/v1/projects/$ref/postgrest" -Headers @{Authorization="Bearer $env:SUPABASE_ACCESS_TOKEN"}
+Invoke-RestMethod -Method PATCH -Uri "https://api.supabase.com/v1/projects/$ref/postgrest" `
+  -Headers @{Authorization="Bearer $env:SUPABASE_ACCESS_TOKEN"; 'Content-Type'='application/json'} `
+  -Body '{"db_schema":"public,graphql_public,wurxbase"}'
+```
+
+**A raw REST call needs `Accept-Profile: wurxbase`.** The client sends it for
+you; hand-built `fetch` calls do not. Use `wurxbaseRest()` from the seam.
+
+#### Moving the data
+
+```bash
+SUPABASE_SERVICE_KEY=... node scripts/wurxbase-copy-data.mjs           # copy
+SUPABASE_SERVICE_KEY=... node scripts/wurxbase-copy-data.mjs --verify  # counts only
+```
+
+Safe to run twice: each table is emptied before it is filled, so a half-finished
+run leaves no duplicates. It refuses to run when `.env.local` points at prod
+unless `--i-mean-prod` is passed.
+
+**Ids are preserved and the sequences must be moved afterwards**, or the next
+insert collides with a row that already exists. The script prints the three
+`setval` statements; run them through the Management API query endpoint.
+
+`activity_logs.id` is load-bearing, which is why ids are kept: `saveAngles`
+writes a row, keeps its id and sweeps `.neq('id', keepId)`. Renumbering would
+be invisible until the first save deleted the wrong row.
+
+#### Proving it actually moved
+
+```bash
+pnpm build && pnpm preview
+SUPABASE_SERVICE_KEY=... node scripts/check-wurxbase-migration.mjs
+```
+
+Counting rows proves the copy landed and nothing else. **Every way this
+migration fails is silent from the screen:** a request still going to the
+retired project returns real-looking data, a missing schema header 404s into
+something that reads as "no records yet", and RLS refusing a table returns an
+empty array rather than an error. So the check signs in, opens the screen, and
+asserts on what the network did — including that a WRITE lands, because reads
+can succeed while writes are refused.
+
+**One expected 406 on the very first load ever.** `app_settings` starts empty
+and their `fetchSettings` self-heals it: `.single()` on no rows returns
+PGRST116, which their code catches and upserts `{id: 1}`. It happens once and
+never again.
+
+#### What is still true about deletes
+
+Every script that deletes anything still refuses to run outside dev via
+`scripts/lib/dev-guard.mjs`. What changed is that WurxBase's data is now
+*inside* our project, so it is covered by our backups and point-in-time recovery
+for the first time — their old project had none. It is also now reachable by our
+service key, which it never was before: treat `wurxbase.*` with the same care
+as `public.*`.
 
 ### vercel.json has a strict schema, and a comment in it kills the deployment
 

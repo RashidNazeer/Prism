@@ -1725,3 +1725,38 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   functional check passes, and the text is simply invisible. Only compositing
   what is actually painted behind each label can catch it, and it caught 862
   failures on one tab that nothing else noticed.
+- 2026-08-28: **WurxBase moves into OUR database, in its own schema.** Rashid
+  consolidated to one app managed from one side. A SCHEMA rather than renamed
+  tables in `public`, because their code says `.from('creators')` in
+  forty-two places and `.from('app_users')` in twenty-four: scoping the client
+  once means not one of those call sites changes. Rejected: prefixing every
+  table `wb_` (touches ninety-two call sites and a re-vendor would undo it)
+  and merging into `public` (a name collision waiting to happen).
+- 2026-08-28: **Their `creators` is NOT merged with our creator tables, and
+  the two must never be joined on a hunch.** Theirs is a paid-deal tracker — a
+  brand, a deal string like "$200 for 6", who hired them, an array of delivered
+  videos. Ours is a person with a login, an application and a brand hub. Same
+  word, different grain. Anything wanting both joins deliberately, on TikTok
+  handle or video id, in a view written for the purpose.
+- 2026-08-28: **The data was copied, not moved, and ids were preserved.** Their
+  project stays intact and untouched, so the cutover is one line to reverse.
+  Ids are kept because `activity_logs.id` is load-bearing in their save path:
+  `saveAngles` writes a row, keeps its id, and deletes everything else with
+  that target. Renumbered ids would be invisible until the first save deleted
+  the wrong row.
+- 2026-08-28: **`json` became `jsonb` in the copy, and that is the only
+  deliberate difference.** Every value in those columns is machine-written
+  objects and arrays, so nothing observable changes, and jsonb is what allows
+  the indexes and constraints that make their data-loss bugs impossible rather
+  than merely unlikely — which is the whole reason the move is worth doing.
+- 2026-08-28: **No unique constraint on (action, target) yet, deliberately.**
+  It is the thing that would make the angle-test and contract overwrite bugs
+  impossible, but their save inserts a new row and then deletes the old ones, so
+  adding it now breaks every save on the day it lands. The constraint arrives
+  with the code change, not before it. PARKED 34.
+- 2026-08-28: **The isolation guard was rewritten rather than deleted.** Its
+  premise was reversed by the consolidation, but the reason it existed did not
+  go away. It now asserts the narrower and more easily broken rule: one client,
+  one schema, and no reference anywhere to a retired project — because a
+  leftover URL does not error, it quietly reports on a database nobody
+  maintains.

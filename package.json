@@ -49,7 +49,9 @@
     "verify:collab-ads-ui": "node scripts/check-collab-ads-ui.mjs",
     "verify:collab-contrast": "node scripts/check-collab-contrast.mjs",
     "vendor:wurxbase": "node scripts/vendor-wurxbase.mjs",
-    "check:brand-theme": "node scripts/check-brand-theme.mjs"
+    "check:brand-theme": "node scripts/check-brand-theme.mjs",
+    "verify:wurxbase": "node scripts/check-wurxbase-migration.mjs",
+    "wurxbase:copy": "node scripts/wurxbase-copy-data.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

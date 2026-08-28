@@ -18,7 +18,3 @@ declare module '@/vendor/wurxbase/App' {
   export default App;
 }
 
-declare module '@/vendor/wurxbase/PaidCollabs' {
-  const PaidCollabsApp: React.ComponentType;
-  export default PaidCollabsApp;
-}

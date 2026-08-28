@@ -765,7 +765,7 @@ export default function WurxUI({
     // doesn't silently swallow events forever.
     const ch = supabase
       .channel(`bmb_${Math.random().toString(36).slice(2, 9)}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'brand_monthly_budgets' }, refetchBudgets)
+      .on('postgres_changes', { event: '*', schema: 'wurxbase', table: 'brand_monthly_budgets' }, refetchBudgets)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [refetchBudgets]);
@@ -5354,7 +5354,7 @@ function DiscoveryTab({ creators, currentUser }) {
   useEffect(() => {
     const ch = supabase
       .channel('discovery-marks')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs', filter: 'action=eq.DISCOVERY_MARK' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'wurxbase', table: 'activity_logs', filter: 'action=eq.DISCOVERY_MARK' }, () => {
         fetchDiscoveryMarks().then(m => { setMarks(m); getDiscoveryMarks.write(m); }).catch(() => {});
       })
       .subscribe();

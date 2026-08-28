@@ -2808,3 +2808,41 @@ project as a control). Nothing imports that file, so nothing is broken by it.
 feature and it is not enabled here: both a probe INSERT and a probe UPDATE came
 back 201/200 and were COMMITTED. Verify a "rolled back" write by reading the
 row afterwards, or do not send it. Both were found and undone.
+
+### Paid Collabs runs on our database (2026-08-28)
+
+**Where the data is:** the `wurxbase` schema of our own project, eight tables,
+copied out of `bnevtdezskftlrjjgbsg` and left intact there. `creators` 1249,
+`activity_logs` 2348, `app_users` 8, `join_requests` 4,
+`brand_monthly_budgets` 38, `audit_logs` 2, `app_settings` and
+`revoked_sessions` empty.
+
+**How their code reaches it:** one seam,
+`src/vendor/wurxbase/supabaseClient.js`, which borrows the single application
+client and scopes it to the schema. Nothing else in the vendored tree imports
+ours, and `verify:isolation` fails the build if that changes.
+
+**What had to change beyond the client, and why each was invisible:**
+
+- **Eight realtime filters said `schema: 'public'`.** Left alone they would
+  subscribe to OUR tables of the same name and deliver nothing, with a healthy
+  subscription and no error.
+- **Five hand-built `fetch` calls** in the latency dot, the diagnostics panel
+  and SQL Quest carried a hardcoded project URL and key. They would have gone on
+  querying the retired database and reporting healthy numbers about it. They use
+  `wurxbaseRest()` now, which adds the schema header and the session token.
+- **The tables had to join the `supabase_realtime` publication.** A repointed
+  filter on an unpublished table produces no events at all.
+- **`app_settings` needs `replica identity full`** because their handler
+  diffs the old row on UPDATE, and the default payload carries only the key.
+
+**What became possible that was not before:** they had no DDL access on that
+project, which is why creative angle tests, brand contracts and Discovery marks
+all ride inside `activity_logs` as one row per subject, and why their saves
+delete-then-insert. We own the schema now, so those can become real tables with
+real constraints. See PARKED 34.
+
+**Still true:** `app_users.password` is plaintext. It was copied as-is because
+their login screen still reads it to check a password in the browser. It is no
+more exposed than before — the key that could read it shipped in the page source
+— and it goes away with the sign-in-from-our-side step.

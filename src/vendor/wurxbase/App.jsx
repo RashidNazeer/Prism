@@ -13,7 +13,7 @@ import './App.css';
 import './responsive.css';
 import './theme.css';
 import './tailwind.css';
-import { supabase, selectAll } from './supabaseClient';
+import { supabase, selectAll, wurxbaseRest, wurxbaseHeaders, WURXBASE_ORIGIN, WURXBASE_ENDPOINT_LABEL } from './supabaseClient';
 import WurxUI from './WurxUI';
 
 /* ─── Constants ──────────────────────────────────────────── */
@@ -4020,9 +4020,7 @@ function LatencyIndicator() {
     async function ping() {
       const t0 = performance.now();
       try {
-        const res = await fetch('https://bnevtdezskftlrjjgbsg.supabase.co/rest/v1/creators?select=id&limit=1', {
-          headers: { apikey: 'sb_publishable_h7DMRqJ19S3cWaEoUR9e8Q_b5FEAEyu' }
-        });
+        const res = await wurxbaseRest('creators?select=id&limit=1');
         const ms = Math.round(performance.now() - t0);
         if (cancelled) return;
         if (res.ok) { setLatency(ms); setError(false); }
@@ -4060,12 +4058,10 @@ function SystemHealthV2({ onClose, currentUser, creatorsLive = [] }) {
       setLoading(true);
       const t0 = performance.now();
       try {
-        const SUPABASE_URL = 'https://bnevtdezskftlrjjgbsg.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_h7DMRqJ19S3cWaEoUR9e8Q_b5FEAEyu';
-        const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
-        // Counts via Range header
+        // Counts via Range header. The project and the key come from the one
+        // client now; the schema header is what keeps these off `public`.
         async function countQuery(path) {
-          const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } });
+          const res = await wurxbaseRest(path, { headers: { Prefer: 'count=exact', Range: '0-0' } });
           const cr = res.headers.get('content-range') || '0-0/0';
           const m = cr.match(/\/(\d+)$/);
           return m ? parseInt(m[1], 10) : 0;
@@ -4102,7 +4098,7 @@ function SystemHealthV2({ onClose, currentUser, creatorsLive = [] }) {
     async function ping() {
       const t0 = performance.now();
       try {
-        await fetch('https://bnevtdezskftlrjjgbsg.supabase.co/rest/v1/creators?select=id&limit=1', { headers: { apikey: 'sb_publishable_h7DMRqJ19S3cWaEoUR9e8Q_b5FEAEyu' } });
+        await wurxbaseRest('creators?select=id&limit=1');
         const ms = Math.round(performance.now() - t0);
         if (!cancelled) {
           samples.push(ms);
@@ -4267,7 +4263,7 @@ function SystemHealthV2({ onClose, currentUser, creatorsLive = [] }) {
 
               <div className="tw-text-[10.5px] tw-font-bold tw-uppercase tw-tracking-wider tw-text-oneui-mute tw-mb-2 tw-mt-4">Connection</div>
               <div className="tw-bg-slate-50 tw-rounded-2xl tw-p-4 tw-ring-1 tw-ring-black/[0.04] tw-space-y-2">
-                <div className="tw-flex tw-items-center tw-justify-between"><span className="tw-text-[12px] tw-font-bold tw-text-oneui-mute">Endpoint</span><span className="tw-text-[11.5px] tw-font-mono tw-font-semibold tw-text-oneui-ink tw-truncate tw-max-w-[260px]">bnevtdezskftlrjjgbsg.supabase.co</span></div>
+                <div className="tw-flex tw-items-center tw-justify-between"><span className="tw-text-[12px] tw-font-bold tw-text-oneui-mute">Endpoint</span><span className="tw-text-[11.5px] tw-font-mono tw-font-semibold tw-text-oneui-ink tw-truncate tw-max-w-[260px]">{WURXBASE_ENDPOINT_LABEL}</span></div>
                 <div className="tw-flex tw-items-center tw-justify-between"><span className="tw-text-[12px] tw-font-bold tw-text-oneui-mute">Online</span><span className={`tw-text-[11.5px] tw-font-bold ${navigator.onLine ? 'tw-text-emerald-700' : 'tw-text-rose-700'}`}>{navigator.onLine ? 'Yes' : 'No'}</span></div>
                 <div className="tw-flex tw-items-center tw-justify-between"><span className="tw-text-[12px] tw-font-bold tw-text-oneui-mute">Avg ping (last {pingHistory.length})</span><span className="tw-text-[11.5px] tw-font-bold tw-text-oneui-ink">{pingHistory.length > 0 ? `${Math.round(pingHistory.reduce((a, b) => a + b, 0) / pingHistory.length)}ms` : '-'}</span></div>
                 <div className="tw-flex tw-items-center tw-justify-between"><span className="tw-text-[12px] tw-font-bold tw-text-oneui-mute">User</span><span className="tw-text-[11.5px] tw-font-bold tw-text-[#1259C3]">{currentUser?.display}</span></div>
@@ -4680,8 +4676,7 @@ function SqlPlaygroundV2({ onClose, currentUser }) {
     setRunning(true);
     const t0 = performance.now();
     try {
-      const SUPABASE_URL = 'https://bnevtdezskftlrjjgbsg.supabase.co';
-      const SUPABASE_KEY = 'sb_publishable_h7DMRqJ19S3cWaEoUR9e8Q_b5FEAEyu';
+      const SUPABASE_URL = WURXBASE_ORIGIN;
       // Use Supabase RPC to run a raw SQL via the rest layer requires a custom function.
       // Fallback: parse FROM/SELECT and use the REST API directly for table queries.
       const parsed = parseSimpleSelect(finalSql);
@@ -4689,7 +4684,7 @@ function SqlPlaygroundV2({ onClose, currentUser }) {
       const url = buildRestUrl(SUPABASE_URL, parsed);
       const ctrl = new AbortController();
       const timeout = setTimeout(() => ctrl.abort(), 10000);
-      const res = await fetch(url, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: ctrl.signal });
+      const res = await fetch(url, { headers: await wurxbaseHeaders(), signal: ctrl.signal });
       clearTimeout(timeout);
       if (!res.ok) {
         const txt = await res.text();
@@ -12085,7 +12080,7 @@ function ActivityLogsPanel({ onClose }) {
     fetchLogs();
     const channel = supabase
       .channel('activity_logs_changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activity_logs' },
+      .on('postgres_changes', { event: 'INSERT', schema: 'wurxbase', table: 'activity_logs' },
         payload => setLogs(prev => [payload.new, ...prev].slice(0, 200))
       )
       .subscribe();
@@ -13356,7 +13351,7 @@ export default function App() {
     if (currentUser?.role !== 'superadmin') return;
     const channel = supabase
       .channel('pending_creators_realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'creators' },
+      .on('postgres_changes', { event: 'INSERT', schema: 'wurxbase', table: 'creators' },
         ({ new: row }) => {
           if (row?.status === 'pending') {
             setPendingCount(c => c + 1);
@@ -13400,7 +13395,7 @@ export default function App() {
     }
     const channel = supabase
       .channel('join_requests_realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'join_requests' },
+      .on('postgres_changes', { event: 'INSERT', schema: 'wurxbase', table: 'join_requests' },
         ({ new: req }) => {
           const msg = `${req.name} (@${req.username}) wants to join the team!`;
           addNotification(msg, 'join');
@@ -13506,7 +13501,7 @@ export default function App() {
     };
     const channel = supabase
       .channel('cross_user_notifs')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activity_logs' },
+      .on('postgres_changes', { event: 'INSERT', schema: 'wurxbase', table: 'activity_logs' },
         ({ new: log }) => {
           if (String(log.user_id) === String(currentUser.id)) return;
           const msgFn = CROSS_MSGS[log.action];
@@ -13527,7 +13522,7 @@ export default function App() {
       .channel(chName)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'app_settings', filter: 'id=eq.1' },
+        { event: '*', schema: 'wurxbase', table: 'app_settings', filter: 'id=eq.1' },
         () => { fetchSettings(); }
       )
       .subscribe();
@@ -13538,7 +13533,7 @@ export default function App() {
   useEffect(() => {
     const channel = supabase
       .channel('app_settings_sync')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_settings', filter: 'id=eq.1' },
+      .on('postgres_changes', { event: 'UPDATE', schema: 'wurxbase', table: 'app_settings', filter: 'id=eq.1' },
         () => fetchSettings()
       )
       .subscribe();
