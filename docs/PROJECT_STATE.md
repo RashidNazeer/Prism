@@ -2,55 +2,54 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-28 by /precompact. Rashid was about to hit his usage limit.**
+**Recorded 2026-08-28.**
 
-**THE ONE DECISION WAITING ON HIM:** he asked *"can we fix this?"* about the
-angle-test delete (below). He has NOT said go. Ask before patching their code.
+**WHAT JUST SHIPPED, on dev, commit `046dd71`, deployed and READY.** WurxBase's
+eight tables now live in the `wurxbase` schema of OUR project. Paid Collabs no
+longer touches their old project at all. `pnpm verify:wurxbase` 6/6 —
+including that a WRITE lands — and his Ad spend / ROI columns survived:
+`verify:collab-ads` 30/30, `verify:collab-ads-ui` 15/15.
 
-**ALREADY APPROVED AND NOT STARTED:** *sign in to Paid Collabs from our side* —
-our admin route sets their `ch_user` session itself with every capability on,
-under the real person's name so their activity log stays truthful. He chose this
-on 2026-08-27 over asking Asad to raise `usman`. **Nothing in any database
-changes**, ours or theirs; see the Paid Collabs section of FEATURE_MAP for why.
+**RASHID HAS NOT LOOKED AT IT YET.** The checklist he was given: open
+/admin/collabs on dev, sign in to WurxBase as usual, and check the brands and
+creators are all there, the numbers match, and Reporting → Creative angle
+testing still works. Also the earlier UI fix on that screen — hover a video row,
+it should be a soft warm band and not blue.
 
-**WHAT SHIPPED (dev, pushed, `23f5d5b`).** His UI complaint is fixed. The
-vendoring pipeline was throwing away alpha, so their 1.4% row hover became a
-SOLID blue and their 10% hairline became solid gold. 521 see-through colours
-were arriving opaque. Contrast is back to 11 of 12, light clean on all six tabs.
-He has NOT looked at it yet — the test checklist is in the chat: Paid Collabs →
-Reporting → Creative angle testing → a brand with a saved test → open an angle →
-run the mouse down the rows, both themes.
+**THE NEXT STEP, already approved on 2026-08-27 and not started:** *sign in to
+Paid Collabs from our side.* Our admin route sets their `ch_user` session
+itself, with every capability on, under the real person's name so their activity
+log stays truthful. This is now worth more than it was: it retires their login
+screen, which is the only reason `wurxbase.app_users.password` still holds
+PLAINTEXT passwords. Delete that column in the same change.
 
-**IN FLIGHT WHEN THE SESSION ENDED:** a Workflow auditing every vendored
-WurxBase write path for the same overwrite-from-unloaded-state bug, run id
-`wf_a002ff07-7b1`. **A workflow does not survive the session.** If its findings
-are wanted, re-run it: the script is at
-`.claude/projects/.../workflows/scripts/wurxbase-overwrite-audit-wf_a002ff07-7b1.js`.
-Its conclusions were never seen, so do not cite them.
+**THEN the six data-loss bugs — and the ground has shifted under the fix.**
+PARKED 34 and `docs/WURXBASE_WRITE_SAFETY.md` hold the full audit: 27 findings,
+each having survived three agents told to refute it. The designed fix was a
+best-effort compare-and-swap **because their project had no DDL access**. We own
+the schema now, so that constraint is gone: a unique index on
+`(action, target)` plus an upsert makes the angle-test AND contract overwrite
+bugs *impossible* rather than unlikely, in one migration, with no JavaScript
+patch to maintain. **Re-read the design with that in mind before implementing
+it — option B or C may no longer be the right answer.**
 
-**THE ANGLE-TEST BUG, stated correctly** (an earlier version of this overstated
-it). `saveAngles` in `src/vendor/wurxbase/angleStore.js` deletes with
-`.eq('action','CREATIVE_ANGLE').eq('target','Brand::YYYY-MM')` — ONE brand in
-ONE month, angle rows only. It does **not** touch creators, other brands or
-other months. Saving empty *is* their delete button and that is correct.
+**Rashid also said our copy is the end of the line: Asad ships no more
+releases.** So fixes are edited straight into `src/vendor/wurxbase/` rather
+than written as re-appliable patches. `scripts/vendor-wurxbase.mjs` and
+`scripts/wurxbase-patches.mjs` are effectively retired — kept for provenance,
+not to be run. Nothing in the build calls them.
 
-The actual hole: the screen reads a `localStorage` mirror written by a fetch
-whose error is swallowed, so **it cannot tell "nobody saved a test" from "I
-failed to load it"** — and the next click writes that emptiness over real data,
-with no error and no trace, because the delete logs nothing. The fix shape:
-never delete, always insert (an empty "tombstone" row), and let their existing
-newest-row-wins loader decide; plus stop swallowing the fetch error. It must go
-through `scripts/wurxbase-patches.mjs` or the next vendoring erases it, and it
-must fail loudly if their release moves those lines. **PARKED 33.**
+**PROD IS UNTOUCHED.** The whole move is dev-only. Their old project is intact
+and untouched too, so the cutover is one line to reverse. Doing prod means:
+apply both migrations, expose the schema in the project's API settings (NOT in
+git — see OPERATIONS), run `wurxbase:copy` with `--i-mean-prod`, move the
+three sequences, then `verify:wurxbase`. **Ask him first** — and ask whether
+the team should stop using the old app during the window, or accept losing
+whatever they type in it.
 
-**CLOSED:** the missing Aurelia August angle test was **Asad deleting it
-deliberately**, confirmed by Rashid. Not a fault, not data loss. The rule in
-PARKED 33 still stands on its own merits: their app has no staging copy and no
-undo, so never drive it with a browser robot — read their database over REST.
-
-**Still waiting on TikTok** for Display API review (PARKED 27; 27b is the prod
-key swap). **Resend** `notify.wurxmedia.com` verification was still pending.
-**PARKED 30a** — the production data question — is still unanswered.
+**Still open, unrelated:** TikTok Display API review (PARKED 27, 27b is the prod
+key swap), Resend `notify.wurxmedia.com` verification, and PARKED 30a — the
+production data question, asked twice, still unanswered.
 
 **Do not re-explore the codebase.** This file, then PARKED, then only what the
 chosen job names.

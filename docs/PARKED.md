@@ -1068,7 +1068,24 @@ one is the worst of the pair — it then reports "Could not save", and the mirro
 keeps rendering the old terms, so nobody investigates while recovery is still
 possible.
 
-**WHAT WE CAN FIX ON OUR COPY:** only the angle-test path, and the design is
+**2026-08-28: THE GROUND MOVED. RE-READ THE DESIGN BEFORE BUILDING IT.** Every
+option in `docs/WURXBASE_WRITE_SAFETY.md` was written under the constraint
+"no DDL access on that project". That constraint is gone — their tables are in
+our `wurxbase` schema now. A unique index on `(action, target)` plus an
+upsert makes the angle-test AND brand-contract overwrite bugs *impossible*
+rather than unlikely, in one migration, with no JavaScript to maintain across
+releases. The delete-before-insert pair becomes a single upsert. **The
+recommended option C was chosen partly because it did not need DDL; it may no
+longer be the right answer.**
+
+Also changed: Asad ships no more releases, so fixes go straight into
+`src/vendor/wurxbase/` rather than into `wurxbase-patches.mjs`. The
+one-file limitation of that script no longer needs fixing, and neither does the
+build-time assertion about refused patches — both were consequences of
+re-vendoring, which is over.
+
+**WHAT WE CAN FIX ON OUR COPY:** everything now, not just the angle-test path.
+Originally: only the angle-test path, and the design is
 option C in the doc — a compare-and-swap. The mirror starts carrying the id of
 the row it was built from; before writing, `saveAngles` asks the server which
 row it currently holds using the fetch's own ordering, and refuses if it is not
