@@ -5360,13 +5360,14 @@ async function fetchDiscoveryMarks() {
     .from('activity_logs')
     .select('id,target,details,user_display,created_at')
     .eq('action', 'DISCOVERY_MARK')
-    .order('created_at', { ascending: false })
-    .order('id', { ascending: true }));
+    .order('target', { ascending: true }));
   if (error) throw error;
   const map = {};
   (data || []).forEach(row => {
     const h = String(row.target || '').toLowerCase().trim();
-    // newest row per handle wins (older duplicates are pruned on write)
+    /* One row per handle is enforced by a partial unique index now, so there
+       are no duplicates to pick between. The guard stays because a map is
+       cheap and a wrong mark is somebody messaging a creator twice. */
     if (!h || map[h]) return;
     const color = row.details && row.details.color;
     if (!color) return;
@@ -5378,17 +5379,63 @@ async function fetchDiscoveryMarks() {
 async function saveDiscoveryMark(handle, colorId, actor) {
   const h = String(handle || '').toLowerCase().trim();
   if (!h) return;
-  // one row per handle: clear any existing, then insert the new state
-  await supabase.from('activity_logs').delete().eq('action', 'DISCOVERY_MARK').eq('target', h);
-  if (!colorId) return;
-  const { error } = await supabase.from('activity_logs').insert({
+
+  /*
+   * ═══ THE DELETE USED TO RUN FIRST, WITH NOTHING TO ROLL IT BACK ═══
+   *
+   * "Clear any existing, then insert the new state" — two requests with a
+   * network between them. Change a mark from Messaged to Under review and lose
+   * the connection in the gap, and the mark is simply gone: not reverted, not
+   * reported, gone. The row that stops the team messaging the same creator
+   * twice. And the UI would then restore the old colour it had just destroyed,
+   * so the screen disagreed with the database until somebody reloaded.
+   *
+   * There is one row per handle now, enforced by a partial unique index, so
+   * setting a mark is an UPDATE, and only an INSERT when there is nothing to
+   * update. No delete in that path at all.
+   *
+   * Last write wins on the colour itself, deliberately: a mark is one small
+   * value that somebody is choosing on purpose by clicking a swatch, and
+   * refusing their click because a colleague clicked first would be worse than
+   * accepting it. What must never happen is the value vanishing, and that is
+   * what this removes.
+   */
+  const who = {
     user_id: String(actor?.id || 'unknown'),
     user_display: actor?.display || actor?.username || 'Unknown',
-    action: 'DISCOVERY_MARK',
-    target: h,
-    details: { color: colorId },
-  });
-  if (error) throw error;
+  };
+
+  /* Clearing a mark is deliberate, and there is nothing to preserve. */
+  if (!colorId) {
+    const { error } = await supabase.from('activity_logs')
+      .delete().eq('action', 'DISCOVERY_MARK').eq('target', h);
+    if (error) throw error;
+    return;
+  }
+
+  const stamp = new Date().toISOString();
+  const row = { details: { color: colorId }, updated_at: stamp, ...who };
+
+  const upd = await supabase.from('activity_logs')
+    .update(row).eq('action', 'DISCOVERY_MARK').eq('target', h).select('id');
+  if (upd.error) throw upd.error;
+  if (upd.data && upd.data.length) return;
+
+  /* Nothing to update, so this handle has never been marked. */
+  const ins = await supabase.from('activity_logs')
+    .insert({ action: 'DISCOVERY_MARK', target: h, ...row });
+  if (!ins.error) return;
+
+  /* 23505 means somebody marked the same creator between our update and our
+     insert — which is exactly the race the unique index exists to catch.
+     Their row is there; write ours over it rather than failing the click. */
+  if (ins.error.code === '23505') {
+    const retry = await supabase.from('activity_logs')
+      .update(row).eq('action', 'DISCOVERY_MARK').eq('target', h);
+    if (retry.error) throw retry.error;
+    return;
+  }
+  throw ins.error;
 }
 
 /* Outreach states a creator can be marked with. Dropping an entry here also

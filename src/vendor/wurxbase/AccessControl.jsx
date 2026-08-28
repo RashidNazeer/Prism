@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from './supabaseClient';
 import { CAP_GROUPS, ALL_CAPS, ROLE_LIST, defaultFor, can } from './access';
@@ -59,9 +59,21 @@ export default function AccessControl({ currentUser, onClose }) {
 
   const picked = useMemo(() => users.find(u => u.id === pickedId) || null, [users, pickedId]);
 
+  /*
+   * WHAT WAS ALREADY STORED WHEN THIS PANEL OPENED.
+   *
+   * `draft` is seeded from the person's saved overrides, so "how many did I
+   * change" was never answerable from it — every stored override looked like
+   * one this operator had just made. That is why the count read "3 set by you"
+   * for grants somebody else saved months earlier, and why the button beside
+   * it wiped all of them.
+   */
+  const baseline = useRef({});
   useEffect(() => {
     if (!picked) return;
-    setDraft({ ...(picked.custom_perms || {}) });
+    const stored = { ...(picked.custom_perms || {}) };
+    baseline.current = stored;
+    setDraft({ ...stored });
     setRole(picked.role || 'viewer');
   }, [picked]);
 
@@ -96,7 +108,18 @@ export default function AccessControl({ currentUser, onClose }) {
   }, [picked, draft, role]);
 
   const allowed = ALL_CAPS.filter(k => value(k)).length;
-  const byHand = Object.keys(draft).length;
+  /* Changed in THIS sitting: a key whose value differs from what was stored
+     when the panel opened, in either direction, including one added or removed. */
+  const byHand = useMemo(() => {
+    const base = baseline.current || {};
+    const keys = new Set([...Object.keys(base), ...Object.keys(draft)]);
+    let n = 0;
+    keys.forEach(k => { if (base[k] !== draft[k]) n += 1; });
+    return n;
+  }, [draft, picked]);
+  /* Everything on the person, however it got there. A different number, and it
+     is the one the destructive button has to name. */
+  const storedCount = Object.keys(baseline.current || {}).length;
 
   const needle = q.trim().toLowerCase();
   const groups = useMemo(() => {
@@ -175,7 +198,8 @@ export default function AccessControl({ currentUser, onClose }) {
                     <span className="ac-tally">
                       <i className="ok">{allowed} allowed</i>
                       <i className="no">{ALL_CAPS.length - allowed} blocked</i>
-                      {byHand > 0 && <i className="hand">{byHand} set by you</i>}
+                      {byHand > 0 && <i className="hand">{byHand} changed, unsaved</i>}
+                      {byHand === 0 && storedCount > 0 && <i className="hand">{storedCount} override{storedCount === 1 ? '' : 's'}</i>}
                     </span>
                   </div>
                 </div>
@@ -203,8 +227,21 @@ export default function AccessControl({ currentUser, onClose }) {
                     <button className="ac-quick" onClick={() => setDraft(
                       ALL_CAPS.reduce((m, k) => { if (defaultFor(role, k)) m[k] = false; return m; }, {})
                     )}>Block all</button>
-                    <button className="ac-quick warn" onClick={() => setDraft({})} disabled={byHand === 0}>
+                    {/*
+                      TWO DIFFERENT ACTIONS, and they used to be one button
+                      wearing the gentler of the two names. "Undo my changes"
+                      called `setDraft({})`, which does not undo anything — it
+                      removes every override the person has, including ones set
+                      by somebody else long before this operator opened the
+                      panel. Somebody mis-taps a switch, reads a button offering
+                      to undo it, and drops that person to bare role defaults.
+                    */}
+                    <button className="ac-quick warn" onClick={() => setDraft({ ...(baseline.current || {}) })} disabled={byHand === 0}>
                       Undo my changes
+                    </button>
+                    {/* The destructive one, saying its own size out loud. */}
+                    <button className="ac-quick warn" onClick={() => setDraft({})} disabled={storedCount === 0}>
+                      Clear all {storedCount} override{storedCount === 1 ? '' : 's'}
                     </button>
                   </div>
                 </div>

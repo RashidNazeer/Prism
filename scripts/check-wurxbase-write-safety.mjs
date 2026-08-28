@@ -129,7 +129,30 @@ try {
     'removing the feature would be a different bug',
   );
 
-  /* ---- 5. THE AUDIT TRAIL IS NOT CONSTRAINED ---------------------------- */
+  /* ---- 5. ALL THREE STATE ACTIONS ARE COVERED, not just the one ---------
+     The index carries a WHERE clause naming three actions. A typo in that list
+     would leave one of them with the old behaviour and nothing would say so. */
+  for (const act of ['BRAND_CONTRACT', 'DISCOVERY_MARK']) {
+    const k = `${KEY}::${act}`;
+    const first = await db
+      .from('activity_logs')
+      .insert({ action: act, target: k, details: { probe: true }, revision: 1 })
+      .select('id')
+      .single();
+    const second = await db
+      .from('activity_logs')
+      .insert({ action: act, target: k, details: { probe: true }, revision: 1 });
+    check(
+      !first.error && second.error?.code === '23505',
+      `${act}: a second row for the same subject is refused too`,
+      second.error
+        ? `code ${second.error.code}`
+        : 'THE INSERT SUCCEEDED — this action is missing from the index predicate',
+    );
+    await db.from('activity_logs').delete().eq('action', act).eq('target', k);
+  }
+
+  /* ---- 6. THE AUDIT TRAIL IS NOT CONSTRAINED ---------------------------- */
   const a = await db.from('activity_logs').insert({ action: 'LOGIN', target: null, user_display: 'probe' }).select('id').single();
   const b = await db.from('activity_logs').insert({ action: 'LOGIN', target: null, user_display: 'probe' }).select('id').single();
   check(

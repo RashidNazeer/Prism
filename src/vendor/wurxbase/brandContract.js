@@ -59,12 +59,13 @@ export function getBrandContract(brand, month) {
 }
 
 export async function fetchBrandContracts() {
+  /* `revision` is what every save conditions itself on; a mirror without it
+     cannot write, which is deliberate. */
   const { data, error } = await selectAll(() => supabase
     .from('activity_logs')
-    .select('id,target,details,user_display,created_at')
+    .select('id,target,details,user_display,created_at,updated_at,revision')
     .eq('action', ACTION)
-    .order('created_at', { ascending: false })
-    .order('id', { ascending: true }));
+    .order('target', { ascending: true }));
   if (error) throw error;
   const map = {};
   (data || []).forEach(row => {
@@ -73,12 +74,41 @@ export async function fetchBrandContracts() {
     let d = row.details;
     if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = null; } }
     if (d && typeof d === 'object') {
-      map[key] = Object.assign({}, d, { savedBy: row.user_display || '', savedAt: row.created_at });
+      map[key] = Object.assign({}, d, {
+        savedBy: row.user_display || '',
+        /* Rows are edited in place now, so created_at is when the contract was
+           first written, not when it was last saved. */
+        savedAt: row.updated_at || row.created_at,
+        revision: row.revision,
+      });
     }
   });
   putMirror(map);
   window.dispatchEvent(new Event('wurx-brand-contracts'));
   return map;
+}
+
+export class ContractConflict extends Error {
+  constructor(current) {
+    super('This contract was changed somewhere else while you had it open.');
+    this.name = 'ContractConflict';
+    this.conflict = true;
+    this.current = current;
+  }
+}
+
+async function currentContract(key) {
+  const { data } = await supabase.from('activity_logs')
+    .select('details,user_display,updated_at,created_at,revision')
+    .eq('action', ACTION).eq('target', key).maybeSingle();
+  if (!data) return null;
+  let d = data.details;
+  if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = null; } }
+  return Object.assign({}, d || {}, {
+    savedBy: data.user_display || '',
+    savedAt: data.updated_at || data.created_at,
+    revision: data.revision,
+  });
 }
 
 export async function saveBrandContract(brand, month, payload, user) {
@@ -87,32 +117,88 @@ export async function saveBrandContract(brand, month, payload, user) {
   if (!b || !m) return null;
   const key = bcKey(b, m);
 
-  /* one row per brand+month - replace rather than accumulate */
-  await supabase.from('activity_logs').delete().eq('action', ACTION).eq('target', key);
-
+  /*
+   * ═══ THE DELETE USED TO RUN FIRST, AND UNCONDITIONALLY ═══
+   *
+   * `delete` then `insert`, in that order, with nothing between them but a
+   * network. A save that failed at the second step destroyed the contract and
+   * then threw, so the modal said "Could not save" over a row that was already
+   * gone — and the mirror kept rendering the old terms, so nobody investigated
+   * while it was still recoverable.
+   *
+   * And an empty payload deleted without inserting at all, which is what an
+   * unloaded modal sends: open the Contract panel on a browser whose boot
+   * fetch failed, click save, and the brand's terms are gone.
+   *
+   * Now: one row per brand+month enforced by a partial unique index, and a save
+   * is an UPDATE conditioned on the revision this screen loaded. No delete in
+   * the ordinary path at all.
+   */
   const clean = {
     fields: (payload && payload.fields) || {},
     custom: (payload && payload.custom) || {},
   };
   const empty = !Object.keys(clean.fields).length && !Object.keys(clean.custom).length;
 
-  if (!empty) {
-    const { error } = await supabase.from('activity_logs').insert({
-      action: ACTION,
-      target: key,
-      details: clean,
-      user_id: (user && user.id) || null,
-      user_display: (user && user.display) || 'system',
-    });
-    if (error) throw error;
+  const known = getBrandContracts()[key];
+  const expected = known && Number.isFinite(known.revision) ? known.revision : null;
+  const stamp = new Date().toISOString();
+  const who = {
+    user_id: (user && user.id) || null,
+    user_display: (user && user.display) || 'system',
+  };
+
+  if (expected == null) {
+    if (empty) {
+      /* Nothing loaded and nothing to write. If the server holds terms, this
+         screen is not entitled to clear them. */
+      const { data: exists } = await supabase.from('activity_logs')
+        .select('id').eq('action', ACTION).eq('target', key).maybeSingle();
+      if (exists) throw new ContractConflict(await currentContract(key));
+      return null;
+    }
+    const { data, error } = await supabase.from('activity_logs').insert({
+      action: ACTION, target: key, details: clean, updated_at: stamp, revision: 1, ...who,
+    }).select('revision,updated_at').single();
+    if (error) {
+      if (error.code === '23505') throw new ContractConflict(await currentContract(key));
+      throw error;
+    }
+    return writeMirror(key, clean, user, data.updated_at || stamp, data.revision);
   }
 
+  if (empty) {
+    const { data, error } = await supabase.from('activity_logs')
+      .delete().eq('action', ACTION).eq('target', key).eq('revision', expected).select('id');
+    if (error) throw error;
+    if (!data || !data.length) throw new ContractConflict(await currentContract(key));
+    const map = getBrandContracts();
+    delete map[key];
+    putMirror(map);
+    window.dispatchEvent(new Event('wurx-brand-contracts'));
+    return null;
+  }
+
+  const { data, error } = await supabase.from('activity_logs')
+    .update({ details: clean, updated_at: stamp, revision: expected + 1, ...who })
+    .eq('action', ACTION).eq('target', key).eq('revision', expected)
+    .select('revision,updated_at');
+  if (error) throw error;
+  if (!data || !data.length) throw new ContractConflict(await currentContract(key));
+
+  return writeMirror(key, clean, user, data[0].updated_at || stamp, data[0].revision);
+}
+
+function writeMirror(key, clean, user, savedAt, revision) {
   const map = getBrandContracts();
-  if (empty) delete map[key];
-  else map[key] = Object.assign({}, clean, { savedBy: (user && user.display) || '', savedAt: new Date().toISOString() });
+  map[key] = Object.assign({}, clean, {
+    savedBy: (user && user.display) || '',
+    savedAt,
+    revision,
+  });
   putMirror(map);
   window.dispatchEvent(new Event('wurx-brand-contracts'));
-  return map[key] || null;
+  return map[key];
 }
 
 /* Effective date used to be offered at brand level and no longer is: it

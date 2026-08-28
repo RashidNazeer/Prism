@@ -512,7 +512,7 @@ function FilterChip({ label, value, options, onChange }) {
 }
 
 /* ─── DeleteConfirmModal · Tailwind premium V2 ─── */
-function DeleteConfirmModal({ type, name, count, onConfirm, onCancel }) {
+function DeleteConfirmModal({ type, name, count, pending = 0, hidden = 0, onConfirm, onCancel }) {
   const isBrand = type === 'brand';
   const isBulk  = type === 'bulk';
   const emoji = isBrand ? '💣' : isBulk ? '☠️' : '🗑️';
@@ -522,8 +522,15 @@ function DeleteConfirmModal({ type, name, count, onConfirm, onCancel }) {
   const ctaLabel = isBrand ? `Nuke "${name}" 💣` : isBulk ? `Delete all ${count} ☠️` : 'Delete it 🗑️';
 
   const subject = isBrand ? `"${name}" brand` : isBulk ? `${count} creator${count !== 1 ? 's' : ''}` : name;
+  /*
+   * The unreviewed applications are named, because they are the ones nobody
+   * expects to lose. "17 records, 12 of them pending applications" is a
+   * different decision from "5 deals", and it is the true one.
+   */
   const subText = isBrand
-    ? `Includes ${count} creator${count !== 1 ? 's' : ''} inside this brand`
+    ? `${count} record${count !== 1 ? 's' : ''} carry this brand` +
+      (pending ? ` · ${pending} ${pending === 1 ? 'is an unreviewed application' : 'are unreviewed applications'}` : '') +
+      (!pending && hidden ? ` · ${hidden} not shown on this screen` : '')
     : isBulk
     ? 'All selected rows will be removed at once'
     : 'This creator and their entire record';
@@ -13554,6 +13561,19 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
   }
   // Debounced save - for rapid changes like drag reorder
   function scheduleSettingsSave(patch) {
+    /*
+     * THE SAME GUARD `saveSettingNow` HAS, AND THIS ONE WAS MISSING IT.
+     *
+     * `app_settings` is ONE ROW SHARED BY THE WHOLE TEAM. The brandOrder
+     * effect runs on mount with whatever localStorage held — `[]` on a new
+     * machine, a private window, or after clearing site data — and scheduled a
+     * write 600ms later. If the settings fetch had not landed by then, that
+     * wrote an empty brand order over everybody's.
+     *
+     * Nothing is lost by refusing: the effect fires again when the real values
+     * arrive and set the state.
+     */
+    if (!settingsLoadedRef.current) return;
     Object.assign(pendingSettingsPatch.current, patch);
     if (settingsSaveTimer.current) clearTimeout(settingsSaveTimer.current);
     settingsSaveTimer.current = setTimeout(() => {
@@ -13567,12 +13587,24 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
 
   async function fetchSettings() {
     const { data, error } = await supabase.from('app_settings').select('*').eq('id', 1).single();
+    /*
+     * DID THIS ACTUALLY LOAD? The flag below used to be set at the end of this
+     * function unconditionally, so a dropped connection or a 5xx left it
+     * saying "loaded" over state that had come from nowhere. A guard that is
+     * true after a failure is worse than no guard: it is believed.
+     *
+     * Two outcomes count as loaded. Data came back, or the row genuinely did
+     * not exist and we have just created it — in which case there was nothing
+     * to overwrite in the first place.
+     */
+    let loaded = Boolean(data);
     // Row doesn't exist yet · create it so future saves work
     if (error && (error.code === 'PGRST116' || error.code === '22P02')) {
-      await supabase.from('app_settings').upsert(
+      const { error: seedErr } = await supabase.from('app_settings').upsert(
         { id: 1, hidden_brands: [], brand_order: [], custom_brands: [] },
         { onConflict: 'id' }
       );
+      loaded = !seedErr;
     }
     if (data) {
       if (Array.isArray(data.brand_order)  && data.brand_order.length)  { setBrandOrder(data.brand_order);  localStorage.setItem('brandOrder',   JSON.stringify(data.brand_order)); }
@@ -13587,7 +13619,8 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
         }
       }
     }
-    settingsLoadedRef.current = true;
+    if (loaded) settingsLoadedRef.current = true;
+    else console.error('fetchSettings failed; settings will not be saved from this session until it succeeds', error);
   }
 
   useEffect(() => { fetchSettings(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -14045,9 +14078,30 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
     fetchCreators();
   }
 
-  function confirmDelete(type, id, name) {
-    const count = type === 'brand' ? creators.filter(c => c.brand === name).length : 0;
-    setDeleteModal({ type, id, name, count });
+  async function confirmDelete(type, id, name) {
+    if (type !== 'brand') { setDeleteModal({ type, id, name, count: 0 }); return; }
+    /*
+     * ASK THE DATABASE, NOT THE LIST ON SCREEN.
+     *
+     * `creators` in state is filtered — approved or null status, and a name —
+     * but the delete below matches on the brand STRING and takes everything
+     * carrying it. So the dialog said "5 creator records" and removed
+     * seventeen, the extra twelve being unreviewed APPLICATIONS that nobody
+     * had looked at yet. Undo could not bring them back either, because it
+     * only ever held the five.
+     *
+     * A confirmation that undercounts what it destroys is worse than no
+     * confirmation: it is a promise.
+     */
+    const { data, error } = await supabase.from('creators').select('id,status,name').eq('brand', name);
+    if (error) {
+      addNotification('Could not check what is in this brand · nothing deleted', 'error');
+      return;
+    }
+    const all = data || [];
+    const visible = creators.filter(c => c.brand === name).length;
+    const pending = all.filter(c => String(c.status || '').toLowerCase() === 'pending').length;
+    setDeleteModal({ type, id, name, count: all.length, pending, hidden: Math.max(0, all.length - visible) });
   }
 
   async function handleDelete(id) {
@@ -14064,19 +14118,34 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
   }
 
   async function deleteBrand(brand) {
-    const brandCreators = creators.filter(c => c.brand === brand);
-    logActivity(currentUser, 'BRAND_DELETE', brand, { count: brandCreators.length });
+    /*
+     * EVERY ROW THE DELETE WILL TAKE, captured before it runs.
+     *
+     * This used to snapshot the on-screen list, which is filtered, while the
+     * delete matched the brand string and took everything. Undo therefore
+     * restored the approved deals and silently dropped the pending
+     * applications — the rows nobody had reviewed yet, and the ones a person
+     * pressing Undo is least likely to notice missing.
+     */
+    const { data: everything, error: readErr } = await supabase.from('creators').select('*').eq('brand', brand);
+    if (readErr) {
+      addNotification('Could not read this brand · nothing deleted', 'error');
+      return;
+    }
+    const brandCreators = everything || [];
+    const visible = creators.filter(c => c.brand === brand).length;
+    logActivity(currentUser, 'BRAND_DELETE', brand, { count: brandCreators.length, visible });
     undoDataRef.current = { type: 'brand', brand, records: brandCreators };
     // Optimistic remove - instant in UI
     setCreators(prev => prev.filter(c => c.brand !== brand));
-    setKpiDeals(d => d - brandCreators.length);
+    setKpiDeals(d => d - visible);
     setAllBrands(prev => prev.filter(b => b !== brand));
     setBrandOrder(prev => prev.filter(b => b !== brand));
     setCustomBrands(prev => prev.filter(b => b !== brand));
     if (activeBrand === brand) setActiveBrand('All');
     setDeleteModal(null);
     supabase.from('creators').delete().eq('brand', brand).then(() => {});
-    startUndoToast(`"${brand}" and ${brandCreators.length} creator${brandCreators.length !== 1 ? 's' : ''} deleted`);
+    startUndoToast(`"${brand}" and ${brandCreators.length} record${brandCreators.length !== 1 ? 's' : ''} deleted`);
   }
 
   /* ── Inline save ── */
@@ -15419,6 +15488,8 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
           type={deleteModal.type}
           name={deleteModal.name}
           count={deleteModal.count}
+          pending={deleteModal.pending}
+          hidden={deleteModal.hidden}
           onCancel={() => setDeleteModal(null)}
           onConfirm={() => {
             if (deleteModal.type === 'creator') handleDelete(deleteModal.id);
