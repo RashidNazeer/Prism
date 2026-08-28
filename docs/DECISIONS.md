@@ -1760,3 +1760,36 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   one schema, and no reference anywhere to a retired project — because a
   leftover URL does not error, it quietly reports on a database nobody
   maintains.
+- 2026-08-29: **The write-safety fix is a database constraint, not JavaScript.**
+  The design in `docs/WURXBASE_WRITE_SAFETY.md` recommended a compare-and-swap
+  performed by re-reading before writing, and said plainly that it "is not
+  atomic and cannot be made atomic here... closing that needs a unique
+  constraint or an RPC, and constraint 3 says no DDL". Owning the schema removed
+  constraint 3. A partial unique index plus a revision column closes it
+  properly, in one migration, for angle tests, brand contracts and Discovery
+  marks at once — with no JavaScript to maintain across releases.
+- 2026-08-29: **A person's WurxBase permissions come from their own row, not
+  from ours.** Deriving their role from our own would hand every `ops` account
+  their `admin` — full edit on deals and money — and two of their eight people
+  are viewers. `wurxbase.app_users.hub_email` is the join, and
+  `useWurxbaseIdentity` reads the role and `custom_perms` Asad already
+  maintains. Our role still decides whether somebody reaches /admin/collabs at
+  all; that gate is ours. The derived mapping remains only as a fallback for a
+  person whose address has not been filled in, and it is the more generous of
+  the two, which is safe only because the route guard sits above it.
+- 2026-08-29: **Deleting the last angle still deletes.** The conditional write
+  makes an accidental wipe impossible, and it would have been easy to make a
+  deliberate one impossible too. That is a different bug: the button exists, and
+  a user who means it should be obeyed. It is conditioned on the revision, so it
+  cannot be performed by a screen that never loaded — which is the actual
+  distinction.
+- 2026-08-29: **Discovery marks keep last-write-wins on the colour.** Angle
+  tests and contracts refuse a stale write because they are documents somebody
+  typed. A mark is one value chosen by clicking a swatch, and refusing the click
+  because a colleague clicked first would be worse than accepting it. What was
+  fixed there is the value VANISHING, which is what delete-before-insert did.
+- 2026-08-29: **Ink is never faded.** Preserving alpha is right for a fill and
+  wrong for ink: their faded labels were near-white on a dark strip, ours faded
+  a mid-tone token, which has no contrast at any opacity. Our palette answers
+  "quieter ink" with three tokens that `pnpm check:contrast` verifies in both
+  themes; alpha cannot be verified the same way. 67 declarations made solid.

@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router';
 import { getSupabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
-import { wurxbaseRoleFor, wurxbaseSession, wurxbaseTabsFor } from '@/lib/wurxbase-identity';
+import { wurxbaseSession } from '@/lib/wurxbase-identity';
+import { useWurxbaseIdentity } from '@/lib/useWurxbaseIdentity';
 import { useTheme } from '@/components/theme/theme-context';
 // Both win on specificity rather than on order. See the header of each file:
 // the vendored CSS ships in a lazily loaded chunk, so "loaded after theirs" is
@@ -130,25 +131,33 @@ export function PaidCollabs() {
    */
   const { user } = useAuth();
   const { data: profile, isPending: profilePending } = useProfile();
+  /* Their own role and overrides where we can find them; our mapping if not. */
+  const identity = useWurxbaseIdentity();
   useLayoutEffect(() => {
     if (!user?.id) return;
     try {
       sessionStorage.setItem(
         'ch_user',
         JSON.stringify(
-          wurxbaseSession({
-            id: user.id,
-            displayName: profile?.display_name,
-            email: user.email,
-            role: profile?.role,
-          }),
+          {
+            ...wurxbaseSession({
+              id: user.id,
+              displayName: profile?.display_name,
+              email: user.email,
+              role: profile?.role,
+            }),
+            /* Their row wins where it exists: the role Asad set, and the
+               overrides he tuned. `can()` reads both. */
+            role: identity.role,
+            custom_perms: identity.customPerms,
+          },
         ),
       );
     } catch {
       /* A browser with storage blocked falls back to their login screen, which
          is the old behaviour rather than a broken screen. */
     }
-  }, [user?.id, user?.email, profile?.display_name, profile?.role]);
+  }, [user?.id, user?.email, profile?.display_name, profile?.role, identity.role, identity.customPerms]);
 
   /* Written by the layout effect above; the app may not mount before it is
      true, or their one-shot read of sessionStorage finds an empty key. */
@@ -186,7 +195,7 @@ export function PaidCollabs() {
         user_display: display,
         action: 'LOGIN',
         target: null,
-        details: { via: 'wurxmediahub', role: wurxbaseRoleFor(profile?.role) },
+        details: { via: 'wurxmediahub', role: identity.role, matched: identity.matched },
       })
       .then(() => undefined, () => undefined);
   }, [identityReady, user?.id, user?.email, profile?.display_name, profile?.role]);
@@ -205,7 +214,7 @@ export function PaidCollabs() {
    * silent redirect this fallback was added to stop.
    */
   const requested = String(tabParam);
-  const allowed = wurxbaseTabsFor(profile?.role);
+  const allowed = identity.tabs;
   const tab = profilePending
     ? requested
     : allowed.includes(requested)

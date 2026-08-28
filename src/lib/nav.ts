@@ -314,7 +314,7 @@ const STUDIO: NavGroup[] = [
   },
 ];
 
-export function navForRole(role: AppRole | undefined): NavGroup[] {
+export function navForRole(role: AppRole | undefined, collabTabs?: string[]): NavGroup[] {
   /*
    * A MENU ROW MUST NOT LIE ABOUT WHAT IT OPENS.
    *
@@ -327,7 +327,7 @@ export function navForRole(role: AppRole | undefined): NavGroup[] {
    * you lacked bounced you to Brands with no explanation. Before the move the
    * row simply was not in the rail, which is the behaviour restored here.
    */
-  if (role === 'admin' || role === 'ops') return withCollabTabs(ADMIN, role);
+  if (role === 'admin' || role === 'ops') return withCollabTabs(ADMIN, role, collabTabs);
   if (role === 'creative_strategist') return STUDIO;
   if (role === 'creator') return CREATOR;
   return APPLICANT;
@@ -346,8 +346,22 @@ export function navForRole(role: AppRole | undefined): NavGroup[] {
  * A cheap identity map when nothing is filtered, so the common case allocates
  * nothing and the array stays reference-stable for anything memoising on it.
  */
-function withCollabTabs(groups: NavGroup[], role: AppRole | undefined): NavGroup[] {
-  const allowed = new Set(wurxbaseTabsFor(role));
+function withCollabTabs(
+  groups: NavGroup[],
+  role: AppRole | undefined,
+  collabTabs?: string[]
+): NavGroup[] {
+  /*
+   * THE PERSON'S OWN PERMISSIONS WHEN WE HAVE THEM, our mapping when we do not.
+   *
+   * `collabTabs` comes from `useWurxbaseIdentity`, which looks the person up
+   * in their own `app_users` row by email and reads the role and overrides
+   * Asad maintains. Deriving from OUR role is the fallback and it is the more
+   * generous of the two — a viewer over there would arrive through our `ops`
+   * as their `admin`. Fine as a stopgap while the addresses are filled in,
+   * not fine as the answer.
+   */
+  const allowed = new Set(collabTabs && collabTabs.length ? collabTabs : wurxbaseTabsFor(role));
   const slug = (to: string | undefined) => (to ?? '').replace('/admin/collabs/', '');
 
   let changed = false;

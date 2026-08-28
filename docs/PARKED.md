@@ -1090,7 +1090,37 @@ tabs moved into our sidebar the row simply was not there. Two honest fixes:
 have the vendored app publish its permitted tabs so the sidebar can hide the
 rest, or land on the row and say plainly that this section is not theirs.
 
-## 34. WurxBase destroys saved data on an ordinary click, in six places
+## 34. DONE 2026-08-29. WurxBase destroyed saved data on an ordinary click
+
+**All six are fixed** on `fix/wurxbase-write-safety`, and the fix is not the
+one that was designed. Every option in `docs/WURXBASE_WRITE_SAFETY.md` was
+written under "no DDL access on that project"; we have owned the schema since
+2026-08-28, so the recommended JavaScript compare-and-swap — which admitted it
+could not be made atomic — was replaced by one Postgres can enforce:
+
+- a **partial unique index** on `(action, target)` for the three actions that
+  store state, so one row per subject is a fact rather than a habit and
+  insert-then-sweep stops being expressible;
+- a **revision column**, making every save a conditional update that Postgres
+  decides atomically. A stale screen changes nothing instead of flattening the
+  row.
+
+`pnpm verify:write-safety` reproduces the sequence that used to lose data:
+11 checks, including that all three actions are inside the index predicate — a
+typo there would have left one with the old behaviour and nothing would have
+said so.
+
+The other three were not concurrency, they were dialogs that lied: the brand
+delete counted the filtered list on screen and deleted on the brand string
+(5 shown, 17 removed, the extra twelve unreviewed applications, and Undo held
+only the five); "Undo my changes" called `setDraft({})`, removing every
+override the person had including ones somebody else set months earlier; and
+the shared settings row could be written by a session whose load had failed,
+because the guard was set true whether or not it succeeded.
+
+**Original entry follows, for the record.**
+
+## 34-was. WurxBase destroys saved data on an ordinary click, in six places
 
 **Status:** PAUSED, needs a decision from Rashid
 **Owner:** Claude
