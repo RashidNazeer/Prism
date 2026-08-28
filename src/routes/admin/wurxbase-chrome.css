@@ -473,3 +473,56 @@
 .wurxbase-root .pc-shell > .pc-header-embedded + div {
   margin-top: 0;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ONE ROW, NOT THREE
+   ---------------------------------------------------------------------------
+   Rashid, 2026-08-28, on the Brands screen after the tabs moved out: *"we also
+   need to have this in same rown it will look beautiful remove extra spacing
+   things"*.
+
+   Taking the tab rail out left its row carrying nothing but the month controls,
+   pinned right, with the screen's own first control ("‹ All brands") stranded on
+   the line below. Two rows, one of them mostly empty, above every screen.
+
+   The month cluster FLOATS right instead. Floats are the one layout tool that
+   lets following block content sit beside a thing and then flow under it, which
+   is exactly the behaviour wanted here: the back button lands on the same line,
+   and a full-width table on another tab simply starts below. Absolute
+   positioning would have overlapped those tables.
+
+   Un-floated below `lg`, where there is not room for two things on a line and
+   stacking is the honest answer.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (width >= 64rem) {
+  .wurxbase-root.wurxbase-root .pc-filterbar {
+    float: right;
+    width: auto;
+    margin: 0 0 0.5rem 1rem;
+  }
+
+  /* The screen's own first control shares the line rather than clearing it. */
+  .wurxbase-root.wurxbase-root .pc-back {
+    margin-top: 0 !important;
+  }
+}
+
+/*
+  THEIR SHELL CAPPED ITSELF AT 1740px AND CENTRED, which is the one thing
+  CLAUDE.md rules out by name: zoom out and the work stops with dead gutters
+  either side. Our own `<main>` gave up its max-width for this reason on
+  2026-08-16 and this was quietly re-imposing it a level down.
+
+  The top padding goes too. It was sized for a page that owned its whole window
+  and drew its own header; our top bar is already directly above, so 24px of air
+  under it is the "extra spacing" he means.
+*/
+.wurxbase-root.wurxbase-root .pc-shell {
+  max-width: none;
+  margin-inline: 0;
+  padding-top: 0;
+}
+.wurxbase-root.wurxbase-root .pc-app {
+  padding-top: 0 !important;
+}

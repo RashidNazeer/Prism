@@ -1053,7 +1053,7 @@ export default function WurxUI({
              so the rail is not drawn at all — two navigations for one thing is
              worse than either. The month controls stay: they filter the screen
              you are already on, which is not navigation. */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: embedded ? 0 : 16, flexWrap: 'wrap' }}>
+        <div className={embedded ? 'pc-filterbar' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: embedded ? 0 : 16, flexWrap: 'wrap' }}>
           {embedded ? <div style={{ flex: 1, minWidth: 0 }} /> : (
           <div className="pc-tabs" ref={tabsRailRef} style={{ marginTop: 0, flex: 1, minWidth: 0 }}>
             {TABS.map(t => (
