@@ -27,7 +27,24 @@
  * surface, never the accent. The accent belongs on its focus ring, where it
  * says "this one is yours" without swallowing the text.
  */
-.wurxbase-root input:not([type='checkbox']):not([type='radio']):not([type='range']),
+/*
+ * THE CREATIVE ANGLE FIGURES ARE EXEMPT, added 2026-08-28 after an audit found
+ * this rule was the cause of two separate complaints rather than the cure.
+ *
+ * Those cells are not fields in the sense this rule means. Each is a small
+ * transparent number inside a bordered pill, and the pill IS the well; painting
+ * the input as well produced the box-inside-a-box Rashid pointed at, and the
+ * fix further down this file could not undo it because this rule is
+ * !important and comes first.
+ *
+ * The ink matters more. Their sheet colours those inputs by KIND — a typed
+ * figure, a figure fetched from EUKA, and a locked one all read differently,
+ * and `color: var(--wx-text) !important` flattened all six of those
+ * declarations into one. That is not a theme bug, it is deleting information.
+ * Every one of their per-kind colours is a --wx-* token and flips correctly, so
+ * the honest fix is to stop overriding them.
+ */
+.wurxbase-root input:not([type='checkbox']):not([type='radio']):not([type='range']):not(.cx-cell input),
 .wurxbase-root textarea,
 .wurxbase-root select {
   /* !important, and only here. Their sheet carries a later, more specific
@@ -39,7 +56,7 @@
   border-color: var(--wx-border);
 }
 
-.wurxbase-root input:not([type='checkbox']):not([type='radio']):focus,
+.wurxbase-root input:not([type='checkbox']):not([type='radio']):not(.cx-cell input):focus,
 .wurxbase-root textarea:focus,
 .wurxbase-root select:focus {
   background: var(--wx-surface-1) !important;
@@ -371,9 +388,11 @@
 }
 
 /* Chart axis labels are SVG text, so they take `fill`, not `color`, and a
-   sweep that only knows about `color` leaves them white on a white ground. */
-.wurxbase-root.wurxbase-root .rp-board-chart text,
-.wurxbase-root.wurxbase-root .rep-chart text {
+   sweep that only knows about `color` leaves them white on a white ground.
+
+   `.rep-chart` used to be listed here too and matched nothing anywhere in the
+   vendored tree — a fix somebody believed was in place. Removed 2026-08-28. */
+.wurxbase-root.wurxbase-root .rp-board-chart text {
   fill: var(--wx-text-muted) !important;
 }
 
@@ -446,4 +465,149 @@
   background: transparent;
   appearance: textfield;
   -webkit-appearance: textfield;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   WHAT THE THEME AUDIT CONFIRMED, 2026-08-28
+   ---------------------------------------------------------------------------
+   Rashid: *"we need to fix dark and light mode issues there coudl be many but i
+   ust shraed one example run adversarial review or do wharever get fix the
+   issue of dark and light mode for this wurx base"*.
+
+   Six categories were audited and every finding below was put to three agents
+   whose instructions were to REFUTE it; these are the ones at least two of
+   three failed to knock down. Where a verifier corrected the original claim,
+   the CORRECTION is what is implemented — several of the first drafts named the
+   wrong line or the wrong ground.
+
+   THE SHAPE OF ALMOST ALL OF IT: the vendoring pipeline mapped fills and inks
+   as separate declarations that never saw each other, so pairs that were
+   legible together came apart. An ink meant for the gold fill ended up on a
+   plain well; a scrim meant to be black became blue. Nothing here is a new
+   colour choice — each one puts a pair back together.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/*
+  THE "NEW ANGLE" BUTTON, which is what he actually pointed at.
+
+  `background: var(--wx-surface-3); color: var(--wx-on-accent)` — the ink that
+  belongs on GOLD, sitting on a plain well. 1.27:1 in dark, 1.28:1 in light, so
+  the label and the + are equally invisible in both. The giveaway is their own
+  next line: `:hover { background: var(--wx-accent) }`. It was always meant to
+  be an accent button and only the resting state was mis-tokenised, which is why
+  it becomes readable the moment you hover — and never on a tablet.
+
+  It also fronts the empty state, so the first thing a new brand-month shows is
+  an invitation nobody can read.
+*/
+.wurxbase-root.wurxbase-root .cx-new {
+  background: var(--wx-accent);
+  color: var(--wx-on-accent);
+}
+.wurxbase-root.wurxbase-root .cx-new:hover:not(:disabled) {
+  background: var(--wx-accent-hover);
+  color: var(--wx-on-accent);
+}
+
+/*
+  SORTABLE COLUMN HEADERS DISAPPEARED UNDER THE CURSOR, in both themes: the
+  label rests at full-strength ink and the hover swapped it to --wx-on-accent
+  while the fill stayed a ~7% wash. 1.30:1 dark, 1.14:1 light.
+
+  Specificity matters here and the first draft of the fix got it wrong: their
+  winning background rule is scoped through .pc-bt-head, so a rule on
+  .pc-bt-sort:hover alone changes the ink and leaves the wash. This is scoped
+  the same way and doubled on top.
+*/
+.wurxbase-root.wurxbase-root .pc-bt-head .pc-bt-sort:hover {
+  background: var(--wx-surface-2);
+  color: var(--wx-text);
+}
+
+/*
+  MODAL HEADER BANDS ran a gradient from a surface into --wx-info — our
+  informational BLUE — while carrying the ink meant for gold. Gold to gold-dark
+  is what the shape was drawn for.
+*/
+.wurxbase-root.wurxbase-root .bc-top,
+.wurxbase-root.wurxbase-root .gm-top,
+.wurxbase-root.wurxbase-root .gm-rail {
+  background: linear-gradient(140deg, var(--wx-accent-active), var(--wx-accent));
+  color: var(--wx-on-accent);
+}
+
+/* The GOD badge faded from a surface into amber under one flat ink, so half the
+   word vanished into its own background. */
+.wurxbase-root.wurxbase-root .gm-mark {
+  background: var(--wx-accent);
+  color: var(--wx-on-accent);
+}
+
+/*
+  THE CONTRACT EDITOR'S STICKY HEADER faded from opaque to a 12% wash, so the
+  rows it is supposed to cover scrolled through its lower half. A sticky band
+  has to be opaque along its whole height or it is not covering anything.
+*/
+.wurxbase-root.wurxbase-root .pc-cf-head {
+  background: var(--wx-surface-1);
+}
+
+/*
+  RINGS DRAWN AS CUT-OUTS, hardcoded #FFF. On the cream ground that is the gap
+  it was drawn as; on near-black it is a bright white halo around every face in
+  the table. --wx-surface-1 is #ffffff in light — pixel-identical to today — and
+  #1a1714 in dark, so the ring goes back to being a gap in both.
+*/
+.wurxbase-root.wurxbase-root .pc-face {
+  box-shadow:
+    0 0 0 2px var(--wx-surface-1),
+    0 1px 3px rgb(0 0 0 / 0.18);
+}
+.wurxbase-root.wurxbase-root .pc-mark-btn.on {
+  box-shadow:
+    0 0 0 2px var(--wx-surface-1),
+    0 1px 3px rgb(0 0 0 / 0.25);
+}
+/* Same idea, on the selected shot in the video picker. The ring sits on the
+   picker SHEET rather than on the page, so it takes surface-1, not --wx-bg. */
+.wurxbase-root.wurxbase-root .cx-pk-v.on .cx-pk-shot {
+  box-shadow:
+    0 0 0 3px var(--wx-surface-1),
+    0 14px 26px -14px rgb(20 17 12 / 0.55);
+}
+
+/*
+  EVERY FULL-SCREEN SCRIM WAS BLUE. A modal backdrop is the page dimmed, which
+  is --wx-bg at some alpha; --wx-info is the colour we reserve for saying
+  something informational, and six overlays wearing it made every dialog in
+  Paid Collabs look like an alert. Each keeps its own alpha, so the weight of
+  each dialog is unchanged — only the hue.
+*/
+.wurxbase-root.wurxbase-root .bc-root {
+  background: color-mix(in srgb, var(--wx-bg) 56%, transparent);
+}
+.wurxbase-root.wurxbase-root .gm-root {
+  background: color-mix(in srgb, var(--wx-bg) 58%, transparent);
+}
+.wurxbase-root.wurxbase-root .cx-pk-root,
+.wurxbase-root.wurxbase-root .cx-cf-root {
+  background: color-mix(in srgb, var(--wx-bg) 46%, transparent);
+}
+.wurxbase-root.wurxbase-root .ac-root {
+  background: color-mix(in srgb, var(--wx-bg) 52%, transparent);
+}
+
+/*
+  EVERY PRIMARY BUTTON WAS THE WARNING COLOUR — caution amber where the brand
+  gold belongs, on the most-clicked control in the product. Their rule is
+  already !important, so this has to be too.
+*/
+.wurxbase-root.wurxbase-root .pc-btn-primary {
+  background: var(--wx-accent) !important;
+  color: var(--wx-on-accent) !important;
+}
+.wurxbase-root.wurxbase-root .pc-btn-primary:hover:not(:disabled) {
+  background: var(--wx-accent-hover) !important;
+  color: var(--wx-on-accent) !important;
 }

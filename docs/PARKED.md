@@ -998,6 +998,98 @@ on the card and `/privacy` in one commit, then reconnecting.
   `tiktok_video_daily`:** these are organic lifetime totals for a whole video,
   that is the ad-driven slice, and the card says so in as many words.
 
+## 35. The dark/light audit: what was fixed, and the 30 claims nobody checked
+
+**Status:** PARTLY DONE
+**Owner:** Claude
+**Raise it when:** Rashid mentions how Paid Collabs looks, or when there is
+session budget to finish the verification.
+
+Rashid, 2026-08-28: *"we need to fix dark and light mode issues there coudl be
+many but i ust shraed one example run adversarial review or do wharever"*.
+
+Six categories were audited, every finding put to three agents told to REFUTE
+it. **13 confirmed and fixed, 13 refuted, and 30 that were never verified at
+all** — their voters died on a session limit, and an unmeasured claim is not a
+finding. They are listed below because several look serious, NOT because they
+are established.
+
+**WHAT WAS FIXED** (all in `src/routes/admin/wurxbase-overrides.css` unless
+noted). The shape of nearly all of it: the vendoring pipeline mapped fills and
+inks as separate declarations that never saw each other, so pairs that were
+legible together came apart.
+
+- **"New angle" was invisible in both themes**, 1.27:1 and 1.28:1 — the ink for
+  the gold fill sitting on a plain well. Their own `:hover` set the accent,
+  which is how we know it was meant to be an accent button all along. It also
+  fronts the empty state, so a new brand-month opened with an unreadable
+  invitation. **This is the example Rashid pointed at.**
+- **Sortable column headers vanished under the cursor**, both themes.
+- Modal header bands ran a gradient into our informational BLUE.
+- **Six full-screen scrims were painted blue**, so every dialog read as an alert.
+- **Every primary button was caution-amber** rather than brand gold.
+- Rings drawn as cut-outs in hardcoded `#FFF` — a white halo round every face
+  in dark mode.
+- A sticky contract header that faded to 12%, so rows scrolled through it.
+- Our own blanket field rule was the cause of two complaints rather than the
+  cure: it painted the angle figures as wells (the box-inside-a-box) and its
+  `color: !important` flattened six per-kind ink colours into one, deleting
+  the "fetched, not typed" signal.
+- A `.rep-chart` selector of ours that matched nothing — a fix somebody
+  believed was in place.
+
+**THE 30 UNVERIFIED, in the auditors' words. Treat as leads, not facts:**
+
+- **[raw-colours]** The brand notes drawer is white with white text in dark mode
+- **[raw-colours]** The Leaderboard's headline figure is hardcoded near-black on a token surface
+- **[raw-colours]** Leaderboard card emphasis is exactly inverted in dark mode
+- **[raw-colours]** Role pills and avatars: the ink was tokenised, the fill was not
+- **[raw-colours]** Every primary button in User Management is filled with a soft token, so it reads as disabled
+- **[raw-colours]** The Remove-member button is invisible until you hover it, then illegible in light mode
+- **[raw-colours]** UMBtnGhost paints itself white on mouse-out and leaves its label near-white on it
+- **[raw-colours]** Hovering a Settings row blanks the row you are pointing at
+- **[raw-colours]** Month and period strips read inside-out in dark mode: the selected chip is the hole
+- **[raw-colours]** The unread-notification dot is painted with a soft token and ringed in near-black
+- **[raw-colours]** --wx-on-accent used as ink on hardcoded categorical fills, which are all dark
+- **[raw-colours]** The creator detail modal is a near-white sheet in dark mode
+- **[raw-colours]** The Tailwind retokenisation was half-done: gradient stops became gold, solid fills stayed blue
+- **[raw-colours]** Near-white hairlines rule the Settings and Activity lists in dark mode
+- **[raw-colours]** SqlQuest is a complete hardcoded light-mode modal, 52 literals, none of which can flip
+- **[raw-colours]** Categorical colour arrays: eleven bare hex lists no stylesheet can reach
+- **[our-overrides]** The SVG-ink !important is needed for one of four text roles in one theme, and flattens all four in both
+- **[our-overrides]** The header's rim light is built from the accent, so it inverts from a highlight into a dark hairline in light mode
+- **[states-and-focus]** The "New angle" button — accent ink on a surface fill, 1.27:1 in dark and 1.28:1 in light
+- **[states-and-focus]** The primary buttons in the video picker and Access Control footers carry the identical defect
+- **[states-and-focus]** The selected role pill in Access Control changes only its ink, to white-on-white in light mode
+- **[states-and-focus]** The selection tick in the video picker is painted the same hex as its own background in dark mode
+- **[states-and-focus]** The selected-video ring is a hardcoded hex that matches the dark panel it sits on
+- **[states-and-focus]** The selected settings nav row uses a 10%-alpha token as ink, invisible in light mode
+- **[states-and-focus]** The notes drawer textarea is hardcoded white, and it is portalled outside the fence so nothing can correct it
+- **[states-and-focus]** Text selection is a 10-14% wash, so selecting a figure looks like nothing happened
+- **[states-and-focus]** Every scrollbar is solid brand gold, and the thumb vanishes when you grab it
+- **[states-and-focus]** The long angle table has a raw near-black Firefox scrollbar on a near-black panel
+- **[states-and-focus]** The only keyboard focus ring in the vendored screen is the green that means "Payment Sent"
+- **[states-and-focus]** Six hover states repaint an element the colour it already was
+
+**A GUARD THAT LIED, AND WHY IT MATTERS MORE THAN ANY OF THEM.**
+`check-collab-contrast.mjs` switched tabs by clicking a button named after
+each one. Moving the six tabs into our sidebar removed those buttons, so
+`if (await b.count())` found nothing, skipped silently, and it measured the
+SAME screen six times while printing six passes — it went from "11 of 12" to
+"12 of 12" on a change that touched no colour. It navigates by URL now and
+**fails if two tabs in a row render an identical set of labels**, because the
+only innocent explanation for that is that navigation stopped working. It also
+signs in as superadmin: the old `lead` user is a viewer with no
+`tabDiscovery`, so the sixth screen was never measured even before this.
+
+**A REAL BUG THE FIXED GUARD FOUND, still open.** Our sidebar shows all six Paid
+Collabs rows to any ops/admin, but the tab a person can actually open is gated
+by their WURXBASE capability. A WurxBase `viewer` or `client` who clicks
+Discovery is silently redirected to Brands with no explanation. Before the
+tabs moved into our sidebar the row simply was not there. Two honest fixes:
+have the vendored app publish its permitted tabs so the sidebar can hide the
+rest, or land on the row and say plainly that this section is not theirs.
+
 ## 34. WurxBase destroys saved data on an ordinary click, in six places
 
 **Status:** PAUSED, needs a decision from Rashid
@@ -1207,8 +1299,13 @@ swap to `scripts/wurxbase-patches.mjs`, which already supports in-place swaps.
 **Rashid said on 2026-08-27 that he has two changes he wants here. Ask him
 first; this may be one of them.**
 
-**b. One count badge fails contrast in DARK mode**, 1.11:1, on the Performance
-tab. Light is clean on all six tabs. `pnpm verify:collab-contrast` names it.
+**b. DONE 2026-08-28.** It was two badges, not one, and the cause was not the
+badge. `PerfBrandSection` in `WurxUI.jsx` held five hardcoded light-mode
+colours; the count pill stayed `#F1F1F4` on a near-black page while its ink
+flipped to near-white. Tokenised — Active takes the success family because it is
+a real state, Inactive takes neutrals because it is not a warning. Performance
+in dark went from 1.10:1 to a worst of 4.9:1, and
+`pnpm verify:collab-contrast` is 12 of 12.
 
 **c. Their app cannot save its own settings.** `app_settings` returns 401 /
 42501 on every write — their RLS refuses the anon key. Pre-existing, unrelated

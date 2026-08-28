@@ -193,7 +193,12 @@ try {
     const ctx = await browser.newContext({ viewport: { width: 1500, height: 950 } });
     await ctx.addInitScript(({ t }) => {
       localStorage.setItem('wurxmediahub-theme', t);
-      sessionStorage.setItem('ch_user', JSON.stringify({ id: 'lead', username: 'Lead', role: 'viewer', display: 'Lead' }));
+      /* SUPERADMIN, not the 'lead' viewer this used to use. A viewer has no
+         tabDiscovery capability, so /admin/collabs/discovery correctly bounces
+         them to Brands and the sixth screen was never measured at all. The
+         point of this guard is to see every surface, which means signing in as
+         the role that can reach every surface. */
+      sessionStorage.setItem('ch_user', JSON.stringify({ id: 'asad', username: 'Asad', role: 'superadmin', display: 'Asad' }));
     }, { t: theme });
     const page = await ctx.newPage();
 
@@ -219,21 +224,52 @@ try {
      * part of a surface and reports a pass is worse than no guard, because it
      * is believed.
      */
-    for (const tab of ['Brands', 'Creators', 'Performance', 'Reporting', 'Leaderboard', 'Discovery']) {
-      const b = page.getByRole('button', { name: new RegExp(`^${tab}$`, 'i') }).first();
-      if (await b.count()) { await b.click(); await page.waitForTimeout(2200); }
+    /*
+     * NAVIGATE BY URL, AND PROVE THE SCREEN CHANGED.
+     *
+     * This used to click a button named after each tab. On 2026-08-28 the six
+     * tabs became six routes in our own sidebar and the rail inside the app was
+     * removed, so `if (await b.count())` found nothing, skipped silently, and
+     * this guard measured the SAME screen six times while printing six passes.
+     * It went from "11 of 12" to "12 of 12" on a change that touched no colour.
+     *
+     * That is the third time a check here has passed by not looking. So the
+     * fingerprint below is not defensive tidiness: two tabs in a row that
+     * render an identical set of labels is now a FAILURE, because the only
+     * innocent explanation is that navigation stopped working.
+     */
+    let lastPrint = null;
+    for (const [tab, slug] of [
+      ['Brands', 'brands'],
+      ['Creators', 'creators'],
+      ['Performance', 'performance'],
+      ['Reporting', 'reporting'],
+      ['Leaderboard', 'leaderboard'],
+      ['Discovery', 'discovery'],
+    ]) {
+      await page.goto(`${BASE}/admin/collabs/${slug}`, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(2200);
+
+      if (!page.url().includes(`/admin/collabs/${slug}`)) {
+        bad(`${tab}: asked for /admin/collabs/${slug} and landed on ${page.url()}`);
+        continue;
+      }
 
       const all = await page.evaluate(PROBE);
       const unmeasured = all.filter((r) => r.unmeasured).length;
       const results = all.filter((r) => !r.unmeasured);
       if (results.length === 0) { bad(`${tab}: nothing measurable rendered, so this check is vacuous`); continue; }
 
-      /* Sub-views inside a tab are part of that tab. Reporting hides a whole
-         second screen behind "Creative angle testing". */
-      for (const sub of ['Creative angle testing']) {
-        const sb = page.getByRole('button', { name: new RegExp(sub, 'i') }).first();
-        if (await sb.count()) { await sb.click(); await page.waitForTimeout(2000); }
+      /* What this screen actually says, cheaply. Identical to the previous tab
+         means the route did not take us anywhere. */
+      const print = `${results.length}|${results.slice(0, 12).map((r) => r.text).join('~')}`;
+      if (print === lastPrint) {
+        bad(`${tab}: rendered exactly what the previous tab did — navigation is not working, so this check would be measuring the same screen twice`);
+        lastPrint = print;
+        continue;
       }
+      lastPrint = print;
+
 
       const failures = results.filter((r) => r.ratio < FAIL_BELOW);
       const warns = results.filter((r) => r.ratio >= FAIL_BELOW && r.ratio < WARN_BELOW);

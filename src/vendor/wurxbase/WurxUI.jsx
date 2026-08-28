@@ -7184,14 +7184,30 @@ function PerformanceTab({ creators, allCreators, allTime, month, onUpdateCreator
    Drop zone + brand rows. Each row is draggable; section header is the drop target. */
 function PerfBrandSection({ title, zone, tone, list, dragging, isOver, onEnter, onLeave, onDrop, onDragStart, onDragEnd, onOpen }) {
   const isDraggingSomething = !!dragging;
-  const accent  = tone === 'green' ? '#16A34A' : '#71717A';
-  const pillBg  = tone === 'green' ? '#E7F6EC' : '#F1F1F4';
-  const pillFg  = tone === 'green' ? '#0E7A3A' : '#3F3F46';
-  const countBg = tone === 'green' ? '#0E7A3A' : '#52525B';
+  /*
+   * TOKENS, not hex. These five were the last hardcoded light-mode colours on
+   * the Performance tab and they are why the count badges failed contrast in
+   * dark mode at 1.10:1 and 1.11:1 — the pill stayed `#F1F1F4` on a near-black
+   * page while its ink flipped to near-white.
+   *
+   * "Active" is a real state, so it keeps the success family; "Inactive" is not
+   * a warning, it is simply the quieter of the two, so it takes neutrals.
+   *
+   * `ringOver` used to build its faint ring by concatenating an alpha suffix
+   * onto the hex (`${accent}55`), which a `var()` cannot do. `color-mix`
+   * gives the same 33% without needing to know the colour.
+   */
+  const accent  = tone === 'green' ? 'var(--wx-success)' : 'var(--wx-border-interactive)';
+  const pillBg  = tone === 'green' ? 'var(--wx-success-soft)' : 'var(--wx-surface-2)';
+  const pillFg  = tone === 'green' ? 'var(--wx-success)' : 'var(--wx-text-muted)';
+  const countBg = tone === 'green' ? 'var(--wx-success)' : 'var(--wx-text-faint)';
   const ringOver = isOver
-    ? { boxShadow: `0 0 0 2px ${accent}`, background: tone === 'green' ? 'rgba(22,163,74,0.04)' : 'rgba(113,113,122,0.05)' }
+    ? {
+        boxShadow: `0 0 0 2px ${accent}`,
+        background: `color-mix(in srgb, ${accent} 5%, transparent)`,
+      }
     : isDraggingSomething
-      ? { boxShadow: `0 0 0 1px ${accent}55` }
+      ? { boxShadow: `0 0 0 1px color-mix(in srgb, ${accent} 33%, transparent)` }
       : {};
 
   return (
