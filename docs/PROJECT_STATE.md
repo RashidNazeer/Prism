@@ -14,14 +14,14 @@ push to prod"*. Dev is now fixed. Ask whether to make it live, then follow
 `docs/NEXT_UNATTENDED.md` section 3 — eight steps, ending in
 `verify:wurxbase-roster` against prod.
 
-**Two things to raise when he says go, both his call and neither blocking:**
+**Both earlier flags are settled. Do not raise either again:**
 
-1. **The shared password is three characters** (`1-0`), his choice, accepted by
-   the auth server. Eight people who can edit deals and budgets are behind one
-   guessable string. Worth per-person passwords at the prod cutover.
-2. **`ops` sees our whole admin sidebar**, not just Paid Collabs —
-   applications, offers, contests, brand hubs. Narrowing it means a new role
-   threaded through every RLS policy; flagged, not done.
+1. **`ops` seeing our whole admin sidebar is fine.** Rashid, 2026-08-29:
+   *"it's fien let them see all no issue"*. Asked and answered — applications,
+   offers, contests and brand hubs are all visible to their team on purpose.
+2. **The password is `1234567890`**, shared by all eight. `1-0` was a typo he
+   corrected. It is shared rather than per-person, which he knows; offer
+   per-person passwords once at the prod cutover and then let it go.
 
 **Still owed, on his "remind me later":** telling Asad about the bugs that
 were in his own copy. Add to that conversation that the five old WurxBase

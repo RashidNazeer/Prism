@@ -50,15 +50,13 @@ Rashid gave the pattern — *"for all this is the actually email :
   checks. Asad gets six tabs and the settings gear, Farkhan six tabs, Fahad
   four tabs and no gear.
 
-**Two things Rashid should decide before this is real money in prod:**
+**Both of these were put to Rashid and both are settled:**
 
-1. **The password is shared and three characters.** The auth server accepts
-   it, so nothing blocks; but eight people who can edit deals and budgets are
-   behind one guessable string. Worth a per-person password at the prod
-   cutover.
-2. **`ops` sees our whole admin sidebar**, not only Paid Collabs —
-   applications, offers, contests, brand hubs. Narrowing it needs a new role
-   threaded through every RLS policy, which is not a Monday job.
+1. **Their team seeing our whole admin panel is intended.** *"it's fien let
+   them see all no issue"*, 2026-08-29. No narrower role is wanted.
+2. **The password is `1234567890`** for all eight — `1-0` was a typo. Shared
+   rather than per-person; worth offering once at the prod cutover, not worth
+   raising twice.
 ### 3. Production
 
 Untouched, and a human decision. Prod has no `wurxbase` schema and prod's code

@@ -1861,3 +1861,9 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   That is the same bug I spent the morning removing from their app, rewritten
   into the guard that checks it. Capture before you overwrite, in test code
   as much as in product code.
+- 2026-08-29: **Their team sees our whole admin panel, deliberately.** Put to
+  Rashid with the trade-off spelled out — `ops` carries applications, offers,
+  contests and brand hubs, not only Paid Collabs — and his answer was *"it's
+  fien let them see all no issue"*. So the narrower role that would have
+  needed threading through every RLS policy is NOT being built, and this is
+  not to be re-raised as an open question.
