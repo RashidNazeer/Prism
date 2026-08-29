@@ -38,9 +38,23 @@ const SERVICE = process.env.SUPABASE_SERVICE_KEY;
 if (!SERVICE) throw new Error('SUPABASE_SERVICE_KEY must be set');
 const BASE = process.env.BASE_URL || 'http://localhost:4173';
 
-/** WCAG AA for body text. Large text is allowed 3.0, so 3.0 is the hard floor. */
-const FAIL_BELOW = 3.0;
-const WARN_BELOW = 4.5;
+/**
+ * WCAG AA, PER ELEMENT — not one floor for everything.
+ *
+ * This used to fail below 3.0 and merely warn between 3.0 and 4.5, on the
+ * grounds that "large text is allowed 3.0". Large text is. Body text is not,
+ * and body text is most of a screen — so a 12px label at 3.1:1 sailed through
+ * as a warning nobody read, on a guard whose whole job is to say whether a
+ * label is readable. It measured the right thing and then applied the wrong
+ * threshold to it, which is the same class of mistake as not measuring.
+ *
+ * The real rule: 3.0 for large text — 24px and up, or 18.66px and up at weight
+ * 700 — and 4.5 for everything else.
+ */
+const LARGE_PX = 24;
+const LARGE_BOLD_PX = 18.66;
+const floorFor = (r) =>
+  r.size >= LARGE_PX || (r.size >= LARGE_BOLD_PX && r.weight >= 700) ? 3.0 : 4.5;
 
 const admin = createClient(env.VITE_SUPABASE_URL, SERVICE, { auth: { persistSession: false } });
 const stamp = Date.now();
@@ -216,6 +230,7 @@ const PROBE = () => {
       fg: isSvgText ? cs.fill : cs.color,
       bg: `rgb(${bg.map(Math.round).join(',')})`,
       size: Math.round(parseFloat(cs.fontSize)),
+      weight: Number(cs.fontWeight) || 400,
       cls: (el.className || '').toString().split(' ').slice(0, 2).join(' '),
       path: (() => {
         const bits = [];
@@ -338,13 +353,11 @@ try {
       lastPrint = print;
 
 
-      const failures = results.filter((r) => r.ratio < FAIL_BELOW);
-      const warns = results.filter((r) => r.ratio >= FAIL_BELOW && r.ratio < WARN_BELOW);
+      const failures = results.filter((r) => r.ratio < floorFor(r));
 
       if (failures.length === 0) {
         ok(
           `${tab}: ${results.length} text elements, worst ${Math.min(...results.map((r) => r.ratio))}:1` +
-            `${warns.length ? `, ${warns.length} below AA` : ''}` +
             `${unmeasured ? `, ${unmeasured} on gradients not measurable` : ''}`
         );
       } else {
@@ -352,16 +365,16 @@ try {
         const byPair = new Map();
         for (const f of failures) {
           const k = `${f.fg} on ${f.bg}`;
-          const e = byPair.get(k) ?? { n: 0, ratio: f.ratio, sample: f.text, cls: f.cls, path: f.path };
+          const e = byPair.get(k) ?? { n: 0, ratio: f.ratio, need: floorFor(f), size: f.size, sample: f.text, cls: f.cls, path: f.path };
           e.n++;
           byPair.set(k, e);
         }
         bad(
-          `${tab}: ${failures.length} of ${results.length} text elements below ${FAIL_BELOW}:1`,
+          `${tab}: ${failures.length} of ${results.length} text elements below the AA floor for their size`,
           [...byPair]
             .sort((a, b) => b[1].n - a[1].n)
             .slice(0, 6)
-            .map(([k, v]) => `${String(v.n).padStart(4)}x  ${v.ratio}:1  ${k}\n              "${v.sample}"  at  ${v.path}`)
+            .map(([k, v]) => `${String(v.n).padStart(4)}x  ${v.ratio}:1 (needs ${v.need}, ${v.size}px)  ${k}\n              "${v.sample}"  at  ${v.path}`)
             .join('\n        ')
         );
       }

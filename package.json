@@ -54,7 +54,8 @@
     "wurxbase:copy": "node scripts/wurxbase-copy-data.mjs",
     "verify:wurxbase-signin": "node scripts/check-wurxbase-signin.mjs",
     "verify:write-safety": "node scripts/check-wurxbase-write-safety.mjs",
-    "verify:wurxbase-perms": "node scripts/check-wurxbase-permissions.mjs"
+    "verify:wurxbase-perms": "node scripts/check-wurxbase-permissions.mjs",
+    "verify:wurxbase-team": "node scripts/check-wurxbase-team.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

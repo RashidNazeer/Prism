@@ -2105,6 +2105,43 @@ from them, as the brand's GMV.
 
 ## Paid Collabs: WurxBase, vendored (2026-08-18)
 
+### The team, and how somebody is recognised (2026-08-29)
+
+**There is no password anywhere in this feature.** Their sign-in went on
+2026-08-28; the `password` column went on 2026-08-29, and so did the five
+hardcoded logins that had been shipping in the browser bundle. `pnpm
+verify:isolation` fails the build if a `password:` or `.password` appears in
+the vendored tree again.
+
+**A person is matched by `wurxbase.app_users.hub_email`** against the address
+they signed in to the hub with. That row supplies their WurxBase role and
+their per-person overrides — never our role, because ours would make every
+`ops` account their `admin`, full edit on deals and money, and two of their
+eight people are viewers. Our role still decides whether somebody reaches
+/admin/collabs at all; that gate is ours.
+
+**A row with no hub email falls back to the derived role, which is the more
+generous answer.** That is safe only because the route guard sits above it,
+and it is why the Team screen shows "no hub email" in red on every unlinked
+row. Fill them in at: the gear -> User Management -> pencil -> Hub email.
+
+**The gear IS the way into Settings.** Their panel opened from the user chip;
+our chrome hides that chip, which silently closed User Management, Access
+Control and God Mode along with it. The gear sits beside the bell and appears
+only for somebody who has something behind it. If it ever disappears, those
+three screens disappear with it, and nothing else will say so — `pnpm
+verify:wurxbase-team` checks it for exactly that reason.
+
+**No Sign out lives in here.** One session, the hub’s, ended from the hub’s
+own top bar. The two that used to be here cleared the vendored app’s stored
+user and left a blank screen behind, with the person still signed in.
+
+**Ink on a tinted chip is `--wx-text`.** `--wx-text-faint` is calibrated
+against `--wx-bg` and measures 4.02:1 on a warning-soft pill. Thirty labels
+across these six screens were that one mistake. The chip keeps its hue; the
+text stops competing with it.
+
+
 The whole WurxBase dashboard runs inside our admin at `/admin/collabs`, sidebar
 item **Paid Collabs** under Data. **Admin only**; no creator nav mentions it and
 no creator route reaches it.

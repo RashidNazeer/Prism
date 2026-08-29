@@ -87,12 +87,22 @@ still points at their old project, so it works the old way today. The cutover:
 If both are live on Monday the data splits again, and this time nobody is
 watching for it. Their old project is still reachable and still accepts writes.
 
-### 5. Still unanswered
+### 5. Answered on 2026-08-29
 
-- **`wurxbase.app_users.password`** — eight plaintext passwords, read by
-  nothing since their login was removed. Offered twice; dropping a column is not
-  an unattended act.
-- **The 30 unverified theme leads** in PARKED 35. Rashid stopped that review to
-  save budget and said he would say when to run it.
-- **Telling Asad** about the bugs that were in his own copy. He asked to be
-  reminded later.
+- **`wurxbase.app_users.password`** — dropped, on his yes. So are the five
+  hardcoded in the bundle and the dead login code that wrote them. The five
+  remain in git history; treat them as burned.
+- **The 30 unverified theme leads** — done, on his yes. The guard had been
+  passing them by applying the large-text contrast floor to small text. 30
+  real failures, all fixed, 12/12 on per-size floors. PARKED 35 closed.
+- **Telling Asad** about the bugs in his own copy — still owed, he asked to
+  be reminded later. Add the burned passwords to that conversation.
+
+### 6. Fixed on 2026-08-29, found by looking
+
+- **Settings was unreachable in our chrome**, and with it User Management,
+  Access Control and God Mode. A gear beside the bell opens it now.
+- **Two Sign out buttons** inside Paid Collabs stranded the person on a blank
+  screen while still signed in. Removed.
+- **The Team screen now edits hub emails**, which is where the eight
+  addresses can be typed without a migration.

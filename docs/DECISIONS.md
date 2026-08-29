@@ -1793,3 +1793,44 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   a mid-tone token, which has no contrast at any opacity. Our palette answers
   "quieter ink" with three tokens that `pnpm check:contrast` verifies in both
   themes; alpha cannot be verified the same way. 67 declarations made solid.
+- 2026-08-29: **The plaintext passwords are gone, and so is everything that
+  wrote one.** Rashid: yes, delete them. The column drop was the small half; the
+  larger half was that five passwords, superadmin included, were hardcoded in
+  `App.jsx` and shipped in the browser bundle where any signed-in person could
+  read them. Dropping the column without removing the code would also have
+  broken the Team screen on Monday, since add-member and edit-member both wrote
+  to it. So the dead login screen, the dead join-request screen and the dead
+  duplicate user modal went with them — 1,198 lines — and
+  `verify:isolation` now fails the build on `password:` or `.password`
+  anywhere in the vendored tree. **The five passwords remain in git history and
+  should be treated as burned wherever the team reused them.**
+- 2026-08-29: **The Team screen edits hub emails, not passwords.** Something had
+  to replace the password field, and the honest replacement is the field that
+  now decides anything: a person's `hub_email` is how they are matched to
+  their role when they arrive from our sign-in. It is required when adding
+  somebody, shown on every row, and flagged in red when missing — an unlinked
+  person falls back to a role derived from ours, which is the more generous
+  answer. It also means Rashid and Asad can fill in the eight addresses
+  themselves rather than waiting on a migration.
+- 2026-08-29: **A gear opens Paid Collabs settings.** Their Settings panel was
+  opened by the user chip, and our chrome hides that chip because our own top
+  bar already says who you are. That quietly closed the door on everything
+  behind it — User Management, Access Control, God Mode — which nobody noticed
+  because the panel had never been the subject of a check. A gear beside the
+  bell reopens it. Not a second profile chip: our top bar owns identity, this
+  owns "settings for this section". Shown only to somebody who has something in
+  there; a viewer's click did nothing before, and a control that does nothing is
+  worse than no control.
+- 2026-08-29: **Contrast is judged per element, not against one floor.**
+  `check-collab-contrast.mjs` failed below 3.0 and warned between 3.0 and 4.5.
+  3.0 is the AA floor for LARGE text only — 24px, or 18.66px bold — and these
+  screens are mostly 9.5px to 13px, so thirty real failures were printed inside
+  pass lines as "12 below AA". The floor is now chosen per element from its own
+  size and weight. This is the fifth member of the "checks that lie" family and
+  the first where the check measured correctly and then judged wrongly.
+- 2026-08-29: **On a tinted surface the ink is `--wx-text`.** Every faint or
+  status-coloured label that failed was failing the same way: a token calibrated
+  against `--wx-bg` used on a chip that moves the ground. Rejected: retuning
+  `--wx-text-faint` itself, which would have changed every screen in the
+  product to fix six chips in one vendored app, and would still be wrong on the
+  next tint. The chip keeps the hue; the text stops competing with it.

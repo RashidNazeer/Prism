@@ -928,7 +928,30 @@ export const supabase = {
    refresh the same token and people get logged out at random);
 3. only the seam imports ours;
 4. no vendored realtime filter still says `schema: 'public'` — it would
-   subscribe to OUR table of the same name and deliver nothing, silently.
+   subscribe to OUR table of the same name and deliver nothing, silently;
+5. no vendored file handles a `password:` or `.password` again. There is no
+   sign-in in this app any more and `wurxbase.app_users` has no password column
+   to write one to, so a reappearance is a mistake rather than a decision. A
+   comment about the history stays legal: the check matches code, not prose.
+
+#### The Paid Collabs suites
+
+All of them need `pnpm build` then `pnpm preview` in another shell, and
+`SUPABASE_SERVICE_KEY` in the environment (fetch it at run time, section 2).
+
+```bash
+pnpm verify:wurxbase         # the migration landed, one sign-in, writes reach us
+pnpm verify:wurxbase-signin  # no second login, the audit names the real person
+pnpm verify:wurxbase-perms   # a viewer of theirs stays a viewer, whatever we are
+pnpm verify:wurxbase-team    # Team screen: settings reachable, hub email saves
+pnpm verify:write-safety     # the sequence that used to lose data loses nothing
+node scripts/check-collab-contrast.mjs   # every label, both themes, per-size AA
+```
+
+**The contrast one judges each element against its own floor**, 3.0 only at
+24px or 18.66px bold and 4.5 otherwise. It used to fail below 3.0 and warn
+above it, which passed thirty real failures while printing them in the pass
+line as "12 below AA". If you change it, do not reintroduce a single floor.
 
 #### The two settings that are not in git
 

@@ -641,3 +641,46 @@
 .wurxbase-root.wurxbase-root .pc-uc-sub {
   color: color-mix(in srgb, var(--wx-on-accent) 78%, transparent);
 }
+
+/* ------------------------------------------------ ink on tinted surfaces -- */
+/*
+ * FAINT INK IS CALIBRATED AGAINST THE PAGE, NOT AGAINST A TINT.
+ *
+ * `--wx-text-faint` is 5.73:1 on `--wx-bg` and `pnpm check:contrast` proves it
+ * in both themes. It is not 5.73:1 on a warning-soft pill or a toned podium,
+ * because the tint moves the ground: the same ink measures 4.02:1 there. Every
+ * failure below is that one mistake, and all of them are 9.5–11px, where AA
+ * asks for 4.5 and gets no discount for being a label.
+ *
+ * Found on 2026-08-29, when `check-collab-contrast.mjs` stopped applying the
+ * large-text floor of 3.0 to text that is not large. It had been reporting
+ * these as passes with a "below AA" note in the same line.
+ *
+ * THE FIX IS THE SAME EVERY TIME: the ink goes to the primary text token and
+ * the tint keeps carrying the meaning. A count pill is still amber, still
+ * blue, still green; only the digits stop being the same hue as what they sit
+ * on. Colour was doing two jobs and could only do one of them well.
+ */
+.wurxbase-root.wurxbase-root .pc-ct-divider-pending .pc-ct-divider-count,
+.wurxbase-root.wurxbase-root .pc-ct-divider-progress .pc-ct-divider-count {
+  color: var(--wx-text);
+}
+
+/* The leaderboard's own labels: "DEALS", "GMV", "CREATOR", "LEADER". All
+   uppercase 9.5px on a toned card, all faint, all short of 4.5. */
+.wurxbase-root.wurxbase-root .lb-pod-label,
+.wurxbase-root.wurxbase-root .lb-pod-stats i,
+.wurxbase-root.wurxbase-root .lb-listhead {
+  color: var(--wx-text);
+}
+.wurxbase-root.wurxbase-root .lb-pod-lead,
+.wurxbase-root.wurxbase-root .lb-pod-sharetxt {
+  color: var(--wx-text);
+}
+
+/* The winner's own name was the accent at 17px on cream — 4.3:1. The podium,
+   the crown and the LEADER pill already say who won; the name only has to be
+   readable. */
+.wurxbase-root.wurxbase-root .lb-pod-name {
+  color: var(--wx-text);
+}

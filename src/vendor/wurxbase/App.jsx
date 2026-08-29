@@ -195,13 +195,19 @@ function playSound(type) {
   } catch (_) { /* silent fail · browser blocked AudioContext */ }
 }
 
-/* ─── Auth ──────────────────────────────────────────────── */
+/* ─── Roles ─────────────────────────────────────────────── */
+/*
+ * NOT CREDENTIALS. This used to carry a plaintext password per person and it
+ * shipped in the browser bundle, readable by anyone who opened devtools. There
+ * is no login here any more — identity comes from the hub's own sign-in — so
+ * all this is now is the starting roster used to seed an empty `app_users`.
+ */
 const USERS = [
-  { id: 'asad',  username: 'Asad',  password: 'Asad.Wurx@26',  role: 'superadmin', display: 'Asad' },
-  { id: 'ipc',   username: 'IPC',   password: 'ipc@wurxmedia',  role: 'ipc',        display: 'IPC' },
-  { id: 'apc',   username: 'APC',   password: 'apc@wurxmedia',  role: 'apc',        display: 'APC' },
-  { id: 'admin', username: 'Admin', password: 'admin.top@wurx', role: 'admin',      display: 'Admin' },
-  { id: 'lead',  username: 'Lead',  password: 'lead@wurx',      role: 'viewer',     display: 'Lead' },
+  { id: 'asad',  username: 'Asad',  role: 'superadmin', display: 'Asad' },
+  { id: 'ipc',   username: 'IPC',   role: 'ipc',        display: 'IPC' },
+  { id: 'apc',   username: 'APC',   role: 'apc',        display: 'APC' },
+  { id: 'admin', username: 'Admin', role: 'admin',      display: 'Admin' },
+  { id: 'lead',  username: 'Lead',  role: 'viewer',     display: 'Lead' },
 ];
 function getBasePerms(role) {
   switch (role) {
@@ -3661,11 +3667,11 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, curre
             </div>
           </div>
           <div className="tw-flex tw-items-center tw-gap-2 print-hide">
-            {can(currentUser, 'canExportCsv') && <button onClick={onExportCsv} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-bg-white hover:tw-bg-gray-50 tw-text-[11.5px] tw-font-bold tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ color: 'var(--wx-text-muted)', border: '1px solid color-mix(in srgb, var(--wx-warning) 12%, transparent)' }}>
+            {can(currentUser, 'canExportCsv') && <button onClick={onExportCsv} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-text-[11.5px] tw-font-bold tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ background: 'var(--wx-surface-2)', color: 'var(--wx-text)', border: '1px solid var(--wx-border)' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               CSV
             </button>}
-            {can(currentUser, 'canPrintReport') && <button onClick={handlePrint} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-text-[11.5px] tw-font-extrabold tw-border-0 tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ background: 'linear-gradient(135deg,var(--wx-warning-soft) 0%,var(--wx-warning-soft) 100%)', color: 'var(--wx-text-muted)', boxShadow: '0 3px 10px rgba(48,39,28,0.28)' }}>
+            {can(currentUser, 'canPrintReport') && <button onClick={handlePrint} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-text-[11.5px] tw-font-extrabold tw-border-0 tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ background: 'var(--wx-warning-soft)', color: 'var(--wx-text)', boxShadow: '0 3px 10px rgba(48,39,28,0.28)' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
               Print PDF
             </button>}
@@ -3908,7 +3914,7 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, curre
         })()}
 
         {/* ── Footer ── */}
-        <div className="tw-text-center tw-text-[11px] tw-font-semibold tw-text-oneui-mute tw-py-3">
+        <div className="tw-text-center tw-text-[11px] tw-font-semibold tw-py-3" style={{ color: 'var(--wx-text-muted)' }}>
           Creator Hub · Executive Report · {periodLabel} · {activeBrand === 'All' ? 'All Brands' : activeBrand}
         </div>
         </>)}
@@ -5236,542 +5242,6 @@ function NotifItemV2({ item, onDismiss, getIcon, formatTime }) {
           aria-label="Dismiss"
         >✕</button>
       </div>
-    </div>
-  );
-}
-
-/* ─── JoinRequestScreen ─────────────────────────────────── */
-function JoinRequestScreen({ onBack }) {
-  const [name, setName]         = useState('');
-  const [email, setEmail]       = useState('');
-  const [username, setUsername] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [showMeme, setShowMeme] = useState(false);
-  const [showDupeMeme, setShowDupeMeme] = useState(false);
-
-  async function submit(e) {
-    e.preventDefault();
-    if (!name.trim() || !email.trim() || !username.trim()) return;
-    setSubmitting(true);
-
-    // Check for duplicates in join_requests and app_users
-    const [{ data: existingReqs }, { data: existingUsers }] = await Promise.all([
-      supabase.from('join_requests').select('id').or(`email.eq.${email.trim()},username.ilike.${username.trim()}`),
-      supabase.from('app_users').select('id').ilike('username', username.trim()),
-    ]);
-
-    if ((existingReqs && existingReqs.length > 0) || (existingUsers && existingUsers.length > 0)) {
-      setSubmitting(false);
-      setShowDupeMeme(true);
-      return;
-    }
-
-    await supabase.from('join_requests').insert([{
-      name: name.trim(),
-      email: email.trim(),
-      username: username.trim(),
-      status: 'pending',
-    }]);
-    setSubmitting(false);
-    setShowMeme(true);
-  }
-
-  return (
-    <div className="tw-fixed tw-inset-0 tw-overflow-hidden tw-font-sans" style={{ background: 'radial-gradient(ellipse at 100% 0%, var(--wx-warning-soft) 0%, var(--wx-warning-soft) 25%, var(--wx-accent) 55%, var(--wx-accent) 90%)' }}>
-      {/* ── Aurora ribbons background ── */}
-      <div aria-hidden className="tw-absolute tw-inset-0 tw-pointer-events-none tw-overflow-hidden">
-        {/* Aurora flowing layers */}
-        <div className="tw-absolute tw-inset-0" style={{ background: 'conic-gradient(from 220deg at 30% 20%, color-mix(in srgb, var(--wx-surface-2) 40%, transparent), color-mix(in srgb, var(--wx-danger-soft) 30%, transparent) 30%, color-mix(in srgb, var(--wx-accent) 40%, transparent) 50%, color-mix(in srgb, var(--wx-accent) 40%, transparent) 70%, color-mix(in srgb, var(--wx-surface-2) 40%, transparent) 100%)', filter: 'blur(80px)', animation: 'jr-aurora 28s ease-in-out infinite' }} />
-        {/* Soft sunset glow ribbons */}
-        <div className="tw-absolute tw--top-20 tw-left-1/4 tw-w-[600px] tw-h-[400px] tw-rounded-full tw-opacity-50" style={{ background: 'radial-gradient(ellipse, color-mix(in srgb, var(--wx-warning-soft) 60%, transparent), transparent 65%)', filter: 'blur(50px)', animation: 'jr-ribbon-a 18s ease-in-out infinite' }} />
-        <div className="tw-absolute tw-bottom-0 tw--right-32 tw-w-[600px] tw-h-[500px] tw-rounded-full tw-opacity-50" style={{ background: 'radial-gradient(ellipse, color-mix(in srgb, var(--wx-surface-3) 60%, transparent), transparent 65%)', filter: 'blur(60px)', animation: 'jr-ribbon-b 22s ease-in-out infinite' }} />
-        <div className="tw-absolute tw-top-1/3 tw--left-20 tw-w-[500px] tw-h-[500px] tw-rounded-full tw-opacity-40" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--wx-surface-3) 65%, transparent), transparent 65%)', filter: 'blur(60px)', animation: 'jr-ribbon-c 25s ease-in-out infinite' }} />
-        {/* Cream noise overlay for filmic feel */}
-        <div className="tw-absolute tw-inset-0 tw-opacity-[0.06]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '20px 20px' }} />
-      </div>
-
-      {/* ── Floating decorative trust badges (desktop) ── */}
-      <div aria-hidden className="tw-hidden xl:tw-block">
-        <div className="tw-absolute tw-top-[18%] tw-left-[10%] tw-z-10 tw-pointer-events-none" style={{ animation: 'jr-float-a 9s ease-in-out infinite', transform: 'rotate(-8deg)' }}>
-          <div className="tw-bg-white/70 tw-backdrop-blur-xl tw-ring-1 tw-ring-white/80 tw-rounded-2xl tw-px-3.5 tw-py-2.5 tw-shadow-[0_12px_32px_rgba(217,70,239,0.25)] tw-flex tw-items-center tw-gap-2.5">
-            <div className="tw-w-9 tw-h-9 tw-rounded-full tw-bg-emerald-500 tw-flex tw-items-center tw-justify-center tw-text-white tw-text-[15px] tw-shadow-md">⚡</div>
-            <div>
-              <div className="tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-text-emerald-700">Fast Review</div>
-              <div className="tw-text-[12.5px] tw-font-extrabold tw-text-slate-900">~24 hours</div>
-            </div>
-          </div>
-        </div>
-        <div className="tw-absolute tw-top-[16%] tw-right-[12%] tw-z-10 tw-pointer-events-none" style={{ animation: 'jr-float-b 11s ease-in-out infinite 0.7s', transform: 'rotate(6deg)' }}>
-          <div className="tw-bg-white/70 tw-backdrop-blur-xl tw-ring-1 tw-ring-white/80 tw-rounded-2xl tw-px-3.5 tw-py-2.5 tw-shadow-[0_12px_32px_rgba(124,58,237,0.25)] tw-flex tw-items-center tw-gap-2.5">
-            <div className="tw-w-9 tw-h-9 tw-rounded-full tw-bg-violet-500 tw-flex tw-items-center tw-justify-center tw-text-white tw-text-[15px] tw-shadow-md">🛡️</div>
-            <div>
-              <div className="tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-text-violet-700">Secure</div>
-              <div className="tw-text-[12.5px] tw-font-extrabold tw-text-slate-900">Encrypted</div>
-            </div>
-          </div>
-        </div>
-        <div className="tw-absolute tw-bottom-[20%] tw-left-[12%] tw-z-10 tw-pointer-events-none" style={{ animation: 'jr-float-c 10s ease-in-out infinite 1.2s', transform: 'rotate(5deg)' }}>
-          <div className="tw-bg-white/70 tw-backdrop-blur-xl tw-ring-1 tw-ring-white/80 tw-rounded-2xl tw-px-3.5 tw-py-2.5 tw-shadow-[0_12px_32px_rgba(251,146,60,0.3)] tw-flex tw-items-center tw-gap-2.5">
-            <div className="tw-w-9 tw-h-9 tw-rounded-full tw-bg-orange-500 tw-flex tw-items-center tw-justify-center tw-text-white tw-text-[15px] tw-shadow-md">🎯</div>
-            <div>
-              <div className="tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-text-orange-700">Role-based</div>
-              <div className="tw-text-[12.5px] tw-font-extrabold tw-text-slate-900">Custom access</div>
-            </div>
-          </div>
-        </div>
-        <div className="tw-absolute tw-bottom-[18%] tw-right-[10%] tw-z-10 tw-pointer-events-none" style={{ animation: 'jr-float-d 12s ease-in-out infinite 0.4s', transform: 'rotate(-7deg)' }}>
-          <div className="tw-bg-white/70 tw-backdrop-blur-xl tw-ring-1 tw-ring-white/80 tw-rounded-2xl tw-px-3.5 tw-py-2.5 tw-shadow-[0_12px_32px_rgba(244,114,182,0.3)] tw-flex tw-items-center tw-gap-2.5">
-            <div className="tw-w-9 tw-h-9 tw-rounded-full tw-bg-rose-500 tw-flex tw-items-center tw-justify-center tw-text-white tw-text-[15px] tw-shadow-md">✨</div>
-            <div>
-              <div className="tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-text-rose-700">Welcome Pack</div>
-              <div className="tw-text-[12.5px] tw-font-extrabold tw-text-slate-900">Onboarding tour</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Main content ── */}
-      <main className="tw-relative tw-z-20 tw-h-full tw-flex tw-items-center tw-justify-center tw-p-4 sm:tw-p-6 tw-overflow-y-auto">
-        <div className="tw-w-full tw-max-w-[460px] tw-flex tw-flex-col" style={{ animation: 'login-card-in 0.7s cubic-bezier(0.33,1,0.68,1)' }}>
-
-          {/* Back button + brand */}
-          <div className="tw-flex tw-items-center tw-justify-between tw-gap-3 tw-mb-5">
-            <button onClick={onBack}
-              className="tw-inline-flex tw-items-center tw-gap-1.5 tw-h-9 tw-px-3.5 tw-rounded-full tw-bg-white/20 tw-backdrop-blur-md tw-ring-1 tw-ring-white/30 tw-text-white tw-text-[12px] tw-font-bold tw-border-0 tw-cursor-pointer hover:tw-bg-white/30 active:tw-scale-95 tw-transition tw-duration-200">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-              Back
-            </button>
-            <div className="tw-flex tw-items-center tw-gap-2.5">
-              <div className="tw-w-10 tw-h-10 tw-rounded-[14px] tw-bg-white/20 tw-backdrop-blur-md tw-ring-1 tw-ring-white/30 tw-flex tw-items-center tw-justify-center tw-shadow-md">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              </div>
-              <span className="tw-text-white tw-text-[16px] tw-font-extrabold tw-tracking-[-0.4px]" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.3)' }}>Creator Hub</span>
-            </div>
-          </div>
-
-          {/* Welcome headline outside the card */}
-          <div className="tw-mb-5 tw-text-center">
-            <div className="tw-inline-flex tw-items-center tw-gap-1.5 tw-h-6 tw-px-3 tw-rounded-full tw-bg-white/20 tw-backdrop-blur-md tw-ring-1 tw-ring-white/30 tw-text-white tw-text-[10.5px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-mb-3">✨ Join the workspace</div>
-            <h1 className="tw-text-white tw-text-[36px] sm:tw-text-[42px] tw-font-extrabold tw-tracking-[-1.2px] tw-leading-[1.05] tw-m-0" style={{ textShadow: '0 4px 24px rgba(0,0,0,0.25)' }}>
-              Let's get you<br/>set up.
-            </h1>
-            <p className="tw-text-white/85 tw-text-[14px] tw-font-medium tw-mt-3 tw-mx-auto tw-max-w-[360px]" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
-              Tell us about yourself. Asad reviews each request personally.
-            </p>
-          </div>
-
-          {/* Form card */}
-          <div className="tw-relative tw-w-full tw-bg-white/85 tw-backdrop-blur-2xl tw-rounded-[28px] tw-ring-1 tw-ring-white/50 tw-shadow-[0_24px_80px_rgba(124,58,237,0.45)] tw-overflow-hidden">
-            {/* Sunset ribbon top */}
-            <div className="tw-h-1 tw-bg-gradient-to-r tw-from-amber-400 tw-via-rose-500 tw-to-fuchsia-600" />
-
-            {/* Step indicator */}
-            <div className="tw-px-7 tw-pt-6 tw-pb-3">
-              <div className="tw-flex tw-items-center tw-gap-2">
-                {[
-                  { n: 1, label: 'Apply', active: true },
-                  { n: 2, label: 'Review', active: false },
-                  { n: 3, label: 'Welcome', active: false },
-                ].map((s, i, arr) => (
-                  <React.Fragment key={s.n}>
-                    <div className={`tw-flex tw-items-center tw-gap-1.5 tw-h-7 tw-pl-1 tw-pr-2.5 tw-rounded-full ${s.active ? 'tw-bg-gradient-to-r tw-from-amber-400 tw-to-rose-500 tw-text-white tw-shadow-md' : 'tw-bg-slate-100 tw-text-slate-400'}`}>
-                      <div className={`tw-w-5 tw-h-5 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-text-[10px] tw-font-extrabold ${s.active ? 'tw-bg-white/25' : 'tw-bg-white'}`}>{s.n}</div>
-                      <span className={`tw-text-[10.5px] tw-font-extrabold tw-uppercase tw-tracking-wider ${s.active ? '' : 'tw-text-slate-500'}`}>{s.label}</span>
-                    </div>
-                    {i < arr.length - 1 && <div className="tw-flex-1 tw-h-px tw-bg-slate-200" />}
-                  </React.Fragment>
-                ))}
-              </div>
-            </div>
-
-            <div className="tw-px-7 tw-pb-7">
-              <form onSubmit={submit} className="tw-flex tw-flex-col tw-gap-3.5 tw-mt-2">
-                {[
-                  { label: 'Full name', value: name, set: setName, type: 'text', placeholder: 'Your name', icon: (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>) },
-                  { label: 'Email', value: email, set: setEmail, type: 'email', placeholder: 'you@example.com', icon: (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>) },
-                  { label: 'Preferred username', value: username, set: setUsername, type: 'text', placeholder: 'e.g. ahmed_ipc', icon: (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/><circle cx="12" cy="7" r="4"/></svg>) },
-                ].map((f, i) => (
-                  <div key={f.label}>
-                    <label className="tw-block tw-text-[11.5px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-text-oneui-mute tw-mb-2">{f.label}</label>
-                    <div className="tw-relative tw-group">
-                      <span className="tw-absolute tw-left-4 tw-top-1/2 -tw-translate-y-1/2 tw-text-oneui-mute group-focus-within:tw-text-rose-600 tw-transition tw-pointer-events-none">{f.icon}</span>
-                      <input
-                        type={f.type}
-                        value={f.value}
-                        onChange={e => f.set(e.target.value)}
-                        placeholder={f.placeholder}
-                        required
-                        autoFocus={i === 0}
-                        className="tw-w-full tw-h-12 tw-pl-11 tw-pr-4 tw-rounded-2xl tw-bg-slate-100/70 tw-border-0 tw-ring-2 tw-ring-transparent focus:tw-bg-white focus:tw-ring-rose-500/40 focus:tw-shadow-[0_0_0_4px_rgba(244,63,94,0.1)] tw-outline-none tw-text-[14px] tw-font-semibold tw-text-oneui-ink placeholder:tw-text-oneui-mute/60 tw-transition tw-duration-200 tw-ease-oneui"
-                        style={{ fontFamily: 'inherit' }}
-                      />
-                    </div>
-                  </div>
-                ))}
-
-                {/* Submit button · sunset gradient */}
-                <button type="submit" disabled={submitting}
-                  className="tw-relative tw-w-full tw-mt-3 tw-rounded-2xl tw-text-white tw-text-[14.5px] tw-font-extrabold tw-tracking-[-0.2px] tw-flex tw-items-center tw-justify-center tw-gap-2 tw-border-0 tw-cursor-pointer hover:-tw-translate-y-0.5 active:tw-scale-[0.98] disabled:tw-opacity-70 disabled:tw-cursor-wait tw-transition tw-duration-200 tw-ease-oneui tw-overflow-hidden"
-                  style={{ height: 50, background: 'linear-gradient(135deg, var(--wx-warning-soft) 0%, var(--wx-danger-soft) 50%, var(--wx-accent) 100%)', boxShadow: '0 10px 28px rgba(244,63,94,0.45), 0 4px 12px rgba(192,38,211,0.35)' }}>
-                  <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-30" style={{ background: 'linear-gradient(135deg, transparent 35%, color-mix(in srgb, var(--wx-surface-1) 50%, transparent) 50%, transparent 65%)' }} />
-                  <span className="tw-relative tw-z-10 tw-flex tw-items-center tw-gap-2">
-                    {submitting ? (
-                      <>
-                        <span className="tw-w-4 tw-h-4 tw-border-2 tw-border-white/40 tw-border-t-white tw-rounded-full tw-animate-spin" />
-                        Sending…
-                      </>
-                    ) : (
-                      <>
-                        Send request
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                      </>
-                    )}
-                  </span>
-                </button>
-              </form>
-
-              {/* Trust footer inside card */}
-              <div className="tw-mt-5 tw-pt-4 tw-border-t tw-border-slate-200 tw-flex tw-items-center tw-justify-center tw-gap-2 tw-text-[11px] tw-font-bold tw-text-oneui-mute">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                Your data is encrypted · We won't spam you
-              </div>
-            </div>
-          </div>
-
-          {/* Already have an account */}
-          <div className="tw-mt-5 tw-text-center">
-            <span className="tw-text-white/70 tw-text-[12.5px] tw-font-medium">Already have credentials?</span>
-            <button onClick={onBack}
-              className="tw-ml-1.5 tw-text-white tw-text-[12.5px] tw-font-extrabold tw-bg-transparent tw-border-0 tw-cursor-pointer hover:tw-underline">
-              Sign in →
-            </button>
-          </div>
-        </div>
-      </main>
-
-      {/* ── REQUEST RECEIVED · Tailwind premium meme popup ── */}
-      {showMeme && (
-        <div className="tw-fixed tw-inset-0 tw-z-[2000] tw-bg-black/60 tw-backdrop-blur-md tw-flex tw-items-center tw-justify-center tw-p-4 tw-font-sans" onClick={() => { setShowMeme(false); onBack(); }}>
-          <div onClick={e => e.stopPropagation()} className="tw-relative tw-w-full tw-max-w-[400px] tw-bg-white tw-rounded-[28px] tw-shadow-oneui_lg tw-overflow-hidden" style={{ animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)' }}>
-            <div className="tw-relative tw-h-[140px] tw-bg-gradient-to-br tw-from-emerald-500 tw-to-emerald-700 tw-flex tw-items-center tw-justify-center tw-overflow-hidden">
-              <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.7) 1px, transparent 0)', backgroundSize: '22px 22px' }} />
-              <div className="tw-text-[64px] tw-relative tw-z-10" style={{ filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.25))' }}>🙏</div>
-              <span className="tw-absolute tw-top-4 tw-left-4 tw-inline-flex tw-items-center tw-h-6 tw-px-2.5 tw-rounded-full tw-bg-white/22 tw-backdrop-blur-md tw-border tw-border-white/30 tw-text-white tw-text-[10px] tw-font-extrabold tw-tracking-wider tw-uppercase">Request #69420</span>
-            </div>
-            <div className="tw-p-6">
-              <div className="tw-text-[22px] tw-font-extrabold tw-text-oneui-ink tw-tracking-[-0.5px] tw-leading-tight">Request Received</div>
-              <div className="tw-text-[13.5px] tw-font-medium tw-text-oneui-mute tw-mt-1.5 tw-mb-4">Status: <span className="tw-text-emerald-600 tw-font-bold">Pending Asad's blessing</span></div>
-              <div className="tw-bg-emerald-50 tw-rounded-2xl tw-p-4 tw-mb-4 tw-space-y-2.5">
-                <div className="tw-flex tw-justify-between tw-items-center tw-gap-3"><span className="tw-text-[11.5px] tw-font-bold tw-uppercase tw-tracking-wider tw-text-emerald-700">Name</span><span className="tw-text-[12.5px] tw-font-semibold tw-text-oneui-ink tw-truncate">{name}</span></div>
-                <div className="tw-flex tw-justify-between tw-items-center tw-gap-3"><span className="tw-text-[11.5px] tw-font-bold tw-uppercase tw-tracking-wider tw-text-emerald-700">Username</span><span className="tw-text-[12.5px] tw-font-semibold tw-text-oneui-ink tw-truncate">@{username}</span></div>
-                <div className="tw-flex tw-justify-between tw-items-center tw-gap-3"><span className="tw-text-[11.5px] tw-font-bold tw-uppercase tw-tracking-wider tw-text-emerald-700">Vibes</span><span className="tw-text-[12.5px] tw-font-semibold tw-text-oneui-ink">Patient 🙏</span></div>
-              </div>
-              <p className="tw-text-[12px] tw-text-oneui-mute tw-text-center tw-mb-4 tw-leading-relaxed">Asad has been notified. Sit tight.</p>
-              <button onClick={() => { setShowMeme(false); onBack(); }}
-                className="tw-w-full tw-h-12 tw-rounded-2xl tw-bg-gradient-to-br tw-from-emerald-600 tw-to-emerald-700 tw-text-white tw-text-[14px] tw-font-bold tw-border-0 tw-cursor-pointer tw-shadow-[0_8px_22px_rgba(16,185,129,0.32)] hover:tw-shadow-[0_12px_28px_rgba(16,185,129,0.42)] hover:-tw-translate-y-0.5 active:tw-scale-[0.98] tw-transition tw-duration-200 tw-ease-oneui">
-                Understood boss 🫡
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── DUPLICATE · Tailwind premium meme popup ── */}
-      {showDupeMeme && (
-        <div className="tw-fixed tw-inset-0 tw-z-[2000] tw-bg-black/60 tw-backdrop-blur-md tw-flex tw-items-center tw-justify-center tw-p-4 tw-font-sans" onClick={() => setShowDupeMeme(false)}>
-          <div onClick={e => e.stopPropagation()} className="tw-relative tw-w-full tw-max-w-[400px] tw-bg-white tw-rounded-[28px] tw-shadow-oneui_lg tw-overflow-hidden" style={{ animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)' }}>
-            <div className="tw-relative tw-h-[140px] tw-bg-gradient-to-br tw-from-amber-500 tw-to-rose-600 tw-flex tw-items-center tw-justify-center tw-overflow-hidden">
-              <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.7) 1px, transparent 0)', backgroundSize: '22px 22px' }} />
-              <div className="tw-text-[64px] tw-relative tw-z-10" style={{ filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.25))' }}>😭</div>
-              <span className="tw-absolute tw-top-4 tw-left-4 tw-inline-flex tw-items-center tw-h-6 tw-px-2.5 tw-rounded-full tw-bg-white/22 tw-backdrop-blur-md tw-border tw-border-white/30 tw-text-white tw-text-[10px] tw-font-extrabold tw-tracking-wider tw-uppercase">Duplicate</span>
-            </div>
-            <div className="tw-p-6">
-              <div className="tw-text-[22px] tw-font-extrabold tw-text-oneui-ink tw-tracking-[-0.5px] tw-leading-tight">Already exists, bro</div>
-              <div className="tw-text-[13.5px] tw-font-medium tw-text-oneui-mute tw-mt-1.5 tw-mb-4">Someone with this email or username already applied, or already has an account.</div>
-              <div className="tw-bg-rose-50 tw-rounded-2xl tw-p-4 tw-mb-4 tw-space-y-2.5">
-                <div className="tw-flex tw-justify-between tw-items-center tw-gap-3"><span className="tw-text-[11.5px] tw-font-bold tw-uppercase tw-tracking-wider tw-text-rose-700">Email</span><span className="tw-text-[12.5px] tw-font-semibold tw-text-oneui-ink tw-truncate">{email}</span></div>
-                <div className="tw-flex tw-justify-between tw-items-center tw-gap-3"><span className="tw-text-[11.5px] tw-font-bold tw-uppercase tw-tracking-wider tw-text-rose-700">Username</span><span className="tw-text-[12.5px] tw-font-semibold tw-text-oneui-ink tw-truncate">@{username}</span></div>
-                <div className="tw-flex tw-justify-between tw-items-center tw-gap-3"><span className="tw-text-[11.5px] tw-font-bold tw-uppercase tw-tracking-wider tw-text-rose-700">Status</span><span className="tw-text-[12.5px] tw-font-semibold tw-text-oneui-ink">In the system 💀</span></div>
-              </div>
-              <p className="tw-text-[12px] tw-text-oneui-mute tw-text-center tw-mb-4 tw-leading-relaxed">If you already have credentials, just log in. Otherwise contact Asad.</p>
-              <button onClick={() => setShowDupeMeme(false)}
-                className="tw-w-full tw-h-12 tw-rounded-2xl tw-bg-gradient-to-br tw-from-rose-600 tw-to-rose-700 tw-text-white tw-text-[14px] tw-font-bold tw-border-0 tw-cursor-pointer tw-shadow-[0_8px_22px_rgba(220,38,38,0.32)] hover:tw-shadow-[0_12px_28px_rgba(220,38,38,0.42)] hover:-tw-translate-y-0.5 active:tw-scale-[0.98] tw-transition tw-duration-200 tw-ease-oneui">
-                My bad, got it 😅
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ─── LoginScreen ───────────────────────────────────────── */
-function LoginScreen({ onLogin, onJoinRequest }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPw, setShowPw] = useState(false);
-  const [shaking, setShaking] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showMemeError, setShowMemeError] = useState(false);
-  const [showForgotPopup, setShowForgotPopup] = useState(false);
-
-  async function attempt(e) {
-    e.preventDefault();
-    if (isProcessing) return;
-    setIsProcessing(true);
-
-    const [{ data }] = await Promise.all([
-      supabase.from('app_users').select('*'),
-      new Promise(r => setTimeout(r, 1000)),
-    ]);
-
-    // Always merge hardcoded USERS so locally-defined accounts (like the Lead
-    // viewer) work even when the Supabase app_users table has rows. DB entries
-    // take precedence — hardcoded ones only fill gaps.
-    const dbPool = (data && data.length > 0) ? data : [];
-    const dbHas  = (uname) => dbPool.some(d => (d.username || '').toLowerCase() === (uname || '').toLowerCase());
-    const pool   = [...dbPool, ...USERS.filter(u => !dbHas(u.username))];
-    const matchedUser = pool.find(u =>
-      u.username.toLowerCase() === username.trim().toLowerCase() && u.password === password
-    );
-
-    if (matchedUser) { onLogin(matchedUser); return; }
-
-    setIsProcessing(false);
-    setShaking(true);
-    setTimeout(() => setShaking(false), 500);
-    setShowMemeError(true);
-  }
-
-  return (
-    <div className="tw-fixed tw-inset-0 tw-overflow-y-auto tw-font-sans" style={{ background: 'linear-gradient(180deg, var(--wx-surface-1) 0%, var(--wx-surface-2) 100%)' }}>
-      {/* Soft warm wash + subtle dot grid */}
-      <div aria-hidden className="tw-absolute tw-inset-0 tw-pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(48,39,28,0.05) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
-
-      <main className={`tw-relative tw-min-h-full tw-flex tw-items-center tw-justify-center tw-p-4 sm:tw-p-8 ${shaking ? 'tw-animate-[login-shake_0.4s_ease-in-out]' : ''}`}>
-        <div className="tw-w-full tw-max-w-[920px]" style={{ animation: 'login-card-in 0.55s cubic-bezier(0.33,1,0.68,1)' }}>
-
-          {/* Card frame */}
-          <div className="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 tw-bg-white tw-rounded-[24px] tw-overflow-hidden" style={{ boxShadow: '0 40px 80px rgba(48,39,28,0.16), 0 8px 24px rgba(48,39,28,0.08), 0 0 0 1px rgba(48,39,28,0.06)' }}>
-
-            {/* ── LEFT · Dark coffee brand panel ── */}
-            <div className="tw-relative tw-p-8 md:tw-p-10 tw-flex tw-flex-col tw-min-h-[420px] md:tw-min-h-[520px]" style={{ background: 'linear-gradient(165deg, var(--wx-warning-soft) 0%, var(--wx-warning-soft) 55%, var(--wx-warning-soft) 100%)', color: 'var(--wx-text-muted)' }}>
-              {/* Subtle cream wash in corner */}
-              <div aria-hidden className="tw-absolute tw--top-32 tw--right-32 tw-w-80 tw-h-80 tw-rounded-full tw-pointer-events-none" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--wx-surface-2) 8%, transparent), transparent 70%)' }} />
-
-              <div className="tw-relative tw-z-10 tw-flex tw-items-center tw-gap-3">
-                <div className="tw-w-12 tw-h-12 tw-rounded-[13px] tw-flex tw-items-center tw-justify-center" style={{ background: 'var(--wx-surface-2)', color: 'var(--wx-warning)' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
-                    <path d="M3 7l9-4 9 4-9 4-9-4z" />
-                    <path d="M3 12l9 4 9-4" />
-                    <path d="M3 17l9 4 9-4" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="tw-text-[20px] tw-font-extrabold tw-tracking-[-0.4px]" style={{ color: 'var(--wx-text-muted)' }}>Wurx Base</div>
-                  <div className="tw-text-[12px] tw-font-semibold" style={{ color: 'color-mix(in srgb, var(--wx-text-muted) 55%, transparent)' }}>Paid Collaborations</div>
-                </div>
-              </div>
-
-              {/* Feature rows · fill the panel's middle with real capability */}
-              <div className="tw-relative tw-z-10 tw-mt-9 tw-flex tw-flex-col tw-gap-2.5">
-                {[
-                  [<svg key="i" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>, 'Live GMV & Ad performance'],
-                  [<svg key="i" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>, 'EUKA-synced video deliverables'],
-                  [<svg key="i" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>, 'One-click signed contracts'],
-                ].map(([icon, label], i) => (
-                  <div key={i} className="tw-flex tw-items-center tw-gap-3">
-                    <span className="tw-w-[30px] tw-h-[30px] tw-rounded-[9px] tw-flex tw-items-center tw-justify-center tw-flex-shrink-0" style={{ background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--wx-border) 16%, transparent)', color: 'var(--wx-text-muted)' }}>
-                      {icon}
-                    </span>
-                    <span className="tw-text-[12.5px] tw-font-semibold" style={{ color: 'color-mix(in srgb, var(--wx-text-muted) 82%, transparent)' }}>{label}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* second ambient wash · bottom-left depth */}
-              <div aria-hidden className="tw-absolute tw--bottom-24 tw--left-24 tw-w-64 tw-h-64 tw-rounded-full tw-pointer-events-none" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--wx-surface-2) 6%, transparent), transparent 70%)' }} />
-
-              <div className="tw-relative tw-z-10 tw-mt-auto tw-pt-10">
-                <div className="tw-text-[28px] md:tw-text-[32px] tw-font-extrabold tw-leading-[1.15] tw-tracking-[-0.7px]" style={{ color: 'var(--wx-text-muted)' }}>
-                  Track every deal,<br/>brand and creator.
-                </div>
-                <div className="tw-text-[13.5px] tw-font-medium tw-mt-4 tw-leading-relaxed" style={{ color: 'color-mix(in srgb, var(--wx-text-muted) 65%, transparent)', maxWidth: 360 }}>
-                  One workspace for paid collaborations · brand budgets, creator deals, video deliverables and monthly GMV/Ad performance.
-                </div>
-
-                <div className="tw-flex tw-flex-wrap tw-gap-2 tw-mt-7">
-                  {['Brands', 'Creators', 'Performance', 'Reporting'].map(t => (
-                    <span key={t} className="tw-inline-flex tw-items-center tw-h-7 tw-px-3 tw-rounded-full tw-text-[11px] tw-font-bold" style={{ background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', border: '1px solid color-mix(in srgb, var(--wx-border) 18%, transparent)' }}>{t}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* ── RIGHT · Sign in form ── */}
-            <div className="tw-p-8 md:tw-p-10 tw-flex tw-flex-col tw-justify-center">
-              <h2 className="tw-m-0 tw-text-[26px] tw-font-extrabold tw-tracking-[-0.6px]" style={{ color: 'var(--wx-text)' }}>Welcome back</h2>
-              <p className="tw-text-[13.5px] tw-font-medium tw-mt-1.5 tw-mb-7" style={{ color: 'var(--wx-text-muted)' }}>Sign in to your Wurx workspace.</p>
-
-              <form onSubmit={attempt} className="tw-flex tw-flex-col tw-gap-4">
-                {/* Username */}
-                <div>
-                  <label className="tw-block tw-text-[10.5px] tw-font-bold tw-uppercase tw-tracking-[0.5px] tw-mb-1.5" style={{ color: 'var(--wx-text-muted)' }}>Username</label>
-                  <div className="tw-relative">
-                    <span className="tw-absolute tw-left-3.5 tw-top-1/2 -tw-translate-y-1/2 tw-pointer-events-none" style={{ color: 'var(--wx-text-muted)' }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    </span>
-                    <input
-                      type="text"
-                      value={username}
-                      onChange={e => setUsername(e.target.value)}
-                      placeholder="username"
-                      autoFocus
-                      autoComplete="username"
-                      disabled={isProcessing}
-                      className="tw-w-full tw-pl-11 tw-pr-4 tw-outline-none tw-text-[14px] tw-font-medium tw-transition"
-                      style={{ height: 46, fontFamily: 'inherit', color: 'var(--wx-text)', background: 'var(--wx-bg)', border: '1px solid var(--wx-border)', borderRadius: 12 }}
-                      onFocus={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#30271C'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(48,39,28,0.10)'; }}
-                      onBlur={e => { e.currentTarget.style.background = '#F8F7F4'; e.currentTarget.style.borderColor = '#E7E2D7'; e.currentTarget.style.boxShadow = 'none'; }}
-                    />
-                  </div>
-                </div>
-
-                {/* Password */}
-                <div>
-                  <div className="tw-flex tw-items-center tw-justify-between tw-mb-1.5">
-                    <label className="tw-text-[10.5px] tw-font-bold tw-uppercase tw-tracking-[0.5px]" style={{ color: 'var(--wx-text-muted)' }}>Password</label>
-                    <button type="button" onClick={() => setShowForgotPopup(true)}
-                      className="tw-bg-transparent tw-border-0 tw-cursor-pointer tw-text-[11px] tw-font-bold" style={{ color: 'var(--wx-warning)' }}>
-                      Forgot?
-                    </button>
-                  </div>
-                  <div className="tw-relative">
-                    <span className="tw-absolute tw-left-3.5 tw-top-1/2 -tw-translate-y-1/2 tw-pointer-events-none" style={{ color: 'var(--wx-text-muted)' }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    </span>
-                    <input
-                      type={showPw ? 'text' : 'password'}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      autoComplete="current-password"
-                      disabled={isProcessing}
-                      className="tw-w-full tw-pl-11 tw-pr-11 tw-outline-none tw-text-[14px] tw-font-medium tw-transition"
-                      style={{ height: 46, fontFamily: 'inherit', color: 'var(--wx-text)', background: 'var(--wx-bg)', border: '1px solid var(--wx-border)', borderRadius: 12 }}
-                      onFocus={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#30271C'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(48,39,28,0.10)'; }}
-                      onBlur={e => { e.currentTarget.style.background = '#F8F7F4'; e.currentTarget.style.borderColor = '#E7E2D7'; e.currentTarget.style.boxShadow = 'none'; }}
-                    />
-                    <button type="button" onClick={() => setShowPw(s => !s)} tabIndex={-1}
-                      className="tw-absolute tw-right-2 tw-top-1/2 -tw-translate-y-1/2 tw-w-8 tw-h-8 tw-rounded-full tw-bg-transparent tw-border-0 tw-flex tw-items-center tw-justify-center tw-cursor-pointer tw-transition"
-                      style={{ color: 'var(--wx-text-muted)' }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(48,39,28,0.06)'; e.currentTarget.style.color = '#1F1F1F'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}
-                    >
-                      {showPw
-                        ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                      }
-                    </button>
-                  </div>
-                </div>
-
-                {/* Sign in CTA */}
-                <button type="submit" disabled={isProcessing}
-                  className="tw-mt-2 tw-w-full tw-rounded-[12px] tw-text-[14px] tw-font-bold tw-tracking-[-0.1px] tw-flex tw-items-center tw-justify-center tw-gap-2 tw-border-0 tw-cursor-pointer disabled:tw-opacity-60 disabled:tw-cursor-wait tw-transition"
-                  style={{ height: 48, background: 'var(--wx-warning-soft)', color: 'var(--wx-text-muted)', boxShadow: '0 8px 22px rgba(48,39,28,0.22)' }}
-                  onMouseEnter={e => { if (!isProcessing) e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(48,39,28,0.30)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 22px rgba(48,39,28,0.22)'; }}
-                >
-                  {isProcessing ? (
-                    <>
-                      <span className="tw-w-3.5 tw-h-3.5 tw-border-2 tw-rounded-full tw-animate-spin" style={{ borderColor: 'color-mix(in srgb, var(--wx-border) 30%, transparent)', borderTopColor: '#F5E9D6' }} />
-                      Signing in
-                    </>
-                  ) : (
-                    <>
-                      Sign in
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                    </>
-                  )}
-                </button>
-              </form>
-
-              {/* Divider */}
-              <div className="tw-flex tw-items-center tw-gap-3 tw-my-5">
-                <div className="tw-flex-1 tw-h-px" style={{ background: 'var(--wx-surface-3)' }} />
-                <span className="tw-text-[10px] tw-font-bold tw-uppercase tw-tracking-[0.6px]" style={{ color: 'var(--wx-text-muted)' }}>Or</span>
-                <div className="tw-flex-1 tw-h-px" style={{ background: 'var(--wx-surface-3)' }} />
-              </div>
-
-              {/* Request to join */}
-              <button onClick={onJoinRequest}
-                className="tw-w-full tw-rounded-[12px] tw-text-[13px] tw-font-bold tw-tracking-[-0.1px] tw-cursor-pointer tw-transition tw-flex tw-items-center tw-justify-center tw-gap-1.5"
-                style={{ height: 42, background: 'transparent', color: 'var(--wx-warning)', border: '1px solid var(--wx-border)' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#F8F7F4'; e.currentTarget.style.borderColor = '#30271C'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E7E2D7'; }}
-              >
-                Request access
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-              </button>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="tw-mt-5 tw-text-center tw-text-[11px] tw-font-medium" style={{ color: 'var(--wx-text-muted)' }}>
-            Secure workspace · © Wurx Media
-          </div>
-        </div>
-      </main>
-
-      {/* ── ACCESS DENIED · cleaner Wurx-style popup ── */}
-      {showMemeError && (
-        <div className="tw-fixed tw-inset-0 tw-z-[2000] tw-flex tw-items-center tw-justify-center tw-p-4 tw-font-sans" style={{ background: 'color-mix(in srgb, var(--wx-warning-soft) 55%, transparent)', backdropFilter: 'blur(6px)' }} onClick={() => setShowMemeError(false)}>
-          <div onClick={e => e.stopPropagation()} className="tw-relative tw-w-full tw-max-w-[400px] tw-bg-white tw-rounded-[20px] tw-overflow-hidden" style={{ animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)', boxShadow: '0 24px 60px rgba(48,39,28,0.30)' }}>
-            <div className="tw-p-7">
-              <div className="tw-w-12 tw-h-12 tw-rounded-[14px] tw-flex tw-items-center tw-justify-center tw-mb-4" style={{ background: 'var(--wx-surface-2)', color: 'var(--wx-danger)' }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              </div>
-              <div className="tw-text-[20px] tw-font-extrabold tw-tracking-[-0.4px]" style={{ color: 'var(--wx-text)' }}>Access denied</div>
-              <div className="tw-text-[13px] tw-font-medium tw-mt-1.5 tw-mb-5" style={{ color: 'var(--wx-text-muted)' }}>Username or password is incorrect. Try again, or contact your admin.</div>
-              <button onClick={() => setShowMemeError(false)} className="tw-w-full tw-h-11 tw-rounded-[12px] tw-text-[13.5px] tw-font-bold tw-border-0 tw-cursor-pointer tw-transition" style={{ background: 'var(--wx-warning-soft)', color: 'var(--wx-text-muted)' }}>
-                Try again
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── FORGOT PASSWORD · cleaner Wurx-style popup ── */}
-      {showForgotPopup && (
-        <div className="tw-fixed tw-inset-0 tw-z-[2000] tw-flex tw-items-center tw-justify-center tw-p-4 tw-font-sans" style={{ background: 'color-mix(in srgb, var(--wx-warning-soft) 55%, transparent)', backdropFilter: 'blur(6px)' }} onClick={() => setShowForgotPopup(false)}>
-          <div onClick={e => e.stopPropagation()} className="tw-relative tw-w-full tw-max-w-[400px] tw-bg-white tw-rounded-[20px] tw-overflow-hidden" style={{ animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)', boxShadow: '0 24px 60px rgba(48,39,28,0.30)' }}>
-            <div className="tw-p-7">
-              <div className="tw-w-12 tw-h-12 tw-rounded-[14px] tw-flex tw-items-center tw-justify-center tw-mb-4" style={{ background: 'var(--wx-surface-2)', color: 'var(--wx-warning)' }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              </div>
-              <div className="tw-text-[20px] tw-font-extrabold tw-tracking-[-0.4px]" style={{ color: 'var(--wx-text)' }}>Reset password</div>
-              <div className="tw-text-[13px] tw-font-medium tw-mt-1.5 tw-mb-5" style={{ color: 'var(--wx-text-muted)' }}>Message your workspace admin to reset your password.</div>
-              <div className="tw-rounded-[12px] tw-p-3.5 tw-mb-5 tw-space-y-2" style={{ background: 'var(--wx-bg)', border: '1px solid var(--wx-border)' }}>
-                {[
-                  { k: 'Step 1', v: 'DM Asad on WhatsApp' },
-                  { k: 'Step 2', v: 'Confirm your username' },
-                  { k: 'Step 3', v: 'Receive new password' },
-                ].map(s => (
-                  <div key={s.k} className="tw-flex tw-justify-between tw-items-center tw-gap-3">
-                    <span className="tw-text-[10.5px] tw-font-bold tw-uppercase tw-tracking-wider" style={{ color: 'var(--wx-text-muted)' }}>{s.k}</span>
-                    <span className="tw-text-[12.5px] tw-font-semibold" style={{ color: 'var(--wx-text)' }}>{s.v}</span>
-                  </div>
-                ))}
-              </div>
-              <button onClick={() => setShowForgotPopup(false)} className="tw-w-full tw-h-11 tw-rounded-[12px] tw-text-[13.5px] tw-font-bold tw-border-0 tw-cursor-pointer tw-transition" style={{ background: 'var(--wx-warning-soft)', color: 'var(--wx-text-muted)' }}>
-                Got it
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -9946,24 +9416,8 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
               </div>
             ))}
 
-            {/* Sign out */}
-            <button
-              onClick={() => { if (window.confirm('Sign out of Wurx Base?')) onLogout(); }}
-              style={{
-                width: '100%', marginTop: 22, height: 48,
-                borderRadius: 14, border: '1px solid color-mix(in srgb, var(--wx-danger) 20%, transparent)',
-                background: 'color-mix(in srgb, var(--wx-danger-soft) 6%, transparent)', color: 'var(--wx-danger)',
-                fontSize: 13.5, fontWeight: 700, letterSpacing: '-0.1px',
-                cursor: 'pointer',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                transition: 'background .15s, border-color .15s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(220,38,38,0.10)'; e.currentTarget.style.borderColor = 'rgba(220,38,38,0.32)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(220,38,38,0.06)'; e.currentTarget.style.borderColor = 'rgba(220,38,38,0.20)'; }}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-              Sign out
-            </button>
+            {/* SIGN OUT REMOVED. One session, the hub's, ended from the hub's
+                own top bar. This ended a session that no longer exists. */}
           </>}
 
           {/* Team management view */}
@@ -10086,7 +9540,7 @@ function SettingsPanel({ onClose, hiredByTeam, setHiredByTeam, currentUser, onOp
       if (data && data.length > 0) {
         setAppUsers(data);
       } else {
-        const seed = USERS.map(u => ({ id: String(u.id), username: u.username, display: u.display, password: u.password, role: u.role }));
+        const seed = USERS.map(u => ({ id: String(u.id), username: u.username, display: u.display, role: u.role }));
         const { data: seeded } = await supabase.from('app_users').upsert(seed, { onConflict: 'id' }).select();
         setAppUsers(seeded && seeded.length > 0 ? seeded : seed);
       }
@@ -10455,7 +9909,6 @@ function RolePicker({ value, onChange }) {
   );
 }
 
-/* ─── UserManagementModal ────────────────────────────────── */
 /* ─── UserManagementModalV2 · Tailwind + Samsung One UI ─── */
 /* ─── UserManagement small Wurx-styled building blocks (UMDialog / UMInput / etc.) ─── */
 function UMDialog({ onClose, title, sub, children }) {
@@ -10575,7 +10028,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
   const [tab, setTab] = useState('members'); // members | requests
   const [search, setSearch] = useState('');
   const [showAdd, setShowAdd] = useState(false);
-  const [newUser, setNewUser] = useState({ username: '', display: '', password: '', role: 'admin' });
+  const [newUser, setNewUser] = useState({ username: '', display: '', hub_email: '', role: 'admin' });
   const [addError, setAddError] = useState('');
   const [editing, setEditing] = useState(null); // user object
   const [editForm, setEditForm] = useState({});
@@ -10594,7 +10047,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
       const { data } = await supabase.from('app_users').select('*');
       if (data && data.length > 0) setAppUsers(data);
       else {
-        const seed = USERS.map(u => ({ id: String(u.id), username: u.username, display: u.display, password: u.password, role: u.role }));
+        const seed = USERS.map(u => ({ id: String(u.id), username: u.username, display: u.display, role: u.role }));
         const { data: seeded } = await supabase.from('app_users').upsert(seed, { onConflict: 'id' }).select();
         setAppUsers(seeded && seeded.length > 0 ? seeded : seed);
       }
@@ -10611,23 +10064,39 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
   }, [onClose]);
 
   async function addUser() {
-    const { username, display, password, role } = newUser;
-    if (!username.trim() || !display.trim() || !password.trim()) return;
+    const { username, display, hub_email, role } = newUser;
+    if (!username.trim() || !display.trim()) return;
+    /* THE EMAIL IS THE WHOLE POINT OF THE ROW NOW. Without it this person is
+       not recognised on arrival and falls back to a role derived from their
+       hub role, which is the more generous of the two. Refusing here is
+       cheaper than explaining later why somebody could edit money. */
+    const email = hub_email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setAddError('A hub email is required — it is how this person is recognised when they sign in.');
+      return;
+    }
     setAddError(''); setSaving(true);
     const id = username.trim().toLowerCase().replace(/\s+/g, '_');
-    const payload = { id, username: username.trim(), display: display.trim(), password: password.trim(), role, brand_access: [] };
+    const payload = { id, username: username.trim(), display: display.trim(), hub_email: email, role, brand_access: [] };
     const { error } = await supabase.from('app_users').insert([payload]);
     if (error) { setAddError(error.message); setSaving(false); return; }
     const { data: fresh } = await supabase.from('app_users').select('*');
     setAppUsers(fresh || [...appUsers, payload]);
-    setNewUser({ username: '', display: '', password: '', role: 'admin' });
+    setNewUser({ username: '', display: '', hub_email: '', role: 'admin' });
     setShowAdd(false); setSaving(false);
   }
 
   async function saveEdit() {
-    if (!editForm.display?.trim() || !editForm.password?.trim()) return;
+    if (!editForm.display?.trim()) return;
+    const email = (editForm.hub_email || '').trim().toLowerCase();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEditError('That does not look like an email address.');
+      return;
+    }
     setEditError(''); setSaving(true);
-    const patch = { display: editForm.display.trim(), password: editForm.password.trim(), role: editForm.role };
+    /* Blank clears the link rather than storing an empty string, so the unique
+       index sees a null and two unlinked people do not collide. */
+    const patch = { display: editForm.display.trim(), hub_email: email || null, role: editForm.role };
     const { error } = await supabase.from('app_users').update(patch).eq('id', editing.id);
     if (!error) {
       setAppUsers(prev => prev.map(u => u.id === editing.id ? { ...u, ...patch } : u));
@@ -10644,8 +10113,10 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
 
   async function handleApprove(req, role) {
     const id = req.username.toLowerCase().replace(/\s+/g, '_');
-    const pwd = Math.random().toString(36).slice(2, 10);
-    const u = { id, username: req.username, display: req.name, password: pwd, role, brand_access: [] };
+    /* They asked for access with an email, so that is the address we link
+       them by. No password is generated: there is nothing here to log into. */
+    const email = (req.email || '').trim().toLowerCase() || null;
+    const u = { id, username: req.username, display: req.name, hub_email: email, role, brand_access: [] };
     const { error } = await supabase.from('app_users').insert([u]);
     if (error) { alert(error.message); return; }
     const { data: fresh } = await supabase.from('app_users').select('*');
@@ -10653,7 +10124,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
     await supabase.from('join_requests').update({ status: 'approved' }).eq('id', req.id);
     setJoinRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'approved' } : r));
     setPendingApproval(null);
-    setCreatedCreds({ username: req.username, password: pwd, display: req.name });
+    setCreatedCreds({ username: req.username, hub_email: email, display: req.name });
   }
 
   async function handleReject(req) {
@@ -10666,6 +10137,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
     !search ||
     u.display?.toLowerCase().includes(search.toLowerCase()) ||
     u.username?.toLowerCase().includes(search.toLowerCase()) ||
+    u.hub_email?.toLowerCase().includes(search.toLowerCase()) ||
     u.role?.toLowerCase().includes(search.toLowerCase())
   );
   const onlineCount = appUsers.filter(u => onlineIds.has(String(u.id))).length;
@@ -10763,7 +10235,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
                 const isSelf = String(u.id) === String(currentUser?.id);
                 const isOnline = onlineIds.has(String(u.id));
                 return (
-                  <div key={u.id} className={`tw-flex tw-items-center tw-gap-3 tw-px-5 tw-py-3.5 ${i > 0 ? 'tw-border-t tw-border-black/5' : ''} hover:tw-bg-black/[0.02] tw-transition`}>
+                  <div key={u.id} data-member={u.id} className={`um-row tw-flex tw-items-center tw-gap-3 tw-px-5 tw-py-3.5 ${i > 0 ? 'tw-border-t tw-border-black/5' : ''} hover:tw-bg-black/[0.02] tw-transition`}>
                     <div className="tw-relative tw-shrink-0">
                       <div className="tw-w-11 tw-h-11 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-text-[16px] tw-font-extrabold" style={{ background: meta.bg, color: meta.color }}>
                         {(u.display || '?')[0].toUpperCase()}
@@ -10775,12 +10247,21 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
                         <span className="tw-text-[14.5px] tw-font-bold tw-text-oneui-ink tw-tracking-[-0.1px]">{u.display}</span>
                         {isSelf && <span className="tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-px-2 tw-py-0.5 tw-rounded-full tw-bg-blue-50 tw-text-[#1259C3]">You</span>}
                       </div>
-                      <div className="tw-text-[12px] tw-font-medium tw-text-oneui-mute tw-mt-0.5">@{u.username}</div>
+                      {/* The email is what decides whether this person is
+                          recognised on arrival, so it is shown, not hidden in
+                          the edit dialog. Unlinked is a warning, because an
+                          unlinked person falls back to a wider role. */}
+                      <div className="tw-text-[12px] tw-font-medium tw-text-oneui-mute tw-mt-0.5 tw-truncate">
+                        @{u.username}
+                        {u.hub_email
+                          ? <> · {u.hub_email}</>
+                          : <span style={{ color: 'var(--wx-danger)', fontWeight: 700 }}> · no hub email</span>}
+                      </div>
                     </div>
                     <span className="tw-text-[10.5px] tw-font-bold tw-uppercase tw-tracking-wider tw-px-2.5 tw-h-6 tw-rounded-full tw-flex tw-items-center" style={{ background: meta.bg, color: meta.color }}>{meta.label}</span>
                     <div className="tw-flex tw-gap-1.5 tw-shrink-0">
-                      <button onClick={() => { setEditing(u); setEditForm({ display: u.display, password: u.password, role: u.role }); setEditError(''); }}
-                        className="tw-w-9 tw-h-9 tw-rounded-full tw-bg-blue-50 tw-text-[#1259C3] tw-flex tw-items-center tw-justify-center tw-border-0 tw-cursor-pointer hover:tw-bg-[#1259C3] hover:tw-text-white active:tw-scale-95 tw-transition tw-duration-200 tw-ease-oneui">
+                      <button onClick={() => { setEditing(u); setEditForm({ display: u.display, hub_email: u.hub_email || '', role: u.role }); setEditError(''); }}
+                        className="um-edit-btn tw-w-9 tw-h-9 tw-rounded-full tw-bg-blue-50 tw-text-[#1259C3] tw-flex tw-items-center tw-justify-center tw-border-0 tw-cursor-pointer hover:tw-bg-[#1259C3] hover:tw-text-white active:tw-scale-95 tw-transition tw-duration-200 tw-ease-oneui">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                       </button>
                       {!isSelf && (
@@ -10827,7 +10308,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
           <UMDialog onClose={() => setShowAdd(false)} title="Add member" sub="New workspace account">
             <UMInput placeholder="Username" value={newUser.username} onChange={v => setNewUser(f => ({ ...f, username: v }))} />
             <UMInput placeholder="Display name" value={newUser.display} onChange={v => setNewUser(f => ({ ...f, display: v }))} />
-            <UMInput placeholder="Password" value={newUser.password} onChange={v => setNewUser(f => ({ ...f, password: v }))} />
+            <UMInput placeholder="Hub email · how they are recognised" value={newUser.hub_email} onChange={v => setNewUser(f => ({ ...f, hub_email: v }))} />
             <UMRolePicker value={newUser.role} onChange={v => setNewUser(f => ({ ...f, role: v }))} />
             {addError && <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--wx-danger)', marginTop: 2 }}>⚠ {addError}</div>}
             <UMActions>
@@ -10841,7 +10322,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
         {editing && (
           <UMDialog onClose={() => setEditing(null)} title={`Edit ${editing.display}`} sub={`@${editing.username}`}>
             <UMInput placeholder="Display name" value={editForm.display || ''} onChange={v => setEditForm(f => ({ ...f, display: v }))} />
-            <UMInput placeholder="Password" value={editForm.password || ''} onChange={v => setEditForm(f => ({ ...f, password: v }))} />
+            <UMInput placeholder="Hub email · how they are recognised" value={editForm.hub_email || ''} onChange={v => setEditForm(f => ({ ...f, hub_email: v }))} />
             <UMRolePicker value={editForm.role} onChange={v => setEditForm(f => ({ ...f, role: v }))} />
             {editError && <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--wx-danger)', marginTop: 2 }}>⚠ {editError}</div>}
             <UMActions>
@@ -10877,7 +10358,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
 
         {/* ── Created creds ── */}
         {createdCreds && (
-          <UMDialog onClose={() => setCreatedCreds(null)} title="Account created" sub={`Share these credentials with ${createdCreds.display}`}>
+          <UMDialog onClose={() => setCreatedCreds(null)} title="Member added" sub={`${createdCreds.display} now has a role here`}>
             <div style={{ background: 'var(--wx-bg)', border: '1px solid var(--wx-border)', borderRadius: 12, padding: 14, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                 <span style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--wx-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Username</span>
@@ -10885,677 +10366,20 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
               </div>
               <div style={{ height: 1, background: 'var(--wx-surface-3)' }} />
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                <span style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--wx-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Password</span>
-                <span style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace', fontSize: 13, fontWeight: 700, color: 'var(--wx-danger)' }}>{createdCreds.password}</span>
+                <span style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--wx-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Hub email</span>
+                <span style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace', fontSize: 13, fontWeight: 700, color: 'var(--wx-text)' }}>{createdCreds.hub_email || 'not set'}</span>
               </div>
             </div>
+            <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--wx-text-muted)', marginTop: 10, lineHeight: 1.5 }}>
+              There is no password to share. They sign in to the hub with that
+              email, and this is the role they arrive with.
+            </div>
             <UMActions>
-              <UMBtnGhost onClick={() => navigator.clipboard.writeText(`Username: ${createdCreds.username}\nPassword: ${createdCreds.password}`)}>Copy</UMBtnGhost>
+              <UMBtnGhost onClick={() => navigator.clipboard.writeText(createdCreds.hub_email || '')}>Copy email</UMBtnGhost>
               <UMBtnPrimary onClick={() => setCreatedCreds(null)}>Done</UMBtnPrimary>
             </UMActions>
           </UMDialog>
         )}
-      </div>
-    </div>
-  );
-}
-
-function UserManagementModal({ onClose, currentUser, onlineUsers, allBrands = [] }) {
-  const [appUsers, setAppUsers]   = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm]   = useState({});
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newUser, setNewUser]     = useState({ username: '', display: '', password: '', role: 'admin', brand_access: [] });
-  const [saving, setSaving]       = useState(false);
-  const [confirmDel, setConfirmDel] = useState(null);
-  const [joinRequests, setJoinRequests] = useState([]);
-  const [showRequests, setShowRequests] = useState(false);
-  const [showPw, setShowPw]       = useState({});
-  const [pendingApproval, setPendingApproval] = useState(null); // { req, role }
-  const [createdCreds, setCreatedCreds]   = useState(null); // { username, password, display }
-  const [approveError, setApproveError]   = useState('');
-  const [approving, setApproving]         = useState(false);
-  const [addError, setAddError]           = useState('');
-  const [editError, setEditError]         = useState('');
-
-  const onlineIds = new Set((onlineUsers || []).map(u => String(u.user_id)));
-
-  // Fetch users + seed + join requests
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase.from('app_users').select('*');
-      if (!error) {
-        if (data && data.length > 0) {
-          setAppUsers(data);
-        } else {
-          const seed = USERS.map(u => ({ id: String(u.id), username: u.username, display: u.display, password: u.password, role: u.role }));
-          const { data: seeded } = await supabase.from('app_users').upsert(seed, { onConflict: 'id' }).select();
-          setAppUsers(seeded && seeded.length > 0 ? seeded : seed);
-        }
-      }
-      const { data: reqs } = await supabase.from('join_requests').select('*').order('created_at', { ascending: false });
-      setJoinRequests(reqs || []);
-      setLoading(false);
-    })();
-  }, []);
-
-  async function saveEdit() {
-    if (!editForm.display?.trim() || !editForm.password?.trim()) return;
-    setEditError('');
-    setSaving(true);
-    const patch = {
-      display: editForm.display.trim(),
-      password: editForm.password.trim(),
-      role: editForm.role,
-      brand_access: editForm.role === 'client' ? (editForm.brand_access || []) : [],
-      custom_perms: editForm.custom_perms || {},
-    };
-    const { error } = await supabase.from('app_users').update(patch).eq('id', editingId);
-    if (!error) {
-      setAppUsers(prev => prev.map(u => u.id === editingId ? { ...u, ...patch } : u));
-      setEditingId(null);
-    } else {
-      setEditError(error.message || 'Failed to save. Try again.');
-    }
-    setSaving(false);
-  }
-
-  async function addUser() {
-    const { username, display, password, role, brand_access } = newUser;
-    if (!username.trim() || !display.trim() || !password.trim()) return;
-    setAddError('');
-    setSaving(true);
-    const id = username.trim().toLowerCase().replace(/\s+/g, '_');
-    const payload = { id, username: username.trim(), display: display.trim(), password: password.trim(), role,
-      brand_access: role === 'client' ? (brand_access || []) : [] };
-    const { error } = await supabase.from('app_users').insert([payload]);
-    if (error) {
-      setAddError(error.message || 'Failed to add user. Try again.');
-      setSaving(false);
-      return;
-    }
-    const { data: freshUsers } = await supabase.from('app_users').select('*');
-    if (freshUsers && freshUsers.length > 0) {
-      setAppUsers(freshUsers);
-    } else {
-      setAppUsers(prev => [...prev, payload]);
-    }
-    setNewUser({ username: '', display: '', password: '', role: 'admin', brand_access: [] });
-    setShowAddForm(false);
-    setSaving(false);
-  }
-
-  async function deleteUser(id) {
-    await supabase.from('app_users').delete().eq('id', id);
-    setAppUsers(prev => prev.filter(u => u.id !== id));
-    setConfirmDel(null);
-  }
-
-  async function handleRequest(req, action, role = 'admin') {
-    if (action === 'approve') {
-      setApproveError('');
-      setApproving(true);
-      const id = req.username.toLowerCase().replace(/\s+/g, '_');
-      const pwd = Math.random().toString(36).slice(2, 10);
-      const brandAccess = role === 'client' ? (pendingApproval?.brandAccess || []) : [];
-      const newUser = { id, username: req.username, display: req.name, password: pwd, role, brand_access: brandAccess };
-
-      const { error } = await supabase.from('app_users').insert([newUser]);
-      if (error) {
-        setApproveError(error.message || 'Failed to create user. Try again.');
-        setApproving(false);
-        return;
-      }
-
-      // Build user list fresh from DB · most reliable
-      const { data: freshUsers } = await supabase.from('app_users').select('*');
-      if (freshUsers && freshUsers.length > 0) {
-        setAppUsers(freshUsers);
-      } else {
-        // Fallback: add locally if DB re-fetch fails
-        setAppUsers(prev => [...prev, newUser]);
-      }
-
-      await supabase.from('join_requests').update({ status: 'approved' }).eq('id', req.id);
-      setJoinRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'approved' } : r));
-
-      setApproving(false);
-      setPendingApproval(null);
-      setShowRequests(false);
-      setCreatedCreds({ username: req.username, password: pwd, display: req.name });
-    } else {
-      setPendingApproval(null);
-      await supabase.from('join_requests').update({ status: 'rejected' }).eq('id', req.id);
-      setJoinRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'rejected' } : r));
-    }
-  }
-
-  const [searchQuery, setSearchQuery] = useState('');
-  const [copiedId, setCopiedId]       = useState(null);
-
-  const pendingReqs = joinRequests.filter(r => r.status === 'pending');
-  const onlineCount = appUsers.filter(u => onlineIds.has(String(u.id))).length;
-  const filteredUsers = appUsers.filter(u =>
-    !searchQuery ||
-    u.display?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.role?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  function copyPassword(user) {
-    navigator.clipboard.writeText(user.password).then(() => {
-      setCopiedId(user.id);
-      setTimeout(() => setCopiedId(null), 1800);
-    });
-  }
-
-  function startEdit(user) {
-    setEditingId(user.id);
-    setEditForm({ display: user.display, password: user.password, role: user.role, brand_access: user.brand_access || [], custom_perms: user.custom_perms || {} });
-    setEditError('');
-  }
-
-  // Role distribution for stats
-  const roleCounts = appUsers.reduce((acc, u) => {
-    acc[u.role] = (acc[u.role] || 0) + 1; return acc;
-  }, {});
-
-  return (
-    <div className="um-overlay" onClick={onClose}>
-      <div className="um-modal" onClick={e => e.stopPropagation()}>
-
-        {/* ── Header ── */}
-        <div className="um-header">
-          <div className="um-header-left">
-            <div className="um-header-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            </div>
-            <div>
-              <div className="um-header-title">User Management</div>
-              <div className="um-header-sub">Wurx Media · Workspace</div>
-            </div>
-          </div>
-          <div className="um-header-right">
-            <div className="um-header-stat">
-              <span className="um-header-stat-num">{appUsers.length}</span>
-              <span className="um-header-stat-label">Members</span>
-            </div>
-            <div className="um-header-stat-divider"/>
-            <div className="um-header-stat">
-              <span className="um-header-stat-num" style={{ color: 'var(--wx-success)' }}>{onlineCount}</span>
-              <span className="um-header-stat-label">Online</span>
-            </div>
-            <div className="um-header-stat-divider"/>
-            <div className="um-header-stat">
-              <span className="um-header-stat-num" style={{ color: 'var(--wx-warning)' }}>{pendingReqs.length}</span>
-              <span className="um-header-stat-label">Pending</span>
-            </div>
-            <button className="um-close-x" onClick={onClose}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-        </div>
-
-        {/* ── Toolbar ── */}
-        <div className="um-toolbar">
-          <div className="um-tabs">
-            <button className={`um-tab${!showRequests ? ' active' : ''}`} onClick={() => setShowRequests(false)}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              Members
-              <span className="um-tab-badge">{appUsers.length}</span>
-            </button>
-            <button className={`um-tab${showRequests ? ' active' : ''}`} onClick={() => setShowRequests(true)}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-              Requests
-              {pendingReqs.length > 0 && <span className="um-tab-badge um-tab-badge-red">{pendingReqs.length}</span>}
-            </button>
-          </div>
-          {!showRequests && (
-            <div className="um-toolbar-right">
-              <div className="um-search-box">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input className="um-search-input" placeholder="Search members…"
-                  value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-                {searchQuery && (
-                  <button className="um-search-clear" onClick={() => setSearchQuery('')}>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
-                )}
-              </div>
-              <button className="um-add-btn" onClick={() => { setShowAddForm(true); setEditingId(null); }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Add Member
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* ── Body ── */}
-        <div className="um-body">
-          {loading ? (
-            <div className="um-loading"><div className="logs-spinner"/><span>Loading members…</span></div>
-          ) : !showRequests ? (
-            <div className="um-user-list">
-
-              {/* Role distribution strip */}
-              <div className="um-role-strip">
-                {Object.entries(roleCounts).map(([role, count]) => {
-                  const m = ROLE_META[role] || ROLE_META.admin;
-                  return (
-                    <div key={role} className="um-role-chip" style={{ background: m.bg, color: m.color, borderColor: m.color + '33' }}>
-                      <span className="um-role-chip-count">{count}</span>
-                      <span>{m.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Column headers */}
-              <div className="um-list-header">
-                <div>Member</div>
-                <div>Role</div>
-                <div>Access</div>
-                <div/>
-              </div>
-
-              {/* User rows */}
-              {filteredUsers.length === 0 ? (
-                <div className="um-empty">No members match "{searchQuery}"</div>
-              ) : filteredUsers.map(user => {
-                const meta = ROLE_META[user.role] || ROLE_META.admin;
-                const isEditing = editingId === user.id;
-                const isSelf = String(user.id) === String(currentUser?.id);
-                const isOnline = onlineIds.has(String(user.id));
-                const brands = Array.isArray(user.brand_access) ? user.brand_access : [];
-
-                return (
-                  <div key={user.id} className={`um-user-row${isEditing ? ' um-user-row-editing' : ''}`}>
-
-                    {/* ── Main row ── */}
-                    <div className="um-user-row-main">
-
-                      {/* Member */}
-                      <div className="um-col-member">
-                        <div className="um-av-wrap">
-                          <div className="um-av" style={{ background: meta.bg, color: meta.color }}>
-                            {(user.display || '?')[0].toUpperCase()}
-                          </div>
-                          <span className={`um-online-dot${isOnline ? ' on' : ''}`}/>
-                        </div>
-                        <div className="um-member-info">
-                          <div className="um-member-name">
-                            {user.display}
-                            {isSelf && <span className="um-you-tag">you</span>}
-                          </div>
-                          <div className="um-member-handle">@{user.username}</div>
-                        </div>
-                      </div>
-
-                      {/* Role */}
-                      <div className="um-col-role">
-                        <div>
-                          <span className="um-role-pill" style={{ background: meta.bg, color: meta.color, borderColor: meta.color + '40' }}>
-                            {meta.label}
-                          </span>
-                          <div className="um-last-seen">
-                            {isOnline ? <span className="um-ls-online">● Online</span> : relativeTime(user.last_seen)}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Access */}
-                      <div className="um-col-access">
-                        {(user.role === 'client' || user.role === 'apc') && brands.length > 0 ? (
-                          <>
-                            {brands.slice(0, 2).map(b => <span key={b} className="um-brand-tag">{b}</span>)}
-                            {brands.length > 2 && <span className="um-brand-tag um-brand-more">+{brands.length - 2}</span>}
-                          </>
-                        ) : (
-                          <span className="um-col-empty">
-                            {user.role === 'superadmin' || user.role === 'viewer' ? 'All brands'
-                              : user.role === 'client' || user.role === 'apc' ? 'None assigned' : '-'}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Actions · icon-only buttons */}
-                      <div className="um-col-actions">
-                        <button
-                          className={`um-icon-btn${isEditing ? ' um-icon-btn-close' : ' um-icon-btn-edit'}`}
-                          title={isEditing ? 'Close' : 'Edit member'}
-                          onClick={() => isEditing ? setEditingId(null) : startEdit(user)}>
-                          {isEditing
-                            ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                          }
-                        </button>
-                        {!isSelf && (
-                          <button className="um-icon-btn um-icon-btn-del" title="Remove member" onClick={() => setConfirmDel(user)}>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* ── Edit accordion ── */}
-                    {isEditing && (
-                      <div className="um-edit-panel">
-                        <div className="um-ep-body">
-
-                          {/* Left · basic fields */}
-                          <div className="um-ep-left">
-                            <div className="um-ep-row2">
-                              <div className="um-edit-section">
-                                <label className="um-field-label">Display Name</label>
-                                <input className="um-input" placeholder="Display name" value={editForm.display}
-                                  onChange={e => setEditForm(f => ({ ...f, display: e.target.value }))} />
-                              </div>
-                              <div className="um-edit-section">
-                                <label className="um-field-label">Password</label>
-                                <div className="um-pw-row">
-                                  <input className="um-input um-pw-input"
-                                    type={showPw[editingId] ? 'text' : 'password'}
-                                    placeholder="Password" value={editForm.password}
-                                    onChange={e => setEditForm(f => ({ ...f, password: e.target.value }))} />
-                                  <button className="um-pw-icon-btn" title={showPw[editingId] ? 'Hide' : 'Show'}
-                                    onClick={() => setShowPw(p => ({ ...p, [editingId]: !p[editingId] }))}>
-                                    {showPw[editingId]
-                                      ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                                      : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                    }
-                                  </button>
-                                  <button className="um-pw-icon-btn" title={copiedId === editingId ? 'Copied!' : 'Copy'}
-                                    style={copiedId === editingId ? { color: 'var(--wx-success)', borderColor: 'var(--wx-success)', background: 'var(--wx-bg)' } : {}}
-                                    onClick={() => { navigator.clipboard.writeText(editForm.password).then(() => { setCopiedId(editingId); setTimeout(() => setCopiedId(null), 1800); }); }}>
-                                    {copiedId === editingId
-                                      ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                      : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                                    }
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="um-edit-section">
-                              <label className="um-field-label">Role</label>
-                              <RolePicker value={editForm.role} onChange={v => setEditForm(f => ({ ...f, role: v, brand_access: [] }))} />
-                            </div>
-                            {editForm.role === 'client' && (
-                              <div className="um-edit-section">
-                                <label className="um-field-label">Brand Access</label>
-                                <BrandAccessPicker
-                                  value={editForm.brand_access || []}
-                                  onChange={v => setEditForm(f => ({ ...f, brand_access: v }))}
-                                  allBrands={allBrands}
-                                />
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Right · permissions */}
-                          <div className="um-ep-right">
-                            <div className="um-ep-right-header">
-                              <span className="um-field-label">Permissions</span>
-                              {Object.keys(editForm.custom_perms || {}).length > 0 && (
-                                <button className="um-perm-reset" onClick={() => setEditForm(f => ({ ...f, custom_perms: {} }))}>
-                                  Reset defaults
-                                </button>
-                              )}
-                            </div>
-                            <div className="um-perm-grid">
-                              {[
-                                { key: 'canAdd',         label: 'Add Creators'   },
-                                { key: 'canEdit',        label: 'Edit Creators'  },
-                                { key: 'canDelete',      label: 'Delete'         },
-                                { key: 'canSeeHiredBy',  label: 'See Hired By'   },
-                                { key: 'canEditVideos',  label: 'Edit Videos'    },
-                                { key: 'canSetDeadline', label: 'Deadlines'      },
-                              ].map(({ key, label }) => {
-                                const base = getBasePerms(editForm.role);
-                                const overridden = editForm.custom_perms && key in editForm.custom_perms;
-                                const current = overridden ? editForm.custom_perms[key] : base[key];
-                                return (
-                                  <div key={key} className={`um-perm-row${overridden ? ' um-perm-overridden' : ''}`}>
-                                    <span className="um-perm-label">{label}</span>
-                                    {overridden && <span className="um-perm-badge">!</span>}
-                                    <button
-                                      className={`um-perm-toggle${current ? ' on' : ' off'}`}
-                                      onClick={() => {
-                                        const newVal = !current;
-                                        setEditForm(f => {
-                                          const cp = { ...(f.custom_perms || {}) };
-                                          if (newVal === base[key]) { delete cp[key]; } else { cp[key] = newVal; }
-                                          return { ...f, custom_perms: cp };
-                                        });
-                                      }}
-                                    >
-                                      <span className="um-perm-knob"/>
-                                    </button>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-
-                        {editError && <div className="um-edit-error">{editError}</div>}
-                        <div className="um-edit-actions">
-                          <button className="um-btn-cancel" onClick={() => { setEditingId(null); setEditError(''); }}>Cancel</button>
-                          <button className="um-btn-save" onClick={saveEdit} disabled={saving}>
-                            {saving ? 'Saving…' : 'Save Changes'}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-            </div>
-
-          ) : (
-            /* ── Join Requests ── */
-            <div className="um-req-list">
-              {pendingReqs.length === 0 ? (
-                <div className="um-req-empty">
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C7D2FE" strokeWidth="1.5" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-                  <div>No pending requests</div>
-                  <span>When someone requests to join, they'll appear here</span>
-                </div>
-              ) : pendingReqs.map(req => (
-                <div key={req.id} className="um-req-card">
-                  <div className="um-req-av-wrap">
-                    <div className="um-req-av">{(req.name || '?')[0].toUpperCase()}</div>
-                  </div>
-                  <div className="um-req-info">
-                    <div className="um-req-name">{req.name}</div>
-                    <div className="um-req-meta">
-                      <span>@{req.username}</span>
-                      <span className="um-req-dot"/>
-                      <span>{req.email}</span>
-                      <span className="um-req-dot"/>
-                      <span>{new Date(req.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                    </div>
-                  </div>
-                  <div className="um-req-btns">
-                    <button className="um-req-approve" onClick={() => setPendingApproval({ req, role: 'admin', brandAccess: [] })}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                      Approve
-                    </button>
-                    <button className="um-req-reject" onClick={() => handleRequest(req, 'reject')}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                      Reject
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* ── Approve with role dialog ── */}
-        {pendingApproval && (
-          <div className="um-dialog-overlay" onClick={() => setPendingApproval(null)}>
-            <div className="um-dialog" onClick={e => e.stopPropagation()}>
-              <div className="um-dialog-header">
-                <div className="um-dialog-icon um-dialog-icon-green">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
-                <div>
-                  <div className="um-dialog-title">Approve Request</div>
-                  <div className="um-dialog-sub">Create workspace account</div>
-                </div>
-              </div>
-              <div className="um-dialog-reqinfo">
-                <div className="um-req-av" style={{ width: 36, height: 36, fontSize: 15, borderRadius: 10 }}>
-                  {(pendingApproval.req.name || '?')[0].toUpperCase()}
-                </div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--wx-text)', fontFamily: 'Inter' }}>{pendingApproval.req.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--wx-text-muted)', fontFamily: 'Inter' }}>@{pendingApproval.req.username} · {pendingApproval.req.email}</div>
-                </div>
-              </div>
-              <div className="um-dialog-fields">
-                <div className="um-edit-section">
-                  <label className="um-field-label">Assign Role</label>
-                  <RolePicker value={pendingApproval.role} onChange={v => setPendingApproval(p => ({ ...p, role: v, brandAccess: [] }))} />
-                </div>
-                {pendingApproval.role === 'client' && (
-                  <div className="um-edit-section">
-                    <label className="um-field-label">Brand Access</label>
-                    <BrandAccessPicker
-                      value={pendingApproval.brandAccess || []}
-                      onChange={v => setPendingApproval(p => ({ ...p, brandAccess: v }))}
-                      allBrands={allBrands}
-                    />
-                  </div>
-                )}
-              </div>
-              {approveError && <div className="um-edit-error">{approveError}</div>}
-              <div className="um-dialog-actions">
-                <button className="um-btn-cancel" onClick={() => { setPendingApproval(null); setApproveError(''); }}>Cancel</button>
-                <button className="um-btn-approve" disabled={approving}
-                  onClick={() => handleRequest(pendingApproval.req, 'approve', pendingApproval.role)}>
-                  {approving ? 'Creating…' : 'Approve & Create Account'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Confirm delete dialog ── */}
-        {confirmDel && (
-          <div className="um-dialog-overlay" onClick={() => setConfirmDel(null)}>
-            <div className="um-dialog" onClick={e => e.stopPropagation()}>
-              <div className="um-dialog-header">
-                <div className="um-dialog-icon um-dialog-icon-red">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
-                </div>
-                <div>
-                  <div className="um-dialog-title">Remove Member</div>
-                  <div className="um-dialog-sub">This cannot be undone</div>
-                </div>
-              </div>
-              <p style={{ fontSize: 14, color: 'var(--wx-text-faint)', fontFamily: 'Inter', margin: '0 0 6px', lineHeight: 1.5 }}>
-                <strong>{confirmDel.display}</strong> (@{confirmDel.username}) will lose all access immediately.
-              </p>
-              <div className="um-dialog-actions">
-                <button className="um-btn-cancel" onClick={() => setConfirmDel(null)}>Cancel</button>
-                <button className="um-btn-delete" onClick={() => deleteUser(confirmDel.id)}>Yes, Remove</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Credentials created ── */}
-        {createdCreds && (
-          <div className="um-dialog-overlay" onClick={() => setCreatedCreds(null)}>
-            <div className="um-dialog" onClick={e => e.stopPropagation()}>
-              <div className="um-dialog-header">
-                <div className="um-dialog-icon" style={{ background: 'linear-gradient(135deg,var(--wx-accent),var(--wx-stage-live))' }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                </div>
-                <div>
-                  <div className="um-dialog-title">Account Created</div>
-                  <div className="um-dialog-sub">Share credentials with {createdCreds.display}</div>
-                </div>
-              </div>
-              <div className="um-creds-box">
-                <div className="um-creds-row">
-                  <span className="um-creds-label">Username</span>
-                  <span className="um-creds-val">{createdCreds.username}</span>
-                </div>
-                <div className="um-creds-row">
-                  <span className="um-creds-label">Password</span>
-                  <span className="um-creds-val um-creds-pw">{createdCreds.password}</span>
-                </div>
-              </div>
-              <div className="um-dialog-actions" style={{ marginTop: 16 }}>
-                <button className="um-btn-save" style={{ flex: 1 }}
-                  onClick={() => { navigator.clipboard.writeText(`Username: ${createdCreds.username}\nPassword: ${createdCreds.password}`); }}>
-                  Copy Credentials
-                </button>
-                <button className="um-btn-cancel" onClick={() => setCreatedCreds(null)}>Done</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Add member dialog ── */}
-        {showAddForm && (
-          <div className="um-dialog-overlay" onClick={() => { setShowAddForm(false); setAddError(''); setNewUser({ username: '', display: '', password: '', role: 'admin', brand_access: [] }); }}>
-            <div className="um-dialog um-add-dialog" onClick={e => e.stopPropagation()}>
-              <div className="um-dialog-header">
-                <div className="um-dialog-icon" style={{ background: 'linear-gradient(135deg, var(--wx-accent), var(--wx-accent))' }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                </div>
-                <div>
-                  <div className="um-dialog-title">Add New Member</div>
-                  <div className="um-dialog-sub">Create a workspace account</div>
-                </div>
-              </div>
-              <div className="um-add-dialog-grid">
-                <div className="um-edit-section">
-                  <label className="um-field-label">Username <span style={{color: 'var(--wx-danger)'}}>*</span></label>
-                  <input className="um-input" placeholder="e.g. ahmed_ipc" value={newUser.username}
-                    onChange={e => setNewUser(f => ({ ...f, username: e.target.value }))} />
-                </div>
-                <div className="um-edit-section">
-                  <label className="um-field-label">Display Name <span style={{color: 'var(--wx-danger)'}}>*</span></label>
-                  <input className="um-input" placeholder="Full name" value={newUser.display}
-                    onChange={e => setNewUser(f => ({ ...f, display: e.target.value }))} />
-                </div>
-                <div className="um-edit-section" style={{ gridColumn: '1 / -1' }}>
-                  <label className="um-field-label">Password <span style={{color: 'var(--wx-danger)'}}>*</span></label>
-                  <input className="um-input" type="text" placeholder="Set a password" value={newUser.password}
-                    onChange={e => setNewUser(f => ({ ...f, password: e.target.value }))} />
-                </div>
-              </div>
-              <div className="um-edit-section">
-                <label className="um-field-label">Role</label>
-                <RolePicker value={newUser.role} onChange={v => setNewUser(f => ({ ...f, role: v, brand_access: [] }))} />
-              </div>
-              {newUser.role === 'client' && (
-                <div className="um-edit-section">
-                  <label className="um-field-label">Brand Access</label>
-                  <BrandAccessPicker
-                    value={newUser.brand_access || []}
-                    onChange={v => setNewUser(f => ({ ...f, brand_access: v }))}
-                    allBrands={allBrands}
-                  />
-                </div>
-              )}
-              {addError && <div className="um-edit-error">{addError}</div>}
-              <div className="um-dialog-actions">
-                <button className="um-btn-cancel" onClick={() => { setShowAddForm(false); setAddError(''); setNewUser({ username: '', display: '', password: '', role: 'admin', brand_access: [] }); }}>Cancel</button>
-                <button className="um-btn-save" style={{ flex: 1 }} onClick={addUser} disabled={saving}>
-                  {saving ? 'Creating…' : 'Create Member'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
       </div>
     </div>
   );
@@ -13051,7 +11875,6 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const tableScrollRef = useRef(null);
   const searchInputRef = useRef(null);
-  const [showJoinRequest, setShowJoinRequest] = useState(false);
   const [showUserMgmt, setShowUserMgmt] = useState(false);
   const perms = getPerms(currentUser?.role || null, currentUser?.custom_perms || null);
 
@@ -13064,20 +11887,6 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
     if (error) console.error('logActivity failed:', error);
   }
 
-  function handleLogin(user) {
-    // Unique session ID for this login (for device tracking + remote logout)
-    const sessionId = (crypto.randomUUID && crypto.randomUUID()) || (Date.now() + '-' + Math.random().toString(36).slice(2, 10));
-    sessionStorage.setItem('ch_session_id', sessionId);
-    sessionStorage.setItem('ch_user', JSON.stringify(user));
-    setCurrentUser(user);
-    // Daily rotating greeting (English, no repeat until all cycled)
-    setGreeting(getDailyGreeting(user.id));
-    setTimeout(() => setGreeting(null), 5500);
-    fetch('https://api.ipify.org?format=json')
-      .then(r => r.json())
-      .then(d => logActivity(user, 'LOGIN', null, { ip: d.ip, ua: navigator.userAgent.slice(0, 160), sessionId }))
-      .catch(() => logActivity(user, 'LOGIN', null, { ip: 'unknown', ua: navigator.userAgent.slice(0, 160), sessionId }));
-  }
   function handleLogout() {
     logActivity(currentUser, 'LOGOUT', null, {});
     sessionStorage.removeItem('ch_user');
@@ -14436,10 +13245,13 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
   }, [inlineDrop]);
 
   /* ── Render ── */
-  if (!currentUser) {
-    if (showJoinRequest) return <JoinRequestScreen onBack={() => setShowJoinRequest(false)} />;
-    return <LoginScreen onLogin={handleLogin} onJoinRequest={() => setShowJoinRequest(true)} />;
-  }
+  /*
+   * NO SIGN-IN SCREEN. Identity arrives from the hub, written to sessionStorage
+   * before this mounts. Landing here means the mount raced the session, not
+   * that somebody needs a password — this app has none any more. Render
+   * nothing for that instant rather than a login form that cannot work.
+   */
+  if (!currentUser) return null;
   if (currentUser.role === 'apc' && apcBrands.length === 0) {
     return <BrandSelector allBrands={allBrands} onSelect={handleApcBrandSelect} />;
   }
@@ -15029,8 +13841,8 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
           } catch (e) { addNotification(`Update failed: ${e.message}`, 'error'); }
         }}
         onOpenSettings={() => { if (currentUser?.role !== 'viewer') setShowSettings(true); }}
+        canOpenSettings={currentUser?.role !== 'viewer'}
         onOpenLogs={() => { if (currentUser?.role !== 'viewer') setShowLogs(true); }}
-        onSignOut={handleLogout}
         notificationsCount={notifications.length}
         onOpenNotifications={() => setShowNotifPanel(s => !s)}
         pendingApprovalsCount={pendingCount}
@@ -15456,7 +14268,6 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
           onOpenLeaderboard={() => { setShowSettings(false); setShowLeaderboard(true); }}
           canCompare={allBrands.length >= 2}
           onCompare={() => setShowCompare(true)}
-          onLogout={handleLogout}
           onOpenSql={can(currentUser, 'canSqlQuest') ? (() => { setShowSettings(false); setShowSqlPlayground(true); }) : null}
           onOpenGod={() => { setShowSettings(false); setShowGod(true); }}
           onOpenAccess={() => { setShowSettings(false); setShowAccess(true); }}

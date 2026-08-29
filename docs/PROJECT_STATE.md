@@ -2,14 +2,92 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-29 by /precompact.**
+**Recorded 2026-08-29, second save of the day.**
 
-Rashid asked for this next, in his words: **"ask me again the same thing about
-email and two small yes no"**.
+**ONE THING IS LEFT AND IT IS HIS: eight email addresses.** Both of the
+yes/no questions were asked again after the compaction and both were
+answered — see "What he decided" below. Nothing else is waiting on him.
 
-**ASK HIM THESE THREE THINGS. Nothing else. Then wait.** He said, an hour
-earlier: *"i don't wanna understand those complexities just tell me what's on my
-end"* — so ask in plain English, no schema names, no file paths, no jargon.
+### Ask him this, and nothing else
+
+*"Which email will each of these people use to log into our hub?"*
+
+| Person | What they can do today |
+| --- | --- |
+| Asad | full access |
+| Usman | manager |
+| Farkhan Saleem | editor |
+| khushi | editor |
+| masifa | editor |
+| Shumyle Asim | editor |
+| Fahad | **view only** |
+| Lead | **view only** |
+
+Without them, Fahad and Lead walk in able to edit deals and money. With them,
+everyone keeps exactly the access Asad already gave them.
+
+**DO NOT GUESS THESE.** Matching the wrong human to a row hands somebody
+else's permissions to the wrong person, which is what the column exists to
+stop.
+
+**Two ways to enter them, and the first is now the easy one.** Paid Collabs
+-> the gear in the top bar -> User Management -> pencil on a row -> Hub email
+-> Save. Every row shows its email, and a row without one says "no hub email"
+in red. Or, per id (asad, usman, farkhan_ipc, khushi, masifa, shumyle_ipc,
+fahad, lead):
+
+```sql
+update wurxbase.app_users set hub_email = '...' where id = 'asad';
+```
+
+Then create their hub accounts — `node scripts/create-admin.mjs <email>
+"<password>" ops`, `ops` for everyone except Asad — and do the production
+cutover, which is step 3 of `docs/NEXT_UNATTENDED.md`.
+
+### What he decided on 2026-08-29
+
+**"Delete the old passwords" — yes, and it is done.** The column is dropped on
+dev. The bigger half was that five passwords, superadmin included, were
+hardcoded in `App.jsx` and shipped in the browser bundle; those are gone
+too, along with the 1,198 lines of dead login code that held them. **They are
+still in git history, so treat those five as burned wherever the team reused
+them** — worth telling Asad alongside the bug list he is already owed.
+
+**"Finish the colour review" — yes, and it is done.** It did not need the
+thirty agent votes that were parked. The guard had been passing the failures:
+it applied the large-text floor of 3.0 to 9.5px labels. On the real per-size
+floors, 30 elements failed across the six screens in both themes; all 30 are
+fixed and it is 12/12. See PARKED 35, now closed.
+
+### Found while doing it, and fixed
+
+**Settings was unreachable.** Their panel opened from the user chip, and our
+chrome hides that chip because our own top bar says who you are. That closed
+the door on User Management, Access Control and God Mode — Asad would have
+found it on Monday. A gear beside the bell reopens it, for anybody who has
+something in there.
+
+**Two Sign out buttons inside Paid Collabs** ended a session that no longer
+exists: they cleared the vendored app’s stored user and left a blank screen
+behind, with the person still signed in. Both gone; the hub’s own top bar has
+the real one.
+
+## WHERE EVERYTHING STANDS
+
+**All the work is on the branch `fix/wurxbase-write-safety`. `dev` is still
+at `19a750a`. Nothing merged, nothing deployed, PRODUCTION UNTOUCHED.** His
+live site and the old app both still run exactly as they did.
+
+Suites, all green on dev: write-safety 11/11, perms 4/4, signin 7/7, wurxbase
+7/7, team 10/10, contrast 12/12 (honest thresholds), collab-ads 30/30,
+collab-ads-ui 15/15, isolation ok. Header checked at 375, 768, 1024 and 1440:
+no sideways scroll, gear visible at every width.
+
+**He has already told the team to stop using the old app on Monday.** Closed;
+do not raise it again.
+
+**Do not re-explore the codebase.** This file, then `docs/NEXT_UNATTENDED.md`
+for the Monday checklist, then PARKED. Ask for the eight addresses and wait.
 
 ---
 

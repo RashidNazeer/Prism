@@ -57,13 +57,26 @@ const fail = [];
 const pass = [];
 const check = (ok, msg, detail) => (ok ? pass : fail).push(detail ? `${msg} — ${detail}` : msg);
 
-/* A WurxBase account to sign in with, read from the migrated table rather than
-   hardcoded, so no credential of theirs lands in this repo. */
 const { data: users, error: uErr } = await admin
   .from('app_users')
-  .select('id,username,password,role')
+  .select('id,username,role,hub_email')
   .order('id');
 if (uErr) throw new Error(`could not read wurxbase.app_users: ${uErr.message}`);
+/*
+ * THE PLAINTEXT PASSWORDS ARE GONE — asked of the database, not assumed.
+ *
+ * The read above already proved the table is reachable, so a failure here is
+ * about the column and not about the table having vanished; and the message
+ * has to name the column, or an unrelated error would pass this check by
+ * failing for the wrong reason.
+ */
+const pwProbe = await admin.from('app_users').select('id,password').limit(1);
+check(
+  Boolean(pwProbe.error) && /password/i.test(pwProbe.error.message || ''),
+  'wurxbase.app_users has no plaintext password column',
+  pwProbe.error ? pwProbe.error.message.slice(0, 70) : 'the column still answers a select',
+);
+
 const who = users.find((u) => u.role === 'superadmin') || users[0];
 /* Not used to sign in any more — nothing does. Read as evidence that
    app_users came across intact and is reachable under RLS. */

@@ -352,8 +352,9 @@ logins, superadmin included, copied verbatim because the code was to be left
 alone. **Raise before prod, and worth changing those passwords regardless.**
 
 **b. It has its own login.** An admin signs into WurxMediaHub and then signs into
-WurxBase again with `Admin` / `admin.top@wurx`. That is their logic, untouched by
-instruction. **Raise when Rashid tires of the second login.**
+WurxBase again with a second username and password. That is their logic,
+untouched by instruction. **DONE 2026-08-28, the second login is gone; the
+passwords behind it were dropped on 2026-08-29.**
 
 **c. The avatar circles keep their teal, orange, blue and purple.** Those
 gradients live in their JavaScript, not their CSS, so the reskin could not reach
@@ -998,9 +999,32 @@ on the card and `/privacy` in one commit, then reconnecting.
   `tiktok_video_daily`:** these are organic lifetime totals for a whole video,
   that is the ad-driven slice, and the card says so in as many words.
 
-## 35. The dark/light audit: what was fixed, and the 30 claims nobody checked
+## 35. DONE 2026-08-29. The dark/light audit, including the 30 unchecked claims
 
-**Status:** PARTLY DONE
+Rashid said "yes, run it" on 2026-08-29, and the answer turned out not to need
+thirty agent votes. **The guard that should have caught these had been passing
+them.** `check-collab-contrast.mjs` failed below 3.0 and merely warned between
+3.0 and 4.5, on the reasoning that "large text is allowed 3.0" — which is true
+of large text and false of the 9.5px and 11px labels that make up most of these
+screens. It printed lines like `PASS Leaderboard: worst 4.02:1, 12 below AA`:
+the failure was in the pass message.
+
+Given the real per-element floor — 3.0 only at 24px, or 18.66px bold, and 4.5
+for everything else — **30 elements failed across the six screens in both
+themes**, which is the same order as the 30 unverified claims and overlaps them
+substantially. All 30 are now fixed and the guard is 12/12 on the honest
+thresholds.
+
+**One mistake, thirty times: ink calibrated against the page, used on a tint.**
+`--wx-text-faint` is 5.73:1 on `--wx-bg` and `pnpm check:contrast` proves
+it. It is 4.02:1 on a warning-soft pill, because the tint moved the ground. The
+fix each time was to put the ink back on `--wx-text` and let the tinted chip
+keep carrying the meaning — colour was doing two jobs and could only do one
+well. Four were different: a `tw-bg-white` button that stayed white in dark
+mode, a hardcoded `#8C8C8C` footer, a green section label on green, and one
+hired-by chip whose rosewood was 4.27:1 on its own background.
+
+**Status:** DONE
 **Owner:** Claude
 **Raise it when:** Rashid mentions how Paid Collabs looks, or when there is
 session budget to finish the verification.

@@ -156,6 +156,28 @@ for (const f of walk(VENDOR)) {
     );
   }
 
+  /*
+   * NO PASSWORD EVER COMES BACK HERE.
+   *
+   * Their app kept every member's password in the clear — five of them
+   * hardcoded in App.jsx and shipped in the browser bundle, the rest in
+   * `app_users.password`. Both are gone as of 2026-08-29 and the column is
+   * dropped, so any reappearance is a mistake rather than a decision.
+   *
+   * This matches CODE, not prose: an object key `password:` or a property
+   * read `.password`. A comment explaining the history stays legal, which is
+   * why the wording elsewhere avoids both forms.
+   */
+  const pw = src.match(/\bpassword\s*:|\.password\b/g);
+  if (pw) {
+    problems.push(
+      `${rel} handles a password field again (${pw.length} place(s)).` +
+        '\n        There is no sign-in in this app any more, so nothing needs one, and' +
+        '\n        wurxbase.app_users has no password column to write it to. A person is' +
+        '\n        recognised by hub_email against the hub account they signed in with.',
+    );
+  }
+
   const publicRealtime = src.match(/schema:\s*'public'/g);
   if (publicRealtime) {
     problems.push(

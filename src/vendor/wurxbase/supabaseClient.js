@@ -6,10 +6,11 @@ import { getSupabase } from '@/lib/supabase';
    It used to hold its own project URL and a publishable key as string
    literals, and reach a second Supabase project directly from the browser
    with no authentication at all — that key was the entire permission model,
-   and `app_users.password` sat in plaintext behind it. On 2026-08-28 Rashid
-   consolidated: one app, one database, managed from one side. Their eight
-   tables now live in the `wurxbase` SCHEMA of our own project, governed by
-   RLS like everything else we own.
+   with every member's login stored in the clear behind it. On 2026-08-28
+   Rashid consolidated: one app, one database, managed from one side. Their
+   eight tables now live in the `wurxbase` SCHEMA of our own project, governed
+   by RLS like everything else we own, and on 2026-08-29 the plaintext column
+   was dropped — there is nothing here to log into any more.
 
    THERE IS EXACTLY ONE SUPABASE CLIENT IN THIS APPLICATION and it is not
    created here. `src/lib/supabase.ts` owns it, and CLAUDE.md calls that

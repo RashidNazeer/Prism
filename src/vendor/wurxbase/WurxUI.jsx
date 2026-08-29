@@ -193,7 +193,10 @@ function hiredByPalette(name) {
     case 'Aris':   return { fg: '#171717', bg: '#F4F4F5', border: 'var(--wx-border-strong)' };  // soft black on warm gray
     case 'Emily':  return { fg: '#C2185B', bg: '#FCE4EC', border: 'var(--wx-border-strong)' };  // pink (unchanged)
     case 'Myles':  return { fg: '#6D28D9', bg: '#EDE9FE', border: 'var(--wx-border-interactive)' };  // rich violet / purple
-    case 'Khushi': return { fg: '#9C5C5C', bg: '#F8E7E1', border: 'var(--wx-border-strong)' };  // pinkish-brown (rosewood)
+    /* WURX-ADDED · rosewood darkened from #9C5C5C, which measured 4.27:1 on its
+       own chip at 11px, under the 4.5 AA asks. Same hue, same chip, readable.
+       The other four here already pass; only this one did not. */
+    case 'Khushi': return { fg: '#8F5050', bg: '#F8E7E1', border: 'var(--wx-border-strong)' };  // pinkish-brown (rosewood)
     default:       return { fg: '#5C5C5E', bg: '#F5F5F7', border: 'var(--wx-border)' };  // neutral gray
   }
 }
@@ -535,6 +538,8 @@ export default function WurxUI({
   onSetCreatorStatus,
   onUpdateCreator,
   onOpenSettings,
+  /* WURX-ADDED · see the settings button below */
+  canOpenSettings = false,
   onOpenLogs,
   onSignOut,
   notificationsCount = 0,
@@ -1004,6 +1009,25 @@ export default function WurxUI({
             }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.16)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </button>
+            {/* WURX-ADDED · the only door to Settings
+                Their Settings panel was opened by the user chip, and embedded
+                we hide that chip because our own top bar already says who you
+                are. That closed the door on everything behind it: User
+                Management, Access Control, God Mode. This is a gear, not a
+                second profile — it says "settings for this section", which is
+                what it now is. Shown only to somebody who has something in
+                there; a viewer's click did nothing, and a control that does
+                nothing is worse than no control. */}
+            {onOpenSettings && canOpenSettings && (
+              <button className="pc-head-settings" onClick={onOpenSettings} title="Paid Collabs settings" aria-label="Paid Collabs settings" style={{
+                width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', transition: 'background 0.15s',
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </button>
+            )}
+            {/* WURX-END */}
             <div className="pc-head-sep" style={{ width: 1, height: 30, background: 'color-mix(in srgb, var(--wx-surface-2) 18%, transparent)', margin: '0 5px' }} />
             {(() => {
               const isViewer = currentUser?.role === 'viewer';
@@ -1037,13 +1061,18 @@ export default function WurxUI({
                 </Tag>
               );
             })()}
-            <button className="pc-head-out" onClick={onSignOut} title="Sign out" style={{
+            {/* NO SIGN-OUT HERE WHEN EMBEDDED. There is one session, the hub's,
+                and its top bar already ends it. This button ended a session
+                that no longer exists: it cleared `ch_user` and left a blank
+                screen behind, with the person still signed in. Rendered only
+                if somebody passes `onSignOut`, which nothing does. */}
+            {onSignOut && <button className="pc-head-out" onClick={onSignOut} title="Sign out" style={{
               width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               background: 'color-mix(in srgb, var(--wx-danger-soft) 12%, transparent)', color: 'var(--wx-danger)', transition: 'background 0.15s',
             }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,107,107,0.22)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,107,107,0.12)'; }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            </button>
+            </button>}
           </div>
         </header>
         </ChromeSlot>
@@ -6719,7 +6748,10 @@ function KpiPill({ label, value, onClick, title }) {
       <span style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         minWidth: 28, height: 26, padding: '0 10px', borderRadius: 999,
-        background: 'linear-gradient(135deg,var(--wx-warning-soft) 0%,var(--wx-warning-soft) 100%)', color: 'var(--wx-text-muted)',
+        /* WURX-ADDED · the number wears text ink. Muted ink on this warning-soft
+           chip measures 4.47:1 at 12.5px, three hundredths under AA — and a
+           count is the one thing on the pill somebody actually reads. */
+        background: 'var(--wx-warning-soft)', color: 'var(--wx-text)',
         fontSize: 12.5, fontWeight: 800, fontVariantNumeric: 'tabular-nums',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12)',
       }}>{value}</span>
@@ -7246,7 +7278,11 @@ function PerfBrandSection({ title, zone, tone, list, dragging, isOver, onEnter, 
    */
   const accent  = tone === 'green' ? 'var(--wx-success)' : 'var(--wx-border-interactive)';
   const pillBg  = tone === 'green' ? 'var(--wx-success-soft)' : 'var(--wx-surface-2)';
-  const pillFg  = tone === 'green' ? 'var(--wx-success)' : 'var(--wx-text-muted)';
+  /* WURX-ADDED · the pill's label wears text ink, not the tone.
+     Green-on-green-soft measures 4.31:1 at 12px, under the 4.5 AA asks of text
+     that size. The dot and the fill already say "active"; the word does not
+     have to be the same hue as the thing behind it to mean it. */
+  const pillFg  = 'var(--wx-text)';
   const countBg = tone === 'green' ? 'var(--wx-success)' : 'var(--wx-text-faint)';
   const ringOver = isOver
     ? {
