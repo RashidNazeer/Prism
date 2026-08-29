@@ -2,57 +2,96 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-28.**
+**Recorded 2026-08-29 by /precompact.**
 
-**WHAT JUST SHIPPED, on dev, commit `046dd71`, deployed and READY.** WurxBase's
-eight tables now live in the `wurxbase` schema of OUR project. Paid Collabs no
-longer touches their old project at all. `pnpm verify:wurxbase` 6/6 —
-including that a WRITE lands — and his Ad spend / ROI columns survived:
-`verify:collab-ads` 30/30, `verify:collab-ads-ui` 15/15.
+Rashid asked for this next, in his words: **"ask me again the same thing about
+email and two small yes no"**.
 
-**RASHID HAS NOT LOOKED AT IT YET.** The checklist he was given: open
-/admin/collabs on dev, sign in to WurxBase as usual, and check the brands and
-creators are all there, the numbers match, and Reporting → Creative angle
-testing still works. Also the earlier UI fix on that screen — hover a video row,
-it should be a soft warm band and not blue.
+**ASK HIM THESE THREE THINGS. Nothing else. Then wait.** He said, an hour
+earlier: *"i don't wanna understand those complexities just tell me what's on my
+end"* — so ask in plain English, no schema names, no file paths, no jargon.
 
-**THE NEXT STEP, already approved on 2026-08-27 and not started:** *sign in to
-Paid Collabs from our side.* Our admin route sets their `ch_user` session
-itself, with every capability on, under the real person's name so their activity
-log stays truthful. This is now worth more than it was: it retires their login
-screen, which is the only reason `wurxbase.app_users.password` still holds
-PLAINTEXT passwords. Delete that column in the same change.
+---
 
-**THEN the six data-loss bugs — and the ground has shifted under the fix.**
-PARKED 34 and `docs/WURXBASE_WRITE_SAFETY.md` hold the full audit: 27 findings,
-each having survived three agents told to refute it. The designed fix was a
-best-effort compare-and-swap **because their project had no DDL access**. We own
-the schema now, so that constraint is gone: a unique index on
-`(action, target)` plus an upsert makes the angle-test AND contract overwrite
-bugs *impossible* rather than unlikely, in one migration, with no JavaScript
-patch to maintain. **Re-read the design with that in mind before implementing
-it — option B or C may no longer be the right answer.**
+### 1. The eight email addresses — the only thing blocking Monday
 
-**Rashid also said our copy is the end of the line: Asad ships no more
-releases.** So fixes are edited straight into `src/vendor/wurxbase/` rather
-than written as re-appliable patches. `scripts/vendor-wurxbase.mjs` and
-`scripts/wurxbase-patches.mjs` are effectively retired — kept for provenance,
-not to be run. Nothing in the build calls them.
+Ask: *"Which email will each of these people use to log into our hub?"*
 
-**PROD IS UNTOUCHED.** The whole move is dev-only. Their old project is intact
-and untouched too, so the cutover is one line to reverse. Doing prod means:
-apply both migrations, expose the schema in the project's API settings (NOT in
-git — see OPERATIONS), run `wurxbase:copy` with `--i-mean-prod`, move the
-three sequences, then `verify:wurxbase`. **Ask him first** — and ask whether
-the team should stop using the old app during the window, or accept losing
-whatever they type in it.
+| Person | What they can do today |
+| --- | --- |
+| Asad | full access |
+| Usman | manager |
+| Farkhan Saleem | editor |
+| khushi | editor |
+| masifa | editor |
+| Shumyle Asim | editor |
+| Fahad | **view only** |
+| Lead | **view only** |
 
-**Still open, unrelated:** TikTok Display API review (PARKED 27, 27b is the prod
-key swap), Resend `notify.wurxmedia.com` verification, and PARKED 30a — the
-production data question, asked twice, still unanswered.
+**Why it matters, in his terms:** without it, Fahad and Lead walk in with full
+edit rights over deals and money. With it, everyone keeps exactly the access
+Asad already gave them.
 
-**Do not re-explore the codebase.** This file, then PARKED, then only what the
-chosen job names.
+**DO NOT GUESS THESE.** Matching the wrong human to a row hands somebody else's
+permissions to the wrong person, which is the thing the column exists to stop.
+
+Once he sends them: `update wurxbase.app_users set hub_email = '...' where id = '...'`
+for each of the eight ids (asad, usman, farkhan_ipc, khushi, masifa,
+shumyle_ipc, fahad, lead), then create their WurxMediaHub accounts —
+`node scripts/create-admin.mjs <email> "<password>" ops`, `ops` for everyone
+except Asad. Then the production cutover, which is step 3 of
+`docs/NEXT_UNATTENDED.md`.
+
+### 2. Drop the old passwords? (yes/no)
+
+Eight plaintext passwords sit in `wurxbase.app_users.password`. Nothing has
+read them since their login screen was removed on 2026-08-28. Offered twice
+already, never answered. Yes means one migration dropping the column.
+
+### 3. Finish the colour review? (yes/no)
+
+30 possible dark/light issues were never verified — the agents checking them
+died when his usage limit hit, and he stopped the re-run to save budget with
+*"i will tell you when to run it"*. They are listed in **PARKED 35** as leads,
+NOT as findings. Re-running resumes from cache; only the unfinished ones cost
+anything.
+
+---
+
+## WHERE EVERYTHING STANDS
+
+**All the work is on the branch `fix/wurxbase-write-safety` (`5285cb2`,
+pushed). `dev` is still at `19a750a`. Nothing merged, nothing deployed,
+PRODUCTION UNTOUCHED.** His live site and Asad's old app both still run exactly
+as they did.
+
+**Done overnight, unattended, on his instruction** (he set a timer that woke the
+session when his limit reset):
+
+- **All six data-loss bugs fixed**, and NOT by the design in
+  `docs/WURXBASE_WRITE_SAFETY.md`. That design was written under "no DDL
+  access" and said it could not be made atomic. We own the schema now, so a
+  partial unique index plus a revision column closes it in the database instead.
+  `pnpm verify:write-safety` 11/11.
+- **The permission leak closed.** A person's WurxBase role and overrides come
+  from their own `app_users` row, matched on `hub_email`, not derived from
+  our role. `pnpm verify:wurxbase-perms` 4/4 — it links a real VIEWER row to
+  an ADMIN of ours and proves they arrive as a viewer.
+- **Data refreshed** from their idle project: creators 1258, activity 2376,
+  budgets 44. Their project is quiet all weekend so this stays current.
+- **Two guards repaired**, both of which had been passing by not looking. The
+  contrast guard could not parse `color(srgb ...)` — what Chromium returns for
+  `color-mix` — so every colour-mix background was read as absent and elements
+  were measured against the wrong thing. That found 67 faded-ink declarations.
+
+Suites: write-safety 11/11, perms 4/4, signin 7/7, wurxbase 6/6, contrast 12/12,
+collab-ads 30/30, collab-ads-ui 15/15.
+
+**He has already told the team to stop using the old app on Monday**, so that
+item is closed. Do not raise it again as an open task.
+
+**Do not re-explore the codebase.** This file, then `docs/NEXT_UNATTENDED.md`
+for the Monday checklist, then PARKED. Ask the three questions above and wait.
 
 ---
 
