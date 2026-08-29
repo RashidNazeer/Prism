@@ -2,18 +2,78 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-29, second save of the day.**
+**Recorded 2026-08-29, third save. Nothing is waiting on Rashid.**
 
-**ONE THING IS LEFT AND IT IS HIS: eight email addresses.** Both of the
-yes/no questions were asked again after the compaction and both were
-answered — see "What he decided" below. Nothing else is waiting on him.
+Everything he was asked for has been answered and done. Dev is complete:
+their team can sign in, each person arrives with the powers Asad gave them,
+and the passwords and colour problems are gone.
 
-### Ask him this, and nothing else
+**The next thing is the PRODUCTION CUTOVER, and it needs his go-ahead, not
+his input.** He has said before: *"first fix everythign ondeve then we will
+push to prod"*. Dev is now fixed. Ask whether to make it live, then follow
+`docs/NEXT_UNATTENDED.md` section 3 — eight steps, ending in
+`verify:wurxbase-roster` against prod.
 
-*"Which email will each of these people use to log into our hub?"*
+**Two things to raise when he says go, both his call and neither blocking:**
 
-| Person | What they can do today |
-| --- | --- |
+1. **The shared password is three characters** (`1-0`), his choice, accepted by
+   the auth server. Eight people who can edit deals and budgets are behind one
+   guessable string. Worth per-person passwords at the prod cutover.
+2. **`ops` sees our whole admin sidebar**, not just Paid Collabs —
+   applications, offers, contests, brand hubs. Narrowing it means a new role
+   threaded through every RLS policy; flagged, not done.
+
+**Still owed, on his "remind me later":** telling Asad about the bugs that
+were in his own copy. Add to that conversation that the five old WurxBase
+passwords are in git history and should be treated as burned.
+
+## WHERE EVERYTHING STANDS
+
+**All the work is on the branch `fix/wurxbase-write-safety`. `dev` is still
+at `19a750a`. Nothing merged, nothing deployed, PRODUCTION UNTOUCHED.**
+
+### Their team, on dev
+
+| Person | In Paid Collabs | Hub account |
+| --- | --- | --- |
+| Asad | superadmin | asad@wurxmedia.com |
+| Usman | admin | usman@wurxmedia.com |
+| Farkhan Saleem | ipc | farkhan@wurxmedia.com |
+| khushi | ipc | khushi@wurxmedia.com |
+| masifa | ipc | masifa@wurxmedia.com |
+| Shumyle Asim | ipc | shumyle@wurxmedia.com |
+| Fahad | viewer | fahad@wurxmedia.com |
+| Lead | viewer | lead@wurxmedia.com |
+
+All eight are `ops` in our hub. Asad does not need our `admin`: his own row
+carries superadmin and the row beats the mapping. Re-runnable with
+`pnpm wurxbase:link`.
+
+### Done 2026-08-29
+
+- **The plaintext passwords are gone**, column and browser bundle both, with
+  1,198 lines of dead login code.
+- **The colour review is finished.** The guard had been passing its own
+  failures by applying the large-text contrast floor to 10px labels. 30 real
+  failures, all fixed, 12/12 on per-size floors.
+- **Settings was unreachable** in our chrome, and with it User Management,
+  Access Control and God Mode. A gear beside the bell opens it.
+- **A viewer arrived with edit powers.** Their app reads its identity once, at
+  mount, and we were mounting it before the permission lookup returned, so it
+  held the wider fallback role. Found by signing in as Fahad. The sidebar was
+  right and sessionStorage was right; only their app was wrong.
+- **A guard was deleting real data.** The permissions suite restored
+  `hub_email` to `null` rather than to what was there, and wiped one of the
+  eight the day they went in.
+
+Suites on dev: roster 21/21, team 10/10, perms 5/5, signin 7/7, wurxbase 7/7,
+write-safety 11/11, contrast 12/12, collab-ads 30/30, collab-ads-ui 15/15,
+isolation ok. Header checked at 375, 768, 1024 and 1440.
+
+**Do not re-explore the codebase.** This file, then
+`docs/NEXT_UNATTENDED.md`, then PARKED.
+
+--- | --- |
 | Asad | full access |
 | Usman | manager |
 | Farkhan Saleem | editor |

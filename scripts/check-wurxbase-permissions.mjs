@@ -18,8 +18,10 @@
  * would otherwise have been handed.
  *
  * It borrows a real row rather than inventing one, because inventing one would
- * not prove the join works against the data that actually exists. The
- * `hub_email` it sets is put back to null in a finally.
+ * not prove the join works against the data that actually exists. Whatever
+ * `hub_email` that row had is captured first and put back in a finally — the
+ * eight real addresses live in that column now, and a restore that writes null
+ * would delete one every time this ran.
  */
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
@@ -54,7 +56,8 @@ let browser;
 
 try {
   /* A real viewer from their team. */
-  const { data: viewers } = await wb.from('app_users').select('id,display,role').eq('role', 'viewer').order('id');
+  /* `hub_email` is selected so the finally can put back what was there. */
+  const { data: viewers } = await wb.from('app_users').select('id,display,role,hub_email').eq('role', 'viewer').order('id');
   if (!viewers?.length) throw new Error('no viewer row in wurxbase.app_users to borrow');
   borrowed = viewers[0];
 
@@ -96,6 +99,26 @@ try {
     `role = ${session?.role ?? '(none)'} — 'superadmin' here would be the leak`,
   );
 
+  /*
+   * 1b. AND THEIR APP IS ACTUALLY USING THAT ROLE.
+   *
+   * Checking sessionStorage alone is not enough, and on 2026-08-29 it passed
+   * while the leak was open. Their App reads that key ONCE at mount; we were
+   * mounting it before the lookup returned, so it held the fallback role and
+   * the correction that arrived afterwards went into storage and nowhere else.
+   * This check read the corrected value and reported safety.
+   *
+   * The gear is drawn from the role their App is holding, so it answers the
+   * question the storage read cannot: a viewer has nothing behind Settings and
+   * must not be offered it.
+   */
+  const gears = await page.locator('.pc-head-settings').count();
+  check(
+    gears === 0,
+    'their app itself is using the viewer role, not just storing it',
+    `${gears} settings gear(s) — a gear here means the app mounted holding the fallback role`,
+  );
+
   /* 2. The sidebar offers only what a viewer can open. A viewer has no
         tabDiscovery, so that row must not be drawn. */
   const rows = (await page.locator('aside a[href^="/admin/collabs/"]').allTextContents()).map((t) => t.trim()).filter(Boolean);
@@ -116,7 +139,18 @@ try {
   );
 } finally {
   if (browser) await browser.close();
-  if (borrowed) await wb.from('app_users').update({ hub_email: null }).eq('id', borrowed.id);
+  /*
+   * PUT BACK WHAT WAS THERE, NOT WHAT USED TO BE THERE.
+   *
+   * This said `hub_email: null`, written when the column was empty for
+   * everybody and null was therefore the truth. On 2026-08-29 the eight real
+   * addresses went in, and the next run of this script silently deleted one of
+   * them — the exact bug I had spent the morning removing from their app,
+   * reintroduced in the guard that checks it. A restore has to restore.
+   */
+  if (borrowed) {
+    await wb.from('app_users').update({ hub_email: borrowed.hub_email ?? null }).eq('id', borrowed.id);
+  }
   if (ME.id) await auth.auth.admin.deleteUser(ME.id);
 }
 

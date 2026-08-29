@@ -1834,3 +1834,30 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   `--wx-text-faint` itself, which would have changed every screen in the
   product to fix six chips in one vendored app, and would still be wrong on the
   next tint. The chip keeps the hue; the text stops competing with it.
+- 2026-08-29: **All eight of their team are `ops` in our hub, Asad included.**
+  The earlier plan gave Asad our `admin` so he would map to their superadmin.
+  That stopped being necessary the moment `hub_email` existed: his own row
+  carries superadmin, and the lookup beats the mapping. So nobody needs a
+  wider role in OUR product than the job requires. **What `ops` does still
+  carry is our whole admin sidebar** — applications, offers, contests, brand
+  hubs — because ops and admin share a nav and differ only in what RLS lets
+  them write. Narrowing that means a new role threaded through every policy;
+  it is not a Monday job, and it is flagged rather than done.
+- 2026-08-29: **Their app must not mount before the permission lookup
+  returns.** Their App reads its session ONCE, in a `useState` initialiser.
+  `identityReady` waited for our profile but not for the WurxBase row, so
+  during the ~200ms lookup it mounted holding the FALLBACK role — the derived
+  one, which makes every `ops` account their `admin`. The correction landed in
+  sessionStorage and their App never looked again. Fahad, a viewer, arrived
+  able to add, edit and delete. Found by signing in as the real accounts;
+  nothing else would have caught it, because the sidebar reads the hook live
+  and was right, and `verify:wurxbase-perms` read sessionStorage, which was
+  eventually right. **Both were looking at the corrected value. Only their App
+  held the wrong one.** The suite now asserts something their App renders.
+- 2026-08-29: **A cleanup restores what was there, never a default.**
+  `check-wurxbase-permissions.mjs` borrowed a real row and put `hub_email`
+  back to `null` — true when it was written, because the column was empty for
+  everybody. The day the eight real addresses went in, running it deleted one.
+  That is the same bug I spent the morning removing from their app, rewritten
+  into the guard that checks it. Capture before you overwrite, in test code
+  as much as in product code.

@@ -35,40 +35,30 @@ collab-ads 30/30, collab-ads-ui 15/15.
 
 ## WHAT NEEDS A PERSON, before Monday
 
-### 1. Eight email addresses — the blocker
+### 1 and 2. DONE ON DEV 2026-08-29
 
-`wurxbase.app_users.hub_email` ships EMPTY. Until it is filled in, everyone
-falls back to the derived mapping, which makes any `ops` account their
-`admin`. Fahad and Lead are viewers.
+Rashid gave the pattern — *"for all this is the actually email :
+[name]@wurxmedia.com"* — and the shared password. On dev:
 
-| WurxBase id | display | role | needs |
-| --- | --- | --- | --- |
-| asad | Asad | superadmin | their WurxMediaHub email |
-| usman | Usman | admin | " |
-| farkhan_ipc | Farkhan Saleem | ipc | " |
-| khushi | khushi | ipc | " |
-| masifa | masifa | ipc | " |
-| shumyle_ipc | Shumyle Asim | ipc | " |
-| fahad | Fahad | viewer | " |
-| lead | Lead | viewer | " |
+- **All eight rows are linked.** `pnpm wurxbase:link` sets them and prints
+  the table; safe to re-run, and it refuses if somebody has been added to
+  their team who is not in its list.
+- **All eight hub accounts exist**, every one of them `ops`. Asad does not
+  need our `admin`: his own row carries superadmin and the row wins.
+- **Proved by signing in as them.** `pnpm verify:wurxbase-roster` (needs
+  `ROSTER_PASSWORD`) signs in as the superadmin, an ipc and a viewer: 21
+  checks. Asad gets six tabs and the settings gear, Farkhan six tabs, Fahad
+  four tabs and no gear.
 
-```sql
-update wurxbase.app_users set hub_email = 'someone@wurxmedia.com' where id = 'asad';
-```
+**Two things Rashid should decide before this is real money in prod:**
 
-**Do not guess these.** Matching the wrong human to a row hands somebody else's
-permissions to the wrong person, which is the thing this column exists to stop.
-
-### 2. Eight WurxMediaHub accounts
-
-None of them has one. Identity comes from our auth now, so without an account
-they cannot get in at all on Monday. `ops` is right for everyone except Asad;
-the WurxBase row decides what they can do once inside.
-
-```bash
-node scripts/create-admin.mjs someone@wurxmedia.com "<a password>" ops
-```
-
+1. **The password is shared and three characters.** The auth server accepts
+   it, so nothing blocks; but eight people who can edit deals and budgets are
+   behind one guessable string. Worth a per-person password at the prod
+   cutover.
+2. **`ops` sees our whole admin sidebar**, not only Paid Collabs —
+   applications, offers, contests, brand hubs. Narrowing it needs a new role
+   threaded through every RLS policy, which is not a Monday job.
 ### 3. Production
 
 Untouched, and a human decision. Prod has no `wurxbase` schema and prod's code
@@ -80,7 +70,10 @@ still points at their old project, so it works the old way today. The cutover:
    git, see OPERATIONS;
 4. `SUPABASE_SERVICE_KEY=... node scripts/wurxbase-copy-data.mjs --i-mean-prod`;
 5. move the three identity sequences the script prints;
-6. `pnpm verify:wurxbase` against prod.
+6. `pnpm verify:wurxbase` against prod;
+7. `SUPABASE_SERVICE_KEY=... node scripts/link-wurxbase-team.mjs --i-mean-prod`;
+8. create the eight hub accounts there too — they do not travel with a
+   migration — then `ROSTER_PASSWORD=... pnpm verify:wurxbase-roster`.
 
 ### 4. Somebody has to tell the team to stop using the old app
 

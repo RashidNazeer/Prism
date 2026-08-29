@@ -150,6 +150,11 @@ export function PaidCollabs() {
                overrides he tuned. `can()` reads both. */
             role: identity.role,
             custom_perms: identity.customPerms,
+            /* And their own spelling of the person's name, where we found it.
+               Their audit trail has said "Farkhan Saleem" for months; falling
+               back to an email local part would have made the same person
+               appear twice in one log under two names. */
+            ...(identity.display ? { display: identity.display } : null),
           },
         ),
       );
@@ -157,11 +162,27 @@ export function PaidCollabs() {
       /* A browser with storage blocked falls back to their login screen, which
          is the old behaviour rather than a broken screen. */
     }
-  }, [user?.id, user?.email, profile?.display_name, profile?.role, identity.role, identity.customPerms]);
+  }, [user?.id, user?.email, profile?.display_name, profile?.role, identity.role, identity.customPerms, identity.display]);
 
-  /* Written by the layout effect above; the app may not mount before it is
-     true, or their one-shot read of sessionStorage finds an empty key. */
-  const identityReady = Boolean(user?.id) && !profilePending;
+  /*
+   * Written by the layout effect above; the app may not mount before it is
+   * true, or their one-shot read of sessionStorage finds an empty key.
+   *
+   * `identity.pending` BELONGS IN HERE AND WAS MISSING UNTIL 2026-08-29.
+   *
+   * Their App reads `ch_user` once, in a `useState` initialiser, and never
+   * looks again. Waiting only for our profile meant mounting it during the
+   * ~200ms the WurxBase lookup takes, so it read the FALLBACK role — the
+   * derived one, which turns every `ops` account into their `admin`. The
+   * correction landed in sessionStorage a moment later and their App never saw
+   * it. Fahad, a viewer, arrived able to add, edit and delete.
+   *
+   * Nothing said so. The sidebar drew four rows because it reads the hook
+   * live, and `verify:wurxbase-perms` passed because it read sessionStorage,
+   * which was eventually right. Both were looking at the corrected value; only
+   * their App was holding the wrong one.
+   */
+  const identityReady = Boolean(user?.id) && !profilePending && !identity.pending;
 
   /*
    * THEIR AUDIT TRAIL KEEPS ITS ARRIVAL RECORD.

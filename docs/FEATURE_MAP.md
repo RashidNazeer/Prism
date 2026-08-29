@@ -2120,6 +2120,14 @@ their per-person overrides — never our role, because ours would make every
 eight people are viewers. Our role still decides whether somebody reaches
 /admin/collabs at all; that gate is ours.
 
+**NOTHING MAY MOUNT THEIR APP UNTIL `useWurxbaseIdentity().pending` IS
+FALSE.** Their App reads its session once, in a `useState` initialiser, and
+never looks again. Mount it during the lookup and it takes the fallback role
+— the wider one — and the correction that arrives 200ms later reaches
+sessionStorage and nothing else. The sidebar stays right, because it reads
+the hook live, so the menu is correct while every button on the screen is
+not. This was live for a few hours on 2026-08-29 and no guard noticed.
+
 **A row with no hub email falls back to the derived role, which is the more
 generous answer.** That is safe only because the route guard sits above it,
 and it is why the Team screen shows "no hub email" in red on every unlinked

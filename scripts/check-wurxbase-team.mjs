@@ -58,6 +58,10 @@ try {
   const { data: rows } = await wb.from('app_users').select('id,display,role,hub_email').eq('role', 'viewer').order('id');
   if (!rows?.length) throw new Error('no viewer row in wurxbase.app_users to edit');
   subject = rows[0];
+  /* Cleared deliberately, so the "no hub email" warning has something true to
+     be about, and so the save below is putting a real value back rather than
+     overwriting one. Restored from `subject.hub_email` in the finally. */
+  await wb.from('app_users').update({ hub_email: null }).eq('id', subject.id);
 
   let created = null;
   for (let i = 0; i < 5 && !created?.data?.user; i++) {
@@ -117,8 +121,17 @@ try {
   /* 2. The word Password is gone from the screen entirely. */
   check(!/password/i.test(modalText), 'the Team screen asks for no password', 'a password field would write to a dropped column');
 
-  /* 3. Their eight people are listed, and unlinked ones say so. */
-  check(/no hub email/i.test(modalText), 'a member with no hub email is flagged as such');
+  /*
+   * 3. An unlinked member is flagged as such.
+   *
+   * THE SUBJECT IS CLEARED ON PURPOSE ABOVE, and that is the point. This first
+   * asserted the warning appeared on whatever happened to be on screen, which
+   * passed on 2026-08-29 only because another suite had just deleted somebody's
+   * address by accident. A check that needs the data to be broken in order to
+   * pass will pass for the wrong reason sooner or later.
+   */
+  check(/no hub email/i.test(modalText), 'a member with no hub email is flagged as such',
+    `${subject.display} was cleared before opening the screen`);
 
   /* 4. Editing a member and saving an email actually persists. This is the
         exact action the eight addresses will be entered with. */
