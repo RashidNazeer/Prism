@@ -8,6 +8,20 @@ import { fetchBrandContracts } from './brandContract';
 import CreativeAngles from './CreativeAngles';
 import AccessControl from './AccessControl';
 import { can } from './access';
+
+/* WURX-ADDED · IS THIS ASAD?
+   Their gates asked `currentUser?.id !== 'asad' && currentUser?.username !==
+   'Asad'`, in seven places. Neither half could ever be false here: `id` is our
+   auth uuid, and the session writes `username: 'asad'` in lower case against a
+   capital 'Asad'. So every one of those gates refused EVERYBODY, Asad included,
+   and did it with a notification. That is why marking a creator paid appeared
+   to do nothing at all.
+   One case-insensitive check, so the same question gets the same answer. */
+function isAsadUser(u) {
+  const a = String(u?.username || u?.id || '').trim().toLowerCase();
+  return a === 'asad';
+}
+
 import { fetchAngles } from './angleStore';
 import './App.css';
 import './responsive.css';
@@ -12667,7 +12681,7 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
 
   async function handleBulkStatusEdit(statusPatch) {
     // HARD RULE · Hired By never bulk-changes for anyone but Asad
-    if (statusPatch && 'hired_by' in statusPatch && currentUser?.id !== 'asad' && currentUser?.username !== 'Asad') {
+    if (statusPatch && 'hired_by' in statusPatch && !isAsadUser(currentUser)) {
       delete statusPatch.hired_by;
       addNotification('Hired By can only be changed by Asad', 'error');
     }
@@ -12995,7 +13009,7 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
     const creator = creators.find(c => c.id === id);
     const oldValue = creator?.[field];
     // HARD RULE · Hired By changes are Asad-only
-    if (field === 'hired_by' && currentUser?.id !== 'asad' && currentUser?.username !== 'Asad') {
+    if (field === 'hired_by' && !isAsadUser(currentUser)) {
       addNotification('Hired By can only be changed by Asad', 'error');
       return;
     }
@@ -13811,7 +13825,7 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
         }}
         onDeleteCreator={async (id) => {
           // Hard gate: creator deletion is Asad-only, regardless of role flags
-          if (currentUser?.id !== 'asad' && currentUser?.username !== 'Asad') {
+          if (!isAsadUser(currentUser)) {
             addNotification('Only Asad can delete creators', 'error');
             throw new Error('not allowed');
           }
@@ -13825,10 +13839,17 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
             addNotification('Read-only access · status cannot be changed', 'error');
             return;
           }
-          // HARD RULE · "Payment Sent" (payment_status: Paid) is Asad-only,
-          // always manual. Every UI path funnels through here — no exceptions.
-          if (patch && patch.payment_status === 'Paid' && currentUser?.id !== 'asad' && currentUser?.username !== 'Asad') {
-            addNotification('Payment Sent can only be set by Asad', 'error');
+          /* WURX-ADDED · this gate was unreachable-by-anyone, including Asad.
+             It read `currentUser?.id !== 'asad' && currentUser?.username !==
+             'Asad'`. Our session carries OUR auth uuid as `id`, so the first
+             half never matched; and it writes `username: 'asad'` in lower
+             case against a capital 'Asad', so neither did the second. Both
+             conditions were therefore always true and every attempt to mark a
+             creator paid was refused — Asad's included — with a notification
+             nobody could read. Now the same capability the menu is built from,
+             so the two cannot disagree. */
+          if (patch && patch.payment_status === 'Paid' && !can(currentUser, 'canEditPay')) {
+            addNotification('You do not have permission to mark a creator paid', 'error');
             return;
           }
           // Optimistic local update first · UI updates immediately
@@ -13844,17 +13865,19 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
             addNotification('Read-only access · changes are disabled', 'error');
             return;
           }
-          // HARD RULE · payment_status: Paid never flows through the generic
-          // patcher for anyone but Asad (EUKA sync/matrix edits use this path).
-          if (patch && patch.payment_status === 'Paid' && currentUser?.id !== 'asad' && currentUser?.username !== 'Asad') {
-            addNotification('Payment Sent can only be set by Asad', 'error');
+          /* WURX-ADDED · second copy of the same gate, with the same defect:
+             `id` is our auth uuid and `username` is lower case 'asad' against
+             a capital 'Asad', so it refused everyone. Same capability as the
+             menu and the status path. */
+          if (patch && patch.payment_status === 'Paid' && !can(currentUser, 'canEditPay')) {
+            addNotification('You do not have permission to mark a creator paid', 'error');
             return;
           }
           // HARD RULE · Hired By changes are Asad-only — this path was
           // unlogged and ungated when July's hired_by got mass-overwritten.
           const _prevC = creators.find(c => c.id === id);
           if (patch && 'hired_by' in patch && (patch.hired_by || '') !== ((_prevC && _prevC.hired_by) || '')
-              && currentUser?.id !== 'asad' && currentUser?.username !== 'Asad') {
+              && !isAsadUser(currentUser)) {
             addNotification('Hired By can only be changed by Asad', 'error');
             return;
           }
@@ -14463,7 +14486,7 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
         onSettings={() => setShowMobileMenu(true)}
         onAdd={() => { setEditCreator(null); setShowSheet(true); }}
         onMarkPaid={() => {
-          if (currentUser?.id !== 'asad' && currentUser?.username !== 'Asad') {
+          if (!isAsadUser(currentUser)) {
             addNotification('Payment Sent can only be set by Asad', 'error');
             return;
           }

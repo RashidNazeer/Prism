@@ -762,3 +762,54 @@
 .wurxbase-root.wurxbase-root .pc-vx-headrow {
   grid-template-columns: 32px 1.75fr 1fr 72px 42px;
 }
+
+/* ------------------------------------------------ their canvas aliases ---- */
+/*
+ * THE INVISIBLE NOTIFICATION. Their stylesheet keeps a set of legacy aliases —
+ * `--bg`, `--paper`, `--paper-deep` — and the retokenising sweep pointed all
+ * three at `--wx-accent-soft`, a 14% gold wash. A colour cannot say what it is
+ * for, and "the page canvas" read as "a tint".
+ *
+ * Mostly that was invisible, because most surfaces are painted from `--pc-*`.
+ * `.notif-panel` and its header are not: they use `background: var(--bg)`. So
+ * the notification panel was drawn with a 14% translucent gold over whatever
+ * was behind it — a box you cannot read, which is exactly what Rashid
+ * photographed while trying to find out why marking a creator paid was
+ * failing. The message was there the whole time; the panel had no background.
+ *
+ * A canvas is a canvas. `--bg` is the page, `--paper` a card, `--paper-deep`
+ * the nested one.
+ */
+.wurxbase-root.wurxbase-root {
+  --bg: var(--wx-bg);
+  --paper: var(--wx-surface-1);
+  --paper-deep: var(--wx-surface-2);
+}
+
+/*
+ * AND THE PANEL ITSELF, painted directly rather than through their aliases.
+ *
+ * Correcting `--bg` above is right, but `theme.css` re-declares the same alias
+ * on a descendant (`.wurxbase-root [data-theme="dark"]`), so what the panel
+ * ends up with depends on where their preference attributes land. A dialog
+ * carrying an error message is not the place to leave that to chance: it was
+ * measuring 3.43:1 with the page showing through it.
+ *
+ * A notification is a raised surface with ordinary ink on it.
+ */
+.wurxbase-root.wurxbase-root .notif-panel,
+.wurxbase-root.wurxbase-root .notif-panel-header {
+  background: var(--wx-surface-1) !important;
+  color: var(--wx-text);
+}
+
+.wurxbase-root.wurxbase-root .notif-panel-title,
+.wurxbase-root.wurxbase-root .notif-panel-count {
+  /* Were the accent on an accent-tinted panel — a heading the same colour as
+     its own background. */
+  color: var(--wx-text) !important;
+}
+
+.wurxbase-root.wurxbase-root .notif-panel * {
+  border-color: var(--wx-border);
+}
