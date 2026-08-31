@@ -439,16 +439,42 @@ function groupByStatus(rows) {
 // Fire-and-forget insert into public.audit_logs. Silently swallows errors
 // (audit table optional · don't break the user's primary action).
 let _auditActor = { actor: '', actor_id: '' };
+/* WURX-ADDED · the whole person, not just their name, so capability questions
+   can be asked as well as identity ones. */
+let _actorUser = null;
 export function setAuditActor(user) {
+  _actorUser = user || null;
   _auditActor = {
     actor:    user?.display  || user?.username || '',
     actor_id: user?.username || user?.id       || '',
   };
 }
-/* "Payment Sent" is Asad-only, always manual · UI components consult this */
+/* Deleting a creator is still Asad-only · UI components consult this */
 export function isAsadActor() {
   const a = String(_auditActor.actor_id || _auditActor.actor || '').trim().toLowerCase();
   return a === 'asad';
+}
+
+/* WURX-ADDED · WHO MAY MARK A CREATOR PAID.
+ *
+ * This was `isAsadActor()`: a string comparison against the literal username
+ * "asad". Their comment called it a hard rule with no exceptions, and it did
+ * work — but it is tied to one person's account name, so the day he is away or
+ * changes account nobody can mark anything paid and there is no setting to fix
+ * it, only a code change. Rashid, asked directly on 2026-08-31, chose to open
+ * it to anyone with edit rights.
+ *
+ * `canEditPay` is their OWN capability for exactly this — "Change payment
+ * status · Mark a creator paid or unpaid" — already granted to superadmin, ipc
+ * and admin, and withheld from apc and viewer. So this is not a new rule
+ * invented here; it is the rule their access model already described, finally
+ * being the one that is enforced. It also means Asad can keep tuning it per
+ * person from Access Control, which the hardcoded name never allowed.
+ *
+ * Still a UI gate, not a boundary: it decides what is offered, and the database
+ * is what actually protects the column. */
+export function canMarkPaid() {
+  return can(_actorUser, 'canEditPay');
 }
 export async function logAudit({ action, target_type, target_id, target_label, changes }) {
   try {
@@ -3397,7 +3423,7 @@ function WurxStatusDropdown({ c, onChange }) {
     { cls: 'progress', label: 'Videos in Progress', apply: { payment_status: 'Not Yet', videos: 'In Progress' } },
     { cls: 'pending',  label: 'Payment Pending',   apply: { payment_status: 'Not Yet', videos: 'Done' } },
     { cls: 'sent',     label: 'Payment Sent',      apply: { payment_status: 'Paid' } },
-  ].filter(o => o.cls !== 'sent' || isAsadActor());
+  ].filter(o => o.cls !== 'sent' || canMarkPaid());
 
   function toggle(e) {
     e.stopPropagation();
@@ -4873,9 +4899,10 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
 
   const bulkApply = async (patch) => {
     if (bulkBusy) return;
-    /* HARD RULE · bulk "Payment Sent" is Asad-only, no exceptions */
-    if (patch && patch.payment_status === 'Paid' && !isAsadActor()) {
-      alert('Payment Sent can only be set by Asad · manually.');
+    /* Marking paid needs the capability their own access model defines for
+       it. Was a hardcoded check against the username "asad". */
+    if (patch && patch.payment_status === 'Paid' && !canMarkPaid()) {
+      alert('You do not have permission to mark a creator paid.');
       return;
     }
     setBulkBusy(true);
@@ -5294,9 +5321,9 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
             selected
           </span>
 
-          {/* Mark Paid · Asad-only */}
-          {isAsadActor() && (
-            <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={bulkMarkPaid} title="Mark all selected as Paid (Asad only)">
+          {/* Mark Paid · anyone with canEditPay */}
+          {canMarkPaid() && (
+            <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={bulkMarkPaid} title="Mark all selected as Paid">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><path d="M20 6 9 17l-5-5"/></svg>
               Mark Paid
             </button>
@@ -5320,7 +5347,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
                 {[
                   { k: 'pending',  l: 'Payment Pending' },
                   { k: 'progress', l: 'Videos in Progress' },
-                  ...(isAsadActor() ? [{ k: 'sent', l: 'Payment Sent' }] : []),
+                  ...(canMarkPaid() ? [{ k: 'sent', l: 'Payment Sent' }] : []),
                 ].map(opt => (
                   <button key={opt.k} type="button" onClick={() => bulkSetStatus(opt.k)} style={{
                     background: 'transparent', border: 0, cursor: 'pointer',
