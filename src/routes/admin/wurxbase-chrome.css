@@ -526,3 +526,25 @@
 .wurxbase-root.wurxbase-root .pc-app {
   padding-top: 0 !important;
 }
+
+/*
+  THEIR FLOATING FOOTER GOES, like their header and tab rail before it.
+
+  A little pill parked at the bottom of the screen and an invisible 32px strip
+  that reveals it on hover. Both are `position: fixed`, and both were the only
+  reason `.wurxbase-fence` had to be a containing block — which in turn was why
+  every dialog in their app was measured against a scrolled box instead of the
+  screen, and why the contract editor opened above the visible area.
+
+  Hiding them is not a workaround for that: it is the same decision already made
+  about the rest of their chrome. Our shell has its own bottom edge, the pill
+  duplicated a status our top bar shows, and `.footer-hover-zone` spans the full
+  width — so once the containment went, it would have sat across the bottom of
+  OUR sidebar and eaten hovers meant for the last menu row.
+*/
+#wurxbase-topbar-slot ~ * .app-footer,
+.wurxbase-root .app-footer,
+.wurxbase-root .footer-pill,
+.wurxbase-root .footer-hover-zone {
+  display: none !important;
+}

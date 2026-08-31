@@ -487,10 +487,34 @@
 @utility wurxbase-fence {
   position: relative;
   isolation: isolate;
-  /* Creates the containing block. `translateZ(0)` rather than `translate(0)`
-     so it also gets its own compositor layer and their animations stay smooth. */
-  transform: translateZ(0);
-  contain: layout paint;
+
+  /*
+   * NO `transform`, NO `contain`, ON PURPOSE — and this is the third time this
+   * corner has been rewritten, so the history matters.
+   *
+   * Both properties make an element the containing block for every
+   * `position: fixed` descendant. That was added to stop their fixed footer and
+   * mobile nav covering our sidebar, and it worked. What it also did was
+   * redefine "fixed" for every dialog in their app: measured against this box
+   * instead of the screen. When the box was 7,607px tall, modals opened 3,413px
+   * down the page. Making it viewport-sized hid that — until a dialog was
+   * opened from a SCROLLED table, when it landed 948px tall against a fence
+   * offset by 600px, hung off the bottom, and dragged the fence back to zero as
+   * the browser scrolled its autofocused input into view. Rashid: *"it opens
+   * the popup above, we have to scroll to go there"*.
+   *
+   * Portalling helps only the overlays that go through `createPortal`. Their
+   * contract editor and creator editor render inline, so no portal reaches
+   * them; measured, the creator editor sat at 56..1004 in a 1000px viewport.
+   *
+   * So the containment goes, and every `position: fixed` in their app means the
+   * screen again. What it was protecting against is handled where it belongs:
+   * the two pieces of their fixed chrome that are actually visible in here —
+   * `.app-footer` and `.footer-hover-zone` — are hidden by wurxbase-chrome.css,
+   * the same file that already removes their header, tab rail and sign-out.
+   * Verified at rest: those two were the ONLY visible fixed elements inside
+   * this fence.
+   */
 
   /*
    * THE FENCE IS EXACTLY THE VIEWPORT, AND THEIR APP SCROLLS INSIDE IT.

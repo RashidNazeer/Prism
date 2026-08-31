@@ -738,3 +738,27 @@
 .wurxbase-root.wurxbase-root .pc-mx .pc-mx-month-pair.mx-sealed .pc-mx-locked {
   color: var(--wx-text-faint) !important;
 }
+
+/* ------------------------------------------- the videos & ad codes panel -- */
+/*
+ * THE URL WAS CUT OFF MID-LINK, which is the one thing this panel exists to
+ * show. Their grid gives the video URL and the ad code one fraction each
+ * (`32px 1fr 1fr 72px 42px`) inside an 880px modal, so the URL field lands at
+ * about 350px for a TikTok link that needs roughly 420px — every row read
+ * `https://www.tiktok.com/@handle/vi` and stopped. Rashid: *"clicking eye icon
+ * shows popup but it still hides the text"*.
+ *
+ * The two columns are not equal work. A URL is long and has to be recognised at
+ * a glance; an ad code is a short token. So the panel gets more width and the
+ * URL takes the larger share of it. `min(1100px, 94vw)` rather than a flat
+ * 1100 so it still fits a laptop, and their own 768px rule below turns the grid
+ * into stacked rows where none of this applies.
+ */
+.wurxbase-root.wurxbase-root .pc-vx-modal {
+  max-width: min(1100px, 94vw);
+}
+
+.wurxbase-root.wurxbase-root .pc-vx-row,
+.wurxbase-root.wurxbase-root .pc-vx-headrow {
+  grid-template-columns: 32px 1.75fr 1fr 72px 42px;
+}
