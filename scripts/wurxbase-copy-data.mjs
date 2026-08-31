@@ -10,6 +10,12 @@
  * is the only destructive act and it only ever touches OUR copy — which is why
  * the script refuses to run against production without --i-mean-prod.
  *
+ * IT IS A REPLACEMENT, NOT A MERGE, AND THAT HAS A PRICE. Anything entered on
+ * OUR side since the last run is discarded, including every hub_email — their
+ * app_users has no such column, so the refilled rows come back null and their
+ * whole team silently drops to the derived role. **Run pnpm wurxbase:link
+ * immediately afterwards, then pnpm verify:wurxbase-roster.**
+ *
  * IDS ARE PRESERVED. Their `activity_logs.id` is load-bearing: `saveAngles`
  * writes a row, keeps its id, and sweeps `.neq('id', keepId)`. Renumbering
  * would be invisible until the first save deleted the wrong row. The identity
@@ -112,7 +118,60 @@ async function readAll(table, order) {
   return rows;
 }
 
+/*
+ * OUR columns for a table, straight from PostgREST's own schema description.
+ *
+ * WHY THIS EXISTS, AND IT IS NOT THEORETICAL. This script reads `select=*` from
+ * theirs and posts the rows here verbatim. That is fine only while the two
+ * tables have identical columns — and on 2026-08-29 they stopped: we dropped
+ * `app_users.password`, theirs still has it. The next run would have DELETED
+ * every row in our `app_users` and then failed on the insert, because
+ * PostgREST rejects an unknown column. Their whole team's roles gone, and the
+ * eight of them dropping to the derived role, which is the exact permission
+ * leak the hub_email column exists to prevent.
+ *
+ * Reading our own columns and projecting onto them makes any future drift a
+ * printed line instead of an outage.
+ */
+let ourColumns = null;
+async function columnsOf(table) {
+  if (!ourColumns) {
+    const r = await req(`${OURS.url}/rest/v1/`, { headers: ourHeaders });
+    if (!r.ok) throw new Error(`could not read our schema: HTTP ${r.status}`);
+    const spec = await r.json();
+    ourColumns = {};
+    for (const [name, def] of Object.entries(spec.definitions || {})) {
+      ourColumns[name] = new Set(Object.keys(def.properties || {}));
+    }
+  }
+  return ourColumns[table] || null;
+}
+
 async function write(table, rows) {
+  /*
+   * PROJECT BEFORE DELETING. The delete below is irreversible, so anything
+   * that could make the insert fail has to be dealt with first.
+   */
+  const cols = await columnsOf(table);
+  if (cols && cols.size) {
+    const theirKeys = new Set(rows.flatMap((r) => Object.keys(r)));
+    const dropped = [...theirKeys].filter((k) => !cols.has(k));
+    if (dropped.length) {
+      console.log(`  · ${table}: ignoring ${dropped.length} column(s) we do not have — ${dropped.join(', ')}`);
+      rows = rows.map((r) => {
+        const out = {};
+        for (const k of Object.keys(r)) if (cols.has(k)) out[k] = r[k];
+        return out;
+      });
+    }
+    const missing = [...cols].filter((k) => !theirKeys.has(k));
+    if (missing.length) {
+      console.log(`  · ${table}: ${missing.join(', ')} exists here and not there — it will be left empty`);
+    }
+  } else {
+    console.log(`  ! ${table}: could not read our columns; copying as-is`);
+  }
+
   /* Clear first, so a re-run is a replacement rather than a merge. */
   const del = await req(`${OURS.url}/rest/v1/${table}?id=not.is.null`, {
     method: 'DELETE',
