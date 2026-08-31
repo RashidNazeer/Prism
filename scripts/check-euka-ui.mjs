@@ -64,6 +64,7 @@ try {
   page.on('response', (r) => {
     if (/\/functions\/v1\/euka/.test(r.url())) calls.push(r.status());
   });
+  const answered = () => calls.length;
 
   await page.goto(`${BASE}/admin/login`, { waitUntil: 'domcontentloaded' });
   await page.fill('input[name="email"]', STAFF_EMAIL);
@@ -81,7 +82,18 @@ try {
    */
   await page.goto(`${BASE}/admin/collabs/brands`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.pc-ava, [class*=brand]', { timeout: 45000 }).catch(() => {});
-  await page.waitForTimeout(9000);
+
+  /*
+   * WAIT FOR THE CALLS, NOT FOR A CLOCK. Nine seconds is ample against
+   * localhost and nowhere near enough against a deployed site, where the round
+   * trip is browser to Vercel to Supabase to Euka. Tuned to localhost, this
+   * reported "the page calls the euka function — 0 call(s)" against a
+   * deployment that was in fact making twenty-two of them: the site was right
+   * and the check was early. Poll for the first answer, then give the rest a
+   * moment to land and paint.
+   */
+  for (let i = 0; i < 60 && answered() === 0; i++) await page.waitForTimeout(1000);
+  await page.waitForTimeout(10000);
 
   /* 1. The brands screen is really up, so everything below is about Euka
         rather than about an empty page. */
