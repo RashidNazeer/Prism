@@ -320,11 +320,33 @@
    ============================================================================ */
 
 /* # · Completed · Creator · Deal · Videos · Total views · New video GMV ·
-   L30 GMV · Items sold · AD SPEND · ROI · Contract · Status · Actions */
+   L30 GMV · Items sold · AD SPEND · ROI · Contract · Status · Actions
+
+   THE LAST THREE CARRY CONTROLS, SO THEY GET FLOORS, NOT JUST FRACTIONS.
+
+   A fraction can be squeezed below the width of what is in it, and a `.pc-cell`
+   centres its content with overflow visible — so a starved track does not clip,
+   it SPILLS, symmetrically, into the gutters on both sides. Two spilling cells
+   meet in the middle and the one that is `position: relative` wins the hit
+   test regardless of DOM order.
+
+   That is not hypothetical. Adding Ad spend and ROI here took this from their
+   twelve tracks to fourteen without widening anything, and at 1500px Status
+   ended up with 115px for a 151px pill while Contract had 50px for 62px of
+   icon buttons. The pencil — relative, because it hosts a status dot — painted
+   on top of the pill and swallowed the click. Measured: 11% of the pill was
+   dead at 1500px, 26% at 1280, 53% at 1024. Asad could not mark anyone paid
+   because he was clicking the pill and hitting the contract editor.
+
+   Actions was starved too, at 27px for two 28px buttons, which the first pass
+   at this missed. Floors are minimum content widths measured in the browser,
+   with a little air. Below 768px their stylesheet drops the grid entirely and
+   these become cards, so the floors are inert there. */
 .wurxbase-root.wurxbase-root .pc-ct-head,
 .wurxbase-root.wurxbase-root .pc-ct-row {
   grid-template-columns:
-    0.36fr 0.74fr 1.42fr .66fr .46fr .5fr .64fr .6fr .46fr .58fr .42fr .44fr 1.02fr .66fr;
+    0.36fr 0.74fr 1.42fr .66fr .46fr .5fr .64fr .6fr .46fr .58fr .42fr
+    minmax(74px, .44fr) minmax(164px, 1.02fr) minmax(72px, .66fr);
 }
 
 /* Video · Views · Engagement · GMV · Items sold · AD SPEND · ROI · Spark code */
@@ -683,4 +705,36 @@
    readable. */
 .wurxbase-root.wurxbase-root .lb-pod-name {
   color: var(--wx-text);
+}
+
+/* -------------------------------------------- the Performance matrix ------ */
+/*
+ * LOCKED AND BANDED WERE THE SAME PAINT, so the screen read as mostly locked.
+ *
+ * `.mx-sealed` (a month that closed before this creator joined, so it cannot be
+ * typed into) and `.mx-band` (the alternating shade that gives the grid its
+ * rhythm) both resolved to `--wx-accent-soft` with an `--wx-accent` border, in
+ * their stylesheet, byte for byte. On Penetrex that is 720 locked cells against
+ * 450 live ones, all wearing the product's accent and the heaviest border on
+ * the screen — so the eye reads the whole grid as sealed and the few editable
+ * months disappear into it. Rashid: *"look at the other ss how bad they are"*.
+ *
+ * A cell you cannot type in should RECEDE. It gets a neutral surface and the
+ * quiet border; the accent tint goes back to meaning "this is the rhythm of the
+ * table", which is the only job it can do without competing.
+ */
+.wurxbase-root.wurxbase-root .pc-mx .pc-mx-month-pair.mx-sealed {
+  background: var(--wx-surface-2) !important;
+  border-color: var(--wx-border) !important;
+}
+
+/*
+ * And the padlock itself was invisible. `--wx-on-accent` is the ink for a solid
+ * accent fill — white in light mode — and it was being used on a 14% tint, so
+ * the glyph measured 1.15:1 against its own cell where a meaningful graphic
+ * needs 3:1. It is the only thing in the cell, so it is the one thing that has
+ * to be legible.
+ */
+.wurxbase-root.wurxbase-root .pc-mx .pc-mx-month-pair.mx-sealed .pc-mx-locked {
+  color: var(--wx-text-faint) !important;
 }

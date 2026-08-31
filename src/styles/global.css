@@ -447,6 +447,43 @@
   This is OUR file styling OUR wrapper. Nothing in `src/vendor/wurxbase` is
   touched, which is the whole point of the arrangement.
 */
+/*
+ * THE OUTER SHELL. It carries `.wurxbase-root`, so every fenced selector in
+ * their stylesheet matches inside it — and it is deliberately NOT the
+ * containing block and NOT the scroller.
+ *
+ * Split out on 2026-08-31. One div used to be all three at once, and that is
+ * why half the controls in Paid Collabs did nothing. Their app portals ten
+ * overlays to `document.body`: the status dropdown, the video/ad-code modal
+ * behind the eye icon, the notes drawer, the Discovery mark popup, the sticky
+ * matrix header, the confirm dialog and more. `document.body` is OUTSIDE
+ * `.wurxbase-root`, so every one of those got ZERO styling — the status menu
+ * landed as an unstyled full-width block at the bottom of the document, which
+ * reads exactly like "clicking does nothing".
+ *
+ * Portalling them into the fence instead would fix the styling and break the
+ * position, because the fence is a transformed, contained, scrolling box: a
+ * `position: fixed` child is measured against IT, not the viewport, so an
+ * overlay opens wherever the fence happens to be scrolled to. That is the same
+ * bug that once put the Unique Creators panel 3,413px down the page.
+ *
+ * So the two jobs are now two elements: this shell provides the class name and
+ * nothing else, `.wurxbase-fence` inside it does the containing and scrolling,
+ * and `#wurxbase-portal-host` sits beside the fence — inside the shell, so
+ * their CSS matches; outside the fence, so `position: fixed` means the screen.
+ */
+@utility wurxbase-shell {
+  position: relative;
+  isolation: isolate;
+  height: calc(100dvh - 3.5rem);
+}
+
+/* Their overlays land here. It occupies no space; its children are fixed. */
+@utility wurxbase-portals {
+  position: static;
+  height: 0;
+}
+
 @utility wurxbase-fence {
   position: relative;
   isolation: isolate;
@@ -480,7 +517,8 @@
    * `3.5rem` is our top bar (`h-14`), in rem so it tracks the text-size
    * setting rather than pinning to 56 physical pixels while the bar grows.
    */
-  height: calc(100dvh - 3.5rem);
+  /* 100% of the shell, which is the viewport minus our top bar. */
+  height: 100%;
   overflow: auto;
   overscroll-behavior: contain;
 }

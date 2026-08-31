@@ -255,9 +255,32 @@ export function PaidCollabs() {
   return (
     <div
       ref={fence}
-      className="wurxbase-root wurxbase-fence -mx-4 -my-4 sm:-mx-6"
+      className="wurxbase-root wurxbase-shell -mx-4 -my-4 sm:-mx-6"
       data-theme={resolved}
     >
+      {/*
+        THEIR OVERLAYS LAND HERE, and where it sits is the whole point.
+
+        Their app portals ten things to `document.body` — the status dropdown,
+        the video and ad-code modal behind the eye icon, the notes drawer, the
+        Discovery mark popup, the confirm dialog, the sticky matrix header.
+        `document.body` is outside `.wurxbase-root`, so every one of their
+        `.wurxbase-root .pc-*` rules missed and those overlays rendered with no
+        styling at all: the status menu came out as a bare full-width block at
+        the very bottom of the document, which on screen is indistinguishable
+        from a button that does nothing.
+
+        This host is INSIDE `.wurxbase-root`, so their CSS matches, and OUTSIDE
+        `.wurxbase-fence`, so a `position: fixed` overlay is measured against
+        the viewport rather than against a scrolled, transformed box. Both
+        halves are necessary; either alone leaves the overlay unstyled or
+        off-screen.
+
+        Paint order is not an argument here: their overlays carry their own
+        z-index (9999 on the status menu, higher on the modals), and this host
+        holds nothing of its own to sit under.
+      */}
+      <div id="wurxbase-portal-host" className="wurxbase-portals" />
       {/*
         THE ONE PLACE OUR DATA REACHES THEIR APP, and it only goes one way.
 
@@ -271,6 +294,8 @@ export function PaidCollabs() {
         prop from the route." Their app still cannot name our project, and
         nothing of ours can name either of theirs.
       */}
+      {/* The scroller, and the box their fixed chrome is trapped inside. */}
+      <div className="wurxbase-fence">
       <CollabAdFiguresProvider>
         <Suspense fallback={<div className="wx-skeleton m-4 h-96 rounded-xl" />}>
           {/*
@@ -295,6 +320,7 @@ export function PaidCollabs() {
           )}
         </Suspense>
       </CollabAdFiguresProvider>
+      </div>
     </div>
   );
 }

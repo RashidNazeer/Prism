@@ -3,6 +3,27 @@ import { createPortal } from 'react-dom';
 import { supabase } from './supabaseClient';
 import { CAP_GROUPS, ALL_CAPS, ROLE_LIST, defaultFor, can } from './access';
 
+/* WURX-ADDED · where their overlays go.
+
+   Every `createPortal` in this app targeted `document.body`, which is OUTSIDE
+   `.wurxbase-root` — so every rule in their own stylesheet, all of which the
+   vendoring fenced under that class, missed. Ten overlays rendered with no
+   styling whatsoever: the status dropdown came out as a bare full-width block
+   at the bottom of the document, which is why clicking "Payment Pending" and
+   the eye icon appeared to do nothing at all.
+
+   The host is a div our route renders INSIDE `.wurxbase-root` and OUTSIDE
+   `.wurxbase-fence`. Inside the root so their CSS matches; outside the fence
+   because the fence is transformed and contained, which would make every
+   `position: fixed` overlay measure itself against a scrolled box instead of
+   the screen.
+
+   Falls back to `document.body` so their app still renders standalone. */
+function wxPortalHost() {
+  return (typeof document !== 'undefined' && document.getElementById('wurxbase-portal-host')) || document.body;
+}
+
+
 /* ════════════════════════════════════════════════════════════════
    Access control
 
@@ -329,5 +350,5 @@ export default function AccessControl({ currentUser, onClose }) {
     </div>
   );
 
-  return createPortal(body, document.body);
+  return createPortal(body, wxPortalHost());
 }

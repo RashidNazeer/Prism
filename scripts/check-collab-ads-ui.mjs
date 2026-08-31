@@ -293,6 +293,20 @@ try {
       return out;
     };
 
+    /*
+     * WAIT FOR A FIGURE, DO NOT ASSUME ONE. The ad figures arrive from an RPC
+     * that fires after the table paints, and on 2026-08-31 this read ran first
+     * and reported "no creator shows a figure" against a brand that had
+     * fifteen — a false failure that cost a real investigation. Poll for the
+     * first real value, then read them all.
+     */
+    await page
+      .waitForFunction(() => {
+        const cells = document.querySelectorAll('.wurxbase-root .pc-cell[data-label="Ad spend"]');
+        return [...cells].some((c) => { const t = c.textContent.trim(); return t && t !== '-' && t !== '–'; });
+      }, { timeout: 45000 })
+      .catch(() => {});
+
     const before = await read();
     const realBefore = before.filter((t) => t && t !== '-' && t !== '–');
     if (realBefore.length === 0) {

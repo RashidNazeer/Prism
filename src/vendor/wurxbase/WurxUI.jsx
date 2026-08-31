@@ -31,6 +31,27 @@ import { mergeContract, getBrandContract, saveBrandContract,
   fetchBrandContracts } from './brandContract';
 import './paidcollabs.css';
 
+/* WURX-ADDED · where their overlays go.
+
+   Every `createPortal` in this app targeted `document.body`, which is OUTSIDE
+   `.wurxbase-root` — so every rule in their own stylesheet, all of which the
+   vendoring fenced under that class, missed. Ten overlays rendered with no
+   styling whatsoever: the status dropdown came out as a bare full-width block
+   at the bottom of the document, which is why clicking "Payment Pending" and
+   the eye icon appeared to do nothing at all.
+
+   The host is a div our route renders INSIDE `.wurxbase-root` and OUTSIDE
+   `.wurxbase-fence`. Inside the root so their CSS matches; outside the fence
+   because the fence is transformed and contained, which would make every
+   `position: fixed` overlay measure itself against a scrolled box instead of
+   the screen.
+
+   Falls back to `document.body` so their app still renders standalone. */
+function wxPortalHost() {
+  return (typeof document !== 'undefined' && document.getElementById('wurxbase-portal-host')) || document.body;
+}
+
+
 /* ════════════════════════════════════════════════════════════════
    WURX MEDIA · 4-tab month-centric dashboard
    Tabs: Brands · Creators · Performance · Reporting
@@ -3410,7 +3431,7 @@ function WurxStatusDropdown({ c, onChange }) {
               <span className={`pc-statusdot ${s.cls}`} />{s.label}
             </button>
           ))}
-        </div>, document.body)}
+        </div>, wxPortalHost())}
     </>
   );
 }
@@ -4665,7 +4686,7 @@ function CreatorVideosPopup({ creator: c, onUpdateCreator, onEdit, onClose }) {
 
       </div>
     </div>,
-    document.body
+    wxPortalHost()
   );
 }
 
@@ -4720,7 +4741,7 @@ function NotesDrawer({ brand, month, initial, onSaved, onClose }) {
         />
       </div>
     </div>,
-    document.body
+    wxPortalHost()
   );
 }
 
@@ -6027,7 +6048,7 @@ function DiscoveryTab({ creators, currentUser }) {
                             )}
                           </span>
                         </>,
-                        document.body
+                        wxPortalHost()
                       )}
                     </span>
                   </div>
@@ -8019,7 +8040,7 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
             </div>
           </div>
         </div>,
-        document.body
+        wxPortalHost()
       )}
 
       {confirmHide && createPortal(
@@ -8046,7 +8067,7 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
             </div>
           </div>
         </div>,
-        document.body
+        wxPortalHost()
       )}
     </>
   );

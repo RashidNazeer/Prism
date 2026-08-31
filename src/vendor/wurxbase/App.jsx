@@ -16,6 +16,27 @@ import './tailwind.css';
 import { supabase, selectAll, wurxbaseRest, wurxbaseHeaders, WURXBASE_ORIGIN, WURXBASE_ENDPOINT_LABEL } from './supabaseClient';
 import WurxUI from './WurxUI';
 
+/* WURX-ADDED · where their overlays go.
+
+   Every `createPortal` in this app targeted `document.body`, which is OUTSIDE
+   `.wurxbase-root` — so every rule in their own stylesheet, all of which the
+   vendoring fenced under that class, missed. Ten overlays rendered with no
+   styling whatsoever: the status dropdown came out as a bare full-width block
+   at the bottom of the document, which is why clicking "Payment Pending" and
+   the eye icon appeared to do nothing at all.
+
+   The host is a div our route renders INSIDE `.wurxbase-root` and OUTSIDE
+   `.wurxbase-fence`. Inside the root so their CSS matches; outside the fence
+   because the fence is transformed and contained, which would make every
+   `position: fixed` overlay measure itself against a scrolled box instead of
+   the screen.
+
+   Falls back to `document.body` so their app still renders standalone. */
+function wxPortalHost() {
+  return (typeof document !== 'undefined' && document.getElementById('wurxbase-portal-host')) || document.body;
+}
+
+
 /* ─── Constants ──────────────────────────────────────────── */
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -426,7 +447,7 @@ function DatePicker({ filter, onChange, onClose }) {
         ))}
       </div>
     </div>,
-    document.body
+    wxPortalHost()
   );
 }
 
@@ -1413,7 +1434,7 @@ function RowActionBtn({ label, tone = 'blue', onClick, children }) {
           className="tw-pointer-events-none tw-fixed tw-z-[3000] tw-px-2 tw-py-0.5 tw-rounded-full tw-text-white tw-text-[10px] tw-font-bold tw-tracking-[0.04em] tw-uppercase tw-whitespace-nowrap tw-shadow-md tw-font-sans"
           style={{ left: tip.x, top: tip.y, transform: 'translate(-50%, -100%)', backgroundColor: t.tip, animation: 'rab-tip 0.16s cubic-bezier(0.33,1,0.68,1)' }}
         >{label}</span>,
-        document.body
+        wxPortalHost()
       )}
     </>
   );
@@ -13322,7 +13343,7 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
                 soundsMuted={soundsMuted}
                 onToggleSounds={() => setSoundsMuted(m => !m)}
               />,
-              document.body
+              wxPortalHost()
             )}
           </div>
 
@@ -13895,7 +13916,7 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
           soundsMuted={soundsMuted}
           onToggleSounds={() => setSoundsMuted(m => !m)}
         />,
-        document.body
+        wxPortalHost()
       )}
 
       {/* Old view conditional · gated to never render */}
