@@ -11,21 +11,30 @@
  * audit history, and anything entered on our side since. Rashid asked for the
  * data to be brought level without disturbing what is already here.
  *
- * SO THIS ONLY EVER ADDS OR CORRECTS:
+ * IT ONLY EVER ADDS. Rashid, after checking with Asad — who had also been
+ * entering things on OUR side: *"I don't want you to delete any data that is in
+ * our app. Just check if anything was added in base platform and not here, we
+ * only need to add it here. And if anything was added directly from our
+ * platform, it's perfect."* The two are deliberately NOT being made identical.
  *
  *   · a row they have and we do not          -> INSERT
- *   · a column where their value differs     -> UPDATE, that column only
- *   · a row we have and they do not          -> LEFT ALONE, and reported
- *   · a column that exists only here         -> NEVER WRITTEN (hub_email)
- *   · a column that exists only there        -> IGNORED (password, dropped here)
+ *   · a field EMPTY here and set there       -> filled in
+ *   · a field set here, whatever they hold   -> LEFT ALONE, and reported
+ *   · a video they have and we do not        -> appended
+ *   · a video we have and they do not        -> kept
+ *   · a row we have and they do not          -> LEFT ALONE
+ *   · `hub_email`                            -> NEVER WRITTEN
+ *   · `password`, which they still have      -> IGNORED, dropped here
  *
- * IT NEVER DELETES ANYTHING. Not a row, not a table.
+ * IT NEVER DELETES ANYTHING AND NEVER OVERWRITES ANYTHING. Not a row, not a
+ * field, not a video. The worst it can do is add something you did not want,
+ * which is visible and reversible; it cannot silently replace a number somebody
+ * typed.
  *
- * `video_codes` IS UNIONED, NOT REPLACED. Their array is normally a superset,
- * but "normally" is not a guarantee to bet somebody's delivery numbers on. The
- * two are merged on the TikTok video id, theirs winning on a shared id, and any
- * video that exists only here is reported so a real divergence is visible
- * rather than silently overwritten.
+ * That rule also disposes of a real hazard. An earlier draft took their value
+ * on conflict, and the dry run showed it overwriting 182 true `items` counts
+ * with 0 — their deployment still runs the bug fixed here on 2026-08-29, where
+ * a swallowed 400 from Euka makes every sweep write zero over the real figure.
  *
  * DRY RUN BY DEFAULT. Nothing is written without `--apply`.
  */
@@ -105,46 +114,24 @@ const vidKey = (u) => {
 function reconcileVideos(mine, theirsArr) {
   const a = Array.isArray(mine) ? mine : [];
   const b = Array.isArray(theirsArr) ? theirsArr : [];
-  const theirKeys = new Set(b.map((v) => vidKey(v?.video)).filter(Boolean));
-  const onlyHere = a.filter((v) => { const k = vidKey(v?.video); return k && !theirKeys.has(k); });
 
   /*
-   * A ZERO FROM A SIDE THAT DOES NOT KNOW IS NOT AN UPDATE.
+   * ADD ONLY. Rashid, 2026-08-31, after checking with Asad — who confirmed he
+   * had also been entering things on OUR side: *"i don't want you to delete any
+   * data that is in our app, just check if anything was added in base platform
+   * and not here, we only need to add it here; and if anything was added
+   * directly from our platform, it's perfect."*
    *
-   * The first dry run of this would have overwritten 182 real `items` counts
-   * with 0. Not because their data is worse in general — because their
-   * deployment is still running the bug fixed here on 2026-08-29: Euka now
-   * requires a `brandId` on the dashboard call, theirs does not send it, the
-   * 400 is swallowed, and every sweep writes `items: 0` over the true count.
-   * Ours has the right numbers precisely because that is fixed.
-   *
-   * So for a video both sides hold, take theirs field by field, and keep ours
-   * wherever theirs is empty and ours is not. That covers `items`, and the
-   * same shape for thumbnails, likes, comments, duration and Spark codes,
-   * whichever side happens to be missing them.
+   * So the two are NOT being made identical. Ours keeps everything it has,
+   * exactly as it has it, and only gains the videos it is missing. Nothing
+   * already here is rewritten — not a metric, not an ad code, not a date.
+   * That also makes the whole class of "their zero overwrote our number"
+   * impossible rather than merely handled.
    */
-  const mineByKey = new Map(a.map((v) => [vidKey(v?.video), v]).filter(([k]) => k));
-  let kept = 0;
-  const merged = b.map((theirRow) => {
-    const ourRow = mineByKey.get(vidKey(theirRow?.video));
-    if (!ourRow) return theirRow;
-    const out = { ...theirRow };
-    for (const f of Object.keys(ourRow)) {
-      const t = theirRow[f];
-      const o = ourRow[f];
-      const theirsEmpty = t === 0 || t === '' || t === null || t === undefined || t === false;
-      const oursHas = !(o === 0 || o === '' || o === null || o === undefined || o === false);
-      if (theirsEmpty && oursHas) { out[f] = o; kept++; }
-    }
-    return out;
-  });
-
-  return {
-    merged: onlyHere.length ? [...merged, ...onlyHere] : merged,
-    onlyMine: onlyHere.length,
-    onlyHere,
-    fieldsKept: kept,
-  };
+  const ourKeys = new Set(a.map((v) => vidKey(v?.video)).filter(Boolean));
+  const toAdd = b.filter((v) => { const k = vidKey(v?.video); return k && !ourKeys.has(k); });
+  if (!toAdd.length) return { merged: a, added: 0, onlyMine: 0, onlyHere: [], fieldsKept: 0 };
+  return { merged: [...a, ...toAdd], added: toAdd.length, onlyMine: 0, onlyHere: [], fieldsKept: 0 };
 }
 
 /*
@@ -188,6 +175,7 @@ for (const { name, key } of TABLES) {
   const inserts = [];
   const fieldTally = {};
   let keptTally = 0;
+  const conflicts = [];
   let videoNotes = [];
 
   for (const t of T) {
@@ -216,7 +204,19 @@ for (const { name, key } of TABLES) {
         if (!same(merged, o[k])) patch[k] = merged;
         continue;
       }
-      if (!same(t[k], o[k])) patch[k] = t[k];
+      /*
+       * FILL A BLANK, NEVER REPLACE A VALUE. If we already hold something for
+       * this field it stays, even when theirs differs — anything entered on our
+       * side is deliberate, and this script has no way to tell a newer edit
+       * from an older one. Only a field that is empty here and set there is
+       * written.
+       */
+      if (same(t[k], o[k])) continue;
+      if (norm(o[k]) !== null) {
+        conflicts.push(`${t.name || id}.${k}: ours ${JSON.stringify(norm(o[k]))} kept, theirs ${JSON.stringify(norm(t[k]))} ignored`);
+        continue;
+      }
+      patch[k] = t[k];
     }
     if (Object.keys(patch).length) {
       for (const k of Object.keys(patch)) fieldTally[k] = (fieldTally[k] || 0) + 1;
