@@ -1941,3 +1941,25 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   Opening a brand mounts a second face for the same store while the list's
   fetch is still in the air, so the drilldown's logo was the one that lost,
   and it stayed a gradient initial until a full reload.
+- 2026-08-29: **The live-cursor name tag gets a theme-INDEPENDENT ink,
+  `--wx-on-identity`.** It sits on one of seven fixed identity hues, and it
+  was wearing `--wx-on-accent`, which flips — white in light, near-black in
+  dark — against a background that never moves. So one theme always failed:
+  white measured 2.49:1 on the teal, and once the palette was deepened enough
+  for white, near-black then failed at 3.52:1 in dark. A surface that does not
+  change theme cannot take an ink that does. The token is deliberately the
+  same value in both blocks, like `--wx-scrim` before it.
+- 2026-08-29: **The seven cursor colours were deepened, keeping their hues.**
+  White measured 2.15:1 to 4.23:1 on the originals — every one under AA. They
+  are identity colours, so only the depth changed; white now clears 5:1 on all
+  seven. Rejected: near-black ink on the original shades, which fails on the
+  violet, so it would have needed two inks and a rule for choosing.
+- 2026-08-29: **The contrast guard is bounded, and coverage is the assertion.**
+  Waiting for every Euka call to fall silent was correct and unusable — one
+  tab took two and a half minutes, because opening Brands sweeps ten stores in
+  the background and none of it changes the text on screen. A check nobody
+  runs is a check that does not exist. It now waits for the first Euka answer
+  plus a stable DOM, caps at 45 seconds, and carries a PER-TAB FLOOR of
+  expected elements. The floor is the real protection: a wait gets outrun by
+  the next thing that makes a page slower, but "did we measure as much as last
+  time" keeps answering the right question.

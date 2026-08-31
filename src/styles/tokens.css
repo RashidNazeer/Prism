@@ -60,6 +60,14 @@
    */
   --wx-scrim: rgba(16, 14, 12, 0.62);
 
+  /* Ink for a chip whose OWN colour is theme-independent — the live-cursor
+     name tag, painted with one of seven fixed identity hues. --wx-on-accent
+     was used there and it FLIPS: white in light, near-black in dark, so one
+     theme or the other always failed on a background that never moved. Same
+     value in both modes on purpose; the surface it sits on does not change,
+     so neither may the ink. */
+  --wx-on-identity: #ffffff;
+
   /*
    * The three money states, and the only colours allowed to encode where a
    * creator's work has got to. Every one of the seven pipeline stages belongs
@@ -167,6 +175,14 @@
   /* Lighter than the dark theme's, because there is more light to take away
      and a cream page under 62% black reads as switched off. */
   --wx-scrim: rgba(38, 31, 24, 0.42);
+
+  /* Ink for a chip whose OWN colour is theme-independent — the live-cursor
+     name tag, painted with one of seven fixed identity hues. --wx-on-accent
+     was used there and it FLIPS: white in light, near-black in dark, so one
+     theme or the other always failed on a background that never moved. Same
+     value in both modes on purpose; the surface it sits on does not change,
+     so neither may the ink. */
+  --wx-on-identity: #ffffff;
 
   /* The three money states. Each one is darkened from the design's value by
      just enough to clear WCAG AA on a nested card, which is the tightest

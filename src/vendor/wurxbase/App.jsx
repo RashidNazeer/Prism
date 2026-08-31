@@ -157,7 +157,14 @@ const DEFAULT_TEAM = [
 const PAYMENT_OPTIONS = ['Paid', 'Not Yet'];
 const VIDEOS_OPTIONS  = ['Done', 'In Progress'];
 
-const CURSOR_COLORS = ['#6366F1','#EC4899','#14B8A6','#F59E0B','#10B981','#3B82F6','#8B5CF6'];
+/* WURX-ADDED · the same seven hues, deep enough for the name to be read.
+   These carry a white label, and at the original
+   shades white measured 2.15:1 to 4.23:1 on them — every one under AA, with
+   teal at 2.49:1. They are identity colours, so the hues are kept and only the
+   depth changes; white now clears 5:1 on all seven. Near-black instead of
+   white was the other option and it fails on the violet, so it would have
+   needed two inks and a rule about which. */
+const CURSOR_COLORS = ['#4F46E5','#BE185D','#0F766E','#B45309','#047857','#2563EB','#7C3AED'];
 function getCursorColor(name) {
   if (!name) return CURSOR_COLORS[0];
   return CURSOR_COLORS[name.charCodeAt(0) % CURSOR_COLORS.length];

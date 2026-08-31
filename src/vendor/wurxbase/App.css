@@ -1262,7 +1262,7 @@ to {transform: translateX(0);}
 ═══════════════════════════════════════════════════════════ */
 .wurxbase-root .live-cursor {position: fixed; pointer-events: none; z-index: 9999; display: flex; align-items: flex-start; gap: 4px; transform: translate(0, 0); transition: left 0.08s linear, top 0.08s linear;}
 .wurxbase-root .live-cursor-svg {filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--wx-bg) 25%, transparent)); flex-shrink: 0;}
-.wurxbase-root .live-cursor-label {margin-top: 16px; padding: 2px 7px; border-radius: 99px; font-size: 10px; font-weight: 700; color: var(--wx-on-accent); white-space: nowrap; font-family: var(--wx-font-sans); box-shadow: 0 2px 8px rgba(0,0,0,0.18);}
+.wurxbase-root .live-cursor-label {margin-top: 16px; padding: 2px 7px; border-radius: 99px; font-size: 10px; font-weight: 700; color: var(--wx-on-identity); white-space: nowrap; font-family: var(--wx-font-sans); box-shadow: 0 2px 8px rgba(0,0,0,0.18);}
 /* ═══════════════════════════════════════════════════════════
    COMPARE BUTTON
 ═══════════════════════════════════════════════════════════ */
