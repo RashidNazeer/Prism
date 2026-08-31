@@ -61,7 +61,8 @@
     "wurxbase:sync": "node scripts/wurxbase-sync-data.mjs",
     "verify:euka": "node scripts/check-euka.mjs",
     "verify:euka-ui": "node scripts/check-euka-ui.mjs",
-    "verify:collab-controls": "node scripts/check-collab-controls.mjs"
+    "verify:collab-controls": "node scripts/check-collab-controls.mjs",
+    "verify:collab-canvas": "node scripts/check-collab-canvas.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

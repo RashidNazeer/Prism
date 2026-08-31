@@ -1639,3 +1639,45 @@ note in memory. Rewriting a table-to-card transformation across six tabs is a
 feature, not a styling pass. But he asked for this screen to be premium, and
 on a tablet it is not a screen yet.
 
+## 41. Two more canvas aliases are mis-roled, and one of them is ink
+
+**Status:** OPEN, found 2026-09-01 while fixing the Discovery colour band
+**Raise it when:** anyone reports an unreadable label in Paid Collabs, or
+before the next re-vendor.
+
+The same codemod mistake that painted the container gold left four more
+aliases on tints: `--mc-cream` and `--mc-cream-lifted` on
+`--wx-warning-soft`, `--f7-surface` on `--wx-info-soft`, `--f7-cream` on
+`--wx-warning-soft` (App.css:3045, :3163). As CANVASES they are now inert,
+because the correction overrides the container outright.
+
+**But `--mc-cream` is also used as INK**, and there it is still wrong. Three
+live buttons — `.esm-add-btn`, `.empty-clear-btn`, `.sp-team-add-btn` — set
+`background: var(--mc-charcoal); color: var(--mc-cream)` on :hover, which
+resolves to a light page grey behind a 10% amber. The label disappears when
+you hover it. Narrow, hover-only, and a different bug from the one that was
+reported, so it was left rather than folded in silently.
+
+The other selectors carrying the same mapping — `.ph-kpi-purple`,
+`.um-add-btn`, `.sp-seg-btn`, `.sp-accent-swatch`, `.login-sky`,
+`.mobile-bottom-nav` — are DEAD CODE, verified: zero JSX uses anywhere in the
+repo. Do not "fix" them; they paint nothing.
+
+## 42. theme.css is entirely inert, and repairing it would turn the app gold
+
+**Status:** OPEN, and it is a trap
+**Raise it when:** anyone tries to make the vendored density, radius or
+motion preferences work, or wonders why theme.css has no effect.
+
+The v382 re-import inserted a space into all 17 of `theme.css`'s attribute
+selectors — `.wurxbase-root [data-theme="dark"]` instead of
+`.wurxbase-root[data-theme="dark"]` — turning every one of them from "this
+element" into "a descendant of this element". Nothing matches, so that whole
+file's dark/density/radius/motion layer has never applied.
+
+**That is currently load-bearing.** theme.css:14 maps five canvas aliases onto
+`var(--wx-accent)` — full-strength brand gold, not a 10% wash. The only
+reason the app is not gold today is that the selectors are broken. Repair the
+selectors without first correcting those five aliases and the whole of Paid
+Collabs turns solid gold.
+

@@ -778,6 +778,49 @@
 }
 
 /*
+ * AND THE PAGE ITSELF, which is the same bug one level up and was visible on
+ * every screen with short content. Rashid photographed Discovery: the top
+ * 375px the page colour, the 473px below it a tan block.
+ *
+ * THREE of their rules paint the container, all `!important`, all at one class
+ * of specificity, so the last one in the file wins:
+ *
+ *   App.css:3047  "App surface — subtle teal tint"     var(--f7-surface)
+ *   App.css:3165  "Canvas: warm cream everywhere"      var(--mc-cream)
+ *   App.css:3730  "Lift body bg so cards stand out"    var(--wx-accent-soft)
+ *
+ * Read the comments: every one of them is a PAGE, and every one was handed a
+ * tint. Upstream, before the retokenising sweep, 3730 was `#F4F5F7` — a
+ * near-white page grey chosen precisely so white cards would lift off it. The
+ * codemod saw a pale colour and called it a tint. Same mistake as `--bg` and
+ * `--paper` above, one level up and across the whole app.
+ *
+ * WHY OUR EXISTING RULE NEVER WON: the one at the top of this file carries no
+ * `!important` at all, so it could not have beaten them from any position in
+ * the cascade. Load order was never the problem.
+ *
+ * IT MUST NAME `.app-root` TOO. That is the element covering the visible area —
+ * `min-height: 100vh`, App.css:23 — and a correction written only for
+ * `.wurxbase-root` leaves the tan block exactly where it is.
+ *
+ * ONLY LIGHT MODE WAS AFFECTED, which is why this survived a contrast pass and
+ * a screenshot review: App.css:3368 already rescues `.app-root` for dark at a
+ * higher specificity. Their file carries 214 dark-only rules and no light-only
+ * rules at all, so light never got the same treatment. Assume any tint bug
+ * found here is light-only until measured otherwise.
+ *
+ * The geometry is NOT part of this. It was tempting to blame `min-height:
+ * 100vh` or our own fixed-height shell, and a counterfactual in a real browser
+ * settled it: remove the 100vh and the band is byte-identical, because
+ * `.wurxbase-shell` is `calc(100dvh - 3.5rem)` by design and is itself painted.
+ * The seam has exactly one cause and it is the colour.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root,
+.wurxbase-root.wurxbase-root.wurxbase-root .app-root {
+  background: var(--wx-bg) !important;
+}
+
+/*
  * AND THE PANEL ITSELF, painted directly rather than through their aliases.
  *
  * Correcting `--bg` above is right, but `theme.css` re-declares the same alias

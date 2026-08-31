@@ -945,6 +945,8 @@ pnpm verify:wurxbase-signin  # no second login, the audit names the real person
 pnpm verify:wurxbase-perms   # a viewer of theirs stays a viewer, whatever we are
 pnpm verify:wurxbase-team    # Team screen: settings reachable, hub email saves
 pnpm verify:write-safety     # the sequence that used to lose data loses nothing
+pnpm verify:collab-canvas    # one page colour, six tabs, both themes, and
+                            # measured while LOADING as well as settled
 pnpm verify:collab-controls  # every row control receives its own clicks
                             # and the performance sheet is checked by
                             # the same suite: no figure clipped, a cell

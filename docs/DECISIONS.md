@@ -2077,3 +2077,36 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   inside the measure loop, which runs before the clone exists, so the pinned
   header opened at column zero over a body scrolled to July — five months of
   figures under five wrong month labels, worse than having none.
+- 2026-09-01: **The Paid Collabs container paints the page canvas, and the
+  rule has to name `.app-root` as well.** Rashid photographed Discovery: the
+  top 375px the page colour, the 473px below it a tan block. THREE rules in
+  their stylesheet paint the container, all `!important`, all at one class of
+  specificity, so the last wins — App.css:3047 "App surface" via `--f7-surface`,
+  :3165 "Canvas: warm cream everywhere" via `--mc-cream`, :3730 "Lift body bg
+  so cards stand out" via `--wx-accent-soft`. Read the comments: every one is
+  a PAGE, and every one was handed a tint. Upstream, before the retokenising
+  sweep, 3730 was `#F4F5F7` — a near-white page grey chosen precisely so white
+  cards would lift off it. A codemod cannot tell a pale canvas from a tint.
+  Our existing rule never won for a simpler reason than load order: it carries
+  no `!important` at all, so it could not have won from any position.
+- 2026-09-01: **Assume a tint bug in the vendored CSS is LIGHT-ONLY until
+  measured otherwise.** This one survived a full contrast pass, a screenshot
+  review and eleven days of use because App.css:3368 already repaints
+  `.app-root` for dark at a higher specificity. Their file carries 214
+  dark-only rules and not one light-only rule, so light never got the same
+  treatment. Every colour check here now runs both themes for that reason.
+- 2026-09-01: **The seam was not a geometry bug, and that was worth proving
+  rather than assuming.** Two plausible culprits presented themselves — their
+  `.app-root { min-height: 100vh }` and our own `wurxbase-shell` fixed height —
+  and a counterfactual run in a real browser against the shipped bundles
+  settled it: remove the 100vh and the band is byte-identical, because the
+  shell is `calc(100dvh - 3.5rem)` by design and is itself painted. One cause,
+  and it is the colour. The 100vh stays.
+- 2026-09-01: **The `@media print` rule was left alone.** A doubled-class
+  `!important` correction does out-specify App.css:4966, so the computed print
+  background changes from `--wx-surface-1` to `--wx-bg`. It is not laid down as
+  ink: their `print-color-adjust: exact` at :4963 matches `.wurxbase-root *` —
+  descendants only — so the container itself inherits `economy` and Chrome
+  omits its background unless the user ticks "Background graphics", and then
+  the delta is #ffffff to #f6f4f1 on the admin content column. Adding a print
+  override would have been complexity bought for nothing.

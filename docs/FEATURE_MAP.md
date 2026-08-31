@@ -2105,6 +2105,26 @@ from them, as the brand's GMV.
 
 ## Paid Collabs: WurxBase, vendored (2026-08-18)
 
+### One canvas, all the way down (2026-09-01)
+
+**Every full-height surface in Paid Collabs paints `--wx-bg`.** There are
+three of them stacked: our `.wurxbase-root .wurxbase-shell`, their
+`.app-root` (min-height 100vh), and their `.pc-app`. Their content is
+often shorter than the shell, so whenever those three disagree about colour
+the difference shows as a band across the bottom of the screen.
+
+**The correction lives in `wurxbase-overrides.css` and must satisfy three
+things at once:** more than one class of specificity, `!important`, and it
+must name `.app-root` — that is the element covering the visible area, and
+a rule written only for `.wurxbase-root` leaves the band exactly where it is.
+
+**Verify with `pnpm verify:collab-canvas`** (86 checks). It measures every
+tab in both themes TWICE — once at 1.2s and once at 12s — because the fault
+is loudest while their content is still short, which is precisely the
+screenshot that was reported. It asserts that the empty region BELOW their
+app is the page canvas, and deliberately not that the page shows a single
+colour: a tall white card on Brands is not a seam.
+
 ### The performance sheet (2026-09-01)
 
 The brand drilldown on the Performance tab: a hundred creators down, ten
