@@ -2,88 +2,70 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-29, fourth save. Nothing is waiting on Rashid.**
+**Recorded 2026-08-31 by /precompact.** He gave no argument, but one thing IS
+queued and it is waiting on a yes from him.
 
-**The next thing is the PRODUCTION CUTOVER, which needs his go-ahead rather
-than his input.** Dev is complete. Follow `docs/NEXT_UNATTENDED.md` section 3.
+### Ask him this
 
-**TWO EXTRA PROD STEPS since the Euka fix**, and neither travels with a
-migration or a git push:
+*"Compaction done. Shall I apply the Euka data sync — the 10 changes we
+rehearsed?"* **Wait for a yes. Do not run it unprompted.**
 
-```powershell
-supabase secrets set "EUKA_API_KEY=<key>" --project-ref $env:SUPABASE_PROJECT_REF_PROD
-supabase functions deploy euka --project-ref $env:SUPABASE_PROJECT_REF_PROD
-```
+`SUPABASE_SERVICE_KEY=... pnpm wurxbase:sync` is a DRY RUN and safe to
+show him again. `--apply` writes. Last rehearsal: **10 updates, 1 insert, 0
+deletes** — 4 payment marks, 3 delivery flags, 2 statuses, 4 video lists topped
+up, 1 creator added. Every change fills a blank; nothing is overwritten and
+nothing is deleted, which is the rule he set after checking with Asad.
 
-**Tell him, once, when the cutover comes up:** the Euka key was a string
-literal in Asad's repository and is in that repository's history, so it should
-be rotated. Rotating means one `supabase secrets set` per project; no code
-changes.
-
-**Still owed on his "remind me later":** telling Asad about the bugs that were
-in his own copy. That list is now longer and more useful — see below.
+**NEVER offer `wurxbase:copy` as the way to do this.** It empties each table
+first and would discard the eight `hub_email` links and everything entered on
+our side. See PARKED 37.
 
 ## WHERE EVERYTHING STANDS
 
-**All the work is on the branch `fix/wurxbase-write-safety`. `dev` is still
-at `19a750a`. Nothing merged, nothing deployed, PRODUCTION UNTOUCHED.**
+**`dev` is at `191ffaf`, pushed, and DEPLOYED to wurxmediahubdev.vercel.app**
+(verified READY, and verified in a browser against the live site, not just the
+deploy status). **Production is untouched** — no Euka function, no key, old
+code. That is still a separate "make it live" step he has not asked for.
 
-### The Euka endpoint, restored 2026-08-29
+### What this session did, after the last save point
 
-Rashid: *"when we click euka it says no brand name found... at all places where
-data is coming from euka api the data is diff in our platform and there"*.
+**The Euka endpoint was missing entirely and is now restored.** Their app asks
+for every Euka figure from `/.netlify/functions/euka`, a serverless function
+that lived only in the original developer's Netlify deployment — the vendoring
+copied their `src/` and it sat outside. On Vercel the path 404s and every call
+site degrades to null without erroring, so every figure was silently absent for
+eleven days. Ported to `supabase/functions/euka`, staff-only, key in Edge
+secrets. Four more bugs were found underneath it, three of which are still live
+on Asad's deployment. See FEATURE_MAP and PARKED 36.
 
-**One missing endpoint, not a dozen bugs.** Their app fetches
-`/.netlify/functions/euka` in twelve places. That function lived only in the
-original developer's Netlify deployment — the vendoring copied their `src/`
-and a Netlify function sits outside it. On Vercel the path 404s, and every
-call site degrades to null without erroring, so every Euka figure was simply
-absent. Ported to `supabase/functions/euka`, reached through `eukaJson()`
-in the seam.
+**Their eight people can sign in**, each arriving with the role and overrides
+Asad set, verified by signing in as three of them.
 
-**Four more bugs were found on top of the missing endpoint**, three of which
-are live on Asad's deployment too:
+**A round of UI bugs he reported, all reproduced in a browser before fixing.**
+Half the controls in Paid Collabs did nothing, and it was one structural
+mistake: one div was the CSS fence, the containing block and the scroller at
+once, so ten portalled overlays rendered unstyled off-screen and every inline
+dialog was measured against a scrolled box. Plus starved grid tracks — mine,
+from adding Ad spend and ROI — where the contract pencil sat on top of the
+status pill and ate the click. Plus a payment gate whose comparison could never
+be false, refusing everyone including Asad with an invisible error. All fixed
+and verified; see DECISIONS for each.
 
-1. **The dashboard call has been 400ing** for want of a `brandId` Euka started
-   requiring. It is swallowed, so thumbnails, Spark codes, avatars and item
-   counts silently came back empty — on their side as well as ours.
-2. **`items` was reading `gmvOrders`**, a count of orders, into the column
-   labelled "Items sold". Live: 59 vs a true 55.
-3. **The video merge wrote `items: 0` over real counts** on every sweep, then
-   the per-creator sweep restored ten of them, forever. It was the only one of
-   six fields written unguarded.
-4. **L30 GMV and tier read a frozen cache first.** `monthly.euka` is refreshed
-   by a nightly job that was never ported and writes to the retired project;
-   800 of 1000 creators carry a value stamped between 29 July and 28 August.
-   Now live first, cache as fallback.
+### Suites, all green on dev
 
-Plus a race where opening a brand quickly left its logo a grey initial until a
-full reload.
+euka 32/32 · euka-ui 7/7 · collab-controls 21/21 · roster 21/21 · team 10/10 ·
+perms 5/5 · signin 7/7 · wurxbase 7/7 · write-safety 11/11 · contrast 12/12 ·
+collab-ads 30/30 · collab-ads-ui 17/17 · isolation ok · lint clean.
 
-**Not every brand has an Euka store, and that is not a bug:** Euka has ten
-stores, Paid Collabs tracks thirty brands, six match.
+### Two things he was told and has not decided
 
-**Three things were found and deliberately NOT fixed — PARKED 36.** The one
-that matters: the video window is asked for in UTC and enforced in the
-browser's local time, and rows outside it are DELETED, so two people sweeping
-the same brand write different data. 3% of rows change side with the
-operator's clock.
+- **The Euka key should be rotated.** It was a string literal in Asad's repo
+  and is in that repo's history. One `supabase secrets set` per project.
+- **Telling Asad about the bugs in his own copy** — his "remind me later" from
+  earlier. The list is longer now and three of them are costing him data daily.
 
-### Done earlier the same day
-
-- The plaintext passwords are gone, column and browser bundle both.
-- The colour review is finished; the guard had been passing its own failures.
-- Settings was unreachable in our chrome; a gear opens it.
-- A viewer arrived with edit rights, because their app reads identity once at
-  mount and we mounted it too early.
-- Their eight people are linked and have hub accounts, all `ops`.
-
-Suites on dev: euka 32/32, euka-ui 7/7, roster 21/21, team 10/10, perms 5/5,
-signin 7/7, wurxbase 7/7, write-safety 11/11, collab-ads 30/30, collab-ads-ui
-17/17, contrast 12/12, isolation ok.
-
-**Do not re-explore the codebase.** This file, then
-`docs/NEXT_UNATTENDED.md`, then PARKED.
+**Do not re-explore the codebase.** This file, then `docs/PARKED.md`, then only
+the files the next action names.
 
 --- | --- | --- |
 | Asad | superadmin | asad@wurxmedia.com |

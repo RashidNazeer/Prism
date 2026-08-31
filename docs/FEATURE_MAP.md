@@ -2105,6 +2105,39 @@ from them, as the brand's GMV.
 
 ## Paid Collabs: WurxBase, vendored (2026-08-18)
 
+### Where their overlays go, and why it matters (2026-08-31)
+
+**Three elements, three jobs, and mixing them broke half the controls.**
+
+| element | job |
+| --- | --- |
+| `.wurxbase-root .wurxbase-shell` | carries the class their CSS is fenced under |
+| `.wurxbase-fence` | the scroller |
+| `#wurxbase-portal-host` | where every overlay is portalled |
+
+**Every `createPortal` in the vendored tree goes to `wxPortalHost()`, never
+`document.body`.** `document.body` is outside `.wurxbase-root`, so their own
+fenced rules cannot reach it and the overlay renders with NO styling — which
+looks exactly like a control that does nothing, not like a bug.
+
+**The fence must never be a containing block.** No `transform`, no
+`contain`. Their contract and creator editors render INLINE, so no portal
+reaches them; inside a containing block their `position: fixed` is measured
+against a scrolled box and the dialog opens off-screen, then drags the page
+to the top as the browser scrolls its autofocused input into view.
+
+**A track carrying a control needs a `minmax` floor.** `.pc-cell` centres
+and does not clip, so a starved column spills into its neighbours and
+whichever element is positioned wins the click. This is the failure mode to
+suspect whenever a control "does nothing" — check `elementFromPoint` at its
+centre before anything else.
+
+**Verify with `pnpm verify:collab-controls`** (21 checks). It asserts on HIT
+TESTING and POSITION rather than existence, because in all three of the bugs
+it was written for, every element existed, was visible, and was correctly
+styled the whole time.
+
+
 ### Where the Euka figures come from (2026-08-29)
 
 Every Euka-derived number on these screens — last-30-day GMV, creator tiers,

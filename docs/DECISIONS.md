@@ -1963,3 +1963,60 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   expected elements. The floor is the real protection: a wait gets outrun by
   the next thing that makes a page slower, but "did we measure as much as last
   time" keeps answering the right question.
+- 2026-08-31: **`.wurxbase-root` and `.wurxbase-fence` are two elements, and
+  a portal host sits between them.** One div used to be the CSS fence, the
+  containing block for `position: fixed`, AND the scroller. Their app portals
+  ten overlays to `document.body`, which is outside `.wurxbase-root`, so every
+  fenced rule missed them — the status menu mounted as an unstyled 1500x23
+  block at y=1008 in a 1000px viewport, which on screen is indistinguishable
+  from a button that does nothing. Portalling into the fence would have fixed
+  the styling and broken the position. So: a shell carries the class name, a
+  fence inside it scrolls, and `#wurxbase-portal-host` sits beside the fence —
+  inside the shell so their CSS matches, outside the fence so fixed means the
+  screen. Eleven portals repointed through one helper.
+- 2026-08-31: **The fence is no longer a containing block at all.** Portalling
+  only reaches overlays that use `createPortal`; their contract editor and
+  creator editor render inline, and inside a transformed, contained, scrolled
+  box a fixed dialog is measured against that box. Measured: the creator
+  editor at 56..1004 in a 1000px viewport, dragging the fence from 600 back to
+  0 as the browser scrolled its autofocused input into view — "it scrolls us
+  to the top". `transform` and `contain` are gone. What they protected against
+  is handled where it belongs: at rest the ONLY visible fixed elements inside
+  the fence were `.app-footer` and `.footer-hover-zone`, and wurxbase-chrome.css
+  hides both, as it already hid their header, tab rail and sign-out.
+- 2026-08-31: **Grid tracks that carry controls get `minmax` floors.** A
+  fraction can be squeezed below its content and a `.pc-cell` centres without
+  clipping, so a starved track SPILLS symmetrically into both gutters. Adding
+  Ad spend and ROI took their table from twelve tracks to fourteen without
+  widening it: Status had 115px for a 151px pill, Contract 50px for 62px of
+  buttons, and the pencil — `position: relative`, so it hit-tests above a
+  static sibling — swallowed the click. Dead band across the pill: 11% at
+  1500px, 53% at 1024. That is why Asad could not mark anyone paid.
+- 2026-08-31: **Marking a creator paid is `canEditPay`, not a name.** Their
+  code compared the username to the literal string "asad" in seven places,
+  and the comparison was broken besides — `id` is our auth uuid and the
+  session writes lower-case `asad` against a capital `Asad`, so both halves
+  were always true and EVERY attempt was refused, Asad included, with no
+  write on the wire. The two payment gates now use the capability their own
+  access model already defines for it; the other five keep their Asad-only
+  policy and get a case-insensitive check. Put to Rashid with the trade-off,
+  he chose to open payment to anyone with edit rights — and Asad has since
+  denied `canEditPay` to all five of his team in Access Control, which the
+  code now respects rather than overrides. The point of the change is that it
+  became a setting he can flip, not a name in a source file.
+- 2026-08-31: **A notification is painted directly, not through their
+  aliases.** `.notif-panel` uses `background: var(--bg)`, and the retokenising
+  sweep had mapped that alias — their page canvas — onto `--wx-accent-soft`, a
+  14% gold wash. The panel was a translucent tint carrying near-black text at
+  3.43:1 with the page showing through, so the error explaining why marking
+  paid failed was unreadable. Aliases corrected AND the panel painted
+  directly, because theme.css re-declares the same alias on a descendant and a
+  dialog carrying an error is not the place to leave that to chance. 18.43:1.
+- 2026-08-31: **The Euka sync fills blanks and never overwrites.** Rashid,
+  after checking with Asad, who had also been entering things on our side:
+  the two databases are deliberately NOT made identical. A field empty here
+  and set there is filled; a field set here is left alone whatever theirs
+  holds. That collapsed the change set from 33 to 10 and disposed of a real
+  hazard rather than handling it — an earlier draft took their value on
+  conflict and would have overwritten 182 true `items` counts with 0, because
+  their deployment still runs the bug fixed here that morning.

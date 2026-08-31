@@ -1574,3 +1574,51 @@ a fallback. What is still missing is the `EUKA_CHECKIN` summary row it wrote
 into `activity_logs`. Port it as a scheduled Edge Function if anybody misses
 that trail.
 
+## 37. The Euka data sync is written and rehearsed, not applied
+
+**Status:** READY, WAITING ON RASHID
+**Owner:** Rashid says go, Claude runs it
+**Raise it when:** he asks about the old app, the video counts, or the
+cutover — or at the start of the next session, because it is the queued item.
+
+`pnpm wurxbase:sync` is a dry run. `--apply` writes. Last rehearsal:
+**10 updates, 1 insert, 0 deletes** — 4 payment marks, 3 delivery flags, 2
+statuses, 4 video lists topped up, 1 creator added. Every one fills a blank.
+
+**Do not reach for `wurxbase:copy` instead.** That one empties each table
+before refilling and would discard the eight `hub_email` links, our audit
+history, and everything entered on our side.
+
+Nineteen of the 25 missing videos are hand-typed links for Aqua Sonic and
+Bentgo, brands with no Euka store, so they exist in no other system and only
+a sync brings them. Six are Euka videos that heal themselves.
+
+## 38. Their old app is still live and still being written to
+
+**Status:** OPEN
+**Raise it when:** anyone compares a number between the two.
+
+On 2026-08-31 Asad added creators at 15:53 and Usman changed workspace
+settings at 16:13, in the OLD app. The same creator went into both databases
+within 24 seconds and now carries a different id in each. Rashid has since
+told Asad to stop; nothing enforces it.
+
+**Their deployment still runs the bugs fixed here on 2026-08-29**, so its
+numbers are actively getting worse: the swallowed 400 from Euka means every
+sweep writes `items: 0` over real counts. Ours has the right figures. Do not
+"correct" ours towards theirs.
+
+## 39. Their app records nothing when money is marked paid
+
+**Status:** OPEN
+**Raise it when:** somebody asks who marked a creator paid, or before the
+prod cutover.
+
+Found while answering exactly that question. Only BULK payment edits write an
+audit row; marking one creator paid from the row writes nothing to either of
+their two trails. Four creators worth $2,310 were marked Paid on their side
+and there is no record of who did it or when — the last logged payment change
+of any kind is 18 May. Our own admin actions are audited properly; this screen
+came from their code and inherited the gap. Worth closing before their team is
+doing it daily.
+

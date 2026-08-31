@@ -945,6 +945,8 @@ pnpm verify:wurxbase-signin  # no second login, the audit names the real person
 pnpm verify:wurxbase-perms   # a viewer of theirs stays a viewer, whatever we are
 pnpm verify:wurxbase-team    # Team screen: settings reachable, hub email saves
 pnpm verify:write-safety     # the sequence that used to lose data loses nothing
+pnpm verify:collab-controls  # every row control receives its own clicks
+pnpm wurxbase:sync           # DRY RUN by default; --apply to write
 node scripts/check-collab-contrast.mjs   # every label, both themes, per-size AA
 ```
 
