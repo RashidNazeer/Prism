@@ -7741,7 +7741,25 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
   };
 
   // Grid template · v186 · compact widths (Creators-tab density)
-  const FROZEN_W = 392;    // 40 rank + name (flex) + 158 handle · long names were clipping
+  /* WURX-ADJUSTED · the sheet's geometry, which was cutting the numbers off.
+     A month column holds two figures side by side. At 170px each half had 53px
+     of room for a number that measures 61px, so every five-figure GMV in the
+     table was truncated mid-digit ("10,160.0", "12,077.1").
+
+     184px gives each half 78px, and the figure it is sized against is
+     123,456.78 (70px) rather than anything currently in the database. One
+     creator, one good month, is six figures on TikTok Shop, and the day that
+     arrives is exactly the day nobody would notice the number had started
+     printing short. `pnpm verify:collab-controls` asserts on that reference
+     string, because a version of it that measured only today's values passed
+     on the broken geometry.
+
+     The identity column pays for part of that: 392 was a quarter of the screen
+     for a name and a handle. 344 fits every name on the roster and every pixel
+     saved is a month you do not have to scroll to. */
+  const FROZEN_W = 344;    // 38 rank + name (flex) + 140 handle
+  const MONTH_W = 184;
+  const SUM = { videos: 82, gmv: 152, ad: 152, del: 58 };
   /* Removing someone here takes them out of THIS matrix only — the creator
      record, their deals and their videos stay untouched everywhere else.
      Stored as monthly.perf = { hidden: true }; every monthly reader sums
@@ -7769,20 +7787,63 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
     if (w && c) c.scrollLeft = w.scrollLeft;
   }, []);
 
+  /* WURX-ADDED · open on the months that have numbers in them.
+     The sheet is wider than any screen and it was opening at scrollLeft 0,
+     which is the OLDEST month — for a brand with ten months of history that is
+     a screen of padlocks and empty cells, and you have to scroll to find out
+     the table has anything in it at all. It opens at the newest month now,
+     which is also the one the header focuses by default, and only on the way
+     in: after that the scroll position is the reader's. */
+  const openedAt = useRef('');
+  useEffect(() => {
+    const w = wrapRef.current;
+    const key = `${brand?.brand || ''}::${months.length}`;
+    if (!w || !months.length || openedAt.current === key) return;
+    /* Land with the NEWEST MONTH against the right edge, measured off the
+       header rather than computed from the column widths — scrolling all the
+       way to the end instead would push every month off-screen behind the
+       three total columns, which is how the first version of this got it
+       wrong on a 1024px laptop. */
+    const tiles = w.querySelectorAll('.pc-mx-head .pc-mxh-tile:not(.mx-sum)');
+    const last = tiles[tiles.length - 1];
+    if (!last) return;
+    openedAt.current = key;
+    w.scrollLeft += last.getBoundingClientRect().right - w.getBoundingClientRect().right;
+  }, [brand?.brand, months.length]);
+
   useEffect(() => {
     let raf = 0;
+    /* WURX-ADJUSTED · the mirror has to know WHICH BOX IS SCROLLING.
+       Their app scrolls the window, so a window listener and a pin line of y=0
+       were right there. Embedded in ours the page never scrolls: the fence
+       does, and a scroll event on an element does not reach a window listener.
+       So on a sheet of a hundred creators the month labels went off the top
+       after twelve rows and never came back, which on a grid whose columns are
+       ONLY distinguished by their heading is the same class of problem as the
+       cut-off numbers. Pin against the scroller's own top edge, not zero,
+       because ours starts below the top bar. */
+    const scrollerOf = (el) => {
+      let n = el?.parentElement;
+      while (n && n !== document.body) {
+        if (/(auto|scroll)/.test(getComputedStyle(n).overflowY)) return n;
+        n = n.parentElement;
+      }
+      return null;
+    };
+    const scroller = scrollerOf(wrapRef.current);
     const measure = () => {
       raf = 0;
       const w = wrapRef.current, h = headRef.current;
       if (!w || !h) return;
       const wr = w.getBoundingClientRect();
       const hh = h.offsetHeight;
-      // pin while the header is above the viewport but the table is still in it
-      const on = wr.top < 0 && wr.bottom > hh + 40;
+      const line = scroller ? Math.max(0, Math.round(scroller.getBoundingClientRect().top)) : 0;
+      // pin while the header is above the scroll line but the table is still in view
+      const on = wr.top < line && wr.bottom > line + hh + 40;
       setStick(prev => {
         if (!on) return prev === null ? prev : null;
-        const next = { left: Math.round(wr.left), width: Math.round(wr.width), height: hh };
-        if (prev && prev.left === next.left && prev.width === next.width && prev.height === next.height) return prev;
+        const next = { left: Math.round(wr.left), width: Math.round(wr.width), height: hh, top: line };
+        if (prev && prev.left === next.left && prev.width === next.width && prev.height === next.height && prev.top === next.top) return prev;
         return next;
       });
       if (cloneRef.current && w) cloneRef.current.scrollLeft = w.scrollLeft;
@@ -7791,12 +7852,27 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
     measure();
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
+    if (scroller) scroller.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
+      if (scroller) scroller.removeEventListener('scroll', onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
   }, [months.length, canon.length]);
+
+  /* WURX-ADDED · line the mirror up the moment it appears.
+     The sync lives inside the measure loop, which runs BEFORE the clone is
+     rendered — on the pass that decides to show it, `cloneRef.current` is still
+     null. Nothing corrected it afterwards unless you happened to scroll
+     sideways, so the pinned header opened at column zero over a body scrolled
+     to July: five months of figures under five wrong month labels, which is a
+     worse failure than having no pinned header at all. */
+  useEffect(() => {
+    if (stick && cloneRef.current && wrapRef.current) {
+      cloneRef.current.scrollLeft = wrapRef.current.scrollLeft;
+    }
+  }, [stick]);
 
   /* ── Focus month ──────────────────────────────────────────────────
      The newest column is the one being filled in (August shows July as
@@ -7825,7 +7901,13 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
     }
     setHiding(false);
   };
-  const tpl = `${FROZEN_W}px ${months.map(() => '170px').join(' ')} 82px 152px 152px${canDelete ? ' 58px' : ''}`;
+  /* The identity column's width is a CUSTOM PROPERTY, not a number, so a media
+     query can narrow it on a small laptop without this component measuring the
+     viewport. 344px of name and handle beside 176px months leaves a 1024px
+     screen showing two months; below that breakpoint the handle goes and the
+     column halves. See "the identity column" in wurxbase-overrides.css. */
+  const tpl = `var(--mx-frozen-w, ${FROZEN_W}px) ${months.map(() => `${MONTH_W}px`).join(' ')} ${SUM.videos}px ${SUM.gmv}px ${SUM.ad}px${canDelete ? ` ${SUM.del}px` : ''}`;
+  const rowStyle = { gridTemplateColumns: tpl };
 
   return (
     <>
@@ -7895,7 +7977,7 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
                   stickyHead below). The page owns vertical scrolling, so CSS
                   sticky can't reach the viewport from inside the horizontal
                   scroll container — the clone is what makes it pin. */}
-              <div className="pc-mx-row pc-mx-head" ref={headRef} style={{ gridTemplateColumns: tpl }}>
+              <div className="pc-mx-row pc-mx-head" ref={headRef} style={rowStyle}>
                 <div className="pc-mx-frozen pc-mx-frozen-head">
                   <div className="pc-mxh pc-mxh-c">#</div>
                   <div className="pc-mxh">Creator</div>
@@ -7920,20 +8002,20 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
                     </button>
                   );
                 })}
-                <div className="pc-mxh-tile pc-mxh-tile-total">
+                <div className="pc-mxh-tile pc-mxh-tile-total mx-sum mx-sum-videos">
                   <span className="pc-mxh-tile-name">Videos</span>
                   <span className="pc-mxh-tile-tval">{grandVideos}</span>
                 </div>
-                <div className="pc-mxh-tile pc-mxh-tile-total">
+                <div className="pc-mxh-tile pc-mxh-tile-total mx-sum mx-sum-gmv">
                   <span className="pc-mxh-tile-name">Total GMV for us</span>
                   <span className="pc-mxh-tile-tval pc-mxh-tile-tval-gmv">{fmt$(grandGmv)}</span>
                 </div>
-                <div className="pc-mxh-tile pc-mxh-tile-total">
+                <div className="pc-mxh-tile pc-mxh-tile-total mx-sum mx-sum-ad">
                   <span className="pc-mxh-tile-name">Total Ad for us</span>
                   <span className="pc-mxh-tile-tval pc-mxh-tile-tval-ad">{fmt$(grandAd)}</span>
                 </div>
                 {canDelete && (
-                  <div className="pc-mxh-tile pc-mxh-tile-total">
+                  <div className="pc-mxh-tile pc-mxh-tile-total mx-sum mx-sum-del">
                     <span className="pc-mxh-tile-name">Del</span>
                   </div>
                 )}
@@ -7951,7 +8033,7 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
                     const hiredMonth = monthKey(rec.hiring_date);
                     const isCohort = !!hiredMonth && hiredMonth === focusMonth;
                     return (
-                      <div className={'pc-mx-row' + (isCohort ? ' mx-cohort' : '')} key={rowKey} style={{ gridTemplateColumns: tpl }}>
+                      <div className={'pc-mx-row' + (isCohort ? ' mx-cohort' : '')} key={rowKey} style={rowStyle}>
                         <div className="pc-mx-frozen">
                           <div className="pc-mx-rank">{String(i + 1).padStart(2, '0')}</div>
                           <div className="pc-mx-name" title={rec.name}>
@@ -7962,7 +8044,11 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
                               </span>
                             )}
                           </div>
-                          <div className="pc-mx-user">{handle ? tiktokHandle(handle) : '–'}</div>
+                          {/* WURX-ADDED · title, because a long handle ellipses
+                              in this column and the name above it already has
+                              one · nothing on this sheet should be unreadable
+                              with no way to recover it */}
+                          <div className="pc-mx-user" title={handle ? tiktokHandle(handle) : ''}>{handle ? tiktokHandle(handle) : '–'}</div>
                         </div>
                         {months.map((m, mi) => {
                           const cell = readCellForHandle(rec, m, handle);
@@ -7995,15 +8081,16 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
                             </div>
                           );
                         })}
-                        <div className="pc-mx-num strong">{isFirstRowOfCreator ? (videosByName[nk] || 0) : <span style={{ color: 'var(--pc-text-3)' }}>·</span>}</div>
-                        <div className="pc-mx-num strong pc-green">{fmt$(sumMonthlyForHandle(rec, handle, 'gmv'))}</div>
-                        <div className="pc-mx-num strong pc-red">{fmt$(sumMonthlyForHandle(rec, handle, 'adSpent'))}</div>
+                        {/* mx-sum-* · these three pin to the right edge, see sumVars */}
+                        <div className="pc-mx-num strong mx-sum mx-sum-videos">{isFirstRowOfCreator ? (videosByName[nk] || 0) : <span style={{ color: 'var(--pc-text-3)' }}>·</span>}</div>
+                        <div className="pc-mx-num strong pc-green mx-sum mx-sum-gmv">{fmt$(sumMonthlyForHandle(rec, handle, 'gmv'))}</div>
+                        <div className="pc-mx-num strong pc-red mx-sum mx-sum-ad">{fmt$(sumMonthlyForHandle(rec, handle, 'adSpent'))}</div>
                         {canDelete && (
                           /* every row gets the button · a creator with two
                              handles renders two rows off the SAME record, so
                              gating it to the first row just looked like the
                              button was randomly missing */
-                          <div className="pc-mx-num">
+                          <div className="pc-mx-num mx-sum mx-sum-del">
                             <button
                               className="pc-actbtn danger"
                               title={`Remove ${rec.name || 'this creator'} from this performance table (Asad only)`}
@@ -8027,11 +8114,11 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
         <div
           className="pc-mx-stickhead"
           ref={cloneRef}
-          style={{ left: stick.left, width: stick.width, height: stick.height }}
+          style={{ left: stick.left, width: stick.width, height: stick.height, top: stick.top }}
           aria-hidden
         >
           <div className="pc-mx">
-            <div className="pc-mx-row pc-mx-head" style={{ gridTemplateColumns: tpl }}>
+            <div className="pc-mx-row pc-mx-head" style={rowStyle}>
               <div className="pc-mx-frozen pc-mx-frozen-head">
                 <div className="pc-mxh pc-mxh-c">#</div>
                 <div className="pc-mxh">Creator</div>
@@ -8040,27 +8127,31 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
               {months.map((m, mi) => {
                 const t = monthTotals[m] || { gmv: 0, ad: 0 };
                 return (
-                  <div key={m} className={'pc-mxh-tile' + (monthBand(mi) ? ' mx-band' : '')}>
+                  <div key={m} className={'pc-mxh-tile' + (monthBand(mi) ? ' mx-band' : '') + (m === focusMonth ? ' mx-focus' : '')}>
                     <span className="pc-mxh-tile-name">{monthShort(m)}</span>
-                    <span className="pc-mxh-tile-gmv">{fmt$(t.gmv)}</span>
-                    <span className="pc-mxh-tile-ad">{fmt$(t.ad)}</span>
+                    {/* WURX-ADJUSTED · blank, not "$0", for a month with nothing
+                        in it — matching the real header this mirrors. It printed
+                        $0 twice per empty month, so the pinned copy did not look
+                        like the thing it is a copy of. */}
+                    <span className="pc-mxh-tile-gmv">{t.gmv > 0 ? fmt$(t.gmv) : ''}</span>
+                    <span className="pc-mxh-tile-ad">{t.ad > 0 ? fmt$(t.ad) : ''}</span>
                   </div>
                 );
               })}
-              <div className="pc-mxh-tile pc-mxh-tile-total">
+              <div className="pc-mxh-tile pc-mxh-tile-total mx-sum mx-sum-videos">
                 <span className="pc-mxh-tile-name">Videos</span>
                 <span className="pc-mxh-tile-tval">{grandVideos}</span>
               </div>
-              <div className="pc-mxh-tile pc-mxh-tile-total">
+              <div className="pc-mxh-tile pc-mxh-tile-total mx-sum mx-sum-gmv">
                 <span className="pc-mxh-tile-name">Total GMV for us</span>
                 <span className="pc-mxh-tile-tval pc-mxh-tile-tval-gmv">{fmt$(grandGmv)}</span>
               </div>
-              <div className="pc-mxh-tile pc-mxh-tile-total">
+              <div className="pc-mxh-tile pc-mxh-tile-total mx-sum mx-sum-ad">
                 <span className="pc-mxh-tile-name">Total Ad for us</span>
                 <span className="pc-mxh-tile-tval pc-mxh-tile-tval-ad">{fmt$(grandAd)}</span>
               </div>
               {canDelete && (
-                <div className="pc-mxh-tile pc-mxh-tile-total">
+                <div className="pc-mxh-tile pc-mxh-tile-total mx-sum mx-sum-del">
                   <span className="pc-mxh-tile-name">Del</span>
                 </div>
               )}

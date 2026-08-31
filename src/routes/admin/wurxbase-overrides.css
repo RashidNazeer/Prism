@@ -43,8 +43,16 @@
  * declarations into one. That is not a theme bug, it is deleting information.
  * Every one of their per-kind colours is a --wx-* token and flips correctly, so
  * the honest fix is to stop overriding them.
+ *
+ * THE PERFORMANCE MATRIX IS EXEMPT FOR THE SAME REASON, added 2026-09-01. Its
+ * cells are `.pc-mx-input`, and they are not fields either: they are the
+ * figures in a sheet, green for GMV and red for ad spend, and this rule was
+ * painting all of them near-black and giving each one a grey fill inside an
+ * already-ruled cell. Rashid photographed the result — a wall of identical
+ * boxes where you cannot tell revenue from spend. Same lesson as the angles:
+ * a rule aimed at FORMS should stop at the edge of a TABLE.
  */
-.wurxbase-root input:not([type='checkbox']):not([type='radio']):not([type='range']):not(.cx-cell input),
+.wurxbase-root input:not([type='checkbox']):not([type='radio']):not([type='range']):not(.cx-cell input):not(.pc-mx-input),
 .wurxbase-root textarea,
 .wurxbase-root select {
   /* !important, and only here. Their sheet carries a later, more specific
@@ -56,7 +64,7 @@
   border-color: var(--wx-border);
 }
 
-.wurxbase-root input:not([type='checkbox']):not([type='radio']):not(.cx-cell input):focus,
+.wurxbase-root input:not([type='checkbox']):not([type='radio']):not(.cx-cell input):not(.pc-mx-input):focus,
 .wurxbase-root textarea:focus,
 .wurxbase-root select:focus {
   background: var(--wx-surface-1) !important;
@@ -710,34 +718,17 @@
 /* -------------------------------------------- the Performance matrix ------ */
 /*
  * LOCKED AND BANDED WERE THE SAME PAINT, so the screen read as mostly locked.
+ * `.mx-sealed` (a month closed before this creator joined) and `.mx-band` (the
+ * alternating shade) both resolved to `--wx-accent-soft` with an `--wx-accent`
+ * border, in their stylesheet, byte for byte. On Penetrex that is 720 locked
+ * cells against 450 live ones, all wearing the product's accent and the
+ * heaviest border on the screen.
  *
- * `.mx-sealed` (a month that closed before this creator joined, so it cannot be
- * typed into) and `.mx-band` (the alternating shade that gives the grid its
- * rhythm) both resolved to `--wx-accent-soft` with an `--wx-accent` border, in
- * their stylesheet, byte for byte. On Penetrex that is 720 locked cells against
- * 450 live ones, all wearing the product's accent and the heaviest border on
- * the screen — so the eye reads the whole grid as sealed and the few editable
- * months disappear into it. Rashid: *"look at the other ss how bad they are"*.
- *
- * A cell you cannot type in should RECEDE. It gets a neutral surface and the
- * quiet border; the accent tint goes back to meaning "this is the rhythm of the
- * table", which is the only job it can do without competing.
+ * That fix — a neutral surface for a sealed cell — was superseded on
+ * 2026-09-01 by THE PERFORMANCE SHEET at the end of this file, which stops
+ * filling the cells at all. It is stated once, there, rather than patched
+ * twice here. This note stays only so the reasoning is not lost with it.
  */
-.wurxbase-root.wurxbase-root .pc-mx .pc-mx-month-pair.mx-sealed {
-  background: var(--wx-surface-2) !important;
-  border-color: var(--wx-border) !important;
-}
-
-/*
- * And the padlock itself was invisible. `--wx-on-accent` is the ink for a solid
- * accent fill — white in light mode — and it was being used on a 14% tint, so
- * the glyph measured 1.15:1 against its own cell where a meaningful graphic
- * needs 3:1. It is the only thing in the cell, so it is the one thing that has
- * to be legible.
- */
-.wurxbase-root.wurxbase-root .pc-mx .pc-mx-month-pair.mx-sealed .pc-mx-locked {
-  color: var(--wx-text-faint) !important;
-}
 
 /* ------------------------------------------- the videos & ad codes panel -- */
 /*
@@ -754,12 +745,12 @@
  * 1100 so it still fits a laptop, and their own 768px rule below turns the grid
  * into stacked rows where none of this applies.
  */
-.wurxbase-root.wurxbase-root .pc-vx-modal {
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-modal {
   max-width: min(1100px, 94vw);
 }
 
-.wurxbase-root.wurxbase-root .pc-vx-row,
-.wurxbase-root.wurxbase-root .pc-vx-headrow {
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-row,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-headrow {
   grid-template-columns: 32px 1.75fr 1fr 72px 42px;
 }
 
@@ -780,7 +771,7 @@
  * A canvas is a canvas. `--bg` is the page, `--paper` a card, `--paper-deep`
  * the nested one.
  */
-.wurxbase-root.wurxbase-root {
+.wurxbase-root.wurxbase-root.wurxbase-root {
   --bg: var(--wx-bg);
   --paper: var(--wx-surface-1);
   --paper-deep: var(--wx-surface-2);
@@ -797,19 +788,437 @@
  *
  * A notification is a raised surface with ordinary ink on it.
  */
-.wurxbase-root.wurxbase-root .notif-panel,
-.wurxbase-root.wurxbase-root .notif-panel-header {
+.wurxbase-root.wurxbase-root.wurxbase-root .notif-panel,
+.wurxbase-root.wurxbase-root.wurxbase-root .notif-panel-header {
   background: var(--wx-surface-1) !important;
   color: var(--wx-text);
 }
 
-.wurxbase-root.wurxbase-root .notif-panel-title,
-.wurxbase-root.wurxbase-root .notif-panel-count {
+.wurxbase-root.wurxbase-root.wurxbase-root .notif-panel-title,
+.wurxbase-root.wurxbase-root.wurxbase-root .notif-panel-count {
   /* Were the accent on an accent-tinted panel — a heading the same colour as
      its own background. */
   color: var(--wx-text) !important;
 }
 
-.wurxbase-root.wurxbase-root .notif-panel * {
+.wurxbase-root.wurxbase-root.wurxbase-root .notif-panel * {
   border-color: var(--wx-border);
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE PERFORMANCE SHEET
+   ──────────────────────────────────────────────────────────────────────────
+   Rashid, 2026-09-01, with their app open beside ours: *"numbers are not even
+   properly visible ... this is the paid app so ui should be premium"*.
+
+   Two separate faults, and they compound.
+
+   THE NUMBERS WERE CUT OFF. A month column is 170px holding two figures side
+   by side. Each half came out 77px wide with 12px of padding on each side, so
+   53px of room for a value that measures 61px — every five-figure GMV in the
+   table was truncated mid-digit and read as a smaller number than it is
+   ("10,160.00" printed as "10,160.0"). That is not a cosmetic problem on a
+   screen whose whole job is showing money. The column is now 176px and the
+   padding 9px, which gives each half 69px: enough for 123,456.78.
+
+   IT WAS ALL FILL AND NO STRUCTURE. Nine iterations of their own restyling
+   had accumulated in paidcollabs.css, each adding a layer without removing
+   the last, and the end state painted every single thing: the header a 10%
+   gold wash, the identity column the same gold, every month cell a bordered
+   grey-beige box with a 9px radius and a margin, the banded months gold with
+   a full-strength gold border, the totals gold again, and a solid #8a5f1f
+   border around the lot. On Penetrex that is roughly 1,100 boxes competing
+   with each other, and the actual figures — the only thing on the screen
+   anyone came for — carry no more visual weight than the padlocks.
+
+   A sheet of numbers is structured by RULES AND ALIGNMENT, not by fills. So:
+   the ground is white, the columns are separated by hairlines, one very quiet
+   wash bands alternate months, and the ink does the rest. Everything below
+   removes something.
+
+   This block is deliberately last and deliberately blunt. It is not worth
+   unpicking nine layers inside a 4,400-line vendored file that we re-vendor
+   from upstream; the sheet's presentation is stated once, here.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── the container ── */
+/*
+ * The full-strength accent border made the table look like a warning. A table
+ * is a surface: the quiet border, and the shadow does the lifting.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-matrix-wrap {
+  border: 1px solid var(--wx-border) !important;
+  border-radius: 14px;
+  background: var(--wx-surface-1);
+  box-shadow: var(--wx-shadow-md);
+  /* Months run off the right edge on any laptop. Rashid: "we can have
+     horizontal scrollbar". Make it an obvious, comfortable one rather than a
+     hairline nobody finds. */
+  overflow-x: auto !important;
+  scrollbar-color: var(--wx-border-strong) transparent;
+}
+
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-matrix-wrap::-webkit-scrollbar {
+  height: 12px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-matrix-wrap::-webkit-scrollbar-track {
+  background: var(--wx-surface-2);
+  border-radius: 0 0 13px 13px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-matrix-wrap::-webkit-scrollbar-thumb {
+  background: var(--wx-border-strong);
+  border: 3px solid var(--wx-surface-2);
+  border-radius: 8px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-matrix-wrap::-webkit-scrollbar-thumb:hover {
+  background: var(--wx-text-faint);
+}
+
+/* ── rows ── */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:not(.pc-mx-head) {
+  min-height: 42px;
+  background: var(--wx-surface-1);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:not(.pc-mx-head):hover,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:not(.pc-mx-head):focus-within {
+  background: var(--wx-surface-2) !important;
+  box-shadow: none;
+}
+
+/* ── the month cell ──
+ * Was: a bordered, rounded, margined box with its own fill, per month, per
+ * creator. Now: nothing but the figures, a hairline to its left marking where
+ * the month starts, and — on alternating months — the quietest wash in the
+ * product so ten columns of numbers stay countable across a wide screen.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-left: 1px solid var(--wx-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+/*
+ * The band is written three classes deep on purpose. Their last layer reaches
+ * it as `.pc-mx > .pc-mx-row:not(.pc-mx-head):nth-of-type(2n)
+ * .pc-mx-month-pair.mx-band`, which is seven class-level selectors and
+ * `!important` — so a shorter rule wins on the odd rows and loses on the even
+ * ones, and the band comes out striped in two different golds. This is what
+ * beating it looks like; there is no shorter way to say it.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx.pc-mx .pc-mx-month-pair.pc-mx-month-pair.mx-band,
+.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx.pc-mx > .pc-mx-row:hover .pc-mx-month-pair.mx-band,
+.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx.pc-mx > .pc-mx-row:focus-within .pc-mx-month-pair.mx-band {
+  background: var(--wx-sheet-band) !important;
+}
+
+/*
+ * SEALED MONTHS SHOULD DISAPPEAR. A creator who joined in June has eight
+ * locked months behind them, so on a ten-month sheet most cells are padlocks —
+ * and each one was drawn as a filled, bordered box. The screen read as mostly
+ * locked. A cell you cannot type in is the least important thing in the row.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx.pc-mx .pc-mx-month-pair.pc-mx-month-pair.mx-sealed {
+  background: transparent !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx.pc-mx .pc-mx-month-pair.pc-mx-month-pair.mx-sealed.mx-band {
+  background: var(--wx-sheet-band) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair.mx-sealed .pc-mx-locked {
+  color: var(--wx-border-strong) !important;
+  opacity: 0.75;
+}
+
+/*
+ * An EARLY month — revenue recorded before the deal started — is a real
+ * exception and keeps its marker, but as an underline rather than a fill, so
+ * it reads as an annotation on the number instead of another box.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair.mx-early {
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: inset 0 -2px 0 var(--wx-warning) !important;
+}
+
+/* ── the figures ── */
+/*
+ * GMV green, ad spend red, right-aligned on tabular numerals so the decimal
+ * points line up down the column — which is the whole reason to right-align.
+ * Their own stylesheet set these colours and then lost them under later
+ * layers; a GMV you cannot tell apart from an ad spend at a glance is the
+ * same bug as a GMV you cannot read.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair .pc-mx-input {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0 9px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 12.5px !important;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.1px;
+  text-align: right !important;
+  color: var(--wx-success) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair .pc-mx-input.ad {
+  color: var(--wx-danger) !important;
+  /* the hairline between a month's two halves is lighter than the one between
+     months, so the pair still reads as one cell */
+  border-left: 1px solid var(--wx-sheet-band) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair.mx-early .pc-mx-input {
+  color: var(--wx-warning) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair .pc-mx-input::placeholder {
+  color: var(--wx-text-faint);
+  opacity: 0.55;
+  font-weight: 500;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair .pc-mx-input:hover {
+  background: var(--wx-accent-soft) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair .pc-mx-input:focus {
+  background: var(--wx-surface-1) !important;
+  box-shadow: inset 0 0 0 2px var(--wx-accent) !important;
+  border-radius: 4px !important;
+  position: relative;
+  z-index: 2;
+}
+
+/* ── the identity column ── */
+/*
+ * White, not gold. It is sticky, so once the months scroll it is the only
+ * thing standing between the reader and a wall of numbers: it needs to look
+ * like paper the sheet slides under, which is a shadow's job, not a tint's.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-frozen {
+  background: var(--wx-surface-1) !important;
+  grid-template-columns: 38px 1fr 140px;
+  border-right: 1px solid var(--wx-border) !important;
+  box-shadow: 6px 0 12px -10px rgb(25 21 18 / 0.45);
+  z-index: 20;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:hover .pc-mx-frozen,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:focus-within .pc-mx-frozen {
+  background: var(--wx-surface-2) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-name {
+  color: var(--wx-text) !important;
+  font-weight: 650;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-user {
+  color: var(--wx-text-muted) !important;
+  font-weight: 500;
+}
+/*
+ * The cohort marker is a RULE DOWN THE EDGE and nothing else. It used to be a
+ * green wash across the identity column, and the contrast guard — once it was
+ * taught to open this screen at all — measured the row number at 4.11:1 on it
+ * in dark mode, twenty-three times. The wash was carrying no information the
+ * green edge and the month tag beside the name do not already carry.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row.mx-cohort .pc-mx-frozen,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row.mx-cohort:hover .pc-mx-frozen {
+  box-shadow: inset 3px 0 0 var(--wx-success), 6px 0 12px -10px rgb(25 21 18 / 0.45);
+}
+/*
+ * Their "joined this month" tag keeps its green pill, so its ink takes a fifth
+ * of the text colour to clear AA at 9px — the same correction the status pills
+ * at the top of this file use, and for the same reason.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-newtag {
+  color: color-mix(in srgb, var(--wx-success) 80%, var(--wx-text)) !important;
+}
+
+/*
+ * The brand hero's stat labels — TOTAL GMV, TOTAL AD SPENT, ROAS, VIDEOS — were
+ * `--pc-text-3`, which resolves to the faintest ink we have, at 9.5px on a
+ * tinted card: 4.28:1 in dark. A four-word label above a five-figure number is
+ * the thing that tells you WHICH five-figure number it is.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-pfhero-l {
+  color: var(--wx-text-muted) !important;
+}
+
+/* ── the header ── */
+/*
+ * One band, one weight. The focused month is the single accented thing on the
+ * screen, which is what makes it findable; when every other tile was also
+ * gold, it was not.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row.pc-mx-head,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx-stickhead .pc-mx-row.pc-mx-head {
+  background: var(--wx-surface-2) !important;
+  border-bottom: 1px solid var(--wx-border-strong) !important;
+  min-height: 52px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row.pc-mx-head .pc-mx-frozen,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx-stickhead .pc-mx-frozen {
+  background: var(--wx-surface-2) !important;
+}
+/*
+ * The pinned mirror of the header — the copy that appears once the real one
+ * scrolls out of the fence — wears the same paint as the real one. It was the
+ * gold wash, so scrolling swapped a grey header for a gold one halfway down
+ * the sheet.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx-stickhead {
+  background: var(--wx-surface-2) !important;
+  border-bottom: 1px solid var(--wx-border-strong) !important;
+  box-shadow: var(--wx-shadow-md);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile {
+  margin: 0 !important;
+  padding: 7px 9px !important;
+  border: 0 !important;
+  border-left: 1px solid var(--wx-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  align-items: flex-end;
+  text-align: right;
+}
+/*
+ * THE HEADER IS NOT BANDED, and the focused month is not filled.
+ *
+ * Both were, and both cost contrast where it is least affordable: the header
+ * carries a month's whole GMV and ad spend at 12px and 10.5px, and stacking a
+ * band or an accent wash under them took green to 4.39:1 and red to 4.38:1.
+ * The band exists to help the eye run ACROSS a hundred body rows; the header
+ * has a label in every cell and does not need it, and the focused month is
+ * already the only accent-coloured name on the screen with a 3px rule under
+ * it. Marking one thing twice is what pushed the numbers under the floor.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile.mx-band {
+  background: transparent !important;
+  border-color: var(--wx-border) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile.mx-focus {
+  background: transparent !important;
+  box-shadow: inset 0 -3px 0 var(--wx-accent) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile.mx-focus .pc-mxh-tile-name {
+  color: var(--wx-accent) !important;
+  opacity: 1;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-name {
+  color: var(--wx-text-muted) !important;
+  font-size: 9.5px;
+  letter-spacing: 0.9px;
+  opacity: 1;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-name::before {
+  display: none;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-gmv {
+  color: var(--wx-success) !important;
+  font-size: 12px;
+  font-weight: 700;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-ad {
+  color: var(--wx-danger) !important;
+  font-size: 10.5px;
+  font-weight: 650;
+  opacity: 1;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh {
+  color: var(--wx-text-muted) !important;
+}
+
+/* ── the summary columns ── */
+/*
+ * The three totals sit at the end of the row and SCROLL WITH IT. Pinning them
+ * to the right edge was tried and reverted the same hour: the block is 444px
+ * wide, so between it and the 344px identity column only 422px of the sheet
+ * was ever scrollable — two and a half months on a laptop, against five with
+ * it off. A pin that costs more than it shows is not worth having, and it was
+ * also drawing itself over live figures at every scroll position.
+ *
+ * What is kept from that attempt is the naming. `mx-sum-*` says which column
+ * is which, so nothing here has to count backwards from the end of the row —
+ * and the delete column, which only Asad sees, was exactly what made counting
+ * backwards wrong.
+ *
+ * The specificity is deliberate. Their own later layers reach these cells with
+ * five class selectors and `!important`, so anything shorter loses and the
+ * columns come back wearing gold pills.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row > .pc-mx-num.mx-sum,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row > .pc-mxh-tile.mx-sum {
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--wx-sheet-summary) !important;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+/* the totals side starts here, and says so with one rule rather than a fill */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row > .mx-sum.mx-sum-videos {
+  border-left: 1px solid var(--wx-border-strong) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:hover > .pc-mx-num.mx-sum,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:focus-within > .pc-mx-num.mx-sum {
+  background: var(--wx-surface-2) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row.pc-mx-head > .pc-mxh-tile.mx-sum,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx-stickhead .pc-mxh-tile.mx-sum {
+  background: var(--wx-surface-2) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-num.pc-green { color: var(--wx-success) !important; }
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-num.pc-red { color: var(--wx-danger) !important; }
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-tval { color: var(--wx-text) !important; font-size: 13px; }
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-tval-gmv { color: var(--wx-success) !important; }
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-tval-ad { color: var(--wx-danger) !important; }
+/* the trailing gold washes their later layers added, removed */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:not(.pc-mx-head) > .pc-mx-num:last-child {
+  border-color: transparent;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-foot {
+  background: var(--wx-surface-2) !important;
+}
+
+/* ── narrow screens ──
+ * Below a laptop the sheet keeps scrolling sideways rather than collapsing:
+ * a matrix IS its two axes, and stacking it into cards would destroy the
+ * comparison it exists to make. What changes is that the identity column
+ * shrinks so more than one month is visible beside it.
+ */
+/*
+ * The width is a custom property because the grid template is built in JS and
+ * a media query cannot reach into it. `tpl` in WurxUI.jsx reads
+ * `var(--mx-frozen-w, 344px)` for its first track, so the tiers below are the
+ * only place the identity column's width is decided.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx {
+  --mx-frozen-w: 344px;
+}
+/*
+ * There is no laptop tier between these two, and that was a decision. Narrowing
+ * the column to 288px on a 1024px screen bought two thirds of one extra month
+ * and cost every name its ending — "Erin Coo…", "Christian…". A name you cannot
+ * read is worse than a month you have to scroll to, so the column holds its
+ * width until the screen is genuinely small.
+ */
+@media (max-width: 900px) {
+  /* a tablet · the handle goes entirely, because a name and two months beats a
+     handle and one */
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx {
+    --mx-frozen-w: 196px;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-frozen {
+    grid-template-columns: 30px 1fr 0;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-user,
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh:nth-child(3) {
+    display: none;
+  }
 }

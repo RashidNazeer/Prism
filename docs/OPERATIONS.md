@@ -946,6 +946,10 @@ pnpm verify:wurxbase-perms   # a viewer of theirs stays a viewer, whatever we ar
 pnpm verify:wurxbase-team    # Team screen: settings reachable, hub email saves
 pnpm verify:write-safety     # the sequence that used to lose data loses nothing
 pnpm verify:collab-controls  # every row control receives its own clicks
+                            # and the performance sheet is checked by
+                            # the same suite: no figure clipped, a cell
+                            # holds 123,456.78, no sideways page scroll,
+                            # at 1500/1280/1024. Needs COLLAB_STAFF_PASSWORD.
 pnpm wurxbase:sync           # DRY RUN by default; --apply to write
 node scripts/check-collab-contrast.mjs   # every label, both themes, per-size AA
 ```

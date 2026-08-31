@@ -97,6 +97,17 @@
   --wx-info: #5cb8e8;
   --wx-info-soft: rgba(92, 184, 232, 0.14);
 
+  /* The performance sheet.
+     A grid of a hundred creators by ten months is read by scanning, so its
+     structure has to come from rules and one very quiet wash, not from filling
+     every cell. --wx-sheet-band groups a month's two figures into one vertical
+     block; --wx-sheet-summary marks the totals side. Both sit under coloured
+     numerals, so they stay far below anything that could move a contrast
+     ratio: at these strengths green and red keep their full ratio against the
+     sheet. */
+  --wx-sheet-band: rgba(200, 146, 75, 0.055);
+  --wx-sheet-summary: #201c18;
+
   /* Elevation, deep shadows on black read as glow, so keep them tight */
   --wx-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
   --wx-shadow-md: 0 1px 2px 0 rgb(0 0 0 / 0.4), 0 10px 30px -14px rgb(0 0 0 / 0.6);
@@ -203,6 +214,10 @@
   --wx-warning-soft: rgba(138, 100, 16, 0.1);
   --wx-info: #186d92;
   --wx-info-soft: rgba(24, 109, 146, 0.1);
+
+  /* The performance sheet · see the dark block for what these are for. */
+  --wx-sheet-band: rgba(138, 95, 31, 0.045);
+  --wx-sheet-summary: #faf8f5;
 
   --wx-shadow-sm: 0 1px 2px 0 rgb(25 21 18 / 0.05);
   --wx-shadow-md: 0 1px 2px 0 rgb(25 21 18 / 0.05), 0 8px 24px -12px rgb(25 21 18 / 0.16);

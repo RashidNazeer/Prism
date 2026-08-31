@@ -1622,3 +1622,20 @@ of any kind is 18 May. Our own admin actions are audited properly; this screen
 came from their code and inherited the gap. Worth closing before their team is
 doing it daily.
 
+## 40. Paid Collabs is not usable on a tablet, and that now blocks a screen he uses
+
+**Status:** OPEN, and promoted from 13e
+**Raise it when:** he opens Paid Collabs on anything narrower than a laptop —
+which he does, and which is why this is no longer just a note.
+
+Measured again 2026-09-01 at 768px: the Performance tab renders brand cards
+carrying **no brand name, no GMV, no ad spend** — a drag handle, a chevron and
+a video count. The values are in the DOM; their responsive CSS simply does not
+lay them out. The performance sheet cannot be reached at all from there, so
+everything fixed in it that day is desktop-only.
+
+It is theirs, not ours, and that was measured rather than assumed — see the
+note in memory. Rewriting a table-to-card transformation across six tabs is a
+feature, not a styling pass. But he asked for this screen to be premium, and
+on a tablet it is not a screen yet.
+

@@ -2,23 +2,28 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-31 by /precompact.** He gave no argument, but one thing IS
-queued and it is waiting on a yes from him.
+**Recorded 2026-09-01.** Two things are queued, in this order.
 
-### Ask him this
+### 1. Ask about the Euka data sync — still unrun, still waiting on his yes
 
-*"Compaction done. Shall I apply the Euka data sync — the 10 changes we
-rehearsed?"* **Wait for a yes. Do not run it unprompted.**
+*"Shall I apply the Euka data sync — the 10 changes we rehearsed?"*
 
-`SUPABASE_SERVICE_KEY=... pnpm wurxbase:sync` is a DRY RUN and safe to
-show him again. `--apply` writes. Last rehearsal: **10 updates, 1 insert, 0
-deletes** — 4 payment marks, 3 delivery flags, 2 statuses, 4 video lists topped
-up, 1 creator added. Every change fills a blank; nothing is overwritten and
-nothing is deleted, which is the rule he set after checking with Asad.
+`SUPABASE_SERVICE_KEY=... pnpm wurxbase:sync` is a DRY RUN and safe to show
+him again. `--apply` writes. Last rehearsal: **10 updates, 1 insert, 0
+deletes** — every change fills a blank; nothing is overwritten and nothing is
+deleted, which is the rule he set after checking with Asad.
 
 **NEVER offer `wurxbase:copy` as the way to do this.** It empties each table
-first and would discard the eight `hub_email` links and everything entered on
-our side. See PARKED 37.
+first and would discard the eight `hub_email` links and everything entered
+on our side. See PARKED 37.
+
+### 2. Paid Collabs is unusable on a tablet, and he is now working in it
+
+PARKED 13e, raised again on 2026-09-01. At 768px the Performance tab shows
+brand cards with **no brand name, no GMV, no ad spend** — a drag handle, a
+chevron and a video count. It is their responsive CSS, measured, not ours,
+and the performance sheet itself cannot even be reached from there. He asked
+for this screen to be premium; on a tablet it is not a screen yet.
 
 ## WHERE EVERYTHING STANDS
 
@@ -26,6 +31,38 @@ our side. See PARKED 37.
 (verified READY, and verified in a browser against the live site, not just the
 deploy status). **Production is untouched** — no Euka function, no key, old
 code. That is still a separate "make it live" step he has not asked for.
+
+### The performance sheet, 2026-09-01
+
+**Rashid, with Asad's app open beside ours: the numbers were not readable**
+**and the screen did not look like a paid product.** Both were true and both
+were measurable.
+
+A month column was 170px holding two figures, so each half had 53px of room
+for a value that measures 61 — every five-figure GMV in the table printed
+short, "10,160.00" as "10,160.0". Nothing threw and nothing looked broken.
+And nine rounds of their own restyling had piled up in paidcollabs.css with
+nothing ever removed, ending in about 1,100 filled, bordered, rounded boxes
+per brand, a gold header, a gold identity column and a full-strength accent
+border around the whole table.
+
+The sheet is now ruled rather than filled, the column is 184px sized against
+a six-figure month, it opens on the newest month instead of ten months of
+padlocks, and the header pins as you scroll. Green GMV and red ad spend came
+back — a global rule meant for FORM FIELDS was painting every figure
+near-black, the same mistake already carved out once for the creative angle
+cells.
+
+**Two guards were extended, and both had been passing on absence.**
+`verify:collab-contrast` only ever measured the brand LIST — 157 headings —
+and never opened a brand; it also read text nodes, and an `<input>` has none,
+so every figure on the densest screen in the product had never been measured.
+It now opens the sheet and reads values: 1,024 elements including 491 figures,
+and it found **60 real contrast failures** the moment it could see them.
+`verify:collab-controls` gained clipping, geometry and overlap checks — and
+the first version of the clipping check PASSED on the broken width, because it
+measured only the values that happen to exist today. It asserts on 123,456.78
+now. 45/45 and 14/14.
 
 ### What this session did, after the last save point
 

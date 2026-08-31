@@ -180,6 +180,113 @@ try {
   check(Boolean(modal), 'the eye button opens its videos panel');
   check(modal?.onScreen === true, 'and it opens where you can see it', modal?.rect);
 
+
+  /* ═══════════════════════════ THE PERFORMANCE SHEET ═══════════════════════
+   * Rashid, 2026-09-01: *"numbers are not even properly visible"*. He was
+   * right and it was measurable the whole time — a month column gave each
+   * figure 53px of room for a value that needs 61, so every five-figure GMV
+   * was cut mid-digit and printed as a SMALLER NUMBER THAN IT IS. Nothing
+   * threw, nothing looked broken, and no guard could see it: they all asked
+   * whether an element exists.
+   *
+   * A number that does not fit its box is the failure. Assert on that.
+   * ══════════════════════════════════════════════════════════════════════ */
+  for (const w of [1500, 1280, 1024]) {
+    await page.setViewportSize({ width: w, height: 1000 });
+    await page.goto(`${BASE}/admin/collabs/performance`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.pc-ava', { timeout: 45000 }).catch(() => {});
+    await page.waitForTimeout(9000);
+    await page.locator('.pc-ava').first().click({ timeout: 20000 }).catch(() => {});
+    const opened = await page.waitForSelector('.pc-mx-row', { timeout: 45000 }).catch(() => null);
+    await page.mouse.move(4, 4);
+    await page.waitForTimeout(6000);
+    if (!opened) { check(false, `${w}px: the performance sheet never opened, so nothing below it was checked`); continue; }
+
+    const sheet = await page.evaluate(() => {
+      const wrap = document.querySelector('.pc-matrix-wrap');
+      const mx = document.querySelector('.pc-mx');
+      if (!wrap || !mx) return null;
+      const clipped = [];
+      let filled = 0;
+      mx.querySelectorAll('.pc-mx-input').forEach((i) => {
+        if (!i.value) return;
+        filled += 1;
+        if (i.scrollWidth > i.clientWidth + 1) clipped.push(`${i.value} needs ${i.scrollWidth} in ${i.clientWidth}`);
+      });
+      /*
+       * THE ROOM A CELL HAS, AGAINST A NUMBER THIS BRAND HAS NOT REACHED YET.
+       *
+       * Measuring only the values that happen to be on screen is how the first
+       * version of this check passed at the broken width: whichever brand loads
+       * first has nothing bigger than 13,888.24, so it fitted, and the guard
+       * reported green on the exact geometry Rashid photographed as broken.
+       * Today's data is not the invariant — the cell has to hold a six-figure
+       * month, because one good creator on one good month IS six figures on
+       * TikTok Shop and nobody should have to notice the day it stops fitting.
+       */
+      const REFERENCE = '123,456.78';
+      const one = mx.querySelector('.pc-mx-month-pair .pc-mx-input');
+      let widest = 0, reference = 0, widestValue = '';
+      if (one) {
+        const cs = getComputedStyle(one);
+        const probe = document.createElement('span');
+        probe.style.cssText = `position:absolute;visibility:hidden;white-space:pre;font:${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize}/${cs.lineHeight} ${cs.fontFamily};letter-spacing:${cs.letterSpacing};font-variant-numeric:${cs.fontVariantNumeric};`;
+        document.body.appendChild(probe);
+        mx.querySelectorAll('.pc-mx-input').forEach((i) => {
+          if (!i.value) return;
+          probe.textContent = i.value;
+          const px = probe.getBoundingClientRect().width;
+          if (px > widest) { widest = px; widestValue = i.value; }
+        });
+        probe.textContent = REFERENCE;
+        reference = probe.getBoundingClientRect().width;
+        probe.remove();
+      }
+      /* every summary cell receives its own clicks · a sticky experiment here
+         once painted the totals straight over live figures */
+      const overlapped = [];
+      mx.querySelectorAll('.mx-sum').forEach((c) => {
+        const r = c.getBoundingClientRect();
+        if (r.width < 4 || r.top < 0 || r.bottom > innerHeight || r.left < 0 || r.right > innerWidth) return;
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        if (hit !== c && !c.contains(hit)) overlapped.push(c.className);
+      });
+      /* what is on screen when the sheet opens */
+      const tiles = [...mx.querySelectorAll('.pc-mx-head .pc-mxh-tile:not(.mx-sum)')];
+      const last = tiles[tiles.length - 1];
+      const wr = wrap.getBoundingClientRect();
+      const lastMonthVisible = last ? last.getBoundingClientRect().right <= wr.right + 2 && last.getBoundingClientRect().right > wr.left : false;
+      return {
+        filled,
+        clipped: clipped.slice(0, 5),
+        clippedCount: clipped.length,
+        widest: Math.round(widest),
+        widestValue,
+        reference: Math.round(reference),
+        room: one ? Math.round(one.clientWidth - parseFloat(getComputedStyle(one).paddingLeft) - parseFloat(getComputedStyle(one).paddingRight)) : 0,
+        overlapped,
+        lastMonthVisible,
+        scrollable: wrap.scrollWidth > wrap.clientWidth,
+        pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      };
+    });
+
+    if (!sheet) { check(false, `${w}px: the sheet rendered no matrix`); continue; }
+    check(sheet.filled > 200, `${w}px: the sheet has figures in it to check`, `${sheet.filled} filled cells`);
+    check(sheet.clippedCount === 0, `${w}px: not one figure is cut off by its cell`, sheet.clipped.join(' | '));
+    check(sheet.widest > 0 && sheet.room >= sheet.widest,
+      `${w}px: a cell has room for the widest figure on this brand's sheet`,
+      `${sheet.widestValue} is ${sheet.widest}px, room ${sheet.room}px`);
+    check(sheet.reference > 0 && sheet.room >= sheet.reference,
+      `${w}px: and for a six-figure month, which is what it has to survive`,
+      `123,456.78 needs ${sheet.reference}px, room is ${sheet.room}px`);
+    check(sheet.overlapped.length === 0, `${w}px: every total column receives its own clicks`, sheet.overlapped.slice(0, 3).join(' | '));
+    check(sheet.scrollable === true, `${w}px: the months scroll sideways inside the sheet`);
+    check(sheet.pageOverflow === 0, `${w}px: and the PAGE does not scroll sideways`, `${sheet.pageOverflow}px`);
+    check(sheet.lastMonthVisible === true,
+      `${w}px: it opens on the newest month, not ten months of empty cells`);
+  }
+  await page.setViewportSize({ width: 1500, height: 1000 });
   check(errors.length === 0, 'zero console errors', errors.slice(0, 3).join(' | '));
   await page.screenshot({ path: 'shots/collab-controls.png' });
 } finally {

@@ -2020,3 +2020,60 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   hazard rather than handling it — an earlier draft took their value on
   conflict and would have overwritten 182 true `items` counts with 0, because
   their deployment still runs the bug fixed here that morning.
+- 2026-09-01: **The performance sheet is ruled, not filled, and a month
+  column is sized against a number the data has not reached yet.** Rashid,
+  with Asad's app open beside ours: *"numbers are not even properly visible
+  ... this is the paid app so ui should be premium"*. Two faults. A month
+  column was 170px holding two figures, so each half had 53px of room for a
+  value measuring 61px and every five-figure GMV printed short — "10,160.00"
+  as "10,160.0", which is not a cosmetic problem on a screen whose job is
+  money. And nine rounds of their own restyling had accumulated in
+  paidcollabs.css without any being removed, ending with every cell a
+  bordered, rounded, filled box: roughly 1,100 of them on Penetrex, the
+  header a gold wash, the identity column the same gold, and a full-strength
+  #8a5f1f border around the lot. The column is 184px now, sized against
+  123,456.78 rather than the largest figure currently in the database,
+  because one creator in one good month IS six figures on TikTok Shop and
+  that is the day nobody would notice it had started truncating. The
+  presentation is stated once, at the end of wurxbase-overrides.css, and it
+  removes rather than adds: white ground, hairline column rules, one 4.3%
+  band on alternating months, ink doing the rest.
+- 2026-09-01: **Sticky total columns were built and reverted the same hour.**
+  Pinning Videos / Total GMV / Total Ad to the right edge sounds obviously
+  right on a sheet ten months wide. The block is 444px: between it and the
+  344px identity column only 422px of a 1210px viewport was ever scrollable,
+  two and a half months against five without it, and at 1024px it left no
+  months visible at all. It also painted itself over live figures at every
+  scroll position. Kept from the attempt: the `mx-sum-*` class names, so no
+  rule has to count backwards from the end of a row — which is what made the
+  delete column, visible only to Asad, break the counting.
+- 2026-09-01: **The identity column holds 344px until 900px wide.** A 288px
+  tier for laptops was written and removed: it bought two thirds of one
+  extra month at 1024px and cost every name its ending. A name you cannot
+  read is worse than a month you have to scroll to. Below 900px the handle
+  goes entirely and the column halves, because there a name plus two months
+  beats a handle plus one. The width is a custom property read by the grid
+  template in WurxUI.jsx, so the breakpoints stay in CSS.
+- 2026-09-01: **Rules in the sheet block are written three `.wurxbase-root`
+  deep on purpose.** Their late layers reach these elements with up to
+  `(0,6,1)` and `!important` — `.pc-mx > .pc-mx-row:not(.pc-mx-head):not(
+  .pc-mx-foot) > div:nth-last-child(2)` — so anything shorter wins on odd
+  rows and loses on even ones, which is how the band first shipped striped in
+  two different golds. There is no shorter way to say it over a vendored
+  stylesheet we do not control and re-pull from upstream.
+- 2026-09-01: **The header is not banded and the focused month is not
+  filled.** Both were, and both cost contrast where it is least affordable:
+  a month's whole GMV at 12px on band plus accent measured 4.39:1, its ad
+  spend 4.38:1. The band exists to help the eye run across a hundred body
+  rows; the header has a label in every cell. Marking one thing twice is what
+  pushed the numbers under the floor.
+- 2026-09-01: **The pinned header follows the fence, not the window.** Their
+  mirror-header effect listened for `window` scroll and pinned at y=0. Our
+  page never scrolls — `.wurxbase-fence` does, and an element's scroll event
+  never reaches a window listener — so on a sheet of a hundred creators the
+  month labels left the top after twelve rows and never came back. It now
+  finds its scrolling ancestor and pins to that box's top edge. Its
+  horizontal position is also synced when the clone MOUNTS: the sync lived
+  inside the measure loop, which runs before the clone exists, so the pinned
+  header opened at column zero over a body scrolled to July — five months of
+  figures under five wrong month labels, worse than having none.

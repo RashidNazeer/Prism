@@ -2105,6 +2105,50 @@ from them, as the brand's GMV.
 
 ## Paid Collabs: WurxBase, vendored (2026-08-18)
 
+### The performance sheet (2026-09-01)
+
+The brand drilldown on the Performance tab: a hundred creators down, ten
+months across, every cell an editable GMV and ad spend. It is the densest
+surface in the product and the only one that is almost entirely numbers.
+
+**Its geometry lives in `WurxUI.jsx`, its paint in `wurxbase-overrides.css`.**
+`FROZEN_W` 344 · `MONTH_W` 184 · `SUM` 82/152/152/58. The month width is
+not a taste decision: two figures share it, and each half must hold
+**123,456.78** — a six-figure month, not the largest number in the database
+today. At 170px each half had 53px for a value measuring 61 and every
+five-figure GMV printed short.
+
+**Structure comes from rules, never fills.** White ground, a hairline to the
+left of each month, a 4.3% band (`--wx-sheet-band`) on alternating months so
+the eye can run across, a faint wash (`--wx-sheet-summary`) on the three
+total columns, green GMV and red ad spend right-aligned on tabular numerals.
+A sealed month — before the creator joined — is a faint padlock on nothing.
+Anything that starts filling cells again is a regression.
+
+**The identity column is sticky, 344px, and does not shrink until 900px.**
+Below that the handle goes and it halves. The width is `--mx-frozen-w`, read
+by the grid template, so breakpoints stay in CSS.
+
+**The sheet opens on the newest month**, measured off the last header tile,
+not by scrolling to the end — the end is the total columns, and scrolling
+there pushes every month off-screen.
+
+**The pinned header is a fixed mirror, and it tracks `.wurxbase-fence`.**
+Sticky cannot reach the viewport from inside a horizontal scroller, so they
+clone the header into a fixed bar. Two things it needs in our shell that it
+did not need in theirs: a scroll listener on the fence (the window never
+scrolls here), and its `scrollLeft` synced when the clone MOUNTS, or it
+opens at column zero over a body scrolled elsewhere.
+
+**Verified by two suites, and both were extended to see it at all:**
+`pnpm verify:collab-controls` now asserts no figure is clipped, that a cell
+holds the reference number, that the totals receive their own clicks and that
+the page never scrolls sideways, at 1500/1280/1024. `pnpm verify:collab-contrast`
+now OPENS a brand — it only ever measured the brand list, 157 headings, and
+reported the tab green — and reads `input` VALUES, which have no text node and
+so had never been measured once. Together they found 60 real contrast
+failures on first run.
+
 ### Where their overlays go, and why it matters (2026-08-31)
 
 **Three elements, three jobs, and mixing them broke half the controls.**

@@ -235,11 +235,28 @@ const PROBE = () => {
   const root = document.querySelector('.wurxbase-root');
   if (!root) return out;
   for (const el of root.querySelectorAll('*')) {
-    const text = [...el.childNodes]
-      .filter((n) => n.nodeType === 3)
-      .map((n) => n.textContent.trim())
-      .join(' ')
-      .trim();
+    /*
+     * A FIELD'S VALUE IS TEXT ON SCREEN AND WAS NOT BEING MEASURED.
+     *
+     * This walked child TEXT NODES, and an <input> has none — its value is a
+     * property, not a child. Every figure in the performance matrix lives in an
+     * input: on Penetrex that is roughly nine hundred numbers, coloured green
+     * for GMV and red for ad spend, sitting on a banded surface, and not one of
+     * them was ever measured. The tab reported "157 text elements, worst 4.9:1"
+     * and the 157 were its headings.
+     *
+     * That is the same shape as every other failure recorded in this file: a
+     * guard that passes because its subject is absent. A typed value is the
+     * most important text on that screen — it is the money.
+     */
+    const isField = el.tagName === 'INPUT' && !['checkbox', 'radio', 'range', 'color'].includes(el.type);
+    const text = isField
+      ? String(el.value || '').trim()
+      : [...el.childNodes]
+          .filter((n) => n.nodeType === 3)
+          .map((n) => n.textContent.trim())
+          .join(' ')
+          .trim();
     if (!text || text.length < 2) continue;
     /*
      * AN EMOJI IS A PICTURE, NOT TEXT.
@@ -456,6 +473,72 @@ try {
         );
       }
     }
+
+    /*
+     * THE SEVENTH SCREEN, AND THE ONE THIS GUARD HAS NEVER SEEN.
+     *
+     * `/admin/collabs/performance` is a list of brand cards. The actual
+     * performance sheet — a hundred creators by ten months of GMV and ad spend,
+     * the densest surface in the product and the only one that is almost
+     * entirely numbers — is a click further in, and this loop never clicked.
+     * It measured 157 headings and reported the tab green while every figure on
+     * it went unlooked at.
+     *
+     * It has to be a click rather than a URL: the drilldown is component state,
+     * not a route.
+     */
+    {
+      const tab = 'Performance sheet';
+      await page.goto(`${BASE}/admin/collabs/performance`, { waitUntil: 'domcontentloaded' });
+      eukaInflight.reset();
+      await settle(page, eukaInflight);
+      await page.locator('.pc-ava').first().click({ timeout: 20_000 }).catch(() => {});
+      const opened = await page.waitForSelector('.pc-mx-row', { timeout: 45_000 }).catch(() => null);
+      /* The mouse sits where it clicked, which is over a row, and a hovered row
+         is painted differently. Move it off before measuring anything. */
+      await page.mouse.move(4, 4);
+      await settle(page, eukaInflight);
+
+      if (!opened) {
+        bad(`${tab}: no brand drilldown opened, so the sheet is UNMEASURED`);
+      } else {
+        const all = await page.evaluate(PROBE);
+        const unreadable = all.filter((r) => r.unreadable);
+        const results = all.filter((r) => !r.unmeasured && !r.unreadable);
+        /* Penetrex alone puts about 1,700 measurable figures and labels on
+           screen. Anything under a thousand means the sheet did not fill in and
+           this check would be reading an empty grid. */
+        if (unreadable.length) {
+          bad(`${tab}: ${unreadable.length} element(s) sit on a colour this guard cannot parse`,
+              [...new Set(unreadable.map((r) => r.unreadable))].slice(0, 3).join(' | '));
+        } else if (results.length < 1000) {
+          bad(`${tab}: only ${results.length} elements measured, expected 1000+ — the sheet is empty or still loading, not passing`);
+        } else {
+          const failures = results.filter((r) => r.ratio < floorFor(r));
+          const figures = results.filter((r) => /^[\d,.]+$/.test(r.text)).length;
+          if (!figures) {
+            bad(`${tab}: not one bare number was measured, so the figures — the whole point of this screen — went unchecked`);
+          } else if (failures.length === 0) {
+            ok(`${tab}: ${results.length} text elements including ${figures} figures, worst ${Math.min(...results.map((r) => r.ratio))}:1`);
+          } else {
+            const byPair = new Map();
+            for (const f of failures) {
+              const k = `${f.fg} on ${f.bg}`;
+              const e = byPair.get(k) ?? { n: 0, ratio: f.ratio, need: floorFor(f), size: f.size, sample: f.text, path: f.path };
+              e.n++;
+              byPair.set(k, e);
+            }
+            bad(
+              `${tab}: ${failures.length} of ${results.length} below the AA floor for their size`,
+              [...byPair].sort((a, b) => b[1].n - a[1].n).slice(0, 6)
+                .map(([k, v]) => `${String(v.n).padStart(4)}x  ${v.ratio}:1 (needs ${v.need}, ${v.size}px)  ${k}\n              "${v.sample}"  at  ${v.path}`)
+                .join('\n        ')
+            );
+          }
+        }
+      }
+    }
+
     await ctx.close();
   }
 } finally {
