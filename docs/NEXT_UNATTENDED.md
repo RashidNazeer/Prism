@@ -33,6 +33,54 @@ collab-ads 30/30, collab-ads-ui 15/15.
 
 ---
 
+## THE TWO DATABASES ARE DIVERGING, and a re-copy is not free
+
+**Measured 2026-08-31.** Rashid compared "Videos delivered" and found 1111 on
+the old app against 1086 on ours. The gap is real and it is not a bug in the
+port: it is 25 videos across FOUR creator rows, and it exists because both
+databases are being edited at the same time.
+
+| creator | brand | missing | why |
+| --- | --- | --- | --- |
+| Sofia Burnett | Aqua Sonic | 10 | typed by hand; brand has no Euka store |
+| Dulce Dagda | Bentgo | 9 | typed by hand; brand has no Euka store |
+| Demarcus Telemaque | Biostime | 5 | Euka videos — recoverable |
+| Victoria Sternau | Biostime | 1 | Euka video — recoverable |
+
+**Six of the 25 heal themselves.** Euka still returns those ids, so our own
+sweep picks them up the next time anyone opens Biostime. Confirmed against the
+live API.
+
+**Nineteen cannot.** Aqua Sonic and Bentgo have no Euka store, so those links
+were typed into the old app by hand and exist in no other system. Only a copy
+brings them across.
+
+**The old app is still in daily use.** Their audit trail on 2026-08-31: Asad
+added a creator at 15:53, Usman signed in at 16:09 and changed workspace
+settings at 16:13. The same creator was added to BOTH databases within 24
+seconds of each other and now carries a different id in each. Every hour both
+are open, the gap grows.
+
+### A RE-COPY IS A FULL REPLACE. Know what it costs before running it.
+
+`wurxbase:copy` EMPTIES each table before filling it. That is what makes it
+safe to re-run, and it means a second copy discards everything our side has
+gained since the first:
+
+- **The eight `hub_email` links go.** Their `app_users` has no such column, so
+  the refilled rows come back with it null — and their whole team drops to the
+  derived role, which is the permission leak the column exists to prevent.
+  **Re-run `pnpm wurxbase:link` immediately afterwards**, then
+  `pnpm verify:wurxbase-roster`.
+- **Anything entered on our side goes**, including creators added while
+  testing.
+- **Our activity_logs go**, including the LOGIN rows our own sign-ins wrote.
+
+The dropped `password` column survives — a copy fills columns, it does not
+restore them.
+
+**So the order matters: stop the old app FIRST, then copy, then re-link, then
+verify.** Copying while they are still typing just moves the gap.
 ## WHAT NEEDS A PERSON, before Monday
 
 ### 1 and 2. DONE ON DEV 2026-08-29
