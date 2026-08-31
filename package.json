@@ -58,6 +58,7 @@
     "verify:wurxbase-team": "node scripts/check-wurxbase-team.mjs",
     "verify:wurxbase-roster": "node scripts/check-wurxbase-roster.mjs",
     "wurxbase:link": "node scripts/link-wurxbase-team.mjs",
+    "wurxbase:sync": "node scripts/wurxbase-sync-data.mjs",
     "verify:euka": "node scripts/check-euka.mjs",
     "verify:euka-ui": "node scripts/check-euka-ui.mjs"
   },
