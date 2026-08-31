@@ -131,3 +131,53 @@ export async function wurxbaseRest(path, init = {}) {
   const headers = await wurxbaseHeaders(init.headers || {});
   return fetch(`${WURXBASE_ORIGIN}/rest/v1/${String(path).replace(/^\/+/, '')}`, { ...init, headers });
 }
+
+/* ── EUKA ───────────────────────────────────────────────────────────────
+   Their app fetches every Euka figure from `/.netlify/functions/euka`, a
+   serverless function that lived in the original developer's NETLIFY
+   deployment. It was never inside the `src/` tree that was vendored in, and
+   `vercel.json` deliberately lets that path 404 rather than answering it with
+   index.html — so since the move, every one of those calls has failed.
+
+   Nothing errored, because their code is written to degrade: each call site
+   does `.then(r => r.ok ? r.json() : null)` and carries on. The store list
+   came back null, so `eukaStoreForBrand` had nothing to match against and the
+   brand screen said `No EUKA store named "Swisse"`; L30 GMV, tiers, brand
+   photos, posted videos and the Discovery pool were all simply absent. That
+   is the "our numbers are different from theirs" report, and it is one
+   missing endpoint rather than a dozen separate bugs.
+
+   The function is ported to `supabase/functions/euka`. This is the only thing
+   that changed on their side: a fetch of a dead URL became a call through the
+   one client, which attaches the session token so the function can check who
+   is asking. Their key was a string literal in a committed file and their
+   endpoint answered anybody; ours is a secret and staff-only, because
+   `type=discovery` returns creator emails and phone numbers.
+
+   Returns the parsed body, or NULL on any failure — deliberately the same
+   contract their call sites already handle. */
+export async function eukaJson(params = {}) {
+  try {
+    const body = {};
+    for (const [k, v] of Object.entries(params)) {
+      if (v !== undefined && v !== null && v !== '') body[k] = String(v);
+    }
+    const { data, error } = await getSupabase().functions.invoke('euka', { body });
+    if (error) {
+      console.error('[euka]', error.message || error);
+      return null;
+    }
+    /* The function answers 502 with `{error}` when EUKA itself fails. Treat
+       that as a failure rather than handing back an object whose every
+       expected key is missing — a caller reading `.stores` off it would see
+       undefined and report "no stores" instead of "EUKA is down". */
+    if (data && data.error) {
+      console.error('[euka]', data.error);
+      return null;
+    }
+    return data || null;
+  } catch (e) {
+    console.error('[euka]', e && e.message);
+    return null;
+  }
+}

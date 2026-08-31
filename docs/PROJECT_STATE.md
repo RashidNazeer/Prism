@@ -2,40 +2,90 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-08-29, third save. Nothing is waiting on Rashid.**
+**Recorded 2026-08-29, fourth save. Nothing is waiting on Rashid.**
 
-Everything he was asked for has been answered and done. Dev is complete:
-their team can sign in, each person arrives with the powers Asad gave them,
-and the passwords and colour problems are gone.
+**The next thing is the PRODUCTION CUTOVER, which needs his go-ahead rather
+than his input.** Dev is complete. Follow `docs/NEXT_UNATTENDED.md` section 3.
 
-**The next thing is the PRODUCTION CUTOVER, and it needs his go-ahead, not
-his input.** He has said before: *"first fix everythign ondeve then we will
-push to prod"*. Dev is now fixed. Ask whether to make it live, then follow
-`docs/NEXT_UNATTENDED.md` section 3 — eight steps, ending in
-`verify:wurxbase-roster` against prod.
+**TWO EXTRA PROD STEPS since the Euka fix**, and neither travels with a
+migration or a git push:
 
-**Both earlier flags are settled. Do not raise either again:**
+```powershell
+supabase secrets set "EUKA_API_KEY=<key>" --project-ref $env:SUPABASE_PROJECT_REF_PROD
+supabase functions deploy euka --project-ref $env:SUPABASE_PROJECT_REF_PROD
+```
 
-1. **`ops` seeing our whole admin sidebar is fine.** Rashid, 2026-08-29:
-   *"it's fien let them see all no issue"*. Asked and answered — applications,
-   offers, contests and brand hubs are all visible to their team on purpose.
-2. **The password is `1234567890`**, shared by all eight. `1-0` was a typo he
-   corrected. It is shared rather than per-person, which he knows; offer
-   per-person passwords once at the prod cutover and then let it go.
+**Tell him, once, when the cutover comes up:** the Euka key was a string
+literal in Asad's repository and is in that repository's history, so it should
+be rotated. Rotating means one `supabase secrets set` per project; no code
+changes.
 
-**Still owed, on his "remind me later":** telling Asad about the bugs that
-were in his own copy. Add to that conversation that the five old WurxBase
-passwords are in git history and should be treated as burned.
+**Still owed on his "remind me later":** telling Asad about the bugs that were
+in his own copy. That list is now longer and more useful — see below.
 
 ## WHERE EVERYTHING STANDS
 
 **All the work is on the branch `fix/wurxbase-write-safety`. `dev` is still
 at `19a750a`. Nothing merged, nothing deployed, PRODUCTION UNTOUCHED.**
 
-### Their team, on dev
+### The Euka endpoint, restored 2026-08-29
 
-| Person | In Paid Collabs | Hub account |
-| --- | --- | --- |
+Rashid: *"when we click euka it says no brand name found... at all places where
+data is coming from euka api the data is diff in our platform and there"*.
+
+**One missing endpoint, not a dozen bugs.** Their app fetches
+`/.netlify/functions/euka` in twelve places. That function lived only in the
+original developer's Netlify deployment — the vendoring copied their `src/`
+and a Netlify function sits outside it. On Vercel the path 404s, and every
+call site degrades to null without erroring, so every Euka figure was simply
+absent. Ported to `supabase/functions/euka`, reached through `eukaJson()`
+in the seam.
+
+**Four more bugs were found on top of the missing endpoint**, three of which
+are live on Asad's deployment too:
+
+1. **The dashboard call has been 400ing** for want of a `brandId` Euka started
+   requiring. It is swallowed, so thumbnails, Spark codes, avatars and item
+   counts silently came back empty — on their side as well as ours.
+2. **`items` was reading `gmvOrders`**, a count of orders, into the column
+   labelled "Items sold". Live: 59 vs a true 55.
+3. **The video merge wrote `items: 0` over real counts** on every sweep, then
+   the per-creator sweep restored ten of them, forever. It was the only one of
+   six fields written unguarded.
+4. **L30 GMV and tier read a frozen cache first.** `monthly.euka` is refreshed
+   by a nightly job that was never ported and writes to the retired project;
+   800 of 1000 creators carry a value stamped between 29 July and 28 August.
+   Now live first, cache as fallback.
+
+Plus a race where opening a brand quickly left its logo a grey initial until a
+full reload.
+
+**Not every brand has an Euka store, and that is not a bug:** Euka has ten
+stores, Paid Collabs tracks thirty brands, six match.
+
+**Three things were found and deliberately NOT fixed — PARKED 36.** The one
+that matters: the video window is asked for in UTC and enforced in the
+browser's local time, and rows outside it are DELETED, so two people sweeping
+the same brand write different data. 3% of rows change side with the
+operator's clock.
+
+### Done earlier the same day
+
+- The plaintext passwords are gone, column and browser bundle both.
+- The colour review is finished; the guard had been passing its own failures.
+- Settings was unreachable in our chrome; a gear opens it.
+- A viewer arrived with edit rights, because their app reads identity once at
+  mount and we mounted it too early.
+- Their eight people are linked and have hub accounts, all `ops`.
+
+Suites on dev: euka 32/32, euka-ui 7/7, roster 21/21, team 10/10, perms 5/5,
+signin 7/7, wurxbase 7/7, write-safety 11/11, collab-ads 30/30, collab-ads-ui
+17/17, contrast 12/12, isolation ok.
+
+**Do not re-explore the codebase.** This file, then
+`docs/NEXT_UNATTENDED.md`, then PARKED.
+
+--- | --- | --- |
 | Asad | superadmin | asad@wurxmedia.com |
 | Usman | admin | usman@wurxmedia.com |
 | Farkhan Saleem | ipc | farkhan@wurxmedia.com |

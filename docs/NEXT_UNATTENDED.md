@@ -71,7 +71,18 @@ still points at their old project, so it works the old way today. The cutover:
 6. `pnpm verify:wurxbase` against prod;
 7. `SUPABASE_SERVICE_KEY=... node scripts/link-wurxbase-team.mjs --i-mean-prod`;
 8. create the eight hub accounts there too — they do not travel with a
-   migration — then `ROSTER_PASSWORD=... pnpm verify:wurxbase-roster`.
+   migration — then `ROSTER_PASSWORD=... pnpm verify:wurxbase-roster`;
+9. **the Euka function and its secret**, which also do not travel:
+
+```powershell
+supabase secrets set "EUKA_API_KEY=<key>" --project-ref $env:SUPABASE_PROJECT_REF_PROD
+supabase functions deploy euka --project-ref $env:SUPABASE_PROJECT_REF_PROD
+```
+
+   then `EUKA_STAFF_PASSWORD=... pnpm verify:euka` against prod. A missing
+   `EUKA_API_KEY` answers 500 rather than an empty result, on purpose: an
+   empty result looks exactly like "this brand has no data", which is the
+   failure that hid the missing endpoint for eleven days.
 
 ### 4. Somebody has to tell the team to stop using the old app
 

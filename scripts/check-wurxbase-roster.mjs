@@ -82,7 +82,7 @@ try {
 
     const hello = page.getByRole('button', { name: /let.s go/i });
     if (await hello.first().isVisible().catch(() => false)) await hello.first().click();
-    await page.goto(`${BASE}/admin/collabs/brands`, { waitUntil: 'networkidle' });
+    await page.goto(`${BASE}/admin/collabs/brands`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(4500);
 
     /* Their own row's role greeted them, not one derived from ours. Every one

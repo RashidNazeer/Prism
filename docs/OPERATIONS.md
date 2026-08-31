@@ -1043,12 +1043,42 @@ vercel build --token $VERCEL_TOKEN --yes      # "Build completed successfully."
 A green `git push` says nothing about the build. `vercel ls wurxmediahubdev`
 shows the state; a run with duration `?` never built at all.
 
-The rewrite excludes `.netlify/` because WurxBase still calls
-`/.netlify/functions/euka`, which does not exist here. Without the exclusion the
-SPA answered it with index.html and a 200, so their code called `.json()` on
-HTML and threw `Unexpected token '<'`. A real 404 lets their own handling
-degrade to null. Square brackets are avoided in the pattern: `source` is parsed
-with path-to-regexp, and a character class is not worth the risk.
+The rewrite excludes `.netlify/`. That exclusion is now VESTIGIAL and is kept
+only because editing `vercel.json` has killed deployments twice: nothing calls
+that path any more. Until 2026-08-29 WurxBase fetched
+`/.netlify/functions/euka` in twelve places, a Netlify function that was never
+vendored in because the copy took their `src/` and it lived outside it. Without
+the exclusion the SPA answered with index.html and a 200, so their code called
+`.json()` on HTML and threw `Unexpected token '<'`; a real 404 let their own
+handling degrade to null instead, which is why nothing ever errored and the
+figures were simply missing. Square brackets are avoided in the pattern:
+`source` is parsed with path-to-regexp, and a character class is not worth the
+risk.
+
+### The Euka proxy
+
+Those twelve call sites now go through `eukaJson()` in the seam to the
+`euka` Edge Function. **The API key is a secret and must never enter the
+repository** — the original had it as a string literal in a committed file,
+which is why it should be rotated.
+
+```powershell
+# the key, straight from wherever you keep it, into the function environment
+supabase secrets set "EUKA_API_KEY=<key>" --project-ref $env:SUPABASE_PROJECT_REF_DEV
+supabase functions deploy euka --project-ref $env:SUPABASE_PROJECT_REF_DEV
+```
+
+**Production needs both of those run again with the prod ref.** A function and
+its secrets do not travel with a migration or a git push, and a missing
+`EUKA_API_KEY` is answered with a loud 500 rather than an empty result, on
+purpose: an empty result is indistinguishable from "this brand has no data",
+which is the failure that hid this for eleven days.
+
+**Never wait on `networkidle` on a Paid Collabs route.** It never settles on a
+screen holding a realtime socket, and these screens now also fire ten Euka
+calls that take seconds each upstream, so a perfectly healthy page blows the
+30 second navigation limit. Navigate with `domcontentloaded` and wait for the
+content you actually need.
 
 ## Screenshot scripts
 

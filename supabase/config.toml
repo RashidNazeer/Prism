@@ -441,3 +441,12 @@ verify_jwt = true
 # platform's JWT gate is left off to let the scheduler in at all.
 [functions.tiktok-sync]
 verify_jwt = false
+
+# The Euka read proxy. Nobody signed out has any business here — the store
+# roster it returns includes creator emails and phone numbers under
+# `type=discovery` — so the platform's JWT gate is left ON as a first lock, and
+# the function re-checks the caller's role against `profiles` behind it. The
+# original it replaces had neither: it answered `*` with no Authorization at
+# all.
+[functions.euka]
+verify_jwt = true

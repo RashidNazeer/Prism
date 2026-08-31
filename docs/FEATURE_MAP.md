@@ -2105,6 +2105,60 @@ from them, as the brand's GMV.
 
 ## Paid Collabs: WurxBase, vendored (2026-08-18)
 
+### Where the Euka figures come from (2026-08-29)
+
+Every Euka-derived number on these screens — last-30-day GMV, creator tiers,
+brand photos, posted videos with their views and revenue, per-creator
+engagement, and the whole Discovery pool — arrives through **one Edge
+Function**, `supabase/functions/euka`, reached from the seam as
+`eukaJson({ store, type, from, to, handle })`.
+
+**It replaces a Netlify function that never came with them.** Their app
+fetches `/.netlify/functions/euka` in twelve places. That function lived only
+in the original developer's Netlify deployment; the vendoring copied their
+`src/` and a Netlify function sits outside it. On Vercel the path 404s, and
+every call site is written as `.then(r => r.ok ? r.json() : null)` — so
+NOTHING ERRORED and every one of those figures was simply absent for eleven
+days. The visible symptom was a red pill on a brand: `No EUKA store named
+"Swisse"`. That is one missing endpoint, not a dozen bugs.
+
+**Six modes, and their shapes are load-bearing.** A dozen call sites in code
+we do not own destructure these by key, so a renamed key is a blank column
+rather than an error:
+
+| call | returns |
+| --- | --- |
+| `eukaJson()` | `{ range, stores: [{id,name}] }` |
+| `eukaJson({store})` | `{ range, handles, profiles, shop }` |
+| `eukaJson({store,type:'videos'})` | `{ range, videos, avatars, brandPhoto, tiers }` |
+| `eukaJson({store,type:'cvideos',handle})` | `{ range, videos: {handle: rows} }` |
+| `eukaJson({store,type:'discovery'})` | `{ range, people }` |
+| `eukaJson({store,type:'photo'})` | `{ photo }` |
+
+**NOT EVERY BRAND HAS A STORE, and that is not a bug.** Euka has ten stores;
+Paid Collabs tracks thirty brands. Six match. A brand with no store shows no
+Euka figures because there are none to show. The match is by name —
+normalised, then a UNIQUE prefix in either direction, which is how the brand
+"Swisse" finds the store "Swisse Wellness". An ambiguous prefix matches
+nothing on purpose: it will not guess between two stores.
+
+**Three things are deliberately different from theirs.** The API key is a
+function secret rather than a string literal in a committed file. The caller
+is verified and must be staff — theirs answered `*` with no Authorization at
+all, and `type=discovery` returns creator email addresses and phone numbers.
+And it takes a POST, because `functions.invoke` sends one and gets the session
+token attached for free.
+
+**Their 60-day cliff is real and undocumented by them.** The export returns
+ZERO ROWS, with a 200, for a range wider than about sixty days — which looks
+exactly like "this brand has no videos". Every window is clamped to 55 days
+and callers needing more history sweep several.
+
+**Verify with** `pnpm verify:euka` (every mode against live Euka, plus the door:
+a creator and a signed-out caller are both refused) and `pnpm verify:euka-ui`
+(the red pill is gone from a real browser, and a brand photo rendered).
+
+
 ### The team, and how somebody is recognised (2026-08-29)
 
 **There is no password anywhere in this feature.** Their sign-in went on

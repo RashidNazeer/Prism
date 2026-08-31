@@ -122,7 +122,15 @@ try {
   const hello = page.getByRole('button', { name: /let.s go/i });
   if (await hello.first().isVisible().catch(() => false)) await hello.first().click();
 
-  await page.goto(`${BASE}/admin/collabs`, { waitUntil: 'networkidle' });
+
+  /*
+   * WAITING ON A PAID COLLABS SCREEN. Never `networkidle`. It never settles on a
+   * screen holding a realtime socket, and since the Euka endpoint was restored
+   * these routes also fire ten proxy calls that take seconds each upstream — so a
+   * perfectly healthy page blows the 30 second navigation limit. Navigate with
+   * `domcontentloaded` and wait for the CONTENT you need.
+   */
+  await page.goto(`${BASE}/admin/collabs`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(3500);
 
   /*

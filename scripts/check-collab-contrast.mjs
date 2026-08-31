@@ -56,6 +56,58 @@ const LARGE_BOLD_PX = 18.66;
 const floorFor = (r) =>
   r.size >= LARGE_PX || (r.size >= LARGE_BOLD_PX && r.weight >= 700) ? 3.0 : 4.5;
 
+/*
+ * Wait for a tab to actually finish, rather than for a fixed number of seconds.
+ *
+ * WHY NOT A FIXED WAIT. These tabs were measured after a flat 2200ms, which was
+ * enough while they only read our own database. Restoring the Euka endpoint put
+ * calls behind them that take seconds each upstream, and the counts collapsed —
+ * Creators measured 7 elements where it has 2085, and the guard reported PASS
+ * on seven readable labels. A guard that measures less and says the same thing
+ * is this project's most repeated bug.
+ *
+ * WHY NOT DOM STABILITY ALONE. A screen waiting on a seven second call is
+ * perfectly still while it waits, so stability settles in the middle of it.
+ *
+ * SO: settled means no Euka call has landed for a moment AND the DOM has
+ * stopped growing. Both, or neither is worth much.
+ *
+ * IN-FLIGHT COUNTING IS NOT ENOUGH EITHER, which the first attempt at this
+ * found the hard way: navigating away cancels pending requests without always
+ * firing a completion event, so the counter sticks above zero and every tab
+ * after Discovery reported "never filled". The counter is therefore reset at
+ * each navigation and backed up by a QUIET PERIOD — the time since the last
+ * Euka response — which needs no bookkeeping to be correct.
+ *
+ * Returns the element count last seen, never a sentinel: the caller decides
+ * whether that number is big enough to be worth measuring.
+ */
+async function settle(page, euka, { quiet = 3, every = 1000, hush = 2500, cap = 150_000 } = {}) {
+  const started = Date.now();
+  let last = 0;
+  let still = 0;
+  while (Date.now() - started < cap) {
+    await page.waitForTimeout(every);
+    const n = await page.evaluate(() => document.querySelectorAll('.wurxbase-root *').length);
+    if (n !== last) { last = n; still = 0; continue; }
+    if (euka.inflight > 0) { still = 0; continue; }
+    if (Date.now() - euka.lastAt < hush) { still = 0; continue; }
+    if (n > 0 && ++still >= quiet) return n;
+  }
+  return last;
+}
+
+/* Euka calls sent, answered, and when the last answer arrived. */
+function trackEuka(page) {
+  const state = { inflight: 0, total: 0, lastAt: 0, reset() { this.inflight = 0; this.lastAt = Date.now(); } };
+  const isEuka = (r) => /\/functions\/v1\/euka/.test(r.url());
+  page.on('request', (r) => { if (isEuka(r)) { state.inflight++; state.total++; } });
+  const done = (r) => { if (isEuka(r)) { state.inflight = Math.max(0, state.inflight - 1); state.lastAt = Date.now(); } };
+  page.on('requestfinished', done);
+  page.on('requestfailed', done);
+  return state;
+}
+
 const admin = createClient(env.VITE_SUPABASE_URL, SERVICE, { auth: { persistSession: false } });
 const stamp = Date.now();
 const ME = { email: `contrast-${stamp}@wurx.test`, password: 'Contrast!2026' };
@@ -270,6 +322,7 @@ try {
       sessionStorage.setItem('ch_user', JSON.stringify({ id: 'asad', username: 'Asad', role: 'superadmin', display: 'Asad' }));
     }, { t: theme });
     const page = await ctx.newPage();
+    const eukaInflight = trackEuka(page);
 
     await page.goto(`${BASE}/admin/login`, { waitUntil: 'domcontentloaded' });
     await page.fill('input[name="email"]', ME.email);
@@ -279,8 +332,9 @@ try {
     const hello = page.getByRole('button', { name: /let.s go/i });
     if (await hello.first().isVisible().catch(() => false)) await hello.first().click();
 
-    await page.goto(`${BASE}/admin/collabs`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(3200);
+    await page.goto(`${BASE}/admin/collabs`, { waitUntil: 'domcontentloaded' });
+    eukaInflight.reset();
+    await settle(page, eukaInflight);
 
     console.log(`\n[${theme}]`);
     /*
@@ -316,11 +370,20 @@ try {
       ['Leaderboard', 'leaderboard'],
       ['Discovery', 'discovery'],
     ]) {
-      await page.goto(`${BASE}/admin/collabs/${slug}`, { waitUntil: 'networkidle' });
-      await page.waitForTimeout(2200);
+      await page.goto(`${BASE}/admin/collabs/${slug}`, { waitUntil: 'domcontentloaded' });
+      eukaInflight.reset();
+      const settledAt = await settle(page, eukaInflight);
 
       if (!page.url().includes(`/admin/collabs/${slug}`)) {
         bad(`${tab}: asked for /admin/collabs/${slug} and landed on ${page.url()}`);
+        continue;
+      }
+
+      /* Chrome alone is roughly this many nodes. Anything at or under it means
+         the screen never filled, and measuring it would report a pass on a
+         page nobody could have read. */
+      if (settledAt < 60) {
+        bad(`${tab}: settled at only ${settledAt} elements — the screen never filled, so this tab is UNMEASURED`);
         continue;
       }
 

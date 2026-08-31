@@ -1867,3 +1867,77 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   fien let them see all no issue"*. So the narrower role that would have
   needed threading through every RLS policy is NOT being built, and this is
   not to be re-raised as an open question.
+- 2026-08-29: **The Euka proxy is a Supabase Edge Function, not a Vercel
+  serverless function.** The original was a Netlify function, and the
+  like-for-like port would have been `/api/euka` on Vercel. Rejected: this
+  repository has fourteen Edge Functions and no `api/` directory, the secret
+  store is already there, and CLAUDE.md names Edge Functions as where
+  privileged server-side work goes. One kind of backend, not two.
+- 2026-08-29: **It is staff-only, which the original was not.** Theirs sent
+  `Access-Control-Allow-Origin: *` and required no Authorization, so anybody
+  who knew the URL could pull the roster — and `type=discovery` returns
+  creator emails and phone numbers. Ours verifies the token with the auth
+  server and reads the role from `profiles`, not from the JWT claim, because a
+  claim can be an hour stale. Faithfully porting the hole was not on.
+- 2026-08-29: **The response shapes are copied exactly, bugs and all.**
+  Twelve call sites in code we do not own read these objects by key. Where
+  the original rounds revenue to cents, picks the newest posted date for a
+  tier, or takes the first non-empty value per profile field, ours does the
+  same — a "better" answer here is a number that silently disagrees with the
+  one their team has been reading for months.
+- 2026-08-29: **`networkidle` is banned on a Paid Collabs route.** It never
+  settles on a screen holding a realtime socket, which OPERATIONS already
+  recorded, and restoring Euka made these routes fire ten proxy calls that
+  take seconds each — so a healthy page blew the 30 second navigation limit
+  and `check-collab-ads-ui` failed on a page that was working. Every one of
+  those navigations already had an explicit wait after it, so the flag was
+  contributing nothing but the risk. Ten of them swapped for
+  `domcontentloaded`.
+- 2026-08-29: **The contrast guard waits for the screen, not for a clock.**
+  Its flat 2200ms was enough until Euka calls went behind these screens;
+  then Creators measured 7 elements where it has 2085 and still said PASS.
+  It now settles on two conditions together — no Euka call in flight AND the
+  DOM stopped growing — because a screen waiting on a seven second call is
+  perfectly still, so stability alone settles in the middle of the wait. It
+  also refuses to measure a tab that never filled, rather than reporting a
+  pass on whatever rendered.
+- 2026-08-29: **The dashboard call sends `brandId`, which the original never
+  did.** Euka tightened that validator after their code was written: the
+  original body answers `400 BAD_REQUEST "Input validation failed"` today,
+  verified live. The original swallows a non-2xx there, so `richById` is empty
+  and every video comes back with no thumbnail, no Spark code, no avatar and
+  `items: 0` — silently, ON THEIR DEPLOYMENT AS MUCH AS OURS. Adding brandId
+  is the whole fix. It does mean two brand faces (Aurelia, Cutler) now come
+  from the dashboard rather than from the sample-request fallback and will
+  look different from the old app; that is the correct photo, and after the
+  cutover there is no old app to compare against.
+- 2026-08-29: **`items` is `itemsSoldCount`, not `gmvOrders`.** The original
+  reads a count of ORDERS into the column the table labels "Items sold". Live
+  on Swisse the same video reports gmvOrders 59 and itemsSoldCount 55, and 55
+  is what the per-creator export says — so the two modes disagreed about the
+  same video depending on which swept last.
+- 2026-08-29: **The video merge stopped writing `items: 0` over real counts.**
+  `items` was the only one of six fields written unconditionally, and the only
+  one the store-wide sweep does not know: the dashboard enriches FIVE videos
+  however many you ask for (it reports `pageSize: 5` and ignores `limit`),
+  while the per-creator sweep that fills it properly reaches ten creators a
+  pass. So the column oscillated rather than filling. Now guarded exactly like
+  `product`, `thumb`, `likes`, `comments` and `secs` beside it.
+- 2026-08-29: **L30 GMV and tier read LIVE first, stored second.** It was the
+  other way round, and that is a second, independent reason our numbers
+  differed from theirs. `monthly.euka` is a cache refreshed nightly by
+  `euka-checkin-background`, a scheduled Netlify function that was never
+  vendored in and which writes to the project retired on 2026-08-28. On their
+  deployment that cache is a day old and reading it first is harmless; on ours
+  it is FROZEN — 800 of 1000 creators carry a stored L30 stamped between 29
+  July and 28 August — and every one was being shown in preference to today's
+  figure. Rejected: porting the nightly job, which is more moving parts for a
+  staler answer. The cache stays as the fallback, because `creator_level`
+  only covers the last thirty days, so a creator who has not posted recently
+  drops out of the live sweep and their last known figure beats a dash.
+- 2026-08-29: **One shared promise per store for brand photos, not a
+  "has it started" flag.** A `Set` meant the first `BrandFace` to mount claimed
+  the store id and every later one returned without ever reading the result.
+  Opening a brand mounts a second face for the same store while the list's
+  fetch is still in the air, so the drilldown's logo was the one that lost,
+  and it stayed a gradient initial until a full reload.

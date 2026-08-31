@@ -3549,7 +3549,11 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, curre
               while (plot.length && plot[plot.length - 1].gmv === 0 && plot[plot.length - 1].ad === 0) plot.pop();
               const skipped = gmvTrend.length - plot.length;
               if (plot.length < 2) {
-                return <div className="tw-text-[11px] tw-italic tw-py-10 tw-text-center" style={{ color: 'color-mix(in srgb, var(--wx-text-muted) 50%, transparent)' }}>
+                /* INK IS NEVER FADED. Muted at 50% measured 2.38:1 in dark and 1.94:1
+                   in light at 11px — an empty state nobody could read, which is
+                   worse than no empty state. Our palette answers 'quieter ink'
+                   with tokens that check:contrast verifies; alpha cannot be. */
+                return <div className="tw-text-[11px] tw-italic tw-py-10 tw-text-center" style={{ color: 'var(--wx-text-muted)' }}>
                   Not enough months with figures to draw a trend yet.
                 </div>;
               }
@@ -4198,7 +4202,7 @@ function SystemHealthV2({ onClose, currentUser, creatorsLive = [] }) {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>System Health</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'color-mix(in srgb, var(--wx-text-muted) 55%, transparent)', marginTop: 2 }}>Real-time database &amp; app performance</div>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>Real-time database &amp; app performance</div>
           </div>
           <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
@@ -4793,7 +4797,7 @@ function SqlPlaygroundV2({ onClose, currentUser }) {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.3px', color: 'var(--wx-text-muted)' }}>SQL Playground</div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'color-mix(in srgb, var(--wx-text-muted) 55%, transparent)', marginTop: 2, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
               <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--wx-success-soft)', display: 'inline-block' }} />
               Read-only · {currentUser?.display}
             </div>
@@ -6541,7 +6545,7 @@ function LeaderboardModalV2({ creators, hiredByTeam, onClose }) {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>Leaderboard</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'color-mix(in srgb, var(--wx-text-muted) 55%, transparent)', marginTop: 2 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>
               {month
                 ? `Hired-by performance · ${monthLabelShort(month)}${prevMonth ? ` vs ${monthLabelShort(prevMonth)}` : ''}`
                 : 'Hired-by performance across all deals'}
@@ -9309,7 +9313,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
             <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>
               {view === 'home' ? 'Settings' : 'Hired By Team'}
             </div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'color-mix(in srgb, var(--wx-text-muted) 55%, transparent)', marginTop: 2 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>
               {view === 'home' ? 'Workspace preferences & administration' : 'Manage your team members'}
             </div>
           </div>
@@ -10170,7 +10174,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>Team</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'color-mix(in srgb, var(--wx-text-muted) 55%, transparent)', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <span><strong style={{ color: 'var(--wx-text-muted)' }}>{appUsers.length}</strong> members</span>
               <span><strong style={{ color: 'var(--wx-success)' }}>{onlineCount}</strong> online</span>
               {pendingReqs.length > 0 && <span><strong style={{ color: 'var(--wx-warning)' }}>{pendingReqs.length}</strong> pending</span>}
@@ -10982,7 +10986,7 @@ function ActivityLogsPanel({ onClose }) {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>Activity Logs</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'color-mix(in srgb, var(--wx-text-muted) 55%, transparent)', marginTop: 2 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>
               {loading ? 'Loading…' : error ? 'Error loading' : `${filtered.length} entr${filtered.length === 1 ? 'y' : 'ies'}`}
             </div>
           </div>
@@ -11375,7 +11379,7 @@ function BrandCompareModalV2({ creators, allBrands, onClose }) {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>Compare Brands</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'color-mix(in srgb, var(--wx-text-muted) 55%, transparent)', marginTop: 2 }}>GMV, spend and delivery side by side · {periodLabel()}</div>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>GMV, spend and delivery side by side · {periodLabel()}</div>
           </div>
           <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}

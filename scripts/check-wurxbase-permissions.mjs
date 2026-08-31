@@ -86,7 +86,7 @@ try {
   const hello = page.getByRole('button', { name: /let.s go/i });
   if (await hello.first().isVisible().catch(() => false)) await hello.first().click();
 
-  await page.goto(`${BASE}/admin/collabs/brands`, { waitUntil: 'networkidle' });
+  await page.goto(`${BASE}/admin/collabs/brands`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(5000);
 
   /* 1. The session carries THEIR role, not the one derived from ours. */
@@ -130,7 +130,7 @@ try {
   );
 
   /* 3. And the route agrees with the sidebar. */
-  await page.goto(`${BASE}/admin/collabs/discovery`, { waitUntil: 'networkidle' });
+  await page.goto(`${BASE}/admin/collabs/discovery`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(3500);
   check(
     !page.url().includes('/collabs/discovery'),

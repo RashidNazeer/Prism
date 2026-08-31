@@ -92,7 +92,7 @@ try {
       )
         await hello.first().click();
 
-      await page.goto(`${BASE}/admin/collabs`, { waitUntil: 'networkidle' });
+      await page.goto(`${BASE}/admin/collabs`, { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('.pc-header-dark', { timeout: 30000 }).catch(() => {});
       // Their tables load from their own Supabase; give the rows a moment so a
       // shot is of the screen and not of its skeleton.

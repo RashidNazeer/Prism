@@ -57,7 +57,9 @@
     "verify:wurxbase-perms": "node scripts/check-wurxbase-permissions.mjs",
     "verify:wurxbase-team": "node scripts/check-wurxbase-team.mjs",
     "verify:wurxbase-roster": "node scripts/check-wurxbase-roster.mjs",
-    "wurxbase:link": "node scripts/link-wurxbase-team.mjs"
+    "wurxbase:link": "node scripts/link-wurxbase-team.mjs",
+    "verify:euka": "node scripts/check-euka.mjs",
+    "verify:euka-ui": "node scripts/check-euka-ui.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

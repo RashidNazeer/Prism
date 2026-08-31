@@ -1533,3 +1533,44 @@ prod project. Worth running before anybody real signs in.
 script. The legal pages are proven; the rest of the app on prod has been seen by
 nothing with eyes.
 
+## 36. Euka: three things found while fixing the proxy, and deliberately not fixed
+
+**Status:** OPEN
+**Owner:** Claude
+**Raise it when:** somebody compares a number against the old app, or asks
+why two people sweeping the same brand get different videos.
+
+All three were found by measuring the live API on 2026-08-29 while restoring
+the endpoint. None is caused by the port; all three predate it and two of
+them exist on Asad's deployment too.
+
+**a. The video window is asked for in UTC and enforced in the browser's
+local time, and the difference is DELETED rather than skipped.** Euka filters
+`posted_date` on its UTC calendar day. `collabWindowFor` builds
+local-midnight boundaries, and `buildEukaVideoPatch` pushes anything outside
+them into `outIds` and then FILTERS THOSE ROWS OUT of `video_codes` — so a
+video Euka correctly returned is removed from the creator's record and its
+GMV leaves the panel total. Measured on live data: at UTC+5, 143 of 19,381
+rows sit in the lost band, and 590 of 19,381 (3.0%) change side depending on
+the operator's clock. **Two people running the same sweep write different
+video_codes.** Fixing it means comparing in UTC on both sides, which touches
+their merge logic — the piece of this app that has already destroyed data
+twice — so it wants its own change and its own verification.
+
+**b. Euka's own numbers are not stable between identical calls.** Three
+back-to-back identical exports seconds apart: four rows flipped
+`estimated_post_rate` to 0, and one row moved `last_30d_gmv` 1017.05 to
+918.28 with its tier going L1 to L0. The handle set and order were identical
+each time. **There is an irreducible floor under "their number vs our
+number"** — a byte-perfect port still will not tie with a side-by-side
+reading. Worth knowing before anybody spends a day chasing a 2% difference.
+
+**c. The nightly Euka check-in was never ported.**
+`netlify/functions/euka-checkin-background.js` runs at 06:00 daily on their
+deployment, sweeps every store and writes `monthly.euka` back onto creator
+rows — in the Supabase project retired on 2026-08-28. The screens no longer
+depend on it: L30 and tier now read live first and treat the stored value as
+a fallback. What is still missing is the `EUKA_CHECKIN` summary row it wrote
+into `activity_logs`. Port it as a scheduled Edge Function if anybody misses
+that trail.
+

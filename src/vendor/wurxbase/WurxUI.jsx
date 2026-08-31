@@ -23,7 +23,7 @@ import {
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { can } from './access';
 import { createPortal } from 'react-dom';
-import { supabase, selectAll } from './supabaseClient';
+import { supabase, selectAll, eukaJson } from './supabaseClient';
 import { godGet, godMoney, godDateParts, colTemplate, colStyle,
   visibleCols } from './godSettings';
 import { generateContractPdf, defaultContractFields, CONTRACT_SECTIONS, renderContractPdf } from './contractPdf';
@@ -41,7 +41,7 @@ const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 const HIRED_BY_OPTIONS = ['Aris', 'Emily', 'Myles', 'Khushi'];
 
 /* ── EUKA L30 GMV · lookup helpers ─────────────────────────────────
-   Data shape from /.netlify/functions/euka (v2):
+   Data shape from the `euka` Edge Function (see supabaseClient.js):
      { handles: { "<handle>": overallL30Gmv } }
    `last_30d_gmv` from EUKA's creator_level export is the creator's
    OVERALL last-30-days GMV across TikTok Shop — store-independent, so
@@ -155,18 +155,35 @@ function dbEuka(c) {
   const v = c && c.monthly && c.monthly.euka;
   return v && (v.tier || Number(v.l30) > 0) ? v : null;
 }
-/* Creator's EUKA tier · DB value first, live sweep as a top-up */
+/* WURX-ADDED · LIVE FIRST, STORED AS THE FALLBACK. This was the other way
+   round, and that is a second reason our figures differed from theirs.
+
+   `monthly.euka` is a CACHE, refreshed nightly by a scheduled Netlify function
+   (`euka-checkin-background`) that was never vendored in — it lives outside
+   their `src/`, and it writes to the Supabase project that was retired on
+   2026-08-28. So on their deployment the cache is a day old and the DB-first
+   rule is harmless; on ours it is frozen at whatever it held on migration day
+   and drifts further every morning. 800 of 1000 creators carry a stored L30
+   stamped between 29 July and 28 August, and every one of them was being shown
+   in preference to today's number.
+
+   Reading live first fixes it without needing that job: a figure fetched
+   minutes ago beats one cached weeks ago. The cache still earns its place as
+   the fallback, because `creator_level` only covers the last thirty days from
+   today, so a creator who has not posted recently drops out of the live sweep
+   entirely — and their last known figure is much better than a dash. It also
+   covers the seconds before the sweep returns. */
 function creatorTier(c, euka) {
-  const db = dbEuka(c);
-  if (db && db.tier) return db.tier;
   const p = eukaProfileFor(euka, [c?.tiktok_account, c?.tiktok_account_2]);
-  return (p && p.tier) || '';
-}
-/* Creator's overall last-30d GMV · DB value first, live sweep as a top-up */
-function creatorL30(c, euka) {
+  if (p && p.tier) return p.tier;
   const db = dbEuka(c);
-  if (db && Number(db.l30) > 0) return Number(db.l30);
-  return eukaL30For(euka, [c?.tiktok_account, c?.tiktok_account_2]);
+  return (db && db.tier) || '';
+}
+function creatorL30(c, euka) {
+  const live = eukaL30For(euka, [c?.tiktok_account, c?.tiktok_account_2]);
+  if (live != null) return live;
+  const db = dbEuka(c);
+  return db && Number(db.l30) > 0 ? Number(db.l30) : null;
 }
 
 /* Shared cell renderer · '–' when EUKA has no record of this creator */
@@ -590,7 +607,7 @@ export default function WurxUI({
     let cancelled = false;
     function go() { (async () => {
       try {
-        const meta = await fetch('/.netlify/functions/euka').then(r => (r.ok ? r.json() : null));
+        const meta = await eukaJson();
         if (!meta || !Array.isArray(meta.stores) || cancelled) return;
         const merged = {};
         const profiles = {};
@@ -604,8 +621,7 @@ export default function WurxUI({
             const s = queue.shift();
             let ok = false;
             try {
-              const d = await fetch(`/.netlify/functions/euka?store=${encodeURIComponent(s.id)}`)
-                .then(r => (r.ok ? r.json() : null));
+              const d = await eukaJson({ store: s.id });
               if (d && d.handles && !cancelled) {
                 ok = true;
                 okStores += 1;
@@ -679,7 +695,7 @@ export default function WurxUI({
 
     idle(() => (async () => {
       try {
-        const meta = await fetch('/.netlify/functions/euka').then(r => (r.ok ? r.json() : null));
+        const meta = await eukaJson();
         if (!meta || !Array.isArray(meta.stores)) return;
         let last = {};
         try { last = JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; } catch { /* fresh */ }
@@ -713,8 +729,7 @@ export default function WurxUI({
           try {
             const byHandle = {};
             for (const w of windows) {
-              const d = await fetch(`/.netlify/functions/euka?store=${encodeURIComponent(s.id)}&type=videos&from=${w.from}&to=${w.to}`)
-                .then(r => (r.ok ? r.json() : null));
+              const d = await eukaJson({ store: s.id, type: 'videos', from: w.from, to: w.to });
               if (!d || !d.videos) continue;
               mergeAvatars(d.avatars);
               mergeVidProfile(d.tiers);
@@ -750,8 +765,7 @@ export default function WurxUI({
               const cvTo = isoD(win.end < shopNow() ? win.end : shopNow());
               const all = [];
               for (const h of hs) {
-                const cd = await fetch(`/.netlify/functions/euka?store=${encodeURIComponent(s.id)}&type=cvideos&handle=${encodeURIComponent(h)}&from=${cvFrom}&to=${cvTo}`)
-                  .then(r => (r.ok ? r.json() : null)).catch(() => null);
+                const cd = await eukaJson({ store: s.id, type: 'cvideos', handle: h, from: cvFrom, to: cvTo });
                 if (cd && cd.videos) Object.values(cd.videos).forEach(v => all.push(...v));
               }
               if (!all.length) continue;
@@ -1056,7 +1070,7 @@ export default function WurxUI({
                   </span>
                   <span className="pc-userchip-txt" style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, alignItems: 'flex-start' }}>
                     <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--wx-text-muted)', letterSpacing: '-0.1px' }}>{currentUser?.display || 'User'}</span>
-                    <span style={{ fontSize: 11.5, fontWeight: 600, color: 'color-mix(in srgb, var(--wx-text-muted) 60%, transparent)' }}>{isViewer ? 'Viewer' : (currentUser?.role || '')}</span>
+                    <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)' }}>{isViewer ? 'Viewer' : (currentUser?.role || '')}</span>
                   </span>
                 </Tag>
               );
@@ -1726,9 +1740,19 @@ function buildEukaVideoPatch(c, vids) {
     if (!m) return;
     if (m.code && !String(r.adCode || '').trim()) { r.adCode = m.code; r.auth = true; codes += 1; }
     if (m.date && !String(r.date || '').trim()) { r.date = m.date; dated += 1; }
-    if (m.views !== r.views || m.revenue !== r.revenue || m.items !== r.items ||
+    /* WURX-ADDED · `items` is guarded like every field beside it.
+       It was the ONLY one of the six written unconditionally, and the only one
+       the posted-videos sweep does not actually know: `views` and `revenue`
+       come from the export and are real for every row, but `items` comes from
+       the dashboard's enrichment, which returns FIVE videos however many you
+       ask for. So a store-wide sweep wrote items:0 over every video outside
+       that five — including the true counts the per-creator sweep had just
+       written from `items_sold_count`, which only reaches ten creators a pass.
+       The column oscillated instead of filling. */
+    if (m.views !== r.views || m.revenue !== r.revenue || (m.items && m.items !== r.items) ||
         (m.product && m.product !== r.product) || (m.thumb && m.thumb !== r.thumb)) {
-      r.views = m.views; r.revenue = m.revenue; r.items = m.items;
+      r.views = m.views; r.revenue = m.revenue;
+      if (m.items) r.items = m.items;
       if (m.product) r.product = m.product;
       if (m.thumb) r.thumb = m.thumb;
       metrics += 1;
@@ -1873,14 +1897,21 @@ function mergeBrandPhoto(storeName, url) {
 let _eukaStoresPromise = null;
 function getEukaStores() {
   if (!_eukaStoresPromise) {
-    _eukaStoresPromise = fetch('/.netlify/functions/euka')
-      .then(r => (r.ok ? r.json() : null))
+    _eukaStoresPromise = eukaJson()
       .then(d => (d && d.stores) || [])
       .catch(() => []);
   }
   return _eukaStoresPromise;
 }
-const _brandPhotoFetched = new Set();
+/* WURX-ADDED · one SHARED promise per store, not a 'has it started' flag.
+   It was a Set: the first BrandFace to mount added the store id and every
+   later one saw it and returned, having never read the result. Whichever
+   mounted second kept its gradient initial until a full page reload — and
+   opening a brand mounts a second face for the same store while the list's
+   fetch is still in the air, so the drilldown's logo was the one that lost.
+   Sharing the promise means every face awaits the same call and all of them
+   get the answer. */
+const _brandPhotoPromise = new Map();
 
 /* Drop-in for the pc-ava brand initial · shows the EUKA brand photo when
    available, falls back to the gradient initial. Same markup shape, so all
@@ -1898,10 +1929,12 @@ function BrandFace({ brand }) {
       const key = _normEukaBrand(store.name);
       const cached = getBrandPhotoMap()[key];
       if (cached) { setPhoto(cached); return; }
-      if (_brandPhotoFetched.has(store.id)) return;
-      _brandPhotoFetched.add(store.id);
-      const d = await fetch(`/.netlify/functions/euka?store=${encodeURIComponent(store.id)}&type=photo`)
-        .then(r => (r.ok ? r.json() : null)).catch(() => null);
+      let pending = _brandPhotoPromise.get(store.id);
+      if (!pending) {
+        pending = eukaJson({ store: store.id, type: 'photo' });
+        _brandPhotoPromise.set(store.id, pending);
+      }
+      const d = await pending;
       if (d && d.photo) { mergeBrandPhoto(store.name, d.photo); if (alive) setPhoto(d.photo); }
     })();
     return () => { alive = false; };
@@ -1987,7 +2020,7 @@ function BrandDrilldown({ brand, creators, brandCreators, budgets, refetchBudget
     setVidSync({ state: 'busy', msg: 'Finding store…' });
     const flash = (state, msg) => { setVidSync({ state, msg }); setTimeout(() => setVidSync({ state: 'idle', msg: '' }), 7000); };
     try {
-      const meta = await fetch('/.netlify/functions/euka').then(r => (r.ok ? r.json() : null));
+      const meta = await eukaJson();
       const store = eukaStoreForBrand(meta?.stores, brand.brand);
       if (!store) throw new Error(`No EUKA store named "${brand.brand}"`);
 
@@ -2000,8 +2033,7 @@ function BrandDrilldown({ brand, creators, brandCreators, budgets, refetchBudget
       for (let i = 0; i < windows.length; i++) {
         setVidSync({ state: 'busy', msg: `Fetching videos… (${i + 1}/${windows.length})` });
         const w = windows[i];
-        const d = await fetch(`/.netlify/functions/euka?store=${encodeURIComponent(store.id)}&type=videos&from=${w.from}&to=${w.to}`)
-          .then(r => (r.ok ? r.json() : null));
+        const d = await eukaJson({ store: store.id, type: 'videos', from: w.from, to: w.to });
         if (!d || !d.videos) continue;   // empty/old window → keep sweeping
         mergeAvatars(d.avatars);
         mergeVidProfile(d.tiers);
@@ -3150,8 +3182,7 @@ function DrilldownVideosPanel({ c, euka, onUpdateCreator, onManage }) {
       try {
         const all = [];
         for (const h of hs) {
-          const d = await fetch(`/.netlify/functions/euka?store=${encodeURIComponent(store.id)}&type=cvideos&handle=${encodeURIComponent(h)}&from=${from}&to=${to}`)
-            .then(r => (r.ok ? r.json() : null)).catch(() => null);
+          const d = await eukaJson({ store: store.id, type: 'cvideos', handle: h, from, to });
           if (d && d.videos) Object.values(d.videos).forEach(v => all.push(...v));
         }
         if (all.length && onUpdateCreator) {
@@ -5560,7 +5591,7 @@ function DiscoveryTab({ creators, currentUser }) {
     setState('loading');
     setProgress('Finding stores…');
     try {
-      const meta = await fetch('/.netlify/functions/euka').then(r => (r.ok ? r.json() : null));
+      const meta = await eukaJson();
       if (!meta || !Array.isArray(meta.stores)) throw new Error('Could not reach EUKA');
 
       /* creator_level caps at 1000 rows per call and ignores pagination,
@@ -5605,8 +5636,7 @@ function DiscoveryTab({ creators, currentUser }) {
         while (queue.length) {
           const { s, w } = queue.shift();
           try {
-            const d = await fetch(`/.netlify/functions/euka?store=${encodeURIComponent(s.id)}&type=discovery&from=${w.from}&to=${w.to}`)
-              .then(r => (r.ok ? r.json() : null));
+            const d = await eukaJson({ store: s.id, type: 'discovery', from: w.from, to: w.to });
             if (d && d.people) absorb(s.name, d.people);
           } catch { /* one window failing shouldn't kill the pool */ }
           done += 1;
