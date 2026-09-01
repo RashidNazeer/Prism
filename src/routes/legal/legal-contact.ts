@@ -31,4 +31,4 @@ export const PRODUCT_NAME = 'Wurx Media Hub';
  * what changed in DECISIONS.md. It is deliberately not `new Date()`: a document
  * that claims to have been updated today, every day, tells a reader nothing.
  */
-export const LEGAL_UPDATED = '26 August 2026';
+export const LEGAL_UPDATED = '1 September 2026';
