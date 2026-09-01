@@ -939,6 +939,36 @@ Second documented problem in the same place: TikTok requires *"an externally
 facing fully developed website"* and says the Website URL *"cannot be a landing
 page or login page."* We submitted the bare landing page.
 
+### SHIPPED TO PRODUCTION 2026-09-01 — commit 5888faa on main
+
+Rashid chose copy-only-to-prod over deploying dev, and a public page for the
+connection. Both are live and verified on wurxmediahub.vercel.app:
+
+- **Terms.tsx** no longer says "a private workspace, not a public
+  marketplace". It opens on independent creators and open applications, and
+  carries one sentence a reviewer cannot miss: creators own their own
+  accounts and Wurx operates none of them.
+- **Privacy.tsx** "our own internal rules" became "our staff data handling
+  rules". The "private target" sentence was LEFT — it means a creator's own
+  contest target, which is the honest use of the word.
+- **NEW: /tiktok**, a signed-out page describing the connection — whose
+  account it is, the two permissions, who can see the figures, how to
+  disconnect. Linked from the footer. **This is the URL the resubmission
+  should give as the Website URL**, not the bare landing page.
+- Legal pages redated to 1 September 2026.
+
+**Copy only: 7 files, zero migrations, zero schema, zero behaviour change.**
+dev stays 39 commits and 7 migrations ahead; the "make it live" decision for
+all of that is still open and untouched.
+
+Verified signed out at 1280px in both themes: no horizontal scroll, zero
+console errors, "private workspace" absent from all three pages.
+
+### STILL TO DO — the submission itself, which only Rashid can send
+
+The site is ready. Nobody has resubmitted anything. When he does, use the
+copy below, and change the Website URL to **https://wurxmediahub.vercel.app/tiktok**.
+
 ### What he was asked, and has not yet answered
 
 1. **Do we rewrite the Terms and Privacy wording?** It is his legal copy. The
