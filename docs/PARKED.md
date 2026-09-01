@@ -879,14 +879,75 @@ today. **Creators must never see the budget or the ROAS target.**
 
 ---
 
-## 27. SUBMITTED 2026-08-26. Waiting on TikTok's review.
+## 27. REJECTED 2026-09-01. Diagnosed, copy drafted, WAITING ON RASHID.
 
-**Status:** BLOCKED, on TikTok
-**Owner:** TikTok's review team. Nothing here is waiting on us.
+**Status:** BLOCKED, on two decisions only he can make
+**Owner:** Rashid
+**Raise it when:** he comes back to TikTok, or asks what is pending.
 
-**Trigger to raise this again: the moment Rashid says the app is approved or
-rejected.** He will hear by email. Do not start the key swap below without a
-clear yes from him.
+**The reviewer's note, verbatim:**
+
+> Changes to your app were not approved for production. See why
+> Note from reviewer: App will not be approved for personal or company
+> internal use.,TikTok for Developers currently does not support personal or
+> internal company use. Not acceptable: Display posts from the TikTok
+> account(s) you or your team manage on your website.
+
+### THE DIAGNOSIS: it is our wording, and we volunteered the exact banned word
+
+TikTok's **App Review Guidelines**, under "Description", say in as many words:
+**"Apps must not be for private or personal use."** The Content Sharing
+Guidelines carry the published twin of the reviewer's sentence: *"API Clients
+must not be limited to test applications and should be intended for a wide
+audience, not limited to internal groups/private use."* Both pages were last
+updated 2026-08-04, three weeks before we submitted, so they are the rules that
+were actually applied.
+
+We used that word about ourselves, twice, where the reviewer could not miss it:
+
+1. The scope explanation's opening sentence: *"Wurx Media Hub is a **private**
+   platform for TikTok Shop creators who work with our brands."*
+2. `/terms`, the page the form tells them to check, opens "What this platform
+   is" with *"Wurx Media Hub is a **private workspace, not a public
+   marketplace**."* — `src/routes/legal/Terms.tsx:31`.
+
+The sentence that refutes the rejection — *"You are an independent creator, not
+an employee, worker, agent or partner"* — is the 10th of 14 headings, 78% down
+a 1,286-word page, and LegalPage renders no table of contents.
+
+**The product is not the problem.** Nothing in the Login Kit / video.list flow
+matches "display posts from the TikTok account(s) you or your team manage":
+each creator authorises their OWN account and the figures render only to them,
+inside the signed-in app. Verified against the code, not assumed.
+
+**Two things that partly resemble it — handle deliberately, never hide:**
+- `creator_tiktok_videos` carries a staff SELECT policy as well as an own-row
+  one (`20260825235328_creator_tiktok_connection.sql:208-219`). No admin screen
+  reads it today, but **"only the creator can see them" would be a lie**, so
+  the new copy says "that creator and Wurx Media staff helping them".
+- The admin Content screen does embed creators' TikTok posts — but through
+  public oEmbed and links the creators submitted, not through these scopes.
+
+### THE BLOCKER, and it is a decision not a task
+
+**The URLs on that form point at PRODUCTION**, which is frozen, running old
+code and empty (0 profiles, 0 brands, 0 offers). Fixing the wording on dev
+changes nothing a reviewer sees. **A resubmission needs a production deploy,
+which is Rashid's "make it live" call and he has not given it.**
+
+Second documented problem in the same place: TikTok requires *"an externally
+facing fully developed website"* and says the Website URL *"cannot be a landing
+page or login page."* We submitted the bare landing page.
+
+### What he was asked, and has not yet answered
+
+1. **Do we rewrite the Terms and Privacy wording?** It is his legal copy. The
+   change is factual: "private workspace, not a public marketplace" becomes
+   wording that says applications are open and approval-gated, which is what
+   his own landing page already says.
+2. **Does that go to production?** Nothing improves for a reviewer until it does.
+
+**Nothing has been changed and nothing resubmitted.**
 
 ---
 
@@ -936,12 +997,77 @@ worth blocking on.
 
 ---
 
-### If it comes back REJECTED
+### The resubmission copy, drafted and checked against the code
+
+Every line below was reconciled with what the product actually does. Do not
+soften it into claiming less access than we take — that is the flag reviewers
+look for, and over-claiming carries a permanent-ban clause.
+
+**Public description (107 chars):**
+
+> Independent TikTok Shop creators sign in to see their own sales, commission
+> and video results in one place.
+
+**Scope explanation (981 chars), no "private", "internal", "our team":**
+
+> Wurx Media Hub is for independent TikTok Shop creators. Each owns and runs
+> their own TikTok account; Wurx Media operates none of them. Any creator can
+> apply on our public home page, and approved creators sign in to see the paid
+> offers brands have for them and what their own posts earned.
+>
+> user.info.basic: a creator chooses "Connect TikTok" on their own profile page
+> and authorises with their own account. We use it to know which account is
+> theirs, and to show that account's name and picture back so they can confirm
+> it. Connecting is optional.
+>
+> video.list: we read the list of that creator's own videos and show them the
+> views, likes, comments and shares on the same page. Those figures are seen by
+> that creator and by Wurx Media staff helping them. They are never shown on a
+> public page or any other website.
+>
+> A creator can disconnect on the same screen: we revoke the token and delete
+> the figures. We never post, edit or delete on TikTok, and never read another
+> user's videos.
+
+**Reason box (389 chars):**
+
+> Resubmission after a rejection for personal or company internal use. That was
+> our wording, not our product. Wurx Media Hub is used by independent TikTok
+> Shop creators who own their own accounts, apply through our public home page,
+> and connect by choice. We manage none of their accounts and display nothing
+> from TikTok publicly. Same two scopes, reworded description, Terms and demo
+> video.
+
+**Hold everything else:** Login Kit only, `user.info.basic` + `video.list`
+only, same Web platform, same two redirect URIs. Do NOT rename the app — the
+missing space in "WurxMedia Hub" is not a rejection cause and TikTok's only
+name rule is that it match the site.
+
+### What the research could NOT settle, and he was told
+
+- **There is no appeal route.** Resubmission through the Support form is the
+  only path. No documented cooldown, no documented limit. Review takes days to
+  two weeks.
+- **No publicly documented case of a successful resubmission after this exact
+  boilerplate could be found.** A real gap, not an abandoned search.
+- **Whether an approval-gated app is approvable at all is not publicly
+  documented.** What is written cuts mildly our way — the rule is about the
+  AUDIENCE being wide, not about open registration, and reviewers ask for demo
+  logins, which presupposes gated apps get reviewed. But nobody at TikTok has
+  written "approval-gated is fine". Business risk, not a settled answer.
+- A secondary framing risk, downgraded on verification but worth knowing:
+  TikTok markets the Display API in audience-facing language ("enable their
+  followers to view their TikTok videos without leaving your platform"), and
+  ours is a per-creator dashboard. Borrow their vocabulary only where it is
+  true of surfaces that already exist.
+
+### The old note, kept because it earned its place
 
 **Get their reason verbatim before changing anything.** TikTok's messages have
 twice named the wrong field here — an authorise-page `client_key` error that was
 really sandbox redirect configuration. Their stated reason is the starting
-point, not the diagnosis.
+point, not the diagnosis. That held again this time: the note said "internal
+use", and the actual defect was one adjective in our own copy.
 
 ---
 
