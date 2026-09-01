@@ -3711,8 +3711,22 @@ function todayISO() {
 function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory = [], categories = [], budgets = [], allCreators = [], euka, currentUser, onDelete, onSave, onClose }) {
   const c = creator || {};
   const isAdd = mode === 'add';
-  // Hard delete is Asad-only · every other profile never sees the button
-  const isAsad = (currentUser?.id === 'asad') || (currentUser?.username === 'Asad');
+  /* WURX-ADJUSTED · WHO MAY DELETE A CREATOR.
+     This was `(currentUser?.id === 'asad') || (currentUser?.username === 'Asad')`,
+     and NEITHER HALF COULD EVER BE TRUE: `id` is our auth uuid, and `username`
+     comes from the profile's display name, which is lower case for all eight
+     team accounts — "asad" never equals "Asad". So the button was never
+     rendered for anybody, Asad included, and the report was "there is no
+     delete button" rather than "I am not allowed".
+     Same fault as the payment gates fixed on 2026-08-31; missed then because
+     the sweep searched the negative form (`!==`) and this one is positive.
+     Note the OTHER delete, on the performance matrix, uses the repaired
+     `isAsadActor()` and does work — which is why the two disagreed.
+     Rashid, asked on 2026-09-02, chose their own capability over a name, as he
+     did for `canEditPay`: `canDelete` is "Delete creators · Remove rows
+     permanently", so it is a setting Asad flips per person rather than a
+     literal in this file. */
+  const mayDelete = can(currentUser, 'canDelete');
   const [confirmDel, setConfirmDel] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -3774,14 +3788,27 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
   // Name autocomplete from directory · ranked (prefix > word > substring),
   // also matches on TikTok handles, exact matches stay visible for autofill
   const [showSug, setShowSug] = useState(false);
-  const matches = useMemo(() => rankDirectory(directory, f.name), [f.name, directory]);
+  /* WURX-ADJUSTED · the directory suggestions work while EDITING too.
+     They were rendered only when adding, but everything behind them was
+     already written for edit mode — `personHistory` below carries an explicit
+     "editing → exclude self" line, which only makes sense if editing was meant
+     to show them. Rashid: the picker appears when adding a creator and not
+     when editing one.
+     The one thing edit mode does need is to leave the record being edited out
+     of its own suggestion list, so "Hailry" does not offer to auto-fill
+     "Hailry" over itself. */
+  const matches = useMemo(() => {
+    const list = rankDirectory(directory, f.name);
+    if (isAdd || !c.id) return list;
+    return list.filter((d) => String(d.id ?? '') !== String(c.id));
+  }, [f.name, directory, isAdd, c.id]);
 
   // TikTok handle autocomplete · same directory, matched by handle. If the
   // typed username already exists, one tap pulls the whole record in — same
   // autofill behavior as the Name field.
   const [tkSugIdx, setTkSugIdx] = useState(null);      // which tiktok input is focused
   const tkMatches = useMemo(() => {
-    if (!isAdd || tkSugIdx == null) return [];
+    if (tkSugIdx == null) return [];
     const q = _normEukaHandle(tiktoks[tkSugIdx] || '');
     if (q.length < 2) return [];
     return directory
@@ -3978,7 +4005,7 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
             onChange={e => { set('name', e.target.value); setShowSug(true); }}
             onFocus={() => setShowSug(true)}
             onBlur={() => setTimeout(() => setShowSug(false), 150)} />
-          {isAdd && showSug && matches.length > 0 && (
+          {showSug && matches.length > 0 && (
             <div className="pc-suggest">
               <div className="pc-suggest-head">Already worked with · tap to auto-fill</div>
               {matches.map((d, i) => (
@@ -4050,7 +4077,7 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
               {tiktoks.length > 1 && (
                 <button type="button" onClick={() => setTiktoks(prev => prev.filter((_, j) => j !== i))} style={{ flex: '0 0 40px', height: 40, borderRadius: 12, border: '1px solid var(--pc-divider)', background: 'var(--pc-card-2)', color: 'var(--pc-error-fg)', cursor: 'pointer', fontSize: 17, fontWeight: 700 }}>×</button>
               )}
-              {isAdd && tkSugIdx === i && tkMatches.length > 0 && (
+              {tkSugIdx === i && tkMatches.length > 0 && (
                 <div className="pc-suggest" style={{ top: '100%' }}>
                   <div className="pc-suggest-head">Username already in database · tap to auto-fill</div>
                   {tkMatches.map((d, k) => (
@@ -4244,7 +4271,7 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
               </>
             ) : <span className="pc-cm-summary-hint">Fill in the creator's details</span>}
           </div>
-          {!isAdd && isAsad && onDelete && (
+          {!isAdd && mayDelete && onDelete && (
             <button
               className={`pc-btn pc-modal-del ${confirmDel ? 'arm' : ''}`}
               disabled={saving || deleting}
@@ -4258,7 +4285,7 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
                 try { await onDelete(c.id); onClose(); }
                 catch (e) { setErr(e?.message || 'Delete failed'); setDeleting(false); setConfirmDel(false); }
               }}
-              title={confirmDel ? 'Click again to permanently delete' : `Delete ${c.name || 'creator'} (Asad only)`}
+              title={confirmDel ? 'Click again to permanently delete' : `Delete ${c.name || 'creator'} · permanent, takes this deal and its videos with it`}
             >
               {deleting ? 'Deleting…' : confirmDel ? 'Confirm delete?' : 'Delete'}
             </button>

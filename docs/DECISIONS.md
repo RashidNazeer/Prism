@@ -2110,3 +2110,27 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   omits its background unless the user ticks "Background graphics", and then
   the delta is #ffffff to #f6f4f1 on the admin content column. Adding a print
   override would have been complexity bought for nothing.
+- 2026-09-02: **Deleting a creator answers to `canDelete`, and it was broken for
+  everyone before that.** Rashid: the edit dialog shows no delete button. It
+  showed none for ANYBODY, Asad included — `const isAsad = (currentUser?.id ===
+  'asad') || (currentUser?.username === 'Asad')` at WurxUI.jsx:3715, where `id`
+  is our auth uuid and `username` is the profile display name, which is lower
+  case for all eight team accounts. Measured, not assumed: every one of the
+  eight evaluates the gate to false. This is the same fault as the payment gates
+  fixed on 2026-08-31, missed then because that sweep searched the NEGATIVE form
+  (`!==`) and this one is written positively. The other two deletes — the
+  creators-table row and the performance matrix — use the repaired
+  `isAsadActor()` and did work, which is why the app disagreed with itself.
+  Asked on 2026-09-02, Rashid chose their own capability over a name, as he did
+  for `canEditPay`. `canDelete` is superadmin-only by default, so today that is
+  Asad and Rashid (our `admin` maps to their `superadmin`), and Asad can grant
+  it to anyone from Access Control instead of us changing code. The row-level
+  and matrix deletes were LEFT on the Asad-only rule: widening a second
+  destructive path was not what was asked, and their tooltips are still true.
+- 2026-09-02: **The creator picker works while editing, not only while adding.**
+  Their dropdown was gated `isAdd` in three places, yet everything behind it was
+  already written for edit mode — `personHistory` carries an explicit "editing →
+  exclude self" line, which only makes sense if editing was meant to show it. So
+  the data layer supported it and a render gate blocked it. Now open in both
+  modes, with the record being edited filtered out of its own suggestions so
+  "Hailry" cannot offer to auto-fill "Hailry" over itself.
