@@ -23,7 +23,7 @@ import {
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { can } from './access';
 import { createPortal } from 'react-dom';
-import { supabase, selectAll, eukaJson } from './supabaseClient';
+import { supabase, selectAll, eukaJson, lastEukaFailure } from './supabaseClient';
 import { godGet, godMoney, godDateParts, colTemplate, colStyle,
   visibleCols } from './godSettings';
 import { generateContractPdf, defaultContractFields, CONTRACT_SECTIONS, renderContractPdf } from './contractPdf';
@@ -2122,11 +2122,36 @@ function BrandDrilldown({ brand, creators, brandCreators, budgets, refetchBudget
   const syncEukaVideos = async () => {
     if (vidSync.state === 'busy') return;
     setVidSync({ state: 'busy', msg: 'Finding store…' });
-    const flash = (state, msg) => { setVidSync({ state, msg }); setTimeout(() => setVidSync({ state: 'idle', msg: '' }), 7000); };
+    /* Seven seconds is enough for "Already up to date" and nowhere near enough
+       to read why something failed, so a failure stays up three times as long
+       and carries its explanation beside the button rather than inside it. */
+    const flash = (state, msg, detail) => {
+      setVidSync({ state, msg, detail: detail || '' });
+      setTimeout(() => setVidSync({ state: 'idle', msg: '', detail: '' }), detail ? 22000 : 7000);
+    };
     try {
       const meta = await eukaJson();
-      const store = eukaStoreForBrand(meta?.stores, brand.brand);
-      if (!store) throw new Error(`No EUKA store named "${brand.brand}"`);
+      /* THESE ARE TWO DIFFERENT FAULTS AND THEY USED TO READ THE SAME.
+         `meta` is null when the CALL failed — blocked, signed out, not
+         allowed, EUKA down. Only once it comes back can "this brand has no
+         store" mean anything. Saying the second when the first happened is
+         what sent people hunting through store names. */
+      if (!meta) {
+        const f = lastEukaFailure();
+        const err = new Error("Can't reach EUKA");
+        err.detail = f
+          ? (f.status ? `${f.status} · ` : '') + f.hint + '. Try: ' + f.fix + '.'
+          : 'The request failed and gave no reason.';
+        throw err;
+      }
+      const store = eukaStoreForBrand(meta.stores, brand.brand);
+      if (!store) {
+        const err = new Error('No store for this brand');
+        const names = (meta.stores || []).map(st => st.name).filter(Boolean);
+        err.detail = `EUKA answered, but none of its stores is called "${brand.brand}". `
+          + (names.length ? 'It has: ' + names.slice(0, 12).join(', ') + '.' : 'It returned no stores at all.');
+        throw err;
+      }
 
       // Full backfill from the brand's earliest onboarding · EUKA caps each
       // export at ~60 days, so we sweep ≤55-day windows and merge.
@@ -2164,7 +2189,7 @@ function BrandDrilldown({ brand, creators, brandCreators, budgets, refetchBudget
       if (removed) bits.push(`−${removed} off-timeline`);
       flash('done', bits.length ? `${bits.join(' · ')} · ${touched} creator${touched !== 1 ? 's' : ''}` : 'Already up to date');
     } catch (e) {
-      flash('err', e?.message || 'Sync failed');
+      flash('err', e?.message || 'Sync failed', e?.detail);
     }
   };
   const [showBudget, setShowBudget] = useState(false);
@@ -2282,6 +2307,16 @@ function BrandDrilldown({ brand, creators, brandCreators, budgets, refetchBudget
           )}
         </div>
         </div>{/* /pc-ddhero-top */}
+
+        {/* WHY it failed, where there is room for a sentence. The button can
+            only hold three words, and "No EUKA store named X" in three words
+            is what sent people hunting through store names for an hour. */}
+        {vidSync.state === 'err' && vidSync.detail && (
+          <div className="pc-euka-why" role="status">
+            <b>{vidSync.msg}</b>
+            <span>{vidSync.detail}</span>
+          </div>
+        )}
 
       </div>{/* /pc-ddhero */}
 

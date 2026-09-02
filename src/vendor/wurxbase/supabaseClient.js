@@ -156,6 +156,55 @@ export async function wurxbaseRest(path, init = {}) {
 
    Returns the parsed body, or NULL on any failure — deliberately the same
    contract their call sites already handle. */
+/*
+ * WHY THE LAST CALL FAILED, IN WORDS SOMEBODY CAN ACT ON.
+ *
+ * Returning null on every failure is the right contract — their call sites all
+ * handle it — but it threw away the one thing worth keeping. Every possible
+ * cause arrived at the same screen as `No EUKA store named "<brand>"`, which
+ * names the brand and blames the data, when the real cause is usually nothing
+ * to do with either.
+ *
+ * That cost real time: the message sent people looking at store names while a
+ * profile-level problem sat one layer down, invisible because Rashid cannot
+ * open a console and the failure only happens on somebody else's laptop.
+ *
+ * So the reason is kept here and the button says it out loud.
+ */
+let _eukaFailure = null;
+export function lastEukaFailure() { return _eukaFailure; }
+
+function describeEukaFailure(error) {
+  /* supabase-js: FunctionsHttpError carries the Response, FunctionsFetchError
+     means the request never got there at all. */
+  const status = error && error.context && typeof error.context.status === 'number'
+    ? error.context.status
+    : null;
+  if (status === null) {
+    return {
+      status: null,
+      hint: 'the request never reached the server — a browser extension, VPN, firewall or offline connection is blocking it',
+      fix: 'open this page in a private window with extensions off',
+    };
+  }
+  if (status === 401) {
+    return { status, hint: 'this browser is signed in but the server rejected the session', fix: 'sign out and sign in again' };
+  }
+  if (status === 403) {
+    return { status, hint: 'this account is not allowed to use EUKA', fix: 'check the role on this account' };
+  }
+  if (status === 404) {
+    return { status, hint: 'the EUKA function is not deployed on this project', fix: 'redeploy the euka function' };
+  }
+  if (status === 500) {
+    return { status, hint: 'the EUKA function is misconfigured — most likely its API key secret is missing', fix: 'set EUKA_API_KEY on the function' };
+  }
+  if (status === 502) {
+    return { status, hint: 'EUKA itself is down or refused us', fix: 'wait a moment and press it again' };
+  }
+  return { status, hint: 'the EUKA function answered ' + status, fix: 'wait a moment and press it again' };
+}
+
 export async function eukaJson(params = {}) {
   try {
     const body = {};
@@ -164,7 +213,8 @@ export async function eukaJson(params = {}) {
     }
     const { data, error } = await getSupabase().functions.invoke('euka', { body });
     if (error) {
-      console.error('[euka]', error.message || error);
+      _eukaFailure = describeEukaFailure(error);
+      console.error('[euka]', _eukaFailure.status, _eukaFailure.hint, error.message || error);
       return null;
     }
     /* The function answers 502 with `{error}` when EUKA itself fails. Treat
@@ -172,11 +222,18 @@ export async function eukaJson(params = {}) {
        expected key is missing — a caller reading `.stores` off it would see
        undefined and report "no stores" instead of "EUKA is down". */
     if (data && data.error) {
+      _eukaFailure = { status: 200, hint: String(data.error), fix: 'this came back from the server, not from the browser' };
       console.error('[euka]', data.error);
       return null;
     }
+    _eukaFailure = null;
     return data || null;
   } catch (e) {
+    _eukaFailure = {
+      status: null,
+      hint: 'the request never reached the server — a browser extension, VPN, firewall or offline connection is blocking it',
+      fix: 'open this page in a private window with extensions off',
+    };
     console.error('[euka]', e && e.message);
     return null;
   }

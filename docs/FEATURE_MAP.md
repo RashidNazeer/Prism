@@ -2105,6 +2105,43 @@ from them, as the brand's GMV.
 
 ## Paid Collabs: WurxBase, vendored (2026-08-18)
 
+## The EUKA button now names its own fault (2026-09-03)
+
+`eukaJson()` returns null on every failure — the right contract, since all
+their call sites degrade on null. But the EUKA videos button turned that
+null into `No EUKA store named "<brand>"`, so **six different faults arrived
+as one sentence that names the brand and blames the data**:
+
+| what actually happened | what it used to say |
+| --- | --- |
+| request blocked before it left the browser | No EUKA store named X |
+| session rejected by the server (401) | No EUKA store named X |
+| account not on the EUKA allow-list (403) | No EUKA store named X |
+| function not deployed (404) | No EUKA store named X |
+| `EUKA_API_KEY` unset (500) | No EUKA store named X |
+| EUKA itself down (502) | No EUKA store named X |
+| the brand really has no store | No EUKA store named X |
+
+`lastEukaFailure()` in `supabaseClient.js` now keeps the reason and the
+button prints it in the drilldown, where a sentence fits. The genuine
+no-store case lists the stores EUKA actually returned, so a name mismatch
+is visible rather than inferred. **The null contract is unchanged.**
+
+**Errors stay up 22 seconds, not 7.** Seven is right for "Already up to
+date" and useless for a reason, and Rashid cannot open a console — the
+screen is the only channel there is.
+
+**Two theories were tested and both were wrong.** A full localStorage:
+filled to the quota, the app carried on, no error. A dead-but-present
+session: the app signs you out and returns to login rather than showing
+this. Neither explains a profile that fails while a fresh profile on the
+same laptop works — which is why the fix is to make the screen say what
+happened rather than to guess.
+
+**Guarded by `pnpm verify:euka-errors`** — forces all four causes with
+request interception and asserts each names itself and that none of them
+says "No EUKA store named".
+
 ## Creative angles are scoped to a MONTH (2026-09-03)
 
 An angle test lives in **one brand in one month** — comparing a September

@@ -1369,3 +1369,38 @@
   font-size: 0.6875rem;
   font-weight: 800;
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   WHY THE EUKA SYNC FAILED
+
+   Every failure of the EUKA videos button used to arrive as the same
+   sentence — `No EUKA store named "<brand>"` — whether the real cause was
+   a blocked request, an expired session, a role that is not allowed, EUKA
+   itself being down, or the brand genuinely having no store. It names the
+   brand and blames the data, so that is where people look.
+
+   The button can hold three words. This holds the reason. */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-euka-why {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 12px;
+  padding: 11px 14px;
+  border-radius: 0.75rem;
+  background: var(--wx-danger-soft);
+  border: 1px solid color-mix(in srgb, var(--wx-danger) 34%, transparent);
+}
+/* Danger ink on a danger wash, never the page's muted ink — the pairing
+   that keeps failing contrast on tinted chips here. */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-euka-why b {
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--wx-danger);
+  letter-spacing: -0.01em;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-euka-why span {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.55;
+  color: var(--wx-text);
+}

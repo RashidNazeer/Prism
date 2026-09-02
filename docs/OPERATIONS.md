@@ -1460,6 +1460,10 @@ pnpm verify:angles       # 12 checks. Creative angles are findable by the
                          # whole team: an empty month must SAY where the
                          # tests are and one click must reach them. Needs a
                          # preview server and COLLAB_STAFF_PASSWORD.
+pnpm verify:euka-errors  # 8 checks. Every way the EUKA videos button can
+                         # fail must name its own cause instead of blaming
+                         # the brand name. Needs a preview server and
+                         # COLLAB_STAFF_PASSWORD.
 ```
 
 **The boundary is `public.is_collabs_viewer()`**, used only by the wurxbase
