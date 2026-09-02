@@ -3288,7 +3288,7 @@ function RepStat({ label, value, sub, delta, neutral, bar, accent }) {
 }
 
 /* ─── ReportingViewV2 · premium executive report ─── */
-function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, currentUser, onExportCsv }) {
+function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, currentUser, onExportCsv, onGoToMonth }) {
   // `creators` = hire-date filtered list (matches Brands tab scope).
   // `allCreators` = full pool restricted only to Active brands. Used solely for
   // GMV / Ad Spent / ROAS so reporting numbers mirror Performance tab brand rows -
@@ -3980,6 +3980,7 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, curre
             money={fmt$Round}
             canEdit={can(currentUser, 'canEditAngles')}
             canType={can(currentUser, 'canEditAdSpend')}
+            onGoToMonth={onGoToMonth}
           />
         )}
       </div>
@@ -13910,7 +13911,7 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
         onOpenNotifications={() => setShowNotifPanel(s => !s)}
         pendingApprovalsCount={pendingCount}
         onOpenPendingApprovals={() => setShowReview(true)}
-        reportingNode={({ creators: filteredCreators, allCreators, dateFilter: f, activeBrands }) => {
+        reportingNode={({ creators: filteredCreators, allCreators, dateFilter: f, activeBrands, goToMonth }) => {
           // Exclude any brand the user has parked as Inactive in Performance tab.
           // `scoped` drives the brand list + per-creator stats; `scopedAll` is the
           // unfiltered pool used by ReportingViewV2 to compute GMV/Ad/ROAS per brand
@@ -13926,6 +13927,7 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
               activeBrand="All"
               dateFilter={f}
               onExportCsv={exportSelectedCSV ? exportUniqueCreators : null}
+              onGoToMonth={goToMonth}
             />
           );
         }}
@@ -13971,6 +13973,8 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
             activeBrand={activeBrand}
             dateFilter={dateFilter}
             onExportCsv={exportSelectedCSV ? exportUniqueCreators : null}
+            /* so an empty angle screen can jump to the month the tests are in */
+            onGoToMonth={(year, month) => setDateFilter({ mode: 'month', year, month })}
           />
         </div>
       ) : viewMode === 'stats' ? (

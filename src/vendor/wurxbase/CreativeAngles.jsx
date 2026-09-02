@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
-  getAngles, getAngleMeta, saveAngles, fetchAngles, newAngleId, brandVideos, angleStats, videoFig, pruneAngle,
+  getAngles, getAllAngles, getAngleMeta, saveAngles, fetchAngles, newAngleId, brandVideos, angleStats, videoFig, pruneAngle,
 } from './angleStore';
 
 /* ════════════════════════════════════════════════════════════════
@@ -40,7 +40,7 @@ const ago = (iso) => {
 const readSet = (k) => { try { return new Set(JSON.parse(localStorage.getItem(k)) || []); } catch (e) { return new Set(); } };
 const writeSet = (k, s) => { try { localStorage.setItem(k, JSON.stringify([...s])); } catch (e) {} };
 
-export default function CreativeAngles({ creators, brand: brandProp, month, monthLabel, currentUser, money, canEdit = true, canType = true }) {
+export default function CreativeAngles({ creators, brand: brandProp, month, monthLabel, currentUser, money, canEdit = true, canType = true, onGoToMonth }) {
   /* Read-only is a real state here, not a disabled-looking copy of the
      editable one: someone without the grant still needs to read the test,
      so the figures stay and only the ways of changing them go. */
@@ -89,9 +89,13 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
 
   const choose = (b) => { setPicked(b); try { localStorage.setItem(PICK_KEY, b); } catch (e) {} };
 
+  /* The whole mirror, not just this brand+month, so an empty screen can say
+     where the tests actually are. */
+  const [all, setAll] = useState(() => getAllAngles());
   const reload = useCallback(() => {
     setAngles(getAngles(brand, month));
     setMeta(getAngleMeta(brand, month));
+    setAll(getAllAngles());
   }, [brand, month]);
   useEffect(() => { reload(); }, [reload]);
   useEffect(() => {
@@ -101,6 +105,37 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
 
   const videos = useMemo(() => brandVideos(creators, brand, month), [creators, brand, month]);
   const index = useMemo(() => { const m = {}; videos.forEach(v => { m[v.url] = v; }); return m; }, [videos]);
+
+  /* EVERY brand+month that actually holds angles, minus the one being looked
+     at.
+     WHY THIS EXISTS. Masifa set up four tests and Asad reported he could not
+     see them. Nothing was wrong with his access — he is superadmin and the
+     rows were already in his browser. The tests were saved against AUGUST and
+     the report opens on the CURRENT month, so he was looking at an empty
+     September and the screen said only "start your first angle". A test that
+     is scoped to one brand in one cycle has to say which cycle, or it reads
+     as data loss. */
+  const elsewhere = useMemo(() => {
+    return Object.entries(all || {})
+      .map(([key, row]) => {
+        const i = key.lastIndexOf('::');
+        if (i < 0) return null;
+        const n = Array.isArray(row && row.angles) ? row.angles.length : 0;
+        if (!n) return null;
+        return { brand: key.slice(0, i), month: key.slice(i + 2), count: n, savedBy: (row && row.savedBy) || '' };
+      })
+      .filter(Boolean)
+      .filter(e => !(e.brand === brand && e.month === month))
+      .sort((a, b) => b.month.localeCompare(a.month) || a.brand.localeCompare(b.brand));
+  }, [all, brand, month]);
+
+  const goTo = useCallback((e) => {
+    if (e.month !== month && onGoToMonth) {
+      const [y, m] = e.month.split('-');
+      onGoToMonth(Number(y), Number(m) - 1);
+    }
+    choose(e.brand);
+  }, [month, onGoToMonth]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const assigned = useMemo(() => {
     const s = new Set();
@@ -266,6 +301,7 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
         <div className="cx-blank">
           <b>Pick a month</b>
           <span>A test compares hooks inside one cycle. Turn off All time and choose the month you are reporting on.</span>
+          <Elsewhere items={elsewhere} month={month} onGo={goTo} jumpable={!!onGoToMonth} />
         </div>
       </section>
     );
@@ -276,6 +312,7 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
         <div className="cx-blank">
           <b>Nothing posted in {monthLabel}</b>
           <span>There are no videos to test yet for this month.</span>
+          <Elsewhere items={elsewhere} month={month} onGo={goTo} jumpable={!!onGoToMonth} />
         </div>
       </section>
     );
@@ -290,6 +327,7 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
         <div className="cx-blank">
           <b>No angles yet</b>
           <span>Nobody has set up a test for {brand} in {monthLabel}. You can read one here once it exists.</span>
+          <Elsewhere items={elsewhere} month={month} onGo={goTo} jumpable={!!onGoToMonth} />
         </div>
       ) : rows.length === 0 ? (
         <div className="cx-blank">
@@ -298,6 +336,7 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
             An angle is the hook you are testing, something like "doctor explains" or "before and after".
             Add one, drop this month's videos into it, then type the ad spend behind each video.
           </span>
+          <Elsewhere items={elsewhere} month={month} onGo={goTo} jumpable={!!onGoToMonth} />
           <button className="cx-new" onClick={addAngle}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
             New angle
@@ -546,6 +585,39 @@ function Cell({ kind, value, auto, locked, unit, onSave }) {
 }
 
 /* ── brand chooser · a One UI sheet rather than a system dropdown ── */
+/* "There is nothing here" is only half an answer when the work is one month
+   away. This says where every existing test is and takes you to it. */
+function Elsewhere({ items, month, onGo, jumpable }) {
+  if (!items || !items.length) return null;
+  const label = (m) => {
+    const [y, mm] = String(m).split('-');
+    const d = new Date(Number(y), Number(mm) - 1, 1);
+    return isNaN(d) ? m : d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  };
+  return (
+    <div className="cx-else">
+      <div className="cx-else-h">
+        {items.length} test{items.length === 1 ? '' : 's'} already set up{jumpable ? ' — open one' : ''}
+      </div>
+      <div className="cx-else-list">
+        {items.map((e) => (
+          <button
+            key={e.brand + '::' + e.month}
+            type="button"
+            className="cx-else-item"
+            onClick={() => onGo(e)}
+            title={(e.savedBy ? 'Set up by ' + e.savedBy + ' · ' : '') + e.brand + ' · ' + label(e.month)}
+          >
+            <span className="cx-else-brand">{e.brand}</span>
+            <span className="cx-else-month">{label(e.month)}</span>
+            <span className="cx-else-count">{e.count}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function BrandMenu({ choices, value, onPick }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);

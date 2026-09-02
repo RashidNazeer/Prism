@@ -2105,6 +2105,36 @@ from them, as the brand's GMV.
 
 ## Paid Collabs: WurxBase, vendored (2026-08-18)
 
+## Creative angles are scoped to a MONTH (2026-09-03)
+
+An angle test lives in **one brand in one month** — comparing a September
+hook against a January one measures the season, not the hook. They are
+stored in `wurxbase.activity_logs`, `action = CREATIVE_ANGLE`, one row per
+`Brand::YYYY-MM`, and read through a localStorage mirror that `fetchAngles()`
+fills once at boot.
+
+**They are fully shared and always were.** Asad reported he could not see
+the tests Masifa set up; it was read as an access problem and it was not.
+He is superadmin with nothing withheld, all seven staff accounts are `ops`
+and active, and reading as him returns all six rows. His browser already
+held every one.
+
+**The screen was the bug.** Every test is August; the report opens on the
+CURRENT month. He was looking at an empty September that said only "start
+your first angle" — nothing on it hinted four tests existed a month back.
+Every empty state now lists the tests that DO exist (brand · month · count)
+and one click goes there.
+
+**Wire the month jump through `WurxUI.jsx`, not `App.jsx`.** App has its own
+`dateFilter`, but Paid Collabs renders reporting via `reportingNode` and
+hands it a filter DERIVED from WurxUI's `month`/`allTime`. Setting App's state
+changes nothing on the screen people use. Wired wrong first; the browser
+check caught it because the click left the header on September.
+
+**Guarded by `pnpm verify:angles`** — signs in as the superadmin and as the
+IPC who wrote the tests, opens on the empty current month, and asserts both
+that the screen says where the tests are and that one click renders them.
+
 ## Roles, and what each one reaches (2026-09-02)
 
 Eight roles. **The model is allow-list throughout**, which is the single most

@@ -1279,6 +1279,13 @@ export default function WurxUI({
                   creators: filtered,
                   allCreators: creators,
                   activeBrands: activeBrandSet,
+                  /* Lets an empty Creative Angles screen jump to the month the
+                     tests were actually saved in. The month lives HERE, so the
+                     setter has to come from here. */
+                  goToMonth: (year, month0) => {
+                    setAllTime(false);
+                    setMonth(String(year) + '-' + String(month0 + 1).padStart(2, '0'));
+                  },
                   dateFilter: (() => {
                     if (allTime || !month) return { mode: 'all' };
                     const parts = month.split('-');

@@ -65,7 +65,8 @@
     "verify:collab-canvas": "node scripts/check-collab-canvas.mjs",
     "collabs:viewer": "node scripts/create-collabs-viewer.mjs",
     "verify:collabs-viewer": "node scripts/check-collabs-viewer.mjs",
-    "verify:collabs-viewer-rls": "node scripts/check-collabs-viewer-rls.mjs"
+    "verify:collabs-viewer-rls": "node scripts/check-collabs-viewer-rls.mjs",
+    "verify:angles": "node scripts/check-angles-visible.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

@@ -1456,6 +1456,10 @@ SUPABASE_SERVICE_KEY=... node scripts/create-collabs-viewer.mjs \
 
 pnpm verify:collabs-viewer-rls   # attacks the DB as each role. Needs the service key.
 pnpm verify:collabs-viewer       # the browser half. Needs a preview server.
+pnpm verify:angles       # 12 checks. Creative angles are findable by the
+                         # whole team: an empty month must SAY where the
+                         # tests are and one click must reach them. Needs a
+                         # preview server and COLLAB_STAFF_PASSWORD.
 ```
 
 **The boundary is `public.is_collabs_viewer()`**, used only by the wurxbase

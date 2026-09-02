@@ -1293,3 +1293,79 @@
 .wurxbase-root.wurxbase-root.wurxbase-root .rp-hero-tag i.down {
   background: var(--wx-danger-soft);
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   "TESTS ALREADY SET UP" — the pointer out of an empty angle screen
+
+   Masifa set up four creative-angle tests and Asad reported he could not
+   see them. His access was never the problem: he is superadmin, and the
+   rows were already in his browser. The tests are scoped to a brand in a
+   MONTH, they were saved against August, and the report opens on the
+   current month — so he was looking at an empty September, and the only
+   thing on screen was "start your first angle".
+
+   A screen scoped to one cycle has to name the cycle, or an empty view
+   reads as lost work. This lists every test that does exist and takes you
+   straight to it. */
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-else {
+  margin-top: 22px;
+  padding-top: 18px;
+  width: 100%;
+  max-width: 560px;
+  border-top: 1px solid color-mix(in srgb, var(--wx-accent) 16%, transparent);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-else-h {
+  font-family: var(--wx-font-mono, ui-monospace, monospace);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--wx-text-muted);
+  margin-bottom: 12px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-else-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-else-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  background: var(--wx-surface-2);
+  border: 1px solid var(--wx-border);
+  color: var(--wx-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: background 0.14s, border-color 0.14s;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-else-item:hover,
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-else-item:focus-visible {
+  background: var(--wx-accent-soft);
+  border-color: color-mix(in srgb, var(--wx-accent) 45%, transparent);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-else-month {
+  color: var(--wx-text-muted);
+  font-weight: 600;
+}
+/* The count sits on an accent chip, so it takes accent INK, never the
+   page's muted ink — that pairing is how the tinted-surface bug keeps
+   coming back. */
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-else-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--wx-accent-soft);
+  color: var(--wx-accent);
+  font-family: var(--wx-font-mono, ui-monospace, monospace);
+  font-size: 0.6875rem;
+  font-weight: 800;
+}
