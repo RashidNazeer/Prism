@@ -1837,3 +1837,65 @@ reason the app is not gold today is that the selectors are broken. Repair the
 selectors without first correcting those five aliases and the whole of Paid
 Collabs turns solid gold.
 
+## 43. The TikTok ads pipeline is not storing most creators' videos
+
+**Status:** OPEN, and it undercuts the product's main promise
+**Raise it when:** anyone asks why a creator's ad spend is blank, or before
+production gets real creators.
+
+Found 2026-09-02 while answering a question about one creator. Erin Cooper
+has **83 Penetrex videos**, and NONE of them are in `tiktok_video_daily`.
+The table holds about **41 distinct videos in total**, over a window of
+30 July to 30 August.
+
+**It is not an access problem.** Asked live, TikTok answered for 33 of her 83
+videos and returned real figures for August: **$3,473.70 ad spend, $5,843.33
+gross revenue, 346 orders, 1.68x**. One video took 57% of the spend. So the
+credentials, the endpoint and the store are all fine — the nightly sync
+simply is not asking about these videos.
+
+Two candidates, neither confirmed: the sync builds its item-id list from a
+source that does not include Paid Collabs video links, or it is scoped
+narrower than the brand. The call it makes is
+`gmv_max/video_list/report/get/` filtered by `item_id IN [...]`, so whatever
+builds that array is where to look (`supabase/functions/tiktok-sync/index.ts`).
+
+**Why it matters more than one creator.** "A creator logs in and sees the ad
+spend behind their own video" is the product. If the pipeline only covers 41
+videos, most creators would see nothing and nobody would know.
+
+## 44. Reacher: explored, dropped, findings kept
+
+**Status:** CLOSED unless he reopens it
+**Raise it when:** he mentions Reacher again.
+
+Rashid, 2026-09-02: *"this is not to be built in this app reacher is diff
+forget that now i just wanted to see what's available"*. Nothing was built.
+
+What was learned, so it need not be re-derived. Reacher is an affiliate
+platform for TikTok Shop sellers, not the email-verification service of the
+same name. **319 endpoints**, essentially their whole product behind an API
+key. His key has **read AND write** (`GET /whoami` returns `can_write: true`);
+reads are 60/min, 3000/hour.
+
+- **Three shops:** Cutler Nutrition and Biostime (US, live, collecting),
+  Longevity (UK, GBP, **inactive** — never logged in, onboarding never
+  finished).
+- **Pro plan $599/month, on trial until 15 September 2026**, Stripe attached
+  and set to charge automatically.
+- **POST does not mean write.** ~59 of their POSTs are reads that carry a
+  filter body; ~48 genuinely write. Their own docs say so on one endpoint.
+- **No order-level creator attribution.** `POST /pnl/orders` has
+  `affiliate_commission` per order x SKU, but no creator field and no
+  order-id lookup — and P&L has `never_run` on both shops, so there is no
+  order data at all until Reacher enable it per shop.
+- **`est_commission` is not one number.** `/creators/list` is lifetime and
+  ignores the date filter; `/creators/performance` is windowed and works. For
+  one creator the two disagreed — a 90-day figure HIGHER than the lifetime
+  one, on less GMV. Do not pay anyone from it without asking Reacher how each
+  is derived.
+- **Reacher holds working login access to the TikTok Shop seller accounts.**
+
+His API key is outside the repo in `cli-secrets.env` as `REACHER_API`. It has
+never been in a chat message or a file in this repo.
+

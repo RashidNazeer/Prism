@@ -2105,6 +2105,45 @@ from them, as the brand's GMV.
 
 ## Paid Collabs: WurxBase, vendored (2026-08-18)
 
+## Roles, and what each one reaches (2026-09-02)
+
+Eight roles. **The model is allow-list throughout**, which is the single most
+important thing to know: a role that exists but is named nowhere can read and
+write nothing, so adding one is safe by construction.
+
+| role | reaches |
+| --- | --- |
+| `admin` | everything · Paid Collabs superadmin |
+| `ops` | the admin app · Paid Collabs admin |
+| `creator` / `applicant` | the creator app |
+| `creative_strategist` | /studio |
+| `affiliate_team_lead` / `operations_lead` / `ads_manager` | Paid Collabs only, READ only |
+
+**NEVER add a role to `public.is_staff()`.** It is
+`jwt_role() in ('ops','admin')` and it guards SEVENTY policies across
+creators, applications, offers, contests, brands and TikTok money. The three
+read-only roles use `public.is_collabs_viewer()` instead — one schema,
+SELECT only; writes to wurxbase still answer to `is_staff()`.
+
+**Adding another role of this kind**, in order: the enum value in its OWN
+migration (Postgres will not let a new label be USED in the transaction that
+added it), then name it in `is_collabs_viewer()`, then add it to
+`COLLABS_ONLY_ROLES` in `src/lib/auth/auth-context.ts` — the router, the
+sidebar and the Paid Collabs identity hook all read that one list. TypeScript
+then names every exhaustive role map needing an entry.
+
+**Export and print are a FLOOR.** `forcedPermsFor()` runs after the role
+grants and after any `app_users.custom_perms` override, so a mistaken grant
+in Access Control cannot open a CSV of creator earnings.
+
+**These three do not inherit from `app_users`.** Asad's eight do, which is the
+point of that lookup; for these an inherited `role: 'admin'` would silently
+promote a read-only account to full edit on money.
+
+**Verified by `pnpm verify:collabs-viewer-rls`** (attacks the database as each
+role with a real session) **and `pnpm verify:collabs-viewer`** (the browser
+half: menu, typed URLs, no write control, zero console errors).
+
 ### One canvas, all the way down (2026-09-01)
 
 **Every full-height surface in Paid Collabs paints `--wx-bg`.** There are

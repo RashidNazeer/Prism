@@ -2,30 +2,74 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-09-01.** Two things are queued, in this order.
+**Recorded 2026-09-02 by /precompact.** He gave no argument, so nothing is
+queued for CLAUDE. Two things are queued for HIM, and neither should be
+started without him saying so.
 
-### 1. Ask about the Euka data sync — still unrun, still waiting on his yes
+### Ask this, then wait
 
-*"Shall I apply the Euka data sync — the 10 changes we rehearsed?"*
+*"Compaction done. Anything you want picked up — or shall I wait?"*
 
-`SUPABASE_SERVICE_KEY=... pnpm wurxbase:sync` is a DRY RUN and safe to show
-him again. `--apply` writes. Last rehearsal: **10 updates, 1 insert, 0
-deletes** — every change fills a blank; nothing is overwritten and nothing is
-deleted, which is the rule he set after checking with Asad.
+If he asks what is pending, answer from `docs/PARKED.md`. The two live ones:
 
-**NEVER offer `wurxbase:copy` as the way to do this.** It empties each table
-first and would discard the eight `hub_email` links and everything entered
-on our side. See PARKED 37.
+1. **The TikTok resubmission is on HIS desk, not ours.** The site is ready and
+   live in production. He has the exact copy to paste, the new Website URL and
+   the demo-video shot list in PARKED 27. **Do not resubmit anything for him**
+   — it is his developer account. If he says it was refused again, get the
+   reviewer note VERBATIM before changing a line; that rule has paid off twice.
+2. **The Euka data sync is still unrun**, still waiting on a yes. `pnpm
+   wurxbase:sync` is a dry run; `--apply` writes. Last rehearsal 3 updates,
+   0 inserts, 0 deletes, blanks only. **Never offer `wurxbase:copy` instead.**
+   See PARKED 37.
 
-### 2. Paid Collabs is unusable on a tablet, and he is now working in it
-
-PARKED 13e, raised again on 2026-09-01. At 768px the Performance tab shows
-brand cards with **no brand name, no GMV, no ad spend** — a drag handle, a
-chevron and a video count. It is their responsive CSS, measured, not ours,
-and the performance sheet itself cannot even be reached from there. He asked
-for this screen to be premium; on a tablet it is not a screen yet.
+**Do not re-explore the codebase.** This file, then PARKED, then only the
+files the work names.
 
 ## WHERE EVERYTHING STANDS
+
+**`dev` is at `d8c9f69`, pushed and deployed to wurxmediahubdev.vercel.app,**
+verified against the live site rather than the deploy status.
+
+**PRODUCTION MOVED for the first time since 26 August**, to `5888faa` on
+`main` — and it carries ONLY a copy change. `dev` is now ~40 commits and 7
+migrations ahead of it. The "make it live" decision for all of that is still
+open and untouched.
+
+### What this session did
+
+**The TikTok app came back REJECTED, and it was our wording.** Their App
+Review Guidelines say "Apps must not be for private or personal use", and the
+word *private* opened both our scope explanation and /terms — the page the
+form sends the reviewer to. The product never matched the rejection: creators
+own their own accounts. Fixed in production as copy only, plus a new public
+`/tiktok` page, because TikTok also require a developed site rather than a
+landing page. Full diagnosis and the drafted resubmission copy are in PARKED
+27.
+
+**Three new roles: Affiliate Team Lead, Operations Lead, Ads Manager.** Their
+own logins, Paid Collabs only, read only. Built WITHOUT touching
+`is_staff()` — that guards seventy policies and widening it would have handed
+them the whole product. Proven by attacking the database as each role and in a
+browser. See DECISIONS and the new `roles-and-access` memory.
+
+**Two Paid Collabs bugs.** The creator editor showed no Delete button to
+ANYBODY, Asad included — a name comparison that could never be true, the same
+fault as the payment gates, missed then because that sweep searched the
+negative form. And the creator picker was switched off while editing although
+the code behind it already handled editing.
+
+**Reacher was explored and dropped.** He said: *"this is not to be built in
+this app reacher is diff forget that now i just wanted to see what's
+available"*. Findings are in PARKED 43 in case it returns. His API key is in
+`cli-secrets.env` as `REACHER_API`.
+
+### Suites, all green on dev
+
+collabs-viewer-rls 34/34 · collabs-viewer 42/42 · collab-controls 45/45 ·
+collab-canvas 86/86 · collab-contrast 14/14 · RLS suite all green · perms 5/5
+· build and lint clean.
+
+
 
 **`dev` is at `191ffaf`, pushed, and DEPLOYED to wurxmediahubdev.vercel.app**
 (verified READY, and verified in a browser against the live site, not just the
