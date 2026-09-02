@@ -301,7 +301,7 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
         <div className="cx-blank">
           <b>Pick a month</b>
           <span>A test compares hooks inside one cycle. Turn off All time and choose the month you are reporting on.</span>
-          <Elsewhere items={elsewhere} month={month} onGo={goTo} jumpable={!!onGoToMonth} />
+          <Elsewhere items={elsewhere} onGo={goTo} jumpable={!!onGoToMonth} />
         </div>
       </section>
     );
@@ -312,7 +312,7 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
         <div className="cx-blank">
           <b>Nothing posted in {monthLabel}</b>
           <span>There are no videos to test yet for this month.</span>
-          <Elsewhere items={elsewhere} month={month} onGo={goTo} jumpable={!!onGoToMonth} />
+          <Elsewhere items={elsewhere} onGo={goTo} jumpable={!!onGoToMonth} />
         </div>
       </section>
     );
@@ -327,7 +327,7 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
         <div className="cx-blank">
           <b>No angles yet</b>
           <span>Nobody has set up a test for {brand} in {monthLabel}. You can read one here once it exists.</span>
-          <Elsewhere items={elsewhere} month={month} onGo={goTo} jumpable={!!onGoToMonth} />
+          <Elsewhere items={elsewhere} onGo={goTo} jumpable={!!onGoToMonth} />
         </div>
       ) : rows.length === 0 ? (
         <div className="cx-blank">
@@ -336,7 +336,7 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
             An angle is the hook you are testing, something like "doctor explains" or "before and after".
             Add one, drop this month's videos into it, then type the ad spend behind each video.
           </span>
-          <Elsewhere items={elsewhere} month={month} onGo={goTo} jumpable={!!onGoToMonth} />
+          <Elsewhere items={elsewhere} onGo={goTo} jumpable={!!onGoToMonth} />
           <button className="cx-new" onClick={addAngle}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
             New angle
@@ -587,7 +587,7 @@ function Cell({ kind, value, auto, locked, unit, onSave }) {
 /* ── brand chooser · a One UI sheet rather than a system dropdown ── */
 /* "There is nothing here" is only half an answer when the work is one month
    away. This says where every existing test is and takes you to it. */
-function Elsewhere({ items, month, onGo, jumpable }) {
+function Elsewhere({ items, onGo, jumpable }) {
   if (!items || !items.length) return null;
   const label = (m) => {
     const [y, mm] = String(m).split('-');
