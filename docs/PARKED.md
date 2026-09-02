@@ -1896,6 +1896,81 @@ reads are 60/min, 3000/hour.
   is derived.
 - **Reacher holds working login access to the TikTok Shop seller accounts.**
 
+### Re-checked 2026-09-02 evening, on Rashid asking "does it give something new?"
+
+**The key is unchanged** (secrets file untouched since 1 Sep). What changed is
+Reacher, and this time we pulled their machine-readable `openapi.json` rather
+than scraping the docs page — 263 paths, 299 operations, saved to the
+scratchpad. Diffed against yesterday, **seven operations are new and all but
+one are GMV Max**:
+
+- `GET /gmv-max/campaigns/{id}/spend-by-surface`, `/delivery-status`,
+  `/settings`, `/changes`
+- `POST /gmv-max/campaigns` and `PATCH /gmv-max/campaigns/{id}` — WRITES
+- `POST /products/catalog`
+
+**The one that would matter to us was already there and is worth knowing about:**
+`GET /gmv-max/campaigns/{id}/creative-metrics` returns DAILY PER-CREATIVE
+spend, impressions, clicks, conversions, revenue, ROI and the full view-rate
+funnel, keyed by `material_id`. Per-creative is per-video. That is precisely
+the grain PARKED 43 says our own pipeline is missing.
+
+**But there is no GMV Max data behind any of it.** `/gmv-max/campaigns`,
+`/automations`, `/spark-codes` and `/excluded-creators` are all empty on both
+live shops, and `/gmv-max/dashboard` is zeros across every metric. **Verified
+against a live control** rather than trusted: `/creators/performance` on the
+same shops returns 27,525 creators for Cutler and 4,358 for Biostime with real
+August GMV, so the account is alive and the GMV Max side is genuinely not
+connected. (Yesterday an empty response is exactly what made me tell Rashid
+Cutler had no creators. It has 42,045.)
+
+**P&L is still `never_run` on both shops**, so still no order data at all.
+Longevity now returns a clearer refusal — *"no TikTok seller ID on file"* —
+confirming onboarding was never finished.
+
+### THE THING THAT ACTUALLY DECIDES THIS: Reacher barely overlaps with us
+
+| Reacher shop | one of our brands? |
+| --- | --- |
+| Cutler Nutrition | **no** |
+| Longevity | **no** (and inactive) |
+| Biostime | yes — 38 of our 1,277 Paid Collabs rows |
+
+**Penetrex is not in Reacher at all** — our biggest brand at 259 rows and our
+only Brand Hub. So Reacher can never answer PARKED 43, which is a Penetrex
+question. It reaches about **3% of the roster**.
+
+For that 3% it does add something real. Reacher knows **16 of our 19 Biostime
+handles**, and holds August figures our sheet does not:
+
+- `briceyscarbear` $3,610.91 GMV / $999.29 commission — our sheet: blank
+- `supersaiyansolo` $2,780.01 / $586.13 — blank
+- `vsternau`, `neptunenavigates`, `jayden_smith4` — all blank here
+
+Where both have a number they mostly agree — `ka.devore` and `laurendauk`
+match to the cent — and sometimes do not (`southernseed_` $977.31 vs our
+$1,045.27). **`est_commission` is the genuinely new field; we hold no
+commission figure anywhere.** The warning above still stands: their two
+commission numbers disagreed with each other, so nobody gets paid from it
+until Reacher explain how it is derived.
+
+**A trap worth remembering.** A first pass reported "Reacher knows 1 of our 19"
+and it was wrong. `wurxbase.creators.tiktok_account` stores a FULL URL
+(`https://www.tiktok.com/@handle`), not a handle, so every comparison against
+a handle silently misses. Proved by a positive and negative control on their
+filter before believing the miss. Anything joining us to an external creator
+source must extract the handle from that URL.
+
+### Two things with a clock on them
+
+1. **The key can WRITE, and now writes ad campaigns.** `can_write: true` with
+   `POST /gmv-max/campaigns` (create), `PATCH` (update budget, target ROAS,
+   schedule) and `POST /gmv-max/excluded-creators` (cut a creator out of
+   delivery). That is money-moving capability sitting in a file. If Reacher
+   offer a read-only key, take it.
+2. **The trial ends 15 September 2026** — $599/month, Stripe attached, charges
+   automatically. Nothing in this product uses Reacher.
+
 His API key is outside the repo in `cli-secrets.env` as `REACHER_API`. It has
 never been in a chat message or a file in this repo.
 
