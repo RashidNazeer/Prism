@@ -1,5 +1,5 @@
 import { defaultFor } from '@/vendor/wurxbase/access';
-import type { AppRole } from '@/lib/auth/auth-context';
+import { isCollabsOnlyRole, type AppRole } from '@/lib/auth/auth-context';
 
 /**
  * WHO OUR ADMIN IS INSIDE PAID COLLABS.
@@ -32,9 +32,12 @@ export type WurxBaseRole = 'superadmin' | 'ipc' | 'admin' | 'apc' | 'viewer' | '
  * `ops`    -> `admin`       every tab and every day-to-day action, but no God
  *                           Mode, no managing users, no hard delete
  *
- * Nobody else reaches /admin/collabs at all: the route sits behind
- * `RequireAuth allow={['ops','admin']}`. The remaining entries exist so this
- * function is total rather than throwing on a role that cannot get here.
+ * `affiliate_team_lead`, `operations_lead`, `ads_manager` -> `viewer`
+ *                           read every tab, change nothing. Their whole world
+ *                           is this route; see COLLABS_ONLY_ROLES.
+ *
+ * Nobody else reaches /admin/collabs at all. The remaining entries exist so
+ * this function is total rather than throwing on a role that cannot get here.
  */
 const ROLE_MAP: Record<AppRole, WurxBaseRole> = {
   admin: 'superadmin',
@@ -45,7 +48,35 @@ const ROLE_MAP: Record<AppRole, WurxBaseRole> = {
      are not on the allow-list for this route, so they never reach it. Mapped
      to the weakest role rather than left out, so this stays total. */
   creative_strategist: 'viewer',
+  affiliate_team_lead: 'viewer',
+  operations_lead: 'viewer',
+  ads_manager: 'viewer',
 };
+
+/**
+ * Permissions these three can never hold, whatever anything else says.
+ *
+ * Their `viewer` role grants `canExportCsv` and `canPrintReport` as standard —
+ * that is what Fahad and Lead have. Rashid, asked on 2026-09-02, withheld both
+ * from these three: they are outside the collabs team, and a CSV of every
+ * creator's GMV and commission is the one artefact that leaves the building
+ * and cannot be recalled. Reading the same numbers on screen is fine and is
+ * the point of the role.
+ *
+ * This is a FLOOR, not a default. It is applied after the role's grants and
+ * after any per-person override from `app_users.custom_perms`, so the answer
+ * cannot be changed by editing a row — only by editing this list. That is
+ * deliberate for a money screen: an override set by mistake in Access Control
+ * should not be able to open an export.
+ */
+const NEVER_FOR_COLLABS_ONLY: Record<string, boolean> = {
+  canExportCsv: false,
+  canPrintReport: false,
+};
+
+export function forcedPermsFor(role: AppRole | undefined): Record<string, boolean> {
+  return isCollabsOnlyRole(role) ? { ...NEVER_FOR_COLLABS_ONLY } : {};
+}
 
 export function wurxbaseRoleFor(role: AppRole | undefined): WurxBaseRole {
   return (role && ROLE_MAP[role]) || 'viewer';

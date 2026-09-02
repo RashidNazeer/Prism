@@ -231,7 +231,29 @@ Deno.serve(async (req) => {
     .eq('id', userData.user.id)
     .single();
 
-  if (!profile?.is_active || (profile.role !== 'admin' && profile.role !== 'ops')) {
+  /*
+   * WHO MAY ASK EUKA. Staff, plus the three read-only Paid Collabs roles added
+   * on 2026-09-02 — Affiliate Team Lead, Operations Lead and Ads Manager.
+   *
+   * They are included because this endpoint is READ-ONLY in both directions:
+   * every mode is a GET against Euka, nothing here writes to Euka or to us.
+   * The figures it returns — creator tier, L30 GMV, the video list — are the
+   * ones already on the Paid Collabs screens those roles are meant to read, so
+   * refusing them here left the Creators and Performance tabs full of holes and
+   * a 403 in the console on every page load.
+   *
+   * It is still a closed list, and deliberately not `!== 'creator'`: a creator
+   * or an applicant must never reach this. Euka's payload carries other
+   * brands' creators, their email addresses and their phone numbers.
+   */
+  const EUKA_ROLES = [
+    'admin',
+    'ops',
+    'affiliate_team_lead',
+    'operations_lead',
+    'ads_manager',
+  ];
+  if (!profile?.is_active || !EUKA_ROLES.includes(profile.role)) {
     return json({ error: 'Not allowed' }, 403, req);
   }
 

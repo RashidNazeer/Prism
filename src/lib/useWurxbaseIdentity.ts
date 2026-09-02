@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
-import { useAuth } from '@/lib/auth/auth-context';
+import { useAuth, isCollabsOnlyRole } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import {
   WURXBASE_TABS,
+  forcedPermsFor,
   wurxbaseRoleFor,
   type WurxBaseRole,
 } from '@/lib/wurxbase-identity';
@@ -68,11 +69,13 @@ export function useWurxbaseIdentity(): WurxbaseIdentity {
 
   const derivedRole = wurxbaseRoleFor(profile?.role);
 
-  /* Staff only. A creator never reaches Paid Collabs, and running this for
-     every signed-in creator would be a query per session for an answer
-     nothing asks for. */
+  /* Staff, plus the three read-only collabs roles. A creator never reaches
+     Paid Collabs, and running this for every signed-in creator would be a
+     query per session for an answer nothing asks for. */
   const enabled =
-    status === 'signedIn' && Boolean(email) && (profile?.role === 'ops' || profile?.role === 'admin');
+    status === 'signedIn' &&
+    Boolean(email) &&
+    (profile?.role === 'ops' || profile?.role === 'admin' || isCollabsOnlyRole(profile?.role));
 
   const { data, isPending } = useQuery({
     queryKey: ['wurxbase-identity', email],
@@ -99,8 +102,22 @@ export function useWurxbaseIdentity(): WurxbaseIdentity {
   });
 
   const matched = Boolean(data);
-  const role = (data?.role as WurxBaseRole) || derivedRole;
-  const customPerms = (data?.custom_perms as Record<string, boolean>) || {};
+  /*
+   * THE COLLABS-ONLY ROLES DO NOT INHERIT FROM `app_users`.
+   *
+   * For Asad's eight people their own row wins, which is the whole point of
+   * the lookup. For these three it must not: an `app_users` row carrying
+   * `role: 'admin'` — created by hand, or copied from Asad's database by the
+   * sync — would silently promote a read-only account to full edit rights on
+   * money, and nothing on screen would say so. Our own role is the authority
+   * for them, and the floor below is applied last so no override can lift it.
+   */
+  const collabsOnly = isCollabsOnlyRole(profile?.role);
+  const role = collabsOnly ? derivedRole : ((data?.role as WurxBaseRole) || derivedRole);
+  const customPerms = {
+    ...(collabsOnly ? {} : ((data?.custom_perms as Record<string, boolean>) || {})),
+    ...forcedPermsFor(profile?.role),
+  };
 
   return {
     role,

@@ -1442,3 +1442,26 @@ header from the registry value rather than from the current shell, and calling
 the server: `initialize` returned protocol `2024-11-05`, `tools/list` returned
 15 tools. Note that `Invoke-RestMethod` **hangs** on this endpoint, because the
 response advertises `text/event-stream`. Use `curl` with `--max-time`.
+
+## The three read-only Paid Collabs roles
+
+Affiliate Team Lead, Operations Lead, Ads Manager. They read Paid Collabs and
+see no other screen; they cannot write anywhere, including inside Paid Collabs.
+
+```bash
+# create or repair one (dev). Refuses to touch an account that is not already
+# one of the three, so it cannot silently demote a colleague.
+SUPABASE_SERVICE_KEY=... node scripts/create-collabs-viewer.mjs \
+  atl@wurxmedia.com affiliate_team_lead
+
+pnpm verify:collabs-viewer-rls   # attacks the DB as each role. Needs the service key.
+pnpm verify:collabs-viewer       # the browser half. Needs a preview server.
+```
+
+**The boundary is `public.is_collabs_viewer()`**, used only by the wurxbase
+SELECT policies. Never add these roles to `is_staff()`: that function guards
+seventy policies across the whole public schema.
+
+**Export and print are withheld** by `forcedPermsFor()` in
+`src/lib/wurxbase-identity.ts`, applied after every other grant, so an override
+in Access Control cannot open them.

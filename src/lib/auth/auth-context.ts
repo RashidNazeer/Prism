@@ -7,8 +7,45 @@ export const ROLES = [
   'creative_strategist',
   'ops',
   'admin',
+  /*
+   * The three READ-ONLY Paid Collabs roles, added 2026-09-02.
+   *
+   * Affiliate Team Lead, Operations Lead and Ads Manager see Paid Collabs and
+   * nothing else, and cannot change anything inside it. They are deliberately
+   * NOT `ops`: `is_staff()` in the database is `jwt_role() in ('ops','admin')`
+   * and it guards seventy policies across creators, offers, contests, brands
+   * and money. Giving one of these people `ops` to "let them see the collabs
+   * screen" would hand them the entire product.
+   *
+   * What they can reach is one predicate wide: `public.is_collabs_viewer()`,
+   * used only by the SELECT policies on the wurxbase schema. Writes there
+   * still answer to `is_staff()`.
+   */
+  'affiliate_team_lead',
+  'operations_lead',
+  'ads_manager',
 ] as const;
 export type AppRole = (typeof ROLES)[number];
+
+/**
+ * The roles whose whole world is Paid Collabs.
+ *
+ * One list, imported by the router, the sidebar and the Paid Collabs identity
+ * hook, so a fourth role of this kind is added in exactly one place. Three
+ * copies of this array is how one of them ends up out of step and somebody
+ * either loses access or gains it.
+ */
+export const COLLABS_ONLY_ROLES = [
+  'affiliate_team_lead',
+  'operations_lead',
+  'ads_manager',
+] as const satisfies readonly AppRole[];
+
+export const isCollabsOnlyRole = (r: AppRole | null | undefined): boolean =>
+  Boolean(r) && (COLLABS_ONLY_ROLES as readonly string[]).includes(r as string);
+
+/* What each is CALLED on screen lives in `src/lib/tiers.ts` with every other
+   role label, not here. One list. */
 
 export const TIERS = ['creator', 'rising', 'pro', 'elite'] as const;
 export type CreatorTier = (typeof TIERS)[number];
@@ -86,6 +123,11 @@ export const HOME_FOR_ROLE: Record<AppRole, string> = {
   creative_strategist: '/studio',
   ops: '/admin',
   admin: '/admin',
+  /* Straight into Paid Collabs. `/admin` would bounce them: it is the
+     dashboard, and they cannot read anything it is made of. */
+  affiliate_team_lead: '/admin/collabs/brands',
+  operations_lead: '/admin/collabs/brands',
+  ads_manager: '/admin/collabs/brands',
 };
 
 const isRole = (v: unknown): v is AppRole =>

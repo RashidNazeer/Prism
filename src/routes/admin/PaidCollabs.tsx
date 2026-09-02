@@ -1,7 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { getSupabase } from '@/lib/supabase';
-import { useAuth } from '@/lib/auth/auth-context';
+import { isCollabsOnlyRole, useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import { wurxbaseSession } from '@/lib/wurxbase-identity';
 import { useWurxbaseIdentity } from '@/lib/useWurxbaseIdentity';
@@ -199,6 +199,21 @@ export function PaidCollabs() {
    */
   useEffect(() => {
     if (!identityReady || !user?.id) return;
+    /*
+     * The read-only roles cannot write here, so do not ask.
+     *
+     * Affiliate Team Lead, Operations Lead and Ads Manager have SELECT on the
+     * wurxbase schema and nothing more, by design. This insert was refused for
+     * them on every visit — correctly — and printed a 403 in the console each
+     * time. An expected failure logged as an error is how a real one gets
+     * missed, and it was the last thing standing between this screen and a
+     * clean console for these accounts.
+     *
+     * Losing their LOGIN line costs nothing an auditor would want: they cannot
+     * change a creator, a deal, a payment or a video, so there is no action of
+     * theirs for the row to be evidence about.
+     */
+    if (isCollabsOnlyRole(profile?.role)) return;
     const MARK = 'wurxbase_session_logged';
     try {
       if (sessionStorage.getItem(MARK)) return;

@@ -62,7 +62,10 @@
     "verify:euka": "node scripts/check-euka.mjs",
     "verify:euka-ui": "node scripts/check-euka-ui.mjs",
     "verify:collab-controls": "node scripts/check-collab-controls.mjs",
-    "verify:collab-canvas": "node scripts/check-collab-canvas.mjs"
+    "verify:collab-canvas": "node scripts/check-collab-canvas.mjs",
+    "collabs:viewer": "node scripts/create-collabs-viewer.mjs",
+    "verify:collabs-viewer": "node scripts/check-collabs-viewer.mjs",
+    "verify:collabs-viewer-rls": "node scripts/check-collabs-viewer-rls.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

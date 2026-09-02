@@ -21,6 +21,7 @@ import {
   Users,
   Video,
 } from 'lucide-react';
+import { isCollabsOnlyRole } from '@/lib/auth/auth-context';
 import type { AppRole } from '@/lib/auth/auth-context';
 import { wurxbaseTabsFor } from '@/lib/wurxbase-identity';
 
@@ -328,6 +329,23 @@ export function navForRole(role: AppRole | undefined, collabTabs?: string[]): Na
    * row simply was not in the rail, which is the behaviour restored here.
    */
   if (role === 'admin' || role === 'ops') return withCollabTabs(ADMIN, role, collabTabs);
+  /*
+   * The three read-only roles get the Paid Collabs group and NOTHING ELSE.
+   *
+   * Built by filtering the admin menu rather than by writing a second one, so a
+   * row added to Paid Collabs tomorrow appears here too and a row added to
+   * Applications or TikTok cannot. The same `withCollabTabs` then drops any
+   * tab their capabilities do not open, exactly as it does for staff.
+   *
+   * This hides rows. It does not protect anything: `/admin/applications` typed
+   * into the address bar is refused by the route guard, and the queries behind
+   * it return nothing under RLS. See COLLABS_ONLY_ROLES.
+   */
+  if (isCollabsOnlyRole(role)) {
+    const collabsOnly = ADMIN.filter((g) => g.items.some((i) => i.to?.startsWith('/admin/collabs')))
+      .map((g) => ({ ...g, items: g.items.filter((i) => i.to?.startsWith('/admin/collabs')) }));
+    return withCollabTabs(collabsOnly, role, collabTabs);
+  }
   if (role === 'creative_strategist') return STUDIO;
   if (role === 'creator') return CREATOR;
   return APPLICANT;

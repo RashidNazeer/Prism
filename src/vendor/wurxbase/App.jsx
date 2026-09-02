@@ -11925,6 +11925,14 @@ export default function App({ tab, onTabChange, embedded = false } = {}) {
   const perms = getPerms(currentUser?.role || null, currentUser?.custom_perms || null);
 
   async function logActivity(actor, action, target, details = {}) {
+    /* WURX-ADDED · do not fire a write we know the database will refuse.
+       The read-only Paid Collabs roles (Affiliate Team Lead, Operations Lead,
+       Ads Manager) cannot insert into wurxbase — that is the point of them —
+       so this ran on every page load, got a 403, and printed an error nobody
+       could act on. A console full of expected failures is how a real one goes
+       unnoticed. `canEdit` is the capability every other write here answers to,
+       so presence follows the same line rather than inventing its own. */
+    if (!can(actor, 'canEdit')) return;
     const display = actor.display || actor.username || actor.id || 'Unknown';
     const { error } = await supabase.from('activity_logs').insert({
       user_id: String(actor.id), user_display: display,

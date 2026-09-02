@@ -2134,3 +2134,42 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   the data layer supported it and a render gate blocked it. Now open in both
   modes, with the record being edited filtered out of its own suggestions so
   "Hailry" cannot offer to auto-fill "Hailry" over itself.
+- 2026-09-02: **Three read-only Paid Collabs roles, and NOT by widening
+  `is_staff()`.** Rashid asked for Affiliate Team Lead, Operations Lead and Ads
+  Manager: their own logins, Paid Collabs only, viewer only, "this is money
+  sensitive". The obvious implementation — give them `ops` so they reach the
+  collabs screen — would have handed them the entire product: `is_staff()` is
+  `jwt_role() in ('ops','admin')` and it guards SEVENTY policies across
+  creators, applications, offers, contests, brands and TikTok money. It is not
+  touched. Instead `public.is_collabs_viewer()` is a second, narrower predicate
+  used by exactly one schema, and only for SELECT; INSERT, UPDATE and DELETE on
+  wurxbase still answer to `is_staff()`. Checked before writing it: every role
+  test in the database is an allow-list (`=` or `in`, never `<>`), so a new enum
+  value starts with zero access and gains only what is named.
+- 2026-09-02: **Two migrations, not one, and that is a Postgres rule not a
+  preference.** A value added by `alter type ... add value` cannot be USED in
+  the transaction that added it, and each migration file is its own
+  transaction. The enum labels land in one file and everything referencing them
+  in the next. Combined, it fails at deploy rather than at review.
+- 2026-09-02: **Export and print are a FLOOR, not a default.** Their `viewer`
+  grants `canExportCsv` and `canPrintReport` as standard — Fahad and Lead have
+  both. Rashid withheld them from these three: a CSV of every creator's GMV and
+  commission is the one artefact that leaves the building and cannot be
+  recalled. `forcedPermsFor()` is applied AFTER the role's grants and after any
+  `app_users.custom_perms` override, so it cannot be lifted by editing a row —
+  only by editing that list. On a money screen an override set by mistake in
+  Access Control should not be able to open an export.
+- 2026-09-02: **These three do not inherit from `app_users`.** For Asad's eight
+  people their own row wins, which is the whole point of that lookup. For these
+  three it must not: a row carrying `role: 'admin'` — created by hand, or
+  carried in by the sync from Asad's database — would silently promote a
+  read-only account to full edit on money with nothing on screen to say so.
+  Our own role is the authority for them.
+- 2026-09-02: **The Euka function admits them; the LOGIN audit row does not.**
+  Euka is read-only in both directions and returns the tier and L30 GMV already
+  on the screens these roles are meant to read, so refusing them left holes and
+  a 403 per page load. The `LOGIN` row written by our own route was the
+  opposite call: they cannot write, the insert was correctly refused, and an
+  expected failure logged as an error is how a real one gets missed. Losing
+  their LOGIN line costs no audit value, because they can change nothing for it
+  to be evidence about.
