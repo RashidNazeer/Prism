@@ -62,6 +62,25 @@ try {
       check(after?.category !== sentinel, `${role}: update CHANGED NOTHING`,
         after?.category === sentinel ? 'THE ROW WAS ACTUALLY MODIFIED' : `still ${JSON.stringify(after?.category)}`);
 
+      /* THE STATUS DROPDOWN, exactly. It writes payment_status and videos,
+         and column-level UPDATE grants are their own boundary here, so a
+         refusal on `category` does not prove a refusal on these. Rashid
+         asked this directly on 2026-09-02 and would not click it himself
+         because the rows are real. */
+      const { data: was } = await svcWb.from('creators')
+        .select('payment_status, videos').eq('id', target.id).single();
+      for (const patch of [
+        { payment_status: 'Not Yet', videos: 'Done' },        // Payment Pending
+        { payment_status: 'Not Yet', videos: 'In Progress' }, // Videos in Progress
+        { payment_status: 'Paid' },                          // Payment Sent
+      ]) {
+        await c.schema('wurxbase').from('creators').update(patch).eq('id', target.id);
+      }
+      const { data: now } = await svcWb.from('creators')
+        .select('payment_status, videos').eq('id', target.id).single();
+      check(now?.payment_status === was?.payment_status && now?.videos === was?.videos,
+        `${role}: status COLUMNS unchanged after all three menu options`,
+        `was ${JSON.stringify(was)}, now ${JSON.stringify(now)}`);
       /* DELETE — verified by the row still existing. */
       await c.schema('wurxbase').from('creators').delete().eq('id', target.id);
       const { count: still } = await svcWb.from('creators').select('*', { count: 'exact', head: true }).eq('id', target.id);

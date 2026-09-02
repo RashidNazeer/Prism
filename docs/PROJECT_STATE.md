@@ -2,28 +2,13 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-09-02 by /precompact.** He gave no argument, so nothing is
-queued for CLAUDE. Two things are queued for HIM, and neither should be
-started without him saying so.
+**Recorded 2026-09-02.** Nothing is queued for Claude. Two things are queued
+for Rashid: the TikTok resubmission (his developer account, copy and shot
+list in PARKED 27) and the Euka data sync (`pnpm wurxbase:sync` dry run,
+`--apply` writes; NEVER offer `wurxbase:copy` instead — PARKED 37).
 
-### Ask this, then wait
-
-*"Compaction done. Anything you want picked up — or shall I wait?"*
-
-If he asks what is pending, answer from `docs/PARKED.md`. The two live ones:
-
-1. **The TikTok resubmission is on HIS desk, not ours.** The site is ready and
-   live in production. He has the exact copy to paste, the new Website URL and
-   the demo-video shot list in PARKED 27. **Do not resubmit anything for him**
-   — it is his developer account. If he says it was refused again, get the
-   reviewer note VERBATIM before changing a line; that rule has paid off twice.
-2. **The Euka data sync is still unrun**, still waiting on a yes. `pnpm
-   wurxbase:sync` is a dry run; `--apply` writes. Last rehearsal 3 updates,
-   0 inserts, 0 deletes, blanks only. **Never offer `wurxbase:copy` instead.**
-   See PARKED 37.
-
-**Do not re-explore the codebase.** This file, then PARKED, then only the
-files the work names.
+Ask: *"Anything you want picked up — or shall I wait?"* Answer "what's
+pending?" from `docs/PARKED.md`.
 
 ## WHERE EVERYTHING STANDS
 
@@ -34,6 +19,37 @@ verified against the live site rather than the deploy status.
 `main` — and it carries ONLY a copy change. `dev` is now ~40 commits and 7
 migrations ahead of it. The "make it live" decision for all of that is still
 open and untouched.
+
+### Read-only really means read-only now (2026-09-02, later)
+
+Rashid asked whether the three new roles could change a deal's status. They
+could not — the App-level handler refuses `viewer` and the database refuses
+the write on the exact columns that menu touches, proven by probing them as
+each role and reading the rows back with the service key.
+
+**But the question found a real hole underneath it.** Every export path in
+Paid Collabs was open to them: brand budgets, the full deal table, the
+outreach list with email addresses, discovery, the leaderboard and two
+clipboard copies. The permission floor withholding `canExportCsv` was real,
+and `App.jsx` honoured it — but `WurxUI.jsx`, the screen people actually
+see, never asked. **An export is the one thing the database cannot refuse**,
+because the rows are already on their screen and the CSV is built in the
+browser. All seven paths are gated now, at the button and in the function.
+
+Also fixed: the status pill is inert for them rather than a menu that opens
+and then scolds; row selection and the bulk bar are gone; the brand notes
+button is gone; and `_actorUser` is set during render, not only from an
+effect, so the new gates cannot read a stale null and strip an ADMIN of
+their controls on first paint.
+
+The browser check that had passed 42/42 over both holes was a denylist of
+labels somebody had already thought of, run on one tab. It is an allowlist
+across all six tabs, the brand drilldown and the angles tab, and it now
+asserts the admin side too. 116 checks.
+
+One bug surfaced that was always there: the Reporting hero's downward-delta
+chip failed AA in both themes. It only renders when a month is DOWN on the
+one before, so every earlier run had nothing to measure.
 
 ### What this session did
 

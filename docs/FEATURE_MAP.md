@@ -2140,6 +2140,49 @@ in Access Control cannot open a CSV of creator earnings.
 point of that lookup; for these an inherited `role: 'admin'` would silently
 promote a read-only account to full edit on money.
 
+### What "viewer only" actually took (2026-09-02, later)
+
+Rashid asked whether the three could change a deal's STATUS, having
+refused to click it on live rows to find out. They could not — but the
+question found four things that were true and one that mattered.
+
+**The status dropdown opened for them.** `WurxStatusDropdown` had no gate
+at all; only the "Payment Sent" OPTION was gated. The write was refused at
+two layers below it, so nothing was ever at risk, but on a money screen a
+menu that opens reads as permission for the moment before it scolds you.
+It is a plain `<span>` pill now for anyone without `canEdit`.
+
+**EVERY EXPORT PATH WAS OPEN, and export is the one thing the database
+cannot refuse.** The rows are already legitimately on screen; the CSV is
+built and downloaded entirely in the browser. `forcedPermsFor()` withheld
+`canExportCsv` correctly and `App.jsx` honoured it — but App.jsx is the
+OLD screen. `WurxUI.jsx`, the one people see, never asked. Seven paths
+were open: brand budgets, the full deal table, the outreach list WITH
+EMAIL ADDRESSES, discovery, the leaderboard and two clipboard copies. All
+seven now go through `canExport()`, at the button AND inside the function.
+
+**A permission helper read from a React effect is null on first paint.**
+`_actorUser` is a module variable set by `setAuditActor` in a `useEffect`,
+and an effect that sets no state triggers no re-render. While it only fed
+`logAudit()` that cost an attribution; the moment the new gates read it,
+a stale null would have stripped ADMINS of their controls until some
+unrelated fetch re-rendered them. It is now set during render as well.
+
+**The browser check was a denylist and it passed on both holes.** It held
+a list of button labels somebody had thought of ("save", "delete",
+"export"…) and passed anything else, and it ran on the creators tab only.
+The status pill's label is the status itself, and the Brands tab was never
+looked at. It is an ALLOWLIST across all six tabs now, plus the brand
+drilldown and the angles tab, and it asserts the ADMIN side too — a gate
+that over-fires is as much a bug as one that never fires. 42 checks became
+116.
+
+**A contrast bug surfaced that had always been there.** The Reporting
+hero's downward-delta chip inks itself in `--wx-text-muted` on a danger
+wash: 4.35:1 dark, 3.51:1 light. It only renders when a month is DOWN on
+the one before, so every previous run had nothing to measure and reported
+green. Now `--wx-danger` on `--wx-danger-soft`, matching its own sibling.
+
 **Verified by `pnpm verify:collabs-viewer-rls`** (attacks the database as each
 role with a real session) **and `pnpm verify:collabs-viewer`** (the browser
 half: menu, typed URLs, no write control, zero console errors).

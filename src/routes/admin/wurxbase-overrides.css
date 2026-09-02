@@ -1265,3 +1265,31 @@
     display: none;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   THE DOWNWARD DELTA ON THE REPORTING HERO
+
+   `.rp-hero-tag i.down` sets a 16% danger wash as its background and then
+   leaves the ink at `--wx-text-muted`. That token is calibrated against the
+   PAGE, not against a tinted chip, so it lands at 4.35:1 in dark and 3.51:1
+   in light — both under the 4.5 an 11px label needs. Its own sibling
+   `i.up` already does the right thing and inks itself in `--wx-success`.
+
+   This is the fourth time a token calibrated for the page has been used on a
+   chip here, and it stayed invisible because the tag only renders when a
+   month is DOWN on the one before. Every earlier run had nothing to measure,
+   so the contrast guard reported green on a bug that was always there.
+
+   Danger ink on a danger wash, matching the up case, and it also reads
+   better: a decline should be red, not grey. */
+.wurxbase-root.wurxbase-root.wurxbase-root .rp-hero-tag i.down {
+  color: var(--wx-danger);
+}
+
+/* Danger ink alone still lands at 4.45:1 in light mode — the 16% wash makes
+   too saturated a chip to carry it. `--wx-danger-soft` is the token already
+   calibrated for a danger surface (10% light, 14% dark), so use it rather
+   than a hand-mixed percentage, and the ink clears AA in both themes. */
+.wurxbase-root.wurxbase-root.wurxbase-root .rp-hero-tag i.down {
+  background: var(--wx-danger-soft);
+}

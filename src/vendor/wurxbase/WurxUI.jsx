@@ -476,6 +476,45 @@ export function isAsadActor() {
 export function canMarkPaid() {
   return can(_actorUser, 'canEditPay');
 }
+
+/* Whether the actor may move a creator between the three status states at all.
+ * Their own capability for it is `canEdit` — "Edit creators" — held by
+ * superadmin, ipc and admin, and withheld from apc, viewer and client.
+ *
+ * Rashid asked on 2026-09-02 whether the three read-only roles could change a
+ * status, having sensibly refused to click it on live rows to find out. They
+ * could not: the App-level handler refuses `viewer` outright and the database
+ * refuses the write regardless. But the menu still OPENED for them, which on a
+ * money screen reads as permission the moment before it reads as a scolding
+ * toast. A viewer now gets the same pill with no caret and nothing to press. */
+export function canEditStatus() {
+  return can(_actorUser, 'canEdit');
+}
+
+/* Whether the actor may take Paid Collabs data OUT — CSV download or the
+ * clipboard. Their own capability is `canExportCsv`.
+ *
+ * THE FLOOR EXISTED AND THIS SCREEN NEVER ASKED. `forcedPermsFor()` withholds
+ * canExportCsv from the three read-only roles, and App.jsx honours it — but
+ * App.jsx is the old screen. WurxUI is the one people actually see, and every
+ * export path in it was ungated: brand budgets, the full deal table, the
+ * outreach list with emails, discovery, the leaderboard, and two clipboard
+ * copies. A viewer could have taken all of it.
+ *
+ * Unlike a status change, an export is NOT caught by the database. The rows
+ * are already legitimately on their screen; the download happens entirely in
+ * the browser. For exports the UI gate is the only gate there is, which is
+ * exactly why it has to be right. */
+export function canExport() {
+  return can(_actorUser, 'canExportCsv');
+}
+
+/* Row selection exists only to feed the bulk bar — bulk edits or an export.
+ * An actor who can do neither gets no checkboxes rather than a selection that
+ * leads nowhere. */
+export function canSelectRows() {
+  return canEditStatus() || canExport();
+}
 export async function logAudit({ action, target_type, target_id, target_label, changes }) {
   try {
     await supabase.from('audit_logs').insert([{
@@ -874,6 +913,17 @@ export default function WurxUI({
   const [editorState, setEditorState] = useState(null);
   // Keep the audit-log actor up to date so every logAudit() call attributes
   // the change to the signed-in user automatically.
+  //
+  // SET IT DURING RENDER, NOT ONLY IN THE EFFECT. `_actorUser` is a module
+  // variable, so writing it from an effect leaves it null for the whole first
+  // paint — and the effect sets no state, so nothing re-renders to correct it.
+  // While it was only feeding logAudit() that cost an attribution at worst.
+  // Now canEditStatus(), canExport() and canSelectRows() read it too, and a
+  // stale null would silently strip an admin of the status dropdown, the
+  // exports and the row checkboxes until some unrelated fetch happened to
+  // re-render them. This is the same shape as the vendored app latching
+  // identity at mount, which has bitten this integration before.
+  if (currentUser) setAuditActor(currentUser);
   useEffect(() => { setAuditActor(currentUser); }, [currentUser]);
   const openAddCreator = useCallback((defaultBrand) => setEditorState({ mode: 'add', defaultBrand: defaultBrand || '' }), []);
   const openEditCreator = useCallback((c) => setEditorState({ mode: 'edit', creator: c }), []);
@@ -1507,7 +1557,7 @@ function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allT
         <span style={{ display: 'inline-flex', alignItems: 'center', height: 32, padding: '0 12px', borderRadius: 999, background: 'var(--pc-card-2)', color: 'var(--pc-text-2)', fontSize: 12.5, fontWeight: 700, letterSpacing: '-0.1px', border: '1px solid var(--pc-divider)' }}>
           {filteredBrands.length} {filteredBrands.length === 1 ? 'brand' : 'brands'} · {allTime ? 'all time' : monthLabel(month)}
         </span>
-        <button
+        {canExport() && <button
           className="pc-btn pc-btn-ghost pc-btn-sm"
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
           title="Download this table as CSV"
@@ -1532,7 +1582,7 @@ function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allT
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export
-        </button>
+        </button>}
         {canAddBrand && (
           <button className="pc-btn pc-btn-primary pc-btn-sm" onClick={() => setShowNewBrand(true)} style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
@@ -1578,7 +1628,7 @@ function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allT
                   <div className="pc-brandname">{r.brand}</div>
                   <small className="pc-brandsub">{r.creators} creator{r.creators !== 1 ? 's' : ''} · {r.videosDone}/{r.videos} videos</small>
                 </div>
-                <button
+                {canEditStatus() && <button
                   className={`pc-note-btn ${hasNotes ? 'has' : ''}`}
                   onClick={(e) => { e.stopPropagation(); setNotesBrand(r); }}
                   title={hasNotes ? 'View / edit notes' : 'Add notes'}
@@ -1590,7 +1640,7 @@ function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allT
                     <line x1="8" y1="13" x2="16" y2="13" />
                     <line x1="8" y1="17" x2="13" y2="17" />
                   </svg>
-                </button>
+                </button>}
               </div>
               <div className="pc-num pc-money" data-label="Budget">{r.budget > 0 ? fmt$Exact(r.budget) : <span className="pc-money muted">-</span>}</div>
               <div className="pc-num pc-money" data-label="Allocated">{fmt$Exact(r.allocated)}</div>
@@ -3445,6 +3495,16 @@ function WurxStatusDropdown({ c, onChange }) {
     return () => { clearTimeout(t); document.removeEventListener('click', close); window.removeEventListener('scroll', close, true); window.removeEventListener('resize', close); };
   }, [open]);
 
+  /* After every hook, never before — this component must keep its hook order
+     stable whichever branch it takes. */
+  if (!canEditStatus()) {
+    return (
+      <span className={`pc-badge ${derived.cls}`} title="Read only">
+        <span className="dot" />{derived.label}
+      </span>
+    );
+  }
+
   return (
     <>
       <button ref={btnRef} className={`pc-badge ${derived.cls} pc-badge-btn`} onClick={toggle} title="Change status">
@@ -4900,6 +4960,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
   const clearSel = () => setSel(new Set());
 
   const copyUsernames = async () => {
+    if (!canExport()) return;
     const handles = new Set();
     creators.filter(c => sel.has(c.id)).forEach(c => {
       [c.tiktok_account, c.tiktok_account_2].forEach(t => {
@@ -4955,6 +5016,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
 
   // Export selected (or filtered if no selection) to CSV
   const exportCsv = () => {
+    if (!canExport()) return;
     const rows = sel.size > 0 ? creators.filter(c => sel.has(c.id)) : filtered;
     if (rows.length === 0) return;
     const headers = ['Name', 'TikTok', 'Brand', 'Category', 'Deal', 'Amount', 'Videos', 'Payment Status', 'Hired By', 'Hired Date', 'Email', 'WhatsApp', 'PayPal', 'Zelle'];
@@ -4989,6 +5051,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
      details found on any of their records and the average rate they were
      actually paid per video. */
   const exportUniqueCsv = () => {
+    if (!canExport()) return;
     const src = sel.size > 0 ? creators.filter(c => sel.has(c.id)) : filtered;
     if (!src.length) return;
 
@@ -5273,7 +5336,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
           {/* Sticky table header · 12 columns (added Hired By at right) */}
           <div className="pc-cv-head" style={{ gridTemplateColumns: colTemplate(god), textAlign: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <input type="checkbox" checked={allSelected} onChange={toggleAllVisible} onClick={e => e.stopPropagation()} style={{ width: 16, height: 16, cursor: 'pointer' }} />
+              {canSelectRows() && <input type="checkbox" checked={allSelected} onChange={toggleAllVisible} onClick={e => e.stopPropagation()} style={{ width: 16, height: 16, cursor: 'pointer' }} />}
             </div>
             {visibleCols(god).map(c => <div key={c.id}>{c.label}</div>)}
           </div>
@@ -5356,6 +5419,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
             </button>
           )}
 
+          {canEditStatus() && <>
           {/* Status menu */}
           <div style={{ position: 'relative' }}>
             <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={() => setBulkMenu(m => m === 'status' ? null : 'status')} title="Set status for all selected">
@@ -5425,7 +5489,9 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
               </div>
             )}
           </div>
+          </>}
 
+          {canExport() && <>
           {/* Export CSV · every selected row, deal by deal */}
           <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={exportCsv} title="Export the selected rows to CSV · one row per deal, all fields">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -5443,6 +5509,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             Copy
           </button>
+          </>}
 
           <button className="pc-iconbtn" onClick={() => { clearSel(); setBulkMenu(null); }} title="Clear selection" style={{ width: 32, height: 32 }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -5807,6 +5874,7 @@ function DiscoveryTab({ creators, currentUser }) {
   };
 
   const exportCsv = () => {
+    if (!canExport()) return;
     const esc = (s) => `"${String(s ?? '').replace(/"/g, '""')}"`;
     const lines = [['Handle', 'Tier', 'Followers', 'Avg views', 'L30 GMV', 'Post rate %', 'Phone', 'Email', 'Seen on', 'Sampled', 'Posted', 'Outreach', 'Marked by'].map(esc).join(',')];
     rows.forEach(r => lines.push([
@@ -5854,7 +5922,7 @@ function DiscoveryTab({ creators, currentUser }) {
             </div>
           </div>
           <div className="pc-dd-actions">
-            {rows.length > 0 && (
+            {rows.length > 0 && canExport() && (
               <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={exportCsv} title="Download the filtered list as CSV">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
                 Export CSV
@@ -6306,10 +6374,12 @@ function LeaderboardTab({ creators, allCreators, month, allTime, onPickMonth }) 
     try { await navigator.clipboard.writeText(txt); setCopied(tag); setTimeout(() => setCopied(c => (c === tag ? '' : c)), 1500); } catch {}
   };
   const copyHandles = () => {
+    if (!canExport()) return;
     const list = shown.map(r => (r.handles[0] ? '@' + r.handles[0] : r.name)).join('\n');
     copyText(list, 'handles');
   };
   const exportCsv = () => {
+    if (!canExport()) return;
     const esc = (s) => `"${String(s ?? '').replace(/"/g, '""')}"`;
     const head = ['Rank', 'Creator', 'Username', 'Tier', 'Brands', metric.label, 'GMV', 'Ad spend', 'ROAS', 'Videos', 'Video GMV', 'Views', 'Items sold', 'Fees paid'];
     const lines = [head.map(esc).join(',')];
@@ -6385,14 +6455,14 @@ function LeaderboardTab({ creators, allCreators, month, allTime, onPickMonth }) 
 
         <div className="lb-tools-sp" />
 
-        <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={copyHandles} disabled={!shown.length}>
+        {canExport() && <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={copyHandles} disabled={!shown.length}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
           {copied === 'handles' ? 'Copied' : 'Copy usernames'}
-        </button>
-        <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={exportCsv} disabled={!shown.length}>
+        </button>}
+{canExport() && <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={exportCsv} disabled={!shown.length}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
           Export CSV
-        </button>
+        </button>}
       </div>
 
       <div className="lb-caption">
@@ -6688,6 +6758,7 @@ function UniqueCreatorsModal({ rows, euka, onClose }) {
   const target = sel.size > 0 ? shown.filter(p => sel.has(p.key)) : shown;
 
   function copyUsernames() {
+    if (!canExport()) return;
     const txt = target.map(p => (p.handles[0] ? '@' + p.handles[0] : '')).filter(Boolean).join('\n');
     if (!txt) return;
     navigator.clipboard?.writeText(txt).then(() => {
@@ -6695,6 +6766,7 @@ function UniqueCreatorsModal({ rows, euka, onClose }) {
     });
   }
   function exportCsv() {
+    if (!canExport()) return;
     if (!target.length) return;
     const esc = v => {
       const t = String(v == null ? '' : v);
@@ -6824,10 +6896,12 @@ function UniqueCreatorsModal({ rows, euka, onClose }) {
           <span className="pc-uc-footlab">
             {sel.size > 0 ? sel.size + ' selected' : shown.length + ' creators'}
           </span>
+          {canExport() && <>
           <button className="pc-uc-btn" onClick={copyUsernames}>
             {copied ? 'Copied' : 'Copy usernames'}
           </button>
           <button className="pc-uc-btn primary" onClick={exportCsv}>Download CSV</button>
+          </>}
         </div>
       </div>
     </div>
@@ -6882,7 +6956,7 @@ function CreatorsTabRow({ c, idx, selected, euka, onToggle, onOpen, onSetStatus 
   return (
     <div className={`pc-cv-row ${selected ? 'sel' : ''}`} onClick={onOpen} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') onOpen(); }} style={{ gridTemplateColumns: colTemplate(god) }}>
       <div className="pc-cv-check" onClick={e => e.stopPropagation()} style={cellCenter}>
-        <input type="checkbox" checked={selected} onChange={onToggle} style={{ width: 16, height: 16, cursor: 'pointer' }} />
+        {canSelectRows() && <input type="checkbox" checked={selected} onChange={onToggle} style={{ width: 16, height: 16, cursor: 'pointer' }} />}
       </div>
       <div className="pc-cell" data-label="#" style={{ ...cellCenter, ...colStyle("#", god) }}><span className="pc-idx">#{idx}</span></div>
       <div className="pc-cell" data-label="Name" style={{ ...colStyle("Name", god),  display: 'flex', alignItems: 'center', gap: 8 }}>
