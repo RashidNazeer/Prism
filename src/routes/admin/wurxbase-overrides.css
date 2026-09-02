@@ -52,19 +52,28 @@
  * boxes where you cannot tell revenue from spend. Same lesson as the angles:
  * a rule aimed at FORMS should stop at the edge of a TABLE.
  */
-.wurxbase-root input:not([type='checkbox']):not([type='radio']):not([type='range']):not(.cx-cell input):not(.pc-mx-input),
+.wurxbase-root input:not([type='checkbox']):not([type='radio']):not([type='range']):not(.cx-cell input):not(.pc-mx-input):not(.pc-chrome-input):not(.pc-monthpicker input),
 .wurxbase-root textarea,
 .wurxbase-root select {
   /* !important, and only here. Their sheet carries a later, more specific
      rule that paints fields with the accent, and an override file layered over
      vendored CSS is the one place forcing it is the honest answer rather than a
      specificity arms race. */
-  background: var(--wx-surface-2) !important;
+  /* --wx-field, not --wx-surface-2. On the white card of light mode a
+     surface-2 fill is a grey band behind the text, which reads as an
+     already-made selection — Rashid, 2026-09-03: "it seems like someone has
+     already selected the text". The edge does the work instead; dark keeps a
+     well because a border alone on near-black does not read. */
+  background: var(--wx-field) !important;
   color: var(--wx-text) !important;
-  border-color: var(--wx-border);
+  border-color: var(--wx-border-strong) !important;
+  /* No forced border WIDTH: their own fields already carry one and this only
+     needs to recolour it. Forcing it would put an edge on the borderless
+     chrome inputs that are meant to sit flush inside a pill. */
+  box-shadow: none;
 }
 
-.wurxbase-root input:not([type='checkbox']):not([type='radio']):not(.cx-cell input):not(.pc-mx-input):focus,
+.wurxbase-root input:not([type='checkbox']):not([type='radio']):not(.cx-cell input):not(.pc-mx-input):not(.pc-chrome-input):not(.pc-monthpicker input):focus,
 .wurxbase-root textarea:focus,
 .wurxbase-root select:focus {
   background: var(--wx-surface-1) !important;

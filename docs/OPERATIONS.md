@@ -1464,6 +1464,10 @@ pnpm verify:euka-errors  # 8 checks. Every way the EUKA videos button can
                          # fail must name its own cause instead of blaming
                          # the brand name. Needs a preview server and
                          # COLLAB_STAFF_PASSWORD.
+pnpm verify:collab-chrome # 17 checks. Fields must not look like selected
+                         # text, and the unread dot must be visible. Half
+                         # source scan, because the colours were inline
+                         # styles. Needs a preview server.
 ```
 
 **The boundary is `public.is_collabs_viewer()`**, used only by the wurxbase

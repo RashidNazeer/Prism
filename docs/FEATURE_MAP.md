@@ -2105,6 +2105,38 @@ from them, as the brand's GMV.
 
 ## Paid Collabs: WurxBase, vendored (2026-08-18)
 
+## A field is not a highlight (2026-09-03)
+
+Our override painted every Paid Collabs input `--wx-surface-2`. In light that
+is #f0ede8 on a white card — **a grey band behind text, which is what a
+SELECTION looks like**, and that is exactly how Rashid read it.
+
+**`--wx-field` now, and it has two right answers**: white in light, where the
+edge does the work, and a real well in dark, where a border alone on
+near-black does not read. Both defined in `tokens.css`; parity guard passes.
+
+**Two inputs are deliberately NOT fields.** This rule has twice built the
+box-inside-a-box Rashid objected to — the angle cells and the sheet figures
+were already exempt, and the top-bar month picker is the third: it sits
+flush inside a pill that already draws the surface and the edge. It is now
+named `pc-chrome-input` rather than discriminated by `type="month"`, because
+the budget editor has a real month FIELD that must still look like one.
+
+## The notifications were never hidden (2026-09-03)
+
+The panel opens on screen, on top, in the right colours, in both themes —
+measured, not assumed. **What was invisible was the unread marker**: a 9px
+dot painted in `--wx-danger-soft`, a 10% wash meant for surfaces, ringed in a
+hardcoded `#30271C` that is a dark smudge on a light top bar. Solid
+`--wx-danger` now, ringed in `--wx-bg`.
+
+The four header buttons were `--wx-surface-2` at **10% on transparent** with
+cream literals hardcoded in their JS hover handlers. Tokens now.
+
+**Guarded by `pnpm verify:collab-chrome`**, and half of it is a SOURCE scan on
+purpose: these were inline styles and JS hover handlers, which no rendered
+check can see while the unread count is zero.
+
 ## The EUKA button now names its own fault (2026-09-03)
 
 `eukaJson()` returns null on every failure — the right contract, since all

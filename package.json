@@ -67,7 +67,8 @@
     "verify:collabs-viewer": "node scripts/check-collabs-viewer.mjs",
     "verify:collabs-viewer-rls": "node scripts/check-collabs-viewer-rls.mjs",
     "verify:angles": "node scripts/check-angles-visible.mjs",
-    "verify:euka-errors": "node scripts/check-euka-errors.mjs"
+    "verify:euka-errors": "node scripts/check-euka-errors.mjs",
+    "verify:collab-chrome": "node scripts/check-collab-chrome.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

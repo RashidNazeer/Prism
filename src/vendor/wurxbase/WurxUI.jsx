@@ -1069,7 +1069,7 @@ export default function WurxUI({
       <div className="pc-shell">
         {/* ═══ HEADER ROW 1 · dark brown bar · brand · actions · profile ═══ */}
         <ChromeSlot embedded={embedded}>
-        <header className={'pc-header pc-header-dark' + (embedded ? ' pc-header-embedded' : '')} style={{ gap: 10, background: 'linear-gradient(180deg, var(--wx-warning-soft) 0%, var(--wx-warning-soft) 100%)', border: '1px solid var(--wx-warning)', boxShadow: 'inset 0 1px 0 rgba(245,233,214,0.07), 0 6px 18px rgba(48,39,28,0.28)', padding: '2px 16px 2px 18px', marginBottom: 10, position: 'relative' }}>
+        <header className={'pc-header pc-header-dark' + (embedded ? ' pc-header-embedded' : '')} style={{ gap: 10, background: 'linear-gradient(180deg, var(--wx-warning-soft) 0%, var(--wx-warning-soft) 100%)', border: '1px solid var(--wx-warning)', boxShadow: 'inset 0 1px 0 color-mix(in srgb, var(--wx-text) 7%, transparent), 0 6px 18px rgba(48,39,28,0.28)', padding: '2px 16px 2px 18px', marginBottom: 10, position: 'relative' }}>
           <div className="pc-brand" style={{ gap: 12 }}>
             <span className="pc-brand-logo" style={{ width: 60, height: 60, padding: 0, background: 'transparent', boxShadow: 'none', overflow: 'hidden', borderRadius: 13, flex: '0 0 60px' }}>
               <img
@@ -1098,8 +1098,8 @@ export default function WurxUI({
               <button onClick={onOpenPendingApprovals} title={`${pendingApprovalsCount} pending`} style={{
                 position: 'relative', width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-warning)', transition: 'background 0.15s',
-              }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.16)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
+                background: 'transparent', color: 'var(--wx-warning)', transition: 'background 0.15s',
+              }} onMouseEnter={e => { e.currentTarget.style.background = 'var(--wx-surface-2)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                 <span style={{ position: 'absolute', top: 5, right: 5, minWidth: 17, height: 17, padding: '0 5px', borderRadius: 999, background: 'var(--wx-warning-soft)', color: 'var(--wx-warning)', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{pendingApprovalsCount > 9 ? '9+' : pendingApprovalsCount}</span>
               </button>
@@ -1108,16 +1108,28 @@ export default function WurxUI({
             <button className="pc-head-bell" onClick={onOpenNotifications} title="Notifications" style={{
               position: 'relative', width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', transition: 'background 0.15s',
-            }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.16)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
+              background: 'transparent', color: 'var(--wx-text-muted)', transition: 'background 0.15s',
+            }} onMouseEnter={e => { e.currentTarget.style.background = 'var(--wx-surface-2)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-              {notificationsCount > 0 && <span style={{ position: 'absolute', top: 8, right: 8, width: 9, height: 9, borderRadius: 999, background: 'var(--wx-danger-soft)', boxShadow: '0 0 0 2px #30271C' }} />}
+              {notificationsCount > 0 && (
+                /* SOLID danger, ringed in the bar behind it. It was painted in
+                   --wx-danger-soft — a 10% wash meant for surfaces, not for a
+                   9px dot — and ringed in a hardcoded near-black that is a dark
+                   smudge on a light top bar. An unread marker nobody can see
+                   is the same as no unread marker. */
+                <span aria-label={notificationsCount + ' unread'} style={{
+                  position: 'absolute', top: 7, right: 7,
+                  minWidth: 10, height: 10, borderRadius: 999,
+                  background: 'var(--wx-danger)',
+                  boxShadow: '0 0 0 2px var(--wx-bg)',
+                }} />
+              )}
             </button>
             <button className="pc-head-logs" onClick={onOpenLogs} title="Activity Logs" style={{
               width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', transition: 'background 0.15s',
-            }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.16)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
+              background: 'transparent', color: 'var(--wx-text-muted)', transition: 'background 0.15s',
+            }} onMouseEnter={e => { e.currentTarget.style.background = 'var(--wx-surface-2)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </button>
             {/* WURX-ADDED · the only door to Settings
@@ -1133,7 +1145,7 @@ export default function WurxUI({
               <button className="pc-head-settings" onClick={onOpenSettings} title="Paid Collabs settings" aria-label="Paid Collabs settings" style={{
                 width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', transition: 'background 0.15s',
+                background: 'transparent', color: 'var(--wx-text-muted)', transition: 'background 0.15s',
               }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               </button>
@@ -1152,12 +1164,12 @@ export default function WurxUI({
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 9,
                     height: 44, padding: '0 14px 0 5px', borderRadius: 999,
-                    background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', border: 0,
+                    background: 'transparent', border: 0,
                     cursor: interactive ? 'pointer' : 'default',
                     transition: 'background 0.15s ease',
                   }}
-                  onMouseEnter={interactive ? e => { e.currentTarget.style.background = 'rgba(245,233,214,0.16)'; } : undefined}
-                  onMouseLeave={interactive ? e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; } : undefined}
+                  onMouseEnter={interactive ? e => { e.currentTarget.style.background = 'var(--wx-surface-2)'; } : undefined}
+                  onMouseLeave={interactive ? e => { e.currentTarget.style.background = 'transparent'; } : undefined}
                 >
                   <span style={{ width: 34, height: 34, borderRadius: 999, background: userGrad, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
@@ -1215,7 +1227,12 @@ export default function WurxUI({
                 background: 'var(--pc-card)', border: '1px solid var(--pc-divider)', cursor: 'pointer',
               }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-                <input type="month" value={month} onChange={e => { if (e.target.value) setMonth(e.target.value); }}
+                {/* WURX-ADDED class · this input is flush inside the pill above,
+                    which already draws the surface and the edge. Our field rule
+                    paints every input a field colour, and on this one that put a
+                    band behind "September 2026" — the box-inside-a-box again.
+                    Named so the rule can leave it alone. */}
+                <input type="month" className="pc-chrome-input" value={month} onChange={e => { if (e.target.value) setMonth(e.target.value); }}
                   style={{ border: 0, background: 'transparent', outline: 'none', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: 'var(--pc-text)', cursor: 'pointer', minWidth: 100 }}
                 />
               </label>

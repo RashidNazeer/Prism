@@ -26,6 +26,7 @@
   --wx-surface-1: #1a1714; /* cards, panels */
   --wx-surface-2: #221e1a; /* hover, nested cards */
   --wx-surface-3: #2a251f; /* wells, inputs */
+  --wx-field: #221e1a;    /* what you type into · a well on dark */
 
   /* Text, all verified >= 4.5:1 on EVERY surface, --wx-bg to --wx-surface-3 */
   --wx-text: #f4f0ea; /* 16.97:1 */
@@ -165,6 +166,7 @@
   --wx-surface-1: #ffffff;
   --wx-surface-2: #f0ede8;
   --wx-surface-3: #e8e3da;
+  --wx-field: #ffffff;    /* what you type into · defined by its edge, not a fill */
 
   --wx-text: #191512; /* 16.53:1 */
   --wx-text-muted: #736a61; /*  4.83:1 */
