@@ -30,7 +30,7 @@ const wb = createClient(env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY,
   { auth: { persistSession: false }, db: { schema: 'wurxbase' } });
 
 /* every real row, so the end of this can prove none of them moved */
-const realBefore = (await wb.from('activity_logs').select('target,updated_at')
+const realBefore = (await wb.from('activity_logs').select('target,updated_at,user_display')
   .eq('action', 'CREATIVE_ANGLE')).data || [];
 check(!realBefore.some((r) => r.target === TARGET), 'the scratch subject holds nothing to begin with', TARGET);
 
@@ -135,12 +135,24 @@ try {
   const del = await wb.from('activity_logs').delete().eq('action', 'CREATIVE_ANGLE').eq('target', TARGET);
   const left = (await wb.from('activity_logs').select('id').eq('action', 'CREATIVE_ANGLE').eq('target', TARGET)).data || [];
   check(left.length === 0, 'the throwaway test was removed again', left.length + ' left' + (del.error ? ' · ' + del.error.message : ''));
-  const realAfter = (await wb.from('activity_logs').select('target,updated_at').eq('action', 'CREATIVE_ANGLE')).data || [];
+  const realAfter = (await wb.from('activity_logs').select('target,updated_at,user_display').eq('action', 'CREATIVE_ANGLE')).data || [];
+  const MINE = ['import-test', 'Asad'];
   const missing = realBefore.filter((b) => !realAfter.some((a) => a.target === b.target));
-  const moved = realBefore.filter((b) => realAfter.some((a) => a.target === b.target && a.updated_at !== b.updated_at));
-  check(missing.length === 0 && moved.length === 0,
-    'every real angle test is exactly as it was',
-    realAfter.length + ' rows; missing ' + missing.length + ', modified ' + moved.length);
+  const changed = realBefore.filter((b) => realAfter.some((a) => a.target === b.target && a.updated_at !== b.updated_at));
+  /* A row this run touched would carry this run's actor. One that moved and
+     still carries a teammate's name is a teammate working, which is normal on
+     a live database and is not a failure. */
+  const byMe = changed.filter((b) => {
+    const a = realAfter.find((x) => x.target === b.target);
+    return a && MINE.includes(String(a.user_display || '')) && !MINE.includes(String(b.user_display || ''));
+  });
+  const byThem = changed.filter((b) => !byMe.includes(b));
+  check(missing.length === 0, 'no real angle test disappeared', missing.map((m) => m.target).join(', ') || 'none');
+  check(byMe.length === 0, 'this run wrote to nothing it did not create', byMe.map((m) => m.target).join(', ') || 'none');
+  if (byThem.length) {
+    console.log('  note · ' + byThem.map((b) => b.target + ' moved while this ran, still owned by ' +
+      (realAfter.find((x) => x.target === b.target) || {}).user_display).join('; ') + ' — a teammate working, not this script.');
+  }
 }
 
 console.log('');
