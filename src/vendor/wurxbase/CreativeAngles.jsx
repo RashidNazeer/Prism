@@ -162,6 +162,140 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
     URL.revokeObjectURL(a.href);
   }, [angles, brand, month, monthLabel]);
 
+  /* ════════ IMPORTING THE FILLED-IN SHEET ════════════════════════════
+
+     The same CSV comes back with Views, GMV and Ad Spend typed in, and each
+     figure has to land on the exact video it was typed against. THE VIDEO
+     LINK IS THE KEY — never the row order and never the angle name. A sheet
+     that has been sorted, filtered, or had rows deleted in Excel is the
+     normal case, not the exception, and matching on position would silently
+     put one creator's ad spend on another creator's video.
+
+     Nothing is written on file-open. The file is read, matched and counted,
+     and what it WOULD change is shown first. This is money going onto rows;
+     an import that just happens is an import nobody can check.
+
+     A BLANK CELL MEANS "not provided", NOT "clear it". Someone filling in
+     ad spend only must not wipe the GMV that is already there.
+
+     ROAS is ignored on purpose. It is GMV over ad spend, computed on the
+     way out; storing a typed one would let the sheet disagree with itself. */
+  const [imported, setImported] = useState(null);   // the staged preview
+  const fileRef = useRef(null);
+
+  /* A CSV parser small enough to read: quotes, doubled quotes inside them,
+     commas and newlines inside quotes, CRLF or LF, and a leading BOM. */
+  const parseCsv = (text) => {
+    const t = String(text || '').replace(/^\ufeff/, '');
+    const rows = [];
+    let row = [], cell = '', q = false;
+    for (let i = 0; i < t.length; i++) {
+      const c = t[i];
+      if (q) {
+        if (c === '"') { if (t[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+        else cell += c;
+      } else if (c === '"') q = true;
+      else if (c === ',') { row.push(cell); cell = ''; }
+      else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+      else if (c !== '\r') cell += c;
+    }
+    if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter((r) => r.some((v) => String(v).trim() !== ''));
+  };
+
+  const norm = (h) => String(h || '').toLowerCase().replace(/[^a-z]/g, '');
+  /* "$1,234.50" and " 4,576 " are what a spreadsheet hands back. */
+  const num = (v) => {
+    const raw = String(v == null ? '' : v).trim();
+    if (raw === '') return null;
+    const n = Number(raw.replace(/[$,\s]/g, ''));
+    return Number.isFinite(n) ? n : NaN;
+  };
+
+  const readSheet = useCallback((text) => {
+    const rows = parseCsv(text);
+    if (!rows.length) return { error: 'That file is empty.' };
+    const head = rows[0].map(norm);
+    const col = (...names) => { for (const n of names) { const i = head.indexOf(n); if (i >= 0) return i; } return -1; };
+    const cLink = col('videoslink', 'videolink', 'video', 'link', 'url');
+    const cViews = col('views');
+    const cGmv = col('gmv');
+    const cAd = col('adspend', 'adspent', 'spend');
+    if (cLink < 0) {
+      return { error: 'No "Videos Link" column in that file. Export the sheet again and fill that one in.' };
+    }
+
+    /* every video that is actually in an angle on this brand + month */
+    const home = new Map();
+    angles.forEach((a) => (a.videos || []).forEach((u) => { if (!home.has(u)) home.set(u, a.id); }));
+
+    const changes = [];       // { angleId, url, field, from, to }
+    const unmatched = [];
+    const bad = [];
+    let seen = 0;
+
+    for (let i = 1; i < rows.length; i++) {
+      const link = String(rows[i][cLink] || '').trim();
+      if (!link) continue;
+      seen++;
+      const angleId = home.get(link);
+      if (!angleId) { unmatched.push(link); continue; }
+      const angle = angles.find((a) => a.id === angleId);
+      const fig = videoFig(angle, link, index);
+
+      const want = [
+        { field: 'viewsOverride', raw: cViews >= 0 ? rows[i][cViews] : '', api: fig.apiViews, now: fig.views },
+        { field: 'gmvOverride',   raw: cGmv   >= 0 ? rows[i][cGmv]   : '', api: fig.apiGmv,   now: fig.gmv },
+        { field: 'spend',         raw: cAd    >= 0 ? rows[i][cAd]    : '', api: null,         now: fig.ad },
+      ];
+      for (const w of want) {
+        const n = num(w.raw);
+        if (n === null) continue;                       // blank = not provided
+        if (Number.isNaN(n)) { bad.push(link + ' · ' + w.field + ' = ' + w.raw); continue; }
+        if (n === w.now) continue;                      // already that
+        changes.push({ angleId, url: link, field: w.field, from: w.now, to: n, api: w.api });
+      }
+    }
+    return { seen, changes, unmatched, bad, matched: seen - unmatched.length };
+  }, [angles, index]);
+
+  const onFile = useCallback((file) => {
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = () => {
+      const res = readSheet(String(r.result || ''));
+      setImported({ ...res, name: file.name });
+    };
+    r.onerror = () => setImported({ error: 'That file could not be read.', name: file.name });
+    r.readAsText(file);
+  }, [readSheet]);
+
+  const applyImport = useCallback(() => {
+    if (!imported || !imported.changes || !imported.changes.length) { setImported(null); return; }
+    /* Mirror what typing does, exactly. A views or GMV figure that equals the
+       figure EUKA already reports is stored as no override at all, so the
+       sheet round-trips without leaving a manual flag on every row. Ad spend
+       has no API value, so it is always stored. */
+    const byAngle = new Map();
+    imported.changes.forEach((c) => {
+      if (!byAngle.has(c.angleId)) byAngle.set(c.angleId, []);
+      byAngle.get(c.angleId).push(c);
+    });
+    const next = angles.map((a) => {
+      const list = byAngle.get(a.id);
+      if (!list) return a;
+      const maps = { viewsOverride: { ...(a.viewsOverride || {}) }, gmvOverride: { ...(a.gmvOverride || {}) }, spend: { ...(a.spend || {}) } };
+      list.forEach((c) => {
+        if (c.field !== 'spend' && c.api != null && Number(c.to) === Number(c.api)) delete maps[c.field][c.url];
+        else maps[c.field][c.url] = c.to;
+      });
+      return { ...a, ...maps };
+    });
+    const n = imported.changes.length;
+    commit(next, 'Imported ' + n + ' figure' + (n === 1 ? '' : 's'));
+    setImported(null);
+  }, [imported, angles]);   // eslint-disable-line react-hooks/exhaustive-deps
+
   /* The button lives in the Reporting header, one component up, so hand the
      function to it rather than drawing a second CSV button here. */
   useEffect(() => {
@@ -316,6 +450,28 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
           </span>
         )}
         {choices.length > 0 && month && <BrandMenu choices={choices} value={brand} onPick={choose} />}
+        {/* Import sits next to New angle because it is the other way figures
+            get in. Gated on canType — the same capability that unlocks the
+            cells it writes — so somebody who cannot type ad spend cannot
+            paste a sheet of it either. */}
+        {brand && month && canType && (
+          <>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".csv,text/csv"
+              style={{ display: 'none' }}
+              onChange={(e) => { onFile(e.target.files && e.target.files[0]); e.target.value = ''; }}
+            />
+            <button className="cx-import" onClick={() => fileRef.current && fileRef.current.click()}
+              title="Upload the exported sheet with Views, GMV and Ad Spend filled in">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 9 12 4 17 9" /><line x1="12" y1="4" x2="12" y2="16" />
+              </svg>
+              Import
+            </button>
+          </>
+        )}
         {brand && month && canEdit && (
           <button className="cx-new" onClick={addAngle}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
@@ -353,6 +509,51 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
     <section className="cx">
       {head}
       {note && <div className="cx-note">{note}</div>}
+
+      {/* NOTHING HAS BEEN WRITTEN YET. This is what the file WOULD do. */}
+      {imported && (
+        <div className="cx-imp" role="status">
+          {imported.error ? (
+            <>
+              <b>{imported.error}</b>
+              <div className="cx-imp-act">
+                <button className="cx-imp-b" onClick={() => setImported(null)}>Close</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <b>{imported.name}</b>
+              <div className="cx-imp-rows">
+                <span><u>{imported.matched}</u> of {imported.seen} rows matched a video in this test</span>
+                <span className={imported.changes.length ? 'on' : ''}>
+                  <u>{imported.changes.length}</u> figure{imported.changes.length === 1 ? '' : 's'} would change
+                </span>
+                {imported.unmatched.length > 0 && (
+                  <span className="warn">
+                    <u>{imported.unmatched.length}</u> link{imported.unmatched.length === 1 ? '' : 's'} not in this test — ignored
+                  </span>
+                )}
+                {imported.bad.length > 0 && (
+                  <span className="warn"><u>{imported.bad.length}</u> cell{imported.bad.length === 1 ? '' : 's'} were not numbers — skipped</span>
+                )}
+              </div>
+              {imported.unmatched.length > 0 && (
+                <details className="cx-imp-more">
+                  <summary>Which links were ignored</summary>
+                  <ul>{imported.unmatched.slice(0, 12).map((u, i) => <li key={i}>{u}</li>)}</ul>
+                  {imported.unmatched.length > 12 && <p>…and {imported.unmatched.length - 12} more.</p>}
+                </details>
+              )}
+              <div className="cx-imp-act">
+                <button className="cx-imp-b" onClick={() => setImported(null)}>Cancel</button>
+                <button className="cx-imp-b primary" disabled={!imported.changes.length} onClick={applyImport}>
+                  {imported.changes.length ? 'Apply ' + imported.changes.length + ' change' + (imported.changes.length === 1 ? '' : 's') : 'Nothing to apply'}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {rows.length === 0 && !canEdit ? (
         <div className="cx-blank">

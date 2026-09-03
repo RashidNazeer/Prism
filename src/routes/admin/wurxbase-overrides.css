@@ -1413,3 +1413,95 @@
   line-height: 1.55;
   color: var(--wx-text);
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   IMPORTING THE FILLED-IN ANGLE SHEET
+
+   The confirmation is deliberately loud. This puts money on rows, and the
+   figures it writes are the ones the whole test is judged on, so the count
+   of what WOULD change is shown before anything is written. */
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-import {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 13px;
+  border-radius: 999px;
+  cursor: pointer;
+  background: var(--wx-surface-2);
+  border: 1px solid var(--wx-border-strong);
+  color: var(--wx-text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  transition: background 0.14s, border-color 0.14s;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-import:hover,
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-import:focus-visible {
+  background: var(--wx-accent-soft);
+  border-color: color-mix(in srgb, var(--wx-accent) 45%, transparent);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 14px 0 4px;
+  padding: 15px 17px;
+  border-radius: 0.75rem;
+  background: var(--wx-surface-1);
+  border: 1px solid color-mix(in srgb, var(--wx-accent) 40%, transparent);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp > b {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--wx-text);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-rows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: 0.8125rem;
+  color: var(--wx-text-muted);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-rows u {
+  text-decoration: none;
+  font-family: var(--wx-font-mono, ui-monospace, monospace);
+  font-weight: 800;
+  color: var(--wx-text);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-rows .on u { color: var(--wx-accent); }
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-rows .warn,
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-rows .warn u { color: var(--wx-danger); }
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-more {
+  font-size: 0.75rem;
+  color: var(--wx-text-muted);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-more summary { cursor: pointer; font-weight: 700; }
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-more ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  max-height: 150px;
+  overflow-y: auto;
+  word-break: break-all;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-act {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-b {
+  height: 34px;
+  padding: 0 15px;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  background: var(--wx-surface-2);
+  border: 1px solid var(--wx-border-strong);
+  color: var(--wx-text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-b.primary {
+  background: var(--wx-accent);
+  border-color: transparent;
+  color: var(--wx-on-accent, var(--wx-bg));
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-b[disabled] { opacity: 0.5; cursor: not-allowed; }
