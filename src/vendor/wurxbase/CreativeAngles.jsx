@@ -40,7 +40,7 @@ const ago = (iso) => {
 const readSet = (k) => { try { return new Set(JSON.parse(localStorage.getItem(k)) || []); } catch (e) { return new Set(); } };
 const writeSet = (k, s) => { try { localStorage.setItem(k, JSON.stringify([...s])); } catch (e) {} };
 
-export default function CreativeAngles({ creators, brand: brandProp, month, monthLabel, currentUser, money, canEdit = true, canType = true, onGoToMonth }) {
+export default function CreativeAngles({ creators, brand: brandProp, month, monthLabel, currentUser, money, canEdit = true, canType = true, onGoToMonth, onProvideExport }) {
   /* Read-only is a real state here, not a disabled-looking copy of the
      editable one: someone without the grant still needs to read the test,
      so the figures stay and only the ways of changing them go. */
@@ -136,6 +136,37 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
     }
     choose(e.brand);
   }, [month, onGoToMonth]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* THE CSV THE TEAM FILLS IN BY HAND.
+
+     One row per video, the angle named once at the top of its group — a CSV
+     has no merged cells, and repeating the name down 66 rows is what makes a
+     sheet unreadable. Views, GMV, ad spend and ROAS ship EMPTY on purpose:
+     this is the sheet somebody fills in, not a report. */
+  const exportAnglesCsv = useCallback(() => {
+    const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const rows = [['Creative angle', 'Videos Link', 'Views', 'GMV', 'Ad Spend', 'ROAS']];
+    (angles || []).forEach((a) => {
+      const name = (a.title || '').trim() || 'Untitled angle';
+      const urls = Array.isArray(a.videos) ? a.videos.filter(Boolean) : [];
+      if (!urls.length) { rows.push([name, '', '', '', '', '']); return; }
+      urls.forEach((u, i) => rows.push([i === 0 ? name : '', u, '', '', '', '']));
+    });
+    const csv = '\ufeff' + rows.map((r) => r.map(esc).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const safe = (t) => String(t || '').replace(/[\\\/:*?"<>|]+/g, ' ').trim();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = safe(brand) + ' - ' + safe(monthLabel || month) + ' - creative angles.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }, [angles, brand, month, monthLabel]);
+
+  /* The button lives in the Reporting header, one component up, so hand the
+     function to it rather than drawing a second CSV button here. */
+  useEffect(() => {
+    if (onProvideExport) onProvideExport(exportAnglesCsv);
+  }, [onProvideExport, exportAnglesCsv]);
 
   const assigned = useMemo(() => {
     const s = new Set();

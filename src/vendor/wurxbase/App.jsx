@@ -3300,6 +3300,11 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, curre
      you work in. Stacking them made one long scroll where the test sat
      below the fold, so they are now two panes of one switch. */
   const [repTab, setRepTab] = useState('report');
+  /* Creative angle testing owns the brand picker, so it owns what its CSV
+     contains. It registers its exporter here and the one header button
+     routes to whichever pane is open. */
+  const anglesCsvRef = useRef(null);
+  const provideAnglesExport = useCallback((fn) => { anglesCsvRef.current = fn; }, []);
 
   // Brand parity: parse all 3 deal formats Brands tab understands. The top-level
   // parseDeal only catches "for N" · so deals like "5 videos $100", "$200/5",
@@ -3713,7 +3718,10 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, curre
             </div>
           </div>
           <div className="tw-flex tw-items-center tw-gap-2 print-hide">
-            {can(currentUser, 'canExportCsv') && <button onClick={onExportCsv} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-text-[11.5px] tw-font-bold tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ background: 'var(--wx-surface-2)', color: 'var(--wx-text)', border: '1px solid var(--wx-border)' }}>
+            {can(currentUser, 'canExportCsv') && <button onClick={() => {
+              if (repTab === 'angles' && anglesCsvRef.current) return anglesCsvRef.current();
+              if (onExportCsv) onExportCsv();
+            }} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-text-[11.5px] tw-font-bold tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ background: 'var(--wx-surface-2)', color: 'var(--wx-text)', border: '1px solid var(--wx-border)' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               CSV
             </button>}
@@ -3981,6 +3989,7 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, curre
             canEdit={can(currentUser, 'canEditAngles')}
             canType={can(currentUser, 'canEditAdSpend')}
             onGoToMonth={onGoToMonth}
+            onProvideExport={provideAnglesExport}
           />
         )}
       </div>
