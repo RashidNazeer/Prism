@@ -159,7 +159,44 @@ Deno.serve(async (req) => {
     },
     { onConflict: 'creator_id' }
   );
-  if (connErr) return reply({ error: 'Could not save that connection' }, 500);
+  /*
+   * SAY WHICH WRITE FAILED AND WHY.
+   *
+   * Both of these used to answer with the same seven words, so a failure here
+   * was indistinguishable from a failure two statements later, and neither
+   * carried the reason Postgres gave. Rashid met exactly that on production on
+   * 2026-09-04 — "Could not save that connection" and nothing else to go on,
+   * on the screen his TikTok resubmission depends on.
+   *
+   * The database's own message is safe to show: it names a column or a
+   * constraint, never a token. The tokens are in the OTHER statement and are
+   * never interpolated into anything.
+   */
+  if (connErr) {
+    console.error('[tiktok-creator-callback] connections upsert failed', connErr);
+    /*
+     * ONE TIKTOK ACCOUNT, ONE CREATOR — and the person who hits it deserves a
+     * sentence, not the name of an index.
+     *
+     * `creator_tiktok_connections_one_account_idx` is deliberate: it stops two
+     * Wurx profiles both binding the same TikTok account and both claiming its
+     * videos. It is PARTIAL, on live connections only, so disconnecting frees
+     * the account for whoever legitimately connects it next — which means this
+     * is not a dead end, it is a two-step. Say the second step.
+     *
+     * Rashid met this on production on 2026-09-04, signing up fresh to record a
+     * TikTok demo video while the same account was still connected to his
+     * creator profile. What he saw was
+     * "duplicate key value violates unique constraint ...one_account_idx".
+     */
+    const dup = connErr.code === '23505' || /duplicate key|unique constraint/i.test(connErr.message || '');
+    if (dup && /one_account_idx/i.test(connErr.message || '')) {
+      return reply({
+        error: 'That TikTok account is already connected to another Wurx account. Open that account, disconnect TikTok there, then connect it here.',
+      }, 409);
+    }
+    return reply({ error: `Could not save that connection (profile step): ${connErr.message}` }, 500);
+  }
 
   const { error: tokErr } = await admin
     .from('creator_tiktok_tokens')
@@ -178,7 +215,10 @@ Deno.serve(async (req) => {
       },
       { onConflict: 'creator_id' }
     );
-  if (tokErr) return reply({ error: 'Could not save that connection' }, 500);
+  if (tokErr) {
+    console.error('[tiktok-creator-callback] tokens upsert failed', tokErr);
+    return reply({ error: `Could not save that connection (token step): ${tokErr.message}` }, 500);
+  }
 
   await admin.from('audit_log').insert({
     actor_id: creatorId,
