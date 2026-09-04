@@ -99,13 +99,26 @@ Deno.serve(async (req) => {
   if (actorErr || !actor) return reply({ error: 'Not allowed' }, 403);
 
   /*
-   * A SUSPENDED ACCOUNT CONNECTS NOTHING. Staff are allowed through as well as
-   * creators: an ops person testing their own account is legitimate, and the
-   * connection is theirs either way. What is NOT allowed is an applicant who
-   * has not been approved, because they have no work here to measure.
+   * A SUSPENDED ACCOUNT CONNECTS NOTHING.
+   *
+   * APPLICANTS ARE ALLOWED, changed 2026-09-04. They were not, on the
+   * reasoning that an unapproved applicant "has no work here to measure" —
+   * which is true of their SALES and false of this. The route that draws the
+   * card admits `['applicant', 'creator']`, so every applicant who signed up
+   * was shown a Connect button and then handed a bare red "Not allowed" by
+   * this function. Two allow-lists for one screen, maintained in different
+   * files, disagreeing about exactly one role.
+   *
+   * Connecting is harmless before approval: it reads that person's own public
+   * video counts and shows them only to them. It is also the path a TikTok
+   * reviewer takes — sign up, connect, see the figures — and the app was
+   * rejected once already for looking closed.
+   *
+   * Staff stay on the list: an ops person testing their own account is
+   * legitimate, and the connection is theirs either way.
    */
   if (!actor.is_active) return reply({ error: 'Not allowed' }, 403);
-  if (!['creator', 'ops', 'admin'].includes(actor.role)) {
+  if (!['applicant', 'creator', 'ops', 'admin'].includes(actor.role)) {
     return reply({ error: 'Not allowed' }, 403);
   }
 

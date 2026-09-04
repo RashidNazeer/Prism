@@ -69,7 +69,9 @@
     "verify:angles": "node scripts/check-angles-visible.mjs",
     "verify:euka-errors": "node scripts/check-euka-errors.mjs",
     "verify:collab-chrome": "node scripts/check-collab-chrome.mjs",
-    "verify:angles-import": "node scripts/check-angles-import.mjs"
+    "verify:angles-import": "node scripts/check-angles-import.mjs",
+    "verify:role-gates": "node scripts/check-role-gates.mjs",
+    "verify:applicant-flow": "node scripts/check-applicant-flow.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

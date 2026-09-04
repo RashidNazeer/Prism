@@ -37,6 +37,34 @@ import {
  * spots the difference has to find the explanation here rather than conclude one
  * of them is lying.
  */
+/**
+ * WHAT A PERSON READS WHEN THE SERVER REFUSES.
+ *
+ * The card printed the response body straight into the page, so a creator saw
+ * the word "Not allowed" in red under a button they had just pressed. It told
+ * them nothing — not what was wrong, not whether it was their fault, not what
+ * to do — and it is what Rashid photographed on 2026-09-04.
+ *
+ * An Edge Function's refusal is written for a log. This is written for the
+ * person holding the phone.
+ */
+function humanError(message: string): string {
+  const m = String(message || '').toLowerCase();
+  if (m.includes('not allowed')) {
+    return 'This account cannot connect TikTok. If you have only just applied, it opens up as soon as your application is approved.';
+  }
+  if (m.includes('not signed in') || m.includes('session')) {
+    return 'Your session has expired. Sign out and sign in again, then try once more.';
+  }
+  if (m.includes('failed to fetch') || m.includes('network')) {
+    return 'We could not reach the server. Check your connection and try again.';
+  }
+  if (!message || /^[a-z_]+$/i.test(message)) {
+    return 'Something went wrong connecting TikTok. Try again, and tell us if it keeps happening.';
+  }
+  return message;
+}
+
 export function TikTokConnection() {
   const { data: account, isLoading } = useTikTokAccount();
   const connected = Boolean(account);
@@ -123,7 +151,7 @@ export function TikTokConnection() {
           </ul>
           {act.error ? (
             <p role="alert" className="text-danger mt-3 text-[0.8125rem]">
-              {(act.error as Error).message}
+              {humanError((act.error as Error).message)}
             </p>
           ) : null}
         </div>
@@ -197,7 +225,7 @@ export function TikTokConnection() {
 
           {act.error ? (
             <p role="alert" className="text-danger mt-3 text-[0.8125rem]">
-              {(act.error as Error).message}
+              {humanError((act.error as Error).message)}
             </p>
           ) : null}
 
