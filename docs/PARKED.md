@@ -1101,6 +1101,41 @@ use", and the actual defect was one adjective in our own copy.
 
 ---
 
+## 27c. THE SANDBOX KEY ON PRODUCTION MAY BLOCK THE REVIEW ITSELF
+
+**Status:** OPEN, and it is a question for Rashid before he resubmits
+**Found:** 2026-09-04, by watching what production actually sends
+
+### THE SWAP MAY HAVE TO HAPPEN BEFORE APPROVAL, NOT AFTER
+
+Production drives the **sandbox** app: pressing Connect there builds an
+authorize URL with `client_key=sbaw82kr6qc82ia76e`. 27b assumes the swap to
+the real key happens once TikTok approve.
+
+**That order may be backwards.** A TikTok sandbox only lets accounts on its
+own target-users list authorise. A reviewer who opens
+`wurxmediahub.vercel.app`, signs up and presses Connect with their OWN TikTok
+account is not on that list — so the connection would fail for them, on the
+exact screen the submission is about, for a reason that has nothing to do
+with the app being reviewed.
+
+**NOT VERIFIED, and it must not be guessed at.** What is confirmed is only
+that production sends the sandbox key. Whether TikTok reviewers test the
+live site themselves, and whether an unapproved app's own key would fare any
+better than the sandbox one, is not documented anywhere we found.
+
+**Two ways to take the risk off the table:**
+
+1. **Give the reviewer the approved creator login** (`mrrashid3255@gmail.com`,
+   role `creator`) **whose TikTok is already connected**, and make the demo
+   video carry the whole flow. Then nothing depends on the reviewer
+   authorising their own account. Cheapest, changes nothing.
+2. **Add the reviewer's TikTok account to the sandbox target users** — only
+possible if TikTok tell us which account they will use, which they do not.
+
+Option 1 is what a submission should carry anyway. Raise it with him before
+he sends the form.
+
 ## 27b. AFTER APPROVAL: the production key swap.
 
 The second TikTok app exists and the flow works end to end **on production**,
@@ -1138,10 +1173,16 @@ on the card and `/privacy` in one commit, then reconnecting.
   sandbox.
 
   **Two things that will bite:**
-  - The identification is INFERRED from the prefix (`sbaw` is TikTok's sandbox
-    convention) and the differing lengths. Neither value has ever been seen in
-    full. **Confirm in the portal that the app's own page shows a key starting
-    `awxg` and ending `7g` before swapping.**
+  - **NO LONGER INFERRED — both keys were read in full on 2026-09-04**, out of
+    the authorize URLs the two sites actually build when Connect is pressed:
+
+    | site | client_key it sends |
+    | --- | --- |
+    | `wurxmediahubdev.vercel.app` | `awxghd5gf1cme27g` — the APP's own |
+    | `wurxmediahub.vercel.app` | `sbaw82kr6qc82ia76e` — the SANDBOX |
+
+    The prefix convention held. No portal check is needed to identify them any
+    more; the swap is putting `awxghd5gf1cme27g` and its secret onto production.
   - **The app keeps its own redirect URI list, separate from the sandbox's.**
     **ALREADY HANDLED — verified on the app's Login Kit page 2026-08-26.** Both
     `https://wurxmediahub.vercel.app/oauth/tiktok-creator/callback` and the dev
