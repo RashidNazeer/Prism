@@ -2105,6 +2105,52 @@ from them, as the brand's GMV.
 
 ## Paid Collabs: WurxBase, vendored (2026-08-18)
 
+## Euka: as many accounts as we hold keys for (2026-09-09)
+
+One Euka key can cover many brands — ours covers **ten** — but a brand can
+also arrive with an account of its own. Nutra did: a separate account whose
+key returns exactly one store, `NUTRAHARMONY STORE`, invisible to our
+existing key.
+
+**Keys are a list now, and one rule keeps the data honest:**
+
+> A STORE IS ONLY EVER ASKED ABOUT WITH THE KEY THAT RETURNED IT.
+
+Never a fallback, never "try the other one". Asking account A about a store
+owned by account B is how one brand's screen fills with another brand's
+numbers, and on this product those numbers are somebody's commission. An
+unknown store is **refused**, not guessed at.
+
+**Adding brand number twelve is a secret change, not a code change.**
+`EUKA_API_KEY` keeps its exact meaning and stays first, so a deployment
+that never sets the new variable behaves identically to before. Extra keys
+go in `EUKA_API_KEYS`, comma or whitespace separated:
+
+```
+supabase secrets set EUKA_API_KEYS=key1,key2 --project-ref <ref>
+```
+
+**A key that fails is COUNTED, not swallowed.** If one account is down its
+stores vanish from the merged list, and a caller looking for one of them
+would otherwise be told "no such store" — a lie about the brand instead of
+the truth about the account. The store list carries `accountsUnavailable`,
+and the per-store refusal says which of the two happened.
+
+**The brand name still has to match a store name**, through
+`eukaStoreForBrand`: normalise, exact, else a unique prefix match. A Paid
+Collabs brand called "Nutra", "NutraHarmony" or "Nutra Harmony" all resolve
+to `NUTRAHARMONY STORE` and nothing else competes.
+
+**Guarded by `pnpm verify:euka-accounts`** — asserts all ten original stores
+are still listed and still answer with real data, that the new one does too,
+and that an unknown store is refused rather than served by some other
+account.
+
+**One transient worth knowing:** a Penetrex full-window call once took 150s
+and died with a 546, then succeeded twice in ~9s with no code change. Euka
+is occasionally slow on a large export; a 546 here is not automatically a
+bug in this function.
+
 ## A field is not a highlight (2026-09-03)
 
 Our override painted every Paid Collabs input `--wx-surface-2`. In light that

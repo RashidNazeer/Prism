@@ -71,7 +71,8 @@
     "verify:collab-chrome": "node scripts/check-collab-chrome.mjs",
     "verify:angles-import": "node scripts/check-angles-import.mjs",
     "verify:role-gates": "node scripts/check-role-gates.mjs",
-    "verify:applicant-flow": "node scripts/check-applicant-flow.mjs"
+    "verify:applicant-flow": "node scripts/check-applicant-flow.mjs",
+    "verify:euka-accounts": "node scripts/check-euka-accounts.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

@@ -1464,6 +1464,10 @@ pnpm verify:euka-errors  # 8 checks. Every way the EUKA videos button can
                          # fail must name its own cause instead of blaming
                          # the brand name. Needs a preview server and
                          # COLLAB_STAFF_PASSWORD.
+pnpm verify:euka-accounts # 9 checks. Every Euka account we hold a key for
+                         # answers for its OWN stores and no other. Needs a
+                         # staff login; hits the deployed function, so it
+                         # needs no key of its own.
 pnpm verify:collab-chrome # 17 checks. Fields must not look like selected
                          # text, and the unread dot must be visible. Half
                          # source scan, because the colours were inline
@@ -1477,3 +1481,18 @@ seventy policies across the whole public schema.
 **Export and print are withheld** by `forcedPermsFor()` in
 `src/lib/wurxbase-identity.ts`, applied after every other grant, so an override
 in Access Control cannot open them.
+
+## Euka keys
+
+`EUKA_API_KEY` is the original account (ten stores). Additional accounts go
+in `EUKA_API_KEYS`, comma or whitespace separated. Both are Edge Function
+secrets and neither has ever been in the repo or in git history.
+
+```powershell
+supabase secrets set EUKA_API_KEYS=<key>[,<key2>] --project-ref $env:SUPABASE_PROJECT_REF_DEV
+supabase functions deploy euka --project-ref $env:SUPABASE_PROJECT_REF_DEV
+```
+
+Set on **dev** 2026-09-09 for Nutra. Production was NOT changed: Paid
+Collabs is dev-only (there is no `wurxbase` schema on prod), so nothing on
+production calls Euka.
