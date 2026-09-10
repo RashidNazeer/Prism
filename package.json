@@ -73,7 +73,8 @@
     "verify:role-gates": "node scripts/check-role-gates.mjs",
     "verify:applicant-flow": "node scripts/check-applicant-flow.mjs",
     "verify:euka-accounts": "node scripts/check-euka-accounts.mjs",
-    "verify:collab-filters": "node scripts/check-collab-filters.mjs"
+    "verify:collab-filters": "node scripts/check-collab-filters.mjs",
+    "verify:alltime-videos": "node scripts/check-alltime-videos.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

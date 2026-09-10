@@ -1542,3 +1542,21 @@
   color: var(--wx-text);
   border-color: var(--wx-border-strong);
 }
+
+/* "across N collabs" — the panel says when it is showing more than the one
+   deal you expanded, because the GMV total beside it would otherwise read as
+   that single deal's. */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vxp-scope {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  margin-left: 8px;
+  border-radius: 999px;
+  background: var(--wx-surface-2);
+  border: 1px solid var(--wx-border-strong);
+  color: var(--wx-text-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}

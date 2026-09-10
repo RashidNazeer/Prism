@@ -2462,7 +2462,14 @@ function BrandDrilldown({ brand, creators, brandCreators, budgets, refetchBudget
                       onDelete={onDeleteCreator && isAsadActor() ? () => onDeleteCreator(c.id).catch(() => {}) : null}
                     />
                     {expandedId === c.id && (
-                      <DrilldownVideosPanel c={c} euka={eukaL30} onUpdateCreator={onUpdateCreator} onManage={() => setVideosCreatorId(c.id)} />
+                      <DrilldownVideosPanel
+                        c={c}
+                        euka={eukaL30}
+                        allTime={allTime}
+                        siblings={brandCreators || creators}
+                        onUpdateCreator={onUpdateCreator}
+                        onManage={() => setVideosCreatorId(c.id)}
+                      />
                     )}
                   </React.Fragment>
                 ))}
@@ -3295,16 +3302,59 @@ function DrilldownCreatorRow({ c, idx, euka, open, onSelect, onSetStatus, onEdit
    thumbnail for EVERY video, not just the top 50) and persists the refresh.
    "Manage videos" opens the full editor popup (add/edit links & codes). */
 const _cvidFetched = new Set();   // one live refresh per creator per session
-function DrilldownVideosPanel({ c, euka, onUpdateCreator, onManage }) {
+function DrilldownVideosPanel({ c, euka, allTime, siblings, onUpdateCreator, onManage }) {
   /* WURX-ADDED · ad figures for the videos this panel lists. */
   const wxAdsP = wxAdsHook();
-  wxAdsP.ensure(wxVideoIds(c.video_codes));
   /* WURX-END */
   const [copiedIdx, setCopiedIdx] = useState(-1);
   const [live, setLive] = useState(false);
-  const rows = (Array.isArray(c.video_codes) ? c.video_codes : [])
+  /*
+   * ONE ROW IS ONE COLLAB, and its videos are that collab's month.
+   *
+   * Erin Cooper has nine Penetrex deals and 88 videos, and every row carries
+   * only its own — so in All time she appears nine times and each expansion
+   * showed fifteen videos, not eighty-eight. Nothing was filtered or lost;
+   * that is simply the shape of the data, and Rashid reasonably read it as a
+   * month filter that All time was ignoring.
+   *
+   * So in ALL TIME the panel gathers the person's videos across every collab
+   * they have on THIS brand. Pick a month and it goes back to that one collab,
+   * because then the collab is what you asked about.
+   *
+   * Deduped by video url: the same post can sit on two rows when collab
+   * windows overlap, and counting it twice would overstate both the count and
+   * the GMV underneath it.
+   */
+  const merged = useMemo(() => {
+    const own = Array.isArray(c.video_codes) ? c.video_codes : [];
+    if (!allTime) return { list: own, collabs: 1 };
+    const key = (c.name || '').trim().toLowerCase();
+    const brand = (c.brand || '').trim();
+    if (!key) return { list: own, collabs: 1 };
+    const seen = new Set();
+    const list = [];
+    let collabs = 0;
+    (siblings || []).forEach((s2) => {
+      if ((s2.name || '').trim().toLowerCase() !== key) return;
+      if ((s2.brand || '').trim() !== brand) return;
+      collabs += 1;
+      (Array.isArray(s2.video_codes) ? s2.video_codes : []).forEach((v) => {
+        const u = String((v && v.video) || '').trim();
+        if (!u || seen.has(u)) return;
+        seen.add(u);
+        list.push(v);
+      });
+    });
+    return { list: list.length || collabs ? list : own, collabs: collabs || 1 };
+  }, [allTime, siblings, c]);
+
+  const rows = merged.list
     .filter(r => r && String(r.video || '').trim())
     .sort((a, b) => String(a.date || '9999').localeCompare(String(b.date || '9999')));
+  /* AFTER `rows`, not before it. Moving this above the merge put a const in
+     its own temporal dead zone and the whole panel threw "Cannot access
+     before initialization" — the expansion simply stopped opening. */
+  wxAdsP.ensure(wxVideoIds(rows));
   const totGmv = rows.reduce((s, r) => s + (Number(r.revenue) || 0), 0);
   /* Engagement rate = (likes + comments) / views. Averaged across only the
      videos that actually carry engagement data — EUKA fills likes on ~85%
@@ -3360,6 +3410,11 @@ function DrilldownVideosPanel({ c, euka, onUpdateCreator, onManage }) {
         <div className="pc-vxp-top">
           <span className="pc-vxp-title">
             Posted videos <b>{rows.length}</b>
+            {/* A GMV total across nine collabs must never be mistaken for one
+                deal's. If the panel is showing more than this row, it says so. */}
+            {allTime && merged.collabs > 1 && (
+              <span className="pc-vxp-scope">across {merged.collabs} collabs</span>
+            )}
             {isEuka && totGmv > 0 && <span className="pc-vxp-gmvchip">{fmt$Exact(Math.round(totGmv))} GMV</span>}
             {isEuka && avgEng != null && (
               <span className={`pc-vxp-engchip ${avgEng >= 8 ? 'hot' : avgEng >= 4 ? 'ok' : 'low'}`}
