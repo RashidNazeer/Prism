@@ -4947,6 +4947,10 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
   const [statusFilter, setStatusFilter]     = useState(null);  // 'pending' | 'progress' | 'sent' | null
   const [hiredByFilter, setHiredByFilter]   = useState(null);  // 'Aris' | 'Emily' | 'Myles' | 'Khushi' | null
   const [tierFilter, setTierFilter]         = useState(null);  // 'L0'..'L5' | 'none' (unmatched) | null
+  /* How many DEALS one person is on. Asad's team asked for it as "how many
+     creators do we have on 1 deal, on 2, on 3" — a retention question, not a
+     row question, so it counts PEOPLE and filters ROWS. */
+  const [dealsFilter, setDealsFilter]       = useState(null);  // 1, 2, 3 … | null
   const [filterOpen, setFilterOpen]         = useState(false);
   const filterRef                            = useRef(null);
 
@@ -4960,7 +4964,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
     return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
   }, [filterOpen]);
 
-  const activeFilterCount = (statusFilter ? 1 : 0) + (hiredByFilter ? 1 : 0) + (tierFilter ? 1 : 0);
+  const activeFilterCount = (statusFilter ? 1 : 0) + (hiredByFilter ? 1 : 0) + (tierFilter ? 1 : 0) + (dealsFilter ? 1 : 0);
 
   // Precomputed lowercase haystack per creator · rebuilt only when data changes,
   // so each search keystroke is a cheap Map lookup instead of string-building.
@@ -4972,20 +4976,77 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
     return m;
   }, [creators]);
 
+  /*
+   * DEALS PER PERSON, keyed by name exactly the way the Unique Creators list
+   * keys them. Two places counting "collabs" by different keys would disagree
+   * on screen, and the number people would trust is whichever they saw last.
+   *
+   * Counted from the WHOLE tab scope, never from the filtered list: a count
+   * that shrinks as you filter cannot answer "how many are on two deals".
+   */
+  /*
+   * ONE TIER PER PERSON, and the count and the filter read the SAME map.
+   *
+   * Their own comment already says it — "their tier is a property of the
+   * person, not the deal, so it must only count once" — but only the COUNT
+   * obeyed it. The filter tested every row on its own, so a person whose two
+   * deal rows disagree (a handle typed on one row and not the other) was
+   * counted once by the chip and matched twice by the filter.
+   *
+   * Invisible while the chips were decoration. The moment they became filters
+   * it showed: the L2 chip said 20 and produced 23 creators. A control whose
+   * label does not predict its result is worse than no control.
+   *
+   * Built from the WHOLE list, not the filtered one, so a person's tier does
+   * not change depending on what else is selected.
+   */
+  const tierByPerson = useMemo(() => {
+    const m = new Map();
+    creators.forEach((c) => {
+      const k = (c.name || '').trim().toLowerCase();
+      if (!k || m.get(k)) return;              // first row that knows a tier wins
+      const t = creatorTier(c, eukaL30);
+      if (t) m.set(k, t);
+    });
+    return m;
+  }, [creators, eukaL30]);
+
+  const dealsByPerson = useMemo(() => {
+    const m = new Map();
+    creators.forEach((c) => {
+      const k = (c.name || '').trim().toLowerCase();
+      if (!k) return;
+      m.set(k, (m.get(k) || 0) + 1);
+    });
+    return m;
+  }, [creators]);
+
+  /* How many PEOPLE sit on exactly n deals, ascending. Every count that really
+     occurs gets a chip — no "4+" bucket, because "how many are on seven" is a
+     question somebody will eventually ask and a bucket cannot answer it. */
+  const dealTally = useMemo(() => {
+    const t = new Map();
+    for (const n of dealsByPerson.values()) t.set(n, (t.get(n) || 0) + 1);
+    return [...t.entries()].sort((a, b) => a[0] - b[0]);
+  }, [dealsByPerson]);
+
   const filtered = useMemo(() => {
     let list = creators;
     if (statusFilter)   list = list.filter(c => statusOf(c) === statusFilter);
     if (hiredByFilter)  list = list.filter(c => (c.hired_by || '').trim() === hiredByFilter);
     if (tierFilter) {
       list = list.filter(c => {
-        const t = creatorTier(c, eukaL30);
+        const t = tierByPerson.get((c.name || '').trim().toLowerCase());
         return tierFilter === 'none' ? !t : t === tierFilter;
       });
+    }
+    if (dealsFilter) {
+      list = list.filter(c => dealsByPerson.get((c.name || '').trim().toLowerCase()) === dealsFilter);
     }
     const q = search.trim().toLowerCase();
     if (!q) return list;
     return list.filter(c => (searchable.get(c.id) || '').includes(q));
-  }, [creators, search, statusFilter, hiredByFilter, tierFilter, eukaL30, searchable]);
+  }, [creators, search, statusFilter, hiredByFilter, tierFilter, dealsFilter, dealsByPerson, tierByPerson, eukaL30, searchable]);
 
   // All-time: collapse to a single bucket so the status dividers below group
   // EVERY creator (across every month) into one Pending / Progress / Sent
@@ -5078,7 +5139,11 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
     if (!canExport()) return;
     const rows = sel.size > 0 ? creators.filter(c => sel.has(c.id)) : filtered;
     if (rows.length === 0) return;
-    const headers = ['Name', 'TikTok', 'Brand', 'Category', 'Deal', 'Amount', 'Videos', 'Payment Status', 'Hired By', 'Hired Date', 'Email', 'WhatsApp', 'PayPal', 'Zelle'];
+    /* L30 GMV comes from creatorL30, the SAME helper the Unique Creators list
+       exports and the screen renders, so the three can never disagree. It is
+       EUKA's last-30-days figure for that creator, not a month total and not
+       the sheet's typed GMV — see the note in docs about the three sources. */
+    const headers = ['Name', 'TikTok', 'Brand', 'Category', 'Deal', 'Amount', 'Videos', 'L30 GMV', 'Payment Status', 'Hired By', 'Hired Date', 'Email', 'WhatsApp', 'PayPal', 'Zelle'];
     const esc = (v) => {
       const s = String(v ?? '');
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -5088,6 +5153,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
       lines.push([
         c.name || '', c.tiktok_account || '', c.brand || '', c.category || '',
         c.deal || '', parseDealAmount(c.deal) || '', parseDealVideos(c.deal) || '',
+        Math.round(creatorL30(c, eukaL30) || 0) || '',
         c.payment_status || '', c.hired_by || '', c.hiring_date || '',
         c.email || '', fmtPhone(c.whatsapp_number), c.paypal || '', c.zelle || '',
       ].map(esc).join(','));
@@ -5199,12 +5265,12 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
       const key = (c.name || '').trim().toLowerCase();
       if (!key || seen.has(key)) return;
       seen.add(key);
-      const t = creatorTier(c, eukaL30);
+      const t = tierByPerson.get(key);
       if (t) { out[t] = (out[t] || 0) + 1; matched += 1; }
     });
     if (!matched && !eukaL30) return null;   // nothing known yet · hide the pill
     return { out, matched, total: seen.size };
-  }, [eukaL30, listForTierCounts]);
+  }, [eukaL30, listForTierCounts, tierByPerson]);
 
   return (
     <>
@@ -5215,15 +5281,60 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
           onClick={() => setShowUnique(true)} />
         <KpiPill label="Total Deals" value={filtered.length} />
         <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {/*
+            * THESE READ AS FILTERS, SO THEY ARE FILTERS.
+            *
+            * They were spans: six tier counts sitting at the top of the screen
+            * that looked exactly like the pills everywhere else in this app and
+            * did nothing when pressed. The filter they imply already existed —
+            * buried in the Filter popover — so this wires the obvious control
+            * to the state that was already there rather than adding a second
+            * way to say the same thing.
+            */}
           {tierCounts && (
-            <span className="pc-tierpill" title={`${tierCounts.matched}/${tierCounts.total} matched to an EUKA creator profile`}>
+            <span className="pc-tierpill" title={`${tierCounts.matched}/${tierCounts.total} matched to an EUKA creator profile · click a tier to filter`}>
               <span className="pc-tierpill-l">EUKA Tiers</span>
               {['L0', 'L1', 'L2', 'L3', 'L4', 'L5'].filter(t => tierCounts.out[t] > 0).map(t => (
-                <span key={t} className={`pc-tierpill-chip ${t.toLowerCase()}`}>{t}<b>{tierCounts.out[t]}</b></span>
+                <button
+                  key={t}
+                  type="button"
+                  className={`pc-tierpill-chip ${t.toLowerCase()}${tierFilter === t ? ' on' : ''}`}
+                  aria-pressed={tierFilter === t}
+                  title={tierFilter === t ? `Showing ${t} only · click to clear` : `Show only ${t}`}
+                  onClick={() => setTierFilter(tierFilter === t ? null : t)}
+                >{t}<b>{tierCounts.out[t]}</b></button>
               ))}
               {tierCounts.total - tierCounts.matched > 0 && (
-                <span className="pc-tierpill-chip none">Unmatched<b>{tierCounts.total - tierCounts.matched}</b></span>
+                <button
+                  type="button"
+                  className={`pc-tierpill-chip none${tierFilter === 'none' ? ' on' : ''}`}
+                  aria-pressed={tierFilter === 'none'}
+                  title={tierFilter === 'none' ? 'Showing unmatched only · click to clear' : 'Show only creators with no EUKA match'}
+                  onClick={() => setTierFilter(tierFilter === 'none' ? null : 'none')}
+                >Unmatched<b>{tierCounts.total - tierCounts.matched}</b></button>
               )}
+            </span>
+          )}
+
+          {/*
+            * DEALS PER PERSON, as chips rather than a dropdown, because the
+            * COUNT is half the answer: "how many creators are on two deals"
+            * is readable without pressing anything, and pressing narrows to
+            * them. A dropdown would hide the number being asked for.
+            */}
+          {dealTally.length > 0 && (
+            <span className="pc-tierpill" title="How many people are on this many deals · click to filter">
+              <span className="pc-tierpill-l">Deals</span>
+              {dealTally.map(([n, people]) => (
+                <button
+                  key={n}
+                  type="button"
+                  className={`pc-tierpill-chip deals${dealsFilter === n ? ' on' : ''}`}
+                  aria-pressed={dealsFilter === n}
+                  title={`${people} creator${people === 1 ? '' : 's'} on ${n} deal${n === 1 ? '' : 's'}`}
+                  onClick={() => setDealsFilter(dealsFilter === n ? null : n)}
+                >{n}&times;<b>{people}</b></button>
+              ))}
             </span>
           )}
         </span>
@@ -5310,7 +5421,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
                   {activeFilterCount > 0 && (
                     <button
                       type="button"
-                      onClick={() => { setStatusFilter(null); setHiredByFilter(null); setTierFilter(null); }}
+                      onClick={() => { setStatusFilter(null); setHiredByFilter(null); setTierFilter(null); setDealsFilter(null); }}
                       style={{ background: 'transparent', border: 0, color: 'var(--pc-text-3)', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '2px 6px', borderRadius: 6 }}
                     >
                       Reset all

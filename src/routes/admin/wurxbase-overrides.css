@@ -1505,3 +1505,40 @@
   color: var(--wx-on-accent, var(--wx-bg));
 }
 .wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-b[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   THE TIER AND DEALS CHIPS ARE CONTROLS NOW
+
+   They were spans that looked exactly like every other pill in this app
+   and did nothing when pressed. They filter the list now, so they have to
+   look pressable and show which one is on.
+
+   THE SELECTED STATE IS AN OUTLINE IN THE CHIP'S OWN INK, not a new
+   background. Each chip already carries a hue — L2 is info, L5 is warning,
+   Unmatched is danger — and every one of those ink-on-wash pairs has been
+   measured against AA. Filling a selected chip with a different colour
+   would invent six new pairs to verify, and this file's history is mostly
+   one lesson: a token calibrated for one surface used on another. An
+   outline in `currentColor` cannot fail, because currentColor is already
+   the ink that passed. */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-tierpill-chip {
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1;
+  transition: filter 0.14s, box-shadow 0.14s;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root button.pc-tierpill-chip:hover {
+  filter: brightness(0.96);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root button.pc-tierpill-chip:focus-visible,
+.wurxbase-root.wurxbase-root.wurxbase-root button.pc-tierpill-chip.on {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+/* Deals chips carry no tier meaning, so they stay neutral rather than
+   borrowing a hue that already means something else on this row. */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-tierpill-chip.deals {
+  background: var(--wx-surface-2);
+  color: var(--wx-text);
+  border-color: var(--wx-border-strong);
+}
