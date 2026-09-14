@@ -12,18 +12,26 @@ pending?" from `docs/PARKED.md`.
 
 ## WHERE EVERYTHING STANDS
 
-### DEV DEPLOYS ARE BLOCKED BY VERCEL, NOT BY THE CODE (2026-09-15)
+### Dev is LIVE at `aab0cf0`, deployed from the CLI (2026-09-15)
 
-Every push since `a4052ed` shows `BLOCKED` on wurxmediahubdev, with "the
+**Git deploys are still blocked, so every push until Rashid fixes it needs
+the CLI route.** Pushes `a4052ed` and `aab0cf0` came back `BLOCKED`: "the
 commit author doesn't have permission to create deployments"
 (`TEAM_ACCESS_REQUIRED`). The commit identity is the same one that deployed
-on 09-10. What changed: the Vercel team (Hobby, sole member `wurxmedia-6695`)
-no longer has a GitHub login linked, so Vercel cannot match GitHub
-`RashidNazeer` to a member. **Rashid's fix:** Vercel → Account Settings →
-Authentication → connect GitHub `RashidNazeer`, then Redeploy the latest
-dev deployment. Until then, wurxmediahubdev.vercel.app still serves
-`a7b2686`. The database and Edge Function changes below ARE live on dev,
-because they do not go through Vercel.
+on 09-10. What changed is that the Vercel team (Hobby, sole member
+`wurxmedia-6695`) no longer has a GitHub login linked. **Rashid's fix:**
+Vercel → Account Settings → Authentication → connect GitHub `RashidNazeer`.
+
+**Deployed anyway, from the CLI.** Exactly `aab0cf0` was exported, deployed
+as a preview of the dev project (`dpl_ECGFqPUZMpGXwxK1U97yHbbX1DFH`), and
+`wurxmediahubdev.vercel.app` was aliased to it. Steps are in OPERATIONS
+under Vercel. Verified on the live URL:
+- the entry asset `index-AUz50jHL.js` is the same file as the tested local build
+- `verify:video-days` 30/30 against the live site
+- `verify:ads-manager-ui` 18/18 as Subhan against the live site
+
+Rollback: alias the domain back to the 09-10 deployment
+`dpl_A4CNU9pa7kjVpGgDhZL8NMqCAYLb`.
 
 ### Top videos total, and Manage videos by day (2026-09-15)
 

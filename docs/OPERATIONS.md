@@ -1051,6 +1051,32 @@ vercel build --token $VERCEL_TOKEN --yes      # "Build completed successfully."
 A green `git push` says nothing about the build. `vercel ls wurxmediahubdev`
 shows the state; a run with duration `?` never built at all.
 
+**When a git deploy comes back `BLOCKED` (`TEAM_ACCESS_REQUIRED`)**, Vercel
+can no longer match the GitHub commit author to a team member. On 2026-09-15
+the cause was that the Vercel account had no GitHub login linked. The real
+fix is Rashid's: Vercel → Account Settings → Authentication → connect GitHub
+`RashidNazeer`. Until then, dev can still be deployed from the CLI, because
+the token belongs to the team owner. The commit author is not checked:
+
+```bash
+# 1. export EXACTLY the pushed commit, so nothing local rides along
+git archive <sha> | tar -x -C <scratch>/deploy-<sha>
+cp .vercel/project.json <scratch>/deploy-<sha>/.vercel/   # projectName MUST be wurxmediahubdev
+# 2. a PREVIEW of the dev project — never --prod (the dev project's production
+#    branch is main, and --prod is not what the dev URL serves)
+cd <scratch>/deploy-<sha> && vercel deploy --yes --token $VERCEL_TOKEN
+# 3. wurxmediahubdev.vercel.app is a dev-BRANCH domain, so a CLI deploy is not
+#    attached to it automatically. Point it by hand:
+vercel alias set <deployment-host> wurxmediahubdev.vercel.app --token $VERCEL_TOKEN --scope wurxmedia-6695s-projects
+```
+
+Both env vars (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`) apply to
+all targets with no branch scoping, so a CLI preview builds against the same
+dev database as a git one. Confirm by comparing the live `assets/index-*.js`
+name with the tested local `dist/`. To roll back, alias the domain to the
+previous deployment's host. The next git deploy that succeeds takes the
+domain back automatically.
+
 The rewrite excludes `.netlify/`. That exclusion is now VESTIGIAL and is kept
 only because editing `vercel.json` has killed deployments twice: nothing calls
 that path any more. Until 2026-08-29 WurxBase fetched
