@@ -2105,6 +2105,53 @@ from them, as the brand's GMV.
 
 ## Paid Collabs: WurxBase, vendored (2026-08-18)
 
+## Top videos total, and videos by posted day (2026-09-15)
+
+Rashid asked for two things. First, the brand page's Top videos strip should
+show ten videos, not eight, with "the sum of gmv (new video gmv column)"
+beside them. Second, Manage videos should "let them view the videos of a
+certain date … today or any date".
+
+**The total is the New video GMV column, added up.** It covers every row in
+the table below, not the ten thumbnails. A total of the best videos is not the
+brand's figure. It sums the ROUNDED per-row values, because those are the
+numbers printed in the column, so a calculator run down the column agrees
+with it.
+
+**Ten 96px thumbnails do not fit beside a total on a laptop.** The first
+version let the row scroll, which hid the tenth video under the total at
+1500px. The strip is now a CSS size container (`container-type: inline-size`
+on `.pc-topvids`) with exactly two shapes:
+- over 1290px: full-size thumbnails, the total centred in the space to
+  their right
+- 1090–1290px: thumbnails shrink (`--tv-w`, never below 76px) so all ten
+  stay beside the total
+- under 1090px: the total goes above as one line and the thumbnails scroll
+
+The total is given 14rem so its caption ("18 of 22 creators · May 2026")
+stays on one line. The thresholds are that arithmetic: ten thumbnails, nine
+gaps, the gap before the total, and the total's 14rem.
+
+It is sized by the strip's own width, not the window's, because the sidebar
+and the text-size control both change how much room the strip has. The
+total's wrapper is one thumbnail tall, so the card centres on the pictures
+and not on the pictures plus their names.
+
+**The posted day is EUKA's**, written onto each saved video as `YYYY-MM-DD`
+by the sweep (`buildEukaVideoPatch`). 89% of saved videos carry one: 4,667 of
+5,250 on dev on 2026-09-15. The rest are pasted links EUKA has not matched
+yet, and no day filter can show those, so the bar states how many there are.
+"Today" is the viewer's own calendar day. An empty day names the latest day
+that has posts, and one click goes there.
+
+**The list is filtered, never re-indexed.** Every row keeps its index in
+`codes`, so an edit or an auth tick made while filtered lands on the right
+video. Adding rows or bulk-pasting clears the filter, because a new row has
+no date and the filter would hide it the moment it appeared.
+
+**Guarded by `pnpm verify:video-days`.** Every expected number comes from the
+database first, and the check proves the modal wrote nothing.
+
 ## Euka: as many accounts as we hold keys for (2026-09-09)
 
 One Euka key can cover many brands — ours covers **ten** — but a brand can

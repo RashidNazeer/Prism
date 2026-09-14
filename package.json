@@ -77,7 +77,8 @@
     "verify:alltime-videos": "node scripts/check-alltime-videos.mjs",
     "staff:ads-manager": "node scripts/create-ads-manager.mjs",
     "verify:ads-manager": "node scripts/check-ads-manager.mjs",
-    "verify:ads-manager-ui": "node scripts/check-ads-manager-ui.mjs"
+    "verify:ads-manager-ui": "node scripts/check-ads-manager-ui.mjs",
+    "verify:video-days": "node scripts/check-video-days.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

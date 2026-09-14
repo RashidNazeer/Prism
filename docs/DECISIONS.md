@@ -2200,3 +2200,19 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   that the protected-target list had never named the Paid Collabs roles.
   Approving a stray application from one of those logins would have silently
   made that colleague a creator.
+- 2026-09-15: **The Top videos total is the New video GMV COLUMN, not the ten
+  thumbnails.** Rashid named the column. A total of the best ten would be a
+  smaller, different number sitting beside a column that disagrees with it. It
+  sums the rounded per-row figures, because those are the numbers printed.
+- 2026-09-15: **Two layouts for the strip, never a third.** Ten full-size
+  thumbnails plus a total do not fit a laptop. Letting the row scroll put the
+  tenth video UNDER the total, a shape nobody would choose. So the thumbnails
+  shrink to fit (down to 76px), and below that the total moves above them.
+  Sized by the strip's own width (a CSS container query), not the window's,
+  because the sidebar and the text-size control change the room available.
+- 2026-09-15: **The day filter uses EUKA's posted date and says what it cannot
+  see.** 11% of saved videos are pasted links EUKA has not dated yet. The bar
+  prints how many, rather than letting a day look emptier than it is.
+  Filtering never re-indexes the rows, so an edit made while filtered lands
+  on the right video. Adding or pasting rows clears the filter, because a new
+  row has no date and would vanish the moment it was added.

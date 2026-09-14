@@ -12,6 +12,30 @@ pending?" from `docs/PARKED.md`.
 
 ## WHERE EVERYTHING STANDS
 
+### DEV DEPLOYS ARE BLOCKED BY VERCEL, NOT BY THE CODE (2026-09-15)
+
+Every push since `a4052ed` shows `BLOCKED` on wurxmediahubdev, with "the
+commit author doesn't have permission to create deployments"
+(`TEAM_ACCESS_REQUIRED`). The commit identity is the same one that deployed
+on 09-10. What changed: the Vercel team (Hobby, sole member `wurxmedia-6695`)
+no longer has a GitHub login linked, so Vercel cannot match GitHub
+`RashidNazeer` to a member. **Rashid's fix:** Vercel → Account Settings →
+Authentication → connect GitHub `RashidNazeer`, then Redeploy the latest
+dev deployment. Until then, wurxmediahubdev.vercel.app still serves
+`a7b2686`. The database and Edge Function changes below ARE live on dev,
+because they do not go through Vercel.
+
+### Top videos total, and Manage videos by day (2026-09-15)
+
+- The brand page's Top videos strip shows **10** videos, with the **New video
+  GMV column's total** centred beside them. Below about 1090px of strip
+  width, the total sits above them instead.
+- Manage videos has a **Posted** bar: All · Today · Yesterday · any date. Each
+  row shows its posted day, and undated links are counted out loud.
+- `verify:video-days` 30/30: numbers from the database, all widths from 400
+  to 1500px, zero console errors, and the modal wrote nothing ·
+  `verify:collab-chrome` 17/17 · lint and build clean.
+
 ### Ads Manager is full staff (2026-09-15)
 
 Rashid: *"ads manager will have the same edit access as asad and rashid has

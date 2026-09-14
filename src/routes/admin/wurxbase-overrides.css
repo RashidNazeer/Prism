@@ -1560,3 +1560,259 @@
   font-weight: 700;
   white-space: nowrap;
 }
+
+/* ------------------------------------------------------------ top videos --- */
+/*
+ * TEN THUMBNAILS, AND THE NEW VIDEO GMV COLUMN'S TOTAL CENTRED IN THE SPACE TO
+ * THEIR RIGHT. Rashid, 2026-09-15.
+ *
+ * TEN 96px THUMBNAILS DO NOT FIT BESIDE A TOTAL ON A LAPTOP. The first version
+ * let the row shrink and scroll, and the browser check caught the tenth video
+ * sitting hidden under the total at 1500px. So the strip is a size container:
+ * - wide: full-size thumbnails, total centred in the space left over
+ * - laptop: thumbnails shrink (never below 76px) so all ten stay beside it
+ * - narrower: the total goes above as one line and the thumbnails scroll
+ * It is sized by the STRIP's width, not the window's, because the sidebar and
+ * the zoom control both change how much room the strip actually has.
+ *
+ * `--tv-w` is the thumbnail width. The total's wrapper is exactly one
+ * thumbnail tall, so the card centres on the pictures and not on the pictures
+ * plus the names printed under them — which is what "19px off" was.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids {
+  container-type: inline-size;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-body {
+  --tv-w: 96px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-body > .pc-topvids-row {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-body .pc-topvid {
+  width: var(--tv-w);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-body .pc-topvid-frame {
+  width: var(--tv-w);
+  height: calc(var(--tv-w) * 4 / 3);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-totalwrap {
+  flex: 1 0 14rem;
+  height: calc(var(--tv-w) * 4 / 3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-total {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 11rem;
+  padding: 14px 22px 13px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--wx-success-soft), transparent 85%), var(--wx-surface-1);
+  border: 1px solid color-mix(in srgb, var(--wx-success) 30%, var(--wx-border));
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--wx-text) 8%, transparent);
+  text-align: center;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-total-lbl {
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--wx-text-muted);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-total-val {
+  font-size: 1.75rem;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--wx-success);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-total-sub {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--wx-text-muted);
+  white-space: nowrap;
+}
+/* Laptop: ten full-size thumbnails, their gaps, the gap to the total and the
+   total (14rem, so its one-line caption never wraps) need 1290px. Under
+   that, the thumbnails shrink so all ten stay. */
+@container (max-width: 1290px) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-body {
+    --tv-w: max(76px, calc((100cqi - 16px - 14rem - 90px) / 10));
+  }
+}
+/* Below 76px a thumbnail stops being a picture. From there the total goes
+   above as one line, and the thumbnails return to full size and scroll. */
+@container (max-width: 1090px) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-body {
+    --tv-w: 96px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-totalwrap {
+    order: -1;
+    flex: 0 0 auto;
+    height: auto;
+    justify-content: flex-start;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-total {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 10px;
+    width: 100%;
+    min-width: 0;
+    padding: 10px 14px;
+    text-align: left;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-total-lbl {
+    white-space: nowrap;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-total-val {
+    font-size: 1.375rem;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-total-sub {
+    margin-left: auto;
+  }
+}
+
+/* ------------------------------------------------ videos: one day's posts --- */
+/*
+ * Rashid, 2026-09-15: "let them view the videos of a certain date … today or
+ * any date". Chips for the two days people ask about, a date field for any
+ * other, and the count of undated links said out loud so a day never looks
+ * emptier than it is.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-days {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: var(--pc-card-2);
+  border-bottom: 1px solid var(--pc-divider);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-days-lbl {
+  margin-right: 2px;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--wx-text-muted);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-day {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--wx-border-strong);
+  background: var(--wx-surface-1);
+  color: var(--wx-text-muted);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-day b {
+  color: var(--wx-text);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-day:hover {
+  border-color: var(--wx-border-interactive);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-day.on {
+  background: var(--wx-accent-soft);
+  border-color: var(--wx-accent);
+  color: var(--wx-text);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-day:focus-visible,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-daypick input:focus-visible,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-daylink:focus-visible {
+  outline: 2px solid var(--wx-accent);
+  outline-offset: 2px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-daypick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-daypick input {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--wx-text);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-days .pc-vx-daypick.on input[type='date'] {
+  border-color: var(--wx-accent) !important;
+  background: var(--wx-accent-soft) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-daypick b {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--wx-text);
+  font-variant-numeric: tabular-nums;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-days-note {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--wx-text-muted);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-daytag {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--wx-surface-2);
+  color: var(--wx-text-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-dayempty {
+  padding: 28px 12px;
+  text-align: center;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--wx-text-muted);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-daylink {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 800;
+  color: var(--wx-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+@media (max-width: 640px) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-days {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-days-note {
+    margin-left: 0;
+    width: 100%;
+  }
+}

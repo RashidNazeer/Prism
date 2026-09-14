@@ -2373,14 +2373,33 @@ function BrandDrilldown({ brand, creators, brandCreators, budgets, refetchBudget
             .filter(r => r && String(r.video || '').trim() && Number(r.revenue) > 0)
             .map(r => ({ ...r, name: c.name })))
           .sort((a, b) => Number(b.revenue) - Number(a.revenue))
-          .slice(0, 8);
+          .slice(0, 10);
         if (!tops.length) return null;
+        /*
+         * WURX-ADDED · THE NEW VIDEO GMV COLUMN, ADDED UP.
+         *
+         * Rashid, 2026-09-15: ten videos instead of eight, and "in the same row
+         * … the sum of gmv (new video gmv column)". So it is exactly that
+         * column's arithmetic — every row in the table below, each row's
+         * posted videos' revenue — and it sums the ROUNDED per-row figures,
+         * because those are the numbers printed in the column. Anyone who
+         * checks it with a calculator against the column gets the same answer.
+         *
+         * Not the ten thumbnails' GMV: those are the best videos, and a total
+         * of the best is not the brand's figure.
+         */
+        const rowGmv = (c) => Math.round((Array.isArray(c.video_codes) ? c.video_codes : [])
+          .filter(r => r && String(r.video || '').trim())
+          .reduce((t, r) => t + (Number(r.revenue) || 0), 0));
+        const colTotal = sortedCreators.reduce((t, c) => t + rowGmv(c), 0);
+        const earning = sortedCreators.filter(c => rowGmv(c) > 0).length;
         return (
           <div className="pc-topvids">
             <div className="pc-topvids-head">
               Top videos by GMV · {allTime ? 'All time' : monthLabel(month)}
               <span className="pc-topvids-sub">live from EUKA</span>
             </div>
+            <div className="pc-topvids-body">
             <div className="pc-topvids-row">
               {tops.map((v, i) => (
                 <a key={i} className="pc-topvid" href={v.video} target="_blank" rel="noreferrer" title={`${v.name} · ${fmt$Exact(Math.round(v.revenue))} GMV · open on TikTok`}>
@@ -2395,6 +2414,16 @@ function BrandDrilldown({ brand, creators, brandCreators, budgets, refetchBudget
                   <span className="pc-topvid-views">{Number(v.views) > 0 ? `${kNum(v.views)} views` : ' '}</span>
                 </a>
               ))}
+            </div>
+            <div className="pc-topvids-totalwrap">
+              <div className="pc-topvids-total" title="The New video GMV column below, added up">
+                <span className="pc-topvids-total-lbl">New video GMV</span>
+                <span className="pc-topvids-total-val">{fmt$Exact(colTotal)}</span>
+                <span className="pc-topvids-total-sub">
+                  {earning} of {sortedCreators.length} creator{sortedCreators.length === 1 ? '' : 's'} · {allTime ? 'all time' : monthLabel(month)}
+                </span>
+              </div>
+            </div>
             </div>
           </div>
         );
@@ -4498,6 +4527,8 @@ function CreatorVideosPopup({ creator: c, onUpdateCreator, onEdit, onClose }) {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkText, setBulkText] = useState('');
   const [bulkErr, setBulkErr] = useState('');
+  /* WURX-ADDED · '' is every video; 'YYYY-MM-DD' is the videos posted that day. */
+  const [dayFilter, setDayFilter] = useState('');
   const debounce = useRef(null);
   const latest = useRef(codes);
   const dirty = useRef(false);
@@ -4618,6 +4649,7 @@ function CreatorVideosPopup({ creator: c, onUpdateCreator, onEdit, onClose }) {
     setCodes(next);
     setBulkText('');
     setBulkOpen(false);
+    setDayFilter('');   // WURX-ADDED · pasted rows have no date yet; a filter would hide them
     if (debounce.current) { clearTimeout(debounce.current); debounce.current = null; }
     persist(next);
     if (dupesIntroduced > 0) {
@@ -4663,6 +4695,7 @@ function CreatorVideosPopup({ creator: c, onUpdateCreator, onEdit, onClose }) {
   // Add N blank rows to the end. No persist · blank rows don't need saving;
   // they save when the user types into them.
   const addRows = (n = 1) => {
+    setDayFilter('');   // WURX-ADDED · a new row has no date, so a day filter would hide it
     setCodes(prev => {
       const next = [...prev, ...Array.from({ length: n }, () => ({ video: '', adCode: '', auth: false }))];
       latest.current = next;
@@ -4730,6 +4763,46 @@ function CreatorVideosPopup({ creator: c, onUpdateCreator, onEdit, onClose }) {
     codes.forEach(r => { if (dupKeys.has(videoKey(r.video))) n++; });
     return n;
   }, [codes, dupKeys]);
+
+  /*
+   * WURX-ADDED · SEE ONE DAY'S VIDEOS.
+   *
+   * Rashid, 2026-09-15: "let them view the videos of a certain date … today
+   * or … any date". The date is the POSTED date EUKA reports, written onto
+   * each row by the sweep as YYYY-MM-DD — 89% of saved videos carry one.
+   *
+   * The other 11% are links pasted before EUKA has matched them, and a day
+   * filter can never show those. So the bar SAYS how many are undated rather
+   * than letting a day look emptier than it is.
+   *
+   * The list is filtered, never re-indexed: every row keeps its position in
+   * `codes`, so an edit or a tick made while filtered lands on the right video.
+   * "Today" is the viewer's own calendar day.
+   */
+  const dayOf = (r) => String(r?.date || '').slice(0, 10);
+  const localDay = (offset) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const today = localDay(0);
+  const yesterday = localDay(-1);
+  const shortDay = (d) => { const [, m, dd] = d.split('-'); return `${MONTHS[parseInt(m, 10) - 1]} ${parseInt(dd, 10)}`; };
+  const dayCounts = useMemo(() => {
+    const m = new Map();
+    codes.forEach(r => {
+      if (!isValidUrl(r.video)) return;
+      const d = dayOf(r);
+      if (d) m.set(d, (m.get(d) || 0) + 1);
+    });
+    return m;
+  }, [codes]);
+  const undated = codes.filter(r => isValidUrl(r.video) && !dayOf(r)).length;
+  const latestDay = [...dayCounts.keys()].sort().pop() || '';
+  const visibleRows = codes
+    .map((row, i) => ({ row, i }))
+    .filter(({ row }) => !dayFilter || dayOf(row) === dayFilter);
+  const pickedOther = Boolean(dayFilter) && dayFilter !== today && dayFilter !== yesterday;
 
   return createPortal(
     <div className="pc-overlay pc-vx-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -4829,6 +4902,29 @@ function CreatorVideosPopup({ creator: c, onUpdateCreator, onEdit, onClose }) {
           </div>
         )}
 
+        {/* WURX-ADDED · posted-day filter */}
+        <div className="pc-vx-days" role="group" aria-label="Show the videos posted on one day">
+          <span className="pc-vx-days-lbl">Posted</span>
+          <button type="button" className={`pc-vx-day ${!dayFilter ? 'on' : ''}`} aria-pressed={!dayFilter} onClick={() => setDayFilter('')}>
+            All <b>{filledCount}</b>
+          </button>
+          <button type="button" className={`pc-vx-day ${dayFilter === today ? 'on' : ''}`} aria-pressed={dayFilter === today} onClick={() => setDayFilter(today)}>
+            Today <b>{dayCounts.get(today) || 0}</b>
+          </button>
+          <button type="button" className={`pc-vx-day ${dayFilter === yesterday ? 'on' : ''}`} aria-pressed={dayFilter === yesterday} onClick={() => setDayFilter(yesterday)}>
+            Yesterday <b>{dayCounts.get(yesterday) || 0}</b>
+          </button>
+          <label className={`pc-vx-daypick ${pickedOther ? 'on' : ''}`} title="Pick any day">
+            <input type="date" value={dayFilter} max={today} onChange={e => setDayFilter(e.target.value)} aria-label="Pick a day" />
+            {pickedOther && <b>{dayCounts.get(dayFilter) || 0}</b>}
+          </label>
+          {undated > 0 && (
+            <span className="pc-vx-days-note" title="Links EUKA has not matched to a posted date yet. No day filter can show these.">
+              {undated} without a posted date yet
+            </span>
+          )}
+        </div>
+
         {/* ── Sticky column labels ── */}
         <div className="pc-vx-collabels">
           <span />
@@ -4841,7 +4937,18 @@ function CreatorVideosPopup({ creator: c, onUpdateCreator, onEdit, onClose }) {
         {/* ── Scrollable list ── */}
         <div className="pc-vx-scroll">
           <div className="pc-vx-list">
-            {codes.map((row, i) => {
+            {dayFilter && visibleRows.length === 0 && (
+              <div className="pc-vx-dayempty">
+                No videos posted on {formatHireDate(dayFilter)}.
+                {latestDay && latestDay !== dayFilter && (
+                  <> The latest posted day is{' '}
+                    <button type="button" className="pc-vx-daylink" onClick={() => setDayFilter(latestDay)}>{formatHireDate(latestDay)}</button>.
+                  </>
+                )}
+                {undated > 0 && <> {undated} video{undated === 1 ? ' has' : 's have'} no posted date yet.</>}
+              </div>
+            )}
+            {visibleRows.map(({ row, i }) => {
               const vOk = isValidUrl(row.video);
               const isDup = vOk && dupKeys.has(videoKey(row.video));
               const canDelete = isEmpty(row) && codes.length > Math.max(committed, 1) && i >= committed;
@@ -4858,6 +4965,9 @@ function CreatorVideosPopup({ creator: c, onUpdateCreator, onEdit, onClose }) {
                     <span className="pc-vx-inp-ico"><svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M8 5v14l11-7z" /></svg></span>
                     <input placeholder="Paste TikTok video URL" value={row.video} onChange={e => change(i, 'video', e.target.value)} onBlur={flush} />
                     {isDup && <span className="pc-vx-dupe-pill" title="Duplicate video">DUPE</span>}
+                    {!isDup && dayOf(row) && (
+                      <span className="pc-vx-daytag" title={`Posted ${formatHireDate(dayOf(row))}`}>{shortDay(dayOf(row))}</span>
+                    )}
                   </label>
                   <label className="pc-vx-inp pc-vx-inp-ad">
                     <span className="pc-vx-inp-ico">#</span>
