@@ -74,7 +74,10 @@
     "verify:applicant-flow": "node scripts/check-applicant-flow.mjs",
     "verify:euka-accounts": "node scripts/check-euka-accounts.mjs",
     "verify:collab-filters": "node scripts/check-collab-filters.mjs",
-    "verify:alltime-videos": "node scripts/check-alltime-videos.mjs"
+    "verify:alltime-videos": "node scripts/check-alltime-videos.mjs",
+    "staff:ads-manager": "node scripts/create-ads-manager.mjs",
+    "verify:ads-manager": "node scripts/check-ads-manager.mjs",
+    "verify:ads-manager-ui": "node scripts/check-ads-manager-ui.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

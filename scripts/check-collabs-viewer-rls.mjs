@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * THE BOUNDARY FOR THE THREE READ-ONLY PAID COLLABS ROLES.
+ * THE BOUNDARY FOR THE READ-ONLY PAID COLLABS ROLES (two since 2026-09-15).
  *
  *   SUPABASE_SERVICE_KEY=... node scripts/check-collabs-viewer-rls.mjs
  *
@@ -28,7 +28,8 @@ const svc = createClient(env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY
 const svcWb = createClient(env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false }, db: { schema: 'wurxbase' } });
 
 const PW = 'Probe!' + Math.random().toString(36).slice(2, 10);
-const ROLES = ['affiliate_team_lead', 'operations_lead', 'ads_manager'];
+/* Not ads_manager: full staff since 2026-09-15, proven by check-ads-manager.mjs. */
+const ROLES = ['affiliate_team_lead', 'operations_lead'];
 const FORBIDDEN = ['brands', 'offers', 'contests', 'tiktok_video_daily', 'audit_log'];
 const pass = [], fail = [];
 const check = (ok, m, d) => (ok ? pass : fail).push(d ? `${m} — ${d}` : m);

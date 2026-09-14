@@ -1443,12 +1443,24 @@ the server: `initialize` returned protocol `2024-11-05`, `tools/list` returned
 15 tools. Note that `Invoke-RestMethod` **hangs** on this endpoint, because the
 response advertises `text/event-stream`. Use `curl` with `--max-time`.
 
-## The three read-only Paid Collabs roles
+## The read-only Paid Collabs roles, and Ads Manager
 
-Affiliate Team Lead, Operations Lead, Ads Manager. They read Paid Collabs and
-see no other screen; they cannot write anywhere, including inside Paid Collabs.
+Affiliate Team Lead and Operations Lead read Paid Collabs and see no other
+screen. They cannot write anywhere, including inside Paid Collabs.
+
+**Ads Manager is NOT one of them since 2026-09-15.** It is full staff, the
+same as Ops (see FEATURE_MAP, "Ads Manager became staff"). Subhan
+(`subhan@wurxmedia.com`) is the only one, on dev.
 
 ```bash
+# create or repair an Ads Manager (dev). Refuses an account holding any role
+# other than ads_manager or a fresh applicant.
+SUPABASE_SERVICE_KEY=... node scripts/create-ads-manager.mjs \
+  someone@wurxmedia.com '<password>' 'Display Name'
+pnpm verify:ads-manager          # 19 checks, needs the service key
+pnpm verify:ads-manager-ui       # browser, needs a preview server and
+                                 # ADS_MANAGER_PASSWORD
+
 # create or repair one (dev). Refuses to touch an account that is not already
 # one of the three, so it cannot silently demote a colleague.
 SUPABASE_SERVICE_KEY=... node scripts/create-collabs-viewer.mjs \
@@ -1475,8 +1487,8 @@ pnpm verify:collab-chrome # 17 checks. Fields must not look like selected
 ```
 
 **The boundary is `public.is_collabs_viewer()`**, used only by the wurxbase
-SELECT policies. Never add these roles to `is_staff()`: that function guards
-seventy policies across the whole public schema.
+SELECT policies. Never add a read-only role to `is_staff()`: that function
+guards seventy policies across the whole public schema, and it means staff.
 
 **Export and print are withheld** by `forcedPermsFor()` in
 `src/lib/wurxbase-identity.ts`, applied after every other grant, so an override

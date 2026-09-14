@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
-import { useAuth, isCollabsOnlyRole } from '@/lib/auth/auth-context';
+import { useAuth, isCollabsOnlyRole, isStaffRole } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import {
   WURXBASE_TABS,
@@ -69,13 +69,13 @@ export function useWurxbaseIdentity(): WurxbaseIdentity {
 
   const derivedRole = wurxbaseRoleFor(profile?.role);
 
-  /* Staff, plus the three read-only collabs roles. A creator never reaches
+  /* Staff, plus the read-only collabs roles. A creator never reaches
      Paid Collabs, and running this for every signed-in creator would be a
      query per session for an answer nothing asks for. */
   const enabled =
     status === 'signedIn' &&
     Boolean(email) &&
-    (profile?.role === 'ops' || profile?.role === 'admin' || isCollabsOnlyRole(profile?.role));
+    (isStaffRole(profile?.role) || isCollabsOnlyRole(profile?.role));
 
   const { data, isPending } = useQuery({
     queryKey: ['wurxbase-identity', email],

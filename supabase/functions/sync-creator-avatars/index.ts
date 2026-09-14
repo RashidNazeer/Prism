@@ -91,7 +91,8 @@ Deno.serve(async (req) => {
     .eq('id', userData.user.id)
     .single();
   if (actorErr || !actor || !actor.is_active) return reply({ error: 'Not allowed' }, 403);
-  if (actor.role !== 'admin' && actor.role !== 'ops') {
+  // Ads Manager is staff since 2026-09-15, the same as ops. Mirrors is_staff().
+  if (actor.role !== 'admin' && actor.role !== 'ops' && actor.role !== 'ads_manager') {
     return reply({ error: 'Only the team can do that' }, 403);
   }
 

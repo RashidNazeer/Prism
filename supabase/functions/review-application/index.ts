@@ -122,7 +122,8 @@ Deno.serve(async (req) => {
     return reply({ error: 'Not allowed' }, 403);
   }
 
-  const isStaff = actor.role === 'admin' || actor.role === 'ops';
+  // Ads Manager is staff since 2026-09-15, the same as ops. Mirrors is_staff().
+  const isStaff = actor.role === 'admin' || actor.role === 'ops' || actor.role === 'ads_manager';
 
   if (!isStaff || !actor.is_active) {
     // A real account asking for something it is not entitled to. Worth keeping.

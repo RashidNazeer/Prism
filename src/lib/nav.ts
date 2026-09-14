@@ -21,7 +21,7 @@ import {
   Users,
   Video,
 } from 'lucide-react';
-import { isCollabsOnlyRole } from '@/lib/auth/auth-context';
+import { isCollabsOnlyRole, isStaffRole } from '@/lib/auth/auth-context';
 import type { AppRole } from '@/lib/auth/auth-context';
 import { wurxbaseTabsFor } from '@/lib/wurxbase-identity';
 
@@ -328,9 +328,9 @@ export function navForRole(role: AppRole | undefined, collabTabs?: string[]): Na
    * you lacked bounced you to Brands with no explanation. Before the move the
    * row simply was not in the rail, which is the behaviour restored here.
    */
-  if (role === 'admin' || role === 'ops') return withCollabTabs(ADMIN, role, collabTabs);
+  if (isStaffRole(role)) return withCollabTabs(ADMIN, role, collabTabs);
   /*
-   * The three read-only roles get the Paid Collabs group and NOTHING ELSE.
+   * The read-only roles get the Paid Collabs group and NOTHING ELSE.
    *
    * Built by filtering the admin menu rather than by writing a second one, so a
    * row added to Paid Collabs tomorrow appears here too and a row added to

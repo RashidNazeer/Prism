@@ -4,7 +4,7 @@ import { RouteFallback } from '@/components/layout/RouteFallback';
 import { ShellLayout } from '@/components/layout/ShellLayout';
 import { WorldLayout } from '@/components/layout/WorldLayout';
 import { RequireAuth, RedirectIfSignedIn } from '@/components/auth/RequireAuth';
-import { COLLABS_ONLY_ROLES } from '@/lib/auth/auth-context';
+import { COLLABS_ONLY_ROLES, STAFF_ROLES } from '@/lib/auth/auth-context';
 
 /**
  * Route table.
@@ -458,19 +458,19 @@ export const router = createBrowserRouter([
      * PAID COLLABS, ON ITS OWN GUARD, and this is why it is not in the block
      * below with the rest of /admin.
      *
-     * Affiliate Team Lead, Operations Lead and Ads Manager see this screen and
-     * no other. Leaving Paid Collabs inside `allow={['ops','admin']}` and
-     * adding the three roles there would have opened Applications, Creators,
-     * Offers, Contests, Brands, TikTok and the audit log to them in the same
-     * edit — every one of which reads money.
+     * Affiliate Team Lead and Operations Lead see this screen and no other.
+     * Leaving Paid Collabs inside the staff guard and adding those roles there
+     * would have opened Applications, Creators, Offers, Contests, Brands,
+     * TikTok and the audit log to them in the same edit — every one of which
+     * reads money.
      *
      * The guard decides which SCREEN renders. It is not the boundary: what
      * they may actually read is `public.is_collabs_viewer()` on the wurxbase
      * SELECT policies, and writes there still answer to `is_staff()`. If this
-     * list were widened by mistake tomorrow, the three would reach a screen
-     * whose every query returns nothing.
+     * list were widened by mistake tomorrow, they would reach a screen whose
+     * every query returns nothing.
      */
-    Component: () => <RequireAuth allow={['ops', 'admin', ...COLLABS_ONLY_ROLES]} />,
+    Component: () => <RequireAuth allow={[...STAFF_ROLES, ...COLLABS_ONLY_ROLES]} />,
     children: [
       {
         Component: ShellLayout,
@@ -489,7 +489,7 @@ export const router = createBrowserRouter([
   },
 
   {
-    Component: () => <RequireAuth allow={['ops', 'admin']} />,
+    Component: () => <RequireAuth allow={STAFF_ROLES} />,
     children: [
       {
         Component: ShellLayout,

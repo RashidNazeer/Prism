@@ -156,7 +156,8 @@ Deno.serve(async (req) => {
   const input = parsed.data;
 
   // ------------------------------------------------------------- the gate --
-  const isStaff = actor.role === 'admin' || actor.role === 'ops';
+  // Ads Manager is staff since 2026-09-15, the same as ops. Mirrors is_staff().
+  const isStaff = actor.role === 'admin' || actor.role === 'ops' || actor.role === 'ads_manager';
   const isCreator = actor.role === 'creator';
   const needsStaff =
     input.action === 'application.review' || input.action === 'application.stage';

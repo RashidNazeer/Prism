@@ -115,6 +115,42 @@ check(unclassified.length === 0,
   'every creator-facing function is classified wide or narrow',
   unclassified.length ? 'UNCLASSIFIED: ' + unclassified.join(', ') : 'none new');
 
+/* ── WHO IS STAFF, answered the same way in all three places ───────────
+      Added 2026-09-15, when Ads Manager became staff. "Staff" is written
+      down three times: STAFF_ROLES in the app, is_staff() in the database,
+      and a hand-typed test in each Edge Function. Miss one and an Ads Manager
+      gets a screen whose queries return nothing, or a Save that answers
+      "Not allowed" — the exact fault this file was written for. ───────── */
+const ctx = readFileSync('src/lib/auth/auth-context.ts', 'utf8');
+const staffDecl = ctx.match(/STAFF_ROLES\s*=\s*\[([^\]]+)\]/);
+const STAFF = staffDecl ? [...staffDecl[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]) : [];
+check(STAFF.includes('ops') && STAFF.includes('admin'), 'the app has a STAFF_ROLES list', STAFF.join(', ') || 'NOT FOUND');
+
+/* the LAST migration to define is_staff() is the one in force */
+const migs = readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql')).sort();
+let dbStaff = null;
+for (const f of migs) {
+  const sql = readFileSync(`supabase/migrations/${f}`, 'utf8');
+  const def = sql.match(/function public\.is_staff\(\)[\s\S]*?\$\$([\s\S]*?)\$\$/);
+  if (def) dbStaff = { file: f, roles: [...def[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]) };
+}
+check(Boolean(dbStaff) && STAFF.length === dbStaff.roles.length && STAFF.every((r) => dbStaff.roles.includes(r)),
+  'STAFF_ROLES matches is_staff() in the database',
+  dbStaff ? `app [${STAFF.join(', ')}] · ${dbStaff.file} [${dbStaff.roles.join(', ')}]` : 'is_staff() NOT FOUND');
+
+/* every function that admits ops must admit every staff role */
+const lagging = [];
+for (const n of all) {
+  const p = `${dir}/${n}/index.ts`;
+  if (!existsSync(p)) continue;
+  const src = readFileSync(p, 'utf8');
+  if (!/role\s*[!=]==\s*'ops'|'ops'[^\]]*\]\.includes\(/.test(src)) continue;
+  const missing = STAFF.filter((r) => !src.includes(`'${r}'`));
+  if (missing.length) lagging.push(`${n} (no ${missing.join(', ')})`);
+}
+check(lagging.length === 0, 'every Edge Function that admits ops admits every staff role',
+  lagging.join(' · ') || 'all agree');
+
 /* ── and the card must never print a server string at a person ───────── */
 const card = readFileSync('src/components/creator/TikTokConnection.tsx', 'utf8');
 check(!/\{\(act\.error as Error\)\.message\}/.test(card),

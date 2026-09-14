@@ -2262,13 +2262,57 @@ write nothing, so adding one is safe by construction.
 | `ops` | the admin app · Paid Collabs admin |
 | `creator` / `applicant` | the creator app |
 | `creative_strategist` | /studio |
-| `affiliate_team_lead` / `operations_lead` / `ads_manager` | Paid Collabs only, READ only |
+| `ads_manager` | STAFF since 2026-09-15: everything `ops` reaches · Paid Collabs superadmin |
+| `affiliate_team_lead` / `operations_lead` | Paid Collabs only, READ only |
 
-**NEVER add a role to `public.is_staff()`.** It is
-`jwt_role() in ('ops','admin')` and it guards SEVENTY policies across
-creators, applications, offers, contests, brands and TikTok money. The three
+**Never add a role to `public.is_staff()` to let somebody SEE a screen.** It
+guards SEVENTY policies across creators, applications, offers, contests,
+brands and TikTok money, so it means "is staff" and nothing narrower. The
 read-only roles use `public.is_collabs_viewer()` instead — one schema,
 SELECT only; writes to wurxbase still answer to `is_staff()`.
+
+### Ads Manager became staff (2026-09-15)
+
+Rashid: *"ads manager will have the same edit access as asad and rashid has
+which means they can edit anything"*, and asked whether that meant Subhan
+or the role, he chose the role. So `ads_manager` is in `is_staff()` now,
+deliberately. The rule above is about people who only read; this is the
+owner deciding who is staff.
+
+**"Staff" is written in THREE places and they must agree.**
+`pnpm verify:role-gates` asserts it from source:
+1. `STAFF_ROLES` in `src/lib/auth/auth-context.ts`, which the router, the
+   sidebar and the Paid Collabs identity hook all read.
+2. `public.is_staff()`, plus the definer functions that read `profiles.role`
+   themselves: `assert_active_staff`, `review_application`,
+   `refresh_content_preview` and `is_approved_creator`. All are in
+   `20260915120000_ads_manager_is_staff.sql`.
+3. The hand-typed staff test in each Edge Function: manage-brand,
+   manage-contest, manage-content, manage-offer-application,
+   review-application, sync-creator-avatars and tiktok-creator. Euka
+   already admitted the role.
+
+**Admin-only stays admin-only** (`jwt_role() = 'admin'`): editing other
+people's profiles, TikTok connection health, and TikTok ads connect/sync.
+Asad is `ops` and does not have these either.
+
+**Inside Paid Collabs `ads_manager` maps to `superadmin`.** Asad carries that
+role through his `app_users` row, and Rashid through `admin`. It opens
+everything that goes by role: every edit, Payment Sent, and Delete in the
+creator editor. Two deletes check a username rather than a role
+(`isAsadActor()`): the row trash icon and the performance matrix delete.
+They stay Asad-only, for Rashid too. That was decided on 2026-09-02 and was
+not reopened.
+
+**`review_application` now refuses to review ANY team account**, the two
+read-only roles included. Approving a stray application can never turn a
+colleague into a creator.
+
+**Proven by** `pnpm verify:ads-manager`. It runs 19 checks: an Ads Manager
+reads every staff table, writes a Paid Collabs deal as a no-op, and passes
+the manage-brand gate, while the same probes refuse an Affiliate Team Lead.
+`pnpm verify:ads-manager-ui` is the browser half. To create an account:
+`pnpm staff:ads-manager <email> <password> [name]`.
 
 **Adding another role of this kind**, in order: the enum value in its OWN
 migration (Postgres will not let a new label be USED in the transaction that
@@ -2281,7 +2325,7 @@ then names every exhaustive role map needing an entry.
 grants and after any `app_users.custom_perms` override, so a mistaken grant
 in Access Control cannot open a CSV of creator earnings.
 
-**These three do not inherit from `app_users`.** Asad's eight do, which is the
+**The read-only roles do not inherit from `app_users`.** Staff do (Asad's eight, and Ads Manager), which is the
 point of that lookup; for these an inherited `role: 'admin'` would silently
 promote a read-only account to full edit on money.
 

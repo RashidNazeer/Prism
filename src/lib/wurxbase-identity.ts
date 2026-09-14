@@ -31,8 +31,13 @@ export type WurxBaseRole = 'superadmin' | 'ipc' | 'admin' | 'apc' | 'viewer' | '
  * `admin`  -> `superadmin`  everything, including God Mode and user management
  * `ops`    -> `admin`       every tab and every day-to-day action, but no God
  *                           Mode, no managing users, no hard delete
+ * `ads_manager` -> `superadmin`
+ *                           Rashid, 2026-09-15: "the same edit access as asad
+ *                           and rashid". Both carry `superadmin` in here — Asad
+ *                           through his own `app_users` row — so that is the
+ *                           answer when an Ads Manager has no row of their own.
  *
- * `affiliate_team_lead`, `operations_lead`, `ads_manager` -> `viewer`
+ * `affiliate_team_lead`, `operations_lead` -> `viewer`
  *                           read every tab, change nothing. Their whole world
  *                           is this route; see COLLABS_ONLY_ROLES.
  *
@@ -50,11 +55,12 @@ const ROLE_MAP: Record<AppRole, WurxBaseRole> = {
   creative_strategist: 'viewer',
   affiliate_team_lead: 'viewer',
   operations_lead: 'viewer',
-  ads_manager: 'viewer',
+  ads_manager: 'superadmin',
 };
 
 /**
- * Permissions these three can never hold, whatever anything else says.
+ * Permissions the read-only collabs roles can never hold, whatever anything
+ * else says. (Written for three; Ads Manager left the list on 2026-09-15.)
  *
  * Their `viewer` role grants `canExportCsv` and `canPrintReport` as standard —
  * that is what Fahad and Lead have. Rashid, asked on 2026-09-02, withheld both

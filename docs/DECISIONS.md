@@ -2173,3 +2173,30 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   expected failure logged as an error is how a real one gets missed. Losing
   their LOGIN line costs no audit value, because they can change nothing for it
   to be evidence about.
+- 2026-09-15: **Ads Manager is STAFF now, and `is_staff()` was widened on
+  purpose.** Rashid: *"ads manager will have the same edit access as asad and
+  rashid has which means they can edit anything"*. Offered the choice between
+  making Subhan `ops` (the role stays read-only) and making the role itself
+  full-edit, he chose the role. The 2026-09-02 rule "never widen `is_staff()`"
+  was written to stop somebody who only READS from getting the product. It
+  was never meant to stop the owner deciding who is staff, so it now reads
+  "never widen it to let somebody SEE a screen". Affiliate Team Lead and
+  Operations Lead are unchanged.
+- 2026-09-15: **"Same as Asad" means `ops` reach plus Paid Collabs
+  `superadmin`, and nothing admin-only.** Everything that admits `ops` now
+  admits `ads_manager`. Nothing gated `jwt_role() = 'admin'` does: editing
+  other people's profiles, TikTok health, connect and sync. Asad does not have
+  those. Paid Collabs maps the role to `superadmin` because Asad carries it
+  there (through his `app_users` row) and so does Rashid. The two
+  `isAsadActor()` deletes were NOT widened. They check a username, Rashid does
+  not get them either, and reopening a destructive path was not what was asked.
+- 2026-09-15: **The two old Ads Manager test accounts were deleted**
+  (`adsmanager@`, and a leftover `probe-ads_manager-…` from the 2026-09-02
+  probe), so Subhan is the only Ads Manager, as Rashid said. The probe left
+  that account behind because its cleanup swallowed the delete error. The new
+  probe reports a leftover account as a FAILURE.
+- 2026-09-15: **`review_application` refuses every team account, not just
+  ops/admin/strategist.** Widening the reviewer list was the moment to notice
+  that the protected-target list had never named the Paid Collabs roles.
+  Approving a stray application from one of those logins would have silently
+  made that colleague a creator.

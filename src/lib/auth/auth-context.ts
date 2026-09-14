@@ -8,13 +8,12 @@ export const ROLES = [
   'ops',
   'admin',
   /*
-   * The three READ-ONLY Paid Collabs roles, added 2026-09-02.
+   * The READ-ONLY Paid Collabs roles, added 2026-09-02.
    *
-   * Affiliate Team Lead, Operations Lead and Ads Manager see Paid Collabs and
-   * nothing else, and cannot change anything inside it. They are deliberately
-   * NOT `ops`: `is_staff()` in the database is `jwt_role() in ('ops','admin')`
-   * and it guards seventy policies across creators, offers, contests, brands
-   * and money. Giving one of these people `ops` to "let them see the collabs
+   * Affiliate Team Lead and Operations Lead see Paid Collabs and nothing
+   * else, and cannot change anything inside it. They are deliberately NOT
+   * staff: `is_staff()` guards seventy policies across creators, offers,
+   * contests, brands and money, and widening it to "let them see the collabs
    * screen" would hand them the entire product.
    *
    * What they can reach is one predicate wide: `public.is_collabs_viewer()`,
@@ -23,22 +22,41 @@ export const ROLES = [
    */
   'affiliate_team_lead',
   'operations_lead',
+  /* Ads Manager was the third read-only role until 2026-09-15, when Rashid
+     made it full staff. See STAFF_ROLES. */
   'ads_manager',
 ] as const;
 export type AppRole = (typeof ROLES)[number];
 
 /**
- * The roles whose whole world is Paid Collabs.
+ * The roles that ARE staff: the whole admin app, and every write `is_staff()`
+ * allows.
+ *
+ * Ads Manager joined Ops and Admin on 2026-09-15. Rashid: *"ads manager will
+ * have the same edit access as asad and rashid has which means they can edit
+ * anything"* — and asked whether that meant one person or the role, the role.
+ *
+ * This list MIRRORS `public.is_staff()` in the database and the staff checks
+ * in the Edge Functions. It decides which screens render; the database decides
+ * what is allowed. If the two ever disagree somebody gets a screen whose every
+ * query comes back empty, or a button that answers "Not allowed".
+ */
+export const STAFF_ROLES = ['ops', 'admin', 'ads_manager'] as const satisfies readonly AppRole[];
+
+export const isStaffRole = (r: AppRole | null | undefined): boolean =>
+  Boolean(r) && (STAFF_ROLES as readonly string[]).includes(r as string);
+
+/**
+ * The roles whose whole world is Paid Collabs, read only.
  *
  * One list, imported by the router, the sidebar and the Paid Collabs identity
- * hook, so a fourth role of this kind is added in exactly one place. Three
+ * hook, so another role of this kind is added in exactly one place. Three
  * copies of this array is how one of them ends up out of step and somebody
  * either loses access or gains it.
  */
 export const COLLABS_ONLY_ROLES = [
   'affiliate_team_lead',
   'operations_lead',
-  'ads_manager',
 ] as const satisfies readonly AppRole[];
 
 export const isCollabsOnlyRole = (r: AppRole | null | undefined): boolean =>
@@ -123,11 +141,12 @@ export const HOME_FOR_ROLE: Record<AppRole, string> = {
   creative_strategist: '/studio',
   ops: '/admin',
   admin: '/admin',
+  /* Staff since 2026-09-15, so home is the dashboard like Ops. */
+  ads_manager: '/admin',
   /* Straight into Paid Collabs. `/admin` would bounce them: it is the
      dashboard, and they cannot read anything it is made of. */
   affiliate_team_lead: '/admin/collabs/brands',
   operations_lead: '/admin/collabs/brands',
-  ads_manager: '/admin/collabs/brands',
 };
 
 const isRole = (v: unknown): v is AppRole =>

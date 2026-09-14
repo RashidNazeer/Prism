@@ -202,8 +202,8 @@ export function PaidCollabs() {
     /*
      * The read-only roles cannot write here, so do not ask.
      *
-     * Affiliate Team Lead, Operations Lead and Ads Manager have SELECT on the
-     * wurxbase schema and nothing more, by design. This insert was refused for
+     * Affiliate Team Lead and Operations Lead have SELECT on the wurxbase
+     * schema and nothing more, by design. (Ads Manager is staff, and logs in.) This insert was refused for
      * them on every visit — correctly — and printed a 403 in the console each
      * time. An expected failure logged as an error is how a real one gets
      * missed, and it was the last thing standing between this screen and a

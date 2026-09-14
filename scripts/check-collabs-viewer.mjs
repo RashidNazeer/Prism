@@ -26,7 +26,8 @@ const STAFF_PW = process.env.COLLAB_STAFF_PASSWORD || PW;
 const WHO = [
   ['atl@wurxmedia.com', 'Affiliate Team Lead'],
   ['opslead@wurxmedia.com', 'Operations Lead'],
-  ['adsmanager@wurxmedia.com', 'Ads Manager'],
+  /* Ads Manager left this list on 2026-09-15: full staff now, see
+     check-ads-manager.mjs. */
 ];
 /* Screens they must never reach. Every one of them reads money. */
 const FORBIDDEN = ['/admin', '/admin/applications', '/admin/offers', '/admin/contests',
@@ -111,6 +112,12 @@ try {
          no editable cell, because canEditAngles and canEditAdSpend are both
          withheld from viewer. Asserted below rather than trusted. */
       /^(reporting|creative angle testing)$/,
+      /* The creators tab's tier chips ("L2" + its count → "l226", and
+         "Unmatched34") and the deals strip ("2×21": two deals, 21 people),
+         which became FILTERS on 2026-09-10 in 5814e80. Each only sets a
+         filter in local state. This check was not run again until
+         2026-09-15, so that was the first time it saw them. */
+      /^l[0-5]\d+$/, /^unmatched\d+$/, /^\d+×\d+$/,
     ];
     const TABS = ['brands', 'creators', 'performance', 'leaderboard', 'discovery', 'reporting'];
     for (const tab of TABS) {

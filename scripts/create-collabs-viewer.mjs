@@ -4,7 +4,10 @@
  *
  *   SUPABASE_SERVICE_KEY=... node scripts/create-collabs-viewer.mjs <email> <role> [password]
  *
- * Roles: affiliate_team_lead | operations_lead | ads_manager
+ * Roles: affiliate_team_lead | operations_lead
+ *
+ * NOT ads_manager, since 2026-09-15: that role is full staff now. Use
+ * scripts/create-ads-manager.mjs for it.
  *
  * WHAT THESE ACCOUNTS CAN DO, so nobody has to guess later: read every Paid
  * Collabs tab, change nothing anywhere, and see no other screen in the product.
@@ -18,7 +21,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 
-const ROLES = ['affiliate_team_lead', 'operations_lead', 'ads_manager'];
+const ROLES = ['affiliate_team_lead', 'operations_lead'];
 const [email, role, pwArg] = process.argv.slice(2);
 if (!email || !ROLES.includes(role)) {
   console.error(`usage: create-collabs-viewer.mjs <email> <${ROLES.join('|')}> [password]`);

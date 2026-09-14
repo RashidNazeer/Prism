@@ -12,6 +12,37 @@ pending?" from `docs/PARKED.md`.
 
 ## WHERE EVERYTHING STANDS
 
+### Ads Manager is full staff (2026-09-15)
+
+Rashid: *"ads manager will have the same edit access as asad and rashid has
+which means they can edit anything"*, for the ROLE, not one person.
+**Subhan (`subhan@wurxmedia.com`) is the only Ads Manager, on dev.** The two
+old test Ads Manager accounts were deleted first, as agreed.
+
+- Migration `20260915120000_ads_manager_is_staff.sql` (applied to dev):
+  `is_staff()`, `assert_active_staff`, `review_application`,
+  `refresh_content_preview` and `is_approved_creator` admit `ads_manager`
+  wherever they admitted `ops`. Nothing admin-only changed.
+- Seven Edge Functions admit it too, deployed to dev.
+- App: `STAFF_ROLES` in auth-context drives the router, sidebar and Paid
+  Collabs identity. Home is `/admin`. Inside Paid Collabs it is `superadmin`,
+  as Asad is.
+- Not widened: the two Asad-only deletes (row trash icon, matrix delete),
+  which check his username. Rashid does not have them either.
+- **Production is untouched by this change.**
+
+Proven: `verify:ads-manager` 19/19 (database and Edge Function, with an
+Affiliate Team Lead as the negative control) · `verify:ads-manager-ui` 18/18
+as Subhan in a real browser (Payment Sent, editor Delete, selection, export,
+every admin screen, zero console errors) · `verify:collabs-viewer-rls` 25/25 ·
+`verify:collabs-viewer` 79/79, including Asad's controls ·
+`verify:role-gates` 12/12, which now fails if "staff" disagrees between the
+app, `is_staff()` and any Edge Function · typecheck, lint and build clean.
+
+`verify:collabs-viewer` first failed 2 checks. That was a stale allowlist,
+not this change: it predated the tier and deals filter chips from
+2026-09-10. They are allowlisted now as filters.
+
 **`dev` is at `d8c9f69`, pushed and deployed to wurxmediahubdev.vercel.app,**
 verified against the live site rather than the deploy status.
 
