@@ -2253,3 +2253,19 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   units never tried once waited. The order is now never-tried first, then
   retries by oldest due. That means neither new work nor any one month's
   retries can hold the queue.
+- 2026-09-16: **The deals count sits on the corner of the creator's face, not
+  beside the tier tag.** Rashid asked for "another tag" next to L1/L2 showing
+  how many deals we have had with that creator. Beside the tag was built
+  first and measured: it took 31px from every name, and at 1600px the brand
+  page's names fell from 48px to 17px, one letter and dots. On the face's
+  corner it costs the name nothing. If he wants it beside the tag anyway, the
+  Creator column has to get wider first.
+- 2026-09-16: **The deals count is deals EVER, not this month's.** The brand
+  page and the Creators tab are month-scoped. A count that changed with the
+  month picker would tell you nothing about the relationship, and the same
+  person would show different numbers on two screens.
+- 2026-09-16: **Tier colours follow Euka's hues** (L1 blue, L2 violet, L3
+  teal, L4 green, L5 lime, L6 amber, L7 orange), because the team reads tiers
+  in Euka all day. They are not the status colours, so a high tier never reads
+  as a warning. Rejected: a gold scale for higher tiers, which collides with
+  the accent and with warning in light mode.

@@ -1816,3 +1816,92 @@
     width: 100%;
   }
 }
+
+/* ------------------------------------------------------------ tier palette --- */
+/*
+ * L0 TO L7, ONE PALETTE, AND IT IS EUKA'S. Rashid, 2026-09-16, pointing at
+ * Euka's own tier tags: "the color scheme of l1, l2 ..l7 tags is not good".
+ * The team reads these tiers in Euka all day, so each tier keeps Euka's hue:
+ * blue, violet, teal, green, lime, amber, orange, with L0 neutral.
+ *
+ * The inks are tokens (`--wx-tier-0`…`7`, both themes). `pnpm check:contrast`
+ * proves each one against ITS OWN chip, which is the 12% tint below composited
+ * on a card, because a token that passes on the page can still fail on a tint.
+ *
+ * Their v295 block defined a palette and then never used it: every badge and
+ * chip rule under it wrote its own colours, which is how L3 and L4 ended up
+ * the same brown. Every tier surface now reads `--t`, set once per tier here.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l0 { --t: var(--wx-tier-0); }
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l1 { --t: var(--wx-tier-1); }
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l2 { --t: var(--wx-tier-2); }
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l3 { --t: var(--wx-tier-3); }
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l4 { --t: var(--wx-tier-4); }
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l5 { --t: var(--wx-tier-5); }
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l6 { --t: var(--wx-tier-6); }
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l7 { --t: var(--wx-tier-7); }
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip):is(.l0, .l1, .l2, .l3, .l4, .l5, .l6, .l7) {
+  color: var(--t);
+  background: color-mix(in srgb, var(--t) 12%, var(--wx-surface-1));
+  border: 1px solid color-mix(in srgb, var(--t) 40%, var(--wx-surface-1));
+}
+/* Unique Creators: the selected tier button goes solid in its tier's ink. */
+.wurxbase-root.wurxbase-root.wurxbase-root {
+  --tier-l0-fg: var(--wx-tier-0);
+  --tier-l1-fg: var(--wx-tier-1);
+  --tier-l2-fg: var(--wx-tier-2);
+  --tier-l3-fg: var(--wx-tier-3);
+  --tier-l4-fg: var(--wx-tier-4);
+  --tier-l5-fg: var(--wx-tier-5);
+  --tier-l6-fg: var(--wx-tier-6);
+  --tier-l7-fg: var(--wx-tier-7);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-uc-segbtn.on:is(.t-l0, .t-l1, .t-l2, .t-l3, .t-l4, .t-l5, .t-l6, .t-l7) {
+  color: var(--wx-text-inverse);
+}
+
+/* ------------------------------------------------------------- deals badge --- */
+/*
+ * How many deals we have had with this person, EVER: every brand, every month.
+ * Rashid, 2026-09-16: "a small circular avatar showing no of deals with that
+ * creator". Neutral on purpose. The tier tag carries the colour, and a second
+ * hue would read as a second tier.
+ *
+ * IT SITS ON THE FACE'S CORNER, NOT BESIDE THE TIER TAG. Beside the tag it took
+ * 31px from every name, and at 1600px the brand page's names fell from 48px to
+ * 17px, one letter and dots. On the corner it costs the name nothing. The ring
+ * is the card colour, the same ring the face itself wears.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-facewrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-dealsbadge {
+  position: absolute;
+  right: -6px;
+  bottom: -5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.1875rem;
+  border-radius: 999px;
+  background: var(--wx-surface-2);
+  border: 1px solid var(--wx-border-strong);
+  box-shadow: 0 0 0 2px var(--wx-surface-1);
+  color: var(--wx-text);
+  font-size: 0.5625rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  cursor: default;
+}
+/* The Creators tab's face is 26px, not 30. At the same offset the bubble sat
+   on the initial, so it drops lower there, below the letter. */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-cv-row .pc-dealsbadge {
+  right: -7px;
+  bottom: -8px;
+}

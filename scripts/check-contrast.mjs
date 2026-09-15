@@ -171,6 +171,37 @@ for (const [theme, tokens] of [
 }
 if (failures === 0) console.log(`  OK    all pairs pass in both themes`);
 
+// 3. Tier chips. Each L0-L7 ink against ITS OWN chip: a 12% tint of the ink
+// composited on a card, exactly as the chip is painted. A token pair check
+// cannot see a tint, and ink on a tint is the colour bug this product has had
+// four times (see the ink-on-tinted-surfaces note). Added 2026-09-16 with the
+// Euka tier palette.
+console.log('\n[3/3] Tier labels on their own chips');
+const before = failures;
+const mixHex = (a, b, t) =>
+  '#' + hex(a).map((v, i) => Math.round((v * t + hex(b)[i] * (1 - t)) * 255).toString(16).padStart(2, '0')).join('');
+for (const [theme, tokens] of [
+  ['dark ', dark],
+  ['light', light],
+]) {
+  const card = tokens['--wx-surface-1'];
+  for (let n = 0; n <= 7; n++) {
+    const ink = tokens[`--wx-tier-${n}`];
+    if (!ink || !ink.startsWith('#')) {
+      fail(`${theme}  tier L${n}: --wx-tier-${n} missing or not a hex colour`);
+      continue;
+    }
+    const chip = mixHex(ink, card, 0.12);
+    const r = ratio(ink, chip);
+    if (r < 4.5) fail(`${theme}  tier L${n} label on its chip: ${r.toFixed(2)}:1 (needs 4.5:1)  ink ${ink} on ${chip}`);
+    // The selected tier button in Unique Creators is the ink as a SOLID fill.
+    const inv = tokens['--wx-text-inverse'];
+    const s = ratio(inv, ink);
+    if (s < 4.5) fail(`${theme}  selected tier L${n} button label: ${s.toFixed(2)}:1 (needs 4.5:1)  ${inv} on ${ink}`);
+  }
+}
+if (failures === before) console.log('  OK    every tier label clears 4.5:1 on its own chip, both themes');
+
 console.log('\n' + '='.repeat(70));
 if (failures > 0) {
   console.error(`${failures} problem(s) found. Fix src/styles/tokens.css.\n`);

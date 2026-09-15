@@ -349,6 +349,34 @@ const HIRED_BY_TAGS = {
   emily:  { i: 'E', fg: '#C2185B', bg: '#FCE7F0' },
   khushi: { i: 'K', fg: '#0E7A3A', bg: '#E4F5EB' },
 };
+/* WURX-ADDED · HOW MANY DEALS WE HAVE HAD WITH A PERSON, EVER.
+   Rashid, 2026-09-16: "a small circular avatar showing no of deals with that
+   creator". It sits on the corner of the creator's face (.pc-facewrap), not
+   beside the tier tag: there it took 31px from every name, and at 1600px the
+   brand page's names fell to one letter. Counted over EVERY row, every brand and every
+   month, so the number is the same wherever the person appears. Keyed on the
+   trimmed, lower-cased name, the same key the Creators tab's deals filter and
+   tier count already use, so the three can never disagree about who is one
+   person. */
+function wxDealsByPerson(rows) {
+  const m = new Map();
+  (rows || []).forEach((c) => {
+    const k = String((c && c.name) || '').trim().toLowerCase();
+    if (k) m.set(k, (m.get(k) || 0) + 1);
+  });
+  return m;
+}
+const wxPersonKey = (c) => String((c && c.name) || '').trim().toLowerCase();
+function DealsBadge({ n }) {
+  if (!n) return null;
+  return (
+    <span className="pc-dealsbadge" title={`${n} deal${n === 1 ? '' : 's'} with this creator, across every brand and month`}>
+      {n}
+    </span>
+  );
+}
+/* WURX-END */
+
 function HiredByTag({ who }) {
   const name = String(who || '').trim();
   if (!name) return null;
@@ -1263,6 +1291,7 @@ export default function WurxUI({
         {tab === 'creators' && (
           <CreatorsTab
             creators={filtered}
+            allCreators={creators}
             allTime={allTime}
             month={month}
             eukaL30={eukaL30}
@@ -1547,6 +1576,7 @@ function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allT
       currentUser={currentUser}
       creators={creators.filter(c => (c.brand || '').trim() === drillBrand.brand)}
       brandCreators={(allCreators || creators).filter(c => (c.brand || '').trim() === drillBrand.brand)}
+      allCreators={allCreators || creators}
       budgets={budgets}
       refetchBudgets={refetchBudgets}
       month={month}
@@ -2070,7 +2100,7 @@ function BrandFace({ brand }) {
   return <span className="pc-ava" style={{ background: gradFor(brand) }}>{initial(brand)}</span>;
 }
 
-function BrandDrilldown({ brand, creators, brandCreators, budgets, refetchBudgets, month, allTime, eukaL30, currentUser, onBack, onSelectCreator, canEdit, canAdd, canDeleteBrand, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator }) {
+function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, refetchBudgets, month, allTime, eukaL30, currentUser, onBack, onSelectCreator, canEdit, canAdd, canDeleteBrand, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator }) {
   /* WURX-ADDED · tell our ad figures which month is on screen.
 
      THIS IS THE WHOLE REASON THE COLUMNS MATCH THE ROW THEY SIT IN. Everything
@@ -2239,6 +2269,9 @@ function BrandDrilldown({ brand, creators, brandCreators, budgets, refetchBudget
     catch (e) { alert('Could not update: ' + e.message); }
   };
 
+  /* WURX-ADDED · deals per person across EVERY brand and month (wxDealsByPerson). */
+  const wxDealsEver = useMemo(() => wxDealsByPerson(allCreators || brandCreators || creators), [allCreators, brandCreators, creators]);
+  /* WURX-END */
   const sortedCreators = useMemo(() => [...creators].sort((a, b) => (a.hiring_date || '').localeCompare(b.hiring_date || '')), [creators]);
   const groups = useMemo(() => groupByStatus(sortedCreators), [sortedCreators]);
 
@@ -2482,6 +2515,7 @@ function BrandDrilldown({ brand, creators, brandCreators, budgets, refetchBudget
                       c={c}
                       idx={offset + i + 1}
                       euka={eukaL30}
+                      deals={wxDealsEver.get(wxPersonKey(c)) || 0}
                       open={expandedId === c.id}
                       onSelect={() => setExpandedId(id => (id === c.id ? null : c.id))}
                       onSetStatus={setStatus}
@@ -3102,7 +3136,7 @@ function markContractDl(id) {
   try { localStorage.setItem(CONTRACT_DL_KEY, JSON.stringify(m)); } catch { /* storage full/blocked */ }
 }
 
-function DrilldownCreatorRow({ c, idx, euka, open, onSelect, onSetStatus, onEditContract, onView, onEditCreator, onDelete }) {
+function DrilldownCreatorRow({ c, idx, euka, deals, open, onSelect, onSetStatus, onEditContract, onView, onEditCreator, onDelete }) {
   const amount = parseDealAmount(c.deal);
   const videoCount = parseDealVideos(c.deal);
   const filled = deliveredVideoCount(c);
@@ -3158,7 +3192,7 @@ function DrilldownCreatorRow({ c, idx, euka, open, onSelect, onSetStatus, onEdit
       </div>
       <div className="pc-cell" data-label="Creator">
         <span className="pc-creatorcell">
-          <CreatorFace handle={handle1 || handle2} name={c.name} />
+          {/* WURX-ADDED */}<span className="pc-facewrap"><CreatorFace handle={handle1 || handle2} name={c.name} /><DealsBadge n={deals} /></span>{/* WURX-END */}
           <span className="pc-creatorcell-txt">
             <span className="pc-cname">{c.name || '-'}</span>
             {handle1
@@ -5125,7 +5159,7 @@ function useGod() {
   return godGet();
 }
 
-function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, onUpdateCreator, onEditCreator }) {
+function CreatorsTab({ creators, allCreators, allTime, month, eukaL30, onSetCreatorStatus, onUpdateCreator, onEditCreator }) {
   const [search, setSearch] = useState('');
   const [sel, setSel] = useState(() => new Set());
   const [videosCreatorId, setVideosCreatorId] = useState(null);
@@ -5197,6 +5231,10 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
     return m;
   }, [creators, eukaL30]);
 
+  /* WURX-ADDED · deals EVER for the row badge. Not dealsByPerson below: that one
+     counts the rows in this month's view, because it drives the deals filter. */
+  const wxDealsEver = useMemo(() => wxDealsByPerson(allCreators || creators), [allCreators, creators]);
+  /* WURX-END */
   const dealsByPerson = useMemo(() => {
     const m = new Map();
     creators.forEach((c) => {
@@ -5727,6 +5765,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
                           idx={offset + i + 1}
                           selected={sel.has(c.id)}
                           euka={eukaL30}
+                          deals={wxDealsEver.get(wxPersonKey(c)) || 0}
                           onToggle={() => toggle(c.id)}
                           onOpen={() => setVideosCreatorId(c.id)}
                           onSetStatus={setStatus}
@@ -7297,7 +7336,7 @@ function KpiPill({ label, value, onClick, title }) {
 const cellCenter = { display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0 };
 const cellEllipsis = { maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
 
-function CreatorsTabRow({ c, idx, selected, euka, onToggle, onOpen, onSetStatus }) {
+function CreatorsTabRow({ c, idx, selected, euka, deals, onToggle, onOpen, onSetStatus }) {
   const god = useGod();
   const amount = parseDealAmount(c.deal);
   const videoCount = parseDealVideos(c.deal);
@@ -7316,7 +7355,7 @@ function CreatorsTabRow({ c, idx, selected, euka, onToggle, onOpen, onSetStatus 
       </div>
       <div className="pc-cell" data-label="#" style={{ ...cellCenter, ...colStyle("#", god) }}><span className="pc-idx">#{idx}</span></div>
       <div className="pc-cell" data-label="Name" style={{ ...colStyle("Name", god),  display: 'flex', alignItems: 'center', gap: 8 }}>
-        <CreatorFace handle={handle || handle2} name={c.name} size={26} />
+        {/* WURX-ADDED */}<span className="pc-facewrap"><CreatorFace handle={handle || handle2} name={c.name} size={26} /><DealsBadge n={deals} /></span>{/* WURX-END */}
         <span className="pc-cname" style={{ ...cellEllipsis, flex: 1, minWidth: 0 }}>{c.name || '-'}</span>
         {tier && <span className={`pc-tierbadge ${String(tier).toLowerCase()}`} title={`EUKA creator tier ${tier}`} style={{ flexShrink: 0 }}>{tier}</span>}
       </div>

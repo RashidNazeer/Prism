@@ -2237,6 +2237,49 @@ no date and the filter would hide it the moment it appeared.
 **Guarded by `pnpm verify:video-days`.** Every expected number comes from the
 database first, and the check proves the modal wrote nothing.
 
+## Deals badge and the L0–L7 tier palette (2026-09-16)
+
+Rashid: beside the L tier tag, "a small circular avatar showing no of deals
+with that creator", and "the color scheme of l1, l2 ..l7 tags is not good",
+pointing at Euka's own tier tags.
+
+**The badge counts deals EVER: every brand, every month.** A deal is one row
+in `wurxbase.creators`. People are matched on the trimmed, lower-cased name,
+the same key the Creators tab's deals filter already uses, so a person shows
+the same number on every screen. It sits on the bottom-right corner of the
+creator's round face (`.pc-facewrap`) on the brand page
+(`DrilldownCreatorRow`) and the Creators tab (`CreatorsTabRow`). It shows
+even when the person has no tier yet, and never shows a zero.
+- **Beside the tier tag was built first and rejected.** It took 31px from
+  every name. At 1600px the brand page's names fell from 48px to 17px ("B.."),
+  and at 1440px they were already squeezed before it. On the face's corner it
+  costs the name nothing, and the check measures that.
+- **The Creators tab's own list is month-filtered**, so the badge must not
+  count it. `CreatorsTab` gets `allCreators` for the badge, and keeps
+  `dealsByPerson` (this view's rows) for its deals filter. Those are two
+  different questions, and merging them would break one of them.
+- The badge is neutral (surface, strong border, body ink) on purpose. The tier
+  tag beside it carries the colour, and a second hue would read as a second
+  tier.
+
+**One tier palette, and it is Euka's hues:** L1 blue, L2 violet, L3 teal, L4
+green, L5 lime, L6 amber, L7 orange, L0 neutral. The team reads tiers in Euka
+all day. The inks are tokens (`--wx-tier-0`…`7`, both themes). Every tag and
+chip is a 12% tint of its ink on a card with a 40% border
+(`wurxbase-overrides.css`, "tier palette").
+- **Their v295 block defined a tier palette and then never used it.** Every
+  badge and chip rule under it set its own colours, which is how L3 and L4
+  were the same brown, and why L5–L7 read as warnings. All tier surfaces now
+  read one `--t`. The selected tier button in Unique Creators is the ink as a
+  solid fill, with `--wx-text-inverse` on it.
+- `check:contrast` has a third section: each tier's ink against ITS OWN tint,
+  and the inverse label against the solid ink, in both themes. A pair check
+  on tokens cannot see a tint ([[ink-on-tinted-surfaces]] in memory).
+
+**Guarded by `pnpm verify:tier-deals`.** Every badge on both screens is
+compared with a count made from the database, and in both themes every tier
+tag must wear its own tier's token, eight distinct inks.
+
 ## Euka: as many accounts as we hold keys for (2026-09-09)
 
 One Euka key can cover many brands — ours covers **ten** — but a brand can

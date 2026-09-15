@@ -29,6 +29,22 @@ Answer "what's pending?" from `docs/PARKED.md`.
 
 ## WHERE EVERYTHING STANDS
 
+### Deals badge and the new L0–L7 tier colours (2026-09-16)
+
+Rashid asked for two things. First, a small circle beside each creator showing
+how many deals we have had with them. Second, a better colour scheme for the
+L1–L7 tags, like Euka's.
+- **Deals badge:** a count of deals EVER, across every brand and month, in a
+  small circle on the corner of the creator's face. It is on the brand page
+  and the Creators tab. Beside the tier tag was built first, and it cut names
+  to one letter at 1600px (DECISIONS, 2026-09-16).
+- **Tier colours:** Euka's hues, as tokens `--wx-tier-0`…`7` in both themes,
+  and one rule set that every tier tag and chip reads.
+- **Proven:** `verify:tier-deals` 17/17. Badges match the database on both
+  screens (34 and 166 rows). The badge costs names no width. Every tier tag
+  wears its own ink in dark and light. No sideways scroll at 390px, and zero
+  console errors. `check:contrast` has a new tier section, and it passes.
+
 ### Paid Collabs ad spend, ROI and spark codes from EUKA (2026-09-15, backfilling)
 
 Rashid: *"let's move with euka for now"*. What was built:

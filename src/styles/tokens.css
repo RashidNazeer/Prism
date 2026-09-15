@@ -98,6 +98,20 @@
   --wx-info: #5cb8e8;
   --wx-info-soft: rgba(92, 184, 232, 0.14);
 
+  /* EUKA creator tiers, L0 to L7. The hue per tier is Euka's own (blue, violet,
+     teal, green, lime, amber, orange), because the team reads these tiers in
+     Euka all day. Each ink is proven against ITS OWN chip, a 12% tint on a
+     card, by check-contrast: a colour that passes on the page can fail on a
+     tint. Rashid, 2026-09-16. */
+  --wx-tier-0: #9d9387;
+  --wx-tier-1: #7fb0ff;
+  --wx-tier-2: #b69cff;
+  --wx-tier-3: #4fd1dc;
+  --wx-tier-4: #6fd26a;
+  --wx-tier-5: #c9dc5e;
+  --wx-tier-6: #f2c14e;
+  --wx-tier-7: #ff9a5a;
+
   /* The performance sheet.
      A grid of a hundred creators by ten months is read by scanning, so its
      structure has to come from rules and one very quiet wash, not from filling
@@ -216,6 +230,20 @@
   --wx-warning-soft: rgba(138, 100, 16, 0.1);
   --wx-info: #186d92;
   --wx-info-soft: rgba(24, 109, 146, 0.1);
+
+  /* EUKA creator tiers, L0 to L7. The hue per tier is Euka's own (blue, violet,
+     teal, green, lime, amber, orange), because the team reads these tiers in
+     Euka all day. Each ink is proven against ITS OWN chip, a 12% tint on a
+     card, by check-contrast: a colour that passes on the page can fail on a
+     tint. Rashid, 2026-09-16. */
+  --wx-tier-0: #6d645b;
+  --wx-tier-1: #1f5fbf;
+  --wx-tier-2: #6b3fc0;
+  --wx-tier-3: #0c6b76;
+  --wx-tier-4: #276d1d;
+  --wx-tier-5: #5a6b0c;
+  --wx-tier-6: #845a00;
+  --wx-tier-7: #a8420c;
 
   /* The performance sheet · see the dark block for what these are for. */
   --wx-sheet-band: rgba(138, 95, 31, 0.045);
