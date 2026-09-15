@@ -2246,3 +2246,10 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   after coming due, and Rashid saw August "showing nothing". Taking jobs in
   the order they became due gives every month a turn, and keeps a retry close
   enough to its timeout to catch Euka's warm answer.
+- 2026-09-15: **...but never-fetched units go before any retry.** Pure
+  oldest-due had the opposite failure within the hour: nine campaigns that
+  time out on every attempt came back every 4 minutes and took all four
+  workers in every run (17:45 to 18:25, "ok 0, failed 4" each time), while
+  units never tried once waited. The order is now never-tried first, then
+  retries by oldest due. That means neither new work nor any one month's
+  retries can hold the queue.

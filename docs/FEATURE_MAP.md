@@ -2164,6 +2164,25 @@ before retrying, doubling each time up to 12 hours.
   timeout retries came back every 4 minutes and always outranked August, so
   August showed nothing. Waiting also cost August the warm answer Euka keeps
   after a timeout. Fixed in `20260915170000_euka_claim_oldest_due_first.sql`.
+  **But never-fetched units go before any retry**
+  (`20260915180000_euka_claim_pending_first.sql`). With pure oldest-due, nine
+  Cutler Nutrition campaigns that time out on every attempt took all four
+  workers in every scheduled run for 40 minutes, and "All Products" waited
+  behind them.
+- **A worker claims one unit at the moment it is about to fetch it.** Claiming
+  in batches left whatever a run could not reach leased for 10 more minutes,
+  every run. Dr Tobias's August "All Products" was claimed for over an hour and
+  never fetched.
+- **After 3 timeouts, a campaign-month is read a week at a time and summed.**
+  Euka's own 504 says "Narrow the date range", and some large Cutler Nutrition
+  campaigns failed every whole-month attempt. Splitting and summing is exact.
+  If any week fails, nothing is stored for that month. Timeout retries stay 4
+  minutes apart for up to 20 tries, because each try warms more weeks at Euka.
+- **Discovery is bounded.** The three campaign lists per ad account are fetched
+  in parallel with a 25s cap, and a run that discovers does no other work, so a
+  slow store cannot push a run past the gateway's 150s limit. Scheduled runs
+  measured 56 to 98s, and none timed out (read from `net._http_response`
+  through the management API's `database/query`).
 - **A page opened before a month synced keeps its dashes until reloaded.** The
   provider remembers "no figures" per video for that page visit, so a month
   that fills in later needs a refresh to appear.

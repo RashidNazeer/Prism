@@ -108,6 +108,19 @@ function lastDays(n: number): string[] {
 const daysAgo = (day: string) =>
   (Date.parse(`${todayUtc()}T00:00:00Z`) - Date.parse(`${day}T00:00:00Z`)) / 86_400_000;
 
+/* [start, end] in seven-day pieces, inclusive, never past `end`. */
+function weekWindows(start: string, end: string): [string, string][] {
+  const out: [string, string][] = [];
+  let s = Date.parse(`${start}T00:00:00Z`);
+  const e = Date.parse(`${end}T00:00:00Z`);
+  while (s <= e) {
+    const stop = Math.min(s + 6 * 86_400_000, e);
+    out.push([iso(new Date(s)), iso(new Date(stop))]);
+    s = stop + 86_400_000;
+  }
+  return out;
+}
+
 async function getJson(url: string, auth: EukaAuth, ms: number): Promise<{ status: number; body: any }> {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), ms);
@@ -190,10 +203,15 @@ async function discover(db: Db, index: StoreIndex) {
        * THREE LISTS, because the default holds only live campaigns and a paused
        * or deleted one can still have spent inside a month being read.
        */
-      for (const status of [null, 'STATUS_DISABLE', 'STATUS_DELETE']) {
+      /* The three lists in PARALLEL, each capped at 25s. Asked one after another
+         at up to 50s each, a slow store kept a run past the gateway's 150s
+         limit, and the cut-off run left the units it had claimed leased. */
+      const lists = await Promise.all([null, 'STATUS_DISABLE', 'STATUS_DELETE'].map(async (status) => {
         const q = new URLSearchParams({ storeId: s.id, advertiserId });
         if (status) q.set('primaryStatus', status);
-        const r = await getJson(`${EUKA_V1}/gmv-max/campaigns?${q}`, auth, 50_000);
+        return { status, r: await getJson(`${EUKA_V1}/gmv-max/campaigns?${q}`, auth, 25_000) };
+      }));
+      for (const { status, r } of lists) {
         if (r.status !== 200) {
           problems.push(`${s.name} campaigns ${status ?? 'live'}: ${errText(r)}`);
           continue;
@@ -263,7 +281,9 @@ async function processUnit(db: Db, index: StoreIndex, u: any, deadline: number):
      minutes, so they are tried again on the next run or two instead of backing off for hours. */
   const fail = async (message: string, transient = false) => {
     const attempts = Number(u.attempts ?? 0) + 1;
-    const due = transient && attempts <= 4
+    /* Up to 20 tries, four minutes apart. In week mode every try warms more of
+       the month at Euka, and hours of backoff would throw that progress away. */
+    const due = transient && attempts <= 20
       ? new Date(Date.now() + 4 * 60_000).toISOString()
       : retryAfter(attempts);
     await where(db.from('euka_ad_sync_units').update({
@@ -284,35 +304,54 @@ async function processUnit(db: Db, index: StoreIndex, u: any, deadline: number):
   }
   const end = monthEnd(start) < today ? monthEnd(start) : today;
 
-  const q = new URLSearchParams({
-    storeId: u.store_id, advertiserId: u.advertiser_id, campaignId: u.campaign_id,
-    startDate: start, endDate: end,
-  });
-  const url = `${EUKA_V1}/gmv-max/reports/item?${q}`;
-  let r = await getJson(url, auth, CALL_MS);
   /*
-   * THE WARM RETRY. Measured: the first ask for a window 504s at ~45s, and the
-   * identical ask straight after answers in ~6s. Retried only when there is
-   * time for it; otherwise the unit is simply due again soon.
+   * A CAMPAIGN-MONTH THAT KEEPS TIMING OUT IS ASKED FOR A WEEK AT A TIME.
+   *
+   * Euka's 504 says it outright: "Narrow the date range". On 2026-09-15 a few
+   * large Cutler Nutrition campaigns timed out on every attempt, warm or not,
+   * for four months running. Splitting a window and summing was proven exact
+   * the same day (seven single days = one seven-day call, to the cent), so
+   * after three failures the month is read in weeks. If any week fails nothing
+   * is stored and the unit is due again shortly; the weeks that did answer are
+   * then warm at Euka and come back in seconds.
    */
-  /*
-   * WHEN AN IMMEDIATE RETRY IS WORTH MAKING. Measured on dev: a 504 at ~49s, the
-   * identical request straight after answered 200 in 45.7s, and requests made
-   * minutes later answered in 5 to 8 seconds. Euka keeps working after it gives
-   * up on us, and keeps the answer. So retry at once only when a SLOW second
-   * answer still fits in this run; otherwise leave it for a run four minutes on,
-   * when it will be warm. (A 12s window would have cut off that 45.7s success.)
-   */
-  const left = deadline - Date.now();
-  if (r.status >= 500 && left > 50_000) r = await getJson(url, auth, Math.min(CALL_MS, left - 2_000));
-  if (r.status !== 200) return fail(`item report: ${errText(r)}`, r.status >= 500);
-  if (r.body?.truncated) {
-    return fail('item report: Euka marked the rows truncated, so they are not the whole month; nothing was stored');
+  const windows: [string, string][] = Number(u.attempts ?? 0) >= 3 ? weekWindows(start, end) : [[start, end]];
+  const allRows: any[] = [];
+  for (let w = 0; w < windows.length; w++) {
+    const [ws, we] = windows[w]!;
+    const q = new URLSearchParams({
+      storeId: u.store_id, advertiserId: u.advertiser_id, campaignId: u.campaign_id,
+      startDate: ws, endDate: we,
+    });
+    const url = `${EUKA_V1}/gmv-max/reports/item?${q}`;
+    const before = deadline - Date.now();
+    if (w > 0 && before < 15_000) {
+      return fail(`item report: time ran out after ${w} of ${windows.length} weeks; nothing stored, due again shortly`, true);
+    }
+    let r = await getJson(url, auth, Math.min(CALL_MS, Math.max(10_000, before - 2_000)));
+    /*
+     * WHEN AN IMMEDIATE RETRY IS WORTH MAKING. Measured on dev: a 504 at ~49s,
+     * the identical request straight after answered 200 in 45.7s, and requests
+     * made minutes later answered in 5 to 8 seconds. Euka keeps working after it
+     * gives up on us, and keeps the answer. So retry at once only when a SLOW
+     * second answer still fits in this run; otherwise leave it for a run four
+     * minutes on, when it will be warm.
+     */
+    const left = deadline - Date.now();
+    if (r.status >= 500 && left > 50_000) r = await getJson(url, auth, Math.min(CALL_MS, left - 2_000));
+    if (r.status !== 200) {
+      const which = windows.length > 1 ? ` (week ${w + 1} of ${windows.length}, ${ws} to ${we})` : '';
+      return fail(`item report${which}: ${errText(r)}`, r.status >= 500);
+    }
+    if (r.body?.truncated) {
+      return fail('item report: Euka marked the rows truncated, so they are not the whole month; nothing was stored');
+    }
+    if (Array.isArray(r.body?.rows)) allRows.push(...r.body.rows);
   }
 
   /* One video can sit under several products in one campaign: sum it. */
   const byItem = new Map<string, { item_id: string; cost: number; orders: number; gross_revenue: number; currency: string | null }>();
-  for (const row of Array.isArray(r.body?.rows) ? r.body.rows : []) {
+  for (const row of allRows) {
     const id = String(row?.itemId ?? '');
     if (!/^[0-9]{6,32}$/.test(id)) continue;
     const cost = Number(row.cost) || 0;
@@ -419,6 +458,15 @@ async function processSparkDay(
 }
 
 /* ═══ a pool of workers that claim due work until time runs short ════════ */
+/*
+ * EACH WORKER CLAIMS ONE UNIT, AT THE MOMENT IT IS ABOUT TO WORK ON IT.
+ *
+ * The first version claimed two per worker in a batch. A claim is a ten-minute
+ * lease, so whatever a run claimed and did not reach before its time ran out
+ * was pushed ten minutes back, every run. Dr Tobias's August "All Products"
+ * campaign was claimed run after run for over an hour and never once fetched.
+ * Claiming only at the moment of work leaves nothing claimed and untouched.
+ */
 async function pool<T>(
   workers: number,
   deadline: number,
@@ -426,27 +474,9 @@ async function pool<T>(
   run: (item: T) => Promise<boolean>,
 ) {
   const tally = { ok: 0, failed: 0 };
-  const queue: T[] = [];
-  let exhausted = false;
-  let claiming: Promise<void> | null = null;
-
-  const refill = async () => {
-    if (exhausted) return;
-    if (!claiming) {
-      claiming = claim(workers * 2).then((items) => {
-        if (items.length === 0) exhausted = true;
-        else queue.push(...items);
-      }).finally(() => {
-        claiming = null;
-      });
-    }
-    await claiming;
-  };
-
   const worker = async () => {
     while (Date.now() + CALL_MS < deadline) {
-      if (queue.length === 0) await refill();
-      const item = queue.shift();
+      const [item] = await claim(1);
       if (item === undefined) return;
       if (await run(item)) tally.ok += 1;
       else tally.failed += 1;
@@ -523,6 +553,12 @@ Deno.serve(async (req) => {
     const stale = !oldest?.length || (unresolved ?? 0) > 0 ||
       Date.now() - Date.parse(oldest[0].checked_at) > DISCOVER_EVERY_MS;
     const discovered = parsed.data.discover || stale ? await discover(db, index) : null;
+    /* Discovery can take most of a run on its own when a store answers slowly,
+       and a run past 150s is cut off by the gateway mid-unit, leaving its claims
+       leased. So a run that discovered stops here; the next one does the work. */
+    if (discovered) {
+      return json({ ranMs: Date.now() - started, trigger: isCron ? 'schedule' : 'staff', discovered, units: null, sparks: null }, 200, req);
+    }
 
     const brandIds = new Map<string, Promise<string>>();
     const [units, sparks] = await Promise.all([
