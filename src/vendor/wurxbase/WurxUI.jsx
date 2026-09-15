@@ -3334,6 +3334,17 @@ const _cvidFetched = new Set();   // one live refresh per creator per session
 function DrilldownVideosPanel({ c, euka, allTime, siblings, onUpdateCreator, onManage }) {
   /* WURX-ADDED · ad figures for the videos this panel lists. */
   const wxAdsP = wxAdsHook();
+  /* The spark code to show for a video: the one saved on this row, else the
+     one EUKA holds for the same TikTok video (euka_spark_codes, synced daily
+     by euka-ads-sync). Rashid, 2026-09-15: spark codes from Euka too. A code
+     saved on the row always wins; Euka only fills a blank. */
+  const wxCode = (r) => {
+    const own = String((r && r.adCode) || '').trim();
+    if (own) return { code: own, expired: false, fromEuka: false };
+    const vid = wxVideoId(r && r.video);
+    const s = vid ? wxAdsP.spark(vid) : null;
+    return s ? { code: s.code, expired: !!s.expired, fromEuka: true } : null;
+  };
   /* WURX-END */
   const [copiedIdx, setCopiedIdx] = useState(-1);
   const [live, setLive] = useState(false);
@@ -3477,13 +3488,18 @@ function DrilldownVideosPanel({ c, euka, allTime, siblings, onUpdateCreator, onM
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
                   {r.date ? `Posted ${formatHireDate(String(r.date).slice(0, 10))}` : 'Posted date not set'}
                 </div>
-                {String(r.adCode || '').trim()
-                  ? <button className={`pc-vxm-code ${copiedIdx === i ? 'copied' : ''}`} onClick={() => copy(i, String(r.adCode).trim())} title={`Copy ad code\n${String(r.adCode).trim()}`}>
-                      {copiedIdx === i
-                        ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>Copied</>
-                        : <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg><span className="pc-vxm-codetxt">{String(r.adCode).trim()}</span></>}
-                    </button>
-                  : <div className="pc-vxm-nocode">No ad code yet</div>}
+                {/* WURX-ADDED · the row's own code, else EUKA's for the same video (wxCode). */}
+                {(() => {
+                  const k = wxCode(r);
+                  return k
+                    ? <button className={`pc-vxm-code ${copiedIdx === i ? 'copied' : ''}`} onClick={() => copy(i, k.code)} title={`Copy ad code\n${k.code}${k.fromEuka ? '\nfrom EUKA' : ''}${k.expired ? ' · expired' : ''}`}>
+                        {copiedIdx === i
+                          ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>Copied</>
+                          : <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg><span className="pc-vxm-codetxt">{k.code}</span></>}
+                      </button>
+                    : <div className="pc-vxm-nocode">No ad code yet</div>;
+                })()}
+                {/* WURX-END */}
                 {/* WURX-ADDED · the same two figures on the CARD layout.
 
                     THERE ARE TWO LAYOUTS AND BOTH NEED THIS. Brands on EUKA get
@@ -3580,13 +3596,18 @@ function DrilldownVideosPanel({ c, euka, allTime, siblings, onUpdateCreator, onM
                 })()}
                 {/* WURX-END */}
                 <div>
-                  {String(r.adCode || '').trim()
-                    ? <button className={`pc-vxp-code ${copiedIdx === i ? 'copied' : ''}`} onClick={() => copy(i, String(r.adCode).trim())} title={`Copy spark code\n${String(r.adCode).trim()}`}>
-                        {copiedIdx === i
-                          ? <>Copied<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg></>
-                          : <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>Copy code</>}
-                      </button>
-                    : <span className="pc-vxp-dash">-</span>}
+                  {/* WURX-ADDED · the row's own code, else EUKA's for the same video (wxCode). */}
+                  {(() => {
+                    const k = wxCode(r);
+                    return k
+                      ? <button className={`pc-vxp-code ${copiedIdx === i ? 'copied' : ''}`} onClick={() => copy(i, k.code)} title={`Copy spark code\n${k.code}${k.fromEuka ? '\nfrom EUKA' : ''}${k.expired ? ' · expired' : ''}`}>
+                          {copiedIdx === i
+                            ? <>Copied<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg></>
+                            : <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>Copy code</>}
+                        </button>
+                      : <span className="pc-vxp-dash">-</span>;
+                  })()}
+                  {/* WURX-END */}
                 </div>
               </div>
             ))}

@@ -450,3 +450,8 @@ verify_jwt = false
 # all.
 [functions.euka]
 verify_jwt = true
+
+[functions.euka-ads-sync]
+# Called by pg_cron through pg_net, which carries no JWT. The function checks
+# x-sync-secret, or a staff session, itself.
+verify_jwt = false

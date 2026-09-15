@@ -2105,6 +2105,63 @@ from them, as the brand's GMV.
 
 ## Paid Collabs: WurxBase, vendored (2026-08-18)
 
+## Ad spend, ROI and spark codes in Paid Collabs come from EUKA (2026-09-15)
+
+Rashid: *"when euka is giving data we can rely on euka … let's move with euka
+for now"*. For every brand whose TikTok ad account is connected INSIDE Euka,
+Paid Collabs shows ad spend and ROI per video and per creator for the month on
+screen, plus the spark code.
+
+**How the numbers get there**
+- **The sync.** The `euka-ads-sync` Edge Function copies Euka's GMV Max item
+  reports into `euka_ad_video_month`: one row per video, campaign, ad account
+  and month, and only where money moved. It copies spark codes into
+  `euka_spark_codes`. pg_cron runs `euka_ads_run_cycle()` every 5 minutes, and
+  staff can also start a run by hand.
+- **The screen.** It reads `euka_ad_totals_for_videos(ids, from, to)` and
+  `euka_spark_codes_for_videos(ids)` through `collab-ad-figures.tsx`. The rows
+  have the same shape as the old `ads_totals_for_videos`, so
+  `collab-ad-math.ts` is untouched: ROI comes from the sums, a duplicate link
+  counts once, and a dash is never a zero.
+- **Access.** Only `is_collabs_viewer()` can read these tables; creators read
+  nothing. A manual run is staff-only, because it spends Euka calls.
+
+**Why a sync and not a live call.** Measured on dev that day:
+- The first request for a report window returns a 504 after about 45s; the
+  same request a few seconds later answers in about 6s.
+- One month across every store took 74 calls and 65 seconds.
+- The spark export is capped at 150 rows a call and takes about 40s.
+
+So each run is limited to 100 seconds of work and claims units from a queue
+(`euka_ad_sync_units`, `euka_spark_sync_days`) under 10-minute leases. It
+makes one quick retry when at least 12s remain. A failure waits 10 minutes
+before retrying, doubling each time up to 12 hours.
+
+**Rules learned the hard way**
+- **Base URL.** GMV Max lives under `https://api.euka.ai/api/v1`, not `/v0`.
+- **No paging.** Euka rejects `page` and `pageSize`, even though its spec
+  documents them. Each ad account's campaigns are read as three lists (live,
+  `STATUS_DISABLE`, `STATUS_DELETE`), each capped at 20. A list shorter than
+  its `pageInfo.totalNumber` is recorded in `euka_ad_sync_stores.last_error`.
+  Aurelia's ad account reports 81 campaigns and lets us read 43.
+- **Summing.** A video can run in several campaigns, and under several
+  products in one campaign. The sync sums within a campaign-month, and the
+  reader sums across them.
+- **Month grain.** The current month, and any month closed less than 8 days
+  ago, re-sync daily, because TikTok revises spend for about a week. Older
+  months are done. The backfill starts at 2026-06.
+- **Spark codes.** They are fetched a DAY at a time for the last 58 days, and
+  `capped` marks any day that hit the 150-row limit. A code saved on the row
+  always wins; Euka only fills a blank (`wxCode` in WurxUI).
+- **Items sold** stays Euka's per-video `items_sold_count`, which counts units.
+  The ad report only has orders, not items.
+- **Connection status.** A 404 saying "TikTok Ads is not connected for this
+  store" is a real answer, recorded as not connected. A timeout is recorded as
+  unknown, and the store is looked up again on the next run.
+
+**Guarded by** `pnpm verify:euka-ads`, plus `verify:collab-ads-ui` for the
+screen.
+
 ## Top videos total, and videos by posted day (2026-09-15)
 
 Rashid asked for two things. First, the brand page's Top videos strip should

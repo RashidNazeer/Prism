@@ -1534,6 +1534,38 @@ key: 401 or 400 means it exists, 404 means it does not. Mode 7
 (`type: 'gmvmax'`, `op: advertisers | campaigns | creatives | item`) relays
 those reads and passes Euka's own status back as `upstreamStatus`.
 
+### The Euka ad-figures sync (`euka-ads-sync`)
+
+Copies GMV Max spend per video, and spark codes, into our database. See
+FEATURE_MAP, "Ad spend, ROI and spark codes in Paid Collabs come from EUKA".
+
+**Secrets on dev, set 2026-09-15:**
+- the function secret `EUKA_ADS_SYNC_SECRET`
+- the vault entries `euka_ads_sync_secret` and `euka_ads_sync_url`, written by
+  `euka_ads_set_sync_secret()` and `euka_ads_set_sync_url()` running as the
+  service role
+
+The secret was generated at run time and never written to a file. To rotate
+it, generate a new one and set all three again.
+
+**The schedule.** The pg_cron job `euka-ads-cycle` calls `euka_ads_run_cycle()`
+every 5 minutes. When the vault is empty it returns NULL and does nothing. On
+production that is deliberate, because Paid Collabs does not exist there. On
+dev, `pnpm verify:euka-ads` step [9] fails if the vault is empty.
+
+**Running it by hand:** POST `/functions/v1/euka-ads-sync` with a staff session
+and `{"discover": true, "budgetMs": 100000}`. Progress lives in three tables:
+- `euka_ad_sync_stores`: which stores are connected, and campaigns listed vs
+  reported
+- `euka_ad_sync_units`: per campaign-month status, `last_error` and `due_at`
+- `euka_spark_sync_days`: per store-day spark-code status
+
+`pnpm verify:euka-ads` runs 21 checks: sums across campaigns, month
+separation, currencies, replace-not-add, who can read, who can run the sync,
+and the vault. `pnpm verify:euka-ads-ui` compares every creator's Ad spend and
+ROI on screen with the database for one brand and month (defaults: Penetrex,
+2026-09). It needs a preview server and that month synced.
+
 `EUKA_API_KEY` is the original account (ten stores). Additional accounts go
 in `EUKA_API_KEYS`, comma or whitespace separated. Both are Edge Function
 secrets and neither has ever been in the repo or in git history.

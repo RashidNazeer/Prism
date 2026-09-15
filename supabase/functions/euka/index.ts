@@ -44,6 +44,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.110.9';
 import { z } from 'npm:zod@4.4.3';
 import { corsHeaders, json } from '../_shared/cors.ts';
+import { eukaKeys, indexStores, storeBrandPair } from '../_shared/euka-accounts.ts';
 
 const BASE = 'https://api.euka.ai/v0';
 /* Euka's current API. The GMV Max ad reports exist ONLY here (mode 7). */
@@ -63,7 +64,8 @@ const Body = z.object({
   type: z.enum(['videos', 'cvideos', 'discovery', 'photo', 'gmvmax']).optional(),
   handle: z.string().trim().max(120).optional(),
   /* mode 7 only: which GMV Max read, and its filters. */
-  op: z.enum(['advertisers', 'campaigns', 'creatives', 'item']).optional(),
+  op: z.enum(['advertisers', 'campaigns', 'creatives', 'item', 'sparkcodes']).optional(),
+  primaryStatus: z.enum(['STATUS_DELIVERY_OK', 'STATUS_DISABLE', 'STATUS_DELETE']).optional(),
   campaignId: z.string().trim().max(64).optional(),
   advertiserId: z.string().trim().max(64).optional(),
   sortBy: z.enum(['cost', 'orders', 'grossRevenue', 'roi']).optional(),
@@ -123,113 +125,12 @@ function window55(fromRaw?: string, toRaw?: string) {
 type Auth = { Authorization: string };
 
 /*
- * ═══ AS MANY EUKA ACCOUNTS AS WE HOLD KEYS FOR ═══════════════════════
- *
- * One Euka key can cover many brands — ours covers ten — but a brand can also
- * arrive with an account of its own. Nutra did, on 2026-09-09: a separate
- * account whose key returns exactly one store, NUTRAHARMONY STORE, which our
- * existing key cannot see at all.
- *
- * So keys are a LIST, and one rule keeps the data honest:
- *
- *   A STORE IS ONLY EVER ASKED ABOUT WITH THE KEY THAT RETURNED IT.
- *
- * Never a fallback, never "try the other one". Asking account A about a store
- * belonging to account B is how a brand's screen quietly fills with another
- * brand's numbers, and on this product those numbers are somebody's commission.
- *
- * EUKA_API_KEY keeps working exactly as it does today and stays first, so a
- * deployment that never sets EUKA_API_KEYS behaves identically to before this
- * existed. Extra keys go in EUKA_API_KEYS, separated by commas or whitespace,
- * which makes brand number twelve a secret change rather than a code change.
+ * WHICH EUKA ACCOUNTS WE HOLD KEYS FOR, WHICH ONE OWNS EACH STORE, AND THE
+ * STORE-TO-BRAND PAIRING live in `../_shared/euka-accounts.ts`, shared with
+ * `euka-ads-sync` since 2026-09-15. One copy of that rule, because two copies of
+ * "which key owns this store" is how one brand's screen fills with another
+ * brand's figures.
  */
-function eukaKeys(): string[] {
-  const primary = Deno.env.get('EUKA_API_KEY') ?? '';
-  const extra = Deno.env.get('EUKA_API_KEYS') ?? '';
-  const all = [primary, ...extra.split(/[\s,]+/)].map((k) => k.trim()).filter(Boolean);
-  return [...new Set(all)];
-}
-
-type StoreIndex = {
-  stores: { id: string; name: string }[];
-  /* store id → the auth of the account that owns it */
-  ownerOf: Map<string, Auth>;
-  /* how many keys did not answer, so a short list is never mistaken for a
-     complete one */
-  unavailable: number;
-  total: number;
-};
-
-/*
- * Ask every account for its stores, once, and remember who owned what.
- *
- * A KEY THAT FAILS IS COUNTED, NOT SWALLOWED. If one account is down or its key
- * has been revoked, its stores simply vanish from the merged list — and a
- * caller looking for one of them would then be told "no such store", which is a
- * lie about the brand instead of the truth about the account. `unavailable` is
- * what lets the answer say which of the two it was.
- */
-async function indexStores(keys: string[]): Promise<StoreIndex> {
-  const results = await Promise.all(keys.map(async (k) => {
-    const auth: Auth = { Authorization: `Bearer ${k}` };
-    try {
-      const r = await fetch(`${BASE}/stores`, { headers: auth });
-      if (!r.ok) return { auth, list: null as any[] | null };
-      const j = await r.json();
-      /* /v0/stores answers a BARE ARRAY while every other export answers an
-         object. Anything else is a failure, never "no stores". */
-      return { auth, list: Array.isArray(j) ? j : null };
-    } catch {
-      return { auth, list: null as any[] | null };
-    }
-  }));
-
-  const stores: { id: string; name: string }[] = [];
-  const ownerOf = new Map<string, Auth>();
-  let unavailable = 0;
-
-  for (const res of results) {
-    if (!res.list) { unavailable++; continue; }
-    for (const raw of res.list) {
-      const id = String((raw as any)?.id ?? '').trim();
-      if (!id) continue;
-      /* Ids are uuids, so two accounts sharing one is not expected. If it ever
-         happens the FIRST key wins, rather than the owner changing silently
-         between one request and the next. */
-      if (ownerOf.has(id)) continue;
-      ownerOf.set(id, res.auth);
-      stores.push({ id, name: String((raw as any)?.name ?? '') });
-    }
-  }
-  return { stores, ownerOf, unavailable, total: keys.length };
-}
-
-/*
- * Euka's data-export requires BOTH store_id and brand_id, though their public
- * spec documents store_id alone. There is no id-to-id link exposed, so the
- * brand is found by matching its name to the store's, normalised. A store with
- * no matching brand yields an empty brandId and the export is attempted without
- * it — which is what theirs does, and is better than refusing outright.
- */
-async function storeBrandPair(auth: Auth, storeId: string, knownName?: string): Promise<string> {
-  const [stores, brands] = await Promise.all([
-    knownName
-      ? Promise.resolve(null)
-      : fetch(`${BASE}/stores`, { headers: auth }).then((r) => (r.ok ? r.json() : [])).catch(() => []),
-    fetch(`${BASE}/brands`, { headers: auth }).then((r) => (r.ok ? r.json() : [])).catch(() => []),
-  ]);
-  const norm = (s: unknown) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
-  /* The store list was already fetched to work out which account owns this
-     store, so the name comes in and we do not ask twice. Both halves must
-     come from the SAME account: a brand id from one account against a store
-     id from another is exactly the mismatch this file exists to prevent. */
-  const store = knownName
-    ? { name: knownName }
-    : (Array.isArray(stores) ? stores : []).find((s: any) => s.id === storeId);
-  if (!store) return '';
-  const brand = (Array.isArray(brands) ? brands : []).find((b: any) => norm(b.name) === norm(store.name));
-  return brand ? String(brand.id) : '';
-}
 
 /* Their exports answer either a bare array or `{ data: [...] }`. */
 function rowsOf(payload: unknown): any[] {
@@ -585,9 +486,36 @@ Deno.serve(async (req) => {
      */
     if (body.type === 'gmvmax') {
       const op = body.op ?? 'advertisers';
+      const wrap = (status: number, payload: unknown) =>
+        new Response(JSON.stringify({ upstreamStatus: status, op, payload }), {
+          status: 200,
+          headers: { ...corsHeaders(req), 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+        });
+      const parsed = async (r: Response) => {
+        const text = await r.text();
+        try {
+          return JSON.parse(text);
+        } catch {
+          return { raw: text.slice(0, 500) };
+        }
+      };
+
+      /* Spark codes are a data export, not a GMV Max route, and Euka limits
+         this one type to the most recent 60 days. */
+      if (op === 'sparkcodes') {
+        const brandId = await storeBrandPair(auth, storeId, storeName);
+        const from = isDay(body.from) ? (body.from as string) : range.start;
+        const to = isDay(body.to) ? (body.to as string) : range.end;
+        const r = await fetch(exportUrl('spark_codes_video_download_links', storeId, brandId, from, to), { headers: auth });
+        return wrap(r.status, await parsed(r));
+      }
+
       const q = new URLSearchParams({ storeId });
       if (body.advertiserId) q.set('advertiserId', body.advertiserId);
       if (body.campaignId) q.set('campaignId', body.campaignId);
+      /* The default campaign list may hold only live campaigns, and a paused
+         or deleted one can still have spent inside the month being read. */
+      if (op === 'campaigns' && body.primaryStatus) q.set('primaryStatus', body.primaryStatus);
       if (op === 'creatives' || op === 'item') {
         q.set('startDate', isDay(body.from) ? (body.from as string) : range.start);
         q.set('endDate', isDay(body.to) ? (body.to as string) : range.end);

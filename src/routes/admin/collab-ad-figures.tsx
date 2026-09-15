@@ -11,7 +11,7 @@ import {
 import { getSupabase } from '@/lib/supabase';
 
 /**
- * Ad spend and ROI for the videos inside Paid Collabs.
+ * Ad spend, ROI and spark codes for the videos inside Paid Collabs.
  *
  * THIS FILE IS THE SEAM, AND IT IS OURS. The vendored WurxBase app in
  * `src/vendor/wurxbase/` holds the creators and their delivered video URLs; we
@@ -22,14 +22,22 @@ import { getSupabase } from '@/lib/supabase';
  * That split is what `pnpm verify:isolation` is protecting, and the guard names
  * this exact arrangement itself: "If it needs something of ours, pass it in as
  * a prop from the route." The vendored app never imports our Supabase client
- * and never names our project; our code never names either of theirs. Three
- * separate databases, no connection between them, and the build says so.
+ * and never names our project; our code never names either of theirs.
+ *
+ * THE SOURCE IS EUKA, since 2026-09-15. Rashid: "when euka is giving data we
+ * can rely on euka … let's move with euka for now". The figures are EUKA's GMV
+ * Max item reports, copied into `euka_ad_video_month` by the `euka-ads-sync`
+ * function, because a live call takes up to a minute (see that function). The
+ * earlier source, our own TikTok connection through `ads_totals_for_videos`,
+ * still exists and still serves creators' My numbers; it is no longer read
+ * here. On the day of the switch Euka held figures for 21 of 23 matched
+ * Penetrex videos that our own data had missed, and where both had a figure
+ * they agreed to within 3%.
  *
  * THE JOIN IS EXACT AND NEEDS NO BRAND MATCHING. Their videos are TikTok URLs;
- * `tiktok_video_daily.item_id` is TikTok's own id for the same video. So a
- * video either has ad figures or it does not, per video. No matching Paid
- * Collab brand names against ours, nothing to keep in step, and a brand lights
- * up the moment its ad account is connected.
+ * Euka's `itemId` is TikTok's own id for the same video. So a video either has
+ * figures or it does not, per video, and a brand lights up the moment its ad
+ * account is connected inside Euka.
  */
 
 /*
@@ -38,8 +46,7 @@ import { getSupabase } from '@/lib/supabase';
  * Not a tidiness split. That file is pure, imports nothing and touches no
  * database, which is what lets `pnpm verify:collab-ads` transpile it and test
  * the money rules directly in Node. Re-exporting rather than duplicating means
- * the implementation under test is the implementation that ships — a second
- * copy would pass its own tests forever while the screen used the other one.
+ * the implementation under test is the implementation that ships.
  */
 export {
   tiktokVideoId,
@@ -52,11 +59,19 @@ export type { AdFigures, AdTotals } from './collab-ad-math';
 
 import type { AdFigures } from './collab-ad-math';
 
+/** The spark code Euka holds for one video. */
+export type SparkCode = { code: string; expired: boolean };
+
 type Ctx = {
   /** Register video ids to fetch. Safe to call during render. */
   ensure: (itemIds: string[]) => void;
   /** What we know about one video, FOR THE CURRENT PERIOD. `null` = no data. */
   get: (itemId: string) => AdFigures | null;
+  /**
+   * The spark code Euka holds for one video, or `null`. Not tied to a month:
+   * a code belongs to the video, not to a period.
+   */
+  spark: (itemId: string) => SparkCode | null;
   /**
    * Which month these figures cover. `''` means all time.
    *
@@ -97,7 +112,7 @@ export function monthBounds(monthKey: string): { from: string | null; to: string
 
 const AdFiguresContext = createContext<Ctx | null>(null);
 
-/** At most this many ids per RPC call; the function refuses more than 2000. */
+/** At most this many ids per RPC call; both functions refuse more than 2000. */
 const BATCH = 500;
 
 export function CollabAdFiguresProvider({ children }: { children: ReactNode }) {
@@ -110,19 +125,23 @@ export function CollabAdFiguresProvider({ children }: { children: ReactNode }) {
   const [month, setMonthState] = useState('');
   /*
    * NOTHING IS FETCHED UNTIL THE PERIOD IS KNOWN, and this is purely about not
-   * wasting a request.
-   *
-   * The rows render before the drilldown's effect has told us which month is on
-   * screen, so without this gate the first pass fired a full-sized query for
-   * "all time" that nothing would ever display — 357 video ids asked for and
-   * thrown away every single time a brand was opened. Waiting one render costs
-   * nothing visible and halves the traffic.
+   * wasting a request. The rows render before the drilldown's effect has told
+   * us which month is on screen, so without this gate the first pass fired a
+   * full-sized query for "all time" that nothing would ever display.
    */
   const [monthKnown, setMonthKnown] = useState(false);
   const [known, setKnown] = useState<Map<string, AdFigures | null>>(() => new Map());
+  /* Spark codes are keyed by video alone: a code does not change by month. */
+  const [sparks, setSparks] = useState<Map<string, SparkCode | null>>(() => new Map());
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /* False once the provider unmounts, so nothing writes state into a corpse. */
+  const alive = useRef(true);
+  useEffect(() => () => {
+    alive.current = false;
+  }, []);
 
   /*
    * `ensure` IS CALLED FROM RENDER, by a table cell that has just discovered
@@ -130,16 +149,11 @@ export function CollabAdFiguresProvider({ children }: { children: ReactNode }) {
    * a ref and schedules one flush, which is what turns dozens of per-row calls
    * into a single request and keeps React out of a render loop.
    */
-  /* False once the provider unmounts, so nothing writes state into a corpse. */
-  const alive = useRef(true);
-  useEffect(() => () => {
-    alive.current = false;
-  }, []);
-
   const pending = useRef<Set<string>>(new Set());
   const scheduled = useRef(false);
   const [wanted, setWanted] = useState<string[]>([]);
   const asked = useRef<Set<string>>(new Set());
+  const sparkAsked = useRef<Set<string>>(new Set());
 
   /*
    * Changing month invalidates nothing that was fetched — August's answers stay
@@ -183,6 +197,8 @@ export function CollabAdFiguresProvider({ children }: { children: ReactNode }) {
     const forMonth = batch[0]?.slice(0, batch[0].indexOf('|')) ?? '';
     const ids = batch.map((k) => k.slice(k.indexOf('|') + 1));
     const { from, to } = monthBounds(forMonth);
+    const sparkIds = ids.filter((id) => !sparkAsked.current.has(id));
+    for (const id of sparkIds) sparkAsked.current.add(id);
 
     /*
      * NO PER-RUN CANCELLATION, AND THAT IS THE FIX RATHER THAN AN OMISSION.
@@ -191,8 +207,7 @@ export function CollabAdFiguresProvider({ children }: { children: ReactNode }) {
      * it — so a cleanup that set `cancelled = true` discarded the request that
      * was already in flight. Both fetches completed, both returned real rows,
      * and both results were thrown away: every figure on screen showed a dash
-     * while the network tab showed 200s full of data. It cost an hour to find,
-     * because nothing failed.
+     * while the network tab showed 200s full of data.
      *
      * Cancelling was never right here. Results are keyed by "month|id", so an
      * answer that arrives late is still the correct answer for ITS OWN key and
@@ -207,10 +222,10 @@ export function CollabAdFiguresProvider({ children }: { children: ReactNode }) {
         const found = new Map<string, AdFigures>();
         for (let i = 0; i < ids.length; i += BATCH) {
           const slice = ids.slice(i, i + BATCH);
-          const { data, error: rpcErr } = await getSupabase().rpc('ads_totals_for_videos', {
+          const { data, error: rpcErr } = await getSupabase().rpc('euka_ad_totals_for_videos', {
             p_item_ids: slice,
-            p_from: from,
-            p_to: to,
+            p_from: from ?? undefined,
+            p_to: to ?? undefined,
           });
           if (rpcErr) throw rpcErr;
           for (const row of (data ?? []) as Array<{
@@ -230,6 +245,19 @@ export function CollabAdFiguresProvider({ children }: { children: ReactNode }) {
             });
           }
         }
+
+        const codes = new Map<string, SparkCode>();
+        for (let i = 0; i < sparkIds.length; i += BATCH) {
+          const slice = sparkIds.slice(i, i + BATCH);
+          const { data, error: sparkErr } = await getSupabase().rpc('euka_spark_codes_for_videos', {
+            p_item_ids: slice,
+          });
+          if (sparkErr) throw sparkErr;
+          for (const row of (data ?? []) as Array<{ item_id: string; spark_code: string; expired: boolean | null }>) {
+            codes.set(row.item_id, { code: row.spark_code, expired: Boolean(row.expired) });
+          }
+        }
+
         if (!alive.current) return;
         setKnown((prev) => {
           const next = new Map(prev);
@@ -243,11 +271,19 @@ export function CollabAdFiguresProvider({ children }: { children: ReactNode }) {
           for (const id of ids) next.set(key(id, forMonth), found.get(id) ?? null);
           return next;
         });
+        if (sparkIds.length) {
+          setSparks((prev) => {
+            const next = new Map(prev);
+            for (const id of sparkIds) next.set(id, codes.get(id) ?? null);
+            return next;
+          });
+        }
         setReady(true);
       } catch (e) {
         if (!alive.current) return;
         /* Let them be asked for again, or a blip becomes permanent blanks. */
         for (const k of batch) asked.current.delete(k);
+        for (const id of sparkIds) sparkAsked.current.delete(id);
         setError((e as Error).message);
         setReady(true);
       } finally {
@@ -261,9 +297,11 @@ export function CollabAdFiguresProvider({ children }: { children: ReactNode }) {
     [known, key, month]
   );
 
+  const spark = useCallback((itemId: string) => sparks.get(itemId) ?? null, [sparks]);
+
   const value = useMemo<Ctx>(
-    () => ({ ensure, get, setMonth, month, ready, loading, error }),
-    [ensure, get, setMonth, month, ready, loading, error]
+    () => ({ ensure, get, spark, setMonth, month, ready, loading, error }),
+    [ensure, get, spark, setMonth, month, ready, loading, error]
   );
 
   return <AdFiguresContext.Provider value={value}>{children}</AdFiguresContext.Provider>;
@@ -281,6 +319,7 @@ export function useCollabAdFigures(): Ctx {
     useContext(AdFiguresContext) ?? {
       ensure: () => {},
       get: () => null,
+      spark: () => null,
       setMonth: () => {},
       month: '',
       ready: false,

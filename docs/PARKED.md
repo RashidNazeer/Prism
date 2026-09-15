@@ -968,10 +968,28 @@ may restore the wording TikTok rejected in 27.
 
 ---
 
-## 46. Euka gives ad spend per video: LIVE-TESTED 2026-09-15, not built
+## 46. Euka ad spend per video: BUILT on dev 2026-09-15, with named gaps
 
-**Status:** PROVEN on dev with our own keys. NOT BUILT: waiting on Rashid's
-go, and one decision (which number wins when two sources have one).
+**Status:** BUILT. Rashid chose Euka as the source ("let's move with euka for
+now"), so the "which number wins" question below is settled: Euka wins. The
+design and its rules are in FEATURE_MAP, "Ad spend, ROI and spark codes in
+Paid Collabs come from EUKA".
+
+**What is still open, with the trigger for each:**
+- **Aurelia.** Euka reports 81 campaigns for its ad account but lists only 43,
+  because it refuses paging. The other 38 campaigns' spend cannot be read.
+  Raise it when Aurelia's totals look low, or when Euka fixes paging.
+- **Brands with no ad account connected in Euka** show dashes: Apothecary,
+  Biostime, Cutler Nutrition, Dangle-it, Dr. Harvey's and Nutra Harmony. Raise
+  it when one of them asks why its ad spend is blank.
+- **Spark codes on busy days.** A store-day that hits Euka's 150-row cap may be
+  missing codes (`euka_spark_sync_days.capped`). Raise it when a video that
+  has a code in Euka shows none.
+- **Old and new numbers mixed during the backfill.** The copy fills over a few
+  hours, current month first. Until then a month shows whatever has synced so
+  far.
+
+**Everything below was written before the build.**
 
 ### What the live test showed
 

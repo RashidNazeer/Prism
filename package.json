@@ -78,7 +78,9 @@
     "staff:ads-manager": "node scripts/create-ads-manager.mjs",
     "verify:ads-manager": "node scripts/check-ads-manager.mjs",
     "verify:ads-manager-ui": "node scripts/check-ads-manager-ui.mjs",
-    "verify:video-days": "node scripts/check-video-days.mjs"
+    "verify:video-days": "node scripts/check-video-days.mjs",
+    "verify:euka-ads": "node scripts/check-euka-ads.mjs",
+    "verify:euka-ads-ui": "node scripts/check-euka-ads-ui.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

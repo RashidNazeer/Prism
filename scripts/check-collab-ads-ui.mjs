@@ -85,7 +85,9 @@ try {
    */
   const rpcCalls = [];
   page.on('request', (r) => {
-    if (!r.url().includes('ads_totals_for_videos')) return;
+    /* The reader is Euka's since 2026-09-15 (`euka_ad_totals_for_videos`);
+       the old name is kept so a run against an older build still counts. */
+    if (!/euka_ad_totals_for_videos|\/rpc\/ads_totals_for_videos/.test(r.url())) return;
     let ids = 0;
     try {
       ids = (JSON.parse(r.postData() || '{}').p_item_ids || []).length;

@@ -2216,3 +2216,27 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   Filtering never re-indexes the rows, so an edit made while filtered lands
   on the right video. Adding or pasting rows clears the filter, because a new
   row has no date and would vanish the moment it was added.
+- 2026-09-15: **Paid Collabs ad spend and ROI come from EUKA, not from our
+  TikTok connection.** Rashid: "let's move with euka for now". Measured the
+  same day on 23 Penetrex videos matched to Paid Collabs: Euka had figures for
+  all of them and our own TikTok data for only 2. Where both existed they
+  agreed within 3%. `ads_totals_for_videos` is NOT removed, because creators'
+  My numbers still read it.
+- 2026-09-15: **A scheduled sync into our database, not a live call.** Euka's
+  per-campaign report 504s at about 45s on the first ask for a window. A month
+  across all stores took 74 calls and 65 seconds, and the spark export is
+  capped at 150 rows a call. Every run is limited to 100 seconds and claims
+  units from a queue, so no single run has to finish the job.
+- 2026-09-15: **Month grain, and only rows where money moved.** The screen
+  only asks for whole months or all time, and one campaign-month is one Euka
+  call. Splitting a window and summing was proven exact: 7 single days came to
+  the same $427.71 as the one 7-day call, so a finer grain later would not
+  change any number. Zero rows are not stored, because the screen shows no
+  row as a dash, and a stored zero would falsely claim nothing was spent.
+- 2026-09-15: **A campaign list Euka cuts short is recorded, never assumed
+  complete.** Euka rejects paging even though its spec documents it. Aurelia's
+  ad account reports 81 campaigns and lets us read 43, and
+  `euka_ad_sync_stores.last_error` says so.
+- 2026-09-15: **For spark codes, the row's own code wins.** Euka only fills a
+  blank. Nothing is written back to Asad's `video_codes`: the fallback is
+  display-only, so their data stays theirs.
