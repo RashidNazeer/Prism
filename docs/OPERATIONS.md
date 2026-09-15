@@ -1527,6 +1527,13 @@ in Access Control cannot open them.
 has 54 paths, including GMV Max ad reporting per video (PARKED 46). Read the
 spec before assuming what Euka can or cannot return.
 
+**The spec's server is `/api/v1`, not `/v0`.** The function's older modes use
+`https://api.euka.ai/v0`. The GMV Max routes exist only under
+`https://api.euka.ai/api/v1` (verified 2026-09-15). Check a route without a
+key: 401 or 400 means it exists, 404 means it does not. Mode 7
+(`type: 'gmvmax'`, `op: advertisers | campaigns | creatives | item`) relays
+those reads and passes Euka's own status back as `upstreamStatus`.
+
 `EUKA_API_KEY` is the original account (ten stores). Additional accounts go
 in `EUKA_API_KEYS`, comma or whitespace separated. Both are Edge Function
 secrets and neither has ever been in the repo or in git history.

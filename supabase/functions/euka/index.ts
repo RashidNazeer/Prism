@@ -46,6 +46,8 @@ import { z } from 'npm:zod@4.4.3';
 import { corsHeaders, json } from '../_shared/cors.ts';
 
 const BASE = 'https://api.euka.ai/v0';
+/* Euka's current API. The GMV Max ad reports exist ONLY here (mode 7). */
+const BASE_V1 = 'https://api.euka.ai/api/v1';
 
 /*
  * Fifteen minutes, matching the CDN cache their Netlify deployment had in front
@@ -58,8 +60,15 @@ const CACHE = 'private, max-age=900';
 const Body = z.object({
   /* Absent means "the store list", which is the one mode taking no store. */
   store: z.string().trim().max(64).optional(),
-  type: z.enum(['videos', 'cvideos', 'discovery', 'photo']).optional(),
+  type: z.enum(['videos', 'cvideos', 'discovery', 'photo', 'gmvmax']).optional(),
   handle: z.string().trim().max(120).optional(),
+  /* mode 7 only: which GMV Max read, and its filters. */
+  op: z.enum(['advertisers', 'campaigns', 'creatives', 'item']).optional(),
+  campaignId: z.string().trim().max(64).optional(),
+  advertiserId: z.string().trim().max(64).optional(),
+  sortBy: z.enum(['cost', 'orders', 'grossRevenue', 'roi']).optional(),
+  page: z.number().int().min(1).max(1000).optional(),
+  pageSize: z.number().int().min(1).max(1000).optional(),
   /*
    * DATES ARE NOT REJECTED HERE, THEY ARE DEFAULTED BELOW.
    *
@@ -556,6 +565,74 @@ Deno.serve(async (req) => {
       });
 
       return ok({ range: { start: from, end: to }, videos: { [handle]: rows } });
+    }
+
+    /*
+     * ── mode 7 · GMV Max ad reporting, READ-ONLY ─────────────────────────
+     *
+     * Rashid, 2026-09-15: can Paid Collabs' Ad spend and ROI columns come from
+     * Euka? Euka's own spec (api.euka.ai/openapi.json) has per-video GMV Max
+     * reports keyed by TikTok post id. This relays four GET endpoints for ONE
+     * store, through the account that owns it.
+     *
+     * EUKA'S STATUS IS PASSED THROUGH, NOT FLATTENED. The wrapper is always a
+     * 200 with `upstreamStatus` beside the payload, because a 403 for a plan
+     * or permission gap must reach whoever asked as a 403 and not turn into
+     * "this brand spent nothing" — the degrade-to-null shape this function
+     * was written to end.
+     *
+     * Nothing here writes to Euka or to us.
+     */
+    if (body.type === 'gmvmax') {
+      const op = body.op ?? 'advertisers';
+      const q = new URLSearchParams({ storeId });
+      if (body.advertiserId) q.set('advertiserId', body.advertiserId);
+      if (body.campaignId) q.set('campaignId', body.campaignId);
+      if (op === 'creatives' || op === 'item') {
+        q.set('startDate', isDay(body.from) ? (body.from as string) : range.start);
+        q.set('endDate', isDay(body.to) ? (body.to as string) : range.end);
+      }
+      /* Only what the caller asked for. Euka applies its own defaults, and a
+         default of ours that it disagrees with 400s the whole call with
+         nothing but "Input validation failed".
+
+         VERIFIED 2026-09-15: `page` and `pageSize` on reports/creatives are
+         BOTH refused that way, even though the spec documents them. So the
+         store-wide report cannot be paged past its first 50 rows. The
+         per-campaign ITEM report returns every row in one call (608 for one
+         Penetrex campaign over 30 days, `truncated: false`), so a real
+         feature reads the campaigns, then one item report for each. */
+      const paged = op === 'creatives' || op === 'campaigns';
+      if (op === 'creatives' && body.sortBy) q.set('sortBy', body.sortBy);
+      if (paged && body.page) q.set('page', String(body.page));
+      /* Euka caps both page sizes at 100. */
+      if (paged && body.pageSize) q.set('pageSize', String(Math.min(body.pageSize, 100)));
+      const path = {
+        advertisers: 'gmv-max/advertisers',
+        campaigns: 'gmv-max/campaigns',
+        creatives: 'gmv-max/reports/creatives',
+        item: 'gmv-max/reports/item',
+      }[op];
+      /*
+       * NOT `BASE`. The GMV Max routes do not exist under `/v0`: every one
+       * answered "Route not found" there, for every store, while `/v0/stores`
+       * answered 401. Euka's spec declares its server as `/api/v1`, and on that
+       * base the same routes answer 400 without a store and `/stores` answers
+       * 401 without a key, which is how a route that exists behaves. Verified
+       * 2026-09-15. The older modes stay on `/v0`, where they work.
+       */
+      const r = await fetch(`${BASE_V1}/${path}?${q}`, { headers: auth });
+      const text = await r.text();
+      let payload: unknown;
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        payload = { raw: text.slice(0, 500) };
+      }
+      return new Response(JSON.stringify({ upstreamStatus: r.status, op, payload }), {
+        status: 200,
+        headers: { ...corsHeaders(req), 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
     }
 
     /* ── mode 6 · the Discovery sourcing pool ───────────────────────────── */

@@ -968,9 +968,52 @@ may restore the wording TikTok rejected in 27.
 
 ---
 
-## 46. Euka can give ad spend per video: read from its spec, not yet tested
+## 46. Euka gives ad spend per video: LIVE-TESTED 2026-09-15, not built
 
-**Status:** ANSWERED as a question, NOT BUILT, and not live-tested.
+**Status:** PROVEN on dev with our own keys. NOT BUILT: waiting on Rashid's
+go, and one decision (which number wins when two sources have one).
+
+### What the live test showed
+
+Read-only, through the new `type: 'gmvmax'` mode on the `euka` Edge Function
+(dev only).
+
+- **The base URL was wrong at first.** Every `/v0/gmv-max/...` call answered
+  "Route not found". Euka's spec declares its server as `/api/v1`, and on
+  `https://api.euka.ai/api/v1` the same routes work. The older modes stay on
+  `/v0`.
+- **Ad accounts connected INSIDE Euka** (`/gmv-max/advertisers`): Penetrex
+  has 2 (Biomax-PX, Infirst Healthcare), Dr Tobias has 2, and Aurelia,
+  Longevity Box and Swisse Wellness have 1 each. **Not connected**, so Euka
+  cannot give ad figures for them: Apothecary Brands, Biostime, Cutler
+  Nutrition, Dangle-it, Dr. Harvey's, NUTRAHARMONY STORE.
+- **The ITEM report is the one in Rashid's screenshot.** Given a
+  `campaignId`, `/gmv-max/reports/item` returned EVERY video in the campaign
+  in one call: 608, 327 and 497 rows for three Penetrex campaigns over 30
+  days, `truncated: false`, live from TikTok.
+- **Item ID is the TikTok post id.** 23 of the top 50 Penetrex videos by
+  spend match a video link saved on a Paid Collabs row.
+- **It fills what we cannot.** OUR TikTok ads data had figures for only 2 of
+  those 23. Where both had one they agreed: once exactly (cost 303.79, GMV
+  1149.66, 56 orders), once within 3% (cost 369.46 vs 358.76). That is the
+  recent days being restated, not a real disagreement.
+- **The store-wide creatives report cannot be paged.** It returns 50 rows
+  with `hasMore: true`, and both `page` and `pageSize` get a bare 400 "Input
+  validation failed", even though the spec documents them. Its synced
+  coverage for Penetrex is only 2026-08-04 → 2026-09-14. So a real build reads
+  the campaigns, then one item report for each.
+- **Items sold is not in these reports; they give orders.** The Items sold
+  column already comes from Euka's video exports (`itemsSoldCount` /
+  `items_sold_count`), so it is a separate question from ad spend.
+
+### The decision needed before building
+
+When a video has figures from both our TikTok connection and Euka, which
+wins? **Recommended:** ours where present, because it is read directly from
+TikTok, and Euka only where ours is blank. Either way, every figure keeps the
+month bounds that `collab-ad-figures.tsx` already applies.
+
+**Everything below was written before the live test.**
 **Raise it when:** Rashid wants per-video ad spend for a brand whose ad
 account we have not connected, or asks for Euka to replace or check our
 TikTok ads numbers.
