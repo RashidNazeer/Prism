@@ -10,8 +10,17 @@ asked to be reminded: *"i will do it later remind me please"*.
    Vercel → Account Settings → Authentication. Until then every dev deploy
    goes through the CLI route in OPERATIONS (Vercel section). PARKED 45.
 2. **TikTok rejected the app a second time on 2026-09-15**, naming only two
-   fields this time: App icon and Website URL. The diagnosis, and the
-   decisions it needs from him, are in PARKED 27d.
+   fields this time: App icon and Website URL. The diagnosis is in PARKED 27d.
+   **He said "ask me same 2 questions later". Ask him both again, as written:**
+   - **Which website do we give TikTok?** A (recommended): build our own
+     public site out into a real multi-page website with the dog-face icon,
+     same address. B: the same site on an official subdomain like
+     `creators.wurxmedia.com` (needs DNS, moves every redirect). C: submit
+     `wurxmedia.com` itself (least work, but it never mentions the hub).
+   - **How does it reach production?** Only the public pages go onto `main`
+     now, as with the 2026-09-01 wording fix, or it waits for the full dev →
+     production move.
+   The icon needs no question: it is the dog face everywhere.
 
 Still queued for him: the Euka data sync (`pnpm wurxbase:sync` dry run,
 `--apply` writes; NEVER offer `wurxbase:copy` instead — PARKED 37).

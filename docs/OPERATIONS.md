@@ -1522,6 +1522,11 @@ in Access Control cannot open them.
 
 ## Euka keys
 
+**Euka's full API spec is public at `https://api.euka.ai/openapi.json`**
+(docs page `https://api.euka.ai/docs`; `docs.euka.ai` does not resolve). It
+has 54 paths, including GMV Max ad reporting per video (PARKED 46). Read the
+spec before assuming what Euka can or cannot return.
+
 `EUKA_API_KEY` is the original account (ten stores). Additional accounts go
 in `EUKA_API_KEYS`, comma or whitespace separated. Both are Edge Function
 secrets and neither has ever been in the repo or in git history.

@@ -968,6 +968,48 @@ may restore the wording TikTok rejected in 27.
 
 ---
 
+## 46. Euka can give ad spend per video: read from its spec, not yet tested
+
+**Status:** ANSWERED as a question, NOT BUILT, and not live-tested.
+**Raise it when:** Rashid wants per-video ad spend for a brand whose ad
+account we have not connected, or asks for Euka to replace or check our
+TikTok ads numbers.
+
+**Rashid, 2026-09-15:** "does euka give us the ad spend for a particular
+video? … if we give post(video) id and it returns cost ad spend gmv created
+etc?"
+
+**Answer, from Euka's own spec at `https://api.euka.ai/openapi.json`:** yes,
+for GMV Max spend, but not as a lookup by post id.
+
+| endpoint | per video | notes |
+| --- | --- | --- |
+| `GET /gmv-max/reports/creatives` | `itemId` (post id), `cost`, `orders`, `grossRevenue`, `costPerOrder`, `roi`, `currency`, `productImpressions`, `productClicks` | a date range, store-wide or one campaign, paged, sortable by cost/orders/revenue/roi. Read from Euka's DAILY sync, which rewrites the last 3 days; `coverage` null means nothing synced, not zero spend |
+| `GET /gmv-max/reports/item` | the same, plus delivery status and click/conversion rates | live from TikTok; `campaignId` required; may be `truncated` |
+| `POST /dashboard/boosted-videos` | `gmvMaxCost`, `gmvMaxRoi`, `adSales`, `acos`, `costPerOrder`, `adItemsSoldCount`, views, creator | at most 100, ranked by TRAILING-YEAR spend, not spend within the dates |
+| `POST /dashboard/top-videos-by-revenue` | the same ad fields | only 5 videos. **We already call this, and discard those fields** |
+| `POST /market-intelligence/tiktok/video/detail` | takes a `video_id` | ESTIMATES only: `ads_roas`, `ad_cpa`, `ads_views`, an ad flag. No spend |
+
+**What it cannot do:** take a post id and return that video's actual spend.
+The way is to pull the creatives report for the dates and match `itemId`.
+
+**Preconditions nobody has checked:**
+1. The brand's TikTok ad account must be connected inside Euka.
+   `GET /gmv-max/advertisers?storeId=` answers that per store.
+2. Both of our Euka keys must be allowed to read GMV Max. `GET /me` shows a
+   key's brand access, not its plan.
+
+**How to test without writing anything:** a temporary read-only mode on the
+`euka` Edge Function calling `/gmv-max/advertisers` and one day of
+`/gmv-max/reports/creatives` per store. The keys live only in Edge secrets.
+
+**Why it might matter:** these are the same five numbers our own TikTok ads
+pipeline reads directly from TikTok, and Euka relays TikTok. So it adds
+nothing for brands whose ad account we already connected. It could fill in
+brands whose ad account is connected to Euka but not to us.
+
+---
+
 ## 45. Vercel blocks git deploys: link GitHub to the Vercel account
 
 **Status:** OPEN, on Rashid. He said *"i will do it later remind me please"*.
