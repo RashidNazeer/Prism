@@ -29,6 +29,40 @@ Answer "what's pending?" from `docs/PARKED.md`.
 
 ## WHERE EVERYTHING STANDS
 
+### Paid Collabs ad spend, ROI and spark codes from EUKA (2026-09-15, backfilling)
+
+Rashid: *"let's move with euka for now"*. What was built:
+- The `euka-ads-sync` Edge Function, with the migration
+  `20260915150000_euka_ad_figures.sql`. The migration adds tables, readers,
+  the claim queue, and a pg_cron job that runs every 5 minutes.
+- `collab-ad-figures.tsx` now reads Euka, and WurxUI's spark-code cells fall
+  back to Euka's code.
+
+It is all on dev and live on wurxmediahubdev.vercel.app. The screen code went
+out by CLI deploy, because git deploys are still blocked (PARKED 45). The live
+entry asset, `index-Io5Hejlp.js`, is the same file the on-screen check passed
+against.
+
+**State when recorded:**
+- Connected in Euka: Penetrex, Dr Tobias, Longevity Box, Swisse Wellness and
+  Aurelia. Aurelia's ad account is "Cutler Nutrition Shop Ads", which reports
+  81 campaigns but lists only 43.
+- September was filling first. Penetrex had 2 of 5 campaigns done (157
+  videos, $1,661), and Euka's first-ask 504s were retrying every 4 minutes.
+- The backfill of June to August will take a few hours.
+
+**Proven:**
+- `verify:euka-ads` 21/21.
+- `verify:euka-accounts` 9/9, after the shared-module move.
+- `verify:euka-ads-ui` 5/5. Every Penetrex September creator row (34, 26 of
+  them with figures) showed the same Ad spend and ROI as the database. A video
+  with no code on its row (Dulce Dagda's) showed Euka's spark code, marked
+  "from EUKA". Zero console errors.
+- Build and lint clean.
+
+At the time of that check, 123 of Penetrex's 132 September videos already had
+Euka figures.
+
 ### Dev is LIVE at `aab0cf0`, deployed from the CLI (2026-09-15)
 
 **Git deploys are still blocked, so every push until Rashid fixes it needs
