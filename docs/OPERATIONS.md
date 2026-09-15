@@ -1070,6 +1070,16 @@ cd <scratch>/deploy-<sha> && vercel deploy --yes --token $VERCEL_TOKEN
 vercel alias set <deployment-host> wurxmediahubdev.vercel.app --token $VERCEL_TOKEN --scope wurxmedia-6695s-projects
 ```
 
+**Scripting it, two traps (2026-09-16):** the deployment URL is NOT the last
+line of stdout. That line is `}` from a JSON dump, and the URL is on the
+`Preview  https://…` line on stderr. Take the host from that line. Also,
+`.vercel/project.json` is pretty-printed (`"projectName": "wurxmediahubdev"`,
+with a space), so a grep for `"projectName":"` finds nothing and stops an
+`&&` chain without a word. Load tokens in Git Bash with
+`set -a; . <(tr -d '\r' < C:/Users/RA_shid/.wurx/cli-secrets.env); set +a`.
+A bare `git push` then fails with "Invalid username or token", because the
+credential helper reads `GH_TOKEN` from the environment.
+
 Both env vars (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`) apply to
 all targets with no branch scoping, so a CLI preview builds against the same
 dev database as a git one. Confirm by comparing the live `assets/index-*.js`
