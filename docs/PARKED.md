@@ -982,6 +982,15 @@ Paid Collabs come from EUKA".
 - **Brands with no ad account connected in Euka** show dashes: Apothecary,
   Biostime, Cutler Nutrition, Dangle-it, Dr. Harvey's and Nutra Harmony. Raise
   it when one of them asks why its ad spend is blank.
+- **14 "Cutler Nutrition" GMV Max campaigns never answer.** They sit on
+  Aurelia's ad account ("Product GMV Max_Gross revenue_Cutler Nutrition_…"),
+  for June to September. Euka 504s on every request, even for a single week.
+  As of 2026-09-15 18:40 UTC they were retrying every 4 minutes, up to 20
+  tries. Every other connected brand's months are complete. They may be the
+  campaigns carrying Cutler Nutrition creators' spend, since Cutler's own Euka
+  store has no ad account connected. **Raise it when:** Cutler Nutrition or
+  Aurelia ad spend is asked about and looks blank. The next lever is asking
+  Euka whether these campaigns can be reported at all.
 - **Spark codes on busy days.** A store-day that hits Euka's 150-row cap may be
   missing codes (`euka_spark_sync_days.capped`). Raise it when a video that
   has a code in Euka shows none.
