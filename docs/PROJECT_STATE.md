@@ -45,9 +45,10 @@ L1–L7 tags, like Euka's.
   screens (34 and 166 rows). The badge costs names no width. Every tier tag
   wears its own ink in dark and light. No sideways scroll at 390px, and zero
   console errors. `check:contrast` has a new tier section, and it passes.
-- **Live on dev:** commit c88c0c1, by CLI deploy, because git deploys are still
-  blocked (PARKED 45). wurxmediahubdev.vercel.app serves `index-CFHyBtzH.js`,
-  the same file the check passed against.
+- **Live on dev:** commit db88682, by CLI deploy, because git deploys are still
+  blocked (PARKED 45). wurxmediahubdev.vercel.app serves `index-CgqMMlgq.js`,
+  the same file `verify:tier-deals` passed against (20/20, including the All
+  Time pass).
 
 ### Paid Collabs ad spend, ROI and spark codes from EUKA (2026-09-15, backfilling)
 
