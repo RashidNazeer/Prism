@@ -2260,10 +2260,14 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   page's names fell from 48px to 17px, one letter and dots. On the face's
   corner it costs the name nothing. If he wants it beside the tag anyway, the
   Creator column has to get wider first.
-- 2026-09-16: **The deals count is deals EVER, not this month's.** The brand
-  page and the Creators tab are month-scoped. A count that changed with the
-  month picker would tell you nothing about the relationship, and the same
-  person would show different numbers on two screens.
+- 2026-09-16: **The deals count follows the month picker, across every brand.**
+  Built first as a lifetime count, on the reasoning that a relationship is not
+  a month. Rashid reversed it the moment he saw it: *"month wise brand deals
+  not overal"*. So a month counts that month's deals across every brand, and
+  All Time counts the person's whole history. Brand and month together was
+  offered and rejected: a brand page row IS that brand's deal for that month,
+  so the circle would read 1 on nearly every row. The hover text names which
+  it is, because the same circle now means two different things.
 - 2026-09-16: **Tier colours follow Euka's hues** (L1 blue, L2 violet, L3
   teal, L4 green, L5 lime, L6 amber, L7 orange), because the team reads tiers
   in Euka all day. They are not the status colours, so a high tier never reads

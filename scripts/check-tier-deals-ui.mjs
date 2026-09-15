@@ -10,10 +10,13 @@
  *
  * Deals: every badge sits on the corner of the creator's face, and costs the
  * name no width (beside the tier tag it cut names to one letter at 1600px).
- * Every badge on the brand page and on the Creators tab is compared with
- * a count made HERE from `wurxbase.creators`, every brand and every month, on
- * the same key the screen uses (trimmed, lower-cased name). The count comes
- * from the database first; a page with no badges is a FAILURE, never a pass.
+ *
+ * THE COUNT FOLLOWS THE MONTH PICKER (Rashid, 2026-09-16: "month wise ... not
+ * overal"). With a month chosen it counts that month's deals across every
+ * brand; under All Time it counts the person's whole history. Both numbers are
+ * made HERE from `wurxbase.creators`, on the same key the screen uses (trimmed,
+ * lower-cased name), and both are checked on screen. The count comes from the
+ * database first; a page with no badges is a FAILURE, never a pass.
  *
  * Tiers: in BOTH themes, every tier tag's ink is the `--wx-tier-N` token of its
  * own tier, and no two tiers on the screen share an ink (L3 and L4 used to).
@@ -40,22 +43,28 @@ const pass = [], fail = [];
 const check = (ok, m, d) => (ok ? pass : fail).push(d ? `${m} — ${d}` : m);
 const key = (name) => String(name || '').trim().toLowerCase();
 
-/* ── the truth: deals per person, every brand, every month ─────────────── */
-const deals = new Map();
+/* ── the truth: this month's deals per person, and the lifetime count ───── */
+const monthDeals = new Map();
+const lifetime = new Map();
 let total = 0;
 for (let from = 0; ; from += 1000) {
-  const { data, error } = await wb.from('creators').select('id,name').order('id').range(from, from + 999);
+  const { data, error } = await wb.from('creators').select('id,name,hiring_date').order('id').range(from, from + 999);
   if (error) throw error;
   for (const r of data) {
     const k = key(r.name);
-    if (k) deals.set(k, (deals.get(k) || 0) + 1);
+    if (!k) continue;
+    lifetime.set(k, (lifetime.get(k) || 0) + 1);
+    if (String(r.hiring_date || '').slice(0, 7) === MONTH) monthDeals.set(k, (monthDeals.get(k) || 0) + 1);
   }
   total += data.length;
   if (data.length < 1000) break;
 }
-const repeat = [...deals.values()].filter((n) => n > 1).length;
-console.log(`database: ${total} deal rows · ${deals.size} people · ${repeat} with more than one deal`);
-check(total > 0 && repeat > 0, 'the database holds people with more than one deal', `${repeat} of ${deals.size}`);
+const repeat = [...monthDeals.values()].filter((n) => n > 1).length;
+/* The two counts must actually DIFFER for somebody, or the month check would
+   pass just as well against a lifetime count and prove nothing. */
+const differs = [...monthDeals.keys()].filter((k) => lifetime.get(k) !== monthDeals.get(k)).length;
+console.log(`database: ${total} deal rows · ${lifetime.size} people · in ${MONTH}: ${monthDeals.size} people, ${repeat} with more than one deal · ${differs} whose month count differs from their lifetime count`);
+check(repeat > 0 && differs > 0, `${MONTH} holds people with more than one deal, and people whose month count differs from their lifetime one`, `${repeat} with several, ${differs} differing`);
 
 /* ── reading the screen ────────────────────────────────────────────────── */
 const readRows = (page, rowSel) => page.evaluate((sel) => [...document.querySelectorAll(sel)].map((row) => ({
@@ -65,11 +74,11 @@ const readRows = (page, rowSel) => page.evaluate((sel) => [...document.querySele
   title: (row.querySelector('.pc-dealsbadge') || { getAttribute: () => '' }).getAttribute('title') || '',
 })), rowSel);
 
-function compareDeals(label, rows) {
+function compareDeals(label, rows, want_ = monthDeals, saying = /in /) {
   const wrong = [];
   let compared = 0;
   for (const r of rows) {
-    const want = deals.get(key(r.name));
+    const want = want_.get(key(r.name));
     if (!want) continue;
     compared++;
     if (String(want) !== r.badge) wrong.push(`${r.name}: badge ${r.badge || 'MISSING'}, database ${want}`);
@@ -79,7 +88,7 @@ function compareDeals(label, rows) {
   check(loose === 0, `${label}: every badge sits on the creator's face`, loose ? `${loose} rows have a badge somewhere else` : '');
   check(compared > 0 && wrong.length === 0, `${label}: every deals badge matches the database (${compared} rows, ${many} showing more than one)`, wrong.slice(0, 4).join(' | '));
   const t = rows.find((r) => r.badge)?.title || '';
-  check(/across every brand and month/.test(t), `${label}: the badge says what it counts on hover`, t || 'no title');
+  check(saying.test(t) && /deals? with this creator/.test(t), `${label}: the badge says what it counts on hover`, t || 'no title');
 }
 
 /* every tier tag's ink is its own token, and no two tiers share one */
@@ -203,7 +212,7 @@ try {
   await page.goto(`${BASE}/admin/collabs/creators`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.pc-cv-row .pc-dealsbadge', { timeout: 45000 }).catch(() => {});
   await page.waitForTimeout(6000);
-  compareDeals('Creators tab', await readRows(page, '.pc-cv-row'));
+  compareDeals(`Creators tab, ${MONTH}`, await readRows(page, '.pc-cv-row'));
   await checkNameRoom(page, 'Creators tab at 1600px', '.pc-cv-row');
   for (const theme of ['dark', 'light']) {
     await setTheme(page, theme);
@@ -211,6 +220,12 @@ try {
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/creators-${theme}.png` });
     await closeUp(page, '.pc-cv-row', `creators-rows-${theme}.png`);
   }
+
+  /* All Time: the same circles must now show the whole history. This is the
+     half that proves the number is not simply the lifetime count relabelled. */
+  await page.locator('button', { hasText: /all time/i }).first().click();
+  await page.waitForTimeout(9000);
+  compareDeals('Creators tab, All Time', await readRows(page, '.pc-cv-row'), lifetime, /all time/i);
 
   /* a phone: the badge must not push the row sideways */
   await page.setViewportSize({ width: 390, height: 844 });

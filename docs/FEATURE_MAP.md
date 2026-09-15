@@ -2243,10 +2243,15 @@ Rashid: beside the L tier tag, "a small circular avatar showing no of deals
 with that creator", and "the color scheme of l1, l2 ..l7 tags is not good",
 pointing at Euka's own tier tags.
 
-**The badge counts deals EVER: every brand, every month.** A deal is one row
-in `wurxbase.creators`. People are matched on the trimmed, lower-cased name,
-the same key the Creators tab's deals filter already uses, so a person shows
-the same number on every screen. It sits on the bottom-right corner of the
+**The badge follows the month picker.** A deal is one row in
+`wurxbase.creators`. With a month chosen it counts that month's deals across
+EVERY brand, so the same person reads the same on the brand page and the
+Creators tab; under All Time it counts their whole history. Rashid asked for
+this after seeing the lifetime version: *"month wise brand deals not overal"*.
+Brand-and-month together was rejected, because a brand page row IS that
+brand's deal for that month, so the circle would say 1 on nearly every row.
+People are matched on the trimmed, lower-cased name,
+the same key the Creators tab's deals filter already uses. It sits on the bottom-right corner of the
 creator's round face (`.pc-facewrap`) on the brand page
 (`DrilldownCreatorRow`) and the Creators tab (`CreatorsTabRow`). It shows
 even when the person has no tier yet, and never shows a zero.
@@ -2254,10 +2259,15 @@ even when the person has no tier yet, and never shows a zero.
   every name. At 1600px the brand page's names fell from 48px to 17px ("B.."),
   and at 1440px they were already squeezed before it. On the face's corner it
   costs the name nothing, and the check measures that.
-- **The Creators tab's own list is month-filtered**, so the badge must not
-  count it. `CreatorsTab` gets `allCreators` for the badge, and keeps
-  `dealsByPerson` (this view's rows) for its deals filter. Those are two
-  different questions, and merging them would break one of them.
+- **The badge counts the MONTH, not the tab's own list.** `CreatorsTab` gets
+  every row (`allCreators`) and filters it by the chosen month itself, because
+  its visible list is narrowed by the search and the filters too, and a circle
+  that changed while you typed in the search box would be nonsense. Its
+  existing `dealsByPerson` still counts the visible rows, because that is what
+  the deals filter chips are about. Two different questions.
+- The brand page's `month` prop is already `''` under All Time; the Creators
+  tab keeps the real month and a separate `allTime`, so it blanks the month
+  itself. Get that wrong and All Time silently shows one month's count.
 - The badge is neutral (surface, strong border, body ink) on purpose. The tier
   tag beside it carries the colour, and a second hue would read as a second
   tier.

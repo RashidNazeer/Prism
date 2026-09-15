@@ -353,24 +353,30 @@ const HIRED_BY_TAGS = {
    Rashid, 2026-09-16: "a small circular avatar showing no of deals with that
    creator". It sits on the corner of the creator's face (.pc-facewrap), not
    beside the tier tag: there it took 31px from every name, and at 1600px the
-   brand page's names fell to one letter. Counted over EVERY row, every brand and every
-   month, so the number is the same wherever the person appears. Keyed on the
+   brand page's names fell to one letter.
+
+   IT FOLLOWS THE MONTH PICKER. Rashid, 2026-09-16: "month wise ... not overal".
+   A month counts that month's deals across EVERY brand, so a person shows the
+   same number on the brand page and the Creators tab; '' (All Time) counts
+   their whole history. Keyed on the
    trimmed, lower-cased name, the same key the Creators tab's deals filter and
    tier count already use, so the three can never disagree about who is one
    person. */
-function wxDealsByPerson(rows) {
+function wxDealsByPerson(rows, month) {
   const m = new Map();
   (rows || []).forEach((c) => {
+    if (month && monthKey(c && c.hiring_date) !== month) return;
     const k = String((c && c.name) || '').trim().toLowerCase();
     if (k) m.set(k, (m.get(k) || 0) + 1);
   });
   return m;
 }
 const wxPersonKey = (c) => String((c && c.name) || '').trim().toLowerCase();
-function DealsBadge({ n }) {
+function DealsBadge({ n, month }) {
   if (!n) return null;
+  const deals = `${n} deal${n === 1 ? '' : 's'} with this creator`;
   return (
-    <span className="pc-dealsbadge" title={`${n} deal${n === 1 ? '' : 's'} with this creator, across every brand and month`}>
+    <span className="pc-dealsbadge" title={month ? `${deals} in ${monthLabel(month)}, across every brand` : `${deals}, all time`}>
       {n}
     </span>
   );
@@ -2269,8 +2275,9 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
     catch (e) { alert('Could not update: ' + e.message); }
   };
 
-  /* WURX-ADDED · deals per person across EVERY brand and month (wxDealsByPerson). */
-  const wxDealsEver = useMemo(() => wxDealsByPerson(allCreators || brandCreators || creators), [allCreators, brandCreators, creators]);
+  /* WURX-ADDED · deals per person in the month on screen, across every brand.
+     This screen's `month` is already '' when All Time is on, which counts the lot. */
+  const wxDealsNow = useMemo(() => wxDealsByPerson(allCreators || brandCreators || creators, month), [allCreators, brandCreators, creators, month]);
   /* WURX-END */
   const sortedCreators = useMemo(() => [...creators].sort((a, b) => (a.hiring_date || '').localeCompare(b.hiring_date || '')), [creators]);
   const groups = useMemo(() => groupByStatus(sortedCreators), [sortedCreators]);
@@ -2515,7 +2522,8 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
                       c={c}
                       idx={offset + i + 1}
                       euka={eukaL30}
-                      deals={wxDealsEver.get(wxPersonKey(c)) || 0}
+                      deals={wxDealsNow.get(wxPersonKey(c)) || 0}
+                      dealsMonth={month}
                       open={expandedId === c.id}
                       onSelect={() => setExpandedId(id => (id === c.id ? null : c.id))}
                       onSetStatus={setStatus}
@@ -3136,7 +3144,7 @@ function markContractDl(id) {
   try { localStorage.setItem(CONTRACT_DL_KEY, JSON.stringify(m)); } catch { /* storage full/blocked */ }
 }
 
-function DrilldownCreatorRow({ c, idx, euka, deals, open, onSelect, onSetStatus, onEditContract, onView, onEditCreator, onDelete }) {
+function DrilldownCreatorRow({ c, idx, euka, deals, dealsMonth, open, onSelect, onSetStatus, onEditContract, onView, onEditCreator, onDelete }) {
   const amount = parseDealAmount(c.deal);
   const videoCount = parseDealVideos(c.deal);
   const filled = deliveredVideoCount(c);
@@ -3192,7 +3200,7 @@ function DrilldownCreatorRow({ c, idx, euka, deals, open, onSelect, onSetStatus,
       </div>
       <div className="pc-cell" data-label="Creator">
         <span className="pc-creatorcell">
-          {/* WURX-ADDED */}<span className="pc-facewrap"><CreatorFace handle={handle1 || handle2} name={c.name} /><DealsBadge n={deals} /></span>{/* WURX-END */}
+          {/* WURX-ADDED */}<span className="pc-facewrap"><CreatorFace handle={handle1 || handle2} name={c.name} /><DealsBadge n={deals} month={dealsMonth} /></span>{/* WURX-END */}
           <span className="pc-creatorcell-txt">
             <span className="pc-cname">{c.name || '-'}</span>
             {handle1
@@ -5231,9 +5239,11 @@ function CreatorsTab({ creators, allCreators, allTime, month, eukaL30, onSetCrea
     return m;
   }, [creators, eukaL30]);
 
-  /* WURX-ADDED · deals EVER for the row badge. Not dealsByPerson below: that one
-     counts the rows in this month's view, because it drives the deals filter. */
-  const wxDealsEver = useMemo(() => wxDealsByPerson(allCreators || creators), [allCreators, creators]);
+  /* WURX-ADDED · deals in the month on screen, across every brand. Not
+     dealsByPerson below: that one counts the rows in THIS TAB's view, which the
+     search and the filters narrow too, because it drives the deals filter. */
+  const wxDealsMonth = allTime ? '' : month;
+  const wxDealsNow = useMemo(() => wxDealsByPerson(allCreators || creators, wxDealsMonth), [allCreators, creators, wxDealsMonth]);
   /* WURX-END */
   const dealsByPerson = useMemo(() => {
     const m = new Map();
@@ -5765,7 +5775,8 @@ function CreatorsTab({ creators, allCreators, allTime, month, eukaL30, onSetCrea
                           idx={offset + i + 1}
                           selected={sel.has(c.id)}
                           euka={eukaL30}
-                          deals={wxDealsEver.get(wxPersonKey(c)) || 0}
+                          deals={wxDealsNow.get(wxPersonKey(c)) || 0}
+                          dealsMonth={wxDealsMonth}
                           onToggle={() => toggle(c.id)}
                           onOpen={() => setVideosCreatorId(c.id)}
                           onSetStatus={setStatus}
@@ -7336,7 +7347,7 @@ function KpiPill({ label, value, onClick, title }) {
 const cellCenter = { display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0 };
 const cellEllipsis = { maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
 
-function CreatorsTabRow({ c, idx, selected, euka, deals, onToggle, onOpen, onSetStatus }) {
+function CreatorsTabRow({ c, idx, selected, euka, deals, dealsMonth, onToggle, onOpen, onSetStatus }) {
   const god = useGod();
   const amount = parseDealAmount(c.deal);
   const videoCount = parseDealVideos(c.deal);
@@ -7355,7 +7366,7 @@ function CreatorsTabRow({ c, idx, selected, euka, deals, onToggle, onOpen, onSet
       </div>
       <div className="pc-cell" data-label="#" style={{ ...cellCenter, ...colStyle("#", god) }}><span className="pc-idx">#{idx}</span></div>
       <div className="pc-cell" data-label="Name" style={{ ...colStyle("Name", god),  display: 'flex', alignItems: 'center', gap: 8 }}>
-        {/* WURX-ADDED */}<span className="pc-facewrap"><CreatorFace handle={handle || handle2} name={c.name} size={26} /><DealsBadge n={deals} /></span>{/* WURX-END */}
+        {/* WURX-ADDED */}<span className="pc-facewrap"><CreatorFace handle={handle || handle2} name={c.name} size={26} /><DealsBadge n={deals} month={dealsMonth} /></span>{/* WURX-END */}
         <span className="pc-cname" style={{ ...cellEllipsis, flex: 1, minWidth: 0 }}>{c.name || '-'}</span>
         {tier && <span className={`pc-tierbadge ${String(tier).toLowerCase()}`} title={`EUKA creator tier ${tier}`} style={{ flexShrink: 0 }}>{tier}</span>}
       </div>
