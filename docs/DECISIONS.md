@@ -2240,3 +2240,9 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
 - 2026-09-15: **For spark codes, the row's own code wins.** Euka only fills a
   blank. Nothing is written back to Asad's `video_codes`: the fallback is
   display-only, so their data stays theirs.
+- 2026-09-15: **The Euka sync queue is oldest-due first.** Ranking by newest
+  month first let September's constant 4-minute timeout retries starve August
+  completely: every Penetrex and Dr Tobias August campaign waited 40+ minutes
+  after coming due, and Rashid saw August "showing nothing". Taking jobs in
+  the order they became due gives every month a turn, and keeps a retry close
+  enough to its timeout to catch Euka's warm answer.

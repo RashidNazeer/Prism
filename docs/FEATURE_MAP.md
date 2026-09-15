@@ -2158,6 +2158,15 @@ before retrying, doubling each time up to 12 hours.
 - **Connection status.** A 404 saying "TikTok Ads is not connected for this
   store" is a real answer, recorded as not connected. A timeout is recorded as
   unknown, and the store is looked up again on the next run.
+- **The queue hands out the job that has waited longest**, never "newest month
+  first". The first version ranked by newest month, and within two hours every
+  August campaign for Penetrex and Dr Tobias was stuck. September's own
+  timeout retries came back every 4 minutes and always outranked August, so
+  August showed nothing. Waiting also cost August the warm answer Euka keeps
+  after a timeout. Fixed in `20260915170000_euka_claim_oldest_due_first.sql`.
+- **A page opened before a month synced keeps its dashes until reloaded.** The
+  provider remembers "no figures" per video for that page visit, so a month
+  that fills in later needs a refresh to appear.
 
 **Guarded by** `pnpm verify:euka-ads`, plus `verify:collab-ads-ui` for the
 screen.
