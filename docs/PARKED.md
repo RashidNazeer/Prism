@@ -879,6 +879,118 @@ today. **Creators must never see the budget or the ROAS target.**
 
 ---
 
+## 27d. REJECTED AGAIN 2026-09-15: the website, and the icon
+
+**Status:** DIAGNOSED, waiting on Rashid's two decisions below. He asked to be
+reminded.
+**Raise it when:** the start of the next session, when he comes back to TikTok,
+or when he asks what is pending.
+
+**The reviewer's note, verbatim:**
+
+> Changes to your app were not approved for production.
+> Update the following fields and resubmit changes to your app: App icon ·
+> Website URL
+>
+> Note from reviewer: Your website URL cannot be a landing page or login page.
+> You must have an externally facing fully developed website.,A valid official
+> website that houses information about your web and services.,The app icon
+> submitted in the Basic Info does not match the icon displayed on the website.
+> Please ensure the same icon is used consistently across both the TikTok, the
+> website and Browser tab (favicon), then resubmit for review
+
+**What moved since 27:** the "personal or company internal use" objection is
+gone. Only these two fields are named.
+
+### The icon, verified 2026-09-15
+
+| where | what it shows |
+| --- | --- |
+| our browser tab, `public/favicon.svg` | the older geometric gold "W" on a gold square (already PARKED 8) |
+| our site header, `public/wurx-logo.png` | the Wurx dog face and the "WURX Media" wordmark |
+| wurxmedia.com browser tab | the dog face: `/favicon.svg` (vector) and `/favicon.png` (256px) |
+
+Our own site disagreed with itself before TikTok compared anything. **The fix
+is one mark in all three places, and it has to be the dog face**, because that
+is what the official site already shows. Use one file for the TikTok app icon
+and for our favicon.
+
+**Rendering it, and the trap in doing so.** `https://wurxmedia.com/favicon.svg`
+is 512×512 with NO `viewBox`. So stretching it to 1024px does not scale
+what is drawn: the first render put a small face in the top-left corner of
+an empty square. Add `viewBox="0 0 512 512"`, then set width and height to
+1024. That renders centred and crisp (drawn area roughly x 40–469, y 111–403
+of 512). It has a transparent background and a pale face, so look at it on
+white before uploading.
+
+### The website, verified 2026-09-15
+
+Signed out, production (`main` at `62534b7`) serves one scrolling landing page
+(Hero, TrustedBy, BrandMarquee, Platform, HowItWorks, ApplyForm, FinalCta),
+plus `/apply`, sign in, `/terms`, `/privacy` and `/tiktok`, on a `vercel.app`
+address. That is, fairly, a landing page with legal pages attached.
+
+`wurxmedia.com` IS a fully developed official site (About, How it works,
+testimonials, its own privacy and terms). But it says nothing about the hub,
+and TikTok wants Terms and Privacy on the same domain as the app (see the
+note in `router.tsx`).
+
+### The two decisions only he can make
+
+1. **Which website.**
+   - **A, recommended:** turn our own public site into a real website on
+     production. It gets its own pages (for creators, for brands, how it works,
+     about, FAQ and contact) beside `/tiktok`, `/terms` and `/privacy`, with
+     one nav, one footer and the dog face in the tab. Submit
+     `https://wurxmediahub.vercel.app/`. The redirect URIs and the Terms and
+     Privacy URLs stay exactly as they are.
+   - **B:** the same site, on an official subdomain such as
+     `creators.wurxmedia.com`. This is the strongest "official" signal, but it
+     needs DNS on wurxmedia.com. It also moves every redirect URI, the
+     Supabase auth URLs and TikTok's URL verification.
+   - **C:** give `https://wurxmedia.com` as the Website URL. The least
+     building, but that site says nothing about the hub, and Terms, Privacy
+     and the redirects would all sit on a different domain.
+
+   **Not documented anywhere we found:** whether a `vercel.app` address itself
+   counts against "official". B removes that doubt; A does not.
+2. **How it reaches production.** Either the public pages go onto `main` on
+   their own, as the 2026-09-01 copy fix did (`5888faa`), or they wait for the
+   full dev → production promotion.
+
+### Found on the way: `main` has commits that `dev` does not
+
+`git rev-list dev..origin/main` counts 3. One of them is `5888faa`, the
+`/tiktok` page and the Terms/Privacy rewording, and **`dev`'s router has no
+`/tiktok` route**. Any promotion of `dev` to production must merge `main`
+into it first. Otherwise it deletes the page the resubmission points to, and
+may restore the wording TikTok rejected in 27.
+
+---
+
+## 45. Vercel blocks git deploys: link GitHub to the Vercel account
+
+**Status:** OPEN, on Rashid. He said *"i will do it later remind me please"*.
+**Raise it when:** the start of every session until it is done, and before
+any deploy.
+
+Since 2026-09-14, every push to `dev` comes back `BLOCKED` with "the commit
+author doesn't have permission to create deployments"
+(`TEAM_ACCESS_REQUIRED`). The commit identity is the same one that deployed
+on 09-10. The Vercel team (Hobby plan, sole member `wurxmedia-6695`) has no
+GitHub login linked, so Vercel cannot match GitHub `RashidNazeer` to a member.
+A push to `main` would almost certainly be blocked the same way.
+
+**His fix:** Vercel → Account Settings → Authentication → connect GitHub
+`RashidNazeer`. Then push anything, or Redeploy, and confirm READY.
+
+**Until then:** use the CLI route in OPERATIONS (Vercel section). Export the
+sha with `git archive`, `vercel deploy` a preview of the dev project, then
+`vercel alias set` it to wurxmediahubdev.vercel.app. That is how dev went live
+at `aab0cf0` on 2026-09-15.
+
+---
+
 ## 27. REJECTED 2026-09-01. Diagnosed, copy drafted, WAITING ON RASHID.
 
 **Status:** BLOCKED, on two decisions only he can make

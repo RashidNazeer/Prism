@@ -2,13 +2,21 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Recorded 2026-09-02.** Nothing is queued for Claude. Two things are queued
-for Rashid: the TikTok resubmission (his developer account, copy and shot
-list in PARKED 27) and the Euka data sync (`pnpm wurxbase:sync` dry run,
+**Updated 2026-09-15. REMIND RASHID OF BOTH OF THESE FIRST THING.** He
+asked to be reminded: *"i will do it later remind me please"*.
+
+1. **Link GitHub to Vercel.** Git deploys to dev are BLOCKED
+   (`TEAM_ACCESS_REQUIRED`) until he connects GitHub `RashidNazeer` under
+   Vercel → Account Settings → Authentication. Until then every dev deploy
+   goes through the CLI route in OPERATIONS (Vercel section). PARKED 45.
+2. **TikTok rejected the app a second time on 2026-09-15**, naming only two
+   fields this time: App icon and Website URL. The diagnosis, and the
+   decisions it needs from him, are in PARKED 27d.
+
+Still queued for him: the Euka data sync (`pnpm wurxbase:sync` dry run,
 `--apply` writes; NEVER offer `wurxbase:copy` instead — PARKED 37).
 
-Ask: *"Anything you want picked up — or shall I wait?"* Answer "what's
-pending?" from `docs/PARKED.md`.
+Answer "what's pending?" from `docs/PARKED.md`.
 
 ## WHERE EVERYTHING STANDS
 
