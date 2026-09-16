@@ -2273,3 +2273,17 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   in Euka all day. They are not the status colours, so a high tier never reads
   as a warning. Rejected: a gold scale for higher tiers, which collides with
   the accent and with warning in light mode.
+- 2026-09-16: **The Top videos totals count each video once.** Rashid's boss
+  asked for sums of views, GMV and ad spend. The day before, the GMV total
+  had been defined as "the column, added up", so that a calculator agrees
+  with it. That stopped being right once it was measured: 84 Penetrex videos
+  sit under two deals of the same creator, and the columns would count
+  2.07M of Penetrex's views twice, along with those videos' ad money. The
+  true figure wins over the calculator. The hover text says how many videos
+  were counted once, so a difference from the column is explained where it
+  shows.
+- 2026-09-16: **Blue, green and red for views, GMV and ad spend are the info,
+  success and danger tokens.** Those are status colours, which are normally
+  kept for states. They are used here because he named the colours, and his
+  words beat the house rule. Nothing else on that strip is a status, so
+  nobody can read "red" as "something is wrong" by mistake.

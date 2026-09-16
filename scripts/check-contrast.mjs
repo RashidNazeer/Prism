@@ -131,7 +131,7 @@ const fail = (msg) => {
 console.log('\nDesign token guard\n' + '='.repeat(70));
 
 // 1. Parity
-console.log('\n[1/2] Theme parity (dark <-> light)');
+console.log('\n[1/4] Theme parity (dark <-> light)');
 const darkColours = Object.keys(dark).filter((k) => isColour(dark[k]));
 const lightColours = Object.keys(light).filter((k) => isColour(light[k]));
 
@@ -146,7 +146,7 @@ if (failures === 0) {
 }
 
 // 2. Contrast
-console.log('\n[2/2] WCAG contrast');
+console.log('\n[2/4] WCAG contrast');
 for (const [theme, tokens] of [
   ['dark ', dark],
   ['light', light],
@@ -176,7 +176,7 @@ if (failures === 0) console.log(`  OK    all pairs pass in both themes`);
 // cannot see a tint, and ink on a tint is the colour bug this product has had
 // four times (see the ink-on-tinted-surfaces note). Added 2026-09-16 with the
 // Euka tier palette.
-console.log('\n[3/3] Tier labels on their own chips');
+console.log('\n[3/4] Tier labels on their own chips');
 const before = failures;
 const mixHex = (a, b, t) =>
   '#' + hex(a).map((v, i) => Math.round((v * t + hex(b)[i] * (1 - t)) * 255).toString(16).padStart(2, '0')).join('');
@@ -201,6 +201,26 @@ for (const [theme, tokens] of [
   }
 }
 if (failures === before) console.log('  OK    every tier label clears 4.5:1 on its own chip, both themes');
+
+// 4. The three totals beside Top videos: views (info), GMV (success) and ad
+// spend (danger). Each card is an 8% tint of its ink on a card, and carries
+// that ink as the figure and the muted grey as the label. Added 2026-09-16.
+console.log('\n[4/4] Top videos totals on their tinted cards');
+const before4 = failures;
+for (const [theme, tokens] of [
+  ['dark ', dark],
+  ['light', light],
+]) {
+  const card = tokens['--wx-surface-1'];
+  for (const t of ['--wx-info', '--wx-success', '--wx-danger']) {
+    const tint = mixHex(tokens[t], card, 0.08);
+    for (const fg of [t, '--wx-text-muted']) {
+      const r = ratio(tokens[fg], tint);
+      if (r < 4.5) fail(`${theme}  ${fg} on the ${t} total card: ${r.toFixed(2)}:1 (needs 4.5:1)  ${tokens[fg]} on ${tint}`);
+    }
+  }
+}
+if (failures === before4) console.log('  OK    each figure and its label clear 4.5:1 on their card, both themes');
 
 console.log('\n' + '='.repeat(70));
 if (failures > 0) {

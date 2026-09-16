@@ -2197,11 +2197,11 @@ show ten videos, not eight, with "the sum of gmv (new video gmv column)"
 beside them. Second, Manage videos should "let them view the videos of a
 certain date … today or any date".
 
-**The total is the New video GMV column, added up.** It covers every row in
-the table below, not the ten thumbnails. A total of the best videos is not the
-brand's figure. It sums the ROUNDED per-row values, because those are the
-numbers printed in the column, so a calculator run down the column agrees
-with it.
+**REPLACED ON 2026-09-16 by three totals (views, GMV, ad spend); see the next
+section.** The single total below was the New video GMV column, added up. It
+covered every row in the table, not the ten thumbnails, and summed the rounded
+per-row values. That last rule is gone: the same video can sit under two
+deals, and the column counts it twice.
 
 **Ten 96px thumbnails do not fit beside a total on a laptop.** The first
 version let the row scroll, which hid the tenth video under the total at
@@ -2236,6 +2236,49 @@ no date and the filter would hide it the moment it appeared.
 
 **Guarded by `pnpm verify:video-days`.** Every expected number comes from the
 database first, and the check proves the modal wrote nothing.
+
+## Top videos: views, GMV and ad spend totals (2026-09-16)
+
+Rashid, for his boss, in place of the single GMV total: *"3 vertical mini
+cards … sum of views (in blue), GMV (green) and ad spend (red) … month wise
+… and if he chooses all time show him sum of all time"*.
+
+**They cover every row in the table below**, which the month picker already
+scopes: one month, or everything under All Time. They do not cover the ten
+thumbnails.
+
+**Each TikTok video is counted once.** The same video sits under two deals of
+one creator: 84 times in Penetrex's history, and none in September 2026.
+Adding the columns would put Penetrex's all-time views at 10.0M instead of
+7.9M, and would count the ad money for those videos twice as well. So a total
+can come in under a calculator run down the column, and the hover text says
+how many videos were counted once. Where two rows carry different synced
+figures for one video, the larger is kept, because views and GMV only grow.
+- **Views:** the videos' synced view counts.
+- **GMV:** New video GMV (each video's revenue), added up, then rounded once.
+- **Ad spend:** Euka's, from the same reader and the same period as the Ad
+  spend column (`wxAdsHook`, then `euka_ad_totals_for_videos`), for the
+  distinct video ids. While it loads it shows "…". With no Euka data it shows
+  a dash, never $0. Two currencies show "Mixed" and are never added together.
+  If the load fails it shows a dash, with the reason in the hover text.
+  `data-state` and `data-value` exist for the check.
+
+**Colours:** `--wx-info`, `--wx-success` and `--wx-danger`, because he asked
+for blue, green and red by name. Each card is an 8% tint of its ink.
+`check:contrast` section 4 proves the figure and the label on each tint.
+
+**Layout:** the same container queries as the old total. At full size the
+three cards stack in the 14rem column, 39px each. When the thumbnails shrink
+(about 1440px) the cards are 32px each. Below a 1090px strip they sit above
+the thumbnails as a row of three, and wrap on a phone. The strip still hides
+when no video has GMV in the period (their rule), and the totals hide with it.
+
+**The video figures are live.** The page's Euka sweep writes fresh views into
+the rows while it is open: All Time views moved by 73 during one check run.
+So the check reads the database before and after the screen.
+
+**Guarded by `pnpm verify:topvids-stats`:** the month and All Time against the
+database, colours in both themes, and seven widths.
 
 ## Deals badge and the L0–L7 tier palette (2026-09-16)
 

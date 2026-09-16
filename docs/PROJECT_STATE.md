@@ -29,6 +29,24 @@ Answer "what's pending?" from `docs/PARKED.md`.
 
 ## WHERE EVERYTHING STANDS
 
+### Top videos: views, GMV and ad spend totals (2026-09-16)
+
+Rashid's boss wanted three stacked cards beside the ten top videos on a brand
+page, instead of the single GMV total: views (blue), GMV (green) and ad spend
+(red), for the chosen month, or for all time under All Time.
+- **Each video is counted once.** 84 Penetrex videos sit under two deals, and
+  adding the columns would put all-time views at 10.0M instead of 7.9M. The
+  hover text says how many videos were counted once.
+- **Ad spend is Euka's**, the same figure and period as the Ad spend column.
+  It shows a dash when Euka has nothing, never $0.
+- **Proven:** `verify:topvids-stats` 23/23. Penetrex September and All Time
+  were checked against the database, colours in both themes, and seven widths
+  from 1920 to 390. Zero console errors. `check:contrast` has a section for the
+  three cards.
+- **Found on the way:** under All Time the page's Euka sweep keeps writing
+  fresh views and GMV into the rows while it is open. Figures can tick up
+  while you watch. That is their existing behaviour, not a fault.
+
 ### Deals badge and the new L0–L7 tier colours (2026-09-16)
 
 Rashid asked for two things. First, a small circle beside each creator showing

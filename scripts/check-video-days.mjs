@@ -9,6 +9,11 @@
  * video gmv column)" beside them, and in Manage videos "let them view the
  * videos of a certain date … today or any date".
  *
+ * ON 2026-09-16 THE SINGLE TOTAL BECAME THREE CARDS (views, GMV, ad spend),
+ * and GMV stopped being "the column added up": each video now counts once.
+ * Their figures are proven by verify:topvids-stats. This check keeps the ten
+ * videos, the cards' position at every width, and the day filter.
+ *
  * EVERY EXPECTED NUMBER IS READ FROM THE DATABASE FIRST, never from the screen
  * under test. The one exception is the column total, which is compared with
  * both: the column the person can see, and the database.
@@ -119,11 +124,10 @@ try {
   const strip = await page.evaluate(() => {
     const box = (e) => { const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom }; };
     const frames = [...document.querySelectorAll('.pc-topvid-frame')];
-    const total = document.querySelector('.pc-topvids-total');
+    const total = document.querySelector('.pc-topvids-stats');
     return {
       tiles: document.querySelectorAll('.pc-topvid').length,
-      total: (document.querySelector('.pc-topvids-total-val') || {}).textContent || null,
-      sub: (document.querySelector('.pc-topvids-total-sub') || {}).textContent || null,
+      total: (document.querySelector('.pc-topvids-stat.gmv .pc-topvids-stat-val') || {}).textContent || null,
       cells: [...document.querySelectorAll('.pc-ct-row [data-label="New video GMV"]')].map((c) => c.textContent.trim()),
       rows: document.querySelectorAll('.pc-ct-row').length,
       lastFrame: frames.length ? box(frames[frames.length - 1]) : null,
@@ -137,12 +141,13 @@ try {
   check(sameRows, 'the brand page lists the rows the database has for that month', `${strip.rows} on screen, ${monthRows.length} in the database`);
   check(strip.tiles === Math.min(10, earning), 'the strip shows ten videos (or every earning video, if fewer)',
     `${strip.tiles} shown, ${earning} earning`);
-  check(strip.total !== null && money(strip.total) === colSum, 'the total equals the New video GMV column added up',
-    `${strip.total} vs $${colSum}`);
-  if (sameRows) check(money(strip.total) === dbTotal, 'and equals the database', `${strip.total} vs $${dbTotal}`);
+  /* The GMV card no longer equals the column added up: it counts each video
+     once and rounds once (DECISIONS, 2026-09-16). verify:topvids-stats proves
+     all three cards against the database. */
+  check(strip.total !== null, 'the views, GMV and ad spend cards render', `GMV card ${strip.total}`);
   if (strip.totalBox && strip.lastFrame && strip.firstFrame) {
     const mid = (b) => (b.t + b.b) / 2;
-    check(strip.totalBox.l > strip.lastFrame.r, 'the total sits to the right of the videos',
+    check(strip.totalBox.l > strip.lastFrame.r, 'the totals sit to the right of the videos',
       `total starts ${Math.round(strip.totalBox.l)}, last video ends ${Math.round(strip.lastFrame.r)}`);
     check(Math.abs(mid(strip.totalBox) - mid(strip.firstFrame)) <= 8, 'vertically centred on the thumbnails',
       `${Math.round(mid(strip.totalBox) - mid(strip.firstFrame))}px off`);
@@ -221,7 +226,7 @@ try {
     await page.setViewportSize({ width: w, height: 900 });
     await page.waitForTimeout(1200);
     const l = await page.evaluate(() => {
-      const t = document.querySelector('.pc-topvids-total');
+      const t = document.querySelector('.pc-topvids-stats');
       const r = document.querySelector('.pc-topvids-row');
       if (!t || !r) return null;
       const tb = t.getBoundingClientRect(), rb = r.getBoundingClientRect();
@@ -234,7 +239,7 @@ try {
     });
     if (!l) { check(false, `at ${w}px the strip rendered`, 'NOT FOUND'); continue; }
     check(l.beside ? l.hidden <= 1 : l.above,
-      `at ${w}px: ${l.beside ? 'all ten fit beside the total' : 'the total sits above the videos'}`,
+      `at ${w}px: ${l.beside ? 'all ten fit beside the totals' : 'the totals sit above the videos'}`,
       l.beside ? `${l.hidden}px of videos hidden` : `above=${l.above}`);
     check(l.overflow <= 1, `at ${w}px the page does not scroll sideways`, `${l.overflow}px`);
     if (SHOTS && w === 1280) await page.locator('.pc-topvids').first().screenshot({ path: `${SHOTS}/strip-1280.png` });
@@ -244,14 +249,14 @@ try {
   await page.setViewportSize({ width: 400, height: 900 });
   await page.waitForTimeout(1500);
   const narrow = await page.evaluate(() => {
-    const t = document.querySelector('.pc-topvids-total');
+    const t = document.querySelector('.pc-topvids-stats');
     const r = document.querySelector('.pc-topvids-row');
     return {
       overflow: document.documentElement.scrollWidth - window.innerWidth,
       above: t && r ? t.getBoundingClientRect().bottom <= r.getBoundingClientRect().top + 1 : null,
     };
   });
-  check(narrow.above === true, 'at 400px the total sits above the videos', String(narrow.above));
+  check(narrow.above === true, 'at 400px the totals sit above the videos', String(narrow.above));
   check(narrow.overflow <= 1, 'and the page does not scroll sideways', `${narrow.overflow}px`);
   if (SHOTS) await page.locator('.pc-topvids').first().screenshot({ path: `${SHOTS}/strip-400.png` });
 

@@ -81,7 +81,8 @@
     "verify:video-days": "node scripts/check-video-days.mjs",
     "verify:euka-ads": "node scripts/check-euka-ads.mjs",
     "verify:euka-ads-ui": "node scripts/check-euka-ads-ui.mjs",
-    "verify:tier-deals": "node scripts/check-tier-deals-ui.mjs"
+    "verify:tier-deals": "node scripts/check-tier-deals-ui.mjs",
+    "verify:topvids-stats": "node scripts/check-topvids-stats.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

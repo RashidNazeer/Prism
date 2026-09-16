@@ -1563,21 +1563,29 @@
 
 /* ------------------------------------------------------------ top videos --- */
 /*
- * TEN THUMBNAILS, AND THE NEW VIDEO GMV COLUMN'S TOTAL CENTRED IN THE SPACE TO
- * THEIR RIGHT. Rashid, 2026-09-15.
+ * TEN THUMBNAILS, AND THREE TOTALS STACKED IN THE SPACE TO THEIR RIGHT:
+ * VIEWS IN BLUE, GMV IN GREEN, AD SPEND IN RED. Rashid, 2026-09-16, for his
+ * boss, replacing the single New video GMV total of the day before. Each one
+ * covers every row in the table below, so each follows the month picker, and
+ * All Time adds up everything.
  *
- * TEN 96px THUMBNAILS DO NOT FIT BESIDE A TOTAL ON A LAPTOP. The first version
- * let the row shrink and scroll, and the browser check caught the tenth video
- * sitting hidden under the total at 1500px. So the strip is a size container:
- * - wide: full-size thumbnails, total centred in the space left over
- * - laptop: thumbnails shrink (never below 76px) so all ten stay beside it
- * - narrower: the total goes above as one line and the thumbnails scroll
+ * TEN 96px THUMBNAILS DO NOT FIT BESIDE THE TOTALS ON A LAPTOP. The first
+ * version let the row shrink and scroll, and the browser check caught the
+ * tenth video sitting hidden under the total at 1500px. So the strip is a size
+ * container:
+ * - wide: full-size thumbnails, the totals centred in the space left over
+ * - laptop: thumbnails shrink (never below 76px) so all ten stay beside them
+ * - narrower: the totals go above as one row and the thumbnails scroll
  * It is sized by the STRIP's width, not the window's, because the sidebar and
  * the zoom control both change how much room the strip actually has.
  *
- * `--tv-w` is the thumbnail width. The total's wrapper is exactly one
- * thumbnail tall, so the card centres on the pictures and not on the pictures
- * plus the names printed under them — which is what "19px off" was.
+ * `--tv-w` is the thumbnail width. The totals' wrapper is exactly one
+ * thumbnail tall, so the three cards share the pictures' height and not the
+ * pictures plus the names printed under them.
+ *
+ * The three colours are the info, success and danger tokens because he asked
+ * for blue, green and red by name. `check:contrast` proves each ink, and the
+ * muted label, on its own 8% tint.
  */
 .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids {
   container-type: inline-size;
@@ -1604,52 +1612,82 @@
   height: calc(var(--tv-w) * 4 / 3);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: stretch;
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-total {
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stats {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  min-width: 11rem;
-  padding: 14px 22px 13px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, var(--wx-success-soft), transparent 85%), var(--wx-surface-1);
-  border: 1px solid color-mix(in srgb, var(--wx-success) 30%, var(--wx-border));
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--wx-text) 8%, transparent);
-  text-align: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 16rem;
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-total-lbl {
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat {
+  --s: var(--wx-info);
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px 0 7px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--s) 8%, var(--wx-surface-1));
+  border: 1px solid color-mix(in srgb, var(--s) 30%, var(--wx-surface-1));
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat.gmv {
+  --s: var(--wx-success);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat.spend {
+  --s: var(--wx-danger);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat-ico {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  color: var(--s);
+  background: color-mix(in srgb, var(--s) 16%, var(--wx-surface-1));
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat-ico svg {
+  display: block;
+  width: 13px;
+  height: 13px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat-lbl {
   font-size: 0.625rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--wx-text-muted);
-}
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-total-val {
-  font-size: 1.75rem;
-  line-height: 1.15;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-  color: var(--wx-success);
-}
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-total-sub {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--wx-text-muted);
   white-space: nowrap;
 }
-/* Laptop: ten full-size thumbnails, their gaps, the gap to the total and the
-   total (14rem, so its one-line caption never wraps) need 1290px. Under
-   that, the thumbnails shrink so all ten stay. */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat-val {
+  margin-left: auto;
+  font-size: 1.0625rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--s);
+  white-space: nowrap;
+}
+/* No figure yet, or none to give: a dash in the label's grey, never a $0. */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat-val.none {
+  color: var(--wx-text-muted);
+  font-weight: 700;
+}
+/* Laptop: ten full-size thumbnails, their gaps, the gap to the totals and the
+   totals (14rem) need 1290px. Under that, the thumbnails shrink so all ten
+   stay. */
 @container (max-width: 1290px) {
   .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-body {
     --tv-w: max(76px, calc((100cqi - 16px - 14rem - 90px) / 10));
   }
 }
-/* Below 76px a thumbnail stops being a picture. From there the total goes
-   above as one line, and the thumbnails return to full size and scroll. */
+/* Below 76px a thumbnail stops being a picture. From there the totals go
+   above as one row of three, and the thumbnails return to full size and
+   scroll. */
 @container (max-width: 1090px) {
   .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-body {
     --tv-w: 96px;
@@ -1663,24 +1701,14 @@
     height: auto;
     justify-content: flex-start;
   }
-  .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-total {
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stats {
     flex-direction: row;
     flex-wrap: wrap;
-    align-items: baseline;
-    column-gap: 10px;
-    width: 100%;
-    min-width: 0;
-    padding: 10px 14px;
-    text-align: left;
+    max-width: none;
   }
-  .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-total-lbl {
-    white-space: nowrap;
-  }
-  .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-total-val {
-    font-size: 1.375rem;
-  }
-  .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-total-sub {
-    margin-left: auto;
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat {
+    flex: 1 1 10rem;
+    min-height: 2.5rem;
   }
 }
 

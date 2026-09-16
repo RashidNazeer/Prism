@@ -2119,6 +2119,7 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
      a single period is enough and every row and video panel below inherits it
      without a prop being threaded through them. */
   const wxSetMonth = wxAdsHook().setMonth;
+  const wxAdsB = wxAdsHook(); /* WURX-ADDED · for the Top videos ad spend total */
   useEffect(() => {
     wxSetMonth(allTime ? '' : (month || ''));
   }, [wxSetMonth, allTime, month]);
@@ -2416,23 +2417,67 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
           .slice(0, 10);
         if (!tops.length) return null;
         /*
-         * WURX-ADDED · THE NEW VIDEO GMV COLUMN, ADDED UP.
+         * WURX-ADDED · THREE TOTALS: VIEWS, GMV AND AD SPEND.
          *
-         * Rashid, 2026-09-15: ten videos instead of eight, and "in the same row
-         * … the sum of gmv (new video gmv column)". So it is exactly that
-         * column's arithmetic — every row in the table below, each row's
-         * posted videos' revenue — and it sums the ROUNDED per-row figures,
-         * because those are the numbers printed in the column. Anyone who
-         * checks it with a calculator against the column gets the same answer.
+         * Rashid, 2026-09-16, for his boss, in place of the single New video
+         * GMV total: "3 vertical mini cards ... the sum of views (in blue), GMV
+         * (green) and ad spend (red)", for the month when a month is chosen and
+         * for all time under All Time. They cover every row in the table below,
+         * which is already scoped exactly that way.
          *
-         * Not the ten thumbnails' GMV: those are the best videos, and a total
-         * of the best is not the brand's figure.
+         * EACH VIDEO IS COUNTED ONCE. On dev the same TikTok video sits under two
+         * deals of one creator 32 times inside a single brand-month (84 across
+         * months), and adding the columns would count its views, its GMV and its
+         * ad money twice. So a total can come in under a calculator run down the
+         * column, and the card's hover text says by how many videos. Where two
+         * rows carry different synced figures for one video the larger is kept:
+         * views and GMV only grow, so the larger is the newer sync.
+         *
+         * Ad spend is Euka's, from the same reader and for the same period as the
+         * Ad spend column. No Euka data is a dash, never $0, and two currencies
+         * are never added together.
          */
-        const rowGmv = (c) => Math.round((Array.isArray(c.video_codes) ? c.video_codes : [])
-          .filter(r => r && String(r.video || '').trim())
-          .reduce((t, r) => t + (Number(r.revenue) || 0), 0));
-        const colTotal = sortedCreators.reduce((t, c) => t + rowGmv(c), 0);
-        const earning = sortedCreators.filter(c => rowGmv(c) > 0).length;
+        const wxVids = new Map();
+        let wxDupes = 0;
+        sortedCreators.forEach((c) => {
+          const seen = new Set();
+          (Array.isArray(c.video_codes) ? c.video_codes : []).forEach((r) => {
+            const url = r && String(r.video || '').trim();
+            if (!url) return;
+            const id = wxVideoId(url);
+            const k = id || url;
+            if (seen.has(k)) return;
+            seen.add(k);
+            const cur = wxVids.get(k);
+            if (cur) wxDupes++;
+            wxVids.set(k, {
+              id,
+              views: Math.max(cur ? cur.views : 0, Number(r.views) || 0),
+              gmv: Math.max(cur ? cur.gmv : 0, Number(r.revenue) || 0),
+            });
+          });
+        });
+        const wxAll = [...wxVids.values()];
+        const wxViews = wxAll.reduce((t, v) => t + v.views, 0);
+        const wxGmv = Math.round(wxAll.reduce((t, v) => t + v.gmv, 0));
+        const wxIdsAll = wxAll.map((v) => v.id).filter(Boolean);
+        wxAdsB.ensure(wxIdsAll);
+        const wxSpend = wxTotals(wxAdsB.get, wxIdsAll);
+        const wxPeriod = allTime ? 'all time' : monthLabel(month);
+        const wxOnce = wxDupes ? ` · ${wxDupes} video${wxDupes === 1 ? '' : 's'} listed under two deals, counted once` : '';
+        const wxVidsIn = `${wxAll.length} video${wxAll.length === 1 ? '' : 's'} in the table below · ${wxPeriod}${wxOnce}`;
+        const wxSpendState = wxSpend.withData
+          ? (wxSpend.mixedCurrency ? 'mixed' : 'ok')
+          : ((!wxAdsB.ready || wxAdsB.loading) && wxIdsAll.length ? 'pending' : (wxAdsB.error ? 'error' : 'none'));
+        const wxSpendText = { ok: wxMoney(wxSpend.cost, wxSpend.currency), mixed: 'Mixed', pending: '…', error: '–', none: '–' }[wxSpendState];
+        const wxSpendTitle = {
+          ok: `Euka ad spend on ${wxSpend.withData} of ${wxIdsAll.length} videos in the table below · ${wxPeriod}${wxOnce}`,
+          mixed: 'These videos were paid for in more than one currency, so they are not added together',
+          pending: 'Loading ad spend from Euka',
+          error: `Ad spend could not be loaded: ${wxAdsB.error}`,
+          none: `Euka has no ad spend for these videos · ${wxPeriod}`,
+        }[wxSpendState];
+        /* WURX-END */
         return (
           <div className="pc-topvids">
             <div className="pc-topvids-head">
@@ -2455,15 +2500,33 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
                 </a>
               ))}
             </div>
+            {/* WURX-ADDED · views, GMV and ad spend for the period, stacked */}
             <div className="pc-topvids-totalwrap">
-              <div className="pc-topvids-total" title="The New video GMV column below, added up">
-                <span className="pc-topvids-total-lbl">New video GMV</span>
-                <span className="pc-topvids-total-val">{fmt$Exact(colTotal)}</span>
-                <span className="pc-topvids-total-sub">
-                  {earning} of {sortedCreators.length} creator{sortedCreators.length === 1 ? '' : 's'} · {allTime ? 'all time' : monthLabel(month)}
-                </span>
+              <div className="pc-topvids-stats" aria-label={`Totals for ${wxPeriod}`}>
+                <div className="pc-topvids-stat views" data-value={wxViews} title={`${wxViews.toLocaleString()} views across ${wxVidsIn}`}>
+                  <span className="pc-topvids-stat-ico" aria-hidden>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                  </span>
+                  <span className="pc-topvids-stat-lbl">Views</span>
+                  <span className={`pc-topvids-stat-val${wxViews > 0 ? '' : ' none'}`}>{wxViews > 0 ? kNum(wxViews) : '–'}</span>
+                </div>
+                <div className="pc-topvids-stat gmv" data-value={wxGmv} title={`${fmt$Exact(wxGmv)} new video GMV across ${wxVidsIn}`}>
+                  <span className="pc-topvids-stat-ico" aria-hidden>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
+                  </span>
+                  <span className="pc-topvids-stat-lbl">GMV</span>
+                  <span className="pc-topvids-stat-val">{fmt$Exact(wxGmv)}</span>
+                </div>
+                <div className="pc-topvids-stat spend" data-state={wxSpendState} data-value={wxSpendState === 'ok' ? wxSpend.cost.toFixed(2) : ''} title={wxSpendTitle}>
+                  <span className="pc-topvids-stat-ico" aria-hidden>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m3 11 18-5v12L3 14v-3z" /><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" /></svg>
+                  </span>
+                  <span className="pc-topvids-stat-lbl">Ad spend</span>
+                  <span className={`pc-topvids-stat-val${wxSpendState === 'ok' ? '' : ' none'}`}>{wxSpendText}</span>
+                </div>
               </div>
             </div>
+            {/* WURX-END */}
             </div>
           </div>
         );
