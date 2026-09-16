@@ -50,9 +50,9 @@ page, instead of the single GMV total: views (blue), GMV (green) and ad spend
 - **Found on the way:** under All Time the page's Euka sweep keeps writing
   fresh views and GMV into the rows while it is open. Figures can tick up
   while you watch. That is their existing behaviour, not a fault.
-- **Live on dev:** commit 6a84915, by CLI deploy (PARKED 45).
-  wurxmediahubdev.vercel.app serves `index-dJ9i2GAW.js`, the build both checks
-  passed against. `verify:video-days` (29/29) now checks the three cards'
+- **Live on dev:** commit df73126, with the cards on the far right, by CLI
+  deploy (PARKED 45). wurxmediahubdev.vercel.app serves `index-B-OCO5zj.js`
+  and `index-DZdrp_OO.css`, the build both checks passed against. `verify:video-days` (29/29) now checks the three cards'
   position instead of the old total.
 
 ### Deals badge and the new L0–L7 tier colours (2026-09-16)
