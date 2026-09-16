@@ -132,6 +132,7 @@ try {
       rows: document.querySelectorAll('.pc-ct-row').length,
       lastFrame: frames.length ? box(frames[frames.length - 1]) : null,
       firstFrame: frames.length ? box(frames[0]) : null,
+      body: document.querySelector('.pc-topvids-body') ? box(document.querySelector('.pc-topvids-body')) : null,
       totalBox: total ? box(total) : null,
     };
   });
@@ -149,8 +150,10 @@ try {
     const mid = (b) => (b.t + b.b) / 2;
     check(strip.totalBox.l > strip.lastFrame.r, 'the totals sit to the right of the videos',
       `total starts ${Math.round(strip.totalBox.l)}, last video ends ${Math.round(strip.lastFrame.r)}`);
-    check(Math.abs(mid(strip.totalBox) - mid(strip.firstFrame)) <= 8, 'vertically centred on the thumbnails',
-      `${Math.round(mid(strip.totalBox) - mid(strip.firstFrame))}px off`);
+    /* Since 2026-09-16 the cards centre on the whole row of tiles (picture,
+       name and views), not on the pictures: "Also in center". */
+    check(!!strip.body && Math.abs(mid(strip.totalBox) - mid(strip.body)) <= 2, 'vertically centred on the row of videos',
+      strip.body ? `${Math.round(mid(strip.totalBox) - mid(strip.body))}px off` : 'no strip body');
   } else {
     check(false, 'the total card rendered', 'NOT FOUND');
   }

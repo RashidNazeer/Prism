@@ -18,12 +18,14 @@
  * THE VIDEO FIGURES ARE LIVE. The page's own Euka sweep writes fresh views into
  * these rows while it is open: one run saw All Time views move by 73 between
  * the database read and the screen read. So every comparison reads the
- * database right before AND right after reading the screen, and the screen
- * must equal one of the two.
+ * database right before AND right after reading the screen, and views and GMV
+ * must fall inside the span of those reads (ad spend must match exactly).
  *
- * Also: each card wears its own token (info, success, danger) in both themes,
- * and at every width the cards never cover a thumbnail, nothing in a card is
- * cut off, and the page never scrolls sideways.
+ * Also: each card wears its own token (info, success, danger) in both themes;
+ * beside the videos the cards sit on the strip's far right, centred top to
+ * bottom on the row ("extreme right ... Also in center"); and at every width
+ * they never cover a thumbnail, nothing in a card is cut off, and the page
+ * never scrolls sideways.
  *
  * BRAND and MONTH default to Penetrex, 2026-09. Screenshots go to SHOTS_DIR.
  */
@@ -190,7 +192,14 @@ const layout = (page) => page.evaluate(() => {
   const clipped = [...document.querySelectorAll('.pc-topvids-stat, .pc-topvids-stat-val, .pc-topvids-stat-lbl')]
     .filter((el) => el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1).length;
   const cards = [...document.querySelectorAll('.pc-topvids-stat')].map((c) => Math.round(r(c).height));
-  return { beside, overlap, hiddenThumbs, clipped, cards, sideways: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+  /* Beside the videos, the cards sit on the strip's far right edge (Rashid,
+     2026-09-16: "extreme right"). */
+  const body = document.querySelector('.pc-topvids-body');
+  const rightGap = body ? Math.round(r(body).right - s.right) : 999;
+  /* ...and centred top to bottom on the row of tiles ("Also in center"). */
+  const mid = (b) => (b.top + b.bottom) / 2;
+  const offCentre = body ? Math.round(mid(s) - mid(r(body))) : 999;
+  return { beside, overlap, hiddenThumbs, clipped, cards, rightGap, offCentre, sideways: document.documentElement.scrollWidth - document.documentElement.clientWidth };
 });
 
 async function shot(page, file) {
@@ -266,9 +275,10 @@ try {
     const l = await layout(page);
     if (l.missing) { check(false, `${w}px: the strip is on screen`); continue; }
     const small = l.cards.filter((h) => h < 24).length;
-    check(l.overlap === 0 && l.hiddenThumbs === 0 && l.clipped === 0 && l.sideways <= 1 && small === 0,
-      `${w}px: cards ${l.beside ? 'beside' : 'above'} the videos, covering none, nothing cut off, no sideways scroll`,
-      `overlap ${l.overlap} · thumbs under cards ${l.hiddenThumbs} · clipped ${l.clipped} · sideways ${l.sideways}px · card heights ${l.cards.join('/')}`);
+    const placed = !l.beside || (Math.abs(l.rightGap) <= 2 && Math.abs(l.offCentre) <= 2);
+    check(l.overlap === 0 && l.hiddenThumbs === 0 && l.clipped === 0 && l.sideways <= 1 && small === 0 && placed,
+      `${w}px: cards ${l.beside ? 'on the far right, centred top to bottom,' : 'above the videos,'} covering none, nothing cut off, no sideways scroll`,
+      `right gap ${l.rightGap}px · off centre ${l.offCentre}px · overlap ${l.overlap} · thumbs under cards ${l.hiddenThumbs} · clipped ${l.clipped} · sideways ${l.sideways}px · card heights ${l.cards.join('/')}`);
     if ([1280, 768, 390].includes(w)) await shot(page, `strip-${w}-light.png`);
   }
   await page.setViewportSize({ width: 1600, height: 1000 });

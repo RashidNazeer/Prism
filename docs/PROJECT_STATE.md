@@ -43,6 +43,10 @@ page, instead of the single GMV total: views (blue), GMV (green) and ad spend
   were checked against the database, colours in both themes, and seven widths
   from 1920 to 390. Zero console errors. `check:contrast` has a section for the
   three cards.
+- **Placement, asked the same day:** "on extreme right … Also in center". The
+  cards sit on the strip's far right edge, centred top to bottom on the row of
+  tiles (picture, name and views). Both checks measure it: 0px gap, 0px off
+  centre.
 - **Found on the way:** under All Time the page's Euka sweep keeps writing
   fresh views and GMV into the rows while it is open. Figures can tick up
   while you watch. That is their existing behaviour, not a fault.

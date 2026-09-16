@@ -1573,15 +1573,16 @@
  * version let the row shrink and scroll, and the browser check caught the
  * tenth video sitting hidden under the total at 1500px. So the strip is a size
  * container:
- * - wide: full-size thumbnails, the totals centred in the space left over
+ * - wide: full-size thumbnails, the totals on the strip's far right
  * - laptop: thumbnails shrink (never below 76px) so all ten stay beside them
  * - narrower: the totals go above as one row and the thumbnails scroll
  * It is sized by the STRIP's width, not the window's, because the sidebar and
  * the zoom control both change how much room the strip actually has.
  *
- * `--tv-w` is the thumbnail width. The totals' wrapper is exactly one
- * thumbnail tall, so the three cards share the pictures' height and not the
- * pictures plus the names printed under them.
+ * `--tv-w` is the thumbnail width. The three cards together are one picture
+ * tall, and they are centred top to bottom on the WHOLE tile (picture, name
+ * and views). Centring on the pictures alone left them sitting high beside the
+ * names, and Rashid asked for "center".
  *
  * The three colours are the info, success and danger tokens because he asked
  * for blue, green and red by name. `check:contrast` proves each ink, and the
@@ -1607,12 +1608,16 @@
   width: var(--tv-w);
   height: calc(var(--tv-w) * 4 / 3);
 }
+/* On the strip's far right, and centred top to bottom on the tiles beside
+   them. Rashid, 2026-09-16: "can we put them on extreme right please? Also in
+   center". The wrapper stretches to the row's full height (align-self), and
+   the cards sit in its middle. */
 .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-totalwrap {
   flex: 1 0 14rem;
-  height: calc(var(--tv-w) * 4 / 3);
+  align-self: stretch;
   display: flex;
-  justify-content: center;
-  align-items: stretch;
+  justify-content: flex-end;
+  align-items: center;
 }
 .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stats {
   display: flex;
@@ -1620,6 +1625,7 @@
   gap: 6px;
   width: 100%;
   max-width: 16rem;
+  height: calc(var(--tv-w) * 4 / 3);
 }
 .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat {
   --s: var(--wx-info);
@@ -1705,6 +1711,7 @@
     flex-direction: row;
     flex-wrap: wrap;
     max-width: none;
+    height: auto;
   }
   .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat {
     flex: 1 1 10rem;

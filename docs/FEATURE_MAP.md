@@ -2268,7 +2268,11 @@ for blue, green and red by name. Each card is an 8% tint of its ink.
 `check:contrast` section 4 proves the figure and the label on each tint.
 
 **Layout:** the same container queries as the old total. At full size the
-three cards stack in the 14rem column, 39px each. When the thumbnails shrink
+three cards stack in the 14rem column, 39px each, **pinned to the strip's
+right edge and centred top to bottom on the whole row of tiles** (Rashid, the
+same day: "put them on extreme right please? Also in center"). The old total
+centred on the pictures alone, which leaves the cards sitting high beside the
+names under them. When the thumbnails shrink
 (about 1440px) the cards are 32px each. Below a 1090px strip they sit above
 the thumbnails as a row of three, and wrap on a phone. The strip still hides
 when no video has GMV in the period (their rule), and the totals hide with it.
