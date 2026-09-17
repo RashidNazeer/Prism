@@ -252,9 +252,11 @@ Deno.serve(async (req) => {
           product: c.product ? String(c.product) : null,
           onboarded: String(c.hiring_date ?? '').slice(0, 10) || null,
           completedOn: done && dates.length ? dates[Math.min(committed > 0 ? committed : dates.length, dates.length) - 1] : null,
-          /* Money he chose to share: the deal and its per-video rate. */
-          deal: amount,
-          perVideo: committed > 0 && amount > 0 ? Math.round(amount / committed) : null,
+          /* NO DEAL AMOUNT AND NO PER-VIDEO RATE. Shared for a day on Rashid's
+             earlier answer, then: "i also dont want this deal column remove
+             it". What we pay a creator is between us and the creator, so it
+             leaves the payload rather than the page. The brand's Allocated and
+             Paid cards still show the totals, which is what he kept. */
           committed,
           delivered,
           views: videos.reduce((t, v) => t + v.views, 0),
@@ -270,7 +272,12 @@ Deno.serve(async (req) => {
         const budgetRows = budgets.filter((b) => String(b.brand ?? '').trim() === brand
           && (month === 'all' ? monthOk(monthOf(b.month)) : monthOf(b.month) === month));
         const budget = budgetRows.reduce((t, b) => t + (Number(b.budget) || 0), 0);
-        const allocated = people.reduce((t, p) => t + p.deal, 0);
+        /* FROM THE ROWS, not from the projection. The projection stopped
+           carrying each creator's deal when that column was removed, and this
+           had been summing it — Allocated and Cost / Video both went blank,
+           which is how a field disappearing from a payload silently empties a
+           total computed from it. */
+        const allocated = rows.reduce((t, c) => t + dealAmount(c.deal), 0);
         /* `c.payment_status === 'Paid'`, exactly as the staff row tests it. */
         const paid = rows
           .filter((c) => c.payment_status === 'Paid')

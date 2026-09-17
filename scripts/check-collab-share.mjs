@@ -124,7 +124,7 @@ try {
      cards the staff screen shows, and the boss asked for the same view
      (DECISIONS, 2026-09-17). Ad spend, ROI, payment status, contact details and
      row ids are the ones that may never appear. */
-  const banned = [...keys].filter((k) => /^(adSpend|ad_spent|roi|payment_status|status|email|whatsapp_number|paypal|zelle|comments|airtable_id|id)$/i.test(k));
+  const banned = [...keys].filter((k) => /^(adSpend|ad_spent|roi|deal|perVideo|payment_status|status|email|whatsapp_number|paypal|zelle|comments|airtable_id|id)$/i.test(k));
   check(banned.length === 0, 'no forbidden field name anywhere in the payload', banned.join(', '));
 
   /* ── 6 · ad spend and ROI, the two he named ──────────────────────────── */
