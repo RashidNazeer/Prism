@@ -1,24 +1,30 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 import { WurxMark } from '@/components/brand/WurxMark';
-import { money } from '@/lib/money';
+import '@/vendor/wurxbase/paidcollabs.css';
+import '@/routes/admin/wurxbase-overrides.css';
 
 /**
  * WHAT A CLIENT SEES, WITH NO ACCOUNT AT ALL.
  *
- * Rashid, 2026-09-17: a link per brand (or several brands) that Asad or an
- * admin can hand to a client. "Clients would need no login at all ... Only read
- * access and only the brand they have been shared."
+ * Rashid's boss, 2026-09-17: "we need to show them exact same view as we have
+ * they will just not be able to see ad spend and roi at any cost". So this is
+ * the Paid Collabs BRANDS view — the same five cards, the same top-videos
+ * strip, the same table — wearing the same stylesheet, and nothing else of the
+ * product. "No other section no other data please."
  *
- * THIS PAGE HOLDS NO SECRETS AND NO CLIENT. It never imports our Supabase
- * client, so it carries no key, no session and no way to reach a table. It
- * POSTs the link to the `collab-share` function and renders whatever comes
- * back. The function decides what a client may see; this file decides only how
- * it looks. If that ever inverts — if this page starts hiding a field the
- * server sent — the hiding is decoration and the field is one "view source"
- * away from being read.
+ * WHAT IS NOT HERE, and could not be even if this file wanted it: ad spend,
+ * ROI, payment details, phone numbers, emails, internal comments. The
+ * `collab-share` function builds the payload field by field and those fields
+ * are never read into it. This page can only draw what it is given, which is
+ * the point — hiding a column in CSS would leave it one "view source" away.
  *
- * There is nothing to click that writes. No form, no status, no export.
+ * ALSO NOT HERE, because a client must not change anything: the status
+ * dropdown is a plain pill, and there is no contract download, no row actions,
+ * no export. Nothing on this page writes.
+ *
+ * It holds no Supabase client, no key and no session, and stores nothing in the
+ * browser.
  */
 
 type Video = {
@@ -37,7 +43,9 @@ type Creator = {
   tiktok: string[];
   hiredBy: string | null;
   deals: number;
-  category: string | null;
+  tier: string | null;
+  l30: number | null;
+  status: string | null;
   onboarded: string | null;
   completedOn: string | null;
   deal: number;
@@ -55,10 +63,13 @@ type BrandBlock = {
   contentGuide?: string;
   kpis?: {
     budget: number;
+    allocated: number;
+    paid: number;
     remaining: number;
     creators: number;
     delivered: number;
     committed: number;
+    costPerVideo: number;
     views: number;
     gmv: number;
   };
@@ -75,6 +86,10 @@ type Payload = {
   data: BrandBlock[];
 };
 
+/* Their column widths, minus Ad spend, ROI, Contract and Actions. Inline so it
+   beats the vendored rule, which counts twelve columns. */
+const COLS = '0.36fr 0.74fr 1.58fr .8fr .52fr .56fr .74fr .68fr .52fr 1.16fr';
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const monthLabel = (key: string) => {
   if (key === 'all') return 'All time';
@@ -84,9 +99,14 @@ const monthLabel = (key: string) => {
 const dayLabel = (iso: string | null) => {
   if (!iso) return '–';
   const d = new Date(`${iso}T00:00:00Z`);
-  return Number.isNaN(d.getTime()) ? '–' : `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
+  return Number.isNaN(d.getTime()) ? '–' : `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
 };
-const compact = (n: number) => new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(n || 0);
+const money = (n: number | null | undefined) =>
+  n === null || n === undefined || !Number.isFinite(n)
+    ? '–'
+    : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: n % 1 === 0 ? 0 : 2 }).format(n);
+const kNum = (n: number) =>
+  n >= 1000 ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n) : String(n || 0);
 const handleOf = (raw: string) => {
   const t = String(raw).trim().replace(/\/$/, '');
   if (t.startsWith('http')) {
@@ -97,6 +117,16 @@ const handleOf = (raw: string) => {
 };
 const profileUrl = (raw: string) =>
   String(raw).trim().startsWith('http') ? String(raw).trim() : `https://www.tiktok.com/${handleOf(raw)}`;
+const initials = (name: string) =>
+  name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('') || '?';
+
+/* Their hired-by palette, so the tag is the same colour it is on your screen. */
+const HIRED_BY: Record<string, { i: string; fg: string; bg: string }> = {
+  aris: { i: 'A', fg: '#1259C3', bg: '#E7EFFB' },
+  myles: { i: 'M', fg: '#7A3BB5', bg: '#F1E9FB' },
+  emily: { i: 'E', fg: '#C2185B', bg: '#FCE7F0' },
+  khushi: { i: 'K', fg: '#0E7A3A', bg: '#E4F5EB' },
+};
 
 export function ShareCollab() {
   const { token = '' } = useParams();
@@ -108,7 +138,6 @@ export function ShareCollab() {
   const [open, setOpen] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
-  /* A shared page must never turn up in a search result. */
   useEffect(() => {
     const meta = document.createElement('meta');
     meta.name = 'robots';
@@ -145,10 +174,7 @@ export function ShareCollab() {
     }
   }, [token]);
 
-  useEffect(() => {
-    void load(null);
-  }, [load]);
-
+  useEffect(() => { void load(null); }, [load]);
   useEffect(() => {
     document.title = payload ? `${payload.data.map((b) => b.brand).join(', ')} · Wurx Media` : 'Wurx Media';
   }, [payload]);
@@ -164,10 +190,8 @@ export function ShareCollab() {
       <Shell>
         <div className="space-y-4" aria-busy="true" aria-live="polite">
           <div className="h-8 w-56 animate-pulse rounded-md bg-surface-2" />
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="h-24 animate-pulse rounded-xl bg-surface-2" />
-            ))}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {[0, 1, 2, 3, 4].map((i) => <div key={i} className="h-24 animate-pulse rounded-xl bg-surface-2" />)}
           </div>
           <div className="h-64 animate-pulse rounded-xl bg-surface-2" />
           <span className="sr-only">Loading this report</span>
@@ -197,23 +221,20 @@ export function ShareCollab() {
   }
 
   if (!payload || !brand) return null;
+  const k = brand.kpis;
 
   return (
     <Shell>
-      {/* ── who this is for, and what it is ───────────────────────────── */}
       <header className="flex flex-wrap items-center justify-between gap-4" data-month={payload.month}>
         <div className="min-w-0">
           <h1 className="text-2xl font-extrabold tracking-tight">{brand.brand}</h1>
-          <p className="mt-1 text-sm text-muted">
-            Creator campaign report · {monthLabel(payload.month)}
-          </p>
+          <p className="mt-1 text-sm text-muted">Creator campaign report · {monthLabel(payload.month)}</p>
         </div>
         <span className="rounded-full border border-line bg-surface-2 px-3 py-1 text-xs font-bold uppercase tracking-wider text-muted">
           Read only
         </span>
       </header>
 
-      {/* ── which brand, which month ──────────────────────────────────── */}
       <div className="mt-6 flex flex-wrap items-center gap-2">
         {payload.data.length > 1 &&
           payload.data.map((b, i) => (
@@ -230,7 +251,7 @@ export function ShareCollab() {
             </button>
           ))}
         {payload.data.length > 1 && <span className="mx-1 h-5 w-px bg-line" aria-hidden />}
-        {[...payload.months.slice(0, 12), 'all'].map((m) => (
+        {[...payload.months.slice(0, 12), ...(payload.months.length > 1 ? ['all'] : [])].map((m) => (
           <button
             key={m}
             type="button"
@@ -245,216 +266,227 @@ export function ShareCollab() {
         ))}
       </div>
 
-      {/* ── the numbers ───────────────────────────────────────────────── */}
-      {brand.kpis && (
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Card label="Budget" value={money(brand.kpis.budget)} sub={`${brand.kpis.creators} creator${brand.kpis.creators === 1 ? '' : 's'}`} />
-          <Card label="Remaining" value={money(brand.kpis.remaining)} sub={brand.kpis.remaining < 0 ? 'over budget' : 'left to allocate'} />
-          <Card label="Videos delivered" value={`${brand.kpis.delivered}${brand.kpis.committed ? `/${brand.kpis.committed}` : ''}`} sub="posted so far" />
-          <Card label="GMV" value={money(brand.kpis.gmv)} sub={`${compact(brand.kpis.views)} views`} accent />
-        </div>
-      )}
+      {/* Everything below wears Paid Collabs' own stylesheet. */}
+      <div className="wurxbase-root mt-6">
+        {k && (
+          <div className="pc-kpis pc-kpis-5" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
+            <Kpi label="Budget" color="#1259C3" value={money(k.budget)}
+              sub={k.budget > 0 ? `${Math.round((k.allocated / k.budget) * 100)}% used` : 'no budget set'} />
+            <Kpi label="Allocated" color="#7A3BB5" value={money(k.allocated)}
+              sub={`${k.creators} creator${k.creators === 1 ? '' : 's'}`} />
+            <Kpi label="Paid" color="#0E7A3A" value={money(k.paid)}
+              sub={k.allocated > 0 ? `${Math.round((k.paid / k.allocated) * 100)}% paid out` : '—'} />
+            <Kpi label="Videos" color="#0EA5E9" value={`${k.delivered}/${k.committed}`}
+              sub={k.committed > 0 ? `${Math.round((k.delivered / k.committed) * 100)}% completed` : '—'} />
+            <Kpi label="Cost / Video" color="#E65100" value={k.costPerVideo > 0 ? money(Math.round(k.costPerVideo)) : '-'}
+              sub="per delivered video" />
+          </div>
+        )}
 
-      {/* ── the best of the work ──────────────────────────────────────── */}
-      {brand.topVideos && brand.topVideos.length > 0 && (
-        <section className="mt-8">
-          <h2 className="text-xs font-extrabold uppercase tracking-wider text-muted">Top videos by GMV</h2>
-          <ul className="mt-3 flex gap-3 overflow-x-auto pb-2">
-            {brand.topVideos.map((v, i) => (
-              <li key={v.url + i} className="w-[104px] flex-shrink-0">
-                <a href={v.url} target="_blank" rel="noreferrer noopener" className="group block">
-                  <span className="relative block aspect-[3/4] overflow-hidden rounded-lg border border-line bg-surface-2">
-                    {v.thumb ? (
-                      <img src={v.thumb} alt="" loading="lazy" className="h-full w-full object-cover" />
-                    ) : (
-                      <span className="flex h-full w-full items-center justify-center text-faint" aria-hidden>▶</span>
-                    )}
-                    <span className="absolute bottom-1 left-1 rounded-md bg-success px-1.5 py-0.5 text-[0.625rem] font-extrabold text-inverse">
-                      {money(v.gmv)}
+        {brand.topVideos && brand.topVideos.length > 0 && (
+          <div className="pc-topvids">
+            <div className="pc-topvids-head">
+              Top videos by GMV · {monthLabel(payload.month)}
+              <span className="pc-topvids-sub">live from EUKA</span>
+            </div>
+            <div className="pc-topvids-body">
+              <div className="pc-topvids-row">
+                {brand.topVideos.map((v, i) => (
+                  <a key={v.url + i} className="pc-topvid" href={v.url} target="_blank" rel="noreferrer noopener"
+                    title={`${v.name} · ${money(v.gmv)} GMV · open on TikTok`}>
+                    <span className="pc-topvid-frame">
+                      {v.thumb
+                        ? <img className="pc-topvid-thumb" src={v.thumb} alt="" loading="lazy" />
+                        : <span className="pc-topvid-thumb pc-topvid-ph" aria-hidden>▶</span>}
+                      <span className="pc-topvid-rank">#{i + 1}</span>
+                      <span className="pc-topvid-gmv">{money(v.gmv)}</span>
                     </span>
-                  </span>
-                  <span className="mt-1.5 block truncate text-xs font-bold group-hover:underline">{v.name}</span>
-                  <span className="block text-[0.6875rem] text-muted">{compact(v.views)} views</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* ── the creators ──────────────────────────────────────────────── */}
-      {brand.creators && (
-        <section className="mt-8">
-          <h2 className="text-xs font-extrabold uppercase tracking-wider text-muted">
-            Creators · {brand.creators.length}
-          </h2>
-
-          {brand.creators.length === 0 ? (
-            <p className="mt-4 rounded-xl border border-line bg-surface-1 p-8 text-center text-muted">
-              No creators posted for {brand.brand} in {monthLabel(payload.month)}.
-            </p>
-          ) : (
-            <>
-              <div className="mt-3 hidden gap-3 px-3 text-[0.6875rem] font-extrabold uppercase tracking-wider text-faint md:grid md:grid-cols-[minmax(0,2.2fr)_repeat(5,minmax(0,1fr))]">
-                <span>Creator</span>
-                <span className="text-right">Deal</span>
-                <span className="text-right">Videos</span>
-                <span className="text-right">Views</span>
-                <span className="text-right">GMV</span>
-                <span className="text-right">Items sold</span>
+                    <span className="pc-topvid-name">{v.name}</span>
+                    <span className="pc-topvid-views">{v.views > 0 ? `${kNum(v.views)} views` : ' '}</span>
+                  </a>
+                ))}
               </div>
-              <ul className="mt-2 space-y-2">
-                {brand.creators.map((c, i) => {
-                  const id = `${c.name}-${i}`;
-                  const isOpen = open === id;
-                  return (
-                    /* The data- attributes are for verify:collab-share-ui, which
-                       compares each row with the database rather than trusting
-                       the words on screen. They carry nothing the row does not
-                       already show. */
-                    <li
-                      key={id}
-                      className="rounded-xl border border-line bg-surface-1"
+              {k && (
+                <div className="pc-topvids-totalwrap">
+                  <div className="pc-topvids-stats" aria-label={`Totals for ${monthLabel(payload.month)}`}>
+                    <div className="pc-topvids-stat views" data-value={k.views} title={`${k.views.toLocaleString()} views`}>
+                      <span className="pc-topvids-stat-ico" aria-hidden>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                      </span>
+                      <span className="pc-topvids-stat-lbl">Views</span>
+                      <span className="pc-topvids-stat-val">{kNum(k.views)}</span>
+                    </div>
+                    <div className="pc-topvids-stat gmv" data-value={k.gmv} title={`${money(k.gmv)} new video GMV`}>
+                      <span className="pc-topvids-stat-ico" aria-hidden>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
+                      </span>
+                      <span className="pc-topvids-stat-lbl">GMV</span>
+                      <span className="pc-topvids-stat-val">{money(k.gmv)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {brand.creators && (
+          <div className="pc-card mt-4">
+            <div className="pc-ct-head" style={{ gridTemplateColumns: COLS }}>
+              <div className="pc-num">#</div>
+              <div>Completed on</div>
+              <div>Creator</div>
+              <div className="pc-num">Deal</div>
+              <div className="pc-num">Videos</div>
+              <div className="pc-num">Total views</div>
+              <div className="pc-num">New video GMV</div>
+              <div className="pc-num">L30 GMV</div>
+              <div className="pc-num">Items sold</div>
+              <div>Status</div>
+            </div>
+
+            {brand.creators.length === 0 ? (
+              <div className="pc-empty">
+                <h3>No creators in {monthLabel(payload.month)}</h3>
+                <p>Nothing was posted for {brand.brand} in this month.</p>
+              </div>
+            ) : (
+              brand.creators.map((c, i) => {
+                const id = `${c.name}-${i}`;
+                const isOpen = open === id;
+                const tag = c.hiredBy ? HIRED_BY[c.hiredBy.trim().toLowerCase()] : null;
+                return (
+                  <div key={id}>
+                    <div
+                      className={`pc-ct-row ${isOpen ? 'open' : ''}`}
+                      style={{ gridTemplateColumns: COLS, cursor: c.videos?.length ? 'pointer' : 'default' }}
+                      onClick={() => c.videos?.length && setOpen(isOpen ? null : id)}
                       data-creator={c.name}
                       data-deal={c.deal}
                       data-delivered={c.delivered}
                       data-views={c.views}
                       data-gmv={c.gmv}
                     >
-                      <div className="grid gap-2 p-3 md:grid-cols-[minmax(0,2.2fr)_repeat(5,minmax(0,1fr))] md:items-center md:gap-3">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="truncate font-bold">{c.name}</span>
-                            {c.deals > 1 && (
-                              <span
-                                title={`${c.deals} campaigns with this creator`}
-                                className="rounded-full border border-line-strong bg-surface-2 px-1.5 text-[0.625rem] font-extrabold tabular-nums"
-                              >
+                      <div className="pc-cell pc-num" data-label="#"><span className="pc-idx">#{i + 1}</span></div>
+                      <div className="pc-cell" data-label="Completed on">{c.completedOn ? dayLabel(c.completedOn) : <span className="pc-handle">-</span>}</div>
+                      <div className="pc-cell" data-label="Creator">
+                        <span className="pc-creatorcell">
+                          <span className="pc-facewrap">
+                            <span className="pc-face" style={{ width: 30, height: 30, fontSize: 12 }}>{initials(c.name)}</span>
+                            {c.deals > 0 && (
+                              <span className="pc-dealsbadge" title={`${c.deals} deal${c.deals === 1 ? '' : 's'} with this creator`}>
                                 {c.deals}
                               </span>
                             )}
-                          </div>
-                          {c.tiktok.length > 0 && (
-                            <a
-                              href={profileUrl(c.tiktok[0]!)}
-                              target="_blank"
-                              rel="noreferrer noopener"
-                              className="text-xs text-accent hover:underline"
-                            >
-                              {handleOf(c.tiktok[0]!)}
-                            </a>
-                          )}
-                        </div>
-                        <Cell label="Deal">
-                          {c.deal > 0 ? money(c.deal) : '–'}
-                          {c.perVideo ? <span className="block text-[0.6875rem] text-muted">{money(c.perVideo)}/video</span> : null}
-                        </Cell>
-                        <Cell label="Videos">
-                          {c.delivered}
-                          {c.committed ? <span className="text-muted">/{c.committed}</span> : null}
-                        </Cell>
-                        <Cell label="Views">{compact(c.views)}</Cell>
-                        <Cell label="GMV">
-                          <span className="font-bold text-success">{money(c.gmv)}</span>
-                        </Cell>
-                        <Cell label="Items sold">{c.items || '–'}</Cell>
+                          </span>
+                          <span className="pc-creatorcell-txt">
+                            <span className="pc-cname">{c.name || '-'}</span>
+                            {c.tiktok[0]
+                              ? <a className="pc-handle pc-handle-sub" href={profileUrl(c.tiktok[0])} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}>{handleOf(c.tiktok[0])}</a>
+                              : <span className="pc-handle pc-handle-sub">-</span>}
+                          </span>
+                          {c.tier && <span className={`pc-tierbadge ${c.tier.toLowerCase()}`} title={`EUKA creator tier ${c.tier}`}>{c.tier}</span>}
+                          {tag && <span className="pc-hbtag" style={{ color: tag.fg, background: tag.bg }} title={c.hiredBy ?? ''}>{tag.i}</span>}
+                        </span>
                       </div>
+                      <div className="pc-cell pc-num" data-label="Deal">
+                        {c.deal > 0
+                          ? <span className="pc-money">{money(c.deal)}{c.perVideo ? <span className="pc-deal-per"> · {money(c.perVideo)}/vid</span> : null}</span>
+                          : <span className="pc-handle">-</span>}
+                      </div>
+                      <div className="pc-cell pc-num" data-label="Videos">
+                        <span className="pc-metric">{c.delivered}{c.committed ? <span style={{ opacity: 0.6 }}>/{c.committed}</span> : null}</span>
+                      </div>
+                      <div className="pc-cell pc-num" data-label="Total views">
+                        {c.views > 0 ? <span className="pc-metric">{kNum(c.views)}</span> : <span className="pc-handle">-</span>}
+                      </div>
+                      <div className="pc-cell pc-num" data-label="New video GMV">
+                        {c.gmv > 0 ? <span className="pc-metric pc-metric-gmv">{money(Math.round(c.gmv))}</span> : <span className="pc-handle">-</span>}
+                      </div>
+                      <div className="pc-cell pc-num" data-label="L30 GMV">
+                        {c.l30 ? <span className="pc-l30-cell">{money(Math.round(c.l30))}</span> : <span className="pc-l30-cell muted">–</span>}
+                      </div>
+                      <div className="pc-cell pc-num" data-label="Items sold">
+                        {c.items > 0 ? <span className="pc-metric">{c.items}</span> : <span className="pc-handle">-</span>}
+                      </div>
+                      <div className="pc-cell" data-label="Status">
+                        <span className="wx-share-status">{c.status || 'Payment Pending'}</span>
+                      </div>
+                    </div>
 
-                      {c.videos && c.videos.length > 0 && (
-                        <div className="border-t border-line px-3 py-2">
-                          <button
-                            type="button"
-                            onClick={() => setOpen(isOpen ? null : id)}
-                            aria-expanded={isOpen}
-                            className="text-xs font-bold text-accent hover:underline"
-                          >
-                            {isOpen ? 'Hide' : 'Show'} {c.videos.length} video{c.videos.length === 1 ? '' : 's'}
-                          </button>
-                          {isOpen && (
-                            <ul className="mt-3 space-y-2">
-                              {c.videos.map((v, vi) => (
-                                <li
-                                  key={v.url + vi}
-                                  className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg bg-surface-2 p-2 text-xs"
-                                >
-                                  <a
-                                    href={v.url}
-                                    target="_blank"
-                                    rel="noreferrer noopener"
-                                    className="font-semibold text-accent hover:underline"
-                                  >
-                                    Video {vi + 1}
-                                  </a>
-                                  <span className="text-muted">{dayLabel(v.date)}</span>
-                                  <span>{compact(v.views)} views</span>
-                                  <span className="font-semibold text-success">{money(v.gmv)}</span>
-                                  {v.items > 0 && <span className="text-muted">{v.items} sold</span>}
-                                  {v.spark && (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        void navigator.clipboard?.writeText(v.spark ?? '');
-                                        setCopied(v.url + vi);
-                                        window.setTimeout(() => setCopied(null), 1600);
-                                      }}
-                                      className="ml-auto rounded-md border border-line-interactive px-2 py-1 font-semibold hover:bg-surface-3"
-                                    >
-                                      {copied === v.url + vi ? 'Copied' : 'Copy spark code'}
-                                    </button>
-                                  )}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </>
-          )}
-        </section>
-      )}
+                    {isOpen && c.videos && (
+                      <div className="wx-share-videos">
+                        {c.videos.map((v, vi) => (
+                          <div key={v.url + vi} className="wx-share-video">
+                            <a href={v.url} target="_blank" rel="noreferrer noopener">Video {vi + 1}</a>
+                            <span>{v.date ? dayLabel(v.date) : '–'}</span>
+                            <span>{kNum(v.views)} views</span>
+                            <span className="wx-share-gmv">{money(v.gmv)}</span>
+                            {v.items > 0 && <span>{v.items} sold</span>}
+                            {v.product && <span className="wx-share-product" title={v.product}>{v.product}</span>}
+                            {v.spark && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void navigator.clipboard?.writeText(v.spark ?? '');
+                                  setCopied(v.url + vi);
+                                  window.setTimeout(() => setCopied(null), 1600);
+                                }}
+                              >
+                                {copied === v.url + vi ? 'Copied' : 'Copy spark code'}
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
 
       <footer className="mt-10 border-t border-line pt-6 text-xs text-muted">
-        <p>
-          Shared with you by Wurx Media. This page is read only and works until {expires}.
-        </p>
+        <p>Shared with you by Wurx Media. This page is read only and works until {expires}.</p>
         <p className="mt-1">Figures come from TikTok Shop and update through the day.</p>
       </footer>
     </Shell>
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Kpi({ label, color, value, sub }: { label: string; color: string; value: string; sub?: string }) {
+  const pct = sub ? Number(sub.match(/(\d+(?:\.\d+)?)\s*%/)?.[1] ?? NaN) : NaN;
   return (
-    <div className="min-h-dvh bg-bg px-4 py-8 sm:px-8">
-      <div className="mx-auto w-full max-w-6xl">
-        <div className="mb-8 flex items-center justify-between">
-          <WurxMark />
-        </div>
-        {children}
+    <div className="pc-kpi" style={{ '--kpi-color': color } as React.CSSProperties}>
+      <div className="pc-kpi-row">
+        <span className="pc-kpi-badge" aria-hidden />
+        <div className="pc-kpi-label">{label}</div>
+      </div>
+      <div>
+        <div className="pc-kpi-value">{value}</div>
+        {Number.isFinite(pct) && (
+          <div className="pc-kpi-track" aria-hidden>
+            <div className="pc-kpi-fill" style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} />
+          </div>
+        )}
+        {sub && <div className="pc-kpi-sub">{sub}</div>}
       </div>
     </div>
   );
 }
 
-function Card({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
+function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-line bg-surface-1 p-4">
-      <p className="text-[0.6875rem] font-extrabold uppercase tracking-wider text-muted">{label}</p>
-      <p className={`mt-1 text-2xl font-extrabold tabular-nums ${accent ? 'text-success' : ''}`}>{value}</p>
-      {sub && <p className="mt-0.5 text-xs text-muted">{sub}</p>}
-    </div>
-  );
-}
-
-function Cell({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-2 text-sm tabular-nums md:block md:text-right">
-      <span className="text-[0.6875rem] font-bold uppercase tracking-wider text-faint md:hidden">{label}</span>
-      <span>{children}</span>
+    <div className="min-h-dvh bg-bg px-4 py-8 sm:px-8">
+      <div className="mx-auto w-full max-w-[1600px]">
+        <div className="mb-8 flex items-center justify-between">
+          <WurxMark />
+        </div>
+        {children}
+      </div>
     </div>
   );
 }

@@ -1940,3 +1940,73 @@
   right: -7px;
   bottom: -8px;
 }
+
+/* ------------------------------------------------------- the client's page --- */
+/*
+ * The share page (`/share/collabs/:token`) wears this same stylesheet so a
+ * client sees the Brands view as staff do. Rashid's boss, 2026-09-17: "exact
+ * same view as we have they will just not be able to see ad spend and roi".
+ *
+ * Only three things there are not theirs: the status is a PILL rather than a
+ * dropdown, because a client may not change anything; the videos open in a
+ * plain panel rather than the editor; and both live under `.wurxbase-root` so
+ * every token and every table rule above still applies.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--wx-stage-due-soft);
+  border: 1px solid color-mix(in srgb, var(--wx-stage-due) 35%, var(--wx-surface-1));
+  color: var(--wx-stage-due);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-videos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 24px 14px;
+  border-bottom: 1px solid var(--pc-divider, var(--wx-border));
+  background: var(--wx-surface-2);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-video {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--wx-surface-1);
+  border: 1px solid var(--wx-border);
+  font-size: 0.8125rem;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-video a {
+  font-weight: 700;
+  color: var(--wx-accent);
+  text-decoration: none;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-video a:hover { text-decoration: underline; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-gmv { font-weight: 700; color: var(--wx-success); }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-product {
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--wx-text-muted);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-video button {
+  margin-left: auto;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--wx-border-interactive);
+  background: var(--wx-surface-1);
+  color: var(--wx-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-video button:hover { background: var(--wx-surface-3); }

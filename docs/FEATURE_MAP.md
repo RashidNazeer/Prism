@@ -2287,13 +2287,24 @@ admin only, at the route and again in the database. It makes a link (label,
 brands, months, sections, 7–365 days), shows it **once**, lists every link with
 its scope, expiry and view count, and revokes with a confirm.
 
-**Not there yet:** the Euka tier badge and L30 GMV on the client page (both are
-live Euka calls; they arrive with the "exact same view" rework below), and a
-client page that mirrors the staff table exactly. Rashid's boss, 2026-09-17:
-*"we need to show them exact same view as we have they will just not be able to
-see ad spend and roi at any cost"* — and with it he chose the staff five KPI
-cards, the Status column (but no contract PDF) and tier + L30 GMV with caching.
-That rework is the next piece.
+**THE CLIENT PAGE IS THE STAFF BRANDS VIEW.** Rashid's boss, 2026-09-17: *"we
+need to show them exact same view as we have they will just not be able to see
+ad spend and roi at any cost"*. `ShareCollab.tsx` imports `paidcollabs.css` and
+our overrides and renders inside `.wurxbase-root`, so it inherits every rule the
+staff table uses — the five KPI cards with their progress bars, the top-videos
+strip, the tier tags, the deals circle, the hire tag. The column template is set
+inline because theirs counts twelve columns and this one has ten.
+- **Gone:** Ad spend, ROI, Contract and Actions. Ad spend and ROI are not in
+  the payload at all; the other two have no markup.
+- **Status** is the same words, as a pill (`.wx-share-status`), never a
+  dropdown. Nothing on the page writes: no select, no input, no export.
+- **Tier and L30 GMV** come from Euka's `creator_level` export, cached per store
+  in `collab_share_euka_cache` for 30 minutes. The page NEVER waits on Euka: a
+  stale map is served and the refresh runs after the response (only a store
+  with nothing cached waits, capped at 8s). `creators.monthly.euka` was rejected
+  as the source — it is frozen at migration day.
+- **Videos** open by clicking the row, into a plain panel with the link, date,
+  views, GMV, items, product and the spark code to copy.
 
 **Guarded by `pnpm verify:collab-share`** (36 checks: the tables are
 unreachable, only owners mint, a link opens only its own brands, expiry and

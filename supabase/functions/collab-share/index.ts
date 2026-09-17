@@ -31,6 +31,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.110.9';
 import { z } from 'npm:zod@4.4.3';
 import { corsHeaders, json } from '../_shared/cors.ts';
+import { EUKA_V0, eukaKeys, indexStores, storeBrandPair, type EukaAuth } from '../_shared/euka-accounts.ts';
 
 /* 24 random bytes, url-safe and unpadded, is exactly 32 characters. */
 const Body = z.object({
@@ -75,6 +76,108 @@ function videoKey(url: string): string {
 type Row = Record<string, any>;
 
 const monthOf = (d: unknown) => String(d ?? '').slice(0, 7);
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+
+/* WurxUI's _normEukaHandle: a handle may be stored as '@name', 'name', or a
+   full profile URL, and Euka answers in bare lower case. */
+function handleKey(raw: unknown): string {
+  const t = String(raw ?? '').trim().toLowerCase();
+  if (!t) return '';
+  const last = t.startsWith('http') ? (t.replace(/\/+$/, '').split('/').pop() ?? '') : t;
+  return last.replace(/^@/, '').split(/[?#]/)[0]!.trim();
+}
+
+const rowsOf = (payload: unknown): Row[] => {
+  if (Array.isArray(payload)) return payload as Row[];
+  for (const key of ['data', 'rows', 'result', 'records']) {
+    const v = (payload as Row | null)?.[key];
+    if (Array.isArray(v)) return v as Row[];
+  }
+  return [];
+};
+
+/*
+ * TIER AND LAST-30-DAY GMV, LIVE FROM EUKA, CACHED PER STORE FOR 30 MINUTES.
+ *
+ * Rashid's boss, 2026-09-17, wanted the client's table to match the staff one,
+ * which carries both. They cannot come from `creators.monthly.euka`: that cache
+ * is frozen at migration day and drifts further every morning (see the note in
+ * WurxUI beside `dbEuka`), so a client would be shown figures from July.
+ *
+ * They also cannot be fetched per view. Euka's export takes seconds and a link
+ * that is passed around a client's office would hammer it, so the answer is
+ * kept in `collab_share_euka_cache` and refreshed at most twice an hour. A
+ * STALE ANSWER BEATS NO ANSWER: if Euka is down or slow, the last good map is
+ * served rather than dashes appearing in two columns.
+ */
+async function tiersForStore(
+  db: ReturnType<typeof createClient>,
+  auth: EukaAuth,
+  store: { id: string; name: string },
+): Promise<Record<string, { tier: string; gmv: number }>> {
+  const { data: cached } = await db
+    .from('collab_share_euka_cache')
+    .select('handles, fetched_at')
+    .eq('store_id', store.id)
+    .maybeSingle();
+  const fresh = cached?.fetched_at && Date.now() - new Date(cached.fetched_at).getTime() < 30 * 60 * 1000;
+  if (fresh) return (cached!.handles ?? {}) as Record<string, { tier: string; gmv: number }>;
+
+  /*
+   * THE PAGE NEVER WAITS FOR EUKA. The first version awaited the export and the
+   * whole request 504'd: that call takes seconds on a good day, and a client
+   * page that hangs because somebody else's API is slow is our fault, not
+   * theirs. So a stale map is served at once and the refresh runs on after the
+   * response; only a store with NOTHING cached gets a short wait, so the very
+   * first view is not needlessly empty.
+   */
+  const refresh = async (): Promise<Record<string, { tier: string; gmv: number }>> => {
+    const brandId = await storeBrandPair(auth, store.id, store.name);
+    const to = iso(new Date());
+    const from = iso(new Date(Date.now() - 29 * 86_400_000));
+    const url =
+      `${EUKA_V0}/data-export?type=creator_level&store_id=${encodeURIComponent(store.id)}` +
+      (brandId ? `&brand_id=${encodeURIComponent(brandId)}` : '') +
+      `&start_date=${from}&end_date=${to}&export_type=json`;
+    const r = await fetch(url, { headers: auth });
+    if (!r.ok) throw new Error(`creator_level ${r.status}`);
+    const out: Record<string, { tier: string; gmv: number }> = {};
+    for (const row of rowsOf(await r.json())) {
+      const h = handleKey(row.creator_handle ?? row.handle);
+      if (!h) continue;
+      const tier = String(row['L tier'] ?? row.l_tier ?? row.tier ?? '').trim();
+      const gmv = Number(row.creator_last_30d_gmv_num ?? row.last_30d_gmv ?? row.gmv ?? 0) || 0;
+      const cur = out[h];
+      if (!cur || gmv > cur.gmv) out[h] = { tier: tier || cur?.tier || '', gmv: Math.max(gmv, cur?.gmv ?? 0) };
+    }
+    await db.from('collab_share_euka_cache').upsert({
+      store_id: store.id,
+      store_name: store.name,
+      handles: out,
+      fetched_at: new Date().toISOString(),
+    });
+    return out;
+  };
+
+  const job = refresh().catch(() => null);
+  const keepWarm = (p: Promise<unknown>) => {
+    try {
+      (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime?.waitUntil?.(p);
+    } catch { /* not on Deploy: the promise simply runs to completion or not */ }
+  };
+
+  if (cached) {
+    keepWarm(job);
+    return (cached.handles ?? {}) as Record<string, { tier: string; gmv: number }>;
+  }
+  const quick = await Promise.race([
+    job,
+    new Promise<null>((res) => setTimeout(() => res(null), 8_000)),
+  ]);
+  if (quick) return quick;
+  keepWarm(job);
+  return {};
+}
 
 /* Every row, paged. PostgREST caps a read at 1000 and says nothing about it;
    a client shown 1000 of 1328 rows would be told a quiet lie. */
@@ -129,7 +232,7 @@ Deno.serve(async (req) => {
        that starts from everything is one forgotten delete from a leak. */
     const creators = await paged((from, to) =>
       db.schema('wurxbase').from('creators')
-        .select('name, brand, hiring_date, deal, videos, video_codes, tiktok_account, tiktok_account_2, category, product, hired_by')
+        .select('name, brand, hiring_date, deal, videos, video_codes, tiktok_account, tiktok_account_2, category, product, hired_by, payment_status')
         .in('brand', brands)
         .not('name', 'is', null).neq('name', '')
         .or('status.eq.approved,status.is.null')
@@ -171,8 +274,32 @@ Deno.serve(async (req) => {
     const inScope = (c: Row) =>
       month === 'all' ? monthOk(monthOf(c.hiring_date)) : monthOf(c.hiring_date) === month;
 
+    /* ── tier and L30 GMV, per brand, from the store that owns it ──────── */
+    /* A store is only ever asked about with the key that RETURNED it, and a
+       brand with no Euka store is not a fault — those two columns simply have
+       nothing to say. Euka being down is not a fault here either: the page
+       still carries everything that comes from our own database. */
+    const tiersByBrand = new Map<string, Record<string, { tier: string; gmv: number }>>();
+    try {
+      const keys = eukaKeys();
+      if (keys.length) {
+        const index = await indexStores(keys);
+        const normalise = (s: unknown) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        await Promise.all(brands.map(async (brand) => {
+          const want = normalise(brand);
+          const exact = index.stores.find((s) => normalise(s.name) === want);
+          const prefixed = index.stores.filter((s) => normalise(s.name).startsWith(want));
+          const store = exact ?? (prefixed.length === 1 ? prefixed[0] : undefined);
+          const auth = store ? index.ownerOf.get(store.id) : undefined;
+          if (!store || !auth) return;
+          tiersByBrand.set(brand, await tiersForStore(db, auth, store));
+        }));
+      }
+    } catch { /* leave the two columns empty rather than failing the page */ }
+
     /* ── the payload, built field by field ─────────────────────────────── */
     const data = brands.map((brand) => {
+      const tiers = tiersByBrand.get(brand) ?? {};
       const rows = creators.filter((c) => String(c.brand ?? '').trim() === brand && inScope(c));
 
       const people = rows.map((c) => {
@@ -203,8 +330,18 @@ Deno.serve(async (req) => {
         const delivered = videos.length;
         const done = c.videos === 'Done' || (committed > 0 && delivered >= committed);
         const dates = videos.map((v) => v.date).filter(Boolean).sort() as string[];
+        /* Euka knows this person by handle; a creator with two handles has the
+           tier of whichever carries one, and the GMV of both added up. */
+        const known = [c.tiktok_account, c.tiktok_account_2]
+          .map(handleKey).filter(Boolean)
+          .map((h) => tiers[h]).filter(Boolean) as { tier: string; gmv: number }[];
+        const l30 = known.reduce((t, e) => t + (Number(e.gmv) || 0), 0);
         return {
           name: String(c.name ?? '').trim(),
+          tier: known.find((e) => e.tier)?.tier || null,
+          l30: l30 > 0 ? l30 : null,
+          /* The same words the staff row shows, read only. */
+          status: c.payment_status ? String(c.payment_status).trim() : null,
           tiktok: [c.tiktok_account, c.tiktok_account_2].map((h) => (h ? String(h).trim() : '')).filter(Boolean),
           hiredBy: c.hired_by ? String(c.hired_by).trim() : null,
           deals: dealsEver.get(String(c.name ?? '').trim().toLowerCase()) ?? 0,
@@ -231,14 +368,23 @@ Deno.serve(async (req) => {
           && (month === 'all' ? monthOk(monthOf(b.month)) : monthOf(b.month) === month));
         const budget = budgetRows.reduce((t, b) => t + (Number(b.budget) || 0), 0);
         const allocated = people.reduce((t, p) => t + p.deal, 0);
-        /* Budget and what is left. Allocated, paid and cost per video are not
-           sent: he asked for "budget and remaining only". */
+        const paid = rows
+          .filter((c) => String(c.payment_status ?? '').trim().toLowerCase() === 'paid')
+          .reduce((t, c) => t + dealAmount(c.deal), 0);
+        const delivered = people.reduce((t, p) => t + p.delivered, 0);
+        /* THE SAME FIVE CARDS THE STAFF SCREEN SHOWS. Rashid's boss, 2026-09-17:
+           "we need to show them exact same view as we have they will just not be
+           able to see ad spend and roi at any cost". That supersedes the earlier
+           "budget and remaining only"; DECISIONS says so. */
         out.kpis = {
           budget,
+          allocated,
+          paid,
           remaining: budget - allocated,
           creators: people.length,
-          delivered: people.reduce((t, p) => t + p.delivered, 0),
+          delivered,
           committed: people.reduce((t, p) => t + p.committed, 0),
+          costPerVideo: delivered > 0 ? allocated / delivered : 0,
           views: people.reduce((t, p) => t + p.views, 0),
           gmv: people.reduce((t, p) => t + p.gmv, 0),
         };

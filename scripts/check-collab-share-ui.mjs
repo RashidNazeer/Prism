@@ -48,7 +48,7 @@ for (const r of rows ?? []) {
   for (const [k, v] of Object.entries(r)) {
     /* name, date, deal and the videos are shared on purpose; everything else in
        this row is a thing a client must never see. */
-    if (['name', 'hiring_date', 'deal', 'video_codes'].includes(k) || v === null || v === undefined) continue;
+    if (['name', 'hiring_date', 'deal', 'video_codes', 'payment_status'].includes(k) || v === null || v === undefined) continue;
     const s = String(v).trim();
     if (s.length >= 6) secrets.push({ k, s });
   }
@@ -128,12 +128,22 @@ try {
   check(leaked.length === 0, 'no phone number, email, payment detail, comment or payment status is in the page',
     leaked.slice(0, 3).map((x) => x.k).join(', '));
   check(!/\bad spend\b/i.test(seen.text) && !/\bROI\b/.test(seen.text), 'the words Ad spend and ROI appear nowhere', '');
-  check(!/Payment Pending|Mark paid|Export|Add creator/i.test(seen.text), 'no staff controls are on the page');
+  /* Status IS shown now, in the same words staff see, but as a pill. Nothing on
+     the page may CHANGE anything: no dropdown, no contract, no export. */
+  check(!/Mark paid|Export|Add creator|Edit creator|Delete/i.test(seen.text), 'no staff controls are on the page');
+  const writable = await page.evaluate(() => ({
+    selects: document.querySelectorAll('select').length,
+    contract: /contract/i.test(document.body.innerText) ? 1 : 0,
+    inputs: document.querySelectorAll('input, textarea').length,
+  }));
+  check(writable.selects === 0 && writable.contract === 0 && writable.inputs === 0,
+    'nothing on the page can be changed: no dropdown, no contract, no field', JSON.stringify(writable));
+  check(/Payment Pending|Paid/i.test(seen.text), 'the Status column is there, as words rather than a control');
 
   /* ── every number on the page, against the database ──────────────────── */
   const shown = await page.evaluate(() => ({
     month: document.querySelector('header[data-month]')?.getAttribute('data-month') ?? '',
-    rows: [...document.querySelectorAll('li[data-creator]')].map((li) => ({
+    rows: [...document.querySelectorAll('.pc-ct-row[data-creator]')].map((li) => ({
       name: li.getAttribute('data-creator') ?? '',
       deal: Number(li.getAttribute('data-deal')) || 0,
       delivered: Number(li.getAttribute('data-delivered')) || 0,
@@ -157,15 +167,27 @@ try {
   check(money, 'and Budget and GMV are on screen');
 
   /* the videos open, with a spark code to copy */
-  const opener = page.locator('button', { hasText: /Show \d+ video/ }).first();
-  if (await opener.isVisible().catch(() => false)) {
-    await opener.click();
-    await page.waitForTimeout(600);
+  const firstRow = page.locator('.pc-ct-row[data-creator]').first();
+  if (await firstRow.isVisible().catch(() => false)) {
+    await firstRow.click();
+    await page.waitForTimeout(700);
+    const videos = await page.locator('.wx-share-video').count();
     const spark = await page.locator('button', { hasText: /Copy spark code/ }).count();
-    check(spark > 0, 'a creator opens to their videos, with the spark code to copy', `${spark} codes`);
+    check(videos > 0, 'a creator row opens to their videos', `${videos} videos, ${spark} spark codes`);
   } else {
-    check(false, 'a creator can be opened to see their videos', 'no opener button');
+    check(false, 'a creator row can be opened', 'no row');
   }
+
+  /* the columns the boss asked for, and the two he did not */
+  const head = await page.evaluate(() => [...document.querySelectorAll('.pc-ct-head > div')].map((d) => d.textContent?.trim()));
+  const columns = ['#', 'Completed on', 'Creator', 'Deal', 'Videos', 'Total views', 'New video GMV', 'L30 GMV', 'Items sold', 'Status'];
+  check(JSON.stringify(head) === JSON.stringify(columns), 'the table has the staff columns, minus Ad spend and ROI', head.join(' | '));
+  const kpis = await page.evaluate(() => [...document.querySelectorAll('.pc-kpi-label')].map((d) => d.textContent?.trim()));
+  check(JSON.stringify(kpis) === JSON.stringify(['Budget', 'Allocated', 'Paid', 'Videos', 'Cost / Video']),
+    'and the same five cards above it', kpis.join(' | '));
+  const tiers = await page.evaluate(() => document.querySelectorAll('.pc-tierbadge').length);
+  const l30 = await page.evaluate(() => [...document.querySelectorAll('.pc-l30-cell')].filter((e) => !e.classList.contains('muted')).length);
+  check(tiers > 0 && l30 > 0, 'tier tags and L30 GMV arrived from Euka', `${tiers} tiers, ${l30} L30 figures`);
 
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/share-dark.png`, fullPage: false });
 
@@ -174,9 +196,12 @@ try {
     await page.evaluate((t) => { document.documentElement.dataset.theme = t; }, theme);
     await page.waitForTimeout(400);
     const painted = await page.evaluate(() => {
-      const bg = getComputedStyle(document.body).backgroundColor;
-      const fg = getComputedStyle(document.querySelector('h1')).color;
-      return { bg, fg };
+      const h = document.querySelector('h1');
+      return {
+        bg: getComputedStyle(document.body).backgroundColor,
+        fg: h ? getComputedStyle(h).color : 'NO HEADING',
+        rows: document.querySelectorAll('.pc-ct-row[data-creator]').length,
+      };
     });
     check(painted.bg !== painted.fg && painted.bg !== 'rgba(0, 0, 0, 0)', `${theme}: the page is painted`, JSON.stringify(painted));
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/share-${theme}.png` });

@@ -2311,3 +2311,20 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   ads_manager, though `is_staff()` has admitted it since 2026-09-15, and not
   the read-only collabs roles. Handing a brand's numbers to an outsider is an
   owner's decision, so the check is written out rather than inherited.
+- 2026-09-17, later: **The client sees the staff Brands view, minus ad spend
+  and ROI.** Rashid relayed his boss: "we need to show them exact same view as
+  we have they will just not be able to see ad spend and roi at any cost". That
+  SUPERSEDES the field-by-field answers earlier the same day (budget and
+  remaining only, no payment status): the client page now carries the same five
+  KPI cards, the same top-videos strip and the same table, wearing the vendored
+  stylesheet, with Status as a read-only pill.
+  Still absent, and these were confirmed with him: **ad spend and ROI** (never
+  sent to the browser), the **contract PDF** (our agreement with the creator),
+  and every write control — no dropdown, no actions, no export, no fields.
+- 2026-09-17: **Tier and L30 GMV come live from Euka, cached per store for 30
+  minutes, and the page never waits for them.** `creators.monthly.euka` holds
+  both and could not be used: that cache is frozen at migration day, so a
+  client would be shown July's figures. The first version awaited Euka's export
+  and the request 504'd, which is a client page failing because somebody else's
+  API is slow. Now a stale map is served at once and the refresh runs after the
+  response; only a store with nothing cached waits, and only for 8 seconds.
