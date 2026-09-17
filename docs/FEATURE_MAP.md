@@ -2237,6 +2237,54 @@ no date and the filter would hide it the moment it appeared.
 **Guarded by `pnpm verify:video-days`.** Every expected number comes from the
 database first, and the check proves the modal wrote nothing.
 
+## Client sharing: read-only links into Paid Collabs (2026-09-17)
+
+Rashid: *"a client sharing section which asad and superadmin maybe boss can
+manage where they can create a link per brand or maybe multiple brands in one
+link ... Clients would need no login at all ... Only read access and only the
+brand they have been shared."*
+
+**The shape of it.** `public.collab_share_links` holds a label, the brands, four
+section switches, an expiry, a revoked flag and a view count — and the link
+only as a SHA-256. `public.collab_share_views` records each open, with the
+visitor's address hashed. Both tables have RLS on with **no policy at all** and
+grants to `service_role` only, so nothing reaches them through the API. The
+three doors are `collab_share_create` (returns the link once),
+`collab_share_list` and `collab_share_revoke`, all `security definer`, all
+ops-and-admin only.
+
+**The client's path:** `/share/collabs/:token` → `ShareCollab.tsx` → POST to the
+`collab-share` Edge Function (`verify_jwt = false`) → a projection. The page
+holds no Supabase client, no key and no session, and stores nothing in the
+browser. It sets `noindex, nofollow, noarchive`.
+
+**What a client sees**, from Rashid's answers that day: brand Budget and
+Remaining, videos delivered, views and GMV; the ten top videos; each creator's
+name, TikTok, deals circle, deal amount and per-video rate, delivery, views,
+GMV and items sold; and each video with its date, views, GMV, items and **spark
+code**. Never: ad spend, ROI, allocated, paid, cost per video, payment status,
+phone numbers, emails, payment details, internal comments, or any row id.
+
+**A section switched off is absent from the payload**, not hidden in the page,
+and `show_videos = false` also strips the spark codes. The same is true of a
+brand that is not on the link: its name does not appear in the bytes.
+
+**Unknown, expired and revoked all answer with one 404 and one sentence**, so a
+probe cannot tell a real link that expired from one that never existed.
+
+**Not there yet:** the admin screen for making links (step 2 — until then they
+are minted by hand, see OPERATIONS), the Euka tier badge and L30 GMV (both are
+live Euka calls, and a public page should not hit Euka on every view), and
+per-month link scoping.
+
+**Guarded by `pnpm verify:collab-share`** (36 checks: the tables are
+unreachable, only owners mint, a link opens only its own brands, expiry and
+revocation bite, and the real phone numbers, emails, payment details and ad
+spend figures in the database are absent from the payload) **and
+`pnpm verify:collab-share-ui`** (22 checks in a browser with no session: it
+opens, every figure matches the database, no staff control is on the page, both
+themes, 390px, zero console errors, and a revoked link says so in plain words).
+
 ## Top videos: views, GMV and ad spend totals (2026-09-16)
 
 Rashid, for his boss, in place of the single GMV total: *"3 vertical mini

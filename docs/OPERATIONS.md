@@ -1614,3 +1614,46 @@ supabase functions deploy euka --project-ref $env:SUPABASE_PROJECT_REF_DEV
 Set on **dev** 2026-09-09 for Nutra. Production was NOT changed: Paid
 Collabs is dev-only (there is no `wurxbase` schema on prod), so nothing on
 production calls Euka.
+
+### Client share links (Paid Collabs)
+
+A link shows one or more brands, read only, to somebody with no account. See
+FEATURE_MAP, "Client sharing: read-only links into Paid Collabs".
+
+**Until the admin screen exists (step 2), mint by hand.** With the service key
+in the environment, through the management API or supabase-js:
+
+```sql
+-- make one: returns the link ONCE. Copy it now; it cannot be shown again.
+select * from public.collab_share_create(
+  'Apothecary - Sarah',        -- label, for your list
+  array['Apothecary'],         -- one brand, or several
+  90,                          -- days until it expires (1..365)
+  true, true, true, true       -- show: top numbers, top videos, creators, videos
+);
+
+-- see them all (never returns anything a link could be rebuilt from)
+select * from public.collab_share_list();
+
+-- switch one off, for good
+select public.collab_share_revoke('<id>');
+```
+
+The client's address is `https://wurxmediahubdev.vercel.app/share/collabs/<token>`
+(production once it goes live). **The link is the credential: 192 random bits,
+stored only as a SHA-256.** Nobody can recover it later, including us, which is
+the point — a lost link is replaced, not looked up.
+
+**Watching a link.** `collab_share_list()` carries `view_count` and
+`last_viewed_at`; `public.collab_share_views` holds one row per open, with the
+visitor address hashed and salted per link. A count climbing far beyond one
+client is the only sign a shared secret gives that it has spread.
+
+```bash
+pnpm verify:collab-share      # 36 checks, attacks the door. Needs SUPABASE_SERVICE_KEY
+pnpm verify:collab-share-ui   # 22 checks in a real browser with no session.
+                              # Needs a preview server and SUPABASE_SERVICE_KEY
+```
+
+Both suites mint their own links and delete them in a `finally`. They write
+nothing to Paid Collabs.

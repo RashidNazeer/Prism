@@ -455,3 +455,12 @@ verify_jwt = true
 # Called by pg_cron through pg_net, which carries no JWT. The function checks
 # x-sync-secret, or a staff session, itself.
 verify_jwt = false
+
+# The client share view. Public on purpose and the only data route that is: the
+# person opening it has no account here and never will. The link itself is the
+# credential — 192 random bits, stored only as a SHA-256, expiring, revocable —
+# and the function checks it, then answers with a projection that cannot carry
+# ad spend, ROI, payment details or anybody's phone number. Leaving the
+# platform's JWT gate on would simply refuse every client.
+[functions.collab-share]
+verify_jwt = false

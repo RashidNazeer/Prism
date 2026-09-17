@@ -2287,3 +2287,27 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   kept for states. They are used here because he named the colours, and his
   words beat the house rule. Nothing else on that strip is a status, so
   nobody can read "red" as "something is wrong" by mistake.
+- 2026-09-17: **A client share link is a password, and is stored like one.**
+  Only its SHA-256 lives in the database, so a leak of our tables hands nobody
+  a working link; the link itself is shown once, at creation, and cannot be
+  retrieved afterwards. It also carries a required expiry and a revoke switch,
+  and every view is recorded. Rejected: a readable token column, which would
+  have made "show me that client's link again" possible and a database leak
+  catastrophic.
+- 2026-09-17: **The client's data comes through an Edge Function, not through
+  RLS.** `anon` has no grant on the `wurxbase` schema and is not getting one:
+  the schema's own migration says "anon gets nothing. Paid Collabs is behind a
+  login and always will be". The function runs as the service role, proves the
+  link, and returns a PROJECTION built field by field. Rejected: an
+  anon-callable security-definer RPC, which would have put a door on the
+  database itself for the sake of saving one function.
+- 2026-09-17: **Hidden means absent, not invisible.** Ad spend, ROI, allocated,
+  paid, cost per video, payment status, phone numbers, emails, payment details
+  and internal comments are never read into the payload, and a switched-off
+  section has no key in it at all. A field merely hidden by CSS is one "view
+  source" away from being read, and this is somebody else's client data.
+  `verify:collab-share` proves it against the real values in the database.
+- 2026-09-17: **Only ops and admin can mint or revoke a link.** Not
+  ads_manager, though `is_staff()` has admitted it since 2026-09-15, and not
+  the read-only collabs roles. Handing a brand's numbers to an outsider is an
+  owner's decision, so the check is written out rather than inherited.

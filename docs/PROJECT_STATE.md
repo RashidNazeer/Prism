@@ -29,6 +29,30 @@ Answer "what's pending?" from `docs/PARKED.md`.
 
 ## WHERE EVERYTHING STANDS
 
+### Client sharing, step 1 of 2 (2026-09-17)
+
+Rashid asked for links that show a client their brand's Paid Collabs work with
+no login, read only, and only the brands on the link. **Step 1 is built and on
+dev: the tables, the server door, the client page and the proof.** Step 2 is
+the admin screen for making links, which he has not approved yet.
+
+- **Built:** `collab_share_links` / `collab_share_views` (RLS on, no policy,
+  service-role grants only), the `collab_share_create/list/revoke` functions
+  (ops and admin only), the `collab-share` Edge Function (`verify_jwt = false`,
+  checks the link itself), and `/share/collabs/:token` → `ShareCollab.tsx`.
+- **His choices that day:** budget and remaining but not allocated, paid or
+  cost per video; each creator's deal and per-video rate but not payment
+  status; spark codes shared; the deals circle and hire tag kept; no phone
+  numbers or emails; ad spend and ROI hidden, which is where this started.
+- **Proven:** `verify:collab-share` 36/36 and `verify:collab-share-ui` 22/22,
+  including that the real phone numbers, emails, payment details and ad spend
+  figures in the database are absent from both the payload and the page, and
+  that every figure on screen matches the database.
+- **Known gaps, said out loud:** no admin screen yet (links are minted by hand,
+  see OPERATIONS); no Euka tier badge or L30 GMV on the client page, because
+  both are live Euka calls and a public page should not hit Euka per view; no
+  per-month scoping on a link.
+
 ### Top videos: views, GMV and ad spend totals (2026-09-16)
 
 Rashid's boss wanted three stacked cards beside the ten top videos on a brand

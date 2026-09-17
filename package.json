@@ -82,7 +82,9 @@
     "verify:euka-ads": "node scripts/check-euka-ads.mjs",
     "verify:euka-ads-ui": "node scripts/check-euka-ads-ui.mjs",
     "verify:tier-deals": "node scripts/check-tier-deals-ui.mjs",
-    "verify:topvids-stats": "node scripts/check-topvids-stats.mjs"
+    "verify:topvids-stats": "node scripts/check-topvids-stats.mjs",
+    "verify:collab-share": "node scripts/check-collab-share.mjs",
+    "verify:collab-share-ui": "node scripts/check-collab-share-ui.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

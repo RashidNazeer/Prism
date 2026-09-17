@@ -292,6 +292,22 @@ export const router = createBrowserRouter([
     lazy: lazyRoute(() => import('@/routes/Apply'), 'Apply'),
   },
   /*
+   * A CLIENT'S READ-ONLY VIEW OF THE BRANDS THEY WERE SHARED.
+   *
+   * Public because the person opening it has no account here and is never
+   * getting one — Rashid, 2026-09-17: "clients would need no login at all".
+   * What makes it safe is the link itself: 192 random bits, kept only as a
+   * SHA-256, with an expiry and a revoke switch, checked by the `collab-share`
+   * function, which answers with a projection that cannot carry ad spend, ROI,
+   * payment details or anybody's phone number. This route renders what that
+   * function returns and holds no key of its own.
+   */
+  {
+    path: '/share/collabs/:token',
+    HydrateFallback: RouteFallback,
+    lazy: lazyRoute(() => import('@/routes/ShareCollab'), 'ShareCollab'),
+  },
+  /*
    * THE TWO LEGAL PAGES, public and unauthenticated on purpose.
    *
    * TikTok's developer portal will not accept an app without a Terms of Service

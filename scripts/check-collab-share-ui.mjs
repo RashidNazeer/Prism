@@ -1,0 +1,212 @@
+#!/usr/bin/env node
+/**
+ * THE CLIENT'S PAGE, IN A REAL BROWSER WITH NO SESSION.
+ *
+ *   pnpm build && pnpm preview
+ *   SUPABASE_SERVICE_KEY=... node scripts/check-collab-share-ui.mjs
+ *
+ * `verify:collab-share` attacks the door. This proves the room behind it: that
+ * the page opens for somebody who has never logged in, shows the brand it was
+ * shared, and does not print a single thing a client must not see — checked
+ * against the REAL phone numbers, emails and ad-spend figures in the database,
+ * not against a list of field names.
+ *
+ * It also proves the page is a page: both themes, a phone width, no console
+ * errors, and a revoked link that says so in words a client can act on.
+ *
+ * It mints its own links and deletes them in a `finally`. Nothing else changes.
+ */
+import { readFileSync, mkdirSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { launchBrowser } from './browser.mjs';
+import { assertDevProject } from './lib/dev-guard.mjs';
+const require = createRequire(process.cwd() + '/package.json');
+const { createClient } = require('@supabase/supabase-js');
+
+const BASE = process.env.BASE_URL || 'http://localhost:4173';
+const BRAND = process.env.BRAND || 'Apothecary';
+const SHOTS = process.env.SHOTS_DIR || '';
+if (SHOTS) mkdirSync(SHOTS, { recursive: true });
+
+const env = Object.fromEntries(readFileSync('.env.local', 'utf8').split(/\r?\n/).filter((l) => l.includes('='))
+  .map((l) => { const i = l.indexOf('='); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }));
+const URL_ = assertDevProject(env.VITE_SUPABASE_URL);
+if (!process.env.SUPABASE_SERVICE_KEY) throw new Error('SUPABASE_SERVICE_KEY must be set');
+const svc = createClient(URL_, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
+const wb = createClient(URL_, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false }, db: { schema: 'wurxbase' } });
+
+const pass = [], fail = [];
+const check = (ok, m, d) => (ok ? pass : fail).push(d ? `${m} — ${d}` : m);
+const made = [];
+
+/* what the database holds for this brand, so the page can be held to it */
+const { data: rows } = await wb.from('creators')
+  .select('name, hiring_date, whatsapp_number, email, paypal, zelle, comments, payment_status, deal, video_codes')
+  .eq('brand', BRAND).or('status.eq.approved,status.is.null');
+const secrets = [];
+for (const r of rows ?? []) {
+  for (const [k, v] of Object.entries(r)) {
+    /* name, date, deal and the videos are shared on purpose; everything else in
+       this row is a thing a client must never see. */
+    if (['name', 'hiring_date', 'deal', 'video_codes'].includes(k) || v === null || v === undefined) continue;
+    const s = String(v).trim();
+    if (s.length >= 6) secrets.push({ k, s });
+  }
+}
+/* The page's own numbers, recomputed here, with the vendored app's arithmetic.
+   AD SPEND IS NOT SEARCHED FOR BY VALUE HERE. A figure like 6.04 collides with
+   unrelated money on the page, and a substring hunt would cry wolf; the payload
+   suite (verify:collab-share) proves ad spend and ROI are absent from the bytes
+   exactly. What this file proves is the opposite and stronger: every number the
+   client sees IS the number the database holds. */
+const dealAmount = (deal) => {
+  const m = String(deal ?? '').match(/\$?(\d[\d,]*\.?\d*)/);
+  return m ? parseFloat(m[1].replace(/,/g, '')) || 0 : 0;
+};
+const videoKey = (url) => {
+  const m = url.match(/video\/(\d+)/);
+  return m ? m[1] : url.toLowerCase().split(/[?#]/)[0].replace(/\/+$/, '');
+};
+const expectedFor = (month) => {
+  const mine = (rows ?? []).filter((r) => String(r.hiring_date ?? '').slice(0, 7) === month);
+  let delivered = 0, views = 0, gmv = 0, deal = 0;
+  for (const r of mine) {
+    const seen = new Set();
+    for (const v of Array.isArray(r.video_codes) ? r.video_codes : []) {
+      const url = String(v?.video ?? '').trim();
+      if (!url) continue;
+      const k = videoKey(url);
+      if (seen.has(k)) continue;
+      seen.add(k);
+      delivered += 1;
+      views += Number(v?.views) || 0;
+      gmv += Number(v?.revenue) || 0;
+    }
+    deal += dealAmount(r.deal);
+  }
+  return { rows: mine.length, delivered, views, gmv, deal };
+};
+console.log(`database: ${(rows ?? []).length} ${BRAND} rows · ${secrets.length} private values`);
+check(secrets.length > 0, 'the brand holds private values, so the leak checks can fail', `${secrets.length} values`);
+
+const browser = await launchBrowser();
+try {
+  const mint = async (label, opts = {}) => {
+    const { data, error } = await svc.rpc('collab_share_create', { p_label: label, p_brands: [BRAND], p_days: 2, ...opts });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    made.push(row.id);
+    return row;
+  };
+  const live = await mint('ui probe');
+
+  /* A COMPLETELY CLEAN BROWSER: no storage, no session, nothing of ours. */
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 2 });
+  const page = await context.newPage();
+  const errors = [];
+  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text().slice(0, 160)); });
+  page.on('pageerror', (e) => errors.push('PAGEERROR ' + String(e.message).slice(0, 160)));
+
+  await page.goto(`${BASE}/share/collabs/${live.token}`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('h1', { timeout: 30000 }).catch(() => {});
+  await page.waitForTimeout(2500);
+
+  const seen = await page.evaluate(() => ({
+    heading: document.querySelector('h1')?.textContent?.trim() ?? '',
+    text: document.body.innerText,
+    html: document.documentElement.outerHTML,
+    rows: document.querySelectorAll('li').length,
+    robots: document.querySelector('meta[name="robots"]')?.getAttribute('content') ?? '',
+    storage: (() => { try { return Object.keys(localStorage).length + Object.keys(sessionStorage).length; } catch { return -1; } })(),
+  }));
+
+  check(seen.heading === BRAND, 'the page opens with no login and names the brand', seen.heading || 'no heading');
+  check(/Read only/i.test(seen.text), 'and says it is read only');
+  check(/noindex/.test(seen.robots), 'and asks search engines to stay away', seen.robots);
+
+  const leaked = secrets.filter((x) => seen.html.includes(x.s));
+  check(leaked.length === 0, 'no phone number, email, payment detail, comment or payment status is in the page',
+    leaked.slice(0, 3).map((x) => x.k).join(', '));
+  check(!/\bad spend\b/i.test(seen.text) && !/\bROI\b/.test(seen.text), 'the words Ad spend and ROI appear nowhere', '');
+  check(!/Payment Pending|Mark paid|Export|Add creator/i.test(seen.text), 'no staff controls are on the page');
+
+  /* ── every number on the page, against the database ──────────────────── */
+  const shown = await page.evaluate(() => ({
+    month: document.querySelector('header[data-month]')?.getAttribute('data-month') ?? '',
+    rows: [...document.querySelectorAll('li[data-creator]')].map((li) => ({
+      name: li.getAttribute('data-creator') ?? '',
+      deal: Number(li.getAttribute('data-deal')) || 0,
+      delivered: Number(li.getAttribute('data-delivered')) || 0,
+      views: Number(li.getAttribute('data-views')) || 0,
+      gmv: Number(li.getAttribute('data-gmv')) || 0,
+    })),
+  }));
+  const want = expectedFor(shown.month);
+  const got = shown.rows.reduce((t, r) => ({
+    rows: t.rows + 1, delivered: t.delivered + r.delivered, views: t.views + r.views,
+    gmv: t.gmv + r.gmv, deal: t.deal + r.deal,
+  }), { rows: 0, delivered: 0, views: 0, gmv: 0, deal: 0 });
+
+  check(shown.rows.length > 0, `it lists the creators for ${shown.month}`, `${shown.rows.length} rows`);
+  check(got.rows === want.rows, 'it lists every row the database has for that month, and no more', `${got.rows} on screen, ${want.rows} in the database`);
+  check(got.delivered === want.delivered, 'videos delivered match the database', `${got.delivered} vs ${want.delivered}`);
+  check(got.views === want.views, 'views match the database', `${got.views} vs ${want.views}`);
+  check(Math.abs(got.gmv - want.gmv) < 0.01, 'GMV matches the database', `${got.gmv.toFixed(2)} vs ${want.gmv.toFixed(2)}`);
+  check(Math.abs(got.deal - want.deal) < 0.01, 'the deal amounts match the database', `${got.deal.toFixed(2)} vs ${want.deal.toFixed(2)}`);
+  const money = await page.evaluate(() => /Budget/i.test(document.body.innerText) && /GMV/i.test(document.body.innerText));
+  check(money, 'and Budget and GMV are on screen');
+
+  /* the videos open, with a spark code to copy */
+  const opener = page.locator('button', { hasText: /Show \d+ video/ }).first();
+  if (await opener.isVisible().catch(() => false)) {
+    await opener.click();
+    await page.waitForTimeout(600);
+    const spark = await page.locator('button', { hasText: /Copy spark code/ }).count();
+    check(spark > 0, 'a creator opens to their videos, with the spark code to copy', `${spark} codes`);
+  } else {
+    check(false, 'a creator can be opened to see their videos', 'no opener button');
+  }
+
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/share-dark.png`, fullPage: false });
+
+  /* both themes, and a phone */
+  for (const theme of ['light', 'dark']) {
+    await page.evaluate((t) => { document.documentElement.dataset.theme = t; }, theme);
+    await page.waitForTimeout(400);
+    const painted = await page.evaluate(() => {
+      const bg = getComputedStyle(document.body).backgroundColor;
+      const fg = getComputedStyle(document.querySelector('h1')).color;
+      return { bg, fg };
+    });
+    check(painted.bg !== painted.fg && painted.bg !== 'rgba(0, 0, 0, 0)', `${theme}: the page is painted`, JSON.stringify(painted));
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/share-${theme}.png` });
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(800);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  check(overflow <= 1, 'at 390px there is no sideways scroll', `${overflow}px`);
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/share-390.png` });
+
+  check(seen.storage === 0, 'the page stores nothing in the browser', `${seen.storage} keys`);
+  check(errors.length === 0, 'zero console errors', errors.slice(0, 3).join(' | '));
+
+  /* ── a revoked link, in the client's own words ────────────────────────── */
+  const dead = await mint('ui probe revoked');
+  await svc.rpc('collab_share_revoke', { p_id: dead.id });
+  const page2 = await context.newPage();
+  await page2.goto(`${BASE}/share/collabs/${dead.token}`, { waitUntil: 'domcontentloaded' });
+  await page2.waitForTimeout(2500);
+  const gone = await page2.evaluate(() => document.body.innerText);
+  check(/link has ended|not active/i.test(gone), 'a revoked link says so, in plain words', gone.slice(0, 80).replace(/\n/g, ' '));
+  check(!new RegExp(BRAND).test(gone), 'and shows nothing of the brand');
+  if (SHOTS) await page2.screenshot({ path: `${SHOTS}/share-revoked.png` });
+} finally {
+  for (const id of made) await svc.from('collab_share_links').delete().eq('id', id);
+  await browser.close();
+}
+
+console.log('');
+for (const p of pass) console.log('  PASS  ' + p);
+for (const f of fail) console.log('  FAIL  ' + f);
+console.log(`\n${pass.length} passed, ${fail.length} failed.`);
+process.exit(fail.length ? 1 : 0);
