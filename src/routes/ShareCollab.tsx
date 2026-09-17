@@ -370,7 +370,7 @@ export function ShareCollab() {
                       <div className="pc-cell" data-label="Creator">
                         <span className="pc-creatorcell">
                           <span className="pc-facewrap">
-                            <span className="pc-face" style={{ width: 30, height: 30, fontSize: 12 }}>{initials(c.name)}</span>
+                            <Face name={c.name} handle={c.tiktok[0]} />
                             {c.deals > 0 && (
                               <span className="pc-dealsbadge" title={`${c.deals} deal${c.deals === 1 ? '' : 's'} with this creator`}>
                                 {c.deals}
@@ -449,6 +449,36 @@ export function ShareCollab() {
         <p className="mt-1">Figures come from TikTok Shop and update through the day.</p>
       </footer>
     </Shell>
+  );
+}
+
+/**
+ * The creator's picture, by the same chain the staff row uses (`CreatorFace`):
+ * their TikTok photo, and an initial when there is none. Rashid: "I told you to
+ * keep the ui same why can't see avatarts".
+ *
+ * The picture comes from unavatar.io by handle, which is where the staff screen
+ * gets it too, so the two screens show the same face. Nothing but the public
+ * handle is sent, and a failure falls back to the initial rather than a gap.
+ */
+function Face({ name, handle }: { name: string; handle?: string }) {
+  const [failed, setFailed] = useState(false);
+  const h = handle ? handleOf(handle).replace(/^@/, '') : '';
+  if (!h || failed) {
+    return (
+      <span className="pc-face" style={{ width: 30, height: 30, fontSize: 12 }}>{initials(name)}</span>
+    );
+  }
+  return (
+    <img
+      className="pc-face"
+      src={`https://unavatar.io/tiktok/${encodeURIComponent(h)}?fallback=false`}
+      alt=""
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      style={{ width: 30, height: 30 }}
+      onError={() => setFailed(true)}
+    />
   );
 }
 

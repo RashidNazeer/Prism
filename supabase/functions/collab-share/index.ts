@@ -225,7 +225,7 @@ Deno.serve(async (req) => {
        that starts from everything is one forgotten delete from a leak. */
     const creators = await paged((from, to) =>
       db.schema('wurxbase').from('creators')
-        .select('name, brand, hiring_date, deal, videos, video_codes, tiktok_account, tiktok_account_2, category, product, hired_by, payment_status')
+        .select('name, brand, hiring_date, deal, videos, video_codes, tiktok_account, tiktok_account_2, category, product, hired_by, payment_status, monthly')
         .in('brand', brands)
         .not('name', 'is', null).neq('name', '')
         .or('status.eq.approved,status.is.null')
@@ -358,10 +358,20 @@ Deno.serve(async (req) => {
         const known = [c.tiktok_account, c.tiktok_account_2]
           .map(handleKey).filter(Boolean)
           .map((h) => tiers[h]).filter(Boolean) as { tier: string; gmv: number }[];
-        const l30 = known.reduce((t, e) => t + (Number(e.gmv) || 0), 0);
+        const live = known.reduce((t, e) => t + (Number(e.gmv) || 0), 0);
+        /* LIVE FIRST, THEN THE STORED FIGURE — the staff row's own rule
+           (`creatorL30` / `creatorTier` in WurxUI). `monthly.euka` is an old
+           cache and a figure from it is worse than today's, but far better than
+           a dash: Euka's creator list covers only the last thirty days and caps
+           at 1000 rows per shop, so anyone quiet lately drops out of the live
+           sweep entirely. Rashid, seeing dashes the staff screen does not have:
+           "still can't see where is their gmv". Both screens now answer the
+           same way. */
+        const stored = (c.monthly && (c.monthly as Row).euka) || null;
+        const l30 = live > 0 ? live : (Number(stored?.l30) > 0 ? Number(stored.l30) : 0);
         return {
           name: String(c.name ?? '').trim(),
-          tier: known.find((e) => e.tier)?.tier || null,
+          tier: known.find((e) => e.tier)?.tier || (stored?.tier ? String(stored.tier) : null),
           l30: l30 > 0 ? l30 : null,
           /* NO STATUS. It was shared for a few hours on 2026-09-17 because the
              "exact same view" instruction implied it; Rashid looked at the page

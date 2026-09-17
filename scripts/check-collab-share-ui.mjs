@@ -41,14 +41,14 @@ const made = [];
 
 /* what the database holds for this brand, so the page can be held to it */
 const { data: rows } = await wb.from('creators')
-  .select('name, hiring_date, tiktok_account, tiktok_account_2, whatsapp_number, email, paypal, zelle, comments, payment_status, deal, video_codes')
+  .select('name, hiring_date, tiktok_account, tiktok_account_2, monthly, whatsapp_number, email, paypal, zelle, comments, payment_status, deal, video_codes')
   .eq('brand', BRAND).or('status.eq.approved,status.is.null');
 const secrets = [];
 for (const r of rows ?? []) {
   for (const [k, v] of Object.entries(r)) {
     /* name, date, deal and the videos are shared on purpose; everything else in
        this row is a thing a client must never see. */
-    if (['name', 'hiring_date', 'deal', 'video_codes', 'payment_status', 'tiktok_account', 'tiktok_account_2'].includes(k)
+    if (['name', 'hiring_date', 'deal', 'video_codes', 'payment_status', 'tiktok_account', 'tiktok_account_2', 'monthly'].includes(k)
       || v === null || v === undefined) continue;
     const s = String(v).trim();
     if (s.length >= 6) secrets.push({ k, s });
@@ -212,10 +212,22 @@ try {
     return last.replace(/^@/, '').split(/[?#]/)[0].trim();
   };
   const monthRows = (rows ?? []).filter((r) => String(r.hiring_date ?? '').slice(0, 7) === shown.month);
-  const expectL30 = monthRows.filter((r) =>
-    [r.tiktok_account, r.tiktok_account_2].map(handleKey).filter(Boolean).some((h) => (merged.get(h) ?? 0) > 0)).length;
+  /* Live across every shop, ELSE the stored figure — the staff row's own rule,
+     which is why their screen has numbers where the first version had dashes. */
+  const expectL30 = monthRows.filter((r) => {
+    const live = [r.tiktok_account, r.tiktok_account_2].map(handleKey).filter(Boolean).some((h) => (merged.get(h) ?? 0) > 0);
+    return live || Number(r.monthly?.euka?.l30) > 0;
+  }).length;
   check(merged.size > 0, 'Euka figures are cached for more than one store, so this can fail', `${merged.size} handles across ${(cacheRows ?? []).length} stores`);
-  check(l30 === expectL30, 'L30 GMV shows for exactly the creators Euka knows, across every shop', `${l30} on screen, ${expectL30} known`);
+  check(l30 === expectL30, 'L30 GMV shows for every creator either Euka or our own record knows', `${l30} on screen, ${expectL30} known`);
+
+  /* Every row has a face, as on the staff screen: their picture, or an initial. */
+  const faces = await page.evaluate(() => ({
+    total: document.querySelectorAll('.pc-ct-row .pc-face').length,
+    photos: document.querySelectorAll('img.pc-face').length,
+    rows: document.querySelectorAll('.pc-ct-row[data-creator]').length,
+  }));
+  check(faces.total === faces.rows, 'every creator row has an avatar', `${faces.total} faces for ${faces.rows} rows (${faces.photos} photos)`);
 
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/share-dark.png`, fullPage: false });
 
