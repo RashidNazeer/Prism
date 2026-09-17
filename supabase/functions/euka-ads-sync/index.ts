@@ -39,6 +39,7 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.110.9';
 import { z } from 'npm:zod@4.4.3';
 import { corsHeaders, json } from '../_shared/cors.ts';
+import { refreshOneStaleStore } from '../_shared/euka-tiers.ts';
 import {
   EUKA_V0,
   EUKA_V1,
@@ -580,6 +581,19 @@ Deno.serve(async (req) => {
           (d) => processSparkDay(db, index, d, deadline, brandIds)),
     ]);
 
+    /*
+     * THE CLIENT PAGE'S TIER AND L30 GMV, ONE STORE PER RUN.
+     *
+     * It lives here because this function is already the place that spends
+     * Euka's time on a schedule. It was briefly inside `collab-share`, where
+     * two heavy exports in the request path left the next client view queued
+     * behind them and two in five timed out. Only when this run has a minute
+     * to spare, so it can never be the reason a run is cut off mid-unit.
+     */
+    const tierCache = Date.now() < deadline - 60_000
+      ? await refreshOneStaleStore(db, index.stores, (id) => index.ownerOf.get(id))
+      : null;
+
     const now = nowIso();
     const { count: unitsDue } = await db.from('euka_ad_sync_units')
       .select('*', { count: 'exact', head: true }).lte('due_at', now);
@@ -593,6 +607,7 @@ Deno.serve(async (req) => {
       units,
       sparks,
       stillDue: { units: unitsDue ?? null, sparkDays: sparkDaysDue ?? null },
+      tierCache,
       eukaAccountsUnavailable: index.unavailable,
     }, 200, req);
   } catch (e) {

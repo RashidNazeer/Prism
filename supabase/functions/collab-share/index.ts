@@ -31,7 +31,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.110.9';
 import { z } from 'npm:zod@4.4.3';
 import { corsHeaders, json } from '../_shared/cors.ts';
-import { EUKA_V0, eukaKeys, indexStores, storeBrandPair, type EukaAuth } from '../_shared/euka-accounts.ts';
+import { handleKey, mergeTiers, type TierMap } from '../_shared/euka-tiers.ts';
 
 /* 24 random bytes, url-safe and unpadded, is exactly 32 characters. */
 const Body = z.object({
@@ -76,104 +76,10 @@ function videoKey(url: string): string {
 type Row = Record<string, any>;
 
 const monthOf = (d: unknown) => String(d ?? '').slice(0, 7);
-const iso = (d: Date) => d.toISOString().slice(0, 10);
+/* Euka's tier and L30 GMV are READ from our own table here and refreshed
+   elsewhere: see _shared/euka-tiers.ts for why a client page must never make
+   that call itself. */
 
-/* WurxUI's _normEukaHandle: a handle may be stored as '@name', 'name', or a
-   full profile URL, and Euka answers in bare lower case. */
-function handleKey(raw: unknown): string {
-  const t = String(raw ?? '').trim().toLowerCase();
-  if (!t) return '';
-  const last = t.startsWith('http') ? (t.replace(/\/+$/, '').split('/').pop() ?? '') : t;
-  return last.replace(/^@/, '').split(/[?#]/)[0]!.trim();
-}
-
-const rowsOf = (payload: unknown): Row[] => {
-  if (Array.isArray(payload)) return payload as Row[];
-  for (const key of ['data', 'rows', 'result', 'records']) {
-    const v = (payload as Row | null)?.[key];
-    if (Array.isArray(v)) return v as Row[];
-  }
-  return [];
-};
-
-/*
- * TIER AND LAST-30-DAY GMV, LIVE FROM EUKA, CACHED PER STORE FOR 30 MINUTES.
- *
- * Rashid's boss, 2026-09-17, wanted the client's table to match the staff one,
- * which carries both. They cannot come from `creators.monthly.euka`: that cache
- * is frozen at migration day and drifts further every morning (see the note in
- * WurxUI beside `dbEuka`), so a client would be shown figures from July.
- *
- * They also cannot be fetched per view. Euka's export takes seconds and a link
- * that is passed around a client's office would hammer it, so the answer is
- * kept in `collab_share_euka_cache` and refreshed at most twice an hour. A
- * STALE ANSWER BEATS NO ANSWER: if Euka is down or slow, the last good map is
- * served rather than dashes appearing in two columns.
- */
-type TierMap = Record<string, { tier: string; gmv: number }>;
-
-/* One creator's L30 GMV is their WHOLE last-30-days, across every shop they
-   post for — which is why the staff sweep reads every store and keeps the
-   largest figure per handle. Reading only the link's own store showed a dash
-   for anyone whose recent GMV came from somewhere else. */
-function mergeTiers(into: TierMap, from: TierMap): TierMap {
-  for (const [h, v] of Object.entries(from ?? {})) {
-    const cur = into[h];
-    into[h] = {
-      tier: cur?.tier || v?.tier || '',
-      gmv: Math.max(Number(cur?.gmv) || 0, Number(v?.gmv) || 0),
-    };
-  }
-  return into;
-}
-
-async function refreshStore(
-  db: ReturnType<typeof createClient>,
-  auth: EukaAuth,
-  store: { id: string; name: string },
-): Promise<TierMap> {
-  const refresh = async (): Promise<TierMap> => {
-    const brandId = await storeBrandPair(auth, store.id, store.name);
-    const to = iso(new Date());
-    const from = iso(new Date(Date.now() - 29 * 86_400_000));
-    const url =
-      `${EUKA_V0}/data-export?type=creator_level&store_id=${encodeURIComponent(store.id)}` +
-      (brandId ? `&brand_id=${encodeURIComponent(brandId)}` : '') +
-      `&start_date=${from}&end_date=${to}&export_type=json`;
-    const r = await fetch(url, { headers: auth });
-    if (!r.ok) throw new Error(`creator_level ${r.status}`);
-    const out: Record<string, { tier: string; gmv: number }> = {};
-    for (const row of rowsOf(await r.json())) {
-      const h = handleKey(row.creator_handle ?? row.handle);
-      if (!h) continue;
-      const tier = String(row['L tier'] ?? row.l_tier ?? row.tier ?? '').trim();
-      const gmv = Number(row.creator_last_30d_gmv_num ?? row.last_30d_gmv ?? row.gmv ?? 0) || 0;
-      const cur = out[h];
-      if (!cur || gmv > cur.gmv) out[h] = { tier: tier || cur?.tier || '', gmv: Math.max(gmv, cur?.gmv ?? 0) };
-    }
-    await db.from('collab_share_euka_cache').upsert({
-      store_id: store.id,
-      store_name: store.name,
-      handles: out,
-      fetched_at: new Date().toISOString(),
-    });
-    return out;
-  };
-
-  return (await refresh().catch(() => null)) ?? {};
-}
-
-/* THE PAGE NEVER WAITS FOR EUKA. The first version awaited the export and the
-   request 504'd — a client page hanging because somebody else's API is slow is
-   our fault, not theirs. */
-const keepWarm = (p: Promise<unknown>) => {
-  try {
-    (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime?.waitUntil?.(p);
-  } catch { /* not on Deploy: the promise runs on or it does not */ }
-};
-
-/* Every row, paged. PostgREST caps a read at 1000 and says nothing about it;
-   a client shown 1000 of 1328 rows would be told a quiet lie. */
 async function paged(build: (from: number, to: number) => any): Promise<Row[]> {
   const out: Row[] = [];
   const size = 1000;
@@ -267,58 +173,20 @@ Deno.serve(async (req) => {
     const inScope = (c: Row) =>
       month === 'all' ? monthOk(monthOf(c.hiring_date)) : monthOf(c.hiring_date) === month;
 
-    /* ── tier and L30 GMV, per brand, from the store that owns it ──────── */
-    /* A store is only ever asked about with the key that RETURNED it, and a
-       brand with no Euka store is not a fault — those two columns simply have
-       nothing to say. Euka being down is not a fault here either: the page
-       still carries everything that comes from our own database. */
+    /* ── tier and L30 GMV: a table read, nothing more ──────────────────── */
+    /*
+     * REFRESHED BY euka-ads-sync, NOT HERE. Each refresh is two multi-thousand
+     * row Euka exports; doing that inside this request left the next client
+     * view queued behind it and two in five timed out (2026-09-18). A client
+     * page is now a database read, and the figures are at most half an hour
+     * old. Every store is merged, because one creator's last-30-day GMV is
+     * their whole GMV across every shop they post for — reading only this
+     * brand's store is what put dashes where the staff screen had figures.
+     */
     let tiers: TierMap = {};
     try {
-      const { data: cacheRows } = await db
-        .from('collab_share_euka_cache')
-        .select('store_id, handles, fetched_at');
+      const { data: cacheRows } = await db.from('collab_share_euka_cache').select('handles');
       for (const row of cacheRows ?? []) tiers = mergeTiers(tiers, (row.handles ?? {}) as TierMap);
-
-      const keys = eukaKeys();
-      if (keys.length) {
-        const index = await indexStores(keys);
-        const known = new Set((cacheRows ?? []).map((r) => r.store_id));
-        const stale = (id: string) => {
-          const row = (cacheRows ?? []).find((r) => r.store_id === id);
-          return !row || Date.now() - new Date(row.fetched_at).getTime() > 30 * 60 * 1000;
-        };
-        const normalise = (s: unknown) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
-        const mine = brands
-          .map((brand) => {
-            const want = normalise(brand);
-            const exact = index.stores.find((s) => normalise(s.name) === want);
-            const prefixed = index.stores.filter((s) => normalise(s.name).startsWith(want));
-            return exact ?? (prefixed.length === 1 ? prefixed[0] : undefined);
-          })
-          .filter(Boolean) as { id: string; name: string }[];
-        /* This link's own stores first — a client reading a brand is the right
-           reason for its figures to be fresh — then two others per view, so the
-           whole roster fills in over a few opens instead of one long request. */
-        const others = index.stores.filter((s) => !mine.some((m) => m.id === s.id) && stale(s.id)).slice(0, 2);
-        const runner = (s: { id: string; name: string }) => {
-          const auth = index.ownerOf.get(s.id);
-          return auth ? refreshStore(db, auth, s) : Promise.resolve({} as TierMap);
-        };
-
-        [...mine.filter((s) => known.has(s.id) && stale(s.id)), ...others]
-          .forEach((s) => keepWarm(runner(s).catch(() => null)));
-
-        /* A store with NOTHING cached gets a short wait, so the first view of a
-           brand is not two empty columns. */
-        const cold = mine.filter((s) => !known.has(s.id));
-        if (cold.length) {
-          const first = await Promise.race([
-            Promise.all(cold.map(runner)),
-            new Promise<null>((res) => setTimeout(() => res(null), 8_000)),
-          ]);
-          if (first) for (const m of first) tiers = mergeTiers(tiers, m);
-        }
-      }
     } catch { /* leave the two columns empty rather than failing the page */ }
 
     /* ── the payload, built field by field ─────────────────────────────── */

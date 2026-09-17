@@ -2328,3 +2328,17 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   and the request 504'd, which is a client page failing because somebody else's
   API is slow. Now a stale map is served at once and the refresh runs after the
   response; only a store with nothing cached waits, and only for 8 seconds.
+- 2026-09-18: **The client page reads tier and L30 GMV from BOTH Euka exports,
+  as the staff screen does.** Rashid, twice: "still can't see where is their
+  gmv". `creator_level` is the 30-day creator list and caps at 1000 rows per
+  shop, so anybody quieter than the top thousand is missing from it; the staff
+  app also harvests the same two fields from `creator_videos` rows (its
+  `getVidProfileMap`), which reaches everybody who posted. Reading only the
+  first is why a client saw dashes where he saw figures. Both are read now,
+  per store, cached together, with the 30-day list winning where both answer.
+- 2026-09-18: **A dash under New video GMV is the truth, and was proven rather
+  than argued.** Every NutraHarmony September video was compared with Euka's
+  own export: our total and theirs are both $378.29, and of the 67 videos we
+  record as zero Euka reports zero for all 67. Those creators have made no
+  sales on those videos yet. The staff screen shows the same dashes on the same
+  rows, because both read the same stored figures.

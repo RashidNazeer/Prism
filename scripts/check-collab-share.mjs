@@ -120,7 +120,11 @@ try {
     if (Array.isArray(v)) return v.forEach(walk);
     if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) { keys.add(k); walk(x); }
   })(payload);
-  const banned = [...keys].filter((k) => /^(adSpend|ad_spent|roi|allocated|paid|costPerVideo|payment_status|email|whatsapp_number|paypal|zelle|comments|airtable_id|id)$/i.test(k));
+  /* allocated, paid and costPerVideo ARE shared: they are three of the five
+     cards the staff screen shows, and the boss asked for the same view
+     (DECISIONS, 2026-09-17). Ad spend, ROI, payment status, contact details and
+     row ids are the ones that may never appear. */
+  const banned = [...keys].filter((k) => /^(adSpend|ad_spent|roi|payment_status|status|email|whatsapp_number|paypal|zelle|comments|airtable_id|id)$/i.test(k));
   check(banned.length === 0, 'no forbidden field name anywhere in the payload', banned.join(', '));
 
   /* ── 6 · ad spend and ROI, the two he named ──────────────────────────── */
