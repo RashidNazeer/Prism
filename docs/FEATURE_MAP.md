@@ -2272,10 +2272,28 @@ brand that is not on the link: its name does not appear in the bytes.
 **Unknown, expired and revoked all answer with one 404 and one sentence**, so a
 probe cannot tell a real link that expired from one that never existed.
 
-**Not there yet:** the admin screen for making links (step 2 — until then they
-are minted by hand, see OPERATIONS), the Euka tier badge and L30 GMV (both are
-live Euka calls, and a public page should not hit Euka on every view), and
-per-month link scoping.
+**Month control (2026-09-17, step 2).** `collab_share_links.months` is a
+whitelist of `YYYY-MM`; empty means every month. The client's switcher offers
+only those months, "All time" on a scoped link means all of ITS months, and a
+month asked for outside the list is answered with one inside it rather than
+refused — a client who edits the URL sees no more than one who clicks. Rashid:
+*"we need to have custom control ... like which month data"*.
+
+**The owner's screen** is `/admin/client-links` (`ClientLinks.tsx`, hooks in
+`lib/admin/useClientLinks.ts`), a row in the Paid Collabs group marked
+`owners: true` in `nav.ts` — the group's items are otherwise filtered against
+the vendored tab list, which cannot judge a row that is not a tab. ops and
+admin only, at the route and again in the database. It makes a link (label,
+brands, months, sections, 7–365 days), shows it **once**, lists every link with
+its scope, expiry and view count, and revokes with a confirm.
+
+**Not there yet:** the Euka tier badge and L30 GMV on the client page (both are
+live Euka calls; they arrive with the "exact same view" rework below), and a
+client page that mirrors the staff table exactly. Rashid's boss, 2026-09-17:
+*"we need to show them exact same view as we have they will just not be able to
+see ad spend and roi at any cost"* — and with it he chose the staff five KPI
+cards, the Status column (but no contract PDF) and tier + L30 GMV with caching.
+That rework is the next piece.
 
 **Guarded by `pnpm verify:collab-share`** (36 checks: the tables are
 unreachable, only owners mint, a link opens only its own brands, expiry and

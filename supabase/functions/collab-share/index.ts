@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
   /* ── is this link real, live and ours? ────────────────────────────────── */
   const { data: link, error: linkErr } = await db
     .from('collab_share_links')
-    .select('id, label, brands, show_kpis, show_top_videos, show_creators, show_videos, expires_at, revoked_at, token_hash, view_count')
+    .select('id, label, brands, months, show_kpis, show_top_videos, show_creators, show_videos, expires_at, revoked_at, token_hash, view_count')
     .eq('token_hash', await sha256Hex(token))
     .maybeSingle();
   if (linkErr) return json({ error: 'Something went wrong. Try again shortly.' }, 500, req);
@@ -152,12 +152,24 @@ Deno.serve(async (req) => {
         .select('brand, month, budget, content_guide_url, focus_product_url')
         .in('brand', brands).range(from, to));
 
-    /* ── which months are on offer, and which one was asked for ────────── */
+    /* ── which months this link may show, and which one was asked for ──── */
+    /*
+     * An EMPTY whitelist means every month. A non-empty one is the whole truth
+     * for this client: the switcher offers those months, "all" means all of
+     * THOSE, and a month asked for outside the list is answered with one inside
+     * it rather than refused — a client who edits the URL sees no more than a
+     * client who clicks. Rashid, 2026-09-17: "which data should be shared with
+     * them and which not like which month data".
+     */
+    const allowed: string[] = (link.months ?? []).filter((m: string) => /^\d{4}-\d{2}$/.test(String(m)));
+    const monthOk = (m: string) => allowed.length === 0 || allowed.includes(m);
     const months = [...new Set(creators.map((c) => monthOf(c.hiring_date)).filter((m) => /^\d{4}-\d{2}$/.test(m)))]
+      .filter(monthOk)
       .sort().reverse();
     const asked = parsed.data.month ?? months[0] ?? 'all';
     const month = asked === 'all' || months.includes(asked) ? asked : (months[0] ?? 'all');
-    const inScope = (c: Row) => month === 'all' || monthOf(c.hiring_date) === month;
+    const inScope = (c: Row) =>
+      month === 'all' ? monthOk(monthOf(c.hiring_date)) : monthOf(c.hiring_date) === month;
 
     /* ── the payload, built field by field ─────────────────────────────── */
     const data = brands.map((brand) => {
@@ -216,7 +228,7 @@ Deno.serve(async (req) => {
 
       if (link.show_kpis) {
         const budgetRows = budgets.filter((b) => String(b.brand ?? '').trim() === brand
-          && (month === 'all' || monthOf(b.month) === month));
+          && (month === 'all' ? monthOk(monthOf(b.month)) : monthOf(b.month) === month));
         const budget = budgetRows.reduce((t, b) => t + (Number(b.budget) || 0), 0);
         const allocated = people.reduce((t, p) => t + p.deal, 0);
         /* Budget and what is left. Allocated, paid and cost per video are not

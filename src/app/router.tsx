@@ -191,6 +191,7 @@ const AdminContestRewards = screen(
 const AdminContestSetup = screen(() => import('@/routes/admin/ContestSetup'), 'ContestSetup');
 const AdminContent = screen(() => import('@/routes/admin/Content'), 'AdminContent');
 const AdminActivity = screen(() => import('@/routes/admin/Activity'), 'Activity');
+const AdminClientLinks = screen(() => import('@/routes/admin/ClientLinks'), 'ClientLinks');
 const AdminTikTok = screen(() => import('@/routes/admin/TikTokSettings'), 'TikTokSettings');
 const AdminPaidCollabs = screen(() => import('@/routes/admin/PaidCollabs'), 'PaidCollabs');
 const AdminBrands = screen(() => import('@/routes/admin/Brands'), 'Brands');
@@ -500,6 +501,26 @@ export const router = createBrowserRouter([
             element: <AdminPaidCollabs />,
           },
         ],
+      },
+    ],
+  },
+
+  {
+    /*
+     * CLIENT LINKS, ON A NARROWER GUARD THAN THE REST OF STAFF.
+     *
+     * ops and admin only. `STAFF_ROLES` has included ads_manager since
+     * 2026-09-15, and handing a brand's numbers to somebody outside the company
+     * is an owner's decision, not a staff one. The guard only picks the screen:
+     * the real boundary is `collab_share_create` / `_list` / `_revoke`, which
+     * re-check the caller's role in the database, so this list being widened by
+     * mistake would give somebody an empty screen rather than a live link.
+     */
+    Component: () => <RequireAuth allow={['admin', 'ops']} />,
+    children: [
+      {
+        Component: ShellLayout,
+        children: [{ path: '/admin/client-links', element: <AdminClientLinks /> }],
       },
     ],
   },

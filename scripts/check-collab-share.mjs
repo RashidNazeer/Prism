@@ -168,6 +168,42 @@ try {
   check(!ageErr && new Date(aged.expires_at).getTime() < Date.now(), 'a link can be aged past its expiry for this test', ageErr?.message ?? aged?.expires_at);
   check((await share({ token: link3.token })).status === 404, 'an expired link is dead');
 
+  /* ── 7b · months are a whitelist, not a default ──────────────────────── */
+  /* The link is minted for ONE month that is not the newest, so "it worked"
+     cannot be the page simply showing its usual latest month. */
+  const older = (payload.months ?? [])[1];
+  check(Boolean(older) && older !== payload.month, `${BRAND} has an older month to scope a link to`, `${(payload.months ?? []).join(', ')}`);
+  if (older) {
+    const { data: mintM, error: mErrM } = await svc.rpc('collab_share_create', {
+      p_label: 'probe months', p_brands: [BRAND], p_days: 2, p_months: [older],
+    });
+    if (mErrM) throw mErrM;
+    const linkM = Array.isArray(mintM) ? mintM[0] : mintM;
+    made.push(linkM.id);
+
+    const rM = await share({ token: linkM.token });
+    const bM = await rM.text();
+    const pM = JSON.parse(bM);
+    check(JSON.stringify(pM.months) === JSON.stringify([older]), `a month-scoped link offers only ${older}`, JSON.stringify(pM.months));
+    check(pM.month === older, 'and opens on it', pM.month);
+    const outside = (pM.data?.[0]?.creators ?? []).filter((c) => String(c.onboarded ?? '').slice(0, 7) !== older);
+    check((pM.data?.[0]?.creators ?? []).length > 0 && outside.length === 0,
+      'every row it carries belongs to that month', `${outside.length} rows from another month`);
+
+    /* asking for a month it was not given */
+    const rAsk = await share({ token: linkM.token, month: payload.month });
+    const pAsk = await rAsk.json();
+    check(pAsk.month === older, 'asking for a month outside the link is answered with one inside it', pAsk.month);
+    const askOutside = (pAsk.data?.[0]?.creators ?? []).filter((c) => String(c.onboarded ?? '').slice(0, 7) !== older);
+    check(askOutside.length === 0, 'and carries no row from the month it was not given', `${askOutside.length} rows`);
+
+    /* "all time" on a scoped link means all of ITS months */
+    const rAll = await share({ token: linkM.token, month: 'all' });
+    const pAll = await rAll.json();
+    const allOutside = (pAll.data?.[0]?.creators ?? []).filter((c) => String(c.onboarded ?? '').slice(0, 7) !== older);
+    check(allOutside.length === 0, 'and All time on it means all of ITS months, not all months', `${allOutside.length} rows from elsewhere`);
+  }
+
   /* ── 8 · sections off means absent, not hidden ───────────────────────── */
   const { data: mint4 } = await svc.rpc('collab_share_create', {
     p_label: 'probe sections', p_brands: [BRAND], p_days: 2,

@@ -10,6 +10,7 @@ import {
   History,
   Inbox,
   LayoutDashboard,
+  Link2,
   Megaphone,
   Store,
   Tag,
@@ -72,6 +73,16 @@ export interface NavItem {
    * hidden below `md`, where there is no room and the name alone is the answer.
    */
   description?: string;
+  /**
+   * OWNERS ONLY: ops and admin, never ads_manager or the read-only roles.
+   *
+   * A row in the Paid Collabs group that is NOT one of the vendored tabs, so
+   * the tab filter below cannot judge it. Client links is the first: it hands a
+   * brand's numbers to somebody outside the company, which is an owner's
+   * decision. The row being hidden is not the boundary — the three
+   * `collab_share_*` functions re-check the caller's role in the database.
+   */
+  owners?: boolean;
 }
 
 export interface NavGroup {
@@ -222,6 +233,13 @@ const ADMIN: NavGroup[] = [
       },
       { label: 'Leaderboard', icon: Award, to: '/admin/collabs/leaderboard' },
       { label: 'Discovery', icon: Compass, to: '/admin/collabs/discovery' },
+      {
+        label: 'Client links',
+        icon: Link2,
+        to: '/admin/client-links',
+        owners: true,
+        description: 'Read-only links you can send a client',
+      },
     ],
   },
 ];
@@ -386,7 +404,12 @@ function withCollabTabs(
   const out = groups
     .map((group) => {
       if (group.label !== COLLABS_GROUP) return group;
-      const items = group.items.filter((item) => allowed.has(slug(item.to)));
+      /* An owners-only row is not a vendored tab, so the tab list cannot judge
+         it: ops and admin keep it, everybody else loses it. */
+      const isOwner = role === 'ops' || role === 'admin';
+      const items = group.items.filter((item) =>
+        item.owners ? isOwner : allowed.has(slug(item.to))
+      );
       if (items.length === group.items.length) return group;
       changed = true;
       return { ...group, items };

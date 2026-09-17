@@ -29,6 +29,29 @@ Answer "what's pending?" from `docs/PARKED.md`.
 
 ## WHERE EVERYTHING STANDS
 
+### Client sharing, step 2: month control and the owner's screen (2026-09-17)
+
+- **Month control.** A link carries a whitelist of months (empty = every
+  month). The client's switcher offers only those, "All time" means all of
+  its months, and asking for another month is answered with one it was given.
+- **`/admin/client-links`**, a row in the Paid Collabs group, ops and admin
+  only: make a link (label, brands, months, sections, 7–365 days), see it once,
+  list every link with scope, expiry and views, revoke with a confirm.
+- **Proven:** `verify:collab-share` 43/43 (including month scoping) and
+  `verify:client-links` 12/12 end to end — an owner makes a link, a browser
+  that never logged in opens it, a non-owner cannot reach the screen, and
+  revoking kills it while the client is sitting on the page.
+
+**NEXT, and already decided by the boss:** the client page must show the
+**exact same Brands view as staff**, minus ad spend and ROI. Rashid relayed it
+on 2026-09-17, and answered the specifics: the staff five KPI cards (Budget,
+Allocated, Paid, Videos, Cost/video), the Status column but **no contract
+PDF**, tier badges and L30 GMV **included** (Euka, cached per brand so a shared
+link cannot hammer it), and the table styled like Paid Collabs itself rather
+than the cleaner client layout built first. That supersedes his earlier
+"budget and remaining only" and "no payment status" answers; the DECISIONS
+entry for those says so.
+
 ### Client sharing, step 1 of 2 (2026-09-17)
 
 Rashid asked for links that show a client their brand's Paid Collabs work with

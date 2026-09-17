@@ -1620,8 +1620,11 @@ production calls Euka.
 A link shows one or more brands, read only, to somebody with no account. See
 FEATURE_MAP, "Client sharing: read-only links into Paid Collabs".
 
-**Until the admin screen exists (step 2), use the tool.** With
-`SUPABASE_SERVICE_KEY` in the environment:
+**The normal way is the screen:** `/admin/client-links`, in the Paid Collabs
+group, ops and admin only. Make a link, copy it once, revoke it there.
+
+**The terminal tool** is for scripts and for when a link is needed without a
+browser. With `SUPABASE_SERVICE_KEY` in the environment:
 
 ```bash
 node scripts/share-link.mjs new "Apothecary - Sarah" Apothecary 30
