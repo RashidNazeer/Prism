@@ -1570,6 +1570,32 @@ and `{"discover": true, "budgetMs": 100000}`. Progress lives in three tables:
 - `euka_ad_sync_units`: per campaign-month status, `last_error` and `due_at`
 - `euka_spark_sync_days`: per store-day spark-code status
 
+**WHEN A BRAND LINKS A NEW AD ACCOUNT IN EUKA, RUN DISCOVERY.** Only discovery
+reads the campaign list, and it runs every six hours, so a newly linked account
+(or a newly created campaign) shows nothing until then. This is the first thing
+to try when somebody says "we connected it and I see no data" — before
+investigating anything.
+
+Sign in as staff with the Supabase JS client, then
+`functions.invoke('euka-ads-sync', { body: { discover: true } })`. A run that
+discovers stops there by design, so invoke it once more with `{}` to work the
+new units; the 5-minute cron would do that anyway.
+
+Then confirm, with the management API:
+
+```sql
+select campaign_name, month, status, row_count, cost
+from euka_ad_sync_units where store_name = '<store>' order by campaign_name, month;
+```
+
+Worked example, 2026-09-17: Apothecary's store had ONE campaign, a deleted
+"All Products" with no rows, so every figure was correctly empty. After
+discovery it had four, and "Ezy Dose Push Button" carried $24,530 in August
+and $14,976 in September. Total time about two minutes.
+`BRAND=Apothecary MONTH=2026-09 pnpm verify:euka-ads-ui` then passed 5/5
+against the live dev site. **Tell whoever asked to reload the page**: the
+screen caches "no figures" for the visit.
+
 `pnpm verify:euka-ads` runs 21 checks: sums across campaigns, month
 separation, currencies, replace-not-add, who can read, who can run the sync,
 and the vault. `pnpm verify:euka-ads-ui` compares every creator's Ad spend and

@@ -91,8 +91,11 @@ entry asset, `index-Io5Hejlp.js`, is the same file the on-screen check passed
 against.
 
 **State when recorded:**
-- Connected in Euka: Penetrex, Dr Tobias, Longevity Box, Swisse Wellness and
-  Aurelia. Aurelia's ad account is "Cutler Nutrition Shop Ads", which reports
+- Connected in Euka: Penetrex, Dr Tobias, Longevity Box, Swisse Wellness,
+  Aurelia, NutraHarmony, and **Apothecary since 2026-09-17** (Rashid linked
+  its account; it needed a discovery run to appear — see OPERATIONS, "when a
+  brand links a new ad account"). Apothecary's August and September spend,
+  $24,530 and $14,976, is now on screen and checked, 5/5. Aurelia's ad account is "Cutler Nutrition Shop Ads", which reports
   81 campaigns but lists only 43.
 - September was filling first. Penetrex had 2 of 5 campaigns done (157
   videos, $1,661), and Euka's first-ask 504s were retrying every 4 minutes.
