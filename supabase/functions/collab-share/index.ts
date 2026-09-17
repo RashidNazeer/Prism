@@ -271,10 +271,12 @@ Deno.serve(async (req) => {
           && (month === 'all' ? monthOk(monthOf(b.month)) : monthOf(b.month) === month));
         const budget = budgetRows.reduce((t, b) => t + (Number(b.budget) || 0), 0);
         const allocated = people.reduce((t, p) => t + p.deal, 0);
+        /* `c.payment_status === 'Paid'`, exactly as the staff row tests it. */
         const paid = rows
-          .filter((c) => String(c.payment_status ?? '').trim().toLowerCase() === 'paid')
+          .filter((c) => c.payment_status === 'Paid')
           .reduce((t, c) => t + dealAmount(c.deal), 0);
         const delivered = people.reduce((t, p) => t + p.delivered, 0);
+        const committed = people.reduce((t, p) => t + p.committed, 0);
         /* THE SAME FIVE CARDS THE STAFF SCREEN SHOWS. Rashid's boss, 2026-09-17:
            "we need to show them exact same view as we have they will just not be
            able to see ad spend and roi at any cost". That supersedes the earlier
@@ -286,8 +288,14 @@ Deno.serve(async (req) => {
           remaining: budget - allocated,
           creators: people.length,
           delivered,
-          committed: people.reduce((t, p) => t + p.committed, 0),
-          costPerVideo: delivered > 0 ? allocated / delivered : 0,
+          committed,
+          /* ALLOCATED OVER COMMITTED VIDEOS, not delivered. The staff card says
+             so in its own comment — "Cost / video = allocated / committed
+             videos (Afflix semantics · not delivered)" — while its label reads
+             "per delivered video". The label is theirs and the arithmetic is
+             theirs; matching their NUMBER is what matters, and dividing by
+             delivered put $238 on a client's screen beside Rashid's $46. */
+          costPerVideo: committed > 0 ? allocated / committed : 0,
           views: people.reduce((t, p) => t + p.views, 0),
           gmv: people.reduce((t, p) => t + p.gmv, 0),
         };

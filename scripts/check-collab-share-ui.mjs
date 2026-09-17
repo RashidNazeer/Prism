@@ -170,7 +170,9 @@ try {
   check(money, 'and Budget and GMV are on screen');
 
   /* the videos open, with a spark code to copy */
-  const firstRow = page.locator('.pc-ct-row[data-creator]').first();
+  /* A row that HAS videos: the first row of a brand is often somebody who has
+     not posted yet, and clicking that one proves nothing. */
+  const firstRow = page.locator('.pc-ct-row[data-creator]:not([data-delivered="0"])').first();
   if (await firstRow.isVisible().catch(() => false)) {
     await firstRow.click();
     await page.waitForTimeout(700);
@@ -188,6 +190,57 @@ try {
   const kpis = await page.evaluate(() => [...document.querySelectorAll('.pc-kpi-label')].map((d) => d.textContent?.trim()));
   check(JSON.stringify(kpis) === JSON.stringify(['Budget', 'Allocated', 'Paid', 'Videos', 'Cost / Video']),
     'and the same five cards above it', kpis.join(' | '));
+
+  /*
+   * EVERY CARD, AGAINST THE STAFF SCREEN'S OWN ARITHMETIC.
+   *
+   * Rashid found Cost / Video reading $238 beside his $46: his card divides
+   * allocated by COMMITTED videos ("Afflix semantics · not delivered" in
+   * WurxUI), and this page had divided by delivered. Checking the rows summed
+   * correctly was not enough — the cards are their own sums, so they get their
+   * own comparison, each formula copied from the staff code.
+   */
+  const dealVideos = (deal) => {
+    const s = String(deal ?? '');
+    const m1 = s.match(/(\d+)\s*(?:videos?|vids?|clips?|posts?)\b/i);
+    if (m1) return parseInt(m1[1], 10);
+    const m2 = s.match(/\$\s*\d[\d,]*(?:\.\d+)?\s*(?:[/\-x×*]|for)\s*(\d+)\b/i);
+    if (m2) return parseInt(m2[1], 10);
+    const m3 = s.match(/\b(\d+)\s*[vV]\b/);
+    if (m3) return parseInt(m3[1], 10);
+    return 0;
+  };
+  const { data: budgetRows } = await wb.from('brand_monthly_budgets').select('brand, month, budget').eq('brand', BRAND);
+  const monthly = (rows ?? []).filter((r) => String(r.hiring_date ?? '').slice(0, 7) === shown.month);
+  const wantAllocated = monthly.reduce((t, r) => t + dealAmount(r.deal), 0);
+  const wantPaid = monthly.filter((r) => r.payment_status === 'Paid').reduce((t, r) => t + dealAmount(r.deal), 0);
+  const wantCommitted = monthly.reduce((t, r) => t + dealVideos(r.deal), 0);
+  const wantDelivered = monthly.reduce((t, r) => {
+    const seen = new Set();
+    for (const v of Array.isArray(r.video_codes) ? r.video_codes : []) {
+      const url = String(v?.video ?? '').trim();
+      if (url) seen.add(videoKey(url));
+    }
+    return t + seen.size;
+  }, 0);
+  const wantBudget = (budgetRows ?? []).filter((b) => String(b.month) === shown.month).reduce((t, b) => t + (Number(b.budget) || 0), 0);
+  const wantCostPerVideo = wantCommitted > 0 ? wantAllocated / wantCommitted : 0;
+
+  const cards = await page.evaluate(() =>
+    [...document.querySelectorAll('.pc-kpi')].map((k) => ({
+      label: k.querySelector('.pc-kpi-label')?.textContent?.trim() ?? '',
+      value: k.querySelector('.pc-kpi-value')?.textContent?.trim() ?? '',
+      sub: k.querySelector('.pc-kpi-sub')?.textContent?.trim() ?? '',
+    })));
+  const num = (s) => Number(String(s).replace(/[^0-9.-]/g, '')) || 0;
+  const card = (label) => cards.find((c) => c.label === label) ?? { value: '', sub: '' };
+  const wrongCards = [];
+  if (num(card('Budget').value) !== Math.round(wantBudget)) wrongCards.push(`Budget ${card('Budget').value} vs ${wantBudget}`);
+  if (num(card('Allocated').value) !== Math.round(wantAllocated)) wrongCards.push(`Allocated ${card('Allocated').value} vs ${wantAllocated}`);
+  if (num(card('Paid').value) !== Math.round(wantPaid)) wrongCards.push(`Paid ${card('Paid').value} vs ${wantPaid}`);
+  if (card('Videos').value !== `${wantDelivered}/${wantCommitted}`) wrongCards.push(`Videos ${card('Videos').value} vs ${wantDelivered}/${wantCommitted}`);
+  if (Math.abs(num(card('Cost / Video').value) - Math.round(wantCostPerVideo)) > 1) wrongCards.push(`Cost/Video ${card('Cost / Video').value} vs ${Math.round(wantCostPerVideo)}`);
+  check(wrongCards.length === 0, 'every card matches the staff screen\'s own arithmetic', wrongCards.join(' | '));
   const tiers = await page.evaluate(() => document.querySelectorAll('.pc-tierbadge').length);
   const l30 = await page.evaluate(() => [...document.querySelectorAll('.pc-l30-cell')].filter((e) => !e.classList.contains('muted')).length);
   check(tiers > 0 && l30 > 0, 'tier tags and L30 GMV arrived from Euka', `${tiers} tiers, ${l30} L30 figures`);
