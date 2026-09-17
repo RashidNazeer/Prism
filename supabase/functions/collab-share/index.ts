@@ -138,16 +138,9 @@ Deno.serve(async (req) => {
         .order('hiring_date', { ascending: false })
         .range(from, to));
 
-    /* How many deals we have had with each person, across every brand: the
-       circle on their face. Names only — this reads the whole table, so it
-       reads the two harmless columns and no others. */
-    const everyone = await paged((from, to) =>
-      db.schema('wurxbase').from('creators').select('name').order('name').range(from, to));
-    const dealsEver = new Map<string, number>();
-    for (const r of everyone) {
-      const k = String(r.name ?? '').trim().toLowerCase();
-      if (k) dealsEver.set(k, (dealsEver.get(k) ?? 0) + 1);
-    }
+    /* The whole-table read that counted a person's campaigns is gone with the
+       circle it fed: a client page should not walk every brand's roster to
+       draw a number the client is not allowed to see. */
 
     const budgets = await paged((from, to) =>
       db.schema('wurxbase').from('brand_monthly_budgets')
@@ -247,16 +240,18 @@ Deno.serve(async (req) => {
              is between us and the creator. */
           tiktok: [c.tiktok_account, c.tiktok_account_2].map((h) => (h ? String(h).trim() : '')).filter(Boolean),
           hiredBy: c.hired_by ? String(c.hired_by).trim() : null,
-          deals: dealsEver.get(String(c.name ?? '').trim().toLowerCase()) ?? 0,
+          /* NO DEALS COUNT. The circle on the face says how many campaigns we
+             have run with that person across every brand — which tells a client
+             how busy their creators are with everybody else. Rashid, relaying
+             the boss: "the deal no around the avatar ... that was for
+             ourself". It is not counted here any more, so nothing to leak. */
           category: c.category ? String(c.category) : null,
           product: c.product ? String(c.product) : null,
           onboarded: String(c.hiring_date ?? '').slice(0, 10) || null,
           completedOn: done && dates.length ? dates[Math.min(committed > 0 ? committed : dates.length, dates.length) - 1] : null,
-          /* NO DEAL AMOUNT AND NO PER-VIDEO RATE. Shared for a day on Rashid's
-             earlier answer, then: "i also dont want this deal column remove
-             it". What we pay a creator is between us and the creator, so it
-             leaves the payload rather than the page. The brand's Allocated and
-             Paid cards still show the totals, which is what he kept. */
+          /* The deal and its per-video rate, which the client does see. */
+          deal: amount,
+          perVideo: committed > 0 && amount > 0 ? Math.round(amount / committed) : null,
           committed,
           delivered,
           views: videos.reduce((t, v) => t + v.views, 0),

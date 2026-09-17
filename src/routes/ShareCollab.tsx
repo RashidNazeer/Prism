@@ -42,11 +42,12 @@ type Creator = {
   name: string;
   tiktok: string[];
   hiredBy: string | null;
-  deals: number;
   tier: string | null;
   l30: number | null;
   onboarded: string | null;
   completedOn: string | null;
+  deal: number;
+  perVideo: number | null;
   committed: number;
   delivered: number;
   views: number;
@@ -85,7 +86,7 @@ type Payload = {
 
 /* Their column widths, minus Ad spend, ROI, Contract and Actions. Inline so it
    beats the vendored rule, which counts twelve columns. */
-const COLS = '0.36fr 0.8fr 1.9fr .6fr .66fr .86fr .8fr .6fr';
+const COLS = '0.36fr 0.74fr 1.7fr .86fr .56fr .6fr .8fr .74fr .56fr';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const monthLabel = (key: string) => {
@@ -333,6 +334,7 @@ export function ShareCollab() {
               <div className="pc-num">#</div>
               <div>Completed on</div>
               <div>Creator</div>
+              <div className="pc-num">Deal</div>
               <div className="pc-num">Videos</div>
               <div className="pc-num">Total views</div>
               <div className="pc-num">New video GMV</div>
@@ -357,6 +359,7 @@ export function ShareCollab() {
                       style={{ gridTemplateColumns: COLS, cursor: c.videos?.length ? 'pointer' : 'default' }}
                       onClick={() => c.videos?.length && setOpen(isOpen ? null : id)}
                       data-creator={c.name}
+                      data-deal={c.deal}
                       data-delivered={c.delivered}
                       data-views={c.views}
                       data-gmv={c.gmv}
@@ -365,14 +368,9 @@ export function ShareCollab() {
                       <div className="pc-cell" data-label="Completed on">{c.completedOn ? dayLabel(c.completedOn) : <span className="pc-handle">-</span>}</div>
                       <div className="pc-cell" data-label="Creator">
                         <span className="pc-creatorcell">
-                          <span className="pc-facewrap">
-                            <Face name={c.name} handle={c.tiktok[0]} />
-                            {c.deals > 0 && (
-                              <span className="pc-dealsbadge" title={`${c.deals} deal${c.deals === 1 ? '' : 's'} with this creator`}>
-                                {c.deals}
-                              </span>
-                            )}
-                          </span>
+                          {/* No deals circle: how many campaigns this person
+                              runs with our other clients is ours, not theirs. */}
+                          <Face name={c.name} handle={c.tiktok[0]} />
                           <span className="pc-creatorcell-txt">
                             <span className="pc-cname">{c.name || '-'}</span>
                             {c.tiktok[0]
@@ -382,6 +380,11 @@ export function ShareCollab() {
                           {c.tier && <span className={`pc-tierbadge ${c.tier.toLowerCase()}`} title={`EUKA creator tier ${c.tier}`}>{c.tier}</span>}
                           {tag && <span className="pc-hbtag" style={{ color: tag.fg, background: tag.bg }} title={c.hiredBy ?? ''}>{tag.i}</span>}
                         </span>
+                      </div>
+                      <div className="pc-cell pc-num" data-label="Deal">
+                        {c.deal > 0
+                          ? <span className="pc-money">{money(c.deal)}{c.perVideo ? <span className="pc-deal-per"> · {money(c.perVideo)}/vid</span> : null}</span>
+                          : <span className="pc-handle">-</span>}
                       </div>
                       <div className="pc-cell pc-num" data-label="Videos">
                         <span className="pc-metric">{c.delivered}{c.committed ? <span style={{ opacity: 0.6 }}>/{c.committed}</span> : null}</span>

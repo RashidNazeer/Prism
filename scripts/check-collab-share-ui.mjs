@@ -148,6 +148,7 @@ try {
     month: document.querySelector('header[data-month]')?.getAttribute('data-month') ?? '',
     rows: [...document.querySelectorAll('.pc-ct-row[data-creator]')].map((li) => ({
       name: li.getAttribute('data-creator') ?? '',
+      deal: Number(li.getAttribute('data-deal')) || 0,
       delivered: Number(li.getAttribute('data-delivered')) || 0,
       views: Number(li.getAttribute('data-views')) || 0,
       gmv: Number(li.getAttribute('data-gmv')) || 0,
@@ -155,8 +156,9 @@ try {
   }));
   const want = expectedFor(shown.month);
   const got = shown.rows.reduce((t, r) => ({
-    rows: t.rows + 1, delivered: t.delivered + r.delivered, views: t.views + r.views, gmv: t.gmv + r.gmv,
-  }), { rows: 0, delivered: 0, views: 0, gmv: 0 });
+    rows: t.rows + 1, delivered: t.delivered + r.delivered, views: t.views + r.views,
+    gmv: t.gmv + r.gmv, deal: t.deal + r.deal,
+  }), { rows: 0, delivered: 0, views: 0, gmv: 0, deal: 0 });
 
   check(shown.rows.length > 0, `it lists the creators for ${shown.month}`, `${shown.rows.length} rows`);
   check(got.rows === want.rows, 'it lists every row the database has for that month, and no more', `${got.rows} on screen, ${want.rows} in the database`);
@@ -164,17 +166,17 @@ try {
   check(got.views === want.views, 'views match the database', `${got.views} vs ${want.views}`);
   check(Math.abs(got.gmv - want.gmv) < 0.01, 'GMV matches the database', `${got.gmv.toFixed(2)} vs ${want.gmv.toFixed(2)}`);
 
-  /* WHAT WE PAY A CREATOR IS NOT ON THIS PAGE. Rashid: "i also dont want this
-     deal column remove it" — so no column, no per-video rate, and no data
-     attribute carrying the figure either. The brand's Allocated and Paid
-     totals stay; those he kept. */
-  const perCreatorMoney = await page.evaluate(() => ({
-    dealCells: document.querySelectorAll('[data-label="Deal"]').length,
-    dataDeal: document.querySelectorAll('.pc-ct-row[data-deal]').length,
-    perVid: /\/vid\b/.test(document.body.innerText) ? 1 : 0,
+  check(Math.abs(got.deal - want.deal) < 0.01, 'the deal amounts match the database', `${got.deal.toFixed(2)} vs ${want.deal.toFixed(2)}`);
+
+  /* NO DEALS CIRCLE ON THE FACE. It counts a person's campaigns across every
+     brand, which tells a client how busy their creators are with everybody
+     else. Rashid, relaying the boss: "the deal no around the avatar ... that
+     was for ourself". Not drawn, and not sent. */
+  const circles = await page.evaluate(() => ({
+    badges: document.querySelectorAll('.pc-dealsbadge').length,
+    wraps: document.querySelectorAll('.pc-facewrap').length,
   }));
-  check(Object.values(perCreatorMoney).every((n) => n === 0),
-    'no creator\'s own deal or rate is anywhere in the page', JSON.stringify(perCreatorMoney));
+  check(circles.badges === 0, 'no deals circle on any avatar', JSON.stringify(circles));
   const money = await page.evaluate(() => /Budget/i.test(document.body.innerText) && /GMV/i.test(document.body.innerText));
   check(money, 'and Budget and GMV are on screen');
 
@@ -194,7 +196,7 @@ try {
 
   /* the columns the boss asked for, and the two he did not */
   const head = await page.evaluate(() => [...document.querySelectorAll('.pc-ct-head > div')].map((d) => d.textContent?.trim()));
-  const columns = ['#', 'Completed on', 'Creator', 'Videos', 'Total views', 'New video GMV', 'L30 GMV', 'Items sold'];
+  const columns = ['#', 'Completed on', 'Creator', 'Deal', 'Videos', 'Total views', 'New video GMV', 'L30 GMV', 'Items sold'];
   check(JSON.stringify(head) === JSON.stringify(columns), 'the table has the staff columns, minus Ad spend and ROI', head.join(' | '));
   const kpis = await page.evaluate(() => [...document.querySelectorAll('.pc-kpi-label')].map((d) => d.textContent?.trim()));
   check(JSON.stringify(kpis) === JSON.stringify(['Budget', 'Allocated', 'Paid', 'Videos', 'Cost / Video']),
