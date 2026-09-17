@@ -1620,24 +1620,23 @@ production calls Euka.
 A link shows one or more brands, read only, to somebody with no account. See
 FEATURE_MAP, "Client sharing: read-only links into Paid Collabs".
 
-**Until the admin screen exists (step 2), mint by hand.** With the service key
-in the environment, through the management API or supabase-js:
+**Until the admin screen exists (step 2), use the tool.** With
+`SUPABASE_SERVICE_KEY` in the environment:
 
-```sql
--- make one: returns the link ONCE. Copy it now; it cannot be shown again.
-select * from public.collab_share_create(
-  'Apothecary - Sarah',        -- label, for your list
-  array['Apothecary'],         -- one brand, or several
-  90,                          -- days until it expires (1..365)
-  true, true, true, true       -- show: top numbers, top videos, creators, videos
-);
-
--- see them all (never returns anything a link could be rebuilt from)
-select * from public.collab_share_list();
-
--- switch one off, for good
-select public.collab_share_revoke('<id>');
+```bash
+node scripts/share-link.mjs new "Apothecary - Sarah" Apothecary 30
+node scripts/share-link.mjs new "Two brands" "Apothecary,Penetrex" 90 ktcv
+node scripts/share-link.mjs list
+node scripts/share-link.mjs revoke <id>
 ```
+
+`sections` is any of k (top numbers), t (top videos), c (creators), v (videos);
+the default is all four.
+
+**NOT through the SQL editor or the management API.** Both run as `postgres`,
+whose JWT is not the service role, so `collab_share_create` raises "Only an
+admin can create a client link" — the gate working, not a fault. The tool uses
+supabase-js with the service key, which `is_service_role()` recognises.
 
 The client's address is `https://wurxmediahubdev.vercel.app/share/collabs/<token>`
 (production once it goes live). **The link is the credential: 192 random bits,
