@@ -41,14 +41,15 @@ const made = [];
 
 /* what the database holds for this brand, so the page can be held to it */
 const { data: rows } = await wb.from('creators')
-  .select('name, hiring_date, whatsapp_number, email, paypal, zelle, comments, payment_status, deal, video_codes')
+  .select('name, hiring_date, tiktok_account, tiktok_account_2, whatsapp_number, email, paypal, zelle, comments, payment_status, deal, video_codes')
   .eq('brand', BRAND).or('status.eq.approved,status.is.null');
 const secrets = [];
 for (const r of rows ?? []) {
   for (const [k, v] of Object.entries(r)) {
     /* name, date, deal and the videos are shared on purpose; everything else in
        this row is a thing a client must never see. */
-    if (['name', 'hiring_date', 'deal', 'video_codes', 'payment_status'].includes(k) || v === null || v === undefined) continue;
+    if (['name', 'hiring_date', 'deal', 'video_codes', 'payment_status', 'tiktok_account', 'tiktok_account_2'].includes(k)
+      || v === null || v === undefined) continue;
     const s = String(v).trim();
     if (s.length >= 6) secrets.push({ k, s });
   }
@@ -138,7 +139,9 @@ try {
   }));
   check(writable.selects === 0 && writable.contract === 0 && writable.inputs === 0,
     'nothing on the page can be changed: no dropdown, no contract, no field', JSON.stringify(writable));
-  check(/Payment Pending|Paid/i.test(seen.text), 'the Status column is there, as words rather than a control');
+  /* Rashid, on seeing the page: "no need to show status". Whether a creator has
+     been paid is between us and them. */
+  check(!/Payment Pending|Videos in Progress/i.test(seen.text), 'the Status column is gone', seen.text.slice(0, 60).replace(/\n/g, ' '));
 
   /* ── every number on the page, against the database ──────────────────── */
   const shown = await page.evaluate(() => ({
@@ -180,7 +183,7 @@ try {
 
   /* the columns the boss asked for, and the two he did not */
   const head = await page.evaluate(() => [...document.querySelectorAll('.pc-ct-head > div')].map((d) => d.textContent?.trim()));
-  const columns = ['#', 'Completed on', 'Creator', 'Deal', 'Videos', 'Total views', 'New video GMV', 'L30 GMV', 'Items sold', 'Status'];
+  const columns = ['#', 'Completed on', 'Creator', 'Deal', 'Videos', 'Total views', 'New video GMV', 'L30 GMV', 'Items sold'];
   check(JSON.stringify(head) === JSON.stringify(columns), 'the table has the staff columns, minus Ad spend and ROI', head.join(' | '));
   const kpis = await page.evaluate(() => [...document.querySelectorAll('.pc-kpi-label')].map((d) => d.textContent?.trim()));
   check(JSON.stringify(kpis) === JSON.stringify(['Budget', 'Allocated', 'Paid', 'Videos', 'Cost / Video']),
@@ -188,6 +191,31 @@ try {
   const tiers = await page.evaluate(() => document.querySelectorAll('.pc-tierbadge').length);
   const l30 = await page.evaluate(() => [...document.querySelectorAll('.pc-l30-cell')].filter((e) => !e.classList.contains('muted')).length);
   check(tiers > 0 && l30 > 0, 'tier tags and L30 GMV arrived from Euka', `${tiers} tiers, ${l30} L30 figures`);
+
+  /* L30 IS EVERY SHOP'S, NOT THIS BRAND'S. Rashid: "why for many videos client
+     is unable to see it while i can see on my dashboard" — the first version
+     read only the link's own store, so a creator whose recent GMV came from
+     another shop showed a dash. The page must now know exactly whom Euka
+     knows: no more (invented) and no fewer (the bug). */
+  const { data: cacheRows } = await svc.from('collab_share_euka_cache').select('handles');
+  const merged = new Map();
+  for (const row of cacheRows ?? []) {
+    for (const [h, v] of Object.entries(row.handles ?? {})) {
+      const gmv = Number(v?.gmv) || 0;
+      if (gmv > (merged.get(h) ?? 0)) merged.set(h, gmv);
+    }
+  }
+  const handleKey = (raw) => {
+    const t = String(raw ?? '').trim().toLowerCase();
+    if (!t) return '';
+    const last = t.startsWith('http') ? (t.replace(/\/+$/, '').split('/').pop() ?? '') : t;
+    return last.replace(/^@/, '').split(/[?#]/)[0].trim();
+  };
+  const monthRows = (rows ?? []).filter((r) => String(r.hiring_date ?? '').slice(0, 7) === shown.month);
+  const expectL30 = monthRows.filter((r) =>
+    [r.tiktok_account, r.tiktok_account_2].map(handleKey).filter(Boolean).some((h) => (merged.get(h) ?? 0) > 0)).length;
+  check(merged.size > 0, 'Euka figures are cached for more than one store, so this can fail', `${merged.size} handles across ${(cacheRows ?? []).length} stores`);
+  check(l30 === expectL30, 'L30 GMV shows for exactly the creators Euka knows, across every shop', `${l30} on screen, ${expectL30} known`);
 
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/share-dark.png`, fullPage: false });
 

@@ -110,28 +110,29 @@ const rowsOf = (payload: unknown): Row[] => {
  * STALE ANSWER BEATS NO ANSWER: if Euka is down or slow, the last good map is
  * served rather than dashes appearing in two columns.
  */
-async function tiersForStore(
+type TierMap = Record<string, { tier: string; gmv: number }>;
+
+/* One creator's L30 GMV is their WHOLE last-30-days, across every shop they
+   post for — which is why the staff sweep reads every store and keeps the
+   largest figure per handle. Reading only the link's own store showed a dash
+   for anyone whose recent GMV came from somewhere else. */
+function mergeTiers(into: TierMap, from: TierMap): TierMap {
+  for (const [h, v] of Object.entries(from ?? {})) {
+    const cur = into[h];
+    into[h] = {
+      tier: cur?.tier || v?.tier || '',
+      gmv: Math.max(Number(cur?.gmv) || 0, Number(v?.gmv) || 0),
+    };
+  }
+  return into;
+}
+
+async function refreshStore(
   db: ReturnType<typeof createClient>,
   auth: EukaAuth,
   store: { id: string; name: string },
-): Promise<Record<string, { tier: string; gmv: number }>> {
-  const { data: cached } = await db
-    .from('collab_share_euka_cache')
-    .select('handles, fetched_at')
-    .eq('store_id', store.id)
-    .maybeSingle();
-  const fresh = cached?.fetched_at && Date.now() - new Date(cached.fetched_at).getTime() < 30 * 60 * 1000;
-  if (fresh) return (cached!.handles ?? {}) as Record<string, { tier: string; gmv: number }>;
-
-  /*
-   * THE PAGE NEVER WAITS FOR EUKA. The first version awaited the export and the
-   * whole request 504'd: that call takes seconds on a good day, and a client
-   * page that hangs because somebody else's API is slow is our fault, not
-   * theirs. So a stale map is served at once and the refresh runs on after the
-   * response; only a store with NOTHING cached gets a short wait, so the very
-   * first view is not needlessly empty.
-   */
-  const refresh = async (): Promise<Record<string, { tier: string; gmv: number }>> => {
+): Promise<TierMap> {
+  const refresh = async (): Promise<TierMap> => {
     const brandId = await storeBrandPair(auth, store.id, store.name);
     const to = iso(new Date());
     const from = iso(new Date(Date.now() - 29 * 86_400_000));
@@ -159,25 +160,17 @@ async function tiersForStore(
     return out;
   };
 
-  const job = refresh().catch(() => null);
-  const keepWarm = (p: Promise<unknown>) => {
-    try {
-      (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime?.waitUntil?.(p);
-    } catch { /* not on Deploy: the promise simply runs to completion or not */ }
-  };
-
-  if (cached) {
-    keepWarm(job);
-    return (cached.handles ?? {}) as Record<string, { tier: string; gmv: number }>;
-  }
-  const quick = await Promise.race([
-    job,
-    new Promise<null>((res) => setTimeout(() => res(null), 8_000)),
-  ]);
-  if (quick) return quick;
-  keepWarm(job);
-  return {};
+  return (await refresh().catch(() => null)) ?? {};
 }
+
+/* THE PAGE NEVER WAITS FOR EUKA. The first version awaited the export and the
+   request 504'd — a client page hanging because somebody else's API is slow is
+   our fault, not theirs. */
+const keepWarm = (p: Promise<unknown>) => {
+  try {
+    (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime?.waitUntil?.(p);
+  } catch { /* not on Deploy: the promise runs on or it does not */ }
+};
 
 /* Every row, paged. PostgREST caps a read at 1000 and says nothing about it;
    a client shown 1000 of 1328 rows would be told a quiet lie. */
@@ -279,27 +272,57 @@ Deno.serve(async (req) => {
        brand with no Euka store is not a fault — those two columns simply have
        nothing to say. Euka being down is not a fault here either: the page
        still carries everything that comes from our own database. */
-    const tiersByBrand = new Map<string, Record<string, { tier: string; gmv: number }>>();
+    let tiers: TierMap = {};
     try {
+      const { data: cacheRows } = await db
+        .from('collab_share_euka_cache')
+        .select('store_id, handles, fetched_at');
+      for (const row of cacheRows ?? []) tiers = mergeTiers(tiers, (row.handles ?? {}) as TierMap);
+
       const keys = eukaKeys();
       if (keys.length) {
         const index = await indexStores(keys);
+        const known = new Set((cacheRows ?? []).map((r) => r.store_id));
+        const stale = (id: string) => {
+          const row = (cacheRows ?? []).find((r) => r.store_id === id);
+          return !row || Date.now() - new Date(row.fetched_at).getTime() > 30 * 60 * 1000;
+        };
         const normalise = (s: unknown) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
-        await Promise.all(brands.map(async (brand) => {
-          const want = normalise(brand);
-          const exact = index.stores.find((s) => normalise(s.name) === want);
-          const prefixed = index.stores.filter((s) => normalise(s.name).startsWith(want));
-          const store = exact ?? (prefixed.length === 1 ? prefixed[0] : undefined);
-          const auth = store ? index.ownerOf.get(store.id) : undefined;
-          if (!store || !auth) return;
-          tiersByBrand.set(brand, await tiersForStore(db, auth, store));
-        }));
+        const mine = brands
+          .map((brand) => {
+            const want = normalise(brand);
+            const exact = index.stores.find((s) => normalise(s.name) === want);
+            const prefixed = index.stores.filter((s) => normalise(s.name).startsWith(want));
+            return exact ?? (prefixed.length === 1 ? prefixed[0] : undefined);
+          })
+          .filter(Boolean) as { id: string; name: string }[];
+        /* This link's own stores first — a client reading a brand is the right
+           reason for its figures to be fresh — then two others per view, so the
+           whole roster fills in over a few opens instead of one long request. */
+        const others = index.stores.filter((s) => !mine.some((m) => m.id === s.id) && stale(s.id)).slice(0, 2);
+        const runner = (s: { id: string; name: string }) => {
+          const auth = index.ownerOf.get(s.id);
+          return auth ? refreshStore(db, auth, s) : Promise.resolve({} as TierMap);
+        };
+
+        [...mine.filter((s) => known.has(s.id) && stale(s.id)), ...others]
+          .forEach((s) => keepWarm(runner(s).catch(() => null)));
+
+        /* A store with NOTHING cached gets a short wait, so the first view of a
+           brand is not two empty columns. */
+        const cold = mine.filter((s) => !known.has(s.id));
+        if (cold.length) {
+          const first = await Promise.race([
+            Promise.all(cold.map(runner)),
+            new Promise<null>((res) => setTimeout(() => res(null), 8_000)),
+          ]);
+          if (first) for (const m of first) tiers = mergeTiers(tiers, m);
+        }
       }
     } catch { /* leave the two columns empty rather than failing the page */ }
 
     /* ── the payload, built field by field ─────────────────────────────── */
     const data = brands.map((brand) => {
-      const tiers = tiersByBrand.get(brand) ?? {};
       const rows = creators.filter((c) => String(c.brand ?? '').trim() === brand && inScope(c));
 
       const people = rows.map((c) => {
@@ -340,8 +363,10 @@ Deno.serve(async (req) => {
           name: String(c.name ?? '').trim(),
           tier: known.find((e) => e.tier)?.tier || null,
           l30: l30 > 0 ? l30 : null,
-          /* The same words the staff row shows, read only. */
-          status: c.payment_status ? String(c.payment_status).trim() : null,
+          /* NO STATUS. It was shared for a few hours on 2026-09-17 because the
+             "exact same view" instruction implied it; Rashid looked at the page
+             and said "no need to show status". Whether we have paid a creator
+             is between us and the creator. */
           tiktok: [c.tiktok_account, c.tiktok_account_2].map((h) => (h ? String(h).trim() : '')).filter(Boolean),
           hiredBy: c.hired_by ? String(c.hired_by).trim() : null,
           deals: dealsEver.get(String(c.name ?? '').trim().toLowerCase()) ?? 0,

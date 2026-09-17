@@ -45,7 +45,6 @@ type Creator = {
   deals: number;
   tier: string | null;
   l30: number | null;
-  status: string | null;
   onboarded: string | null;
   completedOn: string | null;
   deal: number;
@@ -88,7 +87,7 @@ type Payload = {
 
 /* Their column widths, minus Ad spend, ROI, Contract and Actions. Inline so it
    beats the vendored rule, which counts twelve columns. */
-const COLS = '0.36fr 0.74fr 1.58fr .8fr .52fr .56fr .74fr .68fr .52fr 1.16fr';
+const COLS = '0.36fr 0.74fr 1.7fr .86fr .56fr .6fr .8fr .74fr .56fr';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const monthLabel = (key: string) => {
@@ -342,7 +341,6 @@ export function ShareCollab() {
               <div className="pc-num">New video GMV</div>
               <div className="pc-num">L30 GMV</div>
               <div className="pc-num">Items sold</div>
-              <div>Status</div>
             </div>
 
             {brand.creators.length === 0 ? (
@@ -408,9 +406,6 @@ export function ShareCollab() {
                       </div>
                       <div className="pc-cell pc-num" data-label="Items sold">
                         {c.items > 0 ? <span className="pc-metric">{c.items}</span> : <span className="pc-handle">-</span>}
-                      </div>
-                      <div className="pc-cell" data-label="Status">
-                        <span className="wx-share-status">{c.status || 'Payment Pending'}</span>
                       </div>
                     </div>
 
