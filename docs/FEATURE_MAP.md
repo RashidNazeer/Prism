@@ -2292,27 +2292,48 @@ need to show them exact same view as we have they will just not be able to see
 ad spend and roi at any cost"*. `ShareCollab.tsx` imports `paidcollabs.css` and
 our overrides and renders inside `.wurxbase-root`, so it inherits every rule the
 staff table uses — the five KPI cards with their progress bars, the top-videos
-strip, the tier tags, the deals circle, the hire tag. The column template is set
-inline because theirs counts twelve columns and this one has ten.
-- **Gone:** Ad spend, ROI, Contract and Actions. Ad spend and ROI are not in
-  the payload at all; the other two have no markup.
-- **Status** is the same words, as a pill (`.wx-share-status`), never a
-  dropdown. Nothing on the page writes: no select, no input, no export.
-- **Tier and L30 GMV** come from Euka's `creator_level` export, cached per store
-  in `collab_share_euka_cache` for 30 minutes. The page NEVER waits on Euka: a
-  stale map is served and the refresh runs after the response (only a store
-  with nothing cached waits, capped at 8s). `creators.monthly.euka` was rejected
-  as the source — it is frozen at migration day.
+strip, the tier tags, the creator faces (unavatar, by handle), the hire tag. The
+column template is set inline because theirs counts twelve columns and this one
+has nine: #, Completed on, Creator, Deal, Videos, Total views, New video GMV,
+L30 GMV, Items sold.
+- **Gone:** Ad spend, ROI, Status, Contract, Actions, and the **deals circle**
+  on the face. Ad spend and ROI are not in the payload at all, and neither is
+  the status or the deal count (the circle counts OUR deals with a creator,
+  which is ours, not the client's — Rashid's boss, via Rashid, 2026-09-18). The
+  Deal column stays. Nothing on the page writes: no select, no input, no export.
+- **The five cards use the staff formulas, not near relatives.** Allocated is
+  summed from the rows, Paid is rows whose `payment_status` is exactly `Paid`,
+  Cost/video is allocated ÷ committed videos. A client once saw $238 against
+  staff's $46 because it divided by delivered; the UI check now compares all
+  five cards against the staff arithmetic.
+- **Tier and L30 GMV** are read from `collab_share_euka_cache` ONLY; the page
+  makes no Euka call. `euka-ads-sync` refreshes that cache, one stale store at a
+  time (`refreshOneStaleStore` in `_shared/euka-tiers.ts`), from BOTH exports,
+  `creator_level` (30 days, capped at 1000 a store) and `creator_videos`, merged
+  across every store. Where neither has a creator, their stored
+  `creators.monthly.euka` answers, as it does on the staff screen. Awaiting Euka
+  inside the request 504'd twice before this.
 - **Videos** open by clicking the row, into a plain panel with the link, date,
   views, GMV, items, product and the spark code to copy.
 
-**Guarded by `pnpm verify:collab-share`** (36 checks: the tables are
-unreachable, only owners mint, a link opens only its own brands, expiry and
-revocation bite, and the real phone numbers, emails, payment details and ad
-spend figures in the database are absent from the payload) **and
-`pnpm verify:collab-share-ui`** (22 checks in a browser with no session: it
-opens, every figure matches the database, no staff control is on the page, both
-themes, 390px, zero console errors, and a revoked link says so in plain words).
+**Copy again, details, and a new address (2026-09-18).** The link is stored now
+(`collab_share_links.token`), so each row on `/admin/client-links` has Copy
+link, and opens into the address with Copy and Open, the facts, and the
+recent opens (`collab_share_opens`). **Give it a new address**
+(`collab_share_replace`) kills the old address at once and keeps the label,
+brands, months and view history. Links minted before the change have no stored
+address and can only be given a new one; the row says so.
+
+**Guarded by `pnpm verify:collab-share`** (43 checks: the tables are
+unreachable, only owners mint, a link opens only its own brands and months,
+expiry and revocation bite, and the real phone numbers, emails, payment
+details, statuses, deal counts and ad spend figures in the database are absent
+from the payload), **`pnpm verify:collab-share-ui`** (32 checks in a browser
+with no session: it opens, every figure and all five cards match the staff
+arithmetic, no staff control and no deals circle is on the page, a row opens to
+its videos, both themes, 390px, zero console errors, and a revoked link says so
+in plain words) **and `pnpm verify:client-links`** (18: make, copy, open,
+details, new address, stop).
 
 ## Top videos: views, GMV and ad spend totals (2026-09-16)
 
@@ -2413,6 +2434,65 @@ chip is a 12% tint of its ink on a card with a 40% border
 **Guarded by `pnpm verify:tier-deals`.** Every badge on both screens is
 compared with a count made from the database, and in both themes every tier
 tag must wear its own tier's token, eight distinct inks.
+
+## Followers on the Creators tab (2026-09-18)
+
+Rashid: *"can we add a new column of followers as well"*, then *"we also need
+to have filter so users can filter creators on follower"*, then, on the gaps,
+*"is there any other way of fetching their follower count other than euka?
+maybe through handle"*.
+
+**The column** (`followers` in `godSettings.js`, after TikTok) and **the
+filter** (a Followers section in the Creators tab's existing Filter panel, with
+buckets from `WX_FOLLOWER_BUCKETS` and a "No count yet" bucket; Reset all
+clears it) both read ONE function, `wxFollowersOf(euka, stored, handles)` in
+`WurxUI.jsx`, so the chip counts and the cells can never disagree. It returns
+`{ n, source }`:
+1. **`shop`** — the live Euka shop profiles the tab already sweeps for tiers
+   and L30 (the largest figure across stores and both of the creator's handles).
+2. **`lookup`** — otherwise, `public.euka_creator_followers`, loaded once per
+   visit by `collab-ad-figures.tsx` (`storedFollowers`, paged, `found = true`).
+The cell's hover names the source, and carries `data-source` for the check.
+
+**Why a second source.** The shop exports describe only creators active in one
+of OUR shops in the last 30 days: 380 of 464 people had no count, and none of
+those gaps were spelling mismatches. Euka's market intelligence
+(`POST /api/v1/market-intelligence/tiktok/creator/rank`) searches TikTok's
+whole creator population by keyword and returns `creator_handle` and
+`creator_followers`.
+- **A search is not a lookup.** Only a result whose normalised handle EQUALS
+  ours is stored (`followersForHandle` in `_shared/euka-followers.ts`); a near
+  match is somebody else. Where both sources know a creator the two counts must
+  agree within 50% — the first eleven all did (@dulcedagda: 361,800 shop,
+  378,200 lookup).
+- **Its required fields were learnt from its 400s:** `region`, `language`,
+  `currency`, `date_range` and `sort_field`, which is an OBJECT
+  `{ field, type }`, not a string.
+- **Filled by the five-minute `euka-ads-sync`**, after the tier cache, when at
+  least 40s of the run is left: `fillFollowers` takes four handles (never asked
+  first, then the oldest), 1.2s apart, and re-checks each after 30 days.
+- **Euka rations fresh lookups.** A handle it has answered before comes back
+  at once; new ones, after a few dozen, get `503 "Market Intelligence service
+  is unavailable"`. Two failures in a row end the batch. A failure is written
+  with `found = false`, the reason in `last_error`, and a `checked_at` that
+  brings it back in about a day. Left unrecorded, one failing handle sat first
+  in every run and nobody behind it was ever asked.
+- The table: `handle` (lower case, no @) is the key; RLS on, SELECT for
+  `is_collabs_viewer()`, writes by `service_role` only.
+  `euka_followers_for_handles(text[])` is the batch reader.
+
+**Probe by hand:** the staff-gated `euka` function takes
+`{ "type": "micreator", "keyword": "<handle>" }` and returns Euka's raw answer
+with its status.
+
+**Guarded by `pnpm verify:followers`** (16 checks). The expected numbers come
+from Euka through the `euka` function and from the stored table, NOT from the
+screen. It waits for the app's own "sweep complete" marker
+(`wurx_euka_l30_v10` in localStorage, `complete: true`) before comparing. It
+also checks that a bucket filter leaves only creators in that bucket and really
+narrows the list, that "No count yet" leaves only dashes, that no name is
+squeezed under 40px, no sideways scroll, and that the two sources agree where
+both answer.
 
 ## Euka: as many accounts as we hold keys for (2026-09-09)
 

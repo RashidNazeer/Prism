@@ -1642,9 +1642,11 @@ admin can create a client link" — the gate working, not a fault. The tool uses
 supabase-js with the service key, which `is_service_role()` recognises.
 
 The client's address is `https://wurxmediahubdev.vercel.app/share/collabs/<token>`
-(production once it goes live). **The link is the credential: 192 random bits,
-stored only as a SHA-256.** Nobody can recover it later, including us, which is
-the point — a lost link is replaced, not looked up.
+(production once it goes live). **The link is the credential: 192 random bits.**
+Since 2026-09-18 it is stored as well as its SHA-256, so the owner's screen can
+copy it again (DECISIONS says why). Links minted before that have no stored
+address; the screen's **Give it a new address** issues one and kills the old
+one, keeping the history. That is also the move when a link has spread.
 
 **Watching a link.** `collab_share_list()` carries `view_count` and
 `last_viewed_at`; `public.collab_share_views` holds one row per open, with the
@@ -1652,10 +1654,39 @@ visitor address hashed and salted per link. A count climbing far beyond one
 client is the only sign a shared secret gives that it has spread.
 
 ```bash
-pnpm verify:collab-share      # 36 checks, attacks the door. Needs SUPABASE_SERVICE_KEY
-pnpm verify:collab-share-ui   # 22 checks in a real browser with no session.
+pnpm verify:collab-share      # 43 checks, attacks the door. Needs SUPABASE_SERVICE_KEY
+pnpm verify:collab-share-ui   # 32 checks in a real browser with no session.
                               # Needs a preview server and SUPABASE_SERVICE_KEY
+pnpm verify:client-links      # 18 checks on the owner's screen. Same needs.
 ```
 
-Both suites mint their own links and delete them in a `finally`. They write
+All three mint their own links and delete them in a `finally`. They write
 nothing to Paid Collabs.
+
+### Follower counts looked up by handle (Euka market intelligence)
+
+The Creators tab's Followers column falls back to
+`public.euka_creator_followers` when the shop data has no count. See
+FEATURE_MAP, "Followers on the Creators tab". It fills by itself: every
+five-minute `euka-ads-sync` run asks Euka about four handles. **Nothing needs
+running by hand.**
+
+**Is it filling?** The summary JSON of each sync run carries
+`followers: { looked, found, missed, failed, why }`. Or read the table with
+supabase-js and the service key (the management API works too, it is a plain
+table): `found = true` rows are counts, `last_error` rows are Euka refusals
+waiting about a day for a retry. On 2026-09-18 at 16:50 UTC: 465 handles
+known, 75 found, 0 clean misses, 11 refused, 379 not yet asked.
+
+**`503 "Market Intelligence service is unavailable"` is rationing, not an
+outage.** In the same minute that five new handles got 503, a handle Euka had
+answered before got 200. Do not raise the batch size to go faster; fifteen
+back to back drew 503s from a healthy service. The fill takes a day or two.
+
+**Probe one handle**, signed in as staff with supabase-js:
+`functions.invoke('euka', { body: { type: 'micreator', keyword: '<handle>' } })`
+returns `{ upstreamStatus, payload }`, Euka's answer untouched.
+
+```bash
+pnpm verify:followers   # 16 checks. Needs a preview server and SUPABASE_SERVICE_KEY
+```

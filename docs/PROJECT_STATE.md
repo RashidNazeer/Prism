@@ -2,7 +2,7 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Updated 2026-09-15. REMIND RASHID OF BOTH OF THESE FIRST THING.** He
+**Updated 2026-09-18. REMIND RASHID OF THESE FIRST THING.** He
 asked to be reminded: *"i will do it later remind me please"*.
 
 1. **Link GitHub to Vercel.** Git deploys to dev are BLOCKED
@@ -22,12 +22,49 @@ asked to be reminded: *"i will do it later remind me please"*.
      production move.
    The icon needs no question: it is the dog face everywhere.
 
+3. **Rotate the Euka keys that were pasted into the chat**, then set the new ones with `supabase secrets set EUKA_API_KEY=... EUKA_API_KEYS=...` on dev
+   (OPERATIONS, "Euka keys"). Never write a key to a file.
+4. **Two demo client links expire on 18 Oct 2026**: "Apothecary - demo for
+   Rashid" and "Apothecary + Penetrex - demo". Stop them from
+   `/admin/client-links` if he no longer wants them; "Sam - NutraHarmony"
+   (until 17 Dec) is his real one, leave it.
+
 Still queued for him: the Euka data sync (`pnpm wurxbase:sync` dry run,
 `--apply` writes; NEVER offer `wurxbase:copy` instead — PARKED 37).
 
 Answer "what's pending?" from `docs/PARKED.md`.
 
 ## WHERE EVERYTHING STANDS
+
+### Followers on the Creators tab, and a second source for them (2026-09-18)
+
+Live on dev at `813841b` (CLI deploy, live asset checked against the build).
+- **A Followers column** after TikTok, and **a Followers filter** in the
+  existing Filter panel, with a "No count yet" bucket.
+- **Counts come from Euka's shop data first**, and for everyone it does not
+  cover (380 of 464 people) **from Euka's market intelligence, looked up by
+  handle** and kept in `euka_creator_followers`. Only exact handle matches are
+  stored. The hover says which source a count came from.
+- **It is still filling, by itself.** Euka rations new lookups, so the
+  five-minute sync asks about four handles at a time. At 16:50 UTC on
+  2026-09-18: 75 found, 11 refused and queued for a retry in about a day, 379
+  not yet asked. Expect a day or two to cover the roster. A creator with no
+  TikTok presence Euka knows of will stay "No count yet".
+- **Proven:** `verify:followers` 16/16. Every count on screen matches its source
+  (130 of 166 rows on the tested month, 4 of them from the lookup), and where
+  both sources know a creator they agree within 50% (11 compared).
+
+### Client sharing, step 3: the staff view, copy again, a new address (2026-09-18)
+
+- **The client page is the staff Brands view** minus ad spend, ROI, Status, the
+  contract and the deals circle. The five cards use the staff arithmetic
+  exactly; tier and L30 come from a cache the sync fills, never from Euka
+  during the request. Rashid's GMV, avatar, cost/video and Deal-column
+  corrections are all in; FEATURE_MAP "Client sharing" has the detail.
+- **`/admin/client-links`**: copy a link again, open a row for its address,
+  facts and recent opens, stop sharing, or give it a new address in place.
+- **Proven:** `verify:collab-share` 43/43, `verify:collab-share-ui` 32/32,
+  `verify:client-links` 18/18.
 
 ### Client sharing, step 2: month control and the owner's screen (2026-09-17)
 
@@ -42,7 +79,7 @@ Answer "what's pending?" from `docs/PARKED.md`.
   that never logged in opens it, a non-owner cannot reach the screen, and
   revoking kills it while the client is sitting on the page.
 
-**NEXT, and already decided by the boss:** the client page must show the
+**DONE 2026-09-18 (step 3 above). What was decided:** the client page must show the
 **exact same Brands view as staff**, minus ad spend and ROI. Rashid relayed it
 on 2026-09-17, and answered the specifics: the staff five KPI cards (Budget,
 Allocated, Paid, Videos, Cost/video), the Status column but **no contract
