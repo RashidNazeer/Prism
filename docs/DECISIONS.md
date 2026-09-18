@@ -2342,3 +2342,18 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   record as zero Euka reports zero for all 67. Those creators have made no
   sales on those videos yet. The staff screen shows the same dashes on the same
   rows, because both read the same stored figures.
+- 2026-09-18: **A client link is stored, not just fingerprinted, and can be
+  copied again.** This reverses the previous day's decision, and the reasoning
+  it reverses was thin. Hashing protected exactly one case — this table leaking
+  WITHOUT the rest of the database — while everything a link opens sits in that
+  same database. The cost was daily: Rashid, looking at the list, "no option to
+  copy again and we should be able to open it and see details". What protects a
+  link is unchanged and none of it was the hash: RLS on with no policy, grants
+  to service_role only, the functions admitting ops and admin alone, plus
+  expiry, revocation and a recorded view count. Links minted before the change
+  keep no address and can only be replaced; the screen says so.
+- 2026-09-18: **A link can be given a NEW address in place.** The old one dies
+  the instant it is issued, and the label, brands, months, sections and view
+  history stay on the same row. It is the answer both to a link that was never
+  stored and to one that has spread further than intended, and it is gentler
+  than revoke-and-recreate, which loses the history.

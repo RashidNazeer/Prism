@@ -17,6 +17,8 @@ import { getSupabase } from '@/lib/supabase';
 export type ClientLink = {
   id: string;
   label: string;
+  /** The link itself. Null for links minted before 2026-09-18; those are replaced, not recovered. */
+  token: string | null;
   token_hint: string;
   brands: string[];
   months: string[];
@@ -111,6 +113,35 @@ export function useCreateClientLink() {
       if (error) throw error;
       const row = (Array.isArray(data) ? data[0] : data) as { id: string; token: string; expires_at: string };
       return row;
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['client-links'] }),
+  });
+}
+
+export type LinkOpen = { viewed_at: string; visitor: string | null; user_agent: string | null };
+
+/** When a link was opened, newest first. Never an address: only a salted hash. */
+export function useClientLinkOpens(id: string | null) {
+  return useQuery({
+    queryKey: ['client-link-opens', id],
+    enabled: Boolean(id),
+    queryFn: async (): Promise<LinkOpen[]> => {
+      const { data, error } = await getSupabase().rpc('collab_share_opens', { p_id: id, p_limit: 50 });
+      if (error) throw error;
+      return (data ?? []) as LinkOpen[];
+    },
+    staleTime: 30_000,
+  });
+}
+
+/** A new address for the same link. The old one dies immediately. */
+export function useReplaceClientLink() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await getSupabase().rpc('collab_share_replace', { p_id: id });
+      if (error) throw error;
+      return (Array.isArray(data) ? data[0] : data) as { id: string; token: string; expires_at: string };
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['client-links'] }),
   });

@@ -1,14 +1,16 @@
 import { useMemo, useState } from 'react';
-import { Check, Copy, Link2, Plus, ShieldOff } from 'lucide-react';
+import { Check, ChevronRight, Copy, ExternalLink, Link2, Plus, RefreshCw, ShieldOff } from 'lucide-react';
 import { z } from 'zod';
 import { FilterBar } from '@/components/layout/FilterBar';
 import { Button } from '@/components/ui/Button';
 import { Input, Label, Select } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
 import {
+  useClientLinkOpens,
   useClientLinks,
   useCollabScope,
   useCreateClientLink,
+  useReplaceClientLink,
   useRevokeClientLink,
   type ClientLink,
 } from '@/lib/admin/useClientLinks';
@@ -25,9 +27,15 @@ import {
  * page, and how long it lives. What the client then sees is the BRANDS SECTION
  * and nothing else — "no other section no other data please".
  *
- * THE LINK APPEARS ONCE. Only its fingerprint is stored, so this screen can
- * never show it again; the panel after creating is the only chance to copy it.
- * That is deliberate, and the reason is in DECISIONS, 2026-09-17.
+ * A LINK CAN BE COPIED AGAIN, AND OPENED TO SEE EVERYTHING ABOUT IT. Rashid,
+ * 2026-09-18: "no option to copy again and we should be able to open it and see
+ * details please make it properly". Until then only a fingerprint was stored,
+ * which protected a case that barely exists — the data a link opens lives in the
+ * same database — and cost an admin the ability to send a client their link
+ * twice. See DECISIONS, 2026-09-18.
+ *
+ * Links minted before that change have no stored address. They cannot be
+ * recovered, only replaced, and the panel says so in those words.
  */
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -50,6 +58,7 @@ export function ClientLinks() {
   const scope = useCollabScope();
   const create = useCreateClientLink();
   const revoke = useRevokeClientLink();
+  const replace = useReplaceClientLink();
 
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -59,6 +68,7 @@ export function ClientLinks() {
   const [months, setMonths] = useState<string[]>([]);
   const [days, setDays] = useState(90);
   const [sections, setSections] = useState({ kpis: true, topVideos: true, creators: true, videos: true });
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [problem, setProblem] = useState('');
   const [minted, setMinted] = useState<{ url: string; label: string; expires: string } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -139,9 +149,10 @@ export function ClientLinks() {
       {/* the link, the one time it can be seen */}
       {minted && (
         <div className="border-accent bg-accent-soft mt-4 rounded-xl border p-5">
-          <p className="font-bold">Copy this link now. It cannot be shown again.</p>
+          <p className="font-bold">Your link is ready.</p>
           <p className="text-muted mt-1 text-[0.875rem]">
             {minted.label} · works until {minted.expires}. Anyone who has it can read the brands on it.
+            You can copy it again later by opening it in the list.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <code className="bg-surface-1 border-line min-w-0 flex-1 truncate rounded-md border px-3 py-2 text-[0.8125rem]">
@@ -309,9 +320,11 @@ export function ClientLinks() {
         ) : (
           <ul className="space-y-2">
             {rows.map((l) => (
-              <li key={l.id} className="border-line bg-surface-1 rounded-xl border p-5">
+              <li key={l.id} className="border-line bg-surface-1 overflow-hidden rounded-xl border">
                 <LinkRow
                   link={l}
+                  open={expanded === l.id}
+                  onToggle={() => setExpanded(expanded === l.id ? null : l.id)}
                   confirming={confirming === l.id}
                   onAskRevoke={() => setConfirming(l.id)}
                   onCancel={() => setConfirming(null)}
@@ -319,6 +332,15 @@ export function ClientLinks() {
                     revoke.mutate(l.id);
                     setConfirming(null);
                   }}
+                  onReplace={async () => {
+                    const row = await replace.mutateAsync(l.id);
+                    setMinted({
+                      url: `${window.location.origin}/share/collabs/${row.token}`,
+                      label: `${l.label} — new address`,
+                      expires: dayLabel(row.expires_at),
+                    });
+                  }}
+                  replacing={replace.isPending}
                 />
               </li>
             ))}
@@ -329,19 +351,37 @@ export function ClientLinks() {
   );
 }
 
+/**
+ * ONE LINK: a headline that opens into everything about it.
+ *
+ * Rashid, 2026-09-18: "no option to copy again and we should be able to open it
+ * and see details please make it properly". So the row copies without opening,
+ * and opening shows the address, exactly what this client can see, and every
+ * time somebody has looked.
+ */
 function LinkRow({
   link,
+  open,
+  onToggle,
   confirming,
   onAskRevoke,
   onCancel,
   onRevoke,
+  onReplace,
+  replacing,
 }: {
   link: ClientLink;
+  open: boolean;
+  onToggle: () => void;
   confirming: boolean;
   onAskRevoke: () => void;
   onCancel: () => void;
   onRevoke: () => void;
+  onReplace: () => void;
+  replacing: boolean;
 }) {
+  const [copied, setCopied] = useState(false);
+  const url = link.token ? `${window.location.origin}/share/collabs/${link.token}` : null;
   const parts = [
     link.show_kpis && 'top numbers',
     link.show_top_videos && 'top videos',
@@ -349,56 +389,172 @@ function LinkRow({
     link.show_videos && 'their videos',
   ].filter(Boolean) as string[];
 
+  const copy = () => {
+    if (!url) return;
+    void navigator.clipboard?.writeText(url);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  };
+
   return (
-    <div className="flex flex-wrap items-start justify-between gap-4">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-bold">{link.label}</span>
-          <span
-            className={cn(
-              'rounded-full px-2 py-0.5 text-[0.6875rem] font-extrabold uppercase tracking-wider',
-              link.is_live ? 'bg-success-soft text-success' : 'bg-surface-2 text-muted'
-            )}
-          >
-            {link.revoked_at ? 'Revoked' : link.is_live ? 'Live' : 'Expired'}
+    <>
+      <div className="flex flex-wrap items-start justify-between gap-3 p-5">
+        <button type="button" onClick={onToggle} aria-expanded={open} className="min-w-0 flex-1 text-left">
+          <span className="flex flex-wrap items-center gap-2">
+            <ChevronRight
+              size={15}
+              aria-hidden
+              className={cn('text-faint transition-transform', open && 'rotate-90')}
+            />
+            <span className="font-bold">{link.label}</span>
+            <span
+              className={cn(
+                'rounded-full px-2 py-0.5 text-[0.6875rem] font-extrabold uppercase tracking-wider',
+                link.is_live ? 'bg-success-soft text-success' : 'bg-surface-2 text-muted'
+              )}
+            >
+              {link.revoked_at ? 'Stopped' : link.is_live ? 'Live' : 'Expired'}
+            </span>
           </span>
-          <span className="text-faint font-mono text-[0.75rem]">{link.token_hint}…</span>
+          <span className="text-muted mt-1 block text-[0.8125rem]">
+            {link.brands.join(', ')} ·{' '}
+            {link.months.length === 0 ? 'every month' : link.months.map(monthLabel).join(', ')}
+          </span>
+          <span className="text-faint mt-1 block text-[0.75rem]">
+            {link.revoked_at ? `Stopped ${dayLabel(link.revoked_at)}` : `Works until ${dayLabel(link.expires_at)}`}
+            {' · '}
+            {link.view_count === 0
+              ? 'never opened'
+              : `opened ${link.view_count} time${link.view_count === 1 ? '' : 's'}, last ${dayLabel(link.last_viewed_at)}`}
+          </span>
+        </button>
+
+        <div className="flex shrink-0 items-center gap-2">
+          {url && link.is_live && (
+            <Button size="sm" variant="secondary" onClick={copy}>
+              {copied ? <Check size={15} aria-hidden /> : <Copy size={15} aria-hidden />}
+              {copied ? 'Copied' : 'Copy link'}
+            </Button>
+          )}
+          {link.is_live &&
+            (confirming ? (
+              <>
+                <span className="text-[0.8125rem] font-semibold">Stop it?</span>
+                <Button size="sm" variant="secondary" className="text-danger hover:text-danger" onClick={onRevoke}>
+                  Yes, stop
+                </Button>
+                <Button size="sm" variant="ghost" onClick={onCancel}>
+                  Keep
+                </Button>
+              </>
+            ) : (
+              <Button size="sm" variant="ghost" onClick={onAskRevoke}>
+                <ShieldOff size={15} aria-hidden />
+                Stop sharing
+              </Button>
+            ))}
         </div>
-        <p className="text-muted mt-1 text-[0.8125rem]">
-          {link.brands.join(', ')} ·{' '}
-          {link.months.length === 0 ? 'every month' : link.months.map(monthLabel).join(', ')} · {parts.join(', ')}
-        </p>
-        <p className="text-faint mt-1 text-[0.75rem]">
-          {link.revoked_at
-            ? `Revoked ${dayLabel(link.revoked_at)}`
-            : `Works until ${dayLabel(link.expires_at)}`}
-          {' · '}
-          {link.view_count === 0
-            ? 'never opened'
-            : `opened ${link.view_count} time${link.view_count === 1 ? '' : 's'}, last ${dayLabel(link.last_viewed_at)}`}
-        </p>
       </div>
 
-      {link.is_live &&
-        (confirming ? (
-          <div className="flex items-center gap-2">
-            <span className="text-[0.8125rem] font-semibold">Stop this link?</span>
-            <Button size="sm" variant="secondary" className="text-danger hover:text-danger" onClick={onRevoke}>
-              Yes, stop it
-            </Button>
-            <Button size="sm" variant="ghost" onClick={onCancel}>
-              Keep it
-            </Button>
+      {open && (
+        <div className="border-line bg-surface-2 border-t p-5">
+          {/* the address */}
+          {url ? (
+            <>
+              <p className="text-[0.8125rem] font-bold">The link</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <code className="border-line bg-surface-1 min-w-0 flex-1 truncate rounded-md border px-3 py-2 text-[0.8125rem]">
+                  {url}
+                </code>
+                <Button size="sm" onClick={copy}>
+                  {copied ? <Check size={15} aria-hidden /> : <Copy size={15} aria-hidden />}
+                  {copied ? 'Copied' : 'Copy'}
+                </Button>
+                <Button size="sm" variant="secondary" onClick={() => window.open(url, '_blank', 'noopener')}>
+                  <ExternalLink size={15} aria-hidden />
+                  Open
+                </Button>
+              </div>
+            </>
+          ) : (
+            <p className="text-[0.8125rem]">
+              <span className="font-bold">This link cannot be shown again.</span>{' '}
+              <span className="text-muted">
+                It was made before we started keeping a copy. Give it a new address and send that instead.
+              </span>
+            </p>
+          )}
+
+          {/* what this client can see */}
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Fact label="Brands" value={link.brands.join(', ')} />
+            <Fact label="Months" value={link.months.length === 0 ? 'Every month' : link.months.map(monthLabel).join(', ')} />
+            <Fact label="Sections" value={parts.join(', ') || 'nothing'} />
+            <Fact
+              label="Made"
+              value={`${dayLabel(link.created_at)} · ends ${dayLabel(link.expires_at)}`}
+            />
           </div>
-        ) : (
-          <Button size="sm" variant="ghost" onClick={onAskRevoke}>
-            <ShieldOff size={15} aria-hidden />
-            Stop sharing
-          </Button>
-        ))}
+
+          <Opens id={link.id} />
+
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <Button size="sm" variant="secondary" onClick={onReplace} disabled={replacing}>
+              <RefreshCw size={15} aria-hidden />
+              {replacing ? 'Making a new address…' : 'Give it a new address'}
+            </Button>
+            <span className="text-muted text-[0.75rem]">
+              The old address stops working at once. Everything else stays.
+            </span>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/** When somebody looked. The visitor is a hash, so two readers can be told
+    apart without anybody's address being kept. */
+function Opens({ id }: { id: string }) {
+  const opens = useClientLinkOpens(id);
+  const rows = opens.data ?? [];
+  return (
+    <div className="mt-5">
+      <p className="text-[0.8125rem] font-bold">Opens</p>
+      {opens.isLoading ? (
+        <div className="wx-skeleton mt-2 h-4 w-40 rounded" />
+      ) : rows.length === 0 ? (
+        <p className="text-muted mt-1 text-[0.8125rem]">Nobody has opened this link yet.</p>
+      ) : (
+        <>
+          <p className="text-muted mt-1 text-[0.75rem]">
+            {rows.length === 50 ? 'The 50 most recent' : `${rows.length} in total`} ·{' '}
+            {new Set(rows.map((r) => r.visitor)).size} different reader
+            {new Set(rows.map((r) => r.visitor)).size === 1 ? '' : 's'}
+          </p>
+          <ul className="border-line bg-surface-1 mt-2 max-h-52 divide-y divide-line overflow-auto rounded-md border">
+            {rows.map((r, i) => (
+              <li key={i} className="flex items-center justify-between gap-3 px-3 py-2 text-[0.8125rem]">
+                <span>{new Date(r.viewed_at).toLocaleString()}</span>
+                <span className="text-faint font-mono text-[0.75rem]">{r.visitor || '—'}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   );
 }
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-faint text-[0.6875rem] font-extrabold uppercase tracking-wider">{label}</p>
+      <p className="mt-0.5 text-[0.8125rem]">{value}</p>
+    </div>
+  );
+}
+
 
 function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
