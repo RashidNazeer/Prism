@@ -140,6 +140,64 @@ try {
   check(compared > 0 && wrong.length === 0,
     `every follower count matches Euka (${compared} rows compared)`, wrong.slice(0, 4).join(' | '));
 
+  /*
+   * THE FILTER. Rashid, 2026-09-18: "we also need to have filter so users can
+   * filter creators on follower". Picking a bucket must leave exactly the rows
+   * in that bucket — checked against the figures the screen itself shows, so a
+   * filter that quietly kept everybody, or emptied the list, fails.
+   */
+  const bucketOf = (shown) => {
+    if (!/\d/.test(shown)) return 'none';
+    const n = shown.endsWith('M') ? parseFloat(shown) * 1e6 : shown.endsWith('K') ? parseFloat(shown) * 1e3 : Number(shown);
+    if (n >= 1e6) return '1m';
+    if (n >= 1e5) return '100k';
+    if (n >= 1e4) return '10k';
+    return 'under10k';
+  };
+  const before = rows.map((r) => bucketOf(r.shown));
+  const target = ['10k', '100k', 'under10k', '1m'].find((b) => before.filter((x) => x === b).length > 0);
+  check(Boolean(target), 'the tab has creators in at least one followers bucket to filter by', target ?? 'none');
+
+  await page.getByRole('button', { name: /^filter/i }).first().click();
+  await page.waitForTimeout(600);
+  const panel = await page.evaluate(() => document.body.innerText);
+  /* The section titles are uppercased in CSS, and innerText reports what is
+     rendered, so this must not be case-sensitive. */
+  check(/followers/i.test(panel), 'the filter panel offers Followers');
+
+  const labels = { '1m': /^1M\+ · \d+$/, '100k': /^100K – 1M · \d+$/, '10k': /^10K – 100K · \d+$/, 'under10k': /^Under 10K · \d+$/ };
+  const chip = page.locator('button').filter({ hasText: labels[target] }).first();
+  const chipText = (await chip.textContent().catch(() => ''))?.trim() ?? '';
+  await chip.click();
+  await page.waitForTimeout(1200);
+
+  const after = await page.evaluate(() => [...document.querySelectorAll('.pc-cv-row')].map((row) =>
+    row.querySelector('[data-label="Followers"]')?.textContent?.trim() ?? ''));
+  const stray = after.filter((s) => {
+    if (!/\d/.test(s)) return true;
+    const n = s.endsWith('M') ? parseFloat(s) * 1e6 : s.endsWith('K') ? parseFloat(s) * 1e3 : Number(s);
+    const b = n >= 1e6 ? '1m' : n >= 1e5 ? '100k' : n >= 1e4 ? '10k' : 'under10k';
+    return b !== target;
+  }).length;
+  check(after.length > 0 && stray === 0,
+    `filtering by ${chipText} leaves only that bucket`, `${after.length} rows, ${stray} from another bucket`);
+  check(after.length < rows.length, 'and it really narrowed the list', `${after.length} of ${rows.length}`);
+
+  /* 'Not on EUKA' is a filter too: those are people Euka has no profile for. */
+  const noneChip = page.locator('button').filter({ hasText: /^Not on EUKA · \d+$/ }).first();
+  if (await noneChip.isVisible().catch(() => false)) {
+    await noneChip.click();
+    await page.waitForTimeout(1200);
+    const noneRows = await page.evaluate(() => [...document.querySelectorAll('.pc-cv-row')].map((row) =>
+      row.querySelector('[data-label="Followers"]')?.textContent?.trim() ?? ''));
+    check(noneRows.length > 0 && noneRows.every((s) => !/\d/.test(s)),
+      'and Not on EUKA leaves only creators with no count', `${noneRows.length} rows`);
+    await noneChip.click();
+    await page.waitForTimeout(800);
+  }
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(500);
+
   /* the names still have room */
   const squeezed = rows.filter((r) => r.nameWidth > 0 && r.nameWidth < 40).length;
   check(squeezed === 0, 'the new column has not squeezed the names', `${squeezed} names under 40px`);

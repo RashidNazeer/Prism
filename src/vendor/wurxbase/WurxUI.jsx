@@ -372,6 +372,25 @@ function wxDealsByPerson(rows, month) {
   return m;
 }
 const wxPersonKey = (c) => String((c && c.name) || '').trim().toLowerCase();
+/* WURX-ADDED · which followers bucket somebody is in, for the Creators filter.
+   `none` is a real answer, not an empty one: EUKA only reports a creator while
+   they have been active in one of our shops lately, so 380 of 464 people on dev
+   have no profile at all — a fact worth being able to filter FOR. */
+function wxFollowerBucket(n) {
+  const v = Number(n) || 0;
+  if (!v) return 'none';
+  if (v >= 1e6) return '1m';
+  if (v >= 1e5) return '100k';
+  if (v >= 1e4) return '10k';
+  return 'under10k';
+}
+const WX_FOLLOWER_BUCKETS = [
+  { key: '1m',       label: '1M+' },
+  { key: '100k',     label: '100K – 1M' },
+  { key: '10k',      label: '10K – 100K' },
+  { key: 'under10k', label: 'Under 10K' },
+  { key: 'none',     label: 'Not on EUKA' },
+];
 function DealsBadge({ n, month }) {
   if (!n) return null;
   const deals = `${n} deal${n === 1 ? '' : 's'} with this creator`;
@@ -5242,6 +5261,12 @@ function CreatorsTab({ creators, allCreators, allTime, month, eukaL30, onSetCrea
      creators do we have on 1 deal, on 2, on 3" — a retention question, not a
      row question, so it counts PEOPLE and filters ROWS. */
   const [dealsFilter, setDealsFilter]       = useState(null);  // 1, 2, 3 … | null
+  /* WURX-ADDED · Rashid, 2026-09-18: "we also need to have filter so users can
+     filter creators on follower". Buckets rather than a number box: the question
+     is "who is big enough for this brief", and nobody knows whether they mean
+     40,000 or 50,000. 'none' is its own answer — Euka has no profile for that
+     handle, which is not the same as a small following. */
+  const [followersFilter, setFollowersFilter] = useState(null); // '1m'|'100k'|'10k'|'under10k'|'none'|null
   const [filterOpen, setFilterOpen]         = useState(false);
   const filterRef                            = useRef(null);
 
@@ -5255,7 +5280,8 @@ function CreatorsTab({ creators, allCreators, allTime, month, eukaL30, onSetCrea
     return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
   }, [filterOpen]);
 
-  const activeFilterCount = (statusFilter ? 1 : 0) + (hiredByFilter ? 1 : 0) + (tierFilter ? 1 : 0) + (dealsFilter ? 1 : 0);
+  const activeFilterCount = (statusFilter ? 1 : 0) + (hiredByFilter ? 1 : 0) + (tierFilter ? 1 : 0) + (dealsFilter ? 1 : 0)
+    + (followersFilter ? 1 : 0);   /* WURX-ADDED */
 
   // Precomputed lowercase haystack per creator · rebuilt only when data changes,
   // so each search keystroke is a cheap Map lookup instead of string-building.
@@ -5291,6 +5317,20 @@ function CreatorsTab({ creators, allCreators, allTime, month, eukaL30, onSetCrea
    * Built from the WHOLE list, not the filtered one, so a person's tier does
    * not change depending on what else is selected.
    */
+  /* WURX-ADDED · followers per PERSON, largest across their handles and rows,
+     so the filter and the column agree about one human being. */
+  const wxFollowersByPerson = useMemo(() => {
+    const m = new Map();
+    creators.forEach((c) => {
+      const k = (c.name || '').trim().toLowerCase();
+      if (!k) return;
+      const n = Number(eukaProfileFor(eukaL30, [c.tiktok_account, c.tiktok_account_2])?.followers) || 0;
+      if (n > (m.get(k) || 0)) m.set(k, n);
+    });
+    return m;
+  }, [creators, eukaL30]);
+  /* WURX-END */
+
   const tierByPerson = useMemo(() => {
     const m = new Map();
     creators.forEach((c) => {
@@ -5340,10 +5380,17 @@ function CreatorsTab({ creators, allCreators, allTime, month, eukaL30, onSetCrea
     if (dealsFilter) {
       list = list.filter(c => dealsByPerson.get((c.name || '').trim().toLowerCase()) === dealsFilter);
     }
+    /* WURX-ADDED · followers. Read per PERSON, like the tier filter above, so
+       somebody with two rows cannot be in one bucket on one and another on the
+       next. */
+    if (followersFilter) {
+      list = list.filter(c => wxFollowerBucket(wxFollowersByPerson.get((c.name || '').trim().toLowerCase())) === followersFilter);
+    }
     const q = search.trim().toLowerCase();
     if (!q) return list;
     return list.filter(c => (searchable.get(c.id) || '').includes(q));
-  }, [creators, search, statusFilter, hiredByFilter, tierFilter, dealsFilter, dealsByPerson, tierByPerson, eukaL30, searchable]);
+  }, [creators, search, statusFilter, hiredByFilter, tierFilter, dealsFilter, followersFilter,
+      dealsByPerson, tierByPerson, wxFollowersByPerson, eukaL30, searchable]);
 
   // All-time: collapse to a single bucket so the status dividers below group
   // EVERY creator (across every month) into one Pending / Progress / Sent
@@ -5569,6 +5616,23 @@ function CreatorsTab({ creators, allCreators, allTime, month, eukaL30, onSetCrea
     return { out, matched, total: seen.size };
   }, [eukaL30, listForTierCounts, tierByPerson]);
 
+  /* WURX-ADDED · how many PEOPLE sit in each followers bucket, counted over the
+     same scope the tier chips use, so the numbers beside the two filters mean
+     the same thing. */
+  const wxFollowerCounts = useMemo(() => {
+    const out = {};
+    const seen = new Set();
+    listForTierCounts.forEach((c) => {
+      const k = (c.name || '').trim().toLowerCase();
+      if (!k || seen.has(k)) return;
+      seen.add(k);
+      const b = wxFollowerBucket(wxFollowersByPerson.get(k));
+      out[b] = (out[b] || 0) + 1;
+    });
+    return out;
+  }, [listForTierCounts, wxFollowersByPerson]);
+  /* WURX-END */
+
   return (
     <>
       {/* KPI pills */}
@@ -5718,7 +5782,7 @@ function CreatorsTab({ creators, allCreators, allTime, month, eukaL30, onSetCrea
                   {activeFilterCount > 0 && (
                     <button
                       type="button"
-                      onClick={() => { setStatusFilter(null); setHiredByFilter(null); setTierFilter(null); setDealsFilter(null); }}
+                      onClick={() => { setStatusFilter(null); setHiredByFilter(null); setTierFilter(null); setDealsFilter(null); setFollowersFilter(null); }}
                       style={{ background: 'transparent', border: 0, color: 'var(--pc-text-3)', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '2px 6px', borderRadius: 6 }}
                     >
                       Reset all
@@ -5763,6 +5827,26 @@ function CreatorsTab({ creators, allCreators, allTime, month, eukaL30, onSetCrea
                     })}
                   </div>
                 </div>
+
+                {/* WURX-ADDED · Followers */}
+                <div style={sectionGap}>
+                  <div style={sectionTitle}>Followers</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                    <button type="button" onClick={() => setFollowersFilter(null)} style={pill(followersFilter === null)}>
+                      {followersFilter === null && checkSvg}All
+                    </button>
+                    {WX_FOLLOWER_BUCKETS.filter(b => (wxFollowerCounts[b.key] || 0) > 0).map(b => {
+                      const active = followersFilter === b.key;
+                      return (
+                        <button key={b.key} type="button" onClick={() => setFollowersFilter(active ? null : b.key)} style={pill(active)}
+                          title={b.key === 'none' ? 'EUKA has no profile for this handle — usually somebody who has not posted for one of our shops lately' : undefined}>
+                          {active && checkSvg}{b.label} · {wxFollowerCounts[b.key]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                {/* WURX-END */}
 
                 {/* EUKA Tier */}
                 {tierCounts && (
