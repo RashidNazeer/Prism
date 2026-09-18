@@ -7422,6 +7422,11 @@ function CreatorsTabRow({ c, idx, selected, euka, deals, dealsMonth, onToggle, o
   /* formatted at render time, so records saved before this looked right too */
   const contact = c.whatsapp_number ? fmtPhone(c.whatsapp_number) : (c.email || '');
   const tier = creatorTier(c, euka);
+  /* WURX-ADDED · followers, from the same EUKA profile the brand page prints
+     under a handle. It arrives with the L30 sweep, so it fills in a moment
+     after the table paints, exactly as the tier and L30 columns do. */
+  const wxFollowers = Number(eukaProfileFor(euka, [c.tiktok_account, c.tiktok_account_2])?.followers) || 0;
+  /* WURX-END */
   return (
     <div className={`pc-cv-row ${selected ? 'sel' : ''}`} onClick={onOpen} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') onOpen(); }} style={{ gridTemplateColumns: colTemplate(god) }}>
       <div className="pc-cv-check" onClick={e => e.stopPropagation()} style={cellCenter}>
@@ -7446,6 +7451,13 @@ function CreatorsTabRow({ c, idx, selected, euka, deals, dealsMonth, onToggle, o
             </span>
           : <span className="pc-handle">-</span>}
       </div>
+      {/* WURX-ADDED · Followers */}
+      <div className="pc-cell pc-num" data-label="Followers" style={{ ...cellCenter, ...colStyle("Followers", god) }}>
+        {wxFollowers > 0
+          ? <span className="pc-metric" title={`${wxFollowers.toLocaleString()} TikTok followers, from EUKA`}>{kNum(wxFollowers)}</span>
+          : <span className="pc-handle">{euka ? '-' : '…'}</span>}
+      </div>
+      {/* WURX-END */}
       <div className="pc-cell" data-label="Category" style={{ ...cellCenter, ...colStyle("Category", god) }}>{c.category ? <span className="pc-cat" title={c.category}>{c.category}</span> : <span className="pc-handle">-</span>}</div>
       <div className="pc-cell" data-label="Brand" style={{ ...colStyle("Brand", god),  ...cellCenter, fontWeight: 600 }}>{c.brand || <span className="pc-handle">-</span>}</div>
       <div className="pc-cell" data-label="Onboarded" style={{ ...colStyle("Onboarded", god),  ...cellCenter, fontSize: 12.5, color: 'var(--pc-text-2)' }}><HireDate d={c.hiring_date} /></div>

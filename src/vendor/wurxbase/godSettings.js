@@ -71,6 +71,14 @@ export const CREATOR_COLS = [
   { id: 'name',      label: 'Name',      w: '1.34fr' },
   { id: 'contact',   label: 'Contact',   w: '0.86fr' },
   { id: 'tiktok',    label: 'TikTok',    w: '0.88fr' },
+  /* WURX-ADDED · Rashid, 2026-09-18: "can we add a new column of followers as
+     well i hope we can get followers count for our creators". EUKA already
+     carries it per handle — the brand page prints it under the handle — so this
+     column is the same figure, in the list where people are compared.
+     A person who has saved a column order will find it appended at the end
+     (visibleCols keeps unknown columns rather than dropping them), and can move
+     it in the column settings like any other. */
+  { id: 'followers', label: 'Followers', w: '0.62fr' },
   { id: 'category',  label: 'Category',  w: '0.7fr'  },
   { id: 'brand',     label: 'Brand',     w: '0.8fr'  },
   { id: 'onboarded', label: 'Onboarded', w: '0.8fr'  },
@@ -83,6 +91,7 @@ export const CREATOR_COLS = [
 /* data-label on each cell in the row markup, mapped to a column id */
 export const COL_BY_LABEL = {
   '#': 'num', 'Name': 'name', 'Contact': 'contact', 'TikTok': 'tiktok',
+  'Followers': 'followers',
   'Category': 'category', 'Brand': 'brand', 'Onboarded': 'onboarded',
   'Deal': 'deal', 'Rate/Vid': 'rate', 'L30 GMV': 'l30',
   'Status': 'status', 'Hired By': 'hiredby',
