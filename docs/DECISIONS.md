@@ -2357,3 +2357,22 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   history stay on the same row. It is the answer both to a link that was never
   stored and to one that has spread further than intended, and it is gentler
   than revoke-and-recreate, which loses the history.
+- 2026-09-18: **Follower counts for creators Euka's shop data does not cover
+  come from Euka's market intelligence, looked up by handle and stored.**
+  Rashid: "is there any other way of fetching their follower count ... maybe
+  through handle". Euka's per-shop exports describe only creators active in one
+  of our shops in the last thirty days (380 of 464 had no count). Its
+  `/market-intelligence/tiktok/creator/rank` searches TikTok's whole creator
+  population by keyword. Rejected: TikTok's Display API (needs each creator to
+  connect; zero have), scraping tiktok.com (fragile, against their terms), and
+  `creator/detail` (needs Euka's own creator id, which we do not have).
+  **Only an exact handle match is stored** — the endpoint is a search, and a
+  near match is somebody else. Where both sources know a creator the counts must
+  agree within 50%; on the first eleven they did.
+- 2026-09-18: **Euka rations fresh market-intelligence lookups**, so they are
+  done four at a time in the five-minute sync and fill over a day or two. A
+  handle Euka has answered before comes back instantly; a new one, after a few
+  dozen in an afternoon, gets `503 "Market Intelligence service is
+  unavailable"`. A failed lookup is RECORDED and put back in line for a day:
+  leaving failures unrecorded kept one failing handle at the front of every run
+  and nobody behind it was ever looked up.

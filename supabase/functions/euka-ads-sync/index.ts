@@ -40,6 +40,7 @@ import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.1
 import { z } from 'npm:zod@4.4.3';
 import { corsHeaders, json } from '../_shared/cors.ts';
 import { refreshOneStaleStore } from '../_shared/euka-tiers.ts';
+import { fillFollowers } from '../_shared/euka-followers.ts';
 import {
   EUKA_V0,
   EUKA_V1,
@@ -594,6 +595,18 @@ Deno.serve(async (req) => {
       ? await refreshOneStaleStore(db, index.stores, (id) => index.ownerOf.get(id))
       : null;
 
+    /*
+     * FOLLOWER COUNTS FOR THE PEOPLE EUKA'S SHOP DATA DOES NOT COVER.
+     *
+     * A small batch per run, so 464 handles fill in over a few hours and stay
+     * fresh on a monthly re-check, without this ever being the reason a run is
+     * cut off. Any account's key will do: market intelligence is about TikTok,
+     * not about one of our shops.
+     */
+    const followers = Date.now() < deadline - 40_000
+      ? await fillFollowers(db, index.ownerOf.get(index.stores[0]?.id ?? ''), deadline).catch(() => null)
+      : null;
+
     const now = nowIso();
     const { count: unitsDue } = await db.from('euka_ad_sync_units')
       .select('*', { count: 'exact', head: true }).lte('due_at', now);
@@ -608,6 +621,7 @@ Deno.serve(async (req) => {
       sparks,
       stillDue: { units: unitsDue ?? null, sparkDays: sparkDaysDue ?? null },
       tierCache,
+      followers,
       eukaAccountsUnavailable: index.unavailable,
     }, 200, req);
   } catch (e) {

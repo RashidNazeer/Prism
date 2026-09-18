@@ -376,6 +376,27 @@ const wxPersonKey = (c) => String((c && c.name) || '').trim().toLowerCase();
    `none` is a real answer, not an empty one: EUKA only reports a creator while
    they have been active in one of our shops lately, so 380 of 464 people on dev
    have no profile at all — a fact worth being able to filter FOR. */
+/* WURX-ADDED · a handle as the follower store keys it: lower case, no @, no
+   URL. Must match normHandle in supabase/functions/_shared/euka-followers.ts. */
+function wxHandleKey(raw) {
+  const t = String(raw || '').trim().toLowerCase();
+  if (!t) return '';
+  const last = t.startsWith('http') ? (t.replace(/\/+$/, '').split('/').pop() || '') : t;
+  return last.replace(/^@+/, '').split(/[?#]/)[0].trim();
+}
+/* WURX-ADDED · a creator's followers: EUKA's live shop data first, then the
+   count looked up by handle in its market intelligence, which reaches the
+   creators the shop data does not (380 of 464 on dev had none). `source` is
+   for the hover text, so a number never hides where it came from. */
+function wxFollowersOf(euka, stored, handles) {
+  const live = Number(eukaProfileFor(euka, handles)?.followers) || 0;
+  if (live > 0) return { n: live, source: 'shop' };
+  for (const h of handles || []) {
+    const n = stored && stored.get ? stored.get(wxHandleKey(h)) : 0;
+    if (n > 0) return { n, source: 'lookup' };
+  }
+  return { n: 0, source: null };
+}
 function wxFollowerBucket(n) {
   const v = Number(n) || 0;
   if (!v) return 'none';
@@ -389,7 +410,7 @@ const WX_FOLLOWER_BUCKETS = [
   { key: '100k',     label: '100K – 1M' },
   { key: '10k',      label: '10K – 100K' },
   { key: 'under10k', label: 'Under 10K' },
-  { key: 'none',     label: 'Not on EUKA' },
+  { key: 'none',     label: 'No count yet' },
 ];
 function DealsBadge({ n, month }) {
   if (!n) return null;
@@ -5319,16 +5340,17 @@ function CreatorsTab({ creators, allCreators, allTime, month, eukaL30, onSetCrea
    */
   /* WURX-ADDED · followers per PERSON, largest across their handles and rows,
      so the filter and the column agree about one human being. */
+  const wxStoredFollowers = wxAdsHook().storedFollowers;
   const wxFollowersByPerson = useMemo(() => {
     const m = new Map();
     creators.forEach((c) => {
       const k = (c.name || '').trim().toLowerCase();
       if (!k) return;
-      const n = Number(eukaProfileFor(eukaL30, [c.tiktok_account, c.tiktok_account_2])?.followers) || 0;
+      const n = wxFollowersOf(eukaL30, wxStoredFollowers, [c.tiktok_account, c.tiktok_account_2]).n;
       if (n > (m.get(k) || 0)) m.set(k, n);
     });
     return m;
-  }, [creators, eukaL30]);
+  }, [creators, eukaL30, wxStoredFollowers]);
   /* WURX-END */
 
   const tierByPerson = useMemo(() => {
@@ -5839,7 +5861,7 @@ function CreatorsTab({ creators, allCreators, allTime, month, eukaL30, onSetCrea
                       const active = followersFilter === b.key;
                       return (
                         <button key={b.key} type="button" onClick={() => setFollowersFilter(active ? null : b.key)} style={pill(active)}
-                          title={b.key === 'none' ? 'EUKA has no profile for this handle — usually somebody who has not posted for one of our shops lately' : undefined}>
+                          title={b.key === 'none' ? 'Neither EUKA\'s shop data nor a lookup by handle has a follower count for these creators yet. Lookups keep running in the background.' : undefined}>
                           {active && checkSvg}{b.label} · {wxFollowerCounts[b.key]}
                         </button>
                       );
@@ -7509,7 +7531,8 @@ function CreatorsTabRow({ c, idx, selected, euka, deals, dealsMonth, onToggle, o
   /* WURX-ADDED · followers, from the same EUKA profile the brand page prints
      under a handle. It arrives with the L30 sweep, so it fills in a moment
      after the table paints, exactly as the tier and L30 columns do. */
-  const wxFollowers = Number(eukaProfileFor(euka, [c.tiktok_account, c.tiktok_account_2])?.followers) || 0;
+  const wxF = wxFollowersOf(euka, wxAdsHook().storedFollowers, [c.tiktok_account, c.tiktok_account_2]);
+  const wxFollowers = wxF.n;
   /* WURX-END */
   return (
     <div className={`pc-cv-row ${selected ? 'sel' : ''}`} onClick={onOpen} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') onOpen(); }} style={{ gridTemplateColumns: colTemplate(god) }}>
@@ -7538,7 +7561,7 @@ function CreatorsTabRow({ c, idx, selected, euka, deals, dealsMonth, onToggle, o
       {/* WURX-ADDED · Followers */}
       <div className="pc-cell pc-num" data-label="Followers" style={{ ...cellCenter, ...colStyle("Followers", god) }}>
         {wxFollowers > 0
-          ? <span className="pc-metric" title={`${wxFollowers.toLocaleString()} TikTok followers, from EUKA`}>{kNum(wxFollowers)}</span>
+          ? <span className="pc-metric" title={`${wxFollowers.toLocaleString()} TikTok followers · ${wxF.source === 'shop' ? 'EUKA shop data, live' : 'looked up by handle in EUKA market intelligence'}`} data-source={wxF.source}>{kNum(wxFollowers)}</span>
           : <span className="pc-handle">{euka ? '-' : '…'}</span>}
       </div>
       {/* WURX-END */}

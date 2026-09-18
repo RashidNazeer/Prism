@@ -87,6 +87,14 @@ type Ctx = {
   ready: boolean;
   loading: boolean;
   error: string | null;
+  /**
+   * Follower counts looked up by handle in Euka's market intelligence, for the
+   * creators its shop exports do not cover. Keyed by handle: lower case, no @.
+   * Only exact handle matches are ever stored (see the migration
+   * 20260918160000_euka_creator_followers.sql). The screen uses these only when
+   * the live shop data has no figure.
+   */
+  storedFollowers: Map<string, number>;
 };
 
 /**
@@ -299,9 +307,39 @@ export function CollabAdFiguresProvider({ children }: { children: ReactNode }) {
 
   const spark = useCallback((itemId: string) => sparks.get(itemId) ?? null, [sparks]);
 
+  /*
+   * STORED FOLLOWER COUNTS, READ ONCE. There are a few hundred handles in Paid
+   * Collabs, so one paged read of the whole table is simpler and cheaper than
+   * asking per row; the table is refreshed by the scheduled sync, not here.
+   */
+  const [storedFollowers, setStoredFollowers] = useState<Map<string, number>>(() => new Map());
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      const out = new Map<string, number>();
+      for (let from = 0; ; from += 1000) {
+        const { data, error: fErr } = await getSupabase()
+          .from('euka_creator_followers')
+          .select('handle, followers')
+          .eq('found', true)
+          .order('handle')
+          .range(from, from + 999);
+        if (fErr || !data) break;
+        for (const r of data as { handle: string; followers: number | null }[]) {
+          if (r.followers) out.set(r.handle, r.followers);
+        }
+        if (data.length < 1000) break;
+      }
+      if (live && alive.current) setStoredFollowers(out);
+    })();
+    return () => {
+      live = false;
+    };
+  }, []);
+
   const value = useMemo<Ctx>(
-    () => ({ ensure, get, spark, setMonth, month, ready, loading, error }),
-    [ensure, get, spark, setMonth, month, ready, loading, error]
+    () => ({ ensure, get, spark, setMonth, month, ready, loading, error, storedFollowers }),
+    [ensure, get, spark, setMonth, month, ready, loading, error, storedFollowers]
   );
 
   return <AdFiguresContext.Provider value={value}>{children}</AdFiguresContext.Provider>;
@@ -325,6 +363,7 @@ export function useCollabAdFigures(): Ctx {
       ready: false,
       loading: false,
       error: null,
+      storedFollowers: new Map(),
     }
   );
 }

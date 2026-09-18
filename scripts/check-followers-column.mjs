@@ -75,6 +75,34 @@ await Promise.all(stores.map(async (s) => {
 console.log(`euka: ${answered} of ${stores.length} stores answered · ${followers.size} handles with a follower count`);
 check(followers.size > 0, 'Euka gives follower counts, so this check can fail', `${followers.size} handles`);
 
+/* THE SECOND SOURCE: counts looked up by handle in Euka's market intelligence,
+   stored by the sync. The screen falls back to these when the shop data has
+   none, so the check does the same — shop first, stored second. */
+const svc = createClient(URL_, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
+const stored = new Map();
+{
+  const { data } = await svc.from('euka_creator_followers').select('handle, followers').eq('found', true);
+  for (const r of data ?? []) if (r.followers) stored.set(r.handle, r.followers);
+}
+console.log(`stored lookups: ${stored.size} handles`);
+
+/*
+ * ARE THE LOOKUPS THE RIGHT PEOPLE? The lookup is a keyword search, stored only
+ * on an exact handle match — but trust is earned, not assumed. Where BOTH
+ * sources know a handle, the two counts are the same person on different days,
+ * so they must be close. A search that grabbed somebody else would be off by
+ * miles. (Seen on 2026-09-18: @dulcedagda 361,800 by shop data, 378,200 by
+ * lookup — 4.5% apart.)
+ */
+const both = [...stored.keys()].filter((h) => followers.has(h));
+const far = both.filter((h) => {
+  const a = followers.get(h), b = stored.get(h);
+  return Math.max(a, b) / Math.max(1, Math.min(a, b)) > 1.5;
+});
+check(both.length >= 5, 'enough creators are known to both sources to judge the lookup', `${both.length} in both`);
+check(far.length === 0, 'where both sources know a creator, the counts agree within 50%',
+  far.slice(0, 4).map((h) => `@${h}: shop ${followers.get(h)}, lookup ${stored.get(h)}`).join(' | ') || `${both.length} compared`);
+
 /* ── the screen ─────────────────────────────────────────────────────────── */
 const browser = await launchBrowser();
 try {
@@ -102,17 +130,25 @@ try {
    * Comparing then reported creators as missing whose numbers were still in
    * flight. This waits until the filled count stops climbing.
    */
-  const filled = () => page.evaluate(() =>
+  /* THE APP SAYS WHEN ITS SWEEP IS DONE: it writes `wurx_euka_l30_v10` to
+     localStorage only once EVERY store has answered ("Only cache COMPLETE
+     sweeps", WurxUI). Waiting for a pause instead failed once already — a slow
+     store stalled the sweep for six seconds mid-way, the count held still, and
+     the check compared a half-loaded column. */
+  await page.waitForFunction(() => {
+    try {
+      const c = JSON.parse(localStorage.getItem('wurx_euka_l30_v10') || 'null');
+      return Boolean(c && c.complete);
+    } catch { return false; }
+  }, null, { timeout: 180_000 }).catch(() => {});
+  await page.waitForTimeout(2500);
+  const last = await page.evaluate(() =>
     [...document.querySelectorAll('.pc-cv-row [data-label="Followers"]')].filter((c) => /\d/.test(c.textContent ?? '')).length);
-  let last = -1;
-  let stable = 0;
-  for (let i = 0; i < 60 && stable < 3; i++) {
-    await page.waitForTimeout(2000);
-    const now = await filled();
-    stable = now === last && now > 0 ? stable + 1 : 0;
-    last = now;
-  }
-  console.log(`screen: ${last} rows carry a follower count once the sweep settled`);
+  const complete = await page.evaluate(() => {
+    try { return Boolean(JSON.parse(localStorage.getItem('wurx_euka_l30_v10') || 'null')?.complete); } catch { return false; }
+  });
+  check(complete, 'the app finished its Euka sweep before anything was compared');
+  console.log(`screen: ${last} rows carry a follower count once the sweep completed`);
 
   const head = await page.evaluate(() => [...document.querySelectorAll('.pc-cv-head > div')].map((d) => d.textContent?.trim()));
   check(head.includes('Followers'), 'the Creators tab has a Followers column', head.join(' | '));
@@ -130,15 +166,22 @@ try {
 
   const wrong = [];
   let compared = 0;
+  let fromLookup = 0;
   for (const r of rows) {
     const key = handleKey(r.handle);
-    const want = followers.get(key);
-    if (!key || !want) continue;
+    if (!key) continue;
+    const live = followers.get(key);
+    const want = live || stored.get(key);
+    if (!want) {
+      if (/\d/.test(r.shown)) wrong.push(`${r.name || key}: screen ${r.shown}, but neither source has a count`);
+      continue;
+    }
     compared++;
-    if (r.shown !== kNum(want)) wrong.push(`${r.name || key}: screen ${r.shown}, Euka ${kNum(want)}`);
+    if (!live) fromLookup++;
+    if (r.shown !== kNum(want)) wrong.push(`${r.name || key}: screen ${r.shown}, expected ${kNum(want)} (${live ? 'shop' : 'lookup'})`);
   }
   check(compared > 0 && wrong.length === 0,
-    `every follower count matches Euka (${compared} rows compared)`, wrong.slice(0, 4).join(' | '));
+    `every follower count matches its source (${compared} rows, ${fromLookup} of them from the handle lookup)`, wrong.slice(0, 4).join(' | '));
 
   /*
    * THE FILTER. Rashid, 2026-09-18: "we also need to have filter so users can
@@ -184,14 +227,14 @@ try {
   check(after.length < rows.length, 'and it really narrowed the list', `${after.length} of ${rows.length}`);
 
   /* 'Not on EUKA' is a filter too: those are people Euka has no profile for. */
-  const noneChip = page.locator('button').filter({ hasText: /^Not on EUKA · \d+$/ }).first();
+  const noneChip = page.locator('button').filter({ hasText: /^No count yet · \d+$/ }).first();
   if (await noneChip.isVisible().catch(() => false)) {
     await noneChip.click();
     await page.waitForTimeout(1200);
     const noneRows = await page.evaluate(() => [...document.querySelectorAll('.pc-cv-row')].map((row) =>
       row.querySelector('[data-label="Followers"]')?.textContent?.trim() ?? ''));
     check(noneRows.length > 0 && noneRows.every((s) => !/\d/.test(s)),
-      'and Not on EUKA leaves only creators with no count', `${noneRows.length} rows`);
+      'and No count yet leaves only creators with no count', `${noneRows.length} rows`);
     await noneChip.click();
     await page.waitForTimeout(800);
   }

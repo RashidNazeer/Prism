@@ -61,7 +61,9 @@ const CACHE = 'private, max-age=900';
 const Body = z.object({
   /* Absent means "the store list", which is the one mode taking no store. */
   store: z.string().trim().max(64).optional(),
-  type: z.enum(['videos', 'cvideos', 'discovery', 'photo', 'gmvmax']).optional(),
+  type: z.enum(['videos', 'cvideos', 'discovery', 'photo', 'gmvmax', 'micreator']).optional(),
+  /* mode 8 only: the handle or name to look up in Euka's market intelligence. */
+  keyword: z.string().trim().max(120).optional(),
   handle: z.string().trim().max(120).optional(),
   /* mode 7 only: which GMV Max read, and its filters. */
   op: z.enum(['advertisers', 'campaigns', 'creatives', 'item', 'sparkcodes']).optional(),
@@ -558,6 +560,49 @@ Deno.serve(async (req) => {
         payload = { raw: text.slice(0, 500) };
       }
       return new Response(JSON.stringify({ upstreamStatus: r.status, op, payload }), {
+        status: 200,
+        headers: { ...corsHeaders(req), 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
+    }
+
+    /*
+     * ── mode 8 · a creator by handle, from Euka's market intelligence ────
+     *
+     * Rashid, 2026-09-18: "is there any other way of fetching their follower
+     * count other than euka? maybe through handle". This is still Euka, but a
+     * different half of it: `creator/rank` searches TikTok's whole creator
+     * population by keyword, not just the people active in our own shops, which
+     * is why 380 of our 464 creators have no follower count today.
+     *
+     * A PROBE UNTIL IT PROVES ITSELF. It is staff-gated like every other mode
+     * and reads nothing of ours. If the numbers come back wrong, or matching a
+     * handle turns out to be guesswork, this mode goes rather than quietly
+     * filling a column with somebody else's followers.
+     */
+    if (body.type === 'micreator') {
+      const keyword = String(body.keyword ?? '').trim().replace(/^@/, '');
+      if (!keyword) return json({ error: 'keyword required' }, 400, req);
+      const r = await fetch(`${BASE_V1}/market-intelligence/tiktok/creator/rank`, {
+        method: 'POST',
+        headers: { ...auth, 'Content-Type': 'application/json' },
+        /* Euka names the five it insists on: region, language, currency,
+           date_range and sort_field. It said so itself in a 400, which is a
+           better spec than the spec. */
+        body: JSON.stringify({
+          keyword,
+          region: body.from || 'US',
+          language: 'en-US',
+          currency: 'USD',
+          date_range: 'last30Day',
+          sort_field: { field: 'revenue', type: 'DESC' },
+          page_size: 10,
+          page_number: 1,
+        }),
+      });
+      const text = await r.text();
+      let payload: unknown;
+      try { payload = JSON.parse(text); } catch { payload = { raw: text.slice(0, 500) }; }
+      return new Response(JSON.stringify({ upstreamStatus: r.status, payload }), {
         status: 200,
         headers: { ...corsHeaders(req), 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
       });
