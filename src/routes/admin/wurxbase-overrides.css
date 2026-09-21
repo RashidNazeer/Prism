@@ -2010,3 +2010,45 @@
   cursor: pointer;
 }
 .wurxbase-root.wurxbase-root.wurxbase-root .wx-share-video button:hover { background: var(--wx-surface-3); }
+
+/* ============================================================================
+   AD SPEND IN RED, AND NEW VIDEO GMV ON THE BRANDS SCREEN (2026-09-21)
+
+   Rashid: "i want the ad spend column values to be in red color", and "sum the
+   new video gmv of all the brands and add it in the first row of brand's main
+   page". Red and green are the two inks the brand page's own Ad spend and GMV
+   cards already wear, so a figure reads the same colour wherever it appears.
+   check:contrast section 5 proves both inks on a resting row, a hovered row
+   (their gold wash) and the card.
+   ============================================================================ */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-metric-spend {
+  color: var(--wx-danger);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-kpi-gmv .pc-kpi-value {
+  color: var(--wx-success);
+}
+/* SIX CARDS, COUNTED BY THE ROW'S OWN WIDTH, NOT THE WINDOW'S.
+   From 64rem the month controls float right and this row sits beside them, so
+   its width is the window minus the sidebar minus those controls: 355px at a
+   1024px window, 1043px at 1712px. Their five-card row was sized by the window
+   and was already cutting figures off below about 1300px ("$94,090" in a 63px
+   card at 1024). Measured on 2026-09-21: six cards need about 135px each to
+   show every figure whole. So six in a row at 54rem and up, three by two below
+   that, two by three below 26rem. Their own !important rules still take over on
+   a phone-sized window (two columns at 640px, one at 420px). */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-kpis-wrap {
+  container-type: inline-size;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-kpis-6 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@container (width >= 26rem) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-kpis-6 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@container (width >= 54rem) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-kpis-6 {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}

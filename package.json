@@ -83,6 +83,7 @@
     "verify:euka-ads-ui": "node scripts/check-euka-ads-ui.mjs",
     "verify:tier-deals": "node scripts/check-tier-deals-ui.mjs",
     "verify:topvids-stats": "node scripts/check-topvids-stats.mjs",
+    "verify:brands-gmv": "node scripts/check-brands-gmv.mjs",
     "verify:collab-share": "node scripts/check-collab-share.mjs",
     "verify:collab-share-ui": "node scripts/check-collab-share-ui.mjs",
     "verify:client-links": "node scripts/check-client-links-ui.mjs",

@@ -2376,3 +2376,16 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   unavailable"`. A failed lookup is RECORDED and put back in line for a day:
   leaving failures unrecorded kept one failing handle at the front of every run
   and nobody behind it was ever looked up.
+- 2026-09-21: **The Brands screen's New Video GMV is rounded ONCE, from the
+  exact sum, not built from the rounded brand cards.** Each brand card rounds
+  to the dollar, so the two can differ by under 50 cents a brand (August 2026:
+  cards add to $27,451, exact $27,449.47). The exact figure is the true one, a
+  spreadsheet of the videos agrees with it, and the hover says it is rounded
+  once. Both are computed by one function, `wxVideoTotals`, so they cannot
+  disagree in any other way.
+- 2026-09-21: **The Brands card row is sized by its own width (a container
+  query), not the window's.** It sits beside the floated month controls from
+  64rem, so a window-width breakpoint cannot know how much room it has: their
+  five-card version was cutting "$94,090" off at 1024px. Six in a row needs
+  about 135px a card, so below 54rem it becomes three by two rather than six
+  squeezed cards with wrapped labels.

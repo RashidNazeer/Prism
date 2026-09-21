@@ -36,6 +36,19 @@ Answer "what's pending?" from `docs/PARKED.md`.
 
 ## WHERE EVERYTHING STANDS
 
+### New Video GMV on the Brands screen, and red ad spend (2026-09-21)
+
+- **A sixth card on the Brands screen, New Video GMV**, in green: every
+  brand's new video GMV for the month (or All Time), added up with the very
+  function each brand page's GMV card uses, rounded once.
+- **Ad spend figures on a brand's page are red**; dashes stay grey.
+- **The card row sizes itself by its own width**: six in a row on wide
+  screens, three by two on laptops (1152–1440px), two by three at 1024px. This
+  also fixes figures that were already being cut off below about 1300px.
+- **Proven:** `verify:brands-gmv` 34/34. August 2026: $27,449.47, equal to the
+  database; all 10 brands' GMV cards match the database and add up to it
+  within rounding. `check:contrast` section 5 is new.
+
 ### Followers on the Creators tab, and a second source for them (2026-09-18)
 
 Live on dev at `813841b` (CLI deploy, live asset checked against the build).

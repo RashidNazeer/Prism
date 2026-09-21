@@ -412,6 +412,46 @@ const WX_FOLLOWER_BUCKETS = [
   { key: 'under10k', label: 'Under 10K' },
   { key: 'none',     label: 'No count yet' },
 ];
+/* WURX-ADDED · ONE BRAND'S VIDEOS, EACH COUNTED ONCE.
+   The brand page's Views and GMV cards and the Brands screen's New Video GMV
+   card both read this, so the screen-wide total is by construction the brand
+   cards added up. Rashid, 2026-09-21: "sum the new video gmv of all the brands
+   ... be careful on calculations".
+
+   The same TikTok video can sit under two deals of one creator (84 times in
+   Penetrex's history), so it is keyed on TikTok's video id, or the link when
+   there is no id, and kept once. Where two rows carry different synced figures
+   for it, the larger wins: views and GMV only grow, so the larger is the newer
+   sync. `gmv` is NOT rounded here; round once, where it is shown. */
+function wxVideoTotals(list) {
+  const vids = new Map();
+  let dupes = 0;
+  (list || []).forEach((c) => {
+    const seen = new Set();
+    (Array.isArray(c && c.video_codes) ? c.video_codes : []).forEach((r) => {
+      const url = r && String(r.video || '').trim();
+      if (!url) return;
+      const id = wxVideoId(url);
+      const k = id || url;
+      if (seen.has(k)) return;
+      seen.add(k);
+      const cur = vids.get(k);
+      if (cur) dupes++;
+      vids.set(k, {
+        id,
+        views: Math.max(cur ? cur.views : 0, Number(r.views) || 0),
+        gmv: Math.max(cur ? cur.gmv : 0, Number(r.revenue) || 0),
+      });
+    });
+  });
+  const all = [...vids.values()];
+  return {
+    all,
+    dupes,
+    views: all.reduce((t, v) => t + v.views, 0),
+    gmv: all.reduce((t, v) => t + v.gmv, 0),
+  };
+}
 function DealsBadge({ n, month }) {
   if (!n) return null;
   const deals = `${n} deal${n === 1 ? '' : 's'} with this creator`;
@@ -1527,6 +1567,30 @@ function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allT
     videosDone: acc.videosDone + r.videosDone,
   }), { budget: 0, allocated: 0, paid: 0, remaining: 0, videos: 0, videosDone: 0 }), [brandRows]);
 
+  /* WURX-ADDED · NEW VIDEO GMV ACROSS EVERY BRAND, for the sixth card.
+     Rashid, 2026-09-21: "sum the new video gmv of all the brands and add it in
+     the first row of brand's main page".
+
+     Brand by brand, with the very function the brand page's GMV card uses, over
+     the very rows it is given (`row.list` is this screen's creators for that
+     brand, which is what BrandDrilldown receives). So it follows the month
+     picker and All Time exactly as those cards do, and ignores the search box
+     as the other five cards here do. Summed unrounded and rounded once, so it
+     can differ from a calculator run over the rounded brand cards by under a
+     dollar a brand, never more. */
+  const wxGmvAll = useMemo(() => {
+    let gmv = 0, videos = 0, brands = 0, dupes = 0;
+    brandRows.forEach((r) => {
+      const t = wxVideoTotals(r.list);
+      gmv += t.gmv;
+      videos += t.all.length;
+      dupes += t.dupes;
+      if (t.gmv > 0) brands += 1;
+    });
+    return { gmv, videos, brands, dupes };
+  }, [brandRows]);
+  /* WURX-END */
+
   /* ══ INSIGHTS · computed signals worth acting on, shown under the KPIs ══
      Budget philosophy: DEPLOYING the full budget is the goal — 100% used
      is a win, UNDER-spending late in the month is the real problem. */
@@ -1644,13 +1708,32 @@ function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allT
 
   return (
     <>
-      <div className="pc-kpis pc-kpis-5" style={{ marginTop: 16, gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
+      {/* WURX-ADDED · six cards, not five: the grid is ours to size now
+          (`wx-kpis-6` in wurxbase-overrides.css) and the sixth is New Video GMV.
+          Theirs read: className="pc-kpis pc-kpis-5" style={{ marginTop: 16,
+          gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }} */}
+      <div className="wx-kpis-wrap">
+      <div className="pc-kpis pc-kpis-5 wx-kpis-6" style={{ marginTop: 16 }}>
+      {/* WURX-END */}
         <KPI label="Total Budget"     value={totals.budget > 0 ? fmt$Exact(totals.budget) : '-'} color="#1259C3" />
         <KPI label="Allocated"        value={fmt$Exact(totals.allocated)}                       color="#8B5CF6" />
         <KPI label="Paid"             value={fmt$Exact(totals.paid)}                            color="#2E7D32" />
         <KPI label="Remaining"        value={fmt$Exact(totals.remaining)}                       color={totals.remaining < 0 ? '#C62828' : '#E65100'} />
         <KPI label="Videos Delivered" value={`${totals.videosDone} / ${totals.videos}`}    color="#0A0A0A" />
+        {/* WURX-ADDED · the same card as the five before it, in GMV green, and
+            carrying its exact figure for the check and the hover. */}
+        <div className="pc-kpi pc-kpi-simple wx-kpi-gmv" style={{ '--kpi-color': 'var(--wx-success)' }}
+          data-value={wxGmvAll.gmv.toFixed(2)}
+          title={`$${wxGmvAll.gmv.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} new video GMV · ${wxGmvAll.videos} video${wxGmvAll.videos === 1 ? '' : 's'} across ${brandRows.length} brand${brandRows.length === 1 ? '' : 's'} · ${allTime ? 'all time' : monthLabel(month)}${wxGmvAll.dupes ? ` · ${wxGmvAll.dupes} video${wxGmvAll.dupes === 1 ? '' : 's'} listed under two deals, counted once` : ''} · the brand pages' GMV cards added up to the cent, then rounded once`}>
+          <div className="pc-kpi-row" style={{ marginBottom: 10 }}>
+            <span className="pc-kpi-dot" style={{ background: 'var(--wx-success)' }} />
+            <div className="pc-kpi-label">New Video GMV</div>
+          </div>
+          <div className="pc-kpi-value">{fmt$Exact(Math.round(wxGmvAll.gmv))}</div>
+        </div>
       </div>
+      </div>
+      {/* WURX-END */}
 
       <div className="pc-toolbar" style={{ marginTop: 14 }}>
         <SearchBox value={search} onChange={setSearch} placeholder="Search brands…" />
@@ -2476,30 +2559,15 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
          * Ad spend is Euka's, from the same reader and for the same period as the
          * Ad spend column. No Euka data is a dash, never $0, and two currencies
          * are never added together.
+         *
+         * The counting lives in wxVideoTotals, shared with the Brands screen's
+         * New Video GMV card, so that card is always these cards added up.
          */
-        const wxVids = new Map();
-        let wxDupes = 0;
-        sortedCreators.forEach((c) => {
-          const seen = new Set();
-          (Array.isArray(c.video_codes) ? c.video_codes : []).forEach((r) => {
-            const url = r && String(r.video || '').trim();
-            if (!url) return;
-            const id = wxVideoId(url);
-            const k = id || url;
-            if (seen.has(k)) return;
-            seen.add(k);
-            const cur = wxVids.get(k);
-            if (cur) wxDupes++;
-            wxVids.set(k, {
-              id,
-              views: Math.max(cur ? cur.views : 0, Number(r.views) || 0),
-              gmv: Math.max(cur ? cur.gmv : 0, Number(r.revenue) || 0),
-            });
-          });
-        });
-        const wxAll = [...wxVids.values()];
-        const wxViews = wxAll.reduce((t, v) => t + v.views, 0);
-        const wxGmv = Math.round(wxAll.reduce((t, v) => t + v.gmv, 0));
+        const wxVT = wxVideoTotals(sortedCreators);
+        const wxDupes = wxVT.dupes;
+        const wxAll = wxVT.all;
+        const wxViews = wxVT.views;
+        const wxGmv = Math.round(wxVT.gmv);
         const wxIdsAll = wxAll.map((v) => v.id).filter(Boolean);
         wxAdsB.ensure(wxIdsAll);
         const wxSpend = wxTotals(wxAdsB.get, wxIdsAll);
@@ -3369,8 +3437,10 @@ function DrilldownCreatorRow({ c, idx, euka, deals, dealsMonth, open, onSelect, 
         title={wxT.withData
           ? 'Ad spend across this creator\'s videos' + wxNote
           : (wxIds.length ? 'No ad data for these videos' : 'No TikTok video links yet')}>
+        {/* In red, like the Ad spend card above the table (Rashid,
+            2026-09-21). Only a figure is red; the dash stays grey. */}
         {wxT.withData && !wxT.mixedCurrency
-          ? <span className="pc-metric">{wxMoney(wxT.cost, wxT.currency)}</span>
+          ? <span className="pc-metric wx-metric-spend">{wxMoney(wxT.cost, wxT.currency)}</span>
           : <span className="pc-handle">-</span>}
       </div>
       <div className="pc-cell pc-num wx-collab-figure" data-label="ROI"

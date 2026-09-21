@@ -2335,6 +2335,48 @@ its videos, both themes, 390px, zero console errors, and a revoked link says so
 in plain words) **and `pnpm verify:client-links`** (18: make, copy, open,
 details, new address, stop).
 
+## New Video GMV on the Brands screen, and red ad spend (2026-09-21)
+
+Rashid: *"i want the ad spend column values to be in red color"*, and *"sum
+the new video gmv of all the brands and add it in the first row of brand's
+main page ... do not disturb UI and be careful on calculations"*.
+
+**Ad spend figures on a brand's page are `--wx-danger`** (`.wx-metric-spend`),
+the ink of the Ad spend card above the table. A dash stays grey. ROI is
+unchanged.
+
+**The sixth card, New Video GMV**, sits after Videos Delivered, figure and dot
+in `--wx-success`. It is computed brand by brand with `wxVideoTotals`
+(WurxUI.jsx), the SAME function the brand page's Views and GMV cards now call,
+over the same rows each brand page receives (`row.list`). So:
+- it follows the month picker and All Time exactly as those cards do, and
+  ignores the search box, as the other five cards on that row do;
+- each TikTok video counts once per brand (the larger synced figure kept);
+- **it is rounded once, from the exact sum.** Each brand card is rounded to the
+  dollar, so adding the brand cards by hand can differ by under 50 cents a
+  brand. August 2026: the brand cards add to $27,451, the exact total is
+  $27,449.47, and the card says $27,449. The hover gives the exact figure and
+  says it is rounded once.
+
+**The row now sizes itself by its OWN width, not the window's**
+(`.wx-kpis-wrap` is a container, `.wx-kpis-6` answers container queries): six
+cards at 54rem and up, three by two below that, two by three below 26rem, and
+their own `!important` phone rules still apply at 640px and 420px. From 64rem
+the month controls float right and the cards sit beside them, so at a 1440px
+window the row is only 771px wide. Their five-card row was sized by the window
+and was **already cutting figures off below about 1300px** ("$94,090" in a
+63px card at 1024); this fixes that too. Measured: one row of six at 1600px and
+up, three by two from 1440 down to 1152, two by three at 1024.
+
+**Guarded by `pnpm verify:brands-gmv`** (34 checks): the card against the
+database for a month and for All Time, bracketed for live GMV; every brand in
+the month opened and its own GMV card compared with the database, and those
+cards added up against the new card within rounding; every ad spend figure red
+and no dash red, in both themes; the new card green in both themes; and at
+twelve widths, full rows, nothing cut off, clear of the month controls, no
+sideways scroll. `check:contrast` section 5 proves the red and green on a
+resting row and on a hovered row (their gold wash), both themes.
+
 ## Top videos: views, GMV and ad spend totals (2026-09-16)
 
 Rashid, for his boss, in place of the single GMV total: *"3 vertical mini
