@@ -245,6 +245,22 @@ else {
 const head = await fetch(`${BASE}/`).then((r) => r.text());
 check(/rel="icon"[^>]*favicon\.svg/.test(head) && /favicon\.png/.test(head), 'the page head points at both icon files');
 
+/* AND THE .ico. Browsers ask for /favicon.ico whether or not a page links one,
+   and on a single-page app the catch-all rewrite answers that request with the
+   HTML page unless the file really exists — which is what it did until
+   2026-09-22. Paid Collabs also uses that path as its notification icon. */
+check(/favicon\.ico/.test(head), 'the page head points at a .ico too');
+const ico = await fetch(`${BASE}/favicon.ico`)
+  .then(async (r) => (r.ok ? { type: r.headers.get('content-type'), b: Buffer.from(await r.arrayBuffer()) } : null))
+  .catch(() => null);
+if (!ico) check(false, '/favicon.ico is served');
+else {
+  /* An ICO begins 00 00 01 00. HTML begins "<!do". */
+  const isIco = ico.b.readUInt16LE(0) === 0 && ico.b.readUInt16LE(2) === 1;
+  check(isIco, '/favicon.ico is a real icon file, not the app HTML', `${ico.type} · ${ico.b.length} bytes`);
+  if (isIco) check(ico.b.readUInt16LE(4) >= 2, 'and it carries more than one size', `${ico.b.readUInt16LE(4)} sizes`);
+}
+
 console.log('');
 for (const p of pass) console.log('  PASS  ' + p);
 for (const f of fail) console.log('  FAIL  ' + f);
