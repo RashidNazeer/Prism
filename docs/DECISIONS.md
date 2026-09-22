@@ -2450,3 +2450,20 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   is how the wrong one gets ranked. `verify:site` proves the rule by serving
   the build under test AT the live address and reading the tag, rather than by
   reading the source.
+- 2026-09-22: **The official site is the source of truth for business facts,
+  and where we disagreed with it, we changed.** Rashid: "i don't want to read if
+  everything is correct for my business ... you can find about our business here
+  wurxmedia.com and wurxmedia.com/content". Both were read in full. Our landing
+  page had claimed 5K+ creators since July; theirs says 1,000, and a TikTok
+  reviewer reads both sites, so ours came down. The site described a third of
+  the business (a creator programme) where Wurx sells six services, two of which
+  ARE this hub. **A number nobody can source to wurxmedia.com does not belong on
+  our public pages.**
+- 2026-09-22: **The privacy policy now describes the Paid Collabs records.** It
+  said we hold no phone number; `wurxbase.creators` has held a WhatsApp number,
+  an email, a PayPal or Zelle handle and staff notes for every creator we have
+  paid, since the migration. The code has protected those fields since the
+  client links shipped, which made the omission easy to miss: the fields were
+  guarded, just never disclosed to the person they describe. A policy that
+  under-describes what you hold is a false statement, exactly like one that
+  overclaims.

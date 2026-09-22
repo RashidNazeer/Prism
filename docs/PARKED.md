@@ -887,7 +887,13 @@ only" to production. Six pages built, one icon everywhere, `verify:site` 74/74
 against the live dev site.
 
 **What is left, in order:**
-1. Rashid reads the words on dev and corrects anything wrong about the business.
+1. ~~Rashid reads the words.~~ He declined ("i don't have enough time") and sent
+   wurxmedia.com and wurxmedia.com/content instead, 2026-09-22. Both were read
+   and the site was corrected against them: the six services, the case studies,
+   how a collaboration really runs, the creator count (ours said 5K+, theirs
+   says 1,000), and the privacy policy, which denied holding phone numbers and
+   payment handles that Paid Collabs has always held. **Anything about the
+   business that is still wrong, only he can catch.**
 2. **`support@wurxmedia.com` has to exist before we resubmit.** Rashid is
    creating it (2026-09-22). The legal pages tell people to write there, a
    reviewer may test it, and a creator asking for their data has a legal right
