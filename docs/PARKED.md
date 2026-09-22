@@ -881,10 +881,28 @@ today. **Creators must never see the budget or the ROAS target.**
 
 ## 27d. REJECTED AGAIN 2026-09-15: the website, and the icon
 
-**Status:** DIAGNOSED, waiting on Rashid's two decisions below. He asked to be
-reminded.
-**Raise it when:** the start of the next session, when he comes back to TikTok,
-or when he asks what is pending.
+**Status: BOTH FIELDS ANSWERED AND ON DEV (2026-09-22, `65e9872`).** Rashid
+chose option A, our own site at the address we already use, and "public pages
+only" to production. Six pages built, one icon everywhere, `verify:site` 74/74
+against the live dev site.
+
+**What is left, in order:**
+1. Rashid reads the words on dev and corrects anything wrong about the business.
+2. Two answers needed from him: does `support@wurxmedia.com` exist and get read
+   (the legal pages give it; the new Contact page gives `rajil@wurxmedia.com`,
+   which wurxmedia.com publishes), and should the public pages be indexable
+   (`index.html` still carries `<meta name="robots" content="noindex">`).
+3. The public pages go onto `main` on their own, as `5888faa` did.
+4. He resubmits in TikTok's portal with the icon `public/tiktok-app-icon.png`
+   and the Website URL `https://wurxmediahub.vercel.app/`.
+
+**If they reject the vercel.app address itself**, the fallback is option B: the
+same pages on `creators.wurxmedia.com`, which needs a DNS record and moves the
+redirect URIs, the Supabase auth URLs and TikTok's URL verification.
+
+**Raise it when:** he comes back to TikTok, or when he asks what is pending.
+
+The diagnosis below is kept as the record of what was wrong.
 
 **The reviewer's note, verbatim:**
 

@@ -2423,3 +2423,20 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   copy change on the live site and nothing else, so it went out as copy alone:
   no migration, no behaviour change, no schema. The bigger "make it live"
   decision stays open and untouched.
+- 2026-09-22: **The TikTok submission keeps our own address; we built the
+  website instead of moving it.** Rashid chose this over a
+  `creators.wurxmedia.com` subdomain, which would have been the stronger
+  "official" signal but moves every OAuth redirect URI, the Supabase auth URLs
+  and TikTok's URL verification — each one a place sign-in breaks. Nothing
+  about authentication moves this way. If TikTok rejects the vercel.app address
+  itself, the pages are built and only the address changes.
+- 2026-09-22: **The website's words live in one content file**
+  (`src/content/site-pages.ts`), and every company fact in it is copied from
+  wurxmedia.com. A reviewer reads both sites; two versions of the address, the
+  founders or the figures is exactly the inconsistency the icon rejection was
+  about. Editing the copy must never mean editing a component.
+- 2026-09-22: **The tab icon is the official artwork, not a redraw.**
+  wurxmedia.com's `/favicon.svg`, byte-identical apart from the `viewBox` it
+  was missing — TikTok's note was that the icons must match, so a similar mark
+  drawn by us would have invited the same reply. `verify:site` fetches the live
+  official file and compares, so the day theirs changes, ours fails.

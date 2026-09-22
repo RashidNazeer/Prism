@@ -2237,6 +2237,48 @@ no date and the filter would hide it the moment it appeared.
 **Guarded by `pnpm verify:video-days`.** Every expected number comes from the
 database first, and the check proves the modal wrote nothing.
 
+## The public website (2026-09-22)
+
+Built because TikTok rejected the Display API app on 2026-09-15: *"Your website
+URL cannot be a landing page or login page. You must have an externally facing
+fully developed website"*, and *"The app icon submitted in the Basic Info does
+not match the icon displayed on the website"*.
+
+**The pages.** `/` (the marketing page, unchanged), `/creators`, `/brands`,
+`/how-it-works`, `/about`, `/faq`, `/contact`, plus the three that already
+existed, `/tiktok`, `/terms` and `/privacy`. Each is its own route, lazily
+loaded like every other route here, and sets **its own `document.title`** —
+`SitePage` for the six, and `LegalPage` for the three, which all wore
+index.html's title until now.
+- **`/brands` is the public page. `/app/brands` is a creator's own hubs**,
+  behind the login. Different things, one letter apart in a router file.
+- **The copy is in `src/content/site-pages.ts`**, nothing is hardcoded in a
+  component, and every company fact (registered name, address, phone, email,
+  founders, the headline figures) is copied from wurxmedia.com.
+- **`SiteNav` is pages now, not anchors.** It was `#how`, `#platform`,
+  `#brands`, which did nothing from any page but the home page. The bar shows
+  the six links from `lg` up; below that they are in the menu button, whose
+  auto-close on resize moved from 768 to 1024 to match. Apply falls back to
+  `/apply` when the home page's form is not on screen — it silently did nothing
+  on the new pages before that.
+- **`SiteFooter` carries the whole site in three columns** (Platform, Company,
+  Legal). A reviewer reads a footer to judge how much site there is.
+
+**One icon, everywhere.** `public/favicon.svg` is wurxmedia.com's own
+`/favicon.svg`, byte-identical apart from an added `viewBox="0 0 512 512"`.
+Without that viewBox the file declares width and height 512 and nothing else,
+so asking for 1024 draws a 512 face in the corner of an empty square.
+`public/favicon.png` (256px) is theirs too, for browsers that ignore SVG icons,
+and `public/tiktok-app-icon.png` is 1024x1024 on white, rendered from the SVG,
+for the TikTok portal.
+
+**Guarded by `pnpm verify:site`** (74 checks, signed out, no database): every
+page opens with exactly one heading about itself, 120+ words, its own tab title
+and no duplicate titles; no header or footer link lands on a dead page; the
+phone menu reaches all six; four widths with no sideways scroll; both themes;
+zero console errors; and the icon is compared against the **live**
+wurxmedia.com file, so the day theirs changes ours fails.
+
 ## Client sharing: read-only links into Paid Collabs (2026-09-17)
 
 Rashid: *"a client sharing section which asad and superadmin maybe boss can

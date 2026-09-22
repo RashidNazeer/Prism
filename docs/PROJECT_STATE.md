@@ -9,18 +9,14 @@ asked to be reminded: *"i will do it later remind me please"*.
    (`TEAM_ACCESS_REQUIRED`) until he connects GitHub `RashidNazeer` under
    Vercel → Account Settings → Authentication. Until then every dev deploy
    goes through the CLI route in OPERATIONS (Vercel section). PARKED 45.
-2. **TikTok rejected the app a second time on 2026-09-15**, naming only two
-   fields this time: App icon and Website URL. The diagnosis is in PARKED 27d.
-   **He said "ask me same 2 questions later". Ask him both again, as written:**
-   - **Which website do we give TikTok?** A (recommended): build our own
-     public site out into a real multi-page website with the dog-face icon,
-     same address. B: the same site on an official subdomain like
-     `creators.wurxmedia.com` (needs DNS, moves every redirect). C: submit
-     `wurxmedia.com` itself (least work, but it never mentions the hub).
-   - **How does it reach production?** Only the public pages go onto `main`
-     now, as with the 2026-09-01 wording fix, or it waits for the full dev →
-     production move.
-   The icon needs no question: it is the dog face everywhere.
+2. **TikTok: both rejected fields are answered and on dev** (2026-09-22). He
+   chose to build our own site at the address we already use, and to ship the
+   public pages to production on their own. **What is needed from him:** read
+   the words on dev, then answer two things — does `support@wurxmedia.com`
+   exist and get read, and should the public pages be indexable (they are
+   `noindex` today). Then the pages go onto `main` and he resubmits with
+   `public/tiktok-app-icon.png` and `https://wurxmediahub.vercel.app/`.
+   PARKED 27d has the order.
 
 3. **Rotate the Euka keys that were pasted into the chat**, then set the new ones with `supabase secrets set EUKA_API_KEY=... EUKA_API_KEYS=...` on dev
    (OPERATIONS, "Euka keys"). Never write a key to a file.
@@ -35,6 +31,25 @@ Still queued for him: the Euka data sync (`pnpm wurxbase:sync` dry run,
 Answer "what's pending?" from `docs/PARKED.md`.
 
 ## WHERE EVERYTHING STANDS
+
+### The public website, and one icon everywhere (2026-09-22)
+
+Built for TikTok's second rejection, live on dev at `65e9872`.
+- **Six new pages** beside the home page and the legal ones: For creators, For
+  brands, How it works, About, FAQ, Contact. A header menu and a three-column
+  footer carry the whole site on every public page, and each page has its own
+  tab title.
+- **The words live in `src/content/site-pages.ts`**, one file, so Rashid can
+  correct the business facts without touching a component. Every company fact
+  in it comes from wurxmedia.com.
+- **One icon:** the dog face from wurxmedia.com is now our tab icon (the same
+  artwork plus the viewBox it was missing) and `public/tiktok-app-icon.png` is
+  the 1024x1024 file to upload to TikTok.
+- **`main` was merged into `dev` first**, so promoting dev can no longer
+  delete the /tiktok page or restore the wording TikTok rejected.
+- **Proven:** `verify:site` 74/74 against the live dev site.
+- **Next:** he reads the words, answers the support@ and noindex questions,
+  then the public pages go to production on their own and he resubmits.
 
 ### New Video GMV on the Brands screen, and red ad spend (2026-09-21)
 
