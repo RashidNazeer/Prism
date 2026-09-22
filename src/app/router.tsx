@@ -291,6 +291,51 @@ export const router = createBrowserRouter([
     lazy: lazyRoute(() => import('@/routes/Apply'), 'Apply'),
   },
   /*
+   * ───────────────────────── THE WEBSITE, added 2026-09-22 ─────────────────
+   *
+   * TikTok rejected the Display API app a second time on 2026-09-15: "Your
+   * website URL cannot be a landing page or login page. You must have an
+   * externally facing fully developed website ... A valid official website
+   * that houses information about your web and services." We had one scrolling
+   * marketing page, the two legal pages and /tiktok.
+   *
+   * These six are the rest of the site, reachable from the header and the
+   * footer of every public page, on the same domain as the app, its Terms, its
+   * Privacy and both OAuth redirect URIs — which is the other reason not to
+   * move the submission to wurxmedia.com. Copy lives in src/content/site-pages.
+   */
+  {
+    path: '/creators',
+    HydrateFallback: RouteFallback,
+    lazy: lazyRoute(() => import('@/routes/site/Creators'), 'Creators'),
+  },
+  {
+    /* NOT /app/brands, which is a creator's own brand hubs behind the login. */
+    path: '/brands',
+    HydrateFallback: RouteFallback,
+    lazy: lazyRoute(() => import('@/routes/site/Brands'), 'Brands'),
+  },
+  {
+    path: '/how-it-works',
+    HydrateFallback: RouteFallback,
+    lazy: lazyRoute(() => import('@/routes/site/HowItWorksPage'), 'HowItWorksPage'),
+  },
+  {
+    path: '/about',
+    HydrateFallback: RouteFallback,
+    lazy: lazyRoute(() => import('@/routes/site/About'), 'About'),
+  },
+  {
+    path: '/faq',
+    HydrateFallback: RouteFallback,
+    lazy: lazyRoute(() => import('@/routes/site/Faq'), 'Faq'),
+  },
+  {
+    path: '/contact',
+    HydrateFallback: RouteFallback,
+    lazy: lazyRoute(() => import('@/routes/site/Contact'), 'Contact'),
+  },
+  /*
    * THE TWO LEGAL PAGES, public and unauthenticated on purpose.
    *
    * TikTok's developer portal will not accept an app without a Terms of Service

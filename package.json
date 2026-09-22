@@ -47,7 +47,8 @@
     "verify:tiktok-card": "node scripts/check-tiktok-card.mjs",
     "check:brand-theme": "node scripts/check-brand-theme.mjs",
     "verify:role-gates": "node scripts/check-role-gates.mjs",
-    "verify:applicant-flow": "node scripts/check-applicant-flow.mjs"
+    "verify:applicant-flow": "node scripts/check-applicant-flow.mjs",
+    "verify:site": "node scripts/check-public-site.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

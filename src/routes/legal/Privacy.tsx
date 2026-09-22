@@ -1,5 +1,11 @@
 import { LegalPage } from '@/routes/legal/LegalPage';
-import { CONTACT_EMAIL, LEGAL_NAME, LEGAL_UPDATED, PRODUCT_NAME } from '@/routes/legal/legal-contact';
+import {
+  CONTACT_EMAIL,
+  LEGAL_ADDRESS,
+  LEGAL_NAME,
+  LEGAL_UPDATED,
+  PRODUCT_NAME,
+} from '@/routes/legal/legal-contact';
 
 /**
  * What we hold about a person, and what we do with it.
@@ -65,8 +71,13 @@ export function Privacy() {
 
       <h3>Who you are</h3>
       <p>
-        Your name, your email address and your TikTok handle. That is the whole of it: we do not
-        ask for or hold a phone number, a postal address, a date of birth or a legal name.
+        Your name, your email address and your TikTok handle. That is all this platform asks you
+        for: no phone number, no postal address, no date of birth and no legal name.
+      </p>
+      <p>
+        <strong>A paid collaboration is different, and it is described further down.</strong> If
+        you agree a paid deal with us, you give us a way to reach you and a way to pay you, and we
+        hold those.
       </p>
       <p>
         Your handle is what you typed. We do not check it against TikTok, so it is yours to
@@ -148,6 +159,26 @@ export function Privacy() {
           token, delete the video figures we pulled in, and stop reading anything.
         </li>
       </ul>
+
+      <h3>If you have done a paid collaboration with us</h3>
+      <p>
+        A paid collaboration is a flat fee for an agreed number of videos for one brand. To run and
+        pay for one we hold: your name, the way we agreed to reach you (usually a WhatsApp number
+        or an email address), the deal itself, the videos you delivered with their links and the
+        sales and view figures TikTok reports for them, whether you have been paid, and the
+        payment handle you gave us &mdash; a PayPal or Zelle address. Our staff also write notes
+        about the deal, such as what was agreed or why a delivery date moved.
+      </p>
+      <p>
+        You gave us those details when the deal was agreed, and many of them predate this
+        platform: these records began in a spreadsheet and were moved here so that one system
+        holds the work rather than three. <strong>They are visible only to Wurx staff working on
+        that brand.</strong> Never to other creators.
+      </p>
+      <p>
+        We hold no card or bank details for you, and we never ask for any. A payment handle is an
+        address we send money to, not a way to take it.
+      </p>
 
       <h3>What happens on the platform</h3>
       <p>
@@ -266,6 +297,13 @@ export function Privacy() {
         Brands see the results of campaigns they are paying for. Other creators do not see your
         earnings.
       </p>
+      <p>
+        <strong>A brand&rsquo;s own team may be given a read-only link</strong> to the work done on
+        that brand: the creators on it, the videos delivered, and the views and sales those videos
+        produced. Somebody opening that link sees no contact details, no payment details, no
+        payment status and none of our staff notes, and they cannot change anything. The link has
+        an expiry, we can stop it at any time, and every opening of it is recorded.
+      </p>
 
       <h2>How long we keep it</h2>
       <p>
@@ -336,6 +374,9 @@ export function Privacy() {
       <p>
         Any question about your information goes to{' '}
         <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>, and a person will answer it.
+      </p>
+      <p>
+        The controller is {LEGAL_NAME}, {LEGAL_ADDRESS}.
       </p>
     </LegalPage>
   );

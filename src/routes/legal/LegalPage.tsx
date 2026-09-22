@@ -1,9 +1,10 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { WurxMark } from '@/components/brand/WurxMark';
 import { Container } from '@/components/layout/Section';
 import { SiteFooter } from '@/components/landing/SiteFooter';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { allowIndexing } from '@/lib/seo';
 
 /**
  * The shell every legal page sits in.
@@ -33,6 +34,24 @@ export function LegalPage({
   updated: string;
   children: ReactNode;
 }) {
+  /*
+   * ITS OWN TAB TITLE. All three of these pages wore index.html's title, so a
+   * reviewer with Terms, Privacy and Connecting TikTok open saw three
+   * identical tabs — which reads as one page pretending to be three, the exact
+   * impression the 2026-09-15 rejection was about.
+   */
+  useEffect(() => {
+    const previous = document.title;
+    document.title = `${title} | Wurx Media Hub`;
+    return () => {
+      document.title = previous;
+    };
+  }, [title]);
+
+  /* Public pages: Terms, Privacy and Connecting TikTok are three of the pages a
+     reviewer, or a creator deciding whether to trust us, searches for by name. */
+  useEffect(() => allowIndexing(), []);
+
   return (
     <div className="bg-bg min-h-dvh">
       <header className="border-line border-b">

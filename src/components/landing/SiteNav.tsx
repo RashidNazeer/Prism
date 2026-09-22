@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, m } from 'motion/react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { Menu, X } from 'lucide-react';
 import { WurxMark } from '@/components/brand/WurxMark';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
@@ -9,15 +9,41 @@ import { Container } from '@/components/layout/Section';
 import { focusApplyForm } from '@/lib/focus-apply';
 import { cn } from '@/lib/utils';
 
+/**
+ * THE MENU IS PAGES NOW, NOT SECTIONS OF ONE PAGE.
+ *
+ * It was `#how`, `#platform`, `#brands` — anchors into the marketing page,
+ * which is precisely what TikTok rejected the app for on 2026-09-15: "Your
+ * website URL cannot be a landing page or login page. You must have an
+ * externally facing fully developed website." Anchors also did nothing at all
+ * from any other page, which is how /terms had a header whose links went
+ * nowhere.
+ */
 const LINKS = [
-  { href: '#how', label: 'How it works' },
-  { href: '#platform', label: 'The platform' },
-  { href: '#brands', label: 'Brands' },
+  { href: '/creators', label: 'For creators' },
+  { href: '/brands', label: 'For brands' },
+  { href: '/how-it-works', label: 'How it works' },
+  { href: '/about', label: 'About' },
+  { href: '/faq', label: 'FAQ' },
+  { href: '/contact', label: 'Contact' },
 ];
 
 export function SiteNav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+
+  /**
+   * Apply, from wherever you are.
+   *
+   * `focusApplyForm` scrolls to the form in the home page's hero and returns
+   * false when that form is not on the page. It now IS on six other pages'
+   * headers — so on About or the FAQ, "Apply" silently did nothing. Where there
+   * is no form, go to the one at /apply.
+   */
+  const apply = () => {
+    if (!focusApplyForm()) void navigate('/apply');
+  };
 
   // The bar is transparent over the hero and gains a background once you
   // scroll, so the header never fights the headline for attention.
@@ -35,7 +61,9 @@ export function SiteNav() {
       if (e.key === 'Escape') setOpen(false);
     };
     const onResize = () => {
-      if (window.innerWidth >= 768) setOpen(false);
+      /* 1024, matching the `lg:hidden` on the button that opens it. At 768 this
+         closed the menu at a width where the links are still only inside it. */
+      if (window.innerWidth >= 1024) setOpen(false);
     };
     window.addEventListener('keydown', onKey);
     window.addEventListener('resize', onResize);
@@ -56,19 +84,21 @@ export function SiteNav() {
     >
       <Container>
         <nav className="flex h-16 items-center justify-between gap-4">
-          <a href="#top" className="shrink-0" aria-label="WurxMediaHub home">
+          <Link to="/" className="shrink-0" aria-label="WurxMediaHub home">
             <WurxMark />
-          </a>
+          </Link>
 
-          <ul className="hidden items-center gap-1 md:flex">
+          {/* `lg`, not `md`: six page links and the sign-in cluster do not fit
+              a tablet. Below that they are in the menu button beside them. */}
+          <ul className="hidden items-center gap-1 lg:flex">
             {LINKS.map((l) => (
               <li key={l.href}>
-                <a
-                  href={l.href}
-                  className="rounded-lg px-3 py-2 text-sm text-muted transition-colors duration-200 ease-brand hover:text-accent"
+                <Link
+                  to={l.href}
+                  className="text-muted hover:text-accent ease-brand rounded-lg px-3 py-2 text-sm transition-colors duration-200"
                 >
                   {l.label}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
@@ -91,7 +121,7 @@ export function SiteNav() {
             <Button
               size="sm"
               className="hidden sm:inline-flex"
-              onClick={() => focusApplyForm()}
+              onClick={apply}
             >
               Apply
             </Button>
@@ -101,7 +131,7 @@ export function SiteNav() {
               aria-expanded={open}
               aria-controls="mobile-menu"
               aria-label={open ? 'Close menu' : 'Open menu'}
-              className="grid size-10 place-items-center rounded-full border border-line bg-surface-1/60 text-muted transition-colors duration-200 ease-brand hover:border-line-interactive hover:text-accent md:hidden"
+              className="border-line bg-surface-1/60 text-muted hover:border-line-interactive hover:text-accent ease-brand grid size-10 place-items-center rounded-full border transition-colors duration-200 lg:hidden"
             >
               {open ? <X size={17} aria-hidden /> : <Menu size={17} aria-hidden />}
             </button>
@@ -117,19 +147,19 @@ export function SiteNav() {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden border-t border-line md:hidden"
+            className="border-line overflow-hidden border-t lg:hidden"
           >
             <Container>
               <ul className="flex flex-col gap-1 py-4">
                 {LINKS.map((l) => (
                   <li key={l.href}>
-                    <a
-                      href={l.href}
+                    <Link
+                      to={l.href}
                       onClick={() => setOpen(false)}
-                      className="block rounded-lg px-3 py-3 text-[0.9375rem] text-muted transition-colors duration-200 ease-brand hover:bg-surface-2 hover:text-accent"
+                      className="text-muted hover:bg-surface-2 hover:text-accent ease-brand block rounded-lg px-3 py-3 text-[0.9375rem] transition-colors duration-200"
                     >
                       {l.label}
-                    </a>
+                    </Link>
                   </li>
                 ))}
                 <li className="pt-2">
@@ -138,7 +168,7 @@ export function SiteNav() {
                     onClick={() => {
                       setOpen(false);
                       // Let the menu finish collapsing before scrolling.
-                      window.setTimeout(focusApplyForm, 300);
+                      window.setTimeout(apply, 300);
                     }}
                   >
                     Apply to join

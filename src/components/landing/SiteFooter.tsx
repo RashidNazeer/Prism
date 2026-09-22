@@ -15,76 +15,94 @@ export function SiteFooter() {
             </p>
           </div>
 
-          <nav className="flex gap-14 text-sm" aria-label="Footer">
+          {/*
+            THREE COLUMNS, and every page of the website is in one of them.
+            A reviewer checking "fully developed website" reads the footer to
+            see how much site there is; so does anyone lost on a sub-page.
+          */}
+          <nav className="grid grid-cols-2 gap-10 text-sm sm:flex sm:gap-14" aria-label="Footer">
             <div>
-              <h2 className="font-mono text-[0.6875rem] tracking-[0.16em] text-faint uppercase">
+              <h2 className="text-faint font-mono text-[0.6875rem] tracking-[0.16em] uppercase">
                 Platform
               </h2>
               <ul className="mt-4 space-y-2.5">
-                {/*
-                  ABSOLUTE, not bare fragments. `#how` scrolls to a section of
-                  the LANDING page, so from /terms or /privacy — which reuse
-                  this footer — it was a link that did nothing at all. `/#how`
-                  goes home and then to the section.
-                */}
+                {[
+                  { to: '/creators', label: 'For creators' },
+                  { to: '/brands', label: 'For brands' },
+                  { to: '/how-it-works', label: 'How it works' },
+                  { to: '/faq', label: 'FAQ' },
+                ].map((l) => (
+                  <li key={l.to}>
+                    <Link to={l.to} className="text-muted hover:text-accent transition-colors">
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h2 className="text-faint font-mono text-[0.6875rem] tracking-[0.16em] uppercase">
+                Company
+              </h2>
+              <ul className="mt-4 space-y-2.5">
                 <li>
-                  <a href="/#how" className="text-muted transition-colors hover:text-accent">
-                    How it works
-                  </a>
+                  <Link to="/about" className="text-muted hover:text-accent transition-colors">
+                    About
+                  </Link>
                 </li>
                 <li>
-                  <a href="/#platform" className="text-muted transition-colors hover:text-accent">
-                    Features
+                  <Link to="/contact" className="text-muted hover:text-accent transition-colors">
+                    Contact
+                  </Link>
+                </li>
+                <li>
+                  <a
+                    href="https://wurxmedia.com"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="text-muted hover:text-accent transition-colors"
+                  >
+                    Wurx Media
                   </a>
                 </li>
                 <li>
                   <button
                     type="button"
-                    onClick={() => focusApplyForm()}
-                    className="text-muted transition-colors hover:text-accent"
+                    onClick={() => focusApplyForm() || window.location.assign('/apply')}
+                    className="text-muted hover:text-accent transition-colors"
                   >
                     Apply
                   </button>
                 </li>
                 <li>
-                  <Link to="/login" className="text-muted transition-colors hover:text-accent">
+                  <Link to="/login" className="text-muted hover:text-accent transition-colors">
                     Sign in
                   </Link>
                 </li>
               </ul>
             </div>
             <div>
-              <h2 className="font-mono text-[0.6875rem] tracking-[0.16em] text-faint uppercase">
-                Company
+              <h2 className="text-faint font-mono text-[0.6875rem] tracking-[0.16em] uppercase">
+                Legal
               </h2>
               <ul className="mt-4 space-y-2.5">
-                <li>
-                  <a
-                    href="https://wurxmedia.com"
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="text-muted transition-colors hover:text-accent"
-                  >
-                    Wurx Media
-                  </a>
-                </li>
                 {/*
                   LINKED, not merely reachable. An app reviewer looks for these
                   in the footer of the site itself; a URL that only exists in a
                   form field reads as one made for the form.
                 */}
                 <li>
-                  <Link to="/privacy" className="text-muted transition-colors hover:text-accent">
+                  <Link to="/privacy" className="text-muted hover:text-accent transition-colors">
                     Privacy
                   </Link>
                 </li>
                 <li>
-                  <Link to="/terms" className="text-muted transition-colors hover:text-accent">
+                  <Link to="/terms" className="text-muted hover:text-accent transition-colors">
                     Terms
                   </Link>
                 </li>
                 <li>
-                  <Link to="/tiktok" className="text-muted transition-colors hover:text-accent">
+                  <Link to="/tiktok" className="text-muted hover:text-accent transition-colors">
                     Connecting TikTok
                   </Link>
                 </li>
