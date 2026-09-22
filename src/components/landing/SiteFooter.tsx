@@ -83,6 +83,11 @@ export function SiteFooter() {
                     Terms
                   </Link>
                 </li>
+                <li>
+                  <Link to="/tiktok" className="text-muted transition-colors hover:text-accent">
+                    Connecting TikTok
+                  </Link>
+                </li>
               </ul>
             </div>
           </nav>

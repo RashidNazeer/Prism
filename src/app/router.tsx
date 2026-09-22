@@ -327,6 +327,21 @@ export const router = createBrowserRouter([
     HydrateFallback: RouteFallback,
     lazy: lazyRoute(() => import('@/routes/legal/Privacy'), 'Privacy'),
   },
+  /*
+   * And the third one, added 2026-09-01 after the Display API app was rejected.
+   *
+   * TikTok require that the website URL on a submission is "an externally
+   * facing fully developed website" and "cannot be a landing page or login
+   * page". Ours was the marketing page, and no signed-out page anywhere
+   * described the TikTok connection at all — so a reviewer could read that we
+   * sell a creator platform but could not see the feature they were reviewing.
+   * This is the URL that submission should name.
+   */
+  {
+    path: '/tiktok',
+    HydrateFallback: RouteFallback,
+    lazy: lazyRoute(() => import('@/routes/legal/TikTokConnection'), 'TikTokConnection'),
+  },
   // /signup is the same screen, and deliberately NOT behind the
   // "already signed in? go home" guard.
   //

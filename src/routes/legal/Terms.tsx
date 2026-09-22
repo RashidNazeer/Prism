@@ -21,17 +21,25 @@ export function Terms() {
   return (
     <LegalPage title="Terms of Service" updated={LEGAL_UPDATED}>
       <p>
-        These terms cover your use of {PRODUCT_NAME}, the platform {LEGAL_NAME} runs for the
-        creators who work with our TikTok Shop brands. By applying for an account, or by using
-        one, you agree to them. If you do not agree, do not use the platform.
+        These terms cover your use of {PRODUCT_NAME}, the platform {LEGAL_NAME} runs for
+        independent creators who take paid work from our TikTok Shop brands. Applications are
+        open: any creator who meets the conditions in &ldquo;Who can use it&rdquo; below can
+        apply. By applying for an account, or by using one, you agree to them. If you do not
+        agree, do not use the platform.
       </p>
 
       <h2>What this platform is</h2>
       <p>
-        {PRODUCT_NAME} is a private workspace, not a public marketplace. {LEGAL_NAME} works with
-        a number of brands that sell on TikTok Shop. Approved creators use this platform to see
-        the paid work those brands have available, to take it on, to submit the videos they post,
-        to follow their own sales and commission, and to be paid.
+        {PRODUCT_NAME} is a platform for independent TikTok Shop creators. Anyone can apply from
+        our home page: there is no follower minimum, and a person reads every application.{' '}
+        {LEGAL_NAME} works with a number of brands that sell on TikTok Shop, and approved
+        creators use this platform to see the paid work those brands have available, to take it
+        on, to submit the videos they post, to follow their own sales and commission, and to be
+        paid.
+      </p>
+      <p>
+        Creators are independent. You own and run your own TikTok account, and {LEGAL_NAME} does
+        not operate, manage or post from any creator&rsquo;s account.
       </p>
       <p>
         Access is by approval. Having an account does not entitle you to any particular offer,

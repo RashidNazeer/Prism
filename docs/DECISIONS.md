@@ -2389,3 +2389,37 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   five-card version was cutting "$94,090" off at 1024px. Six in a row needs
   about 135px a card, so below 54rem it becomes three by two rather than six
   squeezed cards with wrapped labels.
+- 2026-09-01: **"Private" is gone from every public page, because TikTok's rule
+  bans the word and we volunteered it.** The Display API app was rejected for
+  "personal or company internal use". TikTok's App Review Guidelines say, under
+  Description, "Apps must not be for private or personal use" — and our scope
+  explanation opened "Wurx Media Hub is a private platform", while `/terms`, the
+  page the submission form tells a reviewer to check, opened "What this platform
+  is" with "a private workspace, not a public marketplace". The product never
+  matched the rejection: creators own their own accounts and only they and our
+  staff see their figures. The words did. `Terms.tsx` now opens on independent
+  creators and open applications, both true of the landing page already, and
+  carries one plain sentence a reviewer cannot miss: creators own their own
+  accounts and Wurx operates none of them. `Privacy.tsx`'s "our own internal
+  rules" became "our staff data handling rules". The "private target" sentence
+  in Privacy was deliberately LEFT — it describes a creator's own contest
+  target, which is the honest meaning of the word, and changing it would have
+  been cargo-culting the fix.
+- 2026-09-01: **`/tiktok` exists because TikTok require a developed site, not a
+  landing page.** Their words: "Your website URL cannot be a landing page or
+  login page. You must have an externally facing fully developed website." We
+  submitted the bare marketing page, and no signed-out page anywhere described
+  the connection being applied for — so a reviewer could read that we sell a
+  creator platform but could not see the feature under review. The new page
+  states whose account it is, the two permissions, who can see the figures, and
+  how to disconnect. It says the figures are visible to the creator AND to our
+  staff, because `creator_tiktok_videos` carries a staff SELECT policy: "only
+  you can see them" reads better and is false, and describing less access than
+  you take is what a reviewer is looking for. Linked from the footer, not merely
+  reachable, for the same reason the other two are.
+- 2026-09-01: **This shipped to production on its own, off `main`, not by
+  deploying `dev`.** `dev` is 39 commits and 7 migrations ahead of production —
+  the whole Paid Collabs consolidation. Rashid's TikTok resubmission needed a
+  copy change on the live site and nothing else, so it went out as copy alone:
+  no migration, no behaviour change, no schema. The bigger "make it live"
+  decision stays open and untouched.

@@ -249,10 +249,10 @@ export function Privacy() {
         cases your browser talks to TikTok, and TikTok sees that request the way it sees any visit.
       </p>
       <p>
-        Our staff can export lists of creators and results to a spreadsheet in order to do their
-        work. Once a file is on somebody&rsquo;s computer it is outside the platform, and we
-        handle those files under our own internal rules rather than under the controls described
-        on this page.
+        Our staff can export lists of the independent creators we work with, and their results,
+        to a spreadsheet in order to do their work. Once a file is on somebody&rsquo;s computer
+        it is outside the platform, and we handle those files under our staff data handling rules
+        rather than under the controls described on this page.
       </p>
       <p>
         We may also disclose information where the law requires it, or to establish or defend a
