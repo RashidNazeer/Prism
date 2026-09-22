@@ -9,14 +9,20 @@ asked to be reminded: *"i will do it later remind me please"*.
    (`TEAM_ACCESS_REQUIRED`) until he connects GitHub `RashidNazeer` under
    Vercel → Account Settings → Authentication. Until then every dev deploy
    goes through the CLI route in OPERATIONS (Vercel section). PARKED 45.
-2. **TikTok: both rejected fields are answered and on dev** (2026-09-22). He
+2. **TikTok: the website is LIVE on production (2026-09-23, `d3f1555`) and the
+   only thing left is his resubmission.** Steps: OPERATIONS, "Resubmitting the
+   TikTok app". He still has to create `support@wurxmedia.com` first, and to
+   give the reviewer the connected creator login rather than let them try
+   Connect themselves — production still drives TikTok's sandbox app.
+
+   <details><summary>How it got here (2026-09-22)</summary>He
    chose to build our own site at the address we already use, and to ship the
    public pages to production on their own. **What is needed from him:** read
    the words on dev, and **create the `support@wurxmedia.com` mailbox**, which
    he said on 2026-09-22 he would do — the legal pages send people there and a
    reviewer may test it. Then the pages go onto `main` and he resubmits with
    `public/tiktok-app-icon.png` and `https://wurxmediahub.vercel.app/`.
-   PARKED 27d has the order.
+   PARKED 27d has the order.</details>
 
 3. **Rotate the Euka keys that were pasted into the chat**, then set the new ones with `supabase secrets set EUKA_API_KEY=... EUKA_API_KEYS=...` on dev
    (OPERATIONS, "Euka keys"). Never write a key to a file.

@@ -157,16 +157,29 @@ try {
    * opened at the production address with every request served by the build
    * under test, which is the only way to see what the live site would say.
    */
+  const LIVE = 'https://wurxmediahub.vercel.app';
+  const live = new URL(BASE).host === new URL(LIVE).host;
   const here = await page.evaluate(() => {
     const m = document.querySelector('meta[name="robots"]');
     return m ? m.content : null;
   });
-  check(/noindex/.test(here || ''), 'on this address the pages stay out of search engines', here ?? 'no robots meta at all');
+  /* The live site's public pages are meant to be found; every other address
+     this can be pointed at — dev, a local preview — must not be. */
+  check(live ? !/noindex/.test(here || '') : /noindex/.test(here || ''),
+    live ? 'the live site lets search engines in' : 'on this address the pages stay out of search engines',
+    here ?? 'no robots meta at all');
 
-  const LIVE = 'https://wurxmediahub.vercel.app';
-  const asLive = await ctx.newPage();
+  /*
+   * WHEN THE TARGET IS ALREADY THE LIVE SITE, read it directly. Serving the
+   * live address from BASE while BASE *is* that address is a request that
+   * routes to itself: the handler aborts and the navigation fails, which is a
+   * failing check about nothing. Run against production, the real pages answer
+   * the question on their own.
+   */
+  const onLive = live;
+  const asLive = onLive ? page : await ctx.newPage();
   let served = 0, servedFailed = null;
-  await asLive.route(`${LIVE}/**`, async (route) => {
+  if (!onLive) await asLive.route(`${LIVE}/**`, async (route) => {
     const url = new URL(route.request().url());
     try {
       const r = await fetch(`${BASE}${url.pathname}${url.search}`);
@@ -196,9 +209,9 @@ try {
     }));
     const indexable = /index/.test(got.robots) && !/noindex/.test(got.robots);
     check(indexable === want, `on the live address, ${label} is ${want ? 'indexable' : 'kept out of search'}`,
-      `${path} says "${got.robots}" · tab "${got.title}" · ${served} requests served from the build under test${servedFailed ? ` · could not serve: ${servedFailed}` : ''}`);
+      `${path} says "${got.robots}" · tab "${got.title}" · ${onLive ? 'read from the live site itself' : `${served} requests served from the build under test${servedFailed ? ` · could not serve: ${servedFailed}` : ''}`}`);
   }
-  await asLive.close();
+  if (!onLive) await asLive.close();
 } finally {
   await browser.close();
 }

@@ -881,12 +881,23 @@ today. **Creators must never see the budget or the ROAS target.**
 
 ## 27d. REJECTED AGAIN 2026-09-15: the website, and the icon
 
-**Status: BOTH FIELDS ANSWERED AND ON DEV (2026-09-22, `65e9872`).** Rashid
-chose option A, our own site at the address we already use, and "public pages
-only" to production. Six pages built, one icon everywhere, `verify:site` 74/74
-against the live dev site.
+**Status: LIVE ON PRODUCTION (2026-09-23, `d3f1555`), WAITING ON RASHID TO
+RESUBMIT.** Rashid said "make it live". The public pages and the icons are on
+`main` and deployed; `verify:site` is 86/86 against **wurxmediahub.vercel.app
+itself**. Twenty-eight files, no migration, no Paid Collabs, no client links —
+dev stays far ahead and the full "make all of it live" decision is untouched.
 
-**What is left, in order:**
+**The deploy had to go through the CLI**, with the PRODUCTION project's own
+`.vercel/project.json` (`prj_OLeguFubM4HJApvxEbgDqCpzwNSO`, projectName
+`wurxmediahub`) and `vercel deploy --prod`. The git deploy from the push to
+`main` came back BLOCKED, same `TEAM_ACCESS_REQUIRED` as dev: PARKED 45, and
+still Rashid's to fix.
+
+**What is left: he resubmits.** The exact portal steps are in OPERATIONS,
+"Resubmitting the TikTok app". The two prerequisites that were his are: the
+site live on production (done) and `support@wurxmedia.com` existing (his).
+
+**The history of it, in order:**
 1. ~~Rashid reads the words.~~ He declined ("i don't have enough time") and sent
    wurxmedia.com and wurxmedia.com/content instead, 2026-09-22. Both were read
    and the site was corrected against them: the six services, the case studies,

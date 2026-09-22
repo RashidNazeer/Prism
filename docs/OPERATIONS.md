@@ -1690,3 +1690,42 @@ returns `{ upstreamStatus, payload }`, Euka's answer untouched.
 ```bash
 pnpm verify:followers   # 16 checks. Needs a preview server and SUPABASE_SERVICE_KEY
 ```
+
+## Resubmitting the TikTok app (written 2026-09-23)
+
+Only Rashid can send it. Everything technical is done and live.
+
+**Prerequisites, both checked before he opens the portal:**
+- The website is live on production — done, `d3f1555`, `verify:site` 86/86
+  against `wurxmediahub.vercel.app` itself.
+- **`support@wurxmedia.com` must exist and be read.** Both legal pages send
+  people there and a reviewer may test it. He said on 2026-09-22 he would
+  create it. The Contact page uses `rajil@wurxmedia.com`, which wurxmedia.com
+  publishes, so that address is already real.
+
+**In the portal** (developers.tiktok.com → Manage apps → WurxMedia Hub):
+
+| field | what to do |
+| --- | --- |
+| App icon | upload `https://wurxmediahub.vercel.app/tiktok-app-icon.png` (1024×1024) |
+| Website URL | `https://wurxmediahub.vercel.app/` — the root, now a real site, NOT `/tiktok` as the 27 note said |
+| Terms URL | `https://wurxmediahub.vercel.app/terms`, unchanged |
+| Privacy URL | `https://wurxmediahub.vercel.app/privacy`, unchanged |
+| Products | Login Kit only. Change nothing |
+| Scopes | `user.info.basic` + `video.list` only. Change nothing |
+| Description, scope explanation | **leave exactly as they are** — the second rejection did not mention them, so they passed. Editing text that passed only creates new risk |
+| Reason box | the paragraph in PARKED 27d |
+| Demo access | the connected creator login, see below |
+
+**GIVE THE REVIEWER A DEMO LOGIN, and this is not optional politeness.**
+Production still drives the SANDBOX TikTok app (`sbaw82kr6qc82ia76e`, PARKED
+27b/27c). A reviewer who signs up on the live site and presses Connect with
+their own account is not on the sandbox's target-user list, so it fails on the
+exact screen under review. Rashid chose on 2026-09-23 to hand them the already
+connected creator account rather than swap the key first. **Do not swap the key
+without him asking:** whether an unapproved app's own key behaves better is
+undocumented, and the swap changes a live credential.
+
+**Afterwards:** reviews take days to two weeks. If it is rejected again, get
+their note verbatim BEFORE changing anything — on this app their stated reason
+has twice named the wrong field.
