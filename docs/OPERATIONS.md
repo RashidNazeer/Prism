@@ -1714,7 +1714,7 @@ Only Rashid can send it. Everything technical is done and live.
 | Products | Login Kit only. Change nothing |
 | Scopes | `user.info.basic` + `video.list` only. Change nothing |
 | Description, scope explanation | **leave exactly as they are** — the second rejection did not mention them, so they passed. Editing text that passed only creates new risk |
-| Reason box | the paragraph in PARKED 27d |
+| Reason box | **120 CHARACTERS, not words.** Rashid hit the limit on 2026-09-23 with a 534-character draft. Use: `Both fixed: the icon now matches our website, and the website URL is a full multi-page site. Scopes unchanged.` (110) |
 | Demo access | the connected creator login, see below |
 
 **GIVE THE REVIEWER A DEMO LOGIN, and this is not optional politeness.**
@@ -1725,6 +1725,11 @@ exact screen under review. Rashid chose on 2026-09-23 to hand them the already
 connected creator account rather than swap the key first. **Do not swap the key
 without him asking:** whether an unapproved app's own key behaves better is
 undocumented, and the swap changes a live credential.
+
+**MEASURE ANYTHING THAT GOES IN A PORTAL BOX.** The reason box takes 120
+characters. The public description took 115 on the first submission, which
+should have been the clue. A draft that does not fit is not a small
+inconvenience: it is discovered while he is in the form, mid-submission.
 
 **Afterwards:** reviews take days to two weeks. If it is rejected again, get
 their note verbatim BEFORE changing anything — on this app their stated reason
