@@ -35,19 +35,94 @@ export const COMPANY = {
   email: 'rajil@wurxmedia.com',
   site: 'https://wurxmedia.com',
   founders: 'Rajil and Usman',
+  /** Their own line, at the foot of every page of wurxmedia.com. */
+  tagline: 'The TikTok Shop growth partner for ambitious DTC brands.',
 } as const;
 
 /** The figures on wurxmedia.com. Ours to repeat, not to inflate. */
 export const COMPANY_FACTS = [
   { value: '$100M+', label: 'GMV generated for brand partners' },
   { value: '50+', label: 'Brands at 7 and 8 figures' },
-  { value: '1,000+', label: 'Vetted creators in the network' },
+  { value: '1,000+', label: 'Creators in the network' },
+  { value: '2B+', label: 'Views on creator content' },
+] as const;
+
+/**
+ * The six services, from wurxmedia.com/content, "Our Services · One connected
+ * team". Condensed, and nothing added: a reviewer asked for "information about
+ * our web and services", and the brands reading this page are buying these.
+ *
+ * TWO OF THEM ARE WHAT THIS HUB IS. "Paid Collaborations" is the deal a creator
+ * signs here, and "Creator Community" is the Brand Hub itself — which is why
+ * the hub is not sold separately and this page does not price it.
+ */
+export const SERVICES = [
+  {
+    title: 'Shop Management',
+    body: 'The day-to-day operation of a TikTok Shop: listings, pricing, promotions, inventory sync and compliance — the layer that decides whether the traffic content earns actually converts.',
+  },
+  {
+    title: 'Affiliate Program',
+    body: 'Recruiting, onboarding and managing affiliates at scale, with the commission structures and retention flows that keep them posting.',
+  },
+  {
+    title: 'Paid Collaborations',
+    body: 'Flat-fee campaigns with hand-picked creators, for guaranteed output against a specific angle rather than waiting on organic affiliate volume. This is the deal a creator signs in the hub.',
+  },
+  {
+    title: 'Paid Media',
+    body: 'GMV Max campaigns run with budget pacing and creative rotation, and the judgement to kill or scale a piece of content. This is the ad spend a creator sees behind their own videos.',
+  },
+  {
+    title: 'Creator Community',
+    body: 'A private community per brand, with the incentives and coaching that keep creators posting past month two. The Brand Hub is where it lives.',
+  },
+  {
+    title: 'Meta Creative Pipeline',
+    body: 'The TikTok content that wins is repurposed into Meta ad creative, so one production budget feeds two channels.',
+  },
+] as const;
+
+/** Case studies as wurxmedia.com states them. Figures theirs, not rounded up. */
+export const RESULTS = [
+  { value: '$12.7M', label: 'Cutler Nutrition, TikTok Shop GMV in 12 months' },
+  { value: '3,144%', label: 'M3 Naturals, monthly GMV growth in 6 months' },
+  { value: '$5.5M+', label: 'BrüMate, GMV generated, #1 in Drinkware' },
+  { value: '213%', label: 'Inno Supps, off-site GMV lift from TikTok Shop content' },
 ] as const;
 
 /* ------------------------------------------------------ for creators ----- */
 
 export const CREATOR_INTRO =
   'Wurx Media Hub is where the creators who post for our brands see their own numbers. Not an estimate, not a screenshot somebody sent you at the end of the month: the GMV your videos actually made, the commission on it, and the ad money we put behind your content.';
+
+/**
+ * What working with Wurx is actually like, from wurxmedia.com/content: a brief
+ * and a sample rather than a cold DM, a private community per brand with
+ * coaching in it, and ad rights agreed at the brief stage.
+ *
+ * THE AD RIGHTS LINE IS A DISCLOSURE, not a selling point, and it stays in
+ * plain words. A creator is entitled to know before they post that their video
+ * may be run as an advert.
+ */
+export const CREATOR_WORKING = [
+  {
+    title: 'A brief and a sample, not a cold DM',
+    body: 'Before you film, you get the angle the brand is testing, what to say and what to avoid, and the product itself where the brand is sending samples.',
+  },
+  {
+    title: 'A community for each brand, with coaching in it',
+    body: 'Every creator on a brand goes into that brand’s hub together: the brief, the contests, the leaderboard and our team, rather than a group chat that goes quiet in week three.',
+  },
+  {
+    title: 'Your best video may be run as an advert',
+    body: 'We agree ad rights at the brief stage, so a video that performs can be put behind paid spend instead of dying in the feed. You can see that spend in the hub, on your own video.',
+  },
+  {
+    title: 'Paid on the deal, from the brand’s budget',
+    body: 'A paid collaboration is a flat fee for an agreed number of videos. Wurx pays you; the money comes out of the brand’s campaign budget, which is why the hub tracks both.',
+  },
+] as const;
 
 export const CREATOR_POINTS = [
   {
@@ -87,7 +162,7 @@ export const CREATOR_PROMISES = [
 /* -------------------------------------------------------- for brands ----- */
 
 export const BRAND_INTRO =
-  'Wurx Media runs TikTok Shop creator programmes for 7 and 8 figure brands. The hub is the machinery behind that work: the creator roster, the briefs, the contests, and the numbers that say which creator and which video actually produced revenue.';
+  'Wurx Media is a full-service TikTok Shop agency: shop management, affiliate programmes, paid collaborations, GMV Max media, a creator community per brand, and the pipeline that turns winning TikTok content into Meta ad creative. Wurx Media Hub is the machinery behind the creator half of that — the roster, the briefs, the contests, and the numbers that say which creator and which video actually produced revenue.';
 
 export const BRAND_POINTS = [
   {
@@ -147,7 +222,7 @@ export const CREATOR_JOURNEY = [
 export const FAQ = [
   {
     q: 'Who can apply?',
-    a: 'Any TikTok creator who wants to post for the brands we work with. We look at every application, and we are honest when a brand is not a fit — we would rather tell you than leave you waiting.',
+    a: 'Any TikTok creator who wants to post for the brands we work with. There is no follower minimum written down: what we look at is your account, your niche and your videos against the brands hiring that month. We are honest when a brand is not a fit — we would rather tell you than leave you waiting.',
   },
   {
     q: 'Does it cost anything?',
@@ -171,7 +246,15 @@ export const FAQ = [
   },
   {
     q: 'How and when do I get paid?',
-    a: 'On the deal you agreed with us before you posted: a fee for an agreed number of videos, or a retainer. Payments are made by Wurx Media, and the hub shows each deal as delivered and paid so you can see where yours stands.',
+    a: 'On the deal you agreed before you posted: a flat fee for an agreed number of videos, or a retainer. Wurx pays you, out of the brand’s campaign budget, and the hub shows each deal as delivered and as paid so you can see where yours stands rather than asking.',
+  },
+  {
+    q: 'Do I get the product?',
+    a: 'Where a brand is sending samples, that is arranged with your deal before you film — sample flow is part of how we run a campaign, not an afterthought. The brief says what is coming and what the brand wants shown.',
+  },
+  {
+    q: 'Can my video be used as an advert?',
+    a: 'Yes, and we agree that at the brief stage rather than afterwards. A video that performs organically can be put behind paid spend, which is how a good video keeps earning instead of disappearing in a few days. The hub shows you the ad spend sitting behind your own videos.',
   },
   {
     q: 'Can I work with other brands at the same time?',

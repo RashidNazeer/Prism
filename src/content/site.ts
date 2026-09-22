@@ -8,10 +8,15 @@
 
 /* ---------------------------------------------------------------- stats --- */
 
-/** Headline numbers. Confirmed by Rashid on 2026-07-29. */
+/**
+ * Headline numbers. Confirmed by Rashid on 2026-07-29, and re-checked against
+ * wurxmedia.com on 2026-09-22 at his request ("read everything and update if
+ * something needs to be updated"): the official site says 1,000 creators, not
+ * 5K+, and a TikTok reviewer reads both sites. The other two already matched.
+ */
 export const STATS = [
   { value: '100M+', label: 'Est. revenue generated' },
-  { value: '5K+', label: 'Creators' },
+  { value: '1,000+', label: 'Creators' },
   { value: '2B+', label: 'Views generated' },
 ] as const;
 

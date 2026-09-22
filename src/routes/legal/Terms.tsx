@@ -1,5 +1,11 @@
 import { LegalPage } from '@/routes/legal/LegalPage';
-import { CONTACT_EMAIL, LEGAL_NAME, LEGAL_UPDATED, PRODUCT_NAME } from '@/routes/legal/legal-contact';
+import {
+  CONTACT_EMAIL,
+  LEGAL_ADDRESS,
+  LEGAL_NAME,
+  LEGAL_UPDATED,
+  PRODUCT_NAME,
+} from '@/routes/legal/legal-contact';
 
 /**
  * The terms a creator works under.
@@ -204,6 +210,9 @@ export function Terms() {
       <p>
         Questions about these terms, or about anything on the platform, go to{' '}
         <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+      </p>
+      <p>
+        These terms are between you and {LEGAL_NAME}, {LEGAL_ADDRESS}.
       </p>
     </LegalPage>
   );

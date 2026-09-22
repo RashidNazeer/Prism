@@ -2,7 +2,12 @@ import { Link } from 'react-router';
 import { Section, Reveal, Eyebrow } from '@/components/layout/Section';
 import { SitePage, SiteCard } from '@/components/site/SitePage';
 import { ButtonLink } from '@/components/ui/Button';
-import { CREATOR_INTRO, CREATOR_POINTS, CREATOR_PROMISES } from '@/content/site-pages';
+import {
+  CREATOR_INTRO,
+  CREATOR_POINTS,
+  CREATOR_PROMISES,
+  CREATOR_WORKING,
+} from '@/content/site-pages';
 
 /**
  * For creators: what the hub gives somebody who posts for one of our brands.
@@ -24,6 +29,22 @@ export function Creators() {
       <Section>
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {CREATOR_POINTS.map((p, i) => (
+            <Reveal key={p.title} delay={i * 0.06}>
+              <SiteCard title={p.title}>{p.body}</SiteCard>
+            </Reveal>
+          ))}
+        </div>
+      </Section>
+
+      <Section className="border-line border-t">
+        <Reveal>
+          <Eyebrow>Working with us</Eyebrow>
+          <h2 className="font-display mt-5 max-w-3xl text-[clamp(1.5rem,3.5vw,2.25rem)] font-extrabold tracking-[-0.02em]">
+            What a collaboration actually looks like
+          </h2>
+        </Reveal>
+        <div className="mt-10 grid gap-5 md:grid-cols-2">
+          {CREATOR_WORKING.map((p, i) => (
             <Reveal key={p.title} delay={i * 0.06}>
               <SiteCard title={p.title}>{p.body}</SiteCard>
             </Reveal>

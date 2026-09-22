@@ -21,9 +21,12 @@ export function About() {
           <Reveal>
             <div className="text-muted grid max-w-2xl gap-5 text-lg leading-relaxed">
               <p>
-                We run creator programmes on TikTok Shop: finding the creators, briefing them,
-                paying them, and putting paid spend behind the content that works. Over that work we
-                have generated more than $100M in GMV for our brand partners, across 50+ brands.
+                We are a full-service TikTok Shop agency. We run the shop itself — listings,
+                pricing, promotions, compliance — the affiliate programme, paid collaborations with
+                hand-picked creators, GMV Max media, a private creator community for each brand,
+                and the pipeline that turns winning TikTok videos into Meta ad creative. Over that
+                work we have generated more than $100M in GMV for our brand partners, across 50+
+                brands, with a network of 1,000 creators and more than 2B views on their content.
               </p>
               <p>
                 The hub came out of a problem we could not solve with spreadsheets. A creator posts
@@ -38,7 +41,20 @@ export function About() {
               </p>
               <p>
                 Wurx Media is founder-led: {COMPANY.founders} run the playbook themselves rather
-                than handing it to an account manager.
+                than handing it to an account manager. We have worked with three major e-commerce
+                aggregators, and taken brands to number one in their TikTok Shop category.
+              </p>
+              <p className="text-faint text-base">
+                {COMPANY.tagline} The agency side, its case studies and a strategy call are at{' '}
+                <a
+                  href={COMPANY.site}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="text-accent underline-offset-4 hover:underline"
+                >
+                  wurxmedia.com
+                </a>
+                .
               </p>
             </div>
           </Reveal>
@@ -102,7 +118,7 @@ export function About() {
         <Reveal>
           <Eyebrow>By the numbers</Eyebrow>
         </Reveal>
-        <dl className="mt-8 grid gap-5 sm:grid-cols-3">
+        <dl className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {COMPANY_FACTS.map((f, i) => (
             <Reveal key={f.label} delay={i * 0.06}>
               <div className="border-line bg-surface-1 rounded-2xl border p-7">
