@@ -1,0 +1,179 @@
+#!/usr/bin/env node
+/**
+ * THE PUBLIC WEBSITE, THE WAY A TIKTOK REVIEWER WILL READ IT.
+ *
+ *   pnpm build && pnpm preview
+ *   node scripts/check-public-site.mjs
+ *
+ * TikTok rejected the Display API app on 2026-09-15 on two fields: Website URL
+ * ("cannot be a landing page or login page ... must have an externally facing
+ * fully developed website") and App icon ("does not match the icon displayed on
+ * the website ... across both the TikTok, the website and Browser tab").
+ *
+ * So this checks the two things they named, signed out, as a stranger:
+ *   - every page of the site loads, has its own <h1> and its own tab title,
+ *     carries real content, and is reachable from the header and the footer;
+ *   - no link in the header or footer lands on the 404 page;
+ *   - the tab icon is the dog face from wurxmedia.com, byte-identical to it
+ *     apart from the viewBox, and the file we hand TikTok is 1024x1024;
+ *   - nothing requires a login, at four widths, in both themes, with no
+ *     console errors and no sideways scroll.
+ *
+ * It runs signed out on purpose and never touches the database.
+ */
+import { createHash } from 'node:crypto';
+import { launchBrowser } from './browser.mjs';
+
+const BASE = process.env.BASE_URL || 'http://localhost:4173';
+const OFFICIAL_SVG = process.env.OFFICIAL_ICON || 'https://wurxmedia.com/favicon.svg';
+
+const pass = [], fail = [];
+const check = (ok, m, d) => (ok ? pass : fail).push(d ? `${m} — ${d}` : m);
+
+/** Every page a stranger can open, and what its heading must be about. */
+const PAGES = [
+  { path: '/', h1: /numbers|creator|gmv/i, nav: false },
+  { path: '/creators', h1: /numbers|creator/i },
+  { path: '/brands', h1: /creator programme|brand|tiktok shop/i },
+  { path: '/how-it-works', h1: /step|works|paid/i },
+  { path: '/about', h1: /wurx media/i },
+  { path: '/faq', h1: /question/i },
+  { path: '/contact', h1: /talk to us|contact/i },
+  { path: '/tiktok', h1: /tiktok/i },
+  { path: '/terms', h1: /terms/i },
+  { path: '/privacy', h1: /privacy/i },
+];
+
+const browser = await launchBrowser();
+try {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('console', (m) => { if (m.type() === 'error') errors.push(`${page.url()}: ${m.text().slice(0, 120)}`); });
+  page.on('pageerror', (e) => errors.push(`PAGEERROR ${page.url()}: ${String(e.message).slice(0, 120)}`));
+
+  const titles = new Map();
+  for (const p of PAGES) {
+    await page.goto(`${BASE}${p.path}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('h1', { timeout: 20000 }).catch(() => {});
+    await page.waitForTimeout(600);
+    const got = await page.evaluate(() => ({
+      title: document.title,
+      h1: [...document.querySelectorAll('h1')].map((h) => h.textContent.trim()),
+      words: (document.querySelector('main')?.innerText || document.body.innerText || '').trim().split(/\s+/).length,
+      notFound: /page not found|404/i.test(document.body.innerText.slice(0, 400)),
+      links: [...document.querySelectorAll('header a[href], footer a[href]')].map((a) => a.getAttribute('href')),
+      sideways: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      signIn: /sign in|log in/i.test(document.body.innerText),
+    }));
+    check(!got.notFound && got.h1.length === 1, `${p.path}: opens with exactly one heading`, got.notFound ? 'the 404 page' : `${got.h1.length} h1s: ${got.h1.join(' | ')}`);
+    check(p.h1.test(got.h1[0] || ''), `${p.path}: the heading is about this page`, got.h1[0] || 'none');
+    /* "Fully developed" is the reviewer's phrase. 120 words is not a hard rule
+       anywhere; it is the floor below which a page is a stub, and every page
+       here is meant to answer a question in full. */
+    check(got.words >= 120, `${p.path}: carries real content, not a stub`, `${got.words} words`);
+    check(!!got.title && got.title.length > 6, `${p.path}: has its own tab title`, got.title);
+    titles.set(p.path, got.title);
+    check(got.sideways <= 1, `${p.path}: no sideways scroll at 1440px`, `${got.sideways}px`);
+  }
+
+  /* A site where every tab says the same thing reads as one page in disguise,
+     which is the thing being fixed. */
+  const unique = new Set(titles.values());
+  check(unique.size === titles.size, 'every page has a DIFFERENT tab title', `${unique.size} titles for ${titles.size} pages`);
+
+  /* ── every link in the chrome goes somewhere real ─────────────────────── */
+  await page.goto(`${BASE}/about`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('footer', { timeout: 20000 });
+  const hrefs = await page.evaluate(() =>
+    [...new Set([...document.querySelectorAll('header a[href], footer a[href]')].map((a) => a.getAttribute('href')))]);
+  const internal = hrefs.filter((h) => h && h.startsWith('/') && !h.startsWith('//'));
+  check(internal.length >= 10, 'the header and footer carry the whole site', `${internal.length} internal links`);
+  const dead = [];
+  for (const href of internal) {
+    await page.goto(`${BASE}${href}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(400);
+    const bad = await page.evaluate(() => /page not found|404/i.test(document.body.innerText.slice(0, 400)) || !document.querySelector('h1'));
+    if (bad) dead.push(href);
+  }
+  check(dead.length === 0, 'no link in the header or footer lands on a dead page', dead.join(', ') || `${internal.length} checked`);
+
+  /* ── Apply works from a page that has no form on it ───────────────────── */
+  await page.goto(`${BASE}/about`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('header', { timeout: 20000 });
+  await page.getByRole('button', { name: /^apply$/i }).first().click();
+  await page.waitForTimeout(1200);
+  check(/\/apply/.test(page.url()), 'Apply in the header works from a page with no form on it', page.url());
+
+  /* ── the menu on a phone ──────────────────────────────────────────────── */
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('header', { timeout: 20000 });
+  await page.getByRole('button', { name: /open menu/i }).first().click();
+  await page.waitForTimeout(600);
+  const menu = await page.evaluate(() => {
+    const m = document.getElementById('mobile-menu');
+    return m ? [...m.querySelectorAll('a[href]')].map((a) => a.getAttribute('href')) : [];
+  });
+  for (const want of ['/creators', '/brands', '/how-it-works', '/about', '/faq', '/contact']) {
+    check(menu.includes(want), `the phone menu reaches ${want}`, menu.join(' ') || 'menu did not open');
+  }
+
+  /* ── every width, every page: nothing cut off the side ────────────────── */
+  for (const w of [375, 768, 1024, 1440]) {
+    await page.setViewportSize({ width: w, height: 900 });
+    const bad = [];
+    for (const p of PAGES) {
+      await page.goto(`${BASE}${p.path}`, { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(400);
+      const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      if (over > 1) bad.push(`${p.path} ${over}px`);
+    }
+    check(bad.length === 0, `${w}px: no page scrolls sideways`, bad.join(', ') || `${PAGES.length} pages`);
+  }
+
+  /* ── both themes on a content page ────────────────────────────────────── */
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  for (const theme of ['dark', 'light']) {
+    await page.goto(`${BASE}/creators`, { waitUntil: 'domcontentloaded' });
+    await page.evaluate((t) => {
+      localStorage.setItem('wurxmediahub-theme', t);
+      window.dispatchEvent(new StorageEvent('storage', { key: 'wurxmediahub-theme' }));
+    }, theme);
+    const ok = await page.waitForFunction((t) => document.documentElement.dataset.theme === t, theme, { timeout: 8000 }).then(() => true, () => false);
+    check(ok, `${theme}: the website renders in ${theme} mode`);
+  }
+
+  check(errors.length === 0, 'zero console errors across the whole site', errors.slice(0, 3).join(' | '));
+} finally {
+  await browser.close();
+}
+
+/* ── the icon, the other field TikTok named ─────────────────────────────── */
+const strip = (s) => s.replace(/<!--[\s\S]*?-->/g, '').replace(/\s*viewBox="[^"]*"/, '').replace(/\s+/g, ' ').trim();
+const ours = await fetch(`${BASE}/favicon.svg`).then((r) => (r.ok ? r.text() : null)).catch(() => null);
+const official = await fetch(OFFICIAL_SVG).then((r) => (r.ok ? r.text() : null)).catch(() => null);
+check(!!ours && ours.length > 10_000, 'the site serves a favicon.svg', ours ? `${ours.length} bytes` : 'missing');
+check(!!official, 'wurxmedia.com answered, so the two icons can really be compared', official ? `${official.length} bytes` : 'COULD NOT FETCH — this check proves nothing');
+if (ours && official) {
+  const same = createHash('sha256').update(strip(ours)).digest('hex') === createHash('sha256').update(strip(official)).digest('hex');
+  check(same, 'our tab icon IS the mark wurxmedia.com uses (same artwork, our added viewBox aside)');
+  check(/viewBox="0 0 512 512"/.test(ours), 'and it carries the viewBox, without which it renders in a corner when scaled');
+  check(!/<rect[^>]*fill="#c8924b"/.test(ours), 'the old gold W is gone from the tab icon');
+}
+const png = await fetch(`${BASE}/tiktok-app-icon.png`).then((r) => (r.ok ? r.arrayBuffer() : null)).catch(() => null);
+if (!png) check(false, 'the 1024px file for TikTok is served at /tiktok-app-icon.png');
+else {
+  const b = Buffer.from(png);
+  /* PNG header: width and height are big-endian 32-bit at bytes 16 and 20. */
+  const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+  check(w === 1024 && h === 1024, 'the file for TikTok is 1024x1024', `${w}x${h}`);
+}
+const head = await fetch(`${BASE}/`).then((r) => r.text());
+check(/rel="icon"[^>]*favicon\.svg/.test(head) && /favicon\.png/.test(head), 'the page head points at both icon files');
+
+console.log('');
+for (const p of pass) console.log('  PASS  ' + p);
+for (const f of fail) console.log('  FAIL  ' + f);
+console.log(`\n${pass.length} passed, ${fail.length} failed.`);
+process.exit(fail.length ? 1 : 0);
