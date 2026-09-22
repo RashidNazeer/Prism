@@ -88,7 +88,8 @@
     "verify:collab-share-ui": "node scripts/check-collab-share-ui.mjs",
     "verify:client-links": "node scripts/check-client-links-ui.mjs",
     "verify:followers": "node scripts/check-followers-column.mjs",
-    "verify:site": "node scripts/check-public-site.mjs"
+    "verify:site": "node scripts/check-public-site.mjs",
+    "verify:brand-search": "node scripts/check-brand-search.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

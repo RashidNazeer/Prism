@@ -2377,6 +2377,46 @@ its videos, both themes, 390px, zero console errors, and a revoked link says so
 in plain words) **and `pnpm verify:client-links`** (18: make, copy, open,
 details, new address, stop).
 
+## Search and filter on a brand's own creator list (2026-09-23)
+
+Rashid: *"we need to let users search the creators there should be search and
+filter functionality without disturbing ui"*. The Creators tab had both; a
+brand's own page had neither, and Penetrex alone lists 41 rows in one month.
+
+**One row above the table**, the same `pc-toolbar` shape the Brands screen and
+the Creators tab already use: a search box, a Filter button, and a count.
+- **Search** covers name, both TikTok handles, category, product, deal and who
+  hired them, from one lower-cased haystack per row built once.
+- **Filters:** payment status, videos (still owed / delivered in full), hired
+  by, and EUKA tier. Every chip carries its own count, and **only values this
+  brand-month really contains get a chip** — a filter for somebody who is not
+  on the brand is a dead end you can click. `data-wx="brand-filters"` on the
+  panel is what the check reads.
+- **"Still owed" is the row's own rule**, not a second one: the status flag
+  `videos === 'Done'` OR delivery having reached the commitment, so the filter
+  and the progress bar in the row can never disagree.
+
+**IT NARROWS THE TABLE AND NOTHING ELSE.** The five cards and the top-videos
+totals describe the brand's month, not the rows on screen: a budget that moved
+while somebody typed a name would be a different number every time. The count
+chip reads "12 of 41 creators" whenever the list is narrowed, so a filtered
+list cannot be mistaken for the whole one, and the check compares the cards
+before and after filtering to prove they held still.
+
+**Their `statusOf` is not what you would guess**, and the first draft of the
+check got it wrong: `payment_status === 'Paid'` is Payment Sent, `videos ===
+'Done'` is **Payment Pending** (the videos are in, the money is not), and
+everything else is Videos in Progress.
+
+**Guarded by `pnpm verify:brand-search`** (31 checks): every expected set is
+computed from `wurxbase.creators` — who matches a typed word, who is on each
+status, who still owes videos, who each person was hired by — then compared
+with the screen. A month with one status only, or nobody outstanding, FAILS as
+"proves nothing". Also: group headings add up, rows renumber from one, two
+filters together narrow further and never wider, the empty state names what was
+searched, Reset all restores, both themes open the panel fully on screen, and
+five widths keep search and Filter usable with no sideways scroll.
+
 ## New Video GMV on the Brands screen, and red ad spend (2026-09-21)
 
 Rashid: *"i want the ad spend column values to be in red color"*, and *"sum

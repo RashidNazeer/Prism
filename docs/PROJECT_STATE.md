@@ -57,6 +57,17 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
 - **Next:** he reads the words, answers the support@ and noindex questions,
   then the public pages go to production on their own and he resubmits.
 
+### Search and filter on a brand's creator list (2026-09-23)
+
+- A search box, a Filter button and a count above a brand's table. Search hits
+  name, handles, category, product, deal and hired-by; filters are payment
+  status, still-owed vs delivered, hired by, and EUKA tier, each chip with its
+  count, and only for values that brand-month contains.
+- **The cards and top-videos totals do not move when the list is narrowed** —
+  they describe the month. The count says "12 of 41 creators" when filtered.
+- **Proven:** `verify:brand-search` 31/31 against the database, both themes,
+  five widths.
+
 ### New Video GMV on the Brands screen, and red ad spend (2026-09-21)
 
 - **A sixth card on the Brands screen, New Video GMV**, in green: every

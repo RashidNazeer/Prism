@@ -2404,7 +2404,105 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
   const wxDealsNow = useMemo(() => wxDealsByPerson(allCreators || brandCreators || creators, month), [allCreators, brandCreators, creators, month]);
   /* WURX-END */
   const sortedCreators = useMemo(() => [...creators].sort((a, b) => (a.hiring_date || '').localeCompare(b.hiring_date || '')), [creators]);
-  const groups = useMemo(() => groupByStatus(sortedCreators), [sortedCreators]);
+
+  /* WURX-ADDED · SEARCHING AND FILTERING ONE BRAND'S LIST.
+     Rashid, 2026-09-23: "we need to let users search the creators there should
+     be search and filter functionality without disturbing ui".
+
+     IT NARROWS THE TABLE AND NOTHING ELSE. The five cards and the top-videos
+     totals describe the brand's month, not the rows you happen to be looking
+     at, and a budget that moved when you typed a name would be a different
+     number every time somebody searched. The count beside the search box says
+     how many of the month's creators are showing, so a narrowed list can never
+     be mistaken for the whole one. */
+  const [wxSearch, setWxSearch] = useState('');
+  const [wxFilterOpen, setWxFilterOpen] = useState(false);
+  const [wxStatusF, setWxStatusF] = useState(null);
+  const [wxHiredByF, setWxHiredByF] = useState(null);
+  const [wxTierF, setWxTierF] = useState(null);
+  const [wxDeliveryF, setWxDeliveryF] = useState(null);
+  const wxFilterRef = useRef(null);
+  const wxActiveFilters = [wxStatusF, wxHiredByF, wxTierF, wxDeliveryF].filter(Boolean).length;
+  const wxResetFilters = () => { setWxStatusF(null); setWxHiredByF(null); setWxTierF(null); setWxDeliveryF(null); };
+
+  /* Close on a click outside or Escape, like their own filter popover. */
+  useEffect(() => {
+    if (!wxFilterOpen) return;
+    const onDown = (e) => { if (wxFilterRef.current && !wxFilterRef.current.contains(e.target)) setWxFilterOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setWxFilterOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
+  }, [wxFilterOpen]);
+
+  /* One lower-cased haystack per row, built once. Searching rebuilds nothing. */
+  const wxSearchable = useMemo(() => {
+    const m = new Map();
+    sortedCreators.forEach((c) => {
+      m.set(c.id, [c.name, c.tiktok_account, c.tiktok_account_2, c.category, c.product, c.deal, c.hired_by]
+        .map((v) => String(v || '')).join(' ').toLowerCase());
+    });
+    return m;
+  }, [sortedCreators]);
+
+  /* Delivery, the question a brand page is actually for: who still owes videos.
+     `completed` here is the row's own rule — the status flag OR delivery having
+     reached the commitment — so the filter and the progress bar can never
+     disagree. */
+  const wxDeliveryOf = (c) => {
+    const want = parseDealVideos(c.deal);
+    const got = deliveredVideoCount(c);
+    if (c.videos === 'Done' || (want > 0 && got >= want)) return 'complete';
+    return 'outstanding';
+  };
+
+  /* Only the values this brand-month really contains get a chip. A filter for
+     somebody who is not on this brand is a dead end you can click. */
+  const wxHiredByOptions = useMemo(() => {
+    const t = new Map();
+    sortedCreators.forEach((c) => {
+      const k = String(c.hired_by || '').trim();
+      if (k) t.set(k, (t.get(k) || 0) + 1);
+    });
+    return [...t.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }, [sortedCreators]);
+
+  const wxTierOptions = useMemo(() => {
+    const t = new Map();
+    sortedCreators.forEach((c) => {
+      const k = creatorTier(c, eukaL30) || 'none';
+      t.set(k, (t.get(k) || 0) + 1);
+    });
+    return [...t.entries()].sort((a, b) => (a[0] === 'none' ? 1 : b[0] === 'none' ? -1 : a[0].localeCompare(b[0])));
+  }, [sortedCreators, eukaL30]);
+
+  const wxStatusCounts = useMemo(() => {
+    const t = new Map();
+    sortedCreators.forEach((c) => t.set(statusOf(c), (t.get(statusOf(c)) || 0) + 1));
+    return t;
+  }, [sortedCreators]);
+
+  const wxDeliveryCounts = useMemo(() => {
+    const t = new Map();
+    sortedCreators.forEach((c) => { const k = wxDeliveryOf(c); t.set(k, (t.get(k) || 0) + 1); });
+    return t;
+  }, [sortedCreators]);
+
+  const wxVisible = useMemo(() => {
+    let list = sortedCreators;
+    if (wxStatusF) list = list.filter((c) => statusOf(c) === wxStatusF);
+    if (wxHiredByF) list = list.filter((c) => String(c.hired_by || '').trim() === wxHiredByF);
+    if (wxTierF) list = list.filter((c) => (creatorTier(c, eukaL30) || 'none') === wxTierF);
+    if (wxDeliveryF) list = list.filter((c) => wxDeliveryOf(c) === wxDeliveryF);
+    const q = wxSearch.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((c) => (wxSearchable.get(c.id) || '').includes(q));
+  }, [sortedCreators, wxSearch, wxStatusF, wxHiredByF, wxTierF, wxDeliveryF, wxSearchable, eukaL30]);
+
+  const wxNarrowed = wxVisible.length !== sortedCreators.length;
+  /* WURX-END */
+
+  const groups = useMemo(() => groupByStatus(wxVisible), [wxVisible]);
 
   return (
     <>
@@ -2640,6 +2738,160 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
         );
       })()}
 
+      {/* WURX-ADDED · search and filter for this brand's creators. Their own
+          toolbar shape, the one the Brands screen and the Creators tab already
+          use, so this row is not a new piece of furniture. */}
+      {sortedCreators.length > 0 && (
+        <div className="pc-toolbar" style={{ marginTop: 14 }}>
+          <SearchBox value={wxSearch} onChange={setWxSearch} placeholder="Search name, handle, category, product…" />
+
+          <div ref={wxFilterRef} style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setWxFilterOpen((o) => !o)}
+              title="Filter this brand's creators"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                height: 36, padding: '0 14px', borderRadius: 999,
+                background: wxFilterOpen || wxActiveFilters > 0 ? 'var(--pc-accent-light)' : 'var(--pc-card-2)',
+                color: wxFilterOpen || wxActiveFilters > 0 ? 'var(--pc-accent)' : 'var(--pc-text-2)',
+                border: `1px solid ${wxActiveFilters > 0 ? 'color-mix(in srgb, var(--pc-accent) 30%, transparent)' : 'var(--pc-divider)'}`,
+                fontSize: 12.5, fontWeight: 700, letterSpacing: '-0.1px',
+                cursor: 'pointer', transition: 'background .15s, color .15s, border-color .15s', lineHeight: 1,
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+              </svg>
+              Filter
+              {wxActiveFilters > 0 && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  minWidth: 18, height: 18, padding: '0 6px', borderRadius: 99,
+                  background: 'var(--pc-accent)', color: 'var(--wx-on-accent)',
+                  fontSize: 10.5, fontWeight: 800, lineHeight: 1,
+                }}>{wxActiveFilters}</span>
+              )}
+            </button>
+
+            {wxFilterOpen && (() => {
+              const pill = (active) => ({
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                height: 28, padding: '0 12px', borderRadius: 8,
+                fontSize: 11.5, fontWeight: 600, letterSpacing: '-0.05px',
+                cursor: 'pointer', lineHeight: 1, fontFamily: 'inherit',
+                transition: 'background .12s, color .12s, border-color .12s',
+                background: active ? 'var(--wx-text)' : 'transparent',
+                color: active ? 'var(--wx-text-inverse)' : 'var(--pc-text-2)',
+                border: `1px solid ${active ? 'var(--wx-text)' : 'var(--pc-divider)'}`,
+              });
+              const sectionTitle = {
+                fontSize: 10, fontWeight: 700, color: 'var(--pc-text-3)',
+                textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8,
+              };
+              const section = { marginBottom: 14 };
+              const row = { display: 'flex', flexWrap: 'wrap', gap: 5 };
+              const count = (n) => (n == null ? null : <span style={{ opacity: 0.55, fontWeight: 700 }}>{n}</span>);
+              const Chips = ({ options, value, onPick }) => (
+                <div style={row}>
+                  {options.map((o) => (
+                    <button key={o.key ?? 'all'} type="button" onClick={() => onPick(o.key)} style={pill(value === o.key)}>
+                      {o.label}{count(o.n)}
+                    </button>
+                  ))}
+                </div>
+              );
+
+              return (
+                <div data-wx="brand-filters" style={{
+                  position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                  width: 320, maxHeight: 'calc(100vh - 200px)', overflowY: 'auto',
+                  background: 'var(--pc-card)', border: '1px solid var(--pc-divider)',
+                  borderRadius: 12, padding: '16px 16px 14px', zIndex: 100,
+                  boxShadow: '0 18px 50px rgba(15,23,42,0.10), 0 4px 12px rgba(15,23,42,0.05)',
+                  animation: 'pc-rise .18s var(--pc-ease)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--pc-divider)' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--pc-text)', letterSpacing: '-0.15px' }}>Filters</div>
+                    {wxActiveFilters > 0 && (
+                      <button type="button" onClick={wxResetFilters}
+                        style={{ background: 'transparent', border: 0, color: 'var(--pc-text-3)', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '2px 6px', borderRadius: 6 }}>
+                        Reset all
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={section}>
+                    <div style={sectionTitle}>Payment status</div>
+                    <Chips
+                      value={wxStatusF}
+                      onPick={setWxStatusF}
+                      options={[
+                        { key: null, label: 'All' },
+                        { key: 'pending', label: 'Payment Pending', n: wxStatusCounts.get('pending') || 0 },
+                        { key: 'progress', label: 'Videos in Progress', n: wxStatusCounts.get('progress') || 0 },
+                        { key: 'sent', label: 'Payment Sent', n: wxStatusCounts.get('sent') || 0 },
+                      ]}
+                    />
+                  </div>
+
+                  <div style={section}>
+                    <div style={sectionTitle}>Videos</div>
+                    <Chips
+                      value={wxDeliveryF}
+                      onPick={setWxDeliveryF}
+                      options={[
+                        { key: null, label: 'All' },
+                        { key: 'outstanding', label: 'Still owed', n: wxDeliveryCounts.get('outstanding') || 0 },
+                        { key: 'complete', label: 'Delivered in full', n: wxDeliveryCounts.get('complete') || 0 },
+                      ]}
+                    />
+                  </div>
+
+                  {wxHiredByOptions.length > 0 && (
+                    <div style={section}>
+                      <div style={sectionTitle}>Hired by</div>
+                      <Chips
+                        value={wxHiredByF}
+                        onPick={setWxHiredByF}
+                        options={[{ key: null, label: 'All' }, ...wxHiredByOptions.map(([name, n]) => ({ key: name, label: name, n }))]}
+                      />
+                    </div>
+                  )}
+
+                  {wxTierOptions.length > 1 && (
+                    <div style={{ marginBottom: 2 }}>
+                      <div style={sectionTitle}>EUKA tier</div>
+                      <Chips
+                        value={wxTierF}
+                        onPick={setWxTierF}
+                        options={[
+                          { key: null, label: 'All' },
+                          ...wxTierOptions.map(([t, n]) => ({ key: t, label: t === 'none' ? 'No tier yet' : t.toUpperCase(), n })),
+                        ]}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* How many of the month's creators are showing. A narrowed list must
+              never be mistaken for the whole one. */}
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', height: 32, padding: '0 12px',
+            borderRadius: 999, background: 'var(--pc-card-2)', color: 'var(--pc-text-2)',
+            fontSize: 12.5, fontWeight: 700, letterSpacing: '-0.1px', border: '1px solid var(--pc-divider)',
+          }}>
+            {wxNarrowed
+              ? `${wxVisible.length} of ${sortedCreators.length} creators`
+              : `${sortedCreators.length} creator${sortedCreators.length === 1 ? '' : 's'}`}
+          </span>
+        </div>
+      )}
+      {/* WURX-END */}
+
       {sortedCreators.length === 0 ? (
         <div className="pc-card"><div className="pc-empty">
           <span className="pc-empty-ico" aria-hidden>
@@ -2648,6 +2900,22 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
           <h3>No creators in {monthLabel(month)}</h3>
           <p>Onboard a creator for this brand & month.</p>
           {canAdd && <button className="pc-btn-primary" style={{ marginTop: 16 }} onClick={() => onAddCreator && onAddCreator(brand.brand)}>+ Add creator</button>}
+        </div></div>
+      ) : wxVisible.length === 0 ? (
+        /* WURX-ADDED · the search and filters excluded everybody. Say which,
+           and offer the way back, rather than showing an empty table. */
+        <div className="pc-card"><div className="pc-empty">
+          <span className="pc-empty-ico" aria-hidden>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+          </span>
+          <h3>No creators match</h3>
+          <p>
+            {wxSearch.trim() ? <>Nothing here matches &ldquo;{wxSearch.trim()}&rdquo;</> : 'No creator on this brand matches those filters'}
+            {wxSearch.trim() && wxActiveFilters > 0 ? ' with those filters' : ''}. {sortedCreators.length} creator{sortedCreators.length === 1 ? '' : 's'} on {monthLabel(month)}.
+          </p>
+          <button className="pc-btn-primary" style={{ marginTop: 16 }} onClick={() => { setWxSearch(''); wxResetFilters(); }}>
+            Clear search and filters
+          </button>
         </div></div>
       ) : (
         <div className="pc-card">
