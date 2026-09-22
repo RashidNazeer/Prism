@@ -1,0 +1,21 @@
+# The public website is open; everything that needs a login, or a secret link,
+# is not. The pages themselves are the real control — index.html ships
+# `noindex` and only the public pages lift it, and only on the live site — but
+# a crawler should not be spending requests on doors it cannot open either.
+#
+# /share/ is a client's read-only link into a brand's numbers. It is not secret
+# because it is hidden, it is secret because the link is 192 random bits; this
+# line is here so a crawler that somehow sees one never republishes it.
+
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /admin/
+Disallow: /share/
+Disallow: /oauth/
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
+
+Sitemap: https://wurxmediahub.vercel.app/sitemap.xml

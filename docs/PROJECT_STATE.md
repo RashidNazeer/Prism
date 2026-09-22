@@ -12,9 +12,9 @@ asked to be reminded: *"i will do it later remind me please"*.
 2. **TikTok: both rejected fields are answered and on dev** (2026-09-22). He
    chose to build our own site at the address we already use, and to ship the
    public pages to production on their own. **What is needed from him:** read
-   the words on dev, then answer two things — does `support@wurxmedia.com`
-   exist and get read, and should the public pages be indexable (they are
-   `noindex` today). Then the pages go onto `main` and he resubmits with
+   the words on dev, and **create the `support@wurxmedia.com` mailbox**, which
+   he said on 2026-09-22 he would do — the legal pages send people there and a
+   reviewer may test it. Then the pages go onto `main` and he resubmits with
    `public/tiktok-app-icon.png` and `https://wurxmediahub.vercel.app/`.
    PARKED 27d has the order.
 

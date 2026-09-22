@@ -888,10 +888,11 @@ against the live dev site.
 
 **What is left, in order:**
 1. Rashid reads the words on dev and corrects anything wrong about the business.
-2. Two answers needed from him: does `support@wurxmedia.com` exist and get read
-   (the legal pages give it; the new Contact page gives `rajil@wurxmedia.com`,
-   which wurxmedia.com publishes), and should the public pages be indexable
-   (`index.html` still carries `<meta name="robots" content="noindex">`).
+2. **`support@wurxmedia.com` has to exist before we resubmit.** Rashid is
+   creating it (2026-09-22). The legal pages tell people to write there, a
+   reviewer may test it, and a creator asking for their data has a legal right
+   to reach somebody. The Contact page gives `rajil@wurxmedia.com`, which
+   wurxmedia.com publishes, so that one is already real.
 3. The public pages go onto `main` on their own, as `5888faa` did.
 4. He resubmits in TikTok's portal with the icon `public/tiktok-app-icon.png`
    and the Website URL `https://wurxmediahub.vercel.app/`.

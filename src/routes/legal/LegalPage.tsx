@@ -4,6 +4,7 @@ import { WurxMark } from '@/components/brand/WurxMark';
 import { Container } from '@/components/layout/Section';
 import { SiteFooter } from '@/components/landing/SiteFooter';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { allowIndexing } from '@/lib/seo';
 
 /**
  * The shell every legal page sits in.
@@ -46,6 +47,10 @@ export function LegalPage({
       document.title = previous;
     };
   }, [title]);
+
+  /* Public pages: Terms, Privacy and Connecting TikTok are three of the pages a
+     reviewer, or a creator deciding whether to trust us, searches for by name. */
+  useEffect(() => allowIndexing(), []);
 
   return (
     <div className="bg-bg min-h-dvh">

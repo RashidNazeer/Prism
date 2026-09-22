@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Navigate } from 'react-router';
 import { SiteNav } from '@/components/landing/SiteNav';
 import { Hero } from '@/components/landing/Hero';
@@ -9,6 +9,7 @@ import { FinalCta } from '@/components/landing/FinalCta';
 import { SiteFooter } from '@/components/landing/SiteFooter';
 import { RouteFallback } from '@/components/layout/RouteFallback';
 import { useAuth, HOME_FOR_ROLE } from '@/lib/auth/auth-context';
+import { allowIndexing } from '@/lib/seo';
 
 /**
  * The public marketing page. Roadmap Step 2.
@@ -37,6 +38,10 @@ export function Landing() {
    * signs in while on this page is mid-flow, and the form navigates them itself
    * once its work is actually done.
    */
+  /* The front page of the public website, so search engines may have it — on
+     the real site only, never on dev. */
+  useEffect(() => allowIndexing(), []);
+
   const settled = useRef<'signedOut' | 'signedIn' | null>(null);
   if (settled.current === null && status !== 'loading') settled.current = status;
 

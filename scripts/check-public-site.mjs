@@ -145,8 +145,65 @@ try {
   }
 
   check(errors.length === 0, 'zero console errors across the whole site', errors.slice(0, 3).join(' | '));
+
+  /* ── who may index what ───────────────────────────────────────────────────
+   *
+   * Rashid, 2026-09-22: let search engines find the public pages. The rule is
+   * deny by default (index.html ships `noindex`), lifted by the public pages
+   * themselves, and ONLY on the live site — dev is a full second copy, with
+   * test data, on its own address.
+   *
+   * THE HOST IS THE WHOLE RULE, so it is tested rather than read. The page is
+   * opened at the production address with every request served by the build
+   * under test, which is the only way to see what the live site would say.
+   */
+  const here = await page.evaluate(() => {
+    const m = document.querySelector('meta[name="robots"]');
+    return m ? m.content : null;
+  });
+  check(/noindex/.test(here || ''), 'on this address the pages stay out of search engines', here ?? 'no robots meta at all');
+
+  const LIVE = 'https://wurxmediahub.vercel.app';
+  const asLive = await ctx.newPage();
+  await asLive.route(`${LIVE}/**`, async (route) => {
+    const url = new URL(route.request().url());
+    const r = await fetch(`${BASE}${url.pathname}${url.search}`);
+    const body = Buffer.from(await r.arrayBuffer());
+    await route.fulfill({ status: r.status, body, headers: { 'content-type': r.headers.get('content-type') || 'text/html' } });
+  });
+  for (const [path, want, label] of [
+    ['/creators', true, 'a public page'],
+    ['/privacy', true, 'the Privacy page'],
+    ['/login', false, 'the sign-in page'],
+  ]) {
+    await asLive.goto(`${LIVE}${path}`, { waitUntil: 'domcontentloaded' });
+    await asLive.waitForTimeout(800);
+    const robots = await asLive.evaluate(() => document.querySelector('meta[name="robots"]')?.content ?? '');
+    const indexable = /index/.test(robots) && !/noindex/.test(robots);
+    check(indexable === want, `on the live address, ${label} is ${want ? 'indexable' : 'kept out of search'}`, `${path} says "${robots}"`);
+  }
+  await asLive.close();
 } finally {
   await browser.close();
+}
+
+/* ── robots.txt and the sitemap ─────────────────────────────────────────── */
+const robotsTxt = await fetch(`${BASE}/robots.txt`).then((r) => (r.ok ? r.text() : null)).catch(() => null);
+check(!!robotsTxt && /Sitemap:/i.test(robotsTxt), 'robots.txt is served and points at the sitemap', robotsTxt ? robotsTxt.split('\n')[0] : 'missing');
+if (robotsTxt) {
+  const shut = ['/app/', '/admin/', '/share/', '/oauth/'].filter((p) => !robotsTxt.includes(`Disallow: ${p}`));
+  check(shut.length === 0, 'robots.txt keeps crawlers out of the app, the admin and the share links', shut.join(', '));
+}
+const sitemap = await fetch(`${BASE}/sitemap.xml`).then((r) => (r.ok ? r.text() : null)).catch(() => null);
+check(!!sitemap && /<urlset/.test(sitemap), 'sitemap.xml is served', sitemap ? `${sitemap.length} bytes` : 'missing');
+if (sitemap) {
+  const listed = [...sitemap.matchAll(/<loc>https:\/\/[^/]+([^<]*)<\/loc>/g)].map((m) => m[1] || '/');
+  const wanted = [...PAGES.map((p) => p.path), '/apply'];
+  const missing = wanted.filter((p) => !listed.includes(p));
+  const extra = listed.filter((p) => !wanted.includes(p));
+  check(missing.length === 0 && extra.length === 0, 'the sitemap lists every public page and nothing else',
+    [missing.length ? `missing ${missing.join(', ')}` : '', extra.length ? `should not be there: ${extra.join(', ')}` : ''].filter(Boolean).join(' · ') || `${listed.length} pages`);
+  check(!/wurxmediahubdev/.test(sitemap), 'the sitemap points at the live site, not dev');
 }
 
 /* ── the icon, the other field TikTok named ─────────────────────────────── */

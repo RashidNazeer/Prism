@@ -2440,3 +2440,13 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   was missing — TikTok's note was that the icons must match, so a similar mark
   drawn by us would have invited the same reply. `verify:site` fetches the live
   official file and compares, so the day theirs changes, ours fails.
+- 2026-09-22: **The public pages are indexable, the rest of the product is not,
+  and dev never is.** Rashid asked for the website to be findable. The rule is
+  deny by default — `index.html` ships `noindex` and only the public pages lift
+  it — because a wrong default here publishes a creator's screen, while a wrong
+  `noindex` merely hides a marketing page. It is lifted ONLY on the live host
+  (`src/lib/seo.ts`): dev is a complete second copy of the site on its own
+  address, carrying test brands and seeded creators, and offering Google both
+  is how the wrong one gets ranked. `verify:site` proves the rule by serving
+  the build under test AT the live address and reading the tag, rather than by
+  reading the source.

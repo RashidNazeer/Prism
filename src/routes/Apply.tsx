@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { WurxMark } from '@/components/brand/WurxMark';
 import { ButtonLink } from '@/components/ui/Button';
 import { ApplyForm } from '@/components/landing/ApplyForm';
+import { allowIndexing } from '@/lib/seo';
 
 /**
  * Standalone application page.
@@ -11,6 +13,10 @@ import { ApplyForm } from '@/components/landing/ApplyForm';
  * exact same <ApplyForm />, so there is only ever one form to maintain.
  */
 export function Apply() {
+  /* A public page of the website, and the one a creator searches for by name.
+     Indexed on the live site only. */
+  useEffect(() => allowIndexing(), []);
+
   return (
     <div className="relative min-h-dvh overflow-hidden px-5 py-14 sm:px-8">
       <div aria-hidden className="pointer-events-none absolute inset-0">

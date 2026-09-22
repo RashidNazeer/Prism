@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react';
 import { SiteNav } from '@/components/landing/SiteNav';
 import { SiteFooter } from '@/components/landing/SiteFooter';
 import { Container } from '@/components/layout/Section';
+import { allowIndexing } from '@/lib/seo';
 
 /**
  * The shell every public website page sits in: the site header, the page's own
@@ -41,6 +42,10 @@ export function SitePage({
       document.title = previous;
     };
   }, [title, documentTitle]);
+
+  /* A page of the public website, so search engines may have it — on the real
+     site only. Rashid, 2026-09-22. */
+  useEffect(() => allowIndexing(), []);
 
   return (
     <div className="bg-bg min-h-dvh">
