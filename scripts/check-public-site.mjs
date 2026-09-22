@@ -165,11 +165,20 @@ try {
 
   const LIVE = 'https://wurxmediahub.vercel.app';
   const asLive = await ctx.newPage();
+  let served = 0, servedFailed = null;
   await asLive.route(`${LIVE}/**`, async (route) => {
     const url = new URL(route.request().url());
-    const r = await fetch(`${BASE}${url.pathname}${url.search}`);
-    const body = Buffer.from(await r.arrayBuffer());
-    await route.fulfill({ status: r.status, body, headers: { 'content-type': r.headers.get('content-type') || 'text/html' } });
+    try {
+      const r = await fetch(`${BASE}${url.pathname}${url.search}`);
+      const body = Buffer.from(await r.arrayBuffer());
+      served++;
+      await route.fulfill({ status: r.status, body, headers: { 'content-type': r.headers.get('content-type') || 'text/html' } });
+    } catch (e) {
+      /* NEVER fall through to the real site: it would answer, and the check
+         would then be reading production rather than the build under test. */
+      servedFailed = String(e).slice(0, 120);
+      await route.abort();
+    }
   });
   for (const [path, want, label] of [
     ['/creators', true, 'a public page'],
@@ -178,9 +187,16 @@ try {
   ]) {
     await asLive.goto(`${LIVE}${path}`, { waitUntil: 'domcontentloaded' });
     await asLive.waitForTimeout(800);
-    const robots = await asLive.evaluate(() => document.querySelector('meta[name="robots"]')?.content ?? '');
-    const indexable = /index/.test(robots) && !/noindex/.test(robots);
-    check(indexable === want, `on the live address, ${label} is ${want ? 'indexable' : 'kept out of search'}`, `${path} says "${robots}"`);
+    const got = await asLive.evaluate(() => ({
+      robots: document.querySelector('meta[name="robots"]')?.content ?? '',
+      title: document.title,
+      /* Proof that what answered is the build under test and not the real
+         production site, which would answer this address for real. */
+      ours: !!document.querySelector('a[href="/how-it-works"], meta[name="robots"]'),
+    }));
+    const indexable = /index/.test(got.robots) && !/noindex/.test(got.robots);
+    check(indexable === want, `on the live address, ${label} is ${want ? 'indexable' : 'kept out of search'}`,
+      `${path} says "${got.robots}" · tab "${got.title}" · ${served} requests served from the build under test${servedFailed ? ` · could not serve: ${servedFailed}` : ''}`);
   }
   await asLive.close();
 } finally {
