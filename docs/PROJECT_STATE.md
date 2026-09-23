@@ -57,6 +57,16 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
 - **Next:** he reads the words, answers the support@ and noindex questions,
   then the public pages go to production on their own and he resubmits.
 
+### Onboarding is a side drawer now (2026-09-23)
+
+- The onboarding popup is a right-hand drawer: more room, header and footer
+  fixed, only the middle scrolls, and the small type he asked to keep.
+- Products are a proper dropdown — closed until opened, searchable inside,
+  closes on the arrow, on Escape and after a pick — with a picture per product
+  where the platform has one and a letter tile where it does not.
+- **Proven at six sizes:** `verify:drawer` 78/78 from 100% to 200% zoom and on
+  a phone, including that nothing is painted over the drawer's header.
+
 ### Products and per-product deals on onboarding (2026-09-23)
 
 - Onboarding now offers the brand's **real catalogue** in a searchable

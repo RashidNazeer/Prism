@@ -122,29 +122,42 @@ try {
     await page.waitForTimeout(1200);
     const add = page.getByRole('button', { name: /\+\s*creator/i }).first();
     await add.click();
-    await page.waitForSelector('[data-wx="product-search"]', { timeout: 20000 });
+    /* The picker is a DROPDOWN now: a closed trigger, and the search box only
+       exists once it is open. */
+    await page.waitForSelector('[data-wx="product-trigger"]', { timeout: 20000 });
     /* The brand is already filled in by the button that opened this, which is
        what triggers the catalogue fetch. Wait for it to land rather than for a
        fixed pause: a list read too early is empty for the wrong reason. */
     await page.waitForFunction(() => {
-      const box = document.querySelector('[data-wx="product-search"]');
-      const list = document.querySelector('[data-wx="product-list"]');
-      return !!list || !(box?.placeholder || '').toLowerCase().includes('loading');
-    }, null, { timeout: 30000 }).catch(() => {});
-    await page.waitForTimeout(1200);
+      const t = document.querySelector('[data-wx="product-trigger"]');
+      return !!t && !/loading/i.test(t.textContent || '');
+    }, null, { timeout: 45000 }).catch(() => {});
+    await page.waitForTimeout(400);
+    /* Open it, so the list and its search box exist for the checks below. */
+    if (!(await page.locator('[data-wx="product-panel"]').first().isVisible().catch(() => false))) {
+      await page.locator('[data-wx="product-trigger"]').click();
+      await page.waitForTimeout(500);
+    }
   };
   const closeModal = async () => {
+    /* Escape closes the dropdown first, then the drawer — so press it twice. */
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
     await page.keyboard.press('Escape');
     await page.waitForTimeout(600);
-    const stillOpen = await page.locator('[data-wx="product-search"]').first().isVisible().catch(() => false);
+    const stillOpen = await page.locator('[data-wx="product-trigger"]').first().isVisible().catch(() => false);
     if (stillOpen) {
       const cancel = page.getByRole('button', { name: /^(cancel|close)$/i }).first();
       if (await cancel.isVisible().catch(() => false)) await cancel.click();
       await page.waitForTimeout(500);
     }
   };
+  /* The row's NAME, not the row's text: every row now starts with a picture or
+     a letter tile, so `textContent` reads "PPenetrex Daily Joint…" and a
+     comparison against the API's names silently matches nothing. */
   const listed = () => page.evaluate(() =>
-    [...document.querySelectorAll('[data-wx="product-list"] button')].map((b) => b.textContent.trim()));
+    [...document.querySelectorAll('[data-wx="product-list"] button')]
+      .map((b) => (b.querySelector('span:nth-of-type(2)') || b).textContent.trim()));
 
   /* ── 1. the catalogue, for both platforms ──────────────────────────── */
   for (const brand of [EUKA_BRAND, REACHER_BRAND]) {
@@ -173,12 +186,23 @@ try {
     check(none.length === 0, `${brand}: a word nothing matches leaves an empty list, not the whole catalogue`, `${none.length} shown`);
     await page.fill('[data-wx="product-search"]', '');
     await page.waitForTimeout(300);
+    /* The chosen products now carry a picture or a letter tile; check the list
+       rows do too, which is what "show selected images properly" asks for. */
+    const tiles = await page.evaluate(() =>
+      document.querySelectorAll('[data-wx="product-list"] button > span:first-child').length);
+    check(tiles === shown, `${brand}: every row in the list carries a picture or its stand-in`, `${tiles} of ${shown}`);
     await closeModal();
   }
 
   /* ── 3. two products, two rows of fields, and a live total ─────────── */
   await openModal(REACHER_BRAND);
   const pick = async (n) => {
+    /* Choosing one closes the list — that is the behaviour Rashid asked for —
+       so it is opened again for the next pick. */
+    if (!(await page.locator('[data-wx="product-panel"]').first().isVisible().catch(() => false))) {
+      await page.locator('[data-wx="product-trigger"]').click();
+      await page.waitForTimeout(400);
+    }
     const buttons = page.locator('[data-wx="product-list"] button');
     await buttons.nth(n).click();
     await page.waitForTimeout(400);

@@ -91,7 +91,8 @@
     "verify:site": "node scripts/check-public-site.mjs",
     "verify:brand-search": "node scripts/check-brand-search.mjs",
     "verify:reacher": "node scripts/check-reacher.mjs",
-    "verify:product-picker": "node scripts/check-product-picker.mjs"
+    "verify:product-picker": "node scripts/check-product-picker.mjs",
+    "verify:drawer": "node scripts/check-onboard-drawer.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

@@ -1825,3 +1825,16 @@ await supabase.functions.invoke('collab-products', { body: { brand: 'Penetrex' }
 pnpm verify:product-picker   # 22 checks. Needs a preview server, and
                              # SUPABASE_SERVICE_KEY for the no-stray-row proof
 ```
+
+### The onboarding drawer
+
+```bash
+pnpm verify:drawer          # 78 checks at 100/125/150/175/200% zoom and phone width
+pnpm verify:product-picker  # 24 checks on the dropdown and the deal split
+```
+
+**If it ever appears under the top bar again:** `.wurxbase-root` and
+`.wurxbase-fence` carry `isolation: isolate`, so nothing inside Paid Collabs can
+paint over our shell header whatever its z-index. The drawer is offset by
+`--wx-topbar` (3.5rem, the header's own height) for that reason. Do not "fix" it
+by raising a z-index; it cannot work from inside a sealed stacking context.

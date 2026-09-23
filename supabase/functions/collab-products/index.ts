@@ -131,6 +131,23 @@ Deno.serve(async (req: Request) => {
                 price: p.price != null ? String(p.price) : null,
                 status: p.status ?? null,
               })).filter((p) => p.name);
+
+              /*
+               * NO PICTURE COMES WITH A EUKA PRODUCT, and it is worth writing
+               * down why rather than leaving somebody to try it again.
+               * `dashboard/products-performance` answers productId, title and
+               * twenty figures — no image of any kind. The one Euka endpoint
+               * that does carry `imageUrl`, `social-intelligence/products`, is
+               * MARKET data: asked for our own brand id it answered with
+               * "medicube US Store" products, because that surface indexes
+               * TikTok at large rather than our shop. Matching those back to
+               * ours by title would be guessing at somebody else's catalogue.
+               *
+               * Reacher's `products/catalog` DOES carry `primary_image_url`,
+               * and it is used below when that shop's catalogue is populated.
+               * Everywhere else the picker draws a letter tile, which says "no
+               * picture" honestly instead of showing the wrong product.
+               */
               return json({ source: 'euka', store: store.name, products }, 200, req);
             }
             return json({ source: 'euka', store: store.name, products: [], note: `Euka answered ${r.status}` }, 200, req);

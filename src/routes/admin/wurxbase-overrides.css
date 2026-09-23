@@ -2052,3 +2052,132 @@
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
+
+/* ============================================================================
+   THE ONBOARDING DRAWER (2026-09-23)
+
+   Rashid: "instead of showing the popup, we need to use drawer which will
+   actually open a side drawer with all options ... now as we are using drawer
+   you will have enough space to distribute. keep the font same because boss
+   likes small fonts but ui should be perfect ... when zooming in zooming out
+   drawer should never overlap or miss something."
+
+   Their modal centred itself and capped at 620px, so a form of twenty fields
+   scrolled inside a box with air either side. As a drawer it gets the full
+   height of the window and a width that grows with the text: 30rem at the
+   default size, so a browser zoomed to 150% gives it MORE room rather than
+   overflowing — every length here is in rem or a viewport unit, and there is
+   not one fixed pixel height in the panel.
+
+   WHY dvh AND NOT vh: on a phone, vh counts the address bar that is not there,
+   so the footer sits below the fold exactly when somebody reaches for it.
+   ============================================================================ */
+
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-overlay.wx-drawer-overlay {
+  align-items: stretch;
+  justify-content: flex-end;
+  padding: 0;
+}
+
+/*
+  IT STARTS BELOW OUR TOP BAR, and that is not a taste decision.
+
+  `.wurxbase-root` and `.wurxbase-fence` both carry `isolation: isolate`, so
+  every z-index inside Paid Collabs — including this overlay's 1000 — is sealed
+  inside that context, which sits under our own app header (`z-40`). A drawer
+  drawn from y=0 therefore had its title and close button painted over by the
+  bar above it: the DOM was right and the screen was wrong.
+
+  Raising the z-index cannot fix that from inside a sealed context, and moving
+  the portal to `document.body` is what left their overlays unstyled before. So
+  the drawer begins where our chrome ends. `--wx-topbar` is 3.5rem because the
+  shell's header is `h-14`, in rem, so it tracks the text size somebody has
+  chosen and stays correct when the browser is zoomed.
+*/
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer {
+  --wx-topbar: 3.5rem;
+  /* Grows with the root font size, so zoom widens the drawer instead of
+     squeezing the form. Capped against the window so it can never be wider
+     than the screen it is drawn on. */
+  width: min(34rem, 100vw);
+  max-width: 100vw;
+  height: calc(100dvh - var(--wx-topbar));
+  max-height: calc(100dvh - var(--wx-topbar));
+  /*
+    THE PANEL ITSELF MUST NOT SCROLL. Their `.pc-modal` scrolls its whole box,
+    which in a drawer means the sticky header scrolls away with everything else
+    — the title and the close button simply leave. Only the middle scrolls now.
+    `overflow-x: hidden` is the second half of the same thought: a 120-character
+    product name must be cut off by its own row, never by widening the panel.
+  */
+  overflow: hidden;
+  /* The offset lives in the shorthand, and that is deliberate: a `margin-top`
+     above a later `margin: 0` in the same block is silently undone, which is
+     exactly how the first attempt put the drawer back under the top bar. */
+  margin: var(--wx-topbar) 0 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 1.25rem 0 0 1.25rem;
+  padding: 0;
+  animation: wx-drawer-in 0.24s var(--pc-ease);
+}
+
+@keyframes wx-drawer-in {
+  from { transform: translateX(2rem); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer { animation: none; }
+}
+
+/* The header and the footer hold still; only the middle scrolls. Without
+   `min-height: 0` a flex child refuses to shrink and the footer is pushed off
+   the bottom of the screen — the "missing something when zoomed" case. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer > .pc-cf-head {
+  flex: 0 0 auto;
+  border-radius: 1.25rem 0 0 0;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer > .pc-cm-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  /* The extra room the drawer earned goes into the gutters, not into wider
+     inputs that then dwarf the small type the boss likes. */
+  padding: 1rem 1.25rem 0.75rem;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer > .pc-cf-foot {
+  flex: 0 0 auto;
+  border-radius: 0 0 0 1.25rem;
+  /* Above the phone's home bar rather than under it. */
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/* On a phone it is the whole screen, square edges, and it comes up rather than
+   in — the same gesture their bottom sheet had. */
+@media (max-width: 40rem) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer {
+    width: 100vw;
+    border-radius: 0;
+    animation-name: wx-drawer-up;
+  }
+  /* The overlay itself stops at the bar too, so the backdrop never sits over
+     chrome that is still usable. */
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-overlay.wx-drawer-overlay { top: var(--wx-topbar, 3.5rem); }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer > .pc-cf-head,
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer > .pc-cf-foot { border-radius: 0; }
+}
+@keyframes wx-drawer-up {
+  from { transform: translateY(2rem); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* A short window — a laptop at 150% zoom, or a phone in landscape — is where a
+   fixed-height panel loses its footer. Nothing here has a fixed height, and the
+   section dividers give back their margins so the fields stay reachable. */
+@media (max-height: 34rem) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer > .pc-cm-body { padding-top: 0.5rem; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer .pc-cm-sec { margin: 0.6rem 0 0.5rem; }
+}

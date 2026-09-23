@@ -452,6 +452,43 @@ function wxVideoTotals(list) {
     gmv: all.reduce((t, v) => t + v.gmv, 0),
   };
 }
+/* WURX-ADDED · A PRODUCT'S PICTURE, or an honest stand-in for it.
+   Rashid, 2026-09-23: "also use product images as well and show selected images
+   properly".
+
+   NOT EVERY PRODUCT HAS ONE, and that is the APIs rather than us: Euka's
+   product list carries titles and figures and no image at all (its one endpoint
+   with `imageUrl` indexes TikTok at large, and answered our own brand id with
+   another company's products), and Reacher carries `primary_image_url` only
+   where that shop's catalogue is populated — Irwin's is not. So a product
+   without a picture gets a letter on a tinted tile, which reads as "no picture"
+   rather than as the wrong product. A broken URL falls back to the same tile. */
+function ProductTile({ product, size = 32 }) {
+  const [broken, setBroken] = useState(false);
+  const src = !broken ? (product?.image || '') : '';
+  const label = String(product?.name || product?.url || '?').trim();
+  const initial = (label.match(/[a-z0-9]/i) || ['?'])[0].toUpperCase();
+  const box = {
+    width: size, height: size, flexShrink: 0, borderRadius: 8,
+    border: '1px solid var(--pc-divider)', background: 'var(--pc-card-2)',
+    display: 'grid', placeItems: 'center', overflow: 'hidden',
+  };
+  if (src) {
+    return (
+      <span style={box}>
+        <img src={src} alt="" loading="lazy" onError={() => setBroken(true)}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+      </span>
+    );
+  }
+  return (
+    <span style={{ ...box, background: 'var(--pc-warn-bg)', color: 'var(--pc-warn-fg)', fontSize: size * 0.4, fontWeight: 800 }}
+      title="No picture for this product">
+      {initial}
+    </span>
+  );
+}
+
 function DealsBadge({ n, month }) {
   if (!n) return null;
   const deals = `${n} deal${n === 1 ? '' : 's'} with this creator`;
@@ -4537,6 +4574,21 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
     return [];
   });
   const [prodInput, setProdInput] = useState('');
+  /* WURX-ADDED · the dropdown is CLOSED until it is opened, and the chevron,
+     Escape, a click outside and picking one all close it again. Theirs listed
+     everything permanently, which is what Rashid asked to be rid of. */
+  const [prodOpen, setProdOpen] = useState(false);
+  const prodPanelRef = useRef(null);
+  const prodWrapRef = useRef(null);
+  useEffect(() => {
+    if (!prodOpen) return;
+    const onDown = (e) => { if (prodWrapRef.current && !prodWrapRef.current.contains(e.target)) setProdOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); setProdOpen(false); } };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey, true);
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey, true); };
+  }, [prodOpen]);
+  /* WURX-END */
   const prodKey = (p) => (p.name || p.url || '').toLowerCase().trim();
   const hasProd = (p) => prods.some(x => prodKey(x) === prodKey(p));
   const toggleProd = (p) => setProds(prev => prev.some(x => prodKey(x) === prodKey(p)) ? prev.filter(x => prodKey(x) !== prodKey(p)) : [...prev, { name: p.name || '', url: p.url || '', productId: p.id || p.productId || '' }]);
@@ -4866,9 +4918,18 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
     }
   };
 
+  /* WURX-ADJUSTED · A DRAWER, NOT A POPUP.
+     Rashid, 2026-09-23: "instead of showing the popup, we need to use drawer
+     which will actually open a side drawer with all options ... now as we are
+     using drawer you will have enough space to distribute".
+
+     Theirs was `pc-overlay` centring a `pc-modal` capped at 620px inline. The
+     classes stay so every rule they wrote still applies; `wx-drawer` moves the
+     panel to the right edge and gives it the full height, and the inline cap is
+     gone because an inline style beats any stylesheet. */
   return (
-    <div className="pc-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="pc-modal pc-contract-modal pc-cm" style={{ maxWidth: 620 }}>
+    <div className="pc-overlay wx-drawer-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="pc-modal pc-contract-modal pc-cm wx-drawer" role="dialog" aria-modal="true" aria-label={isAdd ? 'Onboard creator' : 'Edit creator'}>
 
         {/* ── Sticky header ── */}
         <div className="pc-cf-head">
@@ -5028,70 +5089,126 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
         {/* Promoting products */}
         <div className="pc-field">
           <label>Promoting product{prods.length === 1 ? '' : '(s)'}</label>
+          {/* WURX-ADJUSTED · the chosen products as cards with their picture.
+              Theirs were pills holding a 120-character product name, which
+              overlapped each other and the field below. */}
           {prods.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+            <div data-wx="chosen-products" style={{ display: 'grid', gap: 6, marginBottom: 8 }}>
               {prods.map((p, i) => (
-                /* WURX-ADJUSTED · a real product name is a paragraph. Theirs
-                   put the whole thing in a fixed-height pill, and two of Irwin's
-                   ("2-in-1 Kidney & Liver Super Cleanse | 10-Day Herbal Cleanse
-                   with Milk Thistle, NAC & PACran | Liquid Soft-Gels…") spilled
-                   over each other and over the field below. Truncated here, whole
-                   in the hover. */
-                <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, maxWidth: '100%', height: 28, padding: '0 11px 0 12px', borderRadius: 999, background: 'var(--pc-warn-bg)', color: 'var(--pc-warn-fg)', fontSize: 12, fontWeight: 700 }} title={p.name || p.url}>
-                  <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--pc-warn-fg)', flexShrink: 0 }} />
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || p.url}</span>
-                  <button type="button" onClick={() => removeProd(i)} style={{ width: 18, height: 18, borderRadius: 999, border: 0, background: 'color-mix(in srgb, var(--wx-accent) 8%, transparent)', color: 'inherit', cursor: 'pointer', fontSize: 12, lineHeight: 1, marginLeft: 2 }}>×</button>
-                </span>
+                <div key={(p.name || '') + '-' + i} style={{
+                  display: 'flex', alignItems: 'center', gap: 9, minWidth: 0,
+                  padding: '6px 8px', borderRadius: 10,
+                  border: '1px solid var(--pc-divider)', background: 'var(--pc-card-2)',
+                }}>
+                  <ProductTile product={p} size={30} />
+                  <span title={p.name || p.url} style={{
+                    flex: 1, minWidth: 0, fontSize: 12, fontWeight: 600, color: 'var(--pc-text)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>{p.name || p.url}</span>
+                  <button type="button" onClick={() => removeProd(i)} aria-label="Remove this product"
+                    style={{
+                      width: 22, height: 22, flexShrink: 0, borderRadius: 999, border: 0,
+                      background: 'transparent', color: 'var(--pc-text-3)', cursor: 'pointer',
+                      fontSize: 14, lineHeight: 1,
+                    }}>×</button>
+                </div>
               ))}
             </div>
           )}
-          {/* WURX-ADDED · the brand's own catalogue, searchable.
-              Theirs offered only the handful of focus products somebody had
-              typed into the brand, plus a free-text box. This lists what the
-              brand actually sells, from Euka or Reacher, and filters as you
-              type because 45 products is a long way to scroll. The typed box
-              stays: a product the API has never heard of still goes in. */}
-          <div style={{ display: 'flex', gap: 6 }}>
-            <input className="pc-input" data-wx="product-search"
-              placeholder={apiState === 'loading' ? 'Loading this brand\u2019s products\u2026' : 'Search products, or type a new one'}
-              value={prodInput}
-              onChange={e => setProdInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomProd(); } }} />
-            <button type="button" onClick={addCustomProd} disabled={!prodInput.trim()} title="Add this as a product of your own" style={{ flex: '0 0 40px', height: 40, borderRadius: 12, border: 0, background: prodInput.trim() ? 'var(--pc-accent)' : 'var(--pc-card-2)', color: prodInput.trim() ? 'var(--wx-on-accent)' : 'var(--pc-text-3)', cursor: prodInput.trim() ? 'pointer' : 'not-allowed', fontSize: 17, fontWeight: 800 }}>+</button>
-          </div>
+          {/* WURX-ADDED · A DROPDOWN, NOT A PERMANENT LIST.
+              Rashid, 2026-09-23: "it should be the dropdown and searchable and
+              it means it should only show the list only when we open the
+              dropdown, click arrow should close the list but currently it
+              remains. also use product images as well and show selected images
+              properly".
 
-          {wxProdMatches.length > 0 && (
-            <div data-wx="product-list" style={{
-              marginTop: 8, maxHeight: 210, overflowY: 'auto',
-              border: '1px solid var(--pc-divider)', borderRadius: 12, background: 'var(--pc-card-2)',
+              So: a closed control that says how many are chosen, a chevron that
+              turns, a panel that appears on click and closes on the chevron, on
+              Escape, on a click outside and after a pick. The chosen products
+              are cards with their picture, not a row of pills. */}
+          <div ref={prodWrapRef} style={{ position: 'relative' }}>
+          <button type="button" data-wx="product-trigger" onClick={() => setProdOpen((o) => !o)}
+            aria-expanded={prodOpen}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+              height: 40, padding: '0 12px', borderRadius: 12,
+              border: '1px solid var(--pc-divider)', background: 'var(--wx-surface-1)',
+              color: prods.length ? 'var(--pc-text)' : 'var(--pc-text-3)',
+              fontSize: 12.5, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left',
             }}>
-              {wxProdMatches.map((p, i) => (
-                <button key={(p.id || p.name) + '-' + i} type="button" onClick={() => { toggleProd(p); setProdInput(''); }}
+            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {apiState === 'loading' ? 'Loading this brand\u2019s products\u2026'
+                : prods.length === 0 ? 'Choose products'
+                : `${prods.length} product${prods.length === 1 ? '' : 's'} chosen`}
+            </span>
+            {apiState === 'ok' && <span style={{ color: 'var(--pc-text-3)', fontSize: 11 }}>{wxPickable.length + prods.length}</span>}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"
+              strokeLinecap="round" strokeLinejoin="round"
+              style={{ transform: prodOpen ? 'rotate(180deg)' : 'none', transition: 'transform .16s ease', flexShrink: 0 }}>
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+
+          {prodOpen && (
+            <div data-wx="product-panel" ref={prodPanelRef} style={{
+              marginTop: 6, border: '1px solid var(--pc-divider)', borderRadius: 12,
+              background: 'var(--wx-surface-1)', overflow: 'hidden',
+              boxShadow: '0 14px 40px rgba(15,23,42,0.10)',
+            }}>
+              <div style={{ padding: 8, borderBottom: '1px solid var(--pc-divider)' }}>
+                <input className="pc-input" data-wx="product-search" autoFocus
+                  placeholder="Search products, or type a new one"
+                  value={prodInput}
+                  onChange={e => setProdInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') { e.preventDefault(); addCustomProd(); }
+                    if (e.key === 'Escape') { e.preventDefault(); setProdOpen(false); }
+                  }}
+                  style={{ height: 34, fontSize: 12.5 }} />
+              </div>
+              <div data-wx="product-list" style={{ maxHeight: '15rem', overflowY: 'auto' }}>
+                {wxProdMatches.map((p, i) => (
+                  <button key={(p.id || p.name) + '-' + i} type="button"
+                    onClick={() => { toggleProd(p); setProdInput(''); setProdOpen(false); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 9, width: '100%',
+                      padding: '7px 9px', border: 0,
+                      borderBottom: i === wxProdMatches.length - 1 ? 0 : '1px solid var(--pc-divider)',
+                      background: 'transparent', color: 'var(--pc-text)', textAlign: 'left',
+                      fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                    }}>
+                    <ProductTile product={p} size={30} />
+                    <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || p.url}</span>
+                    {p.price && <span style={{ color: 'var(--pc-text-3)', fontSize: 11 }}>${p.price}</span>}
+                    {p.from === 'brand' && <span style={{ color: 'var(--pc-text-3)', fontSize: 9.5, fontWeight: 800, letterSpacing: '.06em' }}>FOCUS</span>}
+                  </button>
+                ))}
+                {wxProdMatches.length === 0 && (
+                  <div style={{ padding: '10px 11px', fontSize: 11.5, color: 'var(--pc-text-3)' }}>
+                    {apiState === 'loading'
+                      ? 'Reading this brand’s catalogue…'
+                      : apiState === 'none'
+                      ? (apiNote || 'No catalogue for this brand — type the product and press +.')
+                      : prodInput.trim()
+                        ? <>Nothing matches &ldquo;{prodInput.trim()}&rdquo;. Press Enter to add it anyway.</>
+                        : 'Everything in this brand\u2019s catalogue is already chosen.'}
+                  </div>
+                )}
+              </div>
+              {prodInput.trim() && (
+                <button type="button" onClick={() => { addCustomProd(); setProdOpen(false); }}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-                    padding: '9px 12px', border: 0, borderBottom: i === wxProdMatches.length - 1 ? 0 : '1px solid var(--pc-divider)',
-                    background: 'transparent', color: 'var(--pc-text)', textAlign: 'left',
-                    fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                    display: 'block', width: '100%', padding: '8px 11px', border: 0,
+                    borderTop: '1px solid var(--pc-divider)', background: 'var(--pc-card-2)',
+                    color: 'var(--pc-accent)', fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
+                    fontFamily: 'inherit', textAlign: 'left',
                   }}>
-                  <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || p.url}</span>
-                  {p.price && <span style={{ color: 'var(--pc-text-3)', fontSize: 11.5 }}>${p.price}</span>}
-                  {p.from === 'brand' && <span style={{ color: 'var(--pc-text-3)', fontSize: 10.5, fontWeight: 700 }}>FOCUS</span>}
+                  + Add &ldquo;{prodInput.trim()}&rdquo; as a product of your own
                 </button>
-              ))}
+              )}
             </div>
           )}
-          {/* What the list is, and what it is not. A brand on neither platform
-              is a fact worth saying once, not an empty box to puzzle over. */}
-          {apiState === 'none' && (
-            <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--pc-text-3)' }}>
-              {apiNote || 'No catalogue for this brand — type the product instead.'}
-            </div>
-          )}
-          {apiState === 'ok' && prodInput.trim() && wxProdMatches.length === 0 && (
-            <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--pc-text-3)' }}>
-              Nothing in this brand&rsquo;s catalogue matches &ldquo;{prodInput.trim()}&rdquo;. The + button adds it anyway.
-            </div>
-          )}
+          </div>
           {/* WURX-END */}
         </div>
 
@@ -5105,11 +5222,18 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
             <label>Deal per product</label>
             <div style={{ display: 'grid', gap: 6 }}>
               {prods.map((p, i) => (
-                <div key={(p.name || '') + '-' + i} style={{ display: 'grid', gridTemplateColumns: '1fr 96px 84px', gap: 6, alignItems: 'center' }}>
-                  <span title={p.name || p.url} style={{
-                    fontSize: 12, fontWeight: 600, color: 'var(--pc-text-2)',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>{p.name || p.url}</span>
+                /* `minmax(0, 1fr)` and not `1fr`: a grid track refuses to go
+                   below its content's minimum, so one long product name pushed
+                   the amount and video fields off the side of the drawer. The
+                   two fields are in rem so a zoomed browser keeps them usable. */
+                <div key={(p.name || '') + '-' + i} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 5.5rem 4.5rem', gap: 6, alignItems: 'center' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                    <ProductTile product={p} size={26} />
+                    <span title={p.name || p.url} style={{
+                      fontSize: 12, fontWeight: 600, color: 'var(--pc-text-2)',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>{p.name || p.url}</span>
+                  </span>
                   <input className="pc-input" data-wx={'amount-' + i} type="number" inputMode="numeric" placeholder="$ amount"
                     value={p.amount ?? ''} onWheel={e => e.currentTarget.blur()}
                     onChange={e => setProdField(i, 'amount', e.target.value)} />

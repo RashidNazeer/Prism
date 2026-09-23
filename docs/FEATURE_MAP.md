@@ -2377,6 +2377,60 @@ its videos, both themes, 390px, zero console errors, and a revoked link says so
 in plain words) **and `pnpm verify:client-links`** (18: make, copy, open,
 details, new address, stop).
 
+## Onboarding is a drawer, and the products are a real dropdown (2026-09-23)
+
+Rashid, after using the first version: *"instead of showing the popup we need to
+use drawer which will actually open a side drawer with all options ... for
+choosing multiple products the ui is very bad, I said it should be the dropdown
+and searchable and it means it should only show the list only when we open the
+dropdown, click arrow should close the list ... also use product images ... keep
+the font same because boss like small fonts but ui should be perfect ... when
+zooming in zooming out drawer should never overlap or miss something"*.
+
+**The drawer** (`wx-drawer` on their own `.pc-modal`, so every rule they wrote
+still applies): right edge, full height, header and footer fixed, only the
+middle scrolls. Their inline `maxWidth: 620` had to go — an inline style beats
+any stylesheet.
+
+**IT STARTS BELOW OUR TOP BAR, and that is structural rather than taste.**
+`.wurxbase-root` and `.wurxbase-fence` both carry `isolation: isolate`, so the
+overlay's `z-index: 1000` is sealed inside Paid Collabs, which sits under our
+shell header (`z-40`). A drawer drawn from y=0 had its title and close button
+painted over: the DOM was right and the screen was wrong. Raising the z-index
+cannot escape a sealed context, and portalling to `document.body` is what left
+their overlays unstyled before, so the drawer begins at `--wx-topbar: 3.5rem`,
+the shell header's own height, in rem so it tracks the text size and zoom.
+
+**Two mistakes worth keeping:** a `margin-top` above a later `margin: 0` in the
+same block is silently undone — the drawer went straight back under the bar; and
+their `.pc-modal` scrolls its whole box, so without `overflow: hidden` on the
+panel the "fixed" header scrolled away with everything else.
+
+**The picker is a dropdown.** A closed trigger saying how many are chosen, a
+chevron that turns, and a panel that opens on click and closes on the chevron,
+on Escape, on a click outside, and after a pick. Search lives inside the panel.
+The chosen products are cards with their picture; the per-product deal rows
+carry the same picture, and their first column is `minmax(0, 1fr)` because a
+plain `1fr` refuses to shrink below a 120-character product name and pushed the
+amount and video fields out of the drawer.
+
+**PICTURES, WHERE THERE ARE ANY.** `ProductTile` draws the image when the source
+gives one and a letter tile when it does not, and a broken URL falls back to the
+same tile. Today that means letters for most brands, and it is the APIs rather
+than us: Euka's product list carries titles and figures and **no image field at
+all**, its one endpoint with `imageUrl` (`social-intelligence/products`) indexes
+TikTok at large — asked for our own brand id it answered with another company's
+products — and Reacher carries `primary_image_url` only where a shop's catalogue
+is populated, which Irwin's is not.
+
+**Guarded by `pnpm verify:drawer`** (78 checks): at 100%, 125%, 150%, 175%, 200%
+and phone width it measures that the drawer is at the right edge and full
+height, that **nothing is painted over its header** (`elementFromPoint`, which is
+what would have caught the first attempt), that Cancel and Add creator are
+inside the window, that nothing spills sideways, that the type is still small,
+and that the list starts closed, opens on the trigger, closes on the chevron and
+on Escape without closing the drawer.
+
 ## The product picker on onboarding, and a deal per product (2026-09-23)
 
 Rashid: *"when we onboard a creator we need to write product name — we want to
