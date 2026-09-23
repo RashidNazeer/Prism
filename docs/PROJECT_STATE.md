@@ -57,6 +57,28 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
 - **Next:** he reads the words, answers the support@ and noindex questions,
   then the public pages go to production on their own and he resubmits.
 
+### Products now show their real photographs (2026-09-24)
+
+- The onboarding picker shows real product pictures, on EUKA brands and Reacher
+  ones alike: Swisse 8/8, Irwin Naturals 11/11, Penetrex 6/9 (three products
+  genuinely have no image indexed; those are retried in a fortnight).
+- They are looked up by the exact TikTok product id and cached in
+  `collab_product_images`, so the second open of a brand is instant.
+- **Proven:** `verify:product-images` 19/19 (including fetching the URLs) and
+  `verify:drawer` 84/84, which measures in a real browser that the photographs
+  actually render at 100–200% zoom and on a phone.
+- The Reacher sync pill no longer says "· 207 videos".
+
+### Cruva is BLOCKED on one fact from Rashid (2026-09-24)
+
+PDC / Aquasonic / Joymode map to **Pure Daily Care**, **Aqua Sonic** and
+**JOYMODE**, all of which already exist in Paid Collabs. The `CRUVA_API` key in
+`.env.local` is valid — proven against a bogus key of the same shape — but it
+reaches exactly two endpoints, `/community/campaigns/list` and
+`/community/campaigns/get`. There is no videos, creators, products or ad-spend
+endpoint behind it. See OPERATIONS for everything already ruled out, so none of
+it is repeated.
+
 ### Onboarding is a side drawer now (2026-09-23)
 
 - The onboarding popup is a right-hand drawer: more room, header and footer

@@ -2295,3 +2295,17 @@ source must extract the handle from that URL.
 His API key is outside the repo in `cli-secrets.env` as `REACHER_API`. It has
 never been in a chat message or a file in this repo.
 
+
+## Cruva for Pure Daily Care, Aqua Sonic and JOYMODE (parked 2026-09-24)
+
+Rashid asked for the Reacher treatment for the three brands on Cruva. The brands
+all exist; the key is valid; the data endpoints are not reachable with it.
+
+**Trigger to bring this back:** Rashid supplies the three Cruva **Shop IDs** and
+either a key that reaches the data endpoints or the endpoint names from Cruva
+support. Everything already ruled out is in OPERATIONS under "Cruva, what is
+already known" — start there rather than re-probing.
+
+When it does come back, product pictures are already solved for it: the market
+lookup in `_shared/product-images.ts` takes a TikTok product id and no brand id,
+so Cruva products will get photographs the day their catalogue is readable.

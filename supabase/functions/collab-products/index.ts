@@ -31,6 +31,7 @@ import { z } from 'npm:zod@4.4.3';
 import { corsHeaders, json } from '../_shared/cors.ts';
 import { EUKA_V1, eukaKeys, indexStores, storeBrandPair } from '../_shared/euka-accounts.ts';
 import { findShop, read as reacherRead, reacherKey, shops as reacherShops } from '../_shared/reacher.ts';
+import { attachProductImages } from '../_shared/product-images.ts';
 
 const Body = z.object({
   brand: z.string().trim().min(1).max(120),
@@ -54,6 +55,20 @@ type Product = {
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const norm = (s: unknown) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/**
+ * ANY EUKA ACCOUNT, FOR THE MARKET LOOKUP ONLY.
+ *
+ * `euka-accounts.ts` insists a store is only ever asked about with the key that
+ * returned it, and that rule is not being bent here: the market endpoint takes
+ * a public TikTok product id and no store or brand id at all, so the answer
+ * does not depend on which of our accounts asks. It is what lets a Reacher
+ * brand — which has no Euka store anywhere — still get product pictures.
+ */
+const marketAuth = () => {
+  const k = eukaKeys()[0];
+  return k ? { Authorization: `Bearer ${k}` } : null;
+};
 
 /* The modal caches per brand on its own side; `json()` here sends no cache
    header, and adding one would be a lie about what this helper does. */
@@ -133,21 +148,22 @@ Deno.serve(async (req: Request) => {
               })).filter((p) => p.name);
 
               /*
-               * NO PICTURE COMES WITH A EUKA PRODUCT, and it is worth writing
-               * down why rather than leaving somebody to try it again.
-               * `dashboard/products-performance` answers productId, title and
-               * twenty figures — no image of any kind. The one Euka endpoint
-               * that does carry `imageUrl`, `social-intelligence/products`, is
-               * MARKET data: asked for our own brand id it answered with
-               * "medicube US Store" products, because that surface indexes
-               * TikTok at large rather than our shop. Matching those back to
-               * ours by title would be guessing at somebody else's catalogue.
+               * NO PICTURE COMES WITH THIS ANSWER — `products-performance`
+               * carries productId, title and twenty figures and no image of
+               * any kind — so the pictures are fetched separately, BY ID.
                *
-               * Reacher's `products/catalog` DOES carry `primary_image_url`,
-               * and it is used below when that shop's catalogue is populated.
-               * Everywhere else the picker draws a letter tile, which says "no
-               * picture" honestly instead of showing the wrong product.
+               * The warning that used to live here still stands and is worth
+               * keeping: the *list* endpoint `social-intelligence/products` is
+               * market-wide, and asked for our own brand id it came back with
+               * "medicube US Store" products. A list cannot be trusted. The
+               * lookup BY PRODUCT ID can, because the id is ours, and that is
+               * what `attachProductImages` uses.
                */
+              await attachProductImages(admin, products, {
+                store: { auth, brandId },
+                market: auth,
+                nativeSource: 'euka-social',
+              });
               return json({ source: 'euka', store: store.name, products }, 200, req);
             }
             return json({ source: 'euka', store: store.name, products: [], note: `Euka answered ${r.status}` }, 200, req);
@@ -201,6 +217,10 @@ Deno.serve(async (req: Request) => {
           const derived: Product[] = [...tally.entries()]
             .sort((a, b) => b[1].n - a[1].n)
             .map(([id, t]) => ({ id, name: t.name, image: null, price: null, status: null }));
+          /* These ids came off Reacher's videos, but they are TIKTOK product
+             ids, so the market lookup can picture them even though this brand
+             has no EUKA store and no EUKA brand id anywhere. */
+          await attachProductImages(admin, derived, { market: marketAuth() });
           return json({
             source: 'reacher',
             store: full.shop_name,
@@ -220,6 +240,9 @@ Deno.serve(async (req: Request) => {
             : null,
           status: p.product_status ?? null,
         })).filter((p) => p.name);
+        /* Their own catalogue picture wins where there is one; the rest fall
+           through to the market lookup by the same TikTok product id. */
+        await attachProductImages(admin, products, { market: marketAuth(), nativeSource: 'reacher' });
         return json({ source: 'reacher', store: full.shop_name, products }, 200, req);
       }
     }

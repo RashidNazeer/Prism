@@ -1838,3 +1838,51 @@ pnpm verify:product-picker  # 24 checks on the dropdown and the deal split
 paint over our shell header whatever its z-index. The drawer is offset by
 `--wx-topbar` (3.5rem, the header's own height) for that reason. Do not "fix" it
 by raising a z-index; it cannot work from inside a sealed stacking context.
+
+### Product pictures
+
+```bash
+pnpm verify:product-images   # 19 checks: the endpoint per platform, then FETCH the URLs
+pnpm verify:drawer           # 84 checks, including that the photographs render in a browser
+```
+
+Pictures come from EUKA by **exact TikTok product id**, never from a list:
+
+```
+GET  /social-intelligence/products/{productId}?brandId=…      our own shop's record
+POST /market-intelligence/tiktok/product/detail  need_image:1  market data, id only
+```
+
+The second needs no brand id, so it works for Reacher and Cruva brands too. Any
+EUKA key may ask it — that is not a breach of the one-key-per-store rule, which
+is about store data. Answers are cached in `public.collab_product_images`;
+delete a row to force a re-ask.
+
+### Cruva, what is already known — do not re-derive this
+
+The key lives in `.env.local` as `CRUVA_API`. **It is valid**: a bogus key of the
+same shape gets `403 Unauthorized`, the real one gets through.
+
+| Fact | Evidence |
+|---|---|
+| Base is `https://api.cruva.com`, auth is `x-api-key` | `/health` returns `{"status":"ok"}` |
+| Server is gunicorn; a missing route is `404 {"error":"Not found"}` | response headers |
+| Every call needs an `X-Shop-Id` header | `400 {"error":"Missing X-Shop-Id header"}` |
+| The key reaches **only** `/community/campaigns/list` and `/community/campaigns/get` | swept ~400 candidate paths derived from their own operation names |
+| There is no OpenAPI spec, no `/docs`, no public API article | probed; help centre has no API page |
+| `mcp.cruva.com` lists all 106 operations to **any** bearer token | a bogus key gets the same list — so `tools/list` is public and the key is NOT an MCP credential |
+| Actually calling an MCP tool needs OAuth | `401 expected JWE compact serialization` |
+| The key cannot mint an OAuth token | `/oauth/token` answers `unsupported_grant_type` for every grant |
+
+**A rate limiter will make a sweep lie to you.** Running eight requests at once
+returns `429` for everything, and a 429 is not a 404 — a concurrent sweep
+reported 366 "live routes" that were all rate-limit responses. Probe one at a
+time, with a gap, and keep a known-good path as a control.
+
+What Cruva's MCP catalogue shows it *has*, for when a working key arrives:
+`search_videos`, `search_crm_affiliates`, `search_brand_products`,
+`list_gmv_max_campaigns` and `list_gmv_max_creatives` — the last being
+**per-video ad spend**, which is better than Reacher gives us.
+
+**Still needed from Rashid:** the three Cruva Shop IDs, and the endpoint names
+from Cruva support.

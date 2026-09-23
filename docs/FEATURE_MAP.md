@@ -2377,6 +2377,75 @@ its videos, both themes, 390px, zero console errors, and a revoked link says so
 in plain words) **and `pnpm verify:client-links`** (18: make, copy, open,
 details, new address, stop).
 
+## The products get their photographs (2026-09-24)
+
+Rashid: *"also check if images can be fetcheable for cruva and euka so we can
+show images of product in dropdown"*.
+
+**THE PREVIOUS ANSWER WAS TRUE AND STILL WRONG.** It said no picture comes with
+a product, and cited real evidence: EUKA's `dashboard/products-performance`
+carries a title and twenty figures and no image field, and the one endpoint that
+does carry `imageUrl` — `social-intelligence/products` — is market-wide, and
+asked for our own brand id answered with another company's products. Both facts
+hold. What the reasoning missed is that **a LIST cannot be trusted here but a
+LOOKUP BY ID can**, because the id is ours. EUKA's public spec
+(`api.euka.ai/openapi.json`) has two:
+
+```
+GET  /social-intelligence/products/{productId}?brandId=…   -> imageUrl
+POST /market-intelligence/tiktok/product/detail (need_image: 1) -> master_image_url
+```
+
+The second takes a TikTok product id and **nothing else** — no brand id, no
+store — which is how a REACHER brand with no EUKA presence anywhere gets
+pictures. Irwin Naturals came out at 11 of 11.
+
+**THE ONE-KEY-PER-STORE RULE IS NOT BENT BY THIS.** `euka-accounts.ts` insists a
+store is only ever asked about with the key that returned it, because asking
+account A about account B's store fills a brand's screen with another brand's
+money. That rule governs STORE data. The market lookup is not store data: it
+takes a public product id and returns what TikTok shows the world. The
+store-scoped lookup keeps the rule exactly — it is only ever called with the auth
+that owns the brand id being passed.
+
+**Cached in `collab_product_images`, keyed on the TikTok product id**, because a
+hundred products times one HTTP call per drawer open would make the picker
+slower than the typing it replaced. A photograph changes about never, so a hit
+is kept indefinitely; a MISS is stored too — *that* is what stops the same empty
+lookup running on every open — and retried after a fortnight, since a listing
+that went up this week often has no image indexed yet. A lookup that **times
+out** writes no row at all, deliberately: a timeout is not a miss, and recording
+it would mean believing in nothing for two weeks.
+
+**THE BUG UNDERNEATH THE BUG, worth more than the feature.** The pictures
+arrived at the endpoint and the screen went on drawing letter tiles, because
+`wxPickable` rebuilds every product into a fresh object and `image` was simply
+not among the fields copied — the list was written when no product had one. The
+same omission sat in `toggleProd`. Nothing errored; the data was right at every
+layer and the last one silently dropped it. **A field added upstream is not
+added until every rebuild of that object carries it**, and the way to see it is
+to read what the browser received rather than what the API returned.
+
+The saved record is unaffected on purpose: `cleanProds` builds its own object
+and does not include the picture, so no image URL is persisted where it could go
+stale.
+
+**Guarded twice, because a URL is not a picture.** `verify:product-images`
+checks the endpoint per platform, and refuses to grade coverage on a brand that
+returned no products at all — "0 of 0, 100% covered" is exactly the lie this
+project keeps catching. It then **fetches** the URLs, because a CDN may refuse a
+hotlink. `verify:drawer` closes the loop in a real browser with `naturalWidth`,
+after waiting for every image to settle: measuring half a second after the list
+opens reports "0 loaded" about pictures that are merely still arriving.
+
+## The sync pill stops quoting a number nobody asked for (2026-09-24)
+
+It read *"Already up to date · 207 videos"* and Rashid asked what 207 was. Fair
+question: it was every video Reacher holds for the whole shop — not this brand's
+filed videos, not anything that had just happened, and nothing anyone could act
+on. A figure with no owner, sitting where a result belongs. Now it just says
+"Already up to date".
+
 ## Onboarding is a drawer, and the products are a real dropdown (2026-09-23)
 
 Rashid, after using the first version: *"instead of showing the popup we need to

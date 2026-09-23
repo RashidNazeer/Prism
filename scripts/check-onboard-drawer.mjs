@@ -142,6 +142,15 @@ try {
     /* The dropdown: opens on the trigger, closes on the trigger, closes on Escape. */
     await page.locator('[data-wx="product-trigger"]').click();
     await page.waitForTimeout(500);
+    /* LET THE PICTURES SETTLE BEFORE MEASURING THEM. Product photographs come
+       off TikTok's CDN, and reading `naturalWidth` half a second after the list
+       opens says "0 loaded" about images that are simply still arriving — a
+       failure report about nothing. Wait until every one has either loaded or
+       given up, and only then look. */
+    await page.waitForFunction(() => {
+      const imgs = [...document.querySelectorAll('[data-wx="product-list"] img')];
+      return imgs.length === 0 || imgs.every((i) => i.complete);
+    }, null, { timeout: 15000 }).catch(() => {});
     const opened = await page.evaluate(() => {
       const p = document.querySelector('[data-wx="product-panel"]');
       const d = document.querySelector('.wx-drawer');
@@ -153,12 +162,23 @@ try {
         onScreen: pr.top >= 0 && pr.top < window.innerHeight,
         rows: document.querySelectorAll('[data-wx="product-list"] button').length,
         tiles: document.querySelectorAll('[data-wx="product-list"] button > span:first-child').length,
+        /* A PICTURE IS NOT A PICTURE UNTIL THE BROWSER HAS ONE. Since
+           2026-09-24 the products carry real image URLs from TikTok's CDN, and
+           a CDN is entitled to refuse a hotlink — which would leave a broken
+           tile on the screen while every count elsewhere still said "covered".
+           `naturalWidth` is the only thing that knows the difference. */
+        imgTotal: document.querySelectorAll('[data-wx="product-list"] button img').length,
+        imgOk: [...document.querySelectorAll('[data-wx="product-list"] button img')]
+          .filter((i) => i.complete && i.naturalWidth > 0).length,
       };
     });
     check(!!opened?.open, `${z.label}: pressing it opens the list`);
     if (opened) {
       check(opened.inside && opened.onScreen, `${z.label}: and the list stays inside the drawer`, `inside ${opened.inside}, on screen ${opened.onScreen}`);
       check(opened.rows > 0 && opened.tiles === opened.rows, `${z.label}: every row carries a picture or its stand-in`, `${opened.tiles} of ${opened.rows}`);
+      check(opened.imgTotal > 0 && opened.imgOk > 0,
+        `${z.label}: real product photographs load, not just letter tiles`,
+        `${opened.imgOk} of ${opened.imgTotal} images rendered`);
     }
     await page.locator('[data-wx="product-trigger"]').click();
     await page.waitForTimeout(400);

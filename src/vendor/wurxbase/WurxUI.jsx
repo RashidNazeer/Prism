@@ -2381,9 +2381,13 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
     if (res.creatorsMatched) bits.push(`${res.creatorsMatched} creator${res.creatorsMatched === 1 ? '' : 's'}`);
     if (res.spendWritten) bits.push(`+${res.spendWritten} ad figure${res.spendWritten === 1 ? '' : 's'}`);
     /* "Nothing new" is the usual answer, because the scheduled run got there
-       first. Say that rather than nothing, or the button looks broken. */
-    flash('done', bits.length ? bits.join(' · ') : `Already up to date · ${res.videosSeen || 0} videos`,
-      res.note || '');
+       first. Say that rather than nothing, or the button looks broken.
+       NO COUNT HERE. It used to read "Already up to date · 207 videos", and
+       Rashid asked what 207 was — fairly, because it is every video Reacher
+       holds for the whole shop, not this brand's filed videos and not anything
+       that just happened. A number nobody can act on, sitting where a result
+       belongs, only invites that question. */
+    flash('done', bits.length ? bits.join(' · ') : 'Already up to date', res.note || '');
     if (res.videosFiled) window.location.reload();
   };
   /* WURX-END */
@@ -4591,7 +4595,7 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
   /* WURX-END */
   const prodKey = (p) => (p.name || p.url || '').toLowerCase().trim();
   const hasProd = (p) => prods.some(x => prodKey(x) === prodKey(p));
-  const toggleProd = (p) => setProds(prev => prev.some(x => prodKey(x) === prodKey(p)) ? prev.filter(x => prodKey(x) !== prodKey(p)) : [...prev, { name: p.name || '', url: p.url || '', productId: p.id || p.productId || '' }]);
+  const toggleProd = (p) => setProds(prev => prev.some(x => prodKey(x) === prodKey(p)) ? prev.filter(x => prodKey(x) !== prodKey(p)) : [...prev, { name: p.name || '', url: p.url || '', productId: p.id || p.productId || '', image: p.image || '' }]);
 
   /* WURX-ADDED · THE BRAND'S REAL CATALOGUE, FROM WHICHEVER PLATFORM SELLS IT.
      Rashid, 2026-09-23: "we want to fetch products for that brand from the api
@@ -4643,7 +4647,11 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
       const k = (p.name || '').toLowerCase().trim();
       if (!k || seen.has(k)) continue;
       seen.add(k);
-      out.push({ name: p.name, url: p.url || '', id: p.id || '', price: p.price || '', from: 'api' });
+      /* `image` MUST be carried across. This list is rebuilt into fresh objects,
+         and when it was written no product had a picture, so the field was
+         simply never copied — which is why the catalogue went on drawing letter
+         tiles for hours after the pictures had actually started arriving. */
+      out.push({ name: p.name, url: p.url || '', id: p.id || '', price: p.price || '', image: p.image || '', from: 'api' });
     }
     for (const p of brandProducts) {
       const k = (p.name || p.url || '').toLowerCase().trim();

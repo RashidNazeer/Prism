@@ -92,7 +92,8 @@
     "verify:brand-search": "node scripts/check-brand-search.mjs",
     "verify:reacher": "node scripts/check-reacher.mjs",
     "verify:product-picker": "node scripts/check-product-picker.mjs",
-    "verify:drawer": "node scripts/check-onboard-drawer.mjs"
+    "verify:drawer": "node scripts/check-onboard-drawer.mjs",
+    "verify:product-images": "node scripts/check-product-images.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",
