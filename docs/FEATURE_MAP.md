@@ -2500,7 +2500,19 @@ row carries, anything that is not PNG/JPEG/WebP, and anything over the bucket's
 and the creator-avatar sync had spent it**, which is why `--file` and `--url`
 exist beside `--tiktok`.
 
-**Guarded by `pnpm verify:reacher`** (24 checks): it reads Reacher live and
+**THE VIDEOS BUTTON FOLLOWS THE BRAND (2026-09-23).** Rashid: *"when we click
+euka videos it says no store found obviously because we are using reacher for
+Irwin Naturals"*. That button asked Euka for every brand, and for Irwin the
+honest answer was "EUKA answered, but none of its stores is called Irwin
+Naturals" — a true sentence about the wrong platform. It now reads the brand's
+source once on open (`collab-products` with `probe: true`, which skips the
+catalogue) and: says **Reacher videos** or **EUKA videos** BEFORE it is pressed,
+runs `reacher-sync` or the Euka sweep accordingly, and reports what changed —
+"Already up to date · 207 videos" is the usual answer for Irwin, because the
+scheduled run got there first. The strip above the table names the same source
+rather than always saying "live from EUKA".
+
+**Guarded by `pnpm verify:reacher`** (28 checks): it reads Reacher live and
 **fails if Reacher returns no videos**, because every comparison after that
 would otherwise pass on an empty API. Then: every filed video exists in Reacher
 with the same views, GMV and items AND is on the creator Reacher credits; no

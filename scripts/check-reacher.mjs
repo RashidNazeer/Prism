@@ -271,7 +271,45 @@ try {
     if (campaignCount === 0) {
       check(seen.spendState === null || seen.spendState !== 'ok', 'and the ad-spend card is not claiming a figure', `card state ${seen.spendState}`);
     }
+    /* ── the videos button follows the platform ───────────────────────── */
+    /* Rashid, 2026-09-23: "when we click euka videos it says no store found
+       obviously because we are using reacher". It now says, and does, Reacher
+       for this brand — and must still say EUKA for a Euka brand. */
+    await page.waitForFunction(() => document.querySelector('.pc-vidsync')?.dataset.wxSource !== 'unknown', null, { timeout: 25000 }).catch(() => {});
+    const btn = await page.evaluate(() => {
+      const b = document.querySelector('.pc-vidsync');
+      return { label: b?.textContent.trim() ?? '', source: b?.dataset.wxSource ?? '', strip: document.querySelector('.pc-topvids-sub')?.textContent.trim() ?? '' };
+    });
+    check(btn.source === 'reacher' && /reacher/i.test(btn.label), `${BRAND}: the videos button names Reacher, not EUKA`, `"${btn.label}" (${btn.source})`);
+    check(/reacher/i.test(btn.strip), 'and the strip above the table says where its figures come from', `"${btn.strip}"`);
+
+    /* Press it: the same sync the scheduler runs, and it must report rather
+       than fail. "Already up to date" is the usual and correct answer. */
+    await page.locator('.pc-vidsync').click();
+    await page.waitForFunction(() => !/asking reacher/i.test(document.querySelector('.pc-vidsync')?.textContent || ''), null, { timeout: 60000 }).catch(() => {});
+    await page.waitForTimeout(1500);
+    const after = await page.evaluate(() => ({
+      label: document.querySelector('.pc-vidsync')?.textContent.trim() ?? '',
+      failed: !!document.querySelector('.pc-vidsync.err'),
+    }));
+    check(!after.failed && after.label.length > 0, 'pressing it runs the Reacher sync and reports what happened', `"${after.label}"`);
+
+    /* A EUKA brand is untouched by all of this. */
+    await page.locator('.pc-back').first().click();
+    await page.waitForTimeout(2000);
+    const euka = page.locator('.pc-bt-row').filter({ has: page.locator('.pc-brandname', { hasText: /^\s*Penetrex\s*$/ }) }).first();
+    if (await euka.isVisible().catch(() => false)) {
+      await euka.click();
+      await page.waitForSelector('.pc-vidsync', { timeout: 30000 });
+      await page.waitForFunction(() => document.querySelector('.pc-vidsync')?.dataset.wxSource !== 'unknown', null, { timeout: 25000 }).catch(() => {});
+      const other = await page.evaluate(() => ({
+        label: document.querySelector('.pc-vidsync')?.textContent.trim() ?? '',
+        source: document.querySelector('.pc-vidsync')?.dataset.wxSource ?? '',
+      }));
+      check(other.source === 'euka' && /euka/i.test(other.label), 'a EUKA brand still says EUKA videos', `"${other.label}" (${other.source})`);
+    }
   }
+
   check(errors.length === 0, 'zero console errors', errors.slice(0, 3).join(' | '));
 } finally {
   await browser.close();

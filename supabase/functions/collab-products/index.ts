@@ -36,6 +36,12 @@ const Body = z.object({
   brand: z.string().trim().min(1).max(120),
   /** How far back to look for products that have actually sold. */
   days: z.number().int().min(7).max(365).optional(),
+  /**
+   * WHICH PLATFORM, WITHOUT THE CATALOGUE. The brand page asks this on every
+   * open just to label its own button, and fetching 45 products to answer
+   * "Euka or Reacher?" would make that page wait on two APIs for nothing.
+   */
+  probe: z.boolean().optional(),
 });
 
 type Product = {
@@ -96,6 +102,7 @@ Deno.serve(async (req: Request) => {
         ?? [...index.stores].sort((a, b) => b.name.length - a.name.length)
           .find((s) => norm(s.name).includes(norm(brand)) || norm(brand).includes(norm(s.name)));
       if (store) {
+        if (body.probe) return json({ source: 'euka', store: store.name, products: [] }, 200, req);
         const auth = index.ownerOf.get(store.id);
         if (auth) {
           const brandId = await storeBrandPair(auth, store.id, store.name);
@@ -145,6 +152,7 @@ Deno.serve(async (req: Request) => {
       const shop = all.find((s) => norm(s.shop_name) === norm(brand))
         ?? all.find((s) => norm(s.shop_name).includes(norm(brand)) || norm(brand).includes(norm(s.shop_name)));
       if (shop) {
+        if (body.probe) return json({ source: 'reacher', store: shop.shop_name, products: [] }, 200, req);
         const full = await findShop(shop.shop_name);
         const j = await reacherRead('/products/catalog', full.shop_id, { page: 1, page_size: 100 });
         const rows = (j.data ?? []) as Record<string, any>[];

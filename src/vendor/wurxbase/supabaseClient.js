@@ -271,3 +271,32 @@ export async function collabProducts(brand) {
     return null;
   }
 }
+
+/* WURX-ADDED · which platform a brand's figures come from, without fetching its
+   catalogue. The brand page asks on every open, only to label its own button.
+   Returns 'euka', 'reacher' or 'none'; null means the question could not be
+   asked, which is not the same as "neither". */
+export async function brandSource(brand) {
+  const name = String(brand || '').trim();
+  if (!name) return null;
+  try {
+    const { data, error } = await getSupabase().functions.invoke('collab-products', { body: { brand: name, probe: true } });
+    if (error || !data || data.error) return null;
+    return { source: String(data.source || 'none'), store: data.store || '' };
+  } catch {
+    return null;
+  }
+}
+
+/* WURX-ADDED · run the Reacher sync for Irwin Naturals from the screen, the way
+   the EUKA videos button runs Euka's. Staff only, checked inside the function. */
+export async function runReacherSync() {
+  try {
+    const { data, error } = await getSupabase().functions.invoke('reacher-sync', { body: {} });
+    if (error) return { ok: false, message: error.message || 'Reacher sync failed' };
+    if (!data || data.error) return { ok: false, message: (data && data.error) || 'Reacher sync failed' };
+    return { ok: true, ...data };
+  } catch (e) {
+    return { ok: false, message: (e && e.message) || 'Reacher sync failed' };
+  }
+}

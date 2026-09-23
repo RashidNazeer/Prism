@@ -23,7 +23,7 @@ import {
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { can } from './access';
 import { createPortal } from 'react-dom';
-import { supabase, selectAll, eukaJson, lastEukaFailure, collabProducts } from './supabaseClient';
+import { supabase, selectAll, eukaJson, lastEukaFailure, collabProducts, brandSource, runReacherSync } from './supabaseClient';
 import { godGet, godMoney, godDateParts, colTemplate, colStyle,
   visibleCols } from './godSettings';
 import { generateContractPdf, defaultContractFields, CONTRACT_SECTIONS, renderContractPdf } from './contractPdf';
@@ -2308,6 +2308,49 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
     const rank = { danger: 0, warn: 1, good: 2, info: 3 };
     return out.sort((a, b) => rank[a.tone] - rank[b.tone]).slice(0, 4);
   }, [brand, creators, eukaL30, month, allTime]);
+  /* WURX-ADDED · WHICH PLATFORM THIS BRAND'S VIDEOS COME FROM.
+     Rashid, 2026-09-23: "when we click euka videos it says no store found
+     obviously because we are using reacher for Irwin Naturals".
+
+     The button below used to be Euka or nothing. It now follows the brand: Euka
+     where Euka has the store, Reacher where Reacher has the shop, and the label
+     says which before it is pressed rather than after it fails. Asked once per
+     brand, cheaply — `probe` skips the catalogue. */
+  const [wxSource, setWxSource] = useState('');
+  useEffect(() => {
+    let alive = true;
+    setWxSource('');
+    (async () => {
+      const res = await brandSource(brand.brand);
+      if (alive && res) setWxSource(res.source);
+    })();
+    return () => { alive = false; };
+  }, [brand.brand]);
+
+  /* Reacher's equivalent of the Euka sweep: the same job — this brand's posted
+     videos, filed onto the creators they belong to — done by the function that
+     already does it every fifteen minutes. */
+  const syncReacherVideos = async () => {
+    if (vidSync.state === 'busy') return;
+    const flash = (state, msg, detail) => {
+      setVidSync({ state, msg, detail: detail || '' });
+      setTimeout(() => setVidSync({ state: 'idle', msg: '', detail: '' }), detail ? 22000 : 7000);
+    };
+    setVidSync({ state: 'busy', msg: 'Asking Reacher…' });
+    const res = await runReacherSync();
+    if (!res.ok) { flash('err', 'Reacher sync failed', res.message); return; }
+    const bits = [];
+    if (res.videosFiled) bits.push(`+${res.videosFiled} video${res.videosFiled === 1 ? '' : 's'}`);
+    if (res.creatorsMatched) bits.push(`${res.creatorsMatched} creator${res.creatorsMatched === 1 ? '' : 's'}`);
+    if (res.spendWritten) bits.push(`+${res.spendWritten} ad figure${res.spendWritten === 1 ? '' : 's'}`);
+    /* "Nothing new" is the usual answer, because the scheduled run got there
+       first. Say that rather than nothing, or the button looks broken. */
+    flash('done', bits.length ? bits.join(' · ') : `Already up to date · ${res.videosSeen || 0} videos`,
+      res.note || '');
+    if (res.videosFiled) window.location.reload();
+  };
+  /* WURX-END */
+
   const syncEukaVideos = async () => {
     if (vidSync.state === 'busy') return;
     setVidSync({ state: 'busy', msg: 'Finding store…' });
@@ -2541,17 +2584,21 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
         </div>
         <div className="pc-dd-actions">
           {canEdit && (
+            /* WURX-ADJUSTED · the button follows the brand's platform. */
             <button
               className={`pc-btn pc-btn-sm pc-btn-ghost pc-vidsync ${vidSync.state}`}
-              onClick={syncEukaVideos}
+              onClick={wxSource === 'reacher' ? syncReacherVideos : syncEukaVideos}
               disabled={vidSync.state === 'busy'}
-              title="Fetch this brand's posted videos from EUKA now (also runs automatically every 6 hours) · only videos inside each creator's collab window count"
+              data-wx-source={wxSource || 'unknown'}
+              title={wxSource === 'reacher'
+                ? "Fetch this brand's posted videos from Reacher now (it also runs by itself every 15 minutes)"
+                : "Fetch this brand's posted videos from EUKA now (also runs automatically every 6 hours) · only videos inside each creator's collab window count"}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="23 7 16 12 23 17 23 7" />
                 <rect x="1" y="5" width="15" height="14" rx="2" />
               </svg>
-              {vidSync.state === 'idle' ? 'EUKA videos'
+              {vidSync.state === 'idle' ? (wxSource === 'reacher' ? 'Reacher videos' : 'EUKA videos')
                 : vidSync.state === 'busy' ? (vidSync.msg || 'Syncing…')
                 : vidSync.msg}
             </button>
@@ -2700,7 +2747,8 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
           <div className="pc-topvids">
             <div className="pc-topvids-head">
               Top videos by GMV · {allTime ? 'All time' : monthLabel(month)}
-              <span className="pc-topvids-sub">live from EUKA</span>
+              {/* WURX-ADJUSTED · name the platform this brand really sells on. */}
+              <span className="pc-topvids-sub">{wxSource === 'reacher' ? 'live from Reacher' : 'live from EUKA'}</span>
             </div>
             <div className="pc-topvids-body">
             <div className="pc-topvids-row">
