@@ -2377,6 +2377,68 @@ its videos, both themes, 390px, zero console errors, and a revoked link says so
 in plain words) **and `pnpm verify:client-links`** (18: make, copy, open,
 details, new address, stop).
 
+## Irwin Naturals comes from Reacher, not Euka (2026-09-23)
+
+Rashid: *"there is one brand we have Irwin Naturals, for that brand we have
+Reacher api not euka ... we need same operations as we are currently doing with
+euka api ... Please do not disturb anything, just for Irwin Naturals"*.
+
+**Reacher is a different TikTok Shop affiliate platform** (reacherapp.com — NOT
+`reacher.email`, the email checker of the same name, which cost an hour). The
+Wurx key sees four shops; Irwin Naturals, shop **12832**, is the only one that
+is also one of our brands, and it has no Euka store at all.
+
+**The API, read off their own spec:**
+- base `https://api.reacherapp.com/public/v1`
+- `x-api-key: rk_live_…` **and** `x-shop-id` on every call. `Authorization:
+  Bearer` answers "Invalid token format", which is what a wrong guess looks
+  like here.
+- most reads are POSTs with a filter body; **`page_size` is capped at 100**, and
+  101 is a 422 rather than a truncated page.
+
+**`_shared/reacher.ts` CANNOT WRITE, by construction.** The key is
+`can_write: true`, and their write endpoints create GMV Max campaigns, change
+budgets and target ROAS, cut creators out of delivery, and send DMs as Wurx.
+Every call goes through one allow-list of four read paths; anything else throws
+before a request is made. Adding a path is the deliberate act.
+
+**What `reacher-sync` does**, every fifteen minutes (`reacher-cycle` in pg_cron,
+secret and URL in the vault, exactly like the Euka job):
+1. Reads every video Reacher holds for the shop in a 120-day window.
+2. **Files the ones we do not have onto the matching Irwin row**, in the same
+   `video_codes` shape the team types by hand, plus `src: 'reacher'` for
+   provenance. Matching is by handle, and `tiktok_account` holds a full URL —
+   comparing that to a handle matches nothing, which once reported "Reacher
+   knows 1 of our 19" when the answer was 16.
+3. Writes per-video GMV Max spend into `euka_ad_video_month` with
+   `source = 'reacher'`, so the brand page's Ad spend and ROI need no new
+   query: `euka_ad_totals_for_videos` sums by video id and does not care which
+   platform filed the row.
+4. Records the run in `reacher_sync_runs`, including failures.
+
+**The three rules that keep it from disturbing anything:** every write is
+filtered to `brand = 'Irwin Naturals'`; a video already on a row is left exactly
+as it is, ad code and typed figures included (**add, never replace**); and
+`dryRun: true` does everything but write. The first live run was taken that way,
+and a before/after snapshot of all 1,356 rows proved only Irwin's 7 rows moved.
+
+**THERE IS NO AD SPEND YET, and that is not a fault.** Irwin's shop has zero
+GMV Max campaigns connected, so every ad endpoint there is empty and no spend
+row is written — Ad spend and ROI show a **dash, never $0**, because "nothing
+was spent" is not something we know. The campaign count is recorded on every
+run, so an empty spend list beside "0 campaigns" reads differently from one
+beside "3 campaigns". The day someone connects that ad account, the figures
+start filling with no code change.
+
+**Guarded by `pnpm verify:reacher`** (19 checks): it reads Reacher live and
+**fails if Reacher returns no videos**, because every comparison after that
+would otherwise pass on an empty API. Then: every filed video exists in Reacher
+with the same views, GMV and items AND is on the creator Reacher credits; no
+video is filed twice; **no brand other than Irwin carries a Reacher-filed
+video**; no ad row claims Reacher while no campaign exists; the 22,317 Euka ad
+rows are untouched; a second run would file nothing; and on the screen the
+figures appear while Ad spend stays a dash.
+
 ## Search and filter on a brand's own creator list (2026-09-23)
 
 Rashid: *"we need to let users search the creators there should be search and

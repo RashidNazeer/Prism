@@ -57,6 +57,19 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
 - **Next:** he reads the words, answers the support@ and noindex questions,
   then the public pages go to production on their own and he resubmits.
 
+### Irwin Naturals runs on Reacher (2026-09-23)
+
+- Irwin Naturals is on Reacher, not Euka. A `reacher-sync` Edge Function files
+  its videos onto the Paid Collabs rows every fifteen minutes, and its per-video
+  ad spend into the same table the brand page already reads.
+- **First run: 13 videos onto 7 of 27 creators.** A before/after snapshot of
+  every row proved nothing outside Irwin Naturals changed.
+- **No ad spend yet:** that shop has no GMV Max campaign connected in Reacher,
+  so Ad spend and ROI show a dash. It fills by itself once the ad account is
+  connected there.
+- **Proven:** `verify:reacher` 19/19, including a control that fails if Reacher
+  returns nothing.
+
 ### Search and filter on a brand's creator list (2026-09-23)
 
 - A search box, a Filter button and a count above a brand's table. Search hits

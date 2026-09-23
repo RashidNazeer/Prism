@@ -1734,3 +1734,50 @@ inconvenience: it is discovered while he is in the form, mid-submission.
 **Afterwards:** reviews take days to two weeks. If it is rejected again, get
 their note verbatim BEFORE changing anything — on this app their stated reason
 has twice named the wrong field.
+
+## Reacher (Irwin Naturals only)
+
+Reacher is the affiliate platform Irwin Naturals sells through. Everything else
+is Euka. See FEATURE_MAP, "Irwin Naturals comes from Reacher, not Euka".
+
+**It is `reacherapp.com`.** `reacher.email` / `api.reacher.so` is an unrelated
+email-verification service with the same name, and it answers 403 to everything,
+which reads exactly like a bad key.
+
+```
+base   https://api.reacherapp.com/public/v1
+auth   x-api-key: rk_live_…        (Authorization: Bearer → "Invalid token format")
+shop   x-shop-id: 12832 | 1,2,3 | all     — required on EVERY call
+pages  page / page_size, page_size ≤ 100  — 101 is a 422
+docs   https://docs.reacherapp.com  ·  spec at /openapi.json (297 paths)
+```
+
+**Secrets on dev:** `REACHER_API_KEY` (the function secret) and
+`REACHER_SYNC_SECRET`, plus the vault entries `reacher_sync_secret` and
+`reacher_sync_url`, written by `reacher_set_sync_secret()` and
+`reacher_set_sync_url()` running as the service role. The key is in
+`.env.local` as `REACHER_API` for the check script. **Never write it anywhere
+else** — it can create ad campaigns.
+
+**The schedule:** pg_cron job `reacher-cycle` calls `reacher_run_cycle()` every
+15 minutes. Empty vault means it returns NULL and does nothing, which is what
+production does — there is no Paid Collabs and no Irwin Naturals there.
+
+**Running it by hand**, signed in as ops/admin/ads_manager:
+`functions.invoke('reacher-sync', { body: { dryRun: true } })` reports what it
+would file and writes nothing. Drop `dryRun` to do it. The service role CANNOT
+call it: the gate wants the scheduler's secret or a real user.
+
+**What a run says:** `reacher_sync_runs` holds one row per run — videos seen,
+videos filed, creators matched, spend rows, campaigns seen, and the failure
+reason when `ok` is false.
+
+**NO AD SPEND IS NOT A FAULT.** Irwin's shop has no GMV Max campaign connected,
+so `campaigns_seen` is 0 and no spend row is written; the column shows a dash.
+Verified against a control: the same key returns 207 real videos for that shop,
+so the account is alive and the ads side is simply not connected.
+
+```bash
+pnpm verify:reacher   # 19 checks. Needs SUPABASE_SERVICE_KEY, REACHER_API in
+                      # .env.local, and a preview server
+```

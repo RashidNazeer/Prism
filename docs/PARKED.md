@@ -2165,10 +2165,30 @@ builds that array is where to look (`supabase/functions/tiktok-sync/index.ts`).
 spend behind their own video" is the product. If the pipeline only covers 41
 videos, most creators would see nothing and nobody would know.
 
-## 44. Reacher: explored, dropped, findings kept
+## 44. Reacher: REOPENED 2026-09-23 and BUILT, for Irwin Naturals only
 
-**Status:** CLOSED unless he reopens it
-**Raise it when:** he mentions Reacher again.
+**Status:** BUILT on dev. Irwin Naturals syncs from Reacher every 15 minutes.
+See FEATURE_MAP, "Irwin Naturals comes from Reacher, not Euka", and OPERATIONS,
+"Reacher (Irwin Naturals only)".
+
+**What changed since the notes below were written (2026-09-02):**
+- **The account now has FOUR shops, and one of them is ours in a new way:**
+  Irwin Naturals (12832) joined Cutler Nutrition, Biostime and Longevity. Irwin
+  is a Paid Collabs brand with 27 creators and no Euka store, so Reacher is the
+  only source it can have.
+- **The base URL was never recorded here and cost an hour.** It is
+  `https://api.reacherapp.com/public/v1` with `x-api-key` and `x-shop-id`.
+  `reacher.so` is the unrelated email-verification service.
+- **Still no GMV Max data**, on Irwin as on the others: zero campaigns, so no
+  ad spend. Everything else about the shop is alive — 207 videos.
+- **The write risk is handled structurally**: `_shared/reacher.ts` refuses any
+  path not on a four-entry read allow-list.
+
+**The open question from 2026-09-02 still stands:** `est_commission` is not one
+number, and nobody is paid from it until Reacher explain the derivation.
+
+**Raise it when:** Irwin's ad account is connected in Reacher (the spend
+pipeline is built and waiting), or another brand moves onto Reacher.
 
 Rashid, 2026-09-02: *"this is not to be built in this app reacher is diff
 forget that now i just wanted to see what's available"*. Nothing was built.
