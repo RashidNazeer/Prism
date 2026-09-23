@@ -95,6 +95,14 @@ type Ctx = {
    * the live shop data has no figure.
    */
   storedFollowers: Map<string, number>;
+  /**
+   * A picture for a brand EUKA has no store for, keyed by the brand name in
+   * lower case. Paid Collabs draws every brand face from Euka's store photo;
+   * Irwin Naturals sells through Reacher and has no Euka store at all, so
+   * without this it is a gradient letter for ever. The screen still PREFERS
+   * Euka's photo — this is only consulted when there is none.
+   */
+  brandPhotos: Map<string, string>;
 };
 
 /**
@@ -337,9 +345,34 @@ export function CollabAdFiguresProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  /*
+   * BRAND PICTURES FOR THE BRANDS EUKA CANNOT DESCRIBE, read once. There are a
+   * handful at most — one today — and the bucket is public, so what is stored
+   * is a path and the URL is built here rather than signed.
+   */
+  const [brandPhotos, setBrandPhotos] = useState<Map<string, string>>(() => new Map());
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      const { data, error: pErr } = await getSupabase()
+        .from('collab_brand_photos')
+        .select('brand, path');
+      if (pErr || !data) return;
+      const base = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/brand-assets/`;
+      const out = new Map<string, string>();
+      for (const r of data as { brand: string; path: string }[]) {
+        if (r.brand && r.path) out.set(r.brand.trim().toLowerCase(), base + r.path);
+      }
+      if (live && alive.current) setBrandPhotos(out);
+    })();
+    return () => {
+      live = false;
+    };
+  }, []);
+
   const value = useMemo<Ctx>(
-    () => ({ ensure, get, spark, setMonth, month, ready, loading, error, storedFollowers }),
-    [ensure, get, spark, setMonth, month, ready, loading, error, storedFollowers]
+    () => ({ ensure, get, spark, setMonth, month, ready, loading, error, storedFollowers, brandPhotos }),
+    [ensure, get, spark, setMonth, month, ready, loading, error, storedFollowers, brandPhotos]
   );
 
   return <AdFiguresContext.Provider value={value}>{children}</AdFiguresContext.Provider>;
@@ -364,6 +397,7 @@ export function useCollabAdFigures(): Ctx {
       loading: false,
       error: null,
       storedFollowers: new Map(),
+      brandPhotos: new Map(),
     }
   );
 }

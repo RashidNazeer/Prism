@@ -2430,7 +2430,24 @@ run, so an empty spend list beside "0 campaigns" reads differently from one
 beside "3 campaigns". The day someone connects that ad account, the figures
 start filling with no code change.
 
-**Guarded by `pnpm verify:reacher`** (19 checks): it reads Reacher live and
+**A PICTURE FOR A BRAND EUKA HAS NEVER HEARD OF (2026-09-23).** Every brand
+face in Paid Collabs is Euka's store photo, so Irwin was a gradient letter.
+`public.collab_brand_photos` holds one row per brand NAME — name, because Paid
+Collabs brands are free text on `wurxbase.creators.brand` and most have no row
+in `public.brands` at all — pointing at an object in the existing PUBLIC
+`brand-assets` bucket. `collab-ad-figures` reads the table once and hands the
+map to the vendored app; `BrandFace` uses it **only when Euka has no photo, or
+when Euka's own image fails to load**, so no existing brand face changes.
+`data-wx-photo` says which source won, which is what the check reads.
+
+Put a picture there with `node scripts/brand-photo.mjs "<brand>" --tiktok
+<handle> | --file <path> | --url <address>`. It refuses a brand no Paid Collabs
+row carries, anything that is not PNG/JPEG/WebP, and anything over the bucket's
+2MB. Irwin's came from their own site: **unavatar has a daily anonymous limit
+and the creator-avatar sync had spent it**, which is why `--file` and `--url`
+exist beside `--tiktok`.
+
+**Guarded by `pnpm verify:reacher`** (24 checks): it reads Reacher live and
 **fails if Reacher returns no videos**, because every comparison after that
 would otherwise pass on an empty API. Then: every filed video exists in Reacher
 with the same views, GMV and items AND is on the creator Reacher credits; no

@@ -1781,3 +1781,25 @@ so the account is alive and the ads side is simply not connected.
 pnpm verify:reacher   # 19 checks. Needs SUPABASE_SERVICE_KEY, REACHER_API in
                       # .env.local, and a preview server
 ```
+
+### A brand picture for a brand EUKA does not cover
+
+Paid Collabs draws every brand face from Euka's store photo. A brand with no
+Euka store — Irwin Naturals — shows a gradient letter until it is given one.
+
+```bash
+SUPABASE_SERVICE_KEY=... node scripts/brand-photo.mjs "Irwin Naturals" --tiktok irwinnaturalsofficial
+SUPABASE_SERVICE_KEY=... node scripts/brand-photo.mjs "Irwin Naturals" --file C:/path/logo.png
+SUPABASE_SERVICE_KEY=... node scripts/brand-photo.mjs "Irwin Naturals" --url https://…/logo.png
+SUPABASE_SERVICE_KEY=... node scripts/brand-photo.mjs --list
+```
+
+It stores the file in the public `brand-assets` bucket under
+`collab-brands/<slug>.<ext>` and records it in `collab_brand_photos`. The
+screen prefers Euka's photo and reads this only when there is none.
+
+**`--tiktok` goes through unavatar.io, which has a DAILY anonymous limit** that
+`sync-creator-avatars` also spends: a 429 saying "Daily anonymous rate limit
+reached" means try tomorrow or use a file. Irwin's picture came from the logo
+on their own website instead (their Shopify CDN serves it at any size —
+`?width=512&height=512`), which is why `--file` and `--url` exist.

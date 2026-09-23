@@ -184,6 +184,23 @@ if (dryErr) {
   check(dry?.shop === BRAND && dry?.videosSeen > 0, 'and it is still reading the right shop', `${dry?.shop}, ${dry?.videosSeen} videos`);
 }
 
+/* ── the brand's own picture ────────────────────────────────────────────── */
+/* Rashid, 2026-09-23: "can we have a photo (dp) of the brand as well". Euka
+   supplies every other brand's face and has no store for this one, so the
+   picture lives in our own bucket and is read only when Euka has nothing. */
+const { data: photo } = await svc.from('collab_brand_photos').select('brand, path, source, bytes').ilike('brand', BRAND).maybeSingle();
+check(!!photo?.path, `${BRAND} has a picture of its own recorded`, photo ? `${photo.source}, ${Math.round((photo.bytes || 0) / 1024)}KB` : 'no row');
+if (photo?.path) {
+  const url = `${URL_}/storage/v1/object/public/brand-assets/${photo.path}`;
+  const r = await fetch(url);
+  const buf = r.ok ? Buffer.from(await r.arrayBuffer()) : null;
+  /* PNG magic, then its own width and height: a 404 page or an HTML error
+     would otherwise pass as "something was served". */
+  const isPng = !!buf && buf.length > 24 && buf.readUInt32BE(0) === 0x89504e47;
+  check(r.ok && !!buf && buf.length > 1000, 'the picture is served publicly, without a session', r.ok ? `${Math.round((buf?.length ?? 0) / 1024)}KB` : `HTTP ${r.status}`);
+  check(isPng && buf.readUInt32BE(16) >= 128, 'and it is a real image, big enough to render', isPng ? `${buf.readUInt32BE(16)}x${buf.readUInt32BE(20)}` : 'not a PNG');
+}
+
 /* ── the run log ────────────────────────────────────────────────────────── */
 const { data: runs } = await svc.from('reacher_sync_runs').select('*').order('ran_at', { ascending: false }).limit(3);
 check((runs || []).length > 0 && runs[0].ok, 'the last run is recorded and succeeded',
@@ -219,6 +236,17 @@ try {
   await page.waitForTimeout(4000);
   const row = page.locator('.pc-bt-row').filter({ has: page.locator('.pc-brandname', { hasText: new RegExp(`^\\s*${BRAND}\\s*$`) }) }).first();
   check(await row.isVisible().catch(() => false), `${BRAND} is listed on the Brands screen for ${MONTH}`);
+
+  /* The face on the list: a real picture, from OUR store rather than Euka's,
+     and no other brand's face taken over by it. */
+  const faces = await page.evaluate(() => [...document.querySelectorAll('.pc-bt-row')].map((r) => ({
+    brand: r.querySelector('.pc-brandname')?.textContent.trim() ?? '',
+    from: r.querySelector('.pc-ava-photo img')?.getAttribute('data-wx-photo') ?? null,
+  })));
+  const mine = faces.find((f) => f.brand.toLowerCase() === BRAND.toLowerCase());
+  check(mine?.from === 'ours', `${BRAND} shows a picture on the Brands list, not a letter`, `face: ${mine?.from ?? 'letter'}`);
+  const hijacked = faces.filter((f) => f.brand.toLowerCase() !== BRAND.toLowerCase() && f.from === 'ours');
+  check(hijacked.length === 0, 'no other brand picked up a picture that is not its own', hijacked.map((f) => f.brand).join(', '));
   if (await row.isVisible().catch(() => false)) {
     await row.click();
     await page.waitForSelector('.pc-ct-row', { timeout: 30000 });

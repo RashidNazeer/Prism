@@ -2199,6 +2199,14 @@ const _brandPhotoPromise = new Map();
 function BrandFace({ brand }) {
   const [photo, setPhoto] = useState('');
   const [err, setErr] = useState(false);
+  /* WURX-ADDED · a face for a brand EUKA has no store for.
+     Rashid, 2026-09-23: "can we have a photo (dp) of the brand as well like we
+     have of other brands", about Irwin Naturals, which sells through Reacher.
+     Their lookup below asks Euka for the store's photo and gives up when there
+     is no store; ours is the fallback, never the first choice, so every brand
+     Euka does describe keeps exactly the picture it has today. */
+  const wxOurPhoto = wxAdsHook().brandPhotos.get(String(brand || '').trim().toLowerCase()) || '';
+  /* WURX-END */
   useEffect(() => {
     let alive = true;
     setErr(false);
@@ -2219,13 +2227,17 @@ function BrandFace({ brand }) {
     })();
     return () => { alive = false; };
   }, [brand]);
-  if (photo && !err) {
+  /* WURX-ADDED · ours only when Euka has nothing, or when Euka's own image
+     fails to load — a broken URL and no URL are the same thing to a reader. */
+  const wxSrc = (photo && !err) ? photo : wxOurPhoto;
+  if (wxSrc) {
     return (
       <span className="pc-ava pc-ava-photo">
-        <img src={photo} alt="" loading="lazy" onError={() => setErr(true)} />
+        <img src={wxSrc} alt="" loading="lazy" onError={() => setErr(true)} data-wx-photo={wxSrc === wxOurPhoto ? 'ours' : 'euka'} />
       </span>
     );
   }
+  /* WURX-END */
   return <span className="pc-ava" style={{ background: gradFor(brand) }}>{initial(brand)}</span>;
 }
 
