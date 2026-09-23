@@ -1803,3 +1803,25 @@ screen prefers Euka's photo and reads this only when there is none.
 reached" means try tomorrow or use a file. Irwin's picture came from the logo
 on their own website instead (their Shopify CDN serves it at any size —
 `?width=512&height=512`), which is why `--file` and `--url` exist.
+
+### The onboarding product picker (`collab-products`)
+
+One Edge Function answers "what does this brand sell", for Euka brands and
+Reacher ones alike. Staff (and the read-only Paid Collabs roles) only.
+
+```js
+// signed in as staff
+await supabase.functions.invoke('collab-products', { body: { brand: 'Penetrex' } })
+// → { source: 'euka' | 'reacher' | 'none', store, products: [{id,name,image,price,status}], note }
+```
+
+- **Euka** needs the brand id, not the store id, and `pageSize` ≤ 100.
+- **Reacher's `/products/catalog` is empty for Irwin**, so the function falls
+  back to the products named on that shop's videos. The `note` says when it did.
+- `source: 'none'` means neither platform has that brand — most of the 43 Paid
+  Collabs brands. The modal then behaves exactly as it did before.
+
+```bash
+pnpm verify:product-picker   # 22 checks. Needs a preview server, and
+                             # SUPABASE_SERVICE_KEY for the no-stray-row proof
+```

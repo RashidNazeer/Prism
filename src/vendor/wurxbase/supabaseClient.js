@@ -238,3 +238,36 @@ export async function eukaJson(params = {}) {
     return null;
   }
 }
+
+/* WURX-ADDED · a brand's products, from whichever platform sells it.
+   Rashid, 2026-09-23: onboarding should offer a product dropdown rather than a
+   free-text box. `collab-products` decides between Euka and Reacher and answers
+   one shape, so this helper — and the modal above it — never has to know which.
+
+   NULL MEANS "COULD NOT ASK", not "no products". The modal keeps its typed
+   fallback in that case rather than showing an empty dropdown, which would read
+   as "this brand has none". */
+export async function collabProducts(brand) {
+  const name = String(brand || '').trim();
+  if (!name) return null;
+  try {
+    const { data, error } = await getSupabase().functions.invoke('collab-products', { body: { brand: name } });
+    if (error) {
+      console.error('[collab-products]', error.message || error);
+      return null;
+    }
+    if (!data || data.error) {
+      if (data && data.error) console.error('[collab-products]', data.error);
+      return null;
+    }
+    return {
+      source: String(data.source || 'none'),
+      store: data.store || '',
+      note: data.note || '',
+      products: Array.isArray(data.products) ? data.products : [],
+    };
+  } catch (e) {
+    console.error('[collab-products]', e && e.message);
+    return null;
+  }
+}

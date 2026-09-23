@@ -40,6 +40,9 @@ const ALLOWED = new Set([
   '/videos/list',
   '/gmv-max/campaigns',
   '/gmv-max/videos/summary',
+  /* Added 2026-09-23 for the onboarding product picker. A read: it lists the
+     shop's catalogue with titles, images and prices. */
+  '/products/catalog',
 ]);
 
 export function reacherKey(): string {

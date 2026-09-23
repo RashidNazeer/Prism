@@ -2377,6 +2377,59 @@ its videos, both themes, 390px, zero console errors, and a revoked link says so
 in plain words) **and `pnpm verify:client-links`** (18: make, copy, open,
 details, new address, stop).
 
+## The product picker on onboarding, and a deal per product (2026-09-23)
+
+Rashid: *"when we onboard a creator we need to write product name — we want to
+fetch products for that brand from the api so it will show us the dropdown to
+choose the product from, we can also search product because list may be long
+... if user has chosen only one product it's fine but more than one he may have
+different deal of videos and amount on that ... their total sum will be auto in
+the row below ... do it for reacher and euka as well"*.
+
+**One door, two platforms.** `collab-products` takes a brand name, finds that
+brand's Euka store or Reacher shop, and answers ONE shape — `{ id, name, image,
+price, status }` — so the modal never knows which platform a brand is on:
+- **Euka:** `POST /api/v1/dashboard/products-performance`, with the Euka BRAND
+  id (not the store id — `storeBrandPair` exists because that mismatch is easy)
+  and a 120-day window. **`pageSize` caps at 100**; 200 is a 400.
+- **Reacher:** `POST /public/v1/products/catalog`. **It is empty for Irwin**, as
+  their creator list is — that side of their sync is not populated for this shop
+  — so the fallback derives the catalogue from `/videos/list`, where every video
+  carries its product id and name, commonest first. Not a guess: the same
+  products, counted from work that was really posted.
+- A brand on neither platform is a **fact, not an error**: the typed box and the
+  brand's focus products stay exactly as they were. An empty dropdown would
+  claim the brand has no products.
+
+**The picker** (`data-wx="product-search"`, `product-list`): the catalogue with
+the brand's focus products folded in, every word of the search must match, and
+the + button still adds a product nobody has ever heard of. Product names here
+are paragraphs — Irwin's run to 120 characters — so the chips truncate with the
+whole name in the hover; theirs had two chips overlapping each other and the
+field below.
+
+**A deal per product, once there is more than one.** One product behaves exactly
+as it always did. Two or more grow an amount and a videos field each
+(`data-wx="amount-N"` / `videos-N`), and the pair underneath becomes the
+**total, computed and read-only** — two ways to type one number is how they come
+to disagree.
+
+**THE TOTAL IS WHAT `deal` CARRIES**, because `deal` is the free text every
+other screen parses: the budget, Allocated, cost per video, the delivery bar,
+the brand cards, the client links and every check. The split rides alongside on
+`creators.products` as `{ name, url, productId, amount, videos }`, which is
+additive and ignored by everything that does not know about it.
+
+**Guarded by `pnpm verify:product-picker`** (22 checks): the dropdown is
+compared against what the API answers for a Euka brand AND the Reacher one
+(both controls fail the run if a catalogue is empty); search narrows it and a
+word matching nothing empties it; one product keeps the typed fields; two
+produce two rows; the totals are the sum and move as the numbers change and
+cannot be typed over; and **pressing Save sends `$800 / 12 videos` with the
+split beside it** — the write is intercepted in the browser, so the whole path
+runs and **no test row ever reaches Paid Collabs**, which the check then proves
+by looking.
+
 ## Irwin Naturals comes from Reacher, not Euka (2026-09-23)
 
 Rashid: *"there is one brand we have Irwin Naturals, for that brand we have

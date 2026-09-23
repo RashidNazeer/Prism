@@ -23,7 +23,7 @@ import {
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { can } from './access';
 import { createPortal } from 'react-dom';
-import { supabase, selectAll, eukaJson, lastEukaFailure } from './supabaseClient';
+import { supabase, selectAll, eukaJson, lastEukaFailure, collabProducts } from './supabaseClient';
 import { godGet, godMoney, godDateParts, colTemplate, colStyle,
   visibleCols } from './godSettings';
 import { generateContractPdf, defaultContractFields, CONTRACT_SECTIONS, renderContractPdf } from './contractPdf';
@@ -4491,7 +4491,106 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
   const [prodInput, setProdInput] = useState('');
   const prodKey = (p) => (p.name || p.url || '').toLowerCase().trim();
   const hasProd = (p) => prods.some(x => prodKey(x) === prodKey(p));
-  const toggleProd = (p) => setProds(prev => prev.some(x => prodKey(x) === prodKey(p)) ? prev.filter(x => prodKey(x) !== prodKey(p)) : [...prev, { name: p.name || '', url: p.url || '' }]);
+  const toggleProd = (p) => setProds(prev => prev.some(x => prodKey(x) === prodKey(p)) ? prev.filter(x => prodKey(x) !== prodKey(p)) : [...prev, { name: p.name || '', url: p.url || '', productId: p.id || p.productId || '' }]);
+
+  /* WURX-ADDED · THE BRAND'S REAL CATALOGUE, FROM WHICHEVER PLATFORM SELLS IT.
+     Rashid, 2026-09-23: "we want to fetch products for that brand from the api
+     so when we onboard creator it will show us the dropdown to choose the
+     product from, we can also search product because list may be long".
+
+     `collab-products` answers for Euka brands and Reacher ones alike, in one
+     shape, so nothing here knows which platform a brand is on. It is asked once
+     per brand and remembered for as long as the modal is open: onboarding
+     several creators for one brand should not be several round trips.
+
+     NULL IS NOT AN EMPTY LIST. A brand on neither platform, or a call that
+     failed, leaves the typed box and the brand's own focus products exactly as
+     they were — an empty dropdown would say "this brand has no products",
+     which is a different and usually false statement. */
+  const [apiProds, setApiProds] = useState([]);
+  const [apiState, setApiState] = useState('idle');   // idle | loading | ok | none
+  const [apiNote, setApiNote] = useState('');
+  const apiCache = useRef(new Map());
+  useEffect(() => {
+    const brand = (f.brand || '').trim();
+    if (!brand) { setApiProds([]); setApiState('idle'); setApiNote(''); return; }
+    if (apiCache.current.has(brand)) {
+      const hit = apiCache.current.get(brand);
+      setApiProds(hit.products); setApiState(hit.products.length ? 'ok' : 'none'); setApiNote(hit.note || '');
+      return;
+    }
+    let alive = true;
+    setApiState('loading'); setApiNote('');
+    (async () => {
+      const res = await collabProducts(brand);
+      if (!alive) return;
+      const products = res?.products ?? [];
+      apiCache.current.set(brand, { products, note: res?.note || '' });
+      setApiProds(products);
+      setApiNote(res?.note || '');
+      setApiState(products.length ? 'ok' : 'none');
+    })();
+    return () => { alive = false; };
+  }, [f.brand]);
+
+  /* One list to choose from: the catalogue first, then any focus product the
+     brand carries that the catalogue does not, so nothing already typed by the
+     team disappears. Already-chosen products drop out. */
+  const wxPickable = useMemo(() => {
+    const seen = new Set(prods.map(prodKey));
+    const out = [];
+    for (const p of apiProds) {
+      const k = (p.name || '').toLowerCase().trim();
+      if (!k || seen.has(k)) continue;
+      seen.add(k);
+      out.push({ name: p.name, url: p.url || '', id: p.id || '', price: p.price || '', from: 'api' });
+    }
+    for (const p of brandProducts) {
+      const k = (p.name || p.url || '').toLowerCase().trim();
+      if (!k || seen.has(k)) continue;
+      seen.add(k);
+      out.push({ name: p.name || '', url: p.url || '', id: '', price: '', from: 'brand' });
+    }
+    return out;
+  }, [apiProds, brandProducts, prods]);
+
+  /* The search box filters that list; with nothing typed it shows the lot,
+     scrolled. Every word must appear, so "kidney cleanse" finds a product whose
+     name puts them apart. */
+  const wxProdMatches = useMemo(() => {
+    const q = prodInput.trim().toLowerCase();
+    if (!q) return wxPickable;
+    const words = q.split(/\s+/);
+    return wxPickable.filter((p) => {
+      const hay = `${p.name} ${p.url}`.toLowerCase();
+      return words.every((w) => hay.includes(w));
+    });
+  }, [wxPickable, prodInput]);
+
+  /* PER-PRODUCT DEALS. Rashid: "if user has chosen only one product it's fine
+     but more than one he may have different deal of videos and amount on that
+     ... their total sum will be auto in the row below".
+
+     With one product the two fields at the bottom are the deal, exactly as
+     before. With more than one, each product carries its own amount and video
+     count and those two fields become the TOTAL — computed, never typed, so
+     they cannot disagree with the parts. The total is what goes into `deal`,
+     which is the field every other screen reads: the budget, cost per video,
+     the delivery bar and the brand cards all parse that text, and they must
+     keep seeing one number for the row. */
+  const wxMulti = prods.length > 1;
+  const wxSplitTotals = useMemo(() => {
+    let amount = 0, videos = 0, missing = 0;
+    for (const p of prods) {
+      const a = Number(p.amount), v = Number(p.videos);
+      if (!Number.isFinite(a) || !Number.isFinite(v) || String(p.amount ?? '') === '' || String(p.videos ?? '') === '') missing++;
+      amount += Number.isFinite(a) ? a : 0;
+      videos += Number.isFinite(v) ? v : 0;
+    }
+    return { amount, videos, missing };
+  }, [prods]);
+  const setProdField = (i, key, value) => setProds((prev) => prev.map((p, j) => (j === i ? { ...p, [key]: value } : p)));
+  /* WURX-END */
   const removeProd = (idx) => setProds(prev => prev.filter((_, j) => j !== idx));
   const addCustomProd = () => {
     const name = prodInput.trim();
@@ -4502,7 +4601,11 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
     }
     setProdInput('');
   };
+  /* WURX-ADJUSTED · theirs, kept because `hasProd` and the chips still read it,
+     but the picker below now builds its own list from the brand's real
+     catalogue with these folded in — see `wxPickable`. */
   const pickableProducts = brandProducts.filter(p => !hasProd(p));
+  void pickableProducts;
 
   // Name autocomplete from directory · ranked (prefix > word > substring),
   // also matches on TikTok handles, exact matches stay visible for autofill
@@ -4660,14 +4763,35 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
     if (!f.brand.trim()) { setErr('Brand is required'); return; }
     setSaving(true);
     setErr('');
-    // Build the Wurx `deal` text from amount + videos_count
+    /* Build the Wurx `deal` text from amount + videos_count.
+       WURX-ADJUSTED · with several products those two are the TOTAL of the
+       per-product rows. `deal` stays one line of free text holding the whole
+       deal, because the budget, cost per video, the delivery bar, the brand
+       cards and every check parse exactly that; the split lives beside it on
+       `products` and is additive. */
+    const wxAmount = wxMulti ? (wxSplitTotals.amount || '') : f.amount;
+    const wxVideos = wxMulti ? (wxSplitTotals.videos || '') : f.videos_count;
     let dealText = '';
-    if (f.amount && f.videos_count) dealText = `$${f.amount} / ${f.videos_count} videos`;
-    else if (f.amount) dealText = `$${f.amount}`;
-    else if (f.videos_count) dealText = `${f.videos_count} videos`;
+    if (wxAmount && wxVideos) dealText = `$${wxAmount} / ${wxVideos} videos`;
+    else if (wxAmount) dealText = `$${wxAmount}`;
+    else if (wxVideos) dealText = `${wxVideos} videos`;
 
     const cleanTiktoks = tiktoks.map(t => (t || '').trim()).filter(Boolean);
-    const cleanProds = prods.filter(p => (p.name || '').trim() || (p.url || '').trim());
+    const cleanProds = prods
+      .filter(p => (p.name || '').trim() || (p.url || '').trim())
+      /* WURX-ADJUSTED · carry the per-product split, as numbers rather than the
+         strings the inputs hand back, and only when there is one to carry. A
+         single product keeps the shape it has always had. */
+      .map(p => {
+        const out = { name: p.name || '', url: p.url || '' };
+        if (p.productId) out.productId = String(p.productId);
+        if (wxMulti) {
+          const a = Number(p.amount), v = Number(p.videos);
+          if (Number.isFinite(a) && String(p.amount ?? '') !== '') out.amount = a;
+          if (Number.isFinite(v) && String(p.videos ?? '') !== '') out.videos = v;
+        }
+        return out;
+      });
 
     const payload = {
       ...(isAdd ? {} : { id: c.id }),
@@ -4859,36 +4983,127 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
           {prods.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
               {prods.map((p, i) => (
-                <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 28, padding: '0 11px 0 12px', borderRadius: 999, background: 'var(--pc-warn-bg)', color: 'var(--pc-warn-fg)', fontSize: 12, fontWeight: 700 }} title={p.url || p.name}>
-                  <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--pc-warn-fg)' }} />
-                  {p.name || p.url}
+                /* WURX-ADJUSTED · a real product name is a paragraph. Theirs
+                   put the whole thing in a fixed-height pill, and two of Irwin's
+                   ("2-in-1 Kidney & Liver Super Cleanse | 10-Day Herbal Cleanse
+                   with Milk Thistle, NAC & PACran | Liquid Soft-Gels…") spilled
+                   over each other and over the field below. Truncated here, whole
+                   in the hover. */
+                <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, maxWidth: '100%', height: 28, padding: '0 11px 0 12px', borderRadius: 999, background: 'var(--pc-warn-bg)', color: 'var(--pc-warn-fg)', fontSize: 12, fontWeight: 700 }} title={p.name || p.url}>
+                  <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--pc-warn-fg)', flexShrink: 0 }} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || p.url}</span>
                   <button type="button" onClick={() => removeProd(i)} style={{ width: 18, height: 18, borderRadius: 999, border: 0, background: 'color-mix(in srgb, var(--wx-accent) 8%, transparent)', color: 'inherit', cursor: 'pointer', fontSize: 12, lineHeight: 1, marginLeft: 2 }}>×</button>
                 </span>
               ))}
             </div>
           )}
-          {pickableProducts.length > 0 && (
-            <div style={{ marginBottom: 8 }}>
-              <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--pc-text-2)', marginBottom: 5 }}>From this brand</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {pickableProducts.map((p, i) => (
-                  <button key={i} type="button" onClick={() => toggleProd(p)} style={{ display: 'inline-flex', alignItems: 'center', height: 28, padding: '0 11px', borderRadius: 999, background: 'transparent', color: 'var(--pc-warn-fg)', fontSize: 12, fontWeight: 700, border: '1px dashed var(--pc-warn-fg)', cursor: 'pointer' }}>+ {p.name || p.url}</button>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* WURX-ADDED · the brand's own catalogue, searchable.
+              Theirs offered only the handful of focus products somebody had
+              typed into the brand, plus a free-text box. This lists what the
+              brand actually sells, from Euka or Reacher, and filters as you
+              type because 45 products is a long way to scroll. The typed box
+              stays: a product the API has never heard of still goes in. */}
           <div style={{ display: 'flex', gap: 6 }}>
-            <input className="pc-input" placeholder="Product name" value={prodInput}
+            <input className="pc-input" data-wx="product-search"
+              placeholder={apiState === 'loading' ? 'Loading this brand\u2019s products\u2026' : 'Search products, or type a new one'}
+              value={prodInput}
               onChange={e => setProdInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomProd(); } }} />
-            <button type="button" onClick={addCustomProd} disabled={!prodInput.trim()} style={{ flex: '0 0 40px', height: 40, borderRadius: 12, border: 0, background: prodInput.trim() ? 'var(--pc-accent)' : 'var(--pc-card-2)', color: prodInput.trim() ? 'white' : 'var(--pc-text-3)', cursor: prodInput.trim() ? 'pointer' : 'not-allowed', fontSize: 17, fontWeight: 800 }}>+</button>
+            <button type="button" onClick={addCustomProd} disabled={!prodInput.trim()} title="Add this as a product of your own" style={{ flex: '0 0 40px', height: 40, borderRadius: 12, border: 0, background: prodInput.trim() ? 'var(--pc-accent)' : 'var(--pc-card-2)', color: prodInput.trim() ? 'var(--wx-on-accent)' : 'var(--pc-text-3)', cursor: prodInput.trim() ? 'pointer' : 'not-allowed', fontSize: 17, fontWeight: 800 }}>+</button>
           </div>
+
+          {wxProdMatches.length > 0 && (
+            <div data-wx="product-list" style={{
+              marginTop: 8, maxHeight: 210, overflowY: 'auto',
+              border: '1px solid var(--pc-divider)', borderRadius: 12, background: 'var(--pc-card-2)',
+            }}>
+              {wxProdMatches.map((p, i) => (
+                <button key={(p.id || p.name) + '-' + i} type="button" onClick={() => { toggleProd(p); setProdInput(''); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                    padding: '9px 12px', border: 0, borderBottom: i === wxProdMatches.length - 1 ? 0 : '1px solid var(--pc-divider)',
+                    background: 'transparent', color: 'var(--pc-text)', textAlign: 'left',
+                    fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                  }}>
+                  <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || p.url}</span>
+                  {p.price && <span style={{ color: 'var(--pc-text-3)', fontSize: 11.5 }}>${p.price}</span>}
+                  {p.from === 'brand' && <span style={{ color: 'var(--pc-text-3)', fontSize: 10.5, fontWeight: 700 }}>FOCUS</span>}
+                </button>
+              ))}
+            </div>
+          )}
+          {/* What the list is, and what it is not. A brand on neither platform
+              is a fact worth saying once, not an empty box to puzzle over. */}
+          {apiState === 'none' && (
+            <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--pc-text-3)' }}>
+              {apiNote || 'No catalogue for this brand — type the product instead.'}
+            </div>
+          )}
+          {apiState === 'ok' && prodInput.trim() && wxProdMatches.length === 0 && (
+            <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--pc-text-3)' }}>
+              Nothing in this brand&rsquo;s catalogue matches &ldquo;{prodInput.trim()}&rdquo;. The + button adds it anyway.
+            </div>
+          )}
+          {/* WURX-END */}
         </div>
 
-        {/* Amount + Videos (2-col) */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <div className="pc-field"><label>Amount ($)</label><input className="pc-input" type="number" inputMode="numeric" placeholder="200" value={f.amount} onChange={e => set('amount', e.target.value)} onWheel={e => e.currentTarget.blur()} /></div>
-          <div className="pc-field"><label>Videos</label><input className="pc-input" type="number" inputMode="numeric" placeholder="5" value={f.videos_count} onChange={e => set('videos_count', e.target.value)} onWheel={e => e.currentTarget.blur()} /></div>
+        {/* WURX-ADDED · a deal per product, once there is more than one.
+            Rashid: "let say a user chosen 2 products, show 2 fields amount and
+            videos fields for each product and their total sum will be auto in
+            the row below". The row below is the existing Amount and Videos
+            pair, which becomes computed rather than typed. */}
+        {wxMulti && (
+          <div className="pc-field" data-wx="per-product-deals">
+            <label>Deal per product</label>
+            <div style={{ display: 'grid', gap: 6 }}>
+              {prods.map((p, i) => (
+                <div key={(p.name || '') + '-' + i} style={{ display: 'grid', gridTemplateColumns: '1fr 96px 84px', gap: 6, alignItems: 'center' }}>
+                  <span title={p.name || p.url} style={{
+                    fontSize: 12, fontWeight: 600, color: 'var(--pc-text-2)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>{p.name || p.url}</span>
+                  <input className="pc-input" data-wx={'amount-' + i} type="number" inputMode="numeric" placeholder="$ amount"
+                    value={p.amount ?? ''} onWheel={e => e.currentTarget.blur()}
+                    onChange={e => setProdField(i, 'amount', e.target.value)} />
+                  <input className="pc-input" data-wx={'videos-' + i} type="number" inputMode="numeric" placeholder="videos"
+                    value={p.videos ?? ''} onWheel={e => e.currentTarget.blur()}
+                    onChange={e => setProdField(i, 'videos', e.target.value)} />
+                </div>
+              ))}
+            </div>
+            {wxSplitTotals.missing > 0 && (
+              <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--pc-warn-fg)' }}>
+                {wxSplitTotals.missing} product{wxSplitTotals.missing === 1 ? '' : 's'} still {wxSplitTotals.missing === 1 ? 'needs' : 'need'} an amount and a video count.
+              </div>
+            )}
+          </div>
+        )}
+        {/* WURX-END */}
+
+        {/* Amount + Videos (2-col).
+            WURX-ADJUSTED · with more than one product these are the TOTAL, added
+            up from the rows above and not typed. Two ways to say the same number
+            is how they come to disagree, and this one is the number every other
+            screen reads off `deal`. */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }} data-wx={wxMulti ? 'deal-total' : 'deal-single'}>
+          <div className="pc-field">
+            <label>{wxMulti ? 'Total amount ($)' : 'Amount ($)'}</label>
+            <input className="pc-input" data-wx="total-amount" type="number" inputMode="numeric" placeholder="200"
+              value={wxMulti ? (wxSplitTotals.amount || '') : f.amount}
+              readOnly={wxMulti}
+              title={wxMulti ? 'Added up from the products above' : undefined}
+              style={wxMulti ? { background: 'var(--pc-card-2)', color: 'var(--pc-text)', fontWeight: 800 } : undefined}
+              onChange={e => set('amount', e.target.value)} onWheel={e => e.currentTarget.blur()} />
+          </div>
+          <div className="pc-field">
+            <label>{wxMulti ? 'Total videos' : 'Videos'}</label>
+            <input className="pc-input" data-wx="total-videos" type="number" inputMode="numeric" placeholder="5"
+              value={wxMulti ? (wxSplitTotals.videos || '') : f.videos_count}
+              readOnly={wxMulti}
+              title={wxMulti ? 'Added up from the products above' : undefined}
+              style={wxMulti ? { background: 'var(--pc-card-2)', color: 'var(--pc-text)', fontWeight: 800 } : undefined}
+              onChange={e => set('videos_count', e.target.value)} onWheel={e => e.currentTarget.blur()} />
+          </div>
         </div>
 
         {/* Live rate intelligence · computed as you type */}

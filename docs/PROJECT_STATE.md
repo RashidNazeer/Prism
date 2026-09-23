@@ -57,6 +57,17 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
 - **Next:** he reads the words, answers the support@ and noindex questions,
   then the public pages go to production on their own and he resubmits.
 
+### Products and per-product deals on onboarding (2026-09-23)
+
+- Onboarding now offers the brand's **real catalogue** in a searchable
+  dropdown, from Euka or Reacher, whichever sells that brand. Typing a product
+  nobody has heard of still works.
+- **More than one product?** Each gets its own amount and videos, and the pair
+  below becomes the computed total. That total is what `deal` carries, so every
+  other screen keeps reading one number.
+- **Proven:** `verify:product-picker` 22/22, including a save whose payload is
+  checked without writing anything to Paid Collabs.
+
 ### Irwin Naturals runs on Reacher (2026-09-23)
 
 - Irwin Naturals is on Reacher, not Euka. A `reacher-sync` Edge Function files

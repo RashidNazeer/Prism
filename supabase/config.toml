@@ -451,6 +451,10 @@ verify_jwt = false
 [functions.euka]
 verify_jwt = true
 
+[functions.collab-products]
+# A staff session is required and checked inside, like the euka proxy.
+verify_jwt = true
+
 [functions.reacher-sync]
 # Called by pg_cron through pg_net, which carries no JWT, exactly like
 # euka-ads-sync. The function checks x-sync-secret or a staff session itself.
