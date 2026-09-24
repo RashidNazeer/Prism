@@ -5267,10 +5267,10 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
           )}
           </div>
           {/* WURX-ADDED · WHAT TO DO WHEN IT IS REQUIRED AND THERE IS NOTHING
-              TO PICK. Only 9 of our 44 brands have a catalogue any platform can
-              read — 35 brands and 716 creators have none — so from October the
-              usual case for half the roster is a product that has to be TYPED.
-              Saying so here is the difference between a rule and a dead end. */}
+              TO PICK. Of the brands actually being worked (11 in September
+              2026), 9 have a catalogue we can read and 2 do not — Aqua Sonic
+              and Pure Daily Care, both on Cruva. Rarer than it first looked,
+              but still the difference between a rule and a dead end. */}
           {wxProductRequired && prods.length === 0 && (
             <div data-wx="product-required-hint" style={{ marginTop: 6, fontSize: 11.5, color: 'var(--pc-warn-fg)' }}>
               {apiState === 'none'

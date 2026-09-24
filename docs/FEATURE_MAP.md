@@ -2399,18 +2399,31 @@ right, because it is then an October deal. `onboarded_on` is always populated �
 today for a new creator, its own date for an edit — and the fallback to today
 covers only a hand-cleared field.
 
-### ONLY 9 OF 44 BRANDS HAVE A CATALOGUE, so "compulsory" had to include typing
+### Two live brands have no catalogue, so "compulsory" had to include typing
 
-Measured on 2026-09-24, brand by brand, rather than assumed: **8 brands on Euka
-and Irwin Naturals on Reacher can have their products fetched. 35 brands and 716
-creators cannot** — no platform we hold answers for them, and that includes Aqua
-Sonic, Pure Daily Care and JOYMODE, which are the Cruva three we cannot read yet.
+**COUNT THE BRANDS BEING WORKED, NOT THE NAMES ON FILE.** The first version of
+this note said "9 of 44", which was true of the distinct brand names across all
+history and wrong about the business: 28 of those 44 are legacy rows with no
+hiring date at all, dormant for months. Rashid saw "44" and said, correctly,
+*"we have only 11"* — the Brands screen lists the brands active in the selected
+month, and that is the roster onboarding actually touches.
 
-Making a product compulsory for half the roster with nothing to choose from
-would have jammed onboarding on 1 October. The picker has always accepted a
-typed product, so the rule is satisfiable everywhere — and when a brand has no
-catalogue the hint says so and tells you to type. A rule without its escape
-hatch spelled out is a dead end.
+Measured on 2026-09-24, of the **11 brands active in September 2026**:
+
+| Source | Brands |
+|---|---|
+| Euka | 8 — Apothecary, Aurelia, Biostime, Dr Tobias, Dr. Harvey's, NUTRAHARMONY STORE, Penetrex, Swisse |
+| Reacher | 1 — Irwin Naturals |
+| **Neither** | **2 — Aqua Sonic, Pure Daily Care** |
+
+So the gap is two brands, and both are Cruva ones. The escape hatch still
+matters — the picker has always accepted a typed product, and when a brand has
+no catalogue the hint says so — but it is the exception rather than half the
+roster. The day Cruva is readable the gap closes entirely.
+
+**The lesson is about the denominator.** A count taken from the database over
+all time answered a different question from the one being asked, and made a
+two-brand gap look like a crisis.
 
 ### Videos split per product; the money does not
 

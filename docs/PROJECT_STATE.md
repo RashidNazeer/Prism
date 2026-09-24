@@ -62,10 +62,12 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
 - From 1 October, onboarding a creator requires a product. **Rows dated before
   October are untouched** — the rule reads the row's own onboarding date, not
   today's, so editing an old creator never starts failing.
-- **Only 9 of 44 brands have a catalogue any platform can fetch** (8 on Euka,
-  Irwin on Reacher). The other 35 brands and 716 creators must type the product
-  name, and the drawer says so rather than leaving a dead end. Aqua Sonic,
-  Pure Daily Care and JOYMODE are among them until Cruva is readable.
+- **Of the 11 brands active this month, 9 can have products fetched** (8 on
+  Euka, Irwin on Reacher). Only **Aqua Sonic and Pure Daily Care** cannot, and
+  both are Cruva brands — for those the product is typed, and the drawer says
+  so rather than leaving a dead end. (44 is the count of distinct brand names
+  across all history, 28 of them dormant rows with no hiring date; it is not
+  the working roster and should not be quoted as one.)
 - The per-product split is now **videos only**. The amount is typed once for the
   whole deal; the video total is the computed sum and cannot be typed over.
 - **Proven:** `verify:october-product` 15/15, `verify:product-picker` 28/28,

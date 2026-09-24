@@ -1928,14 +1928,17 @@ deliberate and must stay that way: the same drawer edits old creators, and a
 clock-based rule would make every pre-October row unsaveable the moment October
 arrived. The constant is `WX_PRODUCT_REQUIRED_FROM` in `WurxUI.jsx`.
 
-**Catalogue coverage, measured 2026-09-24** — 9 of 44 brands can have products
-fetched:
+**Catalogue coverage, measured 2026-09-24.** Count the brands ACTIVE IN THE
+MONTH, which is what the Brands screen lists and what onboarding touches — not
+the 44 distinct brand names in the table, 28 of which are dormant rows carrying
+no hiring date:
 
-| Source | Brands | Creators |
-|---|---|---|
-| Euka | 8 | 617 |
-| Reacher | 1 (Irwin Naturals) | 27 |
-| **Neither** | **35** | **716** |
+| Source | Of the 11 brands active in Sep 2026 |
+|---|---|
+| Euka | 8 |
+| Reacher | 1 (Irwin Naturals) |
+| **Neither** | **2 — Aqua Sonic, Pure Daily Care (both Cruva)** |
 
-For those 35 the product is typed, and the drawer says so. Re-measure by calling
-`collab-products` with `{ brand, probe: true }` per brand.
+For those two the product is typed, and the drawer says so. Re-measure by
+calling `collab-products` with `{ brand, probe: true }` for each brand in the
+month, and count the month rather than the whole table.

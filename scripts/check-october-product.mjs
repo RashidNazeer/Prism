@@ -15,10 +15,10 @@
  * The rule therefore keys on the ROW'S OWN onboarding date, and the check below
  * proves both directions rather than only the new one.
  *
- * It also proves the escape hatch, which matters more than it sounds: only 9 of
- * our 44 brands have a catalogue any platform can read. For the other 35 —
- * 716 creators — "compulsory" has to mean a product that can be TYPED, or
- * October jams onboarding for half the roster.
+ * It also proves the escape hatch. Of the brands actually being worked — 11 in
+ * September 2026, which is what the Brands screen lists — 9 have a catalogue we
+ * can read and 2 do not: Aqua Sonic and Pure Daily Care, both on Cruva. For
+ * those two, "compulsory" has to mean a product that can be TYPED.
  *
  * NOTHING IS WRITTEN. Every write to the creators table is intercepted in the
  * browser and answered with a fake success, and that is proved at the end
@@ -35,10 +35,10 @@ const BASE = process.env.BASE_URL || 'http://localhost:4173';
 /* A brand with a catalogue, and one without: the rule must behave the same on
    both, and only the second can prove the typed escape hatch. */
 const WITH_CATALOGUE = process.env.EUKA_BRAND || 'Penetrex';
-/* THE BRANDS SCREEN ONLY LISTS THE BRANDS ACTIVE IN THE CURRENT MONTH — 11 of
-   the 44 — so this has to be one of those, not merely a brand with no
-   catalogue. Aqua Sonic is both: it is on the screen and it is one of the 35
-   brands no platform can answer for. */
+/* THE BRANDS SCREEN LISTS THE BRANDS ACTIVE IN THE SELECTED MONTH — 11 in
+   September 2026, not the 44 distinct names that exist across the whole
+   history — so this has to be one of those. Aqua Sonic is both: it is on the
+   screen and it is one of the two no platform can answer for. */
 const NO_CATALOGUE = process.env.BARE_BRAND || 'Aqua Sonic';
 
 const env = Object.fromEntries(readFileSync('.env.local', 'utf8').split(/\r?\n/).filter((l) => l.includes('='))
