@@ -172,20 +172,73 @@ export type ReacherSpend = {
  * why the campaign count is recorded on every run — an empty spend list beside
  * "0 campaigns" means nothing is connected, while an empty list beside "3
  * campaigns" would mean something is wrong and worth looking at.
+ *
+ * ═══ NINETY DAYS IS THEIR CEILING, AND THIS WAS A LOADED GUN (2026-09-24) ═══
+ *
+ * `/gmv-max/videos/summary` refuses any range longer than 90 days:
+ *
+ *     400 INVALID_REQUEST "Date range exceeds maximum of 90 days."
+ *
+ * The sync asks for 120. It has never failed only because the call sits behind
+ * `if (campaigns > 0)`, and Irwin has none — so the broken path has never run.
+ * THE DAY THE AD ACCOUNT IS CONNECTED IS THE DAY THE SYNC STARTS FAILING, which
+ * is the worst possible moment and exactly the sort of fault this project keeps
+ * finding: a guard that hides a broken path while its subject is empty.
+ *
+ * So the window is split into chunks of at most 90 days and the parts are SUMMED
+ * PER VIDEO AND CAMPAIGN rather than concatenated. Concatenating would be worse
+ * than the bug: the caller files every row under one month and upserts on
+ * (item_id, month, advertiser_id, campaign_id), so two chunks holding the same
+ * video would not double-count — the second would silently OVERWRITE the first,
+ * and a quarter's ad spend would quietly become one month's.
  */
+const SPEND_MAX_DAYS = 90;
+
 export async function videoSpend(shopId: number, from: string, to: string): Promise<{ rows: ReacherSpend[]; currency: string }> {
-  const out: ReacherSpend[] = [];
+  const start = Date.parse(`${from}T00:00:00Z`);
+  const end = Date.parse(`${to}T00:00:00Z`);
   let currency = 'USD';
-  for (let page = 1; page <= 50; page++) {
-    const j = await read('/gmv-max/videos/summary', shopId, { page, page_size: 100, start_date: from, end_date: to });
-    currency = String(j.currency ?? currency);
-    const rows = (j.data ?? []) as ReacherSpend[];
-    out.push(...rows);
-    const pag = (j.pagination ?? {}) as { total_pages?: number };
-    if (!pag.total_pages || page >= pag.total_pages) break;
+
+  /* Chunk ends are inclusive, so a chunk of exactly 90 days spans 89 days of
+     difference — asking for 90 days of difference is 91 days to them, and is
+     refused. That off-by-one is how the limit is usually met. */
+  const spans: { a: string; b: string }[] = [];
+  const step = (SPEND_MAX_DAYS - 1) * 86_400_000;
+  for (let a = start; a <= end; a += step + 86_400_000) {
+    const b = Math.min(a + step, end);
+    spans.push({ a: iso(new Date(a)), b: iso(new Date(b)) });
   }
-  return { rows: out, currency };
+
+  /* video id + campaign id is the grain the caller writes at, so it is the
+     grain the parts are added up at. */
+  const merged = new Map<string, ReacherSpend>();
+  for (const span of spans) {
+    for (let page = 1; page <= 50; page++) {
+      const j = await read('/gmv-max/videos/summary', shopId, {
+        page, page_size: 100, start_date: span.a, end_date: span.b,
+      });
+      currency = String(j.currency ?? currency);
+      for (const r of (j.data ?? []) as ReacherSpend[]) {
+        const key = `${r.video_id ?? ''}|${r.campaign_id ?? ''}`;
+        const seen = merged.get(key);
+        if (!seen) {
+          merged.set(key, { ...r });
+          continue;
+        }
+        seen.spend = Number(seen.spend ?? seen.cost ?? 0) + Number(r.spend ?? r.cost ?? 0);
+        seen.cost = seen.spend;
+        seen.revenue = Number(seen.revenue ?? seen.gross_revenue ?? 0) + Number(r.revenue ?? r.gross_revenue ?? 0);
+        seen.gross_revenue = seen.revenue;
+        seen.orders = Number(seen.orders ?? 0) + Number(r.orders ?? 0);
+      }
+      const pag = (j.pagination ?? {}) as { total_pages?: number };
+      if (!pag.total_pages || page >= pag.total_pages) break;
+    }
+  }
+  return { rows: [...merged.values()], currency };
 }
+
+const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 export async function campaignCount(shopId: number): Promise<number> {
   const j = await get('/gmv-max/campaigns', shopId) as { pagination?: { total_count?: number }; data?: unknown[] };

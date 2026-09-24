@@ -57,6 +57,19 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
 - **Next:** he reads the words, answers the support@ and noindex questions,
   then the public pages go to production on their own and he resubmits.
 
+### Irwin's ad account is still not connected, and a loaded gun was removed (2026-09-24)
+
+- Asked Reacher directly: **Irwin Naturals has 0 GMV Max campaigns**, so there
+  is no ad spend or ROI to show. Biostime has 6 and Cutler 29, which is how we
+  know the endpoint works rather than the shop being broken.
+- **Found and fixed before it fired:** the spend endpoint refuses a window over
+  90 days and the sync asks for 120. It has never failed only because the call
+  sits behind `if (campaigns > 0)` — so the day Rashid connected the ad account
+  would have been the day the sync started failing. `videoSpend` now chunks the
+  window and sums the parts per video and campaign.
+- **Proven on Biostime:** $11,531.54 spend and $14,138.50 ad revenue over two
+  chunks, 200 rows. `verify:reacher-ads` 13/13, `verify:reacher` 28/28.
+
 ### Products now show their real photographs (2026-09-24)
 
 - The onboarding picker shows real product pictures, on EUKA brands and Reacher

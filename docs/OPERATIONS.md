@@ -1886,3 +1886,33 @@ What Cruva's MCP catalogue shows it *has*, for when a working key arrives:
 
 **Still needed from Rashid:** the three Cruva Shop IDs, and the endpoint names
 from Cruva support.
+
+### Reacher's ad side
+
+```bash
+pnpm verify:reacher-ads   # campaigns per shop, the 90-day limit, and the chunked window
+```
+
+**`/gmv-max/videos/summary` refuses any range longer than 90 days** —
+`400 INVALID_REQUEST "Date range exceeds maximum of 90 days."` — and the sync
+asks for 120. It never failed only because the call sits behind
+`if (campaigns > 0)` and Irwin has none, so **the day Irwin's ad account was
+connected would have been the day the sync broke.** `videoSpend` now splits the
+window into chunks of at most 90 days and SUMS the parts per video and campaign.
+
+Summing, not concatenating, matters: the caller files every row under one month
+and upserts on `(item_id, month, advertiser_id, campaign_id)`, so two chunks
+holding the same video would not double-count — the second would silently
+overwrite the first, and a quarter's spend would quietly become one month's.
+
+Ad-account state on 2026-09-24, read from Reacher:
+
+| Shop | GMV Max campaigns |
+|---|---|
+| Biostime | 6 (Euka is the source for this brand in our app, so nothing to do) |
+| Cutler Nutrition | 29 (not a Paid Collabs brand) |
+| **Irwin Naturals** | **0 — not connected** |
+| Longevity | 0 |
+
+Irwin's ad spend and ROI stay a dash until Rashid connects GMV Max on that shop
+in TikTok. It is a dash and not a zero on purpose: zero is a claim about money.
