@@ -60,7 +60,12 @@ try {
     await row.scrollIntoViewIfNeeded().catch(() => {});
     await row.click();
     await page.waitForSelector('.pc-ct-row, .pc-empty', { timeout: 30000 });
-    await page.waitForTimeout(1800);
+    /* WAIT FOR A CARD, not for a pause. The table's first row appears before
+       the month's creators have all landed, and on Penetrex — 259 of them —
+       a fixed 1.8s read "the band is not on the page" when it simply had not
+       been drawn yet. */
+    await page.waitForSelector('[data-wx="product-pill"]', { timeout: 30000 }).catch(() => {});
+    await page.waitForTimeout(700);
     return true;
   };
 
@@ -74,9 +79,12 @@ try {
         gmv: Number(p.getAttribute('data-gmv')),
         creators: Number(p.getAttribute('data-creators')),
         videos: Number(p.getAttribute('data-videos')),
-        name: (p.querySelector('.wx-prodpill-name')?.textContent || '').trim(),
-        stats: p.querySelectorAll('.wx-prodpill-stats > span').length,
-        tile: !!p.querySelector('.wx-prodpill-name') && !!p.firstElementChild,
+        name: (p.querySelector('.wx-prodcard-name')?.textContent || '').trim(),
+        /* Four labelled rows: GMV, Views, Creators, Videos. */
+        stats: p.querySelectorAll('.wx-prodcard-row').length,
+        rank: (p.querySelector('.wx-prodcard-rank')?.textContent || '').trim(),
+        bar: !!p.querySelector('.wx-prodcard-bar-fill'),
+        shot: !!p.querySelector('.wx-prodcard-shot'),
       }));
       const card = document.querySelector('.pc-topvids-stat.gmv');
       const head = (el.querySelector('.wx-prodband-head')?.textContent || '').trim();
@@ -116,9 +124,14 @@ try {
     check(band.pills.every((p) => p.videos >= p.creators),
       `${brand}: a product never has more creators than videos`,
       band.pills.map((p) => `${p.creators}c/${p.videos}v`).join(' '));
-    check(band.pills.every((p) => p.name.length > 0), `${brand}: every pill is named`);
-    check(band.pills.every((p) => p.stats === 3), `${brand}: each pill shows exactly the three figures asked for`,
+    check(band.pills.every((p) => p.name.length > 0), `${brand}: every card is named`);
+    check(band.pills.every((p) => p.stats === 4), `${brand}: each card shows GMV, views, creators and videos`,
       band.pills.map((p) => p.stats).join(','));
+    check(band.pills.every((p) => p.bar && p.shot), `${brand}: each card has its GMV bar and its picture slot`);
+    /* The numeral is decoration that carries information — it must agree with
+       the order, or it is just noise. */
+    check(band.pills.every((p, i) => p.rank === String(i + 1).padStart(2, '0')),
+      `${brand}: the rank numeral matches the card's position`, band.pills.map((p) => p.rank).join(' '));
     /* Sorted by GMV, biggest first. */
     const sorted = band.pills.every((p, i) => i === 0 || band.pills[i - 1].gmv >= p.gmv);
     check(sorted, `${brand}: the biggest earner is first`, band.pills.map((p) => p.gmv).join(' ≥ '));

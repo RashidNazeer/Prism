@@ -2379,6 +2379,18 @@ details, new address, stop).
 
 ## By product, on a brand's page (2026-09-24)
 
+**Redesigned the same day, after Rashid sent a mockup: "u are very bad at design
+see how beautiful this is, i want cards like this".** He was right. The first
+version was three unlabelled numbers in a row — legible, and it read as a data
+strip rather than as a product. What the mockup had that it did not: labels, a
+ghost rank numeral, the photograph given room, one row per figure with a circled
+icon, and a bar under the GMV. Labels and vertical rhythm are what make a card.
+
+`flex: 1 0 15.5rem` does two jobs in one line: a brand with two products fills
+the band instead of leaving it two thirds white space, and a brand with seven
+keeps every card readable and lets the row scroll rather than squeezing seven
+into the width of four.
+
 Rashid: *"is it possible to get the product wise gmv, product wise creators and
 product wise videos ... a beautifully iconed and pilled style display without
 disturbing the ui ... for the current month that user selected"*.
