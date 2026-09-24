@@ -59,10 +59,11 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
 
 ### Product-wise GMV, creators and videos on a brand's page (2026-09-24)
 
-- A CARD per product under the top-videos card: rank numeral, photograph, and a
-  labelled row each for GMV (with a share bar), views, creators and videos, for
-  the month on screen. Scrolls inside itself on a laptop, stacks on a phone.
-  Redesigned from flat pills after Rashid sent a mockup.
+- **Product performance**: a card per product under the top-videos card — its
+  photograph, name, "Product 01", then GMV, views, creators and videos laid
+  across the bottom. 206px tall on a laptop, one row however many products a
+  brand has, stacked two-by-two on a phone. Redesigned twice on 2026-09-24 from
+  Rashid's mockups: flat pills → tall cards → wide compact cards.
 - Built from data we already had — the product name on each synced video — so
   nothing new is fetched for the figures.
 - **It reconciles with the card above it**, proven per brand: Penetrex

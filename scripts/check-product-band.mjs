@@ -80,11 +80,12 @@ try {
         creators: Number(p.getAttribute('data-creators')),
         videos: Number(p.getAttribute('data-videos')),
         name: (p.querySelector('.wx-prodcard-name')?.textContent || '').trim(),
-        /* Four labelled rows: GMV, Views, Creators, Videos. */
-        stats: p.querySelectorAll('.wx-prodcard-row').length,
+        /* Four labelled figures across the card: GMV, Views, Creators, Videos. */
+        stats: p.querySelectorAll('.wx-prodcard-cell').length,
         rank: (p.querySelector('.wx-prodcard-rank')?.textContent || '').trim(),
-        bar: !!p.querySelector('.wx-prodcard-bar-fill'),
         shot: !!p.querySelector('.wx-prodcard-shot'),
+        /* Every figure must be a real value, not an empty cell. */
+        values: [...p.querySelectorAll('.wx-prodcard-val')].map((v) => v.textContent.trim()),
       }));
       const card = document.querySelector('.pc-topvids-stat.gmv');
       const head = (el.querySelector('.wx-prodband-head')?.textContent || '').trim();
@@ -127,16 +128,19 @@ try {
     check(band.pills.every((p) => p.name.length > 0), `${brand}: every card is named`);
     check(band.pills.every((p) => p.stats === 4), `${brand}: each card shows GMV, views, creators and videos`,
       band.pills.map((p) => p.stats).join(','));
-    check(band.pills.every((p) => p.bar && p.shot), `${brand}: each card has its GMV bar and its picture slot`);
+    check(band.pills.every((p) => p.shot), `${brand}: each card has its picture slot`);
+    check(band.pills.every((p) => p.values.length === 4 && p.values.every(Boolean)),
+      `${brand}: all four figures are filled in, none blank`,
+      band.pills.map((p) => p.values.join('/')).join(' · '));
     /* The numeral is decoration that carries information — it must agree with
        the order, or it is just noise. */
-    check(band.pills.every((p, i) => p.rank === String(i + 1).padStart(2, '0')),
-      `${brand}: the rank numeral matches the card's position`, band.pills.map((p) => p.rank).join(' '));
+    check(band.pills.every((p, i) => p.rank === `Product ${String(i + 1).padStart(2, '0')}`),
+      `${brand}: the product number matches the card's position`, band.pills.map((p) => p.rank).join(' '));
     /* Sorted by GMV, biggest first. */
     const sorted = band.pills.every((p, i) => i === 0 || band.pills[i - 1].gmv >= p.gmv);
     check(sorted, `${brand}: the biggest earner is first`, band.pills.map((p) => p.gmv).join(' ≥ '));
-    check(/by product/i.test(band.head) && /\d{4}|all time/i.test(band.head),
-      `${brand}: the heading names the period on screen`, `"${band.head}"`);
+    check(/product performance/i.test(band.head) && /\d{4}|all time/i.test(band.head),
+      `${brand}: the heading names the section and the period on screen`, `"${band.head}"`);
     check(band.pageSideScroll <= 1, `${brand}: the band does not make the page scroll sideways`,
       `${band.pageSideScroll}px`);
     console.log(`  · ${brand}: ${band.pills.length} products · $${sumGmv} GMV · ${sumVideos} videos · card $${band.cardGmv}`);

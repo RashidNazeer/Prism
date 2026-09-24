@@ -577,7 +577,7 @@ function ProductBand({ creators, brand, period }) {
      all, because one product is called "NEW! Penetrex…" and that makes the
      shared prefix empty. Middle truncation has no such dependency on the
      naming happening to be tidy. The full title is always in the tooltip. */
-  const shortLabel = (name, max = 52) => {
+  const shortLabel = (name, max = 44) => {
     const s = String(name || '');
     if (s.length <= max) return s;
     const head = s.slice(0, Math.ceil(max * 0.55)).trimEnd();
@@ -585,31 +585,35 @@ function ProductBand({ creators, brand, period }) {
     return `${head}…${tail}`;
   };
 
-  /* ONE ROW INSIDE A CARD: a circled icon, what it is, and the figure.
-     The circle is what makes these read as a card rather than a dense strip —
-     Rashid's reference had it, and it is also what gives a monochrome icon
-     enough presence at 0.8rem to be seen at all. */
-  const Row = ({ icon, label, value, ink, bar }) => (
-    <div className="wx-prodcard-row">
-      <span className="wx-prodcard-ico" aria-hidden="true">{icon}</span>
-      <span className="wx-prodcard-lbl">{label}</span>
+  /* ONE FIGURE IN THE STRIP: what it is above, the number below.
+     Rashid, 2026-09-24, with a second mockup: "the current card is taking too
+     much space ... it can't take too much space but still show counts
+     properly". The tall card stacked its four figures vertically, which made
+     every card about 300px high; laid across the bottom of a wide card they
+     take about half that, and the row still scrolls so the band stays ONE row
+     however many products a brand has. */
+  const Cell = ({ icon, label, value, ink }) => (
+    <div className="wx-prodcard-cell">
+      <span className="wx-prodcard-cell-top">
+        <span className="wx-prodcard-ico" aria-hidden="true">{icon}</span>
+        <span className="wx-prodcard-lbl">{label}</span>
+      </span>
       <span className="wx-prodcard-val" style={ink ? { color: ink } : undefined}>{value}</span>
-      {bar !== undefined && (
-        /* Share of the month, drawn rather than written. `aria-hidden` because
-           the figure beside it already says the number; a screen reader does
-           not need the decoration twice. */
-        <span className="wx-prodcard-bar" aria-hidden="true">
-          <span className="wx-prodcard-bar-fill" style={{ width: `${Math.max(2, Math.min(100, bar))}%` }} />
-        </span>
-      )}
     </div>
   );
 
   return (
     <div className="wx-prodband" data-wx="product-band" style={{ marginTop: 14 }}>
       <div className="wx-prodband-head">
-        By product · {period}
-        <span className="wx-prodband-sub">{rows.length} product{rows.length === 1 ? '' : 's'}</span>
+        <h3 className="wx-prodband-title">Product performance</h3>
+        <span className="wx-prodband-chip">{rows.length} product{rows.length === 1 ? '' : 's'}</span>
+        {/* THE PERIOD, NOT A SECOND MONTH PICKER. Rashid's mockup drew a month
+            dropdown here, and the screen already has one in its top bar that
+            every other figure on the page obeys. A second control would be a
+            second source of truth for the same question, and the day the two
+            disagree the band and the KPI cards above it would be describing
+            different months while looking equally authoritative. */}
+        <span className="wx-prodband-period">{period}</span>
       </div>
       {/* The row scrolls inside itself. A long catalogue must never make the
           page scroll sideways — that rule is in CLAUDE.md and it is the thing
@@ -626,27 +630,27 @@ function ProductBand({ creators, brand, period }) {
               /* Machine-readable, so the guard compares NUMBERS with the card
                  above rather than parsing "$1,234" back out of the text. */
               data-gmv={Math.round(r.gmv)} data-creators={r.creators} data-videos={r.videos}
-              title={`${label} · ${fmt$Exact(Math.round(r.gmv))} GMV · ${r.creators} creator${r.creators === 1 ? '' : 's'} · ${r.videos} video${r.videos === 1 ? '' : 's'}${total > 0 ? ` · ${share}% of this month's GMV` : ''}`}>
-              <div className="wx-prodcard-top">
-                {/* THE RANK IS THE ORDER THE CARDS ARE ALREADY IN, said out
-                    loud. It is decoration that carries information, which is
-                    the only kind worth drawing. */}
-                <span className="wx-prodcard-rank" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+              title={`${label} · ${fmt$Exact(Math.round(r.gmv))} GMV · ${Number(r.views) > 0 ? `${kNum(r.views)} views · ` : ''}${r.creators} creator${r.creators === 1 ? '' : 's'} · ${r.videos} video${r.videos === 1 ? '' : 's'}${total > 0 ? ` · ${share}% of this month's GMV` : ''}`}>
+              <div className="wx-prodcard-head">
                 <span className="wx-prodcard-shot">
-                  <ProductTile product={{ name: label, image: img }} size={72} bare />
+                  <ProductTile product={{ name: label, image: img }} size={52} />
+                </span>
+                <span className="wx-prodcard-id">
+                  <span className="wx-prodcard-name" style={!has ? { color: 'var(--pc-text-3)', fontStyle: 'italic' } : undefined}>{short}</span>
+                  {/* The rank, said quietly. It was a 2.5rem ghost numeral and
+                      that was a lot of height for a fact worth one line. */}
+                  <span className="wx-prodcard-rank">Product {String(i + 1).padStart(2, '0')}</span>
                 </span>
               </div>
-              <h4 className="wx-prodcard-name" style={!has ? { color: 'var(--pc-text-3)', fontStyle: 'italic' } : undefined}>{short}</h4>
               <div className="wx-prodcard-rows">
-                <Row label="GMV" ink="var(--wx-success)" bar={share}
-                  value={fmt$Exact(Math.round(r.gmv))}
-                  icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M14.5 9.2a2.6 2.6 0 0 0-2.5-1.6c-1.4 0-2.4.8-2.4 1.9 0 2.6 5 1.4 5 4.1 0 1.2-1.1 2-2.6 2a2.7 2.7 0 0 1-2.6-1.7" /><path d="M12 6.2v1.4M12 16.4v1.4" /></svg>} />
-                <Row label="Views" value={Number(r.views) > 0 ? kNum(r.views) : '–'}
-                  icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" /><circle cx="12" cy="12" r="3" /></svg>} />
-                <Row label="Creators" value={r.creators}
-                  icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /></svg>} />
-                <Row label="Videos" value={r.videos}
-                  icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" /></svg>} />
+                <Cell label="GMV" ink="var(--wx-success)" value={fmt$Exact(Math.round(r.gmv))}
+                  icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="6" y1="20" x2="6" y2="13" /><line x1="12" y1="20" x2="12" y2="8" /><line x1="18" y1="20" x2="18" y2="4" /></svg>} />
+                <Cell label="Views" value={Number(r.views) > 0 ? kNum(r.views) : '–'}
+                  icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" /><circle cx="12" cy="12" r="3" /></svg>} />
+                <Cell label="Creators" value={r.creators}
+                  icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /></svg>} />
+                <Cell label="Videos" value={r.videos}
+                  icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" /></svg>} />
               </div>
             </article>
           );

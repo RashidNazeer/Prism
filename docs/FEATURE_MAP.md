@@ -2379,8 +2379,8 @@ details, new address, stop).
 
 ## By product, on a brand's page (2026-09-24)
 
-**Redesigned the same day, after Rashid sent a mockup: "u are very bad at design
-see how beautiful this is, i want cards like this".** He was right. The first
+**Redesigned TWICE the same day.** First after Rashid sent a mockup: *"u are
+very bad at design see how beautiful this is, i want cards like this"*. He was right. The first
 version was three unlabelled numbers in a row — legible, and it read as a data
 strip rather than as a product. What the mockup had that it did not: labels, a
 ghost rank numeral, the photograph given room, one row per figure with a circled
@@ -2390,6 +2390,31 @@ icon, and a bar under the GMV. Labels and vertical rhythm are what make a card.
 the band instead of leaving it two thirds white space, and a brand with seven
 keeps every card readable and lets the row scroll rather than squeezing seven
 into the width of four.
+
+**Then again, an hour later:** *"the current card is taking too much space ...
+it's very bad, it can't take too much space but still show counts properly"*.
+He was right again, and the fix was the AXIS rather than the type size. The tall
+card stacked four labelled figures down the page and stood about 300px high;
+laid ACROSS the bottom of a wide card the same four take 206px, and nothing had
+to shrink — the counts are still the biggest thing on it. The section became
+"Product performance" with a count chip, the 2.5rem ghost numeral became a quiet
+"Product 01" under the name, and the GMV share bar went.
+
+**IT STAYS ONE ROW, and that is the part worth remembering.** Wrapping the cards
+into a grid is the obvious move and makes the complaint worse: seven products at
+two per row is four rows, taller than what he was objecting to. The row scrolls,
+so the band costs the same height whether a brand has two products or twenty.
+
+**His mockup drew a month dropdown in the section header and it is a static
+label instead.** The screen already has a month control that every other figure
+on the page obeys; a second one would be a second source of truth for the same
+question, and the day they disagreed the band and the KPI cards would describe
+different months while looking equally authoritative.
+
+**`flex-basis` stops meaning width the moment the container turns vertical.** On
+a phone the row becomes a column, so `flex: 1 0 24rem` gave every card a 24rem
+FLOOR ON ITS HEIGHT: correct figures sitting above 250px of empty card. `flex: 0
+0 auto` in the phone query is the fix, and the band went from 805px to 450px.
 
 Rashid: *"is it possible to get the product wise gmv, product wise creators and
 product wise videos ... a beautifully iconed and pilled style display without
