@@ -1942,3 +1942,18 @@ no hiring date:
 For those two the product is typed, and the drawer says so. Re-measure by
 calling `collab-products` with `{ brand, probe: true }` for each brand in the
 month, and count the month rather than the whole table.
+
+### The by-product band
+
+```bash
+pnpm verify:product-band   # 46 checks, including that the pills add up to the GMV card
+```
+
+It reads `sortedCreators` — the same rows the table below shows — so it is
+scoped to the selected month by construction. `wxProductTotals` MUST keep using
+the same dedupe key and rule as `wxVideoTotals`; if they drift, the pills stop
+adding up to the card above them and both numbers look authoritative.
+
+Pictures are matched from `collab-products` by EXACT product name within the one
+brand. Videos carry a product name and no product id, so there is no id to join
+on — do not loosen that match.

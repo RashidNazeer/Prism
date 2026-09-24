@@ -452,6 +452,188 @@ function wxVideoTotals(list) {
     gmv: all.reduce((t, v) => t + v.gmv, 0),
   };
 }
+/* WURX-ADDED · THE SAME VIDEOS, BROKEN DOWN BY PRODUCT.
+   Rashid, 2026-09-24: "is it possible to get the product wise gmv, product wise
+   creators and product wise videos ... it should show us product wise
+   everything for the current month that user selected".
+
+   It is, and from data we already hold: 1,042 of the 1,049 videos posted in
+   September carry the product they sold, written by the same EUKA and Reacher
+   syncs that fill the table. Nothing new is fetched to build this.
+
+   IT DEDUPES EXACTLY AS `wxVideoTotals` DOES, and that is the whole point of
+   writing it here beside it rather than inline in the screen. The same TikTok
+   video sits under two deals of one creator 32 times in a single brand-month on
+   dev; counting it twice here would make the products add up to more than the
+   GMV card directly above them, and a breakdown that does not reconcile with
+   the total it sits under is worse than no breakdown. Same key (the TikTok
+   video id), same rule for disagreeing rows (keep the larger figure, since
+   views and GMV only ever grow, so the larger is the newer sync).
+
+   A VIDEO WITH NO PRODUCT IS SHOWN, NOT DROPPED. Seven of those 1,049 have
+   none, and silently discarding them is how a breakdown quietly stops summing
+   to its own total. They gather under one honest label instead. */
+function wxProductTotals(list) {
+  const vids = new Map();
+  (list || []).forEach((c) => {
+    const who = (c && (c.id ?? c.name)) ?? '';
+    const seen = new Set();
+    (Array.isArray(c && c.video_codes) ? c.video_codes : []).forEach((r) => {
+      const url = r && String(r.video || '').trim();
+      if (!url) return;
+      const k = wxVideoId(url) || url;
+      if (seen.has(k)) return;
+      seen.add(k);
+      const gmv = Number(r.revenue) || 0;
+      const cur = vids.get(k);
+      /* One video, one product. Where two rows disagree the richer row wins,
+         which is the same "the larger is the newer sync" rule used above. */
+      if (!cur || gmv > cur.gmv) {
+        vids.set(k, {
+          gmv: Math.max(cur ? cur.gmv : 0, gmv),
+          views: Math.max(cur ? cur.views : 0, Number(r.views) || 0),
+          product: String(r.product || '').trim() || (cur ? cur.product : ''),
+          who: cur ? cur.who : who,
+        });
+      } else if (cur && !cur.product && String(r.product || '').trim()) {
+        cur.product = String(r.product || '').trim();
+      }
+    });
+  });
+  const byProduct = new Map();
+  for (const v of vids.values()) {
+    const name = v.product || '';
+    const key = name.toLowerCase();
+    let row = byProduct.get(key);
+    if (!row) {
+      row = { name, videos: 0, gmv: 0, views: 0, creators: new Set() };
+      byProduct.set(key, row);
+    }
+    row.videos++;
+    row.gmv += v.gmv;
+    row.views += v.views;
+    if (v.who !== '') row.creators.add(v.who);
+  }
+  return [...byProduct.values()]
+    .map((r) => ({ ...r, creators: r.creators.size }))
+    /* Biggest earner first; a product with no GMV yet still appears, ordered by
+       how much work went into it. */
+    .sort((a, b) => b.gmv - a.gmv || b.videos - a.videos);
+}
+
+/* WURX-ADDED · THE BY-PRODUCT BAND on a brand's page.
+
+   One pill per product: its picture, its name, and the three figures Rashid
+   asked for — GMV, creators, videos — for whatever month is on screen.
+
+   THE PICTURES ARRIVE LATE AND THAT IS DELIBERATE. The videos carry a product
+   NAME and no product id, so the only way to a photograph is to match that name
+   against the brand's own catalogue, which is a round trip. The band renders
+   immediately with letter tiles and upgrades in place when the catalogue lands;
+   making the figures wait on a picture would be the wrong way round.
+
+   THE MATCH IS EXACT AND WITHIN ONE BRAND. Same shop, same platform, same
+   string — anything looser would put one product's photograph on another's
+   numbers, and a wrong picture beside a real GMV figure is worse than no
+   picture at all.
+
+   The pill sits on `--pc-card`, which is `--wx-surface-1`: the surface
+   check:contrast section 5 already proves the green GMV ink against. Putting it
+   on the tinted `--pc-card-2` would have been a new, unproven ground for an ink
+   calibrated elsewhere, which is a bug this project has shipped before. */
+function ProductBand({ creators, brand, period }) {
+  const rows = useMemo(() => wxProductTotals(creators), [creators]);
+  const [pics, setPics] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    setPics(null);
+    if (!brand || !rows.length) return undefined;
+    (async () => {
+      const res = await collabProducts(brand);
+      if (!alive || !res) return;
+      const map = new Map();
+      for (const p of res.products || []) {
+        const k = String(p.name || '').trim().toLowerCase();
+        if (k && p.image) map.set(k, p.image);
+      }
+      setPics(map);
+    })();
+    return () => { alive = false; };
+  }, [brand, rows.length]);
+
+  if (!rows.length) return null;
+  const total = rows.reduce((t, r) => t + r.gmv, 0);
+
+  /* WHAT THE PILLS ACTUALLY SAY — and the reason it is not just CSS.
+     Clipping these titles from the right produced four Penetrex pills all
+     reading "Penetrex Daily Joint & Muscle Car…" beside four different GMV
+     figures: a list of identical labels, which is worse than no label.
+
+     The distinguishing words can be at either end — Penetrex's differ at the
+     tail (", 3 Oz. Gel", "Lotion, 8 oz Pump") while Irwin's differ at the head
+     — so the label keeps BOTH ends and loses the middle. A first attempt trimmed
+     the prefix every product shares, which looked neater and then did nothing at
+     all, because one product is called "NEW! Penetrex…" and that makes the
+     shared prefix empty. Middle truncation has no such dependency on the
+     naming happening to be tidy. The full title is always in the tooltip. */
+  const shortLabel = (name, max = 38) => {
+    const s = String(name || '');
+    if (s.length <= max) return s;
+    const head = s.slice(0, Math.ceil(max * 0.55)).trimEnd();
+    const tail = s.slice(-Math.floor(max * 0.35)).trimStart();
+    return `${head}…${tail}`;
+  };
+
+  const Stat = ({ icon, value, label, ink }) => (
+    <span title={label} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
+      <span aria-hidden="true" style={{ display: 'inline-flex', color: 'var(--pc-text-3)' }}>{icon}</span>
+      <span style={{ fontSize: 12, fontWeight: 800, color: ink || 'var(--pc-text)', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+    </span>
+  );
+
+  return (
+    <div className="wx-prodband" data-wx="product-band" style={{ marginTop: 14 }}>
+      <div className="wx-prodband-head">
+        By product · {period}
+        <span className="wx-prodband-sub">{rows.length} product{rows.length === 1 ? '' : 's'}</span>
+      </div>
+      {/* The row scrolls inside itself. A long catalogue must never make the
+          page scroll sideways — that rule is in CLAUDE.md and it is the thing
+          that makes this safe to add to a screen that is already full. */}
+      <div className="wx-prodband-row" data-wx="product-band-row">
+        {rows.map((r, i) => {
+          const has = !!r.name;
+          const label = has ? r.name : 'No product recorded';
+          const short = has ? shortLabel(r.name) : label;
+          const img = has && pics ? (pics.get(r.name.toLowerCase()) || '') : '';
+          const share = total > 0 ? Math.round((r.gmv / total) * 100) : 0;
+          return (
+            <div key={(r.name || 'none') + i} className="wx-prodpill" data-wx="product-pill"
+              /* Machine-readable, so the guard compares NUMBERS with the card
+                 above rather than parsing "$1,234" back out of the text. */
+              data-gmv={Math.round(r.gmv)} data-creators={r.creators} data-videos={r.videos}
+              title={`${label} · ${fmt$Exact(Math.round(r.gmv))} GMV · ${r.creators} creator${r.creators === 1 ? '' : 's'} · ${r.videos} video${r.videos === 1 ? '' : 's'}${total > 0 ? ` · ${share}% of this month's GMV` : ''}`}>
+              <ProductTile product={{ name: label, image: img }} size={30} />
+              <span className="wx-prodpill-body">
+                <span className="wx-prodpill-name" style={!has ? { color: 'var(--pc-text-3)', fontStyle: 'italic' } : undefined}>{short}</span>
+                <span className="wx-prodpill-stats">
+                  <Stat ink="var(--wx-success)" value={fmt$Exact(Math.round(r.gmv))} label="GMV from this product's videos"
+                    icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17l6-6 4 4 8-8" /><path d="M21 7v6h-6" /></svg>} />
+                  <Stat value={r.creators} label="creators who posted for this product"
+                    icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /></svg>} />
+                  <Stat value={r.videos} label="videos posted for this product"
+                    icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" /></svg>} />
+                </span>
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* WURX-ADDED · A PRODUCT'S PICTURE, or an honest stand-in for it.
    Rashid, 2026-09-23: "also use product images as well and show selected images
    properly".
@@ -2838,6 +3020,19 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
           </div>
         );
       })()}
+
+      {/* WURX-ADDED · BY PRODUCT, for the month on screen.
+          Rashid, 2026-09-24: "product wise gmv, product wise creators and
+          product wise videos ... a beautifully iconed and pilled style display
+          without disturbing the ui ... for the current month that user
+          selected".
+
+          It reads the same `sortedCreators` the table below does, so it is
+          scoped to the same month by construction rather than by a second
+          filter that could drift from it, and `wxProductTotals` counts each
+          video once with the same rule as the GMV card above — so the pills add
+          up to that card instead of quietly exceeding it. */}
+      <ProductBand creators={sortedCreators} brand={brand.brand} period={allTime ? 'All time' : monthLabel(month)} />
 
       {/* WURX-ADDED · search and filter for this brand's creators. Their own
           toolbar shape, the one the Brands screen and the Creators tab already

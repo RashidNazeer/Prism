@@ -2377,6 +2377,62 @@ its videos, both themes, 390px, zero console errors, and a revoked link says so
 in plain words) **and `pnpm verify:client-links`** (18: make, copy, open,
 details, new address, stop).
 
+## By product, on a brand's page (2026-09-24)
+
+Rashid: *"is it possible to get the product wise gmv, product wise creators and
+product wise videos ... a beautifully iconed and pilled style display without
+disturbing the ui ... for the current month that user selected"*.
+
+It was possible with no new data at all. **1,042 of the 1,049 videos posted in
+September already carry the product they sold**, written by the same EUKA and
+Reacher syncs that fill the table — so the band is a different reading of rows
+the page had already loaded, not a new fetch.
+
+### It reconciles, and that is the only thing that made it worth shipping
+
+`wxProductTotals` dedupes **with the same key and the same rule** as
+`wxVideoTotals`, which feeds the GMV card directly above it. On dev a single
+TikTok video sits under two deals of one creator 32 times inside one
+brand-month; a naive per-product sum would have come out higher than the card it
+sits under, and two authoritative-looking numbers that disagree are worse than
+one number alone. Proven per brand rather than asserted: Penetrex $1,327 = card
+$1,327, Apothecary $949 = $949, Biostime $429 = $429, and the per-product video
+counts add up to the Videos card too.
+
+**The seven videos with no product are shown, not dropped** — under "No product
+recorded". Discarding them is exactly how a breakdown quietly stops summing to
+its own total.
+
+### Two mistakes worth keeping
+
+**The labels.** Clipping these titles from the right gave four Penetrex pills
+all reading "Penetrex Daily Joint & Muscle Car…" beside four different GMV
+figures — identical labels, which is worse than none. The first fix trimmed the
+prefix every product shares; it looked tidier and did nothing at all, because
+one product is called "NEW! Penetrex…" and that makes the shared prefix empty.
+The label now keeps BOTH ENDS and loses the middle, which needs no assumption
+about the naming being tidy: Penetrex's products differ at the tail (", 3 Oz.
+Gel"), Irwin's at the head. Full title in the tooltip.
+
+**The pictures arrive late, on purpose.** Videos carry a product NAME and no
+product id, so a photograph means matching that name against the brand's own
+catalogue — a round trip. The band renders at once with letter tiles and
+upgrades in place. The match is EXACT and within one brand: anything looser puts
+one product's photograph beside another's money.
+
+The pill sits on `--pc-card` (`--wx-surface-1`) because that is the ground
+check:contrast section 5 already proves the green GMV ink against; the tinted
+`--pc-card-2` would have been a new unproven surface for an ink calibrated
+elsewhere, which is a bug this project has shipped before.
+
+**Guarded by `pnpm verify:product-band`** (46 checks): reconciliation against
+the card on three brands, a refusal to grade a brand showing no pills at all,
+every pill carrying all three figures with creators never exceeding videos,
+biggest earner first, and no horizontal page scroll at 375/768/1024/1440. The
+responsive pass waits for a pill rather than a fixed pause — a fixed wait passed
+at two widths and failed at the other two, which read as a layout fault and was
+only timing.
+
 ## A product is compulsory from October, and videos split but money does not (2026-09-24)
 
 Rashid: *"I want from october and onwards (not before october please) it should

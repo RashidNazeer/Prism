@@ -57,6 +57,17 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
 - **Next:** he reads the words, answers the support@ and noindex questions,
   then the public pages go to production on their own and he resubmits.
 
+### Product-wise GMV, creators and videos on a brand's page (2026-09-24)
+
+- A pill per product under the top-videos card: its photograph, GMV in green,
+  creators and videos, for the month on screen. Scrolls inside itself on a
+  laptop and stacks on a phone.
+- Built from data we already had — the product name on each synced video — so
+  nothing new is fetched for the figures.
+- **It reconciles with the card above it**, proven per brand: Penetrex
+  $1,327 = $1,327, Apothecary $949 = $949, Biostime $429 = $429.
+- **Proven:** `verify:product-band` 46/46, contrast pass, zero console errors.
+
 ### A product becomes compulsory on 1 October (2026-09-24)
 
 - From 1 October, onboarding a creator requires a product. **Rows dated before

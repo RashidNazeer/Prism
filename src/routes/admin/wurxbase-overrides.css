@@ -2181,3 +2181,118 @@
   .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer > .pc-cm-body { padding-top: 0.5rem; }
   .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer .pc-cm-sec { margin: 0.6rem 0 0.5rem; }
 }
+
+/* ============================================================================
+   BY PRODUCT, on a brand's page (2026-09-24)
+
+   Rashid: "product wise gmv, product wise creators and product wise videos ...
+   a beautifully iconed and pilled style display without disturbing the ui".
+
+   "Without disturbing the UI" is the constraint that shapes all of this. The
+   band borrows the top-videos card's own heading treatment so it reads as
+   another one of their sections rather than a new piece of furniture, and the
+   pill row SCROLLS INSIDE ITSELF: Penetrex has six products and Irwin's names
+   run past 150 characters, and neither may push the page sideways.
+
+   Every size is in rem, so the whole band follows the text-size control in the
+   top bar. The ink on the GMV figure is --wx-success on --pc-card, which is
+   --wx-surface-1 — the ground check:contrast section 5 already proves it
+   against. That is why the pill is not on --pc-card-2.
+   ============================================================================ */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodband {
+  background: var(--pc-card);
+  border: 1px solid var(--pc-divider);
+  border-radius: var(--pc-radius, 0.875rem);
+  box-shadow: var(--pc-shadow);
+  overflow: hidden;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodband-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--pc-divider-soft, var(--pc-divider));
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pc-text-2);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodband-sub {
+  margin-left: auto;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--pc-text-3);
+  text-transform: none;
+}
+/* The scroller. `min-width: 0` is what actually lets it scroll: without it the
+   flex child refuses to shrink below its content and the PAGE scrolls instead,
+   which is the failure this whole block exists to avoid. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodband-row {
+  display: flex;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.7rem 0.9rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodpill {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex: 0 0 auto;
+  max-width: 20rem;
+  padding: 0.45rem 0.7rem 0.45rem 0.45rem;
+  border: 1px solid var(--pc-divider);
+  border-radius: 999px;
+  background: var(--pc-card);
+  transition: border-color 0.15s var(--pc-ease, ease), box-shadow 0.15s var(--pc-ease, ease);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodpill:hover {
+  border-color: var(--pc-accent);
+  box-shadow: var(--pc-shadow);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodpill-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+/* Their product titles are sentences, not names — "2-in-1 Kidney & Liver Super
+   Cleanse | 10-Day Herbal Cleanse with Milk Thistle, NAC & PACran | ..." — so
+   one line, clipped, with the whole thing on hover. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodpill-name {
+  /* The label is already shortened in JS, keeping both ends. This is only a
+     safety net for a name that arrives longer than expected. */
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--pc-text);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodpill-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+/* On a phone the pills go full width and stack, because a horizontal scroller
+   of 20rem pills on a 375px screen shows one and a half of them. */
+@media (max-width: 40rem) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodband-row {
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodpill {
+    max-width: none;
+    width: 100%;
+    border-radius: 0.75rem;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodpill-name {
+    max-width: none;
+  }
+}

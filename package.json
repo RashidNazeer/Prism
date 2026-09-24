@@ -95,7 +95,8 @@
     "verify:drawer": "node scripts/check-onboard-drawer.mjs",
     "verify:product-images": "node scripts/check-product-images.mjs",
     "verify:reacher-ads": "node scripts/check-reacher-ads.mjs",
-    "verify:october-product": "node scripts/check-october-product.mjs"
+    "verify:october-product": "node scripts/check-october-product.mjs",
+    "verify:product-band": "node scripts/check-product-band.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",
