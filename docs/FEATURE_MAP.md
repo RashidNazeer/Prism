@@ -2377,6 +2377,66 @@ its videos, both themes, 390px, zero console errors, and a revoked link says so
 in plain words) **and `pnpm verify:client-links`** (18: make, copy, open,
 details, new address, stop).
 
+## A product is compulsory from October, and videos split but money does not (2026-09-24)
+
+Rashid: *"I want from october and onwards (not before october please) it should
+be compulsory to choose the product while onboarding"* and *"we only need one
+checkbox and that should be videos, users will only input no of videos that
+would be auto sum and amount will be entered manually only"*.
+
+### The date the rule reads is the ROW'S, never the clock's
+
+This is the whole design. The same drawer edits creators hired months ago, so a
+rule written as "if today is October, require a product" would start refusing to
+save a September row the moment October arrived — **hundreds of existing rows
+unsaveable because somebody opened one to fix a phone number.** That is exactly
+what "not before October please" forbids, and it would have looked like a
+database fault rather than a validation change.
+
+So the rule reads `onboarded_on`, the row's own date. A row dated 2026-09-30 is
+never asked for a product; move that same row to October and it is, which is
+right, because it is then an October deal. `onboarded_on` is always populated —
+today for a new creator, its own date for an edit — and the fallback to today
+covers only a hand-cleared field.
+
+### ONLY 9 OF 44 BRANDS HAVE A CATALOGUE, so "compulsory" had to include typing
+
+Measured on 2026-09-24, brand by brand, rather than assumed: **8 brands on Euka
+and Irwin Naturals on Reacher can have their products fetched. 35 brands and 716
+creators cannot** — no platform we hold answers for them, and that includes Aqua
+Sonic, Pure Daily Care and JOYMODE, which are the Cruva three we cannot read yet.
+
+Making a product compulsory for half the roster with nothing to choose from
+would have jammed onboarding on 1 October. The picker has always accepted a
+typed product, so the rule is satisfiable everywhere — and when a brand has no
+catalogue the hint says so and tells you to type. A rule without its escape
+hatch spelled out is a dead end.
+
+### Videos split per product; the money does not
+
+It shipped on 2026-09-23 as an amount AND a video count per product. That was
+wrong and Rashid corrected it the next day. A deal is one sum of money for a
+body of work — splitting it per product asked whoever onboards to invent an
+allocation nobody had agreed, and two typed numbers that must add to a third is
+how they come to disagree. The video count genuinely is per product, because it
+is what gets delivered, so that is the only thing split. The Amount field stays
+typed however many products there are; the Videos field is the computed sum and
+cannot be typed over. `deal` still carries one line, `$800 / 14 videos`, which
+is what the budget, cost per video, the delivery bar and the brand cards parse.
+
+Per-product `amount` is no longer written to `products` at all.
+
+### The error banner got a `data-wx` hook
+
+Not cosmetic: without one, a check cannot tell *refused with a reason* from
+*silently did nothing*, and those are the only two outcomes this rule has.
+
+**Guarded by `pnpm verify:october-product`** (15 checks), which proves BOTH
+directions — that a 30 September row still saves with no product, and that a
+1 October row will not — plus that a brand with no catalogue can still comply by
+typing. Nothing is written: every save is intercepted, and the absence of a test
+row is then proved against the database rather than assumed.
+
 ## The products get their photographs (2026-09-24)
 
 Rashid: *"also check if images can be fetcheable for cruva and euka so we can

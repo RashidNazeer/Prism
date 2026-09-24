@@ -218,13 +218,21 @@ try {
 
   await pick(0);
   await page.waitForSelector('[data-wx="per-product-deals"]', { timeout: 10000 });
-  const rows = await page.evaluate(() => document.querySelectorAll('[data-wx="per-product-deals"] input[data-wx^="amount-"]').length);
-  check(rows === 2, 'two products: one amount and one video field for each', `${rows} rows`);
+  /* VIDEOS ARE SPLIT PER PRODUCT; THE MONEY IS NOT (Rashid, 2026-09-24).
+     The amount field must stay typed however many products there are — an
+     amount box per product would be asking whoever onboards to invent an
+     allocation nobody agreed. */
+  const rows = await page.evaluate(() => ({
+    videos: document.querySelectorAll('[data-wx="per-product-deals"] input[data-wx^="videos-"]').length,
+    amounts: document.querySelectorAll('[data-wx="per-product-deals"] input[data-wx^="amount-"]').length,
+  }));
+  check(rows.videos === 2, 'two products: one video field for each', `${rows.videos} rows`);
+  check(rows.amounts === 0, 'and NO amount field per product — the money is one figure for the deal',
+    `${rows.amounts} per-product amount inputs`);
 
-  await page.fill('[data-wx="amount-0"]', '300');
   await page.fill('[data-wx="videos-0"]', '5');
-  await page.fill('[data-wx="amount-1"]', '450');
   await page.fill('[data-wx="videos-1"]', '7');
+  await page.fill('[data-wx="total-amount"]', '800');
   await page.waitForTimeout(500);
   const totals = await page.evaluate(() => ({
     amount: document.querySelector('[data-wx="total-amount"]')?.value,
@@ -232,16 +240,19 @@ try {
     amountReadOnly: document.querySelector('[data-wx="total-amount"]')?.readOnly,
     videosReadOnly: document.querySelector('[data-wx="total-videos"]')?.readOnly,
   }));
-  check(totals.amount === '750' && totals.videos === '12', 'the totals are the sum of the parts, computed as you type',
-    `$${totals.amount} / ${totals.videos} videos, expected $750 / 12`);
-  check(totals.amountReadOnly === true && totals.videosReadOnly === true,
-    'and they cannot be typed over, so the parts and the total can never disagree');
+  check(totals.videos === '12', 'the video total is the sum of the parts, computed as you type',
+    `${totals.videos} videos, expected 12`);
+  check(totals.amountReadOnly === false, 'the amount stays typed by hand, even with several products',
+    `readOnly=${totals.amountReadOnly}`);
+  check(totals.videosReadOnly === true,
+    'the video total cannot be typed over, so the parts and the total can never disagree');
+  check(totals.amount === '800', 'and the amount that was typed is the amount that stands', `$${totals.amount}`);
 
-  /* Change one part; the total must follow. */
-  await page.fill('[data-wx="amount-1"]', '500');
+  /* Change one part; the video total must follow. */
+  await page.fill('[data-wx="videos-1"]', '9');
   await page.waitForTimeout(400);
-  const again = await page.evaluate(() => document.querySelector('[data-wx="total-amount"]')?.value);
-  check(again === '800', 'changing one product moves the total with it', `$${again}, expected $800`);
+  const again = await page.evaluate(() => document.querySelector('[data-wx="total-videos"]')?.value);
+  check(again === '14', 'changing one product moves the video total with it', `${again}, expected 14`);
 
   /* ── 4. what a save would send ─────────────────────────────────────── */
   /* Name is required before the button will enable, and Playwright's own fill
@@ -265,13 +276,18 @@ try {
     sent ? `${written.length} request(s) caught` : 'no write was attempted');
   if (sent) {
     const b = sent.body;
-    check(/\$800\s*\/\s*12 videos/.test(String(b.deal || '')), 'the deal it sends is the TOTAL, the field every other screen reads', `deal: "${b.deal}"`);
+    check(/\$800\s*\/\s*14 videos/.test(String(b.deal || '')),
+      'the deal it sends is the typed amount and the SUMMED video count, the line every other screen reads',
+      `deal: "${b.deal}"`);
     const ps = Array.isArray(b.products) ? b.products : [];
-    check(ps.length === 2 && ps.every((p) => typeof p.amount === 'number' && typeof p.videos === 'number'),
-      'and each product carries its own amount and videos, as numbers',
-      ps.map((p) => `${(p.name || '').slice(0, 18)}: $${p.amount}/${p.videos}`).join(' · '));
-    const sum = ps.reduce((s, p) => s + (Number(p.amount) || 0), 0);
-    check(sum === 800, 'the parts add up to the total that was sent', `$${sum}`);
+    check(ps.length === 2 && ps.every((p) => typeof p.videos === 'number'),
+      'each product carries its own video count, as a number',
+      ps.map((p) => `${(p.name || '').slice(0, 18)}: ${p.videos}`).join(' · '));
+    check(ps.every((p) => p.amount === undefined),
+      'and NO per-product amount is stored — there is one price for the deal',
+      ps.map((p) => String(p.amount)).join(', '));
+    const sum = ps.reduce((s, p) => s + (Number(p.videos) || 0), 0);
+    check(sum === 14, 'the video parts add up to the total that was sent', `${sum} videos`);
   }
 
   check(errors.length === 0, 'zero console errors', errors.slice(0, 3).join(' | '));

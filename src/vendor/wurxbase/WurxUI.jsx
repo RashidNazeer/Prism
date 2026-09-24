@@ -4687,17 +4687,48 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
      the delivery bar and the brand cards all parse that text, and they must
      keep seeing one number for the row. */
   const wxMulti = prods.length > 1;
+  /* WURX-ADJUSTED 2026-09-24 · VIDEOS SPLIT PER PRODUCT, MONEY DOES NOT.
+     Rashid: "we only need one checkbox and that should be videos, users will
+     only input no of videos that would be auto sum and amount will be entered
+     manually only, no of videos would be per product".
+
+     It is the right way round. A deal is one sum of money for a body of work;
+     splitting it per product was asking whoever onboards to invent an
+     allocation nobody had agreed, and two typed numbers that must add up to a
+     third is how they come to disagree. The video count genuinely is per
+     product — that is what gets delivered — so that is the only thing split. */
   const wxSplitTotals = useMemo(() => {
-    let amount = 0, videos = 0, missing = 0;
+    let videos = 0, missing = 0;
     for (const p of prods) {
-      const a = Number(p.amount), v = Number(p.videos);
-      if (!Number.isFinite(a) || !Number.isFinite(v) || String(p.amount ?? '') === '' || String(p.videos ?? '') === '') missing++;
-      amount += Number.isFinite(a) ? a : 0;
+      const v = Number(p.videos);
+      if (!Number.isFinite(v) || String(p.videos ?? '') === '') missing++;
       videos += Number.isFinite(v) ? v : 0;
     }
-    return { amount, videos, missing };
+    return { videos, missing };
   }, [prods]);
   const setProdField = (i, key, value) => setProds((prev) => prev.map((p, j) => (j === i ? { ...p, [key]: value } : p)));
+
+  /* A PRODUCT IS COMPULSORY FROM OCTOBER, AND NOT ONE DAY EARLIER.
+     Rashid, 2026-09-24: "I want from october and onwards (not before october
+     please) it should be compulsory to choose the product while onboarding".
+
+     THE RULE KEYS ON THE ROW'S OWN ONBOARDING DATE, not on today's. That is
+     what makes it safe: the same modal edits creators hired months ago, and a
+     rule read off the clock would refuse to save a September row every time
+     somebody opened it to fix a phone number — hundreds of existing rows turned
+     unsaveable overnight, which is exactly what "not before October please"
+     forbids. A row dated 2026-09-30 is never blocked; the same row moved to
+     October is, which is correct, because it is then an October deal.
+
+     `onboarded_on` is always filled — today for a new creator, its own date for
+     an existing one — and the fallback below only covers a hand-cleared field,
+     where "today" is the honest reading of what is being created. */
+  const WX_PRODUCT_REQUIRED_FROM = '2026-10-01';
+  const wxProductRequired = useMemo(() => {
+    const raw = String(f.onboarded_on || '').trim();
+    const day = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : todayISO();
+    return day >= WX_PRODUCT_REQUIRED_FROM;
+  }, [f.onboarded_on]);
   /* WURX-END */
   const removeProd = (idx) => setProds(prev => prev.filter((_, j) => j !== idx));
   const addCustomProd = () => {
@@ -4869,6 +4900,12 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
   const save = async () => {
     if (!f.name.trim()) { setErr('Name is required'); return; }
     if (!f.brand.trim()) { setErr('Brand is required'); return; }
+    /* WURX-ADDED · the October rule, checked here as well as shown above,
+       because a message beside a field is a prompt and this is a condition. */
+    if (wxProductRequired && !prods.some(p => (p.name || '').trim() || (p.url || '').trim())) {
+      setErr('Choose at least one product — required for creators onboarded from 1 October.');
+      return;
+    }
     setSaving(true);
     setErr('');
     /* Build the Wurx `deal` text from amount + videos_count.
@@ -4877,7 +4914,7 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
        deal, because the budget, cost per video, the delivery bar, the brand
        cards and every check parse exactly that; the split lives beside it on
        `products` and is additive. */
-    const wxAmount = wxMulti ? (wxSplitTotals.amount || '') : f.amount;
+    const wxAmount = f.amount;
     const wxVideos = wxMulti ? (wxSplitTotals.videos || '') : f.videos_count;
     let dealText = '';
     if (wxAmount && wxVideos) dealText = `$${wxAmount} / ${wxVideos} videos`;
@@ -4894,8 +4931,9 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
         const out = { name: p.name || '', url: p.url || '' };
         if (p.productId) out.productId = String(p.productId);
         if (wxMulti) {
-          const a = Number(p.amount), v = Number(p.videos);
-          if (Number.isFinite(a) && String(p.amount ?? '') !== '') out.amount = a;
+          /* Videos only. The money is one figure for the whole deal and lives
+             on `deal`, where every other screen already reads it. */
+          const v = Number(p.videos);
           if (Number.isFinite(v) && String(p.videos ?? '') !== '') out.videos = v;
         }
         return out;
@@ -5096,7 +5134,18 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
 
         {/* Promoting products */}
         <div className="pc-field">
-          <label>Promoting product{prods.length === 1 ? '' : '(s)'}</label>
+          <label>
+            Promoting product{prods.length === 1 ? '' : '(s)'}
+            {/* WURX-ADDED · required from October. Said here as well as on save,
+                so it is a known condition before the form is filled in rather
+                than a refusal after it. */}
+            {wxProductRequired && (
+              <span data-wx="product-required" style={{
+                marginLeft: 6, fontSize: 10, fontWeight: 800, letterSpacing: '.06em',
+                color: prods.length ? 'var(--pc-text-3)' : 'var(--pc-warn-fg)',
+              }}>REQUIRED</span>
+            )}
+          </label>
           {/* WURX-ADJUSTED · the chosen products as cards with their picture.
               Theirs were pills holding a 120-character product name, which
               overlapped each other and the field below. */}
@@ -5217,24 +5266,38 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
             </div>
           )}
           </div>
+          {/* WURX-ADDED · WHAT TO DO WHEN IT IS REQUIRED AND THERE IS NOTHING
+              TO PICK. Only 9 of our 44 brands have a catalogue any platform can
+              read — 35 brands and 716 creators have none — so from October the
+              usual case for half the roster is a product that has to be TYPED.
+              Saying so here is the difference between a rule and a dead end. */}
+          {wxProductRequired && prods.length === 0 && (
+            <div data-wx="product-required-hint" style={{ marginTop: 6, fontSize: 11.5, color: 'var(--pc-warn-fg)' }}>
+              {apiState === 'none'
+                ? 'A product is required from October, and this brand has no catalogue to read — open the list and type the product name, then press Enter.'
+                : 'A product is required for creators onboarded from October.'}
+            </div>
+          )}
           {/* WURX-END */}
         </div>
 
-        {/* WURX-ADDED · a deal per product, once there is more than one.
-            Rashid: "let say a user chosen 2 products, show 2 fields amount and
-            videos fields for each product and their total sum will be auto in
-            the row below". The row below is the existing Amount and Videos
-            pair, which becomes computed rather than typed. */}
+        {/* WURX-ADDED · VIDEOS PER PRODUCT, once there is more than one.
+            It began (2026-09-23) as an amount and a video count per product.
+            Rashid, 2026-09-24: "we only need one checkbox and that should be
+            videos ... amount will be entered manually only, no of videos would
+            be per product". So the Videos field below is the computed total and
+            the Amount field beside it is typed, as it always was with one
+            product. */}
         {wxMulti && (
           <div className="pc-field" data-wx="per-product-deals">
-            <label>Deal per product</label>
+            <label>Videos per product</label>
             <div style={{ display: 'grid', gap: 6 }}>
               {prods.map((p, i) => (
                 /* `minmax(0, 1fr)` and not `1fr`: a grid track refuses to go
                    below its content's minimum, so one long product name pushed
                    the amount and video fields off the side of the drawer. The
                    two fields are in rem so a zoomed browser keeps them usable. */
-                <div key={(p.name || '') + '-' + i} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 5.5rem 4.5rem', gap: 6, alignItems: 'center' }}>
+                <div key={(p.name || '') + '-' + i} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 5.5rem', gap: 6, alignItems: 'center' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                     <ProductTile product={p} size={26} />
                     <span title={p.name || p.url} style={{
@@ -5242,9 +5305,6 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}>{p.name || p.url}</span>
                   </span>
-                  <input className="pc-input" data-wx={'amount-' + i} type="number" inputMode="numeric" placeholder="$ amount"
-                    value={p.amount ?? ''} onWheel={e => e.currentTarget.blur()}
-                    onChange={e => setProdField(i, 'amount', e.target.value)} />
                   <input className="pc-input" data-wx={'videos-' + i} type="number" inputMode="numeric" placeholder="videos"
                     value={p.videos ?? ''} onWheel={e => e.currentTarget.blur()}
                     onChange={e => setProdField(i, 'videos', e.target.value)} />
@@ -5253,7 +5313,7 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
             </div>
             {wxSplitTotals.missing > 0 && (
               <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--pc-warn-fg)' }}>
-                {wxSplitTotals.missing} product{wxSplitTotals.missing === 1 ? '' : 's'} still {wxSplitTotals.missing === 1 ? 'needs' : 'need'} an amount and a video count.
+                {wxSplitTotals.missing} product{wxSplitTotals.missing === 1 ? '' : 's'} still {wxSplitTotals.missing === 1 ? 'needs' : 'need'} a video count.
               </div>
             )}
           </div>
@@ -5267,12 +5327,12 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
             screen reads off `deal`. */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }} data-wx={wxMulti ? 'deal-total' : 'deal-single'}>
           <div className="pc-field">
-            <label>{wxMulti ? 'Total amount ($)' : 'Amount ($)'}</label>
+            {/* THE MONEY IS TYPED, ALWAYS, however many products there are.
+                It is one deal for one creator, and nobody has agreed a split of
+                it per product. */}
+            <label>Amount ($)</label>
             <input className="pc-input" data-wx="total-amount" type="number" inputMode="numeric" placeholder="200"
-              value={wxMulti ? (wxSplitTotals.amount || '') : f.amount}
-              readOnly={wxMulti}
-              title={wxMulti ? 'Added up from the products above' : undefined}
-              style={wxMulti ? { background: 'var(--pc-card-2)', color: 'var(--pc-text)', fontWeight: 800 } : undefined}
+              value={f.amount}
               onChange={e => set('amount', e.target.value)} onWheel={e => e.currentTarget.blur()} />
           </div>
           <div className="pc-field">
@@ -5362,7 +5422,10 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
         </div>
 
         {err && (
-          <div style={{ background: 'var(--pc-error-bg)', color: 'var(--pc-error-fg)', borderRadius: 12, padding: '10px 13px', fontSize: 12.5, fontWeight: 600, marginBottom: 12 }}>{err}</div>
+          /* WURX-ADJUSTED · a hook to test against. It had only inline styles,
+             so a check could not tell "the save was refused with a reason" from
+             "the save silently did nothing" — which is the whole difference. */
+          <div data-wx="save-error" style={{ background: 'var(--pc-error-bg)', color: 'var(--pc-error-fg)', borderRadius: 12, padding: '10px 13px', fontSize: 12.5, fontWeight: 600, marginBottom: 12 }}>{err}</div>
         )}
 
         </div>{/* /pc-cm-body */}

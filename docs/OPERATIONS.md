@@ -1916,3 +1916,26 @@ Ad-account state on 2026-09-24, read from Reacher:
 
 Irwin's ad spend and ROI stay a dash until Rashid connects GMV Max on that shop
 in TikTok. It is a dash and not a zero on purpose: zero is a claim about money.
+
+### The October product rule
+
+```bash
+pnpm verify:october-product   # 15 checks, both directions, nothing written
+```
+
+The rule keys on the row's own `onboarded_on`, NOT on today's date. That is
+deliberate and must stay that way: the same drawer edits old creators, and a
+clock-based rule would make every pre-October row unsaveable the moment October
+arrived. The constant is `WX_PRODUCT_REQUIRED_FROM` in `WurxUI.jsx`.
+
+**Catalogue coverage, measured 2026-09-24** — 9 of 44 brands can have products
+fetched:
+
+| Source | Brands | Creators |
+|---|---|---|
+| Euka | 8 | 617 |
+| Reacher | 1 (Irwin Naturals) | 27 |
+| **Neither** | **35** | **716** |
+
+For those 35 the product is typed, and the drawer says so. Re-measure by calling
+`collab-products` with `{ brand, probe: true }` per brand.

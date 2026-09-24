@@ -57,6 +57,20 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
 - **Next:** he reads the words, answers the support@ and noindex questions,
   then the public pages go to production on their own and he resubmits.
 
+### A product becomes compulsory on 1 October (2026-09-24)
+
+- From 1 October, onboarding a creator requires a product. **Rows dated before
+  October are untouched** — the rule reads the row's own onboarding date, not
+  today's, so editing an old creator never starts failing.
+- **Only 9 of 44 brands have a catalogue any platform can fetch** (8 on Euka,
+  Irwin on Reacher). The other 35 brands and 716 creators must type the product
+  name, and the drawer says so rather than leaving a dead end. Aqua Sonic,
+  Pure Daily Care and JOYMODE are among them until Cruva is readable.
+- The per-product split is now **videos only**. The amount is typed once for the
+  whole deal; the video total is the computed sum and cannot be typed over.
+- **Proven:** `verify:october-product` 15/15, `verify:product-picker` 28/28,
+  `verify:drawer` 84/84, contrast pass, nothing written to Paid Collabs.
+
 ### Irwin's ad account is still not connected, and a loaded gun was removed (2026-09-24)
 
 - Asked Reacher directly: **Irwin Naturals has 0 GMV Max campaigns**, so there

@@ -147,10 +147,15 @@ try {
        opens says "0 loaded" about images that are simply still arriving — a
        failure report about nothing. Wait until every one has either loaded or
        given up, and only then look. */
+    /* Wait for the thing being asserted, which is that the CDN serves us AT
+       ALL — not for every image in the list. They are `loading="lazy"`, so the
+       ones below the fold of a short panel may never load by design, and
+       waiting for all of them makes the check fail on laziness rather than on
+       anything real. One rendered photograph proves the point; zero does not. */
     await page.waitForFunction(() => {
       const imgs = [...document.querySelectorAll('[data-wx="product-list"] img')];
-      return imgs.length === 0 || imgs.every((i) => i.complete);
-    }, null, { timeout: 15000 }).catch(() => {});
+      return imgs.length === 0 || imgs.some((i) => i.complete && i.naturalWidth > 0);
+    }, null, { timeout: 25000 }).catch(() => {});
     const opened = await page.evaluate(() => {
       const p = document.querySelector('[data-wx="product-panel"]');
       const d = document.querySelector('.wx-drawer');
