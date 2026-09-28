@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { WurxMark } from '@/components/brand/WurxMark';
 import { useTikTokFinish } from '@/lib/creator/useTikTokAccount';
+import { finishTikTokSignup, signupInFlight } from '@/lib/signup/tiktokSignup';
 
 /**
  * Where TikTok sends a CREATOR back after they connect their own account.
@@ -65,6 +66,33 @@ export function OAuthTikTokCreatorCallback() {
     if (!code || !state) {
       setPhase('failed');
       setMessage('That link is missing something. Start again from your profile.');
+      return;
+    }
+
+    /*
+     * IS THIS A SIGN-UP OR A SETTINGS CONNECT?
+     *
+     * Both come back to this address, because a second redirect URI has to be
+     * registered on the TikTok app before signup can have its own. The browser
+     * that started a signup left a marker in its own sessionStorage, so the
+     * question is answered here without a round trip and without the server
+     * telling a stranger which states exist.
+     *
+     * If the marker is missing — TikTok's in-app browser handing the return to
+     * a different browser — this falls through to the creator flow and refuses
+     * there. Safe: it can end in "start again", never in the wrong identity.
+     */
+    if (signupInFlight()) {
+      finishTikTokSignup(code, state)
+        .then((identity) => {
+          setHandle(identity.handle ? `@${identity.handle}` : identity.displayName);
+          setPhase('done');
+          setTimeout(() => navigate('/signup', { replace: true }), 1400);
+        })
+        .catch((e: Error) => {
+          setPhase('failed');
+          setMessage(e.message);
+        });
       return;
     }
 
