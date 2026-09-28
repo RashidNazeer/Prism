@@ -428,6 +428,14 @@ verify_jwt = true
 [functions.tiktok-creator-callback]
 verify_jwt = false
 
+# PUBLIC, and the reason is written in the file: `start` and `finish` are
+# reached from TikTok's redirect with no session in the tab - a creator
+# approving inside TikTok's in-app browser on a phone is exactly the person this
+# is for. The `claim` action verifies the caller's token itself, against the
+# auth server, the same way tiktok-connect does.
+[functions.tiktok-signup]
+verify_jwt = false
+
 [functions.tiktok-callback]
 verify_jwt = false
 
