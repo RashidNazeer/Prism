@@ -1,19 +1,17 @@
 # Project state
 
-## NEXT ACTION AFTER COMPACTION
+## NEXT ACTION
 
-**Recorded 2026-09-29 by /precompact.**
+**Updated 2026-09-29, after the product groups shipped.**
 
-Rashid asked for this next: he has **more changes to the TikTok-first signup**
-and will describe them himself. He tested the whole round trip on his own phone
-on 2026-09-29 and it worked — "did not hit any issue on my phone while logging
-in with same account, that was perfect" — so steps 1 to 3 are proven on a real
-device, not just in a suite.
+Nothing is queued. The last thing done was **product groups on a brand's
+creator table** (entry below); it is on dev and waiting on Rashid to look at it.
 
-**Before starting it, ask him:** "Compaction done. What are the changes you
-wanted on the TikTok sign-up?" Wait for a yes. Do not begin unprompted, and do
-NOT start step 4 or 5 on your own — step 4 needs a TikTok scope he has not
-applied for yet.
+**Still owed to him, not forgotten:** he has **more changes to the TikTok-first
+signup** and said he would describe them himself — *"few more changes but will
+let u know"*. He tested that round trip on his own phone on 2026-09-29 and it
+worked. Do NOT start step 4 or 5 of the signup plan unprompted; step 4 needs a
+TikTok scope he has not applied for yet.
 
 Everything below is context, not instructions.
 
@@ -76,6 +74,66 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
 - **Proven:** `verify:site` 74/74 against the live dev site.
 - **Next:** he reads the words, answers the support@ and noindex questions,
   then the public pages go to production on their own and he resubmits.
+
+### A brand's creators, grouped by product (2026-09-29)
+
+Rashid, with a mockup: *"we are showing creators of the brand when we open a
+particular brand ... we also have products and we can see. Now what i want is to
+organize and show product wise creators and for the ui i exactly want the ui as
+u can see in ss2"*.
+
+Open a brand and the creator table now splits into a band per product: the
+product's picture, its name, a "N creators" pill, a collapse chevron and a menu
+with Expand all / Collapse all. The payment-status dividers stay exactly where
+they were and the product bands sit inside them, which is what his mockup drew
+and the right way round — payment state is how the team WORKS the list, product
+is how they READ it.
+
+**ONE CREATOR, ONE ROW, and that is the whole design.** Every row carries
+per-creator money — the deal, total views, new-video GMV, L30 GMV, ad spend,
+ROI. Listing somebody again under a second product would show the same money
+twice on one screen, and this is not hypothetical: 10 of Penetrex's 34 September
+creators posted for more than one product, so a row-per-product table is 53 rows
+for 34 people. A creator goes under the product MOST of their videos are for,
+and the band says "1 also posted elsewhere" rather than hiding the overlap.
+
+**The band above and the groups below will show different creator counts, on
+purpose.** The band counts everyone who touched a product, so its counts overlap
+(NUTRAHARMONY: 19 + 18 + 1 + 1 = 39 for 38 people). The groups partition the
+same people, so they add up to exactly the "38 creators" pill beside the search
+box. Two scopes, each reconciling with the total next to it.
+
+A brand with no product on any video keeps its flat table — two of the eleven
+brands on screen in September are like that.
+
+**Suite:** `pnpm verify:product-groups`, 98 checks, 0 failures. It proves the
+partition by name (no creator listed twice), that the counts add up to the rows
+and to the header pill, that the numbering reads 1..N, that collapsing one band
+touches only that band, and that the menu actually does something.
+
+**TWO THINGS WENT WRONG AND BOTH ARE WORTH REMEMBERING.**
+
+1. **Indenting the rows made three controls unclickable.** The grouped rows were
+   indented 22px and the section inset another 24px. That twelve-column grid has
+   no slack: the Status column is 1.16fr of 8.9 and the pill inside it is 151px.
+   Take 46px away and the pill overflows its cell, and an overflowing cell is
+   covered by the cell after it — the status pill, the contract pencil and the
+   eye button all stopped taking their own clicks. Nothing looked broken. The
+   tree is now drawn INSIDE the row's own 24px of left padding, and the row's
+   geometry is byte-for-byte what it was.
+2. **`verify:collab-controls` was standing at six FALSE failures.** Its probe
+   counts a point as "a neighbour is on top of it" whenever
+   `document.elementFromPoint` returns nothing — but that is also what it
+   returns for a point OUTSIDE THE VIEWPORT. The first row sits lower than it
+   used to (the product band, now the group header, are above it), so at 1280
+   and 1024 it was already below a 1000px fold and the suite was describing a
+   bug that does not exist. It now scrolls the row into view, counts empty
+   points separately, and FAILS if it could not sample anything. 54/54.
+
+**Also ran clean:** `verify:product-band` 55/55, `verify:collab-contrast` 14/14,
+`verify:collab-canvas` 77/77. `verify:product-images` has one flaky failure per
+run and it is a different product each time — it fetches pictures straight from
+TikTok's CDN and those fetches time out; nothing to do with this work.
 
 ### TikTok-first signup works on a real phone (2026-09-29)
 

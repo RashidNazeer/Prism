@@ -1958,6 +1958,43 @@ Pictures are matched from `collab-products` by EXACT product name within the one
 brand. Videos carry a product name and no product id, so there is no id to join
 on — do not loosen that match.
 
+The catalogue is fetched ONCE per brand and shared with the product groups
+below, via `wxProductPics` — a module-level promise cache in `WurxUI.jsx`. A
+failed fetch is dropped from it so the next mount asks again.
+
+### Product groups in the creator table
+
+```bash
+pnpm verify:product-groups   # 98 checks, needs pnpm preview on :4173
+```
+
+Grouping is on whenever two or more distinct products are in view; otherwise the
+table stays flat. Brands used by the suite: `PG_BRANDS` (default
+`Penetrex,Dr Tobias`) and `PG_FLAT_BRAND` (default `Pure Daily Care` — pick one
+with NO product on any video, and one that actually has creators in the month on
+screen, or the check grades a brand it never opened).
+
+**The checks that matter, and why they are worded that way:**
+
+- **No creator is listed twice.** Every row carries per-creator money; a person
+  under two products shows their GMV, views, ad spend and ROI twice.
+- **The groups add up** to the rows on screen AND to the "N creators" pill next
+  to the search box. The band above will NOT match — it overlaps by design.
+- **A grouped row is as wide as the card.** `.pc-ct-row` is a twelve-column grid
+  with no spare width: Status is 1.16fr of 8.9 and the pill in it is 151px. Take
+  even 20px off and the pill overflows, and the next cell paints over it — three
+  controls go dead with nothing visibly wrong. Never indent these rows; draw
+  inside the row's own 24px of left padding.
+
+**A NOTE ON `verify:collab-controls`, fixed 2026-09-29.** Its overlap probe
+counted `document.elementFromPoint` returning nothing as "a neighbour is on top
+of it". That is also what it returns for a point OUTSIDE THE VIEWPORT, and the
+first table row now sits below a 1000px fold (the by-product band, then the
+group header, are above it). The suite stood at six failures describing a bug
+that did not exist. It now scrolls the row into view, counts empty points
+separately, and FAILS if it could not sample any. If you see that suite report a
+control as covered, check the row is on screen before believing it.
+
 ### The TikTok identity ledger
 
 ```bash

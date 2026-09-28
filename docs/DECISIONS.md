@@ -2526,3 +2526,46 @@ and sends only its SHA-256; the code never reaches the address bar, history or
 referrer; nonces last fifteen minutes; one nonce per creator is live at a time.
 **Narrowed, not closed** — and written into the checks so a green suite is never
 read as more than it is.
+
+## Product groups partition the creators; the band overlaps them (2026-09-29)
+
+**Decision:** on a brand's creator table, each creator appears exactly once,
+under the product most of their videos are for. The Product performance band
+above keeps counting every creator who touched a product, so the two will show
+different numbers for the same product.
+
+**Why.** The row carries per-creator money — deal, total views, new-video GMV,
+L30 GMV, ad spend, ROI. A creator listed under two products shows that money
+twice on one screen, and any total a human adds up off the page comes out wrong.
+Ten of Penetrex's thirty-four September creators posted for more than one
+product; a row-per-product table is 53 rows for 34 people.
+
+**Rejected:** listing a creator under every product they posted for, so the
+group counts would match the band's. That buys agreement between two numbers at
+the price of a screen that double-counts money — the wrong trade in a product
+whose whole promise is that the numbers are real.
+
+**Rejected:** scoping each row's figures to the product it sits under. GMV and
+views could be scoped; the deal, items sold, ad spend, ROI, contract and status
+cannot — they belong to the creator, not the pairing. Half a row scoped and half
+not is worse than either.
+
+**The two counts are allowed to disagree because each reconciles with the total
+beside it:** the band's products add up to the GMV card above them, the groups
+add up to the "N creators" pill next to the search box. Neither is wrong; they
+answer different questions.
+
+## The status dividers stay outside the product groups (2026-09-29)
+
+**Decision:** Payment Pending / Videos in Progress / Payment Sent remain the
+outer split, with the product bands inside them, which is what Rashid's mockup
+drew.
+
+**Why.** Payment state is how this team WORKS the list — "who do we owe" is the
+question that gets asked every week, and the count on that divider is the answer.
+Product is how they READ it. Putting product outside would fragment "17 pending"
+into per-product pieces and lose the number they actually use.
+
+**The consequence, accepted:** a product appears once under each status it has
+creators in, so the same product name can show three times on one page. Each
+band folds independently, keyed on status-and-product together.

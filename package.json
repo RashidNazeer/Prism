@@ -101,7 +101,8 @@
     "verify:tiktok-release": "node scripts/check-tiktok-release-ui.mjs",
     "verify:tiktok-guards": "node scripts/check-tiktok-connect-guards.mjs",
     "verify:tiktok-signup": "node scripts/check-tiktok-signup.mjs",
-    "verify:product-band": "node scripts/check-product-band.mjs"
+    "verify:product-band": "node scripts/check-product-band.mjs",
+    "verify:product-groups": "node scripts/check-product-groups.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

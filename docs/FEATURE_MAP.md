@@ -4415,3 +4415,75 @@ broken.
 **`pnpm verify:wurxbase-signin`** proves it: no second screen, the app renders
 straight away, the session names the real person, our admin maps to their
 superadmin, and zero console errors.
+
+
+## Product groups on a brand's creator table (2026-09-29)
+
+`src/vendor/wurxbase/WurxUI.jsx` · `wxCreatorProduct`, `wxKnownProducts`,
+`wxProductOrder`, `wxSplitByProduct`, `wxProductPics`, `WxGroupMenu`, and the
+`wxTable` memo in the brand drilldown. Styles: `.wx-pgroup*` / `.wx-prow` in
+`src/routes/admin/wurxbase-overrides.css`. Guard: `pnpm verify:product-groups`.
+
+Rashid: *"organize and show product wise creators and for the ui i exactly want
+the ui as u can see in ss2"*.
+
+**ONE CREATOR APPEARS ONCE. This is the rule the whole feature rests on.** The
+row is per-creator and carries per-creator money; listing somebody under each of
+their products shows that money twice. Measured on dev: 10 of Penetrex's 34
+September creators straddle products, and a row-per-product table is 53 rows for
+34 people. A creator is placed under the product MOST of their distinct videos
+are for — ties break on GMV, then name — and the band header says how many of
+its creators also posted elsewhere.
+
+**Where a creator with no videos goes.** Ten of Irwin Naturals' 27 September
+creators have none. They fall back to the product they were onboarded with,
+which is why that field is compulsory from October. The legacy free-text
+`product` column is used only when it MATCHES a product the brand actually has:
+that column holds an email address on at least one live row, and a group header
+is no place to find that out.
+
+**The order is the band's order, not a second opinion.** `wxProductOrder` reads
+`wxProductTotals` — the same ranking the Product performance strip draws itself
+from — so the two halves of the screen can never disagree about which product
+leads. A product that exists only as an onboarding choice has no GMV to rank by
+and follows, alphabetically. "No product recorded" is always last.
+
+**The band's creator counts and the groups' will differ, and that is correct.**
+The band counts everyone who touched a product (overlapping: NUTRAHARMONY reads
+19 + 18 + 1 + 1 for 38 people); the groups partition the same people and add up
+to the header pill. Do not "fix" one to match the other — they answer different
+questions, and each reconciles with the total beside it.
+
+**Grouping happens only when there is something to group by** (two or more
+distinct products in view). Two of the eleven brands on screen in September —
+Pure Daily Care and Aqua Sonic, both on Cruva — carry no product anywhere and
+keep the flat table.
+
+**A band is per PRODUCT PER STATUS, and folds alone.** The same product appears
+under every payment status it has creators in. Keying the collapsed set on the
+product alone meant folding one also folded its twins further down the page:
+thirteen rows vanished for a click that promised nine. The key is
+`${statusKey}::${productKey}`.
+
+**THE ROWS MUST NOT LOSE A SINGLE PIXEL OF WIDTH, and this shipped wrong once.**
+The first version indented grouped rows 22px and inset the section another 24px.
+`.pc-ct-row` is a twelve-column grid with no slack — Status is 1.16fr of 8.9 and
+the pill in it is 151px, which already overflows below roughly 1300px. Take 46px
+more and it overflows at 1500 too, and an overflowing cell is painted over by
+the cell after it: the status pill, the contract pencil and the eye button all
+stopped receiving their own clicks, with nothing visibly wrong. So the header
+carries the inset, the rows keep the full card width, and the tree is drawn
+inside the row's own 24px of left padding (rail at 10px, elbow to 18px, both
+`pointer-events: none`). `verify:product-groups` measures the row against the
+card and probes all three controls, because this is not a mistake to make twice.
+
+**The label is middle-truncated, shared with the band** (`wxShortProduct`). Five
+of NUTRAHARMONY's products begin "NUTRA HARMONY" and four of Penetrex's begin
+"Penetrex Daily Joint & Muscle Car", so an end-clip gives a column of identical
+headers. Both halves of the screen shorten the same name the same way; two
+copies would drift.
+
+**One catalogue fetch per brand.** `wxProductPics` is a module-level promise
+cache shared by the band and the groups — it was two Edge Function round trips.
+A FAILURE is dropped from the cache so the next mount asks again: "could not
+reach the catalogue once" must never harden into "this brand has no pictures".

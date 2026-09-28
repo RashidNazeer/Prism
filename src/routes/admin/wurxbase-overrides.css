@@ -2397,3 +2397,220 @@
     padding-left: 0;
   }
 }
+
+
+/* ------------------------------------------- product groups in the table -- */
+/*
+ * Rashid, 2026-09-29, with a mockup: a brand's creator table grouped by
+ * product — a band per product carrying its picture, its name and how many
+ * creators sit under it, with the rows tucked underneath on a tree.
+ *
+ * THE BAND SITS ON `--pc-card-2` AND ITS INK COMES FROM THE SAME PAIR. That is
+ * the surface the table's own hover state and the status dividers already use,
+ * so no ink here is calibrated against one ground and then shown on another,
+ * which is the colour bug this project keeps re-shipping.
+ *
+ * THE RAIL IS THE ACCENT, HEAVILY DILUTED. It is decoration, not information:
+ * the grouping is already carried by the header, the indent and the count, so
+ * the line never has to be readable, only visible.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup {
+  margin: 0.625rem 0 0.125rem;
+}
+/*
+ * THE INSET IS ON THE HEADER ALONE, AND THE ROWS KEEP THE FULL WIDTH OF THE
+ * CARD. This is not tidiness, it is the bug that shipped and was caught:
+ * indenting the rows by 22px and insetting the section by another 24px took
+ * 46px off a twelve-column grid that has none to give. The Status column is
+ * 1.16fr of 8.9; the pill inside it is 151px and already overflows below about
+ * 1300px. Take another 46px and it overflows at 1500 too — and an overflowing
+ * cell is covered by the cell after it, so `pnpm verify:collab-controls` went
+ * from six failures to fourteen: the status pill, the contract pencil and the
+ * eye button all stopped receiving their own clicks, and the status menu could
+ * no longer be opened at all.
+ *
+ * So the tree is drawn INSIDE the row's own 24px of left padding, where there
+ * was nothing but space, and the row's geometry is byte-for-byte what it was.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-head {
+  margin: 0 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4375rem 0.5rem 0.4375rem 0.375rem;
+  border: 1px solid var(--pc-divider);
+  border-radius: 0.75rem;
+  background: var(--pc-card-2);
+}
+/* The whole band is the hit target, not just the chevron. A control you can
+   only reach by hitting a 14px glyph is a control a phone cannot use. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-toggle {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.125rem 0.25rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-toggle:focus-visible {
+  outline: 2px solid var(--pc-accent);
+  outline-offset: 2px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-chev {
+  flex: 0 0 auto;
+  display: inline-flex;
+  color: var(--pc-text-3);
+  transition: transform 0.16s var(--pc-ease, ease);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup.is-shut .wx-pgroup-chev {
+  transform: rotate(-90deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-chev { transition: none; }
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-shot { flex: 0 0 auto; display: inline-flex; }
+/* The full name is in the band's tooltip; here it truncates rather than
+   wrapping to three lines and pushing the count off the row. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--pc-text);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-name.is-none {
+  font-style: italic;
+  font-weight: 600;
+  color: var(--pc-text-3);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-count {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: 1.375rem;
+  padding: 0 0.5625rem;
+  border: 1px solid var(--pc-divider);
+  border-radius: 999px;
+  background: var(--pc-card);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--pc-text-2);
+  white-space: nowrap;
+}
+/* Said quietly, because it is a caveat rather than a figure: how many of these
+   people ALSO posted for another product, and so are counted here but not only
+   here. Without it a reader takes the band for the whole of that creator. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-also {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: 1.25rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--wx-accent) 12%, transparent);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--pc-accent);
+  white-space: nowrap;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-menu { position: relative; flex: 0 0 auto; display: inline-flex; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-kebab {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--pc-text-3);
+  cursor: pointer;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-kebab:hover { background: var(--pc-card); color: var(--pc-text-2); }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-kebab:focus-visible { outline: 2px solid var(--pc-accent); outline-offset: 2px; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-pop {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  right: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  min-width: 12rem;
+  padding: 0.25rem;
+  border: 1px solid var(--pc-divider);
+  border-radius: 0.75rem;
+  background: var(--pc-card);
+  box-shadow: var(--pc-shadow);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-pop button {
+  padding: 0.5rem 0.625rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  text-align: left;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--pc-text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-pop button:hover { background: var(--pc-card-2); }
+
+/* The rows, on a tree drawn in the row's own left padding — the rail at 10px
+   and the elbow reaching 18px, where the first column starts at 24px. It hangs
+   from the band and stops at the last child's elbow, so it never runs on past
+   the end of the group. Decoration only: the grouping is already carried by the
+   header, the count and the order, so the line never has to be read. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-rows { position: relative; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prow { position: relative; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prow::before {
+  content: '';
+  position: absolute;
+  left: 0.625rem;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--wx-accent) 26%, transparent);
+  pointer-events: none;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prow:last-child::before { display: none; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prow::after {
+  content: '';
+  position: absolute;
+  left: 0.625rem;
+  top: 0;
+  width: 0.5rem;
+  height: 1.375rem;
+  border-left: 1px solid color-mix(in srgb, var(--wx-accent) 26%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--wx-accent) 26%, transparent);
+  border-bottom-left-radius: 0.5rem;
+  pointer-events: none;
+}
+
+/* PHONES AND SMALL TABLETS. Below 768 their table stops being a table: every
+   row becomes a detached card with a gap under it. A tree line drawn through
+   those gaps reads as a rendering fault, so the rail goes and the indent
+   shrinks to something a 375px screen can afford — the band directly above
+   still says which product these are. */
+@media (max-width: 768px) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup { margin: 0.5rem 0 0.125rem; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-head { margin: 0; flex-wrap: wrap; row-gap: 0.375rem; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-toggle { flex-wrap: wrap; row-gap: 0.375rem; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-name { font-size: 0.875rem; flex: 1 1 8rem; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prow::before,
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prow::after { display: none; }
+}
+@media (max-width: 420px) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-also { display: none; }
+}

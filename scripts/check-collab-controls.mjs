@@ -102,17 +102,46 @@ try {
     const report = await page.evaluate(() => {
       const row = document.querySelector('.pc-ct-row');
       if (!row) return null;
+      /*
+       * SCROLL THE ROW INTO VIEW FIRST, AND SAY SO WHEN A POINT IS EMPTY.
+       *
+       * `document.elementFromPoint` returns null for anything outside the
+       * viewport, and this probe used to count a null as "a neighbour is on top
+       * of it". The first row sits lower than it used to — the by-product band
+       * above the table, then the product group header — so at 1280 and 1024 it
+       * was already below a 1000px fold, and this file reported three controls
+       * as unclickable that were perfectly clickable once you scrolled to them.
+       * Six false failures, standing, describing a bug that does not exist.
+       *
+       * The distinction is kept rather than papered over: `offscreen` counts the
+       * points that had NOTHING at them, `own` counts the ones that were this
+       * control's, and a point owned by something else is still a real overlap.
+       * A probe that could not sample anything is a FAILURE to probe, not a
+       * pass — see the checks below.
+       */
+      row.scrollIntoView({ block: 'center' });
       const probe = (el, label) => {
         if (!el) return { label, present: false };
         const r = el.getBoundingClientRect();
         if (!r.width) return { label, present: true, zero: true };
-        let mine = 0, total = 0;
+        const y = r.top + r.height / 2;
+        let mine = 0, empty = 0, total = 0;
         for (let x = r.left + 2; x < r.right - 2; x += 3) {
           total++;
-          const hit = document.elementFromPoint(x, r.top + r.height / 2);
-          if (hit && (hit === el || el.contains(hit))) mine++;
+          const hit = document.elementFromPoint(x, y);
+          if (!hit) empty++;
+          else if (hit === el || el.contains(hit)) mine++;
         }
-        return { label, present: true, own: total ? Math.round((mine / total) * 100) : 0, w: Math.round(r.width) };
+        const sampled = total - empty;
+        return {
+          label,
+          present: true,
+          /* Of the points that could be sampled at all. */
+          own: sampled ? Math.round((mine / sampled) * 100) : 0,
+          sampled,
+          offscreen: empty,
+          w: Math.round(r.width),
+        };
       };
       return [
         probe(row.querySelector('.pc-badge-btn'), 'status pill'),
@@ -123,6 +152,11 @@ try {
 
     for (const c of report || []) {
       if (!c.present) { check(false, `${width}px: ${c.label} is missing`); continue; }
+      /* A probe that sampled nothing proves nothing. Say that, rather than
+         letting a 0-of-0 be read as either a pass or an overlap. */
+      check(c.sampled > 0, `${width}px: the ${c.label} could be probed at all`,
+        `${c.sampled} points on screen, ${c.offscreen} off it`);
+      if (!c.sampled) continue;
       check(
         c.own >= 92,
         `${width}px: the ${c.label} receives its own clicks`,
@@ -134,7 +168,13 @@ try {
   await page.setViewportSize({ width: 1500, height: 1000 });
   await page.waitForTimeout(1200);
 
-  /* The status menu opens ON SCREEN and offers the option Asad needs. */
+  /* The status menu opens ON SCREEN and offers the option Asad needs.
+     Scrolled to first, for the same reason as the probe above: the row sits
+     below a 1000px fold now that the product band and its group header are
+     above it, and "the status menu opens" was failing because the click never
+     landed, not because the menu is broken. */
+  await page.locator('.pc-ct-row .pc-badge-btn').first().scrollIntoViewIfNeeded().catch(() => {});
+  await page.waitForTimeout(300);
   await page.locator('.pc-ct-row .pc-badge-btn').first().click();
   await page.waitForTimeout(1200);
   const menu = await page.evaluate(() => {
@@ -169,6 +209,8 @@ try {
   await page.waitForTimeout(800);
 
   /* The eye opens its panel on screen rather than below the fold. */
+  await page.locator('.pc-ct-row .pc-rowactions .pc-actbtn').first().scrollIntoViewIfNeeded().catch(() => {});
+  await page.waitForTimeout(300);
   await page.locator('.pc-ct-row .pc-rowactions .pc-actbtn').first().click();
   await page.waitForTimeout(2500);
   const modal = await page.evaluate(() => {

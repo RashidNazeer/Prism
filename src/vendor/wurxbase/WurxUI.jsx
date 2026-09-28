@@ -521,6 +521,219 @@ function wxProductTotals(list) {
     .sort((a, b) => b.gmv - a.gmv || b.videos - a.videos);
 }
 
+/* WURX-ADDED · WHAT A PRODUCT LABEL ACTUALLY SAYS — and why it is not just CSS.
+   Clipping these titles from the right produced four Penetrex pills all reading
+   "Penetrex Daily Joint & Muscle Car…" beside four different GMV figures: a list
+   of identical labels, which is worse than no label. On NUTRAHARMONY it is five
+   bands all reading "NUTRA HARMONY Hydrating…".
+
+   The distinguishing words can be at either end — Penetrex's differ at the tail
+   (", 3 Oz. Gel", "Lotion, 8 oz Pump") while Irwin's differ at the head — so the
+   label keeps BOTH ends and loses the middle. A first attempt trimmed the prefix
+   every product shares, which looked neater and then did nothing at all, because
+   one product is called "NEW! Penetrex…" and that makes the shared prefix empty.
+   Middle truncation has no such dependency on the naming happening to be tidy.
+   The full title is always in the tooltip.
+
+   It lives out here because the band's cards and the table's group headers must
+   shorten the same name the same way; two copies drifting apart would have one
+   half of the screen calling a product something the other half does not. */
+function wxShortProduct(name, max = 44) {
+  const s = String(name || '');
+  if (s.length <= max) return s;
+  const head = s.slice(0, Math.ceil(max * 0.55)).trimEnd();
+  const tail = s.slice(-Math.floor(max * 0.35)).trimStart();
+  return `${head}…${tail}`;
+}
+/* WURX-END */
+
+/* WURX-ADDED · WHICH PRODUCT A CREATOR SITS UNDER, AND WHY ONLY ONE.
+   Rashid, 2026-09-29, with a mockup: "we are showing creators of the brand when
+   we open a particular brand ... we also have products and we can see. Now what
+   i want is to organize and show product wise creators".
+
+   ONE CREATOR, ONE ROW. A creator's row carries PER-CREATOR money — the deal,
+   total views, new-video GMV, L30 GMV, ad spend, ROI — so listing the same
+   person again under a second product would show the same money twice on one
+   screen. That is not hypothetical: on dev, 10 of Penetrex's 34 September
+   creators posted for more than one product, and a row-per-product table comes
+   to 53 rows for 34 people, with every figure of those ten counted twice. So a
+   creator is placed under the product MOST of their videos are for, and the
+   header says how many of its creators also posted elsewhere rather than
+   quietly hiding it.
+
+   THE BAND ABOVE ANSWERS A DIFFERENT QUESTION, and its counts will differ on
+   purpose. It counts every creator who touched a product, so its figures
+   overlap and add up to MORE than the brand has creators (NUTRAHARMONY: 19 + 18
+   + 1 + 1 = 39 for 38 people). These groups PARTITION the same people, so they
+   add up to exactly the "N creators" pill they sit under. Two scopes, each
+   reconciling with the total next to it, which is the only way two breakdowns
+   of one list can both be true.
+
+   A CREATOR WITH NO VIDEOS YET STILL BELONGS SOMEWHERE. Ten of Irwin Naturals'
+   27 September creators have none. Those fall back to the product they were
+   onboarded with — which is exactly what that field being compulsory from
+   October is for. The legacy free-text `product` column is used only when it
+   matches a product this brand actually sells: it holds an email address on at
+   least one live row, and a group header is no place to discover that. */
+function wxCreatorProduct(c, known) {
+  const tally = new Map();
+  const seen = new Set();
+  (Array.isArray(c && c.video_codes) ? c.video_codes : []).forEach((r) => {
+    const url = r && String(r.video || '').trim();
+    if (!url) return;
+    /* Deduped on TikTok's video id, the same key `wxVideoTotals` and
+       `wxProductTotals` use. One video filed under two deals of one creator is
+       a single video here too, or "most" would be decided by how many times a
+       row happens to have been duplicated. */
+    const k = wxVideoId(url) || url;
+    if (seen.has(k)) return;
+    seen.add(k);
+    const name = String(r.product || '').trim();
+    if (!name) return;
+    const lk = name.toLowerCase();
+    const cur = tally.get(lk) || { name, videos: 0, gmv: 0 };
+    cur.videos += 1;
+    cur.gmv += Number(r.revenue) || 0;
+    tally.set(lk, cur);
+  });
+  if (tally.size) {
+    const best = [...tally.values()].sort((a, b) =>
+      b.videos - a.videos || b.gmv - a.gmv || a.name.localeCompare(b.name))[0];
+    return { key: best.name.toLowerCase(), name: best.name, alsoOn: tally.size - 1 };
+  }
+  const assigned = (Array.isArray(c && c.products) ? c.products : [])
+    .map((x) => String((x && x.name) || '').trim()).filter(Boolean);
+  if (assigned.length) return { key: assigned[0].toLowerCase(), name: assigned[0], alsoOn: 0 };
+  const legacy = String((c && c.product) || '').trim();
+  const hit = legacy && known ? known.get(legacy.toLowerCase()) : '';
+  if (hit) return { key: legacy.toLowerCase(), name: hit, alsoOn: 0 };
+  return { key: '', name: '', alsoOn: 0 };
+}
+
+/* Every product name this brand is actually known to use, lowercased -> as
+   written. Built from the videos AND from what creators were onboarded with, so
+   a brand whose sync has not run yet is not treated as having no catalogue. */
+function wxKnownProducts(list) {
+  const known = new Map();
+  const add = (n) => {
+    const t = String(n || '').trim();
+    if (t && !known.has(t.toLowerCase())) known.set(t.toLowerCase(), t);
+  };
+  (list || []).forEach((c) => {
+    (Array.isArray(c && c.video_codes) ? c.video_codes : []).forEach((r) => add(r && r.product));
+    (Array.isArray(c && c.products) ? c.products : []).forEach((x) => add(x && x.name));
+  });
+  return known;
+}
+
+/* THE ORDER THE GROUPS APPEAR IN IS THE BAND'S ORDER, not a second opinion.
+   `wxProductTotals` already ranks by GMV then videos and the strip above the
+   table draws itself from it; ranking these independently would leave the two
+   halves of one screen disagreeing about which product is doing best. A product
+   that exists only as an onboarding choice has no GMV to rank by and follows,
+   alphabetically; "no product" is always last. */
+function wxProductOrder(list) {
+  const rank = new Map();
+  wxProductTotals(list).forEach((r, i) => {
+    const k = String(r.name || '').trim().toLowerCase();
+    if (k) rank.set(k, i);
+  });
+  return rank;
+}
+
+function wxSplitByProduct(rows, placed, rank) {
+  const bands = new Map();
+  (rows || []).forEach((c) => {
+    const pl = placed.get(c.id) || { key: '', name: '' };
+    let b = bands.get(pl.key);
+    if (!b) { b = { key: pl.key, name: pl.name, items: [] }; bands.set(pl.key, b); }
+    b.items.push(c);
+  });
+  const LAST = Number.MAX_SAFE_INTEGER;
+  return [...bands.values()].sort((a, b) => {
+    if (!a.key !== !b.key) return a.key ? -1 : 1;
+    const ra = rank.has(a.key) ? rank.get(a.key) : LAST;
+    const rb = rank.has(b.key) ? rank.get(b.key) : LAST;
+    return ra - rb || a.name.localeCompare(b.name);
+  });
+}
+
+/* ONE CATALOGUE FETCH PER BRAND, SHARED. The band and the table groups want the
+   same pictures and `collabProducts` is an Edge Function round trip; asking
+   twice on every brand open would double that for nothing. A FAILURE IS NOT
+   CACHED — it is dropped from the map so the next mount asks again, because "we
+   could not reach the catalogue once" must never harden into "this brand has no
+   pictures" for the rest of the session. */
+const WX_PRODUCT_PICS = new Map();
+function wxProductPics(brand) {
+  const key = String(brand || '').trim();
+  if (!key) return Promise.resolve(new Map());
+  if (!WX_PRODUCT_PICS.has(key)) {
+    const job = (async () => {
+      const res = await collabProducts(key);
+      if (!res) throw new Error('catalogue unavailable');
+      const map = new Map();
+      for (const pr of res.products || []) {
+        const k = String((pr && pr.name) || '').trim().toLowerCase();
+        if (k && pr.image) map.set(k, pr.image);
+      }
+      return map;
+    })();
+    job.catch(() => WX_PRODUCT_PICS.delete(key));
+    WX_PRODUCT_PICS.set(key, job);
+  }
+  return WX_PRODUCT_PICS.get(key).catch(() => new Map());
+}
+function wxUseProductPics(brand) {
+  const [pics, setPics] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    setPics(null);
+    if (!brand) return undefined;
+    wxProductPics(brand).then((m) => { if (alive) setPics(m); });
+    return () => { alive = false; };
+  }, [brand]);
+  return pics;
+}
+
+/* The group header's own menu. Two actions, both real: a brand with seven
+   products makes a long page, and collapsing the lot is the only way to see its
+   shape. A plain absolutely-positioned panel rather than a portal — a portal is
+   how other menus on this screen have twice ended up rendering off-screen. */
+function WxGroupMenu({ onExpandAll, onCollapseAll }) {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDown = (e) => { if (wrap.current && !wrap.current.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); } };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey, true);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey, true);
+    };
+  }, [open]);
+  return (
+    <span className="wx-pgroup-menu" ref={wrap}>
+      <button type="button" className="wx-pgroup-kebab" aria-label="Product group options"
+        aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <circle cx="12" cy="5" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="12" cy="19" r="1.7" />
+        </svg>
+      </button>
+      {open && (
+        <span className="wx-pgroup-pop" role="menu">
+          <button type="button" role="menuitem" onClick={() => { onExpandAll(); setOpen(false); }}>Expand all products</button>
+          <button type="button" role="menuitem" onClick={() => { onCollapseAll(); setOpen(false); }}>Collapse all products</button>
+        </span>
+      )}
+    </span>
+  );
+}
+/* WURX-END */
+
 /* WURX-ADDED · THE BY-PRODUCT BAND on a brand's page.
 
    One pill per product: its picture, its name, and the three figures Rashid
@@ -543,47 +756,15 @@ function wxProductTotals(list) {
    calibrated elsewhere, which is a bug this project has shipped before. */
 function ProductBand({ creators, brand, period }) {
   const rows = useMemo(() => wxProductTotals(creators), [creators]);
-  const [pics, setPics] = useState(null);
-
-  useEffect(() => {
-    let alive = true;
-    setPics(null);
-    if (!brand || !rows.length) return undefined;
-    (async () => {
-      const res = await collabProducts(brand);
-      if (!alive || !res) return;
-      const map = new Map();
-      for (const p of res.products || []) {
-        const k = String(p.name || '').trim().toLowerCase();
-        if (k && p.image) map.set(k, p.image);
-      }
-      setPics(map);
-    })();
-    return () => { alive = false; };
-  }, [brand, rows.length]);
+  /* The pictures come from the shared per-brand cache, because the groups in
+     the table below want exactly the same map and this used to be a second
+     Edge Function round trip for it. */
+  const pics = wxUseProductPics(brand);
 
   if (!rows.length) return null;
   const total = rows.reduce((t, r) => t + r.gmv, 0);
 
-  /* WHAT THE PILLS ACTUALLY SAY — and the reason it is not just CSS.
-     Clipping these titles from the right produced four Penetrex pills all
-     reading "Penetrex Daily Joint & Muscle Car…" beside four different GMV
-     figures: a list of identical labels, which is worse than no label.
-
-     The distinguishing words can be at either end — Penetrex's differ at the
-     tail (", 3 Oz. Gel", "Lotion, 8 oz Pump") while Irwin's differ at the head
-     — so the label keeps BOTH ends and loses the middle. A first attempt trimmed
-     the prefix every product shares, which looked neater and then did nothing at
-     all, because one product is called "NEW! Penetrex…" and that makes the
-     shared prefix empty. Middle truncation has no such dependency on the
-     naming happening to be tidy. The full title is always in the tooltip. */
-  const shortLabel = (name, max = 44) => {
-    const s = String(name || '');
-    if (s.length <= max) return s;
-    const head = s.slice(0, Math.ceil(max * 0.55)).trimEnd();
-    const tail = s.slice(-Math.floor(max * 0.35)).trimStart();
-    return `${head}…${tail}`;
-  };
+  const shortLabel = wxShortProduct;
 
   /* ONE FIGURE IN THE STRIP: what it is above, the number below.
      Rashid, 2026-09-24, with a second mockup: "the current card is taking too
@@ -2813,6 +2994,65 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
 
   const groups = useMemo(() => groupByStatus(wxVisible), [wxVisible]);
 
+  /* WURX-ADDED · PRODUCT BANDS INSIDE EACH STATUS SECTION.
+     Rashid's mockup keeps the Payment Pending / In Progress / Payment Sent
+     dividers exactly where they are and puts the product groups underneath
+     them, which is the right way round: the payment state is how this team
+     works the list, and the product is how they read it. */
+  const wxProdPics = wxUseProductPics(brand.brand);
+  const wxKnownProds = useMemo(() => wxKnownProducts(sortedCreators), [sortedCreators]);
+  const wxPlaced = useMemo(() => {
+    const m = new Map();
+    sortedCreators.forEach((c) => m.set(c.id, wxCreatorProduct(c, wxKnownProds)));
+    return m;
+  }, [sortedCreators, wxKnownProds]);
+  const wxProdRank = useMemo(() => wxProductOrder(sortedCreators), [sortedCreators]);
+
+  /* GROUP ONLY WHEN THERE IS SOMETHING TO GROUP BY. Fifteen of the brands on
+     dev carry no product on any video and none on any creator; wrapping those
+     in a single "No product recorded" band would be pure furniture, so they
+     keep the flat list they have today. One product is the same case: a lone
+     band around the whole table tells nobody anything. */
+  const wxBandProducts = useMemo(() => {
+    const keys = new Set();
+    wxVisible.forEach((c) => { const pl = wxPlaced.get(c.id); if (pl && pl.key) keys.add(pl.key); });
+    return keys.size >= 2;
+  }, [wxVisible, wxPlaced]);
+
+  const [wxShut, setWxShut] = useState(() => new Set());
+  /* The row number is the row's PLACE IN THE LIST, so it is handed out here, in
+     reading order, once the bands are known. Collapsing a band still consumes
+     its numbers — #14 must not become #9 because somebody folded a group.
+
+     EACH BAND FOLDS ALONE, hence `uid`. The same product appears once under
+     every payment status it has creators in — Dr Tobias's Colon Cleanse is a
+     band under all three — and keying the collapsed set on the product alone
+     meant folding the one you clicked also folded its twins further down the
+     page. Thirteen rows vanished for a click that promised nine. */
+  const wxTable = useMemo(() => {
+    let n = 0;
+    return groups.map((g) => {
+      const bands = wxBandProducts
+        ? wxSplitByProduct(g.items, wxPlaced, wxProdRank)
+        : [{ key: '\u0000flat', name: '', flat: true, items: g.items }];
+      return {
+        ...g,
+        bands: bands.map((b) => ({
+          ...b,
+          uid: `${g.key}::${b.key}`,
+          rows: b.items.map((c) => ({ c, n: ++n })),
+        })),
+      };
+    });
+  }, [groups, wxBandProducts, wxPlaced, wxProdRank]);
+
+  const wxAllBandKeys = useMemo(() => {
+    const keys = [];
+    wxTable.forEach((g) => g.bands.forEach((b) => { if (!b.flat) keys.push(b.uid); }));
+    return keys;
+  }, [wxTable]);
+  /* WURX-END */
+
   return (
     <>
       <button className="pc-back" onClick={onBack} style={{ marginTop: 14 }}>‹ All brands</button>
@@ -3265,11 +3505,40 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
             <div>Status</div>
             <div>Actions</div>
           </div>
-          {groups.map((g, gi) => {
-            const offset = groups.slice(0, gi).reduce((s, x) => s + x.items.length, 0);
+          {/* WURX-ADDED · the same rows, read out of `wxTable` so the product
+              bands and the flat list share one renderer and one numbering. */}
+          {wxTable.map((g) => {
             // Show divider above every group (including the first) when there's
             // more than one status to separate. Single-status lists stay clean.
-            const showDivider = groups.length > 1;
+            const showDivider = wxTable.length > 1;
+            const creatorRow = ({ c, n }) => (
+              <React.Fragment key={c.id}>
+                <DrilldownCreatorRow
+                  c={c}
+                  idx={n}
+                  euka={eukaL30}
+                  deals={wxDealsNow.get(wxPersonKey(c)) || 0}
+                  dealsMonth={month}
+                  open={expandedId === c.id}
+                  onSelect={() => setExpandedId(id => (id === c.id ? null : c.id))}
+                  onSetStatus={setStatus}
+                  onEditContract={() => setContractEditC(c)}
+                  onView={() => setVideosCreatorId(c.id)}
+                  onEditCreator={onEditCreator ? () => onEditCreator(c) : null}
+                  onDelete={onDeleteCreator && isAsadActor() ? () => onDeleteCreator(c.id).catch(() => {}) : null}
+                />
+                {expandedId === c.id && (
+                  <DrilldownVideosPanel
+                    c={c}
+                    euka={eukaL30}
+                    allTime={allTime}
+                    siblings={brandCreators || creators}
+                    onUpdateCreator={onUpdateCreator}
+                    onManage={() => setVideosCreatorId(c.id)}
+                  />
+                )}
+              </React.Fragment>
+            );
             return (
               <React.Fragment key={g.key}>
                 {showDivider && (
@@ -3282,37 +3551,77 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
                     <span className="pc-ct-divider-line" />
                   </div>
                 )}
-                {g.items.map((c, i) => (
-                  <React.Fragment key={c.id}>
-                    <DrilldownCreatorRow
-                      c={c}
-                      idx={offset + i + 1}
-                      euka={eukaL30}
-                      deals={wxDealsNow.get(wxPersonKey(c)) || 0}
-                      dealsMonth={month}
-                      open={expandedId === c.id}
-                      onSelect={() => setExpandedId(id => (id === c.id ? null : c.id))}
-                      onSetStatus={setStatus}
-                      onEditContract={() => setContractEditC(c)}
-                      onView={() => setVideosCreatorId(c.id)}
-                      onEditCreator={onEditCreator ? () => onEditCreator(c) : null}
-                      onDelete={onDeleteCreator && isAsadActor() ? () => onDeleteCreator(c.id).catch(() => {}) : null}
-                    />
-                    {expandedId === c.id && (
-                      <DrilldownVideosPanel
-                        c={c}
-                        euka={eukaL30}
-                        allTime={allTime}
-                        siblings={brandCreators || creators}
-                        onUpdateCreator={onUpdateCreator}
-                        onManage={() => setVideosCreatorId(c.id)}
-                      />
-                    )}
-                  </React.Fragment>
-                ))}
+                {g.bands.map((b) => {
+                  if (b.flat) return <React.Fragment key={b.key}>{b.rows.map(creatorRow)}</React.Fragment>;
+                  const shut = wxShut.has(b.uid);
+                  const named = !!b.name;
+                  /* How many of these people ALSO posted for another product.
+                     Said out loud, because the alternative is a reader assuming
+                     this band is everything that creator did. */
+                  const also = b.rows.filter(({ c }) => ((wxPlaced.get(c.id) || {}).alsoOn || 0) > 0).length;
+                  const label = named ? b.name : 'No product recorded';
+                  return (
+                    <section
+                      className={`wx-pgroup${shut ? ' is-shut' : ''}`}
+                      key={b.uid}
+                      data-wx="product-group"
+                      data-product={named ? b.name : ''}
+                      data-count={b.rows.length}
+                    >
+                      <div className="wx-pgroup-head">
+                        <button
+                          type="button"
+                          className="wx-pgroup-toggle"
+                          aria-expanded={!shut}
+                          title={`${label} · ${b.rows.length} creator${b.rows.length === 1 ? '' : 's'} in ${g.label}${also > 0 ? `, ${also} of whom also posted for another product` : ''}. Each creator is listed once, under the product most of their videos are for.`}
+                          onClick={() => setWxShut((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(b.uid)) next.delete(b.uid); else next.add(b.uid);
+                            return next;
+                          })}
+                        >
+                          <span className="wx-pgroup-chev" aria-hidden="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                          </span>
+                          <span className="wx-pgroup-shot">
+                            <ProductTile
+                              product={{ name: label, image: named && wxProdPics ? (wxProdPics.get(b.key) || '') : '' }}
+                              size={34}
+                            />
+                          </span>
+                          {/* Shortened the SAME WAY the band above shortens it,
+                              and in the middle rather than at the end: five of
+                              NUTRAHARMONY's products begin "NUTRA HARMONY" and
+                              an end-clip makes every band read alike. */}
+                          <span className={`wx-pgroup-name${named ? '' : ' is-none'}`}>
+                            {named ? wxShortProduct(b.name, 58) : label}
+                          </span>
+                          <span className="wx-pgroup-count">
+                            {b.rows.length} creator{b.rows.length === 1 ? '' : 's'}
+                          </span>
+                          {also > 0 && (
+                            <span className="wx-pgroup-also">
+                              {also} also posted elsewhere
+                            </span>
+                          )}
+                        </button>
+                        <WxGroupMenu
+                          onExpandAll={() => setWxShut(new Set())}
+                          onCollapseAll={() => setWxShut(new Set(wxAllBandKeys))}
+                        />
+                      </div>
+                      {!shut && (
+                        <div className="wx-pgroup-rows">
+                          {b.rows.map((r) => <div className="wx-prow" key={r.c.id}>{creatorRow(r)}</div>)}
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
               </React.Fragment>
             );
           })}
+          {/* WURX-END */}
         </div>
       )}
 
