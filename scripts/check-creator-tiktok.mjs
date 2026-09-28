@@ -485,8 +485,19 @@ try {
 
 } finally {
   await admin.from('creator_tiktok_oauth_states').delete().in('creator_id', made);
+  /*
+   * DELETE THE IDENTITY CLAIMS TOO, BEFORE THE ACCOUNTS.
+   *
+   * `tiktok_identities.profile_id` is ON DELETE SET NULL on purpose — a claim
+   * has to outlive the account, or deleting a creator would silently unbar the
+   * TikTok account they applied with. Right for the product, wrong for a test
+   * fixture: every run of this suite otherwise left an orphan behind, shown on
+   * the Creator accounts screen as "A TikTok account · the account that claimed
+   * it has been deleted". Four had already piled up before anyone looked.
+   */
+  await admin.from('tiktok_identities').delete().in('profile_id', made);
   for (const id of made) await admin.auth.admin.deleteUser(id);
-  console.log('\n[cleanup] test creators and their rows removed');
+  console.log('\n[cleanup] test creators, their rows and their TikTok claims removed');
 }
 
 console.log('\n' + '='.repeat(70));

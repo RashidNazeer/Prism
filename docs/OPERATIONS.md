@@ -1998,3 +1998,20 @@ on `window.__wxOAuthReturn`. Do not move this into React: an effect runs long
 after the client has been built.
 
 The ads side returns `auth_code` and the creator side `code`; both are captured.
+
+### Releasing a TikTok account, from the screen
+
+Admin -> Data -> **TikTok** -> **Creator accounts**. Live claims first, released
+ones underneath with the reason and the date. "Let this account apply again"
+needs a sentence before it will submit - required by the database, not the form.
+
+```bash
+pnpm verify:tiktok-release   # 16 checks: seeds a claim, releases it THROUGH THE UI,
+                             # proves the audit row and that it can claim again
+```
+
+**A test fixture that deletes creators must delete their claims too.**
+`tiktok_identities.profile_id` is ON DELETE SET NULL by design, so a suite that
+removes its test accounts leaves orphans behind - they show as "A TikTok account
+- the account that claimed it has been deleted". Four had accumulated from
+`check-creator-tiktok` before anyone looked; its cleanup now removes them.

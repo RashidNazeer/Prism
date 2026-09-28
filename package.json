@@ -98,6 +98,7 @@
     "verify:october-product": "node scripts/check-october-product.mjs",
     "verify:tiktok-identity": "node scripts/check-tiktok-identity.mjs",
     "verify:oauth-strip": "node scripts/check-oauth-strip.mjs",
+    "verify:tiktok-release": "node scripts/check-tiktok-release-ui.mjs",
     "verify:product-band": "node scripts/check-product-band.mjs"
   },
   "dependencies": {

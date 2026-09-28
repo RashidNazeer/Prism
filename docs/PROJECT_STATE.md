@@ -69,9 +69,10 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
   (verified vs typed, uniqueness on verified handles only, applicants locked out
   of both).
 - **Proven:** `verify:tiktok-identity` 24/24, `verify:creator-tiktok` 29/29.
-- **Still in step 1:** the staff release screen, the dev wipe script learning
-  about the new table, and stripping TikTok's return parameters before the app
-  loads.
+- **Step 1 is COMPLETE.** The staff release screen is the third tab on
+  Data -> TikTok ("Creator accounts"), the dev wipe releases claims before it
+  deletes accounts, and TikTok's return parameters are stripped in index.html
+  before the Supabase client can try to spend them.
 - Rashid's decisions: rejection is **not** permanent (staff can release and
   re-review); do not chase "same person across two TikTok accounts"; fix the
   Settings-flow defects properly; email verification stays parked.
