@@ -521,6 +521,24 @@ function wxProductTotals(list) {
     .sort((a, b) => b.gmv - a.gmv || b.videos - a.videos);
 }
 
+/* WURX-ADDED · A VIDEO'S PICTURE, OR THE PLACEHOLDER — NEVER A BROKEN ICON.
+   The strip used to render `<img src={v.thumb}>` the moment a thumbnail was
+   stored, with no fallback, so a URL that stops answering shows the browser's
+   torn-page glyph in the middle of the brand page. That mattered little while
+   every thumbnail came from one store that has served them since 2025; it
+   matters now that Irwin's are resolved per video and a picture can exist one
+   week and not the next. The play symbol already means "no picture here", so a
+   failed load says the same thing rather than something alarming. */
+function WxVideoThumb({ src, className, phClassName }) {
+  const [broken, setBroken] = useState(false);
+  useEffect(() => { setBroken(false); }, [src]);
+  if (!src || broken) return <span className={phClassName} aria-hidden>▶</span>;
+  return (
+    <img className={className} src={src} alt="" loading="lazy" onError={() => setBroken(true)} />
+  );
+}
+/* WURX-END */
+
 /* WURX-ADDED · WHAT A PRODUCT LABEL ACTUALLY SAYS — and why it is not just CSS.
    Clipping these titles from the right produced four Penetrex pills all reading
    "Penetrex Daily Joint & Muscle Car…" beside four different GMV figures: a list
@@ -3249,9 +3267,10 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
               {tops.map((v, i) => (
                 <a key={i} className="pc-topvid" href={v.video} target="_blank" rel="noreferrer" title={`${v.name} · ${fmt$Exact(Math.round(v.revenue))} GMV · open on TikTok`}>
                   <span className="pc-topvid-frame">
-                    {v.thumb
-                      ? <img className="pc-topvid-thumb" src={v.thumb} alt="" loading="lazy" />
-                      : <span className="pc-topvid-thumb pc-topvid-ph" aria-hidden>▶</span>}
+                    {/* WURX-ADDED · falls back to the placeholder rather than
+                        a broken-image icon. WURX-END */}
+                    <WxVideoThumb src={v.thumb} className="pc-topvid-thumb"
+                      phClassName="pc-topvid-thumb pc-topvid-ph" />
                     <span className="pc-topvid-rank">#{i + 1}</span>
                     <span className="pc-topvid-gmv">{fmt$Exact(Math.round(v.revenue))}</span>
                   </span>
@@ -4665,9 +4684,9 @@ function DrilldownVideosPanel({ c, euka, allTime, siblings, onUpdateCreator, onM
             {rows.map((r, i) => (
               <div className="pc-vxp-row" key={i}>
                 <a className="pc-vxp-vid" href={r.video} target="_blank" rel="noreferrer" title="Open video on TikTok">
-                  {r.thumb
-                    ? <img className="pc-vxp-thumb" src={r.thumb} alt="" loading="lazy" />
-                    : <span className="pc-vxp-thumb pc-vxp-thumb-ph" aria-hidden>▶</span>}
+                  {/* WURX-ADDED · same fallback as the strip above. WURX-END */}
+                  <WxVideoThumb src={r.thumb} className="pc-vxp-thumb"
+                    phClassName="pc-vxp-thumb pc-vxp-thumb-ph" />
                   <span className="pc-vxp-vidtxt">
                     <span className="pc-vxp-prod">{(r.product || '').trim() || 'View video'}</span>
                     <span className="pc-vxp-date">

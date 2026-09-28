@@ -4,8 +4,10 @@
 
 **Updated 2026-09-29, after the product groups shipped.**
 
-Nothing is queued. The last thing done was **product groups on a brand's
-creator table** (entry below); it is on dev and waiting on Rashid to look at it.
+Nothing is queued. The last things done were **two Irwin Naturals fixes**
+(thumbnails on the top videos strip, and a finished deal moving itself to
+Payment Pending) and before them **product groups on a brand's creator table**.
+All on dev, waiting on Rashid to look.
 
 **Still owed to him, not forgotten:** he has **more changes to the TikTok-first
 signup** and said he would describe them himself — *"few more changes but will
@@ -74,6 +76,64 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
 - **Proven:** `verify:site` 74/74 against the live dev site.
 - **Next:** he reads the words, answers the support@ and noindex questions,
   then the public pages go to production on their own and he resubmits.
+
+### Two Irwin Naturals fixes (2026-09-29)
+
+Rashid: *"for irwin naturals the top videos row does not show thumbnail please
+check that and for irwin when a deal is completed such as a creator has made 5/5
+videos why does not it automatically move towards payment pending, asad did it
+manually"*. Both were real and both had the same root: **`reacher-sync` writes
+`video_codes` and nothing else**, while every browser path that writes videos
+does more.
+
+**1. Thumbnails. It was every one of them: 0 of 66**, against 4,882 of 6,126
+everywhere else. Reacher has no thumbnail to give — checked against their own
+spec, neither `/videos/list` nor `/videos/performance` carries an image field,
+and their `social-intelligence` routes answer 404 for us (so does the control,
+so that is "not on our plan", not "no data").
+
+**TikTok's own oEmbed works perfectly and is the wrong answer.** It needs no key
+and hands back a real thumbnail — with `x-expires` in the URL, which was THE
+NEXT DAY. Storing it would have put pictures on the screen the afternoon it
+shipped and emptied them again by the weekend, with nothing failing and no test
+going red.
+
+What was used instead: the one public object store every thumbnail on these
+screens already comes from, keyed on TikTok's own video id. Not signed, no
+expiry, and a thumbnail for a video posted in November 2025 still loads. **60 of
+Irwin's 66 resolved (91%)**; the other 6 are genuinely absent and keep the
+play-symbol placeholder. Existence is checked, never assumed — a guessed URL
+would put a broken-image icon in the strip. No new dependency: Irwin was simply
+the one brand never asking the host everything else already uses.
+
+**2. A finished deal now moves itself to Payment Pending.** The status is
+derived from the `videos` flag; the browser recomputes it from the deal on every
+save and the Edge Function never did. Irwin is the only brand Reacher fills,
+which is exactly why it was the only brand where Asad had to do it by hand. One
+creator was sitting stuck when this was written — Danny, 5 of 5 delivered on a
+"$200 / 5 videos" deal — and the sync moved him on its next run.
+
+The rule is forward-only: never backwards, never a row already `Paid`, and
+`payment_status` is not touched at all.
+
+**`parseDealVideos` now exists twice**, in the browser and in Deno. Two copies of
+a rule that decides whether somebody is owed money is a drift waiting to happen
+and the drift would be silent — a creator simply never appears in the pending
+list. `verify:deal-complete` runs BOTH copies over every deal string that exists
+and fails if they ever disagree.
+
+**Also fixed while in there:** the strip rendered `<img>` with no fallback, so a
+URL that stops answering showed a torn-page glyph. It degrades to the
+placeholder now.
+
+**Suites:** `verify:video-thumbs` 14/14 (new), `verify:deal-complete` 20/20
+(new), `verify:reacher` 27/27, `verify:collab-controls` 54/54,
+`verify:product-groups` 98/98, `verify:isolation` clean.
+
+**A doc was wrong and is fixed in the same commit:** OPERATIONS said Irwin has
+no GMV Max campaign connected and that ad spend is expected to show a dash. It
+reports **4 campaigns and 164 spend rows** now, and the brand page shows real
+Ad spend and ROI.
 
 ### A brand's creators, grouped by product (2026-09-29)
 

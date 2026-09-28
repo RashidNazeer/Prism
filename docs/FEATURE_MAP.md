@@ -4487,3 +4487,70 @@ copies would drift.
 cache shared by the band and the groups — it was two Edge Function round trips.
 A FAILURE is dropped from the cache so the next mount asks again: "could not
 reach the catalogue once" must never harden into "this brand has no pictures".
+
+
+## Thumbnails for videos we file ourselves (2026-09-29)
+
+`supabase/functions/_shared/video-thumbs.ts` · called from `reacher-sync`.
+Guard: `pnpm verify:video-thumbs`.
+
+**REACHER HAS NO THUMBNAIL.** Their spec: `/videos/list` and
+`/videos/performance` return ids, urls, handles, product, counts and money, and
+no image field. The three schemas in their spec that do carry one are a trending
+feed, a weekly report's top five, and an ads row — none is a lookup for a video
+we hold. Their `social-intelligence` routes 404 for us, and so does the control,
+which is what makes that "not on our plan" rather than "no data".
+
+**NEVER STORE TIKTOK'S oEMBED URL.** It works, needs no key, and carries
+`x-expires` — measured at ONE DAY on 2026-09-29. It is the perfect shape of bug
+for this project: right on the day it ships, silently empty a week later.
+
+**The source is the store every existing thumbnail already comes from**, keyed
+on TikTok's video id:
+`https://database.euka.ai/storage/v1/object/public/creator_videos_photos/<id>.webp`.
+Permanent, unsigned, and because the key is TikTok's id rather than anything of
+EUKA's it answers for brands EUKA does not run — 60 of Irwin's 66.
+
+**Existence is checked, not assumed.** Six of the sixty-six have no object; a
+guessed URL renders a broken-image icon, which is worse than the placeholder.
+
+**There is no cache table, deliberately.** The row IS the cache: a video with a
+thumbnail is never asked about again, and the only ids re-asked on a later run
+are the ones with no picture yet — exactly the set worth retrying, since a video
+posted this morning may be indexed by tonight.
+
+**The strip degrades to the placeholder**, via `WxVideoThumb`. It used to render
+`<img>` with no `onError`, so a URL that stopped answering showed the browser's
+torn-page glyph in the middle of the brand page.
+
+## A finished deal moves itself to Payment Pending (2026-09-29)
+
+`supabase/functions/reacher-sync/index.ts`. Guard: `pnpm verify:deal-complete`.
+
+Rashid: *"why does not it automatically move towards payment pending, asad did it
+manually"*. Because this function wrote `video_codes` and nothing else, while
+BOTH browser paths that write videos — the EUKA merge and the video editor's
+save — recompute the `videos` flag from the deal every time. **Irwin is the only
+brand Reacher fills, which is why it was the only brand where it had to be done
+by hand.**
+
+**The flag is the status.** `statusOf` reads Payment Pending off
+`videos === 'Done'` whenever the row is not `Paid`. So the fix is one field.
+
+**Forward only.** The browser also flips Done back to In Progress when videos
+are removed; this function never removes one, so a reverse could only ever undo
+a human's decision. A row already `Paid` is skipped entirely — paid is further
+along than owed. `payment_status` is NOT written: the screens derive the status
+from the flag, so writing it would change nothing and could overwrite a field a
+human owns.
+
+**`parseDealVideos` NOW EXISTS TWICE** — `WurxUI.jsx` and `reacher-sync`. Change
+one, change the other. `verify:deal-complete` lifts both out of their files by
+source and runs them over every deal string that exists (294 distinct on dev)
+plus the shapes the parser claims to read, and fails on any disagreement. It
+also guards against both copies agreeing on nothing.
+
+**NOT enforced: "nothing is flagged Done without having delivered".** 444 rows on
+dev are exactly that and none is a bug — a deal gets renegotiated, a link never
+gets pasted, a creator is released early. Staff own that direction. The only
+rule the machine enforces is that it never LEAVES somebody out.

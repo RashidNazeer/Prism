@@ -1772,10 +1772,66 @@ call it: the gate wants the scheduler's secret or a real user.
 videos filed, creators matched, spend rows, campaigns seen, and the failure
 reason when `ok` is false.
 
-**NO AD SPEND IS NOT A FAULT.** Irwin's shop has no GMV Max campaign connected,
-so `campaigns_seen` is 0 and no spend row is written; the column shows a dash.
-Verified against a control: the same key returns 207 real videos for that shop,
-so the account is alive and the ads side is simply not connected.
+**~~NO AD SPEND IS NOT A FAULT~~ — THE ADS ARE CONNECTED NOW (2026-09-29).**
+Irwin's shop reports **4 campaigns and 164 spend rows**, and the brand page
+shows real Ad spend and ROI. The note that used to sit here — "no GMV Max
+campaign connected, `campaigns_seen` is 0, the column shows a dash" — was true
+when it was written and is not any more. Rashid asked on 2026-09-25 to "check
+that ad account for Irwin Naturals is connected now"; it is.
+
+**What is still true from that note:** zero campaigns is not by itself a fault,
+and the way to tell an empty ads side from a broken key is the control — the
+same key returning real videos for the shop proves the account is alive.
+
+### Thumbnails for the videos we file
+
+`reacher-sync` fills a blank `thumb` from the one public object store every
+thumbnail on these screens already comes from, keyed on TikTok's video id:
+
+```
+https://database.euka.ai/storage/v1/object/public/creator_videos_photos/<videoId>.webp
+```
+
+**Reacher has no thumbnail to give.** Checked against their own spec: neither
+`/videos/list` nor `/videos/performance` carries an image field, and their
+`social-intelligence` routes answer 404 for us — as does the control, so that
+is "not on our plan" rather than "no data".
+
+**DO NOT USE TIKTOK'S oEMBED, however well it works.**
+`https://www.tiktok.com/oembed?url=…` needs no key and hands back a real
+thumbnail — with `x-expires` in the URL, which on 2026-09-29 was the NEXT DAY.
+Storing one puts pictures on the screen for a day and empties them again with
+nothing failing.
+
+There is no cache table: a video with a thumbnail is never asked about again,
+and the only ids re-asked are the ones with no picture yet, which is exactly the
+set worth retrying. 60 of Irwin's 66 resolved; the other 6 are genuinely absent
+from the store and keep the play-symbol placeholder.
+
+```bash
+pnpm verify:video-thumbs   # 14 checks. Needs SUPABASE_SERVICE_KEY and a preview
+                           # server. Proves no stored URL carries an expiry.
+pnpm verify:deal-complete  # 20 checks. Needs SUPABASE_SERVICE_KEY and
+                           # COLLAB_STAFF_PASSWORD (the service role cannot call
+                           # reacher-sync, so it signs in to dry-run it).
+```
+
+### A finished deal moves itself to Payment Pending
+
+The status on screen is derived from the `videos` flag. Both browser paths that
+write videos recompute it from the deal on every save; `reacher-sync` did not,
+so a creator whose videos come from Reacher finished their deal and stayed in
+"Videos in Progress" until a human noticed. **Irwin is the only brand Reacher
+fills, which is why it was the only brand where Asad was doing it by hand.**
+
+The rule is forward-only: it never writes a status backwards, never touches a
+row that is already `Paid`, and never writes `payment_status` — the screens read
+Payment Pending from the flag whenever the row is not Paid, so there is nothing
+to gain and a human's field to lose.
+
+`parseDealVideos` now exists twice, in `WurxUI.jsx` and in `reacher-sync`.
+**Change one and change the other**; `verify:deal-complete` runs both copies
+over every deal string that exists and fails if they ever disagree.
 
 ```bash
 pnpm verify:reacher   # 19 checks. Needs SUPABASE_SERVICE_KEY, REACHER_API in

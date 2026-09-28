@@ -68,6 +68,8 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const monthStart = (day: string) => `${String(day).slice(0, 7)}-01`;
 
+import { fillVideoThumbs } from '../_shared/video-thumbs.ts';
+
 type VideoCode = Record<string, unknown>;
 
 /**
@@ -96,6 +98,26 @@ function toVideoCode(v: ReacherVideo): VideoCode {
     product: String(v.product_name || ''),
     src: 'reacher',
   };
+}
+
+/**
+ * HOW MANY VIDEOS THE DEAL PROMISED. Copied verbatim from `parseDealVideos` in
+ * `src/vendor/wurxbase/WurxUI.jsx`, because the number this returns decides
+ * whether a creator shows as Payment Pending, and the browser and this function
+ * must never read one deal string two different ways. If that one is ever
+ * changed, change this with it — `pnpm verify:deal-complete` compares the two
+ * against the real deal strings on every row so a drift is caught.
+ */
+function parseDealVideos(deal: unknown): number {
+  if (!deal) return 0;
+  const t = String(deal);
+  const m1 = t.match(/(\d+)\s*(?:videos?|vids?|clips?|posts?)\b/i);
+  if (m1) return parseInt(m1[1], 10);
+  const m2 = t.match(/\$\s*\d[\d,]*(?:\.\d+)?\s*(?:[/\-x×*]|for)\s*(\d+)\b/i);
+  if (m2) return parseInt(m2[1], 10);
+  const m3 = t.match(/\b(\d+)\s*[vV]\b/);
+  if (m3) return parseInt(m3[1], 10);
+  return 0;
 }
 
 /** The video keys already on a row, by TikTok id where there is one. */
@@ -171,6 +193,11 @@ Deno.serve(async (req: Request) => {
        appeared with them. Reported because "nothing new" and "nothing changed"
        are different answers, and the second one hid $1,000 for five days. */
     videosRefreshed: 0, gmvAdded: 0,
+    /* Pictures found for videos that had none, and rows moved to Payment
+       Pending because the deal is now complete. Both reported, because both
+       used to be somebody's manual job. */
+    thumbsFilled: 0, thumbsMissing: 0, thumbsTruncated: false,
+    markedDone: [] as string[],
     unmatchedHandles: [] as string[],
     campaigns: 0, spendRows: 0, spendWritten: 0,
     note: '' as string,
@@ -186,10 +213,17 @@ Deno.serve(async (req: Request) => {
     summary.videosSeen = vids.length;
 
     /* ── 2. our Irwin rows, and only ours ─────────────────────────────── */
-    const rows: { id: number; name: string | null; tiktok_account: string | null; tiktok_account_2: string | null; video_codes: unknown }[] = [];
+    const rows: {
+      id: number; name: string | null;
+      tiktok_account: string | null; tiktok_account_2: string | null;
+      video_codes: unknown;
+      /* For the completion rule below. `deal` says how many videos were
+         promised; `videos` is the flag the screens derive the status from. */
+      deal: string | null; videos: string | null; payment_status: string | null;
+    }[] = [];
     for (let page = 0; ; page += 500) {
       const { data, error } = await db.schema('wurxbase').from('creators')
-        .select('id, name, tiktok_account, tiktok_account_2, video_codes')
+        .select('id, name, tiktok_account, tiktok_account_2, video_codes, deal, videos, payment_status')
         .eq('brand', BRAND)
         .order('id')
         .range(page, page + 499);
@@ -293,17 +327,114 @@ Deno.serve(async (req: Request) => {
     summary.videosRefreshed = refreshed;
     summary.gmvAdded = Math.round(gmvAdded * 100) / 100;
 
+    /*
+     * ═══ WHAT EACH ROW ENDS UP WITH ═════════════════════════════════════
+     *
+     * Built for EVERY row, not only the ones with new or refreshed videos,
+     * because the two things below have to be able to fix a row that this run
+     * changes nothing else about — a creator who finished their deal weeks ago
+     * and a video that has been sitting there without a picture are both
+     * exactly that case.
+     */
+    const finalFor = new Map<number, VideoCode[]>();
+    for (const row of rows) {
+      const base = refreshedFor.get(row.id)
+        ?? (Array.isArray(row.video_codes) ? row.video_codes as VideoCode[] : []);
+      finalFor.set(row.id, [...base, ...(toFile.get(row.id) ?? [])]);
+    }
+
+    /*
+     * ═══ PICTURES FOR THE VIDEOS WE FILED ═══════════════════════════════
+     *
+     * Rashid, 2026-09-29: "for irwin naturals the top videos row does not show
+     * thumbnail". Reacher has none to give — the whole account is in
+     * `_shared/video-thumbs.ts`, including why TikTok's own oEmbed, which works
+     * perfectly, is the wrong answer (its URL expired the next day).
+     *
+     * The arrays are filled in place, so whatever this finds rides along on the
+     * write below rather than costing a second one. It touches only entries we
+     * filed ourselves; a typed video or one EUKA filed is not ours to write on.
+     */
+    const blanks = (list: VideoCode[]) =>
+      list.filter((v) => v && (v as Record<string, unknown>).src === 'reacher'
+        && !String((v as Record<string, unknown>).thumb ?? '').trim()).length;
+    /* Counted per row BEFORE and after, so the write below can name the rows a
+       picture actually landed on. Rewriting every row's whole video list
+       because one of them gained a thumbnail would be a hundred needless
+       writes, and each one is a chance to clobber something. */
+    const blanksBefore = new Map<number, number>();
+    for (const [id, list] of finalFor) blanksBefore.set(id, blanks(list));
+
+    const thumbs = await fillVideoThumbs([...finalFor.values()] as Record<string, unknown>[][]);
+    summary.thumbsFilled = thumbs.filled;
+    summary.thumbsMissing = thumbs.missing;
+    summary.thumbsTruncated = thumbs.truncated;
+
+    const thumbRows = new Set<number>();
+    for (const [id, list] of finalFor) {
+      if (blanks(list) < (blanksBefore.get(id) ?? 0)) thumbRows.add(id);
+    }
+
+    /*
+     * ═══ A FINISHED DEAL MOVES ITSELF TO PAYMENT PENDING ════════════════
+     *
+     * Rashid, 2026-09-29: "when a deal is completed such as a creator has made
+     * 5/5 videos why does not it automatically move towards payment pending,
+     * asad did it manually".
+     *
+     * BECAUSE THIS FUNCTION NEVER DID IT, AND EVERY OTHER PATH DOES. The status
+     * on screen is derived from the `videos` flag, and both browser paths that
+     * write videos — the EUKA merge and the video editor's save — recompute it
+     * from the deal every time they write. This function wrote `video_codes`
+     * and nothing else, so a creator whose videos arrive from Reacher finished
+     * their deal and stayed in "Videos in Progress" until a human noticed.
+     * Irwin is the only brand Reacher fills, which is why it is the only brand
+     * where Asad had to do it by hand.
+     *
+     * The rule is the browser's rule, to the letter: enough videos delivered
+     * against what the deal promised.
+     *
+     * IT ONLY EVER MOVES FORWARD. The browser also flips Done back to In
+     * Progress when videos are removed; this function never removes one, so the
+     * reverse could only ever undo a human's decision, and it is not written.
+     * A row already marked Paid is left completely alone — being paid is
+     * further along than being owed, and nothing here should walk that back.
+     *
+     * `payment_status` is NOT touched. The screens read Payment Pending from
+     * the `videos` flag whenever the row is not Paid, so setting it would
+     * change no status anywhere and would overwrite a field a human may have
+     * put something in.
+     */
+    const flagFor = new Map<number, string>();
+    for (const row of rows) {
+      if (row.payment_status === 'Paid') continue;
+      if (row.videos === 'Done') continue;
+      const committed = parseDealVideos(row.deal);
+      if (committed <= 0) continue;        /* no promised count, no rule to apply */
+      const delivered = (finalFor.get(row.id) ?? [])
+        .filter((v) => String((v as Record<string, unknown>).video ?? '').trim()).length;
+      if (delivered < committed) continue;
+      flagFor.set(row.id, 'Done');
+      summary.markedDone.push(`${row.name ?? row.id} ${delivered}/${committed}`);
+    }
+
     if (!dryRun) {
-      /* One write per row, carrying both the new videos and the refreshed ones,
-         so a creator with both does not get written twice. */
-      const ids = new Set([...toFile.keys(), ...refreshedFor.keys()]);
+      /* One write per row, carrying the new videos, the refreshed ones, any
+         picture just found and the completion flag, so a creator with all four
+         does not get written four times. */
+      const changedVideos = new Set([...toFile.keys(), ...refreshedFor.keys(), ...thumbRows]);
+      const ids = new Set([...changedVideos, ...flagFor.keys()]);
       for (const id of ids) {
-        const row = rows.find((r) => r.id === id)!;
-        const base = refreshedFor.get(id)
-          ?? (Array.isArray(row.video_codes) ? row.video_codes as VideoCode[] : []);
-        const add = toFile.get(id) ?? [];
+        const patch: Record<string, unknown> = {};
+        /* Only send `video_codes` when something in THIS row's list actually
+           changed — a row whose only news is the flag must not have its whole
+           video list rewritten for nothing. */
+        if (changedVideos.has(id)) patch.video_codes = finalFor.get(id) ?? [];
+        const flag = flagFor.get(id);
+        if (flag) patch.videos = flag;
+        if (!Object.keys(patch).length) continue;
         const { error } = await db.schema('wurxbase').from('creators')
-          .update({ video_codes: [...base, ...add] })
+          .update(patch)
           .eq('id', id)
           .eq('brand', BRAND);            /* belt and braces: Irwin rows only */
         if (error) throw new Error(`filing videos on row ${id}: ${error.message}`);
