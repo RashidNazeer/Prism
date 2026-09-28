@@ -34,16 +34,24 @@ export function OAuthTikTokCreatorCallback() {
     if (started.current) return;
     started.current = true;
 
+    /*
+     * THE PARAMETERS HAVE USUALLY ALREADY BEEN TAKEN OFF THE ADDRESS, by the
+     * script in index.html that runs before the Supabase client is built.
+     * That is not tidiness: the client is `detectSessionInUrl: true` with PKCE,
+     * so a `?code=` sitting in the address when it loads is one it will try to
+     * spend as its own. Reading them from there is the normal path; the query
+     * string is only a fallback for a page that somehow loaded without it.
+     */
+    const stash = (window as unknown as { __wxOAuthReturn?: Record<string, string | null> }).__wxOAuthReturn;
     const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    const state = params.get('state');
-    const denied = params.get('error');
+    const code = stash?.code ?? params.get('code');
+    const state = stash?.state ?? params.get('state');
+    const denied = stash?.error ?? params.get('error');
 
     /*
-     * STRIP THE CODE FROM THE ADDRESS BAR IMMEDIATELY. It otherwise sits in
-     * browser history, in the referrer of anything this page loads, and in any
-     * screenshot of the window. It is single use and about to be spent, but it
-     * costs one line not to leave it lying around.
+     * STRIP THE CODE FROM THE ADDRESS BAR IMMEDIATELY, if anything is left. It
+     * otherwise sits in browser history, in the referrer of anything this page
+     * loads, and in any screenshot of the window.
      */
     window.history.replaceState({}, '', window.location.pathname);
 

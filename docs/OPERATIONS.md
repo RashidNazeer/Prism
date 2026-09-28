@@ -1980,3 +1980,21 @@ Everything today is `sandbox-2026`. **On the day production moves to the approve
 key, every open_id changes** - that is a new generation, a one-time amnesty for
 every barred account, and every existing creator must reconnect before their
 identity row is current. Diary item, not a bug.
+
+### TikTok's return parameters and the Supabase client
+
+```bash
+pnpm verify:oauth-strip   # 8 checks, needs pnpm preview running
+```
+
+`src/lib/supabase.ts` is `detectSessionInUrl: true` with PKCE, so the moment it
+loads it looks for `?code=` in the address and tries to exchange it. TikTok sends
+creators back to `/oauth/tiktok-creator/callback` (and admins to
+`/oauth/tiktok/callback`) with exactly that shape.
+
+The strip therefore lives in **index.html**, beside the theme script, because it
+has to run before the module graph loads. The parameters are handed to the page
+on `window.__wxOAuthReturn`. Do not move this into React: an effect runs long
+after the client has been built.
+
+The ads side returns `auth_code` and the creator side `code`; both are captured.
