@@ -177,11 +177,34 @@ try {
   check(false, 'the check ran to completion', String(e.message).slice(0, 160));
 } finally {
   /* ── cleanup, then PROVE it ─────────────────────────────────────────── */
-  await admin.from('tiktok_identities').delete().ilike('open_id', `%${TAG}%`);
+  /*
+   * CLAIMS ARE DELETED LAST, AFTER THE ACCOUNTS.
+   *
+   * Deleting them first left two behind: a claim outlives its account by
+   * design, so anything that touches a connection after the sweep can put one
+   * back, and the sweep has already run. Ordering it last makes the cleanup
+   * independent of what the rest of the teardown does.
+   */
+  /*
+   * DELETING THE ACCOUNT CAN FAIL, AND SWALLOWING THAT LEAVES A ROW BEHIND.
+   * It did: one run hit a network blip, `.catch(() => {})` ate it, and a test
+   * application survived — which the final assertion then caught, three steps
+   * after the thing that actually went wrong. Retry, and say so.
+   */
+  const undeleted = [];
   for (const id of made.users) {
     await admin.from('creator_tiktok_connections').delete().eq('creator_id', id);
-    await admin.auth.admin.deleteUser(id).catch(() => {});
+    await admin.from('applications').delete().eq('user_id', id);
+    let gone = false;
+    for (let i = 0; i < 3 && !gone; i++) {
+      const { error } = await admin.auth.admin.deleteUser(id);
+      if (!error) gone = true;
+      else await new Promise((r) => setTimeout(r, 800));
+    }
+    if (!gone) undeleted.push(id);
   }
+  check(undeleted.length === 0, 'every test account was deleted', undeleted.join(', '));
+  await admin.from('tiktok_identities').delete().ilike('open_id', `%${TAG}%`);
   const { data: leftIds } = await admin.from('tiktok_identities').select('id').ilike('open_id', `%${TAG}%`);
   const { data: leftApps } = await admin.from('applications').select('id').ilike('tiktok_handle', `%zzcheck%`);
   check((leftIds ?? []).length === 0, 'no test claim survived the cleanup', `${(leftIds ?? []).length} left`);

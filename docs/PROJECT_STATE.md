@@ -69,6 +69,18 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
   (verified vs typed, uniqueness on verified handles only, applicants locked out
   of both).
 - **Proven:** `verify:tiktok-identity` 24/24, `verify:creator-tiktok` 29/29.
+- **Steps 1 and 2 are COMPLETE.** Step 2 closed three live defects in the
+  Settings connect flow: a suspended account could finish a connect started
+  before it was suspended; a TikTok account someone else had claimed could be
+  bound to a second profile once the first disconnected; and swapping accounts
+  left the old token live at TikTok with the old account's videos still
+  attached. `verify:tiktok-guards` 13/13.
+- **PKCE IS NOT AVAILABLE TO US.** TikTok's docs say `code_verifier` is
+  "required for mobile and desktop app only", so a leaked authorisation code
+  cannot be cryptographically bound to the browser that started the flow. It is
+  narrowed (the code never reaches the address bar, the nonce lasts 15 minutes,
+  one live nonce per creator) rather than closed. Written down so a green suite
+  is not read as more than it is.
 - **Step 1 is COMPLETE.** The staff release screen is the third tab on
   Data -> TikTok ("Creator accounts"), the dev wipe releases claims before it
   deletes accounts, and TikTok's return parameters are stripped in index.html
