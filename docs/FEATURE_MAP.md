@@ -2377,6 +2377,40 @@ its videos, both themes, 390px, zero console errors, and a revoked link says so
 in plain words) **and `pnpm verify:client-links`** (18: make, copy, open,
 details, new address, stop).
 
+## Add-never-replace was half a rule, and the other half was money (2026-09-28)
+
+Rashid: *"there is a creator on Irwin Naturals with name clarkepayne3.0 ... on
+tiktok shop i can see his videos and gmv but just wanna be sure what does reacher
+give us"*.
+
+Reacher gave **$1,036.40** across three videos. We had all three videos and
+**$0.00** on every one of them.
+
+**THE MAPPING WAS NEVER WRONG.** `toVideoCode` reads `video_gmv` correctly. The
+fault was the filing rule: videos were added once and never looked at again.
+Reacher's own docs say affiliate data is up to three days stale, and GMV lands
+days after a post — so a video filed on the day it went up is filed at zero, and
+nothing ever went back for it. Across Irwin that was **50 of 52 videos**, and the
+brand page read **$34.63** where the truth was **$1,181.44**.
+
+The rule is now: never delete a video, never touch a row another source filed —
+but REFRESH the figures on the ones that came from Reacher. Numbers only ever
+**grow** (`Math.max`), the same rule the screens already use when two rows
+disagree, so a short or partly-synced answer can never wipe money that has
+already been recorded. A product name fills a blank and never overwrites one.
+
+**Proved by reconciliation, not by the number going up:** Reacher's own GMV for
+our Irwin creators is $1,181.44 across 52 videos, and Paid Collabs now holds
+$1,181.44 across 52 videos. Difference $0.00.
+
+The same run wrote **164 ad-spend rows** — Reacher's per-video ad feed for Irwin
+started returning data on 2026-09-28, four days after the account was connected.
+
+**The lesson generalises past this sync.** Any "add, never replace" rule against
+a source whose figures ARRIVE LATE is a rule that freezes the first, emptiest
+reading it ever saw. The test is not "did we file it" but "does our copy still
+equal the source".
+
 ## By product, on a brand's page (2026-09-24)
 
 **Redesigned TWICE the same day.** First after Rashid sent a mockup: *"u are

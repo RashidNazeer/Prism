@@ -57,6 +57,19 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
 - **Next:** he reads the words, answers the support@ and noindex questions,
   then the public pages go to production on their own and he resubmits.
 
+### Irwin's GMV was 97% missing, and is now exact (2026-09-28)
+
+- Chasing one creator Rashid asked about found that **50 of Irwin's 52 videos
+  were stored with $0 GMV**. The brand page read $34.63; the real figure is
+  **$1,181.44**.
+- Cause: the sync added videos once and never refreshed them, while Reacher's
+  GMV lands days after a post. Fixed — filed Reacher videos are now refreshed on
+  every run, growing only, and other sources' rows are never touched.
+- **Reconciled exactly:** Reacher $1,181.44 / 52 videos = Paid Collabs
+  $1,181.44 / 52 videos.
+- Reacher's per-video **ad spend for Irwin started flowing the same day**: 164
+  rows written, so ad spend and ROI now appear on the brand page.
+
 ### Product-wise GMV, creators and videos on a brand's page (2026-09-24)
 
 - **Product performance**: a card per product under the top-videos card — its

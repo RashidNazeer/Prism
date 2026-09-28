@@ -167,6 +167,10 @@ Deno.serve(async (req: Request) => {
   const summary = {
     shop: '', shopId: 0, from, to, dryRun,
     videosSeen: 0, videosFiled: 0, creatorsMatched: 0,
+    /* Filed videos whose figures moved on this run, and the money that
+       appeared with them. Reported because "nothing new" and "nothing changed"
+       are different answers, and the second one hid $1,000 for five days. */
+    videosRefreshed: 0, gmvAdded: 0,
     unmatchedHandles: [] as string[],
     campaigns: 0, spendRows: 0, spendWritten: 0,
     note: '' as string,
@@ -202,6 +206,31 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    /*
+     * ═══ THE LATEST FIGURES, BY VIDEO ═══════════════════════════════════
+     *
+     * ADD-NEVER-REPLACE WAS HALF A RULE, AND THE MISSING HALF COST REAL MONEY.
+     * Reacher's own docs say affiliate data is up to three days stale, and GMV
+     * lands days after a video is posted — so a video filed on the day it went
+     * up is filed with $0, and nothing ever went back for it. On 2026-09-28
+     * that was 50 of Irwin's 52 videos: the brand page read $34.63 against
+     * Reacher's own $1,036.40 for a single creator.
+     *
+     * So: still never delete a video, still never touch a row that did not come
+     * from Reacher — but REFRESH the figures on the ones that did. Numbers only
+     * ever GROW here (`Math.max`), which is the same rule the screens use when
+     * two rows disagree, and it means a short or partly-synced Reacher answer
+     * can never wipe money that has already been recorded.
+     */
+    const latest = new Map<string, ReacherVideo>();
+    for (const v of vids) {
+      const url = String(v.video_url || v.tiktok_url || '').trim();
+      if (!url) continue;
+      const key = videoId(url) ?? url.toLowerCase().replace(/\/+$/, '');
+      const prev = latest.get(key);
+      if (!prev || Number(v.video_gmv || 0) > Number(prev.video_gmv || 0)) latest.set(key, v);
+    }
+
     /* Group the videos we can place, by row. */
     const toFile = new Map<number, VideoCode[]>();
     const unmatched = new Set<string>();
@@ -213,7 +242,7 @@ Deno.serve(async (req: Request) => {
       if (!row) { unmatched.add(h); continue; }
       const have = keysOn(row);
       const key = videoId(url) ?? url.toLowerCase().replace(/\/+$/, '');
-      if (have.has(key)) continue;            /* ADD, NEVER REPLACE */
+      if (have.has(key)) continue;            /* already filed; refreshed below */
       const list = toFile.get(row.id) ?? [];
       /* Two Reacher rows for one video (it can sit under two products) are one
          video to us; the first wins, as the count-once rule does everywhere. */
@@ -225,12 +254,56 @@ Deno.serve(async (req: Request) => {
     summary.videosFiled = [...toFile.values()].reduce((s, l) => s + l.length, 0);
     summary.unmatchedHandles = [...unmatched].slice(0, 20);
 
+    /* Refresh what is already filed, row by row, and remember what changed. */
+    let refreshed = 0, gmvAdded = 0;
+    const refreshedFor = new Map<number, VideoCode[]>();
+    for (const row of rows) {
+      const existing = Array.isArray(row.video_codes) ? row.video_codes as VideoCode[] : [];
+      if (!existing.length) continue;
+      let touched = false;
+      const next = existing.map((rec) => {
+        /* OURS ONLY. A typed row, or one EUKA filed, is not Reacher's to
+           correct — that is how one source quietly overwrites another. */
+        if (!rec || (rec as Record<string, unknown>).src !== 'reacher') return rec;
+        const url = String(rec.video ?? '').trim();
+        if (!url) return rec;
+        const v = latest.get(videoId(url) ?? url.toLowerCase().replace(/\/+$/, ''));
+        if (!v) return rec;
+        const grow = (was: unknown, now: unknown) => Math.max(Number(was) || 0, Number(now) || 0);
+        const fresh: VideoCode = {
+          ...rec,
+          views: grow(rec.views, v.views),
+          revenue: grow(rec.revenue, v.video_gmv),
+          items: grow(rec.items, v.units_sold),
+          likes: grow(rec.likes, v.like_count),
+          comments: grow(rec.comments, v.comment_count),
+          /* A product name only ever fills a blank; it never overwrites one. */
+          product: String(rec.product || '') || String(v.product_name || ''),
+        };
+        if (fresh.revenue !== rec.revenue || fresh.views !== rec.views
+          || fresh.items !== rec.items || fresh.likes !== rec.likes || fresh.comments !== rec.comments) {
+          touched = true;
+          refreshed++;
+          gmvAdded += (Number(fresh.revenue) || 0) - (Number(rec.revenue) || 0);
+        }
+        return fresh;
+      });
+      if (touched) refreshedFor.set(row.id, next);
+    }
+    summary.videosRefreshed = refreshed;
+    summary.gmvAdded = Math.round(gmvAdded * 100) / 100;
+
     if (!dryRun) {
-      for (const [id, add] of toFile) {
+      /* One write per row, carrying both the new videos and the refreshed ones,
+         so a creator with both does not get written twice. */
+      const ids = new Set([...toFile.keys(), ...refreshedFor.keys()]);
+      for (const id of ids) {
         const row = rows.find((r) => r.id === id)!;
-        const existing = Array.isArray(row.video_codes) ? row.video_codes as VideoCode[] : [];
+        const base = refreshedFor.get(id)
+          ?? (Array.isArray(row.video_codes) ? row.video_codes as VideoCode[] : []);
+        const add = toFile.get(id) ?? [];
         const { error } = await db.schema('wurxbase').from('creators')
-          .update({ video_codes: [...existing, ...add] })
+          .update({ video_codes: [...base, ...add] })
           .eq('id', id)
           .eq('brand', BRAND);            /* belt and braces: Irwin rows only */
         if (error) throw new Error(`filing videos on row ${id}: ${error.message}`);
