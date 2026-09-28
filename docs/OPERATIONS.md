@@ -1957,3 +1957,26 @@ adding up to the card above them and both numbers look authoritative.
 Pictures are matched from `collab-products` by EXACT product name within the one
 brand. Videos carry a product name and no product id, so there is no id to join
 on — do not loosen that match.
+
+### The TikTok identity ledger
+
+```bash
+pnpm verify:tiktok-identity   # 24 checks against the real database
+pnpm verify:creator-tiktok    # 29 - proves the Settings flow did not move
+```
+
+`public.tiktok_identities` is the permanent record of which TikTok account has
+claimed an application. It is NOT `creator_tiktok_connections`: that table frees
+the account on disconnect by design, which is right for connecting and wrong for
+applying.
+
+**To let a barred TikTok account apply again**, call
+`release_tiktok_identity(identity_id, reason)` - staff or service_role, a reason
+is required, and it writes an `audit_log` row. Deleting the ledger row is not the
+way; the release is the auditable path.
+
+**`app_generation`** records which TikTok app key vouched for an `open_id`.
+Everything today is `sandbox-2026`. **On the day production moves to the approved
+key, every open_id changes** - that is a new generation, a one-time amnesty for
+every barred account, and every existing creator must reconnect before their
+identity row is current. Diary item, not a bug.

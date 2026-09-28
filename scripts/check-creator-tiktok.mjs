@@ -287,11 +287,21 @@ try {
     else bad(`a signed-out caller got ${r.status}`, JSON.stringify(r.json));
   }
   {
-    /* An applicant has no work here to measure, and must not connect. */
+    /* AN APPLICANT IS ALLOWED, and this assertion used to say the opposite.
+       The gate was deliberately widened on 2026-09-04 (c712f8a) because the
+       route that draws the card already admitted applicants, so every applicant
+       who signed up saw a Connect button and got a bare red "Not allowed" from
+       this function — two allow-lists for one screen, disagreeing about exactly
+       one role. This check was last touched on 2026-08-26 and has been failing
+       ever since, which nobody noticed because it fails one assertion out of
+       29 and the suite is not run on a schedule.
+
+       It matters more now than it did: the TikTok-first signup flow depends on
+       an applicant being able to connect before they are approved. */
     const applicant = await signIn(C);
     const r = await callFn('tiktok-creator', applicant.token, { action: 'connect.start' });
-    if (r.status === 403) ok('an applicant is refused (403)');
-    else bad(`an applicant got ${r.status}`, JSON.stringify(r.json));
+    if (r.status === 200) ok('an applicant IS allowed to connect (200), as intended since 2026-09-04');
+    else bad(`an applicant got ${r.status}, expected 200`, JSON.stringify(r.json));
   }
   {
     /* A suspended creator likewise. */

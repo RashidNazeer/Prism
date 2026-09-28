@@ -96,6 +96,7 @@
     "verify:product-images": "node scripts/check-product-images.mjs",
     "verify:reacher-ads": "node scripts/check-reacher-ads.mjs",
     "verify:october-product": "node scripts/check-october-product.mjs",
+    "verify:tiktok-identity": "node scripts/check-tiktok-identity.mjs",
     "verify:product-band": "node scripts/check-product-band.mjs"
   },
   "dependencies": {

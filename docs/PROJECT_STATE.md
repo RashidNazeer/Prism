@@ -57,6 +57,25 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
 - **Next:** he reads the words, answers the support@ and noindex questions,
   then the public pages go to production on their own and he resubmits.
 
+### TikTok-first signup: step 1 of 5 is in (2026-09-28)
+
+- After a 16-agent design-and-attack pass, the plan is: **we mint no sessions
+  ourselves.** The browser creates the account exactly as the apply form does
+  today; our server only binds the TikTok identity. That removes the
+  account-takeover class entirely.
+- **Step 1 shipped to dev:** the `tiktok_identities` ledger (one TikTok account,
+  one application — outliving disconnect, rejection and account deletion), the
+  staff release function, the app-key generation stamp, and handle integrity
+  (verified vs typed, uniqueness on verified handles only, applicants locked out
+  of both).
+- **Proven:** `verify:tiktok-identity` 24/24, `verify:creator-tiktok` 29/29.
+- **Still in step 1:** the staff release screen, the dev wipe script learning
+  about the new table, and stripping TikTok's return parameters before the app
+  loads.
+- Rashid's decisions: rejection is **not** permanent (staff can release and
+  re-review); do not chase "same person across two TikTok accounts"; fix the
+  Settings-flow defects properly; email verification stays parked.
+
 ### Irwin's GMV was 97% missing, and is now exact (2026-09-28)
 
 - Chasing one creator Rashid asked about found that **50 of Irwin's 52 videos

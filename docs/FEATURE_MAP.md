@@ -2377,6 +2377,81 @@ its videos, both themes, 390px, zero console errors, and a revoked link says so
 in plain words) **and `pnpm verify:client-links`** (18: make, copy, open,
 details, new address, stop).
 
+## One TikTok account, one application: the identity ledger (2026-09-28)
+
+Rashid, designing TikTok-first signup: *"the same person should never be able to
+apply again"*, and later, *"it should not be permanent, we should let admin
+review the rejected again"*.
+
+### Why a second table rather than the connection we already had
+
+`creator_tiktok_connections` already carries a one-account guard, but it is a
+PARTIAL unique index `where revoked_at is null` — **disconnecting frees the
+TikTok account for the next profile.** That is right for "connect your account"
+and exactly wrong for "you have already applied": a creator could apply, be
+rejected, disconnect, and apply again forever. The rule has to outlive the
+connection, the rejection and the profile, so `tiktok_identities` is its own
+ledger and nothing in it is removed by a disconnect.
+
+### The four decisions inside it
+
+**ONE FACT, ONE WRITER.** Both routes — the existing Settings connect and the
+signup flow to come — feed the ledger through a TRIGGER on the connections
+table, not through a second copy of the logic in TypeScript. Two places writing
+one fact is this project's most repeated bug.
+
+**THE GENERATION COLUMN IS NOT BUREAUCRACY.** Production still runs TikTok's
+SANDBOX client key, so every `open_id` on file is sandbox-scoped and WILL CHANGE
+when the approved key is installed. Without recording which key vouched for an
+id, the day it changes is the day the rule silently stops matching anybody, with
+no error anywhere. With it, that day is a visible new generation.
+
+**THE UNIQUE INDEX IS PARTIAL, `where released_at is null`.** A plain unique
+index would make the release button do nothing at all — worth naming because it
+is the obvious way to write this, and the check asserts a released account can
+genuinely be claimed again.
+
+**UNIQUENESS ON HANDLES APPLIES ONLY TO VERIFIED ONES.** Dev already holds a
+duplicate typed handle ("roseamyg3", twice), so a bare unique index would have
+aborted the migration on real data. Typed handles keep behaving as they do
+today; a handle TikTok vouched for can never collide. `tiktok_handle_verified`
+is in no column grant to `authenticated`, so an applicant cannot set it, and a
+trigger stops them editing a handle once it is verified.
+
+### Two faults the check found in my own code
+
+**`release_tiktok_identity` refused `service_role`.** `is_staff()` resolves the
+caller from `auth.uid()`, which is null for the service key, so every scripted
+or server-side release answered "Not allowed". The staff path worked; nothing
+else did.
+
+**Its audit row could silently not exist.** The insert was
+`insert ... select ... from profiles where id = v_actor` — when the actor has no
+profiles row, that select returns nothing, the insert writes NOTHING, and the
+release still succeeds. A privileged action that quietly leaves no trace is
+worse than one that fails, because you never know to look. It is now an
+unconditional `values (...)` with scalar sub-selects.
+
+### And one that was already there
+
+`verify:creator-tiktok` has been failing since **2026-09-04** and nobody saw it.
+The connect gate was deliberately widened that day to admit applicants (c712f8a,
+with the reasoning written in the file: the route that draws the card already
+admitted them, so every applicant saw a Connect button and got a bare red "Not
+allowed"). The check was last touched on 2026-08-26 and still asserted the old
+403 — one failing assertion out of 29, in a suite nobody runs on a schedule.
+
+It matters more now than it did: **TikTok-first signup depends on an applicant
+being able to connect before approval.**
+
+**Guarded by `pnpm verify:tiktok-identity`** (24 checks): the trigger writes the
+claim, a second creator cannot claim the same account, disconnecting does NOT
+unbar, a creator cannot release, a release needs a reason, a released account
+CAN be claimed again, an applicant can neither set the verified flag nor edit a
+verified handle, two applications cannot share a verified handle in any letter
+case, and no test row survives. Every assertion reads the blocking row back
+before asserting it blocks.
+
 ## Add-never-replace was half a rule, and the other half was money (2026-09-28)
 
 Rashid: *"there is a creator on Irwin Naturals with name clarkepayne3.0 ... on
