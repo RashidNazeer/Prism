@@ -2309,3 +2309,42 @@ already known" — start there rather than re-probing.
 When it does come back, product pictures are already solved for it: the market
 lookup in `_shared/product-images.ts` takes a TikTok product id and no brand id,
 so Cruva products will get photographs the day their catalogue is readable.
+
+## TikTok `user.info.profile` scope (parked 2026-09-29)
+
+**Status:** WAITING ON RASHID
+**Owner:** Rashid to apply, Claude to ship
+
+The declared @handle. Without it the handle is derived from a video's share URL,
+which works for 99.56% of real URLs but yields nothing for a creator with no
+videos — at exactly the moment we promised to fill the box in.
+
+**Trigger:** Rashid applies on the TikTok app and it appears on the app's own
+**Scopes page** (not the submission dialog — reading the dialog instead cost two
+hours on 2026-08-26). Then, in ONE commit: `DISPLAY_SCOPES`, the hardcoded copy
+in the check, the consent list on the creator card, and `/privacy`.
+
+**Never widen our list first.** More in our array than on the app and TikTok
+refuses the authorise URL outright — Connect breaks for every creator on deploy.
+
+## A second TikTok redirect URI (parked 2026-09-29)
+
+**Status:** NICE TO HAVE
+
+Signup and the Settings connect both return to `/oauth/tiktok-creator/callback`
+today; the browser marks which flow it started so the page can tell them apart.
+Safe, and it can only ever end in "start again", never a wrong identity. A
+dedicated `/signup/tiktok/callback` would be cleaner. **Trigger:** whenever a
+second redirect URI is added to the TikTok app.
+
+## Email confirmation is now the weakest link (parked 2026-09-29)
+
+**Status:** RASHID SAID "leave it for now, we will come to verification later"
+
+TikTok-first signup makes identity lopsided: the TikTok half is strongly proven
+and the email half is not proven at all. Nobody checks that a creator's email is
+real, and it is the address used to pay and contact them.
+
+**Trigger:** when Rashid raises verification. Needs SMTP proven FIRST, then
+confirmation switched on LAST — turning it on breaks both signup paths unless
+the flow survives it, which it is built to.

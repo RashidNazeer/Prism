@@ -2,18 +2,38 @@
 
 ## NEXT ACTION AFTER COMPACTION
 
-**Updated 2026-09-18. REMIND RASHID OF THESE FIRST THING.** He
-asked to be reminded: *"i will do it later remind me please"*.
+**Recorded 2026-09-29 by /precompact.**
+
+Rashid asked for this next: he has **more changes to the TikTok-first signup**
+and will describe them himself. He tested the whole round trip on his own phone
+on 2026-09-29 and it worked — "did not hit any issue on my phone while logging
+in with same account, that was perfect" — so steps 1 to 3 are proven on a real
+device, not just in a suite.
+
+**Before starting it, ask him:** "Compaction done. What are the changes you
+wanted on the TikTok sign-up?" Wait for a yes. Do not begin unprompted, and do
+NOT start step 4 or 5 on your own — step 4 needs a TikTok scope he has not
+applied for yet.
+
+Everything below is context, not instructions.
+
+## Standing reminders for Rashid
+
+**Updated 2026-09-29. REMIND HIM OF THESE FIRST THING.** He asked to be
+reminded: *"i will do it later remind me please"*. (This used to be a second
+block called NEXT ACTION AFTER COMPACTION; there is only one of those now, at
+the very top, and it is the thing to do next rather than the list to nag.)
 
 1. **Link GitHub to Vercel.** Git deploys to dev are BLOCKED
    (`TEAM_ACCESS_REQUIRED`) until he connects GitHub `RashidNazeer` under
    Vercel → Account Settings → Authentication. Until then every dev deploy
    goes through the CLI route in OPERATIONS (Vercel section). PARKED 45.
-2. **TikTok: the website is LIVE on production (2026-09-23, `d3f1555`) and the
-   only thing left is his resubmission.** Steps: OPERATIONS, "Resubmitting the
-   TikTok app". He still has to create `support@wurxmedia.com` first, and to
-   give the reviewer the connected creator login rather than let them try
-   Connect themselves — production still drives TikTok's sandbox app.
+2. ~~TikTok resubmission~~ — **DONE. THE APP WAS APPROVED on 2026-09-28.**
+   Products: Login Kit. Scopes: `user.info.basic` and `video.list`, which is
+   exactly what `DISPLAY_SCOPES` already asks for, so nothing had to change.
+   What is still outstanding from that work: **production runs the SANDBOX
+   client key**, and swapping it to the approved one is step 5 of the signup
+   plan — on that day every `open_id` changes and every creator must reconnect.
 
    <details><summary>How it got here (2026-09-22)</summary>He
    chose to build our own site at the address we already use, and to ship the
@@ -56,6 +76,53 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
 - **Proven:** `verify:site` 74/74 against the live dev site.
 - **Next:** he reads the words, answers the support@ and noindex questions,
   then the public pages go to production on their own and he resubmits.
+
+### TikTok-first signup works on a real phone (2026-09-29)
+
+**Rashid tested the full round trip on his own phone and it worked first time.**
+That is the milestone: everything before this was proved by suites, and the one
+thing no suite could cover was a real person approving on tiktok.com in a mobile
+browser.
+
+**Steps 1, 2 and 3 of the five-step plan are done and on dev.**
+
+- **Step 1** — `tiktok_identities`, the permanent ledger that makes "one TikTok
+  account, one application" real: it outlives disconnecting, rejection and
+  account deletion. Plus the staff release (Data -> TikTok -> Creator accounts),
+  handle integrity (verified vs typed), the dev wipe freeing claims, and the
+  `index.html` strip that stops the Supabase client spending TikTok's code.
+- **Step 2** — three live defects closed in the Settings connect flow: a
+  suspended account could finish a connect; a TikTok account someone else had
+  claimed could be taken once they disconnected; swapping accounts left the old
+  token live at TikTok with its videos still attached.
+- **Step 3** — the signup itself. `tiktok-signup` Edge Function (start / finish
+  / claim), the two pending tables, and "Continue with TikTok" on `/signup`.
+
+**THE POSTURE, decided by a 16-agent design-and-attack pass: we mint no
+sessions.** The browser creates the account with the same `signUp` the apply
+form already used, so Supabase issues every session exactly as before. Our
+server only ever answers "whoever holds this ticket proved they control TikTok
+account X". That removes account takeover as a class rather than defending
+against it.
+
+**Suites:** `verify:tiktok-identity` 25/25, `verify:tiktok-guards` 13/13,
+`verify:tiktok-signup` 24/24, `verify:tiktok-release` 16/16,
+`verify:oauth-strip` 8/8, `verify:creator-tiktok` 29/29.
+
+### What is left, and what it waits on
+
+- **Step 4 — the pre-filled handle.** Needs `user.info.profile`, which has NOT
+  been applied for. Until then the handle is read out of a video's share URL
+  (99.56% of 6,171 real URLs in our data), and a creator with no videos types
+  it. **Do not add the scope to `DISPLAY_SCOPES` before it appears on the app's
+  own Scopes page** — more in our list than on the app and TikTok refuses the
+  authorise URL for EVERYONE on deploy.
+- **Step 5 — production.** Production still runs TikTok's SANDBOX client key.
+  On the day it changes, every `open_id` changes with it: that is a new
+  `app_generation`, a one-time amnesty for every barred account, and every
+  existing creator must reconnect. Runbook, not a bug.
+- **Signup and Settings share one return address** (`/oauth/tiktok-creator/callback`)
+  until a second redirect URI is registered on the TikTok app.
 
 ### TikTok-first signup: step 1 of 5 is in (2026-09-28)
 

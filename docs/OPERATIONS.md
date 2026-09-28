@@ -2015,3 +2015,32 @@ pnpm verify:tiktok-release   # 16 checks: seeds a claim, releases it THROUGH THE
 removes its test accounts leaves orphans behind - they show as "A TikTok account
 - the account that claimed it has been deleted". Four had accumulated from
 `check-creator-tiktok` before anyone looked; its cleanup now removes them.
+
+### TikTok-first signup
+
+```bash
+pnpm verify:tiktok-signup    # 24 - the guards: browser binding, ticket rules, handle
+pnpm verify:tiktok-identity  # 25 - one TikTok, one application, and the release
+pnpm verify:tiktok-guards    # 13 - the three Settings-connect defects, closed
+pnpm verify:tiktok-release   # 16 - the staff release, through the real screen
+pnpm verify:oauth-strip      # 8  - TikTok's code never reaches the Supabase client
+pnpm verify:creator-tiktok   # 29 - the Settings flow did not move
+```
+
+**The flow.** `/signup` -> Continue with TikTok -> TikTok -> back to
+`/oauth/tiktok-creator/callback` -> a ticket is kept in sessionStorage -> email
+and password (`supabase.auth.signUp`, browser to Supabase) -> `claim` binds the
+proven identity -> the application is written, and a trigger takes its handle
+from the ledger.
+
+**WE MINT NO SESSIONS.** Supabase issues them, exactly as before. If anyone ever
+proposes minting one server-side, read DECISIONS first.
+
+**One callback address serves two flows.** Signup and the Settings connect both
+return to `/oauth/tiktok-creator/callback`; the browser leaves a marker in
+sessionStorage so the page knows which. A missing marker falls through to the
+creator flow and refuses there - "start again", never a wrong identity.
+
+**If Connect breaks for everyone after a deploy**, check `DISPLAY_SCOPES`
+against the TikTok app's own Scopes page. More in our array than on the app and
+TikTok refuses the authorise URL outright.

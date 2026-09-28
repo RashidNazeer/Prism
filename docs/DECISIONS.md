@@ -2467,3 +2467,62 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   guarded, just never disclosed to the person they describe. A policy that
   under-describes what you hold is a false statement, exactly like one that
   overclaims.
+
+## TikTok-first signup: we mint no sessions (2026-09-29)
+
+**Decision:** the browser creates the account with the same `supabase.auth.signUp`
+the apply form already used. Our server never issues a session. It only ever
+answers "whoever holds this ticket proved, a moment ago, that they control
+TikTok account X", and binds that to an account Supabase has already created.
+
+**Why.** There is a Supabase setting that stamps a creator's role onto their
+login token, and it defaults to OFF. With it off nothing errors: the password
+works, the login succeeds, the dashboard loads, and every query returns empty.
+A creator sees a working product with no numbers in it. Any login path we invent
+can skip that stamp; the path the product already uses cannot. And a defect in
+session-minting code does not look like a bug — it looks like a successful
+login, which is the one failure Rashid said he cannot absorb.
+
+**Rejected:** creating the account with the Supabase admin API. With email
+confirmation off it marks an address confirmed that nobody proved; with it on it
+tells the new creator to check an inbox for a mail that is never sent. It also
+bypasses the dashboard's own signup switch and the platform rate limit.
+
+**Rejected:** making TikTok able to create accounts from scratch. TikTok never
+returns an email — no scope provides one, confirmed against their docs — so such
+an account could never be recovered or contacted. TikTok may only ever open a
+door that already exists.
+
+## One TikTok account, one application — and a rejection is not permanent (2026-09-29)
+
+**Decision:** `tiktok_identities` is a ledger separate from
+`creator_tiktok_connections`, because that table frees a TikTok account on
+disconnect by design. A claim outlives the connection, the rejection and the
+profile. Staff can release one, with a reason, and it is audited.
+
+Rashid, asked whether a rejection should be for ever: *"it should not be
+permanent, we should let admin review the rejected again"*. So the release
+shipped in the same step as the rule — a rule with no visible way out is the
+same as a permanent bar.
+
+**Rejected:** enforcing "the same PERSON cannot apply twice" via TikTok's
+cross-account id. A second TikTok account is free, the id is blank on some rows,
+and an automatic refusal would occasionally lock out a real creator for a reason
+nobody can see. Recorded, never enforced.
+
+**Rejected:** blocking a repeat application by EMAIL alone, and telling the
+visitor. A stranger could then type any address and learn whether that person
+applied and was rejected. After TikTok has vouched for them it is safe to say,
+because we are telling them about themselves.
+
+## PKCE is not available to us (2026-09-29)
+
+TikTok's own documentation: `code_verifier` is "required for mobile and desktop
+app only". So an authorisation code cannot be cryptographically bound to the
+browser that began the flow, and that hole cannot be closed — only narrowed.
+
+What we do instead: the browser generates a secret, keeps it in sessionStorage
+and sends only its SHA-256; the code never reaches the address bar, history or
+referrer; nonces last fifteen minutes; one nonce per creator is live at a time.
+**Narrowed, not closed** — and written into the checks so a green suite is never
+read as more than it is.
