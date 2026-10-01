@@ -4276,7 +4276,18 @@ function DrilldownCreatorRow({ c, idx, euka, deals, dealsMonth, open, onSelect, 
   const itemsSold = vidRows.reduce((s, r) => s + (Number(r.items) || 0), 0);
 
   return (
-    <div className={`pc-ct-row ${open ? 'open' : ''}`} onClick={onSelect} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') onSelect(); }}>
+    <div
+      className={`pc-ct-row ${open ? 'open' : ''}`}
+      /* WURX-ADDED · data-wx-id, so a guard can tell two ROWS apart.
+         `verify:product-groups` proves that grouping by product never lists the
+         same row twice, which matters because every row carries that creator's
+         money. It keyed on the name, and across a brand's whole history that is
+         wrong: one person hired in January and again in July is two legitimate
+         rows, and the check read 272 rows / 114 people as a duplication bug.
+         The row id is the only exact key, and nobody ever sees it. WURX-END */
+      data-wx-id={c.id}
+      onClick={onSelect} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') onSelect(); }}
+    >
       <div className="pc-cell pc-num pc-idxcell" data-label="#"><span className="pc-idx">#{idx}</span></div>
       <div className="pc-cell" data-label="Completed on">
         {(() => {

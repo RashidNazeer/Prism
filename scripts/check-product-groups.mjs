@@ -24,7 +24,7 @@
  * a brand with no product data at all is checked the other way round, that it
  * kept its flat table and grew no empty band.
  */
-import { launchBrowser } from './browser.mjs';
+import { launchBrowser, ensureAllTime } from './browser.mjs';
 
 const BASE = process.env.BASE_URL || 'http://localhost:4173';
 /* Penetrex is the hard case on dev: seven products in September and ten
@@ -60,8 +60,13 @@ const READ = () => {
     /* The rows actually painted under this band, right now. */
     rows: [...g.querySelectorAll('.wx-prow')].map((r) => ({
       idx: (r.querySelector('.pc-idx')?.textContent || '').trim(),
-      who: (r.querySelector('.pc-cname')?.textContent || '').trim()
-        + '|' + (r.querySelector('.pc-handle')?.textContent || '').trim(),
+      /* THE ROW ID, not the person's name. Over a brand's whole history one
+         person is legitimately several rows — hired in January, hired again in
+         July — and keying on the name read 272 rows / 156 people as a
+         duplication bug when nothing was duplicated. A row is the thing that
+         must not appear twice, because a row is what carries the money. */
+      who: (r.querySelector('.pc-ct-row')?.getAttribute('data-wx-id') || '').trim()
+        || (r.querySelector('.pc-cname')?.textContent || '').trim(),
     })),
   }));
   const pills = [...document.querySelectorAll('[data-wx="product-pill"]')].map((p) => ({
@@ -189,12 +194,31 @@ try {
     const back = p.locator('.pc-back');
     if (await back.first().isVisible().catch(() => false)) { await back.first().click(); await p.waitForTimeout(2500); }
     await p.waitForSelector('.pc-bt-row', { timeout: 30000 }).catch(() => {});
+    /* ALL TIME FIRST, WHILE STILL ON THE LIST. The Brands screen lists the
+       brands active in the selected month, so a brand with no creators this
+       month is not on it at all — which is how this file reported "Pure Daily
+       Care is not on the Brands screen" on 1 October. Switching after opening a
+       brand is too late; the row has to be findable. */
+    await ensureAllTime(p);
     await p.waitForTimeout(800);
     const row = p.locator('.pc-bt-row')
       .filter({ has: p.locator('.pc-brandname', { hasText: new RegExp(`^\\s*${brand}\\s*$`) }) }).first();
     if (!(await row.count().catch(() => 0))) return false;
     await row.scrollIntoViewIfNeeded().catch(() => {});
     await row.click();
+    /*
+     * ALL TIME, NOT WHATEVER MONTH THE CLOCK IS IN.
+     *
+     * The brand page opens on the current month, and on 1 October this file
+     * went from 98 green to four failures without a line of the feature
+     * changing: a brand with no October creators was no longer on the Brands
+     * screen at all, and the brands that were had everybody in one payment
+     * status, so the status dividers the check insists on were correctly
+     * absent. None of that is about product grouping. A guard that breaks when
+     * the calendar turns over is a guard nobody trusts the second time, so it
+     * asks about the whole history instead, where the shape of the data is
+     * stable.
+     */
     await p.waitForSelector('.pc-ct-row, .pc-empty', { timeout: 30000 }).catch(() => {});
     /* AND THEN PROVE WE ARE ACTUALLY ON THAT BRAND'S PAGE. Returning true
        because a click did not throw is how this file reported "0 product bands"
@@ -229,6 +253,7 @@ try {
     return true;
   };
 
+  let sawDividers = false;
   for (const brand of GROUPED) {
     if (!(await openBrand(page, brand))) { check(false, `${brand} is on the Brands screen`); continue; }
     const v = await page.evaluate(READ);
@@ -242,9 +267,12 @@ try {
     /* ── THE PARTITION. This is the check the feature lives or dies on. ── */
     const everyone = v.groups.flatMap((g) => g.rows.map((r) => r.who));
     const unique = new Set(everyone);
+    check(everyone.every(Boolean),
+      `${brand}: every grouped row carries the id the check needs`,
+      `${everyone.filter(Boolean).length} of ${everyone.length}`);
     check(unique.size === everyone.length,
-      `${brand}: NO CREATOR IS LISTED TWICE — their money appears once on the screen`,
-      `${everyone.length} rows, ${unique.size} distinct people`);
+      `${brand}: NO ROW IS LISTED TWICE — each creator's money appears once on the screen`,
+      `${everyone.length} rows, ${unique.size} distinct`);
 
     const summed = v.groups.reduce((t, g) => t + g.count, 0);
     check(summed === v.allRows,
@@ -302,9 +330,16 @@ try {
       `${brand}: every band says how many creators`, v.groups.map((g) => g.countLabel).join(' · '));
     check(v.groups.every((g) => g.hasKebab), `${brand}: every band has its menu button`);
     check(v.groups.every((g) => g.expanded === 'true'), `${brand}: bands open by default`);
-    check(v.statusBands > 0,
-      `${brand}: the payment-status dividers are still there above the products`,
-      `${v.statusBands} dividers`);
+    /* THE DIVIDERS ARE CONDITIONAL AND ALWAYS WERE: the table draws them only
+       when there is more than one payment status to separate. Dr Tobias's whole
+       history is in one status, so insisting on them failed a screen that was
+       correct. The real rule is that products never escape their status
+       section — if the page has more than one section, it must have drawn the
+       dividers that make them. */
+    check(v.sections.length <= 1 || v.statusBands > 0,
+      `${brand}: product bands stay inside the payment-status sections`,
+      `${v.sections.length} sections, ${v.statusBands} dividers`);
+    sawDividers = sawDividers || v.statusBands > 0;
     check(v.spills === 0, `${brand}: nothing in a band spills out of the card`, `${v.spills} too wide`);
     check(v.pageSideScroll <= 1, `${brand}: no horizontal page scroll`, `${v.pageSideScroll}px`);
 

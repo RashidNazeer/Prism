@@ -2569,3 +2569,48 @@ into per-product pieces and lose the number they actually use.
 **The consequence, accepted:** a product appears once under each status it has
 creators in, so the same product name can show three times on one page. Each
 band folds independently, keyed on status-and-product together.
+
+## The contract is redrawn in OUR file, not in the vendored one (2026-10-02)
+
+**Decision:** the whole design lives in `src/routes/admin/contract-paper.js`.
+`src/vendor/wurxbase/contractPdf.js` keeps its original renderer and hands off
+to ours on one fenced line.
+
+**Why.** That file is a verbatim copy of WurxBase's code, and the verbatim rule
+exists so the next upstream pull is find-and-reapply rather than diff
+archaeology. Replacing a whole renderer inside it would have made the diff
+unreadable. One fenced line is one thing to re-add.
+
+**Rejected:** editing their renderer in place. **Rejected:** forking the file
+out of `vendor/` entirely — `WurxUI.jsx` imports `defaultContractFields` and
+`CONTRACT_SECTIONS` from it, and moving those is a bigger change than this one.
+
+## How a signature should get onto the contract (2026-10-02, OPEN)
+
+**Not decided.** Rashid: *"for usman signature i am not sure how asad's is being
+generated but i can get the signature as image or what is the best fit u need to
+tell me that later first build ui"*.
+
+**What happens today, unchanged:** the Brand Representative line is auto-signed
+by drawing `fields.signerName` (default "Aris") in a script typeface on an
+offscreen canvas. It is not an image of anybody's handwriting — it is a name set
+in a cursive font, and it will render differently on a machine that does not
+have that font installed.
+
+**The options to put to him, in order of what they cost:**
+
+1. **An uploaded image per signer.** He sends a PNG with a transparent
+   background; it goes in a private bucket keyed by staff member, and the
+   renderer stamps whichever signer the contract names. Faithful, and the only
+   option that is actually that person's signature. Needs a bucket, an upload
+   screen and a rule about who may change whose.
+2. **Keep the drawn name, but embed the font.** Removes the "renders
+   differently elsewhere" problem for nothing but bundle weight. Still not a
+   signature, just a consistent one.
+3. **Leave the line blank and sign on paper.** What the mockup shows, and what
+   the Creator and Agency blocks already do.
+
+**The question that decides it** is whether these contracts are ever sent
+already-signed, or always printed and signed by hand. If they are sent signed,
+it is option 1 and the image needs to be treated as sensitive — a signature
+image in a public bucket is a forgery kit.

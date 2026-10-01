@@ -2018,6 +2018,27 @@ The catalogue is fetched ONCE per brand and shared with the product groups
 below, via `wxProductPics` — a module-level promise cache in `WurxUI.jsx`. A
 failed fetch is dropped from it so the next mount asks again.
 
+### The creator contract PDF
+
+```bash
+pnpm verify:contract-pdf        # 32 checks, needs pnpm preview on :4173
+node scripts/backfill-video-thumbs.mjs          # dry run, every brand
+node scripts/backfill-video-thumbs.mjs --write  # apply. Needs SUPABASE_SERVICE_KEY
+```
+
+The design is in `src/routes/admin/contract-paper.js`, which is OURS; the
+vendored `contractPdf.js` delegates to it on one fenced line. The wordmark is
+inline base64 (`wurx-mark.js`) so the renderer stays synchronous — a fetched
+logo would give a blank header on a bad network and nothing would look wrong.
+
+**ALL TIME, NOT THE CURRENT MONTH, in any suite that opens a brand.** Use
+`ensureAllTime(page)` from `scripts/browser.mjs`. Three suites failed on 1
+October for no reason other than the date: a brand with no creators this month
+is not on the Brands screen at all, and a brand whose creators are all in one
+payment status correctly draws no status dividers. **It is a toggle** — clicking
+it blindly once per brand turns it on, off, on, and silently tests the middle
+brand on the current month, which is why it is a function and not two lines.
+
 ### Product groups in the creator table
 
 ```bash

@@ -4,10 +4,18 @@
 
 **Updated 2026-09-29, after the product groups shipped.**
 
-Nothing is queued. The last things done were **two Irwin Naturals fixes**
-(thumbnails on the top videos strip, and a finished deal moving itself to
-Payment Pending) and before them **product groups on a brand's creator table**.
-All on dev, waiting on Rashid to look.
+Nothing is queued. The last things done were the **contract redesign** and the
+**thumbnail backfill across every brand** (entry below); before them, two Irwin
+Naturals fixes and product groups on a brand's creator table. All on dev,
+waiting on Rashid to look.
+
+**ONE QUESTION IS OPEN AND HE RAISED IT HIMSELF — SIGNATURES.** Rashid: *"for
+usman signature i am not sure how asad's is being generated but i can get the
+signature as image or what is the best fit u need to tell me that later first
+build ui"*. The UI is built and the existing mechanism is untouched: the Brand
+Representative line is auto-signed by drawing `fields.signerName` (default
+"Aris") in a script face on a canvas. The options to put to him are in
+DECISIONS, "How a signature should get onto the contract".
 
 **Still owed to him, not forgotten:** he has **more changes to the TikTok-first
 signup** and said he would describe them himself — *"few more changes but will
@@ -76,6 +84,65 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
 - **Proven:** `verify:site` 74/74 against the live dev site.
 - **Next:** he reads the words, answers the support@ and noindex questions,
   then the public pages go to production on their own and he resubmits.
+
+### The contract, redrawn — and thumbnails everywhere (2026-10-02)
+
+**1. THE CONTRACT LOOKS LIKE SOMETHING WURX SENDS.** Rashid, with a mockup:
+*"all i want is to update the ui of the contract it's very boring and also add
+some extra stuff in it ... i want exactly that UI"*.
+
+Cream paper, a black spine with a gold rule, the wordmark stamped in a black
+block, a ghost of the mascot top right, numbered sections with gold numerals,
+gold bullets and hairlines, and a footer with the address and "01 / 04" on every
+page. The signatures moved to a page of their own as three bordered blocks —
+and there are now THREE of them: Brand, Creator and **Agency**, which is the
+"extra stuff". Wurx is a party to this agreement and had nowhere to sign.
+
+**It is a redraw, not a rewrite.** Every word still comes from
+`CONTRACT_SECTIONS` and from whatever the editor has changed. Rashid asked for
+the page flow to stay as it was — *"the second page should be vertical below the
+first one like we currently have"* — because his mockup shows two pages SIDE BY
+SIDE as a design preview. It is still letter portrait, pages one after another.
+
+**Where it lives:** `src/routes/admin/contract-paper.js`, OURS. The vendored
+`contractPdf.js` hands off to it on one fenced line, so re-applying this after
+an upstream pull is re-adding that line rather than diff archaeology.
+
+**A sentence-level bug went with it.** The old renderer split text on
+whitespace and re-joined with single spaces, so a bold run ending mid-sentence
+produced "September 30, 2026 ." — three times on the payment page. The
+tokeniser now carries whether a space was really there, and it is exported so
+`verify:contract-pdf` can test it as a pure function.
+
+**2. THUMBNAILS, EVERYWHERE.** Rashid: *"yes please fix as u just said"*. The
+Irwin fix lives in `reacher-sync`; everywhere else the videos arrive through the
+browser and no server job owns them, so it is a re-runnable script:
+`node scripts/backfill-video-thumbs.mjs` (dry run; `--write` to apply). It only
+ever ADDS a picture to an entry that has none. **1,397 blanks asked about, 1,100
+filled (79%)** across 18 brands — Penetrex 526, Pure Daily Care 203, Aqua Sonic
+177. The 297 left are genuinely not in the store and are re-asked on a later
+run.
+
+**3. THREE SUITES WERE QUIETLY DATE-DEPENDENT, and 1 October proved it.**
+`verify:product-groups` went from 100 green to four failures without a line of
+the feature changing: brands with no October creators are not on the Brands
+screen at all, and brands that were had everybody in one payment status, so the
+status dividers the check insisted on were correctly absent. The fix is
+`ensureAllTime()` in `scripts/browser.mjs`, now shared by three suites — **and
+it is a function because the control is a TOGGLE**: three brands, three clicks,
+and the middle one is silently tested on the current month.
+
+Two assertions were wrong rather than merely fragile, and both are fixed: "no
+creator listed twice" keyed on the NAME, which over a brand's whole history
+reads 272 rows / 114 people as duplication when one person hired twice is two
+legitimate rows (rows now carry `data-wx-id`); and "the status dividers are
+there" is conditional on there being more than one status, with a run-level
+guard so the condition is never vacuous.
+
+**Suites:** `verify:contract-pdf` 32/32 (new), `verify:product-groups` 100/100,
+`verify:product-band` 55/55, `verify:video-thumbs` 14/14,
+`verify:deal-complete` 20/20, `verify:collab-controls` 54/54,
+`verify:collab-contrast` 14/14, isolation clean.
 
 ### Two Irwin Naturals fixes (2026-09-29)
 

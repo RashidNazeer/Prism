@@ -21,7 +21,7 @@
  * discrepancy, everything reconciles" is the shape of lie this project keeps
  * catching.
  */
-import { launchBrowser } from './browser.mjs';
+import { launchBrowser, ensureAllTime } from './browser.mjs';
 
 const BASE = process.env.BASE_URL || 'http://localhost:4173';
 /* A brand with several products, and one with a single product, so a
@@ -53,6 +53,14 @@ try {
     const back = page.locator('.pc-back');
     if (await back.first().isVisible().catch(() => false)) { await back.first().click(); await page.waitForTimeout(2500); }
     await page.waitForSelector('.pc-bt-row', { timeout: 30000 }).catch(() => {});
+    /* ALL TIME, CHOSEN ON THE LIST, BEFORE THE BRAND IS LOOKED FOR.
+       The Brands screen lists the brands active in the SELECTED MONTH, and the
+       page opens on the current one — so on 1 October this file reported "the
+       band is not on the page" for brands that had simply not been worked yet
+       that month, and a null GMV card for the same reason. Nothing it checks is
+       about the calendar, so it asks about the whole history, where the shape
+       of the data does not change under it. */
+    await ensureAllTime(page);
     await page.waitForTimeout(800);
     const row = page.locator('.pc-bt-row')
       .filter({ has: page.locator('.pc-brandname', { hasText: new RegExp(`^\\s*${brand}\\s*$`) }) }).first();
@@ -65,6 +73,17 @@ try {
        a fixed 1.8s read "the band is not on the page" when it simply had not
        been drawn yet. */
     await page.waitForSelector('[data-wx="product-pill"]', { timeout: 30000 }).catch(() => {});
+    /* AND FOR THE CARD THE PILLS ARE COMPARED AGAINST. The band is drawn from
+       rows the page already has; the Top videos block above it arrives later,
+       and on All Time, with fifty-odd creators, later is after the 700ms this
+       used to wait — which read as "the GMV card was not readable" on a brand
+       whose card says $15,338. Waiting for the thing being compared is not the
+       same as waiting a bit longer and hoping. */
+    await page.waitForSelector('.pc-topvids-stat.gmv', { timeout: 30000 }).catch(() => {});
+    await page.waitForFunction(() => {
+      const c = document.querySelector('.pc-topvids-stat.gmv');
+      return c && c.getAttribute('data-value') !== null;
+    }, null, { timeout: 20000 }).catch(() => {});
     await page.waitForTimeout(700);
     return true;
   };
@@ -161,6 +180,7 @@ try {
     await p2.waitForSelector('.pc-bt-row, .pc-back', { timeout: 60000 }).catch(() => {});
     const b2 = p2.locator('.pc-back');
     if (await b2.first().isVisible().catch(() => false)) { await b2.first().click(); await p2.waitForTimeout(2500); }
+    await ensureAllTime(p2);
     const row = p2.locator('.pc-bt-row').filter({ has: p2.locator('.pc-brandname', { hasText: /^\s*Penetrex\s*$/ }) }).first();
     if (!(await row.count().catch(() => 0))) { check(false, `${w}px: Penetrex row found`); await c2.close(); continue; }
     await row.scrollIntoViewIfNeeded().catch(() => {});

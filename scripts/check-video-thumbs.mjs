@@ -25,7 +25,7 @@
  * Nothing is written.
  */
 import { readFileSync } from 'node:fs';
-import { launchBrowser } from './browser.mjs';
+import { launchBrowser, ensureAllTime } from './browser.mjs';
 
 const BASE = process.env.BASE_URL || 'http://localhost:4173';
 const KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -156,6 +156,17 @@ try {
   } else {
     await row.scrollIntoViewIfNeeded().catch(() => {});
     await row.click();
+    /*
+     * ALL TIME, NOT THE MONTH THE CLOCK HAPPENS TO BE IN.
+     *
+     * The brand page opens on the current month, so on 1 October this file
+     * started reporting "0 tiles" for a strip that was working perfectly — the
+     * new month simply had no videos in it yet. A guard that fails when the
+     * date rolls over is a guard nobody will trust the second time. All Time
+     * asks the question the check is actually about: are the videos we hold
+     * showing their pictures.
+     */
+    await ensureAllTime(page);
     await page.waitForSelector('.pc-topvid, .pc-empty', { timeout: 40000 }).catch(() => {});
     /* Wait for the strip to settle rather than for a fixed pause. */
     let last = -1, same = 0;

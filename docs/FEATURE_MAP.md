@@ -4554,3 +4554,69 @@ also guards against both copies agreeing on nothing.
 dev are exactly that and none is a bug — a deal gets renegotiated, a link never
 gets pasted, a creator is released early. Staff own that direction. The only
 rule the machine enforces is that it never LEAVES somebody out.
+
+
+## The creator contract, redrawn (2026-10-02)
+
+`src/routes/admin/contract-paper.js` (ours) · `src/routes/admin/wurx-mark.js`
+(the wordmark, inline) · `src/vendor/wurxbase/contractPdf.js` delegates to it.
+Guard: `pnpm verify:contract-pdf`.
+
+Rashid, with a mockup: *"update the ui of the contract it's very boring and also
+add some extra stuff in it ... i want exactly that UI"*.
+
+**A REDRAW, NOT A REWRITE.** The words all still come from `CONTRACT_SECTIONS`
+and the per-creator editor. What changed is the paper.
+
+**IT STAYS LETTER PORTRAIT, PAGES STACKED.** Rashid: *"the second page should be
+vertical below the first one like we currently have"*. His mockup shows two
+pages side by side because it is a design preview; that is not the document.
+
+**THE WORDMARK IS INLINE BASE64, NOT A FETCH.** The PDF is drawn in a click
+handler. A network hiccup on a fetched logo would produce a contract with a
+blank header, and nothing would look wrong until it reached a creator.
+
+**THE WATERMARK IS VECTOR CIRCLES, NOT THE LOGO AT LOW OPACITY.** It stays crisp
+at any zoom and cannot flatten into a grey smudge on a printer that does not do
+transparency.
+
+**THE TOKENISER IS WHERE THE OLD RENDERER WENT WRONG.** It split text on
+whitespace and re-joined with single spaces, so `**September 30, 2026**.` came
+out as "September 30, 2026 ." — three times on the payment page. `tokenise()`
+carries whether a space was really there and is exported so it can be tested as
+a pure function; `verify:contract-pdf` does exactly that before it opens a
+browser.
+
+**THE SUITE DRIVES THE APP, deliberately.** The renderer draws the signature on
+a canvas and stamps a PNG, and Node has neither, so a check that imported the
+module would pass on a document that comes out of a browser with a hole in the
+header. It clicks the button a person clicks and reads the file that lands.
+Images are told apart BY SIZE (228x64 mark, 360x110 signature) because "at least
+two images" is satisfied by the mark alone — a transparent PNG becomes an image
+plus its alpha mask.
+
+**`agency` is a field, not a constant**, defaulting to "Wurx Media", so a brand
+handled under another name can be given one without touching the renderer.
+
+**STILL OPEN: how a real signature gets in.** Unchanged for now — the Brand
+Representative line is auto-signed by drawing `fields.signerName` in a script
+face. See DECISIONS.
+
+## Backfilling video thumbnails (2026-10-02)
+
+`scripts/backfill-video-thumbs.mjs` · dry run by default, `--write` to apply.
+
+Irwin's blanks are fixed inside `reacher-sync` because that function files
+Irwin's videos. Everywhere else videos arrive through the BROWSER and no
+server-side job owns them, so there is nowhere for the same code to live.
+
+**It only ever ADDS**, never replaces or removes, and never touches any other
+field. Re-running is safe and useful: a video with a picture is skipped, so a
+later run only asks about the ones still blank — which is the set worth asking
+about again, since a video posted this week may be indexed next week.
+
+**Controls run before AND after the sweep.** If the store ever answered 200 to
+an impossible id, every "found it" would be a lie and the run would fill the
+table with broken links; the script refuses to write in that case.
+
+First run: 1,397 blanks, 1,100 filled (79%), 188 rows written, across 18 brands.
