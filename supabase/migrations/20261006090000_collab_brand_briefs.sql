@@ -20,6 +20,12 @@
 -- brands are free text on `wurxbase.creators.brand` and most have no row in
 -- `public.brands`. The reader compares case-insensitively and trimmed.
 --
+-- THE NAME HERE FINDS THE BRIEF; IT IS NOT THE NAME TO FILE UNDER. Angle cards
+-- live in wurxbase.activity_logs under 'Brand::YYYY-MM', and the screen builds
+-- that key from creators.brand compared trimmed but CASE SENSITIVELY. So
+-- whatever files a result must write the brand exactly as it is spelled on the
+-- creator rows, never as it is spelled in this table.
+--
 -- `angles` is the list of creative concepts the brief names, in the brief's
 -- order. They become the angle categories. Stored, not re-derived on every
 -- run, so that a model wording a concept slightly differently one night cannot
@@ -38,8 +44,11 @@ create table if not exists public.collab_brand_briefs (
   -- insensitively, by the unique index below and by every reader.
   brand      text not null check (length(btrim(brand)) between 1 and 120),
 
-  -- Which focus product this brief is for. Empty for a brand with one brief.
-  -- It is what the audit backend hands back as the brief a video followed.
+  -- Which focus product this brief is for: the product's name, or empty when
+  -- the brief does not name one. REQUIRED TO DIFFER between a brand's briefs
+  -- (the unique index below), because it is what the audit backend hands back
+  -- as the brief a video followed. A caller sends the brand name as the label
+  -- when this is empty.
   product    text not null default '' check (length(product) <= 80),
 
   -- Order within the brand: the document's first tab first.
@@ -52,8 +61,12 @@ create table if not exists public.collab_brand_briefs (
              check (brief_url ~ '^https://docs\.google\.com/document/d/[A-Za-z0-9_-]{16,}'
                     and length(brief_url) <= 400),
 
-  -- The creative concepts the brief names, in its own order.
-  angles     text[] not null default '{}',
+  -- The creative concepts the brief names, in its own order. May be empty
+  -- for a brief that has been registered but not read yet; never holds a
+  -- null, and thirty is far more concepts than any brief lists.
+  angles     text[] not null default '{}'
+             check (cardinality(angles) <= 30
+                    and array_position(angles, null) is null),
 
   -- A brief that has been replaced is switched off, not deleted: the videos
   -- already filed under its angles still need to say where those came from.
@@ -66,9 +79,12 @@ create table if not exists public.collab_brand_briefs (
 comment on table public.collab_brand_briefs is
   'The content brief(s) a Paid Collabs brand''s creators follow: one row per brief, two for a brand with two focus products (a Google Doc tab each). Keyed by brand NAME, like collab_brand_photos. `angles` are the creative concepts the brief names and become the angle-testing categories.';
 
--- One brief per brand + product, whatever the capitalisation.
+-- One ACTIVE brief per brand + product, whatever the capitalisation. Partial
+-- on purpose: a replaced brief is switched off and kept (see is_active), and
+-- a unique index over every row would make its own successor impossible.
 create unique index if not exists collab_brand_briefs_brand_product_idx
-  on public.collab_brand_briefs (lower(btrim(brand)), lower(btrim(product)));
+  on public.collab_brand_briefs (lower(btrim(brand)), lower(btrim(product)))
+  where is_active;
 
 drop trigger if exists collab_brand_briefs_touch_updated_at on public.collab_brand_briefs;
 create trigger collab_brand_briefs_touch_updated_at
@@ -129,7 +145,10 @@ values
   ('Swisse', '', 0,
    'https://docs.google.com/document/d/1g4_33htyHJl7A4z7aVV0zax1hJsXE8FI8sACcSkuAy8/edit?tab=t.0',
    array['Visual hook (Top performing angle)', 'What I wish I could tell my younger self']::text[])
-on conflict (lower(btrim(brand)), lower(btrim(product))) do nothing;
+-- The predicate must match the partial index above, or Postgres finds no
+-- constraint to infer and the insert errors.
+on conflict (lower(btrim(brand)), lower(btrim(product))) where is_active
+do nothing;
 
 -- NOT IN THE SHEET YET, so no row and no categorising until they have one:
 --   Apothecary
