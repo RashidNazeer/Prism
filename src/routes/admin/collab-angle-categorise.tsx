@@ -66,10 +66,27 @@ async function messageFrom(error: unknown, fallback: string): Promise<string> {
       const body = await ctx.clone().json();
       if (body?.error) return String(body.error);
     } catch {
-      /* not JSON: fall through to the generic message */
+      /* not JSON: fall through to the translations below */
     }
   }
-  return (error as Error)?.message || fallback;
+  const raw = (error as Error)?.message || fallback;
+
+  /* SUPABASE'S OWN WORDING IS NOT AN ANSWER. "Failed to send a request to the
+     Edge Function" is what a browser reports when the request never completed
+     at all, and the commonest reason by far is that the function is not
+     deployed on this project: there is nothing there to answer the browser's
+     preflight, so it never even gets as far as a status code. Saying that is
+     the difference between a person knowing what to do and filing a bug. */
+  if (/failed to send a request/i.test(raw)) {
+    return 'The categorising service did not answer. It may not be deployed on ' +
+      'this project yet, or something between here and Supabase is blocking ' +
+      'the request.';
+  }
+  if (/non-2xx/i.test(raw)) {
+    return 'The categorising service refused the request. Try again, and if it ' +
+      'keeps happening the server log will say why.';
+  }
+  return raw;
 }
 
 /**
