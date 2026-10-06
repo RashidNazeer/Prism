@@ -230,13 +230,14 @@ refresh that row's `angles`.
   not to change the schema. Applying the migration needs a Supabase access
   token and the dev database password, so it has not been pushed and no suite
   has been run.
-- **Committed to the feature branch only** (2026-10-06), as
+- **Pushed to the feature branch only** (2026-10-06), as
   `RashidNazeer <wurxmedia@gmail.com>` on Umar's instruction. That is not the
   identity OPERATIONS fixes for this repository
   (`Rashid Nazeer <286085480+RashidNazeer@users.noreply.github.com>`); Rashid
-  to say if the branch should be re-authored before it merges. **Not pushed**:
-  the repository is public to read, but pushing needs the account doing the
-  work to be a collaborator. Not merged into `dev`.
+  to say if the branch should be re-authored before it merges. **Not merged
+  into `dev`**, and no pull request has been opened yet; the description is
+  ready in `PR_creative-angle-auto-categorise.md` one folder above the
+  repository.
 - **Who gets the button is not settled.** The button gates on
   `canEditAngles`, which a plain `ops` account does not have by default.
   Umar to say whether ops staff should be granted it, or only the people who
