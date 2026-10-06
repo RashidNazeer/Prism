@@ -40,27 +40,58 @@ brief's creative concepts it follows.
 
 ## How it will work
 
-1. The brand's brief(s) are looked up in `public.collab_brand_briefs`.
-2. The brand's videos that have not been processed yet go into a queue, one row
-   per video (table to be built).
+1. The brand's brief(s) are looked up in `public.collab_brand_briefs`. The
+   lookup is case insensitive and trimmed, but the filing key is not (see rule
+   4 in "Design rules from the 2026-10-06 review"). The enqueue step fails
+   loudly: it lists every brand that has creators but no brief, and every brief
+   whose brand has no creators.
+2. The Edge Function works out the brand's videos itself, from the database,
+   and puts the ones not yet filed into a queue, one row per video (table to be
+   built). Nothing the browser sends is trusted: the browser says only which
+   brand, never which links. A video is identified by its TikTok video id (the
+   digits in `/video/<id>`), not by its URL text. "Already filed" means that id
+   appears in any angle of any `Brand::*` row for that brand. Videos are
+   deduplicated by id before batching.
 3. A background worker sends 5 videos at a time to the audit backend through an
    Edge Function that holds the backend's URL and key as secrets. One batch at a
-   time across all brands, because the machine runs one job at a time.
+   time across all brands, because the machine runs one job at a time. A batch
+   takes 25 to 30 minutes and an Edge Function call lasts about 100 seconds, so
+   the worker is a submit-then-poll state machine, not one long call. The
+   provider's job id is stored on the batch row, a cron tick runs every minute,
+   and each tick does one short step (submit, or one status check, or file a
+   finished result). A batch spans many ticks. It is modelled on
+   `supabase/functions/euka-ads-sync/index.ts`: claim the row with
+   `for update skip locked` and a short lease.
 4. When a batch is done, each link is filed under its angle in the row for that
    brand and the **month the video was posted** (`Brand::YYYY-MM` in
    `wurxbase.activity_logs`, action `CREATIVE_ANGLE`), creating the angle if it
-   does not exist. The month follows the same rule as `brandVideos()` in
-   `src/vendor/wurxbase/angleStore.js`: the video's own date, else the creator's
-   hire month.
+   does not exist. The month is the first 7 characters of `video.date`, else the
+   first 7 characters of the creator's `hiring_date`. If neither exists the video
+   is skipped and reported, because it cannot be filed. Scope mirrors the
+   screen: month mode only, active brands only. The key is built from the exact
+   trimmed `wurxbase.creators.brand` string, compared case sensitively. The
+   save replicates `saveAngles` using the service role (details in the review
+   rules, 6 and 7).
 5. The screen shows progress and an estimate, and the angle cards fill in as
-   batches finish.
+   batches finish. Nothing in the app subscribes to angle changes (the store
+   loads once at boot into a localStorage mirror), so our progress component
+   calls the exported `fetchAngles()` after each batch is filed, or the open
+   screen will not show the filing until it is reloaded. The button is shown
+   only when `can(currentUser, 'canEditAngles')` is true (see
+   `src/vendor/wurxbase/access.js`), and the Edge Function checks the same
+   thing again server side. A plain `ops` account does not have that capability
+   by default.
 
 Rules the filing must keep:
 
 - A video somebody already filed by hand is never moved.
-- Typed ad spend, GMV and views overrides are never touched.
+- Typed ad spend, GMV and views overrides are never touched. Every existing key
+  on every existing angle is preserved, including keys we do not know about.
 - The save goes through the row's `revision` check, exactly like `saveAngles`,
-  so it cannot overwrite somebody editing at the same moment.
+  so it cannot overwrite somebody editing at the same moment. The server must
+  bump `revision` itself, or a stale browser tab will silently overwrite the
+  filing with its own copy.
+- The same video URL never appears twice in one angle.
 - If the machine is off, videos stay queued and the screen says so. Nothing is
   lost.
 
@@ -80,8 +111,32 @@ For a job (`POST /analyze`, then poll `GET /jobs/{id}`):
 ```
 
 Briefs are sent as `briefs: [{label, url, angles}]`, one entry per brief (two
-for a two-product brand). A URL with `?tab=t.xxxx` reads that tab only. About 5
-minutes per video on a first run, so a batch of 5 is roughly 25 minutes.
+for a two-product brand). A URL with `?tab=t.xxxx` reads that tab only. About 5.5
+minutes per video on a first run, so a batch of 5 is 25 to 30 minutes. On top of
+that, every job pays one to three minutes of brief compilation per brief,
+because the brief is recompiled on every job by choice.
+
+**What to trust while a job runs.** Mid-run, only `status`, `phase`,
+`requested_videos`, `downloaded_videos` and `elapsed_s` mean anything.
+`placements`, `unplaced` and `completed_videos` are empty until the job ends.
+`angles` already lists the brief's angle names with empty lists while the job
+runs; that is not a result and must not be read as one.
+
+**`POST /analyze` is not idempotent.** If the response is lost, the provider
+still has a job running, and because it runs one job at a time that orphan
+blocks everything for about half an hour. So the batch row is written as
+`submitting` before the post, the post carries `label = <batch uuid>`, and
+before any retry the worker looks for that label in `GET /jobs?limit=50`. Probe
+`GET /ready` first; it needs no key. Never treat a bare HTTP 404 as "job lost":
+an offline ngrok tunnel also returns a 404, but as an HTML error page. The
+provider's real 404 is JSON, `{"detail": "no job <id>"}`. Only that means the
+job is gone.
+
+**"Matched None" can be provisional.** If the provider marks a placement
+`needs_review`, or the job warns about missing visual evidence, treat the
+result as provisional and re-run those videos once before filing them. The
+evidence is cached, so a re-run is cheap. Filing a transient failure as "fits no
+angle" means nobody ever looks at that video again.
 
 **Always send `angles`** (the row's `angles` column). The backend then files
 videos under exactly those names. Left to read the names out of the document by
@@ -100,13 +155,45 @@ refresh that row's `angles`.
 ## Build order
 
 1. **The briefs, per brand.** Done on this branch (see the change log).
-2. A queue table: one row per video, with status and the angle it was given.
-3. The Edge Function that talks to the audit backend, and the worker tick
-   (pattern: `euka-ads-sync`, cron → pg_net → function with a Vault secret).
-4. Filing results into `wurxbase.activity_logs`.
+1a. **Prerequisite: protect the vendored files.** Generalise
+   `scripts/wurxbase-patches.mjs` so it can patch `CreativeAngles.jsx` as well
+   as `WurxUI.jsx`, and add a check that fails if `angleStore.js` has lost its
+   `revision` handling. Without this, the hook line in step 5 is lost on the
+   next re-vendor (the vendor script regenerates `CreativeAngles.jsx` and copies
+   `angleStore.js` verbatim, with no fence round our revision logic). Do this
+   before step 5.
+2. A queue table: one row per video, with status and the angle it was given,
+   plus a batch table holding the provider job id, the batch uuid used as the
+   label, the state (`submitting`, `running`, and so on), a lease, and attempt
+   counts. A batch that fails twice is split into single-video batches to find
+   the one video causing it.
+3. The Edge Function that talks to the audit backend, and the worker tick, run
+   every minute as a submit-then-poll state machine (pattern: `euka-ads-sync`,
+   cron → pg_net → function with a Vault secret; claim with
+   `for update skip locked`, short lease). Platform wiring that fails silently
+   if forgotten:
+   - The cron-called function needs a `[functions.<name>] verify_jwt = false`
+     block in `supabase/config.toml`. Without it pg_net's call gets 401 forever
+     and the cron looks healthy while doing nothing.
+   - Every new table needs `grant all privileges on table X to service_role` as
+     well as RLS and policies.
+   - Regenerate `src/types/database.ts` for any new table the screen reads, or
+     the strict TypeScript build fails.
+   - `scripts/check-role-gates.mjs` requires any function that tests for the
+     `ops` role to name every staff role.
+   - The button-facing function re-checks the caller server side: verify the
+     JWT, require `profiles.role` to be a staff role and active, then look up
+     `canEditAngles` in `wurxbase.app_users` by `hub_email`.
+4. Filing results into `wurxbase.activity_logs`, replicating `saveAngles`
+   (`src/vendor/wurxbase/angleStore.js`, lines 89 to 174) with the service role.
+   See rules 3 to 7 below: identify videos by id, key by the exact brand string,
+   month rule, optimistic-concurrency save, and the server-made angle shape.
 5. The button, progress bar and estimate on the angle-testing screen. Ours goes
    in our own file under `src/routes/admin/` and hooks into the vendored
-   `CreativeAngles.jsx` on one fenced line, per the vendoring rules.
+   `CreativeAngles.jsx` on one fenced line, per the vendoring rules (and only
+   after step 1a, so the line survives a re-vendor). The button is gated on
+   `can(currentUser, 'canEditAngles')`. The component calls `fetchAngles()`
+   after each batch is filed. Progress follows rule 13 below.
 6. The automatic run.
 7. A `scripts/check-*.mjs` suite, and the FEATURE_MAP / OPERATIONS entries.
 
@@ -114,27 +201,143 @@ refresh that row's `angles`.
 
 - **Brand names are unverified against the database.** The rows use the names
   in Umar's sheet. Before the feature is switched on, compare them with
-  `select distinct btrim(brand) from wurxbase.creators`. "Biostime Shop US" in
-  particular may be plain "Biostime" on the Paid Collabs rows. The match is case
-  insensitive and trimmed, but not fuzzy.
-- **Eight brands have no brief yet**: Apothecary, Aqua Sonic, Aurelia, Yesday,
-  Inno Supps, Irwin Naturals, Klassy Network (the sheet holds the document's
-  title, not its link), Pure Daily Care. They cannot be categorised until they
-  have one.
-- **Dr. Harvey's has two concepts with nearly the same name** ("It's Not Just Bad
-  Breath, It's Their Health" and its "Variation #2"). They are two categories
-  as written. Umar to say whether they should be one.
-- **Honeysticks and Swisse have a second tab that is not a brief** (a short note,
-  and an empty tab). Only the first tab is used.
-- **Nothing has been applied or deployed.** This machine has no dev credentials
-  for the project (no `.env.local`, no CLI secrets file), so the migration has
-  not been pushed and no suite has been run.
-- **Committed and pushed to the feature branch only** (2026-10-06), as
+  `select distinct btrim(brand) from wurxbase.creators`, and add any other
+  spelling to that row's `aliases`. The brief lookup is case insensitive,
+  trimmed, and checks `aliases`, but it is not fuzzy. The filing key is
+  different: it uses the creators table's own spelling, case sensitive
+  (rule 4 below).
+- **Five brands cannot be categorised yet**, and the first two need somebody to
+  fix the sheet:
+  - **Klassy Network**: its link is Kenashii's document
+    (`1sT-cmKCfffY...`, titled "Kenashii Viral Video & Content Guide", and the
+    text never mentions Klassy). Deliberately given **no row**, because a brief
+    attached to the wrong brand would judge Klassy's videos against Kenashii's
+    concepts. It needs its own link.
+  - **Cutler Nutritions**: the linked document is readable but empty, with no
+    brief written in it.
+  - **Aqua Sonic, Inno Supps, Irwin Naturals**: no link in the sheet.
+- **A hyperlinked cell hides its URL.** Apothecary, Kenashii and both Aurelia
+  cells show a document title rather than a link, and a CSV export of the sheet
+  drops the URL entirely, so those brands look like they have none. Read the
+  sheet's **XLSX** export instead, which keeps the hyperlink. Anyone refreshing
+  these rows from the sheet must do the same.
+- **Honeysticks and Swisse have a second tab that is not a brief** (a 210
+  character note, and an empty tab). Only the first tab is used. Google serves
+  the FIRST tab for a tab id that does not exist, so a tab whose text matches
+  tab one is not a real tab.
+- **Nothing has been applied or deployed.** The repository's `.env` holds the
+  dev Supabase URL and publishable key, which are enough for the browser but
+  not to change the schema. Applying the migration needs a Supabase access
+  token and the dev database password, so it has not been pushed and no suite
+  has been run.
+- **Committed to the feature branch only** (2026-10-06), as
   `RashidNazeer <wurxmedia@gmail.com>` on Umar's instruction. That is not the
   identity OPERATIONS fixes for this repository
   (`Rashid Nazeer <286085480+RashidNazeer@users.noreply.github.com>`); Rashid
-  to say if the branch should be re-authored before it merges. Not merged into
-  `dev`.
+  to say if the branch should be re-authored before it merges. **Not pushed**:
+  the repository is public to read, but pushing needs the account doing the
+  work to be a collaborator. Not merged into `dev`.
+- **Who gets the button is not settled.** The button gates on
+  `canEditAngles`, which a plain `ops` account does not have by default.
+  Umar to say whether ops staff should be granted it, or only the people who
+  already edit angles by hand.
+- **The progress weights and the 5.5 minute fallback come from one real run.**
+  Re-measure them after the first few live batches.
+
+## Design rules from the 2026-10-06 review
+
+A detailed review of this plan against the existing code found the points
+below. Rules 1, 2, 10 and 14 are also written into "How it will work" and the
+backend notes above; the rest are collected here so none is missed. All of them
+are requirements for the implementation.
+
+1. **The worker is a submit-then-poll state machine.** An Edge Function call
+   lasts about 100 seconds and a batch of 5 takes 25 to 30 minutes. Persist the
+   provider's job id on the batch row, run the cron tick every minute, and let
+   each tick do one status check. Copy `euka-ads-sync` (claim with
+   `for update skip locked`, short lease). A batch spans many ticks.
+2. **Submitting is made safe against lost responses.** Write the batch row as
+   `submitting` before posting. Send `label = <batch uuid>`. Before any retry,
+   look for that label in `GET /jobs?limit=50`. Probe `GET /ready` first (no key
+   needed). A bare 404 is not "job lost": an offline ngrok tunnel returns an
+   HTML error page, and only the JSON `{"detail": "no job <id>"}` means the job
+   is gone.
+3. **Identify videos by TikTok video id, never by URL text.**
+   `wurxbase.creators.video_codes[].video` is free text written by three
+   writers (manual entry, the Euka sync, the Reacher sync), so one video
+   appears in several spellings. Take the digits after `/video/`. Dedupe by id
+   before batching, send canonical URLs to the provider, map results back by
+   id, and file the exact string that is in `video_codes`. "Already filed"
+   means that id appears in any angle of any `Brand::*` row for that brand.
+4. **The brand key is the exact trimmed `wurxbase.creators.brand`, compared
+   case sensitively.** The screen builds `Brand::YYYY-MM` that way
+   (`caKey` and `brandVideos` in `src/vendor/wurxbase/angleStore.js`). Look the
+   brief up case insensitively, but never write the briefs table's spelling
+   into the key. The enqueue step fails loudly and lists brands with no brief
+   and briefs with no creators.
+5. **Month and scope.** Month is the first 7 characters of `video.date`, else
+   the first 7 of the creator's `hiring_date`. With neither, skip the video and
+   report it. Month mode only, active brands only, as on the screen.
+6. **Filing replicates `saveAngles`** (`angleStore.js`, lines 89 to 174), with
+   the service role. Read `id, details, revision`. Update where
+   `revision = <r>`, setting the merged `details`, `revision = <r> + 1`,
+   `updated_at = now()` and a readable `user_display`. If zero rows come back,
+   re-read, re-merge and retry, a bounded number of times. If no row exists,
+   insert with `revision: 1`; on a unique violation (23505), re-read and take
+   the update path. Never delete. Never write an empty angle list. Preserve
+   every existing key on every existing angle (`spend`, `gmvOverride`,
+   `viewsOverride`, `adSpent`, and anything unknown). If the server does not
+   bump `revision`, a stale browser tab silently overwrites the filing with its
+   own copy.
+7. **A server-made angle has the screen's shape.**
+   `{ id, title, videos: [], spend: {}, gmvOverride: {}, viewsOverride: {} }`,
+   with the id in the format of `newAngleId` ('a', then a base-36 timestamp,
+   then 4 random characters), unique within the row. Add a marker key, for
+   example `auto: { name: <the brief's angle name> }`, so a staff rename does
+   not cause a duplicate next run. Match an existing angle by the marker first,
+   then by title normalised (curly quotes to straight, whitespace collapsed,
+   trimmed, case insensitive). The same video URL must never appear twice in one
+   angle: the screen uses the URL as a React key, and duplicate keys produce
+   console errors that the browser verification suite treats as failures.
+8. **The open screen does not refresh itself.** The angle store loads once at
+   boot into a localStorage mirror and nothing subscribes to changes. The
+   progress component calls the exported `fetchAngles()` after each batch is
+   filed.
+9. **Gate the button, and re-check on the server.** The button needs
+   `can(currentUser, 'canEditAngles')` (`src/vendor/wurxbase/access.js`); a
+   plain `ops` account lacks it by default. The Edge Function verifies the JWT,
+   requires `profiles.role` to be a staff role and active, then looks up the
+   capability in `wurxbase.app_users` by `hub_email`. It trusts nothing from the
+   browser. It derives the video list itself from the database and never
+   accepts video URLs from the browser, because the provider downloads
+   whatever links it is given.
+10. **"Matched None" is provisional in two cases.** When the provider marks the
+    placement `needs_review`, or the job warns about missing visual evidence,
+    re-run those videos once before filing them. The evidence is cached, so a
+    re-run is cheap. Filing a transient failure as "fits no angle" means nobody
+    looks at the video again.
+11. **Protect the vendored files first.** A hook line added to
+    `src/vendor/wurxbase/CreativeAngles.jsx` is lost on the next re-vendor:
+    `scripts/wurxbase-patches.mjs` patches only `WurxUI.jsx`, the vendor script
+    regenerates `CreativeAngles.jsx`, and `angleStore.js` is copied verbatim
+    with no fence round our revision logic. Generalising the patch script, and
+    adding a check that fails if `angleStore.js` has lost its `revision`
+    handling, is a prerequisite step (build order 1a).
+12. **Platform wiring that fails silently if forgotten.** See build order step
+    3: `verify_jwt = false` for the cron-called function in
+    `supabase/config.toml`; `grant all privileges ... to service_role` on every
+    new table as well as RLS and policies; regenerate `src/types/database.ts`
+    for any new table the screen reads; and `scripts/check-role-gates.mjs`
+    needs any function testing for the `ops` role to name every staff role.
+13. **Progress and the estimate.** Use only the fields that mean something
+    mid-run (see "What the audit backend returns"). Drive the bar from phase
+    weights measured on a real run: brief 5 per cent, ingest 4, decode 5, speech
+    and on-screen text 58, vision 16, judging 11. Keep a rolling average of
+    finished batch durations per video, falling back to about 5.5 minutes per
+    video, and label the figure an estimate. Add one to three minutes of brief
+    compilation per brief to every job.
+14. **Split a failing batch.** If a batch fails twice, split it into
+    single-video batches to find the one video causing it.
 
 ## Change log
 
@@ -147,28 +350,67 @@ refresh that row's `angles`.
   order), `is_active`, and timestamps. A unique index on brand + product, case
   insensitive. RLS on; `select` for `is_collabs_viewer()`; no write policy;
   explicit grants to `authenticated` (select) and `service_role` (all).
-- **The same migration inserts 11 briefs for 10 brands**, taken from Umar's
-  sheet on 2026-10-06. Every document was fetched and its "Creative Concepts"
-  list read from the text; nothing was typed by hand. `on conflict do nothing`.
+- **The same migration inserts 16 briefs for 14 brands**, taken from Umar's
+  sheet as it stood on 2026-10-06. Every document was fetched, its real tabs
+  worked out, and its "Creative Concepts" list read from the text; nothing was
+  typed by hand, and a second pass checked that each document names the brand
+  it is filed under. `on conflict do nothing`.
+
   The names are stored as category titles: the quote marks a brief puts round a
   concept are removed, so `“Visual hook”(Top performing angle)` is stored as
-  `Visual hook (Top performing angle)`. All 11 were checked against the live
-  documents through the backend's `/briefs/angles` on 2026-10-06 and match.
+  `Visual hook (Top performing angle)`.
 
   | Brand | Product | Angles |
   | --- | --- | --- |
+  | Apothecary | | 2 |
+  | Aurelia | Hair Revive + Hair perfection | 2 |
+  | Aurelia | Hair Perfection | 3 |
+  | Yesday | | 3 |
   | Bentgo | | 3 |
   | Biostime Shop US | | 2 |
   | Dr Tobias | Colon 14 Day Cleanse | 4 |
   | Dr Tobias | Lung Health | 3 |
-  | Dr. Harvey's | Holistix | 3 |
+  | Dr. Harvey's | | 2 |
   | FlyWell | | 3 |
   | Honeysticks | | 2 |
   | JoyMode | | 3 |
   | Kenashii | | 3 |
   | Penetrex | | 4 |
+  | Pure Daily Care | | 2 |
   | Swisse | | 2 |
 
+- **`aliases` column added.** Umar, 2026-10-06: "Biostime Shop US and Biostime
+  both are same". One brief answers for every spelling of a brand, so a row
+  carries the others in `aliases` and the lookup checks them. Biostime Shop US
+  carries `{Biostime}`.
+- **Dr. Harvey's two near-identical concepts are stored as one.** The brief
+  lists "It's Not Just Bad Breath, It's Their Health" and then the same title
+  again with "(Variation #2)". Umar left the decision here: one creative angle,
+  two executions. As two categories nothing could tell them apart, and an angle
+  test compares hooks against each other, not takes of one hook. Stored once;
+  a video following either execution lands in the same category. If the team
+  ever wants them separated, give them names that differ.
+- **Aurelia is the second two-brief brand**, and unlike Dr Tobias its two
+  briefs are two separate documents rather than two tabs. Note that "Hair
+  Perfection" is covered by both, with different concepts in each.
 - **Added this file**, and an entry in `docs/FEATURE_MAP.md`.
 - No application code, no Edge Function, no vendored file and no existing
   migration was changed.
+
+### 2026-10-06, design review written into the plan
+
+- **Edited this file only.** A design review of the plan against the existing
+  code found 14 points the plan got wrong or left out. They are now in the plan.
+- **Corrected earlier sections** rather than adding contradictions: "How it will
+  work" (worker is a submit-then-poll state machine; videos identified by video
+  id and derived server side; month and brand-key rules; `fetchAngles()` after
+  filing; button gated on `canEditAngles` and re-checked by the server), "What
+  the audit backend returns" (5.5 minutes per video plus brief compilation, which
+  fields to trust mid-run, non-idempotent `POST /analyze`, the 404 trap,
+  provisional "Matched None"), "Build order" (new prerequisite 1a for the
+  vendored-file patch script, batch table, platform wiring, filing and screen
+  detail) and "Open items" (brand key spelling, who gets the button, progress
+  weights).
+- **Added the section "Design rules from the 2026-10-06 review"**, 14 numbered
+  rules for whoever implements the feature.
+- No code, migration, vendored file or database was touched.
