@@ -4620,3 +4620,40 @@ an impossible id, every "found it" would be a lie and the run would fill the
 table with broken links; the script refuses to write in that case.
 
 First run: 1,397 blanks, 1,100 filled (79%), 188 rows written, across 18 brands.
+
+## The brief a brand follows, and filing angles automatically (2026-10-06, IN PROGRESS)
+
+**Not finished and not on `dev`.** Branch `feature/creative-angle-auto-categorise`.
+The plan, Umar's decisions, the open items and the record of every change are in
+[`CREATIVE_ANGLE_AUTOMATION.md`](CREATIVE_ANGLE_AUTOMATION.md). Read that first.
+
+What exists so far:
+
+- `public.collab_brand_briefs` (`supabase/migrations/20261006090000_collab_brand_briefs.sql`):
+  one row per brief, keyed by brand NAME like `collab_brand_photos`, with
+  `aliases` for the brand's other spellings. A brand with two focus products
+  has two rows, either a Google Doc tab each (Dr Tobias) or two separate
+  documents (Aurelia), which is why the tab is in `brief_url`. `angles` holds
+  the brief's concept names; they become the angle-testing categories. That
+  migration inserts 16 briefs for 14 brands.
+
+Change rules:
+
+- **The brand name must match `wurxbase.creators.brand`**, trimmed and case
+  insensitive, or be listed in that row's `aliases`. A row whose name matches
+  nothing is simply never used, so a typo fails silently. Check the names
+  before switching the feature on.
+- **A brand gets no row rather than a wrong one.** Klassy Network's link in the
+  source sheet is Kenashii's document, so it is deliberately absent: a brief
+  attached to the wrong brand judges that brand's videos against another
+  brand's concepts, and the answer still looks plausible.
+- **Refresh these rows from the sheet's XLSX export, not its CSV.** Several
+  cells are hyperlinks showing a document title, and a CSV export drops the URL
+  silently, which reads as "this brand has no brief".
+- **Keep the tab in the URL.** Without `?tab=`, Google exports every tab as one
+  text and two products' concepts are judged as one brief.
+- **Do not rename an angle in `angles` casually.** The names are the categories
+  already filed into `wurxbase.activity_logs`; a renamed concept opens a second
+  category beside the first.
+- Nothing writes this table from the browser. A change goes through an Edge
+  Function with the service key, once that function exists.
