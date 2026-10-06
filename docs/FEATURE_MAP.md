@@ -2566,6 +2566,62 @@ catalogue — a round trip. The band renders at once with letter tiles and
 upgrades in place. The match is EXACT and within one brand: anything looser puts
 one product's photograph beside another's money.
 
+### Expected videos and ad spend (2026-10-07)
+
+Rashid: *"the videos part must also show the number of expected videos like
+shown product wise 5/10 ... and i want the cards to show the summed up ad spend
+as well in each card"*. Five figures now: GMV, views, creators, **videos
+delivered over promised**, and **ad spend**.
+
+**Ad spend was the easy half.** It shares the GMV's scope — this product's own
+videos — so it reconciles the same way, obeys the month selector through the
+same `BrandDrilldown` effect, and costs no new request: the creator rows below
+ask for exactly these video ids and the provider caches by `month|id`.
+
+**Expected videos needed a decision, because the data cannot answer it
+directly.** A commitment lives on the DEAL — "10 videos at $40" — and names no
+product. So "expected videos for Product 02" does not exist in the database;
+only a rule for attributing a creator's promise to the products they posted
+for. Two rules were put to Rashid on 2026-10-07 and he chose the first:
+
+- **Every creator who posted for it** carries their WHOLE commitment under that
+  product. Same scope as the `creators` figure beside it, which already counts a
+  person under each product they touched. The two therefore agree, and a card
+  can never show videos against a blank commitment.
+- *Rejected:* attributing a promise only to the creator's MAIN product. That
+  makes the cards sum exactly to the brand's `314 / 313` KPI, and in exchange
+  prints "12 / 0" on every side product.
+
+**So these deliberately do NOT sum to that KPI.** They overlap, exactly as the
+creator counts already overlap (NUTRAHARMONY: 19 + 18 + 1 + 1 = 39 for 38
+people). An overlap the neighbouring figure already has is a smaller lie than a
+denominator of zero under a real delivered count.
+
+### The guard was green while the feature was still loading
+
+`check-product-band.mjs` passed on the first run with **every** Penetrex card
+reading "–" for ad spend. Nothing was broken: a dash is a legal answer for a
+brand with no ad data, and Penetrex's 2,270 video ids are five RPC round trips
+at 500 an go — far past the 700ms the script waited. The check was green while
+the figure it existed to prove had not arrived.
+
+Caught by comparing the band against the **creator rows on the same screen**:
+Penetrex's rows were priced ($6,618, $11.25, $30.43 …) while its cards were not.
+Biostime's rows were blank too, so its dashes were honest.
+
+That comparison is now the check itself — `the band is priced wherever the
+creator rows below it are` — and it calibrates itself, so no brand is hardcoded
+as "should have ad spend" and it cannot rot when an ad account is connected or
+dropped. 73 checks, 0 failures, four widths, zero console errors. Penetrex all
+time: $45,993 / $17,327 / $5,886 / $2,794 / $996 / $235 / $5.46 across its seven
+products.
+
+**The card grew from `flex: 1 0 24rem` to `27rem`** to seat a fifth column: at
+the old width five columns left about 70px each, and "637/992" beside "$45,993"
+needs more. The row still scrolls, so a wider card costs no page width — it
+shows slightly fewer products at once, which is the right trade for figures that
+fit.
+
 The pill sits on `--pc-card` (`--wx-surface-1`) because that is the ground
 check:contrast section 5 already proves the green GMV ink against; the tinted
 `--pc-card-2` would have been a new unproven surface for an ink calibrated
@@ -4627,8 +4683,24 @@ First run: 1,397 blanks, 1,100 filled (79%), 188 rows written, across 18 brands.
 The plan, Umar's decisions, the open items and the record of every change are in
 [`CREATIVE_ANGLE_AUTOMATION.md`](CREATIVE_ANGLE_AUTOMATION.md). Read that first.
 
+**Files:** `supabase/migrations/20261006090000_collab_brand_briefs.sql` ·
+`supabase/migrations/20261007090000_collab_angle_queue.sql` ·
+`supabase/functions/collab-angles/` · `supabase/functions/collab-angles-sync/` ·
+`supabase/functions/_shared/audit-api.ts` ·
+`supabase/functions/_shared/angle-store.ts` ·
+`src/routes/admin/collab-angle-categorise.tsx` ·
+`src/routes/admin/wurxbase-overrides.css` (the `wx-cat-` block) ·
+`scripts/wurxbase-patches.mjs` · `scripts/check-angles-categorise.mjs`
+(`pnpm verify:angles-categorise`)
+
 What exists so far:
 
+- The queue (`collab_angle_videos`) and one row per backend job
+  (`collab_angle_batches`), drained by `collab-angles-sync` on a one-minute
+  cron. `collab-angles` is the button's door: it derives the video list from
+  `wurxbase.creators` server side and queues it.
+- A Categorise button in the angle-testing header, hooked into the vendored
+  `CreativeAngles.jsx` through a `WURX-ADDED` fence, with a progress ring.
 - `public.collab_brand_briefs` (`supabase/migrations/20261006090000_collab_brand_briefs.sql`):
   one row per brief, keyed by brand NAME like `collab_brand_photos`, with
   `aliases` for the brand's other spellings. A brand with two focus products
@@ -4650,6 +4722,18 @@ Change rules:
 - **Refresh these rows from the sheet's XLSX export, not its CSV.** Several
   cells are hyperlinks showing a document title, and a CSV export drops the URL
   silently, which reads as "this brand has no brief".
+- **The filer only ever adds.** It writes `wurxbase.activity_logs` conditioned
+  on the `revision` it read and bumps it, exactly as `angleStore.js` does. Drop
+  that and a browser tab left open silently replaces the filing with its own
+  stale copy of the angles.
+- **A video already filed by a person is never moved**, matched by TikTok video
+  id across every angle of the row rather than by comparing link text.
+- **Four things must be in place or the feature does nothing, quietly**: both
+  migrations applied, the `AUDIT_API_URL` / `AUDIT_API_KEY` /
+  `COLLAB_ANGLES_SYNC_SECRET` function secrets, the two vault entries, and both
+  functions deployed. `collab_angles_run_cycle()` returns null rather than
+  raising when the vault is empty, so the cron history looks healthy either
+  way. See "Turning the feature on" in `CREATIVE_ANGLE_AUTOMATION.md`.
 - **Keep the tab in the URL.** Without `?tab=`, Google exports every tab as one
   text and two products' concepts are judged as one brief.
 - **Do not rename an angle in `angles` casually.** The names are the categories

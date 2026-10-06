@@ -1,3 +1,16 @@
+/* WURX-ADDED · Categorise button for Creative angle testing ──────────────────
+   Every change of ours to this file sits inside a WURX-ADDED ... WURX-END block,
+   so pulling a newer version from upstream is a find-and-reapply job. Nothing
+   of theirs is edited or removed; these blocks only add.
+
+   This imports OUR route component, which asks our `collab-angles` function to
+   sort a brand-month's videos into angles. It is NOT a Supabase client and
+   names no project of ours, so this file still cannot reach our database,
+   which is what pnpm verify:isolation asserts on every build. Same arrangement
+   as the ad figures in WurxUI.jsx. See
+   src/routes/admin/collab-angle-categorise.tsx. */
+import { CollabAngleCategorise } from '@/routes/admin/collab-angle-categorise';
+/* WURX-END */
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
   getAngles, getAllAngles, getAngleMeta, saveAngles, fetchAngles, newAngleId, brandVideos, angleStats, videoFig, pruneAngle,
@@ -478,6 +491,21 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
             New angle
           </button>
         )}
+        {/* WURX-ADDED · the Categorise button, straight after New angle.
+
+            It renders nothing unless there is a brand, a month and edit rights,
+            so it needs no gate here. onFiled re-reads the angle store when the
+            filer has put videos into angles, so the cards update without a
+            reload. fetchAngles() is already imported above and its rejection is
+            swallowed the same way App.jsx does at boot: a failed refresh is not
+            worth an error on a screen that is otherwise working. */}
+        <CollabAngleCategorise
+          brand={brand}
+          month={month}
+          canEdit={canEdit}
+          onFiled={() => { fetchAngles().catch(() => {}); }}
+        />
+        {/* WURX-END */}
       </div>
     </header>
   );
