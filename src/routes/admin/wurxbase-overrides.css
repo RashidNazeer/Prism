@@ -2276,8 +2276,13 @@
    seven keeps every card readable and scrolls. */
 .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard {
   position: relative;
-  flex: 1 0 24rem;
-  max-width: 34rem;
+  /* 30rem since the fifth figure arrived: at 24rem the labels collapsed to
+     "Crea…" and "Ad s…", a column whose heading has to be guessed; 30rem still
+     clipped Penetrex's "1296/1828", and a clipped count is a WRONG number
+     rather than a tidy one. Measured, not guessed: that value wants 79px and
+     this gives its column about 81px. */
+  flex: 1 0 32rem;
+  max-width: 38rem;
   padding: 0.85rem 1rem 0.75rem;
   border: 1px solid var(--pc-divider);
   border-radius: 0.875rem;
@@ -2323,19 +2328,36 @@
   font-weight: 600;
   color: var(--pc-text-3);
 }
-/* The figures, across. Equal columns with a hairline between them, so four
-   numbers of different widths still line up. */
+/* The figures, across. Equal columns with a hairline between them, so five
+   numbers of different widths still line up.
+
+   FIVE SINCE 2026-10-07, when Ad spend joined GMV, views, creators and videos.
+   The card's flex-basis grew with it, 24rem to 30rem: at the old width a fifth
+   column left about 70px each, the values drew over the hairline between them
+   and the labels collapsed to "Crea…". The row still scrolls, so a wider card
+   costs no page width — it shows slightly fewer products at once, which is the
+   right trade for figures that fit. */
 .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-rows {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   padding-top: 0.6rem;
+}
+/* The commitment behind the slash, said quietly: it is the target, not the
+   achievement. Mirrors `.pc-vidprog-of` on the creator rows so the same fact
+   is drawn the same way in both places. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-of {
+  font-size: 0.66em;
+  font-weight: 700;
+  color: var(--pc-text-3);
 }
 .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-cell {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
   min-width: 0;
-  padding: 0 0.6rem;
+  /* 0.45rem, not 0.6rem: five columns need the width back. The hairline still
+     separates them, so the figures do not read as one run of digits. */
+  padding: 0 0.45rem;
   border-left: 1px solid var(--pc-divider-soft, var(--pc-divider));
 }
 .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-cell:first-child {
@@ -2357,16 +2379,32 @@
   font-size: 0.75rem;
   font-weight: 600;
 }
+/* THE FIGURE MUST STAY INSIDE ITS COLUMN.
+   Rashid, 2026-10-07, with a screenshot: "the line is overlapping the number".
+   At 1.25rem across five columns "133/203" was wider than its cell and, with
+   nothing to stop it, drew straight over the hairline into Ad spend — the
+   number and the divider on top of each other.
+
+   Two fixes, and both are needed. The type comes down to 1.1rem so the figures
+   FIT, and the cell clips so that the day one does not — an unusually long
+   value, a bigger text size from the top bar — it ends in an ellipsis inside
+   its own column instead of over its neighbour. Clipping alone would have
+   turned "133/203" into "133/2…", which is a wrong number rather than a tidy
+   one, so the size had to come down first. */
 .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-val {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.015em;
   color: var(--pc-text);
   font-variant-numeric: tabular-nums;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-/* On a phone the cards go full width and stack, and the four figures become
-   two by two rather than four columns of 60px. */
+/* On a phone the cards go full width and stack, and the five figures become
+   two by two (and a last one on its own) rather than five columns of 50px. */
 @media (max-width: 40rem) {
   /* Title, count and period on ONE line at 390px: at the desktop size they came
      to 349px against 358px of room, so the period fell to a line of its own. */

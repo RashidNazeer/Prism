@@ -2566,6 +2566,82 @@ catalogue — a round trip. The band renders at once with letter tiles and
 upgrades in place. The match is EXACT and within one brand: anything looser puts
 one product's photograph beside another's money.
 
+### Expected videos and ad spend (2026-10-07)
+
+Rashid: *"the videos part must also show the number of expected videos like
+shown product wise 5/10 ... and i want the cards to show the summed up ad spend
+as well in each card"*. Five figures now: GMV, views, creators, **videos
+delivered over promised**, and **ad spend**.
+
+**Ad spend was the easy half.** It shares the GMV's scope — this product's own
+videos — so it reconciles the same way, obeys the month selector through the
+same `BrandDrilldown` effect, and costs no new request: the creator rows below
+ask for exactly these video ids and the provider caches by `month|id`.
+
+**Expected videos needed a decision, because the data cannot answer it
+directly.** A commitment lives on the DEAL — "10 videos at $40" — and names no
+product. So "expected videos for Product 02" does not exist in the database;
+only a rule for attributing a creator's promise to the products they posted
+for. Two rules were put to Rashid on 2026-10-07 and he chose the first:
+
+- **Every creator who posted for it** carries their WHOLE commitment under that
+  product. Same scope as the `creators` figure beside it, which already counts a
+  person under each product they touched. The two therefore agree, and a card
+  can never show videos against a blank commitment.
+- *Rejected:* attributing a promise only to the creator's MAIN product. That
+  makes the cards sum exactly to the brand's `314 / 313` KPI, and in exchange
+  prints "12 / 0" on every side product.
+
+**So these deliberately do NOT sum to that KPI.** They overlap, exactly as the
+creator counts already overlap (NUTRAHARMONY: 19 + 18 + 1 + 1 = 39 for 38
+people). An overlap the neighbouring figure already has is a smaller lie than a
+denominator of zero under a real delivered count.
+
+### The guard was green while the feature was still loading
+
+`check-product-band.mjs` passed on the first run with **every** Penetrex card
+reading "–" for ad spend. Nothing was broken: a dash is a legal answer for a
+brand with no ad data, and Penetrex's 2,270 video ids are five RPC round trips
+at 500 a go — far past the 700ms the script waited. The check was green while
+the figure it existed to prove had not arrived.
+
+Caught by comparing the band against the **creator rows on the same screen**:
+Penetrex's rows were priced ($6,618, $11.25, $30.43 …) while its cards were not.
+Biostime's rows were blank too, so its dashes were honest.
+
+That comparison is now the check itself — `the band is priced wherever the
+creator rows below it are` — and it calibrates itself, so no brand is hardcoded
+as "should have ad spend" and it cannot rot when an ad account is connected or
+dropped. 73 checks, 0 failures, four widths, zero console errors. Penetrex all
+time: $45,993 / $17,327 / $5,886 / $2,794 / $996 / $235 / $5.46 across its seven
+products.
+
+### The line overlapping the number
+
+Rashid, with a screenshot: *"the line is overlapping the number fix it as well"*.
+At five columns the 1.25rem figures were wider than the cells holding them and,
+with nothing to stop them, drew straight over the hairline divider into the next
+column — "133/203" sitting on top of the rule beside it, and the headings
+collapsed to "Crea…" and "Ad s…".
+
+**Three changes, and the card had to get wider.** The type came down to
+`1.1rem`, the cell padding to `0.45rem`, and `flex-basis` went `24rem` →
+`32rem`. The row still scrolls, so a wider card costs no page width; it shows
+slightly fewer products at once, which is the right trade for figures that fit.
+
+**A clipped count is a WRONG number, not a tidy one**, which is why the width
+was measured rather than guessed. `overflow: hidden` alone turned Penetrex's
+"1296/1828" into "1296/18…", and 30rem still clipped it: that value wants 79px
+and the column had 69px. 32rem gives it about 81px. The ellipsis stays as the
+last resort for a value nobody has seen yet — a bigger text size from the top
+bar, a five-digit count — so the failure mode is a cut-off figure inside its own
+column rather than one drawn across its neighbour.
+
+Checked by geometry rather than by eye: a script walks every `.wx-prodcard-cell`
+and asserts no child's bounding box leaves its parent and no `scrollWidth`
+exceeds its `clientWidth`. That is what caught the clip the screenshot could not
+show.
+
 The pill sits on `--pc-card` (`--wx-surface-1`) because that is the ground
 check:contrast section 5 already proves the green GMV ink against; the tinted
 `--pc-card-2` would have been a new unproven surface for an ink calibrated
