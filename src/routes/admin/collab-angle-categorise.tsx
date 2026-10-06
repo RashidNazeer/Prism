@@ -150,9 +150,18 @@ export function CollabAngleCategorise({ brand, month, canEdit, onFiled }: Props)
      "12 of 12 done" line but a brand nobody has touched stays quiet. */
   const [touched, setTouched] = useState(false);
 
+  /* ALIVE IS SET ON THE WAY IN AS WELL AS CLEARED ON THE WAY OUT, and leaving
+     that out is not a style point. StrictMode mounts, unmounts and remounts
+     every component in development on purpose. A cleanup that only clears the
+     flag leaves it false for the rest of the component's life, after which
+     every setState below is skipped: the button dimmed, the ring appeared,
+     and then nothing ever happened again. Found by pressing it. */
   const alive = useRef(true);
-  useEffect(() => () => {
-    alive.current = false;
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
   }, []);
 
   /* Refs, so the poll never re-subscribes just because the parent re-rendered. */
