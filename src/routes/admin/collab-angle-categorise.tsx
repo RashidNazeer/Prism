@@ -30,14 +30,21 @@ type Progress = {
   skipped: number;
   failed: number;
   needs_review: number;
+  /** Every video the brand posted this month. 0 when an older function omits it. */
+  total_videos: number;
+  /** How many of those already sit in an angle. 0 when an older function omits it. */
+  already_categorised: number;
   running_batch: { state: string; last_phase: string | null; n_videos: number } | null;
   eta_seconds: number | null;
 };
 
+/** Every field optional: an older deployed function may send only some. */
 type StartResult = {
-  queued: number;
-  already: number;
-  skipped_no_date: number;
+  total_videos?: number;
+  queued?: number;
+  already_categorised?: number;
+  already_queued?: number;
+  skipped_no_date?: number;
 };
 
 /** How often to ask while work is in flight. */
@@ -136,6 +143,8 @@ function toProgress(raw: unknown): Progress {
     skipped: num(r.skipped),
     failed: num(r.failed),
     needs_review: num(r.needs_review),
+    total_videos: num(r.total_videos),
+    already_categorised: num(r.already_categorised),
     running_batch: rb
       ? {
           state: String(rb.state ?? ''),
@@ -145,6 +154,50 @@ function toProgress(raw: unknown): Progress {
       : null,
     eta_seconds: typeof eta === 'number' && Number.isFinite(eta) && eta > 0 ? eta : null,
   };
+}
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+/** "2026-08" becomes "August 2026"; anything unexpected is shown as given. */
+function monthLabel(month: string): string {
+  const m = /^(\d{4})-(\d{2})$/.exec(month);
+  const name = m ? MONTH_NAMES[Number(m[2]) - 1] : undefined;
+  return m && name ? `${name} ${m[1]}` : month;
+}
+
+const videos = (n: number) => `${n} video${n === 1 ? '' : 's'}`;
+
+/**
+ * What to say when a press queued nothing, or null when it queued something and
+ * the progress line speaks for itself. First match wins, in the order agreed
+ * with the Edge Function. A missing field reads as 0, so an older deployed
+ * function never crashes this, it just gets the plainer fallback.
+ */
+function startNote(res: StartResult | null | undefined, brand: string, month: string): string | null {
+  const queued = num(res?.queued);
+  if (queued > 0) return null;
+  const totalVideos = num(res?.total_videos);
+  const categorised = num(res?.already_categorised);
+  const alreadyQueued = num(res?.already_queued);
+  const noDate = num(res?.skipped_no_date);
+  if (totalVideos === 0 && typeof res?.total_videos === 'number') {
+    return `No videos posted for ${brand} in ${monthLabel(month)}.`;
+  }
+  if (totalVideos > 0 && categorised === totalVideos) {
+    /* "All 1 video are" is the kind of sentence that makes a careful product
+       look careless, and a brand with one video that month is not rare. */
+    return totalVideos === 1
+      ? 'That video is already categorised.'
+      : `All ${videos(totalVideos)} are already categorised.`;
+  }
+  if (alreadyQueued > 0) return `Already categorising ${videos(alreadyQueued)}.`;
+  if (noDate > 0) {
+    return `${videos(noDate)} ${noDate === 1 ? 'has' : 'have'} no date, so ${noDate === 1 ? 'it cannot' : 'they cannot'} be filed by month.`;
+  }
+  return 'Nothing new to categorise.';
 }
 
 const doneOf = (p: Progress) => p.filed + p.skipped + p.failed + p.needs_review;
@@ -253,15 +306,7 @@ export function CollabAngleCategorise({ brand, month, canEdit, onFiled }: Props)
       );
       if (!alive.current) return;
       setTouched(true);
-      if (num(res?.queued) === 0) {
-        setNote(
-          num(res?.already) > 0
-            ? 'Nothing new to categorise.'
-            : num(res?.skipped_no_date) > 0
-              ? 'These videos have no date, so they cannot be filed by month.'
-              : 'No videos to categorise.'
-        );
-      }
+      setNote(startNote(res, brand, month));
       await look();
     } catch (e) {
       if (alive.current) setError((e as Error).message);
@@ -279,7 +324,12 @@ export function CollabAngleCategorise({ brand, month, canEdit, onFiled }: Props)
 
   let line = '';
   if (progress && total > 0 && (active || touched)) {
-    line = `${done} of ${total} video${total === 1 ? '' : 's'} done`;
+    /* When some of the month was already filed, say so in the same breath, so
+       "5 videos" is not mistaken for the whole month. */
+    const skippedAlready = progress.already_categorised;
+    line = skippedAlready > 0
+      ? `${done} of ${total} new video${total === 1 ? '' : 's'} done, ${skippedAlready} already categorised`
+      : `${done} of ${total} video${total === 1 ? '' : 's'} done`;
     const phase = progress.running_batch?.last_phase
       ? PHASE_WORDS[progress.running_batch.last_phase]
       : undefined;

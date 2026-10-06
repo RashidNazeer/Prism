@@ -136,6 +136,31 @@ function anglesOf(row: Row | null): Angle[] {
 }
 
 /**
+ * Every TikTok video id already sitting in an angle for this brand and month.
+ *
+ * WHY THE QUEUE FUNCTION ASKS THIS AT ALL. The queue table only knows about
+ * videos this machine has been given. Most months are partly or wholly filed by
+ * hand before anybody presses Categorise (Biostime already had 59 videos in 3
+ * angles for August 2026), and sending those to the audit machine costs about
+ * five minutes each only to have `filePlacements` discard them as duplicates at
+ * the very end. Asking the store first means we never send them.
+ *
+ * Read only. An absent row is a month nobody has started, so: an empty set.
+ * The brand is used verbatim, exactly as `angleKey` does for writing, which is
+ * case sensitive here even though the brief lookup is not. Ids come from
+ * `tiktokVideoId`, never from the link text, because one video is stored in
+ * several spellings.
+ */
+export async function filedVideoIds(
+  db: SupabaseClient,
+  brand: string,
+  month: string,
+): Promise<Set<string>> {
+  const row = await readRow(db, angleKey(brand, month));
+  return filedIds(anglesOf(row));
+}
+
+/**
  * Add these videos to their angles, under one brand and month.
  *
  * Retries the whole read-merge-write when somebody saved underneath us, which

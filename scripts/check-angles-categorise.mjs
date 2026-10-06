@@ -164,7 +164,46 @@ check('the worker never trusts a result before the job is terminal',
 check('the browser never supplies the video list',
   /videosForBrand/.test(fn) && !/video_urls/.test(read(UI)));
 
-console.log('\n5. LIVE: the audit machine, if this run can reach it');
+console.log('\n5. NEW ONLY: a video already filed is never sent to the machine again');
+
+/* The bug this section pins: angles.start used to look only at its own queue
+   table, so a month somebody had filed by hand (Biostime: 59 videos in 3 angles)
+   was queued whole and sent to the audit machine at about five minutes a video,
+   to be discarded as duplicates at filing time. Nothing errored. It was just
+   slow and wasteful, which is exactly why a test has to say so. */
+const ui = read(UI);
+const start = fn.slice(fn.indexOf('angles.start ──'));
+const progress = fn.slice(fn.indexOf('async function progressOf'), fn.indexOf('Deno.serve'));
+const importsStore = /import\s*\{[^}]*\bfiledVideoIds\b[^}]*\}\s*from\s*'\.\.\/_shared\/angle-store\.ts'/.test(fn);
+
+check('the angle store can be asked which videos are already filed',
+  /export\s+(async\s+)?(const|function)\s+filedVideoIds\b/.test(store));
+check('angles.start asks the angle store, not only its own queue, what is new',
+  importsStore && /filedVideoIds\(/.test(fn) && /monthOf\(/.test(start));
+check('a video already filed by hand is not put in the queue',
+  /filed\.has\(/.test(fn) && /fresh/.test(start) && /collab_angle_videos/.test(start));
+check('the filed check comes before the queue check, so no video is counted twice',
+  /filed\.has\([^)]*\)[\s\S]*?known\.has\(/.test(start));
+check('the queue and the angle store are compared by TikTok id, not by link text',
+  /tiktokVideoId\(/.test(fn) && /video_id/.test(fn) && /filedIds\(/.test(store));
+check('the screen is told how many videos the brand posted, on start and on progress',
+  (start.match(/total_videos/g) ?? []).length >= 2 && /total_videos/.test(progress));
+check('the screen is told how many are already categorised, on start and on progress',
+  (start.match(/already_categorised/g) ?? []).length >= 2 && /already_categorised/.test(progress));
+check('the progress ring still counts queue rows, not every video of the month',
+  /const total = \(data \?\? \[\]\)\.length/.test(progress));
+check('a month nobody has started reads as an empty set, not as an error',
+  /return filedIds\(anglesOf\(row\)\)/.test(store) && /Array\.isArray\(list\) \? list/.test(store));
+check('the screen reads both totals from the reply',
+  /total_videos/.test(ui) && /already_categorised/.test(ui));
+check('the screen says so when every video is already categorised',
+  /already categorised/i.test(ui) && /All \$\{[^}]+\} are already categorised/.test(ui));
+check('the screen says so when the brand posted nothing that month',
+  /No videos posted for/.test(ui));
+check('a person never reads a dash in the message',
+  !/[–—]/.test((ui.match(/return `[^`]*`/g) ?? []).join('\n')));
+
+console.log('\n6. LIVE: the audit machine, if this run can reach it');
 
 const url = (process.env.AUDIT_API_URL ?? '').replace(/\/+$/, '');
 const key = process.env.AUDIT_API_KEY ?? '';

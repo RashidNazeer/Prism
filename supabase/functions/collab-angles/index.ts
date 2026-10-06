@@ -27,6 +27,7 @@ import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.1
 import { z } from 'npm:zod@4.4.3';
 import { corsHeaders, json } from '../_shared/cors.ts';
 import { tiktokVideoId } from '../_shared/audit-api.ts';
+import { filedVideoIds } from '../_shared/angle-store.ts';
 
 const STAFF = ['ops', 'admin', 'ads_manager'];
 const MONTH = /^\d{4}-\d{2}$/;
@@ -121,7 +122,47 @@ export function videosForBrand(
   return { videos: [...byId.values()], noDate };
 }
 
+/**
+ * Everything both actions need to know about one brand month: its videos, how
+ * many were undatable, and which video ids an angle already holds.
+ *
+ * The angle store is consulted so that videos already filed (usually by hand)
+ * are never queued: each one would otherwise cost the audit machine about five
+ * minutes, only to be discarded as a duplicate when it is filed. The store is
+ * read with the brand exactly as given, because its key is case sensitive,
+ * whereas the brief lookup is not; that difference is deliberate.
+ */
+async function monthOf(db: SupabaseClient, brand: string, month: string) {
+  /* ONE BRAND'S ROWS, FILTERED IN THE DATABASE. Reading `wurxbase.creators`
+     through PostgREST and filtering here came back SILENTLY TRUNCATED: the
+     default cap is 1000 rows and there are 1479, so roughly 479 creators were
+     invisible and any brand sitting past the cap had videos the button could
+     never find. It was also 1.8 MB and about 2.7 seconds a call, which the
+     progress poll asks for every five seconds.
+
+     The function matches trimmed and case sensitively, exactly as the screen's
+     own `brandVideos` does, so what this collects is what that brand's cards
+     show. See 20261007140000_collab_brand_creator_videos.sql. */
+  const { data: creators, error } = await db
+    .rpc('collab_brand_creator_videos', { p_brand: brand });
+  if (error) throw new Error(error.message);
+
+  const { videos, noDate } = videosForBrand(
+    ((creators ?? []) as Array<Record<string, unknown>>)
+      /* The rpc has already matched the brand, and `videosForBrand` filters on
+         it again; give it the value it expects rather than loosening it. */
+      .map((c) => ({ ...c, brand })),
+    brand,
+    month,
+  );
+  /* Skip the store read when there is nothing to compare against. */
+  const filed = videos.length ? await filedVideoIds(db, brand, month) : new Set<string>();
+  return { videos, noDate, filed };
+}
+
 async function progressOf(db: SupabaseClient, brand: string, month: string) {
+  const { videos, filed } = await monthOf(db, brand, month);
+
   const { data, error } = await db
     .from('collab_angle_videos')
     .select('status')
@@ -161,6 +202,12 @@ async function progressOf(db: SupabaseClient, brand: string, month: string) {
         n_videos: (batch as { n_videos: number }).n_videos,
       }
       : null,
+    /* About the brand month as a whole, not the queue: `total` above is what the
+       ring is drawn from, these two are what the screen compares to decide
+       whether everything is done. Computed by the same code as angles.start so
+       the two can never disagree. */
+    total_videos: videos.length,
+    already_categorised: videos.filter((v) => filed.has(v.video_id)).length,
     eta_seconds: eta,
   };
 }
@@ -236,27 +283,19 @@ Deno.serve(async (req) => {
       }, 422);
     }
 
-    const { data: creators, error: crErr } = await admin
-      .schema('wurxbase')
-      .from('creators')
-      .select('name, brand, hiring_date, video_codes');
-    if (crErr) throw new Error(crErr.message);
-
-    const { videos, noDate } = videosForBrand(
-      (creators ?? []) as Array<Record<string, unknown>>,
-      brand,
-      body.month,
-    );
+    const { videos, noDate, filed } = await monthOf(admin, brand, body.month);
 
     if (!videos.length) {
       return reply({
         ok: true,
+        total_videos: 0,
         queued: 0,
-        already: 0,
+        already_categorised: 0,
+        already_queued: 0,
         skipped_no_date: noDate,
         brand,
         month: body.month,
-        note: `No videos posted for ${brand} in ${body.month}.`,
+        briefs: briefs.length,
       });
     }
 
@@ -271,7 +310,17 @@ Deno.serve(async (req) => {
     if (exErr) throw new Error(exErr.message);
     const known = new Set((existing ?? []).map((r) => String((r as { video_id: string }).video_id)));
 
-    const fresh = videos.filter((v) => !known.has(v.video_id));
+    /* Sort every video into exactly one bucket, and test "already filed"
+       FIRST. A video that is both filed and queued (the queue row is still
+       there from an earlier run, and somebody has since filed it by hand, or the
+       worker did) is counted once, as categorised. Counting it in both would
+       make the three numbers add up to more than total_videos, and the screen
+       compares them to decide whether to say "all categorised". */
+    const alreadyCategorised = videos.filter((v) => filed.has(v.video_id));
+    const unfiled = videos.filter((v) => !filed.has(v.video_id));
+    const fresh = unfiled.filter((v) => !known.has(v.video_id));
+    const alreadyQueued = unfiled.length - fresh.length;
+
     if (fresh.length) {
       const { error: insErr } = await admin.from('collab_angle_videos').insert(
         fresh.map((v) => ({
@@ -295,16 +344,21 @@ Deno.serve(async (req) => {
       detail: {
         brand,
         month: body.month,
+        total_videos: videos.length,
         queued: fresh.length,
-        already: videos.length - fresh.length,
+        already_categorised: alreadyCategorised.length,
+        already_queued: alreadyQueued,
+        skipped_no_date: noDate,
         briefs: briefs.length,
       },
     });
 
     return reply({
       ok: true,
+      total_videos: videos.length,
       queued: fresh.length,
-      already: videos.length - fresh.length,
+      already_categorised: alreadyCategorised.length,
+      already_queued: alreadyQueued,
       skipped_no_date: noDate,
       brand,
       month: body.month,

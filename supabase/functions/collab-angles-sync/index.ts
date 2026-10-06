@@ -302,6 +302,7 @@ async function fileBatch(db: SupabaseClient, batch: Batch, job: Awaited<ReturnTy
 }
 
 Deno.serve(async (req) => {
+  const started = Date.now();
   const reply = (body: unknown, status = 200) => json(body, status, req);
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) });
   if (req.method !== 'POST') return reply({ error: 'Method not allowed' }, 405);
