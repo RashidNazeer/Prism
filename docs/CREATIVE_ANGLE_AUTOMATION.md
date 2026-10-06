@@ -152,6 +152,60 @@ still what makes a second spelling of a category impossible.
 with no model call. Use it when somebody changes a brand's brief link, to
 refresh that row's `angles`.
 
+## Applying the migration
+
+Whoever applies it needs access to the dev project, which lives in the Wurx
+Media organisation. Umar's Supabase account is not a member of it, so Rashid
+is applying this one.
+
+```powershell
+git fetch origin
+git checkout feature/creative-angle-auto-categorise
+supabase db push          # dev project, npznoiotslruqovorrec
+```
+
+Then three checks, in the SQL editor or `supabase db query`. **The second one
+is the one that matters**: a brief whose brand name matches nothing in
+`wurxbase.creators` is never used, and nothing anywhere says so.
+
+```sql
+-- 1. The rows landed: expect 16 across 14 brands.
+select brand, product, cardinality(angles) as angles, is_active
+from public.collab_brand_briefs
+order by brand, position;
+
+-- 2. Does every brief match a real Paid Collabs brand?
+-- Anything listed here is a brief that will never be used.
+select b.brand, b.product
+from public.collab_brand_briefs b
+where not exists (
+  select 1 from wurxbase.creators c
+  where lower(btrim(c.brand)) = lower(btrim(b.brand))
+     or lower(btrim(c.brand)) = any (
+          select lower(btrim(a)) from unnest(b.aliases) a)
+);
+
+-- 3. And the other way: brands posting videos that have no brief, so they
+-- cannot be categorised yet.
+select distinct btrim(c.brand) as brand
+from wurxbase.creators c
+where btrim(coalesce(c.brand, '')) <> ''
+  and not exists (
+    select 1 from public.collab_brand_briefs b
+    where b.is_active
+      and (lower(btrim(b.brand)) = lower(btrim(c.brand))
+           or lower(btrim(c.brand)) = any (
+                select lower(btrim(a)) from unnest(b.aliases) a))
+  )
+order by 1;
+```
+
+Fix anything query 2 returns by adding the real spelling to that row's
+`aliases`, not by renaming `brand`. Query 3's output is expected to include
+Klassy Network, Cutler Nutritions, Aqua Sonic, Inno Supps and Irwin Naturals
+(see Open items); anything else on that list is a brand whose brief is missing
+from the sheet.
+
 ## Build order
 
 1. **The briefs, per brand.** Done on this branch (see the change log).
