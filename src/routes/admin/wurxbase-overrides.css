@@ -2679,7 +2679,14 @@
   outline: 2px solid var(--wx-accent);
   outline-offset: 3px;
 }
-.wurxbase-root .wx-cat-btn:disabled { cursor: progress; }
+/* A BUSY BUTTON MUST LOOK BUSY. `cursor: progress` alone is invisible until
+   somebody happens to hover, and at nought per cent the ring has nothing to
+   draw yet, so pressing Categorise looked as though it had done nothing. */
+.wurxbase-root .wx-cat-btn:disabled {
+  cursor: progress;
+  opacity: 0.72;
+  box-shadow: none;
+}
 
 /* 3px clear of the button on every side; the radius is half the 50px height. */
 .wurxbase-root .wx-cat-ring {
@@ -2696,10 +2703,15 @@
   ry: 25px;
   stroke-width: 2px;
 }
-.wurxbase-root .wx-cat-track { stroke: color-mix(in srgb, var(--wx-accent) 18%, transparent); }
+/* The track carries the whole message at nought per cent: "there is a ring
+   here and it is empty" rather than a button that looks untouched. */
+.wurxbase-root .wx-cat-track { stroke: color-mix(in srgb, var(--wx-accent) 30%, transparent); }
 .wurxbase-root .wx-cat-arc {
   stroke: var(--wx-accent);
-  stroke-linecap: round;
+  /* BUTT, NOT ROUND. A round cap on a dash of zero length still paints its
+     half-circle, so an empty ring showed a stray dot at the twelve o'clock
+     mark and looked like a rendering fault. */
+  stroke-linecap: butt;
   transition: stroke-dashoffset 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 

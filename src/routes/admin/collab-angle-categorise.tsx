@@ -72,8 +72,33 @@ async function messageFrom(error: unknown, fallback: string): Promise<string> {
   return (error as Error)?.message || fallback;
 }
 
+/**
+ * A CALL THAT CANNOT HANG. `functions.invoke` has no timeout of its own, so a
+ * request that never completes, which is what a dead tunnel or a sleeping
+ * laptop looks like from here, would leave the button disabled with a ring at
+ * nought and no way back except reloading the page.
+ */
+const CALL_TIMEOUT_MS = 20_000;
+
 async function callAngles<T>(body: Record<string, unknown>, fallback: string): Promise<T> {
-  const { data, error } = await getSupabase().functions.invoke('collab-angles', { body });
+  const abort = new AbortController();
+  const timer = window.setTimeout(() => abort.abort(), CALL_TIMEOUT_MS);
+  let data: unknown;
+  let error: unknown;
+  try {
+    ({ data, error } = await getSupabase().functions.invoke('collab-angles', {
+      body,
+      signal: abort.signal,
+    }));
+  } catch (e) {
+    throw new Error(
+      abort.signal.aborted
+        ? 'The server did not answer in 20 seconds. Try again in a moment.'
+        : await messageFrom(e, fallback),
+    );
+  } finally {
+    window.clearTimeout(timer);
+  }
   if (error) throw new Error(await messageFrom(error, fallback));
   if ((data as { error?: string } | null)?.error) throw new Error((data as { error: string }).error);
   return data as T;
