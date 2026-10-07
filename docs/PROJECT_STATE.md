@@ -2602,3 +2602,83 @@ Do not start either without him asking. See PARKED.md.
 - Flagship brand for the first Brand Hub (needed at Step 6).
 - Leaderboard privacy default: opt-in or opt-out (Step 9).
 - How payments and commission are displayed to creators (Step 8).
+
+---
+
+# HANDOVER, 2026-10-08 (written before a session restart)
+
+A session ended here so the 21st.dev and Stitch MCP servers could connect; both
+are configured and both need a Claude Code restart to load. Everything below is
+what the next session needs and cannot get from the code.
+
+## Merged into dev
+
+- **Product cards** on Paid Collabs Brands: ad spend, and videos as delivered /
+  expected. PR merged.
+- **Creative angle categorise** (the other agent's work). PR merged.
+- **My numbers: any date range + brand dropdown**, and the Brand Hub sidebar's
+  two "soon" rows replaced by one **Creators Library**. PR #6 merged.
+
+- **Performance tab** (PR #7): blanks that say why they are blank, and synced
+  Euka figures for the 35 brands nobody ever typed into. Typed figures are
+  untouched; synced ones are marked `synced`.
+- **My numbers follow-ups** (PRs #8 and #9): the brand dropdown shows at one
+  brand instead of two, and the All / Offer / Contest channel filter is removed
+  because it could be left switched on and silently narrow a money screen.
+
+Nothing of mine is left unmerged. Every branch above is in `dev`.
+
+## Known defects, with why each is still open
+
+1. **`src/types/database.ts` is stale.** It has no `collab_brand_briefs`,
+   `tiktok_identities` or `tiktok_signup_states`, so it predates the last six
+   migrations. CLAUDE.md requires regenerating it. **Blocked:** needs
+   `supabase gen types --linked`, and the account on this machine gets 403 on
+   the dev project.
+2. **`scripts/wurxbase-patches.mjs` does not contain every WURX-ADDED block.**
+   It claims to be "the only thing that puts them there", and it is not: the
+   by-product band and the Performance blanks are fenced in the file but absent
+   from the script, so a re-vendor would silently delete both. Not a bug today;
+   it is a trap for the day somebody pulls a new WurxBase release.
+3. **`ROI 0.00x` on My numbers.** `roi = cost > 0 ? revenue / cost : null`, so
+   52 cents of spend against no GMV prints `0.00x` — arithmetically true, and
+   the opposite of the rule the admin side states outright ("NOT 0.00x, which
+   reads as we spent money and got nothing back"). **Blocked on Rashid:** at
+   what spend is the number too small to judge.
+4. **Rule violations found in the first audit, unfixed.** Hardcoded hex and a
+   `fontSize: 12` in `src/routes/ShareCollab.tsx`; `max-w-` caps on five admin
+   screens against the "fills full width" rule (`ContestSetup.tsx:540`,
+   `ContestClaims.tsx:39`, `BrandHub.tsx`, `ApplicationDetail.tsx`,
+   `CreatorDetail.tsx`). Each needs a decision, not a sweep: the admin caps may
+   have been deliberate, and the ShareCollab colours are on a client-facing page.
+
+## The thing that keeps blocking verification
+
+**There is no usable creator login on dev.** `skinbyamara@wurxmediahub.demo`,
+the account every script defaults to, does not exist, and this machine has no
+service key to create one. Consequences already paid for:
+
+- The brand dropdown shipped invisible. It hid itself below two brands, and all
+  fifteen creators on dev have videos with exactly one, so no account could ever
+  see it. Rashid found it, not the tests.
+- The date-range calendar is **not browser-verified at 375px**, which is its
+  riskiest width. `scripts/check-numbers-range.mjs` is written and waiting.
+
+**Get a creator login before trusting anything on `/app/*`.**
+
+## Not started: the dashboard redesign
+
+Rashid gave a long brief for `src/routes/app/Dashboard.tsx` — premium dark SaaS,
+layered 3D cards, 12-column grid, KPI row, vertical activity timeline, and
+explicitly "use the 21st.dev MCP". **Nothing was built**, deliberately: the MCP
+was not connected, and a half-done token layer was reverted rather than left in
+the tree. Three notes for whoever picks it up:
+
+- His brief's figures (`4 / 10 videos`) do not match the real screen (`0 / 10`).
+  Use the real ones. It is a creator's earnings screen.
+- His hexes are close to but not the same as the tokens (`#DFA653` against our
+  `#c8924b`). He also said to treat the current palette as the foundation, so
+  keep `--wx-*` and add a depth layer. **Any new token needs a light-mode twin**
+  or `pnpm build` fails on parity.
+- The sidebar he wants restyled is shared with the admin app and is asserted by
+  `check-chrome.mjs`. Changing it changes every admin screen.
