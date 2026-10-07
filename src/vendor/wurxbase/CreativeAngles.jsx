@@ -1,3 +1,31 @@
+/* WURX-ADDED · ANGLE → PRODUCT → VIDEOS ─────────────────────────────────────
+   Umar asked for the Brands screen's shape inside an angle: the angle is the
+   category, the products sit under it, and the videos sit under those -- with
+   the product's picture on the band, as that screen has it.
+
+   `wxAngleRows` is a pure arrangement of rows already on screen and has no
+   React in it, so Node can test it directly. `useProductPics` reads the SAME
+   `collab-products` catalogue the Brands screen reads, so one product cannot
+   show two different pictures on two screens. Neither names a project, so the
+   isolation check still holds. See src/routes/admin/collab-angle-products.ts,
+   collab-angle-product-band.tsx and collab-angle-product-pics.ts. */
+import { wxAngleRows } from '@/routes/admin/collab-angle-products';
+import { WxAngleProductHead } from '@/routes/admin/collab-angle-product-band';
+import { useProductPics as wxUseProductPics } from '@/routes/admin/collab-angle-product-pics';
+/* WURX-END */
+/* WURX-ADDED · Categorise button for Creative angle testing ──────────────────
+   Every change of ours to this file sits inside a WURX-ADDED ... WURX-END block,
+   so pulling a newer version from upstream is a find-and-reapply job. Nothing
+   of theirs is edited or removed; these blocks only add.
+
+   This imports OUR route component, which asks our `collab-angles` function to
+   sort a brand-month's videos into angles. It is NOT a Supabase client and
+   names no project of ours, so this file still cannot reach our database,
+   which is what pnpm verify:isolation asserts on every build. Same arrangement
+   as the ad figures in WurxUI.jsx. See
+   src/routes/admin/collab-angle-categorise.tsx. */
+import { CollabAngleCategorise } from '@/routes/admin/collab-angle-categorise';
+/* WURX-END */
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
   getAngles, getAllAngles, getAngleMeta, saveAngles, fetchAngles, newAngleId, brandVideos, angleStats, videoFig, pruneAngle,
@@ -478,6 +506,21 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
             New angle
           </button>
         )}
+        {/* WURX-ADDED · the Categorise button, straight after New angle.
+
+            It renders nothing unless there is a brand, a month and edit rights,
+            so it needs no gate here. onFiled re-reads the angle store when the
+            filer has put videos into angles, so the cards update without a
+            reload. fetchAngles() is already imported above and its rejection is
+            swallowed the same way App.jsx does at boot: a failed refresh is not
+            worth an error on a screen that is otherwise working. */}
+        <CollabAngleCategorise
+          brand={brand}
+          month={month}
+          canEdit={canEdit}
+          onFiled={() => { fetchAngles().catch(() => {}); }}
+        />
+        {/* WURX-END */}
       </div>
     </header>
   );
@@ -579,6 +622,7 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
           {rows.map(r => (
             <AngleCard key={r.id} r={r} n={rows.indexOf(r) + 1} open={!shut.has(r.id)} leading={leadId === r.id}
               index={index} fmt={fmt} poolLeft={pool.length} canEdit={canEdit} canType={canType}
+              wxBrand={brand}
               onToggle={() => toggle(r.id)}
               onRename={(t) => patch(r.id, { title: t.trim() || 'Untitled angle' })}
               onRemove={() => setConfirmDel(r.id)}
@@ -622,10 +666,29 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
 }
 
 /* ── one angle · a drawer that keeps its figures on the outside ── */
-function AngleCard({ r, n, open, leading, index, fmt, poolLeft, canEdit, canType, onToggle, onRename, onRemove, onDetach, onCell, onAdd }) {
+function AngleCard({ r, n, open, leading, index, fmt, poolLeft, canEdit, canType, wxBrand, onToggle, onRename, onRemove, onDetach, onCell, onAdd }) {
   const s = r.stats;
   const [q, setQ] = useState('');
   const [needOnly, setNeedOnly] = useState(false);
+  /* WURX-ADDED · which product bands are folded shut in THIS angle, and the
+     brand's product pictures.
+
+     Per card, not global: two angles sell different products, so one shared
+     set would fold a band in an angle the user never touched. Open by default,
+     because everything in this drawer was visible before and a drawer that
+     opens empty reads as broken rather than tidy.
+
+     The pictures are fetched once per BRAND and shared by every band in every
+     angle, so this hook costs one Edge Function call for the screen rather than
+     one per card. */
+  const [wxShut, wxSetShut] = useState(() => new Set());
+  const wxToggle = (key) => wxSetShut((s) => {
+    const next = new Set(s);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    return next;
+  });
+  const wxPics = wxUseProductPics(wxBrand);
+  /* WURX-END */
 
   /* Every video in the angle, with its figures resolved once. */
   const all = (r.videos || []).map(url => ({ url, f: videoFig(r, url, index) }));
@@ -686,7 +749,7 @@ function AngleCard({ r, n, open, leading, index, fmt, poolLeft, canEdit, canType
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" />
                     </svg>
-                    <input value={q} onChange={e => setQ(e.target.value)} placeholder="Find a creator in this angle" />
+                    <input value={q} onChange={e => setQ(e.target.value)} placeholder="Find a creator or product" />
                     {q && (
                       <button type="button" onClick={() => setQ('')} title="Clear">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
@@ -713,7 +776,11 @@ function AngleCard({ r, n, open, leading, index, fmt, poolLeft, canEdit, canType
                 {shown.length === 0 && (
                   <div className="cx-dnone">Nothing here matches that.</div>
                 )}
-                {shown.map(({ url, f }) => (
+                {wxAngleRows(shown, wxShut).map(({ url, f, wxHead }) => wxHead ? (
+                  <WxAngleProductHead key={'wx:' + wxHead.key} head={wxHead}
+                    shut={wxShut.has(wxHead.key)} onToggle={() => wxToggle(wxHead.key)} fmt={fmt}
+                    pic={wxPics ? wxPics.get(wxHead.key) : null} />
+                ) : (
                   <div key={url} className={'cx-tr' + (f.v ? '' : ' gone')}>
                     <a className="cx-who" href={url} target="_blank" rel="noreferrer">
                       {f.v && f.v.thumb ? <img src={f.v.thumb} alt="" loading="lazy" /> : <i>&#9654;</i>}
@@ -721,7 +788,7 @@ function AngleCard({ r, n, open, leading, index, fmt, poolLeft, canEdit, canType
                         <b>{f.v ? (f.v.creator || 'Unnamed') : 'Not in this month'}</b>
                         <small>
                           {f.v
-                            ? String(f.v.date || '').slice(0, 10) + (f.v.product ? ' · ' + f.v.product : '')
+                            ? String(f.v.date || '').slice(0, 10) /* the product names the band above */
                             : url.replace(/^https?:\/\//, '').slice(0, 30)}
                         </small>
                       </span>

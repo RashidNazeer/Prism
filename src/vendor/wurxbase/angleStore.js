@@ -228,7 +228,7 @@ export function brandVideos(creators, brand, month) {
       if (!url) return;
       const vm = String((v && v.date) || '').slice(0, 7) || hireMonth;
       if (m && vm !== m) return;
-      if (seen.has(url)) return;               // the same link can sit on two rows
+      if (seen.has(url)) { const p0 = out.find(o => o.url === url); if (p0 && !p0.product && v && v.product) p0.product = String(v.product).trim(); return; }               // the same link can sit on two rows
       seen.add(url);
       out.push({
         url,

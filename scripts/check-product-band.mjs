@@ -20,6 +20,16 @@
  * It also refuses to grade a brand that shows no pills at all — "0 pills, 0
  * discrepancy, everything reconciles" is the shape of lie this project keeps
  * catching.
+ *
+ * TWO MORE FIGURES SINCE 2026-10-07. Rashid: "the videos part must also show the
+ * number of expected videos ... and i want the cards to show the summed up ad
+ * spend as well in each card". Ad spend shares the GMV's scope, this product's
+ * own videos, so it reconciles the same way. The expected-video commitment does
+ * NOT: a commitment belongs to a creator's deal and names no product, so it is
+ * attributed to every product that creator posted for and therefore overlaps,
+ * exactly as the creator count beside it already does. That was the decision
+ * rather than the accident, and the checks below assert the overlap scope
+ * instead of a sum that was never meant to hold.
  */
 import { launchBrowser, ensureAllTime } from './browser.mjs';
 
@@ -84,6 +94,22 @@ try {
       const c = document.querySelector('.pc-topvids-stat.gmv');
       return c && c.getAttribute('data-value') !== null;
     }, null, { timeout: 20000 }).catch(() => {});
+    /* AND FOR THE AD FIGURES, which arrive last and by a different road.
+       Ad spend is fetched per video id in batches of 500, so Penetrex's 2,270
+       videos are five round trips — and at the 700ms this used to wait, every
+       card still read "–". That passed, because a dash is a legal answer when a
+       brand has no ad data, so the check was green while the figure it was
+       meant to prove had simply not arrived. A guard that cannot tell "loading"
+       from "nothing" would stay green if ad spend broke completely.
+
+       A brand with genuinely no ad data never resolves this, which is why it
+       falls through on a timeout rather than failing: the cross-check below is
+       what decides, by comparing the band against the creator rows on the same
+       screen at the same moment. */
+    await page.waitForFunction(() =>
+      [...document.querySelectorAll('[data-wx="product-pill"]')]
+        .some((p) => (p.getAttribute('data-adspend') || '') !== ''),
+      null, { timeout: 25000 }).catch(() => {});
     await page.waitForTimeout(700);
     return true;
   };
@@ -98,18 +124,30 @@ try {
         gmv: Number(p.getAttribute('data-gmv')),
         creators: Number(p.getAttribute('data-creators')),
         videos: Number(p.getAttribute('data-videos')),
+        expected: Number(p.getAttribute('data-expected')),
+        /* '' when no video of this product has ad data at all, which is a
+           different answer from 0 and must not become one here. */
+        adspend: p.getAttribute('data-adspend'),
         name: (p.querySelector('.wx-prodcard-name')?.textContent || '').trim(),
-        /* Four labelled figures across the card: GMV, Views, Creators, Videos. */
+        /* Five labelled figures across the card: GMV, Views, Creators, Videos,
+           Ad spend. */
         stats: p.querySelectorAll('.wx-prodcard-cell').length,
         rank: (p.querySelector('.wx-prodcard-rank')?.textContent || '').trim(),
         shot: !!p.querySelector('.wx-prodcard-shot'),
         /* Every figure must be a real value, not an empty cell. */
         values: [...p.querySelectorAll('.wx-prodcard-val')].map((v) => v.textContent.trim()),
       }));
+      /* THE SAME FACT, READ OFF THE ROWS BELOW. If any creator row on this
+         screen is priced, this brand HAS ad data, so the band must be priced
+         too. Self-calibrating: no brand is hardcoded as "should have ad spend",
+         which would rot the first time an ad account is connected or dropped. */
+      const rowsPriced = [...document.querySelectorAll('.pc-cell.wx-collab-figure[data-label="Ad spend"]')]
+        .some((c) => /\d/.test(c.textContent || ''));
       const card = document.querySelector('.pc-topvids-stat.gmv');
       const head = (el.querySelector('.wx-prodband-head')?.textContent || '').trim();
       return {
         pills,
+        rowsPriced,
         cardGmv: card ? Number(card.getAttribute('data-value')) : null,
         head,
         rowScrollsInside: (() => {
@@ -145,12 +183,51 @@ try {
       `${brand}: a product never has more creators than videos`,
       band.pills.map((p) => `${p.creators}c/${p.videos}v`).join(' '));
     check(band.pills.every((p) => p.name.length > 0), `${brand}: every card is named`);
-    check(band.pills.every((p) => p.stats === 4), `${brand}: each card shows GMV, views, creators and videos`,
+    check(band.pills.every((p) => p.stats === 5),
+      `${brand}: each card shows GMV, views, creators, videos and ad spend`,
       band.pills.map((p) => p.stats).join(','));
     check(band.pills.every((p) => p.shot), `${brand}: each card has its picture slot`);
-    check(band.pills.every((p) => p.values.length === 4 && p.values.every(Boolean)),
-      `${brand}: all four figures are filled in, none blank`,
+    check(band.pills.every((p) => p.values.length === 5 && p.values.every(Boolean)),
+      `${brand}: all five figures are filled in, none blank`,
       band.pills.map((p) => p.values.join('/')).join(' · '));
+
+    /* ── the expected-video commitment, added 2026-10-07 ──────────────────
+       THE SCOPE IS "EVERY CREATOR WHO POSTED FOR IT", settled with Rashid on
+       2026-10-07, so these deliberately overlap and do NOT sum to the brand's
+       own videos KPI — exactly as the creator counts already overlap. What
+       must hold is that a product with creators has a commitment at all, and
+       that the commitment is drawn where the delivered count is. */
+    check(band.pills.every((p) => Number.isFinite(p.expected) && p.expected >= 0),
+      `${brand}: every card carries an expected-video figure`,
+      band.pills.map((p) => `${p.videos}/${p.expected}`).join(' '));
+    check(band.pills.some((p) => p.expected > 0),
+      `${brand}: at least one product has a real video commitment`,
+      band.pills.map((p) => `${p.videos}/${p.expected}`).join(' '));
+    /* The figure is only shown when it is real, so wherever it IS shown the
+       card's text must actually carry the slash. */
+    check(band.pills.every((p) => p.expected === 0 || /\d\s*\/\s*\d/.test(p.values.join(' '))),
+      `${brand}: a card with a commitment draws it as "delivered / expected"`,
+      band.pills.map((p) => p.values.join('|')).join(' · '));
+
+    /* ── ad spend, added 2026-10-07 ───────────────────────────────────────
+       SAME SCOPE AS THE GMV BESIDE IT: this product's own videos. A blank is
+       the honest answer when no video of the product has ad data, and it must
+       stay distinguishable from a real zero — so the attribute is '' rather
+       than 0 and the cell prints a dash. */
+    check(band.pills.every((p) => p.adspend === '' || Number.isFinite(Number(p.adspend))),
+      `${brand}: ad spend is a number or an honest blank, never NaN`,
+      band.pills.map((p) => String(p.adspend)).join(' '));
+    check(band.pills.every((p) => p.adspend === '' || Number(p.adspend) >= 0),
+      `${brand}: no card claims negative ad spend`,
+      band.pills.map((p) => String(p.adspend)).join(' '));
+    const priced = band.pills.filter((p) => p.adspend !== '');
+    /* THE CHECK THAT MAKES THE OTHERS WORTH ANYTHING. A dash is only honest
+       when there is nothing to show; if the rows below are priced and the band
+       is not, the band is broken, not empty. */
+    check(!band.rowsPriced || priced.length > 0,
+      `${brand}: the band is priced wherever the creator rows below it are`,
+      `rows priced: ${band.rowsPriced} · band priced: ${priced.length}/${band.pills.length}`);
+    console.log(`  · ${brand}: ${priced.length}/${band.pills.length} products priced · rows priced: ${band.rowsPriced} · ad spend ${priced.map((p) => '$' + p.adspend).join(' ') || 'none'}`);
     /* The numeral is decoration that carries information — it must agree with
        the order, or it is just noise. */
     check(band.pills.every((p, i) => p.rank === `Product ${String(i + 1).padStart(2, '0')}`),

@@ -475,13 +475,43 @@ function wxVideoTotals(list) {
    to its own total. They gather under one honest label instead. */
 function wxProductTotals(list) {
   const vids = new Map();
+  /* WHAT EACH CREATOR ROW PROMISED, read in the same pass.
+     Rashid, 2026-10-07: "the videos part must also show the number of expected
+     videos like shown product wise 5/10".
+
+     THE COMMITMENT IS ON THE DEAL, NOT ON THE PRODUCT. A creator is hired for
+     "10 videos at $40", and nothing in that sentence names a product — so there
+     is no such thing as "expected videos for Product 02" in the data, only a
+     rule for attributing a creator's promise to the products they posted for.
+
+     THE RULE IS THE BAND'S OWN SCOPE, asked and settled on 2026-10-07: every
+     creator who posted at least one video for a product carries their WHOLE
+     commitment under it. That is the same scope as the `creators` figure beside
+     it, which already counts a person under each product they touched — so the
+     two agree, and a card can never show videos against a blank commitment.
+
+     IT OVERLAPS, DELIBERATELY, exactly as the creator count does: a creator who
+     posted for two products is counted under both, so these do NOT add up to
+     the brand's own "N / M videos" KPI. The alternative — attributing a
+     creator's promise only to their main product — makes the cards sum to that
+     KPI and in exchange prints "12 / 0" on every side product, which is a
+     worse lie than an overlap the figure beside it already has.
+
+     KEYED ON THE ROW, NOT THE PERSON, which is how `brandRows` counts the same
+     promise: one row of `creators` is one deal, so a creator hired twice has
+     two commitments and both are real. `first wins` guards the one case where
+     a row has no id and two deals collapse onto a name — the same collapsing
+     the creator count below already does, rather than a second opinion. */
+  const committed = new Map();
   (list || []).forEach((c) => {
     const who = (c && (c.id ?? c.name)) ?? '';
+    if (who !== '' && !committed.has(who)) committed.set(who, parseDealVideos(c.deal) || 0);
     const seen = new Set();
     (Array.isArray(c && c.video_codes) ? c.video_codes : []).forEach((r) => {
       const url = r && String(r.video || '').trim();
       if (!url) return;
-      const k = wxVideoId(url) || url;
+      const id = wxVideoId(url);
+      const k = id || url;
       if (seen.has(k)) return;
       seen.add(k);
       const gmv = Number(r.revenue) || 0;
@@ -490,6 +520,10 @@ function wxProductTotals(list) {
          which is the same "the larger is the newer sync" rule used above. */
       if (!cur || gmv > cur.gmv) {
         vids.set(k, {
+          /* TikTok's own id, kept so the band can price these videos. A row
+             without one is still counted as a video — it just cannot carry ad
+             spend, because ad spend is only ever keyed on a real video id. */
+          id: cur ? cur.id : id,
           gmv: Math.max(cur ? cur.gmv : 0, gmv),
           views: Math.max(cur ? cur.views : 0, Number(r.views) || 0),
           product: String(r.product || '').trim() || (cur ? cur.product : ''),
@@ -506,16 +540,22 @@ function wxProductTotals(list) {
     const key = name.toLowerCase();
     let row = byProduct.get(key);
     if (!row) {
-      row = { name, videos: 0, gmv: 0, views: 0, creators: new Set() };
+      row = { name, videos: 0, gmv: 0, views: 0, creators: new Set(), ids: [] };
       byProduct.set(key, row);
     }
     row.videos++;
     row.gmv += v.gmv;
     row.views += v.views;
+    /* Already deduped: `vids` is keyed on this id, so one video is one entry. */
+    if (v.id) row.ids.push(v.id);
     if (v.who !== '') row.creators.add(v.who);
   }
   return [...byProduct.values()]
-    .map((r) => ({ ...r, creators: r.creators.size }))
+    .map((r) => ({
+      ...r,
+      expected: [...r.creators].reduce((t, w) => t + (committed.get(w) || 0), 0),
+      creators: r.creators.size,
+    }))
     /* Biggest earner first; a product with no GMV yet still appears, ordered by
        how much work went into it. */
     .sort((a, b) => b.gmv - a.gmv || b.videos - a.videos);
@@ -779,6 +819,26 @@ function ProductBand({ creators, brand, period }) {
      Edge Function round trip for it. */
   const pics = wxUseProductPics(brand);
 
+  /* AD SPEND PER PRODUCT, from the figures the rest of this screen already
+     reads. Rashid, 2026-10-07: "i want the cards to show the summed up ad spend
+     as well in each card".
+
+     NOTHING NEW IS FETCHED. The creator rows below ask for exactly these video
+     ids, and the provider caches by "month|id" — so asking here costs one
+     shared request rather than a second pass over the same videos.
+
+     IT OBEYS THE MONTH SELECTOR like every other figure on the card, because
+     `BrandDrilldown` tells the provider which month is on screen. A lifetime ad
+     spend sitting beside a September GMV would be two periods in one card.
+
+     SUMMED OVER THE PRODUCT'S OWN VIDEOS, which is the same scope as the GMV
+     and views above it — so a card's ad spend, GMV and views all describe the
+     same set of videos, and the cards add up to the brand's ad spend the way
+     their GMV adds up to the GMV card. */
+  const wxAds = wxAdsHook();
+  const adIds = useMemo(() => rows.flatMap((r) => r.ids), [rows]);
+  wxAds.ensure(adIds);
+
   if (!rows.length) return null;
   const total = rows.reduce((t, r) => t + r.gmv, 0);
 
@@ -824,12 +884,20 @@ function ProductBand({ creators, brand, period }) {
           const short = has ? shortLabel(r.name) : label;
           const img = has && pics ? (pics.get(r.name.toLowerCase()) || '') : '';
           const share = total > 0 ? Math.round((r.gmv / total) * 100) : 0;
+          const ads = wxTotals(wxAds.get, r.ids);
+          /* A DASH IS NOT A ZERO, the same rule the creator rows state: no ad
+             data means we cannot answer, which is a different claim from
+             "nothing was spent" — and a wrong zero about money gets acted on. */
+          const adText = ads.withData && !ads.mixedCurrency
+            ? wxMoney(ads.cost, ads.currency)
+            : '–';
           return (
             <article key={(r.name || 'none') + i} className="wx-prodcard" data-wx="product-pill"
               /* Machine-readable, so the guard compares NUMBERS with the card
                  above rather than parsing "$1,234" back out of the text. */
               data-gmv={Math.round(r.gmv)} data-creators={r.creators} data-videos={r.videos}
-              title={`${label} · ${fmt$Exact(Math.round(r.gmv))} GMV · ${Number(r.views) > 0 ? `${kNum(r.views)} views · ` : ''}${r.creators} creator${r.creators === 1 ? '' : 's'} · ${r.videos} video${r.videos === 1 ? '' : 's'}${total > 0 ? ` · ${share}% of this month's GMV` : ''}`}>
+              data-expected={r.expected} data-adspend={ads.withData ? Math.round(ads.cost) : ''}
+              title={`${label} · ${fmt$Exact(Math.round(r.gmv))} GMV · ${Number(r.views) > 0 ? `${kNum(r.views)} views · ` : ''}${r.creators} creator${r.creators === 1 ? '' : 's'} · ${r.videos}${r.expected > 0 ? ` of ${r.expected}` : ''} video${r.videos === 1 ? '' : 's'} delivered${ads.withData ? ` · ${adText} ad spend across ${ads.withData} of ${ads.asked} video${ads.asked === 1 ? '' : 's'}` : ''}${total > 0 ? ` · ${share}% of this month's GMV` : ''}`}>
               <div className="wx-prodcard-head">
                 <span className="wx-prodcard-shot">
                   <ProductTile product={{ name: label, image: img }} size={52} />
@@ -848,8 +916,18 @@ function ProductBand({ creators, brand, period }) {
                   icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" /><circle cx="12" cy="12" r="3" /></svg>} />
                 <Cell label="Creators" value={r.creators}
                   icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /></svg>} />
-                <Cell label="Videos" value={r.videos}
+                {/* DELIVERED OVER PROMISED, drawn the way the creator rows draw
+                    it: the count full size, the commitment quieter behind a
+                    slash. The commitment is dropped rather than printed as
+                    "/0" when this product's creators have no video deal at
+                    all — a denominator of nothing is not a target. */}
+                <Cell label="Videos"
+                  value={r.expected > 0
+                    ? <>{r.videos}<span className="wx-prodcard-of">/{r.expected}</span></>
+                    : r.videos}
                   icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" /></svg>} />
+                <Cell label="Ad spend" ink={ads.withData ? 'var(--wx-danger)' : undefined} value={adText}
+                  icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11l18-8-8 18-2-7-8-3z" /></svg>} />
               </div>
             </article>
           );
