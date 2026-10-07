@@ -5002,3 +5002,76 @@ filter that could be left on, and there is no longer one to explain.
 `creator_daily_performance` keep their `p_source` parameter and `My content`
 still labels each card's channel, so the question can be asked again without a
 migration.
+
+## The creator dashboard, recomposed (2026-10-08)
+
+**Files:** `src/routes/app/Dashboard.tsx` · `src/styles/tokens.css` (the
+`--wx-card-*` and `--wx-hero-wash` layer) · `src/styles/global.css`
+(`wx-card`, `wx-card-lift`, `wx-card-hero`)
+
+Rashid's brief: a premium creator-economy dashboard, "highly symmetrical",
+"subtle but noticeable 3D depth", explicitly not a gaming or crypto look, and
+"do not just add shadows to the existing UI — recompose the dashboard".
+
+### The composition, which was the actual problem
+
+- **The container capped at 1140px.** On a wide screen the dashboard sat in the
+  left two thirds with the rest of the page empty beside it. That is the "large
+  unused areas" in the brief: not too little content, a container too narrow to
+  use the room. Now 1400px and centred.
+- **The KPI boxes lived in the right column, under the timeline**, taking
+  whatever width was left after the work list. They are now their own band
+  directly under the money, four equal columns of the page grid, two on a phone
+  so they do not push the work list below the fold.
+- **Work and Activity were `auto-fit` equal columns**, so the work a creator
+  came to act on got exactly as much room as the log of what already happened.
+  Now an explicit 7 / 5 split from `lg`, stacking work-before-activity below it.
+- **One gap value.** It was `gap-[14px]` between sections and other numbers
+  inside them, so nothing aligned across a boundary. `gap-4` is the scale's own
+  step and follows the text-size control, which a hardcoded 14px never did.
+
+### Depth as four layers, not a drop shadow
+
+`wx-card` is one class used by every card on the screen, which is what makes it
+read as one product rather than a pile of panels. A face that is lighter at the
+top so the card has a direction, a warm hairline rim, a 1px inset highlight
+along the upper edge, and a shadow beneath rather than around. Hover lifts 2px
+and only on cards that are actually links — a hover state on something you
+cannot click is a promise the interface does not keep.
+
+**The light-mode twins are not copies.** In the dark the card is lighter than
+the page and a white top edge reads as a light source; on white that highlight
+is invisible and a lighter face is indistinguishable from the background, so
+there the shadow does the work. Copying the dark values across would have
+produced tokens that technically exist and visibly do nothing — parity
+satisfied, intent lost.
+
+### The timeline
+
+Each row draws its own segment of rail rather than one absolute line down the
+section, so it cannot drift out of step with the dots when a row wraps. The last
+row stops short, which gives the sequence an end instead of running off the
+edge. The horizontal rules between rows are gone: with a rail joining the dots,
+a line through every row cut the very thing meant to connect them.
+
+### What was deliberately not done
+
+- **The sidebar.** The brief asks for it to be restyled; it is shared with the
+  admin app and asserted by `check-chrome.mjs` (rail width, the single `h1` per
+  screen, the text-size menu's roles). Restyling it changes every admin screen
+  and is its own step.
+- **21st.dev was not consulted.** The MCP is configured and still unauthorised:
+  the key lives in a user environment variable and the running VSCode process
+  cannot see variables set after it launched. Needs a full VSCode restart, not
+  a Claude Code one.
+
+### Verified, and the gap
+
+`tsc` clean, token parity passes (8 new tokens x 2 modes), brand-theme passes,
+isolation ok, vite builds.
+
+**Not seen in a browser.** There is still no usable creator login on dev, and
+`/app/*` is reachable only by `applicant` and `creator`. Every structural claim
+above is from the code, not from looking at it. The figures are the real ones
+from the screen (0 of 10 approved, 10 still to film) — the brief quoted 4/10,
+which does not match the data.

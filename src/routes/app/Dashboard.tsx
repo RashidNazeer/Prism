@@ -1,7 +1,7 @@
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
+﻿import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
-import { Check, Clock, Sparkles, X } from 'lucide-react';
+import { Briefcase, Check, Clock, Sparkles, Store, X } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/Button';
 import { WelcomeMoment } from '@/components/creator/WelcomeMoment';
 import { ApprovedMoment } from '@/components/creator/ApprovedMoment';
@@ -252,7 +252,21 @@ function CreatorHome({
   const nothingYet = noOfferWork && !hasContestMoney;
 
   return (
-    <div className="wx-pop flex max-w-[1140px] flex-col gap-[14px]">
+    /*
+     * ONE GRID, 2026-10-08. Rashid: "Use a strong grid system. Everything
+     * should feel intentionally aligned ... almost architectural."
+     *
+     * The cap moved 1140 to 1400 and the content centres inside it. At 1140 on
+     * a wide screen the dashboard sat in the left two thirds with the rest of
+     * the page empty beside it, which is the "large unused areas" in his brief:
+     * not too little content, a container too narrow to use the room.
+     *
+     * ONE GAP VALUE EVERYWHERE. It was `gap-[14px]` between sections and other
+     * numbers inside them, so nothing lined up across a boundary. `gap-4` is
+     * the scale's own step and it follows the text-size control, which a
+     * hardcoded 14px never did.
+     */
+    <div className="wx-pop mx-auto flex w-full max-w-[1400px] flex-col gap-3.5">
       <Header name={name} tier={tier} handle={handle} />
 
       {nothingYet ? (
@@ -314,12 +328,34 @@ function CreatorHome({
               */}
               <ContestEarnings />
 
-              <div className="grid [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))] items-start gap-[14px]">
-                <Work rows={work} pending={pending} moved={moved} progress={progress} />
+              {/*
+                THE KPI ROW IS ITS OWN BAND NOW, directly under the money.
+                It used to sit in the right-hand column beneath the timeline,
+                where four small boxes were whatever width was left over after
+                the work list took its share â€” the "four tiny disconnected
+                boxes" in the brief. Across the full width they are four equal
+                columns of the same grid everything else uses.
+              */}
+              <Counts summary={summary} />
 
-                <div className="flex flex-col gap-[14px]">
+              {/*
+                SEVEN AND FIVE, not auto-fit. `repeat(auto-fit,minmax(320px,1fr))`
+                gave two equal columns, so the work a creator came to act on got
+                exactly as much room as the log of what already happened. The
+                split is explicit and it only applies from `lg`; below that the
+                two stack in the order the brief asks for, work before activity.
+              */}
+              {/* `items-stretch`, not `items-start`. Symmetry is the brief's
+                  highest-priority requirement and two cards of different
+                  heights side by side is the most visible way to break it. The
+                  timeline grows to meet the work list; `h-full` on each card
+                  carries the stretch through the wrapper. */}
+              <div className="grid grid-cols-1 items-stretch gap-3.5 lg:grid-cols-12">
+                <div className="lg:col-span-7">
+                  <Work rows={work} pending={pending} moved={moved} progress={progress} />
+                </div>
+                <div className="lg:col-span-5">
                   <Activity rows={rows ?? []} events={events ?? []} moved={moved} />
-                  <Counts summary={summary} />
                 </div>
               </div>
             </>
@@ -407,16 +443,21 @@ function Header({
         <h2 className="font-display text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
           {greet(name)}
         </h2>
+        {/* One line saying what the screen is for. The brief asked for it and
+            the greeting alone never said why any of this was on the page. */}
+        <p className="text-muted text-[0.875rem] leading-[1.4]">
+          Here is where your work stands and what it has earned.
+        </p>
       </div>
 
       <div className="flex items-center gap-2">
         {tier ? (
-          <span className="border-line bg-surface-1 rounded-full border px-3 py-1.5 text-[0.75rem] font-semibold tracking-[0.02em] capitalize">
+          <span className="wx-card rounded-full px-3 py-1.5 text-[0.75rem] font-semibold tracking-[0.02em] capitalize">
             {tier} creator
           </span>
         ) : null}
         {handle ? (
-          <span className="border-line bg-surface-1 text-muted rounded-full border px-3 py-1.5 text-[0.75rem]">
+          <span className="wx-card text-muted wx-numeric rounded-full px-3 py-1.5 text-[0.75rem]">
             @{handle}
           </span>
         ) : null}
@@ -475,8 +516,17 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
   ].filter((s) => s.value > 0);
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-5 rounded-xl border p-[clamp(18px,2.4vw,26px)] shadow-md">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    /*
+     * THE HERO. Rashid: "Does the $400 financial state feel like the primary
+     * piece of information?" It is the only card on the screen carrying the
+     * warm wash, which is how it leads without being bigger than everything
+     * else â€” light rather than size. It does not lift on hover, because it is
+     * not clickable and a card that moves under the cursor and then does
+     * nothing is a promise the interface breaks.
+     */
+    <section className="wx-card wx-card-hero flex flex-col gap-5 overflow-hidden rounded-2xl p-[clamp(1.125rem,2vw,1.5rem)]">
+      {/* `relative` so the content sits above the ::before wash. */}
+      <div className="relative flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Agreed with you so far
@@ -497,17 +547,23 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
           </p>
         </div>
 
-        {/* Right aligned only once it is actually beside the headline. Wrapped
-            onto its own line on a phone, a right-aligned figure floats in the
-            middle of nowhere. */}
-        <div className="flex flex-col gap-0.5 sm:text-right">
+        {/*
+          AN INSET PANEL, not a floating figure. With `justify-between` on a
+          wide screen this sat alone against the right edge with a void between
+          it and the headline, reading as something that had drifted there
+          rather than as the second half of a statement. Given a tinted well and
+          a left hairline it becomes a deliberate counterweight — the same
+          treatment as the three cells below, so the hero has one vocabulary
+          rather than two.
+        */}
+        <div className="bg-surface-2/60 border-line flex flex-col gap-0.5 rounded-xl border-l px-4 py-2.5 shadow-[inset_0_1px_0_0_var(--wx-card-top-light)] sm:text-right">
           <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             In your account
           </p>
           <span
             key={`paid-${moved.key}`}
             className={cn(
-              'font-display text-stage-paid text-[clamp(1.5rem,3.4vw,1.875rem)] font-semibold',
+              'font-display wx-numeric text-stage-paid text-[clamp(1.375rem,3vw,1.75rem)] leading-none font-semibold',
               moved.ids.size > 0 && 'wx-bump'
             )}
           >
@@ -519,11 +575,22 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
       {/* Every agreed pound, and where it currently sits. The three add up to
           the headline by construction: each stage belongs to exactly one
           bucket, so a creator can check our arithmetic. */}
-      <div className="flex flex-col gap-2.5">
+      <div className="relative flex flex-col gap-3">
+        {/*
+          18px of saturated fill was louder than the $400 above it. A creator's
+          eye went to the bar first, which inverts the hierarchy the whole card
+          exists to state â€” and on a single-job account the bar is one colour
+          across the full width, so it was a large block of indigo in a screen
+          whose only accent is meant to be gold.
+
+          10px, sunk into its track by an inset shadow, so it reads as a gauge
+          cut into the card rather than a stripe painted across it. Same data,
+          same colours, a third of the weight.
+        */}
         <div
           role="img"
           aria-label={`${fmt(paid)} paid, ${fmt(due)} awaiting payment, ${fmt(working)} in progress`}
-          className="bg-surface-2 flex h-[18px] gap-0.5 overflow-hidden rounded-full"
+          className="bg-surface-3 flex h-2.5 gap-0.5 overflow-hidden rounded-full shadow-[inset_0_1px_2px_rgb(0_0_0/0.25)]"
         >
           {segments.map((s) => (
             <m.span
@@ -536,23 +603,42 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
           ))}
         </div>
 
-        <dl className="grid [grid-template-columns:repeat(auto-fit,minmax(170px,1fr))] gap-2.5">
+        {/*
+          THREE EQUAL CELLS, always three columns from `sm` up. `auto-fit` with
+          a 170px floor dropped to 2 + 1 at some widths, which put "In progress"
+          alone on a row looking like a conclusion rather than one third of a
+          split. These are parts of one number and have to read as one row.
+
+          Each keeps its bucket tint and gains the top hairline, so they read as
+          inset panels within the hero rather than three loose chips on it.
+        */}
+        <dl className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
           {cells.map((cell) => (
             <div
               key={cell.key}
-              className={cn('flex flex-col gap-1.5 rounded-lg p-3.5', cell.tone.soft)}
+              className={cn(
+                'flex flex-col gap-1 rounded-xl p-3.5 shadow-[inset_0_1px_0_0_var(--wx-card-top-light)]',
+                cell.tone.soft
+              )}
             >
-              <dt className={cn('text-[0.75rem] font-semibold', cell.tone.text)}>{cell.label}</dt>
+              <dt
+                className={cn(
+                  'text-[0.6875rem] font-semibold tracking-[0.1em] uppercase',
+                  cell.tone.text
+                )}
+              >
+                {cell.label}
+              </dt>
               <dd
                 key={`${cell.key}-${moved.key}`}
                 className={cn(
-                  'font-display text-[1.4375rem] font-semibold',
+                  'font-display wx-numeric text-[1.5rem] leading-none font-semibold',
                   moved.ids.size > 0 && 'wx-bump'
                 )}
               >
                 {fmt(cell.value)}
               </dd>
-              <dd className="text-muted text-[0.75rem]">{cell.sub}</dd>
+              <dd className="text-muted text-[0.75rem] leading-[1.35]">{cell.sub}</dd>
             </div>
           ))}
         </dl>
@@ -575,17 +661,17 @@ function Work({
   progress: Map<string, JobProgress> | undefined;
 }) {
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-xl border p-5 shadow-md">
+    <section className="wx-card flex h-full flex-col gap-3.5 rounded-2xl p-4">
       <div className="flex items-baseline justify-between gap-2.5">
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Work you took
         </h2>
-        <p className="text-muted text-[0.8125rem]">
+        <p className="text-muted wx-numeric text-[0.8125rem]">
           {rows.length} {rows.length === 1 ? 'job' : 'jobs'}
         </p>
       </div>
 
-      <ul className="flex flex-col gap-2.5">
+      <ul className="flex flex-col gap-3">
         {rows.map((row) => {
           const stage = row.stage ?? 'pending_request';
           const at = stageIndex(stage);
@@ -593,23 +679,36 @@ function Work({
           const justMoved = moved.ids.has(row.id);
 
           return (
+            /*
+             * A WORK ITEM, not a generic card. Rashid listed what it has to
+             * communicate at a glance: project, earnings, progress, the current
+             * action and a way to act. The money is the second biggest figure
+             * on the page after the hero, because it is the answer to "what is
+             * this job worth" and it was previously the same size as the
+             * offer's title.
+             *
+             * It sits on `--wx-surface-2`, a step above the card holding it,
+             * rather than on the same surface with a border. A card drawn on
+             * its own colour inside its parent reads as a sheet lying on it;
+             * the border version read as a box drawn on a box.
+             */
             <li
               key={`${row.id}-${moved.key}`}
               className={cn(
-                'border-line bg-surface-1 flex flex-col gap-[11px] rounded-2xl border p-3.5',
+                'bg-surface-2 flex flex-col gap-2.5 rounded-xl p-3.5 shadow-[inset_0_1px_0_0_var(--wx-card-top-light)]',
                 justMoved && 'wx-flash'
               )}
             >
               <div className="flex items-start gap-3">
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <p className="text-muted truncate text-[0.6875rem] font-semibold tracking-[0.08em] uppercase">
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <p className="text-muted truncate text-[0.6875rem] font-semibold tracking-[0.1em] uppercase">
                     {row.brand?.name ?? 'A brand'}
                   </p>
                   <p className="text-[0.96875rem] leading-[1.25] font-semibold break-words">
                     {row.offer?.title ?? 'An offer'}
                   </p>
                 </div>
-                <p className="font-display shrink-0 text-[1rem] font-semibold whitespace-nowrap">
+                <p className="font-display wx-numeric shrink-0 text-[1.375rem] leading-none font-semibold whitespace-nowrap">
                   {row.committed_amount === null
                     ? 'To confirm'
                     : money(row.committed_amount, row.currency)}
@@ -641,7 +740,9 @@ function Work({
                   {STAGE_META[stage].creatorHint}
                 </span>
                 {justMoved ? (
-                  <span className="text-stage-live text-[0.6875rem] font-semibold">just now</span>
+                  <span className="text-stage-live text-[0.6875rem] font-semibold">
+                    just now
+                  </span>
                 ) : null}
               </p>
 
@@ -714,7 +815,7 @@ function Activity({
   const claimed = new Set<string>();
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-xl border p-5 shadow-md">
+    <section className="wx-card flex h-full flex-col gap-3.5 rounded-2xl p-4">
       <h2 className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         <span aria-hidden className="wx-blink bg-stage-paid size-1.5 rounded-full" />
         Everything that moved
@@ -726,28 +827,52 @@ function Activity({
           happens.
         </p>
       ) : (
+        /*
+         * A TIMELINE, not a list of rows in a box. Rashid: "The timeline should
+         * feel integrated into the card rather than like a list pasted into a
+         * box."
+         *
+         * The rail is drawn by each row rather than as one absolute line down
+         * the section, so it cannot drift out of step with the dots when a row
+         * wraps to two lines or three. Every row paints its own segment and the
+         * last one stops short, which is what makes the sequence read as having
+         * an end rather than running off the bottom edge.
+         *
+         * THE BORDERS BETWEEN ROWS ARE GONE. With a rail joining the dots, a
+         * horizontal rule through every row cut the very line that was meant to
+         * connect them.
+         */
         <ol className="flex flex-col">
-          {events.map((event) => {
+          {events.map((event, i) => {
             const row = byId.get(event.application_id);
             const tone = toneFor(event.to_stage);
             const fresh =
               moved.ids.has(event.application_id) && !claimed.has(event.application_id);
             if (fresh) claimed.add(event.application_id);
+            const last = i === events.length - 1;
 
             return (
               <li
                 key={`${event.id}-${moved.key}`}
                 className={cn(
-                  'border-line grid gap-3 border-b',
+                  'group grid gap-3',
                   compact
                     ? 'grid-cols-[1fr_auto] py-2.5'
-                    : 'grid-cols-[14px_1fr_auto] py-[11px]',
+                    : 'grid-cols-[0.875rem_1fr_auto] pb-4',
                   fresh && 'wx-pop'
                 )}
               >
                 {compact ? null : (
-                  <span className="flex justify-center pt-1">
-                    <span aria-hidden className={cn('size-2 rounded-full', tone.dot)} />
+                  /* The dot and its segment of rail, as one column. */
+                  <span className="flex flex-col items-center gap-1 pt-1">
+                    <span
+                      aria-hidden
+                      className={cn(
+                        'size-2 shrink-0 rounded-full ring-2 ring-[color:var(--wx-card-face)]',
+                        tone.dot
+                      )}
+                    />
+                    {last ? null : <span aria-hidden className="bg-line w-px flex-1" />}
                   </span>
                 )}
 
@@ -760,7 +885,9 @@ function Activity({
                     {row?.offer?.title ?? 'an offer'}
                   </p>
                   {event.note ? (
-                    <p className="text-stage-live text-[0.78125rem] leading-[1.35]">{event.note}</p>
+                    <p className="text-stage-live text-[0.78125rem] leading-[1.35]">
+                      {event.note}
+                    </p>
                   ) : null}
                 </div>
 
@@ -784,29 +911,114 @@ const dayMonth = (iso: string) =>
 
 /* -------------------------------------------------------------- counts --- */
 
+/**
+ * THE KPI BAND.
+ *
+ * Rashid: "Instead of four tiny disconnected boxes, make them feel like a
+ * single coordinated component." They were in the right-hand column under the
+ * timeline, taking whatever width was left; now they are four equal columns of
+ * the page grid, directly under the money.
+ *
+ * AN ICON EACH, in a tinted well, because four bare numerals in a row are hard
+ * to tell apart at a glance and the brief asked for icon / number / label. The
+ * icons repeat ones already used elsewhere for the same ideas rather than
+ * introducing a second vocabulary.
+ *
+ * THESE ONES DO LIFT, because every one of them is a link that goes somewhere.
+ *
+ * TWO COLUMNS ON A PHONE, not one. Four full-width rows pushed the work list
+ * below the fold on a 375px screen, and these are a glance, not the point of
+ * the page.
+ */
 function Counts({ summary }: { summary: WorkSummary }) {
   const items = [
-    { n: summary.approved, label: 'offers you are on', to: '/app/offers?tab=in' },
-    { n: summary.brands, label: 'brands you work with', to: '/app/brands' },
-    { n: summary.waiting, label: 'waiting on a decision', to: '/app/offers' },
-    { n: summary.declined, label: 'not accepted', to: '/app/offers' },
+    {
+      n: summary.approved,
+      label: 'offers you are on',
+      to: '/app/offers?tab=in',
+      icon: Briefcase,
+      tone: 'text-stage-live',
+    },
+    {
+      n: summary.brands,
+      label: 'brands you work with',
+      to: '/app/brands',
+      icon: Store,
+      tone: 'text-accent',
+    },
+    {
+      n: summary.waiting,
+      label: 'waiting on a decision',
+      to: '/app/offers',
+      icon: Clock,
+      tone: 'text-stage-due',
+    },
+    {
+      n: summary.declined,
+      label: 'not accepted',
+      to: '/app/offers',
+      icon: X,
+      tone: 'text-muted',
+    },
   ];
 
   return (
-    <ul className="grid [grid-template-columns:repeat(auto-fit,minmax(130px,1fr))] gap-2.5">
-      {items.map((item) => (
-        <li key={item.label}>
-          <Link
-            to={item.to}
-            className="border-line bg-surface-1 hover:border-stage-live flex h-full flex-col gap-1 rounded-2xl border p-3.5 transition-colors duration-200"
+    /*
+     * ONE CARD, FOUR CELLS, 2026-10-08 (second pass).
+     *
+     * They were four separate cards and that was wrong twice over.
+     *
+     * THE GRID. Four equal cards put vertical edges at 25, 50 and 75 percent
+     * while the row beneath them splits seven-five at about 58. Nothing lined
+     * up between the two bands, which is the "shared grid columns" requirement
+     * broken in the most visible way there is. As one card the band has no
+     * internal edges to disagree with anything, and the seven-five split below
+     * is free to be what the content needs.
+     *
+     * THE RECTANGLES. The brief asked for these to stop reading as "four tiny
+     * disconnected boxes" and four cards with four gaps between them is exactly
+     * that, whatever is drawn inside them. Hairlines rather than gaps: the same
+     * four facts, one object.
+     *
+     * The cells still light on hover, because each is still a link — the hover
+     * is a background change rather than a lift, since lifting one quarter of a
+     * card would tear the card.
+     */
+    <ul className="wx-card grid grid-cols-2 overflow-hidden rounded-2xl lg:grid-cols-4">
+      {items.map((item, i) => {
+        const Icon = item.icon;
+        return (
+          <li
+            key={item.label}
+            className={cn(
+              'border-line',
+              /* Two columns on a phone, four from lg: the dividers have to
+                 follow, or they cut the band in the wrong places. */
+              i % 2 === 1 && 'border-l',
+              i >= 2 && 'border-t lg:border-t-0',
+              i === 2 && 'lg:border-l'
+            )}
           >
-            <span className="font-display text-[1.625rem] leading-none font-semibold">
-              {item.n}
-            </span>
-            <span className="text-muted text-[0.78125rem] leading-[1.3]">{item.label}</span>
-          </Link>
-        </li>
-      ))}
+            <Link
+              to={item.to}
+              className="hover:bg-surface-2/70 flex h-full items-center gap-3 p-4 transition-colors duration-200"
+            >
+              <span
+                aria-hidden
+                className="bg-surface-2 grid size-9 shrink-0 place-items-center rounded-lg shadow-[inset_0_1px_0_0_var(--wx-card-top-light)]"
+              >
+                <Icon size={16} className={item.tone} />
+              </span>
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="font-display wx-numeric text-[1.625rem] leading-none font-semibold">
+                  {item.n}
+                </span>
+                <span className="text-muted text-[0.75rem] leading-[1.3]">{item.label}</span>
+              </span>
+            </Link>
+          </li>
+        );
+      })}
     </ul>
   );
 }

@@ -71,8 +71,8 @@
    than in tokens.css is what keeps the two faces off the public page. */
 .wx-app {
   --wx-font-sans:
-    'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+    'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
   --wx-font-display:
     'Sora', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
@@ -351,6 +351,78 @@
   border: 1px solid var(--wx-glass-line);
   backdrop-filter: blur(var(--wx-glass-blur));
   -webkit-backdrop-filter: blur(var(--wx-glass-blur));
+}
+
+/*
+ * THE DASHBOARD CARD, 2026-10-08.
+ *
+ * One class, used by every card on the creator home, which is the whole reason
+ * the screen reads as a single product rather than a pile of panels. Rashid's
+ * brief asked for exactly that: "The final dashboard must look like one product
+ * rather than a collection of components from different websites."
+ *
+ * FOUR LAYERS, and the order matters:
+ *   the FACE      a gradient, lighter at the top, so the card has a direction
+ *   the RIM       a hairline border, warm rather than grey
+ *   the TOP LIGHT a 1px inset highlight along the upper edge only
+ *   the LIFT      a shadow beneath, not around
+ *
+ * The top light is an inset box-shadow rather than a pseudo-element, so it
+ * costs no DOM, survives any border radius, and cannot be knocked out of place
+ * by content. All three shadows live in one `box-shadow`, which is also why
+ * hover can cross-fade the whole stack in one transition.
+ *
+ * HOVER IS TWO PIXELS. The brief said 2-4px and "keep this extremely
+ * restrained"; on a dark page anything more reads as a card detaching from the
+ * screen. `translateY` and `box-shadow` only, both compositor-friendly — never
+ * width, height or top, which force layout on every frame of the transition.
+ */
+@utility wx-card {
+  position: relative;
+  background: var(--wx-card-face);
+  border: 1px solid var(--wx-card-rim);
+  box-shadow:
+    inset 0 1px 0 0 var(--wx-card-top-light),
+    var(--wx-card-lift);
+  transition:
+    transform 220ms var(--wx-ease),
+    box-shadow 220ms var(--wx-ease),
+    border-color 220ms var(--wx-ease),
+    background 220ms var(--wx-ease);
+}
+
+/* Only the cards that actually go somewhere or do something lift. A hover
+   state on a card you cannot click is a promise the interface does not keep. */
+@utility wx-card-lift {
+  &:hover {
+    transform: translateY(-2px);
+    border-color: var(--wx-card-rim-hover);
+    background: var(--wx-card-face-hover);
+    box-shadow:
+      inset 0 1px 0 0 var(--wx-card-top-light),
+      var(--wx-card-lift-hover);
+  }
+}
+
+/* The hero's warm wash, behind its content and never over it. */
+@utility wx-card-hero {
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--wx-hero-wash);
+    pointer-events: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wx-card {
+    transition: none;
+  }
+  .wx-card-lift:hover {
+    transform: none;
+  }
 }
 
 /* Under-lighting, on hover only. Gold here, indigo in the design. */
