@@ -4761,3 +4761,105 @@ Change rules:
   category beside the first.
 - Nothing writes this table from the browser. A change goes through an Edge
   Function with the service key, once that function exists.
+
+## Any date range, and one brand at a time, on My numbers (2026-10-07)
+
+**Files:** `src/lib/creator/date-range.ts` (new, pure) ·
+`src/components/creator/DateRangePicker.tsx` (new) ·
+`src/components/creator/BrandFilter.tsx` (new) · `src/routes/app/MyNumbers.tsx`
+
+Rashid, with a screenshot of a two-month picker: *"the data can be displayed for
+any date range ... Make it like a calender okay?"* and *"In the numbers tab I
+want a drop down to select different brands for whom I want to see the
+numbers."*
+
+### Nothing in the database had to change
+
+`creator_video_performance`, `creator_daily_performance` and
+`creator_brand_performance` already take `p_from` and `p_to` as plain dates and
+filter `between p_from and p_to`, inclusive, and the first three already take
+`p_brand_id` — the Brand Hub has passed it since 2026-08-24. The old screen
+offered four fixed ranges because the UI chose to, not because the data did. No
+migration, no RPC change.
+
+**The brand filter is not a security boundary and does not need to be.** Those
+functions are `security invoker` and every one filters `creator_id =
+auth.uid()` underneath, so a brand id typed into the network tab can only narrow
+the caller's own rows; an unknown brand returns nothing rather than somebody
+else's figures.
+
+### What replaced what
+
+Four tabs (All time / 7 days / 30 days / By month) and a month walker became one
+button that opens a two-month calendar with nine shortcuts. Six are Rashid's
+from the picker he sent; "All time" is kept because it was the default and is
+the honest answer for a creator three weeks in; **"This month" and "Last month"
+are kept because the control they replace was a month walker he asked for by
+name** — *"what did I earn in July"* — and losing that in a redesign would be a
+regression dressed as an improvement.
+
+The note that was deleted said the ranges were *"deliberately a set of ranges
+rather than two date pickers"*. That was right while the only questions were
+this week and this month; it stops being right the moment somebody wants a
+campaign's fortnight.
+
+### The decisions worth keeping
+
+- **Hand-built, no dependency.** The stack is locked and every colour must be a
+  `--wx-*` token; theming a third-party calendar into that is more work than the
+  grid, and it would be the only library of its kind in the repo.
+- **A portal, not an absolute panel.** `RowActions` already learned that a panel
+  inside `FilterBar` is clipped by any ancestor that scrolls. It measures the
+  trigger, flips above when there is no room, and is pulled back inside the
+  viewport by the same 8px gutter `check-responsive` measures.
+- **Everything is UTC.** A stat date is an ad account's day as TikTok closed it.
+  `new Date(y, m, d)` is local time and lands the boundary a day out east of
+  Greenwich, which here means a day's money filed under the wrong month.
+- **Today is never offered.** The nightly job writes a day only once it is
+  complete, so the ceiling is yesterday, capped again at `window.latest`.
+- **A shortcut that overshoots still answers.** "Last 12 months" for a creator
+  who joined in August clamps to their first video rather than showing nothing.
+- **Tabs left, filters right.** Rashid asked the row to stay "practical and
+  symmetrical"; what you are LOOKING AT stays left, what you are NARROWING BY is
+  pinned right in the `action` slot, so the bar reads as two halves.
+- **Two windows, usually one request.** The brand list is built from the
+  creator's whole history at the route's scope, not from the chosen range —
+  otherwise picking a brand would empty the dropdown that picked it. With
+  nothing picked the two window queries share a key and cost one request.
+- **The brand list comes from the videos, not from `creator_brand_performance`**,
+  which only knows brands with MONEY rows: a creator whose first videos have
+  earned nothing would get an empty dropdown from that source, and that is
+  exactly the creator most likely to go looking for one.
+- **A native `<select>` for the brand.** The screen already carries one
+  hand-built popover; a second bespoke listbox is two keyboard implementations
+  to keep correct for no gain, and most creators here are on a phone.
+- Fewer than two brands and the dropdown is not drawn: a control that can only
+  say one thing teaches people it is broken.
+
+### Verified
+
+30 date-maths assertions pass in Node against the pure module — leap years
+(Feb 2024 vs 2026), year boundaries, inclusive spans, clamping at both ends, and
+"the ceiling is yesterday, never today". `tsc` clean, tokens pass, isolation ok,
+vite builds, no new lint findings.
+
+**NOT verified in a browser, and it should be before this merges.** The demo
+creator account the scripts default to (`skinbyamara@wurxmediahub.demo`) does
+not exist on dev, and this machine has no service key to make one, so the
+sign-in returns 400 and the screen was never reached. The geometry of the
+popover at 375px is the untested risk; a browser check is written and ready at
+`scripts/check-numbers-range.mjs` once there is a creator login to run it with.
+
+## The Brand Hub sidebar: one section instead of two (2026-10-07)
+
+**Files:** `src/routes/app/BrandHub.tsx`
+
+Rashid, circling them: *"I want the circled elements removed and instead there
+should be only one element named Creators Library"*. "Campaigns & briefs"
+(Next) and "Creative studio" (Later) are gone; "Creators Library" takes their
+place.
+
+It keeps the marked-but-unclickable treatment the two it replaces had, because
+nothing is behind it yet either, and that is the rule the list exists for: a
+creator should see the shape of what is coming without being able to click into
+an empty room.

@@ -38,12 +38,8 @@ import { useCreatorBrands } from '@/lib/creator/useCreatorBrands';
  * fold all three into the Brand Hub chunk, so a creator browsing a brand's
  * offers would download the whole numbers screen to look at a product list.
  */
-const HubNumbers = lazy(() =>
-  import('./MyNumbers').then((m) => ({ default: m.MyNumbers }))
-);
-const HubContests = lazy(() =>
-  import('./Contests').then((m) => ({ default: m.Contests }))
-);
+const HubNumbers = lazy(() => import('./MyNumbers').then((m) => ({ default: m.MyNumbers })));
+const HubContests = lazy(() => import('./Contests').then((m) => ({ default: m.Contests })));
 const HubLeaderboards = lazy(() =>
   import('./Leaderboards').then((m) => ({ default: m.Leaderboards }))
 );
@@ -81,18 +77,27 @@ const SECTIONS = [
   { key: 'numbers', label: 'My numbers' },
   { key: 'contests', label: 'Contests' },
   { key: 'leaderboards', label: 'Leaderboards' },
-  { key: 'briefs', label: 'Campaigns & briefs', soon: 'Next' },
-  { key: 'studio', label: 'Creative studio', soon: 'Later' },
+  /*
+   * ONE SECTION WHERE THERE WERE TWO. Rashid, 2026-10-07, circling "Campaigns &
+   * briefs" and "Creative studio": "I want the circled elements removed and
+   * instead there should be only one element named Creators Library".
+   *
+   * It keeps the marked-but-unclickable treatment the two it replaces had,
+   * because nothing is behind it yet either, and the rule below is the point of
+   * this list: a creator should see the shape of what is coming without being
+   * able to click into an empty room.
+   */
+  { key: 'library', label: 'Creators Library', soon: 'Next' },
 ] as const;
 
 /*
  * WHAT IS ACTUALLY BEHIND A TAB, and the honesty is the point.
  *
  * My numbers, Contests and Leaderboards are real screens with real data, so
- * they open. Campaigns & briefs and Creative studio have no table, no rows and
- * no screen anywhere in this repo, so they stay marked and unclickable rather
- * than opening an empty room. Rashid asked for every section that is possible,
- * and these two are not yet possible.
+ * they open. Creators Library has no table, no rows and no screen anywhere in
+ * this repo, so it stays marked and unclickable rather than opening an empty
+ * room. Rashid asked for every section that is possible, and that one is not
+ * yet possible.
  */
 const BUILT = new Set(['overview', 'offers', 'numbers', 'contests', 'leaderboards']);
 
@@ -144,8 +149,8 @@ export function BrandHub() {
         <div className="border-line bg-surface-1 max-w-md rounded-xl border p-8 text-center shadow-md">
           <p className="font-semibold">No brand hubs yet</p>
           <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
-            When Wurx opens a brand to you, it appears here with its own space:
-            its offers, its contests and your numbers for it.
+            When Wurx opens a brand to you, it appears here with its own space: its offers, its
+            contests and your numbers for it.
           </p>
           <ButtonLink to="/app" variant="secondary" size="sm" className="mt-5">
             Back to your dashboard
@@ -220,28 +225,28 @@ export function BrandHub() {
       ) : null}
 
       <div className="min-w-0 flex-1 px-5 py-6 sm:px-8 sm:py-8">
-      {section === 'offers' ? (
-        <Offers
-          offers={offers ?? []}
-          mine={mine ?? []}
-          loading={offersLoading}
-          brandName={brand.name}
-        />
-      ) : section === 'numbers' ? (
-        <Suspense fallback={<SectionLoading />}>
-          <HubNumbers brandId={brand.id} />
-        </Suspense>
-      ) : section === 'contests' ? (
-        <Suspense fallback={<SectionLoading />}>
-          <HubContests hubBrandId={brand.id} />
-        </Suspense>
-      ) : section === 'leaderboards' ? (
-        <Suspense fallback={<SectionLoading />}>
-          <HubLeaderboards brandId={brand.id} />
-        </Suspense>
-      ) : (
-        <Overview brand={brand} products={products ?? []} loading={productsLoading} />
-      )}
+        {section === 'offers' ? (
+          <Offers
+            offers={offers ?? []}
+            mine={mine ?? []}
+            loading={offersLoading}
+            brandName={brand.name}
+          />
+        ) : section === 'numbers' ? (
+          <Suspense fallback={<SectionLoading />}>
+            <HubNumbers brandId={brand.id} />
+          </Suspense>
+        ) : section === 'contests' ? (
+          <Suspense fallback={<SectionLoading />}>
+            <HubContests hubBrandId={brand.id} />
+          </Suspense>
+        ) : section === 'leaderboards' ? (
+          <Suspense fallback={<SectionLoading />}>
+            <HubLeaderboards brandId={brand.id} />
+          </Suspense>
+        ) : (
+          <Overview brand={brand} products={products ?? []} loading={productsLoading} />
+        )}
       </div>
     </BrandWorldShell>
   );
@@ -548,7 +553,10 @@ function Offers({
                 >
                   {b.label}
                   <span
-                    className={cn('font-display text-[0.75rem]', active ? 'text-accent' : 'text-faint')}
+                    className={cn(
+                      'font-display text-[0.75rem]',
+                      active ? 'text-accent' : 'text-faint'
+                    )}
                   >
                     {n}
                   </span>
@@ -597,7 +605,11 @@ function Offers({
       </ul>
 
       {applyingTo ? (
-        <ApplyDialog offer={applyingTo} brandName={brandName} onClose={() => setApplyingTo(null)} />
+        <ApplyDialog
+          offer={applyingTo}
+          brandName={brandName}
+          onClose={() => setApplyingTo(null)}
+        />
       ) : null}
     </div>
   );
@@ -688,9 +700,7 @@ function OfferSummary({
                 component is never rendered but could be.
               */
               style={
-                f.strong
-                  ? { color: 'var(--wx-brand-accent-ink, var(--wx-accent))' }
-                  : undefined
+                f.strong ? { color: 'var(--wx-brand-accent-ink, var(--wx-accent))' } : undefined
               }
             >
               {f.value}
