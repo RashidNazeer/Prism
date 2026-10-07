@@ -4942,8 +4942,16 @@ campaign's fortnight.
 - **A native `<select>` for the brand.** The screen already carries one
   hand-built popover; a second bespoke listbox is two keyboard implementations
   to keep correct for no gain, and most creators here are on a phone.
-- Fewer than two brands and the dropdown is not drawn: a control that can only
-  say one thing teaches people it is broken.
+- The dropdown is drawn as soon as the creator has one brand. **It first hid
+  itself below two**, on the reasoning that a control which can only say one
+  thing reads as broken — and that shipped, and Rashid could not find the
+  feature he had asked for. Every one of the fifteen creators with approved
+  videos on dev has them with exactly ONE brand, so the rule hid it from every
+  account anybody could sign in as. A control nobody can see is worse than a
+  control with one option in it. The lesson is not about dropdowns: a rule that
+  hides a feature below some threshold has to be checked against the data it
+  will actually meet, or the threshold is a guess that silently deletes the
+  work.
 
 ### Verified
 
