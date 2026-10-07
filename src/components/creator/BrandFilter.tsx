@@ -28,9 +28,20 @@ export function BrandFilter({
   value: string | null;
   onChange: (id: string | null) => void;
 }) {
-  /* One brand is not a choice, it is a label — and a dropdown that can only say
-     one thing teaches people the control is broken. */
-  if (brands.length < 2) return null;
+  /*
+   * SHOWN AS SOON AS THERE IS A BRAND AT ALL, and the first rule here was
+   * wrong. It hid the control below two brands, reasoning that a dropdown which
+   * can only say one thing reads as broken. The argument is fine; the
+   * consequence was not. On dev all fifteen creators with approved videos have
+   * them with exactly ONE brand, so the rule hid the feature from every account
+   * anybody could sign in as — including the one Rashid tested with, which is
+   * how it was found, by him, after it shipped.
+   *
+   * A control nobody can ever see is worse than a control with one option in
+   * it. Production will have creators working across several brands; until
+   * then this still says, truthfully, which brand the figures are for.
+   */
+  if (brands.length === 0) return null;
 
   return (
     <div className="relative shrink-0">
