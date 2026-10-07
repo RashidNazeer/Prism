@@ -724,6 +724,64 @@
   color: var(--wx-text);
 }
 
+/* ------------------------------------- blanks that say why they are blank -- */
+/*
+ * Rashid, 2026-10-07: "figure out why data is not being shown". The Performance
+ * tab's money columns are typed in by hand and 35 of 44 brands have never had a
+ * figure entered, so most of this screen was dashes that read as "earned
+ * nothing". See WxBlank in WurxUI.jsx.
+ *
+ * IT MUST NOT COMPETE WITH A REAL FIGURE. "Not entered" sits where $184,167
+ * sits on the row above it, so at the figures' own size and weight it would be
+ * the loudest thing in a column of numbers, and the brands we know least about
+ * would shout the most. Smaller, lighter, italic: present, clearly not a
+ * number, and legible rather than hidden.
+ *
+ * `--pc-text-3` is the same ink the existing muted dash already uses, so this
+ * introduces no new colour and nothing for check:contrast to re-prove.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-blank {
+  font-size: 0.78em;
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--pc-text-3);
+  cursor: help;
+  white-space: nowrap;
+}
+/*
+ * A SYNCED FIGURE, standing in where nobody ever typed one. Added 2026-10-07.
+ *
+ * It wears the SAME ink and size as a typed figure, because it is a real number
+ * and demoting it would be a lie of a different kind. What marks it is a dotted
+ * underline and the word "synced" at label size: enough to tell the two apart
+ * on inspection, not enough to make the brands we know least about the loudest
+ * rows on the page.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-synced {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  border-bottom: 1px dotted var(--pc-text-3);
+  cursor: help;
+  white-space: nowrap;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-synced-dot { color: var(--pc-text-3); }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-synced-tag {
+  font-size: 0.68em;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 0;
+  color: var(--pc-text-3);
+}
+
+/* The completeness note under a brand name. Quieter than the creator count it
+   follows, because it is a caveat about the row and not a fact about the brand. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-brandsub-part {
+  color: var(--pc-text-3);
+  cursor: help;
+}
+
 /* -------------------------------------------- the Performance matrix ------ */
 /*
  * LOCKED AND BANDED WERE THE SAME PAINT, so the screen read as mostly locked.

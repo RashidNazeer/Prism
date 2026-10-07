@@ -9268,6 +9268,48 @@ function PerformanceTab({ creators, allCreators, allTime, month, onUpdateCreator
       const row = ensure(b);
       row.gmv += sumMonthly(c, 'gmv');
       row.ad  += sumMonthly(c, 'adSpent');
+      /* WURX-ADDED · HOW MUCH OF THIS BRAND WAS EVER TYPED IN.
+         Rashid, 2026-10-07, looking at a column of dashes: "figure out why data
+         is not being shown".
+
+         The answer is that these columns have exactly one source, the month
+         cells somebody types into the matrix below, and 35 of 44 brands have
+         never had a single one. A bare "-" cannot say that. It reads as "this
+         brand earned nothing", which against NUTRAHARMONY's 440 delivered
+         videos is the opposite of the truth.
+
+         So count two different things. `wxCells` is whether ANY money was ever
+         entered for the brand, which separates "nobody has filled this in" from
+         a real recorded zero. `wxEntered` over `wxRows` is how far the filling
+         got, because a brand is not either-or: 80 of Penetrex's 286 rows carry
+         money and the total is the sum of whatever somebody got round to.
+
+         Counted here rather than in a pass of its own because the row object is
+         spread into the returned brand, so these ride along without touching
+         their aggregation. The skip-list is copied from the loop below on
+         purpose: if the two ever disagreed about what counts as a month cell,
+         the note would contradict the figure beside it. */
+      let wxMoneyCells = 0;
+      const wxM = c.monthly || {};
+      Object.keys(wxM).forEach(kk => {
+        if (kk === 'l30' || kk.startsWith('l30@') || kk === 'euka' || kk === 'perf') return;
+        if (!/^\d{4}-\d{2}$/.test(kk.split('@')[0])) return;
+        const cell = wxM[kk] || {};
+        if ((Number(cell.gmv) || 0) > 0 || (Number(cell.adSpent) || 0) > 0) wxMoneyCells += 1;
+      });
+      row.wxRows = (row.wxRows || 0) + 1;
+      row.wxCells = (row.wxCells || 0) + wxMoneyCells;
+      if (wxMoneyCells > 0) row.wxEntered = (row.wxEntered || 0) + 1;
+      /* THE BRAND'S VIDEOS, so a brand nobody ever typed can still be priced
+         from the Euka figures our own side holds. Deduped on TikTok's id, the
+         same key every other money reader here uses; a row without one is not
+         a video we failed to price, it is not a video. */
+      if (!row.wxIdSet) row.wxIdSet = new Set();
+      (Array.isArray(c.video_codes) ? c.video_codes : []).forEach(r => {
+        const id = wxVideoId(r && r.video);
+        if (id) row.wxIdSet.add(id);
+      });
+      /* WURX-END */
       const k = creatorDedupKey(c);
       if (k) row.names.add(k);
       /* L30 is a property of the PERSON, and the nightly sync stores it under
@@ -9477,10 +9519,114 @@ function PerformanceTab({ creators, allCreators, allTime, month, onUpdateCreator
   );
 }
 
+/* WURX-ADDED · A BLANK THAT SAYS WHY IT IS BLANK.
+
+   THREE DIFFERENT SILENCES WERE ALL DRAWN AS "-" on this tab, and a reader had
+   no way to tell them apart:
+
+     nobody ever typed a figure in       35 of 44 brands
+     figures exist, this one is a zero   a real, recorded fact
+     no creator was hired this period    the Videos column only
+
+   Only the middle one means "nothing happened". The other two mean "we are not
+   saying", and printing them identically is how a brand with 440 delivered
+   videos comes to look like a brand that earned nothing.
+
+   IT CHANGES NO FIGURE. Every number already on screen is untouched; this only
+   fills the gaps where there was never a number to show. That was the point of
+   doing this first, ahead of the larger question of whether these columns
+   should be fed by the Euka sync instead of by hand — that one moves money
+   people have been reading for months and is Rashid's call, not a side effect
+   of a label.
+
+   The wording avoids "none" and "0" for the same reason the ad-spend cells
+   elsewhere avoid them: a dash is not a zero. */
+function WxBlank({ label, reason }) {
+  return <span className="pc-money muted wx-blank" title={reason}>{label}</span>;
+}
+
+/* A FIGURE THAT CAME FROM THE SYNC RATHER THAN FROM A PERSON.
+
+   PROVENANCE HAS TO BE ON THE SCREEN, because the two sources do not measure
+   the same thing and sometimes disagree by half. Printing a synced figure in
+   the same ink as a typed one would quietly merge two different claims into
+   one column and leave nobody able to tell which they were reading.
+
+   A dotted underline and a tooltip, not a coloured badge: it is the same kind
+   of fact as the number beside it, just differently sourced, and a loud chip
+   would make the brands we know LEAST about the most eye-catching rows. */
+function WxSynced({ value, brand, kind, compact }) {
+  return (
+    <span
+      className="wx-synced"
+      title={`No ${kind} has ever been typed into the matrix for ${brand}, so this is the figure our own Euka sync holds for their videos, all time. It is not part of the typed record, and the two sources do not always agree where both exist.`}
+    >
+      {value}
+      {/* THE WORD IS DROPPED IN THE NARROW COLUMN, not shrunk to fit. ROAS is
+          the tightest column on the row (0.85fr) and at 1024px "1.23×·synced"
+          measured wider than the cell holding it — caught by a geometry check,
+          invisible at 1440px where it was drawn. The dotted underline and the
+          tooltip still say where the figure came from, and the two columns
+          beside it already say "synced" in words on the same row. */}
+      {compact ? null : (
+        <>
+          <span className="wx-synced-dot" aria-hidden="true">·</span>
+          <span className="wx-synced-tag">synced</span>
+        </>
+      )}
+    </span>
+  );
+}
+
+/* The brand's own answer for its money columns: never filled in, or filled in
+   and genuinely nil. `wxCells` is the whole test. */
+function wxMoneyBlank(b) {
+  return b.wxCells
+    ? <WxBlank label="-" reason="Figures have been entered for this brand, and this one is nil." />
+    : <WxBlank label="Not entered" reason={`No monthly figures have ever been entered for ${b.brand} in the performance matrix below. This column is typed in by hand; it is not synced, so a blank here says nothing about what the brand earned.`} />;
+}
+/* WURX-END */
+
 /* ── Active / Inactive brand section (Performance tab) ──────────
    Drop zone + brand rows. Each row is draggable; section header is the drop target. */
 function PerfBrandSection({ title, zone, tone, list, dragging, isOver, onEnter, onLeave, onDrop, onDragStart, onDragEnd, onOpen }) {
   const isDraggingSomething = !!dragging;
+  /* WURX-ADDED · FALL BACK TO THE SYNCED FIGURES, NEVER OVERRIDE THE TYPED ONES.
+     Rashid, 2026-10-07: "suggest the appropriate fix and make the fix for me".
+
+     THE OBVIOUS FIX WOULD HAVE DESTROYED HISTORY, which is why this is not it.
+     Measured on dev before writing a line: the Euka rows begin 2026-06 while
+     the typed cells go back to 2025-12, so feeding these columns from the sync
+     would have deleted 21 brand-months — every Penetrex month before June, and
+     Biostime, Aqua Sonic and Pure Daily Care entirely, since those three have
+     no Euka rows at all and would have gone from real figures to nothing.
+
+     And where the two DO overlap they disagree: Apothecary's August matches to
+     the dollar ($23,553 both ways) while Penetrex's June is $24,594 typed
+     against $13,275 synced. With no way to say which is right, the one a human
+     put there wins — it is the record of what was agreed, and it is the number
+     people have been reading for months.
+
+     So: typed if it exists, synced only where nothing was ever typed. That
+     changes no figure on screen and fills 35 brands that had none, including
+     NUTRAHARMONY and Irwin Naturals, which have never been typed at all and
+     together have 581 delivered videos.
+
+     ALL TIME, because that is what this column already means — the comment on
+     the aggregation says "ALWAYS all-time sum across c.monthly", so the synced
+     side has to be asked the same question or the two halves of one column
+     would cover different periods. */
+  const wxAds = wxAdsHook();
+  const wxSetMonth = wxAds.setMonth;
+  useEffect(() => { wxSetMonth(''); }, [wxSetMonth]);
+  /* ONLY the brands with nothing typed. Asking for every brand's videos would
+     be thousands of ids fetched to be thrown away, since a typed brand's
+     figures win regardless. */
+  const wxNeedIds = useMemo(
+    () => list.filter(b => !b.wxCells).flatMap(b => [...(b.wxIdSet || [])]),
+    [list]
+  );
+  wxAds.ensure(wxNeedIds);
   /*
    * TOKENS, not hex. These five were the last hardcoded light-mode colours on
    * the Performance tab and they are why the count badges failed contrast in
@@ -9571,6 +9717,11 @@ function PerfBrandSection({ title, zone, tone, list, dragging, isOver, onEnter, 
           </div>
           {list.map(b => {
             const isMe = dragging === b.brand;
+            /* WURX-ADDED · the synced answer, computed only for a brand with
+               nothing typed. `totalsOf` derives ROI from the SUMS, never from
+               an average of per-video ratios. */
+            const sy = b.wxCells ? null : wxTotals(wxAds.get, [...(b.wxIdSet || [])]);
+            /* WURX-END */
             return (
               <div
                 key={b.brand}
@@ -9598,18 +9749,46 @@ function PerfBrandSection({ title, zone, tone, list, dragging, isOver, onEnter, 
                   <BrandFace brand={b.brand} />
                   <span>
                     <div className="pc-brandname">{b.brand}</div>
-                    <small className="pc-brandsub">{b.uniqueCreators} creator{b.uniqueCreators === 1 ? '' : 's'} tracked</small>
+                    <small className="pc-brandsub">
+                      {b.uniqueCreators} creator{b.uniqueCreators === 1 ? '' : 's'} tracked
+                      {/* WURX-ADDED · HOW COMPLETE THE TYPED-IN MONEY IS.
+                          A brand is rarely all-or-nothing: Penetrex's $184,167
+                          is 80 of 286 rows, so the total is not wrong so much
+                          as partial, and the row above gives no hint of that.
+                          Said only where it is true and worth saying. */}
+                      {b.wxCells && b.wxEntered < b.wxRows
+                        ? <span className="wx-brandsub-part" title={`Money has been typed in for ${b.wxEntered} of this brand's ${b.wxRows} creator rows. The totals beside this are the sum of those rows only.`}>
+                            {' · '}{b.wxEntered} of {b.wxRows} rows entered
+                          </span>
+                        : null}
+                      {/* WURX-END */}
+                    </small>
                   </span>
                 </div>
                 <div className="pc-num" data-label="Creators">{b.uniqueCreators}</div>
-                <div className={`pc-num pc-money ${b.gmv > 0 ? 'pc-green' : ''}`} data-label="Total GMV">{b.gmv > 0 ? fmt$(b.gmv) : <span className="pc-money muted">-</span>}</div>
-                <div className={`pc-num pc-money ${b.ad > 0 ? 'pc-red' : ''}`} data-label="Total Ad">{b.ad > 0 ? fmt$(b.ad) : <span className="pc-money muted">-</span>}</div>
+                {/* WURX-ADDED · typed figures exactly as they were; synced ones
+                    only where nothing was ever typed, and marked as such. */}
+                <div className={`pc-num pc-money ${b.gmv > 0 ? 'pc-green' : ''}`} data-label="Total GMV">
+                  {b.gmv > 0 ? fmt$(b.gmv) : (sy && sy.revenue > 0 ? <WxSynced value={fmt$(sy.revenue)} brand={b.brand} kind="GMV" /> : wxMoneyBlank(b))}
+                </div>
+                <div className={`pc-num pc-money ${b.ad > 0 ? 'pc-red' : ''}`} data-label="Total Ad">
+                  {b.ad > 0 ? fmt$(b.ad) : (sy && sy.cost > 0 ? <WxSynced value={fmt$(sy.cost)} brand={b.brand} kind="ad spend" /> : wxMoneyBlank(b))}
+                </div>
                 <div className="pc-num" data-label="ROAS">
                   {b.roas != null
                     ? <span className={`pc-roas-chip ${b.roas >= 2 ? 'good' : b.roas >= 1 ? 'ok' : 'bad'}`}>{b.roas.toFixed(2)}×</span>
-                    : <span className="pc-money muted">-</span>}
+                    : (sy && sy.roi != null
+                        ? <WxSynced compact value={<span className={`pc-roas-chip ${sy.roi >= 2 ? 'good' : sy.roi >= 1 ? 'ok' : 'bad'}`}>{sy.roi.toFixed(2)}×</span>} brand={b.brand} kind="ROAS" />
+                        : (b.wxCells
+                            ? <WxBlank label="-" reason="No ad spend is recorded for this brand, so there is no return to divide by it." />
+                            : wxMoneyBlank(b)))}
                 </div>
-                <div className="pc-num" data-label="Videos">{b.videosDelivered || <span className="pc-money muted">-</span>}</div>
+                {/* The Videos blank has a DIFFERENT cause and must not borrow
+                    the money one. This column is scoped to the month on screen
+                    by hire date, so a brand with plenty of videos shows nothing
+                    here in a month it hired nobody. */}
+                <div className="pc-num" data-label="Videos">{b.videosDelivered || <WxBlank label="-" reason="No creator was hired for this brand in the period on screen, so no delivered videos fall inside it. This is not a count of all their videos." />}</div>
+                {/* WURX-END */}
                 <div style={{ color: 'var(--pc-text-3)', textAlign: 'center', fontSize: 18 }}>›</div>
               </div>
             );
