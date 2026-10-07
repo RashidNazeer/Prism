@@ -9190,6 +9190,39 @@ function PerformanceTab({ creators, allCreators, allTime, month, onUpdateCreator
       const row = ensure(b);
       row.gmv += sumMonthly(c, 'gmv');
       row.ad  += sumMonthly(c, 'adSpent');
+      /* WURX-ADDED · HOW MUCH OF THIS BRAND WAS EVER TYPED IN.
+         Rashid, 2026-10-07, looking at a column of dashes: "figure out why data
+         is not being shown".
+
+         The answer is that these columns have exactly one source, the month
+         cells somebody types into the matrix below, and 35 of 44 brands have
+         never had a single one. A bare "-" cannot say that. It reads as "this
+         brand earned nothing", which against NUTRAHARMONY's 440 delivered
+         videos is the opposite of the truth.
+
+         So count two different things. `wxCells` is whether ANY money was ever
+         entered for the brand, which separates "nobody has filled this in" from
+         a real recorded zero. `wxEntered` over `wxRows` is how far the filling
+         got, because a brand is not either-or: 80 of Penetrex's 286 rows carry
+         money and the total is the sum of whatever somebody got round to.
+
+         Counted here rather than in a pass of its own because the row object is
+         spread into the returned brand, so these ride along without touching
+         their aggregation. The skip-list is copied from the loop below on
+         purpose: if the two ever disagreed about what counts as a month cell,
+         the note would contradict the figure beside it. */
+      let wxMoneyCells = 0;
+      const wxM = c.monthly || {};
+      Object.keys(wxM).forEach(kk => {
+        if (kk === 'l30' || kk.startsWith('l30@') || kk === 'euka' || kk === 'perf') return;
+        if (!/^\d{4}-\d{2}$/.test(kk.split('@')[0])) return;
+        const cell = wxM[kk] || {};
+        if ((Number(cell.gmv) || 0) > 0 || (Number(cell.adSpent) || 0) > 0) wxMoneyCells += 1;
+      });
+      row.wxRows = (row.wxRows || 0) + 1;
+      row.wxCells = (row.wxCells || 0) + wxMoneyCells;
+      if (wxMoneyCells > 0) row.wxEntered = (row.wxEntered || 0) + 1;
+      /* WURX-END */
       const k = creatorDedupKey(c);
       if (k) row.names.add(k);
       /* L30 is a property of the PERSON, and the nightly sync stores it under
@@ -9399,6 +9432,41 @@ function PerformanceTab({ creators, allCreators, allTime, month, onUpdateCreator
   );
 }
 
+/* WURX-ADDED · A BLANK THAT SAYS WHY IT IS BLANK.
+
+   THREE DIFFERENT SILENCES WERE ALL DRAWN AS "-" on this tab, and a reader had
+   no way to tell them apart:
+
+     nobody ever typed a figure in       35 of 44 brands
+     figures exist, this one is a zero   a real, recorded fact
+     no creator was hired this period    the Videos column only
+
+   Only the middle one means "nothing happened". The other two mean "we are not
+   saying", and printing them identically is how a brand with 440 delivered
+   videos comes to look like a brand that earned nothing.
+
+   IT CHANGES NO FIGURE. Every number already on screen is untouched; this only
+   fills the gaps where there was never a number to show. That was the point of
+   doing this first, ahead of the larger question of whether these columns
+   should be fed by the Euka sync instead of by hand — that one moves money
+   people have been reading for months and is Rashid's call, not a side effect
+   of a label.
+
+   The wording avoids "none" and "0" for the same reason the ad-spend cells
+   elsewhere avoid them: a dash is not a zero. */
+function WxBlank({ label, reason }) {
+  return <span className="pc-money muted wx-blank" title={reason}>{label}</span>;
+}
+
+/* The brand's own answer for its money columns: never filled in, or filled in
+   and genuinely nil. `wxCells` is the whole test. */
+function wxMoneyBlank(b) {
+  return b.wxCells
+    ? <WxBlank label="-" reason="Figures have been entered for this brand, and this one is nil." />
+    : <WxBlank label="Not entered" reason={`No monthly figures have ever been entered for ${b.brand} in the performance matrix below. This column is typed in by hand; it is not synced, so a blank here says nothing about what the brand earned.`} />;
+}
+/* WURX-END */
+
 /* ── Active / Inactive brand section (Performance tab) ──────────
    Drop zone + brand rows. Each row is draggable; section header is the drop target. */
 function PerfBrandSection({ title, zone, tone, list, dragging, isOver, onEnter, onLeave, onDrop, onDragStart, onDragEnd, onOpen }) {
@@ -9520,18 +9588,40 @@ function PerfBrandSection({ title, zone, tone, list, dragging, isOver, onEnter, 
                   <BrandFace brand={b.brand} />
                   <span>
                     <div className="pc-brandname">{b.brand}</div>
-                    <small className="pc-brandsub">{b.uniqueCreators} creator{b.uniqueCreators === 1 ? '' : 's'} tracked</small>
+                    <small className="pc-brandsub">
+                      {b.uniqueCreators} creator{b.uniqueCreators === 1 ? '' : 's'} tracked
+                      {/* WURX-ADDED · HOW COMPLETE THE TYPED-IN MONEY IS.
+                          A brand is rarely all-or-nothing: Penetrex's $184,167
+                          is 80 of 286 rows, so the total is not wrong so much
+                          as partial, and the row above gives no hint of that.
+                          Said only where it is true and worth saying. */}
+                      {b.wxCells && b.wxEntered < b.wxRows
+                        ? <span className="wx-brandsub-part" title={`Money has been typed in for ${b.wxEntered} of this brand's ${b.wxRows} creator rows. The totals beside this are the sum of those rows only.`}>
+                            {' · '}{b.wxEntered} of {b.wxRows} rows entered
+                          </span>
+                        : null}
+                      {/* WURX-END */}
+                    </small>
                   </span>
                 </div>
                 <div className="pc-num" data-label="Creators">{b.uniqueCreators}</div>
-                <div className={`pc-num pc-money ${b.gmv > 0 ? 'pc-green' : ''}`} data-label="Total GMV">{b.gmv > 0 ? fmt$(b.gmv) : <span className="pc-money muted">-</span>}</div>
-                <div className={`pc-num pc-money ${b.ad > 0 ? 'pc-red' : ''}`} data-label="Total Ad">{b.ad > 0 ? fmt$(b.ad) : <span className="pc-money muted">-</span>}</div>
+                {/* WURX-ADDED · the blanks name their own cause; the figures
+                    themselves are exactly as they were. */}
+                <div className={`pc-num pc-money ${b.gmv > 0 ? 'pc-green' : ''}`} data-label="Total GMV">{b.gmv > 0 ? fmt$(b.gmv) : wxMoneyBlank(b)}</div>
+                <div className={`pc-num pc-money ${b.ad > 0 ? 'pc-red' : ''}`} data-label="Total Ad">{b.ad > 0 ? fmt$(b.ad) : wxMoneyBlank(b)}</div>
                 <div className="pc-num" data-label="ROAS">
                   {b.roas != null
                     ? <span className={`pc-roas-chip ${b.roas >= 2 ? 'good' : b.roas >= 1 ? 'ok' : 'bad'}`}>{b.roas.toFixed(2)}×</span>
-                    : <span className="pc-money muted">-</span>}
+                    : (b.wxCells
+                        ? <WxBlank label="-" reason="No ad spend is recorded for this brand, so there is no return to divide by it." />
+                        : wxMoneyBlank(b))}
                 </div>
-                <div className="pc-num" data-label="Videos">{b.videosDelivered || <span className="pc-money muted">-</span>}</div>
+                {/* The Videos blank has a DIFFERENT cause and must not borrow
+                    the money one. This column is scoped to the month on screen
+                    by hire date, so a brand with plenty of videos shows nothing
+                    here in a month it hired nobody. */}
+                <div className="pc-num" data-label="Videos">{b.videosDelivered || <WxBlank label="-" reason="No creator was hired for this brand in the period on screen, so no delivered videos fall inside it. This is not a count of all their videos." />}</div>
+                {/* WURX-END */}
                 <div style={{ color: 'var(--pc-text-3)', textAlign: 'center', fontSize: 18 }}>›</div>
               </div>
             );

@@ -4657,3 +4657,65 @@ Change rules:
   category beside the first.
 - Nothing writes this table from the browser. A change goes through an Edge
   Function with the service key, once that function exists.
+
+## Why the Performance tab was mostly dashes (2026-10-07)
+
+**Files:** `src/vendor/wurxbase/WurxUI.jsx` (`WxBlank`, `wxMoneyBlank`, the
+`wxRows`/`wxCells`/`wxEntered` counters in `PerformanceTab`) ·
+`src/routes/admin/wurxbase-overrides.css`
+
+Rashid, with a screenshot of brand after brand showing "-": *"figure out why
+data is not being shown? What is the reason for missing data."*
+
+### The reason
+
+**The Performance tab's GMV, Ad and ROAS columns have exactly one source: the
+month cells somebody types into the matrix by hand.** The file says so at the
+top of `PerformanceTab` — *"Aggregates ONLY from the manually-entered monthly
+matrix data (`creators.monthly` JSONB). Per-deal `c.gmv` / `c.ad_spent` fields
+are NOT used here."* Nothing syncs into those cells. The nightly Euka sync does
+write into `monthly`, but only `monthly.euka.l30`.
+
+Measured against dev rather than inferred, by reproducing the tab's own
+arithmetic over all 1,484 creator rows: **9 of 44 brands have ever had a figure
+entered.** The other 35 have zero cells.
+
+| | last month entered |
+|---|---|
+| Penetrex, Swisse | **2026-08** |
+| Dr. Harvey's, Biostime, Dr Tobias, Aurelia, Apothecary | 2026-09 |
+| Aqua Sonic, Pure Daily Care | **2026-08 only, ever** |
+| 35 others incl. NUTRAHARMONY, Irwin, Bentgo, JOYMODE | never |
+
+So on 2026-10-07 nobody had entered September for Penetrex or Swisse, and
+nobody had entered October for anyone. Even where it is filled it is partial:
+Penetrex's $184,167 is 80 of its 286 creator rows.
+
+**This is not a broken sync.** The synced money (Euka and Reacher per video)
+feeds the Brands tab and the product band and never reaches this tab. The two
+disagree accordingly: this tab says Penetrex ad spend is $105,601 (typed), the
+product cards say $45,993 (Euka, all time).
+
+### What was done about it, and what was not
+
+Rashid chose the smaller of two options on 2026-10-07: **explain the blanks,
+change no figure.** The larger option — feeding these columns from the synced
+data — moves numbers people have been reading for months and stays his call.
+
+Three silences were all drawn as the same "-": never entered, a real recorded
+zero, and (in the Videos column) no creator hired in the period on screen. Only
+the middle one means "nothing happened"; the other two mean "we are not saying".
+Now a brand with nothing entered reads **Not entered** with a tooltip saying the
+column is typed in by hand, a genuine nil keeps its dash, and the Videos blank
+explains that the column is scoped to the month by hire date and is not a count
+of all the brand's videos. A partly-filled brand carries `80 of 280 rows
+entered` under its name, because its total is the sum of whatever somebody got
+round to and the row gave no hint of that.
+
+Verified on dev: 44 rows, **0 blanks without a reason**, 0 console errors, and
+every figure byte-identical to before (Dr Tobias $9,630 / $13,980 / 0.69x,
+Aurelia $6,782 / $26,924 / 0.25x, Swisse $4,551 / $23,724 / 0.19x).
+
+`scripts/check-performance.mjs` was NOT run: it needs `SUPABASE_SERVICE_KEY`,
+which the machine this was built on does not have. It is an RLS test that
+creates and deletes rows, so it exercises nothing this change touches.
