@@ -447,16 +447,104 @@
   This is OUR file styling OUR wrapper. Nothing in `src/vendor/wurxbase` is
   touched, which is the whole point of the arrangement.
 */
+/*
+ * THE OUTER SHELL. It carries `.wurxbase-root`, so every fenced selector in
+ * their stylesheet matches inside it — and it is deliberately NOT the
+ * containing block and NOT the scroller.
+ *
+ * Split out on 2026-08-31. One div used to be all three at once, and that is
+ * why half the controls in Paid Collabs did nothing. Their app portals ten
+ * overlays to `document.body`: the status dropdown, the video/ad-code modal
+ * behind the eye icon, the notes drawer, the Discovery mark popup, the sticky
+ * matrix header, the confirm dialog and more. `document.body` is OUTSIDE
+ * `.wurxbase-root`, so every one of those got ZERO styling — the status menu
+ * landed as an unstyled full-width block at the bottom of the document, which
+ * reads exactly like "clicking does nothing".
+ *
+ * Portalling them into the fence instead would fix the styling and break the
+ * position, because the fence is a transformed, contained, scrolling box: a
+ * `position: fixed` child is measured against IT, not the viewport, so an
+ * overlay opens wherever the fence happens to be scrolled to. That is the same
+ * bug that once put the Unique Creators panel 3,413px down the page.
+ *
+ * So the two jobs are now two elements: this shell provides the class name and
+ * nothing else, `.wurxbase-fence` inside it does the containing and scrolling,
+ * and `#wurxbase-portal-host` sits beside the fence — inside the shell, so
+ * their CSS matches; outside the fence, so `position: fixed` means the screen.
+ */
+@utility wurxbase-shell {
+  position: relative;
+  isolation: isolate;
+  height: calc(100dvh - 3.5rem);
+}
+
+/* Their overlays land here. It occupies no space; its children are fixed. */
+@utility wurxbase-portals {
+  position: static;
+  height: 0;
+}
+
 @utility wurxbase-fence {
   position: relative;
   isolation: isolate;
-  /* Creates the containing block. `translateZ(0)` rather than `translate(0)`
-     so it also gets its own compositor layer and their animations stay smooth. */
-  transform: translateZ(0);
-  /* Their shell asks for full height; give it a real one to fill rather than
-     the zero it would otherwise inherit. */
-  min-height: calc(100dvh - 8rem);
-  contain: layout paint;
+
+  /*
+   * NO `transform`, NO `contain`, ON PURPOSE — and this is the third time this
+   * corner has been rewritten, so the history matters.
+   *
+   * Both properties make an element the containing block for every
+   * `position: fixed` descendant. That was added to stop their fixed footer and
+   * mobile nav covering our sidebar, and it worked. What it also did was
+   * redefine "fixed" for every dialog in their app: measured against this box
+   * instead of the screen. When the box was 7,607px tall, modals opened 3,413px
+   * down the page. Making it viewport-sized hid that — until a dialog was
+   * opened from a SCROLLED table, when it landed 948px tall against a fence
+   * offset by 600px, hung off the bottom, and dragged the fence back to zero as
+   * the browser scrolled its autofocused input into view. Rashid: *"it opens
+   * the popup above, we have to scroll to go there"*.
+   *
+   * Portalling helps only the overlays that go through `createPortal`. Their
+   * contract editor and creator editor render inline, so no portal reaches
+   * them; measured, the creator editor sat at 56..1004 in a 1000px viewport.
+   *
+   * So the containment goes, and every `position: fixed` in their app means the
+   * screen again. What it was protecting against is handled where it belongs:
+   * the two pieces of their fixed chrome that are actually visible in here —
+   * `.app-footer` and `.footer-hover-zone` — are hidden by wurxbase-chrome.css,
+   * the same file that already removes their header, tab rail and sign-out.
+   * Verified at rest: those two were the ONLY visible fixed elements inside
+   * this fence.
+   */
+
+  /*
+   * THE FENCE IS EXACTLY THE VIEWPORT, AND THEIR APP SCROLLS INSIDE IT.
+   *
+   * Changed 2026-08-28. It used to be `min-height`, so the element grew to
+   * whatever their content needed — 7,607px on the Creators tab. Being the
+   * containing block, that is also the box every `position: fixed` descendant
+   * is measured against, and their modal overlays are `inset: 0` centred. So
+   * the Unique Creators panel opened 3,413px down the page: the screen dimmed,
+   * and the dialog was nowhere. Rashid: *"when i click unique creators look how
+   * does it look like this is very bad"*. Every modal in Paid Collabs had it.
+   *
+   * The containment cannot simply be dropped — it is what stops their fixed
+   * FOOTER, bulk bar and mobile nav covering our sidebar, which is the bug it
+   * was added for and which a browser test caught by failing to click
+   * "Dashboard" for thirty seconds.
+   *
+   * Making the fence viewport-sized fixes both at once: their overlays cover
+   * exactly what is on screen, their chrome still cannot escape, and their
+   * sticky table headers stick to something the size they were written for.
+   * Their app was a full-window application that scrolled itself; this gives it
+   * back that shape inside our shell.
+   *
+   * `3.5rem` is our top bar (`h-14`), in rem so it tracks the text-size
+   * setting rather than pinning to 56 physical pixels while the bar grows.
+   */
+  /* 100% of the shell, which is the viewport minus our top bar. */
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 /* The design's primary action: a gradient fill rather than a flat one. */

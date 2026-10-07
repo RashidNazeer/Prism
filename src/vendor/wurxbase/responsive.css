@@ -1,3 +1,4 @@
+
 /* ═══════════════════════════════════════════════════════════════
    MOBILE RESPONSIVE — Creator Hub  (Samsung One UI)
    Breakpoints:
@@ -5,738 +6,355 @@
      ≤480px  → phone extra tightening
      481-768 → tablet tweaks
 ═══════════════════════════════════════════════════════════════ */
-
 /* Prevent pull-to-refresh browser gesture interfering with swipe-to-close */
-.wurxbase-root, .wurxbase-root { overscroll-behavior-y: none; }
+.wurxbase-root, .wurxbase-root {overscroll-behavior-y: none;}
 
 /* NDM slide-up keyframe (used in mobile media query below) */
 @keyframes ndm-slide-up {
-  from { transform: translateY(100%); opacity: 0.85; }
-  to   { transform: translateY(0);    opacity: 1; }
+from {transform: translateY(100%); opacity: 0.85;}
+to {transform: translateY(0); opacity: 1;}
 }
 
 /* ───────────────────────────────────────
    TABLET + PHONE  (≤768px)
 ─────────────────────────────────────── */
 @media (max-width: 768px) {
-
-  .wurxbase-root { -webkit-text-size-adjust: 100%; }
-
-  /* ════════════════════════════════
+.wurxbase-root {-webkit-text-size-adjust: 100%;}
+/* ════════════════════════════════
      TOPBAR — brand left, bell + hamburger right
   ════════════════════════════════ */
-  .wurxbase-root .topbar { padding: 0 14px; gap: 8px; }
-  .wurxbase-root .topbar-brand { font-size: 13px; gap: 7px; }
-  .wurxbase-root .topbar-brand-icon { width: 26px; height: 26px; border-radius: 7px; }
-  .wurxbase-root .topbar-spacer { display: none; }
-  /* Show hamburger, hide desktop items */
-  .wurxbase-root .topbar-hamburger { display: flex !important; }
-  .wurxbase-root .topbar-right-items { display: none !important; }
-  .wurxbase-root .btn-icon { width: 34px; height: 34px; border-radius: 10px; }
-  /* Push bell + hamburger to the RIGHT side */
-  .wurxbase-root .notif-wrap { margin-left: auto; }
-
-  /* ════════════════════════════════
+.wurxbase-root .topbar {padding: 0 14px; gap: 8px;}
+.wurxbase-root .topbar-brand {font-size: 13px; gap: 7px;}
+.wurxbase-root .topbar-brand-icon {width: 26px; height: 26px; border-radius: 7px;}
+.wurxbase-root .topbar-spacer {display: none;}
+/* Show hamburger, hide desktop items */
+.wurxbase-root .topbar-hamburger {display: flex !important;}
+.wurxbase-root .topbar-right-items {display: none !important;}
+.wurxbase-root .btn-icon {width: 34px; height: 34px; border-radius: 10px;}
+/* Push bell + hamburger to the RIGHT side */
+.wurxbase-root .notif-wrap {margin-left: auto;}
+/* ════════════════════════════════
      PAGE HEAD — 2-row mobile layout
      Row 1: [Title]  →→→  [📅 Date] [+ Add]
      Row 2: [24 Creators] [15 Deals]   (stat chips)
   ════════════════════════════════ */
-  .wurxbase-root .page-head {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;          /* allows row 2 to wrap below */
-    align-items: center;
-    gap: 0;
-    padding: 10px 14px 0;
-    background: var(--wx-surface-1);
-    border-bottom: 1px solid var(--wx-accent);
-  }
-  /* Flatten ph-left so title + badge-row become direct flex children of page-head */
-  .wurxbase-root .ph-left { display: contents; }
-
-  /* Row 1 left: title */
-  .wurxbase-root .ph-title {
-    order: 1;
-    flex: 1;
-    font-size: 18px;
-    font-weight: 900;
-    letter-spacing: -0.5px;
-    color: var(--wx-accent);
-    white-space: nowrap;
-    padding-bottom: 8px;
-  }
-  /* Row 1 right: action buttons */
-  .wurxbase-root .ph-actions {
-    order: 2;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding-bottom: 8px;
-  }
-  .wurxbase-root .btn-date { height: 31px; padding: 0 10px; font-size: 11px; gap: 4px; }
-  .wurxbase-root .btn-add  { height: 31px; padding: 0 11px; font-size: 11px; gap: 4px; }
-
-  /* Row 2: stats strip — plain text, no boxes */
-  .wurxbase-root .ph-badge-row {
-    order: 3;
-    width: 100%;                  /* forces wrap to new row */
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: center;
-    gap: 0;
-    padding: 7px 0 9px;
-    border-top: 1px solid var(--wx-accent);
-    overflow: visible;
-  }
-
-  /* No boxes — just text inline */
-  .wurxbase-root .ph-kpi-pill {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 4px;
-    padding: 0;
-    border-radius: 0;
-    background: none !important;
-    border: none !important;
-    box-shadow: none;
-    flex-shrink: 0;
-  }
-  /* Dot separator between stats */
-  .wurxbase-root .ph-kpi-pill + .ph-kpi-pill {
-    margin-left: 14px;
-    position: relative;
-  }
-  .wurxbase-root .ph-kpi-pill + .ph-kpi-pill::before {
-    content: '';
-    position: absolute;
-    left: -9px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: var(--wx-accent);
-  }
-
-  /* Number — big + colored */
-  .wurxbase-root .ph-kpi-val {
-    font-size: 15px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    line-height: 1;
-  }
-  .wurxbase-root .ph-kpi-blue   .ph-kpi-val { color: var(--wx-accent); }
-  .wurxbase-root .ph-kpi-purple .ph-kpi-val { color: var(--wx-accent); }
-
-  /* Label — small + muted gray (same for both) */
-  .wurxbase-root .ph-kpi-lbl {
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0;
-  }
-  .wurxbase-root .ph-kpi-blue   .ph-kpi-lbl { color: var(--wx-accent); }
-  .wurxbase-root .ph-kpi-purple .ph-kpi-lbl { color: var(--wx-accent); }
-
-  /* ════════════════════════════════
+.wurxbase-root .page-head {display: flex; flex-direction: row; flex-wrap: wrap; /* allows row 2 to wrap below */ align-items: center; gap: 0; padding: 10px 14px 0; background: var(--wx-surface-1); border-bottom: 1px solid var(--wx-accent);}
+/* Flatten ph-left so title + badge-row become direct flex children of page-head */
+.wurxbase-root .ph-left {display: contents;}
+/* Row 1 left: title */
+.wurxbase-root .ph-title {order: 1; flex: 1; font-size: 18px; font-weight: 900; letter-spacing: -0.5px; color: var(--wx-accent); white-space: nowrap; padding-bottom: 8px;}
+/* Row 1 right: action buttons */
+.wurxbase-root .ph-actions {order: 2; flex-shrink: 0; display: flex; align-items: center; gap: 6px; padding-bottom: 8px;}
+.wurxbase-root .btn-date {height: 31px; padding: 0 10px; font-size: 11px; gap: 4px;}
+.wurxbase-root .btn-add {height: 31px; padding: 0 11px; font-size: 11px; gap: 4px;}
+/* Row 2: stats strip — plain text, no boxes */
+.wurxbase-root .ph-badge-row {order: 3; width: 100%; /* forces wrap to new row */ display: flex; flex-wrap: nowrap; align-items: center; gap: 0; padding: 7px 0 9px; border-top: 1px solid var(--wx-accent); overflow: visible;}
+/* No boxes — just text inline */
+.wurxbase-root .ph-kpi-pill {display: inline-flex; align-items: baseline; gap: 4px; padding: 0; border-radius: 0; background: none !important; border: none !important; box-shadow: none; flex-shrink: 0;}
+/* Dot separator between stats */
+.wurxbase-root .ph-kpi-pill + .ph-kpi-pill {margin-left: 14px; position: relative;}
+.wurxbase-root .ph-kpi-pill + .ph-kpi-pill::before {content: ''; position: absolute; left: -9px; top: 50%; transform: translateY(-50%); width: 3px; height: 3px; border-radius: 50%; background: var(--wx-accent);}
+/* Number — big + colored */
+.wurxbase-root .ph-kpi-val {font-size: 15px; font-weight: 800; letter-spacing: -0.5px; line-height: 1;}
+.wurxbase-root .ph-kpi-blue   .ph-kpi-val {color: var(--wx-accent);}
+.wurxbase-root .ph-kpi-purple .ph-kpi-val {color: var(--wx-accent);}
+/* Label — small + muted gray (same for both) */
+.wurxbase-root .ph-kpi-lbl {font-size: 11px; font-weight: 500; letter-spacing: 0;}
+.wurxbase-root .ph-kpi-blue   .ph-kpi-lbl {color: var(--wx-accent);}
+.wurxbase-root .ph-kpi-purple .ph-kpi-lbl {color: var(--wx-accent);}
+/* ════════════════════════════════
      FILTER BAR — search + chips (2 rows)
   ════════════════════════════════ */
-  .wurxbase-root .filter-section {
-    padding: 0 12px;
-    top: 52px;
-    background: var(--wx-surface-1);
-    border-bottom: 1px solid var(--wx-accent);
-  }
-  .wurxbase-root .filter-bar {
-    height: auto;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 7px;
-    padding: 8px 0 7px;
-  }
-  .wurxbase-root .filter-search-wrap {
-    width: 100% !important;
-    height: 38px;
-    border-radius: 999px;
-    order: 1;
-  }
-  .wurxbase-root .filter-search-wrap:focus-within {
-    width: 100% !important;
-    border-radius: 999px;
-  }
-  .wurxbase-root .filter-bar-divider { display: none; }
-  .wurxbase-root .density-toggle { display: none !important; }
-  /* Chips — horizontal scroll, compact */
-  .wurxbase-root .filter-chips-group {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 5px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    order: 2;
-  }
-  .wurxbase-root .filter-chips-group::-webkit-scrollbar { display: none; }
-  .wurxbase-root .fchip {
-    height: 28px;
-    padding: 0 10px;
-    font-size: 11.5px;
-    flex-shrink: 0;
-  }
-  .wurxbase-root .fchip-clear-all { height: 28px; flex-shrink: 0; }
-  /* Filter dropdown — open below filter bar, not near footer */
-  .wurxbase-root .fchip-drop {
-    position: fixed !important;
-    top: 190px !important;
-    bottom: auto !important;
-    left: 12px !important;
-    right: 12px !important;
-    min-width: unset;
-    border-radius: 18px;
-    max-height: 48vh;
-    overflow-y: auto;
-    z-index: 600;
-    box-shadow: 0 16px 48px rgba(0,0,0,0.18), 0 2px 10px rgba(0,0,0,0.08);
-  }
-
-  /* ════════════════════════════════
+.wurxbase-root .filter-section {padding: 0 12px; top: 52px; background: var(--wx-surface-1); border-bottom: 1px solid var(--wx-accent);}
+.wurxbase-root .filter-bar {height: auto; flex-direction: column; align-items: stretch; gap: 7px; padding: 8px 0 7px;}
+.wurxbase-root .filter-search-wrap {width: 100% !important; height: 38px; border-radius: 999px; order: 1;}
+.wurxbase-root .filter-search-wrap:focus-within {width: 100% !important; border-radius: 999px;}
+.wurxbase-root .filter-bar-divider {display: none;}
+.wurxbase-root .density-toggle {display: none !important;}
+/* Chips — horizontal scroll, compact */
+.wurxbase-root .filter-chips-group {display: flex; flex-wrap: nowrap; gap: 5px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; order: 2;}
+.wurxbase-root .filter-chips-group::-webkit-scrollbar {display: none;}
+.wurxbase-root .fchip {height: 28px; padding: 0 10px; font-size: 11.5px; flex-shrink: 0;}
+.wurxbase-root .fchip-clear-all {height: 28px; flex-shrink: 0;}
+/* Filter dropdown — open below filter bar, not near footer */
+.wurxbase-root .fchip-drop {position: fixed !important; top: 190px !important; bottom: auto !important; left: 12px !important; right: 12px !important; min-width: unset; border-radius: 18px; max-height: 48vh; overflow-y: auto; z-index: 600; box-shadow: 0 16px 48px rgba(0,0,0,0.18), 0 2px 10px rgba(0,0,0,0.08);}
+/* ════════════════════════════════
      BRAND TABS + HIDDEN BRANDS
   ════════════════════════════════ */
-  .wurxbase-root .brand-tabs-outer { padding: 0 12px; }
-  .wurxbase-root .brand-tabs-bar { padding: 5px 0; gap: 3px; }
-  .wurxbase-root .brand-tab {
-    height: 28px;
-    padding: 0 10px;
-    font-size: 12px;
-  }
-  .wurxbase-root .brand-tab-count {
-    min-width: 14px; height: 14px;
-    font-size: 9px; padding: 0 3px;
-  }
-  /* + Add brand button — small icon only */
-  .wurxbase-root .brand-tab-add {
-    width: 22px; height: 22px;
-    font-size: 14px; border-radius: 999px;
-  }
-  /* Hidden brands pill — compact */
-  .wurxbase-root .hidden-brands-pill {
-    height: 26px;
-    padding: 0 9px 0 7px;
-    font-size: 11px;
-    border-radius: 8px;
-    box-shadow: none;
-    border-left-width: 2px;
-  }
-  .wurxbase-root .hidden-brands-pill svg { width: 10px; height: 10px; }
-
-  /* ════════════════════════════════
+.wurxbase-root .brand-tabs-outer {padding: 0 12px;}
+.wurxbase-root .brand-tabs-bar {padding: 5px 0; gap: 3px;}
+.wurxbase-root .brand-tab {height: 28px; padding: 0 10px; font-size: 12px;}
+.wurxbase-root .brand-tab-count {min-width: 14px; height: 14px; font-size: 9px; padding: 0 3px;}
+/* + Add brand button — small icon only */
+.wurxbase-root .brand-tab-add {width: 22px; height: 22px; font-size: 14px; border-radius: 999px;}
+/* Hidden brands pill — compact */
+.wurxbase-root .hidden-brands-pill {height: 26px; padding: 0 9px 0 7px; font-size: 11px; border-radius: 8px; box-shadow: none; border-left-width: 2px;}
+.wurxbase-root .hidden-brands-pill svg {width: 10px; height: 10px;}
+/* ════════════════════════════════
      BRAND STATS — Samsung One UI
      3-col grid, white cards, colored accents
   ════════════════════════════════ */
-  .wurxbase-root .brand-stats-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    padding: 10px 12px 14px;
-    gap: 8px;
-    overflow: visible;
-    background: transparent;
-  }
-
-  /* Card: white, soft shadow, column layout */
-  .wurxbase-root .bstat-card {
-    flex: unset;
-    min-width: unset;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 10px 10px 9px;
-    gap: 6px;
-    border-radius: 16px;
-    background: var(--wx-surface-1) !important;
-    border: 1px solid var(--wx-accent) !important;
-    border-left: 1px solid var(--wx-accent) !important;
-    box-shadow: 0 2px 8px rgba(15,23,42,0.06) !important;
-  }
-  .wurxbase-root .bstat-card:hover {
-    transform: none;
-    box-shadow: 0 2px 8px rgba(15,23,42,0.06) !important;
-  }
-
-  /* Icon — restore colored bg box, compact */
-  .wurxbase-root .bsc-icon {
-    width: 26px;
-    height: 26px;
-    border-radius: 8px;
-    flex-shrink: 0;
-  }
-  .wurxbase-root .bsc-icon svg { width: 13px; height: 13px; }
-
-  /* Body */
-  .wurxbase-root .bsc-body { gap: 0; }
-
-  /* Label — tiny uppercase muted */
-  .wurxbase-root .bsc-label {
-    font-size: 8.5px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    color: var(--wx-accent);
-    line-height: 1.3;
-  }
-
-  /* Value — large bold, colored per card */
-  .wurxbase-root .bsc-value {
-    font-size: 17px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    line-height: 1.15;
-  }
-  .wurxbase-root .bstat-card-blue   .bsc-value { color: var(--wx-accent); }
-  .wurxbase-root .bstat-card-purple .bsc-value { color: var(--wx-accent); }
-  .wurxbase-root .bstat-card-amber  .bsc-value { color: var(--wx-warning); }
-  .wurxbase-root .bstat-card-teal   .bsc-value { color: var(--wx-info); }
-  .wurxbase-root .bstat-card-green  .bsc-value { color: var(--wx-success); }
-  .wurxbase-root .bstat-card-rose   .bsc-value { color: var(--wx-danger); }
-
-  /* Hide sub / progress */
-  .wurxbase-root .bsc-sub           { display: none !important; }
-  .wurxbase-root .bsc-progress-wrap { display: none !important; }
-  .wurxbase-root .bsc-value-total   { display: none !important; }
-
-  /* ════════════════════════════════
+.wurxbase-root .brand-stats-row {display: grid; grid-template-columns: repeat(3, 1fr); padding: 10px 12px 14px; gap: 8px; overflow: visible; background: transparent;}
+/* Card: white, soft shadow, column layout */
+.wurxbase-root .bstat-card {flex: unset; min-width: unset; flex-direction: column; align-items: flex-start; padding: 10px 10px 9px; gap: 6px; border-radius: 16px; background: var(--wx-surface-1) !important; border: 1px solid var(--wx-accent) !important; border-left: 1px solid var(--wx-accent) !important; box-shadow: 0 2px 8px rgba(15,23,42,0.06) !important;}
+.wurxbase-root .bstat-card:hover {transform: none; box-shadow: 0 2px 8px rgba(15,23,42,0.06) !important;}
+/* Icon — restore colored bg box, compact */
+.wurxbase-root .bsc-icon {width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;}
+.wurxbase-root .bsc-icon svg {width: 13px; height: 13px;}
+/* Body */
+.wurxbase-root .bsc-body {gap: 0;}
+/* Label — tiny uppercase muted */
+.wurxbase-root .bsc-label {font-size: 8.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: var(--wx-accent); line-height: 1.3;}
+/* Value — large bold, colored per card */
+.wurxbase-root .bsc-value {font-size: 17px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.15;}
+.wurxbase-root .bstat-card-blue   .bsc-value {color: var(--wx-accent);}
+.wurxbase-root .bstat-card-purple .bsc-value {color: var(--wx-accent);}
+.wurxbase-root .bstat-card-amber  .bsc-value {color: var(--wx-warning);}
+.wurxbase-root .bstat-card-teal   .bsc-value {color: var(--wx-info);}
+.wurxbase-root .bstat-card-green  .bsc-value {color: var(--wx-success);}
+.wurxbase-root .bstat-card-rose   .bsc-value {color: var(--wx-danger);}
+/* Hide sub / progress */
+.wurxbase-root .bsc-sub {display: none !important;}
+.wurxbase-root .bsc-progress-wrap {display: none !important;}
+.wurxbase-root .bsc-value-total {display: none !important;}
+/* ════════════════════════════════
      TABLE — NAME + ACTIONS ONLY
      Full width, no horizontal scroll needed
   ════════════════════════════════ */
-
-  /* Hide ALL columns except name — row click opens modal */
-  .wurxbase-root thead th { display: none !important; }
-  .wurxbase-root tbody td { display: none !important; }
-
-  /* Show: name only */
-  .wurxbase-root .col-name-th   { display: table-cell !important; }
-  .wurxbase-root .col-name-td   { display: table-cell !important; }
-
-  /* Table container */
-  .wurxbase-root .table-outer {
-    padding: 8px 12px 80px;
-    background: transparent;
-  }
-  .wurxbase-root .table-scroll {
-    overflow: visible;
-    border-radius: 16px;
-    border: 1.5px solid var(--wx-accent);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-    max-height: none;
-    background: var(--wx-surface-1);
-  }
-  .wurxbase-root table {
-    width: 100%;
-    min-width: unset;
-    table-layout: fixed;
-  }
-
-  /* Header row */
-  .wurxbase-root thead { display: table-header-group; }
-  .wurxbase-root thead tr { display: table-row; }
-  .wurxbase-root thead th.col-check-th {
-    height: 34px;
-    background: var(--wx-accent-soft);
-    border-bottom: 1.5px solid var(--wx-accent);
-    width: 38px !important;
-    min-width: 38px !important;
-    padding: 0 4px 0 12px !important;
-    position: static !important;
-    z-index: auto !important;
-  }
-  .wurxbase-root thead th.col-name-th {
-    height: 34px;
-    font-size: 10.5px;
-    letter-spacing: 0.4px;
-    background: var(--wx-accent-soft);
-    border-bottom: 1.5px solid var(--wx-accent);
-    padding: 0 16px;
-    /* reset sticky — no horizontal scroll */
-    position: static !important;
-    left: auto !important;
-    z-index: auto !important;
-    box-shadow: none !important;
-    width: 100%;
-  }
-  .wurxbase-root thead th.col-actions-th {
-    height: 34px;
-    font-size: 10.5px;
-    letter-spacing: 0.4px;
-    background: var(--wx-accent-soft);
-    border-bottom: 1.5px solid var(--wx-accent);
-    padding: 0 10px;
-    position: static !important;
-    right: auto !important;
-    z-index: auto !important;
-    box-shadow: none !important;
-    width: 80px;
-    text-align: right;
-  }
-
-  /* Body rows */
-  .wurxbase-root tbody tr {
-    display: table-row;
-    height: 46px;
-    border-bottom: 1px solid var(--wx-accent);
-    background: var(--wx-surface-1);
-  }
-  .wurxbase-root tbody tr:last-child { border-bottom: none; }
-  .wurxbase-root tbody tr:hover { background: var(--wx-accent-soft); }
-  .wurxbase-root tbody tr.selected-row { background: var(--wx-accent-soft); }
-
-  /* Checkbox cell */
-  .wurxbase-root .col-check-td {
-    display: table-cell !important;
-    position: static !important;
-    width: 38px !important;
-    min-width: 38px !important;
-    padding: 0 4px 0 12px !important;
-    vertical-align: middle;
-    background: transparent !important;
-  }
-  .wurxbase-root .col-check-td .bulk-checkbox { width: 15px; height: 15px; }
-
-  /* Name cell — keep position:relative so the Retainer ribbon stays anchored */
-  .wurxbase-root .col-name-td {
-    display: table-cell !important;
-    position: relative !important;  /* NOT static — retainer ribbon needs this */
-    left: auto !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    border-right: none !important;
-    z-index: auto !important;
-    width: 100% !important;
-    max-width: none !important;
-    min-width: unset !important;
-    padding: 0 16px !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    color: var(--wx-accent) !important;
-    vertical-align: middle;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  /* Actions cell */
-  .wurxbase-root .col-actions-td {
-    display: table-cell !important;
-    position: static !important;
-    right: auto !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    border-left: none !important;
-    z-index: auto !important;
-    width: 86px !important;
-    min-width: unset !important;
-    padding: 0 10px !important;
-    vertical-align: middle;
-  }
-  /* Row actions — always visible, right-aligned */
-  .wurxbase-root .row-actions {
-    opacity: 1 !important;
-    gap: 4px;
-    justify-content: flex-end;
-  }
-  .wurxbase-root .row-action-btn { width: 32px; height: 32px; border-radius: 9px; }
-
-  /* Hover bg sync */
-  .wurxbase-root tbody tr:hover .col-name-td   { background: transparent !important; }
-  .wurxbase-root tbody tr:hover .col-actions-td { background: transparent !important; }
-
-  /* ════════════════════════════════
+/* Hide ALL columns except name — row click opens modal */
+.wurxbase-root thead th {display: none !important;}
+.wurxbase-root tbody td {display: none !important;}
+/* Show: name only */
+.wurxbase-root .col-name-th {display: table-cell !important;}
+.wurxbase-root .col-name-td {display: table-cell !important;}
+/* Table container */
+.wurxbase-root .table-outer {padding: 8px 12px 80px; background: transparent;}
+.wurxbase-root .table-scroll {overflow: visible; border-radius: 16px; border: 1.5px solid var(--wx-accent); box-shadow: 0 2px 12px rgba(0,0,0,0.05); max-height: none; background: var(--wx-surface-1);}
+.wurxbase-root table {width: 100%; min-width: unset; table-layout: fixed;}
+/* Header row */
+.wurxbase-root thead {display: table-header-group;}
+.wurxbase-root thead tr {display: table-row;}
+.wurxbase-root thead th.col-check-th {height: 34px; background: var(--wx-accent-soft); border-bottom: 1.5px solid var(--wx-accent); width: 38px !important; min-width: 38px !important; padding: 0 4px 0 12px !important; position: static !important; z-index: auto !important;}
+.wurxbase-root thead th.col-name-th {height: 34px; font-size: 10.5px; letter-spacing: 0.4px; background: var(--wx-accent-soft); border-bottom: 1.5px solid var(--wx-accent); padding: 0 16px; /* reset sticky — no horizontal scroll */ position: static !important; left: auto !important; z-index: auto !important; box-shadow: none !important; width: 100%;}
+.wurxbase-root thead th.col-actions-th {height: 34px; font-size: 10.5px; letter-spacing: 0.4px; background: var(--wx-accent-soft); border-bottom: 1.5px solid var(--wx-accent); padding: 0 10px; position: static !important; right: auto !important; z-index: auto !important; box-shadow: none !important; width: 80px; text-align: right;}
+/* Body rows */
+.wurxbase-root tbody tr {display: table-row; height: 46px; border-bottom: 1px solid var(--wx-accent); background: var(--wx-surface-1);}
+.wurxbase-root tbody tr:last-child {border-bottom: none;}
+.wurxbase-root tbody tr:hover {background: var(--wx-accent-soft);}
+.wurxbase-root tbody tr.selected-row {background: var(--wx-accent-soft);}
+/* Checkbox cell */
+.wurxbase-root .col-check-td {display: table-cell !important; position: static !important; width: 38px !important; min-width: 38px !important; padding: 0 4px 0 12px !important; vertical-align: middle; background: transparent !important;}
+.wurxbase-root .col-check-td .bulk-checkbox {width: 15px; height: 15px;}
+/* Name cell — keep position:relative so the Retainer ribbon stays anchored */
+.wurxbase-root .col-name-td {display: table-cell !important; position: relative !important; /* NOT static — retainer ribbon needs this */ left: auto !important; background: transparent !important; box-shadow: none !important; border-right: none !important; z-index: auto !important; width: 100% !important; max-width: none !important; min-width: unset !important; padding: 0 16px !important; font-size: 14px !important; font-weight: 600 !important; color: var(--wx-accent) !important; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+/* Actions cell */
+.wurxbase-root .col-actions-td {display: table-cell !important; position: static !important; right: auto !important; background: transparent !important; box-shadow: none !important; border-left: none !important; z-index: auto !important; width: 86px !important; min-width: unset !important; padding: 0 10px !important; vertical-align: middle;}
+/* Row actions — always visible, right-aligned */
+.wurxbase-root .row-actions {opacity: 1 !important; gap: 4px; justify-content: flex-end;}
+.wurxbase-root .row-action-btn {width: 32px; height: 32px; border-radius: 9px;}
+/* Hover bg sync */
+.wurxbase-root tbody tr:hover .col-name-td {background: transparent !important;}
+.wurxbase-root tbody tr:hover .col-actions-td {background: transparent !important;}
+/* ════════════════════════════════
      DETAIL MODAL — slide up from bottom
   ════════════════════════════════ */
-  .wurxbase-root .modal-overlay { padding: 0; align-items: flex-end; background: color-mix(in srgb, var(--wx-accent) 50%, transparent); }
-
-  /* New VIP modal — bottom sheet */
-  .wurxbase-root .ndm {
-    max-width: 100% !important;
-    width: 100% !important;
-    border-radius: 22px 22px 0 0 !important;
-    max-height: 92vh !important;
-    animation: ndm-slide-up 0.32s cubic-bezier(0.34,1.2,0.64,1) !important;
-    box-shadow: 0 -8px 40px rgba(0,0,0,0.18) !important;
-  }
-  .wurxbase-root .ndm-drag-handle {
-    display: flex !important;
-    width: 100% !important; height: 22px !important;
-    flex-shrink: 0;
-  }
-  .wurxbase-root .ndm { border-radius: 24px 24px 0 0 !important; }
-  .wurxbase-root .ndm-id { padding: 28px 20px 18px !important; }
-  .wurxbase-root .ndm-id-av { width: 72px !important; height: 72px !important; font-size: 30px !important; border-radius: 22px !important; margin-bottom: 12px !important; }
-  .wurxbase-root .ndm-id-name { font-size: 20px !important; }
-  .wurxbase-root .ndm-stats { grid-template-columns: 1fr 1fr !important; padding: 0 12px 12px !important; }
-  .wurxbase-root .ndm-stat-deal { grid-column: 1 / -1; }
-  .wurxbase-root .ndm-stat { border-radius: 16px !important; padding: 12px 14px !important; }
-  .wurxbase-root .ndm-stat-v { font-size: 15px !important; }
-  .wurxbase-root .ndm-sect { padding: 4px 12px 12px !important; }
-  .wurxbase-root .ndm-list { border-radius: 18px !important; }
-  .wurxbase-root .ndm-row { padding: 12px 14px !important; gap: 12px !important; }
-  .wurxbase-root .ndm-row-val { font-size: 13px !important; }
-  .wurxbase-root .ndm-row-icon { width: 32px !important; height: 32px !important; border-radius: 10px !important; }
-  .wurxbase-root .ndm-vids-sect { padding: 4px 12px 8px !important; }
-  .wurxbase-root .vc { border-radius: 18px !important; padding: 12px 14px !important; }
-  .wurxbase-root .ndm-foot { padding: 12px 14px 28px !important; }
-  .wurxbase-root .ndm-del  { height: 48px !important; }
-  .wurxbase-root .ndm-edit { height: 48px !important; font-size: 13.5px !important; }
-  .wurxbase-root .ndm-close { top: 12px !important; right: 12px !important; }
-
-  /* Legacy modal (add/edit sheet) */
-  .wurxbase-root .cm {
-    max-width: 100% !important;
-    border-radius: 22px 22px 0 0;
-    max-height: 94vh;
-    animation: cm-slide-up 0.32s cubic-bezier(0.34,1.2,0.64,1);
-  }
+.wurxbase-root .modal-overlay {padding: 0; align-items: flex-end; background: color-mix(in srgb, var(--wx-accent) 50%, transparent);}
+/* New VIP modal — bottom sheet */
+.wurxbase-root .ndm {max-width: 100% !important; width: 100% !important; border-radius: 22px 22px 0 0 !important; max-height: 92vh !important; animation: ndm-slide-up 0.32s cubic-bezier(0.34,1.2,0.64,1) !important; box-shadow: 0 -8px 40px rgba(0,0,0,0.18) !important;}
+.wurxbase-root .ndm-drag-handle {display: flex !important; width: 100% !important; height: 22px !important; flex-shrink: 0;}
+.wurxbase-root .ndm {border-radius: 24px 24px 0 0 !important;}
+.wurxbase-root .ndm-id {padding: 28px 20px 18px !important;}
+.wurxbase-root .ndm-id-av {width: 72px !important; height: 72px !important; font-size: 30px !important; border-radius: 22px !important; margin-bottom: 12px !important;}
+.wurxbase-root .ndm-id-name {font-size: 20px !important;}
+.wurxbase-root .ndm-stats {grid-template-columns: 1fr 1fr !important; padding: 0 12px 12px !important;}
+.wurxbase-root .ndm-stat-deal {grid-column: 1 / -1;}
+.wurxbase-root .ndm-stat {border-radius: 16px !important; padding: 12px 14px !important;}
+.wurxbase-root .ndm-stat-v {font-size: 15px !important;}
+.wurxbase-root .ndm-sect {padding: 4px 12px 12px !important;}
+.wurxbase-root .ndm-list {border-radius: 18px !important;}
+.wurxbase-root .ndm-row {padding: 12px 14px !important; gap: 12px !important;}
+.wurxbase-root .ndm-row-val {font-size: 13px !important;}
+.wurxbase-root .ndm-row-icon {width: 32px !important; height: 32px !important; border-radius: 10px !important;}
+.wurxbase-root .ndm-vids-sect {padding: 4px 12px 8px !important;}
+.wurxbase-root .vc {border-radius: 18px !important; padding: 12px 14px !important;}
+.wurxbase-root .ndm-foot {padding: 12px 14px 28px !important;}
+.wurxbase-root .ndm-del {height: 48px !important;}
+.wurxbase-root .ndm-edit {height: 48px !important; font-size: 13.5px !important;}
+.wurxbase-root .ndm-close {top: 12px !important; right: 12px !important;}
+/* Legacy modal (add/edit sheet) */
+.wurxbase-root .cm {max-width: 100% !important; border-radius: 22px 22px 0 0; max-height: 94vh; animation: cm-slide-up 0.32s cubic-bezier(0.34,1.2,0.64,1);}
   @keyframes cm-slide-up {
-    from { transform: translateY(100%); opacity: 0.85; }
-    to   { transform: translateY(0);    opacity: 1; }
+from {transform: translateY(100%); opacity: 0.85;}
+to {transform: translateY(0); opacity: 1;}
   }
-  .wurxbase-root .cm-hero { height: 96px; }
-  .wurxbase-root .cm-av { width: 54px; height: 54px; font-size: 20px; }
-  .wurxbase-root .detail-info-section { margin: 0 8px 8px; }
-  .wurxbase-root .dvs-card { padding: 12px; }
-
-  /* ════════════════════════════════
+.wurxbase-root .cm-hero {height: 96px;}
+.wurxbase-root .cm-av {width: 54px; height: 54px; font-size: 20px;}
+.wurxbase-root .detail-info-section {margin: 0 8px 8px;}
+.wurxbase-root .dvs-card {padding: 12px;}
+/* ════════════════════════════════
      SETTINGS PANEL — slide up
   ════════════════════════════════ */
-  .wurxbase-root .settings-overlay { padding: 0 !important; align-items: flex-end !important; }
-  .wurxbase-root .settings-panel {
-    position: fixed !important;
-    top: auto !important; right: 0 !important; bottom: 0 !important;
-    border-radius: 22px 22px 0 0 !important;
-    max-height: 88vh !important;
-    width: 100% !important; max-width: 100% !important;
-    animation: cm-slide-up 0.3s cubic-bezier(0.34,1.2,0.64,1) !important;
-  }
-  .wurxbase-root .ta-list { gap: 2px; padding: 2px 0; }
-  .wurxbase-root .ta-row { padding: 10px 12px; border-radius: 12px; gap: 10px; }
-  .wurxbase-root .ta-avatar { width: 38px; height: 38px; font-size: 13px; }
-  .wurxbase-root .ta-name { font-size: 13px; }
-  .wurxbase-root .ta-username { font-size: 11px; }
-  .wurxbase-root .ta-role-pill { font-size: 10px; padding: 2px 7px; }
-  .wurxbase-root .team-member-row { padding: 8px 10px; }
-  .wurxbase-root .team-avatar { width: 30px; height: 30px; font-size: 11px; }
-  .wurxbase-root .team-delete { opacity: 1 !important; }
-
-  /* ════════════════════════════════
+.wurxbase-root .settings-overlay {padding: 0 !important; align-items: flex-end !important;}
+.wurxbase-root .settings-panel {position: fixed !important; top: auto !important; right: 0 !important; bottom: 0 !important; border-radius: 22px 22px 0 0 !important; max-height: 88vh !important; width: 100% !important; max-width: 100% !important; animation: cm-slide-up 0.3s cubic-bezier(0.34,1.2,0.64,1) !important;}
+.wurxbase-root .ta-list {gap: 2px; padding: 2px 0;}
+.wurxbase-root .ta-row {padding: 10px 12px; border-radius: 12px; gap: 10px;}
+.wurxbase-root .ta-avatar {width: 38px; height: 38px; font-size: 13px;}
+.wurxbase-root .ta-name {font-size: 13px;}
+.wurxbase-root .ta-username {font-size: 11px;}
+.wurxbase-root .ta-role-pill {font-size: 10px; padding: 2px 7px;}
+.wurxbase-root .team-member-row {padding: 8px 10px;}
+.wurxbase-root .team-avatar {width: 30px; height: 30px; font-size: 11px;}
+.wurxbase-root .team-delete {opacity: 1 !important;}
+/* ════════════════════════════════
      ACTIVITY LOGS — slide up
   ════════════════════════════════ */
-  .wurxbase-root .logs-overlay { padding: 0 !important; align-items: flex-end !important; }
-  .wurxbase-root .logs-panel {
-    border-radius: 22px 22px 0 0 !important;
-    max-height: 92vh !important;
-    width: 100% !important; max-width: 100% !important;
-    animation: cm-slide-up 0.3s cubic-bezier(0.34,1.2,0.64,1) !important;
-  }
-  .wurxbase-root .logs-header { padding: 16px 18px 12px; }
-  .wurxbase-root .logs-filters { padding: 10px 14px; flex-wrap: wrap; gap: 6px; }
-  .wurxbase-root .logs-filter-chip { font-size: 11.5px; padding: 5px 10px; }
-
-  /* ════════════════════════════════
+.wurxbase-root .logs-overlay {padding: 0 !important; align-items: flex-end !important;}
+.wurxbase-root .logs-panel {border-radius: 22px 22px 0 0 !important; max-height: 92vh !important; width: 100% !important; max-width: 100% !important; animation: cm-slide-up 0.3s cubic-bezier(0.34,1.2,0.64,1) !important;}
+.wurxbase-root .logs-header {padding: 16px 18px 12px;}
+.wurxbase-root .logs-filters {padding: 10px 14px; flex-wrap: wrap; gap: 6px;}
+.wurxbase-root .logs-filter-chip {font-size: 11.5px; padding: 5px 10px;}
+/* ════════════════════════════════
      USER MANAGEMENT — slide up
   ════════════════════════════════ */
-  .wurxbase-root .um-overlay { padding: 0; align-items: flex-end; }
-  .wurxbase-root .um-modal {
-    width: 100% !important; max-width: 100% !important;
-    border-radius: 22px 22px 0 0 !important;
-    max-height: 94vh;
-    animation: cm-slide-up 0.3s cubic-bezier(0.34,1.2,0.64,1);
-  }
-  .wurxbase-root .um-header { padding: 16px 16px 14px; }
-  .wurxbase-root .um-header-title { font-size: 15px; }
-  .wurxbase-root .um-header-sub { display: none; }
-  .wurxbase-root .um-header-stat { padding: 0 8px; }
-  .wurxbase-root .um-header-stat-num { font-size: 16px; }
-  .wurxbase-root .um-toolbar { padding: 0 14px; }
-  .wurxbase-root .um-tab { padding: 11px 12px; font-size: 12px; }
-  .wurxbase-root .um-body { padding: 14px 14px 20px; }
-  .wurxbase-root .um-list-header { display: none; }
-  .wurxbase-root .um-user-row-main {
-    grid-template-columns: 1fr auto;
-    grid-template-rows: auto auto;
-    gap: 4px 0; padding: 12px 14px;
-  }
-  .wurxbase-root .um-col-member  { grid-column: 1; grid-row: 1; }
-  .wurxbase-root .um-col-role    { grid-column: 1; grid-row: 2; padding-left: 45px; }
-  .wurxbase-root .um-col-access  { display: none; }
-  .wurxbase-root .um-col-actions { grid-column: 2; grid-row: 1 / 3; align-self: center; }
-  .wurxbase-root .um-ep-body { grid-template-columns: 1fr; gap: 14px; }
-  .wurxbase-root .um-ep-row2 { grid-template-columns: 1fr; }
-  .wurxbase-root .um-ep-right { border-radius: 12px; }
-  .wurxbase-root .um-role-picker { gap: 5px; }
-  .wurxbase-root .um-rp-btn { font-size: 11px; padding: 5px 10px; }
-  .wurxbase-root .um-dialog-overlay { align-items: flex-end !important; }
-  .wurxbase-root .um-dialog {
-    width: 100% !important; max-width: 100% !important;
-    border-radius: 22px 22px 0 0 !important;
-    padding-bottom: 30px;
-  }
-  .wurxbase-root .um-add-dialog { width: 100% !important; }
-  .wurxbase-root .um-add-dialog-grid { grid-template-columns: 1fr; }
-
-  /* ════════════════════════════════
+.wurxbase-root .um-overlay {padding: 0; align-items: flex-end;}
+.wurxbase-root .um-modal {width: 100% !important; max-width: 100% !important; border-radius: 22px 22px 0 0 !important; max-height: 94vh; animation: cm-slide-up 0.3s cubic-bezier(0.34,1.2,0.64,1);}
+.wurxbase-root .um-header {padding: 16px 16px 14px;}
+.wurxbase-root .um-header-title {font-size: 15px;}
+.wurxbase-root .um-header-sub {display: none;}
+.wurxbase-root .um-header-stat {padding: 0 8px;}
+.wurxbase-root .um-header-stat-num {font-size: 16px;}
+.wurxbase-root .um-toolbar {padding: 0 14px;}
+.wurxbase-root .um-tab {padding: 11px 12px; font-size: 12px;}
+.wurxbase-root .um-body {padding: 14px 14px 20px;}
+.wurxbase-root .um-list-header {display: none;}
+.wurxbase-root .um-user-row-main {grid-template-columns: 1fr auto; grid-template-rows: auto auto; gap: 4px 0; padding: 12px 14px;}
+.wurxbase-root .um-col-member {grid-column: 1; grid-row: 1;}
+.wurxbase-root .um-col-role {grid-column: 1; grid-row: 2; padding-left: 45px;}
+.wurxbase-root .um-col-access {display: none;}
+.wurxbase-root .um-col-actions {grid-column: 2; grid-row: 1 / 3; align-self: center;}
+.wurxbase-root .um-ep-body {grid-template-columns: 1fr; gap: 14px;}
+.wurxbase-root .um-ep-row2 {grid-template-columns: 1fr;}
+.wurxbase-root .um-ep-right {border-radius: 12px;}
+.wurxbase-root .um-role-picker {gap: 5px;}
+.wurxbase-root .um-rp-btn {font-size: 11px; padding: 5px 10px;}
+.wurxbase-root .um-dialog-overlay {align-items: flex-end !important;}
+.wurxbase-root .um-dialog {width: 100% !important; max-width: 100% !important; border-radius: 22px 22px 0 0 !important; padding-bottom: 30px;}
+.wurxbase-root .um-add-dialog {width: 100% !important;}
+.wurxbase-root .um-add-dialog-grid {grid-template-columns: 1fr;}
+/* ════════════════════════════════
      NOTIFICATIONS — fixed bottom
   ════════════════════════════════ */
-  .wurxbase-root .notif-panel {
-    position: fixed !important;
-    top: auto !important; bottom: 0 !important;
-    left: 0 !important; right: 0 !important;
-    width: 100% !important;
-    border-radius: 22px 22px 0 0;
-    max-height: 80vh;
-    animation: cm-slide-up 0.28s cubic-bezier(0.34,1.2,0.64,1);
-  }
-  .wurxbase-root .notif-panel-body { max-height: 60vh; }
-
-  /* ════════════════════════════════
+.wurxbase-root .notif-panel {position: fixed !important; top: auto !important; bottom: 0 !important; left: 0 !important; right: 0 !important; width: 100% !important; border-radius: 22px 22px 0 0; max-height: 80vh; animation: cm-slide-up 0.28s cubic-bezier(0.34,1.2,0.64,1);}
+.wurxbase-root .notif-panel-body {max-height: 60vh;}
+/* ════════════════════════════════
      MISC
   ════════════════════════════════ */
-  .wurxbase-root .bsm-overlay { padding: 0; align-items: flex-end; }
-  .wurxbase-root .bsm-modal {
-    border-radius: 22px 22px 0 0 !important;
-    max-height: 80vh;
-    width: 100% !important; max-width: 100% !important;
-    animation: cm-slide-up 0.3s cubic-bezier(0.34,1.2,0.64,1);
-  }
-  .wurxbase-root .login-card { padding: 28px 20px 24px; margin: 16px; width: auto !important; min-width: unset; }
-  .wurxbase-root .bsel-card  { padding: 24px 18px; margin: 14px; }
-  .wurxbase-root .date-popover {
-    position: fixed !important;
-    top: auto !important; bottom: 60px;
-    left: 12px !important; right: 12px !important;
-    width: auto !important;
-  }
-  .wurxbase-root .inline-dropdown { border-radius: 16px; }
-  .wurxbase-root .samsung-toast { bottom: 20px; max-width: calc(100vw - 32px); }
-  .wurxbase-root .undo-toast {
-    bottom: 16px; left: 16px; right: 16px;
-    transform: none !important; max-width: none;
-  }
-  .wurxbase-root .context-menu { border-radius: 16px; min-width: 160px; }
+.wurxbase-root .bsm-overlay {padding: 0; align-items: flex-end;}
+.wurxbase-root .bsm-modal {border-radius: 22px 22px 0 0 !important; max-height: 80vh; width: 100% !important; max-width: 100% !important; animation: cm-slide-up 0.3s cubic-bezier(0.34,1.2,0.64,1);}
+.wurxbase-root .login-card {padding: 28px 20px 24px; margin: 16px; width: auto !important; min-width: unset;}
+.wurxbase-root .bsel-card {padding: 24px 18px; margin: 14px;}
+.wurxbase-root .date-popover {position: fixed !important; top: auto !important; bottom: 60px; left: 12px !important; right: 12px !important; width: auto !important;}
+.wurxbase-root .inline-dropdown {border-radius: 16px;}
+.wurxbase-root .samsung-toast {bottom: 20px; max-width: calc(100vw - 32px);}
+.wurxbase-root .undo-toast {bottom: 16px; left: 16px; right: 16px; transform: none !important; max-width: none;}
+.wurxbase-root .context-menu {border-radius: 16px; min-width: 160px;}
 }
 
 /* ───────────────────────────────────────
    PHONE ONLY (≤480px)
 ─────────────────────────────────────── */
 @media (max-width: 480px) {
-
-  .wurxbase-root .topbar { padding: 0 12px; gap: 6px; }
-  .wurxbase-root .topbar-brand { font-size: 12.5px; }
-
-  .wurxbase-root .page-head { padding: 8px 12px 0; }
-  .wurxbase-root .ph-title { font-size: 16px; padding-bottom: 7px; }
-  .wurxbase-root .ph-actions { padding-bottom: 7px; }
-  .wurxbase-root .ph-badge-row { padding: 6px 0 8px; }
-  .wurxbase-root .ph-kpi-val { font-size: 14px; }
-  .wurxbase-root .ph-kpi-lbl { font-size: 10.5px; }
-  .wurxbase-root .btn-date, .wurxbase-root .btn-add { height: 29px; padding: 0 8px; font-size: 10.5px; }
-
-  .wurxbase-root .brand-stats-row { padding: 8px 10px 12px; gap: 6px; }
-  .wurxbase-root .bstat-card { padding: 9px 9px 8px; border-radius: 14px; gap: 5px; }
-  .wurxbase-root .bsc-icon { width: 24px; height: 24px; border-radius: 7px; }
-  .wurxbase-root .bsc-icon svg { width: 12px; height: 12px; }
-  .wurxbase-root .bsc-value { font-size: 15px; }
-  .wurxbase-root .bsc-label { font-size: 8px; }
-
-  .wurxbase-root .filter-section { padding: 0 10px; }
-  .wurxbase-root .filter-search-wrap { height: 36px; }
-  .wurxbase-root .fchip { height: 26px; font-size: 11px; padding: 0 8px; }
-  .wurxbase-root .brand-tab { height: 26px; padding: 0 9px; font-size: 11px; }
-  .wurxbase-root .brand-tabs-outer { padding: 0 10px; }
-  .wurxbase-root .hidden-brands-pill { height: 24px; font-size: 10.5px; padding: 0 7px 0 6px; }
-  .wurxbase-root .brand-tab-add { width: 20px; height: 20px; font-size: 13px; }
-
-  /* Table adjustments */
-  .wurxbase-root .table-outer { padding: 6px 10px 80px; }
-  .wurxbase-root tbody tr { height: 42px; }
-  .wurxbase-root .col-check-td { padding: 0 2px 0 10px !important; }
-  .wurxbase-root .col-name-td { font-size: 13px !important; padding: 0 10px !important; }
-  .wurxbase-root .col-actions-td { width: 76px !important; padding: 0 7px !important; }
-  .wurxbase-root .row-action-btn { width: 28px; height: 28px; border-radius: 8px; }
-
-  .wurxbase-root .cm-hero { height: 86px; }
-  .wurxbase-root .cm-av { width: 48px; height: 48px; font-size: 17px; }
-  .wurxbase-root .cm-stat { padding: 10px 8px; }
-  .wurxbase-root .cm-stat-v { font-size: 14px; }
-
-  .wurxbase-root .ta-row { padding: 8px 10px; gap: 8px; }
-  .wurxbase-root .ta-avatar { width: 34px; height: 34px; font-size: 12px; }
-  .wurxbase-root .ta-status-text { display: none; }
-
-  .wurxbase-root .um-header { padding: 14px 14px 12px; }
-  .wurxbase-root .um-header-stat-divider { display: none; }
-  .wurxbase-root .um-header-stat:last-of-type { display: none; }
-  .wurxbase-root .um-dialog { padding: 20px 16px 30px; gap: 12px; }
-
-  .wurxbase-root .notif-item { padding: 8px 14px; gap: 9px; }
-  .wurxbase-root .notif-item-icon { width: 28px; height: 28px; font-size: 12px; border-radius: 8px; }
-  .wurxbase-root .logs-header { padding: 14px 16px 10px; }
-  .wurxbase-root .logs-entry  { padding: 10px 14px; }
+.wurxbase-root .topbar {padding: 0 12px; gap: 6px;}
+.wurxbase-root .topbar-brand {font-size: 12.5px;}
+.wurxbase-root .page-head {padding: 8px 12px 0;}
+.wurxbase-root .ph-title {font-size: 16px; padding-bottom: 7px;}
+.wurxbase-root .ph-actions {padding-bottom: 7px;}
+.wurxbase-root .ph-badge-row {padding: 6px 0 8px;}
+.wurxbase-root .ph-kpi-val {font-size: 14px;}
+.wurxbase-root .ph-kpi-lbl {font-size: 10.5px;}
+.wurxbase-root .btn-date, .wurxbase-root .btn-add {height: 29px; padding: 0 8px; font-size: 10.5px;}
+.wurxbase-root .brand-stats-row {padding: 8px 10px 12px; gap: 6px;}
+.wurxbase-root .bstat-card {padding: 9px 9px 8px; border-radius: 14px; gap: 5px;}
+.wurxbase-root .bsc-icon {width: 24px; height: 24px; border-radius: 7px;}
+.wurxbase-root .bsc-icon svg {width: 12px; height: 12px;}
+.wurxbase-root .bsc-value {font-size: 15px;}
+.wurxbase-root .bsc-label {font-size: 8px;}
+.wurxbase-root .filter-section {padding: 0 10px;}
+.wurxbase-root .filter-search-wrap {height: 36px;}
+.wurxbase-root .fchip {height: 26px; font-size: 11px; padding: 0 8px;}
+.wurxbase-root .brand-tab {height: 26px; padding: 0 9px; font-size: 11px;}
+.wurxbase-root .brand-tabs-outer {padding: 0 10px;}
+.wurxbase-root .hidden-brands-pill {height: 24px; font-size: 10.5px; padding: 0 7px 0 6px;}
+.wurxbase-root .brand-tab-add {width: 20px; height: 20px; font-size: 13px;}
+/* Table adjustments */
+.wurxbase-root .table-outer {padding: 6px 10px 80px;}
+.wurxbase-root tbody tr {height: 42px;}
+.wurxbase-root .col-check-td {padding: 0 2px 0 10px !important;}
+.wurxbase-root .col-name-td {font-size: 13px !important; padding: 0 10px !important;}
+.wurxbase-root .col-actions-td {width: 76px !important; padding: 0 7px !important;}
+.wurxbase-root .row-action-btn {width: 28px; height: 28px; border-radius: 8px;}
+.wurxbase-root .cm-hero {height: 86px;}
+.wurxbase-root .cm-av {width: 48px; height: 48px; font-size: 17px;}
+.wurxbase-root .cm-stat {padding: 10px 8px;}
+.wurxbase-root .cm-stat-v {font-size: 14px;}
+.wurxbase-root .ta-row {padding: 8px 10px; gap: 8px;}
+.wurxbase-root .ta-avatar {width: 34px; height: 34px; font-size: 12px;}
+.wurxbase-root .ta-status-text {display: none;}
+.wurxbase-root .um-header {padding: 14px 14px 12px;}
+.wurxbase-root .um-header-stat-divider {display: none;}
+.wurxbase-root .um-header-stat:last-of-type {display: none;}
+.wurxbase-root .um-dialog {padding: 20px 16px 30px; gap: 12px;}
+.wurxbase-root .notif-item {padding: 8px 14px; gap: 9px;}
+.wurxbase-root .notif-item-icon {width: 28px; height: 28px; font-size: 12px; border-radius: 8px;}
+.wurxbase-root .logs-header {padding: 14px 16px 10px;}
+.wurxbase-root .logs-entry {padding: 10px 14px;}
 }
 
 /* ───────────────────────────────────────
    TABLET ONLY (481-768px) — roomier table
 ─────────────────────────────────────── */
 @media (min-width: 481px) and (max-width: 768px) {
-  .wurxbase-root .table-outer { padding: 8px 14px 80px; }
+.wurxbase-root .table-outer {padding: 8px 14px 80px;}
 }
 
 /* ───────────────────────────────────────
    TOUCH DEVICE HELPERS
 ─────────────────────────────────────── */
 @media (hover: none) {
-  .wurxbase-root .row-actions { opacity: 1 !important; }
-  .wurxbase-root .brand-tabs-bar, .wurxbase-root .table-scroll, .wurxbase-root .um-body, .wurxbase-root .logs-body, .wurxbase-root .cm {
-    -webkit-overflow-scrolling: touch;
-  }
-  .wurxbase-root .row-action-btn { min-width: 36px; min-height: 36px; }
-  .wurxbase-root .btn-icon { min-width: 36px; min-height: 36px; }
-  .wurxbase-root .fchip { min-height: 32px; }
-  .wurxbase-root button { touch-action: manipulation; }
+.wurxbase-root .row-actions {opacity: 1 !important;}
+.wurxbase-root .brand-tabs-bar, .wurxbase-root .table-scroll, .wurxbase-root .um-body, .wurxbase-root .logs-body, .wurxbase-root .cm {-webkit-overflow-scrolling: touch;}
+.wurxbase-root .row-action-btn {min-width: 36px; min-height: 36px;}
+.wurxbase-root .btn-icon {min-width: 36px; min-height: 36px;}
+.wurxbase-root .fchip {min-height: 32px;}
+.wurxbase-root button {touch-action: manipulation;}
 }
 
 /* ───────────────────────────────────────
    MOBILE BOTTOM NAV CLEARANCE
 ─────────────────────────────────────── */
 @media (max-width: 768px) {
-  /* Push footer above the nav bar */
-  .wurxbase-root .app-footer { margin-bottom: 62px; }
+/* Push footer above the nav bar */
+.wurxbase-root .app-footer {margin-bottom: 62px;}
 
   /* Topbar: tighter on very small screens */
   @media (max-width: 380px) {
-    .wurxbase-root .topbar { padding: 0 10px; gap: 6px; }
-    .wurxbase-root .topbar-brand { font-size: 12px; gap: 6px; }
-    .wurxbase-root .topbar-brand-icon { width: 24px; height: 24px; }
+.wurxbase-root .topbar {padding: 0 10px; gap: 6px;}
+.wurxbase-root .topbar-brand {font-size: 12px; gap: 6px;}
+.wurxbase-root .topbar-brand-icon {width: 24px; height: 24px;}
   }
-
-  /* Active touch feedback on brand tabs */
-  .wurxbase-root .brand-tab:active { transform: scale(0.94); background: var(--wx-accent-soft) !important; }
-
-  /* Row tap feedback */
-  .wurxbase-root .tr-clickable:active td { background: var(--wx-accent-soft) !important; }
-
-  /* Smooth scroll on all containers */
-  .wurxbase-root .table-scroll, .wurxbase-root .brand-tabs-bar, .wurxbase-root .filter-chips-group {
-    scroll-behavior: smooth;
-  }
-
-  /* Bottom sheet (add/edit) on mobile */
-  .wurxbase-root .sheet-overlay { padding: 0 !important; align-items: flex-end !important; }
-  .wurxbase-root .sheet {
-    border-radius: 24px 24px 0 0 !important;
-    max-height: 92vh !important;
-    width: 100% !important;
-    max-width: 100% !important;
-  }
+/* Active touch feedback on brand tabs */
+.wurxbase-root .brand-tab:active {transform: scale(0.94); background: var(--wx-accent-soft) !important;}
+/* Row tap feedback */
+.wurxbase-root .tr-clickable:active td {background: var(--wx-accent-soft) !important;}
+/* Smooth scroll on all containers */
+.wurxbase-root .table-scroll, .wurxbase-root .brand-tabs-bar, .wurxbase-root .filter-chips-group {scroll-behavior: smooth;}
+/* Bottom sheet (add/edit) on mobile */
+.wurxbase-root .sheet-overlay {padding: 0 !important; align-items: flex-end !important;}
+.wurxbase-root .sheet {border-radius: 24px 24px 0 0 !important; max-height: 92vh !important; width: 100% !important; max-width: 100% !important;}
 
   /* Compare button — hide text on tiny screens, icon only */
   @media (max-width: 380px) {
-    .wurxbase-root .btn-compare span { display: none; }
-    .wurxbase-root .btn-compare { padding: 0 10px; }
+.wurxbase-root .btn-compare span {display: none;}
+.wurxbase-root .btn-compare {padding: 0 10px;}
   }
 }

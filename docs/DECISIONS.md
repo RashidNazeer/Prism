@@ -1663,6 +1663,732 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   two permissions and the video figures, which is exactly what the app asks for.
   The scope-gated field list, the hidden-not-dashed totals strip, the privacy
   page correction and two new guards all came out of this and all stand.
+- 2026-08-26: **The vendored WurxBase code is no longer strictly verbatim, and
+  Rashid decided that knowingly.** Adding columns to their creators list cannot
+  be done from outside their file. The alternative offered was a separate panel
+  of ours on the brand page, leaving their code pristine; he chose the columns
+  where he wants to read them. **Every addition is fenced in a
+  `WURX-ADDED ... WURX-END` block**, so pulling a newer upstream version is a
+  find-and-reapply job rather than diff archaeology. Nothing of theirs is edited
+  or deleted; the blocks only add.
+- 2026-08-26: **Paid Collab videos are joined to our ad data by TikTok's video
+  id, not by brand name.** Their links already carry the id and our table is
+  keyed on it, so there is no mapping table to maintain, nothing to fall out of
+  step, and no spelling to get wrong. It also means a brand needs no
+  configuration: connecting its ad account is what makes the figures appear.
+- 2026-08-26: **The totals are per creator, not per brand.** Offered both; he
+  chose per creator, so a brand's list can be read for which creators returned
+  on the spend. A brand-level total is a small addition if it is ever wanted,
+  and would be the one most likely to be misread, since it blends creators on
+  very different deals.
+- 2026-08-27: **Ad spend and ROI follow the Paid Collabs month selector**, and
+  never show lifetime figures. Rashid asked for this after testing the first
+  version, and he is right: every other number in that row is one month's, so a
+  lifetime total beside them is a different period presented as comparable.
+  "All Time" sends null bounds. The range applies to `stat_date`, which is the
+  ADVERTISER's day, because that is the only boundary TikTok files against.
+- 2026-08-27: **The figures provider does not cancel in-flight requests.** Its
+  cache is keyed `month|id`, so a result arriving late is still correct for its
+  own key and cannot overwrite a newer one. The reflexive
+  `return () => { cancelled = true }` cleanup actively destroyed data here:
+  changing the month grew the effect's dependency, both fetches completed, both
+  returned real rows, and both results were discarded — a screen of dashes with
+  200s in the network tab and no error anywhere. Unmount is guarded with a ref
+  instead. **Cancel a request when a stale result would be WRONG; never when it
+  would merely be old.**
+- 2026-08-27: **Nothing is fetched until the period is known.** The rows render
+  before the drilldown reports its month, so an ungated first pass fired a
+  full-sized all-time query that nothing would display — 357 ids on every brand
+  open. One render of patience halves the traffic.
+
+- 2026-08-27: **The app's email goes out on its own subdomain, not on
+  wurxmedia.com.** Rashid asked explicitly that the website's existing Resend
+  sending not be disturbed, and a subdomain is the only answer that guarantees
+  that structurally rather than by care. The risk that decided it runs in the
+  direction people do not expect: the website mails a real opt-in list, and a
+  campaign that collects spam complaints degrades the whole domain, so the
+  casualty would be a password reset a creator needs at eleven at night. Cost:
+  three additive DNS records, and a new subdomain has no sending reputation
+  until it warms up. Quota stays shared, because Resend counts per account.
+- 2026-08-27: **Vendoring WurxBase is a committed, repeatable pipeline**, not a
+  codemod somebody runs once and throws away. Reconstructing the first one from
+  its own output cost most of a day and was only possible because our copy still
+  held the answers; it would not have been possible a second time.
+- 2026-08-27: **An existing themed declaration is preserved verbatim on a
+  re-vendor.** Where a rule existed before, a person chose that token, and no
+  colour-distance reasoning beats it — inference re-derived `.pc-bt-sort.on` as
+  `--wx-on-accent` where the human had chosen `--wx-warning`, which is white
+  text on a white header. It also means a colour THEY changed is overridden by
+  ours, which is the point of a reskin rather than a loss.
+- 2026-08-27: **The reskin is guarded by measuring the rendered page, not the
+  stylesheet.** A mis-mapped colour is not an error: the page renders, every
+  functional check passes, and the text is simply invisible. Only compositing
+  what is actually painted behind each label can catch it, and it caught 862
+  failures on one tab that nothing else noticed.
+- 2026-08-28: **WurxBase moves into OUR database, in its own schema.** Rashid
+  consolidated to one app managed from one side. A SCHEMA rather than renamed
+  tables in `public`, because their code says `.from('creators')` in
+  forty-two places and `.from('app_users')` in twenty-four: scoping the client
+  once means not one of those call sites changes. Rejected: prefixing every
+  table `wb_` (touches ninety-two call sites and a re-vendor would undo it)
+  and merging into `public` (a name collision waiting to happen).
+- 2026-08-28: **Their `creators` is NOT merged with our creator tables, and
+  the two must never be joined on a hunch.** Theirs is a paid-deal tracker — a
+  brand, a deal string like "$200 for 6", who hired them, an array of delivered
+  videos. Ours is a person with a login, an application and a brand hub. Same
+  word, different grain. Anything wanting both joins deliberately, on TikTok
+  handle or video id, in a view written for the purpose.
+- 2026-08-28: **The data was copied, not moved, and ids were preserved.** Their
+  project stays intact and untouched, so the cutover is one line to reverse.
+  Ids are kept because `activity_logs.id` is load-bearing in their save path:
+  `saveAngles` writes a row, keeps its id, and deletes everything else with
+  that target. Renumbered ids would be invisible until the first save deleted
+  the wrong row.
+- 2026-08-28: **`json` became `jsonb` in the copy, and that is the only
+  deliberate difference.** Every value in those columns is machine-written
+  objects and arrays, so nothing observable changes, and jsonb is what allows
+  the indexes and constraints that make their data-loss bugs impossible rather
+  than merely unlikely — which is the whole reason the move is worth doing.
+- 2026-08-28: **No unique constraint on (action, target) yet, deliberately.**
+  It is the thing that would make the angle-test and contract overwrite bugs
+  impossible, but their save inserts a new row and then deletes the old ones, so
+  adding it now breaks every save on the day it lands. The constraint arrives
+  with the code change, not before it. PARKED 34.
+- 2026-08-28: **The isolation guard was rewritten rather than deleted.** Its
+  premise was reversed by the consolidation, but the reason it existed did not
+  go away. It now asserts the narrower and more easily broken rule: one client,
+  one schema, and no reference anywhere to a retired project — because a
+  leftover URL does not error, it quietly reports on a database nobody
+  maintains.
+- 2026-08-29: **The write-safety fix is a database constraint, not JavaScript.**
+  The design in `docs/WURXBASE_WRITE_SAFETY.md` recommended a compare-and-swap
+  performed by re-reading before writing, and said plainly that it "is not
+  atomic and cannot be made atomic here... closing that needs a unique
+  constraint or an RPC, and constraint 3 says no DDL". Owning the schema removed
+  constraint 3. A partial unique index plus a revision column closes it
+  properly, in one migration, for angle tests, brand contracts and Discovery
+  marks at once — with no JavaScript to maintain across releases.
+- 2026-08-29: **A person's WurxBase permissions come from their own row, not
+  from ours.** Deriving their role from our own would hand every `ops` account
+  their `admin` — full edit on deals and money — and two of their eight people
+  are viewers. `wurxbase.app_users.hub_email` is the join, and
+  `useWurxbaseIdentity` reads the role and `custom_perms` Asad already
+  maintains. Our role still decides whether somebody reaches /admin/collabs at
+  all; that gate is ours. The derived mapping remains only as a fallback for a
+  person whose address has not been filled in, and it is the more generous of
+  the two, which is safe only because the route guard sits above it.
+- 2026-08-29: **Deleting the last angle still deletes.** The conditional write
+  makes an accidental wipe impossible, and it would have been easy to make a
+  deliberate one impossible too. That is a different bug: the button exists, and
+  a user who means it should be obeyed. It is conditioned on the revision, so it
+  cannot be performed by a screen that never loaded — which is the actual
+  distinction.
+- 2026-08-29: **Discovery marks keep last-write-wins on the colour.** Angle
+  tests and contracts refuse a stale write because they are documents somebody
+  typed. A mark is one value chosen by clicking a swatch, and refusing the click
+  because a colleague clicked first would be worse than accepting it. What was
+  fixed there is the value VANISHING, which is what delete-before-insert did.
+- 2026-08-29: **Ink is never faded.** Preserving alpha is right for a fill and
+  wrong for ink: their faded labels were near-white on a dark strip, ours faded
+  a mid-tone token, which has no contrast at any opacity. Our palette answers
+  "quieter ink" with three tokens that `pnpm check:contrast` verifies in both
+  themes; alpha cannot be verified the same way. 67 declarations made solid.
+- 2026-08-29: **The plaintext passwords are gone, and so is everything that
+  wrote one.** Rashid: yes, delete them. The column drop was the small half; the
+  larger half was that five passwords, superadmin included, were hardcoded in
+  `App.jsx` and shipped in the browser bundle where any signed-in person could
+  read them. Dropping the column without removing the code would also have
+  broken the Team screen on Monday, since add-member and edit-member both wrote
+  to it. So the dead login screen, the dead join-request screen and the dead
+  duplicate user modal went with them — 1,198 lines — and
+  `verify:isolation` now fails the build on `password:` or `.password`
+  anywhere in the vendored tree. **The five passwords remain in git history and
+  should be treated as burned wherever the team reused them.**
+- 2026-08-29: **The Team screen edits hub emails, not passwords.** Something had
+  to replace the password field, and the honest replacement is the field that
+  now decides anything: a person's `hub_email` is how they are matched to
+  their role when they arrive from our sign-in. It is required when adding
+  somebody, shown on every row, and flagged in red when missing — an unlinked
+  person falls back to a role derived from ours, which is the more generous
+  answer. It also means Rashid and Asad can fill in the eight addresses
+  themselves rather than waiting on a migration.
+- 2026-08-29: **A gear opens Paid Collabs settings.** Their Settings panel was
+  opened by the user chip, and our chrome hides that chip because our own top
+  bar already says who you are. That quietly closed the door on everything
+  behind it — User Management, Access Control, God Mode — which nobody noticed
+  because the panel had never been the subject of a check. A gear beside the
+  bell reopens it. Not a second profile chip: our top bar owns identity, this
+  owns "settings for this section". Shown only to somebody who has something in
+  there; a viewer's click did nothing before, and a control that does nothing is
+  worse than no control.
+- 2026-08-29: **Contrast is judged per element, not against one floor.**
+  `check-collab-contrast.mjs` failed below 3.0 and warned between 3.0 and 4.5.
+  3.0 is the AA floor for LARGE text only — 24px, or 18.66px bold — and these
+  screens are mostly 9.5px to 13px, so thirty real failures were printed inside
+  pass lines as "12 below AA". The floor is now chosen per element from its own
+  size and weight. This is the fifth member of the "checks that lie" family and
+  the first where the check measured correctly and then judged wrongly.
+- 2026-08-29: **On a tinted surface the ink is `--wx-text`.** Every faint or
+  status-coloured label that failed was failing the same way: a token calibrated
+  against `--wx-bg` used on a chip that moves the ground. Rejected: retuning
+  `--wx-text-faint` itself, which would have changed every screen in the
+  product to fix six chips in one vendored app, and would still be wrong on the
+  next tint. The chip keeps the hue; the text stops competing with it.
+- 2026-08-29: **All eight of their team are `ops` in our hub, Asad included.**
+  The earlier plan gave Asad our `admin` so he would map to their superadmin.
+  That stopped being necessary the moment `hub_email` existed: his own row
+  carries superadmin, and the lookup beats the mapping. So nobody needs a
+  wider role in OUR product than the job requires. **What `ops` does still
+  carry is our whole admin sidebar** — applications, offers, contests, brand
+  hubs — because ops and admin share a nav and differ only in what RLS lets
+  them write. Narrowing that means a new role threaded through every policy;
+  it is not a Monday job, and it is flagged rather than done.
+- 2026-08-29: **Their app must not mount before the permission lookup
+  returns.** Their App reads its session ONCE, in a `useState` initialiser.
+  `identityReady` waited for our profile but not for the WurxBase row, so
+  during the ~200ms lookup it mounted holding the FALLBACK role — the derived
+  one, which makes every `ops` account their `admin`. The correction landed in
+  sessionStorage and their App never looked again. Fahad, a viewer, arrived
+  able to add, edit and delete. Found by signing in as the real accounts;
+  nothing else would have caught it, because the sidebar reads the hook live
+  and was right, and `verify:wurxbase-perms` read sessionStorage, which was
+  eventually right. **Both were looking at the corrected value. Only their App
+  held the wrong one.** The suite now asserts something their App renders.
+- 2026-08-29: **A cleanup restores what was there, never a default.**
+  `check-wurxbase-permissions.mjs` borrowed a real row and put `hub_email`
+  back to `null` — true when it was written, because the column was empty for
+  everybody. The day the eight real addresses went in, running it deleted one.
+  That is the same bug I spent the morning removing from their app, rewritten
+  into the guard that checks it. Capture before you overwrite, in test code
+  as much as in product code.
+- 2026-08-29: **Their team sees our whole admin panel, deliberately.** Put to
+  Rashid with the trade-off spelled out — `ops` carries applications, offers,
+  contests and brand hubs, not only Paid Collabs — and his answer was *"it's
+  fien let them see all no issue"*. So the narrower role that would have
+  needed threading through every RLS policy is NOT being built, and this is
+  not to be re-raised as an open question.
+- 2026-08-29: **The Euka proxy is a Supabase Edge Function, not a Vercel
+  serverless function.** The original was a Netlify function, and the
+  like-for-like port would have been `/api/euka` on Vercel. Rejected: this
+  repository has fourteen Edge Functions and no `api/` directory, the secret
+  store is already there, and CLAUDE.md names Edge Functions as where
+  privileged server-side work goes. One kind of backend, not two.
+- 2026-08-29: **It is staff-only, which the original was not.** Theirs sent
+  `Access-Control-Allow-Origin: *` and required no Authorization, so anybody
+  who knew the URL could pull the roster — and `type=discovery` returns
+  creator emails and phone numbers. Ours verifies the token with the auth
+  server and reads the role from `profiles`, not from the JWT claim, because a
+  claim can be an hour stale. Faithfully porting the hole was not on.
+- 2026-08-29: **The response shapes are copied exactly, bugs and all.**
+  Twelve call sites in code we do not own read these objects by key. Where
+  the original rounds revenue to cents, picks the newest posted date for a
+  tier, or takes the first non-empty value per profile field, ours does the
+  same — a "better" answer here is a number that silently disagrees with the
+  one their team has been reading for months.
+- 2026-08-29: **`networkidle` is banned on a Paid Collabs route.** It never
+  settles on a screen holding a realtime socket, which OPERATIONS already
+  recorded, and restoring Euka made these routes fire ten proxy calls that
+  take seconds each — so a healthy page blew the 30 second navigation limit
+  and `check-collab-ads-ui` failed on a page that was working. Every one of
+  those navigations already had an explicit wait after it, so the flag was
+  contributing nothing but the risk. Ten of them swapped for
+  `domcontentloaded`.
+- 2026-08-29: **The contrast guard waits for the screen, not for a clock.**
+  Its flat 2200ms was enough until Euka calls went behind these screens;
+  then Creators measured 7 elements where it has 2085 and still said PASS.
+  It now settles on two conditions together — no Euka call in flight AND the
+  DOM stopped growing — because a screen waiting on a seven second call is
+  perfectly still, so stability alone settles in the middle of the wait. It
+  also refuses to measure a tab that never filled, rather than reporting a
+  pass on whatever rendered.
+- 2026-08-29: **The dashboard call sends `brandId`, which the original never
+  did.** Euka tightened that validator after their code was written: the
+  original body answers `400 BAD_REQUEST "Input validation failed"` today,
+  verified live. The original swallows a non-2xx there, so `richById` is empty
+  and every video comes back with no thumbnail, no Spark code, no avatar and
+  `items: 0` — silently, ON THEIR DEPLOYMENT AS MUCH AS OURS. Adding brandId
+  is the whole fix. It does mean two brand faces (Aurelia, Cutler) now come
+  from the dashboard rather than from the sample-request fallback and will
+  look different from the old app; that is the correct photo, and after the
+  cutover there is no old app to compare against.
+- 2026-08-29: **`items` is `itemsSoldCount`, not `gmvOrders`.** The original
+  reads a count of ORDERS into the column the table labels "Items sold". Live
+  on Swisse the same video reports gmvOrders 59 and itemsSoldCount 55, and 55
+  is what the per-creator export says — so the two modes disagreed about the
+  same video depending on which swept last.
+- 2026-08-29: **The video merge stopped writing `items: 0` over real counts.**
+  `items` was the only one of six fields written unconditionally, and the only
+  one the store-wide sweep does not know: the dashboard enriches FIVE videos
+  however many you ask for (it reports `pageSize: 5` and ignores `limit`),
+  while the per-creator sweep that fills it properly reaches ten creators a
+  pass. So the column oscillated rather than filling. Now guarded exactly like
+  `product`, `thumb`, `likes`, `comments` and `secs` beside it.
+- 2026-08-29: **L30 GMV and tier read LIVE first, stored second.** It was the
+  other way round, and that is a second, independent reason our numbers
+  differed from theirs. `monthly.euka` is a cache refreshed nightly by
+  `euka-checkin-background`, a scheduled Netlify function that was never
+  vendored in and which writes to the project retired on 2026-08-28. On their
+  deployment that cache is a day old and reading it first is harmless; on ours
+  it is FROZEN — 800 of 1000 creators carry a stored L30 stamped between 29
+  July and 28 August — and every one was being shown in preference to today's
+  figure. Rejected: porting the nightly job, which is more moving parts for a
+  staler answer. The cache stays as the fallback, because `creator_level`
+  only covers the last thirty days, so a creator who has not posted recently
+  drops out of the live sweep and their last known figure beats a dash.
+- 2026-08-29: **One shared promise per store for brand photos, not a
+  "has it started" flag.** A `Set` meant the first `BrandFace` to mount claimed
+  the store id and every later one returned without ever reading the result.
+  Opening a brand mounts a second face for the same store while the list's
+  fetch is still in the air, so the drilldown's logo was the one that lost,
+  and it stayed a gradient initial until a full reload.
+- 2026-08-29: **The live-cursor name tag gets a theme-INDEPENDENT ink,
+  `--wx-on-identity`.** It sits on one of seven fixed identity hues, and it
+  was wearing `--wx-on-accent`, which flips — white in light, near-black in
+  dark — against a background that never moves. So one theme always failed:
+  white measured 2.49:1 on the teal, and once the palette was deepened enough
+  for white, near-black then failed at 3.52:1 in dark. A surface that does not
+  change theme cannot take an ink that does. The token is deliberately the
+  same value in both blocks, like `--wx-scrim` before it.
+- 2026-08-29: **The seven cursor colours were deepened, keeping their hues.**
+  White measured 2.15:1 to 4.23:1 on the originals — every one under AA. They
+  are identity colours, so only the depth changed; white now clears 5:1 on all
+  seven. Rejected: near-black ink on the original shades, which fails on the
+  violet, so it would have needed two inks and a rule for choosing.
+- 2026-08-29: **The contrast guard is bounded, and coverage is the assertion.**
+  Waiting for every Euka call to fall silent was correct and unusable — one
+  tab took two and a half minutes, because opening Brands sweeps ten stores in
+  the background and none of it changes the text on screen. A check nobody
+  runs is a check that does not exist. It now waits for the first Euka answer
+  plus a stable DOM, caps at 45 seconds, and carries a PER-TAB FLOOR of
+  expected elements. The floor is the real protection: a wait gets outrun by
+  the next thing that makes a page slower, but "did we measure as much as last
+  time" keeps answering the right question.
+- 2026-08-31: **`.wurxbase-root` and `.wurxbase-fence` are two elements, and
+  a portal host sits between them.** One div used to be the CSS fence, the
+  containing block for `position: fixed`, AND the scroller. Their app portals
+  ten overlays to `document.body`, which is outside `.wurxbase-root`, so every
+  fenced rule missed them — the status menu mounted as an unstyled 1500x23
+  block at y=1008 in a 1000px viewport, which on screen is indistinguishable
+  from a button that does nothing. Portalling into the fence would have fixed
+  the styling and broken the position. So: a shell carries the class name, a
+  fence inside it scrolls, and `#wurxbase-portal-host` sits beside the fence —
+  inside the shell so their CSS matches, outside the fence so fixed means the
+  screen. Eleven portals repointed through one helper.
+- 2026-08-31: **The fence is no longer a containing block at all.** Portalling
+  only reaches overlays that use `createPortal`; their contract editor and
+  creator editor render inline, and inside a transformed, contained, scrolled
+  box a fixed dialog is measured against that box. Measured: the creator
+  editor at 56..1004 in a 1000px viewport, dragging the fence from 600 back to
+  0 as the browser scrolled its autofocused input into view — "it scrolls us
+  to the top". `transform` and `contain` are gone. What they protected against
+  is handled where it belongs: at rest the ONLY visible fixed elements inside
+  the fence were `.app-footer` and `.footer-hover-zone`, and wurxbase-chrome.css
+  hides both, as it already hid their header, tab rail and sign-out.
+- 2026-08-31: **Grid tracks that carry controls get `minmax` floors.** A
+  fraction can be squeezed below its content and a `.pc-cell` centres without
+  clipping, so a starved track SPILLS symmetrically into both gutters. Adding
+  Ad spend and ROI took their table from twelve tracks to fourteen without
+  widening it: Status had 115px for a 151px pill, Contract 50px for 62px of
+  buttons, and the pencil — `position: relative`, so it hit-tests above a
+  static sibling — swallowed the click. Dead band across the pill: 11% at
+  1500px, 53% at 1024. That is why Asad could not mark anyone paid.
+- 2026-08-31: **Marking a creator paid is `canEditPay`, not a name.** Their
+  code compared the username to the literal string "asad" in seven places,
+  and the comparison was broken besides — `id` is our auth uuid and the
+  session writes lower-case `asad` against a capital `Asad`, so both halves
+  were always true and EVERY attempt was refused, Asad included, with no
+  write on the wire. The two payment gates now use the capability their own
+  access model already defines for it; the other five keep their Asad-only
+  policy and get a case-insensitive check. Put to Rashid with the trade-off,
+  he chose to open payment to anyone with edit rights — and Asad has since
+  denied `canEditPay` to all five of his team in Access Control, which the
+  code now respects rather than overrides. The point of the change is that it
+  became a setting he can flip, not a name in a source file.
+- 2026-08-31: **A notification is painted directly, not through their
+  aliases.** `.notif-panel` uses `background: var(--bg)`, and the retokenising
+  sweep had mapped that alias — their page canvas — onto `--wx-accent-soft`, a
+  14% gold wash. The panel was a translucent tint carrying near-black text at
+  3.43:1 with the page showing through, so the error explaining why marking
+  paid failed was unreadable. Aliases corrected AND the panel painted
+  directly, because theme.css re-declares the same alias on a descendant and a
+  dialog carrying an error is not the place to leave that to chance. 18.43:1.
+- 2026-08-31: **The Euka sync fills blanks and never overwrites.** Rashid,
+  after checking with Asad, who had also been entering things on our side:
+  the two databases are deliberately NOT made identical. A field empty here
+  and set there is filled; a field set here is left alone whatever theirs
+  holds. That collapsed the change set from 33 to 10 and disposed of a real
+  hazard rather than handling it — an earlier draft took their value on
+  conflict and would have overwritten 182 true `items` counts with 0, because
+  their deployment still runs the bug fixed here that morning.
+- 2026-09-01: **The performance sheet is ruled, not filled, and a month
+  column is sized against a number the data has not reached yet.** Rashid,
+  with Asad's app open beside ours: *"numbers are not even properly visible
+  ... this is the paid app so ui should be premium"*. Two faults. A month
+  column was 170px holding two figures, so each half had 53px of room for a
+  value measuring 61px and every five-figure GMV printed short — "10,160.00"
+  as "10,160.0", which is not a cosmetic problem on a screen whose job is
+  money. And nine rounds of their own restyling had accumulated in
+  paidcollabs.css without any being removed, ending with every cell a
+  bordered, rounded, filled box: roughly 1,100 of them on Penetrex, the
+  header a gold wash, the identity column the same gold, and a full-strength
+  #8a5f1f border around the lot. The column is 184px now, sized against
+  123,456.78 rather than the largest figure currently in the database,
+  because one creator in one good month IS six figures on TikTok Shop and
+  that is the day nobody would notice it had started truncating. The
+  presentation is stated once, at the end of wurxbase-overrides.css, and it
+  removes rather than adds: white ground, hairline column rules, one 4.3%
+  band on alternating months, ink doing the rest.
+- 2026-09-01: **Sticky total columns were built and reverted the same hour.**
+  Pinning Videos / Total GMV / Total Ad to the right edge sounds obviously
+  right on a sheet ten months wide. The block is 444px: between it and the
+  344px identity column only 422px of a 1210px viewport was ever scrollable,
+  two and a half months against five without it, and at 1024px it left no
+  months visible at all. It also painted itself over live figures at every
+  scroll position. Kept from the attempt: the `mx-sum-*` class names, so no
+  rule has to count backwards from the end of a row — which is what made the
+  delete column, visible only to Asad, break the counting.
+- 2026-09-01: **The identity column holds 344px until 900px wide.** A 288px
+  tier for laptops was written and removed: it bought two thirds of one
+  extra month at 1024px and cost every name its ending. A name you cannot
+  read is worse than a month you have to scroll to. Below 900px the handle
+  goes entirely and the column halves, because there a name plus two months
+  beats a handle plus one. The width is a custom property read by the grid
+  template in WurxUI.jsx, so the breakpoints stay in CSS.
+- 2026-09-01: **Rules in the sheet block are written three `.wurxbase-root`
+  deep on purpose.** Their late layers reach these elements with up to
+  `(0,6,1)` and `!important` — `.pc-mx > .pc-mx-row:not(.pc-mx-head):not(
+  .pc-mx-foot) > div:nth-last-child(2)` — so anything shorter wins on odd
+  rows and loses on even ones, which is how the band first shipped striped in
+  two different golds. There is no shorter way to say it over a vendored
+  stylesheet we do not control and re-pull from upstream.
+- 2026-09-01: **The header is not banded and the focused month is not
+  filled.** Both were, and both cost contrast where it is least affordable:
+  a month's whole GMV at 12px on band plus accent measured 4.39:1, its ad
+  spend 4.38:1. The band exists to help the eye run across a hundred body
+  rows; the header has a label in every cell. Marking one thing twice is what
+  pushed the numbers under the floor.
+- 2026-09-01: **The pinned header follows the fence, not the window.** Their
+  mirror-header effect listened for `window` scroll and pinned at y=0. Our
+  page never scrolls — `.wurxbase-fence` does, and an element's scroll event
+  never reaches a window listener — so on a sheet of a hundred creators the
+  month labels left the top after twelve rows and never came back. It now
+  finds its scrolling ancestor and pins to that box's top edge. Its
+  horizontal position is also synced when the clone MOUNTS: the sync lived
+  inside the measure loop, which runs before the clone exists, so the pinned
+  header opened at column zero over a body scrolled to July — five months of
+  figures under five wrong month labels, worse than having none.
+- 2026-09-01: **The Paid Collabs container paints the page canvas, and the
+  rule has to name `.app-root` as well.** Rashid photographed Discovery: the
+  top 375px the page colour, the 473px below it a tan block. THREE rules in
+  their stylesheet paint the container, all `!important`, all at one class of
+  specificity, so the last wins — App.css:3047 "App surface" via `--f7-surface`,
+  :3165 "Canvas: warm cream everywhere" via `--mc-cream`, :3730 "Lift body bg
+  so cards stand out" via `--wx-accent-soft`. Read the comments: every one is
+  a PAGE, and every one was handed a tint. Upstream, before the retokenising
+  sweep, 3730 was `#F4F5F7` — a near-white page grey chosen precisely so white
+  cards would lift off it. A codemod cannot tell a pale canvas from a tint.
+  Our existing rule never won for a simpler reason than load order: it carries
+  no `!important` at all, so it could not have won from any position.
+- 2026-09-01: **Assume a tint bug in the vendored CSS is LIGHT-ONLY until
+  measured otherwise.** This one survived a full contrast pass, a screenshot
+  review and eleven days of use because App.css:3368 already repaints
+  `.app-root` for dark at a higher specificity. Their file carries 214
+  dark-only rules and not one light-only rule, so light never got the same
+  treatment. Every colour check here now runs both themes for that reason.
+- 2026-09-01: **The seam was not a geometry bug, and that was worth proving
+  rather than assuming.** Two plausible culprits presented themselves — their
+  `.app-root { min-height: 100vh }` and our own `wurxbase-shell` fixed height —
+  and a counterfactual run in a real browser against the shipped bundles
+  settled it: remove the 100vh and the band is byte-identical, because the
+  shell is `calc(100dvh - 3.5rem)` by design and is itself painted. One cause,
+  and it is the colour. The 100vh stays.
+- 2026-09-01: **The `@media print` rule was left alone.** A doubled-class
+  `!important` correction does out-specify App.css:4966, so the computed print
+  background changes from `--wx-surface-1` to `--wx-bg`. It is not laid down as
+  ink: their `print-color-adjust: exact` at :4963 matches `.wurxbase-root *` —
+  descendants only — so the container itself inherits `economy` and Chrome
+  omits its background unless the user ticks "Background graphics", and then
+  the delta is #ffffff to #f6f4f1 on the admin content column. Adding a print
+  override would have been complexity bought for nothing.
+- 2026-09-02: **Deleting a creator answers to `canDelete`, and it was broken for
+  everyone before that.** Rashid: the edit dialog shows no delete button. It
+  showed none for ANYBODY, Asad included — `const isAsad = (currentUser?.id ===
+  'asad') || (currentUser?.username === 'Asad')` at WurxUI.jsx:3715, where `id`
+  is our auth uuid and `username` is the profile display name, which is lower
+  case for all eight team accounts. Measured, not assumed: every one of the
+  eight evaluates the gate to false. This is the same fault as the payment gates
+  fixed on 2026-08-31, missed then because that sweep searched the NEGATIVE form
+  (`!==`) and this one is written positively. The other two deletes — the
+  creators-table row and the performance matrix — use the repaired
+  `isAsadActor()` and did work, which is why the app disagreed with itself.
+  Asked on 2026-09-02, Rashid chose their own capability over a name, as he did
+  for `canEditPay`. `canDelete` is superadmin-only by default, so today that is
+  Asad and Rashid (our `admin` maps to their `superadmin`), and Asad can grant
+  it to anyone from Access Control instead of us changing code. The row-level
+  and matrix deletes were LEFT on the Asad-only rule: widening a second
+  destructive path was not what was asked, and their tooltips are still true.
+- 2026-09-02: **The creator picker works while editing, not only while adding.**
+  Their dropdown was gated `isAdd` in three places, yet everything behind it was
+  already written for edit mode — `personHistory` carries an explicit "editing →
+  exclude self" line, which only makes sense if editing was meant to show it. So
+  the data layer supported it and a render gate blocked it. Now open in both
+  modes, with the record being edited filtered out of its own suggestions so
+  "Hailry" cannot offer to auto-fill "Hailry" over itself.
+- 2026-09-02: **Three read-only Paid Collabs roles, and NOT by widening
+  `is_staff()`.** Rashid asked for Affiliate Team Lead, Operations Lead and Ads
+  Manager: their own logins, Paid Collabs only, viewer only, "this is money
+  sensitive". The obvious implementation — give them `ops` so they reach the
+  collabs screen — would have handed them the entire product: `is_staff()` is
+  `jwt_role() in ('ops','admin')` and it guards SEVENTY policies across
+  creators, applications, offers, contests, brands and TikTok money. It is not
+  touched. Instead `public.is_collabs_viewer()` is a second, narrower predicate
+  used by exactly one schema, and only for SELECT; INSERT, UPDATE and DELETE on
+  wurxbase still answer to `is_staff()`. Checked before writing it: every role
+  test in the database is an allow-list (`=` or `in`, never `<>`), so a new enum
+  value starts with zero access and gains only what is named.
+- 2026-09-02: **Two migrations, not one, and that is a Postgres rule not a
+  preference.** A value added by `alter type ... add value` cannot be USED in
+  the transaction that added it, and each migration file is its own
+  transaction. The enum labels land in one file and everything referencing them
+  in the next. Combined, it fails at deploy rather than at review.
+- 2026-09-02: **Export and print are a FLOOR, not a default.** Their `viewer`
+  grants `canExportCsv` and `canPrintReport` as standard — Fahad and Lead have
+  both. Rashid withheld them from these three: a CSV of every creator's GMV and
+  commission is the one artefact that leaves the building and cannot be
+  recalled. `forcedPermsFor()` is applied AFTER the role's grants and after any
+  `app_users.custom_perms` override, so it cannot be lifted by editing a row —
+  only by editing that list. On a money screen an override set by mistake in
+  Access Control should not be able to open an export.
+- 2026-09-02: **These three do not inherit from `app_users`.** For Asad's eight
+  people their own row wins, which is the whole point of that lookup. For these
+  three it must not: a row carrying `role: 'admin'` — created by hand, or
+  carried in by the sync from Asad's database — would silently promote a
+  read-only account to full edit on money with nothing on screen to say so.
+  Our own role is the authority for them.
+- 2026-09-02: **The Euka function admits them; the LOGIN audit row does not.**
+  Euka is read-only in both directions and returns the tier and L30 GMV already
+  on the screens these roles are meant to read, so refusing them left holes and
+  a 403 per page load. The `LOGIN` row written by our own route was the
+  opposite call: they cannot write, the insert was correctly refused, and an
+  expected failure logged as an error is how a real one gets missed. Losing
+  their LOGIN line costs no audit value, because they can change nothing for it
+  to be evidence about.
+- 2026-09-15: **Ads Manager is STAFF now, and `is_staff()` was widened on
+  purpose.** Rashid: *"ads manager will have the same edit access as asad and
+  rashid has which means they can edit anything"*. Offered the choice between
+  making Subhan `ops` (the role stays read-only) and making the role itself
+  full-edit, he chose the role. The 2026-09-02 rule "never widen `is_staff()`"
+  was written to stop somebody who only READS from getting the product. It
+  was never meant to stop the owner deciding who is staff, so it now reads
+  "never widen it to let somebody SEE a screen". Affiliate Team Lead and
+  Operations Lead are unchanged.
+- 2026-09-15: **"Same as Asad" means `ops` reach plus Paid Collabs
+  `superadmin`, and nothing admin-only.** Everything that admits `ops` now
+  admits `ads_manager`. Nothing gated `jwt_role() = 'admin'` does: editing
+  other people's profiles, TikTok health, connect and sync. Asad does not have
+  those. Paid Collabs maps the role to `superadmin` because Asad carries it
+  there (through his `app_users` row) and so does Rashid. The two
+  `isAsadActor()` deletes were NOT widened. They check a username, Rashid does
+  not get them either, and reopening a destructive path was not what was asked.
+- 2026-09-15: **The two old Ads Manager test accounts were deleted**
+  (`adsmanager@`, and a leftover `probe-ads_manager-…` from the 2026-09-02
+  probe), so Subhan is the only Ads Manager, as Rashid said. The probe left
+  that account behind because its cleanup swallowed the delete error. The new
+  probe reports a leftover account as a FAILURE.
+- 2026-09-15: **`review_application` refuses every team account, not just
+  ops/admin/strategist.** Widening the reviewer list was the moment to notice
+  that the protected-target list had never named the Paid Collabs roles.
+  Approving a stray application from one of those logins would have silently
+  made that colleague a creator.
+- 2026-09-15: **The Top videos total is the New video GMV COLUMN, not the ten
+  thumbnails.** Rashid named the column. A total of the best ten would be a
+  smaller, different number sitting beside a column that disagrees with it. It
+  sums the rounded per-row figures, because those are the numbers printed.
+- 2026-09-15: **Two layouts for the strip, never a third.** Ten full-size
+  thumbnails plus a total do not fit a laptop. Letting the row scroll put the
+  tenth video UNDER the total, a shape nobody would choose. So the thumbnails
+  shrink to fit (down to 76px), and below that the total moves above them.
+  Sized by the strip's own width (a CSS container query), not the window's,
+  because the sidebar and the text-size control change the room available.
+- 2026-09-15: **The day filter uses EUKA's posted date and says what it cannot
+  see.** 11% of saved videos are pasted links EUKA has not dated yet. The bar
+  prints how many, rather than letting a day look emptier than it is.
+  Filtering never re-indexes the rows, so an edit made while filtered lands
+  on the right video. Adding or pasting rows clears the filter, because a new
+  row has no date and would vanish the moment it was added.
+- 2026-09-15: **Paid Collabs ad spend and ROI come from EUKA, not from our
+  TikTok connection.** Rashid: "let's move with euka for now". Measured the
+  same day on 23 Penetrex videos matched to Paid Collabs: Euka had figures for
+  all of them and our own TikTok data for only 2. Where both existed they
+  agreed within 3%. `ads_totals_for_videos` is NOT removed, because creators'
+  My numbers still read it.
+- 2026-09-15: **A scheduled sync into our database, not a live call.** Euka's
+  per-campaign report 504s at about 45s on the first ask for a window. A month
+  across all stores took 74 calls and 65 seconds, and the spark export is
+  capped at 150 rows a call. Every run is limited to 100 seconds and claims
+  units from a queue, so no single run has to finish the job.
+- 2026-09-15: **Month grain, and only rows where money moved.** The screen
+  only asks for whole months or all time, and one campaign-month is one Euka
+  call. Splitting a window and summing was proven exact: 7 single days came to
+  the same $427.71 as the one 7-day call, so a finer grain later would not
+  change any number. Zero rows are not stored, because the screen shows no
+  row as a dash, and a stored zero would falsely claim nothing was spent.
+- 2026-09-15: **A campaign list Euka cuts short is recorded, never assumed
+  complete.** Euka rejects paging even though its spec documents it. Aurelia's
+  ad account reports 81 campaigns and lets us read 43, and
+  `euka_ad_sync_stores.last_error` says so.
+- 2026-09-15: **For spark codes, the row's own code wins.** Euka only fills a
+  blank. Nothing is written back to Asad's `video_codes`: the fallback is
+  display-only, so their data stays theirs.
+- 2026-09-15: **The Euka sync queue is oldest-due first.** Ranking by newest
+  month first let September's constant 4-minute timeout retries starve August
+  completely: every Penetrex and Dr Tobias August campaign waited 40+ minutes
+  after coming due, and Rashid saw August "showing nothing". Taking jobs in
+  the order they became due gives every month a turn, and keeps a retry close
+  enough to its timeout to catch Euka's warm answer.
+- 2026-09-15: **...but never-fetched units go before any retry.** Pure
+  oldest-due had the opposite failure within the hour: nine campaigns that
+  time out on every attempt came back every 4 minutes and took all four
+  workers in every run (17:45 to 18:25, "ok 0, failed 4" each time), while
+  units never tried once waited. The order is now never-tried first, then
+  retries by oldest due. That means neither new work nor any one month's
+  retries can hold the queue.
+- 2026-09-16: **The deals count sits on the corner of the creator's face, not
+  beside the tier tag.** Rashid asked for "another tag" next to L1/L2 showing
+  how many deals we have had with that creator. Beside the tag was built
+  first and measured: it took 31px from every name, and at 1600px the brand
+  page's names fell from 48px to 17px, one letter and dots. On the face's
+  corner it costs the name nothing. If he wants it beside the tag anyway, the
+  Creator column has to get wider first.
+- 2026-09-16: **The deals count follows the month picker, across every brand.**
+  Built first as a lifetime count, on the reasoning that a relationship is not
+  a month. Rashid reversed it the moment he saw it: *"month wise brand deals
+  not overal"*. So a month counts that month's deals across every brand, and
+  All Time counts the person's whole history. Brand and month together was
+  offered and rejected: a brand page row IS that brand's deal for that month,
+  so the circle would read 1 on nearly every row. The hover text names which
+  it is, because the same circle now means two different things.
+- 2026-09-16: **Tier colours follow Euka's hues** (L1 blue, L2 violet, L3
+  teal, L4 green, L5 lime, L6 amber, L7 orange), because the team reads tiers
+  in Euka all day. They are not the status colours, so a high tier never reads
+  as a warning. Rejected: a gold scale for higher tiers, which collides with
+  the accent and with warning in light mode.
+- 2026-09-16: **The Top videos totals count each video once.** Rashid's boss
+  asked for sums of views, GMV and ad spend. The day before, the GMV total
+  had been defined as "the column, added up", so that a calculator agrees
+  with it. That stopped being right once it was measured: 84 Penetrex videos
+  sit under two deals of the same creator, and the columns would count
+  2.07M of Penetrex's views twice, along with those videos' ad money. The
+  true figure wins over the calculator. The hover text says how many videos
+  were counted once, so a difference from the column is explained where it
+  shows.
+- 2026-09-16: **Blue, green and red for views, GMV and ad spend are the info,
+  success and danger tokens.** Those are status colours, which are normally
+  kept for states. They are used here because he named the colours, and his
+  words beat the house rule. Nothing else on that strip is a status, so
+  nobody can read "red" as "something is wrong" by mistake.
+- 2026-09-17: **A client share link is a password, and is stored like one.**
+  Only its SHA-256 lives in the database, so a leak of our tables hands nobody
+  a working link; the link itself is shown once, at creation, and cannot be
+  retrieved afterwards. It also carries a required expiry and a revoke switch,
+  and every view is recorded. Rejected: a readable token column, which would
+  have made "show me that client's link again" possible and a database leak
+  catastrophic.
+- 2026-09-17: **The client's data comes through an Edge Function, not through
+  RLS.** `anon` has no grant on the `wurxbase` schema and is not getting one:
+  the schema's own migration says "anon gets nothing. Paid Collabs is behind a
+  login and always will be". The function runs as the service role, proves the
+  link, and returns a PROJECTION built field by field. Rejected: an
+  anon-callable security-definer RPC, which would have put a door on the
+  database itself for the sake of saving one function.
+- 2026-09-17: **Hidden means absent, not invisible.** Ad spend, ROI, allocated,
+  paid, cost per video, payment status, phone numbers, emails, payment details
+  and internal comments are never read into the payload, and a switched-off
+  section has no key in it at all. A field merely hidden by CSS is one "view
+  source" away from being read, and this is somebody else's client data.
+  `verify:collab-share` proves it against the real values in the database.
+- 2026-09-17: **Only ops and admin can mint or revoke a link.** Not
+  ads_manager, though `is_staff()` has admitted it since 2026-09-15, and not
+  the read-only collabs roles. Handing a brand's numbers to an outsider is an
+  owner's decision, so the check is written out rather than inherited.
+- 2026-09-17, later: **The client sees the staff Brands view, minus ad spend
+  and ROI.** Rashid relayed his boss: "we need to show them exact same view as
+  we have they will just not be able to see ad spend and roi at any cost". That
+  SUPERSEDES the field-by-field answers earlier the same day (budget and
+  remaining only, no payment status): the client page now carries the same five
+  KPI cards, the same top-videos strip and the same table, wearing the vendored
+  stylesheet, with Status as a read-only pill.
+  Still absent, and these were confirmed with him: **ad spend and ROI** (never
+  sent to the browser), the **contract PDF** (our agreement with the creator),
+  and every write control — no dropdown, no actions, no export, no fields.
+- 2026-09-17: **Tier and L30 GMV come live from Euka, cached per store for 30
+  minutes, and the page never waits for them.** `creators.monthly.euka` holds
+  both and could not be used: that cache is frozen at migration day, so a
+  client would be shown July's figures. The first version awaited Euka's export
+  and the request 504'd, which is a client page failing because somebody else's
+  API is slow. Now a stale map is served at once and the refresh runs after the
+  response; only a store with nothing cached waits, and only for 8 seconds.
+- 2026-09-18: **The client page reads tier and L30 GMV from BOTH Euka exports,
+  as the staff screen does.** Rashid, twice: "still can't see where is their
+  gmv". `creator_level` is the 30-day creator list and caps at 1000 rows per
+  shop, so anybody quieter than the top thousand is missing from it; the staff
+  app also harvests the same two fields from `creator_videos` rows (its
+  `getVidProfileMap`), which reaches everybody who posted. Reading only the
+  first is why a client saw dashes where he saw figures. Both are read now,
+  per store, cached together, with the 30-day list winning where both answer.
+- 2026-09-18: **A dash under New video GMV is the truth, and was proven rather
+  than argued.** Every NutraHarmony September video was compared with Euka's
+  own export: our total and theirs are both $378.29, and of the 67 videos we
+  record as zero Euka reports zero for all 67. Those creators have made no
+  sales on those videos yet. The staff screen shows the same dashes on the same
+  rows, because both read the same stored figures.
+- 2026-09-18: **A client link is stored, not just fingerprinted, and can be
+  copied again.** This reverses the previous day's decision, and the reasoning
+  it reverses was thin. Hashing protected exactly one case — this table leaking
+  WITHOUT the rest of the database — while everything a link opens sits in that
+  same database. The cost was daily: Rashid, looking at the list, "no option to
+  copy again and we should be able to open it and see details". What protects a
+  link is unchanged and none of it was the hash: RLS on with no policy, grants
+  to service_role only, the functions admitting ops and admin alone, plus
+  expiry, revocation and a recorded view count. Links minted before the change
+  keep no address and can only be replaced; the screen says so.
+- 2026-09-18: **A link can be given a NEW address in place.** The old one dies
+  the instant it is issued, and the label, brands, months, sections and view
+  history stay on the same row. It is the answer both to a link that was never
+  stored and to one that has spread further than intended, and it is gentler
+  than revoke-and-recreate, which loses the history.
+- 2026-09-18: **Follower counts for creators Euka's shop data does not cover
+  come from Euka's market intelligence, looked up by handle and stored.**
+  Rashid: "is there any other way of fetching their follower count ... maybe
+  through handle". Euka's per-shop exports describe only creators active in one
+  of our shops in the last thirty days (380 of 464 had no count). Its
+  `/market-intelligence/tiktok/creator/rank` searches TikTok's whole creator
+  population by keyword. Rejected: TikTok's Display API (needs each creator to
+  connect; zero have), scraping tiktok.com (fragile, against their terms), and
+  `creator/detail` (needs Euka's own creator id, which we do not have).
+  **Only an exact handle match is stored** — the endpoint is a search, and a
+  near match is somebody else. Where both sources know a creator the counts must
+  agree within 50%; on the first eleven they did.
+- 2026-09-18: **Euka rations fresh market-intelligence lookups**, so they are
+  done four at a time in the five-minute sync and fill over a day or two. A
+  handle Euka has answered before comes back instantly; a new one, after a few
+  dozen in an afternoon, gets `503 "Market Intelligence service is
+  unavailable"`. A failed lookup is RECORDED and put back in line for a day:
+  leaving failures unrecorded kept one failing handle at the front of every run
+  and nobody behind it was ever looked up.
+- 2026-09-21: **The Brands screen's New Video GMV is rounded ONCE, from the
+  exact sum, not built from the rounded brand cards.** Each brand card rounds
+  to the dollar, so the two can differ by under 50 cents a brand (August 2026:
+  cards add to $27,451, exact $27,449.47). The exact figure is the true one, a
+  spreadsheet of the videos agrees with it, and the hover says it is rounded
+  once. Both are computed by one function, `wxVideoTotals`, so they cannot
+  disagree in any other way.
+- 2026-09-21: **The Brands card row is sized by its own width (a container
+  query), not the window's.** It sits beside the floated month controls from
+  64rem, so a window-width breakpoint cannot know how much room it has: their
+  five-card version was cutting "$94,090" off at 1024px. Six in a row needs
+  about 135px a card, so below 54rem it becomes three by two rather than six
+  squeezed cards with wrapped labels.
 - 2026-09-01: **"Private" is gone from every public page, because TikTok's rule
   bans the word and we volunteered it.** The Display API app was rejected for
   "personal or company internal use". TikTok's App Review Guidelines say, under
@@ -1697,3 +2423,194 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   copy change on the live site and nothing else, so it went out as copy alone:
   no migration, no behaviour change, no schema. The bigger "make it live"
   decision stays open and untouched.
+- 2026-09-22: **The TikTok submission keeps our own address; we built the
+  website instead of moving it.** Rashid chose this over a
+  `creators.wurxmedia.com` subdomain, which would have been the stronger
+  "official" signal but moves every OAuth redirect URI, the Supabase auth URLs
+  and TikTok's URL verification — each one a place sign-in breaks. Nothing
+  about authentication moves this way. If TikTok rejects the vercel.app address
+  itself, the pages are built and only the address changes.
+- 2026-09-22: **The website's words live in one content file**
+  (`src/content/site-pages.ts`), and every company fact in it is copied from
+  wurxmedia.com. A reviewer reads both sites; two versions of the address, the
+  founders or the figures is exactly the inconsistency the icon rejection was
+  about. Editing the copy must never mean editing a component.
+- 2026-09-22: **The tab icon is the official artwork, not a redraw.**
+  wurxmedia.com's `/favicon.svg`, byte-identical apart from the `viewBox` it
+  was missing — TikTok's note was that the icons must match, so a similar mark
+  drawn by us would have invited the same reply. `verify:site` fetches the live
+  official file and compares, so the day theirs changes, ours fails.
+- 2026-09-22: **The public pages are indexable, the rest of the product is not,
+  and dev never is.** Rashid asked for the website to be findable. The rule is
+  deny by default — `index.html` ships `noindex` and only the public pages lift
+  it — because a wrong default here publishes a creator's screen, while a wrong
+  `noindex` merely hides a marketing page. It is lifted ONLY on the live host
+  (`src/lib/seo.ts`): dev is a complete second copy of the site on its own
+  address, carrying test brands and seeded creators, and offering Google both
+  is how the wrong one gets ranked. `verify:site` proves the rule by serving
+  the build under test AT the live address and reading the tag, rather than by
+  reading the source.
+- 2026-09-22: **The official site is the source of truth for business facts,
+  and where we disagreed with it, we changed.** Rashid: "i don't want to read if
+  everything is correct for my business ... you can find about our business here
+  wurxmedia.com and wurxmedia.com/content". Both were read in full. Our landing
+  page had claimed 5K+ creators since July; theirs says 1,000, and a TikTok
+  reviewer reads both sites, so ours came down. The site described a third of
+  the business (a creator programme) where Wurx sells six services, two of which
+  ARE this hub. **A number nobody can source to wurxmedia.com does not belong on
+  our public pages.**
+- 2026-09-22: **The privacy policy now describes the Paid Collabs records.** It
+  said we hold no phone number; `wurxbase.creators` has held a WhatsApp number,
+  an email, a PayPal or Zelle handle and staff notes for every creator we have
+  paid, since the migration. The code has protected those fields since the
+  client links shipped, which made the omission easy to miss: the fields were
+  guarded, just never disclosed to the person they describe. A policy that
+  under-describes what you hold is a false statement, exactly like one that
+  overclaims.
+
+## TikTok-first signup: we mint no sessions (2026-09-29)
+
+**Decision:** the browser creates the account with the same `supabase.auth.signUp`
+the apply form already used. Our server never issues a session. It only ever
+answers "whoever holds this ticket proved, a moment ago, that they control
+TikTok account X", and binds that to an account Supabase has already created.
+
+**Why.** There is a Supabase setting that stamps a creator's role onto their
+login token, and it defaults to OFF. With it off nothing errors: the password
+works, the login succeeds, the dashboard loads, and every query returns empty.
+A creator sees a working product with no numbers in it. Any login path we invent
+can skip that stamp; the path the product already uses cannot. And a defect in
+session-minting code does not look like a bug — it looks like a successful
+login, which is the one failure Rashid said he cannot absorb.
+
+**Rejected:** creating the account with the Supabase admin API. With email
+confirmation off it marks an address confirmed that nobody proved; with it on it
+tells the new creator to check an inbox for a mail that is never sent. It also
+bypasses the dashboard's own signup switch and the platform rate limit.
+
+**Rejected:** making TikTok able to create accounts from scratch. TikTok never
+returns an email — no scope provides one, confirmed against their docs — so such
+an account could never be recovered or contacted. TikTok may only ever open a
+door that already exists.
+
+## One TikTok account, one application — and a rejection is not permanent (2026-09-29)
+
+**Decision:** `tiktok_identities` is a ledger separate from
+`creator_tiktok_connections`, because that table frees a TikTok account on
+disconnect by design. A claim outlives the connection, the rejection and the
+profile. Staff can release one, with a reason, and it is audited.
+
+Rashid, asked whether a rejection should be for ever: *"it should not be
+permanent, we should let admin review the rejected again"*. So the release
+shipped in the same step as the rule — a rule with no visible way out is the
+same as a permanent bar.
+
+**Rejected:** enforcing "the same PERSON cannot apply twice" via TikTok's
+cross-account id. A second TikTok account is free, the id is blank on some rows,
+and an automatic refusal would occasionally lock out a real creator for a reason
+nobody can see. Recorded, never enforced.
+
+**Rejected:** blocking a repeat application by EMAIL alone, and telling the
+visitor. A stranger could then type any address and learn whether that person
+applied and was rejected. After TikTok has vouched for them it is safe to say,
+because we are telling them about themselves.
+
+## PKCE is not available to us (2026-09-29)
+
+TikTok's own documentation: `code_verifier` is "required for mobile and desktop
+app only". So an authorisation code cannot be cryptographically bound to the
+browser that began the flow, and that hole cannot be closed — only narrowed.
+
+What we do instead: the browser generates a secret, keeps it in sessionStorage
+and sends only its SHA-256; the code never reaches the address bar, history or
+referrer; nonces last fifteen minutes; one nonce per creator is live at a time.
+**Narrowed, not closed** — and written into the checks so a green suite is never
+read as more than it is.
+
+## Product groups partition the creators; the band overlaps them (2026-09-29)
+
+**Decision:** on a brand's creator table, each creator appears exactly once,
+under the product most of their videos are for. The Product performance band
+above keeps counting every creator who touched a product, so the two will show
+different numbers for the same product.
+
+**Why.** The row carries per-creator money — deal, total views, new-video GMV,
+L30 GMV, ad spend, ROI. A creator listed under two products shows that money
+twice on one screen, and any total a human adds up off the page comes out wrong.
+Ten of Penetrex's thirty-four September creators posted for more than one
+product; a row-per-product table is 53 rows for 34 people.
+
+**Rejected:** listing a creator under every product they posted for, so the
+group counts would match the band's. That buys agreement between two numbers at
+the price of a screen that double-counts money — the wrong trade in a product
+whose whole promise is that the numbers are real.
+
+**Rejected:** scoping each row's figures to the product it sits under. GMV and
+views could be scoped; the deal, items sold, ad spend, ROI, contract and status
+cannot — they belong to the creator, not the pairing. Half a row scoped and half
+not is worse than either.
+
+**The two counts are allowed to disagree because each reconciles with the total
+beside it:** the band's products add up to the GMV card above them, the groups
+add up to the "N creators" pill next to the search box. Neither is wrong; they
+answer different questions.
+
+## The status dividers stay outside the product groups (2026-09-29)
+
+**Decision:** Payment Pending / Videos in Progress / Payment Sent remain the
+outer split, with the product bands inside them, which is what Rashid's mockup
+drew.
+
+**Why.** Payment state is how this team WORKS the list — "who do we owe" is the
+question that gets asked every week, and the count on that divider is the answer.
+Product is how they READ it. Putting product outside would fragment "17 pending"
+into per-product pieces and lose the number they actually use.
+
+**The consequence, accepted:** a product appears once under each status it has
+creators in, so the same product name can show three times on one page. Each
+band folds independently, keyed on status-and-product together.
+
+## The contract is redrawn in OUR file, not in the vendored one (2026-10-02)
+
+**Decision:** the whole design lives in `src/routes/admin/contract-paper.js`.
+`src/vendor/wurxbase/contractPdf.js` keeps its original renderer and hands off
+to ours on one fenced line.
+
+**Why.** That file is a verbatim copy of WurxBase's code, and the verbatim rule
+exists so the next upstream pull is find-and-reapply rather than diff
+archaeology. Replacing a whole renderer inside it would have made the diff
+unreadable. One fenced line is one thing to re-add.
+
+**Rejected:** editing their renderer in place. **Rejected:** forking the file
+out of `vendor/` entirely — `WurxUI.jsx` imports `defaultContractFields` and
+`CONTRACT_SECTIONS` from it, and moving those is a bigger change than this one.
+
+## How a signature should get onto the contract (2026-10-02, OPEN)
+
+**Not decided.** Rashid: *"for usman signature i am not sure how asad's is being
+generated but i can get the signature as image or what is the best fit u need to
+tell me that later first build ui"*.
+
+**What happens today, unchanged:** the Brand Representative line is auto-signed
+by drawing `fields.signerName` (default "Aris") in a script typeface on an
+offscreen canvas. It is not an image of anybody's handwriting — it is a name set
+in a cursive font, and it will render differently on a machine that does not
+have that font installed.
+
+**The options to put to him, in order of what they cost:**
+
+1. **An uploaded image per signer.** He sends a PNG with a transparent
+   background; it goes in a private bucket keyed by staff member, and the
+   renderer stamps whichever signer the contract names. Faithful, and the only
+   option that is actually that person's signature. Needs a bucket, an upload
+   screen and a rule about who may change whose.
+2. **Keep the drawn name, but embed the font.** Removes the "renders
+   differently elsewhere" problem for nothing but bundle weight. Still not a
+   signature, just a consistent one.
+3. **Leave the line blank and sign on paper.** What the mockup shows, and what
+   the Creator and Agency blocks already do.
+
+**The question that decides it** is whether these contracts are ever sent
+already-signed, or always printed and signed by hand. If they are sent signed,
+it is option 1 and the image needs to be treated as sensitive — a signature
+image in a public bucket is a forgery kit.

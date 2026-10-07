@@ -31,9 +31,13 @@ export function OAuthTikTokCallback() {
     if (started.current) return;
     started.current = true;
 
+    /* Taken off the address before the Supabase client loaded — see the script
+       in index.html. That client is `detectSessionInUrl: true` with PKCE and
+       would otherwise try to spend TikTok's `code` as its own. */
+    const stash = (window as unknown as { __wxOAuthReturn?: Record<string, string | null> }).__wxOAuthReturn;
     const params = new URLSearchParams(window.location.search);
-    const authCode = params.get('auth_code') ?? params.get('code');
-    const nonce = params.get('state');
+    const authCode = stash?.code ?? params.get('auth_code') ?? params.get('code');
+    const nonce = stash?.state ?? params.get('state');
 
     /*
      * STRIP THE CODE FROM THE ADDRESS BAR IMMEDIATELY.

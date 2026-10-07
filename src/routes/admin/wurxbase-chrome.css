@@ -357,3 +357,194 @@
     display: none !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PAID COLLABS' HEADER, LIVING IN OUR TOP BAR
+   ---------------------------------------------------------------------------
+   Rashid, 2026-08-28: *"the header as u see should be at top replace our simple
+   header but the replacement means simple write wurx creator database in same
+   way as we have for our wurxbase no need to have logo because we already have
+   in left side the notification and clock should obviulsy exist... i want to
+   give it native look of our own app now"*.
+
+   `WurxUI` portals its whole `<header>` into `#wurxbase-topbar-slot` when it is
+   embedded, and everything below is the strip-down. Nothing here reaches the
+   standalone header: every rule is behind `.pc-header-embedded`, which is only
+   added in that branch.
+
+   WHY THE ELEMENT MOVES INSTEAD OF BEING REBUILT: the bell opens their
+   notification panel and the clock opens their activity log, both of which are
+   state deep inside a lazily-loaded component. Rebuilding those two buttons in
+   our shell would mean our shell holding a handle on their internals. Moving
+   the DOM leaves ownership exactly where it was.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The card becomes part of the bar: no panel, no border, no shadow, no gap. */
+.wurxbase-root .pc-header-embedded,
+#wurxbase-topbar-slot .pc-header-embedded {
+  display: flex !important;
+  align-items: center;
+  gap: 0.5rem !important;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  position: static !important;
+}
+
+/*
+  GONE, because our own shell is already saying all four of these a few pixels
+  to the left: the Wurx mark (the sidebar has it), "Paid Collaborations" (the
+  lit menu row and the page title say it), the user chip and the sign-out
+  button (our own account menu owns both, and two sign-outs in one bar is a
+  question rather than a control).
+*/
+#wurxbase-topbar-slot .pc-header-embedded .pc-brand,
+#wurxbase-topbar-slot .pc-header-embedded .pc-userchip,
+#wurxbase-topbar-slot .pc-header-embedded .pc-head-out {
+  display: none !important;
+}
+
+/*
+  The wordmark stops being absolutely centred. It was positioned against the
+  full width of their own bar; in ours it shares the row with our page title on
+  one side and our controls on the other, so it sits in the flow and lets those
+  decide the space. Below `md` it goes entirely — the bar there is a mark, a
+  name and a menu button, and a third thing would truncate all of them.
+*/
+#wurxbase-topbar-slot .pc-header-embedded .pc-head-title {
+  position: static !important;
+  transform: none !important;
+  inset: auto !important;
+  display: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-inline: auto;
+}
+@media (width >= 48rem) {
+  #wurxbase-topbar-slot .pc-header-embedded .pc-head-title {
+    display: flex;
+  }
+}
+
+/* The rules either side of the wordmark are decoration and the first thing
+   that should give way when the bar gets tight. */
+#wurxbase-topbar-slot .pc-header-embedded .pc-head-title-line {
+  flex: 0 1 2.5rem;
+  min-width: 0;
+}
+#wurxbase-topbar-slot .pc-header-embedded .pc-head-title-text {
+  white-space: nowrap;
+}
+
+/* The two controls he asked to keep, sized like ours rather than like theirs:
+   44px circles in a 56px bar left no air above or below them. */
+#wurxbase-topbar-slot .pc-header-embedded .pc-head-actions {
+  gap: 0.25rem !important;
+  flex: 0 0 auto;
+}
+#wurxbase-topbar-slot .pc-header-embedded .pc-head-actions button {
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+}
+#wurxbase-topbar-slot .pc-header-embedded .pc-head-actions button svg {
+  width: 1.0625rem;
+  height: 1.0625rem;
+}
+
+/*
+  Their presence avatars go entirely. Who else is in the tool is genuinely
+  useful, but rendered here it is a single loud gradient circle in a bar that
+  otherwise carries no faces at all — our own shell has no account avatar in
+  the top bar — so it reads as something gone wrong rather than as somebody
+  being online. It belongs beside the work, not in the chrome.
+*/
+#wurxbase-topbar-slot .pc-header-embedded .pc-presence,
+#wurxbase-topbar-slot .pc-header-embedded .pc-presence-wrap {
+  display: none !important;
+}
+
+/* With the header gone from the page body, the first row of work should not
+   inherit the gap that used to sit under it. */
+.wurxbase-root .pc-shell > .pc-header-embedded + div {
+  margin-top: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ONE ROW, NOT THREE
+   ---------------------------------------------------------------------------
+   Rashid, 2026-08-28, on the Brands screen after the tabs moved out: *"we also
+   need to have this in same rown it will look beautiful remove extra spacing
+   things"*.
+
+   Taking the tab rail out left its row carrying nothing but the month controls,
+   pinned right, with the screen's own first control ("‹ All brands") stranded on
+   the line below. Two rows, one of them mostly empty, above every screen.
+
+   The month cluster FLOATS right instead. Floats are the one layout tool that
+   lets following block content sit beside a thing and then flow under it, which
+   is exactly the behaviour wanted here: the back button lands on the same line,
+   and a full-width table on another tab simply starts below. Absolute
+   positioning would have overlapped those tables.
+
+   Un-floated below `lg`, where there is not room for two things on a line and
+   stacking is the honest answer.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (width >= 64rem) {
+  .wurxbase-root.wurxbase-root .pc-filterbar {
+    float: right;
+    width: auto;
+    margin: 0 0 0.5rem 1rem;
+  }
+
+  /* The screen's own first control shares the line rather than clearing it. */
+  .wurxbase-root.wurxbase-root .pc-back {
+    margin-top: 0 !important;
+  }
+}
+
+/*
+  THEIR SHELL CAPPED ITSELF AT 1740px AND CENTRED, which is the one thing
+  CLAUDE.md rules out by name: zoom out and the work stops with dead gutters
+  either side. Our own `<main>` gave up its max-width for this reason on
+  2026-08-16 and this was quietly re-imposing it a level down.
+
+  The top padding goes too. It was sized for a page that owned its whole window
+  and drew its own header; our top bar is already directly above, so 24px of air
+  under it is the "extra spacing" he means.
+*/
+.wurxbase-root.wurxbase-root .pc-shell {
+  max-width: none;
+  margin-inline: 0;
+  padding-top: 0;
+}
+.wurxbase-root.wurxbase-root .pc-app {
+  padding-top: 0 !important;
+}
+
+/*
+  THEIR FLOATING FOOTER GOES, like their header and tab rail before it.
+
+  A little pill parked at the bottom of the screen and an invisible 32px strip
+  that reveals it on hover. Both are `position: fixed`, and both were the only
+  reason `.wurxbase-fence` had to be a containing block — which in turn was why
+  every dialog in their app was measured against a scrolled box instead of the
+  screen, and why the contract editor opened above the visible area.
+
+  Hiding them is not a workaround for that: it is the same decision already made
+  about the rest of their chrome. Our shell has its own bottom edge, the pill
+  duplicated a status our top bar shows, and `.footer-hover-zone` spans the full
+  width — so once the containment went, it would have sat across the bottom of
+  OUR sidebar and eaten hovers meant for the last menu row.
+*/
+#wurxbase-topbar-slot ~ * .app-footer,
+.wurxbase-root .app-footer,
+.wurxbase-root .footer-pill,
+.wurxbase-root .footer-hover-zone {
+  display: none !important;
+}

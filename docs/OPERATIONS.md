@@ -889,42 +889,141 @@ themselves, both carry their own guard as well and both name what they will
 remove before doing it: `wipe-offers-contests.mjs` and `seed-penetrex.mjs
 --clean`.
 
-### The two platforms cannot reach each other's data
+### One database, one client, one schema
 
-Rashid asked for certainty rather than a promise: deleting from WurxBase's UI
-must only ever affect WurxBase's data, and the same the other way round.
+**Changed on 2026-08-28, and this section used to say the opposite.** Until then
+there were two products on two Supabase projects, and `verify:isolation`
+forbade the vendored app from importing our client at all. Rashid consolidated:
+*"now there is only one main copy and that is our own copy in this app we are
+moving everything here... I want to have only one app being managed from one
+side."*
 
-**They are separate Postgres databases in separate Supabase projects.** There is
-no shared table, no cross-database foreign key and no cascade that can span
-them, so a DELETE on one side is *physically* incapable of reaching the other.
-The only way to break that is for code on one side to hold a connection to the
-other, and `pnpm verify:isolation` forbids exactly that. It runs inside
-`pnpm build`, so it cannot be forgotten.
+**WurxBase's eight tables now live in the `wurxbase` SCHEMA of our own
+project.** Separation by project is gone; separation by schema replaces it.
 
-| database | project | reached by |
+| what | where | reached by |
 | --- | --- | --- |
-| WurxMediaHub | `npznoiotslruqovorrec` | our code only |
-| WurxBase | `bnevtdezskftlrjjgbsg` | the vendored app only |
-| Paid Collaborations | `pfkpgmpicjcirnogxkac` | the vendored app only |
+| WurxMediaHub | `public` on `npznoiotslruqovorrec` | our code |
+| WurxBase | `wurxbase` on the same project | the vendored app, through one seam |
+| ~~WurxBase's old project~~ | `bnevtdezskftlrjjgbsg` | retired, data copied out |
+| ~~Paid Collaborations~~ | `pfkpgmpicjcirnogxkac` | the project no longer exists |
 
-Verified by hand as well as by the guard:
+**The seam is `src/vendor/wurxbase/supabaseClient.js` and nothing else.** It
+borrows the one application client and scopes it: `getSupabase().schema('wurxbase')`.
+That is why their ninety-two `.from('creators')` calls needed no rewrite, and
+why their `creators` can never be confused with our `profiles`.
 
-- the vendored code names **only** its own two projects, and never imports our
-  Supabase client;
-- our `src/`, `scripts/` and `supabase/` name **neither** of theirs;
-- **their in-app SQL console is read-only and scoped to their own project**: it
-  hardcodes their URL, sends GET only, rejects
-  `INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|GRANT|REVOKE|COPY|EXECUTE`
-  with a regex, appends `LIMIT 1000` and times out at ten seconds.
+```js
+export const supabase = {
+  from:    (t) => getSupabase().schema('wurxbase').from(t),
+  channel: (...a) => getSupabase().channel(...a),   // realtime is on the root client
+};
+```
 
-The guard was tested by breaking it in both directions and watching the build
-fail, rather than by trusting a green light.
+**`pnpm verify:isolation` now asserts the new rule** and still runs inside
+`pnpm build`:
 
-**What this does NOT protect against**, and it is worth being straight about:
-their tables are still writable by anyone holding their publishable key, which
-ships in both bundles. Isolation means our side cannot hurt their data; it does
-not make their data safe from the open policies on their own project, and there
-is no point-in-time recovery on it.
+1. nothing anywhere names a retired project or its old publishable key;
+2. the vendored code constructs no client of its own (one client, or two race to
+   refresh the same token and people get logged out at random);
+3. only the seam imports ours;
+4. no vendored realtime filter still says `schema: 'public'` — it would
+   subscribe to OUR table of the same name and deliver nothing, silently;
+5. no vendored file handles a `password:` or `.password` again. There is no
+   sign-in in this app any more and `wurxbase.app_users` has no password column
+   to write one to, so a reappearance is a mistake rather than a decision. A
+   comment about the history stays legal: the check matches code, not prose.
+
+#### The Paid Collabs suites
+
+All of them need `pnpm build` then `pnpm preview` in another shell, and
+`SUPABASE_SERVICE_KEY` in the environment (fetch it at run time, section 2).
+
+```bash
+pnpm verify:wurxbase         # the migration landed, one sign-in, writes reach us
+pnpm verify:wurxbase-signin  # no second login, the audit names the real person
+pnpm verify:wurxbase-perms   # a viewer of theirs stays a viewer, whatever we are
+pnpm verify:wurxbase-team    # Team screen: settings reachable, hub email saves
+pnpm verify:write-safety     # the sequence that used to lose data loses nothing
+pnpm verify:collab-canvas    # one page colour, six tabs, both themes, and
+                            # measured while LOADING as well as settled
+pnpm verify:collab-controls  # every row control receives its own clicks
+                            # and the performance sheet is checked by
+                            # the same suite: no figure clipped, a cell
+                            # holds 123,456.78, no sideways page scroll,
+                            # at 1500/1280/1024. Needs COLLAB_STAFF_PASSWORD.
+pnpm wurxbase:sync           # DRY RUN by default; --apply to write
+node scripts/check-collab-contrast.mjs   # every label, both themes, per-size AA
+```
+
+**The contrast one judges each element against its own floor**, 3.0 only at
+24px or 18.66px bold and 4.5 otherwise. It used to fail below 3.0 and warn
+above it, which passed thirty real failures while printing them in the pass
+line as "12 below AA". If you change it, do not reintroduce a single floor.
+
+#### The two settings that are not in git
+
+**PostgREST must be told the schema exists.** Tables and grants are not enough;
+without this every request 404s.
+
+```powershell
+# read it first, then add to the list rather than replacing it
+Invoke-RestMethod -Method GET -Uri "https://api.supabase.com/v1/projects/$ref/postgrest" -Headers @{Authorization="Bearer $env:SUPABASE_ACCESS_TOKEN"}
+Invoke-RestMethod -Method PATCH -Uri "https://api.supabase.com/v1/projects/$ref/postgrest" `
+  -Headers @{Authorization="Bearer $env:SUPABASE_ACCESS_TOKEN"; 'Content-Type'='application/json'} `
+  -Body '{"db_schema":"public,graphql_public,wurxbase"}'
+```
+
+**A raw REST call needs `Accept-Profile: wurxbase`.** The client sends it for
+you; hand-built `fetch` calls do not. Use `wurxbaseRest()` from the seam.
+
+#### Moving the data
+
+```bash
+SUPABASE_SERVICE_KEY=... node scripts/wurxbase-copy-data.mjs           # copy
+SUPABASE_SERVICE_KEY=... node scripts/wurxbase-copy-data.mjs --verify  # counts only
+```
+
+Safe to run twice: each table is emptied before it is filled, so a half-finished
+run leaves no duplicates. It refuses to run when `.env.local` points at prod
+unless `--i-mean-prod` is passed.
+
+**Ids are preserved and the sequences must be moved afterwards**, or the next
+insert collides with a row that already exists. The script prints the three
+`setval` statements; run them through the Management API query endpoint.
+
+`activity_logs.id` is load-bearing, which is why ids are kept: `saveAngles`
+writes a row, keeps its id and sweeps `.neq('id', keepId)`. Renumbering would
+be invisible until the first save deleted the wrong row.
+
+#### Proving it actually moved
+
+```bash
+pnpm build && pnpm preview
+SUPABASE_SERVICE_KEY=... node scripts/check-wurxbase-migration.mjs
+```
+
+Counting rows proves the copy landed and nothing else. **Every way this
+migration fails is silent from the screen:** a request still going to the
+retired project returns real-looking data, a missing schema header 404s into
+something that reads as "no records yet", and RLS refusing a table returns an
+empty array rather than an error. So the check signs in, opens the screen, and
+asserts on what the network did — including that a WRITE lands, because reads
+can succeed while writes are refused.
+
+**One expected 406 on the very first load ever.** `app_settings` starts empty
+and their `fetchSettings` self-heals it: `.single()` on no rows returns
+PGRST116, which their code catches and upserts `{id: 1}`. It happens once and
+never again.
+
+#### What is still true about deletes
+
+Every script that deletes anything still refuses to run outside dev via
+`scripts/lib/dev-guard.mjs`. What changed is that WurxBase's data is now
+*inside* our project, so it is covered by our backups and point-in-time recovery
+for the first time — their old project had none. It is also now reachable by our
+service key, which it never was before: treat `wurxbase.*` with the same care
+as `public.*`.
 
 ### vercel.json has a strict schema, and a comment in it kills the deployment
 
@@ -952,12 +1051,78 @@ vercel build --token $VERCEL_TOKEN --yes      # "Build completed successfully."
 A green `git push` says nothing about the build. `vercel ls wurxmediahubdev`
 shows the state; a run with duration `?` never built at all.
 
-The rewrite excludes `.netlify/` because WurxBase still calls
-`/.netlify/functions/euka`, which does not exist here. Without the exclusion the
-SPA answered it with index.html and a 200, so their code called `.json()` on
-HTML and threw `Unexpected token '<'`. A real 404 lets their own handling
-degrade to null. Square brackets are avoided in the pattern: `source` is parsed
-with path-to-regexp, and a character class is not worth the risk.
+**When a git deploy comes back `BLOCKED` (`TEAM_ACCESS_REQUIRED`)**, Vercel
+can no longer match the GitHub commit author to a team member. On 2026-09-15
+the cause was that the Vercel account had no GitHub login linked. The real
+fix is Rashid's: Vercel → Account Settings → Authentication → connect GitHub
+`RashidNazeer`. Until then, dev can still be deployed from the CLI, because
+the token belongs to the team owner. The commit author is not checked:
+
+```bash
+# 1. export EXACTLY the pushed commit, so nothing local rides along
+git archive <sha> | tar -x -C <scratch>/deploy-<sha>
+cp .vercel/project.json <scratch>/deploy-<sha>/.vercel/   # projectName MUST be wurxmediahubdev
+# 2. a PREVIEW of the dev project — never --prod (the dev project's production
+#    branch is main, and --prod is not what the dev URL serves)
+cd <scratch>/deploy-<sha> && vercel deploy --yes --token $VERCEL_TOKEN
+# 3. wurxmediahubdev.vercel.app is a dev-BRANCH domain, so a CLI deploy is not
+#    attached to it automatically. Point it by hand:
+vercel alias set <deployment-host> wurxmediahubdev.vercel.app --token $VERCEL_TOKEN --scope wurxmedia-6695s-projects
+```
+
+**Scripting it, two traps (2026-09-16):** the deployment URL is NOT the last
+line of stdout. That line is `}` from a JSON dump, and the URL is on the
+`Preview  https://…` line on stderr. Take the host from that line. Also,
+`.vercel/project.json` is pretty-printed (`"projectName": "wurxmediahubdev"`,
+with a space), so a grep for `"projectName":"` finds nothing and stops an
+`&&` chain without a word. Load tokens in Git Bash with
+`set -a; . <(tr -d '\r' < C:/Users/RA_shid/.wurx/cli-secrets.env); set +a`.
+A bare `git push` then fails with "Invalid username or token", because the
+credential helper reads `GH_TOKEN` from the environment.
+
+Both env vars (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`) apply to
+all targets with no branch scoping, so a CLI preview builds against the same
+dev database as a git one. Confirm by comparing the live `assets/index-*.js`
+name with the tested local `dist/`. To roll back, alias the domain to the
+previous deployment's host. The next git deploy that succeeds takes the
+domain back automatically.
+
+The rewrite excludes `.netlify/`. That exclusion is now VESTIGIAL and is kept
+only because editing `vercel.json` has killed deployments twice: nothing calls
+that path any more. Until 2026-08-29 WurxBase fetched
+`/.netlify/functions/euka` in twelve places, a Netlify function that was never
+vendored in because the copy took their `src/` and it lived outside it. Without
+the exclusion the SPA answered with index.html and a 200, so their code called
+`.json()` on HTML and threw `Unexpected token '<'`; a real 404 let their own
+handling degrade to null instead, which is why nothing ever errored and the
+figures were simply missing. Square brackets are avoided in the pattern:
+`source` is parsed with path-to-regexp, and a character class is not worth the
+risk.
+
+### The Euka proxy
+
+Those twelve call sites now go through `eukaJson()` in the seam to the
+`euka` Edge Function. **The API key is a secret and must never enter the
+repository** — the original had it as a string literal in a committed file,
+which is why it should be rotated.
+
+```powershell
+# the key, straight from wherever you keep it, into the function environment
+supabase secrets set "EUKA_API_KEY=<key>" --project-ref $env:SUPABASE_PROJECT_REF_DEV
+supabase functions deploy euka --project-ref $env:SUPABASE_PROJECT_REF_DEV
+```
+
+**Production needs both of those run again with the prod ref.** A function and
+its secrets do not travel with a migration or a git push, and a missing
+`EUKA_API_KEY` is answered with a loud 500 rather than an empty result, on
+purpose: an empty result is indistinguishable from "this brand has no data",
+which is the failure that hid this for eleven days.
+
+**Never wait on `networkidle` on a Paid Collabs route.** It never settles on a
+screen holding a realtime socket, and these screens now also fire ten Euka
+calls that take seconds each upstream, so a perfectly healthy page blows the
+30 second navigation limit. Navigate with `domcontentloaded` and wait for the
+content you actually need.
 
 ## Screenshot scripts
 
@@ -1120,6 +1285,38 @@ creator must **disconnect and reconnect** to get them. Nothing in the product
 can do this for them and nothing warns them — the card simply keeps hiding the
 totals strip, correctly, because the permission genuinely is not there.
 
+## Paid Collabs: the Ad Spend and ROI columns
+
+```powershell
+pnpm verify:collab-ads      # 30 checks, no server. Needs SUPABASE_SERVICE_KEY
+pnpm verify:collab-ads-ui   # 15 checks in a browser. Needs a server AND the key
+```
+
+**The figures are MONTH-SCOPED**, driven by Paid Collabs' own month selector;
+"All Time" sends null bounds. The range applies to `stat_date`, the
+ADVERTISER's day (`Etc/GMT+5`), because that is the only boundary TikTok files
+against — a range in any other timezone moves a day's money across a month end.
+
+**Request economy, measured rather than promised:** one RPC to open a brand, and
+around 424 video ids per call when a period changes. The UI suite counts the ids
+inside each request body, because a flat request count cannot tell batching from
+per-row fetching once the row count changes underneath it.
+
+**THE SCREEN IS `WurxUI.jsx`, NOT `App.jsx`.** Both vendored files contain a
+creators table; only WurxUI's is reachable at `/admin/collabs`. An
+implementation in App.jsx builds, passes every data test, and changes nothing on
+screen. Open the page and look before choosing where to edit.
+
+**Our additions are fenced in `WURX-ADDED ... WURX-END` blocks.** To re-vendor
+after pulling upstream changes, grep for those markers and re-apply them; the
+build's own `verify:isolation` still forbids the vendored code from naming our
+project or importing our Supabase client.
+
+**Their lists are CSS grids, so a new column needs a new TRACK**, restated in
+`wurxbase-overrides.css`. Add a header cell without a track and every later
+column shifts one place along, which looks like a styling wobble and is actually
+a creator's status showing under "Actions".
+
 ## Launching an environment: what a migration does NOT carry
 
 Learned on 2026-08-26, launching production for the first time. `supabase db
@@ -1281,3 +1478,683 @@ header from the registry value rather than from the current shell, and calling
 the server: `initialize` returned protocol `2024-11-05`, `tools/list` returned
 15 tools. Note that `Invoke-RestMethod` **hangs** on this endpoint, because the
 response advertises `text/event-stream`. Use `curl` with `--max-time`.
+
+## The read-only Paid Collabs roles, and Ads Manager
+
+Affiliate Team Lead and Operations Lead read Paid Collabs and see no other
+screen. They cannot write anywhere, including inside Paid Collabs.
+
+**Ads Manager is NOT one of them since 2026-09-15.** It is full staff, the
+same as Ops (see FEATURE_MAP, "Ads Manager became staff"). Subhan
+(`subhan@wurxmedia.com`) is the only one, on dev.
+
+```bash
+# create or repair an Ads Manager (dev). Refuses an account holding any role
+# other than ads_manager or a fresh applicant.
+SUPABASE_SERVICE_KEY=... node scripts/create-ads-manager.mjs \
+  someone@wurxmedia.com '<password>' 'Display Name'
+pnpm verify:ads-manager          # 19 checks, needs the service key
+pnpm verify:ads-manager-ui       # browser, needs a preview server and
+                                 # ADS_MANAGER_PASSWORD
+
+# create or repair one (dev). Refuses to touch an account that is not already
+# one of the three, so it cannot silently demote a colleague.
+SUPABASE_SERVICE_KEY=... node scripts/create-collabs-viewer.mjs \
+  atl@wurxmedia.com affiliate_team_lead
+
+pnpm verify:collabs-viewer-rls   # attacks the DB as each role. Needs the service key.
+pnpm verify:collabs-viewer       # the browser half. Needs a preview server.
+pnpm verify:angles       # 12 checks. Creative angles are findable by the
+                         # whole team: an empty month must SAY where the
+                         # tests are and one click must reach them. Needs a
+                         # preview server and COLLAB_STAFF_PASSWORD.
+pnpm verify:euka-errors  # 8 checks. Every way the EUKA videos button can
+                         # fail must name its own cause instead of blaming
+                         # the brand name. Needs a preview server and
+                         # COLLAB_STAFF_PASSWORD.
+pnpm verify:euka-accounts # 9 checks. Every Euka account we hold a key for
+                         # answers for its OWN stores and no other. Needs a
+                         # staff login; hits the deployed function, so it
+                         # needs no key of its own.
+pnpm verify:collab-chrome # 17 checks. Fields must not look like selected
+                         # text, and the unread dot must be visible. Half
+                         # source scan, because the colours were inline
+                         # styles. Needs a preview server.
+```
+
+**The boundary is `public.is_collabs_viewer()`**, used only by the wurxbase
+SELECT policies. Never add a read-only role to `is_staff()`: that function
+guards seventy policies across the whole public schema, and it means staff.
+
+**Export and print are withheld** by `forcedPermsFor()` in
+`src/lib/wurxbase-identity.ts`, applied after every other grant, so an override
+in Access Control cannot open them.
+
+## Euka keys
+
+**Euka's full API spec is public at `https://api.euka.ai/openapi.json`**
+(docs page `https://api.euka.ai/docs`; `docs.euka.ai` does not resolve). It
+has 54 paths, including GMV Max ad reporting per video (PARKED 46). Read the
+spec before assuming what Euka can or cannot return.
+
+**The spec's server is `/api/v1`, not `/v0`.** The function's older modes use
+`https://api.euka.ai/v0`. The GMV Max routes exist only under
+`https://api.euka.ai/api/v1` (verified 2026-09-15). Check a route without a
+key: 401 or 400 means it exists, 404 means it does not. Mode 7
+(`type: 'gmvmax'`, `op: advertisers | campaigns | creatives | item`) relays
+those reads and passes Euka's own status back as `upstreamStatus`.
+
+### The Euka ad-figures sync (`euka-ads-sync`)
+
+Copies GMV Max spend per video, and spark codes, into our database. See
+FEATURE_MAP, "Ad spend, ROI and spark codes in Paid Collabs come from EUKA".
+
+**Secrets on dev, set 2026-09-15:**
+- the function secret `EUKA_ADS_SYNC_SECRET`
+- the vault entries `euka_ads_sync_secret` and `euka_ads_sync_url`, written by
+  `euka_ads_set_sync_secret()` and `euka_ads_set_sync_url()` running as the
+  service role
+
+The secret was generated at run time and never written to a file. To rotate
+it, generate a new one and set all three again.
+
+**The schedule.** The pg_cron job `euka-ads-cycle` calls `euka_ads_run_cycle()`
+every 5 minutes. When the vault is empty it returns NULL and does nothing. On
+production that is deliberate, because Paid Collabs does not exist there. On
+dev, `pnpm verify:euka-ads` step [9] fails if the vault is empty.
+
+**Running it by hand:** POST `/functions/v1/euka-ads-sync` with a staff session
+and `{"discover": true, "budgetMs": 100000}`. Progress lives in three tables:
+- `euka_ad_sync_stores`: which stores are connected, and campaigns listed vs
+  reported
+- `euka_ad_sync_units`: per campaign-month status, `last_error` and `due_at`
+- `euka_spark_sync_days`: per store-day spark-code status
+
+**WHEN A BRAND LINKS A NEW AD ACCOUNT IN EUKA, RUN DISCOVERY.** Only discovery
+reads the campaign list, and it runs every six hours, so a newly linked account
+(or a newly created campaign) shows nothing until then. This is the first thing
+to try when somebody says "we connected it and I see no data" — before
+investigating anything.
+
+Sign in as staff with the Supabase JS client, then
+`functions.invoke('euka-ads-sync', { body: { discover: true } })`. A run that
+discovers stops there by design, so invoke it once more with `{}` to work the
+new units; the 5-minute cron would do that anyway.
+
+Then confirm, with the management API:
+
+```sql
+select campaign_name, month, status, row_count, cost
+from euka_ad_sync_units where store_name = '<store>' order by campaign_name, month;
+```
+
+Worked example, 2026-09-17: Apothecary's store had ONE campaign, a deleted
+"All Products" with no rows, so every figure was correctly empty. After
+discovery it had four, and "Ezy Dose Push Button" carried $24,530 in August
+and $14,976 in September. Total time about two minutes.
+`BRAND=Apothecary MONTH=2026-09 pnpm verify:euka-ads-ui` then passed 5/5
+against the live dev site. **Tell whoever asked to reload the page**: the
+screen caches "no figures" for the visit.
+
+`pnpm verify:euka-ads` runs 21 checks: sums across campaigns, month
+separation, currencies, replace-not-add, who can read, who can run the sync,
+and the vault. `pnpm verify:euka-ads-ui` compares every creator's Ad spend and
+ROI on screen with the database for one brand and month (defaults: Penetrex,
+2026-09). It needs a preview server and that month synced.
+
+`EUKA_API_KEY` is the original account (ten stores). Additional accounts go
+in `EUKA_API_KEYS`, comma or whitespace separated. Both are Edge Function
+secrets and neither has ever been in the repo or in git history.
+
+```powershell
+supabase secrets set EUKA_API_KEYS=<key>[,<key2>] --project-ref $env:SUPABASE_PROJECT_REF_DEV
+supabase functions deploy euka --project-ref $env:SUPABASE_PROJECT_REF_DEV
+```
+
+Set on **dev** 2026-09-09 for Nutra. Production was NOT changed: Paid
+Collabs is dev-only (there is no `wurxbase` schema on prod), so nothing on
+production calls Euka.
+
+### Client share links (Paid Collabs)
+
+A link shows one or more brands, read only, to somebody with no account. See
+FEATURE_MAP, "Client sharing: read-only links into Paid Collabs".
+
+**The normal way is the screen:** `/admin/client-links`, in the Paid Collabs
+group, ops and admin only. Make a link, copy it once, revoke it there.
+
+**The terminal tool** is for scripts and for when a link is needed without a
+browser. With `SUPABASE_SERVICE_KEY` in the environment:
+
+```bash
+node scripts/share-link.mjs new "Apothecary - Sarah" Apothecary 30
+node scripts/share-link.mjs new "Two brands" "Apothecary,Penetrex" 90 ktcv
+node scripts/share-link.mjs list
+node scripts/share-link.mjs revoke <id>
+```
+
+`sections` is any of k (top numbers), t (top videos), c (creators), v (videos);
+the default is all four.
+
+**NOT through the SQL editor or the management API.** Both run as `postgres`,
+whose JWT is not the service role, so `collab_share_create` raises "Only an
+admin can create a client link" — the gate working, not a fault. The tool uses
+supabase-js with the service key, which `is_service_role()` recognises.
+
+The client's address is `https://wurxmediahubdev.vercel.app/share/collabs/<token>`
+(production once it goes live). **The link is the credential: 192 random bits.**
+Since 2026-09-18 it is stored as well as its SHA-256, so the owner's screen can
+copy it again (DECISIONS says why). Links minted before that have no stored
+address; the screen's **Give it a new address** issues one and kills the old
+one, keeping the history. That is also the move when a link has spread.
+
+**Watching a link.** `collab_share_list()` carries `view_count` and
+`last_viewed_at`; `public.collab_share_views` holds one row per open, with the
+visitor address hashed and salted per link. A count climbing far beyond one
+client is the only sign a shared secret gives that it has spread.
+
+```bash
+pnpm verify:collab-share      # 43 checks, attacks the door. Needs SUPABASE_SERVICE_KEY
+pnpm verify:collab-share-ui   # 32 checks in a real browser with no session.
+                              # Needs a preview server and SUPABASE_SERVICE_KEY
+pnpm verify:client-links      # 18 checks on the owner's screen. Same needs.
+```
+
+All three mint their own links and delete them in a `finally`. They write
+nothing to Paid Collabs.
+
+### Follower counts looked up by handle (Euka market intelligence)
+
+The Creators tab's Followers column falls back to
+`public.euka_creator_followers` when the shop data has no count. See
+FEATURE_MAP, "Followers on the Creators tab". It fills by itself: every
+five-minute `euka-ads-sync` run asks Euka about four handles. **Nothing needs
+running by hand.**
+
+**Is it filling?** The summary JSON of each sync run carries
+`followers: { looked, found, missed, failed, why }`. Or read the table with
+supabase-js and the service key (the management API works too, it is a plain
+table): `found = true` rows are counts, `last_error` rows are Euka refusals
+waiting about a day for a retry. On 2026-09-18 at 16:50 UTC: 465 handles
+known, 75 found, 0 clean misses, 11 refused, 379 not yet asked.
+
+**`503 "Market Intelligence service is unavailable"` is rationing, not an
+outage.** In the same minute that five new handles got 503, a handle Euka had
+answered before got 200. Do not raise the batch size to go faster; fifteen
+back to back drew 503s from a healthy service. The fill takes a day or two.
+
+**Probe one handle**, signed in as staff with supabase-js:
+`functions.invoke('euka', { body: { type: 'micreator', keyword: '<handle>' } })`
+returns `{ upstreamStatus, payload }`, Euka's answer untouched.
+
+```bash
+pnpm verify:followers   # 16 checks. Needs a preview server and SUPABASE_SERVICE_KEY
+```
+
+## Resubmitting the TikTok app (written 2026-09-23)
+
+Only Rashid can send it. Everything technical is done and live.
+
+**Prerequisites, both checked before he opens the portal:**
+- The website is live on production — done, `d3f1555`, `verify:site` 86/86
+  against `wurxmediahub.vercel.app` itself.
+- **`support@wurxmedia.com` must exist and be read.** Both legal pages send
+  people there and a reviewer may test it. He said on 2026-09-22 he would
+  create it. The Contact page uses `rajil@wurxmedia.com`, which wurxmedia.com
+  publishes, so that address is already real.
+
+**In the portal** (developers.tiktok.com → Manage apps → WurxMedia Hub):
+
+| field | what to do |
+| --- | --- |
+| App icon | upload `https://wurxmediahub.vercel.app/tiktok-app-icon.png` (1024×1024) |
+| Website URL | `https://wurxmediahub.vercel.app/` — the root, now a real site, NOT `/tiktok` as the 27 note said |
+| Terms URL | `https://wurxmediahub.vercel.app/terms`, unchanged |
+| Privacy URL | `https://wurxmediahub.vercel.app/privacy`, unchanged |
+| Products | Login Kit only. Change nothing |
+| Scopes | `user.info.basic` + `video.list` only. Change nothing |
+| Description, scope explanation | **leave exactly as they are** — the second rejection did not mention them, so they passed. Editing text that passed only creates new risk |
+| Reason box | **120 CHARACTERS, not words.** Rashid hit the limit on 2026-09-23 with a 534-character draft. Use: `Both fixed: the icon now matches our website, and the website URL is a full multi-page site. Scopes unchanged.` (110) |
+| Demo access | the connected creator login, see below |
+
+**GIVE THE REVIEWER A DEMO LOGIN, and this is not optional politeness.**
+Production still drives the SANDBOX TikTok app (`sbaw82kr6qc82ia76e`, PARKED
+27b/27c). A reviewer who signs up on the live site and presses Connect with
+their own account is not on the sandbox's target-user list, so it fails on the
+exact screen under review. Rashid chose on 2026-09-23 to hand them the already
+connected creator account rather than swap the key first. **Do not swap the key
+without him asking:** whether an unapproved app's own key behaves better is
+undocumented, and the swap changes a live credential.
+
+**MEASURE ANYTHING THAT GOES IN A PORTAL BOX.** The reason box takes 120
+characters. The public description took 115 on the first submission, which
+should have been the clue. A draft that does not fit is not a small
+inconvenience: it is discovered while he is in the form, mid-submission.
+
+**Afterwards:** reviews take days to two weeks. If it is rejected again, get
+their note verbatim BEFORE changing anything — on this app their stated reason
+has twice named the wrong field.
+
+## Reacher (Irwin Naturals only)
+
+Reacher is the affiliate platform Irwin Naturals sells through. Everything else
+is Euka. See FEATURE_MAP, "Irwin Naturals comes from Reacher, not Euka".
+
+**It is `reacherapp.com`.** `reacher.email` / `api.reacher.so` is an unrelated
+email-verification service with the same name, and it answers 403 to everything,
+which reads exactly like a bad key.
+
+```
+base   https://api.reacherapp.com/public/v1
+auth   x-api-key: rk_live_…        (Authorization: Bearer → "Invalid token format")
+shop   x-shop-id: 12832 | 1,2,3 | all     — required on EVERY call
+pages  page / page_size, page_size ≤ 100  — 101 is a 422
+docs   https://docs.reacherapp.com  ·  spec at /openapi.json (297 paths)
+```
+
+**Secrets on dev:** `REACHER_API_KEY` (the function secret) and
+`REACHER_SYNC_SECRET`, plus the vault entries `reacher_sync_secret` and
+`reacher_sync_url`, written by `reacher_set_sync_secret()` and
+`reacher_set_sync_url()` running as the service role. The key is in
+`.env.local` as `REACHER_API` for the check script. **Never write it anywhere
+else** — it can create ad campaigns.
+
+**The schedule:** pg_cron job `reacher-cycle` calls `reacher_run_cycle()` every
+15 minutes. Empty vault means it returns NULL and does nothing, which is what
+production does — there is no Paid Collabs and no Irwin Naturals there.
+
+**Running it by hand**, signed in as ops/admin/ads_manager:
+`functions.invoke('reacher-sync', { body: { dryRun: true } })` reports what it
+would file and writes nothing. Drop `dryRun` to do it. The service role CANNOT
+call it: the gate wants the scheduler's secret or a real user.
+
+**What a run says:** `reacher_sync_runs` holds one row per run — videos seen,
+videos filed, creators matched, spend rows, campaigns seen, and the failure
+reason when `ok` is false.
+
+**~~NO AD SPEND IS NOT A FAULT~~ — THE ADS ARE CONNECTED NOW (2026-09-29).**
+Irwin's shop reports **4 campaigns and 164 spend rows**, and the brand page
+shows real Ad spend and ROI. The note that used to sit here — "no GMV Max
+campaign connected, `campaigns_seen` is 0, the column shows a dash" — was true
+when it was written and is not any more. Rashid asked on 2026-09-25 to "check
+that ad account for Irwin Naturals is connected now"; it is.
+
+**What is still true from that note:** zero campaigns is not by itself a fault,
+and the way to tell an empty ads side from a broken key is the control — the
+same key returning real videos for the shop proves the account is alive.
+
+### Thumbnails for the videos we file
+
+`reacher-sync` fills a blank `thumb` from the one public object store every
+thumbnail on these screens already comes from, keyed on TikTok's video id:
+
+```
+https://database.euka.ai/storage/v1/object/public/creator_videos_photos/<videoId>.webp
+```
+
+**Reacher has no thumbnail to give.** Checked against their own spec: neither
+`/videos/list` nor `/videos/performance` carries an image field, and their
+`social-intelligence` routes answer 404 for us — as does the control, so that
+is "not on our plan" rather than "no data".
+
+**DO NOT USE TIKTOK'S oEMBED, however well it works.**
+`https://www.tiktok.com/oembed?url=…` needs no key and hands back a real
+thumbnail — with `x-expires` in the URL, which on 2026-09-29 was the NEXT DAY.
+Storing one puts pictures on the screen for a day and empties them again with
+nothing failing.
+
+There is no cache table: a video with a thumbnail is never asked about again,
+and the only ids re-asked are the ones with no picture yet, which is exactly the
+set worth retrying. 60 of Irwin's 66 resolved; the other 6 are genuinely absent
+from the store and keep the play-symbol placeholder.
+
+```bash
+pnpm verify:video-thumbs   # 14 checks. Needs SUPABASE_SERVICE_KEY and a preview
+                           # server. Proves no stored URL carries an expiry.
+pnpm verify:deal-complete  # 20 checks. Needs SUPABASE_SERVICE_KEY and
+                           # COLLAB_STAFF_PASSWORD (the service role cannot call
+                           # reacher-sync, so it signs in to dry-run it).
+```
+
+### A finished deal moves itself to Payment Pending
+
+The status on screen is derived from the `videos` flag. Both browser paths that
+write videos recompute it from the deal on every save; `reacher-sync` did not,
+so a creator whose videos come from Reacher finished their deal and stayed in
+"Videos in Progress" until a human noticed. **Irwin is the only brand Reacher
+fills, which is why it was the only brand where Asad was doing it by hand.**
+
+The rule is forward-only: it never writes a status backwards, never touches a
+row that is already `Paid`, and never writes `payment_status` — the screens read
+Payment Pending from the flag whenever the row is not Paid, so there is nothing
+to gain and a human's field to lose.
+
+`parseDealVideos` now exists twice, in `WurxUI.jsx` and in `reacher-sync`.
+**Change one and change the other**; `verify:deal-complete` runs both copies
+over every deal string that exists and fails if they ever disagree.
+
+```bash
+pnpm verify:reacher   # 19 checks. Needs SUPABASE_SERVICE_KEY, REACHER_API in
+                      # .env.local, and a preview server
+```
+
+### A brand picture for a brand EUKA does not cover
+
+Paid Collabs draws every brand face from Euka's store photo. A brand with no
+Euka store — Irwin Naturals — shows a gradient letter until it is given one.
+
+```bash
+SUPABASE_SERVICE_KEY=... node scripts/brand-photo.mjs "Irwin Naturals" --tiktok irwinnaturalsofficial
+SUPABASE_SERVICE_KEY=... node scripts/brand-photo.mjs "Irwin Naturals" --file C:/path/logo.png
+SUPABASE_SERVICE_KEY=... node scripts/brand-photo.mjs "Irwin Naturals" --url https://…/logo.png
+SUPABASE_SERVICE_KEY=... node scripts/brand-photo.mjs --list
+```
+
+It stores the file in the public `brand-assets` bucket under
+`collab-brands/<slug>.<ext>` and records it in `collab_brand_photos`. The
+screen prefers Euka's photo and reads this only when there is none.
+
+**`--tiktok` goes through unavatar.io, which has a DAILY anonymous limit** that
+`sync-creator-avatars` also spends: a 429 saying "Daily anonymous rate limit
+reached" means try tomorrow or use a file. Irwin's picture came from the logo
+on their own website instead (their Shopify CDN serves it at any size —
+`?width=512&height=512`), which is why `--file` and `--url` exist.
+
+### The onboarding product picker (`collab-products`)
+
+One Edge Function answers "what does this brand sell", for Euka brands and
+Reacher ones alike. Staff (and the read-only Paid Collabs roles) only.
+
+```js
+// signed in as staff
+await supabase.functions.invoke('collab-products', { body: { brand: 'Penetrex' } })
+// → { source: 'euka' | 'reacher' | 'none', store, products: [{id,name,image,price,status}], note }
+```
+
+- **Euka** needs the brand id, not the store id, and `pageSize` ≤ 100.
+- **Reacher's `/products/catalog` is empty for Irwin**, so the function falls
+  back to the products named on that shop's videos. The `note` says when it did.
+- `source: 'none'` means neither platform has that brand — most of the 43 Paid
+  Collabs brands. The modal then behaves exactly as it did before.
+
+```bash
+pnpm verify:product-picker   # 22 checks. Needs a preview server, and
+                             # SUPABASE_SERVICE_KEY for the no-stray-row proof
+```
+
+### The onboarding drawer
+
+```bash
+pnpm verify:drawer          # 78 checks at 100/125/150/175/200% zoom and phone width
+pnpm verify:product-picker  # 24 checks on the dropdown and the deal split
+```
+
+**If it ever appears under the top bar again:** `.wurxbase-root` and
+`.wurxbase-fence` carry `isolation: isolate`, so nothing inside Paid Collabs can
+paint over our shell header whatever its z-index. The drawer is offset by
+`--wx-topbar` (3.5rem, the header's own height) for that reason. Do not "fix" it
+by raising a z-index; it cannot work from inside a sealed stacking context.
+
+### Product pictures
+
+```bash
+pnpm verify:product-images   # 19 checks: the endpoint per platform, then FETCH the URLs
+pnpm verify:drawer           # 84 checks, including that the photographs render in a browser
+```
+
+Pictures come from EUKA by **exact TikTok product id**, never from a list:
+
+```
+GET  /social-intelligence/products/{productId}?brandId=…      our own shop's record
+POST /market-intelligence/tiktok/product/detail  need_image:1  market data, id only
+```
+
+The second needs no brand id, so it works for Reacher and Cruva brands too. Any
+EUKA key may ask it — that is not a breach of the one-key-per-store rule, which
+is about store data. Answers are cached in `public.collab_product_images`;
+delete a row to force a re-ask.
+
+### Cruva, what is already known — do not re-derive this
+
+The key lives in `.env.local` as `CRUVA_API`. **It is valid**: a bogus key of the
+same shape gets `403 Unauthorized`, the real one gets through.
+
+| Fact | Evidence |
+|---|---|
+| Base is `https://api.cruva.com`, auth is `x-api-key` | `/health` returns `{"status":"ok"}` |
+| Server is gunicorn; a missing route is `404 {"error":"Not found"}` | response headers |
+| Every call needs an `X-Shop-Id` header | `400 {"error":"Missing X-Shop-Id header"}` |
+| The key reaches **only** `/community/campaigns/list` and `/community/campaigns/get` | swept ~400 candidate paths derived from their own operation names |
+| There is no OpenAPI spec, no `/docs`, no public API article | probed; help centre has no API page |
+| `mcp.cruva.com` lists all 106 operations to **any** bearer token | a bogus key gets the same list — so `tools/list` is public and the key is NOT an MCP credential |
+| Actually calling an MCP tool needs OAuth | `401 expected JWE compact serialization` |
+| The key cannot mint an OAuth token | `/oauth/token` answers `unsupported_grant_type` for every grant |
+
+**A rate limiter will make a sweep lie to you.** Running eight requests at once
+returns `429` for everything, and a 429 is not a 404 — a concurrent sweep
+reported 366 "live routes" that were all rate-limit responses. Probe one at a
+time, with a gap, and keep a known-good path as a control.
+
+What Cruva's MCP catalogue shows it *has*, for when a working key arrives:
+`search_videos`, `search_crm_affiliates`, `search_brand_products`,
+`list_gmv_max_campaigns` and `list_gmv_max_creatives` — the last being
+**per-video ad spend**, which is better than Reacher gives us.
+
+**Still needed from Rashid:** the three Cruva Shop IDs, and the endpoint names
+from Cruva support.
+
+### Reacher's ad side
+
+```bash
+pnpm verify:reacher-ads   # campaigns per shop, the 90-day limit, and the chunked window
+```
+
+**`/gmv-max/videos/summary` refuses any range longer than 90 days** —
+`400 INVALID_REQUEST "Date range exceeds maximum of 90 days."` — and the sync
+asks for 120. It never failed only because the call sits behind
+`if (campaigns > 0)` and Irwin has none, so **the day Irwin's ad account was
+connected would have been the day the sync broke.** `videoSpend` now splits the
+window into chunks of at most 90 days and SUMS the parts per video and campaign.
+
+Summing, not concatenating, matters: the caller files every row under one month
+and upserts on `(item_id, month, advertiser_id, campaign_id)`, so two chunks
+holding the same video would not double-count — the second would silently
+overwrite the first, and a quarter's spend would quietly become one month's.
+
+Ad-account state on 2026-09-24, read from Reacher:
+
+| Shop | GMV Max campaigns |
+|---|---|
+| Biostime | 6 (Euka is the source for this brand in our app, so nothing to do) |
+| Cutler Nutrition | 29 (not a Paid Collabs brand) |
+| **Irwin Naturals** | **0 — not connected** |
+| Longevity | 0 |
+
+Irwin's ad spend and ROI stay a dash until Rashid connects GMV Max on that shop
+in TikTok. It is a dash and not a zero on purpose: zero is a claim about money.
+
+### The October product rule
+
+```bash
+pnpm verify:october-product   # 15 checks, both directions, nothing written
+```
+
+The rule keys on the row's own `onboarded_on`, NOT on today's date. That is
+deliberate and must stay that way: the same drawer edits old creators, and a
+clock-based rule would make every pre-October row unsaveable the moment October
+arrived. The constant is `WX_PRODUCT_REQUIRED_FROM` in `WurxUI.jsx`.
+
+**Catalogue coverage, measured 2026-09-24.** Count the brands ACTIVE IN THE
+MONTH, which is what the Brands screen lists and what onboarding touches — not
+the 44 distinct brand names in the table, 28 of which are dormant rows carrying
+no hiring date:
+
+| Source | Of the 11 brands active in Sep 2026 |
+|---|---|
+| Euka | 8 |
+| Reacher | 1 (Irwin Naturals) |
+| **Neither** | **2 — Aqua Sonic, Pure Daily Care (both Cruva)** |
+
+For those two the product is typed, and the drawer says so. Re-measure by
+calling `collab-products` with `{ brand, probe: true }` for each brand in the
+month, and count the month rather than the whole table.
+
+### The by-product band
+
+```bash
+pnpm verify:product-band   # 46 checks, including that the pills add up to the GMV card
+```
+
+It reads `sortedCreators` — the same rows the table below shows — so it is
+scoped to the selected month by construction. `wxProductTotals` MUST keep using
+the same dedupe key and rule as `wxVideoTotals`; if they drift, the pills stop
+adding up to the card above them and both numbers look authoritative.
+
+Pictures are matched from `collab-products` by EXACT product name within the one
+brand. Videos carry a product name and no product id, so there is no id to join
+on — do not loosen that match.
+
+The catalogue is fetched ONCE per brand and shared with the product groups
+below, via `wxProductPics` — a module-level promise cache in `WurxUI.jsx`. A
+failed fetch is dropped from it so the next mount asks again.
+
+### The creator contract PDF
+
+```bash
+pnpm verify:contract-pdf        # 32 checks, needs pnpm preview on :4173
+node scripts/backfill-video-thumbs.mjs          # dry run, every brand
+node scripts/backfill-video-thumbs.mjs --write  # apply. Needs SUPABASE_SERVICE_KEY
+```
+
+The design is in `src/routes/admin/contract-paper.js`, which is OURS; the
+vendored `contractPdf.js` delegates to it on one fenced line. The wordmark is
+inline base64 (`wurx-mark.js`) so the renderer stays synchronous — a fetched
+logo would give a blank header on a bad network and nothing would look wrong.
+
+**ALL TIME, NOT THE CURRENT MONTH, in any suite that opens a brand.** Use
+`ensureAllTime(page)` from `scripts/browser.mjs`. Three suites failed on 1
+October for no reason other than the date: a brand with no creators this month
+is not on the Brands screen at all, and a brand whose creators are all in one
+payment status correctly draws no status dividers. **It is a toggle** — clicking
+it blindly once per brand turns it on, off, on, and silently tests the middle
+brand on the current month, which is why it is a function and not two lines.
+
+### Product groups in the creator table
+
+```bash
+pnpm verify:product-groups   # 98 checks, needs pnpm preview on :4173
+```
+
+Grouping is on whenever two or more distinct products are in view; otherwise the
+table stays flat. Brands used by the suite: `PG_BRANDS` (default
+`Penetrex,Dr Tobias`) and `PG_FLAT_BRAND` (default `Pure Daily Care` — pick one
+with NO product on any video, and one that actually has creators in the month on
+screen, or the check grades a brand it never opened).
+
+**The checks that matter, and why they are worded that way:**
+
+- **No creator is listed twice.** Every row carries per-creator money; a person
+  under two products shows their GMV, views, ad spend and ROI twice.
+- **The groups add up** to the rows on screen AND to the "N creators" pill next
+  to the search box. The band above will NOT match — it overlaps by design.
+- **A grouped row is as wide as the card.** `.pc-ct-row` is a twelve-column grid
+  with no spare width: Status is 1.16fr of 8.9 and the pill in it is 151px. Take
+  even 20px off and the pill overflows, and the next cell paints over it — three
+  controls go dead with nothing visibly wrong. Never indent these rows; draw
+  inside the row's own 24px of left padding.
+
+**A NOTE ON `verify:collab-controls`, fixed 2026-09-29.** Its overlap probe
+counted `document.elementFromPoint` returning nothing as "a neighbour is on top
+of it". That is also what it returns for a point OUTSIDE THE VIEWPORT, and the
+first table row now sits below a 1000px fold (the by-product band, then the
+group header, are above it). The suite stood at six failures describing a bug
+that did not exist. It now scrolls the row into view, counts empty points
+separately, and FAILS if it could not sample any. If you see that suite report a
+control as covered, check the row is on screen before believing it.
+
+### The TikTok identity ledger
+
+```bash
+pnpm verify:tiktok-identity   # 24 checks against the real database
+pnpm verify:creator-tiktok    # 29 - proves the Settings flow did not move
+```
+
+`public.tiktok_identities` is the permanent record of which TikTok account has
+claimed an application. It is NOT `creator_tiktok_connections`: that table frees
+the account on disconnect by design, which is right for connecting and wrong for
+applying.
+
+**To let a barred TikTok account apply again**, call
+`release_tiktok_identity(identity_id, reason)` - staff or service_role, a reason
+is required, and it writes an `audit_log` row. Deleting the ledger row is not the
+way; the release is the auditable path.
+
+**`app_generation`** records which TikTok app key vouched for an `open_id`.
+Everything today is `sandbox-2026`. **On the day production moves to the approved
+key, every open_id changes** - that is a new generation, a one-time amnesty for
+every barred account, and every existing creator must reconnect before their
+identity row is current. Diary item, not a bug.
+
+### TikTok's return parameters and the Supabase client
+
+```bash
+pnpm verify:oauth-strip   # 8 checks, needs pnpm preview running
+```
+
+`src/lib/supabase.ts` is `detectSessionInUrl: true` with PKCE, so the moment it
+loads it looks for `?code=` in the address and tries to exchange it. TikTok sends
+creators back to `/oauth/tiktok-creator/callback` (and admins to
+`/oauth/tiktok/callback`) with exactly that shape.
+
+The strip therefore lives in **index.html**, beside the theme script, because it
+has to run before the module graph loads. The parameters are handed to the page
+on `window.__wxOAuthReturn`. Do not move this into React: an effect runs long
+after the client has been built.
+
+The ads side returns `auth_code` and the creator side `code`; both are captured.
+
+### Releasing a TikTok account, from the screen
+
+Admin -> Data -> **TikTok** -> **Creator accounts**. Live claims first, released
+ones underneath with the reason and the date. "Let this account apply again"
+needs a sentence before it will submit - required by the database, not the form.
+
+```bash
+pnpm verify:tiktok-release   # 16 checks: seeds a claim, releases it THROUGH THE UI,
+                             # proves the audit row and that it can claim again
+```
+
+**A test fixture that deletes creators must delete their claims too.**
+`tiktok_identities.profile_id` is ON DELETE SET NULL by design, so a suite that
+removes its test accounts leaves orphans behind - they show as "A TikTok account
+- the account that claimed it has been deleted". Four had accumulated from
+`check-creator-tiktok` before anyone looked; its cleanup now removes them.
+
+### TikTok-first signup
+
+```bash
+pnpm verify:tiktok-signup    # 24 - the guards: browser binding, ticket rules, handle
+pnpm verify:tiktok-identity  # 25 - one TikTok, one application, and the release
+pnpm verify:tiktok-guards    # 13 - the three Settings-connect defects, closed
+pnpm verify:tiktok-release   # 16 - the staff release, through the real screen
+pnpm verify:oauth-strip      # 8  - TikTok's code never reaches the Supabase client
+pnpm verify:creator-tiktok   # 29 - the Settings flow did not move
+```
+
+**The flow.** `/signup` -> Continue with TikTok -> TikTok -> back to
+`/oauth/tiktok-creator/callback` -> a ticket is kept in sessionStorage -> email
+and password (`supabase.auth.signUp`, browser to Supabase) -> `claim` binds the
+proven identity -> the application is written, and a trigger takes its handle
+from the ledger.
+
+**WE MINT NO SESSIONS.** Supabase issues them, exactly as before. If anyone ever
+proposes minting one server-side, read DECISIONS first.
+
+**One callback address serves two flows.** Signup and the Settings connect both
+return to `/oauth/tiktok-creator/callback`; the browser leaves a marker in
+sessionStorage so the page knows which. A missing marker falls through to the
+creator flow and refuses there - "start again", never a wrong identity.
+
+**If Connect breaks for everyone after a deploy**, check `DISPLAY_SCOPES`
+against the TikTok app's own Scopes page. More in our array than on the app and
+TikTok refuses the authorise URL outright.

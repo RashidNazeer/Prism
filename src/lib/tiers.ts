@@ -19,6 +19,12 @@ export const ROLE_LABEL: Record<AppRole, string> = {
   creative_strategist: 'Creative strategist',
   ops: 'Ops',
   admin: 'Admin',
+  /* Spelled out rather than abbreviated: "ATL" means nothing to somebody
+     reading an audit row. The first two are read-only Paid Collabs roles;
+     Ads Manager is full staff since 2026-09-15. */
+  affiliate_team_lead: 'Affiliate Team Lead',
+  operations_lead: 'Operations Lead',
+  ads_manager: 'Ads Manager',
 };
 
 export const TIER_LABEL: Record<CreatorTier, string> = {

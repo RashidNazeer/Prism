@@ -1,12 +1,16 @@
 import {
   Award,
+  BarChart3,
   Building2,
+  Compass,
+  FileBarChart,
   Gift,
   HandCoins,
   Handshake,
   History,
   Inbox,
   LayoutDashboard,
+  Link2,
   Megaphone,
   Store,
   Tag,
@@ -18,7 +22,13 @@ import {
   Users,
   Video,
 } from 'lucide-react';
+import { isCollabsOnlyRole, isStaffRole } from '@/lib/auth/auth-context';
 import type { AppRole } from '@/lib/auth/auth-context';
+import { wurxbaseTabsFor } from '@/lib/wurxbase-identity';
+
+/** The heading the Paid Collabs rows sit under. Named once so the group and the
+ *  filter that prunes it cannot drift apart. */
+const COLLABS_GROUP = 'Paid Collabs';
 
 /**
  * The sidebar, in one place.
@@ -63,6 +73,16 @@ export interface NavItem {
    * hidden below `md`, where there is no room and the name alone is the answer.
    */
   description?: string;
+  /**
+   * OWNERS ONLY: ops and admin, never ads_manager or the read-only roles.
+   *
+   * A row in the Paid Collabs group that is NOT one of the vendored tabs, so
+   * the tab filter below cannot judge it. Client links is the first: it hands a
+   * brand's numbers to somebody outside the company, which is an owner's
+   * decision. The row being hidden is not the boundary — the three
+   * `collab_share_*` functions re-check the caller's role in the database.
+   */
+  owners?: boolean;
 }
 
 export interface NavGroup {
@@ -165,17 +185,61 @@ const ADMIN: NavGroup[] = [
       // Named for what it is to an admin, not for the protocol underneath:
       // nobody manages "an OAuth integration", they connect TikTok.
       { label: 'TikTok', icon: Plug, to: '/admin/tiktok' },
-      /*
-       * WurxBase, brought in whole and unchanged. STAFF ONLY, and it is in the
-       * ADMIN list alone: no creator nav mentions it and no creator route
-       * reaches it. It carries brand budgets and creator payment details, so
-       * that is not a preference.
-       */
-      { label: 'Paid Collabs', icon: HandCoins, to: '/admin/collabs' },
       // Read when something needs explaining, not when something needs
       // deciding, which is why it is here and not with the queues.
       { label: 'Activity', icon: History, to: '/admin/activity' },
       { label: 'Uploads', icon: Upload, soon: 'Later' },
+    ],
+  },
+  {
+    /*
+     * PAID COLLABS IS A SECTION NOW, not one row that opens an app with its own
+     * tabs inside it.
+     *
+     * Rashid, 2026-08-28, looking at the six pills across the top of the
+     * embedded screen: *"pull them out and create new menus item on main menu
+     * as Paid Collabs and put all these tabs there as menu item section we will
+     * navigate from there so we need to remove those tabs from top... i want to
+     * give it native look of our own app now"*.
+     *
+     * A heading over six links earns its row by the rule at the top of this
+     * file, and it removes a whole second navigation system from the product:
+     * before this, finding Reporting meant knowing that Paid Collabs was a row
+     * in Data that opened something with a tab rail of its own.
+     *
+     * THE NAMES ARE THEIRS, deliberately. "Creators" and "Brands" already
+     * appear elsewhere in this menu meaning our own creators and our own brand
+     * hubs, and these are neither — they are the paid-deal tracker's. The
+     * heading is what tells them apart, which is exactly what a heading is for,
+     * and renaming them would break the one thing every person using that
+     * screen already knows.
+     *
+     * STAFF ONLY, and in the ADMIN list alone: no creator nav mentions these
+     * and no creator route reaches them. They carry brand budgets and creator
+     * payment details, so that is not a preference.
+     */
+    label: COLLABS_GROUP,
+    items: [
+      { label: 'Brands', icon: HandCoins, to: '/admin/collabs/brands' },
+      { label: 'Creators', icon: Users, to: '/admin/collabs/creators' },
+      { label: 'Performance', icon: BarChart3, to: '/admin/collabs/performance' },
+      {
+        label: 'Reporting',
+        icon: FileBarChart,
+        to: '/admin/collabs/reporting',
+        // Creative angle testing is a sub-tab of Reporting, so the row stays
+        // lit while somebody is inside it.
+        activePrefixes: ['/admin/collabs/reporting'],
+      },
+      { label: 'Leaderboard', icon: Award, to: '/admin/collabs/leaderboard' },
+      { label: 'Discovery', icon: Compass, to: '/admin/collabs/discovery' },
+      {
+        label: 'Client links',
+        icon: Link2,
+        to: '/admin/client-links',
+        owners: true,
+        description: 'Read-only links you can send a client',
+      },
     ],
   },
 ];
@@ -269,11 +333,90 @@ const STUDIO: NavGroup[] = [
   },
 ];
 
-export function navForRole(role: AppRole | undefined): NavGroup[] {
-  if (role === 'admin' || role === 'ops') return ADMIN;
+export function navForRole(role: AppRole | undefined, collabTabs?: string[]): NavGroup[] {
+  /*
+   * A MENU ROW MUST NOT LIE ABOUT WHAT IT OPENS.
+   *
+   * Rashid, asked whether to hide Paid Collabs rows a person cannot open:
+   * *"if it was u remove it i dont want any leak"*.
+   *
+   * The six tabs became six rows on 2026-08-28, and rows are drawn from this
+   * static list while the tab a person may actually open is decided by their
+   * WurxBase capability. All six were offered to everybody, and clicking one
+   * you lacked bounced you to Brands with no explanation. Before the move the
+   * row simply was not in the rail, which is the behaviour restored here.
+   */
+  if (isStaffRole(role)) return withCollabTabs(ADMIN, role, collabTabs);
+  /*
+   * The read-only roles get the Paid Collabs group and NOTHING ELSE.
+   *
+   * Built by filtering the admin menu rather than by writing a second one, so a
+   * row added to Paid Collabs tomorrow appears here too and a row added to
+   * Applications or TikTok cannot. The same `withCollabTabs` then drops any
+   * tab their capabilities do not open, exactly as it does for staff.
+   *
+   * This hides rows. It does not protect anything: `/admin/applications` typed
+   * into the address bar is refused by the route guard, and the queries behind
+   * it return nothing under RLS. See COLLABS_ONLY_ROLES.
+   */
+  if (isCollabsOnlyRole(role)) {
+    const collabsOnly = ADMIN.filter((g) => g.items.some((i) => i.to?.startsWith('/admin/collabs')))
+      .map((g) => ({ ...g, items: g.items.filter((i) => i.to?.startsWith('/admin/collabs')) }));
+    return withCollabTabs(collabsOnly, role, collabTabs);
+  }
   if (role === 'creative_strategist') return STUDIO;
   if (role === 'creator') return CREATOR;
   return APPLICANT;
+}
+
+/**
+ * Drop the Paid Collabs rows this person cannot open, and the heading with them
+ * if none survive.
+ *
+ * The six tabs are drawn from a static list here, while WHICH of them opens is
+ * decided by the person's WurxBase capability. Offering all six to everybody
+ * meant clicking one you lacked bounced you to Brands with no explanation —
+ * a menu row lying about what it opens. Before the tabs moved into this sidebar
+ * the row simply was not in their rail, which is the behaviour restored here.
+ *
+ * A cheap identity map when nothing is filtered, so the common case allocates
+ * nothing and the array stays reference-stable for anything memoising on it.
+ */
+function withCollabTabs(
+  groups: NavGroup[],
+  role: AppRole | undefined,
+  collabTabs?: string[]
+): NavGroup[] {
+  /*
+   * THE PERSON'S OWN PERMISSIONS WHEN WE HAVE THEM, our mapping when we do not.
+   *
+   * `collabTabs` comes from `useWurxbaseIdentity`, which looks the person up
+   * in their own `app_users` row by email and reads the role and overrides
+   * Asad maintains. Deriving from OUR role is the fallback and it is the more
+   * generous of the two — a viewer over there would arrive through our `ops`
+   * as their `admin`. Fine as a stopgap while the addresses are filled in,
+   * not fine as the answer.
+   */
+  const allowed = new Set(collabTabs && collabTabs.length ? collabTabs : wurxbaseTabsFor(role));
+  const slug = (to: string | undefined) => (to ?? '').replace('/admin/collabs/', '');
+
+  let changed = false;
+  const out = groups
+    .map((group) => {
+      if (group.label !== COLLABS_GROUP) return group;
+      /* An owners-only row is not a vendored tab, so the tab list cannot judge
+         it: ops and admin keep it, everybody else loses it. */
+      const isOwner = role === 'ops' || role === 'admin';
+      const items = group.items.filter((item) =>
+        item.owners ? isOwner : allowed.has(slug(item.to))
+      );
+      if (items.length === group.items.length) return group;
+      changed = true;
+      return { ...group, items };
+    })
+    .filter((group) => group.items.length > 0);
+
+  return changed || out.length !== groups.length ? out : groups;
 }
 
 /** True when this item is the screen currently on show. */

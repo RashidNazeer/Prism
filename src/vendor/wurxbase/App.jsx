@@ -2,12 +2,54 @@ import React, {
   useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo
 } from 'react';
 import { createPortal } from 'react-dom';
+import SqlQuest from './SqlQuest';
+import GodMode, { applyGod, loadGod } from './GodMode';
+import { fetchBrandContracts } from './brandContract';
+import CreativeAngles from './CreativeAngles';
+import AccessControl from './AccessControl';
+import { can } from './access';
+
+/* WURX-ADDED · IS THIS ASAD?
+   Their gates asked `currentUser?.id !== 'asad' && currentUser?.username !==
+   'Asad'`, in seven places. Neither half could ever be false here: `id` is our
+   auth uuid, and the session writes `username: 'asad'` in lower case against a
+   capital 'Asad'. So every one of those gates refused EVERYBODY, Asad included,
+   and did it with a notification. That is why marking a creator paid appeared
+   to do nothing at all.
+   One case-insensitive check, so the same question gets the same answer. */
+function isAsadUser(u) {
+  const a = String(u?.username || u?.id || '').trim().toLowerCase();
+  return a === 'asad';
+}
+
+import { fetchAngles } from './angleStore';
 import './App.css';
 import './responsive.css';
 import './theme.css';
 import './tailwind.css';
-import { supabase } from './supabaseClient';
+import { supabase, selectAll, wurxbaseRest, wurxbaseHeaders, WURXBASE_ORIGIN, WURXBASE_ENDPOINT_LABEL } from './supabaseClient';
 import WurxUI from './WurxUI';
+
+/* WURX-ADDED · where their overlays go.
+
+   Every `createPortal` in this app targeted `document.body`, which is OUTSIDE
+   `.wurxbase-root` — so every rule in their own stylesheet, all of which the
+   vendoring fenced under that class, missed. Ten overlays rendered with no
+   styling whatsoever: the status dropdown came out as a bare full-width block
+   at the bottom of the document, which is why clicking "Payment Pending" and
+   the eye icon appeared to do nothing at all.
+
+   The host is a div our route renders INSIDE `.wurxbase-root` and OUTSIDE
+   `.wurxbase-fence`. Inside the root so their CSS matches; outside the fence
+   because the fence is transformed and contained, which would make every
+   `position: fixed` overlay measure itself against a scrolled box instead of
+   the screen.
+
+   Falls back to `document.body` so their app still renders standalone. */
+function wxPortalHost() {
+  return (typeof document !== 'undefined' && document.getElementById('wurxbase-portal-host')) || document.body;
+}
+
 
 /* ─── Constants ──────────────────────────────────────────── */
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -141,16 +183,23 @@ const AVATAR_GRADIENTS = [
 ];
 
 const DEFAULT_TEAM = [
-  { id: 'aris',   name: 'Aris',   color: '#1D4ED8', bg: '#DBEAFE' },
-  { id: 'emily',  name: 'Emily',  color: '#9D174D', bg: '#FCE7F3' },
-  { id: 'myles',  name: 'Myles',  color: '#374151', bg: '#F3F4F6' },
-  { id: 'khushi', name: 'Khushi', color: '#991B1B', bg: '#FEE2E2' },
+  { id: 'aris',   name: 'Aris',   color: 'var(--wx-text-faint)', bg: '#DBEAFE' },
+  { id: 'emily',  name: 'Emily',  color: 'var(--wx-text-faint)', bg: '#FCE7F3' },
+  { id: 'myles',  name: 'Myles',  color: 'var(--wx-text-faint)', bg: '#F3F4F6' },
+  { id: 'khushi', name: 'Khushi', color: 'var(--wx-danger)', bg: '#FEE2E2' },
 ];
 
 const PAYMENT_OPTIONS = ['Paid', 'Not Yet'];
 const VIDEOS_OPTIONS  = ['Done', 'In Progress'];
 
-const CURSOR_COLORS = ['#6366F1','#EC4899','#14B8A6','#F59E0B','#10B981','#3B82F6','#8B5CF6'];
+/* WURX-ADDED · the same seven hues, deep enough for the name to be read.
+   These carry a white label, and at the original
+   shades white measured 2.15:1 to 4.23:1 on them — every one under AA, with
+   teal at 2.49:1. They are identity colours, so the hues are kept and only the
+   depth changes; white now clears 5:1 on all seven. Near-black instead of
+   white was the other option and it fails on the violet, so it would have
+   needed two inks and a rule about which. */
+const CURSOR_COLORS = ['#4F46E5','#BE185D','#0F766E','#B45309','#047857','#2563EB','#7C3AED'];
 function getCursorColor(name) {
   if (!name) return CURSOR_COLORS[0];
   return CURSOR_COLORS[name.charCodeAt(0) % CURSOR_COLORS.length];
@@ -188,13 +237,19 @@ function playSound(type) {
   } catch (_) { /* silent fail · browser blocked AudioContext */ }
 }
 
-/* ─── Auth ──────────────────────────────────────────────── */
+/* ─── Roles ─────────────────────────────────────────────── */
+/*
+ * NOT CREDENTIALS. This used to carry a plaintext password per person and it
+ * shipped in the browser bundle, readable by anyone who opened devtools. There
+ * is no login here any more — identity comes from the hub's own sign-in — so
+ * all this is now is the starting roster used to seed an empty `app_users`.
+ */
 const USERS = [
-  { id: 'asad',  username: 'Asad',  password: 'Asad.Wurx@26',  role: 'superadmin', display: 'Asad' },
-  { id: 'ipc',   username: 'IPC',   password: 'ipc@wurxmedia',  role: 'ipc',        display: 'IPC' },
-  { id: 'apc',   username: 'APC',   password: 'apc@wurxmedia',  role: 'apc',        display: 'APC' },
-  { id: 'admin', username: 'Admin', password: 'admin.top@wurx', role: 'admin',      display: 'Admin' },
-  { id: 'lead',  username: 'Lead',  password: 'lead@wurx',      role: 'viewer',     display: 'Lead' },
+  { id: 'asad',  username: 'Asad',  role: 'superadmin', display: 'Asad' },
+  { id: 'ipc',   username: 'IPC',   role: 'ipc',        display: 'IPC' },
+  { id: 'apc',   username: 'APC',   role: 'apc',        display: 'APC' },
+  { id: 'admin', username: 'Admin', role: 'admin',      display: 'Admin' },
+  { id: 'lead',  username: 'Lead',  role: 'viewer',     display: 'Lead' },
 ];
 function getBasePerms(role) {
   switch (role) {
@@ -212,6 +267,10 @@ function getPerms(role, customPerms = null) {
   if (!customPerms || Object.keys(customPerms).length === 0) return base;
   return { ...base, ...customPerms };
 }
+
+/* Anything gated on a capability asks through here, so a grant made in
+   Access control is felt the moment that person signs in. */
+function allowed(user, key) { return can(user, key); }
 
 function relativeTime(ts) {
   if (!ts) return 'Never';
@@ -402,7 +461,7 @@ function DatePicker({ filter, onChange, onClose }) {
         ))}
       </div>
     </div>,
-    document.body
+    wxPortalHost()
   );
 }
 
@@ -501,7 +560,7 @@ function FilterChip({ label, value, options, onChange }) {
 }
 
 /* ─── DeleteConfirmModal · Tailwind premium V2 ─── */
-function DeleteConfirmModal({ type, name, count, onConfirm, onCancel }) {
+function DeleteConfirmModal({ type, name, count, pending = 0, hidden = 0, onConfirm, onCancel }) {
   const isBrand = type === 'brand';
   const isBulk  = type === 'bulk';
   const emoji = isBrand ? '💣' : isBulk ? '☠️' : '🗑️';
@@ -511,8 +570,15 @@ function DeleteConfirmModal({ type, name, count, onConfirm, onCancel }) {
   const ctaLabel = isBrand ? `Nuke "${name}" 💣` : isBulk ? `Delete all ${count} ☠️` : 'Delete it 🗑️';
 
   const subject = isBrand ? `"${name}" brand` : isBulk ? `${count} creator${count !== 1 ? 's' : ''}` : name;
+  /*
+   * The unreviewed applications are named, because they are the ones nobody
+   * expects to lose. "17 records, 12 of them pending applications" is a
+   * different decision from "5 deals", and it is the true one.
+   */
   const subText = isBrand
-    ? `Includes ${count} creator${count !== 1 ? 's' : ''} inside this brand`
+    ? `${count} record${count !== 1 ? 's' : ''} carry this brand` +
+      (pending ? ` · ${pending} ${pending === 1 ? 'is an unreviewed application' : 'are unreviewed applications'}` : '') +
+      (!pending && hidden ? ` · ${hidden} not shown on this screen` : '')
     : isBulk
     ? 'All selected rows will be removed at once'
     : 'This creator and their entire record';
@@ -1382,7 +1448,7 @@ function RowActionBtn({ label, tone = 'blue', onClick, children }) {
           className="tw-pointer-events-none tw-fixed tw-z-[3000] tw-px-2 tw-py-0.5 tw-rounded-full tw-text-white tw-text-[10px] tw-font-bold tw-tracking-[0.04em] tw-uppercase tw-whitespace-nowrap tw-shadow-md tw-font-sans"
           style={{ left: tip.x, top: tip.y, transform: 'translate(-50%, -100%)', backgroundColor: t.tip, animation: 'rab-tip 0.16s cubic-bezier(0.33,1,0.68,1)' }}
         >{label}</span>,
-        document.body
+        wxPortalHost()
       )}
     </>
   );
@@ -1583,7 +1649,7 @@ function GalleryCard({ creator, idx, onClick }) {
     >
       {/* Hero strip · gradient avatar background */}
       <div className="tw-relative tw-h-[110px] tw-overflow-hidden" style={{ background: grad }}>
-        <div className="tw-absolute tw-inset-0 tw-pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 80% at 80% 0%, rgba(255,255,255,0.32), transparent 60%), radial-gradient(ellipse 70% 80% at 0% 100%, rgba(0,0,0,0.32), transparent 60%)' }} />
+        <div className="tw-absolute tw-inset-0 tw-pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 80% at 80% 0%, color-mix(in srgb, var(--wx-surface-1) 32%, transparent), transparent 60%), radial-gradient(ellipse 70% 80% at 0% 100%, color-mix(in srgb, var(--wx-accent) 32%, transparent), transparent 60%)' }} />
         <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.7) 1px, transparent 0)', backgroundSize: '20px 20px' }} />
         {/* Top row: status pill + brand pill */}
         <div className="tw-relative tw-z-10 tw-flex tw-items-start tw-justify-between tw-p-2.5">
@@ -1776,8 +1842,8 @@ function StatsViewV2({ creators, onSelectBrand }) {
         {/* ── Budget Allocation Trend · Premium glassy bar chart ── */}
         <div className="tw-relative tw-overflow-hidden tw-rounded-[28px] tw-shadow-oneui_lg tw-bg-gradient-to-br tw-from-slate-900 tw-via-[#0E1F4D] tw-to-slate-900 tw-p-5 md:tw-p-6">
           {/* Decorative orbs */}
-          <div className="tw-absolute tw--top-20 tw--right-20 tw-w-[260px] tw-h-[260px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.4), transparent 70%)', filter: 'blur(40px)' }} />
-          <div className="tw-absolute tw--bottom-24 tw--left-16 tw-w-[260px] tw-h-[260px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.4), transparent 70%)', filter: 'blur(40px)' }} />
+          <div className="tw-absolute tw--top-20 tw--right-20 tw-w-[260px] tw-h-[260px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--wx-success-soft) 40%, transparent), transparent 70%)', filter: 'blur(40px)' }} />
+          <div className="tw-absolute tw--bottom-24 tw--left-16 tw-w-[260px] tw-h-[260px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--wx-accent) 40%, transparent), transparent 70%)', filter: 'blur(40px)' }} />
           <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.5) 1px, transparent 0)', backgroundSize: '24px 24px' }} />
 
           {/* Header */}
@@ -1864,7 +1930,7 @@ function StatsViewV2({ creators, onSelectBrand }) {
                         }}
                       >
                         {/* Glossy top highlight */}
-                        <div className="tw-absolute tw-top-0 tw-left-0 tw-right-0 tw-h-[35%] tw-rounded-t-[10px] tw-pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.35), transparent)' }} />
+                        <div className="tw-absolute tw-top-0 tw-left-0 tw-right-0 tw-h-[35%] tw-rounded-t-[10px] tw-pointer-events-none" style={{ background: 'linear-gradient(180deg, color-mix(in srgb, var(--wx-surface-1) 35%, transparent), transparent)' }} />
                         {/* Inner shimmer line */}
                         <div className="tw-absolute tw-top-0 tw-left-1/4 tw-right-1/4 tw-h-px tw-bg-white/40" />
                         {isPeak && <div className="tw-absolute tw-top-1.5 tw-left-1/2 -tw-translate-x-1/2 tw-text-[12px]">⭐</div>}
@@ -1879,7 +1945,7 @@ function StatsViewV2({ creators, onSelectBrand }) {
               {trendAvg > 0 && (
                 <div className="tw-absolute tw-left-0 tw-right-0 tw-pointer-events-none" style={{ bottom: `${24 + (trendAvg / trendMax) * 200}px` }}>
                   <div className="tw-flex tw-items-center tw-gap-2 tw-px-1">
-                    <div className="tw-flex-1 tw-h-px tw-bg-white/30" style={{ background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.4) 0 6px, transparent 6px 12px)' }} />
+                    <div className="tw-flex-1 tw-h-px tw-bg-white/30" style={{ background: 'repeating-linear-gradient(90deg, color-mix(in srgb, var(--wx-surface-1) 40%, transparent) 0 6px, transparent 6px 12px)' }} />
                     <span className="tw-text-[9.5px] tw-font-bold tw-text-white/60 tw-bg-slate-900/40 tw-px-1.5 tw-rounded-full">avg</span>
                   </div>
                 </div>
@@ -2235,7 +2301,7 @@ function Donut({ data, total }) {
         return el;
       })}
       <text x={c} y={c - 2} textAnchor="middle" className="tw-fill-oneui-ink" style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.5px' }}>{total}</text>
-      <text x={c} y={c + 14} textAnchor="middle" style={{ fontSize: 9, fontWeight: 700, fill: '#64748B', textTransform: 'uppercase', letterSpacing: 1 }}>deals</text>
+      <text x={c} y={c + 14} textAnchor="middle" style={{ fontSize: 9, fontWeight: 700, fill: 'var(--wx-text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>deals</text>
     </svg>
   );
 }
@@ -2393,8 +2459,8 @@ function CreatorsViewV2({ creators, activeBrand, onCardClick, onTierUpgrade }) {
 
         {/* ── HERO STRIP ── */}
         <div className="tw-relative tw-overflow-hidden tw-rounded-[28px] tw-bg-gradient-to-br tw-from-[#0F172A] tw-via-[#1E1B4B] tw-to-[#0F172A] tw-p-5 md:tw-p-6 tw-shadow-oneui_lg">
-          <div className="tw-absolute tw--top-24 tw--left-12 tw-w-[300px] tw-h-[300px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.45), transparent 70%)', filter: 'blur(40px)' }} />
-          <div className="tw-absolute tw--bottom-24 tw--right-12 tw-w-[300px] tw-h-[300px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, rgba(236,72,153,0.4), transparent 70%)', filter: 'blur(40px)' }} />
+          <div className="tw-absolute tw--top-24 tw--left-12 tw-w-[300px] tw-h-[300px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--wx-accent) 45%, transparent), transparent 70%)', filter: 'blur(40px)' }} />
+          <div className="tw-absolute tw--bottom-24 tw--right-12 tw-w-[300px] tw-h-[300px] tw-rounded-full tw-pointer-events-none tw-opacity-50" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--wx-accent) 40%, transparent), transparent 70%)', filter: 'blur(40px)' }} />
           <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.5) 1px, transparent 0)', backgroundSize: '22px 22px' }} />
 
           <div className="tw-relative tw-z-10 tw-flex tw-items-start tw-justify-between tw-flex-wrap tw-gap-4">
@@ -2546,12 +2612,12 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
     return Math.round((paid * 0.35) + (deliver * 0.30) + (roasH * 0.35));
   }, [c.paidPct, c.deliveryPct, c.roas]);
 
-  const grade = scoreVal >= 90 ? { letter: 'S', color: '#FBBF24', glow: '#F59E0B' }
-    : scoreVal >= 75 ? { letter: 'A', color: '#34D399', glow: '#10B981' }
-    : scoreVal >= 60 ? { letter: 'B', color: '#60A5FA', glow: '#2563EB' }
-    : scoreVal >= 45 ? { letter: 'C', color: '#A78BFA', glow: '#7C3AED' }
-    : scoreVal >= 30 ? { letter: 'D', color: '#FB923C', glow: '#EA580C' }
-    : { letter: 'E', color: '#F87171', glow: '#DC2626' };
+  const grade = scoreVal >= 90 ? { letter: 'S', color: 'var(--wx-warning)', glow: '#F59E0B' }
+    : scoreVal >= 75 ? { letter: 'A', color: 'var(--wx-success)', glow: '#10B981' }
+    : scoreVal >= 60 ? { letter: 'B', color: 'var(--wx-text-muted)', glow: '#2563EB' }
+    : scoreVal >= 45 ? { letter: 'C', color: 'var(--wx-text-muted)', glow: '#7C3AED' }
+    : scoreVal >= 30 ? { letter: 'D', color: 'var(--wx-warning)', glow: '#EA580C' }
+    : { letter: 'E', color: 'var(--wx-danger)', glow: '#DC2626' };
 
   // Per-status counts for filter pill badges
   const counts = useMemo(() => {
@@ -2589,31 +2655,31 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
       className="cdm-v2 tw-fixed tw-inset-0 tw-z-[1900] tw-flex tw-items-end md:tw-items-center tw-justify-center tw-p-0 md:tw-p-4"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       style={{
-        background: 'rgba(15,23,42,0.42)',
+        background: 'color-mix(in srgb, var(--wx-accent) 42%, transparent)',
         backdropFilter: 'blur(14px) saturate(140%)',
         WebkitBackdropFilter: 'blur(14px) saturate(140%)',
         animation: 'bsv2-fade 0.24s ease',
         fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-        color: '#0F172A',
+        color: 'var(--wx-text)',
       }}
     >
       <div
         className="tw-relative tw-w-full md:tw-max-w-[520px] tw-rounded-t-[36px] md:tw-rounded-[36px] tw-overflow-hidden tw-flex tw-flex-col"
         style={{
           maxHeight: '92vh',
-          background: '#F2F2F7',
+          background: 'var(--wx-bg)',
           boxShadow: '0 32px 80px rgba(15,23,42,0.22), 0 4px 12px rgba(15,23,42,0.06)',
           animation: 'bsv2-pop 0.42s cubic-bezier(0.33,1,0.68,1)',
         }}
       >
         {/* Mobile pull handle */}
         <div className="tw-flex tw-justify-center tw-pt-3 tw-pb-2 md:tw-hidden">
-          <div style={{ width: 38, height: 5, borderRadius: 999, background: 'rgba(15,23,42,0.18)' }} />
+          <div style={{ width: 38, height: 5, borderRadius: 999, background: 'color-mix(in srgb, var(--wx-accent) 18%, transparent)' }} />
         </div>
 
         {/* ── HERO: clean white card, iOS Settings style ── */}
         <div style={{
-          background: '#FFFFFF',
+          background: 'var(--wx-surface-1)',
           padding: '20px 22px 22px',
           position: 'relative',
         }}>
@@ -2625,7 +2691,7 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
               position: 'absolute', top: 16, right: 16,
               width: 32, height: 32, borderRadius: 999,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: '#F2F2F7', color: '#8E8E93',
+              background: 'var(--wx-bg)', color: 'var(--wx-text-faint)',
               transition: 'background 0.15s ease, color 0.15s ease',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = '#E5E5EA'; e.currentTarget.style.color = '#1C1C1E'; }}
@@ -2655,8 +2721,8 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
               )}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: '#1C1C1E', letterSpacing: '-0.5px', lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-              {c.handle && <div style={{ fontSize: 13, fontWeight: 500, color: '#8E8E93', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.handle}</div>}
+              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--wx-text)', letterSpacing: '-0.5px', lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+              {c.handle && <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--wx-text-faint)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.handle}</div>}
               {tierMeta && (
                 <div style={{ marginTop: 6 }}>
                   <span style={{
@@ -2675,14 +2741,14 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
           {/* Stats · 4 columns separated by hairlines */}
           <div style={{
             marginTop: 18,
-            background: '#F2F2F7',
+            background: 'var(--wx-bg)',
             borderRadius: 16,
             display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
             overflow: 'hidden',
           }}>
             {[
-              { label: 'Deals',  value: c.deals,                                                color: '#1C1C1E' },
-              { label: 'Budget', value: fmt$(c.allocated),                                      color: '#1C1C1E' },
+              { label: 'Deals',  value: c.deals,                                                color: 'var(--wx-text)' },
+              { label: 'Budget', value: fmt$(c.allocated),                                      color: 'var(--wx-text)' },
               { label: 'GMV',    value: c.gmv > 0 ? fmt$(c.gmv) : '-',                          color: c.gmv > 0 ? '#34C759' : '#8E8E93' },
               { label: 'ROAS',   value: c.roas != null ? `${c.roas.toFixed(2)}×` : '-',         color: c.roas == null ? '#8E8E93' : c.roas >= 2 ? '#34C759' : c.roas >= 1 ? '#007AFF' : '#FF3B30' },
             ].map((s, i) => (
@@ -2692,7 +2758,7 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
                 borderLeft: i > 0 ? '0.5px solid #D1D1D6' : 'none',
               }}>
                 <div style={{ fontSize: 15.5, fontWeight: 800, color: s.color, letterSpacing: '-0.3px', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
-                <div style={{ fontSize: 10.5, fontWeight: 600, color: '#8E8E93', marginTop: 4, letterSpacing: '0.02em' }}>{s.label}</div>
+                <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--wx-text-faint)', marginTop: 4, letterSpacing: '0.02em' }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -2744,20 +2810,20 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 18px 22px', overscrollBehavior: 'contain' }}>
           {sortedDeals.length === 0 ? (
             <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-              <div style={{ width: 56, height: 56, borderRadius: 999, background: '#E5E5EA', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--wx-surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               </div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#1C1C1E' }}>No deals match</div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#8E8E93', marginTop: 4 }}>Try a different filter</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--wx-text)' }}>No deals match</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--wx-text-faint)', marginTop: 4 }}>Try a different filter</div>
             </div>
           ) : (
             <>
               {/* Section header */}
               <div style={{ padding: '6px 4px 8px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#1C1C1E', letterSpacing: '-0.1px' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.1px' }}>
                   {sortedDeals.length} {sortedDeals.length === 1 ? 'deal' : 'deals'}
                 </span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#8E8E93' }}>Tap to view</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--wx-text-faint)' }}>Tap to view</span>
               </div>
 
               {/* iOS-grouped white container with internal hairlines */}
@@ -2778,19 +2844,19 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
                   // Status icon definition (24px circle with vector glyph)
                   const statusIcon = isPaid ? {
                       bg: '#34C759', glyph: <polyline points="20 6 9 17 4 12"/>, sw: 3.4,
-                      label: 'Paid', color: '#1F8D44',
+                      label: 'Paid', color: 'var(--wx-success)',
                     } : isUnpaid ? {
                       bg: '#FF3B30', glyph: <><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>, sw: 2.4,
-                      label: 'Unpaid', color: '#C92516',
+                      label: 'Unpaid', color: 'var(--wx-danger)',
                     } : isInProg ? {
                       bg: '#FF9500', glyph: <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>, sw: 2.4,
-                      label: 'In Progress', color: '#B96A00',
+                      label: 'In Progress', color: 'var(--wx-warning)',
                     } : isDone ? {
                       bg: '#007AFF', glyph: <polygon points="6 4 20 12 6 20" />, sw: 0,
-                      label: 'Done', color: '#0058C4',
+                      label: 'Done', color: 'var(--wx-text-faint)',
                     } : {
                       bg: '#8E8E93', glyph: <circle cx="12" cy="12" r="3"/>, sw: 0,
-                      label: 'Open', color: '#3A3A3C',
+                      label: 'Open', color: 'var(--wx-text)',
                     };
 
                   return (
@@ -2826,26 +2892,26 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
                         <div style={{ flex: 1, minWidth: 0 }}>
                           {/* Top: brand · status */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                            {d.brand && <span style={{ fontSize: 12.5, fontWeight: 700, color: '#1C1C1E', letterSpacing: '-0.1px' }}>{d.brand}</span>}
-                            {d.brand && <span style={{ width: 2, height: 2, borderRadius: 999, background: '#C7C7CC' }} />}
+                            {d.brand && <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.1px' }}>{d.brand}</span>}
+                            {d.brand && <span style={{ width: 2, height: 2, borderRadius: 999, background: 'var(--wx-surface-3)' }} />}
                             <span style={{ fontSize: 11.5, fontWeight: 700, color: statusIcon.color, letterSpacing: '0.02em' }}>{statusIcon.label}</span>
                           </div>
                           {/* Headline */}
                           <div style={{
-                            fontSize: 14.5, fontWeight: 700, color: '#1C1C1E', letterSpacing: '-0.2px', lineHeight: 1.3,
+                            fontSize: 14.5, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.2px', lineHeight: 1.3,
                             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                           }}>
-                            {d.deal || <span style={{ color: '#8E8E93', fontWeight: 500, fontStyle: 'italic' }}>No description</span>}
+                            {d.deal || <span style={{ color: 'var(--wx-text-faint)', fontWeight: 500, fontStyle: 'italic' }}>No description</span>}
                           </div>
                           {/* Sub-meta */}
-                          <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontWeight: 500, color: '#8E8E93', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontWeight: 500, color: 'var(--wx-text-faint)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {d.hiring_date && <span>{formatDate(d.hiring_date)}</span>}
-                            {d.hiring_date && videos > 0 && <span style={{ color: '#C7C7CC' }}>·</span>}
+                            {d.hiring_date && videos > 0 && <span style={{ color: 'var(--wx-text-muted)' }}>·</span>}
                             {videos > 0 && <span>{videos} {videos === 1 ? 'video' : 'videos'}</span>}
                             {d.hired_by && (
                               <>
-                                <span style={{ color: '#C7C7CC' }}>·</span>
-                                <span>by <strong style={{ color: '#1C1C1E', fontWeight: 700 }}>{d.hired_by}</strong></span>
+                                <span style={{ color: 'var(--wx-text-muted)' }}>·</span>
+                                <span>by <strong style={{ color: 'var(--wx-text)', fontWeight: 700 }}>{d.hired_by}</strong></span>
                               </>
                             )}
                           </div>
@@ -2854,7 +2920,7 @@ function CreatorDealsModalV2({ aggregate, deals, onClose, onSelectDeal, fmt$ }) 
                         {/* Amount + chevron */}
                         <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
                           {amount > 0 && (
-                            <div style={{ fontSize: 16, fontWeight: 800, color: '#1C1C1E', letterSpacing: '-0.4px', fontVariantNumeric: 'tabular-nums' }}>{fmt$(amount)}</div>
+                            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--wx-text)', letterSpacing: '-0.4px', fontVariantNumeric: 'tabular-nums' }}>{fmt$(amount)}</div>
                           )}
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                         </div>
@@ -3063,8 +3129,8 @@ function CreatorAggregateCard({ c, idx, onClick, fmt$, isSelected, onToggleSelec
           boxShadow: '0 4px 12px rgba(15,23,42,0.16), inset 0 1px 2px rgba(255,255,255,0.4)',
         }}>{initial}</div>
         <div style={{ flex: 1, minWidth: 0, paddingRight: 36 }}>
-          <div style={{ fontSize: 17, fontWeight: 800, color: '#1C1C1E', letterSpacing: '-0.4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-          {c.handle && <div style={{ fontSize: 12.5, fontWeight: 500, color: '#8E8E93', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.handle}</div>}
+          <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--wx-text)', letterSpacing: '-0.4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+          {c.handle && <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--wx-text-faint)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.handle}</div>}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -3074,7 +3140,7 @@ function CreatorAggregateCard({ c, idx, onClick, fmt$, isSelected, onToggleSelec
               color: tierMeta.label === 'Elite' ? '#451A03' : 'white',
               boxShadow: `0 2px 5px ${tierMeta.from}40`,
             }}>{tierMeta.emoji} {tierMeta.label}</span>
-            <span style={{ fontSize: 11.5, fontWeight: 600, color: '#8E8E93' }}>{c.deals} {c.deals === 1 ? 'deal' : 'deals'}{c.brandsArr.length > 0 ? ` · ${c.brandsArr.length} ${c.brandsArr.length === 1 ? 'brand' : 'brands'}` : ''}</span>
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-faint)' }}>{c.deals} {c.deals === 1 ? 'deal' : 'deals'}{c.brandsArr.length > 0 ? ` · ${c.brandsArr.length} ${c.brandsArr.length === 1 ? 'brand' : 'brands'}` : ''}</span>
           </div>
         </div>
       </div>
@@ -3082,15 +3148,15 @@ function CreatorAggregateCard({ c, idx, onClick, fmt$, isSelected, onToggleSelec
       {/* iOS-style stats group · 4 columns */}
       <div style={{
         margin: '0 14px',
-        background: '#F2F2F7',
+        background: 'var(--wx-bg)',
         borderRadius: 14,
         display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
         overflow: 'hidden',
       }}>
         {[
-          { label: 'Budget', value: fmt$(c.allocated),                                color: '#1C1C1E' },
-          { label: 'Paid',   value: fmt$(c.paid),                                     color: '#1F8D44',  sub: `${c.paidPct}%` },
-          { label: 'Videos', value: `${c.videosDelivered}/${c.videosCommitted}`,      color: '#5856D6',  sub: `${c.deliveryPct}%` },
+          { label: 'Budget', value: fmt$(c.allocated),                                color: 'var(--wx-text)' },
+          { label: 'Paid',   value: fmt$(c.paid),                                     color: 'var(--wx-success)',  sub: `${c.paidPct}%` },
+          { label: 'Videos', value: `${c.videosDelivered}/${c.videosCommitted}`,      color: 'var(--wx-text-muted)',  sub: `${c.deliveryPct}%` },
           { label: 'ROAS',   value: c.roas != null ? `${c.roas.toFixed(2)}×` : '-',   color: c.roas == null ? '#8E8E93' : c.roas >= 2 ? '#1F8D44' : c.roas >= 1 ? '#0058C4' : '#C92516' },
         ].map((s, i) => (
           <div key={s.label} style={{
@@ -3099,7 +3165,7 @@ function CreatorAggregateCard({ c, idx, onClick, fmt$, isSelected, onToggleSelec
             borderLeft: i > 0 ? '0.5px solid #D1D1D6' : 'none',
           }}>
             <div style={{ fontSize: 14.5, fontWeight: 800, color: s.color, letterSpacing: '-0.3px', lineHeight: 1, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.value}</div>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#8E8E93', marginTop: 3, letterSpacing: '0.02em' }}>{s.label}{s.sub ? ` · ${s.sub}` : ''}</div>
+            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--wx-text-faint)', marginTop: 3, letterSpacing: '0.02em' }}>{s.label}{s.sub ? ` · ${s.sub}` : ''}</div>
           </div>
         ))}
       </div>
@@ -3117,7 +3183,7 @@ function CreatorAggregateCard({ c, idx, onClick, fmt$, isSelected, onToggleSelec
             <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: c.profit >= 0 ? '#1F8D44' : '#C92516' }}>
               {c.gmv > 0 ? 'GMV' : 'Ad Spent'}
             </div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#1C1C1E', letterSpacing: '-0.4px', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--wx-text)', letterSpacing: '-0.4px', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
               {fmt$(c.gmv > 0 ? c.gmv : c.adSpent)}
             </div>
           </div>
@@ -3141,11 +3207,11 @@ function CreatorAggregateCard({ c, idx, onClick, fmt$, isSelected, onToggleSelec
             <span key={b} style={{
               display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 10px', borderRadius: 999,
               fontSize: 11, fontWeight: 700, letterSpacing: '-0.1px',
-              background: '#F2F2F7', color: '#3A3A3C',
+              background: 'var(--wx-bg)', color: 'var(--wx-text)',
             }}>{b}</span>
           ))}
           {c.brandsArr.length > 4 && (
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#8E8E93' }}>+{c.brandsArr.length - 4}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--wx-text-faint)' }}>+{c.brandsArr.length - 4}</span>
           )}
         </div>
       )}
@@ -3174,13 +3240,71 @@ function StatTile({ label, value, sub, color, pct }) {
   );
 }
 
+/* A ring reads "how far along" before you have parsed the number, so the
+   two ratios that have a meaningful ceiling get one: 100% delivered, and
+   3x ROAS as a practical top of scale. */
+function Ring({ value, color, center }) {
+  const R = 34, C = 2 * Math.PI * R;
+  const v = Math.max(0, Math.min(1, Number(value) || 0));
+  return (
+    <svg viewBox="0 0 88 88" className="rb-ring">
+      <circle cx="44" cy="44" r={R} className="rb-ring-bg" />
+      <circle cx="44" cy="44" r={R} stroke={color}
+        strokeDasharray={(C * v).toFixed(1) + " " + C.toFixed(1)}
+        className="rb-ring-fg" />
+      <text x="44" y="49" textAnchor="middle" className="rb-ring-num">{center}</text>
+    </svg>
+  );
+}
+
+/* ─── Reporting · one stat, told in three lines ───────────────────
+   Small caps label, the figure at full weight, then how it moved. The
+   accent stripe is the only colour on the card so six of them in a row
+   stay scannable instead of turning into a paint chart. */
+function fmt$Round(n) {
+  return '$' + Math.round(Number(n) || 0).toLocaleString('en-US');
+}
+function RepStat({ label, value, sub, delta, neutral, bar, accent }) {
+  const up = delta != null && delta >= 0;
+  return (
+    <div className="rep-stat" style={{ '--rep-accent': accent }}>
+      <div className="rep-stat-l">{label}</div>
+      <div className="rep-stat-v">{value}</div>
+      {bar != null && (
+        <div className="rep-stat-bar"><i style={{ width: Math.min(100, bar) + '%' }} /></div>
+      )}
+      <div className="rep-stat-f">
+        {delta != null && isFinite(delta) && (
+          /* On ad spend a rise is neither good nor bad on its own — ROAS is
+             the row that judges it — so that one chip stays neutral. */
+          <span className={'rep-delta ' + (neutral ? 'flat' : up ? 'up' : 'down')}>
+            {up ? '↑' : '↓'} {up ? '+' : ''}{Math.round(delta)}%
+          </span>
+        )}
+        {sub && <span className="rep-stat-s">{sub}</span>}
+      </div>
+    </div>
+  );
+}
+
 /* ─── ReportingViewV2 · premium executive report ─── */
-function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, onExportCsv }) {
+function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, currentUser, onExportCsv, onGoToMonth }) {
   // `creators` = hire-date filtered list (matches Brands tab scope).
   // `allCreators` = full pool restricted only to Active brands. Used solely for
   // GMV / Ad Spent / ROAS so reporting numbers mirror Performance tab brand rows -
   // e.g. May data entered for an April-hired creator still rolls into May Reporting.
   const gmvPool = allCreators || creators;
+
+  /* Two jobs live in this tab and they are read at different moments:
+     the executive report is what you send out, the angle test is what
+     you work in. Stacking them made one long scroll where the test sat
+     below the fold, so they are now two panes of one switch. */
+  const [repTab, setRepTab] = useState('report');
+  /* Creative angle testing owns the brand picker, so it owns what its CSV
+     contains. It registers its exporter here and the one header button
+     routes to whichever pane is open. */
+  const anglesCsvRef = useRef(null);
+  const provideAnglesExport = useCallback((fn) => { anglesCsvRef.current = fn; }, []);
 
   // Brand parity: parse all 3 deal formats Brands tab understands. The top-level
   // parseDeal only catches "for N" · so deals like "5 videos $100", "$200/5",
@@ -3350,6 +3474,12 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, onExp
     })).sort((a, b) => (b.gmv - a.gmv) || a.brand.localeCompare(b.brand));
   }, [creators, gmvPool, dateFilter]);
 
+  /* The month this section works in · a creative test lives inside one
+     cycle, so year and all-time views deliberately leave it empty. */
+  const angleMonth = (dateFilter && dateFilter.mode === 'month')
+    ? `${dateFilter.year}-${String(dateFilter.month + 1).padStart(2, '0')}`
+    : '';
+
   const periodLabel = (() => {
     if (!dateFilter || dateFilter.mode === 'all') return 'All time';
     if (dateFilter.mode === 'year') return `${dateFilter.year}`;
@@ -3386,14 +3516,21 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, onExp
     for (let i = 5; i >= 0; i--) {
       const d = new Date(anchor.getFullYear(), anchor.getMonth() - i, 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      let gmv = 0;
+      let gmv = 0, ad = 0;
       src.forEach(c => {
         const mo = c.monthly || {};
         Object.keys(mo).forEach(k => {
-          if (k === key || k.startsWith(`${key}@`)) gmv += Number(mo[k]?.gmv) || 0;
+          if (k === key || k.startsWith(`${key}@`)) {
+            gmv += Number(mo[k]?.gmv) || 0;
+            ad += Number(mo[k]?.adSpent) || 0;
+          }
         });
       });
-      months.push({ key, label: d.toLocaleDateString('en-US', { month: 'short' }), gmv });
+      months.push({
+        key, gmv, ad,
+        label: d.toLocaleDateString('en-US', { month: 'short' }),
+        full: d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+      });
     }
     return months;
   }, [allCreators, creators, dateFilter]);
@@ -3403,6 +3540,165 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, onExp
     if (!prev) return null;
     return ((cur - prev) / prev) * 100;
   }, [gmvTrend]);
+
+  /* Movement for the tile rail · measured between the last two months of the
+     trend window, and only where the earlier month actually has a figure to
+     compare against. */
+  const mom = useMemo(() => {
+    /* Compare the last two months that actually CARRY figures, not simply the
+       last two slots. The current month is usually still empty — measuring
+       against it reported a flat "-100%" on every tile, which reads as a
+       collapse when really nothing has been entered yet. */
+    const filled = gmvTrend.filter(m => m.gmv > 0 || m.ad > 0);
+    if (filled.length < 2) return {};
+    const cur = filled[filled.length - 1], prev = filled[filled.length - 2];
+    const pc = (a, b) => (b > 0 ? Math.round(((a - b) / b) * 100) : null);
+    const cr = cur.ad > 0 ? cur.gmv / cur.ad : null;
+    const pr = prev.ad > 0 ? prev.gmv / prev.ad : null;
+    return {
+      gmv: pc(cur.gmv, prev.gmv),
+      ad: pc(cur.ad, prev.ad),
+      roas: (cr != null && pr != null) ? pc(cr, pr) : null,
+      label: prev.full,
+      curLabel: cur.full,
+    };
+  }, [gmvTrend]);
+
+  /* The sentence at the top · assembled from the same figures shown below,
+     so it can never drift from them. Written as something a person would
+     actually say, which is the whole point of a brief. */
+  const brief = useMemo(() => {
+    const top = [...brandBreakdown].sort((a, b) => b.gmv - a.gmv)[0];
+    const scope = activeBrand === 'All' ? 'across every brand' : activeBrand;
+    let headline, detail;
+    if (!stats.totalGMV && !stats.totalAdSpent) {
+      headline = 'Nothing recorded for this period yet.';
+      detail = `${stats.totalCreators} deals are on the books, but no GMV or ad spend has been entered against them.`;
+    } else if (top && top.gmv > 0 && activeBrand === 'All') {
+      const shareP = stats.totalGMV > 0 ? Math.round((top.gmv / stats.totalGMV) * 100) : 0;
+      headline = `${top.brand} is carrying this period.`;
+      detail = `${fmt$Round(top.gmv)} of ${fmt$Round(stats.totalGMV)} GMV, ${shareP}% of everything ${scope}`
+        + (top.roas != null ? `, at ${top.roas.toFixed(2)}× on ads.` : '.');
+    } else {
+      headline = stats.roas == null ? 'Sales recorded, no ad spend behind them.'
+        : stats.roas >= 1 ? 'Ads are paying for themselves.' : 'Ads are costing more than they return.';
+      detail = `${fmt$Round(stats.totalGMV)} GMV on ${fmt$Round(stats.totalAdSpent)} of spend ${scope}.`;
+    }
+    return { headline, detail };
+  }, [stats, brandBreakdown, activeBrand]);
+
+  const chart = (() => {
+              /* Drop trailing months that hold nothing. The window always ends
+                 on the current month, which normally has no figures entered
+                 yet — plotting it pulled the line down to zero and read as a
+                 collapse rather than as "not filled in". */
+              let plot = gmvTrend.slice();
+              while (plot.length && plot[plot.length - 1].gmv === 0 && plot[plot.length - 1].ad === 0) plot.pop();
+              const skipped = gmvTrend.length - plot.length;
+              if (plot.length < 2) {
+                /* INK IS NEVER FADED. Muted at 50% measured 2.38:1 in dark and 1.94:1
+                   in light at 11px — an empty state nobody could read, which is
+                   worse than no empty state. Our palette answers 'quieter ink'
+                   with tokens that check:contrast verifies; alpha cannot be. */
+                return <div className="tw-text-[11px] tw-italic tw-py-10 tw-text-center" style={{ color: 'var(--wx-text-muted)' }}>
+                  Not enough months with figures to draw a trend yet.
+                </div>;
+              }
+
+              /* Everything — bars, line, dots and the month names — is drawn
+                 from the SAME x(i). The labels used to live in a separate flex
+                 row spanning edge to edge while the plot was inset, so no
+                 point ever sat above its own month. */
+              const W = 620, H = 168;
+              const P = { l: 46, r: 46, t: 22, b: 30 };
+              const iw = W - P.l - P.r, ih = H - P.t - P.b;
+              const maxG = Math.max(...plot.map(d => d.gmv), 1);
+              const maxA = Math.max(...plot.map(d => d.ad), 1);
+              const barW = Math.min(30, (iw / plot.length) * 0.44);
+              const inset = barW / 2 + 4;
+              const span = Math.max(iw - inset * 2, 1);
+              const x = i => P.l + inset + (plot.length === 1 ? span / 2 : (i * span) / (plot.length - 1));
+              const yG = v => P.t + ih - (v / maxG) * ih;
+              const pts = plot.map((d, i) => [x(i), yG(d.gmv)]);
+              const line = pts.map((pt, i) => {
+                if (i === 0) return `M${pt[0].toFixed(1)},${pt[1].toFixed(1)}`;
+                const pr = pts[i - 1];
+                const cx = ((pr[0] + pt[0]) / 2).toFixed(1);
+                return `C${cx},${pr[1].toFixed(1)} ${cx},${pt[1].toFixed(1)} ${pt[0].toFixed(1)},${pt[1].toFixed(1)}`;
+              }).join(' ');
+              const area = `${line} L${pts[pts.length - 1][0].toFixed(1)},${P.t + ih} L${pts[0][0].toFixed(1)},${P.t + ih} Z`;
+              const last = plot.length - 1;
+              const kd = v => (Math.abs(v) >= 1000 ? '$' + (v / 1000).toFixed(v >= 10000 ? 0 : 1).replace(/\.0$/, '') + 'k' : '$' + Math.round(v));
+
+              return (
+                <>
+                  <svg viewBox={`0 0 ${W} ${H}`} className="tw-w-full tw-mt-1.5" style={{ height: 186 }}>
+                    <defs>
+                      <linearGradient id="repAreaC" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#34D399" stopOpacity="0.30" />
+                        <stop offset="100%" stopColor="#34D399" stopOpacity="0.02" />
+                      </linearGradient>
+                    </defs>
+
+                    {[0, 0.5, 1].map(f => (
+                      <g key={f}>
+                        <line x1={P.l} x2={P.l + iw} y1={P.t + ih * f} y2={P.t + ih * f}
+                          stroke="rgba(245,233,214,0.10)" strokeWidth="1" strokeDasharray={f === 1 ? '0' : '3 5'} />
+                        <text x={P.l - 8} y={P.t + ih * f + 3.5} textAnchor="end"
+                          style={{ fontSize: 8.5, fontWeight: 800, fill: 'color-mix(in srgb, var(--wx-text-muted) 72%, transparent)' }}>{kd(maxG * (1 - f))}</text>
+                        <text x={P.l + iw + 8} y={P.t + ih * f + 3.5} textAnchor="start"
+                          style={{ fontSize: 8.5, fontWeight: 800, fill: 'color-mix(in srgb, var(--wx-text-muted) 34%, transparent)' }}>{kd(maxA * (1 - f))}</text>
+                      </g>
+                    ))}
+
+                    {plot.map((d, i) => {
+                      const h = (d.ad / maxA) * ih;
+                      return (
+                        <rect key={'b' + d.key} x={x(i) - barW / 2} y={P.t + ih - h} width={barW}
+                          height={Math.max(h, d.ad > 0 ? 2 : 0)} rx="3" fill="rgba(245,233,214,0.13)">
+                          <title>{d.full} · {fmt$Round(d.ad)} ad spend</title>
+                        </rect>
+                      );
+                    })}
+
+                    <path d={area} fill="url(#repAreaC)" />
+                    <path d={line} fill="none" stroke="#34D399" strokeWidth="2.4"
+                      strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+
+                    {pts.map((pt, i) => (
+                      <circle key={'d' + plot[i].key} cx={pt[0]} cy={pt[1]} r={i === last ? 4.5 : 3}
+                        fill={i === last ? '#34D399' : '#241C13'} stroke="#34D399" strokeWidth="2">
+                        <title>{plot[i].full} · {fmt$Round(plot[i].gmv)} GMV</title>
+                      </circle>
+                    ))}
+
+                    <text x={x(last)} y={Math.max(pts[last][1] - 9, 10)}
+                      textAnchor={last === plot.length - 1 ? 'end' : 'middle'}
+                      style={{ fontSize: 10, fontWeight: 900, fill: 'var(--wx-text-muted)' }}>
+                      {fmt$Round(plot[last].gmv)}
+                    </text>
+
+                    {/* month names, drawn on the same scale as the data */}
+                    {plot.map((d, i) => (
+                      <text key={'l' + d.key} x={x(i)} y={H - 10} textAnchor="middle"
+                        style={{ fontSize: 9, fontWeight: 800, fill: i === last ? '#6EE7B7' : 'rgba(245,233,214,0.42)' }}>
+                        {d.full}
+                      </text>
+                    ))}
+                  </svg>
+
+                  <div className="rep-legend">
+                    <i className="rep-lg bar" />Ad spend
+                    <i className="rep-lg line" />GMV
+                    {skipped > 0 && (
+                      <span className="rep-note">
+                        {gmvTrend[gmvTrend.length - 1].full} not recorded yet
+                      </span>
+                    )}
+                  </div>
+                </>
+              );
+            })();
 
   return (
     <div className="tw-px-4 md:tw-px-6 tw-pb-24 md:tw-pb-12 tw-font-sans report-print-root">
@@ -3414,279 +3710,288 @@ function ReportingViewV2({ creators, allCreators, activeBrand, dateFilter, onExp
         <div className="tw-flex tw-items-center tw-justify-between tw-gap-3 tw-flex-wrap">
           <div className="tw-min-w-0">
             <div className="tw-flex tw-items-center tw-gap-2 tw-flex-wrap">
-              <span className="tw-text-[21px] md:tw-text-[23px] tw-font-extrabold tw-tracking-[-0.6px]" style={{ color: '#14110C' }}>{activeBrand === 'All' ? 'All Brands' : activeBrand}</span>
-              <span className="tw-h-[22px] tw-px-2.5 tw-rounded-full tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1px] tw-flex tw-items-center" style={{ background: 'linear-gradient(180deg,#FFFFFF,#F4EFE3)', color: '#57534E', border: '1px solid rgba(48,39,28,0.12)' }}>Executive Report</span>
+              <span className="tw-text-[21px] md:tw-text-[23px] tw-font-extrabold tw-tracking-[-0.6px]" style={{ color: 'var(--wx-text)' }}>{activeBrand === 'All' ? 'All Brands' : activeBrand}</span>
+              <span className="tw-h-[22px] tw-px-2.5 tw-rounded-full tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1px] tw-flex tw-items-center" style={{ background: 'linear-gradient(180deg,var(--wx-surface-1),var(--wx-surface-2))', color: 'var(--wx-text-faint)', border: '1px solid color-mix(in srgb, var(--wx-warning) 12%, transparent)' }}>Executive Report</span>
             </div>
-            <div className="tw-text-[11.5px] tw-font-semibold tw-mt-0.5" style={{ color: '#8A857B' }}>
+            <div className="tw-text-[11.5px] tw-font-semibold tw-mt-0.5" style={{ color: 'var(--wx-text-faint)' }}>
               {periodLabel}{activeBrand === 'All' && brandBreakdown.length > 0 && <> · {brandBreakdown.length} brands</>} · Generated {generatedAt}
             </div>
           </div>
           <div className="tw-flex tw-items-center tw-gap-2 print-hide">
-            <button onClick={onExportCsv} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-bg-white hover:tw-bg-gray-50 tw-text-[11.5px] tw-font-bold tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ color: '#3C4043', border: '1px solid rgba(20,17,12,0.12)' }}>
+            {can(currentUser, 'canExportCsv') && <button onClick={() => {
+              if (repTab === 'angles' && anglesCsvRef.current) return anglesCsvRef.current();
+              if (onExportCsv) onExportCsv();
+            }} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-text-[11.5px] tw-font-bold tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ background: 'var(--wx-surface-2)', color: 'var(--wx-text)', border: '1px solid var(--wx-border)' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               CSV
-            </button>
-            <button onClick={handlePrint} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-text-[11.5px] tw-font-extrabold tw-border-0 tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ background: 'linear-gradient(135deg,#4A3A28 0%,#2A2118 100%)', color: '#F5E9D6', boxShadow: '0 3px 10px rgba(48,39,28,0.28)' }}>
+            </button>}
+            {can(currentUser, 'canPrintReport') && <button onClick={handlePrint} className="tw-h-9 tw-px-3.5 tw-rounded-full tw-text-[11.5px] tw-font-extrabold tw-border-0 tw-cursor-pointer tw-transition active:tw-scale-95 tw-flex tw-items-center tw-gap-1.5" style={{ background: 'var(--wx-warning-soft)', color: 'var(--wx-text)', boxShadow: '0 3px 10px rgba(48,39,28,0.28)' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
               Print PDF
-            </button>
+            </button>}
           </div>
         </div>
 
-        {/* ── stat row · 4 small cards · Net Profit was removed ── */}
-        <div className="tw-grid tw-grid-cols-2 md:tw-grid-cols-4 tw-gap-2.5">
-          <div className="tw-rounded-[16px] tw-p-3.5 tw-ring-1 tw-ring-emerald-200/70 tw-transition-all tw-duration-200 hover:tw--translate-y-[2px] hover:tw-shadow-oneui" style={{ background: 'linear-gradient(180deg,#ECFDF5 0%,#FFFFFF 80%)' }}>
-            <div className="tw-flex tw-items-center tw-justify-between tw-gap-1">
-              <span className="tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1.2px] tw-text-emerald-700">GMV</span>
-              {trendDelta != null && (
-                <span className={`tw-text-[9.5px] tw-font-extrabold tw-tabular-nums ${trendDelta >= 0 ? 'tw-text-emerald-600' : 'tw-text-rose-600'}`}>{trendDelta >= 0 ? '↑' : '↓'}{Math.abs(trendDelta).toFixed(0)}%</span>
-              )}
-            </div>
-            <div className="tw-text-[19px] tw-font-extrabold tw-tabular-nums tw-tracking-[-0.6px] tw-mt-1.5" style={{ color: '#0B1F14' }}>{fmt$(stats.totalGMV)}</div>
-            <div className="tw-text-[9.5px] tw-font-bold tw-mt-0.5" style={{ color: '#7C8B82' }}>{stats.creatorsWithGmv} creators sold</div>
-          </div>
-          <div className="tw-bg-white tw-rounded-[16px] tw-p-3.5 tw-ring-1 tw-ring-black/[0.06] tw-transition-all tw-duration-200 hover:tw--translate-y-[2px] hover:tw-shadow-oneui">
-            <div className="tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1.2px]" style={{ color: '#8A857B' }}>Ad Spent</div>
-            <div className="tw-text-[19px] tw-font-extrabold tw-tabular-nums tw-tracking-[-0.6px] tw-mt-1.5" style={{ color: '#E11D48' }}>{fmt$(stats.totalAdSpent)}</div>
-            <div className="tw-text-[9.5px] tw-font-bold tw-mt-0.5" style={{ color: '#B0AA9E' }}>{periodLabel}</div>
-          </div>
-          <div className="tw-bg-white tw-rounded-[16px] tw-p-3.5 tw-ring-1 tw-ring-black/[0.06] tw-transition-all tw-duration-200 hover:tw--translate-y-[2px] hover:tw-shadow-oneui">
-            <div className="tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1.2px]" style={{ color: '#8A857B' }}>ROAS</div>
-            <div className="tw-text-[19px] tw-font-extrabold tw-tabular-nums tw-tracking-[-0.6px] tw-mt-1.5" style={{ color: stats.roas == null ? '#B0AA9E' : roasGood ? '#059669' : '#E11D48' }}>{stats.roas != null ? `${stats.roas.toFixed(2)}×` : '-'}</div>
-            <div className="tw-text-[9.5px] tw-font-bold tw-mt-0.5" style={{ color: '#B0AA9E' }}>{roasTier === 'gold' ? 'excellent' : roasGood ? 'profitable' : stats.roas != null ? 'below 1×' : '-'}</div>
-          </div>
-          <div className="tw-bg-white tw-rounded-[16px] tw-p-3.5 tw-ring-1 tw-ring-black/[0.06] tw-transition-all tw-duration-200 hover:tw--translate-y-[2px] hover:tw-shadow-oneui">
-            <div className="tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1.2px]" style={{ color: '#8A857B' }}>Delivered</div>
-            <div className="tw-text-[19px] tw-font-extrabold tw-tabular-nums tw-tracking-[-0.6px] tw-mt-1.5" style={{ color: '#14110C' }}>{stats.deliveredPct}%</div>
-            <div className="tw-h-[4px] tw-rounded-full tw-overflow-hidden tw-mt-1.5" style={{ background: '#EDEFF1' }}>
-              <div className="tw-h-full tw-rounded-full tw-bg-emerald-500 tw-transition-all tw-duration-700" style={{ width: `${stats.deliveredPct}%` }} />
-            </div>
-            <div className="tw-text-[9.5px] tw-font-bold tw-tabular-nums tw-mt-1" style={{ color: '#B0AA9E' }}>{stats.totalVideosCompleted}/{stats.totalVideosCommitted} videos</div>
-          </div>
+        {/* two panes, one switch · full bleed so it reads as the spine of
+            the tab rather than a control floating in the corner */}
+        <div className="rp-seg print-hide" role="tablist">
+          <span className="rp-seg-ink" style={{ transform: repTab === 'report' ? 'translateX(0%)' : 'translateX(100%)' }} aria-hidden />
+          <button role="tab" aria-selected={repTab === 'report'}
+            className={'rp-seg-b' + (repTab === 'report' ? ' on' : '')}
+            onClick={() => setRepTab('report')}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="m7 14 3.5-4 3 3L19 7" />
+            </svg>
+            Reporting
+          </button>
+          <button role="tab" aria-selected={repTab === 'angles'}
+            className={'rp-seg-b' + (repTab === 'angles' ? ' on' : '')}
+            onClick={() => setRepTab('angles')}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 3h6M10 3v6L5.2 17.4A2 2 0 0 0 6.9 20.5h10.2a2 2 0 0 0 1.7-3.1L14 9V3" /><path d="M8 15h8" />
+            </svg>
+            Creative angle testing
+          </button>
         </div>
 
-        {/* ── chart + money row ── */}
-        <div className="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 tw-gap-2.5">
-          {/* trend card */}
-          <div className="md:tw-col-span-2 tw-bg-white tw-rounded-[16px] tw-p-4 tw-ring-1 tw-ring-black/[0.06] tw-transition-all tw-duration-200 hover:tw--translate-y-[2px] hover:tw-shadow-oneui">
-            <div className="tw-flex tw-items-center tw-justify-between tw-gap-2">
-              <span className="tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1.2px]" style={{ color: '#8A857B' }}>GMV Trend · 6 months</span>
-              {trendDelta != null && (
-                <span className={`tw-inline-flex tw-items-center tw-gap-1 tw-h-[20px] tw-px-2 tw-rounded-full tw-text-[10px] tw-font-extrabold tw-tabular-nums ${trendDelta >= 0 ? 'tw-bg-emerald-50 tw-text-emerald-700' : 'tw-bg-rose-50 tw-text-rose-700'}`}>
-                  {trendDelta >= 0 ? '↑' : '↓'} {Math.abs(trendDelta).toFixed(0)}% vs {gmvTrend[gmvTrend.length - 2]?.label}
+        {repTab === 'report' && (<>
+
+        {/* ═══════════════════════════════════════════════════════════
+            THE BOARD · one surface, one arrangement
+            The previous version showed GMV in a chip AND again in a tile,
+            ROAS in a chip AND again in a ring — the same figure twice in two
+            different visual languages, which is what made it read as
+            scattered. Each number now appears exactly once, and the headline,
+            the hero figure, the chart and the supporting metrics all sit on
+            the SAME surface so the eye never has to change gear.
+            ═══════════════════════════════════════════════════════════ */}
+        <div className="rp-board">
+          <div className="rp-board-aura" aria-hidden />
+
+          <div className="rp-board-top">
+            <div className="rp-board-say">
+              <span className="rp-eyebrow">{periodLabel}{activeBrand !== 'All' && ` · ${activeBrand}`}</span>
+              <h2 className="rp-say">{brief.headline}</h2>
+              <p className="rp-say-sub">{brief.detail}</p>
+
+              <div className="rp-hero">
+                <span className="rp-hero-num">{fmt$Round(stats.totalGMV)}</span>
+                <span className="rp-hero-tag">
+                  GMV
+                  {mom.gmv != null && (
+                    <i className={mom.gmv >= 0 ? 'up' : 'down'}>
+                      {mom.gmv >= 0 ? '↑' : '↓'}{Math.abs(mom.gmv)}% vs {mom.label}
+                    </i>
+                  )}
                 </span>
-              )}
+              </div>
             </div>
-            {(() => {
-              const vals = gmvTrend.map(t => t.gmv);
-              if (!vals.some(v => v > 0)) return <div className="tw-text-[11px] tw-italic tw-py-8 tw-text-center" style={{ color: '#B0AA9E' }}>No GMV in this window yet.</div>;
-              const W = 560, H = 96, P = 8;
-              const max = Math.max(...vals, 1);
-              const stepX = (W - P * 2) / (vals.length - 1);
-              const pts = vals.map((v, i) => [P + i * stepX, H - P - (v / max) * (H - P * 2)]);
-              const line = pts.map((p, i) => {
-                if (i === 0) return `M${p[0].toFixed(1)},${p[1].toFixed(1)}`;
-                const pr = pts[i - 1];
-                const cx = ((pr[0] + p[0]) / 2).toFixed(1);
-                return `C${cx},${pr[1].toFixed(1)} ${cx},${p[1].toFixed(1)} ${p[0].toFixed(1)},${p[1].toFixed(1)}`;
-              }).join(' ');
-              const area = `${line} L${pts[pts.length - 1][0].toFixed(1)},${H} L${pts[0][0].toFixed(1)},${H} Z`;
-              return (
-                <>
-                  <svg viewBox={`0 0 ${W} ${H}`} className="tw-w-full tw-mt-2" style={{ height: 104 }} preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="repAreaC" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#10B981" stopOpacity="0.28" />
-                        <stop offset="100%" stopColor="#10B981" stopOpacity="0.01" />
-                      </linearGradient>
-                    </defs>
-                    {[0.5].map(f => (
-                      <line key={f} x1={P} x2={W - P} y1={H - P - f * (H - P * 2)} y2={H - P - f * (H - P * 2)} stroke="rgba(20,17,12,0.06)" strokeWidth="1" strokeDasharray="3 5" />
-                    ))}
-                    <path d={area} fill="url(#repAreaC)" />
-                    <path d={line} fill="none" stroke="#059669" strokeWidth="2.2" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-                    {pts.map((p, i) => (
-                      <circle key={i} cx={p[0]} cy={p[1]} r={i === pts.length - 1 ? 4.5 : 3} fill={i === pts.length - 1 ? '#059669' : '#FFFFFF'} stroke="#059669" strokeWidth="2">
-                        <title>{gmvTrend[i].label} · {fmt$(gmvTrend[i].gmv)}</title>
-                      </circle>
-                    ))}
-                  </svg>
-                  <div className="tw-flex tw-justify-between tw-mt-1 tw-px-0.5">
-                    {gmvTrend.map((t, i) => (
-                      <span key={t.key} className="tw-text-[9px] tw-font-bold tw-tabular-nums" style={{ color: i === gmvTrend.length - 1 ? '#059669' : '#B0AA9E' }} title={fmt$(t.gmv)}>{t.label}</span>
-                    ))}
-                  </div>
-                </>
-              );
-            })()}
+
+            <div className="rp-board-chart">{chart}</div>
           </div>
 
-          {/* money flow card */}
-          <div className="tw-bg-white tw-rounded-[16px] tw-p-4 tw-ring-1 tw-ring-black/[0.06] tw-transition-all tw-duration-200 hover:tw--translate-y-[2px] hover:tw-shadow-oneui">
-            <div className="tw-flex tw-items-center tw-justify-between tw-gap-2">
-              <span className="tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1.2px]" style={{ color: '#8A857B' }}>Money Flow</span>
-              <span className="tw-text-[9.5px] tw-font-extrabold tw-tabular-nums" style={{ color: '#B0AA9E' }}>{stats.collectedPct}% paid</span>
+          {/* the supporting cast · read left to right as one sentence:
+              this much spend, at this return, delivering this much, with
+              this much still owed */}
+          <div className="rp-strip">
+            <div className="rp-strip-cell">
+              <span className="rp-s-l">Ad spend</span>
+              <span className="rp-s-v">{fmt$Round(stats.totalAdSpent)}</span>
+              <span className="rp-s-s">
+                {mom.ad != null ? `${mom.ad >= 0 ? '+' : ''}${mom.ad}% vs ${mom.label}` : 'behind creator content'}
+              </span>
             </div>
-            <div className="tw-text-[9.5px] tw-font-extrabold tw-uppercase tw-tracking-[1px] tw-mt-3" style={{ color: '#7C3AED' }}>Allocated</div>
-            <div className="tw-text-[21px] tw-font-extrabold tw-tabular-nums tw-tracking-[-0.6px] tw-mt-0.5" style={{ color: '#14110C' }}>{fmt$(stats.amountAllocated)}</div>
-            <div className="tw-h-[7px] tw-rounded-full tw-overflow-hidden tw-mt-2.5 tw-flex" style={{ background: '#F1EDE4' }}>
-              <div className="tw-h-full tw-bg-emerald-500 tw-transition-all tw-duration-700" style={{ width: `${stats.collectedPct}%` }} />
-              <div className="tw-h-full tw-bg-rose-300 tw-transition-all tw-duration-700" style={{ width: `${100 - stats.collectedPct}%` }} />
+            <div className="rp-strip-cell">
+              <span className="rp-s-l">Return on spend</span>
+              <span className={'rp-s-v ' + (stats.roas == null ? '' : stats.roas >= 1 ? 'good' : 'bad')}>
+                {stats.roas != null ? stats.roas.toFixed(2) + '×' : '-'}
+              </span>
+              <span className="rp-s-s">
+                {stats.roas == null ? 'no ad spend' : stats.roas >= 2 ? 'strong return' : stats.roas >= 1 ? 'above break-even' : 'below break-even'}
+              </span>
             </div>
-            <div className="tw-flex tw-flex-col tw-gap-1.5 tw-mt-2.5">
-              <div className="tw-flex tw-items-center tw-justify-between">
-                <span className="tw-flex tw-items-center tw-gap-1.5 tw-text-[10.5px] tw-font-bold" style={{ color: '#57534E' }}><span className="tw-w-1.5 tw-h-1.5 tw-rounded-full tw-bg-emerald-500" />Paid</span>
-                <span className="tw-text-[11.5px] tw-font-extrabold tw-tabular-nums" style={{ color: '#14110C' }}>{fmt$(stats.amountPaid)}</span>
-              </div>
-              <div className="tw-flex tw-items-center tw-justify-between">
-                <span className="tw-flex tw-items-center tw-gap-1.5 tw-text-[10.5px] tw-font-bold" style={{ color: '#57534E' }}><span className="tw-w-1.5 tw-h-1.5 tw-rounded-full tw-bg-rose-400" />Outstanding</span>
-                <span className="tw-text-[11.5px] tw-font-extrabold tw-tabular-nums" style={{ color: '#14110C' }}>{fmt$(stats.amountOutstanding)}</span>
-              </div>
+            <div className="rp-strip-cell">
+              <span className="rp-s-l">Videos delivered</span>
+              <span className="rp-s-v">{stats.deliveredPct}%</span>
+              <span className="rp-s-bar"><i style={{ width: Math.min(100, stats.deliveredPct) + '%' }} /></span>
+              <span className="rp-s-s">{stats.totalVideosCompleted} of {stats.totalVideosCommitted}</span>
             </div>
           </div>
         </div>
 
-        {/* ── leaderboard + extremes row ── */}
-        <div className="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 tw-gap-2.5">
-          {/* leaderboard */}
-          <div className="md:tw-col-span-2 tw-bg-white tw-rounded-[16px] tw-p-4 tw-ring-1 tw-ring-black/[0.06] tw-transition-all tw-duration-200 hover:tw--translate-y-[2px] hover:tw-shadow-oneui">
-            <div className="tw-flex tw-items-center tw-justify-between tw-mb-2.5">
-              <span className="tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1.2px]" style={{ color: '#8A857B' }}>Leaderboard</span>
-              <span className="tw-text-[9.5px] tw-font-bold" style={{ color: '#B0AA9E' }}>Top {Math.min(5, topByGMV.length)} by GMV</span>
-            </div>
+        {/* ═══ one row of three · people, unit economics, the two extremes ═══ */}
+        <div className="rp-row3">
+          <section className="rp-card rp-people">
+            <header className="rp-c-head">
+              <span className="rp-c-title">Top creators</span>
+              <span className="rp-c-note">by GMV</span>
+            </header>
             {topByGMV.length === 0 ? (
-              <div className="tw-text-[11px] tw-italic tw-py-5 tw-text-center" style={{ color: '#B0AA9E' }}>No GMV recorded in this period yet.</div>
-            ) : topByGMV.slice(0, 5).map((c, i) => {
-              const gmv = periodGmv(c);
-              const adSpent = periodAd(c);
-              const cRoas = adSpent > 0 ? gmv / adSpent : null;
+              <div className="rp-empty">No creator GMV in this period</div>
+            ) : topByGMV.map((c, i) => {
+              const g = periodGmv(c), a = periodAd(c);
+              const r = a > 0 ? g / a : null;
+              const top = topByGMV[0] ? periodGmv(topByGMV[0]) : 0;
               return (
-                <div key={c.id} className="tw-flex tw-items-center tw-gap-3 tw-py-2" style={{ borderBottom: i < Math.min(5, topByGMV.length) - 1 ? '1px solid rgba(20,17,12,0.05)' : 'none' }}>
-                  <span
-                    className="tw-w-6 tw-h-6 tw-rounded-[7px] tw-flex tw-items-center tw-justify-center tw-text-[10px] tw-font-extrabold tw-tabular-nums tw-flex-shrink-0"
-                    style={i === 0
-                      ? { background: 'linear-gradient(135deg,#4A3A28 0%,#2A2118 100%)', color: '#F5E9D6' }
-                      : { background: '#F4EFE3', color: '#57534E', border: '1px solid rgba(48,39,28,0.10)' }}
-                  >{i + 1}</span>
-                  <span className="tw-w-8 tw-h-8 tw-rounded-full tw-text-white tw-text-[12px] tw-font-extrabold tw-flex tw-items-center tw-justify-center tw-leading-none tw-flex-shrink-0" style={{ background: getGradient(c.name || '?') }}>{(c.name || '?')[0].toUpperCase()}</span>
-                  <div className="tw-flex-1 tw-min-w-0">
-                    <div className="tw-text-[12.5px] tw-font-extrabold tw-truncate" style={{ color: '#14110C' }}>{c.name}</div>
-                    <div className="tw-text-[10px] tw-font-semibold" style={{ color: '#8A857B' }}>{c.brand || '-'}{adSpent > 0 && <> · Ad {fmt$(adSpent)}</>}</div>
-                  </div>
-                  {cRoas != null && <span className={`tw-text-[10px] tw-font-extrabold tw-tabular-nums tw-flex-shrink-0 ${cRoas >= 1 ? 'tw-text-emerald-600' : 'tw-text-rose-600'}`}>{cRoas.toFixed(2)}×</span>}
-                  <span className="tw-text-[13.5px] tw-font-extrabold tw-tabular-nums tw-flex-shrink-0" style={{ color: '#059669' }}>{fmt$(gmv)}</span>
+                <div key={c.id} className="rp-p-row">
+                  <span className="rp-p-n">{i + 1}</span>
+                  <span className="rp-p-m">
+                    <b>{c.name}</b>
+                    <small>{c.brand || 'no brand'}{a > 0 ? ` · ${fmt$Round(a)} ad` : ''}</small>
+                    {/* bar against the leader · ranks without reading digits */}
+                    <i className="rp-p-bar"><em style={{ width: (top > 0 ? (g / top) * 100 : 0) + '%' }} /></i>
+                  </span>
+                  <span className="rp-p-r">
+                    <b>{fmt$Round(g)}</b>
+                    {r != null && <small className={r >= 2 ? 'great' : r >= 1 ? 'ok' : 'bad'}>{r.toFixed(2)}×</small>}
+                  </span>
                 </div>
               );
             })}
-          </div>
+          </section>
 
-          {/* ROAS extremes */}
-          <div className="tw-bg-white tw-rounded-[16px] tw-p-4 tw-ring-1 tw-ring-black/[0.06] tw-transition-all tw-duration-200 hover:tw--translate-y-[2px] hover:tw-shadow-oneui">
-            <div className="tw-text-[9px] tw-font-extrabold tw-uppercase tw-tracking-[1.2px] tw-mb-3" style={{ color: '#8A857B' }}>ROAS Extremes</div>
-            {!stats.topROASCreator ? (
-              <div className="tw-text-[11px] tw-italic tw-py-5 tw-text-center" style={{ color: '#B0AA9E' }}>No GMV/Ad data to compare yet.</div>
-            ) : (
-              <div className="tw-flex tw-flex-col tw-gap-2.5">
-                {[
-                  { tag: 'Best', d: stats.topROASCreator, cls: 'tw-text-emerald-600', bg: '#ECFDF5', ring: 'rgba(16,185,129,0.25)', bar: 'linear-gradient(90deg,#34D399,#059669)', track: '#D1FAE5' },
-                  ...(stats.worstROASCreator && stats.worstROASCreator.creator.id !== stats.topROASCreator.creator.id
-                    ? [{ tag: 'Lowest', d: stats.worstROASCreator, cls: 'tw-text-rose-600', bg: '#FFF1F2', ring: 'rgba(244,63,94,0.22)', bar: 'linear-gradient(90deg,#FDA4AF,#F43F5E)', track: '#FFE4E6' }]
-                    : []),
-                ].map(({ tag, d, cls, bg, ring, bar, track }) => (
-                  <div key={tag} className="tw-rounded-[13px] tw-p-2.5" style={{ background: bg, border: `1px solid ${ring}` }}>
-                    <div className="tw-flex tw-items-center tw-gap-2">
-                      <span className="tw-w-7 tw-h-7 tw-rounded-full tw-text-white tw-text-[11px] tw-font-extrabold tw-flex tw-items-center tw-justify-center tw-leading-none tw-flex-shrink-0" style={{ background: getGradient(d.creator.name || '?') }}>{(d.creator.name || '?')[0].toUpperCase()}</span>
-                      <div className="tw-flex-1 tw-min-w-0">
-                        <div className={`tw-text-[8.5px] tw-font-extrabold tw-uppercase tw-tracking-[1px] ${cls}`}>{tag}</div>
-                        <div className="tw-text-[11.5px] tw-font-extrabold tw-truncate" style={{ color: '#14110C' }}>{d.creator.name}</div>
-                      </div>
-                      <span className={`tw-text-[14px] tw-font-extrabold tw-tabular-nums ${cls}`}>{d.roas.toFixed(2)}×</span>
-                    </div>
-                    <div className="tw-h-[5px] tw-rounded-full tw-overflow-hidden tw-mt-2" style={{ background: track }}>
-                      <div className="tw-h-full tw-rounded-full tw-transition-all tw-duration-700" style={{ width: `${Math.max(6, Math.min(d.roas / 3, 1) * 100)}%`, background: bar }} />
-                    </div>
-                    <div className="tw-text-[9px] tw-font-bold tw-tabular-nums tw-mt-1.5" style={{ color: '#8A857B' }}>GMV {fmt$(d.gmv)} · Ad {fmt$(d.ad)}</div>
-                  </div>
-                ))}
+          <section className="rp-card rp-ends">
+            <header className="rp-c-head">
+              <span className="rp-c-title">The two ends</span>
+              <span className="rp-c-note">ROAS</span>
+            </header>
+            {stats.topROASCreator ? (
+              <div className="rp-end best">
+                <span className="rp-end-tag">Best</span>
+                <b>{stats.topROASCreator.creator.name}</b>
+                <span className="rp-end-v">{stats.topROASCreator.roas.toFixed(2)}×</span>
+                <small>{fmt$Round(stats.topROASCreator.gmv)} on {fmt$Round(stats.topROASCreator.ad)}</small>
+              </div>
+            ) : <div className="rp-empty">Not enough ad spend to rank</div>}
+            {stats.worstROASCreator && (
+              <div className="rp-end worst">
+                <span className="rp-end-tag">Lowest</span>
+                <b>{stats.worstROASCreator.creator.name}</b>
+                <span className="rp-end-v">{stats.worstROASCreator.roas.toFixed(2)}×</span>
+                <small>{fmt$Round(stats.worstROASCreator.gmv)} on {fmt$Round(stats.worstROASCreator.ad)}</small>
               </div>
             )}
-          </div>
+          </section>
         </div>
 
-        {/* ── Brand breakdown table (only when "All") · alphabetical, premium spacing ── */}
-        {activeBrand === 'All' && brandBreakdown.length > 0 && (
-          <div className="tw-bg-white tw-rounded-[24px] tw-shadow-oneui tw-ring-1 tw-ring-black/[0.05] tw-overflow-hidden report-brand-table">
-            <div className="tw-flex tw-items-center tw-gap-3 tw-px-6 tw-pt-5 tw-pb-4">
-              <span className="tw-h-[22px] tw-px-3 tw-rounded-full tw-text-[9.5px] tw-font-extrabold tw-uppercase tw-tracking-[1px] tw-flex tw-items-center tw-flex-shrink-0" style={{ background: 'linear-gradient(180deg,#FFFFFF,#F4EFE3)', color: '#57534E', border: '1px solid rgba(48,39,28,0.12)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)' }}>Brand Breakdown</span>
-              <div className="tw-h-px tw-flex-1" style={{ background: 'rgba(48,39,28,0.10)' }} />
-              <span className="tw-h-7 tw-px-3 tw-rounded-full tw-text-[11.5px] tw-font-extrabold tw-flex tw-items-center tw-tabular-nums" style={{ background: '#F4EFE3', color: '#57534E', border: '1px solid rgba(48,39,28,0.10)' }}>{brandBreakdown.length} brands · A → Z</span>
-            </div>
-            <div className="tw-overflow-x-auto">
-              <table className="tw-w-full tw-text-[12.5px] tw-border-collapse">
-                <thead style={{ background: '#F1F3F4' }}>
-                  <tr style={{ borderTop: '1px solid #C9CCD1', borderBottom: '1px solid #C9CCD1' }}>
-                    <th className="tw-text-left tw-pl-6 tw-pr-4 tw-py-3 tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-whitespace-nowrap" style={{ color: '#3C4043' }}>Brand</th>
-                    <th className="tw-text-center tw-px-4 tw-py-3 tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-whitespace-nowrap" style={{ color: '#3C4043' }}>Deals</th>
-                    <th className="tw-text-center tw-px-4 tw-py-3 tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-whitespace-nowrap" style={{ color: '#3C4043' }}>Allocated</th>
-                    <th className="tw-text-center tw-px-4 tw-py-3 tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-whitespace-nowrap" style={{ color: '#3C4043' }}>Paid</th>
-                    <th className="tw-text-center tw-px-4 tw-py-3 tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-whitespace-nowrap" style={{ color: '#3C4043' }}>GMV</th>
-                    <th className="tw-text-center tw-px-4 tw-py-3 tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-whitespace-nowrap" style={{ color: '#3C4043' }}>Ad Spent</th>
-                    <th className="tw-text-center tw-px-4 tw-py-3 tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-whitespace-nowrap" style={{ color: '#3C4043' }}>ROAS</th>
-                    <th className="tw-text-center tw-pr-6 tw-pl-4 tw-py-3 tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-whitespace-nowrap" style={{ color: '#3C4043' }}>Profit / Loss</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {brandBreakdown.map((b, i) => (
-                    <tr key={b.brand} className="tw-transition" style={{ borderBottom: '1px solid #E1E3E6' }} onMouseEnter={e => { e.currentTarget.style.background = '#F6F8F9'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
-                      <td className="tw-pl-6 tw-pr-4 tw-py-3.5 tw-whitespace-nowrap">
-                        <div className="tw-flex tw-items-center tw-gap-2.5">
-                          <span className="tw-w-7 tw-h-7 tw-rounded-full tw-text-white tw-text-[11px] tw-font-extrabold tw-flex tw-items-center tw-justify-center tw-leading-none tw-shadow-sm tw-flex-shrink-0" style={{ background: getGradient(b.brand), paddingTop: 1 }}>{b.brand[0].toUpperCase()}</span>
-                          <span className="tw-font-extrabold tw-text-[13px] tw-tracking-[-0.2px]" style={{ color: '#1F1F1F' }}>{b.brand}</span>
-                        </div>
-                      </td>
-                      <td className="tw-text-center tw-px-4 tw-py-3.5 tw-font-extrabold tw-text-slate-800 tw-tabular-nums tw-whitespace-nowrap">{b.count}</td>
-                      <td className="tw-text-center tw-px-4 tw-py-3.5 tw-font-bold tw-text-violet-700 tw-tabular-nums tw-whitespace-nowrap">{fmt$(b.allocated)}</td>
-                      <td className="tw-text-center tw-px-4 tw-py-3.5 tw-font-extrabold tw-text-emerald-700 tw-tabular-nums tw-whitespace-nowrap">{fmt$(b.paid)}</td>
-                      <td className="rep-gmv tw-text-center tw-px-4 tw-py-3.5 tw-tabular-nums tw-whitespace-nowrap">{b.gmv > 0 ? fmt$(b.gmv) : <span className="rep-gmv-none">-</span>}</td>
-                      <td className="tw-text-center tw-px-4 tw-py-3.5 tw-font-extrabold tw-text-rose-700 tw-tabular-nums tw-whitespace-nowrap">{b.adSpent > 0 ? fmt$(b.adSpent) : <span className="tw-text-oneui-mute/60 tw-font-medium">-</span>}</td>
-                      <td className={`tw-text-center tw-px-4 tw-py-3.5 tw-font-extrabold tw-tabular-nums tw-whitespace-nowrap ${b.roas == null ? 'tw-text-oneui-mute/60 tw-font-medium' : b.roas >= 1 ? 'tw-text-emerald-700' : 'tw-text-rose-700'}`}>
-                        {b.roas != null ? (
-                          <span className={`tw-inline-flex tw-items-center tw-gap-1 tw-h-6 tw-px-2 tw-rounded-full tw-text-[11px] ${b.roas >= 1 ? 'tw-bg-emerald-50 tw-ring-1 tw-ring-emerald-200' : 'tw-bg-rose-50 tw-ring-1 tw-ring-rose-200'}`}>
-                            {b.roas.toFixed(2)}×
+        {/* ═══ BRAND BREAKDOWN ═══
+            Rows are separate capsules rather than lines in a grid. A ruled
+            table asks you to trace across a line; a capsule is one object you
+            take in at once, which is the whole reason phone UIs moved to them.
+            The three biggest earners carry a coloured rail so the shape of the
+            month is visible before a single figure is read. */}
+        {activeBrand === 'All' && brandBreakdown.length > 0 && (() => {
+          const rows = [...brandBreakdown].sort((a, b) => (b.gmv - a.gmv) || (b.allocated - a.allocated));
+          const topGmv = rows.reduce((m, r) => Math.max(m, r.gmv || 0), 0);
+          const earning = rows.filter(r => r.gmv > 0).length;
+          return (
+            <div className="bx report-brand-table">
+              <div className="bx-top">
+                <div>
+                  <span className="bx-title">Brand breakdown</span>
+                  <span className="bx-sub">{rows.length} brands, {earning} with GMV recorded</span>
+                </div>
+                <span className="bx-flag">Ranked by GMV</span>
+              </div>
+
+              <div className="bx-scroll">
+                <div className="bx-head">
+                  <div />
+                  <div className="bx-l">Brand</div>
+                  <div>GMV</div>
+                  <div>Ad spend</div>
+                  <div>ROAS</div>
+                  <div>Paid</div>
+                  <div>Profit</div>
+                </div>
+
+                <div className="bx-list">
+                  {rows.map((b, i) => {
+                    const share = topGmv > 0 ? Math.round((b.gmv / topGmv) * 100) : 0;
+                    const paidPct = b.allocated > 0 ? Math.round((b.paid / b.allocated) * 100) : 0;
+                    const live = b.gmv > 0 || b.adSpent > 0;
+                    return (
+                      <article key={b.brand} className={'bx-row' + (i < 3 ? ' lead' : '') + (live ? '' : ' quiet')}>
+                        <span className="bx-rail" style={{ background: getGradient(b.brand) }} aria-hidden />
+                        <span className={'bx-rank r' + (i < 3 ? i + 1 : 'n')}>{i + 1}</span>
+
+                        <span className="bx-brand">
+                          <span className="bx-face" style={{ background: getGradient(b.brand) }}>{b.brand[0].toUpperCase()}</span>
+                          <span className="bx-bmeta">
+                            <b>{b.brand}</b>
+                            <small>{b.count} deal{b.count === 1 ? '' : 's'}{b.videosDone > 0 ? ` · ${b.videosDone} videos` : ''}</small>
                           </span>
-                        ) : '-'}
-                      </td>
-                      <td className={`tw-text-center tw-pr-6 tw-pl-4 tw-py-3.5 tw-font-extrabold tw-tabular-nums tw-whitespace-nowrap ${b.profit >= 0 ? 'tw-text-emerald-700' : 'tw-text-rose-700'}`}>{(b.gmv > 0 || b.adSpent > 0) ? `${b.profit >= 0 ? '+' : '−'}${fmt$(Math.abs(b.profit))}` : <span className="tw-text-oneui-mute/60 tw-font-medium">-</span>}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot style={{ background: '#F1F3F4', borderTop: '2px solid #C9CCD1' }}>
-                  <tr>
-                    <td className="tw-pl-6 tw-pr-4 tw-py-4 tw-text-[11px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-whitespace-nowrap" style={{ color: '#3C4043' }}>Total</td>
-                    <td className="tw-text-center tw-px-4 tw-py-4 tw-font-extrabold tw-text-slate-800 tw-tabular-nums tw-whitespace-nowrap">{stats.totalCreators}</td>
-                    <td className="tw-text-center tw-px-4 tw-py-4 tw-font-extrabold tw-text-violet-800 tw-tabular-nums tw-whitespace-nowrap">{fmt$(stats.amountAllocated)}</td>
-                    <td className="tw-text-center tw-px-4 tw-py-4 tw-font-extrabold tw-text-emerald-800 tw-tabular-nums tw-whitespace-nowrap">{fmt$(stats.amountPaid)}</td>
-                    <td className="rep-gmv rep-gmv-total tw-text-center tw-px-4 tw-py-4 tw-tabular-nums tw-whitespace-nowrap">{fmt$(stats.totalGMV)}</td>
-                    <td className="tw-text-center tw-px-4 tw-py-4 tw-font-extrabold tw-text-rose-800 tw-tabular-nums tw-whitespace-nowrap">{fmt$(stats.totalAdSpent)}</td>
-                    <td className="tw-text-center tw-px-4 tw-py-4 tw-tabular-nums tw-whitespace-nowrap">
-                      {stats.roas != null ? (
-                        <span className={`tw-inline-flex tw-items-center tw-gap-1 tw-h-7 tw-px-2.5 tw-rounded-full tw-text-[12px] tw-font-extrabold ${roasGood ? 'tw-bg-emerald-100 tw-text-emerald-800 tw-ring-1 tw-ring-emerald-300' : 'tw-bg-rose-100 tw-text-rose-800 tw-ring-1 tw-ring-rose-300'}`}>
-                          {stats.roas.toFixed(2)}×
                         </span>
-                      ) : <span className="tw-text-slate-500 tw-font-extrabold">-</span>}
-                    </td>
-                    <td className={`tw-text-center tw-pr-6 tw-pl-4 tw-py-4 tw-font-extrabold tw-tabular-nums tw-text-[14px] tw-whitespace-nowrap ${stats.profit >= 0 ? 'tw-text-emerald-800' : 'tw-text-rose-800'}`}>{stats.profit >= 0 ? '+' : '−'}{fmt$(Math.abs(stats.profit))}</td>
-                  </tr>
-                </tfoot>
-              </table>
+
+                        <span className="bx-gmv">
+                          {b.gmv > 0 ? (<>
+                            <b>{fmt$Round(b.gmv)}</b>
+                            <i className="bx-fill"><em style={{ width: share + '%' }} /></i>
+                          </>) : <span className="bx-none">not recorded</span>}
+                        </span>
+
+                        <span className="bx-ad">{b.adSpent > 0 ? fmt$Round(b.adSpent) : <span className="bx-none">-</span>}</span>
+
+                        <span className="bx-roasw">
+                          {b.roas != null
+                            ? <span className={'bx-roas ' + (b.roas >= 2 ? 'great' : b.roas >= 1 ? 'ok' : 'bad')}>{b.roas.toFixed(2)}×</span>
+                            : <span className="bx-none">-</span>}
+                        </span>
+
+                        <span className="bx-paid">
+                          <b>{fmt$Round(b.paid)}</b>
+                          <i className="bx-fill paid"><em style={{ width: paidPct + '%' }} /></i>
+                          <small>{paidPct}% of {fmt$Round(b.allocated)}</small>
+                        </span>
+
+                        <span className={'bx-pl ' + (!live ? 'off' : b.profit >= 0 ? 'pos' : 'neg')}>
+                          {live ? (b.profit >= 0 ? '+' : '−') + fmt$Round(Math.abs(b.profit)) : <span className="bx-none">-</span>}
+                        </span>
+                      </article>
+                    );
+                  })}
+                </div>
+
+                <div className="bx-foot">
+                  <span className="bx-f-l">All brands</span>
+                  <span className="bx-f-c"><small>GMV</small><b>{fmt$Round(stats.totalGMV)}</b></span>
+                  <span className="bx-f-c"><small>Ad spend</small><b>{fmt$Round(stats.totalAdSpent)}</b></span>
+                  <span className="bx-f-c"><small>ROAS</small><b>{stats.roas != null ? stats.roas.toFixed(2) + '×' : '-'}</b></span>
+                  <span className="bx-f-c"><small>Paid</small><b>{fmt$Round(stats.amountPaid)}</b></span>
+                  <span className={'bx-f-c ' + (stats.profit >= 0 ? 'pos' : 'neg')}>
+                    <small>Profit</small><b>{(stats.profit >= 0 ? '+' : '−') + fmt$Round(Math.abs(stats.profit))}</b>
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ── Footer ── */}
-        <div className="tw-text-center tw-text-[11px] tw-font-semibold tw-text-oneui-mute tw-py-3">
+        <div className="tw-text-center tw-text-[11px] tw-font-semibold tw-py-3" style={{ color: 'var(--wx-text-muted)' }}>
           Creator Hub · Executive Report · {periodLabel} · {activeBrand === 'All' ? 'All Brands' : activeBrand}
         </div>
+        </>)}
+
+        {/* ═══ CREATIVE ANGLE TESTING ═══
+            Which hook is working, for one brand in one month. Views come off
+            the videos themselves, and so does GMV wherever EUKA reports it,
+            so they always match the Brands tab. Ad spend is typed per video,
+            and so is GMV for the brands EUKA does not cover. */}
+        {repTab === 'angles' && (
+          <CreativeAngles
+            creators={allCreators || creators}
+            brand={activeBrand}
+            month={angleMonth}
+            monthLabel={periodLabel}
+            currentUser={currentUser}
+            money={fmt$Round}
+            canEdit={can(currentUser, 'canEditAngles')}
+            canType={can(currentUser, 'canEditAdSpend')}
+            onGoToMonth={onGoToMonth}
+            onProvideExport={provideAnglesExport}
+          />
+        )}
       </div>
     </div>
   );
@@ -3784,9 +4089,7 @@ function LatencyIndicator() {
     async function ping() {
       const t0 = performance.now();
       try {
-        const res = await fetch('https://bnevtdezskftlrjjgbsg.supabase.co/rest/v1/creators?select=id&limit=1', {
-          headers: { apikey: 'sb_publishable_h7DMRqJ19S3cWaEoUR9e8Q_b5FEAEyu' }
-        });
+        const res = await wurxbaseRest('creators?select=id&limit=1');
         const ms = Math.round(performance.now() - t0);
         if (cancelled) return;
         if (res.ok) { setLatency(ms); setError(false); }
@@ -3824,12 +4127,10 @@ function SystemHealthV2({ onClose, currentUser, creatorsLive = [] }) {
       setLoading(true);
       const t0 = performance.now();
       try {
-        const SUPABASE_URL = 'https://bnevtdezskftlrjjgbsg.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_h7DMRqJ19S3cWaEoUR9e8Q_b5FEAEyu';
-        const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
-        // Counts via Range header
+        // Counts via Range header. The project and the key come from the one
+        // client now; the schema header is what keeps these off `public`.
         async function countQuery(path) {
-          const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } });
+          const res = await wurxbaseRest(path, { headers: { Prefer: 'count=exact', Range: '0-0' } });
           const cr = res.headers.get('content-range') || '0-0/0';
           const m = cr.match(/\/(\d+)$/);
           return m ? parseInt(m[1], 10) : 0;
@@ -3866,7 +4167,7 @@ function SystemHealthV2({ onClose, currentUser, creatorsLive = [] }) {
     async function ping() {
       const t0 = performance.now();
       try {
-        await fetch('https://bnevtdezskftlrjjgbsg.supabase.co/rest/v1/creators?select=id&limit=1', { headers: { apikey: 'sb_publishable_h7DMRqJ19S3cWaEoUR9e8Q_b5FEAEyu' } });
+        await wurxbaseRest('creators?select=id&limit=1');
         const ms = Math.round(performance.now() - t0);
         if (!cancelled) {
           samples.push(ms);
@@ -3935,27 +4236,27 @@ function SystemHealthV2({ onClose, currentUser, creatorsLive = [] }) {
       style={{
         position: 'fixed', inset: 0, zIndex: 1900,
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-        background: 'rgba(48,39,28,0.50)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        background: 'color-mix(in srgb, var(--wx-warning-soft) 50%, transparent)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
         fontFamily: 'inherit',
       }}
     >
       <div style={{
         position: 'relative', width: '100%', maxWidth: 640, maxHeight: '92vh',
-        background: '#F8F7F4', borderRadius: 22,
+        background: 'var(--wx-bg)', borderRadius: 22,
         boxShadow: '0 32px 80px rgba(48,39,28,0.25), 0 8px 24px rgba(48,39,28,0.10)',
         animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
       }}>
         {/* ── Header · dark coffee ── */}
-        <div style={{ background: '#30271C', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ background: 'var(--wx-warning-soft)', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: '#F5E9D6' }}>System Health</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(245,233,214,0.55)', marginTop: 2 }}>Real-time database &amp; app performance</div>
+            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>System Health</div>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>Real-time database &amp; app performance</div>
           </div>
-          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
+          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -3963,10 +4264,10 @@ function SystemHealthV2({ onClose, currentUser, creatorsLive = [] }) {
         </div>
 
         {/* Sparkline strip */}
-        <div style={{ padding: '14px 22px', background: 'linear-gradient(135deg, #FDFAF4 0%, #F5EFE2 100%)', borderBottom: '1px solid #E7E2D7', display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ padding: '14px 22px', background: 'linear-gradient(135deg, var(--wx-surface-1) 0%, var(--wx-surface-2) 100%)', borderBottom: '1px solid var(--wx-border)', display: 'flex', alignItems: 'center', gap: 14 }}>
           <div>
-            <div style={{ fontSize: 10, fontWeight: 800, color: '#9C8F7C', textTransform: 'uppercase', letterSpacing: 0.6 }}>Latency · 5s</div>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: '#30271C', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{lastPing != null ? `${lastPing}ms` : '-'}</div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--wx-text-muted)', textTransform: 'uppercase', letterSpacing: 0.6 }}>Latency · 5s</div>
+            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-warning)', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{lastPing != null ? `${lastPing}ms` : '-'}</div>
           </div>
           <svg width="240" height="44" viewBox="0 0 220 50" style={{ flex: 1 }}>
             <path d={sparkPath} fill="none" stroke="#30271C" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
@@ -4031,7 +4332,7 @@ function SystemHealthV2({ onClose, currentUser, creatorsLive = [] }) {
 
               <div className="tw-text-[10.5px] tw-font-bold tw-uppercase tw-tracking-wider tw-text-oneui-mute tw-mb-2 tw-mt-4">Connection</div>
               <div className="tw-bg-slate-50 tw-rounded-2xl tw-p-4 tw-ring-1 tw-ring-black/[0.04] tw-space-y-2">
-                <div className="tw-flex tw-items-center tw-justify-between"><span className="tw-text-[12px] tw-font-bold tw-text-oneui-mute">Endpoint</span><span className="tw-text-[11.5px] tw-font-mono tw-font-semibold tw-text-oneui-ink tw-truncate tw-max-w-[260px]">bnevtdezskftlrjjgbsg.supabase.co</span></div>
+                <div className="tw-flex tw-items-center tw-justify-between"><span className="tw-text-[12px] tw-font-bold tw-text-oneui-mute">Endpoint</span><span className="tw-text-[11.5px] tw-font-mono tw-font-semibold tw-text-oneui-ink tw-truncate tw-max-w-[260px]">{WURXBASE_ENDPOINT_LABEL}</span></div>
                 <div className="tw-flex tw-items-center tw-justify-between"><span className="tw-text-[12px] tw-font-bold tw-text-oneui-mute">Online</span><span className={`tw-text-[11.5px] tw-font-bold ${navigator.onLine ? 'tw-text-emerald-700' : 'tw-text-rose-700'}`}>{navigator.onLine ? 'Yes' : 'No'}</span></div>
                 <div className="tw-flex tw-items-center tw-justify-between"><span className="tw-text-[12px] tw-font-bold tw-text-oneui-mute">Avg ping (last {pingHistory.length})</span><span className="tw-text-[11.5px] tw-font-bold tw-text-oneui-ink">{pingHistory.length > 0 ? `${Math.round(pingHistory.reduce((a, b) => a + b, 0) / pingHistory.length)}ms` : '-'}</span></div>
                 <div className="tw-flex tw-items-center tw-justify-between"><span className="tw-text-[12px] tw-font-bold tw-text-oneui-mute">User</span><span className="tw-text-[11.5px] tw-font-bold tw-text-[#1259C3]">{currentUser?.display}</span></div>
@@ -4444,8 +4745,7 @@ function SqlPlaygroundV2({ onClose, currentUser }) {
     setRunning(true);
     const t0 = performance.now();
     try {
-      const SUPABASE_URL = 'https://bnevtdezskftlrjjgbsg.supabase.co';
-      const SUPABASE_KEY = 'sb_publishable_h7DMRqJ19S3cWaEoUR9e8Q_b5FEAEyu';
+      const SUPABASE_URL = WURXBASE_ORIGIN;
       // Use Supabase RPC to run a raw SQL via the rest layer requires a custom function.
       // Fallback: parse FROM/SELECT and use the REST API directly for table queries.
       const parsed = parseSimpleSelect(finalSql);
@@ -4453,7 +4753,7 @@ function SqlPlaygroundV2({ onClose, currentUser }) {
       const url = buildRestUrl(SUPABASE_URL, parsed);
       const ctrl = new AbortController();
       const timeout = setTimeout(() => ctrl.abort(), 10000);
-      const res = await fetch(url, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: ctrl.signal });
+      const res = await fetch(url, { headers: await wurxbaseHeaders(), signal: ctrl.signal });
       clearTimeout(timeout);
       if (!res.ok) {
         const txt = await res.text();
@@ -4531,43 +4831,43 @@ function SqlPlaygroundV2({ onClose, currentUser }) {
       style={{
         position: 'fixed', inset: 0, zIndex: 1900,
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-        background: 'rgba(48,39,28,0.50)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        background: 'color-mix(in srgb, var(--wx-warning-soft) 50%, transparent)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
         fontFamily: 'inherit',
       }}
     >
       <div style={{
         position: 'relative', width: '100%', maxWidth: 1100, height: '92vh',
-        background: '#F8F7F4', borderRadius: 22,
+        background: 'var(--wx-bg)', borderRadius: 22,
         boxShadow: '0 32px 80px rgba(48,39,28,0.25), 0 8px 24px rgba(48,39,28,0.10)',
         animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
       }}>
         {/* ── Header · dark coffee ── */}
-        <div style={{ background: '#30271C', padding: '14px 22px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ background: 'var(--wx-warning-soft)', padding: '14px 22px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.3px', color: '#F5E9D6' }}>SQL Playground</div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(245,233,214,0.55)', marginTop: 2, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-              <span style={{ width: 6, height: 6, borderRadius: 999, background: '#22C55E', display: 'inline-block' }} />
+            <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.3px', color: 'var(--wx-text-muted)' }}>SQL Playground</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--wx-success-soft)', display: 'inline-block' }} />
               Read-only · {currentUser?.display}
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <button onClick={() => setShowSchema(s => !s)} title="Toggle schema" style={{ height: 32, padding: '0 12px', borderRadius: 999, border: 0, cursor: 'pointer', background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', fontSize: 11.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5, lineHeight: 1, fontFamily: 'inherit' }}
+            <button onClick={() => setShowSchema(s => !s)} title="Toggle schema" style={{ height: 32, padding: '0 12px', borderRadius: 999, border: 0, cursor: 'pointer', background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', fontSize: 11.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5, lineHeight: 1, fontFamily: 'inherit' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,233,214,0.18)'}
               onMouseLeave={e => e.currentTarget.style.background = 'rgba(245,233,214,0.10)'}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
               Schema
             </button>
-            <button onClick={() => setShowHistory(s => !s)} title="History" style={{ height: 32, padding: '0 12px', borderRadius: 999, border: 0, cursor: 'pointer', background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', fontSize: 11.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5, lineHeight: 1, fontFamily: 'inherit' }}
+            <button onClick={() => setShowHistory(s => !s)} title="History" style={{ height: 32, padding: '0 12px', borderRadius: 999, border: 0, cursor: 'pointer', background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', fontSize: 11.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5, lineHeight: 1, fontFamily: 'inherit' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,233,214,0.18)'}
               onMouseLeave={e => e.currentTarget.style.background = 'rgba(245,233,214,0.10)'}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               History
             </button>
-            <button onClick={onClose} title="Close" style={{ width: 32, height: 32, borderRadius: 999, border: 0, cursor: 'pointer', background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+            <button onClick={onClose} title="Close" style={{ width: 32, height: 32, borderRadius: 999, border: 0, cursor: 'pointer', background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,233,214,0.18)'}
               onMouseLeave={e => e.currentTarget.style.background = 'rgba(245,233,214,0.10)'}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -5002,542 +5302,6 @@ function NotifItemV2({ item, onDismiss, getIcon, formatTime }) {
   );
 }
 
-/* ─── JoinRequestScreen ─────────────────────────────────── */
-function JoinRequestScreen({ onBack }) {
-  const [name, setName]         = useState('');
-  const [email, setEmail]       = useState('');
-  const [username, setUsername] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [showMeme, setShowMeme] = useState(false);
-  const [showDupeMeme, setShowDupeMeme] = useState(false);
-
-  async function submit(e) {
-    e.preventDefault();
-    if (!name.trim() || !email.trim() || !username.trim()) return;
-    setSubmitting(true);
-
-    // Check for duplicates in join_requests and app_users
-    const [{ data: existingReqs }, { data: existingUsers }] = await Promise.all([
-      supabase.from('join_requests').select('id').or(`email.eq.${email.trim()},username.ilike.${username.trim()}`),
-      supabase.from('app_users').select('id').ilike('username', username.trim()),
-    ]);
-
-    if ((existingReqs && existingReqs.length > 0) || (existingUsers && existingUsers.length > 0)) {
-      setSubmitting(false);
-      setShowDupeMeme(true);
-      return;
-    }
-
-    await supabase.from('join_requests').insert([{
-      name: name.trim(),
-      email: email.trim(),
-      username: username.trim(),
-      status: 'pending',
-    }]);
-    setSubmitting(false);
-    setShowMeme(true);
-  }
-
-  return (
-    <div className="tw-fixed tw-inset-0 tw-overflow-hidden tw-font-sans" style={{ background: 'radial-gradient(ellipse at 100% 0%, #FCD34D 0%, #FB923C 25%, #EC4899 55%, #7C3AED 90%)' }}>
-      {/* ── Aurora ribbons background ── */}
-      <div aria-hidden className="tw-absolute tw-inset-0 tw-pointer-events-none tw-overflow-hidden">
-        {/* Aurora flowing layers */}
-        <div className="tw-absolute tw-inset-0" style={{ background: 'conic-gradient(from 220deg at 30% 20%, rgba(255,237,213,0.4), rgba(251,113,133,0.3) 30%, rgba(217,70,239,0.4) 50%, rgba(124,58,237,0.4) 70%, rgba(255,237,213,0.4) 100%)', filter: 'blur(80px)', animation: 'jr-aurora 28s ease-in-out infinite' }} />
-        {/* Soft sunset glow ribbons */}
-        <div className="tw-absolute tw--top-20 tw-left-1/4 tw-w-[600px] tw-h-[400px] tw-rounded-full tw-opacity-50" style={{ background: 'radial-gradient(ellipse, rgba(252,211,77,0.6), transparent 65%)', filter: 'blur(50px)', animation: 'jr-ribbon-a 18s ease-in-out infinite' }} />
-        <div className="tw-absolute tw-bottom-0 tw--right-32 tw-w-[600px] tw-h-[500px] tw-rounded-full tw-opacity-50" style={{ background: 'radial-gradient(ellipse, rgba(192,132,252,0.6), transparent 65%)', filter: 'blur(60px)', animation: 'jr-ribbon-b 22s ease-in-out infinite' }} />
-        <div className="tw-absolute tw-top-1/3 tw--left-20 tw-w-[500px] tw-h-[500px] tw-rounded-full tw-opacity-40" style={{ background: 'radial-gradient(circle, rgba(244,114,182,0.65), transparent 65%)', filter: 'blur(60px)', animation: 'jr-ribbon-c 25s ease-in-out infinite' }} />
-        {/* Cream noise overlay for filmic feel */}
-        <div className="tw-absolute tw-inset-0 tw-opacity-[0.06]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '20px 20px' }} />
-      </div>
-
-      {/* ── Floating decorative trust badges (desktop) ── */}
-      <div aria-hidden className="tw-hidden xl:tw-block">
-        <div className="tw-absolute tw-top-[18%] tw-left-[10%] tw-z-10 tw-pointer-events-none" style={{ animation: 'jr-float-a 9s ease-in-out infinite', transform: 'rotate(-8deg)' }}>
-          <div className="tw-bg-white/70 tw-backdrop-blur-xl tw-ring-1 tw-ring-white/80 tw-rounded-2xl tw-px-3.5 tw-py-2.5 tw-shadow-[0_12px_32px_rgba(217,70,239,0.25)] tw-flex tw-items-center tw-gap-2.5">
-            <div className="tw-w-9 tw-h-9 tw-rounded-full tw-bg-emerald-500 tw-flex tw-items-center tw-justify-center tw-text-white tw-text-[15px] tw-shadow-md">⚡</div>
-            <div>
-              <div className="tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-text-emerald-700">Fast Review</div>
-              <div className="tw-text-[12.5px] tw-font-extrabold tw-text-slate-900">~24 hours</div>
-            </div>
-          </div>
-        </div>
-        <div className="tw-absolute tw-top-[16%] tw-right-[12%] tw-z-10 tw-pointer-events-none" style={{ animation: 'jr-float-b 11s ease-in-out infinite 0.7s', transform: 'rotate(6deg)' }}>
-          <div className="tw-bg-white/70 tw-backdrop-blur-xl tw-ring-1 tw-ring-white/80 tw-rounded-2xl tw-px-3.5 tw-py-2.5 tw-shadow-[0_12px_32px_rgba(124,58,237,0.25)] tw-flex tw-items-center tw-gap-2.5">
-            <div className="tw-w-9 tw-h-9 tw-rounded-full tw-bg-violet-500 tw-flex tw-items-center tw-justify-center tw-text-white tw-text-[15px] tw-shadow-md">🛡️</div>
-            <div>
-              <div className="tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-text-violet-700">Secure</div>
-              <div className="tw-text-[12.5px] tw-font-extrabold tw-text-slate-900">Encrypted</div>
-            </div>
-          </div>
-        </div>
-        <div className="tw-absolute tw-bottom-[20%] tw-left-[12%] tw-z-10 tw-pointer-events-none" style={{ animation: 'jr-float-c 10s ease-in-out infinite 1.2s', transform: 'rotate(5deg)' }}>
-          <div className="tw-bg-white/70 tw-backdrop-blur-xl tw-ring-1 tw-ring-white/80 tw-rounded-2xl tw-px-3.5 tw-py-2.5 tw-shadow-[0_12px_32px_rgba(251,146,60,0.3)] tw-flex tw-items-center tw-gap-2.5">
-            <div className="tw-w-9 tw-h-9 tw-rounded-full tw-bg-orange-500 tw-flex tw-items-center tw-justify-center tw-text-white tw-text-[15px] tw-shadow-md">🎯</div>
-            <div>
-              <div className="tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-text-orange-700">Role-based</div>
-              <div className="tw-text-[12.5px] tw-font-extrabold tw-text-slate-900">Custom access</div>
-            </div>
-          </div>
-        </div>
-        <div className="tw-absolute tw-bottom-[18%] tw-right-[10%] tw-z-10 tw-pointer-events-none" style={{ animation: 'jr-float-d 12s ease-in-out infinite 0.4s', transform: 'rotate(-7deg)' }}>
-          <div className="tw-bg-white/70 tw-backdrop-blur-xl tw-ring-1 tw-ring-white/80 tw-rounded-2xl tw-px-3.5 tw-py-2.5 tw-shadow-[0_12px_32px_rgba(244,114,182,0.3)] tw-flex tw-items-center tw-gap-2.5">
-            <div className="tw-w-9 tw-h-9 tw-rounded-full tw-bg-rose-500 tw-flex tw-items-center tw-justify-center tw-text-white tw-text-[15px] tw-shadow-md">✨</div>
-            <div>
-              <div className="tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-text-rose-700">Welcome Pack</div>
-              <div className="tw-text-[12.5px] tw-font-extrabold tw-text-slate-900">Onboarding tour</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Main content ── */}
-      <main className="tw-relative tw-z-20 tw-h-full tw-flex tw-items-center tw-justify-center tw-p-4 sm:tw-p-6 tw-overflow-y-auto">
-        <div className="tw-w-full tw-max-w-[460px] tw-flex tw-flex-col" style={{ animation: 'login-card-in 0.7s cubic-bezier(0.33,1,0.68,1)' }}>
-
-          {/* Back button + brand */}
-          <div className="tw-flex tw-items-center tw-justify-between tw-gap-3 tw-mb-5">
-            <button onClick={onBack}
-              className="tw-inline-flex tw-items-center tw-gap-1.5 tw-h-9 tw-px-3.5 tw-rounded-full tw-bg-white/20 tw-backdrop-blur-md tw-ring-1 tw-ring-white/30 tw-text-white tw-text-[12px] tw-font-bold tw-border-0 tw-cursor-pointer hover:tw-bg-white/30 active:tw-scale-95 tw-transition tw-duration-200">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-              Back
-            </button>
-            <div className="tw-flex tw-items-center tw-gap-2.5">
-              <div className="tw-w-10 tw-h-10 tw-rounded-[14px] tw-bg-white/20 tw-backdrop-blur-md tw-ring-1 tw-ring-white/30 tw-flex tw-items-center tw-justify-center tw-shadow-md">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              </div>
-              <span className="tw-text-white tw-text-[16px] tw-font-extrabold tw-tracking-[-0.4px]" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.3)' }}>Creator Hub</span>
-            </div>
-          </div>
-
-          {/* Welcome headline outside the card */}
-          <div className="tw-mb-5 tw-text-center">
-            <div className="tw-inline-flex tw-items-center tw-gap-1.5 tw-h-6 tw-px-3 tw-rounded-full tw-bg-white/20 tw-backdrop-blur-md tw-ring-1 tw-ring-white/30 tw-text-white tw-text-[10.5px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-mb-3">✨ Join the workspace</div>
-            <h1 className="tw-text-white tw-text-[36px] sm:tw-text-[42px] tw-font-extrabold tw-tracking-[-1.2px] tw-leading-[1.05] tw-m-0" style={{ textShadow: '0 4px 24px rgba(0,0,0,0.25)' }}>
-              Let's get you<br/>set up.
-            </h1>
-            <p className="tw-text-white/85 tw-text-[14px] tw-font-medium tw-mt-3 tw-mx-auto tw-max-w-[360px]" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
-              Tell us about yourself. Asad reviews each request personally.
-            </p>
-          </div>
-
-          {/* Form card */}
-          <div className="tw-relative tw-w-full tw-bg-white/85 tw-backdrop-blur-2xl tw-rounded-[28px] tw-ring-1 tw-ring-white/50 tw-shadow-[0_24px_80px_rgba(124,58,237,0.45)] tw-overflow-hidden">
-            {/* Sunset ribbon top */}
-            <div className="tw-h-1 tw-bg-gradient-to-r tw-from-amber-400 tw-via-rose-500 tw-to-fuchsia-600" />
-
-            {/* Step indicator */}
-            <div className="tw-px-7 tw-pt-6 tw-pb-3">
-              <div className="tw-flex tw-items-center tw-gap-2">
-                {[
-                  { n: 1, label: 'Apply', active: true },
-                  { n: 2, label: 'Review', active: false },
-                  { n: 3, label: 'Welcome', active: false },
-                ].map((s, i, arr) => (
-                  <React.Fragment key={s.n}>
-                    <div className={`tw-flex tw-items-center tw-gap-1.5 tw-h-7 tw-pl-1 tw-pr-2.5 tw-rounded-full ${s.active ? 'tw-bg-gradient-to-r tw-from-amber-400 tw-to-rose-500 tw-text-white tw-shadow-md' : 'tw-bg-slate-100 tw-text-slate-400'}`}>
-                      <div className={`tw-w-5 tw-h-5 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-text-[10px] tw-font-extrabold ${s.active ? 'tw-bg-white/25' : 'tw-bg-white'}`}>{s.n}</div>
-                      <span className={`tw-text-[10.5px] tw-font-extrabold tw-uppercase tw-tracking-wider ${s.active ? '' : 'tw-text-slate-500'}`}>{s.label}</span>
-                    </div>
-                    {i < arr.length - 1 && <div className="tw-flex-1 tw-h-px tw-bg-slate-200" />}
-                  </React.Fragment>
-                ))}
-              </div>
-            </div>
-
-            <div className="tw-px-7 tw-pb-7">
-              <form onSubmit={submit} className="tw-flex tw-flex-col tw-gap-3.5 tw-mt-2">
-                {[
-                  { label: 'Full name', value: name, set: setName, type: 'text', placeholder: 'Your name', icon: (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>) },
-                  { label: 'Email', value: email, set: setEmail, type: 'email', placeholder: 'you@example.com', icon: (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>) },
-                  { label: 'Preferred username', value: username, set: setUsername, type: 'text', placeholder: 'e.g. ahmed_ipc', icon: (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/><circle cx="12" cy="7" r="4"/></svg>) },
-                ].map((f, i) => (
-                  <div key={f.label}>
-                    <label className="tw-block tw-text-[11.5px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-text-oneui-mute tw-mb-2">{f.label}</label>
-                    <div className="tw-relative tw-group">
-                      <span className="tw-absolute tw-left-4 tw-top-1/2 -tw-translate-y-1/2 tw-text-oneui-mute group-focus-within:tw-text-rose-600 tw-transition tw-pointer-events-none">{f.icon}</span>
-                      <input
-                        type={f.type}
-                        value={f.value}
-                        onChange={e => f.set(e.target.value)}
-                        placeholder={f.placeholder}
-                        required
-                        autoFocus={i === 0}
-                        className="tw-w-full tw-h-12 tw-pl-11 tw-pr-4 tw-rounded-2xl tw-bg-slate-100/70 tw-border-0 tw-ring-2 tw-ring-transparent focus:tw-bg-white focus:tw-ring-rose-500/40 focus:tw-shadow-[0_0_0_4px_rgba(244,63,94,0.1)] tw-outline-none tw-text-[14px] tw-font-semibold tw-text-oneui-ink placeholder:tw-text-oneui-mute/60 tw-transition tw-duration-200 tw-ease-oneui"
-                        style={{ fontFamily: 'inherit' }}
-                      />
-                    </div>
-                  </div>
-                ))}
-
-                {/* Submit button · sunset gradient */}
-                <button type="submit" disabled={submitting}
-                  className="tw-relative tw-w-full tw-mt-3 tw-rounded-2xl tw-text-white tw-text-[14.5px] tw-font-extrabold tw-tracking-[-0.2px] tw-flex tw-items-center tw-justify-center tw-gap-2 tw-border-0 tw-cursor-pointer hover:-tw-translate-y-0.5 active:tw-scale-[0.98] disabled:tw-opacity-70 disabled:tw-cursor-wait tw-transition tw-duration-200 tw-ease-oneui tw-overflow-hidden"
-                  style={{ height: 50, background: 'linear-gradient(135deg, #F59E0B 0%, #F43F5E 50%, #C026D3 100%)', boxShadow: '0 10px 28px rgba(244,63,94,0.45), 0 4px 12px rgba(192,38,211,0.35)' }}>
-                  <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-30" style={{ background: 'linear-gradient(135deg, transparent 35%, rgba(255,255,255,0.5) 50%, transparent 65%)' }} />
-                  <span className="tw-relative tw-z-10 tw-flex tw-items-center tw-gap-2">
-                    {submitting ? (
-                      <>
-                        <span className="tw-w-4 tw-h-4 tw-border-2 tw-border-white/40 tw-border-t-white tw-rounded-full tw-animate-spin" />
-                        Sending…
-                      </>
-                    ) : (
-                      <>
-                        Send request
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                      </>
-                    )}
-                  </span>
-                </button>
-              </form>
-
-              {/* Trust footer inside card */}
-              <div className="tw-mt-5 tw-pt-4 tw-border-t tw-border-slate-200 tw-flex tw-items-center tw-justify-center tw-gap-2 tw-text-[11px] tw-font-bold tw-text-oneui-mute">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                Your data is encrypted · We won't spam you
-              </div>
-            </div>
-          </div>
-
-          {/* Already have an account */}
-          <div className="tw-mt-5 tw-text-center">
-            <span className="tw-text-white/70 tw-text-[12.5px] tw-font-medium">Already have credentials?</span>
-            <button onClick={onBack}
-              className="tw-ml-1.5 tw-text-white tw-text-[12.5px] tw-font-extrabold tw-bg-transparent tw-border-0 tw-cursor-pointer hover:tw-underline">
-              Sign in →
-            </button>
-          </div>
-        </div>
-      </main>
-
-      {/* ── REQUEST RECEIVED · Tailwind premium meme popup ── */}
-      {showMeme && (
-        <div className="tw-fixed tw-inset-0 tw-z-[2000] tw-bg-black/60 tw-backdrop-blur-md tw-flex tw-items-center tw-justify-center tw-p-4 tw-font-sans" onClick={() => { setShowMeme(false); onBack(); }}>
-          <div onClick={e => e.stopPropagation()} className="tw-relative tw-w-full tw-max-w-[400px] tw-bg-white tw-rounded-[28px] tw-shadow-oneui_lg tw-overflow-hidden" style={{ animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)' }}>
-            <div className="tw-relative tw-h-[140px] tw-bg-gradient-to-br tw-from-emerald-500 tw-to-emerald-700 tw-flex tw-items-center tw-justify-center tw-overflow-hidden">
-              <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.7) 1px, transparent 0)', backgroundSize: '22px 22px' }} />
-              <div className="tw-text-[64px] tw-relative tw-z-10" style={{ filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.25))' }}>🙏</div>
-              <span className="tw-absolute tw-top-4 tw-left-4 tw-inline-flex tw-items-center tw-h-6 tw-px-2.5 tw-rounded-full tw-bg-white/22 tw-backdrop-blur-md tw-border tw-border-white/30 tw-text-white tw-text-[10px] tw-font-extrabold tw-tracking-wider tw-uppercase">Request #69420</span>
-            </div>
-            <div className="tw-p-6">
-              <div className="tw-text-[22px] tw-font-extrabold tw-text-oneui-ink tw-tracking-[-0.5px] tw-leading-tight">Request Received</div>
-              <div className="tw-text-[13.5px] tw-font-medium tw-text-oneui-mute tw-mt-1.5 tw-mb-4">Status: <span className="tw-text-emerald-600 tw-font-bold">Pending Asad's blessing</span></div>
-              <div className="tw-bg-emerald-50 tw-rounded-2xl tw-p-4 tw-mb-4 tw-space-y-2.5">
-                <div className="tw-flex tw-justify-between tw-items-center tw-gap-3"><span className="tw-text-[11.5px] tw-font-bold tw-uppercase tw-tracking-wider tw-text-emerald-700">Name</span><span className="tw-text-[12.5px] tw-font-semibold tw-text-oneui-ink tw-truncate">{name}</span></div>
-                <div className="tw-flex tw-justify-between tw-items-center tw-gap-3"><span className="tw-text-[11.5px] tw-font-bold tw-uppercase tw-tracking-wider tw-text-emerald-700">Username</span><span className="tw-text-[12.5px] tw-font-semibold tw-text-oneui-ink tw-truncate">@{username}</span></div>
-                <div className="tw-flex tw-justify-between tw-items-center tw-gap-3"><span className="tw-text-[11.5px] tw-font-bold tw-uppercase tw-tracking-wider tw-text-emerald-700">Vibes</span><span className="tw-text-[12.5px] tw-font-semibold tw-text-oneui-ink">Patient 🙏</span></div>
-              </div>
-              <p className="tw-text-[12px] tw-text-oneui-mute tw-text-center tw-mb-4 tw-leading-relaxed">Asad has been notified. Sit tight.</p>
-              <button onClick={() => { setShowMeme(false); onBack(); }}
-                className="tw-w-full tw-h-12 tw-rounded-2xl tw-bg-gradient-to-br tw-from-emerald-600 tw-to-emerald-700 tw-text-white tw-text-[14px] tw-font-bold tw-border-0 tw-cursor-pointer tw-shadow-[0_8px_22px_rgba(16,185,129,0.32)] hover:tw-shadow-[0_12px_28px_rgba(16,185,129,0.42)] hover:-tw-translate-y-0.5 active:tw-scale-[0.98] tw-transition tw-duration-200 tw-ease-oneui">
-                Understood boss 🫡
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── DUPLICATE · Tailwind premium meme popup ── */}
-      {showDupeMeme && (
-        <div className="tw-fixed tw-inset-0 tw-z-[2000] tw-bg-black/60 tw-backdrop-blur-md tw-flex tw-items-center tw-justify-center tw-p-4 tw-font-sans" onClick={() => setShowDupeMeme(false)}>
-          <div onClick={e => e.stopPropagation()} className="tw-relative tw-w-full tw-max-w-[400px] tw-bg-white tw-rounded-[28px] tw-shadow-oneui_lg tw-overflow-hidden" style={{ animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)' }}>
-            <div className="tw-relative tw-h-[140px] tw-bg-gradient-to-br tw-from-amber-500 tw-to-rose-600 tw-flex tw-items-center tw-justify-center tw-overflow-hidden">
-              <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.7) 1px, transparent 0)', backgroundSize: '22px 22px' }} />
-              <div className="tw-text-[64px] tw-relative tw-z-10" style={{ filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.25))' }}>😭</div>
-              <span className="tw-absolute tw-top-4 tw-left-4 tw-inline-flex tw-items-center tw-h-6 tw-px-2.5 tw-rounded-full tw-bg-white/22 tw-backdrop-blur-md tw-border tw-border-white/30 tw-text-white tw-text-[10px] tw-font-extrabold tw-tracking-wider tw-uppercase">Duplicate</span>
-            </div>
-            <div className="tw-p-6">
-              <div className="tw-text-[22px] tw-font-extrabold tw-text-oneui-ink tw-tracking-[-0.5px] tw-leading-tight">Already exists, bro</div>
-              <div className="tw-text-[13.5px] tw-font-medium tw-text-oneui-mute tw-mt-1.5 tw-mb-4">Someone with this email or username already applied, or already has an account.</div>
-              <div className="tw-bg-rose-50 tw-rounded-2xl tw-p-4 tw-mb-4 tw-space-y-2.5">
-                <div className="tw-flex tw-justify-between tw-items-center tw-gap-3"><span className="tw-text-[11.5px] tw-font-bold tw-uppercase tw-tracking-wider tw-text-rose-700">Email</span><span className="tw-text-[12.5px] tw-font-semibold tw-text-oneui-ink tw-truncate">{email}</span></div>
-                <div className="tw-flex tw-justify-between tw-items-center tw-gap-3"><span className="tw-text-[11.5px] tw-font-bold tw-uppercase tw-tracking-wider tw-text-rose-700">Username</span><span className="tw-text-[12.5px] tw-font-semibold tw-text-oneui-ink tw-truncate">@{username}</span></div>
-                <div className="tw-flex tw-justify-between tw-items-center tw-gap-3"><span className="tw-text-[11.5px] tw-font-bold tw-uppercase tw-tracking-wider tw-text-rose-700">Status</span><span className="tw-text-[12.5px] tw-font-semibold tw-text-oneui-ink">In the system 💀</span></div>
-              </div>
-              <p className="tw-text-[12px] tw-text-oneui-mute tw-text-center tw-mb-4 tw-leading-relaxed">If you already have credentials, just log in. Otherwise contact Asad.</p>
-              <button onClick={() => setShowDupeMeme(false)}
-                className="tw-w-full tw-h-12 tw-rounded-2xl tw-bg-gradient-to-br tw-from-rose-600 tw-to-rose-700 tw-text-white tw-text-[14px] tw-font-bold tw-border-0 tw-cursor-pointer tw-shadow-[0_8px_22px_rgba(220,38,38,0.32)] hover:tw-shadow-[0_12px_28px_rgba(220,38,38,0.42)] hover:-tw-translate-y-0.5 active:tw-scale-[0.98] tw-transition tw-duration-200 tw-ease-oneui">
-                My bad, got it 😅
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ─── LoginScreen ───────────────────────────────────────── */
-function LoginScreen({ onLogin, onJoinRequest }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPw, setShowPw] = useState(false);
-  const [shaking, setShaking] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showMemeError, setShowMemeError] = useState(false);
-  const [showForgotPopup, setShowForgotPopup] = useState(false);
-
-  async function attempt(e) {
-    e.preventDefault();
-    if (isProcessing) return;
-    setIsProcessing(true);
-
-    const [{ data }] = await Promise.all([
-      supabase.from('app_users').select('*'),
-      new Promise(r => setTimeout(r, 1000)),
-    ]);
-
-    // Always merge hardcoded USERS so locally-defined accounts (like the Lead
-    // viewer) work even when the Supabase app_users table has rows. DB entries
-    // take precedence — hardcoded ones only fill gaps.
-    const dbPool = (data && data.length > 0) ? data : [];
-    const dbHas  = (uname) => dbPool.some(d => (d.username || '').toLowerCase() === (uname || '').toLowerCase());
-    const pool   = [...dbPool, ...USERS.filter(u => !dbHas(u.username))];
-    const matchedUser = pool.find(u =>
-      u.username.toLowerCase() === username.trim().toLowerCase() && u.password === password
-    );
-
-    if (matchedUser) { onLogin(matchedUser); return; }
-
-    setIsProcessing(false);
-    setShaking(true);
-    setTimeout(() => setShaking(false), 500);
-    setShowMemeError(true);
-  }
-
-  return (
-    <div className="tw-fixed tw-inset-0 tw-overflow-y-auto tw-font-sans" style={{ background: 'linear-gradient(180deg, #FDFAF4 0%, #F5EFE2 100%)' }}>
-      {/* Soft warm wash + subtle dot grid */}
-      <div aria-hidden className="tw-absolute tw-inset-0 tw-pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(48,39,28,0.05) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
-
-      <main className={`tw-relative tw-min-h-full tw-flex tw-items-center tw-justify-center tw-p-4 sm:tw-p-8 ${shaking ? 'tw-animate-[login-shake_0.4s_ease-in-out]' : ''}`}>
-        <div className="tw-w-full tw-max-w-[920px]" style={{ animation: 'login-card-in 0.55s cubic-bezier(0.33,1,0.68,1)' }}>
-
-          {/* Card frame */}
-          <div className="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 tw-bg-white tw-rounded-[24px] tw-overflow-hidden" style={{ boxShadow: '0 40px 80px rgba(48,39,28,0.16), 0 8px 24px rgba(48,39,28,0.08), 0 0 0 1px rgba(48,39,28,0.06)' }}>
-
-            {/* ── LEFT · Dark coffee brand panel ── */}
-            <div className="tw-relative tw-p-8 md:tw-p-10 tw-flex tw-flex-col tw-min-h-[420px] md:tw-min-h-[520px]" style={{ background: 'linear-gradient(165deg, #3A3023 0%, #30271C 55%, #281F15 100%)', color: '#F5E9D6' }}>
-              {/* Subtle cream wash in corner */}
-              <div aria-hidden className="tw-absolute tw--top-32 tw--right-32 tw-w-80 tw-h-80 tw-rounded-full tw-pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(245,233,214,0.08), transparent 70%)' }} />
-
-              <div className="tw-relative tw-z-10 tw-flex tw-items-center tw-gap-3">
-                <div className="tw-w-12 tw-h-12 tw-rounded-[13px] tw-flex tw-items-center tw-justify-center" style={{ background: '#F5E9D6', color: '#30271C' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
-                    <path d="M3 7l9-4 9 4-9 4-9-4z" />
-                    <path d="M3 12l9 4 9-4" />
-                    <path d="M3 17l9 4 9-4" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="tw-text-[20px] tw-font-extrabold tw-tracking-[-0.4px]" style={{ color: '#F5E9D6' }}>Wurx Base</div>
-                  <div className="tw-text-[12px] tw-font-semibold" style={{ color: 'rgba(245,233,214,0.55)' }}>Paid Collaborations</div>
-                </div>
-              </div>
-
-              {/* Feature rows · fill the panel's middle with real capability */}
-              <div className="tw-relative tw-z-10 tw-mt-9 tw-flex tw-flex-col tw-gap-2.5">
-                {[
-                  [<svg key="i" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>, 'Live GMV & Ad performance'],
-                  [<svg key="i" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>, 'EUKA-synced video deliverables'],
-                  [<svg key="i" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>, 'One-click signed contracts'],
-                ].map(([icon, label], i) => (
-                  <div key={i} className="tw-flex tw-items-center tw-gap-3">
-                    <span className="tw-w-[30px] tw-h-[30px] tw-rounded-[9px] tw-flex tw-items-center tw-justify-center tw-flex-shrink-0" style={{ background: 'rgba(245,233,214,0.10)', border: '1px solid rgba(245,233,214,0.16)', color: '#F5E9D6' }}>
-                      {icon}
-                    </span>
-                    <span className="tw-text-[12.5px] tw-font-semibold" style={{ color: 'rgba(245,233,214,0.82)' }}>{label}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* second ambient wash · bottom-left depth */}
-              <div aria-hidden className="tw-absolute tw--bottom-24 tw--left-24 tw-w-64 tw-h-64 tw-rounded-full tw-pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(245,233,214,0.06), transparent 70%)' }} />
-
-              <div className="tw-relative tw-z-10 tw-mt-auto tw-pt-10">
-                <div className="tw-text-[28px] md:tw-text-[32px] tw-font-extrabold tw-leading-[1.15] tw-tracking-[-0.7px]" style={{ color: '#F5E9D6' }}>
-                  Track every deal,<br/>brand and creator.
-                </div>
-                <div className="tw-text-[13.5px] tw-font-medium tw-mt-4 tw-leading-relaxed" style={{ color: 'rgba(245,233,214,0.65)', maxWidth: 360 }}>
-                  One workspace for paid collaborations · brand budgets, creator deals, video deliverables and monthly GMV/Ad performance.
-                </div>
-
-                <div className="tw-flex tw-flex-wrap tw-gap-2 tw-mt-7">
-                  {['Brands', 'Creators', 'Performance', 'Reporting'].map(t => (
-                    <span key={t} className="tw-inline-flex tw-items-center tw-h-7 tw-px-3 tw-rounded-full tw-text-[11px] tw-font-bold" style={{ background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', border: '1px solid rgba(245,233,214,0.18)' }}>{t}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* ── RIGHT · Sign in form ── */}
-            <div className="tw-p-8 md:tw-p-10 tw-flex tw-flex-col tw-justify-center">
-              <h2 className="tw-m-0 tw-text-[26px] tw-font-extrabold tw-tracking-[-0.6px]" style={{ color: '#1F1F1F' }}>Welcome back</h2>
-              <p className="tw-text-[13.5px] tw-font-medium tw-mt-1.5 tw-mb-7" style={{ color: '#6B7280' }}>Sign in to your Wurx workspace.</p>
-
-              <form onSubmit={attempt} className="tw-flex tw-flex-col tw-gap-4">
-                {/* Username */}
-                <div>
-                  <label className="tw-block tw-text-[10.5px] tw-font-bold tw-uppercase tw-tracking-[0.5px] tw-mb-1.5" style={{ color: '#6B7280' }}>Username</label>
-                  <div className="tw-relative">
-                    <span className="tw-absolute tw-left-3.5 tw-top-1/2 -tw-translate-y-1/2 tw-pointer-events-none" style={{ color: '#9CA3AF' }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    </span>
-                    <input
-                      type="text"
-                      value={username}
-                      onChange={e => setUsername(e.target.value)}
-                      placeholder="username"
-                      autoFocus
-                      autoComplete="username"
-                      disabled={isProcessing}
-                      className="tw-w-full tw-pl-11 tw-pr-4 tw-outline-none tw-text-[14px] tw-font-medium tw-transition"
-                      style={{ height: 46, fontFamily: 'inherit', color: '#1F1F1F', background: '#F8F7F4', border: '1px solid #E7E2D7', borderRadius: 12 }}
-                      onFocus={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#30271C'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(48,39,28,0.10)'; }}
-                      onBlur={e => { e.currentTarget.style.background = '#F8F7F4'; e.currentTarget.style.borderColor = '#E7E2D7'; e.currentTarget.style.boxShadow = 'none'; }}
-                    />
-                  </div>
-                </div>
-
-                {/* Password */}
-                <div>
-                  <div className="tw-flex tw-items-center tw-justify-between tw-mb-1.5">
-                    <label className="tw-text-[10.5px] tw-font-bold tw-uppercase tw-tracking-[0.5px]" style={{ color: '#6B7280' }}>Password</label>
-                    <button type="button" onClick={() => setShowForgotPopup(true)}
-                      className="tw-bg-transparent tw-border-0 tw-cursor-pointer tw-text-[11px] tw-font-bold" style={{ color: '#30271C' }}>
-                      Forgot?
-                    </button>
-                  </div>
-                  <div className="tw-relative">
-                    <span className="tw-absolute tw-left-3.5 tw-top-1/2 -tw-translate-y-1/2 tw-pointer-events-none" style={{ color: '#9CA3AF' }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    </span>
-                    <input
-                      type={showPw ? 'text' : 'password'}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      autoComplete="current-password"
-                      disabled={isProcessing}
-                      className="tw-w-full tw-pl-11 tw-pr-11 tw-outline-none tw-text-[14px] tw-font-medium tw-transition"
-                      style={{ height: 46, fontFamily: 'inherit', color: '#1F1F1F', background: '#F8F7F4', border: '1px solid #E7E2D7', borderRadius: 12 }}
-                      onFocus={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#30271C'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(48,39,28,0.10)'; }}
-                      onBlur={e => { e.currentTarget.style.background = '#F8F7F4'; e.currentTarget.style.borderColor = '#E7E2D7'; e.currentTarget.style.boxShadow = 'none'; }}
-                    />
-                    <button type="button" onClick={() => setShowPw(s => !s)} tabIndex={-1}
-                      className="tw-absolute tw-right-2 tw-top-1/2 -tw-translate-y-1/2 tw-w-8 tw-h-8 tw-rounded-full tw-bg-transparent tw-border-0 tw-flex tw-items-center tw-justify-center tw-cursor-pointer tw-transition"
-                      style={{ color: '#9CA3AF' }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(48,39,28,0.06)'; e.currentTarget.style.color = '#1F1F1F'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}
-                    >
-                      {showPw
-                        ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                      }
-                    </button>
-                  </div>
-                </div>
-
-                {/* Sign in CTA */}
-                <button type="submit" disabled={isProcessing}
-                  className="tw-mt-2 tw-w-full tw-rounded-[12px] tw-text-[14px] tw-font-bold tw-tracking-[-0.1px] tw-flex tw-items-center tw-justify-center tw-gap-2 tw-border-0 tw-cursor-pointer disabled:tw-opacity-60 disabled:tw-cursor-wait tw-transition"
-                  style={{ height: 48, background: '#30271C', color: '#F5E9D6', boxShadow: '0 8px 22px rgba(48,39,28,0.22)' }}
-                  onMouseEnter={e => { if (!isProcessing) e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(48,39,28,0.30)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 22px rgba(48,39,28,0.22)'; }}
-                >
-                  {isProcessing ? (
-                    <>
-                      <span className="tw-w-3.5 tw-h-3.5 tw-border-2 tw-rounded-full tw-animate-spin" style={{ borderColor: 'rgba(245,233,214,0.30)', borderTopColor: '#F5E9D6' }} />
-                      Signing in
-                    </>
-                  ) : (
-                    <>
-                      Sign in
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                    </>
-                  )}
-                </button>
-              </form>
-
-              {/* Divider */}
-              <div className="tw-flex tw-items-center tw-gap-3 tw-my-5">
-                <div className="tw-flex-1 tw-h-px" style={{ background: '#E7E2D7' }} />
-                <span className="tw-text-[10px] tw-font-bold tw-uppercase tw-tracking-[0.6px]" style={{ color: '#9CA3AF' }}>Or</span>
-                <div className="tw-flex-1 tw-h-px" style={{ background: '#E7E2D7' }} />
-              </div>
-
-              {/* Request to join */}
-              <button onClick={onJoinRequest}
-                className="tw-w-full tw-rounded-[12px] tw-text-[13px] tw-font-bold tw-tracking-[-0.1px] tw-cursor-pointer tw-transition tw-flex tw-items-center tw-justify-center tw-gap-1.5"
-                style={{ height: 42, background: 'transparent', color: '#30271C', border: '1px solid #E7E2D7' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#F8F7F4'; e.currentTarget.style.borderColor = '#30271C'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E7E2D7'; }}
-              >
-                Request access
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-              </button>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="tw-mt-5 tw-text-center tw-text-[11px] tw-font-medium" style={{ color: '#9C8F7C' }}>
-            Secure workspace · © Wurx Media
-          </div>
-        </div>
-      </main>
-
-      {/* ── ACCESS DENIED · cleaner Wurx-style popup ── */}
-      {showMemeError && (
-        <div className="tw-fixed tw-inset-0 tw-z-[2000] tw-flex tw-items-center tw-justify-center tw-p-4 tw-font-sans" style={{ background: 'rgba(48,39,28,0.55)', backdropFilter: 'blur(6px)' }} onClick={() => setShowMemeError(false)}>
-          <div onClick={e => e.stopPropagation()} className="tw-relative tw-w-full tw-max-w-[400px] tw-bg-white tw-rounded-[20px] tw-overflow-hidden" style={{ animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)', boxShadow: '0 24px 60px rgba(48,39,28,0.30)' }}>
-            <div className="tw-p-7">
-              <div className="tw-w-12 tw-h-12 tw-rounded-[14px] tw-flex tw-items-center tw-justify-center tw-mb-4" style={{ background: '#FEE2E2', color: '#B91C1C' }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              </div>
-              <div className="tw-text-[20px] tw-font-extrabold tw-tracking-[-0.4px]" style={{ color: '#1F1F1F' }}>Access denied</div>
-              <div className="tw-text-[13px] tw-font-medium tw-mt-1.5 tw-mb-5" style={{ color: '#6B7280' }}>Username or password is incorrect. Try again, or contact your admin.</div>
-              <button onClick={() => setShowMemeError(false)} className="tw-w-full tw-h-11 tw-rounded-[12px] tw-text-[13.5px] tw-font-bold tw-border-0 tw-cursor-pointer tw-transition" style={{ background: '#30271C', color: '#F5E9D6' }}>
-                Try again
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── FORGOT PASSWORD · cleaner Wurx-style popup ── */}
-      {showForgotPopup && (
-        <div className="tw-fixed tw-inset-0 tw-z-[2000] tw-flex tw-items-center tw-justify-center tw-p-4 tw-font-sans" style={{ background: 'rgba(48,39,28,0.55)', backdropFilter: 'blur(6px)' }} onClick={() => setShowForgotPopup(false)}>
-          <div onClick={e => e.stopPropagation()} className="tw-relative tw-w-full tw-max-w-[400px] tw-bg-white tw-rounded-[20px] tw-overflow-hidden" style={{ animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)', boxShadow: '0 24px 60px rgba(48,39,28,0.30)' }}>
-            <div className="tw-p-7">
-              <div className="tw-w-12 tw-h-12 tw-rounded-[14px] tw-flex tw-items-center tw-justify-center tw-mb-4" style={{ background: '#F5E9D6', color: '#30271C' }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              </div>
-              <div className="tw-text-[20px] tw-font-extrabold tw-tracking-[-0.4px]" style={{ color: '#1F1F1F' }}>Reset password</div>
-              <div className="tw-text-[13px] tw-font-medium tw-mt-1.5 tw-mb-5" style={{ color: '#6B7280' }}>Message your workspace admin to reset your password.</div>
-              <div className="tw-rounded-[12px] tw-p-3.5 tw-mb-5 tw-space-y-2" style={{ background: '#F8F7F4', border: '1px solid #E7E2D7' }}>
-                {[
-                  { k: 'Step 1', v: 'DM Asad on WhatsApp' },
-                  { k: 'Step 2', v: 'Confirm your username' },
-                  { k: 'Step 3', v: 'Receive new password' },
-                ].map(s => (
-                  <div key={s.k} className="tw-flex tw-justify-between tw-items-center tw-gap-3">
-                    <span className="tw-text-[10.5px] tw-font-bold tw-uppercase tw-tracking-wider" style={{ color: '#9C8F7C' }}>{s.k}</span>
-                    <span className="tw-text-[12.5px] tw-font-semibold" style={{ color: '#1F1F1F' }}>{s.v}</span>
-                  </div>
-                ))}
-              </div>
-              <button onClick={() => setShowForgotPopup(false)} className="tw-w-full tw-h-11 tw-rounded-[12px] tw-text-[13.5px] tw-font-bold tw-border-0 tw-cursor-pointer tw-transition" style={{ background: '#30271C', color: '#F5E9D6' }}>
-                Got it
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ─── BrandSelector (APC only) ──────────────────────────── */
 function BrandSelector({ allBrands, onSelect }) {
   const [selected, setSelected] = useState([]);
@@ -5835,11 +5599,11 @@ function DetailModalV2({ creator, onClose, onEdit, onDelete, onUpdate, perms = {
         <div data-sheet-hero className="tw-relative tw-overflow-hidden" style={{ background: gradient, height: 200 }}>
           {/* Atmospheric multi-layer overlays */}
           <div className="tw-absolute tw-inset-0 tw-pointer-events-none" style={{
-            background: 'radial-gradient(ellipse 80% 90% at 85% 10%, rgba(255,255,255,0.38), transparent 55%), radial-gradient(ellipse 80% 90% at 15% 95%, rgba(0,0,0,0.42), transparent 60%)'
+            background: 'radial-gradient(ellipse 80% 90% at 85% 10%, color-mix(in srgb, var(--wx-surface-1) 38%, transparent), transparent 55%), radial-gradient(ellipse 80% 90% at 15% 95%, color-mix(in srgb, var(--wx-accent) 42%, transparent), transparent 60%)'
           }} />
           {/* Diagonal sheen */}
           <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-20" style={{
-            background: 'linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%)'
+            background: 'linear-gradient(135deg, transparent 30%, color-mix(in srgb, var(--wx-surface-1) 18%, transparent) 50%, transparent 70%)'
           }} />
           {/* Soft mesh */}
           <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-25" style={{
@@ -5847,7 +5611,7 @@ function DetailModalV2({ creator, onClose, onEdit, onDelete, onUpdate, perms = {
             backgroundSize: '20px 20px'
           }} />
           {/* Bottom fade so name area is darker for contrast */}
-          <div className="tw-absolute tw-inset-x-0 tw-bottom-0 tw-h-[55%] tw-pointer-events-none" style={{ background: 'linear-gradient(180deg, transparent, rgba(0,0,0,0.55))' }} />
+          <div className="tw-absolute tw-inset-x-0 tw-bottom-0 tw-h-[55%] tw-pointer-events-none" style={{ background: 'linear-gradient(180deg, transparent, color-mix(in srgb, var(--wx-accent) 55%, transparent))' }} />
 
           {/* Top bar: hire date pill + close */}
           <div className="tw-relative tw-z-10 tw-flex tw-items-start tw-justify-between tw-gap-2 tw-px-5 tw-pt-4">
@@ -6814,32 +6578,32 @@ function LeaderboardModalV2({ creators, hiredByTeam, onClose }) {
     <div
       className="tw-fixed tw-inset-0 tw-z-[1900] tw-flex tw-items-center tw-justify-center tw-p-4 sm:tw-p-6"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-      style={{ animation: 'sp-fade 0.22s ease', background: 'rgba(48,39,28,0.50)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+      style={{ animation: 'sp-fade 0.22s ease', background: 'color-mix(in srgb, var(--wx-warning-soft) 50%, transparent)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
     >
       <div style={{
         position: 'relative', width: '100%', maxWidth: 560, maxHeight: '92vh',
-        background: '#F8F7F4', borderRadius: 22,
+        background: 'var(--wx-bg)', borderRadius: 22,
         boxShadow: '0 32px 80px rgba(48,39,28,0.25), 0 8px 24px rgba(48,39,28,0.10)',
         animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)',
         overflow: 'hidden', display: 'flex', flexDirection: 'column',
         fontFamily: 'inherit',
       }}>
         {/* ── Header · dark coffee ── */}
-        <div style={{ background: '#30271C', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ background: 'var(--wx-warning-soft)', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
             </svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: '#F5E9D6' }}>Leaderboard</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(245,233,214,0.55)', marginTop: 2 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>Leaderboard</div>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>
               {month
                 ? `Hired-by performance · ${monthLabelShort(month)}${prevMonth ? ` vs ${monthLabelShort(prevMonth)}` : ''}`
                 : 'Hired-by performance across all deals'}
             </div>
           </div>
-          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
+          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -6847,7 +6611,7 @@ function LeaderboardModalV2({ creators, hiredByTeam, onClose }) {
         </div>
 
         {/* ── Period strip · all time + the last 12 active months ── */}
-        <div style={{ background: '#fff', borderBottom: '1px solid #E7E2D7', padding: '10px 0 10px 22px' }}>
+        <div style={{ background: 'var(--wx-surface-1)', borderBottom: '1px solid var(--wx-border)', padding: '10px 0 10px 22px' }}>
           <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingRight: 22, scrollbarWidth: 'none' }}>
             {[{ id: '', label: 'All time' }, ...months.map(m => ({ id: m, label: monthLabelShort(m) }))].map(p => {
               const active = month === p.id;
@@ -6867,19 +6631,19 @@ function LeaderboardModalV2({ creators, hiredByTeam, onClose }) {
 
         {/* ── Top performer hero ── */}
         {top && (
-          <div style={{ padding: '18px 22px 16px', background: 'linear-gradient(135deg, #FDFAF4 0%, #F5EFE2 100%)', borderBottom: '1px solid #E7E2D7' }}>
+          <div style={{ padding: '18px 22px 16px', background: 'linear-gradient(135deg, var(--wx-surface-1) 0%, var(--wx-surface-2) 100%)', borderBottom: '1px solid var(--wx-border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
                 <span style={{ width: 56, height: 56, borderRadius: 999, background: top.bg, color: top.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{(top.name || '?')[0].toUpperCase()}</span>
-                <span style={{ position: 'absolute', bottom: -2, right: -2, width: 22, height: 22, borderRadius: 999, background: '#30271C', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, lineHeight: 1, border: '2px solid #FDFAF4' }}>#1</span>
+                <span style={{ position: 'absolute', bottom: -2, right: -2, width: 22, height: 22, borderRadius: 999, background: 'var(--wx-warning-soft)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, lineHeight: 1, border: '2px solid var(--wx-border)' }}>#1</span>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 10.5, fontWeight: 800, color: '#9C8F7C', textTransform: 'uppercase', letterSpacing: 0.6 }}>Leading by {tabs.find(t => t.id === metric).label}{month ? ` · ${monthLabelShort(month)}` : ''}</div>
-                <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.4px', color: '#1F1F1F', marginTop: 1 }}>{top.name}</div>
-                <div style={{ fontSize: 11.5, fontWeight: 600, color: '#6B7280', marginTop: 2 }}>{top.deals} deal{top.deals !== 1 ? 's' : ''} · {top.paidCount} paid · {top.videosDone} delivered</div>
+                <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--wx-text-muted)', textTransform: 'uppercase', letterSpacing: 0.6 }}>Leading by {tabs.find(t => t.id === metric).label}{month ? ` · ${monthLabelShort(month)}` : ''}</div>
+                <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text)', marginTop: 1 }}>{top.name}</div>
+                <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>{top.deals} deal{top.deals !== 1 ? 's' : ''} · {top.paidCount} paid · {top.videosDone} delivered</div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.5px', color: '#30271C', fontVariantNumeric: 'tabular-nums' }}>{fmt(top)}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.5px', color: 'var(--wx-warning)', fontVariantNumeric: 'tabular-nums' }}>{fmt(top)}</div>
                 {(() => {
                   const mv = movement(top.name);
                   if (!mv) return null;
@@ -6892,7 +6656,7 @@ function LeaderboardModalV2({ creators, hiredByTeam, onClose }) {
 
         {/* ── Metric tabs · neutral pill toggle ── */}
         <div style={{ padding: '14px 22px 0' }}>
-          <div style={{ display: 'flex', gap: 4, background: '#fff', borderRadius: 999, padding: 4, border: '1px solid #E7E2D7' }}>
+          <div style={{ display: 'flex', gap: 4, background: 'var(--wx-surface-1)', borderRadius: 999, padding: 4, border: '1px solid var(--wx-border)' }}>
             {tabs.map(t => {
               const active = metric === t.id;
               return (
@@ -6913,17 +6677,17 @@ function LeaderboardModalV2({ creators, hiredByTeam, onClose }) {
         <div style={{ flex: 1, overflowY: 'auto', padding: '14px 22px 22px' }}>
           {sorted.length === 0 ? (
             <div style={{ padding: '60px 16px', textAlign: 'center' }}>
-              <div style={{ width: 56, height: 56, borderRadius: 999, background: '#F4F2EE', color: '#9C8F7C', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--wx-bg)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#1F1F1F', letterSpacing: '-0.2px' }}>No rankings yet</div>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#9C8F7C', marginTop: 4 }}>Assign "Hired By" to creators to see leaderboard</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.2px' }}>No rankings yet</div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--wx-text-muted)', marginTop: 4 }}>Assign "Hired By" to creators to see leaderboard</div>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {/* Nobody scored on this metric · say so instead of a wall of -100% */}
               {maxVal === 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', marginBottom: 2, borderRadius: 12, background: '#FBF6EA', border: '1px solid #EADFC6', color: '#8A6D2F', fontSize: 11.5, fontWeight: 600, lineHeight: 1.45 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', marginBottom: 2, borderRadius: 12, background: 'var(--wx-bg)', border: '1px solid var(--wx-border)', color: 'var(--wx-warning)', fontSize: 11.5, fontWeight: 600, lineHeight: 1.45 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   <span>No {tabs.find(t => t.id === metric).label} recorded for {month ? monthLabelShort(month) : 'this period'} yet{metric === 'gmv' ? ' · EUKA month data may not be synced' : ''}.</span>
                 </div>
@@ -6971,22 +6735,22 @@ function LbCardV2({ s, rank, pct, display, mv, prev }) {
       display: 'flex', alignItems: 'center', gap: 12,
       padding: '12px 14px',
       borderRadius: 14,
-      background: '#fff',
+      background: 'var(--wx-surface-1)',
       border: '1px solid ' + (isTop ? '#30271C' : '#E7E2D7'),
       transition: 'border-color .15s',
     }}>
       <div style={{ width: 26, height: 26, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11.5, fontWeight: 800, color: isTop ? '#30271C' : '#9C8F7C', fontVariantNumeric: 'tabular-nums' }}>#{rank + 1}</div>
       <div style={{ width: 38, height: 38, borderRadius: 999, background: s.bg, color: s.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, lineHeight: 1, flexShrink: 0 }}>{(s.name || '?')[0].toUpperCase()}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 700, color: '#1F1F1F', letterSpacing: '-0.2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#9C8F7C', marginTop: 2 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>
           <span>{s.deals} deal{s.deals !== 1 ? 's' : ''}</span>
-          <span style={{ width: 3, height: 3, borderRadius: 999, background: '#9C8F7C', opacity: 0.6 }} />
+          <span style={{ width: 3, height: 3, borderRadius: 999, background: 'var(--wx-accent)', opacity: 0.6 }} />
           <span>{s.paidCount} paid</span>
-          <span style={{ width: 3, height: 3, borderRadius: 999, background: '#9C8F7C', opacity: 0.6 }} />
+          <span style={{ width: 3, height: 3, borderRadius: 999, background: 'var(--wx-accent)', opacity: 0.6 }} />
           <span>{s.videosDone} delivered</span>
         </div>
-        <div style={{ marginTop: 6, height: 4, borderRadius: 999, background: '#F2EEE7', overflow: 'hidden' }}>
+        <div style={{ marginTop: 6, height: 4, borderRadius: 999, background: 'var(--wx-surface-2)', overflow: 'hidden' }}>
           <div style={{ height: '100%', borderRadius: 999, background: s.color, width: pct + '%', transition: 'width .5s cubic-bezier(.4,.0,.2,1)' }} />
         </div>
       </div>
@@ -8722,7 +8486,7 @@ function BottomSheet({ editCreator, allBrands, onSave, onClose, hiredByTeam, can
                   <label className="form-label">
                     Deadline
                     {form.deadline && new Date(form.deadline) < new Date() && (
-                      <span style={{ marginLeft: 8, fontSize: 11, color: '#EF4444', fontWeight: 700 }}>⚠ Overdue</span>
+                      <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--wx-danger)', fontWeight: 700 }}>⚠ Overdue</span>
                     )}
                   </label>
                   <input className="form-input" type="date" value={form.deadline || ''}
@@ -9290,7 +9054,7 @@ function BottomSheetV2({ editCreator, allBrands, onSave, onClose, hiredByTeam, c
                 {/* Lifetime / Total GMV */}
                 <div className="tw-mt-2 tw-relative tw-overflow-hidden tw-rounded-2xl tw-bg-gradient-to-br tw-from-blue-500 tw-via-indigo-600 tw-to-violet-700 tw-p-3 tw-shadow-md">
                   <div className="tw-absolute tw-inset-0 tw-pointer-events-none tw-opacity-15" style={{ backgroundImage: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.6) 1px, transparent 1px)', backgroundSize: '14px 14px' }} />
-                  <div className="tw-absolute tw--top-6 tw--right-3 tw-w-16 tw-h-16 tw-rounded-full tw-opacity-30 tw-pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.6), transparent 70%)' }} />
+                  <div className="tw-absolute tw--top-6 tw--right-3 tw-w-16 tw-h-16 tw-rounded-full tw-opacity-30 tw-pointer-events-none" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--wx-surface-1) 60%, transparent), transparent 70%)' }} />
                   <div className="tw-relative tw-z-10 tw-flex tw-items-center tw-justify-between tw-gap-2">
                     <div className="tw-flex tw-items-center tw-gap-2">
                       <div className="tw-w-7 tw-h-7 tw-rounded-full tw-bg-white/22 tw-backdrop-blur tw-flex tw-items-center tw-justify-center tw-text-white tw-text-[14px]">🏆</div>
@@ -9440,16 +9204,16 @@ function BottomSheetV2({ editCreator, allBrands, onSave, onClose, hiredByTeam, c
 /* ─── SettingsPanel ──────────────────────────────────────── */
 const ROLES = ['superadmin', 'ipc', 'apc', 'admin', 'viewer', 'client'];
 const ROLE_META = {
-  superadmin: { label: 'Super Admin', color: '#4F46E5', bg: '#EEF2FF' },
-  ipc:        { label: 'IPC',         color: '#059669', bg: '#ECFDF5' },
-  apc:        { label: 'APC',         color: '#D97706', bg: '#FFFBEB' },
-  admin:      { label: 'Admin',       color: '#DC2626', bg: '#FEF2F2' },
-  viewer:     { label: 'Viewer',      color: '#0369A1', bg: '#E0F2FE' },
-  client:     { label: 'Client',      color: '#7C3AED', bg: '#F5F3FF' },
+  superadmin: { label: 'Super Admin', color: 'var(--wx-text-faint)', bg: '#EEF2FF' },
+  ipc:        { label: 'IPC',         color: 'var(--wx-success)', bg: '#ECFDF5' },
+  apc:        { label: 'APC',         color: 'var(--wx-warning)', bg: '#FFFBEB' },
+  admin:      { label: 'Admin',       color: 'var(--wx-danger)', bg: '#FEF2F2' },
+  viewer:     { label: 'Viewer',      color: 'var(--wx-text-faint)', bg: '#E0F2FE' },
+  client:     { label: 'Client',      color: 'var(--wx-text-muted)', bg: '#F5F3FF' },
 };
 
 /* ─── SettingsPanelV2 · Tailwind + new One UI concept ─── */
-function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, onOpenLogs, onOpenUserMgmt, onCompare, canCompare, onOpenLeaderboard, onLogout, onOpenSql }) {
+function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, onOpenLogs, onOpenUserMgmt, onCompare, canCompare, onOpenLeaderboard, onLogout, onOpenSql, onOpenGod, onOpenAccess }) {
   const [view, setView] = useState('home'); // home | team
   const [newName, setNewName] = useState('');
   const [confirmDel, setConfirmDel] = useState(null);
@@ -9483,7 +9247,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
   // No rainbow colors per-row · the section grouping is the visual structure.
   const iconChipStyle = {
     width: 38, height: 38, borderRadius: 11, flexShrink: 0,
-    background: '#F4F2EE', color: '#30271C',
+    background: 'var(--wx-bg)', color: 'var(--wx-warning)',
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
   };
 
@@ -9496,45 +9260,56 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
           sub: `${hiredByTeam.length} member${hiredByTeam.length !== 1 ? 's' : ''}`,
           icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>),
           action: () => setView('team'),
+          hide: !allowed(currentUser, 'canManageTeam'),
         },
         {
           id: 'leaderboard', label: 'Team Leaderboard', sub: 'Hired-by performance',
           icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>),
           action: () => { onClose(); onOpenLeaderboard(); },
         },
-        canCompare && {
+        canCompare && allowed(currentUser, 'canCompareBrands') && {
           id: 'compare', label: 'Compare Brands', sub: 'Side-by-side analytics',
           icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="7" height="14" rx="1.5"/><rect x="14" y="3" width="7" height="17" rx="1.5"/></svg>),
           action: () => { onClose(); onCompare(); },
         },
-      ].filter(Boolean),
+      ].filter(Boolean).filter(i => !i.hide),
     },
-    isSuperAdmin && {
+    (isSuperAdmin || allowed(currentUser, 'canManageUsers') || allowed(currentUser, 'canGrantAccess') || allowed(currentUser, 'canSeeLogs')) && {
       title: 'Administration',
       items: [
-        {
+        allowed(currentUser, 'canGrantAccess') && {
+          id: 'access', label: 'Access Control', sub: 'Decide what each person can reach',
+          icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.4"/></svg>),
+          action: () => { onClose(); onOpenAccess(); },
+        },
+        allowed(currentUser, 'canManageUsers') && {
           id: 'users', label: 'User Management', sub: 'Roles, access, permissions',
           icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>),
           action: () => { onClose(); onOpenUserMgmt(); },
         },
-        {
+        allowed(currentUser, 'canSeeLogs') && {
           id: 'logs', label: 'Activity Logs', sub: 'Workspace audit trail',
           icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>),
           action: () => { onClose(); onOpenLogs(); },
         },
-      ],
+      ].filter(Boolean),
     },
     /* System Health was removed · the diagnostics it showed were not used
        in practice and the panel only added noise to Settings. */
-    isSuperAdmin && onOpenSql && {
-      title: 'Developer',
+    (allowed(currentUser, 'canGodMode') || allowed(currentUser, 'canSqlQuest')) && {
+      title: 'Superadmin',
       items: [
-        {
-          id: 'sql', label: 'SQL Playground', sub: 'Read-only DB query tool',
-          icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>),
+        allowed(currentUser, 'canGodMode') && {
+          id: 'god', label: 'God Mode', sub: 'Appearance, navigation, brand surgery',
+          icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l2.6 6.2 6.7.5-5.1 4.4 1.6 6.5L12 16.1 6.2 19.6l1.6-6.5L2.7 8.7l6.7-.5z"/></svg>),
+          action: () => { onClose(); onOpenGod(); },
+        },
+        allowed(currentUser, 'canSqlQuest') && {
+          id: 'sql', label: 'SQL Quest', sub: 'Learn SQL by playing · 11 levels',
+          icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="12" rx="4"/><line x1="7" y1="12" x2="11" y2="12"/><line x1="9" y1="10" x2="9" y2="14"/><circle cx="16" cy="11" r="1"/><circle cx="18.5" cy="13.5" r="1"/></svg>),
           action: () => { onClose(); onOpenSql(); },
         },
-      ],
+      ].filter(Boolean),
     },
     {
       title: 'About',
@@ -9553,14 +9328,14 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
     <div
       className="tw-fixed tw-inset-0 tw-z-[1000] tw-flex tw-items-center tw-justify-center tw-p-4 sm:tw-p-6"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-      style={{ animation: 'sp-fade 0.22s ease-out', background: 'rgba(48,39,28,0.50)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+      style={{ animation: 'sp-fade 0.22s ease-out', background: 'color-mix(in srgb, var(--wx-warning-soft) 50%, transparent)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
     >
       <div
         ref={ref}
         className="tw-relative tw-w-full tw-flex tw-flex-col tw-font-sans"
         style={{
           maxWidth: 560, maxHeight: '92vh',
-          background: '#F8F7F4', borderRadius: 22,
+          background: 'var(--wx-bg)', borderRadius: 22,
           boxShadow: '0 32px 80px rgba(48,39,28,0.25), 0 8px 24px rgba(48,39,28,0.10)',
           animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)',
           overflow: 'hidden',
@@ -9568,7 +9343,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
       >
         {/* ── Header · dark coffee bar with cream text ── */}
         <div style={{
-          background: '#30271C', padding: '16px 22px 14px',
+          background: 'var(--wx-warning-soft)', padding: '16px 22px 14px',
           display: 'flex', alignItems: 'center', gap: 12,
         }}>
           {view !== 'home' && (
@@ -9578,7 +9353,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
               style={{
                 width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', transition: 'background .15s',
+                background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', transition: 'background .15s',
               }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}
@@ -9587,10 +9362,10 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
             </button>
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: '#F5E9D6' }}>
+            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>
               {view === 'home' ? 'Settings' : 'Hired By Team'}
             </div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(245,233,214,0.55)', marginTop: 2 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>
               {view === 'home' ? 'Workspace preferences & administration' : 'Manage your team members'}
             </div>
           </div>
@@ -9600,7 +9375,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
             style={{
               width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', transition: 'background .15s',
+              background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', transition: 'background .15s',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}
@@ -9615,13 +9390,13 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
             {/* Profile card — warm cream with role chip */}
             <div style={{
               padding: 18, borderRadius: 18,
-              background: 'linear-gradient(135deg, #FDFAF4 0%, #F5EFE2 100%)',
-              border: '1px solid #E7E2D7',
+              background: 'linear-gradient(135deg, var(--wx-surface-1) 0%, var(--wx-surface-2) 100%)',
+              border: '1px solid var(--wx-border)',
               display: 'flex', alignItems: 'center', gap: 14,
             }}>
               <div style={{
                 width: 52, height: 52, borderRadius: 999,
-                background: '#30271C', color: '#F5E9D6',
+                background: 'var(--wx-warning-soft)', color: 'var(--wx-text-muted)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
               }}>
@@ -9631,21 +9406,21 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
                 </svg>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.3px', color: '#1F1F1F', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentUser?.display}</div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', marginTop: 1 }}>@{currentUser?.username}</div>
+                <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.3px', color: 'var(--wx-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentUser?.display}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 1 }}>@{currentUser?.username}</div>
                 <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 10px',
-                    borderRadius: 999, background: '#30271C', color: '#F5E9D6',
+                    borderRadius: 999, background: 'var(--wx-warning-soft)', color: 'var(--wx-text-muted)',
                     fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.4, lineHeight: 1,
                   }}>{meMeta.label}</span>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: 5, height: 22, padding: '0 10px',
-                    borderRadius: 999, background: 'rgba(34,197,94,0.10)', color: '#15803D',
+                    borderRadius: 999, background: 'color-mix(in srgb, var(--wx-success-soft) 10%, transparent)', color: 'var(--wx-success)',
                     fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.4, lineHeight: 1,
-                    border: '1px solid rgba(34,197,94,0.30)',
+                    border: '1px solid color-mix(in srgb, var(--wx-success) 30%, transparent)',
                   }}>
-                    <span style={{ width: 6, height: 6, borderRadius: 999, background: '#22C55E', display: 'inline-block' }} />
+                    <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--wx-success-soft)', display: 'inline-block' }} />
                     Online
                   </span>
                 </div>
@@ -9656,13 +9431,13 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
             {sections.map(section => (
               <div key={section.title} style={{ marginTop: 18 }}>
                 <div style={{
-                  fontSize: 10.5, fontWeight: 800, color: '#9C8F7C',
+                  fontSize: 10.5, fontWeight: 800, color: 'var(--wx-text-muted)',
                   textTransform: 'uppercase', letterSpacing: 0.6,
                   padding: '0 4px 8px',
                 }}>{section.title}</div>
                 <div style={{
-                  background: '#fff', borderRadius: 16,
-                  border: '1px solid #E7E2D7',
+                  background: 'var(--wx-surface-1)', borderRadius: 16,
+                  border: '1px solid var(--wx-border)',
                   overflow: 'hidden',
                 }}>
                   {section.items.map((item, i) => (
@@ -9683,13 +9458,13 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
                     >
                       <div style={iconChipStyle}>{item.icon}</div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13.5, fontWeight: 700, color: '#1F1F1F', letterSpacing: '-0.1px' }}>{item.label}</div>
-                        {item.sub && <div style={{ fontSize: 11.5, fontWeight: 500, color: '#9C8F7C', marginTop: 2 }}>{item.sub}</div>}
+                        <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.1px' }}>{item.label}</div>
+                        {item.sub && <div style={{ fontSize: 11.5, fontWeight: 500, color: 'var(--wx-text-muted)', marginTop: 2 }}>{item.sub}</div>}
                       </div>
                       {item.value ? (
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', textAlign: 'right', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.value}</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--wx-text-muted)', textAlign: 'right', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.value}</span>
                       ) : item.action ? (
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#9C8F7C', flexShrink: 0 }}><polyline points="9 18 15 12 9 6"/></svg>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--wx-text-muted)', flexShrink: 0 }}><polyline points="9 18 15 12 9 6"/></svg>
                       ) : null}
                     </button>
                   ))}
@@ -9697,31 +9472,15 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
               </div>
             ))}
 
-            {/* Sign out */}
-            <button
-              onClick={() => { if (window.confirm('Sign out of Wurx Base?')) onLogout(); }}
-              style={{
-                width: '100%', marginTop: 22, height: 48,
-                borderRadius: 14, border: '1px solid rgba(220,38,38,0.20)',
-                background: 'rgba(220,38,38,0.06)', color: '#B91C1C',
-                fontSize: 13.5, fontWeight: 700, letterSpacing: '-0.1px',
-                cursor: 'pointer',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                transition: 'background .15s, border-color .15s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(220,38,38,0.10)'; e.currentTarget.style.borderColor = 'rgba(220,38,38,0.32)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(220,38,38,0.06)'; e.currentTarget.style.borderColor = 'rgba(220,38,38,0.20)'; }}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-              Sign out
-            </button>
+            {/* SIGN OUT REMOVED. One session, the hub's, ended from the hub's
+                own top bar. This ended a session that no longer exists. */}
           </>}
 
           {/* Team management view */}
           {view === 'team' && <div>
-            <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E7E2D7', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--wx-surface-1)', borderRadius: 16, border: '1px solid var(--wx-border)', overflow: 'hidden' }}>
               {hiredByTeam.length === 0 && (
-                <div style={{ padding: '22px 18px', textAlign: 'center', color: '#9C8F7C', fontSize: 13, fontWeight: 600 }}>No team members yet</div>
+                <div style={{ padding: '22px 18px', textAlign: 'center', color: 'var(--wx-text-muted)', fontSize: 13, fontWeight: 600 }}>No team members yet</div>
               )}
               {hiredByTeam.map((m, i) => (
                 <div key={m.id} style={{
@@ -9741,7 +9500,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
                     disabled={!isSuperAdmin}
                     style={{
                       flex: 1, minWidth: 0, background: 'transparent', border: 0, outline: 'none',
-                      fontSize: 14, fontWeight: 700, color: '#1F1F1F', letterSpacing: '-0.1px',
+                      fontSize: 14, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.1px',
                       fontFamily: 'inherit',
                     }}
                   />
@@ -9751,7 +9510,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
                       title="Remove"
                       style={{
                         width: 30, height: 30, borderRadius: 999, border: 0, cursor: 'pointer',
-                        background: 'rgba(220,38,38,0.08)', color: '#B91C1C',
+                        background: 'color-mix(in srgb, var(--wx-danger-soft) 8%, transparent)', color: 'var(--wx-danger)',
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                         flexShrink: 0, transition: 'background .15s',
                       }}
@@ -9774,8 +9533,8 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
                   placeholder="Add new team member"
                   style={{
                     flex: 1, height: 44, padding: '0 14px', borderRadius: 12,
-                    background: '#fff', border: '1px solid #E7E2D7',
-                    fontSize: 13.5, fontWeight: 600, color: '#1F1F1F',
+                    background: 'var(--wx-surface-1)', border: '1px solid var(--wx-border)',
+                    fontSize: 13.5, fontWeight: 600, color: 'var(--wx-text)',
                     outline: 'none', fontFamily: 'inherit',
                     transition: 'border-color .15s, box-shadow .15s',
                   }}
@@ -9787,7 +9546,7 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
                   disabled={!newName.trim()}
                   style={{
                     height: 44, padding: '0 18px', borderRadius: 12, border: 0,
-                    background: '#30271C', color: '#F5E9D6',
+                    background: 'var(--wx-warning-soft)', color: 'var(--wx-text-muted)',
                     fontSize: 13, fontWeight: 700,
                     cursor: newName.trim() ? 'pointer' : 'not-allowed',
                     opacity: newName.trim() ? 1 : 0.5,
@@ -9801,13 +9560,13 @@ function SettingsPanelV2({ onClose, hiredByTeam, setHiredByTeam, currentUser, on
 
         {/* Confirm delete */}
         {confirmDel && (
-          <div onClick={() => setConfirmDel(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(48,39,28,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 22 }}>
-            <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 18, padding: 22, width: '100%', maxWidth: 340, boxShadow: '0 24px 60px rgba(48,39,28,0.30)' }}>
-              <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.3px', color: '#1F1F1F' }}>Remove member?</div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#6B7280', marginTop: 6, marginBottom: 16 }}>Remove <strong style={{ color: '#1F1F1F' }}>{confirmDel.name}</strong> from the team?</div>
+          <div onClick={() => setConfirmDel(null)} style={{ position: 'absolute', inset: 0, background: 'color-mix(in srgb, var(--wx-warning-soft) 45%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 22 }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: 'var(--wx-surface-1)', borderRadius: 18, padding: 22, width: '100%', maxWidth: 340, boxShadow: '0 24px 60px rgba(48,39,28,0.30)' }}>
+              <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.3px', color: 'var(--wx-text)' }}>Remove member?</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--wx-text-muted)', marginTop: 6, marginBottom: 16 }}>Remove <strong style={{ color: 'var(--wx-text)' }}>{confirmDel.name}</strong> from the team?</div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => setConfirmDel(null)} style={{ flex: 1, height: 42, borderRadius: 11, border: '1px solid #E7E2D7', background: '#fff', color: '#1F1F1F', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
-                <button onClick={() => deleteMember(confirmDel.id)} style={{ flex: 1, height: 42, borderRadius: 11, border: 0, background: '#B91C1C', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Remove</button>
+                <button onClick={() => setConfirmDel(null)} style={{ flex: 1, height: 42, borderRadius: 11, border: '1px solid var(--wx-border)', background: 'var(--wx-surface-1)', color: 'var(--wx-text)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={() => deleteMember(confirmDel.id)} style={{ flex: 1, height: 42, borderRadius: 11, border: 0, background: 'var(--wx-danger-soft)', color: 'var(--wx-text-muted)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Remove</button>
               </div>
             </div>
           </div>
@@ -9837,7 +9596,7 @@ function SettingsPanel({ onClose, hiredByTeam, setHiredByTeam, currentUser, onOp
       if (data && data.length > 0) {
         setAppUsers(data);
       } else {
-        const seed = USERS.map(u => ({ id: String(u.id), username: u.username, display: u.display, password: u.password, role: u.role }));
+        const seed = USERS.map(u => ({ id: String(u.id), username: u.username, display: u.display, role: u.role }));
         const { data: seeded } = await supabase.from('app_users').upsert(seed, { onConflict: 'id' }).select();
         setAppUsers(seeded && seeded.length > 0 ? seeded : seed);
       }
@@ -10206,7 +9965,6 @@ function RolePicker({ value, onChange }) {
   );
 }
 
-/* ─── UserManagementModal ────────────────────────────────── */
 /* ─── UserManagementModalV2 · Tailwind + Samsung One UI ─── */
 /* ─── UserManagement small Wurx-styled building blocks (UMDialog / UMInput / etc.) ─── */
 function UMDialog({ onClose, title, sub, children }) {
@@ -10214,13 +9972,13 @@ function UMDialog({ onClose, title, sub, children }) {
     <div onClick={onClose} style={{
       position: 'absolute', inset: 0, zIndex: 30,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 22, background: 'rgba(48,39,28,0.45)',
+      padding: 22, background: 'color-mix(in srgb, var(--wx-warning-soft) 45%, transparent)',
       backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
       borderRadius: 22, animation: 'sp-fade 0.18s ease',
     }}>
       <div onClick={e => e.stopPropagation()} style={{
         width: '100%', maxWidth: 400,
-        background: '#fff', borderRadius: 18,
+        background: 'var(--wx-surface-1)', borderRadius: 18,
         boxShadow: '0 24px 60px rgba(48,39,28,0.28), 0 6px 16px rgba(48,39,28,0.10)',
         padding: '20px 22px 18px',
         animation: 'sp-pop 0.24s cubic-bezier(0.33,1,0.68,1)',
@@ -10228,8 +9986,8 @@ function UMDialog({ onClose, title, sub, children }) {
         fontFamily: 'inherit',
       }}>
         <div>
-          <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.4px', color: '#1F1F1F', lineHeight: 1.2 }}>{title}</div>
-          {sub && <div style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', marginTop: 4 }}>{sub}</div>}
+          <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text)', lineHeight: 1.2 }}>{title}</div>
+          {sub && <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 4 }}>{sub}</div>}
         </div>
         {children}
       </div>
@@ -10245,8 +10003,8 @@ function UMInput({ placeholder, value, onChange, type = 'text' }) {
       onChange={e => onChange(e.target.value)}
       style={{
         height: 42, padding: '0 14px', borderRadius: 11,
-        background: '#F8F7F4', border: '1px solid #E7E2D7',
-        fontSize: 13, fontWeight: 600, color: '#1F1F1F',
+        background: 'var(--wx-bg)', border: '1px solid var(--wx-border)',
+        fontSize: 13, fontWeight: 600, color: 'var(--wx-text)',
         outline: 'none', fontFamily: 'inherit',
         transition: 'border-color .15s, box-shadow .15s, background .15s',
       }}
@@ -10282,8 +10040,8 @@ function UMBtnGhost({ onClick, children, disabled }) {
   return (
     <button onClick={onClick} disabled={disabled} style={{
       flex: 1, height: 42, borderRadius: 11,
-      background: '#fff', border: '1px solid #E7E2D7',
-      color: '#1F1F1F', fontSize: 13, fontWeight: 700,
+      background: 'var(--wx-surface-1)', border: '1px solid var(--wx-border)',
+      color: 'var(--wx-text)', fontSize: 13, fontWeight: 700,
       cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1,
       transition: 'background .12s, border-color .12s', fontFamily: 'inherit',
     }}
@@ -10296,8 +10054,8 @@ function UMBtnPrimary({ onClick, children, disabled }) {
   return (
     <button onClick={onClick} disabled={disabled} style={{
       flex: 1, height: 42, borderRadius: 11,
-      background: '#30271C', border: 0,
-      color: '#F5E9D6', fontSize: 13, fontWeight: 700,
+      background: 'var(--wx-warning-soft)', border: 0,
+      color: 'var(--wx-text-muted)', fontSize: 13, fontWeight: 700,
       cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1,
       transition: 'transform .12s, box-shadow .15s', fontFamily: 'inherit',
       boxShadow: '0 4px 12px rgba(48,39,28,0.18)',
@@ -10308,8 +10066,8 @@ function UMBtnDanger({ onClick, children, disabled }) {
   return (
     <button onClick={onClick} disabled={disabled} style={{
       flex: 1, height: 42, borderRadius: 11,
-      background: '#B91C1C', border: 0,
-      color: '#fff', fontSize: 13, fontWeight: 700,
+      background: 'var(--wx-danger-soft)', border: 0,
+      color: 'var(--wx-text-muted)', fontSize: 13, fontWeight: 700,
       cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1,
       transition: 'background .15s', fontFamily: 'inherit',
       boxShadow: '0 4px 12px rgba(185,28,28,0.22)',
@@ -10326,7 +10084,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
   const [tab, setTab] = useState('members'); // members | requests
   const [search, setSearch] = useState('');
   const [showAdd, setShowAdd] = useState(false);
-  const [newUser, setNewUser] = useState({ username: '', display: '', password: '', role: 'admin' });
+  const [newUser, setNewUser] = useState({ username: '', display: '', hub_email: '', role: 'admin' });
   const [addError, setAddError] = useState('');
   const [editing, setEditing] = useState(null); // user object
   const [editForm, setEditForm] = useState({});
@@ -10345,7 +10103,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
       const { data } = await supabase.from('app_users').select('*');
       if (data && data.length > 0) setAppUsers(data);
       else {
-        const seed = USERS.map(u => ({ id: String(u.id), username: u.username, display: u.display, password: u.password, role: u.role }));
+        const seed = USERS.map(u => ({ id: String(u.id), username: u.username, display: u.display, role: u.role }));
         const { data: seeded } = await supabase.from('app_users').upsert(seed, { onConflict: 'id' }).select();
         setAppUsers(seeded && seeded.length > 0 ? seeded : seed);
       }
@@ -10362,23 +10120,39 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
   }, [onClose]);
 
   async function addUser() {
-    const { username, display, password, role } = newUser;
-    if (!username.trim() || !display.trim() || !password.trim()) return;
+    const { username, display, hub_email, role } = newUser;
+    if (!username.trim() || !display.trim()) return;
+    /* THE EMAIL IS THE WHOLE POINT OF THE ROW NOW. Without it this person is
+       not recognised on arrival and falls back to a role derived from their
+       hub role, which is the more generous of the two. Refusing here is
+       cheaper than explaining later why somebody could edit money. */
+    const email = hub_email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setAddError('A hub email is required — it is how this person is recognised when they sign in.');
+      return;
+    }
     setAddError(''); setSaving(true);
     const id = username.trim().toLowerCase().replace(/\s+/g, '_');
-    const payload = { id, username: username.trim(), display: display.trim(), password: password.trim(), role, brand_access: [] };
+    const payload = { id, username: username.trim(), display: display.trim(), hub_email: email, role, brand_access: [] };
     const { error } = await supabase.from('app_users').insert([payload]);
     if (error) { setAddError(error.message); setSaving(false); return; }
     const { data: fresh } = await supabase.from('app_users').select('*');
     setAppUsers(fresh || [...appUsers, payload]);
-    setNewUser({ username: '', display: '', password: '', role: 'admin' });
+    setNewUser({ username: '', display: '', hub_email: '', role: 'admin' });
     setShowAdd(false); setSaving(false);
   }
 
   async function saveEdit() {
-    if (!editForm.display?.trim() || !editForm.password?.trim()) return;
+    if (!editForm.display?.trim()) return;
+    const email = (editForm.hub_email || '').trim().toLowerCase();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEditError('That does not look like an email address.');
+      return;
+    }
     setEditError(''); setSaving(true);
-    const patch = { display: editForm.display.trim(), password: editForm.password.trim(), role: editForm.role };
+    /* Blank clears the link rather than storing an empty string, so the unique
+       index sees a null and two unlinked people do not collide. */
+    const patch = { display: editForm.display.trim(), hub_email: email || null, role: editForm.role };
     const { error } = await supabase.from('app_users').update(patch).eq('id', editing.id);
     if (!error) {
       setAppUsers(prev => prev.map(u => u.id === editing.id ? { ...u, ...patch } : u));
@@ -10395,8 +10169,10 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
 
   async function handleApprove(req, role) {
     const id = req.username.toLowerCase().replace(/\s+/g, '_');
-    const pwd = Math.random().toString(36).slice(2, 10);
-    const u = { id, username: req.username, display: req.name, password: pwd, role, brand_access: [] };
+    /* They asked for access with an email, so that is the address we link
+       them by. No password is generated: there is nothing here to log into. */
+    const email = (req.email || '').trim().toLowerCase() || null;
+    const u = { id, username: req.username, display: req.name, hub_email: email, role, brand_access: [] };
     const { error } = await supabase.from('app_users').insert([u]);
     if (error) { alert(error.message); return; }
     const { data: fresh } = await supabase.from('app_users').select('*');
@@ -10404,7 +10180,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
     await supabase.from('join_requests').update({ status: 'approved' }).eq('id', req.id);
     setJoinRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'approved' } : r));
     setPendingApproval(null);
-    setCreatedCreds({ username: req.username, password: pwd, display: req.name });
+    setCreatedCreds({ username: req.username, hub_email: email, display: req.name });
   }
 
   async function handleReject(req) {
@@ -10417,6 +10193,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
     !search ||
     u.display?.toLowerCase().includes(search.toLowerCase()) ||
     u.username?.toLowerCase().includes(search.toLowerCase()) ||
+    u.hub_email?.toLowerCase().includes(search.toLowerCase()) ||
     u.role?.toLowerCase().includes(search.toLowerCase())
   );
   const onlineCount = appUsers.filter(u => onlineIds.has(String(u.id))).length;
@@ -10429,33 +10206,33 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
         position: 'fixed', inset: 0, zIndex: 990,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 16,
-        background: 'rgba(48,39,28,0.50)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        background: 'color-mix(in srgb, var(--wx-warning-soft) 50%, transparent)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
         fontFamily: 'inherit',
       }}
     >
       <div ref={ref}
         style={{
           position: 'relative', width: '100%', maxWidth: 820, maxHeight: '92vh',
-          background: '#F8F7F4', borderRadius: 22,
+          background: 'var(--wx-bg)', borderRadius: 22,
           boxShadow: '0 32px 80px rgba(48,39,28,0.25), 0 8px 24px rgba(48,39,28,0.10)',
           animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)',
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
 
         {/* ── Header · dark coffee ── */}
-        <div style={{ background: '#30271C', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ background: 'var(--wx-warning-soft)', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: '#F5E9D6' }}>Team</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(245,233,214,0.55)', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <span><strong style={{ color: '#F5E9D6' }}>{appUsers.length}</strong> members</span>
-              <span><strong style={{ color: '#22C55E' }}>{onlineCount}</strong> online</span>
-              {pendingReqs.length > 0 && <span><strong style={{ color: '#F59E0B' }}>{pendingReqs.length}</strong> pending</span>}
+            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>Team</div>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <span><strong style={{ color: 'var(--wx-text-muted)' }}>{appUsers.length}</strong> members</span>
+              <span><strong style={{ color: 'var(--wx-success)' }}>{onlineCount}</strong> online</span>
+              {pendingReqs.length > 0 && <span><strong style={{ color: 'var(--wx-warning)' }}>{pendingReqs.length}</strong> pending</span>}
             </div>
           </div>
-          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
+          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -10464,7 +10241,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
 
         {/* ── Toolbar · pill tabs + search + add ── */}
         <div style={{ padding: '14px 22px 12px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: 4, background: '#fff', borderRadius: 999, padding: 4, border: '1px solid #E7E2D7' }}>
+          <div style={{ display: 'flex', gap: 4, background: 'var(--wx-surface-1)', borderRadius: 999, padding: 4, border: '1px solid var(--wx-border)' }}>
             {[{id:'members', l:'Members', n:appUsers.length}, {id:'requests', l:'Requests', n:pendingReqs.length}].map(t => {
               const active = tab === t.id;
               return (
@@ -10483,14 +10260,14 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
             })}
           </div>
           {tab === 'members' && (<>
-            <div style={{ flex: 1, minWidth: 180, display: 'flex', alignItems: 'center', gap: 8, height: 36, padding: '0 14px', borderRadius: 999, background: '#fff', border: '1px solid #E7E2D7' }}>
+            <div style={{ flex: 1, minWidth: 180, display: 'flex', alignItems: 'center', gap: 8, height: 36, padding: '0 14px', borderRadius: 999, background: 'var(--wx-surface-1)', border: '1px solid var(--wx-border)' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9C8F7C" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search members"
-                style={{ flex: 1, background: 'transparent', border: 0, outline: 'none', fontSize: 12.5, fontWeight: 600, color: '#1F1F1F', fontFamily: 'inherit' }} />
+                style={{ flex: 1, background: 'transparent', border: 0, outline: 'none', fontSize: 12.5, fontWeight: 600, color: 'var(--wx-text)', fontFamily: 'inherit' }} />
             </div>
             <button onClick={() => setShowAdd(true)} style={{
               height: 36, padding: '0 14px', borderRadius: 999, border: 0, cursor: 'pointer',
-              background: '#30271C', color: '#F5E9D6',
+              background: 'var(--wx-warning-soft)', color: 'var(--wx-text-muted)',
               fontSize: 12.5, fontWeight: 700, letterSpacing: '-0.1px',
               display: 'inline-flex', alignItems: 'center', gap: 6, lineHeight: 1,
               fontFamily: 'inherit', transition: 'transform .12s',
@@ -10514,7 +10291,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
                 const isSelf = String(u.id) === String(currentUser?.id);
                 const isOnline = onlineIds.has(String(u.id));
                 return (
-                  <div key={u.id} className={`tw-flex tw-items-center tw-gap-3 tw-px-5 tw-py-3.5 ${i > 0 ? 'tw-border-t tw-border-black/5' : ''} hover:tw-bg-black/[0.02] tw-transition`}>
+                  <div key={u.id} data-member={u.id} className={`um-row tw-flex tw-items-center tw-gap-3 tw-px-5 tw-py-3.5 ${i > 0 ? 'tw-border-t tw-border-black/5' : ''} hover:tw-bg-black/[0.02] tw-transition`}>
                     <div className="tw-relative tw-shrink-0">
                       <div className="tw-w-11 tw-h-11 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-text-[16px] tw-font-extrabold" style={{ background: meta.bg, color: meta.color }}>
                         {(u.display || '?')[0].toUpperCase()}
@@ -10526,12 +10303,21 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
                         <span className="tw-text-[14.5px] tw-font-bold tw-text-oneui-ink tw-tracking-[-0.1px]">{u.display}</span>
                         {isSelf && <span className="tw-text-[10px] tw-font-extrabold tw-uppercase tw-tracking-wider tw-px-2 tw-py-0.5 tw-rounded-full tw-bg-blue-50 tw-text-[#1259C3]">You</span>}
                       </div>
-                      <div className="tw-text-[12px] tw-font-medium tw-text-oneui-mute tw-mt-0.5">@{u.username}</div>
+                      {/* The email is what decides whether this person is
+                          recognised on arrival, so it is shown, not hidden in
+                          the edit dialog. Unlinked is a warning, because an
+                          unlinked person falls back to a wider role. */}
+                      <div className="tw-text-[12px] tw-font-medium tw-text-oneui-mute tw-mt-0.5 tw-truncate">
+                        @{u.username}
+                        {u.hub_email
+                          ? <> · {u.hub_email}</>
+                          : <span style={{ color: 'var(--wx-danger)', fontWeight: 700 }}> · no hub email</span>}
+                      </div>
                     </div>
                     <span className="tw-text-[10.5px] tw-font-bold tw-uppercase tw-tracking-wider tw-px-2.5 tw-h-6 tw-rounded-full tw-flex tw-items-center" style={{ background: meta.bg, color: meta.color }}>{meta.label}</span>
                     <div className="tw-flex tw-gap-1.5 tw-shrink-0">
-                      <button onClick={() => { setEditing(u); setEditForm({ display: u.display, password: u.password, role: u.role }); setEditError(''); }}
-                        className="tw-w-9 tw-h-9 tw-rounded-full tw-bg-blue-50 tw-text-[#1259C3] tw-flex tw-items-center tw-justify-center tw-border-0 tw-cursor-pointer hover:tw-bg-[#1259C3] hover:tw-text-white active:tw-scale-95 tw-transition tw-duration-200 tw-ease-oneui">
+                      <button onClick={() => { setEditing(u); setEditForm({ display: u.display, hub_email: u.hub_email || '', role: u.role }); setEditError(''); }}
+                        className="um-edit-btn tw-w-9 tw-h-9 tw-rounded-full tw-bg-blue-50 tw-text-[#1259C3] tw-flex tw-items-center tw-justify-center tw-border-0 tw-cursor-pointer hover:tw-bg-[#1259C3] hover:tw-text-white active:tw-scale-95 tw-transition tw-duration-200 tw-ease-oneui">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                       </button>
                       {!isSelf && (
@@ -10578,9 +10364,9 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
           <UMDialog onClose={() => setShowAdd(false)} title="Add member" sub="New workspace account">
             <UMInput placeholder="Username" value={newUser.username} onChange={v => setNewUser(f => ({ ...f, username: v }))} />
             <UMInput placeholder="Display name" value={newUser.display} onChange={v => setNewUser(f => ({ ...f, display: v }))} />
-            <UMInput placeholder="Password" value={newUser.password} onChange={v => setNewUser(f => ({ ...f, password: v }))} />
+            <UMInput placeholder="Hub email · how they are recognised" value={newUser.hub_email} onChange={v => setNewUser(f => ({ ...f, hub_email: v }))} />
             <UMRolePicker value={newUser.role} onChange={v => setNewUser(f => ({ ...f, role: v }))} />
-            {addError && <div style={{ fontSize: 12, fontWeight: 600, color: '#B91C1C', marginTop: 2 }}>⚠ {addError}</div>}
+            {addError && <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--wx-danger)', marginTop: 2 }}>⚠ {addError}</div>}
             <UMActions>
               <UMBtnGhost onClick={() => setShowAdd(false)}>Cancel</UMBtnGhost>
               <UMBtnPrimary onClick={addUser} disabled={saving}>{saving ? 'Creating…' : 'Create'}</UMBtnPrimary>
@@ -10592,9 +10378,9 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
         {editing && (
           <UMDialog onClose={() => setEditing(null)} title={`Edit ${editing.display}`} sub={`@${editing.username}`}>
             <UMInput placeholder="Display name" value={editForm.display || ''} onChange={v => setEditForm(f => ({ ...f, display: v }))} />
-            <UMInput placeholder="Password" value={editForm.password || ''} onChange={v => setEditForm(f => ({ ...f, password: v }))} />
+            <UMInput placeholder="Hub email · how they are recognised" value={editForm.hub_email || ''} onChange={v => setEditForm(f => ({ ...f, hub_email: v }))} />
             <UMRolePicker value={editForm.role} onChange={v => setEditForm(f => ({ ...f, role: v }))} />
-            {editError && <div style={{ fontSize: 12, fontWeight: 600, color: '#B91C1C', marginTop: 2 }}>⚠ {editError}</div>}
+            {editError && <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--wx-danger)', marginTop: 2 }}>⚠ {editError}</div>}
             <UMActions>
               <UMBtnGhost onClick={() => setEditing(null)}>Cancel</UMBtnGhost>
               <UMBtnPrimary onClick={saveEdit} disabled={saving}>{saving ? 'Saving…' : 'Save'}</UMBtnPrimary>
@@ -10605,7 +10391,7 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
         {/* ── Confirm Delete ── */}
         {confirmDel && (
           <UMDialog onClose={() => setConfirmDel(null)} title="Remove member?" sub={`${confirmDel.display} · @${confirmDel.username}`}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: '#6B7280', marginTop: 4, marginBottom: 4 }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--wx-text-muted)', marginTop: 4, marginBottom: 4 }}>
               This will permanently remove their access to the workspace.
             </div>
             <UMActions>
@@ -10628,20 +10414,24 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
 
         {/* ── Created creds ── */}
         {createdCreds && (
-          <UMDialog onClose={() => setCreatedCreds(null)} title="Account created" sub={`Share these credentials with ${createdCreds.display}`}>
-            <div style={{ background: '#F8F7F4', border: '1px solid #E7E2D7', borderRadius: 12, padding: 14, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <UMDialog onClose={() => setCreatedCreds(null)} title="Member added" sub={`${createdCreds.display} now has a role here`}>
+            <div style={{ background: 'var(--wx-bg)', border: '1px solid var(--wx-border)', borderRadius: 12, padding: 14, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                <span style={{ fontSize: 10.5, fontWeight: 800, color: '#9C8F7C', textTransform: 'uppercase', letterSpacing: 0.5 }}>Username</span>
-                <span style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace', fontSize: 13, fontWeight: 700, color: '#1F1F1F' }}>{createdCreds.username}</span>
+                <span style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--wx-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Username</span>
+                <span style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace', fontSize: 13, fontWeight: 700, color: 'var(--wx-text)' }}>{createdCreds.username}</span>
               </div>
-              <div style={{ height: 1, background: '#E7E2D7' }} />
+              <div style={{ height: 1, background: 'var(--wx-surface-3)' }} />
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                <span style={{ fontSize: 10.5, fontWeight: 800, color: '#9C8F7C', textTransform: 'uppercase', letterSpacing: 0.5 }}>Password</span>
-                <span style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace', fontSize: 13, fontWeight: 700, color: '#B91C1C' }}>{createdCreds.password}</span>
+                <span style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--wx-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Hub email</span>
+                <span style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace', fontSize: 13, fontWeight: 700, color: 'var(--wx-text)' }}>{createdCreds.hub_email || 'not set'}</span>
               </div>
             </div>
+            <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--wx-text-muted)', marginTop: 10, lineHeight: 1.5 }}>
+              There is no password to share. They sign in to the hub with that
+              email, and this is the role they arrive with.
+            </div>
             <UMActions>
-              <UMBtnGhost onClick={() => navigator.clipboard.writeText(`Username: ${createdCreds.username}\nPassword: ${createdCreds.password}`)}>Copy</UMBtnGhost>
+              <UMBtnGhost onClick={() => navigator.clipboard.writeText(createdCreds.hub_email || '')}>Copy email</UMBtnGhost>
               <UMBtnPrimary onClick={() => setCreatedCreds(null)}>Done</UMBtnPrimary>
             </UMActions>
           </UMDialog>
@@ -10651,678 +10441,17 @@ function UserManagementModalV2({ onClose, currentUser, onlineUsers = [], allBran
   );
 }
 
-function UserManagementModal({ onClose, currentUser, onlineUsers, allBrands = [] }) {
-  const [appUsers, setAppUsers]   = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm]   = useState({});
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newUser, setNewUser]     = useState({ username: '', display: '', password: '', role: 'admin', brand_access: [] });
-  const [saving, setSaving]       = useState(false);
-  const [confirmDel, setConfirmDel] = useState(null);
-  const [joinRequests, setJoinRequests] = useState([]);
-  const [showRequests, setShowRequests] = useState(false);
-  const [showPw, setShowPw]       = useState({});
-  const [pendingApproval, setPendingApproval] = useState(null); // { req, role }
-  const [createdCreds, setCreatedCreds]   = useState(null); // { username, password, display }
-  const [approveError, setApproveError]   = useState('');
-  const [approving, setApproving]         = useState(false);
-  const [addError, setAddError]           = useState('');
-  const [editError, setEditError]         = useState('');
-
-  const onlineIds = new Set((onlineUsers || []).map(u => String(u.user_id)));
-
-  // Fetch users + seed + join requests
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase.from('app_users').select('*');
-      if (!error) {
-        if (data && data.length > 0) {
-          setAppUsers(data);
-        } else {
-          const seed = USERS.map(u => ({ id: String(u.id), username: u.username, display: u.display, password: u.password, role: u.role }));
-          const { data: seeded } = await supabase.from('app_users').upsert(seed, { onConflict: 'id' }).select();
-          setAppUsers(seeded && seeded.length > 0 ? seeded : seed);
-        }
-      }
-      const { data: reqs } = await supabase.from('join_requests').select('*').order('created_at', { ascending: false });
-      setJoinRequests(reqs || []);
-      setLoading(false);
-    })();
-  }, []);
-
-  async function saveEdit() {
-    if (!editForm.display?.trim() || !editForm.password?.trim()) return;
-    setEditError('');
-    setSaving(true);
-    const patch = {
-      display: editForm.display.trim(),
-      password: editForm.password.trim(),
-      role: editForm.role,
-      brand_access: editForm.role === 'client' ? (editForm.brand_access || []) : [],
-      custom_perms: editForm.custom_perms || {},
-    };
-    const { error } = await supabase.from('app_users').update(patch).eq('id', editingId);
-    if (!error) {
-      setAppUsers(prev => prev.map(u => u.id === editingId ? { ...u, ...patch } : u));
-      setEditingId(null);
-    } else {
-      setEditError(error.message || 'Failed to save. Try again.');
-    }
-    setSaving(false);
-  }
-
-  async function addUser() {
-    const { username, display, password, role, brand_access } = newUser;
-    if (!username.trim() || !display.trim() || !password.trim()) return;
-    setAddError('');
-    setSaving(true);
-    const id = username.trim().toLowerCase().replace(/\s+/g, '_');
-    const payload = { id, username: username.trim(), display: display.trim(), password: password.trim(), role,
-      brand_access: role === 'client' ? (brand_access || []) : [] };
-    const { error } = await supabase.from('app_users').insert([payload]);
-    if (error) {
-      setAddError(error.message || 'Failed to add user. Try again.');
-      setSaving(false);
-      return;
-    }
-    const { data: freshUsers } = await supabase.from('app_users').select('*');
-    if (freshUsers && freshUsers.length > 0) {
-      setAppUsers(freshUsers);
-    } else {
-      setAppUsers(prev => [...prev, payload]);
-    }
-    setNewUser({ username: '', display: '', password: '', role: 'admin', brand_access: [] });
-    setShowAddForm(false);
-    setSaving(false);
-  }
-
-  async function deleteUser(id) {
-    await supabase.from('app_users').delete().eq('id', id);
-    setAppUsers(prev => prev.filter(u => u.id !== id));
-    setConfirmDel(null);
-  }
-
-  async function handleRequest(req, action, role = 'admin') {
-    if (action === 'approve') {
-      setApproveError('');
-      setApproving(true);
-      const id = req.username.toLowerCase().replace(/\s+/g, '_');
-      const pwd = Math.random().toString(36).slice(2, 10);
-      const brandAccess = role === 'client' ? (pendingApproval?.brandAccess || []) : [];
-      const newUser = { id, username: req.username, display: req.name, password: pwd, role, brand_access: brandAccess };
-
-      const { error } = await supabase.from('app_users').insert([newUser]);
-      if (error) {
-        setApproveError(error.message || 'Failed to create user. Try again.');
-        setApproving(false);
-        return;
-      }
-
-      // Build user list fresh from DB · most reliable
-      const { data: freshUsers } = await supabase.from('app_users').select('*');
-      if (freshUsers && freshUsers.length > 0) {
-        setAppUsers(freshUsers);
-      } else {
-        // Fallback: add locally if DB re-fetch fails
-        setAppUsers(prev => [...prev, newUser]);
-      }
-
-      await supabase.from('join_requests').update({ status: 'approved' }).eq('id', req.id);
-      setJoinRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'approved' } : r));
-
-      setApproving(false);
-      setPendingApproval(null);
-      setShowRequests(false);
-      setCreatedCreds({ username: req.username, password: pwd, display: req.name });
-    } else {
-      setPendingApproval(null);
-      await supabase.from('join_requests').update({ status: 'rejected' }).eq('id', req.id);
-      setJoinRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'rejected' } : r));
-    }
-  }
-
-  const [searchQuery, setSearchQuery] = useState('');
-  const [copiedId, setCopiedId]       = useState(null);
-
-  const pendingReqs = joinRequests.filter(r => r.status === 'pending');
-  const onlineCount = appUsers.filter(u => onlineIds.has(String(u.id))).length;
-  const filteredUsers = appUsers.filter(u =>
-    !searchQuery ||
-    u.display?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.role?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  function copyPassword(user) {
-    navigator.clipboard.writeText(user.password).then(() => {
-      setCopiedId(user.id);
-      setTimeout(() => setCopiedId(null), 1800);
-    });
-  }
-
-  function startEdit(user) {
-    setEditingId(user.id);
-    setEditForm({ display: user.display, password: user.password, role: user.role, brand_access: user.brand_access || [], custom_perms: user.custom_perms || {} });
-    setEditError('');
-  }
-
-  // Role distribution for stats
-  const roleCounts = appUsers.reduce((acc, u) => {
-    acc[u.role] = (acc[u.role] || 0) + 1; return acc;
-  }, {});
-
-  return (
-    <div className="um-overlay" onClick={onClose}>
-      <div className="um-modal" onClick={e => e.stopPropagation()}>
-
-        {/* ── Header ── */}
-        <div className="um-header">
-          <div className="um-header-left">
-            <div className="um-header-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            </div>
-            <div>
-              <div className="um-header-title">User Management</div>
-              <div className="um-header-sub">Wurx Media · Workspace</div>
-            </div>
-          </div>
-          <div className="um-header-right">
-            <div className="um-header-stat">
-              <span className="um-header-stat-num">{appUsers.length}</span>
-              <span className="um-header-stat-label">Members</span>
-            </div>
-            <div className="um-header-stat-divider"/>
-            <div className="um-header-stat">
-              <span className="um-header-stat-num" style={{ color: '#4ADE80' }}>{onlineCount}</span>
-              <span className="um-header-stat-label">Online</span>
-            </div>
-            <div className="um-header-stat-divider"/>
-            <div className="um-header-stat">
-              <span className="um-header-stat-num" style={{ color: '#FBBF24' }}>{pendingReqs.length}</span>
-              <span className="um-header-stat-label">Pending</span>
-            </div>
-            <button className="um-close-x" onClick={onClose}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-        </div>
-
-        {/* ── Toolbar ── */}
-        <div className="um-toolbar">
-          <div className="um-tabs">
-            <button className={`um-tab${!showRequests ? ' active' : ''}`} onClick={() => setShowRequests(false)}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              Members
-              <span className="um-tab-badge">{appUsers.length}</span>
-            </button>
-            <button className={`um-tab${showRequests ? ' active' : ''}`} onClick={() => setShowRequests(true)}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-              Requests
-              {pendingReqs.length > 0 && <span className="um-tab-badge um-tab-badge-red">{pendingReqs.length}</span>}
-            </button>
-          </div>
-          {!showRequests && (
-            <div className="um-toolbar-right">
-              <div className="um-search-box">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input className="um-search-input" placeholder="Search members…"
-                  value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-                {searchQuery && (
-                  <button className="um-search-clear" onClick={() => setSearchQuery('')}>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
-                )}
-              </div>
-              <button className="um-add-btn" onClick={() => { setShowAddForm(true); setEditingId(null); }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Add Member
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* ── Body ── */}
-        <div className="um-body">
-          {loading ? (
-            <div className="um-loading"><div className="logs-spinner"/><span>Loading members…</span></div>
-          ) : !showRequests ? (
-            <div className="um-user-list">
-
-              {/* Role distribution strip */}
-              <div className="um-role-strip">
-                {Object.entries(roleCounts).map(([role, count]) => {
-                  const m = ROLE_META[role] || ROLE_META.admin;
-                  return (
-                    <div key={role} className="um-role-chip" style={{ background: m.bg, color: m.color, borderColor: m.color + '33' }}>
-                      <span className="um-role-chip-count">{count}</span>
-                      <span>{m.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Column headers */}
-              <div className="um-list-header">
-                <div>Member</div>
-                <div>Role</div>
-                <div>Access</div>
-                <div/>
-              </div>
-
-              {/* User rows */}
-              {filteredUsers.length === 0 ? (
-                <div className="um-empty">No members match "{searchQuery}"</div>
-              ) : filteredUsers.map(user => {
-                const meta = ROLE_META[user.role] || ROLE_META.admin;
-                const isEditing = editingId === user.id;
-                const isSelf = String(user.id) === String(currentUser?.id);
-                const isOnline = onlineIds.has(String(user.id));
-                const brands = Array.isArray(user.brand_access) ? user.brand_access : [];
-
-                return (
-                  <div key={user.id} className={`um-user-row${isEditing ? ' um-user-row-editing' : ''}`}>
-
-                    {/* ── Main row ── */}
-                    <div className="um-user-row-main">
-
-                      {/* Member */}
-                      <div className="um-col-member">
-                        <div className="um-av-wrap">
-                          <div className="um-av" style={{ background: meta.bg, color: meta.color }}>
-                            {(user.display || '?')[0].toUpperCase()}
-                          </div>
-                          <span className={`um-online-dot${isOnline ? ' on' : ''}`}/>
-                        </div>
-                        <div className="um-member-info">
-                          <div className="um-member-name">
-                            {user.display}
-                            {isSelf && <span className="um-you-tag">you</span>}
-                          </div>
-                          <div className="um-member-handle">@{user.username}</div>
-                        </div>
-                      </div>
-
-                      {/* Role */}
-                      <div className="um-col-role">
-                        <div>
-                          <span className="um-role-pill" style={{ background: meta.bg, color: meta.color, borderColor: meta.color + '40' }}>
-                            {meta.label}
-                          </span>
-                          <div className="um-last-seen">
-                            {isOnline ? <span className="um-ls-online">● Online</span> : relativeTime(user.last_seen)}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Access */}
-                      <div className="um-col-access">
-                        {(user.role === 'client' || user.role === 'apc') && brands.length > 0 ? (
-                          <>
-                            {brands.slice(0, 2).map(b => <span key={b} className="um-brand-tag">{b}</span>)}
-                            {brands.length > 2 && <span className="um-brand-tag um-brand-more">+{brands.length - 2}</span>}
-                          </>
-                        ) : (
-                          <span className="um-col-empty">
-                            {user.role === 'superadmin' || user.role === 'viewer' ? 'All brands'
-                              : user.role === 'client' || user.role === 'apc' ? 'None assigned' : '-'}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Actions · icon-only buttons */}
-                      <div className="um-col-actions">
-                        <button
-                          className={`um-icon-btn${isEditing ? ' um-icon-btn-close' : ' um-icon-btn-edit'}`}
-                          title={isEditing ? 'Close' : 'Edit member'}
-                          onClick={() => isEditing ? setEditingId(null) : startEdit(user)}>
-                          {isEditing
-                            ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                          }
-                        </button>
-                        {!isSelf && (
-                          <button className="um-icon-btn um-icon-btn-del" title="Remove member" onClick={() => setConfirmDel(user)}>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* ── Edit accordion ── */}
-                    {isEditing && (
-                      <div className="um-edit-panel">
-                        <div className="um-ep-body">
-
-                          {/* Left · basic fields */}
-                          <div className="um-ep-left">
-                            <div className="um-ep-row2">
-                              <div className="um-edit-section">
-                                <label className="um-field-label">Display Name</label>
-                                <input className="um-input" placeholder="Display name" value={editForm.display}
-                                  onChange={e => setEditForm(f => ({ ...f, display: e.target.value }))} />
-                              </div>
-                              <div className="um-edit-section">
-                                <label className="um-field-label">Password</label>
-                                <div className="um-pw-row">
-                                  <input className="um-input um-pw-input"
-                                    type={showPw[editingId] ? 'text' : 'password'}
-                                    placeholder="Password" value={editForm.password}
-                                    onChange={e => setEditForm(f => ({ ...f, password: e.target.value }))} />
-                                  <button className="um-pw-icon-btn" title={showPw[editingId] ? 'Hide' : 'Show'}
-                                    onClick={() => setShowPw(p => ({ ...p, [editingId]: !p[editingId] }))}>
-                                    {showPw[editingId]
-                                      ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                                      : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                    }
-                                  </button>
-                                  <button className="um-pw-icon-btn" title={copiedId === editingId ? 'Copied!' : 'Copy'}
-                                    style={copiedId === editingId ? { color: '#16A34A', borderColor: '#86EFAC', background: '#F0FDF4' } : {}}
-                                    onClick={() => { navigator.clipboard.writeText(editForm.password).then(() => { setCopiedId(editingId); setTimeout(() => setCopiedId(null), 1800); }); }}>
-                                    {copiedId === editingId
-                                      ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                      : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                                    }
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="um-edit-section">
-                              <label className="um-field-label">Role</label>
-                              <RolePicker value={editForm.role} onChange={v => setEditForm(f => ({ ...f, role: v, brand_access: [] }))} />
-                            </div>
-                            {editForm.role === 'client' && (
-                              <div className="um-edit-section">
-                                <label className="um-field-label">Brand Access</label>
-                                <BrandAccessPicker
-                                  value={editForm.brand_access || []}
-                                  onChange={v => setEditForm(f => ({ ...f, brand_access: v }))}
-                                  allBrands={allBrands}
-                                />
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Right · permissions */}
-                          <div className="um-ep-right">
-                            <div className="um-ep-right-header">
-                              <span className="um-field-label">Permissions</span>
-                              {Object.keys(editForm.custom_perms || {}).length > 0 && (
-                                <button className="um-perm-reset" onClick={() => setEditForm(f => ({ ...f, custom_perms: {} }))}>
-                                  Reset defaults
-                                </button>
-                              )}
-                            </div>
-                            <div className="um-perm-grid">
-                              {[
-                                { key: 'canAdd',         label: 'Add Creators'   },
-                                { key: 'canEdit',        label: 'Edit Creators'  },
-                                { key: 'canDelete',      label: 'Delete'         },
-                                { key: 'canSeeHiredBy',  label: 'See Hired By'   },
-                                { key: 'canEditVideos',  label: 'Edit Videos'    },
-                                { key: 'canSetDeadline', label: 'Deadlines'      },
-                              ].map(({ key, label }) => {
-                                const base = getBasePerms(editForm.role);
-                                const overridden = editForm.custom_perms && key in editForm.custom_perms;
-                                const current = overridden ? editForm.custom_perms[key] : base[key];
-                                return (
-                                  <div key={key} className={`um-perm-row${overridden ? ' um-perm-overridden' : ''}`}>
-                                    <span className="um-perm-label">{label}</span>
-                                    {overridden && <span className="um-perm-badge">!</span>}
-                                    <button
-                                      className={`um-perm-toggle${current ? ' on' : ' off'}`}
-                                      onClick={() => {
-                                        const newVal = !current;
-                                        setEditForm(f => {
-                                          const cp = { ...(f.custom_perms || {}) };
-                                          if (newVal === base[key]) { delete cp[key]; } else { cp[key] = newVal; }
-                                          return { ...f, custom_perms: cp };
-                                        });
-                                      }}
-                                    >
-                                      <span className="um-perm-knob"/>
-                                    </button>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-
-                        {editError && <div className="um-edit-error">{editError}</div>}
-                        <div className="um-edit-actions">
-                          <button className="um-btn-cancel" onClick={() => { setEditingId(null); setEditError(''); }}>Cancel</button>
-                          <button className="um-btn-save" onClick={saveEdit} disabled={saving}>
-                            {saving ? 'Saving…' : 'Save Changes'}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-            </div>
-
-          ) : (
-            /* ── Join Requests ── */
-            <div className="um-req-list">
-              {pendingReqs.length === 0 ? (
-                <div className="um-req-empty">
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C7D2FE" strokeWidth="1.5" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-                  <div>No pending requests</div>
-                  <span>When someone requests to join, they'll appear here</span>
-                </div>
-              ) : pendingReqs.map(req => (
-                <div key={req.id} className="um-req-card">
-                  <div className="um-req-av-wrap">
-                    <div className="um-req-av">{(req.name || '?')[0].toUpperCase()}</div>
-                  </div>
-                  <div className="um-req-info">
-                    <div className="um-req-name">{req.name}</div>
-                    <div className="um-req-meta">
-                      <span>@{req.username}</span>
-                      <span className="um-req-dot"/>
-                      <span>{req.email}</span>
-                      <span className="um-req-dot"/>
-                      <span>{new Date(req.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                    </div>
-                  </div>
-                  <div className="um-req-btns">
-                    <button className="um-req-approve" onClick={() => setPendingApproval({ req, role: 'admin', brandAccess: [] })}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                      Approve
-                    </button>
-                    <button className="um-req-reject" onClick={() => handleRequest(req, 'reject')}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                      Reject
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* ── Approve with role dialog ── */}
-        {pendingApproval && (
-          <div className="um-dialog-overlay" onClick={() => setPendingApproval(null)}>
-            <div className="um-dialog" onClick={e => e.stopPropagation()}>
-              <div className="um-dialog-header">
-                <div className="um-dialog-icon um-dialog-icon-green">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
-                <div>
-                  <div className="um-dialog-title">Approve Request</div>
-                  <div className="um-dialog-sub">Create workspace account</div>
-                </div>
-              </div>
-              <div className="um-dialog-reqinfo">
-                <div className="um-req-av" style={{ width: 36, height: 36, fontSize: 15, borderRadius: 10 }}>
-                  {(pendingApproval.req.name || '?')[0].toUpperCase()}
-                </div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: '#0F172A', fontFamily: 'Inter' }}>{pendingApproval.req.name}</div>
-                  <div style={{ fontSize: 12, color: '#64748B', fontFamily: 'Inter' }}>@{pendingApproval.req.username} · {pendingApproval.req.email}</div>
-                </div>
-              </div>
-              <div className="um-dialog-fields">
-                <div className="um-edit-section">
-                  <label className="um-field-label">Assign Role</label>
-                  <RolePicker value={pendingApproval.role} onChange={v => setPendingApproval(p => ({ ...p, role: v, brandAccess: [] }))} />
-                </div>
-                {pendingApproval.role === 'client' && (
-                  <div className="um-edit-section">
-                    <label className="um-field-label">Brand Access</label>
-                    <BrandAccessPicker
-                      value={pendingApproval.brandAccess || []}
-                      onChange={v => setPendingApproval(p => ({ ...p, brandAccess: v }))}
-                      allBrands={allBrands}
-                    />
-                  </div>
-                )}
-              </div>
-              {approveError && <div className="um-edit-error">{approveError}</div>}
-              <div className="um-dialog-actions">
-                <button className="um-btn-cancel" onClick={() => { setPendingApproval(null); setApproveError(''); }}>Cancel</button>
-                <button className="um-btn-approve" disabled={approving}
-                  onClick={() => handleRequest(pendingApproval.req, 'approve', pendingApproval.role)}>
-                  {approving ? 'Creating…' : 'Approve & Create Account'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Confirm delete dialog ── */}
-        {confirmDel && (
-          <div className="um-dialog-overlay" onClick={() => setConfirmDel(null)}>
-            <div className="um-dialog" onClick={e => e.stopPropagation()}>
-              <div className="um-dialog-header">
-                <div className="um-dialog-icon um-dialog-icon-red">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
-                </div>
-                <div>
-                  <div className="um-dialog-title">Remove Member</div>
-                  <div className="um-dialog-sub">This cannot be undone</div>
-                </div>
-              </div>
-              <p style={{ fontSize: 14, color: '#334155', fontFamily: 'Inter', margin: '0 0 6px', lineHeight: 1.5 }}>
-                <strong>{confirmDel.display}</strong> (@{confirmDel.username}) will lose all access immediately.
-              </p>
-              <div className="um-dialog-actions">
-                <button className="um-btn-cancel" onClick={() => setConfirmDel(null)}>Cancel</button>
-                <button className="um-btn-delete" onClick={() => deleteUser(confirmDel.id)}>Yes, Remove</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Credentials created ── */}
-        {createdCreds && (
-          <div className="um-dialog-overlay" onClick={() => setCreatedCreds(null)}>
-            <div className="um-dialog" onClick={e => e.stopPropagation()}>
-              <div className="um-dialog-header">
-                <div className="um-dialog-icon" style={{ background: 'linear-gradient(135deg,#6366F1,#8B5CF6)' }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                </div>
-                <div>
-                  <div className="um-dialog-title">Account Created</div>
-                  <div className="um-dialog-sub">Share credentials with {createdCreds.display}</div>
-                </div>
-              </div>
-              <div className="um-creds-box">
-                <div className="um-creds-row">
-                  <span className="um-creds-label">Username</span>
-                  <span className="um-creds-val">{createdCreds.username}</span>
-                </div>
-                <div className="um-creds-row">
-                  <span className="um-creds-label">Password</span>
-                  <span className="um-creds-val um-creds-pw">{createdCreds.password}</span>
-                </div>
-              </div>
-              <div className="um-dialog-actions" style={{ marginTop: 16 }}>
-                <button className="um-btn-save" style={{ flex: 1 }}
-                  onClick={() => { navigator.clipboard.writeText(`Username: ${createdCreds.username}\nPassword: ${createdCreds.password}`); }}>
-                  Copy Credentials
-                </button>
-                <button className="um-btn-cancel" onClick={() => setCreatedCreds(null)}>Done</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Add member dialog ── */}
-        {showAddForm && (
-          <div className="um-dialog-overlay" onClick={() => { setShowAddForm(false); setAddError(''); setNewUser({ username: '', display: '', password: '', role: 'admin', brand_access: [] }); }}>
-            <div className="um-dialog um-add-dialog" onClick={e => e.stopPropagation()}>
-              <div className="um-dialog-header">
-                <div className="um-dialog-icon" style={{ background: 'linear-gradient(135deg, #6366F1, #4F46E5)' }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                </div>
-                <div>
-                  <div className="um-dialog-title">Add New Member</div>
-                  <div className="um-dialog-sub">Create a workspace account</div>
-                </div>
-              </div>
-              <div className="um-add-dialog-grid">
-                <div className="um-edit-section">
-                  <label className="um-field-label">Username <span style={{color:'#EF4444'}}>*</span></label>
-                  <input className="um-input" placeholder="e.g. ahmed_ipc" value={newUser.username}
-                    onChange={e => setNewUser(f => ({ ...f, username: e.target.value }))} />
-                </div>
-                <div className="um-edit-section">
-                  <label className="um-field-label">Display Name <span style={{color:'#EF4444'}}>*</span></label>
-                  <input className="um-input" placeholder="Full name" value={newUser.display}
-                    onChange={e => setNewUser(f => ({ ...f, display: e.target.value }))} />
-                </div>
-                <div className="um-edit-section" style={{ gridColumn: '1 / -1' }}>
-                  <label className="um-field-label">Password <span style={{color:'#EF4444'}}>*</span></label>
-                  <input className="um-input" type="text" placeholder="Set a password" value={newUser.password}
-                    onChange={e => setNewUser(f => ({ ...f, password: e.target.value }))} />
-                </div>
-              </div>
-              <div className="um-edit-section">
-                <label className="um-field-label">Role</label>
-                <RolePicker value={newUser.role} onChange={v => setNewUser(f => ({ ...f, role: v, brand_access: [] }))} />
-              </div>
-              {newUser.role === 'client' && (
-                <div className="um-edit-section">
-                  <label className="um-field-label">Brand Access</label>
-                  <BrandAccessPicker
-                    value={newUser.brand_access || []}
-                    onChange={v => setNewUser(f => ({ ...f, brand_access: v }))}
-                    allBrands={allBrands}
-                  />
-                </div>
-              )}
-              {addError && <div className="um-edit-error">{addError}</div>}
-              <div className="um-dialog-actions">
-                <button className="um-btn-cancel" onClick={() => { setShowAddForm(false); setAddError(''); setNewUser({ username: '', display: '', password: '', role: 'admin', brand_access: [] }); }}>Cancel</button>
-                <button className="um-btn-save" style={{ flex: 1 }} onClick={addUser} disabled={saving}>
-                  {saving ? 'Creating…' : 'Create Member'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-      </div>
-    </div>
-  );
-}
-
 /* ─── ActivityLogsPanel ──────────────────────────────────── */
 const LOG_META = {
-  LOGIN:             { icon: '🔑', color: '#4F46E5', bg: '#EEF2FF' },
-  LOGOUT:            { icon: '🚪', color: '#64748B', bg: '#F1F5F9' },
-  CREATOR_ADD:       { icon: '✨', color: '#059669', bg: '#ECFDF5' },
-  CREATOR_UPDATE:    { icon: '✏️', color: '#D97706', bg: '#FFFBEB' },
-  CREATOR_DELETE:    { icon: '🗑️', color: '#DC2626', bg: '#FEF2F2' },
-  BULK_DELETE:       { icon: '🗑️', color: '#DC2626', bg: '#FEF2F2' },
-  BULK_STATUS_EDIT:  { icon: '⚡', color: '#7C3AED', bg: '#F5F3FF' },
-  BRAND_DELETE:      { icon: '🏷️', color: '#DC2626', bg: '#FEF2F2' },
-  EXPORT_CSV:        { icon: '📥', color: '#2563EB', bg: '#EFF6FF' },
+  LOGIN:             { icon: '🔑', color: 'var(--wx-text-faint)', bg: '#EEF2FF' },
+  LOGOUT:            { icon: '🚪', color: 'var(--wx-text-muted)', bg: '#F1F5F9' },
+  CREATOR_ADD:       { icon: '✨', color: 'var(--wx-success)', bg: '#ECFDF5' },
+  CREATOR_UPDATE:    { icon: '✏️', color: 'var(--wx-warning)', bg: '#FFFBEB' },
+  CREATOR_DELETE:    { icon: '🗑️', color: 'var(--wx-danger)', bg: '#FEF2F2' },
+  BULK_DELETE:       { icon: '🗑️', color: 'var(--wx-danger)', bg: '#FEF2F2' },
+  BULK_STATUS_EDIT:  { icon: '⚡', color: 'var(--wx-text-muted)', bg: '#F5F3FF' },
+  BRAND_DELETE:      { icon: '🏷️', color: 'var(--wx-danger)', bg: '#FEF2F2' },
+  EXPORT_CSV:        { icon: '📥', color: 'var(--wx-text-muted)', bg: '#EFF6FF' },
 };
 
 /* ─── BulkStatusModal ────────────────────────────────────── */
@@ -11345,7 +10474,7 @@ function BulkStatusModal({ count, onSave, onClose }) {
             <div className="bsm-options">
               {[['', 'No change', ''], ['Paid', 'Paid ✓', '#059669'], ['Not Yet', 'Not Yet', '#DC2626']].map(([v, label, col]) => (
                 <button key={v} className={`bsm-opt${payment === v ? ' active' : ''}`}
-                  style={payment === v && col ? { background: col, color: '#fff', borderColor: col } : {}}
+                  style={payment === v && col ? { background: col, color: 'var(--wx-text-muted)', borderColor: col } : {}}
                   onClick={() => setPayment(p => p === v ? '' : v)}>
                   {label}
                 </button>
@@ -11357,7 +10486,7 @@ function BulkStatusModal({ count, onSave, onClose }) {
             <div className="bsm-options">
               {[['', 'No change', ''], ['Done', 'Done ✓', '#059669'], ['In Progress', 'In Progress', '#D97706']].map(([v, label, col]) => (
                 <button key={v} className={`bsm-opt${videos === v ? ' active' : ''}`}
-                  style={videos === v && col ? { background: col, color: '#fff', borderColor: col } : {}}
+                  style={videos === v && col ? { background: col, color: 'var(--wx-text-muted)', borderColor: col } : {}}
                   onClick={() => setVideos(p => p === v ? '' : v)}>
                   {label}
                 </button>
@@ -11420,32 +10549,32 @@ function LogEntry({ log, hideTop }) {
     }}>
       <div style={{
         width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-        background: '#F4F2EE', color: '#30271C',
+        background: 'var(--wx-bg)', color: 'var(--wx-warning)',
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: '#1F1F1F', letterSpacing: '-0.1px', lineHeight: 1.4 }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--wx-text)', letterSpacing: '-0.1px', lineHeight: 1.4 }}>
           <span style={{ fontWeight: 700 }}>{log.user_display}</span>{' '}
-          <span style={{ color: '#6B7280' }}>{logLabel(log)}</span>
+          <span style={{ color: 'var(--wx-text-muted)' }}>{logLabel(log)}</span>
         </div>
-        {sub && <div style={{ fontSize: 11.5, fontWeight: 600, color: '#9C8F7C', marginTop: 3 }}>{sub}</div>}
+        {sub && <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 3 }}>{sub}</div>}
         {log.action === 'CREATOR_UPDATE' && log.details?.changes?.length > 0 && (
-          <div style={{ marginTop: 6, padding: 8, borderRadius: 8, background: '#F8F7F4', border: '1px solid #E7E2D7' }}>
+          <div style={{ marginTop: 6, padding: 8, borderRadius: 8, background: 'var(--wx-bg)', border: '1px solid var(--wx-border)' }}>
             {log.details.changes.map((ch, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, marginTop: i > 0 ? 4 : 0 }}>
-                <span style={{ color: '#9C8F7C', textTransform: 'uppercase', fontSize: 10, letterSpacing: 0.3, minWidth: 60 }}>{ch.field}</span>
-                <span style={{ color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 100 }}>{ch.from || '-'}</span>
+                <span style={{ color: 'var(--wx-text-muted)', textTransform: 'uppercase', fontSize: 10, letterSpacing: 0.3, minWidth: 60 }}>{ch.field}</span>
+                <span style={{ color: 'var(--wx-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 100 }}>{ch.from || '-'}</span>
                 <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#9C8F7C" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                <span style={{ color: '#1F1F1F', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{ch.to || '-'}</span>
+                <span style={{ color: 'var(--wx-text)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{ch.to || '-'}</span>
               </div>
             ))}
           </div>
         )}
-        <div style={{ fontSize: 10.5, fontWeight: 600, color: '#9C8F7C', marginTop: 5, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 5, display: 'flex', alignItems: 'center', gap: 6 }}>
           {timeAgo(log.created_at)}
-          <span style={{ width: 2, height: 2, borderRadius: 999, background: '#9C8F7C', opacity: 0.5 }} />
+          <span style={{ width: 2, height: 2, borderRadius: 999, background: 'var(--wx-accent)', opacity: 0.5 }} />
           <span>{new Date(log.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
         </div>
       </div>
@@ -11824,6 +10953,8 @@ function ActivityLogsPanel({ onClose }) {
       .from('activity_logs')
       .select('*')
       .neq('action', 'DISCOVERY_MARK')
+      .neq('action', 'BRAND_CONTRACT')
+      .neq('action', 'CREATIVE_ANGLE')
       .order('created_at', { ascending: false })
       .limit(200);
     if (err) { setError(err.message); setLoading(false); return; }
@@ -11836,7 +10967,7 @@ function ActivityLogsPanel({ onClose }) {
     fetchLogs();
     const channel = supabase
       .channel('activity_logs_changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activity_logs' },
+      .on('postgres_changes', { event: 'INSERT', schema: 'wurxbase', table: 'activity_logs' },
         payload => setLogs(prev => [payload.new, ...prev].slice(0, 200))
       )
       .subscribe();
@@ -11885,7 +11016,7 @@ function ActivityLogsPanel({ onClose }) {
         position: 'fixed', inset: 0, zIndex: 1900,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 16,
-        background: 'rgba(48,39,28,0.50)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        background: 'color-mix(in srgb, var(--wx-warning-soft) 50%, transparent)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
         animation: 'sp-fade 0.22s ease',
         fontFamily: 'inherit',
       }}
@@ -11894,24 +11025,24 @@ function ActivityLogsPanel({ onClose }) {
         onClick={e => e.stopPropagation()}
         style={{
           position: 'relative', width: '100%', maxWidth: 560, maxHeight: '92vh',
-          background: '#F8F7F4', borderRadius: 22,
+          background: 'var(--wx-bg)', borderRadius: 22,
           boxShadow: '0 32px 80px rgba(48,39,28,0.25), 0 8px 24px rgba(48,39,28,0.10)',
           animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)',
           overflow: 'hidden', display: 'flex', flexDirection: 'column',
         }}
       >
         {/* ── Header · dark coffee ── */}
-        <div style={{ background: '#30271C', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ background: 'var(--wx-warning-soft)', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: '#F5E9D6' }}>Activity Logs</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(245,233,214,0.55)', marginTop: 2 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>Activity Logs</div>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>
               {loading ? 'Loading…' : error ? 'Error loading' : `${filtered.length} entr${filtered.length === 1 ? 'y' : 'ies'}`}
             </div>
           </div>
-          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
+          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -11920,7 +11051,7 @@ function ActivityLogsPanel({ onClose }) {
 
         {/* ── Filter pills ── */}
         <div style={{ padding: '14px 22px 0' }}>
-          <div style={{ display: 'flex', gap: 4, background: '#fff', borderRadius: 999, padding: 4, border: '1px solid #E7E2D7' }}>
+          <div style={{ display: 'flex', gap: 4, background: 'var(--wx-surface-1)', borderRadius: 999, padding: 4, border: '1px solid var(--wx-border)' }}>
             {tabs.map(t => {
               const active = filter === t.id;
               return (
@@ -11941,31 +11072,31 @@ function ActivityLogsPanel({ onClose }) {
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 22px 22px' }}>
           {loading ? (
             <div style={{ padding: '60px 16px', textAlign: 'center' }}>
-              <span style={{ display: 'inline-block', width: 24, height: 24, borderRadius: 999, border: '2.5px solid #E7E2D7', borderTopColor: '#30271C', animation: 'spin 0.8s linear infinite' }} />
+              <span style={{ display: 'inline-block', width: 24, height: 24, borderRadius: 999, border: '2.5px solid var(--wx-border)', borderTopColor: '#30271C', animation: 'spin 0.8s linear infinite' }} />
             </div>
           ) : error ? (
             <div style={{ padding: '40px 16px', textAlign: 'center' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 999, background: 'rgba(220,38,38,0.10)', color: '#B91C1C', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 999, background: 'color-mix(in srgb, var(--wx-danger-soft) 10%, transparent)', color: 'var(--wx-danger)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#1F1F1F', letterSpacing: '-0.2px' }}>Could not load logs</div>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#9C8F7C', marginTop: 4 }}>Make sure the <strong style={{ color: '#1F1F1F' }}>activity_logs</strong> table exists in Supabase.</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.2px' }}>Could not load logs</div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--wx-text-muted)', marginTop: 4 }}>Make sure the <strong style={{ color: 'var(--wx-text)' }}>activity_logs</strong> table exists in Supabase.</div>
             </div>
           ) : filtered.length === 0 ? (
             <div style={{ padding: '60px 16px', textAlign: 'center' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 999, background: '#F4F2EE', color: '#9C8F7C', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 999, background: 'var(--wx-bg)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#1F1F1F', letterSpacing: '-0.2px' }}>No activity yet</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.2px' }}>No activity yet</div>
             </div>
           ) : (
             grouped.map(group => (
               <React.Fragment key={group.label}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0 10px', marginTop: 4 }}>
-                  <span style={{ fontSize: 10.5, fontWeight: 800, color: '#9C8F7C', textTransform: 'uppercase', letterSpacing: 0.6 }}>{group.label}</span>
-                  <span style={{ flex: 1, height: 1, background: '#E7E2D7' }} />
+                  <span style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--wx-text-muted)', textTransform: 'uppercase', letterSpacing: 0.6 }}>{group.label}</span>
+                  <span style={{ flex: 1, height: 1, background: 'var(--wx-surface-3)' }} />
                 </div>
-                <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E7E2D7', overflow: 'hidden', marginBottom: 8 }}>
+                <div style={{ background: 'var(--wx-surface-1)', borderRadius: 16, border: '1px solid var(--wx-border)', overflow: 'hidden', marginBottom: 8 }}>
                   {group.items.map((log, i) => <LogEntry key={log.id} log={log} hideTop={i === 0} />)}
                 </div>
               </React.Fragment>
@@ -12007,9 +11138,9 @@ function CountUp({ value, prefix = '', suffix = '', duration = 700 }) {
 /* ─── KanbanBoard ───────────────────────────────────────── */
 function KanbanBoard({ creators, onUpdate, onCardClick }) {
   const COLS = [
-    { id: 'in_progress', label: 'In Progress', color: '#D97706', bg: '#FFFBEB' },
-    { id: 'delivered', label: 'Delivered', color: '#0066FF', bg: '#EFF6FF' },
-    { id: 'paid', label: 'Paid', color: '#059669', bg: '#F0FDF4' },
+    { id: 'in_progress', label: 'In Progress', color: 'var(--wx-warning)', bg: '#FFFBEB' },
+    { id: 'delivered', label: 'Delivered', color: 'var(--wx-text-muted)', bg: '#EFF6FF' },
+    { id: 'paid', label: 'Paid', color: 'var(--wx-success)', bg: '#F0FDF4' },
   ];
 
   function getCol(c) {
@@ -12241,7 +11372,7 @@ function BrandCompareModalV2({ creators, allBrands, onClose }) {
     /* Ad spend has no winner · spending more is neither good nor bad on its own,
        ROAS is the row that judges it. */
     { label: 'Ad spend',   a: 'adSpent',     fmt: money, neutral: true },
-    { label: 'ROAS',       a: 'roas',        fmt: v => v > 0 ? v.toFixed(2) + '×' : '—' },
+    { label: 'ROAS',       a: 'roas',        fmt: v => v > 0 ? v.toFixed(2) + '×' : '-' },
     { label: 'Creators',   a: 'count',       fmt: v => String(v) },
     { label: 'Budget',     a: 'totalAmount', fmt: money },
     { label: 'Paid out',   a: 'totalPaid',   fmt: money },
@@ -12256,7 +11387,7 @@ function BrandCompareModalV2({ creators, allBrands, onClose }) {
     const aWins = neutral ? av > 0 : av > bv;
     const bWins = neutral ? bv > 0 : bv > av;
     const bar = (v, win, color) => (
-      <div style={{ height: 8, borderRadius: 999, background: '#F2EEE7', overflow: 'hidden' }}>
+      <div style={{ height: 8, borderRadius: 999, background: 'var(--wx-surface-2)', overflow: 'hidden' }}>
         <div style={{ height: '100%', borderRadius: 999, width: (v / max) * 100 + '%', background: color, opacity: win ? 1 : 0.34, transition: 'width .45s cubic-bezier(.4,0,.2,1)' }} />
       </div>
     );
@@ -12264,7 +11395,7 @@ function BrandCompareModalV2({ creators, allBrands, onClose }) {
       <div style={{ display: 'grid', gridTemplateColumns: '86px 1fr 104px 1fr 86px', alignItems: 'center', gap: 10, padding: '9px 0' }}>
         <div style={{ textAlign: 'right', fontSize: 13.5, fontWeight: 800, letterSpacing: '-0.2px', fontVariantNumeric: 'tabular-nums', color: aWins ? '#1F1F1F' : '#9C8F7C' }}>{fmt(av)}</div>
         <div style={{ direction: 'rtl' }}>{bar(av, aWins, colorA)}</div>
-        <div style={{ textAlign: 'center', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, color: '#9C8F7C' }}>{label}</div>
+        <div style={{ textAlign: 'center', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--wx-text-muted)' }}>{label}</div>
         <div>{bar(bv, bWins, colorB)}</div>
         <div style={{ textAlign: 'left', fontSize: 13.5, fontWeight: 800, letterSpacing: '-0.2px', fontVariantNumeric: 'tabular-nums', color: bWins ? '#1F1F1F' : '#9C8F7C' }}>{fmt(bv)}</div>
       </div>
@@ -12283,26 +11414,26 @@ function BrandCompareModalV2({ creators, allBrands, onClose }) {
   return (
     <div
       className="tw-fixed tw-inset-0 tw-z-[950] tw-flex tw-items-center tw-justify-center tw-p-4 sm:tw-p-6"
-      style={{ animation: 'sp-fade 0.22s ease', background: 'rgba(48,39,28,0.50)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+      style={{ animation: 'sp-fade 0.22s ease', background: 'color-mix(in srgb, var(--wx-warning-soft) 50%, transparent)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={{
         position: 'relative', width: '100%', maxWidth: 680, maxHeight: '92vh',
-        background: '#F8F7F4', borderRadius: 22,
+        background: 'var(--wx-bg)', borderRadius: 22,
         boxShadow: '0 32px 80px rgba(48,39,28,0.25), 0 8px 24px rgba(48,39,28,0.10)',
         animation: 'sp-pop 0.32s cubic-bezier(0.33,1,0.68,1)',
         overflow: 'hidden', display: 'flex', flexDirection: 'column', fontFamily: 'inherit',
       }}>
         {/* ── Header · dark coffee ── */}
-        <div style={{ background: '#30271C', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ background: 'var(--wx-warning-soft)', padding: '16px 22px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3l-7.5 7.5"/><path d="M3 21l7.5-7.5"/></svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: '#F5E9D6' }}>Compare Brands</div>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(245,233,214,0.55)', marginTop: 2 }}>GMV, spend and delivery side by side · {periodLabel()}</div>
+            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text-muted)' }}>Compare Brands</div>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>GMV, spend and delivery side by side · {periodLabel()}</div>
           </div>
-          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
+          <button onClick={onClose} title="Close" style={{ width: 34, height: 34, borderRadius: 999, border: 0, cursor: 'pointer', background: 'color-mix(in srgb, var(--wx-surface-2) 10%, transparent)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.18)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -12310,7 +11441,7 @@ function BrandCompareModalV2({ creators, allBrands, onClose }) {
         </div>
 
         {/* ── Period strip ── */}
-        <div style={{ background: '#fff', borderBottom: '1px solid #E7E2D7', padding: '10px 22px' }}>
+        <div style={{ background: 'var(--wx-surface-1)', borderBottom: '1px solid var(--wx-border)', padding: '10px 22px' }}>
           <div style={{ display: 'flex', gap: 6 }}>
             {[['month','This month'],['last','Last month'],['all','All time'],['custom','Pick month']].map(([k, lbl]) => {
               const active = period === k;
@@ -12330,7 +11461,7 @@ function BrandCompareModalV2({ creators, allBrands, onClose }) {
             <select
               value={`${customYear}-${customMonth}`}
               onChange={e => { const [y, m] = e.target.value.split('-'); setCustomYear(+y); setCustomMonth(+m); }}
-              style={{ marginTop: 8, width: '100%', height: 34, padding: '0 10px', borderRadius: 10, border: '1px solid #E7E2D7', background: '#FBFAF7', fontSize: 12.5, fontWeight: 700, color: '#1F1F1F', cursor: 'pointer', outline: 'none', fontFamily: 'inherit' }}
+              style={{ marginTop: 8, width: '100%', height: 34, padding: '0 10px', borderRadius: 10, border: '1px solid var(--wx-border)', background: 'var(--wx-surface-1)', fontSize: 12.5, fontWeight: 700, color: 'var(--wx-text)', cursor: 'pointer', outline: 'none', fontFamily: 'inherit' }}
             >
               {monthOptions.map(o => (<option key={`${o.y}-${o.m}`} value={`${o.y}-${o.m}`}>{o.label}</option>))}
             </select>
@@ -12340,62 +11471,62 @@ function BrandCompareModalV2({ creators, allBrands, onClose }) {
         {/* ── Body · scrollable ── */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '14px 22px 22px' }}>
           {/* Brand pickers */}
-          <div style={{ background: '#fff', border: '1px solid #E7E2D7', borderRadius: 16, padding: 14, display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 12, alignItems: 'end' }}>
+          <div style={{ background: 'var(--wx-surface-1)', border: '1px solid var(--wx-border)', borderRadius: 16, padding: 14, display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 12, alignItems: 'end' }}>
             <BrandPickerV2 value={brandA} onChange={setBrandA} brands={allBrands} label="Brand A" color={colorA} />
-            <div style={{ width: 38, height: 38, borderRadius: 999, background: '#30271C', color: '#F5E9D6', fontSize: 10.5, fontWeight: 800, letterSpacing: 0.6, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 3 }}>VS</div>
+            <div style={{ width: 38, height: 38, borderRadius: 999, background: 'var(--wx-warning-soft)', color: 'var(--wx-text-muted)', fontSize: 10.5, fontWeight: 800, letterSpacing: 0.6, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 3 }}>VS</div>
             <BrandPickerV2 value={brandB} onChange={setBrandB} brands={allBrands} label="Brand B" color={colorB} />
           </div>
 
           {!ready ? (
             <div style={{ padding: '56px 16px', textAlign: 'center' }}>
-              <div style={{ width: 56, height: 56, borderRadius: 999, background: '#F4F2EE', color: '#9C8F7C', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--wx-bg)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3l-7.5 7.5"/><path d="M3 21l7.5-7.5"/></svg>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#1F1F1F', letterSpacing: '-0.2px' }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--wx-text)', letterSpacing: '-0.2px' }}>
                 {brandA === brandB && brandA ? 'Pick two different brands' : 'Pick two brands'}
               </div>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#9C8F7C', marginTop: 4 }}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--wx-text-muted)', marginTop: 4 }}>
                 {!brandA && !brandB ? 'Choose Brand A and Brand B above' : brandA === brandB ? 'A and B are the same right now' : 'One more to go'}
               </div>
             </div>
           ) : (<>
             {/* Headline · GMV lead */}
             {gmvLead && (
-              <div style={{ marginTop: 12, padding: '14px 16px', borderRadius: 16, background: 'linear-gradient(135deg, #FDFAF4 0%, #F5EFE2 100%)', border: '1px solid #E7E2D7', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ marginTop: 12, padding: '14px 16px', borderRadius: 16, background: 'linear-gradient(135deg, var(--wx-surface-1) 0%, var(--wx-surface-2) 100%)', border: '1px solid var(--wx-border)', display: 'flex', alignItems: 'center', gap: 12 }}>
                 <span style={{ width: 40, height: 40, borderRadius: 999, background: gmvLead.c + '22', color: gmvLead.c, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 800, flexShrink: 0 }}>{(gmvLead.n || '?')[0].toUpperCase()}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 10.5, fontWeight: 800, color: '#9C8F7C', textTransform: 'uppercase', letterSpacing: 0.6 }}>Ahead on GMV</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.4px', color: '#1F1F1F', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{gmvLead.n}</div>
-                  <div style={{ fontSize: 11.5, fontWeight: 600, color: '#6B7280', marginTop: 2 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--wx-text-muted)', textTransform: 'uppercase', letterSpacing: 0.6 }}>Ahead on GMV</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.4px', color: 'var(--wx-text)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{gmvLead.n}</div>
+                  <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)', marginTop: 2 }}>
                     {gmvLead.gap > 0 ? `+${money(gmvLead.gap)} more` : 'Level on GMV'}{gmvLead.x > 1 ? ` · ${gmvLead.x.toFixed(1)}× the other` : ''}
                   </div>
                 </div>
-                <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: '-0.5px', color: '#30271C', fontVariantNumeric: 'tabular-nums' }}>{money(gmvLead.v)}</div>
+                <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: '-0.5px', color: 'var(--wx-warning)', fontVariantNumeric: 'tabular-nums' }}>{money(gmvLead.v)}</div>
               </div>
             )}
 
             {/* Brand name rail */}
             <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 10, padding: '0 2px' }}>
               <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 800, letterSpacing: '-0.3px', color: colorA, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{brandA}</div>
-              <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.6, color: '#9C8F7C', padding: '3px 10px', borderRadius: 999, background: '#EFEBE3', whiteSpace: 'nowrap' }}>{sA.count + sB.count} creators</div>
+              <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.6, color: 'var(--wx-text-muted)', padding: '3px 10px', borderRadius: 999, background: 'var(--wx-surface-2)', whiteSpace: 'nowrap' }}>{sA.count + sB.count} creators</div>
               <div style={{ textAlign: 'left', fontSize: 14, fontWeight: 800, letterSpacing: '-0.3px', color: colorB, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{brandB}</div>
             </div>
 
             {sA.count === 0 && sB.count === 0 && sA.gmv === 0 && sB.gmv === 0 ? (
-              <div style={{ marginTop: 14, padding: '40px 16px', textAlign: 'center', fontSize: 13, fontWeight: 600, color: '#9C8F7C', background: '#fff', border: '1px solid #E7E2D7', borderRadius: 16 }}>
+              <div style={{ marginTop: 14, padding: '40px 16px', textAlign: 'center', fontSize: 13, fontWeight: 600, color: 'var(--wx-text-muted)', background: 'var(--wx-surface-1)', border: '1px solid var(--wx-border)', borderRadius: 16 }}>
                 Nothing recorded for either brand in {periodLabel()}
               </div>
             ) : (
-              <div style={{ marginTop: 10, background: '#fff', border: '1px solid #E7E2D7', borderRadius: 16, padding: '6px 16px' }}>
+              <div style={{ marginTop: 10, background: 'var(--wx-surface-1)', border: '1px solid var(--wx-border)', borderRadius: 16, padding: '6px 16px' }}>
                 {ROWS.map((r, i) => (
-                  <div key={r.label} style={i > 0 ? { borderTop: '1px solid #F2EEE7' } : undefined}>
+                  <div key={r.label} style={i > 0 ? { borderTop: '1px solid var(--wx-border)' } : undefined}>
                     <CmpRow label={r.label} av={sA[r.a] || 0} bv={sB[r.a] || 0} fmt={r.fmt} neutral={r.neutral} />
                   </div>
                 ))}
               </div>
             )}
 
-            <div style={{ marginTop: 10, fontSize: 10.5, fontWeight: 600, color: '#9C8F7C', textAlign: 'center', lineHeight: 1.5 }}>
+            <div style={{ marginTop: 10, fontSize: 10.5, fontWeight: 600, color: 'var(--wx-text-muted)', textAlign: 'center', lineHeight: 1.5 }}>
               GMV and ad spend come from EUKA month data · deal figures are scoped by hiring date
             </div>
           </>)}
@@ -12418,11 +11549,11 @@ function BrandPickerV2({ value, onChange, brands, label, color }) {
 
   return (
     <div style={{ position: 'relative' }} ref={wrapRef}>
-      <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.6, color: '#9C8F7C', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.6, color: 'var(--wx-text-muted)', marginBottom: 6 }}>{label}</div>
       {value ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 38, padding: '0 6px 0 10px', borderRadius: 999, background: `${color}1F` }}>
           <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: 800, letterSpacing: '-0.2px', color }}>{value}</span>
-          <button onClick={() => { onChange(''); setSearch(''); }} title="Clear" style={{ width: 24, height: 24, borderRadius: 999, background: '#fff', color: '#6B7280', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: 0, cursor: 'pointer', flexShrink: 0, transition: 'background .15s, color .15s' }}
+          <button onClick={() => { onChange(''); setSearch(''); }} title="Clear" style={{ width: 24, height: 24, borderRadius: 999, background: 'var(--wx-surface-1)', color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: 0, cursor: 'pointer', flexShrink: 0, transition: 'background .15s, color .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = '#B4362F'; e.currentTarget.style.color = '#fff'; }}
             onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#6B7280'; }}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -12434,15 +11565,15 @@ function BrandPickerV2({ value, onChange, brands, label, color }) {
           onFocus={() => setOpen(true)}
           onChange={e => { setSearch(e.target.value); setOpen(true); }}
           placeholder="Search brand…"
-          style={{ width: '100%', height: 38, padding: '0 14px', borderRadius: 999, background: '#FBFAF7', border: '1px solid #E7E2D7', outline: 'none', fontSize: 13, fontWeight: 600, color: '#1F1F1F', fontFamily: 'inherit', transition: 'border-color .15s, box-shadow .15s' }}
+          style={{ width: '100%', height: 38, padding: '0 14px', borderRadius: 999, background: 'var(--wx-surface-1)', border: '1px solid var(--wx-border)', outline: 'none', fontSize: 13, fontWeight: 600, color: 'var(--wx-text)', fontFamily: 'inherit', transition: 'border-color .15s, box-shadow .15s' }}
           onFocusCapture={e => { e.currentTarget.style.borderColor = '#30271C'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(48,39,28,0.08)'; }}
           onBlur={e => { e.currentTarget.style.borderColor = '#E7E2D7'; e.currentTarget.style.boxShadow = 'none'; }}
         />
       )}
       {open && !value && filtered.length > 0 && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 6, background: '#fff', borderRadius: 14, border: '1px solid #E7E2D7', boxShadow: '0 16px 40px rgba(48,39,28,0.16)', maxHeight: 240, overflowY: 'auto', zIndex: 30, padding: 5 }}>
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 6, background: 'var(--wx-surface-1)', borderRadius: 14, border: '1px solid var(--wx-border)', boxShadow: '0 16px 40px rgba(48,39,28,0.16)', maxHeight: 240, overflowY: 'auto', zIndex: 30, padding: 5 }}>
           {filtered.slice(0, 12).map(b => (
-            <button key={b} onMouseDown={() => { onChange(b); setSearch(''); setOpen(false); }} style={{ width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 10, fontSize: 12.5, fontWeight: 600, color: '#1F1F1F', border: 0, background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', transition: 'background .12s' }}
+            <button key={b} onMouseDown={() => { onChange(b); setSearch(''); setOpen(false); }} style={{ width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 10, fontSize: 12.5, fontWeight: 600, color: 'var(--wx-text)', border: 0, background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', transition: 'background .12s' }}
               onMouseEnter={e => { e.currentTarget.style.background = '#F4F2EE'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
               {b}
@@ -12663,7 +11794,7 @@ function applyPrefsToDOM(p) {
   root.setAttribute('data-motion', p.motion);
 }
 
-export default function App() {
+export default function App({ tab, onTabChange, embedded = false } = {}) {
   // UI preferences (live)
   const [uiPrefs, setUiPrefs] = useState(loadPrefs);
   useEffect(() => { applyPrefsToDOM(uiPrefs); savePrefs(uiPrefs); }, [uiPrefs]);
@@ -12756,6 +11887,16 @@ export default function App() {
   const [viewMode, setViewMode] = useState('table');
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showSqlPlayground, setShowSqlPlayground] = useState(false);
+  const [showGod, setShowGod] = useState(false);
+  const [showAccess, setShowAccess] = useState(false);
+  /* appearance is CSS variables, so it has to be on <html> before the
+     first paint of every session, not only when the panel is opened */
+  useEffect(() => { applyGod(loadGod()); }, []);
+  /* brand contracts live in activity_logs and are shared by the team,
+     so they are pulled once at boot into the local mirror */
+  useEffect(() => { fetchBrandContracts().catch(() => {}); }, []);
+  /* creative angles are team-shared too, so they load once at boot */
+  useEffect(() => { fetchAngles().catch(() => {}); }, []);
   const [colOrder, setColOrder] = useState(() => {
     try { const s = JSON.parse(localStorage.getItem('ch_col_order') || 'null'); return Array.isArray(s) && s.every(k => DEFAULT_COL_ORDER.includes(k)) ? s : DEFAULT_COL_ORDER; } catch { return DEFAULT_COL_ORDER; }
   });
@@ -12790,11 +11931,18 @@ export default function App() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const tableScrollRef = useRef(null);
   const searchInputRef = useRef(null);
-  const [showJoinRequest, setShowJoinRequest] = useState(false);
   const [showUserMgmt, setShowUserMgmt] = useState(false);
   const perms = getPerms(currentUser?.role || null, currentUser?.custom_perms || null);
 
   async function logActivity(actor, action, target, details = {}) {
+    /* WURX-ADDED · do not fire a write we know the database will refuse.
+       The read-only Paid Collabs roles (Affiliate Team Lead, Operations Lead,
+       Ads Manager) cannot insert into wurxbase — that is the point of them —
+       so this ran on every page load, got a 403, and printed an error nobody
+       could act on. A console full of expected failures is how a real one goes
+       unnoticed. `canEdit` is the capability every other write here answers to,
+       so presence follows the same line rather than inventing its own. */
+    if (!can(actor, 'canEdit')) return;
     const display = actor.display || actor.username || actor.id || 'Unknown';
     const { error } = await supabase.from('activity_logs').insert({
       user_id: String(actor.id), user_display: display,
@@ -12803,20 +11951,6 @@ export default function App() {
     if (error) console.error('logActivity failed:', error);
   }
 
-  function handleLogin(user) {
-    // Unique session ID for this login (for device tracking + remote logout)
-    const sessionId = (crypto.randomUUID && crypto.randomUUID()) || (Date.now() + '-' + Math.random().toString(36).slice(2, 10));
-    sessionStorage.setItem('ch_session_id', sessionId);
-    sessionStorage.setItem('ch_user', JSON.stringify(user));
-    setCurrentUser(user);
-    // Daily rotating greeting (English, no repeat until all cycled)
-    setGreeting(getDailyGreeting(user.id));
-    setTimeout(() => setGreeting(null), 5500);
-    fetch('https://api.ipify.org?format=json')
-      .then(r => r.json())
-      .then(d => logActivity(user, 'LOGIN', null, { ip: d.ip, ua: navigator.userAgent.slice(0, 160), sessionId }))
-      .catch(() => logActivity(user, 'LOGIN', null, { ip: 'unknown', ua: navigator.userAgent.slice(0, 160), sessionId }));
-  }
   function handleLogout() {
     logActivity(currentUser, 'LOGOUT', null, {});
     sessionStorage.removeItem('ch_user');
@@ -12864,7 +11998,7 @@ export default function App() {
       if (!saved || !Array.isArray(saved)) return DEFAULT_TEAM;
       // Handle old string-array format ['Aris','Emily'...]
       if (saved.length && typeof saved[0] === 'string') {
-        return saved.map(n => DEFAULT_TEAM.find(d => d.name === n) || { id: n.toLowerCase(), name: n, color: '#374151', bg: '#F3F4F6' });
+        return saved.map(n => DEFAULT_TEAM.find(d => d.name === n) || { id: n.toLowerCase(), name: n, color: 'var(--wx-text-faint)', bg: '#F3F4F6' });
       }
       // Ensure every object has required fields
       return saved.filter(m => m && m.name);
@@ -13046,13 +12180,19 @@ export default function App() {
   const fetchCreators = useCallback(async () => {
     setLoading(true);
     // Main list: only approved creators. Pending ones live in the review queue.
-    const { data, error } = await supabase
+    /* Paged · this table is past 1000 rows and PostgREST hard-caps a single
+       response there, so an unpaged select silently dropped the oldest deals
+       and made the KPI counts drift as new ones were added. `id` is the
+       tiebreaker that keeps page boundaries stable when hiring_date repeats
+       or is null. */
+    const { data, error } = await selectAll(() => supabase
       .from('creators')
       .select('*')
       .not('name', 'is', null)
       .neq('name', '')
       .or('status.eq.approved,status.is.null')
-      .order('hiring_date', { ascending: false });
+      .order('hiring_date', { ascending: false })
+      .order('id', { ascending: true }));
 
     if (!error && data) {
       setCreators(data);
@@ -13091,7 +12231,7 @@ export default function App() {
     if (currentUser?.role !== 'superadmin') return;
     const channel = supabase
       .channel('pending_creators_realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'creators' },
+      .on('postgres_changes', { event: 'INSERT', schema: 'wurxbase', table: 'creators' },
         ({ new: row }) => {
           if (row?.status === 'pending') {
             setPendingCount(c => c + 1);
@@ -13135,7 +12275,7 @@ export default function App() {
     }
     const channel = supabase
       .channel('join_requests_realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'join_requests' },
+      .on('postgres_changes', { event: 'INSERT', schema: 'wurxbase', table: 'join_requests' },
         ({ new: req }) => {
           const msg = `${req.name} (@${req.username}) wants to join the team!`;
           addNotification(msg, 'join');
@@ -13241,7 +12381,7 @@ export default function App() {
     };
     const channel = supabase
       .channel('cross_user_notifs')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activity_logs' },
+      .on('postgres_changes', { event: 'INSERT', schema: 'wurxbase', table: 'activity_logs' },
         ({ new: log }) => {
           if (String(log.user_id) === String(currentUser.id)) return;
           const msgFn = CROSS_MSGS[log.action];
@@ -13262,7 +12402,7 @@ export default function App() {
       .channel(chName)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'app_settings', filter: 'id=eq.1' },
+        { event: '*', schema: 'wurxbase', table: 'app_settings', filter: 'id=eq.1' },
         () => { fetchSettings(); }
       )
       .subscribe();
@@ -13273,7 +12413,7 @@ export default function App() {
   useEffect(() => {
     const channel = supabase
       .channel('app_settings_sync')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_settings', filter: 'id=eq.1' },
+      .on('postgres_changes', { event: 'UPDATE', schema: 'wurxbase', table: 'app_settings', filter: 'id=eq.1' },
         () => fetchSettings()
       )
       .subscribe();
@@ -13294,6 +12434,19 @@ export default function App() {
   }
   // Debounced save - for rapid changes like drag reorder
   function scheduleSettingsSave(patch) {
+    /*
+     * THE SAME GUARD `saveSettingNow` HAS, AND THIS ONE WAS MISSING IT.
+     *
+     * `app_settings` is ONE ROW SHARED BY THE WHOLE TEAM. The brandOrder
+     * effect runs on mount with whatever localStorage held — `[]` on a new
+     * machine, a private window, or after clearing site data — and scheduled a
+     * write 600ms later. If the settings fetch had not landed by then, that
+     * wrote an empty brand order over everybody's.
+     *
+     * Nothing is lost by refusing: the effect fires again when the real values
+     * arrive and set the state.
+     */
+    if (!settingsLoadedRef.current) return;
     Object.assign(pendingSettingsPatch.current, patch);
     if (settingsSaveTimer.current) clearTimeout(settingsSaveTimer.current);
     settingsSaveTimer.current = setTimeout(() => {
@@ -13307,12 +12460,24 @@ export default function App() {
 
   async function fetchSettings() {
     const { data, error } = await supabase.from('app_settings').select('*').eq('id', 1).single();
+    /*
+     * DID THIS ACTUALLY LOAD? The flag below used to be set at the end of this
+     * function unconditionally, so a dropped connection or a 5xx left it
+     * saying "loaded" over state that had come from nowhere. A guard that is
+     * true after a failure is worse than no guard: it is believed.
+     *
+     * Two outcomes count as loaded. Data came back, or the row genuinely did
+     * not exist and we have just created it — in which case there was nothing
+     * to overwrite in the first place.
+     */
+    let loaded = Boolean(data);
     // Row doesn't exist yet · create it so future saves work
     if (error && (error.code === 'PGRST116' || error.code === '22P02')) {
-      await supabase.from('app_settings').upsert(
+      const { error: seedErr } = await supabase.from('app_settings').upsert(
         { id: 1, hidden_brands: [], brand_order: [], custom_brands: [] },
         { onConflict: 'id' }
       );
+      loaded = !seedErr;
     }
     if (data) {
       if (Array.isArray(data.brand_order)  && data.brand_order.length)  { setBrandOrder(data.brand_order);  localStorage.setItem('brandOrder',   JSON.stringify(data.brand_order)); }
@@ -13321,13 +12486,14 @@ export default function App() {
       if (Array.isArray(data.hired_by_team) && data.hired_by_team.length) {
         const saved = data.hired_by_team;
         if (typeof saved[0] === 'string') {
-          setHiredByTeam(saved.map(n => DEFAULT_TEAM.find(d => d.name === n) || { id: n.toLowerCase(), name: n, color: '#374151', bg: '#F3F4F6' }));
+          setHiredByTeam(saved.map(n => DEFAULT_TEAM.find(d => d.name === n) || { id: n.toLowerCase(), name: n, color: 'var(--wx-text-faint)', bg: '#F3F4F6' }));
         } else {
           setHiredByTeam(saved.filter(m => m && m.name));
         }
       }
     }
-    settingsLoadedRef.current = true;
+    if (loaded) settingsLoadedRef.current = true;
+    else console.error('fetchSettings failed; settings will not be saved from this session until it succeeds', error);
   }
 
   useEffect(() => { fetchSettings(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -13533,7 +12699,7 @@ export default function App() {
 
   async function handleBulkStatusEdit(statusPatch) {
     // HARD RULE · Hired By never bulk-changes for anyone but Asad
-    if (statusPatch && 'hired_by' in statusPatch && currentUser?.id !== 'asad' && currentUser?.username !== 'Asad') {
+    if (statusPatch && 'hired_by' in statusPatch && !isAsadUser(currentUser)) {
       delete statusPatch.hired_by;
       addNotification('Hired By can only be changed by Asad', 'error');
     }
@@ -13785,9 +12951,30 @@ export default function App() {
     fetchCreators();
   }
 
-  function confirmDelete(type, id, name) {
-    const count = type === 'brand' ? creators.filter(c => c.brand === name).length : 0;
-    setDeleteModal({ type, id, name, count });
+  async function confirmDelete(type, id, name) {
+    if (type !== 'brand') { setDeleteModal({ type, id, name, count: 0 }); return; }
+    /*
+     * ASK THE DATABASE, NOT THE LIST ON SCREEN.
+     *
+     * `creators` in state is filtered — approved or null status, and a name —
+     * but the delete below matches on the brand STRING and takes everything
+     * carrying it. So the dialog said "5 creator records" and removed
+     * seventeen, the extra twelve being unreviewed APPLICATIONS that nobody
+     * had looked at yet. Undo could not bring them back either, because it
+     * only ever held the five.
+     *
+     * A confirmation that undercounts what it destroys is worse than no
+     * confirmation: it is a promise.
+     */
+    const { data, error } = await supabase.from('creators').select('id,status,name').eq('brand', name);
+    if (error) {
+      addNotification('Could not check what is in this brand · nothing deleted', 'error');
+      return;
+    }
+    const all = data || [];
+    const visible = creators.filter(c => c.brand === name).length;
+    const pending = all.filter(c => String(c.status || '').toLowerCase() === 'pending').length;
+    setDeleteModal({ type, id, name, count: all.length, pending, hidden: Math.max(0, all.length - visible) });
   }
 
   async function handleDelete(id) {
@@ -13804,19 +12991,34 @@ export default function App() {
   }
 
   async function deleteBrand(brand) {
-    const brandCreators = creators.filter(c => c.brand === brand);
-    logActivity(currentUser, 'BRAND_DELETE', brand, { count: brandCreators.length });
+    /*
+     * EVERY ROW THE DELETE WILL TAKE, captured before it runs.
+     *
+     * This used to snapshot the on-screen list, which is filtered, while the
+     * delete matched the brand string and took everything. Undo therefore
+     * restored the approved deals and silently dropped the pending
+     * applications — the rows nobody had reviewed yet, and the ones a person
+     * pressing Undo is least likely to notice missing.
+     */
+    const { data: everything, error: readErr } = await supabase.from('creators').select('*').eq('brand', brand);
+    if (readErr) {
+      addNotification('Could not read this brand · nothing deleted', 'error');
+      return;
+    }
+    const brandCreators = everything || [];
+    const visible = creators.filter(c => c.brand === brand).length;
+    logActivity(currentUser, 'BRAND_DELETE', brand, { count: brandCreators.length, visible });
     undoDataRef.current = { type: 'brand', brand, records: brandCreators };
     // Optimistic remove - instant in UI
     setCreators(prev => prev.filter(c => c.brand !== brand));
-    setKpiDeals(d => d - brandCreators.length);
+    setKpiDeals(d => d - visible);
     setAllBrands(prev => prev.filter(b => b !== brand));
     setBrandOrder(prev => prev.filter(b => b !== brand));
     setCustomBrands(prev => prev.filter(b => b !== brand));
     if (activeBrand === brand) setActiveBrand('All');
     setDeleteModal(null);
     supabase.from('creators').delete().eq('brand', brand).then(() => {});
-    startUndoToast(`"${brand}" and ${brandCreators.length} creator${brandCreators.length !== 1 ? 's' : ''} deleted`);
+    startUndoToast(`"${brand}" and ${brandCreators.length} record${brandCreators.length !== 1 ? 's' : ''} deleted`);
   }
 
   /* ── Inline save ── */
@@ -13825,7 +13027,7 @@ export default function App() {
     const creator = creators.find(c => c.id === id);
     const oldValue = creator?.[field];
     // HARD RULE · Hired By changes are Asad-only
-    if (field === 'hired_by' && currentUser?.id !== 'asad' && currentUser?.username !== 'Asad') {
+    if (field === 'hired_by' && !isAsadUser(currentUser)) {
       addNotification('Hired By can only be changed by Asad', 'error');
       return;
     }
@@ -14107,16 +13309,19 @@ export default function App() {
   }, [inlineDrop]);
 
   /* ── Render ── */
-  if (!currentUser) {
-    if (showJoinRequest) return <JoinRequestScreen onBack={() => setShowJoinRequest(false)} />;
-    return <LoginScreen onLogin={handleLogin} onJoinRequest={() => setShowJoinRequest(true)} />;
-  }
+  /*
+   * NO SIGN-IN SCREEN. Identity arrives from the hub, written to sessionStorage
+   * before this mounts. Landing here means the mount raced the session, not
+   * that somebody needs a password — this app has none any more. Render
+   * nothing for that instant rather than a login form that cannot work.
+   */
+  if (!currentUser) return null;
   if (currentUser.role === 'apc' && apcBrands.length === 0) {
     return <BrandSelector allBrands={allBrands} onSelect={handleApcBrandSelect} />;
   }
 
   return (
-    <div className="app-root" style={{ background: 'var(--pc-bg, #FAFAFA)' }}>
+    <div className="app-root" style={{ background: 'var(--pc-bg, var(--wx-surface-1))' }}>
       {/* ═══ OLD CHROME HIDDEN · replaced by WurxUI shell ═══ */}
       {false && (<>
       {/* TOPBAR · Samsung One UI v2 */}
@@ -14170,7 +13375,7 @@ export default function App() {
                 soundsMuted={soundsMuted}
                 onToggleSounds={() => setSoundsMuted(m => !m)}
               />,
-              document.body
+              wxPortalHost()
             )}
           </div>
 
@@ -14598,6 +13803,9 @@ export default function App() {
           Brands · Creators · Performance · Reporting
       ═══════════════════════════════════════════════════════════════ */}
       <WurxUI
+        tab={tab}
+        onTabChange={onTabChange}
+        embedded={embedded}
         creators={creators}
         currentUser={currentUser}
         perms={perms}
@@ -14635,7 +13843,7 @@ export default function App() {
         }}
         onDeleteCreator={async (id) => {
           // Hard gate: creator deletion is Asad-only, regardless of role flags
-          if (currentUser?.id !== 'asad' && currentUser?.username !== 'Asad') {
+          if (!isAsadUser(currentUser)) {
             addNotification('Only Asad can delete creators', 'error');
             throw new Error('not allowed');
           }
@@ -14649,10 +13857,17 @@ export default function App() {
             addNotification('Read-only access · status cannot be changed', 'error');
             return;
           }
-          // HARD RULE · "Payment Sent" (payment_status: Paid) is Asad-only,
-          // always manual. Every UI path funnels through here — no exceptions.
-          if (patch && patch.payment_status === 'Paid' && currentUser?.id !== 'asad' && currentUser?.username !== 'Asad') {
-            addNotification('Payment Sent can only be set by Asad', 'error');
+          /* WURX-ADDED · this gate was unreachable-by-anyone, including Asad.
+             It read `currentUser?.id !== 'asad' && currentUser?.username !==
+             'Asad'`. Our session carries OUR auth uuid as `id`, so the first
+             half never matched; and it writes `username: 'asad'` in lower
+             case against a capital 'Asad', so neither did the second. Both
+             conditions were therefore always true and every attempt to mark a
+             creator paid was refused — Asad's included — with a notification
+             nobody could read. Now the same capability the menu is built from,
+             so the two cannot disagree. */
+          if (patch && patch.payment_status === 'Paid' && !can(currentUser, 'canEditPay')) {
+            addNotification('You do not have permission to mark a creator paid', 'error');
             return;
           }
           // Optimistic local update first · UI updates immediately
@@ -14668,17 +13883,19 @@ export default function App() {
             addNotification('Read-only access · changes are disabled', 'error');
             return;
           }
-          // HARD RULE · payment_status: Paid never flows through the generic
-          // patcher for anyone but Asad (EUKA sync/matrix edits use this path).
-          if (patch && patch.payment_status === 'Paid' && currentUser?.id !== 'asad' && currentUser?.username !== 'Asad') {
-            addNotification('Payment Sent can only be set by Asad', 'error');
+          /* WURX-ADDED · second copy of the same gate, with the same defect:
+             `id` is our auth uuid and `username` is lower case 'asad' against
+             a capital 'Asad', so it refused everyone. Same capability as the
+             menu and the status path. */
+          if (patch && patch.payment_status === 'Paid' && !can(currentUser, 'canEditPay')) {
+            addNotification('You do not have permission to mark a creator paid', 'error');
             return;
           }
           // HARD RULE · Hired By changes are Asad-only — this path was
           // unlogged and ungated when July's hired_by got mass-overwritten.
           const _prevC = creators.find(c => c.id === id);
           if (patch && 'hired_by' in patch && (patch.hired_by || '') !== ((_prevC && _prevC.hired_by) || '')
-              && currentUser?.id !== 'asad' && currentUser?.username !== 'Asad') {
+              && !isAsadUser(currentUser)) {
             addNotification('Hired By can only be changed by Asad', 'error');
             return;
           }
@@ -14697,13 +13914,13 @@ export default function App() {
           } catch (e) { addNotification(`Update failed: ${e.message}`, 'error'); }
         }}
         onOpenSettings={() => { if (currentUser?.role !== 'viewer') setShowSettings(true); }}
+        canOpenSettings={currentUser?.role !== 'viewer'}
         onOpenLogs={() => { if (currentUser?.role !== 'viewer') setShowLogs(true); }}
-        onSignOut={handleLogout}
         notificationsCount={notifications.length}
         onOpenNotifications={() => setShowNotifPanel(s => !s)}
         pendingApprovalsCount={pendingCount}
         onOpenPendingApprovals={() => setShowReview(true)}
-        reportingNode={({ creators: filteredCreators, allCreators, dateFilter: f, activeBrands }) => {
+        reportingNode={({ creators: filteredCreators, allCreators, dateFilter: f, activeBrands, goToMonth }) => {
           // Exclude any brand the user has parked as Inactive in Performance tab.
           // `scoped` drives the brand list + per-creator stats; `scopedAll` is the
           // unfiltered pool used by ReportingViewV2 to compute GMV/Ad/ROAS per brand
@@ -14713,11 +13930,13 @@ export default function App() {
           const scopedAll = (allCreators || filteredCreators).filter(inActive);
           return (
             <ReportingViewV2
+              currentUser={currentUser}
               creators={scoped}
               allCreators={scopedAll}
               activeBrand="All"
               dateFilter={f}
               onExportCsv={exportSelectedCSV ? exportUniqueCreators : null}
+              onGoToMonth={goToMonth}
             />
           );
         }}
@@ -14739,7 +13958,7 @@ export default function App() {
           soundsMuted={soundsMuted}
           onToggleSounds={() => setSoundsMuted(m => !m)}
         />,
-        document.body
+        wxPortalHost()
       )}
 
       {/* Old view conditional · gated to never render */}
@@ -14758,10 +13977,13 @@ export default function App() {
       ) : viewMode === 'reporting' ? (
         <div className="tw-pt-3 md:tw-pt-4">
           <ReportingViewV2
+              currentUser={currentUser}
             creators={sortedCreators}
             activeBrand={activeBrand}
             dateFilter={dateFilter}
             onExportCsv={exportSelectedCSV ? exportUniqueCreators : null}
+            /* so an empty angle screen can jump to the month the tests are in */
+            onGoToMonth={(year, month) => setDateFilter({ mode: 'month', year, month })}
           />
         </div>
       ) : viewMode === 'stats' ? (
@@ -15122,14 +14344,29 @@ export default function App() {
           onOpenLeaderboard={() => { setShowSettings(false); setShowLeaderboard(true); }}
           canCompare={allBrands.length >= 2}
           onCompare={() => setShowCompare(true)}
-          onLogout={handleLogout}
-          onOpenSql={currentUser?.role === 'superadmin' ? (() => { setShowSettings(false); setShowSqlPlayground(true); }) : null}
+          onOpenSql={can(currentUser, 'canSqlQuest') ? (() => { setShowSettings(false); setShowSqlPlayground(true); }) : null}
+          onOpenGod={() => { setShowSettings(false); setShowGod(true); }}
+          onOpenAccess={() => { setShowSettings(false); setShowAccess(true); }}
         />
       )}
 
-      {/* SQL Playground V2 (superadmin only) */}
-      {showSqlPlayground && currentUser?.role === 'superadmin' && (
-        <SqlPlaygroundV2 currentUser={currentUser} onClose={() => setShowSqlPlayground(false)} />
+      {/* Access control · who is allowed to reach what */}
+      {showAccess && can(currentUser, 'canGrantAccess') && (
+        <AccessControl currentUser={currentUser} onClose={() => setShowAccess(false)} />
+      )}
+
+      {showGod && can(currentUser, 'canGodMode') && (
+        <GodMode
+          creators={creators}
+          allBrands={allBrands}
+          currentUser={currentUser}
+          onRefresh={fetchCreators}
+          onClose={() => setShowGod(false)}
+        />
+      )}
+
+      {showSqlPlayground && can(currentUser, 'canSqlQuest') && (
+        <SqlQuest onClose={() => setShowSqlPlayground(false)} />
       )}
 
       {/* Delete confirm modal */}
@@ -15138,6 +14375,8 @@ export default function App() {
           type={deleteModal.type}
           name={deleteModal.name}
           count={deleteModal.count}
+          pending={deleteModal.pending}
+          hidden={deleteModal.hidden}
           onCancel={() => setDeleteModal(null)}
           onConfirm={() => {
             if (deleteModal.type === 'creator') handleDelete(deleteModal.id);
@@ -15268,7 +14507,7 @@ export default function App() {
         onSettings={() => setShowMobileMenu(true)}
         onAdd={() => { setEditCreator(null); setShowSheet(true); }}
         onMarkPaid={() => {
-          if (currentUser?.id !== 'asad' && currentUser?.username !== 'Asad') {
+          if (!isAsadUser(currentUser)) {
             addNotification('Payment Sent can only be set by Asad', 'error');
             return;
           }

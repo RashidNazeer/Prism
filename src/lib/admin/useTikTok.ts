@@ -146,6 +146,53 @@ export function useMappableBrands() {
   });
 }
 
+/**
+ * THE CREATOR IDENTITY LEDGER: which TikTok account has claimed an application.
+ *
+ * Not the same thing as `creator_tiktok_connections`, and the difference is the
+ * whole point: that table frees a TikTok account the moment somebody
+ * disconnects, which is right for "connect your account" and wrong for "you
+ * have already applied". A claim here outlives the connection, the rejection
+ * and the profile.
+ *
+ * Read-only to the browser. Staff can SELECT it under RLS; releasing goes
+ * through `release_tiktok_identity`, which re-checks the caller's role in the
+ * database rather than trusting this screen.
+ */
+export type TikTokIdentity = {
+  id: string;
+  open_id: string;
+  app_generation: string;
+  handle: string | null;
+  source: string;
+  claimed_at: string;
+  released_at: string | null;
+  release_reason: string | null;
+  profile_id: string | null;
+  profile: { email: string; display_name: string | null; role: string } | null;
+};
+
+export function useTikTokIdentities() {
+  return useQuery({
+    queryKey: ['admin', 'tiktok', 'identities'],
+    staleTime: 15_000,
+    queryFn: async (): Promise<TikTokIdentity[]> => {
+      const { data, error } = await getSupabase()
+        .from('tiktok_identities')
+        .select(
+          'id, open_id, app_generation, handle, source, claimed_at, released_at, release_reason, profile_id, profile:profiles!tiktok_identities_profile_id_fkey (email, display_name, role)'
+        )
+        /* Live claims first — those are the ones that can be blocking someone.
+           A released claim is history and belongs underneath it. */
+        .order('released_at', { ascending: true, nullsFirst: true })
+        .order('claimed_at', { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return (data ?? []) as unknown as TikTokIdentity[];
+    },
+  });
+}
+
 export function useTikTokActions() {
   const qc = useQueryClient();
   const refresh = () => {
@@ -186,5 +233,22 @@ export function useTikTokActions() {
     onSuccess: refresh,
   });
 
-  return { connect, recheck, disconnect, map, pull };
+  /*
+   * RELEASING A TIKTOK ACCOUNT lets it apply again. Rashid, 2026-09-28: a
+   * rejection must not be permanent — "we should let admin review the rejected
+   * again". The reason is required by the database, not by this form, so a
+   * release can never be recorded without one however it was called.
+   */
+  const release = useMutation({
+    mutationFn: async ({ identityId, reason }: { identityId: string; reason: string }) => {
+      const { error } = await getSupabase().rpc('release_tiktok_identity', {
+        p_identity_id: identityId,
+        p_reason: reason,
+      });
+      if (error) throw error;
+    },
+    onSuccess: refresh,
+  });
+
+  return { connect, recheck, disconnect, map, pull, release };
 }

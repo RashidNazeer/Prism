@@ -71,6 +71,48 @@
           document.documentElement.dataset.theme = 'dark';
         }
       })();
+
+      /*
+       * TIKTOK'S RETURN PARAMETERS ARE NOT SUPABASE'S, AND THE CLIENT CANNOT
+       * TELL THE DIFFERENCE.
+       *
+       * `src/lib/supabase.ts` is built with `detectSessionInUrl: true` and
+       * `flowType: 'pkce'`, so the moment that module loads it looks for a
+       * `?code=` in the address and tries to exchange it for a session using
+       * whatever PKCE verifier it has in storage. TikTok sends us back to
+       * /oauth/tiktok/callback and /oauth/tiktok-creator/callback with exactly
+       * that shape — `?code=...&state=...` — and the client will grab it.
+       *
+       * The React route already strips the address bar, but that runs in an
+       * effect, long AFTER the client has been constructed. This has to happen
+       * before the module graph loads at all, which is why it lives here beside
+       * the theme script rather than in the app.
+       *
+       * The parameters are handed to the page on `window.__wxOAuthReturn`
+       * instead, so nothing is lost — and they leave the address bar, the
+       * referrer and the history entry at the same time.
+       */
+      (function () {
+        try {
+          var p = window.location.pathname;
+          if (p !== '/oauth/tiktok/callback' && p !== '/oauth/tiktok-creator/callback') return;
+          if (!window.location.search) return;
+          var q = new URLSearchParams(window.location.search);
+          window.__wxOAuthReturn = {
+            /* The ads side returns `auth_code`, the creator side `code`. Both
+               are captured, because missing one would silently strip a
+               parameter the page still needs. */
+            code: q.get('code') || q.get('auth_code'),
+            state: q.get('state'),
+            error: q.get('error'),
+            error_description: q.get('error_description'),
+            scopes: q.get('scopes'),
+          };
+          window.history.replaceState({}, '', p);
+        } catch (e) {
+          /* Leaving the query in place is the old behaviour, not a new fault. */
+        }
+      })();
     </script>
 
     <!--

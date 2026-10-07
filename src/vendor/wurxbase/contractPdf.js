@@ -15,6 +15,14 @@
      **bold** inline segments render bold in the PDF
    ════════════════════════════════════════════════════════════════════ */
 import { jsPDF } from 'jspdf';
+/* WURX-ADDED · the redrawn document.
+   Rashid, 2026-10-02: "all i want is to update the ui of the contract it's very
+   boring". The whole design lives in OUR file rather than in this one, because
+   replacing a renderer inside a verbatim vendored copy turns the next upstream
+   pull into diff archaeology. Their renderer below is left exactly as it was;
+   `renderContractPdf` hands off to ours on its first line, so re-applying this
+   work after a pull is re-adding that one line. WURX-END */
+import { saveContract as wxSaveContract } from '@/routes/admin/contract-paper';
 
 const ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
   'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
@@ -76,6 +84,11 @@ export function defaultContractFields(info) {
     periodEnd: fmtLongDate(new Date(py, pm, 25)),
     cycleClose: fmtLongDate(new Date(py, pm + 1, 0)),
     signerName: 'Aris',
+    /* WURX-ADDED · Wurx is a party to this agreement and had nowhere to sign.
+       It appears in the parties box on page one and as the third signature
+       block. A field rather than a constant, so a brand that is handled under
+       another name can be given one without touching the renderer. WURX-END */
+    agency: 'Wurx Media',
   };
 }
 
@@ -188,6 +201,10 @@ The Brand reserves the right to withhold payment until all obligations have been
 
 /* ── PDF renderer · draws fields + section texts (edited or default) ── */
 export function renderContractPdf(fields, sections) {
+  /* WURX-ADDED · everything below this line is their original renderer and is
+     no longer reached. See the import at the top of this file. WURX-END */
+  return wxSaveContract(fields, sections);
+  // eslint-disable-next-line no-unreachable
   const doc = new jsPDF({ unit: 'pt', format: 'letter' });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();

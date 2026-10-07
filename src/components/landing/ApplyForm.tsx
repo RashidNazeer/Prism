@@ -1,4 +1,5 @@
-import { useCallback, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { claimTikTokSignup, forgetIdentity, pendingIdentity, startTikTokSignup, type PendingIdentity } from '@/lib/signup/tiktokSignup';
 import { useNavigate, Link } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, m } from 'motion/react';
@@ -88,6 +89,40 @@ export function ApplyForm() {
     if (submitted && validator.current) setErrors(validator.current(next));
   };
 
+  /*
+   * WHAT TIKTOK HAS ALREADY VOUCHED FOR IN THIS TAB.
+   *
+   * Rashid, 2026-09-28: lead with "Continue with TikTok", then thank them and
+   * ask for email and password with the handle already filled in.
+   *
+   * Read once on mount rather than on every render: it lives in sessionStorage,
+   * and a component that re-reads storage while typing is a component that
+   * fights the person filling the form.
+   */
+  const [verified, setVerified] = useState<PendingIdentity | null>(null);
+  const [tiktokBusy, setTiktokBusy] = useState(false);
+  const [tiktokError, setTiktokError] = useState('');
+
+  useEffect(() => {
+    const p = pendingIdentity();
+    if (!p) return;
+    setVerified(p);
+    if (p.handle) set('tiktokHandle', p.handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function onContinueWithTikTok() {
+    setTiktokBusy(true);
+    setTiktokError('');
+    try {
+      await startTikTokSignup();
+      /* The browser leaves; nothing after this runs on the happy path. */
+    } catch (e) {
+      setTiktokBusy(false);
+      setTiktokError((e as Error).message);
+    }
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitted(true);
@@ -137,6 +172,29 @@ export function ApplyForm() {
       return;
     }
 
+    /*
+     * ATTACH THE PROVEN TIKTOK IDENTITY, BEFORE THE APPLICATION IS WRITTEN.
+     *
+     * Order matters: a trigger on `applications` takes the handle from the
+     * identity ledger, so the claim has to land first or the application is
+     * stored with whatever is in the box instead of the account TikTok vouched
+     * for. It is also why editing that box cannot cheat — the database
+     * overwrites it either way.
+     *
+     * A failure here is NOT fatal to the application. The account exists and
+     * the person is signed in; sending them back to the start would be the
+     * worst possible moment to lose the form. They apply, and Settings can
+     * connect TikTok afterwards.
+     */
+    if (verified) {
+      try {
+        await claimTikTokSignup();
+      } catch (e) {
+        forgetIdentity();
+        console.error('[apply] TikTok claim failed', e);
+      }
+    }
+
     const { error: insertError } = await supabase.from('applications').insert({
       user_id: userId,
       tiktok_handle: values.tiktokHandle.trim().replace(/^@/, ''),
@@ -184,6 +242,61 @@ export function ApplyForm() {
 
       <FormError>{formError}</FormError>
 
+      {/* ── CONTINUE WITH TIKTOK ──────────────────────────────────────────
+          Rashid, 2026-09-28: "every creator must have tiktok account, that's
+          why they are registering". Leading with it makes the handle PROVEN
+          rather than typed, which is the fix for a field that has been quietly
+          wrong for months and broke video matching on two brands.
+
+          It is offered, not forced. TikTok can be down, an in-app browser can
+          lose the tab, and a creator with no TikTok app to hand should still be
+          able to apply — so the ordinary form is right underneath, unchanged. */}
+      {!alreadySignedIn && !verified && (
+        <div className="mt-6" data-wx="tiktok-signup">
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full"
+            onClick={onContinueWithTikTok}
+            disabled={tiktokBusy}
+          >
+            {tiktokBusy ? 'Opening TikTok…' : 'Continue with TikTok'}
+          </Button>
+          <p className="mt-2 text-center text-[0.75rem] leading-relaxed text-muted">
+            We only read your handle and your public video stats — never your
+            password, and we can never post anything.
+          </p>
+          {tiktokError ? (
+            <p role="alert" className="mt-2 text-center text-[0.75rem] text-danger">
+              {tiktokError}
+            </p>
+          ) : null}
+          <div className="mt-5 flex items-center gap-3" aria-hidden>
+            <span className="h-px flex-1 bg-line" />
+            <span className="font-mono text-[0.625rem] tracking-[0.16em] text-muted uppercase">
+              or fill it in yourself
+            </span>
+            <span className="h-px flex-1 bg-line" />
+          </div>
+        </div>
+      )}
+
+      {verified ? (
+        <div
+          className="mt-6 rounded-xl border border-success/40 bg-success-soft p-3"
+          data-wx="tiktok-verified"
+        >
+          <p className="text-[0.875rem] font-semibold">
+            Thanks — TikTok confirmed {verified.handle ? `@${verified.handle}` : 'your account'}.
+          </p>
+          <p className="mt-1 text-[0.8125rem] leading-relaxed text-muted">
+            {verified.handle
+              ? 'Your handle is filled in below. Now choose an email and a password.'
+              : 'We could not read a handle yet — add one below and we will confirm it once you post.'}
+          </p>
+        </div>
+      ) : null}
+
       <div className="mt-6 space-y-5">
         <Field label="TikTok handle" error={errors.tiktokHandle}>
           {({ id, describedBy, invalid }) => (
@@ -197,6 +310,12 @@ export function ApplyForm() {
               onChange={(e) => set('tiktokHandle', e.target.value)}
               aria-describedby={describedBy}
               invalid={invalid}
+              /* READ-ONLY, NOT DISABLED, once TikTok has vouched for it. A
+                 disabled input is skipped by the tab order and reads as broken;
+                 this reads as settled. Editing it would change nothing anyway —
+                 the database takes the handle from the ledger — so the honest
+                 thing is to stop inviting the edit. */
+              readOnly={!!verified?.handle}
             />
           )}
         </Field>

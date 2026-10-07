@@ -5,6 +5,7 @@ import { WurxMark } from '@/components/brand/WurxMark';
 import { prefetchRoute } from '@/app/router';
 import { cn } from '@/lib/utils';
 import { isNavItemActive, navForRole, type NavItem } from '@/lib/nav';
+import { useWurxbaseIdentity } from '@/lib/useWurxbaseIdentity';
 import type { AppRole } from '@/lib/auth/auth-context';
 
 /**
@@ -80,7 +81,11 @@ export function AppSidebar({
   collapsed?: boolean;
 }) {
   const { pathname } = useLocation();
-  const groups = navForRole(role);
+  /* Paid Collabs rows are drawn from the person's OWN WurxBase permissions
+     where their row can be found, and from our role mapping where it cannot.
+     A menu row must not offer a screen that bounces. */
+  const { tabs: collabTabs } = useWurxbaseIdentity();
+  const groups = navForRole(role, collabTabs);
   const initial = (name || email || '?').trim().charAt(0) || '?';
   const create = createActionFor(role);
   const navRef = useRef<HTMLElement>(null);

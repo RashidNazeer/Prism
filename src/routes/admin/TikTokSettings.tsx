@@ -16,6 +16,8 @@ import {
   useTikTokAccounts,
   useTikTokActions,
   useTikTokConnections,
+  useTikTokIdentities,
+  type TikTokIdentity,
   type AccountMapRow,
   type ConnectionHealth,
   type AdAccount,
@@ -42,6 +44,10 @@ import { cn } from '@/lib/utils';
 const TABS = [
   { key: 'accounts', label: 'Ad accounts' },
   { key: 'connection', label: 'Connection' },
+  /* Creator identities live here rather than under People, because this is the
+     screen about TikTok and the claim is a TikTok fact. It is also the only
+     place staff can undo a bar, so it must be findable without being told. */
+  { key: 'identities', label: 'Creator accounts' },
 ] as const;
 type TabKey = (typeof TABS)[number]['key'];
 
@@ -50,7 +56,8 @@ export function TikTokSettings() {
   const adAccounts = useTikTokAdAccounts();
   const accounts = useTikTokAccounts();
   const brands = useMappableBrands();
-  const { connect, recheck, disconnect, map, pull } = useTikTokActions();
+  const identities = useTikTokIdentities();
+  const { connect, recheck, disconnect, map, pull, release } = useTikTokActions();
 
   /*
    * CONNECTIONS, PLURAL, from 2026-08-20. Rashid: "each brand will have it’s
@@ -136,7 +143,11 @@ export function TikTokSettings() {
               key={t.key}
               active={activeTab === t.key}
               count={
-                t.key === 'accounts' && connected ? (adAccounts.data?.length ?? 0) : undefined
+                t.key === 'accounts' && connected
+                  ? (adAccounts.data?.length ?? 0)
+                  : t.key === 'identities'
+                    ? (identities.data?.filter((i) => !i.released_at).length ?? undefined)
+                    : undefined
               }
               onClick={() => setTab(t.key)}
             >
@@ -174,6 +185,15 @@ export function TikTokSettings() {
               ? `${map.variables.advertiserId}:${map.variables.storeId}`
               : undefined
           }
+        />
+      ) : activeTab === 'identities' ? (
+        <IdentitiesTab
+          rows={identities.data ?? []}
+          loading={identities.isPending}
+          error={identities.error ? String((identities.error as Error).message) : null}
+          onRelease={(identityId, reason) => release.mutate({ identityId, reason })}
+          releasingId={release.isPending ? (release.variables?.identityId ?? null) : null}
+          releaseError={release.error ? String((release.error as Error).message) : null}
         />
       ) : (
         <ConnectionTab
@@ -527,6 +547,173 @@ function ConnectionTab({
       ) : null}
 
     </section>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------- creator accounts --- */
+
+/**
+ * WHICH TIKTOK ACCOUNTS HAVE ALREADY APPLIED, and the one button that undoes it.
+ *
+ * Rashid, 2026-09-28: "the same person should never be able to apply again" —
+ * and then, when asked whether that should be for ever: "it should not be
+ * permanent, we should let admin review the rejected again". Both halves are
+ * here. The claim is permanent until a human decides otherwise, and the deciding
+ * takes one click and a sentence.
+ *
+ * A RELEASED ROW IS KEPT, not deleted, so "this account applied in August and we
+ * let them back in" stays readable a year later.
+ *
+ * The reason box is required by the DATABASE, not by this form. A release
+ * without one is refused however it is called, which is what stops the reason
+ * becoming optional the first time somebody is in a hurry.
+ */
+function IdentitiesTab({
+  rows,
+  loading,
+  error,
+  onRelease,
+  releasingId,
+  releaseError,
+}: {
+  rows: TikTokIdentity[];
+  loading: boolean;
+  error: string | null;
+  onRelease: (identityId: string, reason: string) => void;
+  releasingId: string | null;
+  releaseError: string | null;
+}) {
+  const [openFor, setOpenFor] = useState<string | null>(null);
+  const [reason, setReason] = useState('');
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="wx-skeleton h-20 rounded-xl" />
+        <div className="wx-skeleton h-20 rounded-xl" />
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <p
+        role="alert"
+        className="border-danger/40 bg-danger-soft text-danger rounded-lg border p-3 text-[0.8125rem]"
+      >
+        {error}
+      </p>
+    );
+  }
+  if (!rows.length) {
+    return (
+      <Empty
+        title="No TikTok account has applied yet"
+        body="When a creator connects their TikTok account, it is recorded here so the same account cannot hold two applications. You can release one at any time to let it apply again."
+      />
+    );
+  }
+
+  const live = rows.filter((r) => !r.released_at);
+  const released = rows.filter((r) => r.released_at);
+
+  const Row = ({ r }: { r: TikTokIdentity }) => {
+    const who = r.profile?.display_name || r.profile?.email || null;
+    const isOpen = openFor === r.id;
+    return (
+      <li className="border-line bg-surface-1 rounded-xl border p-3 sm:p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-[0.9375rem] font-bold">
+              {r.handle ? `@${r.handle}` : who || 'A TikTok account'}
+            </p>
+            <p className="text-muted mt-0.5 truncate text-[0.8125rem]">
+              {who ? who : 'the account that claimed it has been deleted'}
+              {' · claimed '}
+              {new Date(r.claimed_at).toLocaleDateString()}
+              {r.source === 'backfill' ? ' · recorded when the rule was added' : ''}
+            </p>
+            {r.released_at ? (
+              <p className="text-muted mt-1 text-[0.8125rem]">
+                Released {new Date(r.released_at).toLocaleDateString()}
+                {r.release_reason ? ` — ${r.release_reason}` : ''}
+              </p>
+            ) : null}
+          </div>
+
+          {r.released_at ? (
+            <span className="text-muted wx-numeric text-[0.75rem] font-semibold">
+              can apply again
+            </span>
+          ) : (
+            <Button variant="secondary" onClick={() => { setOpenFor(isOpen ? null : r.id); setReason(''); }}>
+              {isOpen ? 'Cancel' : 'Let this account apply again'}
+            </Button>
+          )}
+        </div>
+
+        {isOpen ? (
+          <div className="border-line mt-3 flex flex-col gap-2 border-t pt-3 sm:flex-row sm:items-center">
+            <label className="sr-only" htmlFor={`reason-${r.id}`}>
+              Why are you releasing this TikTok account?
+            </label>
+            <input
+              id={`reason-${r.id}`}
+              className="border-line bg-surface-2 min-w-0 flex-1 rounded-md border px-3 py-2 text-[0.875rem]"
+              placeholder="Why? e.g. rejected in August, invited back for Q4"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            />
+            <Button
+              onClick={() => onRelease(r.id, reason.trim())}
+              disabled={!reason.trim() || releasingId === r.id}
+            >
+              {releasingId === r.id ? 'Releasing…' : 'Release'}
+            </Button>
+          </div>
+        ) : null}
+      </li>
+    );
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      {releaseError ? (
+        <p
+          role="alert"
+          className="border-danger/40 bg-danger-soft text-danger rounded-lg border p-3 text-[0.8125rem]"
+        >
+          {releaseError}
+        </p>
+      ) : null}
+
+      <section>
+        <h2 className="text-muted mb-2 text-[0.75rem] font-bold tracking-wide uppercase">
+          Claimed · {live.length}
+        </h2>
+        {live.length ? (
+          <ul className="flex flex-col gap-2">
+            {live.map((r) => (
+              <Row key={r.id} r={r} />
+            ))}
+          </ul>
+        ) : (
+          <p className="text-muted text-[0.875rem]">No TikTok account is currently claimed.</p>
+        )}
+      </section>
+
+      {released.length ? (
+        <section>
+          <h2 className="text-muted mb-2 text-[0.75rem] font-bold tracking-wide uppercase">
+            Released · {released.length}
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {released.map((r) => (
+              <Row key={r.id} r={r} />
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }

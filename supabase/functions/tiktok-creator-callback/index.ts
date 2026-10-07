@@ -27,7 +27,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.110.9';
 import { z } from 'npm:zod@4.4.3';
 import { corsHeaders, json } from '../_shared/cors.ts';
-import { displayCreds, exchangeCode, fetchUser } from '../_shared/tiktok-display.ts';
+import { displayCreds, exchangeCode, fetchUser, revoke } from '../_shared/tiktok-display.ts';
 
 const Body = z.object({
   /* TikTok's authorisation code. Opaque, so only length and shape are checked. */
@@ -88,6 +88,28 @@ Deno.serve(async (req) => {
   }
   const creatorId = burned.creator_id as string;
 
+  /*
+   * A SUSPENDED OR DEMOTED ACCOUNT CONNECTS NOTHING, and it is checked BEFORE
+   * the code is exchanged.
+   *
+   * `tiktok-creator` checks `is_active` and the role before it mints a state,
+   * but this function never re-checked either — so a nonce minted fifteen
+   * minutes ago still worked for somebody suspended fourteen minutes ago.
+   *
+   * It runs here, ahead of the handshake, for two reasons: a code that will
+   * never be used should not be spent, and a guard that sits behind a live
+   * TikTok exchange cannot be tested without one.
+   */
+  const { data: actor } = await admin
+    .from('profiles')
+    .select('id, role, is_active')
+    .eq('id', creatorId)
+    .maybeSingle();
+  if (!actor?.is_active
+    || !['applicant', 'creator', 'ops', 'admin', 'ads_manager'].includes(String(actor.role))) {
+    return reply({ error: 'That account cannot connect a TikTok account.' }, 403);
+  }
+
   /* ------------------------------------------------------- the handshake -- */
   let token;
   try {
@@ -119,6 +141,87 @@ Deno.serve(async (req) => {
   if (!openId) return reply({ error: 'TikTok did not say which account that was' }, 502);
 
   const nowIso = new Date().toISOString();
+
+  /* ═══ THREE GUARDS THAT WERE NOT HERE, ADDED 2026-09-28 ═══════════════
+   *
+   * This function resolved the creator from the burned nonce and then trusted
+   * everything else. Two independent reviews of the signup design found the
+   * same three holes in it, and signup is about to be built ON TOP of this —
+   * so they are fixed here first rather than inherited.
+   */
+
+  /*
+   * 2. AN ACCOUNT SOMEBODY ELSE HAS ALREADY CLAIMED IS NOT AVAILABLE.
+   *
+   * The older guard is a partial unique index on LIVE connections, so it stops
+   * two live connections and nothing else: creator A could connect TikTok X,
+   * disconnect, and creator B could then bind X and show X's videos as their
+   * own. The identity ledger outlives the disconnect, so it can answer the
+   * question the index cannot.
+   *
+   * Staff can release a claim, which is why the message says so rather than
+   * reading as a dead end.
+   */
+  const { data: claimed } = await admin
+    .from('tiktok_identities')
+    .select('profile_id')
+    .eq('open_id', openId)
+    .is('released_at', null)
+    .limit(1)
+    .maybeSingle();
+  if (claimed && claimed.profile_id && claimed.profile_id !== creatorId) {
+    return reply({
+      error: 'That TikTok account has already been used on another Wurx account. Ask the Wurx team to release it if it should be yours.',
+    }, 409);
+  }
+
+  /*
+   * 3. SWAPPING ACCOUNTS MUST NOT LEAVE THE OLD ONE BEHIND.
+   *
+   * Reconnecting with a DIFFERENT TikTok account used to overwrite the row and
+   * stop there: the previous account's token stayed valid at TikTok, and its
+   * videos stayed attached to this creator — somebody else's view counts on a
+   * screen about money. Both are cleared here, before the new account is
+   * written, so a failure halfway leaves no mixture.
+   *
+   * REVOKING IS SAFE ONLY BECAUSE THE ACCOUNT IS DIFFERENT. TikTok's revoke
+   * ends the user's whole authorisation of this app, not one token — so it must
+   * never run for an open_id that is still connected somewhere. Here it is by
+   * definition the account being replaced.
+   */
+  const { data: previous } = await admin
+    .from('creator_tiktok_connections')
+    .select('open_id')
+    .eq('creator_id', creatorId)
+    .maybeSingle();
+
+  if (previous?.open_id && previous.open_id !== openId) {
+    const { data: oldTok } = await admin
+      .from('creator_tiktok_tokens')
+      .select('access_token')
+      .eq('creator_id', creatorId)
+      .maybeSingle();
+    if (oldTok?.access_token) {
+      /* Best effort: TikTok being unreachable must not block the new
+         connection, and an un-revoked old token is a smaller problem than a
+         creator who cannot connect at all. */
+      try { await revoke(creds, oldTok.access_token); } catch { /* logged below */ }
+    }
+    const { error: vidErr } = await admin
+      .from('creator_tiktok_videos')
+      .delete()
+      .eq('creator_id', creatorId);
+    if (vidErr) console.error('[tiktok-creator-callback] clearing old videos failed', vidErr);
+
+    await admin.from('audit_log').insert({
+      actor_id: creatorId,
+      actor_role: 'creator',
+      action: 'tiktok_creator.account_swapped',
+      subject_type: 'creator_tiktok_connection',
+      subject_id: creatorId,
+      detail: { from_open_id: previous.open_id, to_open_id: openId },
+    });
+  }
 
   const { error: connErr } = await admin.from('creator_tiktok_connections').upsert(
     {

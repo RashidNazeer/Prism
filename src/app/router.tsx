@@ -1,9 +1,10 @@
 import { lazy } from 'react';
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, Navigate } from 'react-router';
 import { RouteFallback } from '@/components/layout/RouteFallback';
 import { ShellLayout } from '@/components/layout/ShellLayout';
 import { WorldLayout } from '@/components/layout/WorldLayout';
 import { RequireAuth, RedirectIfSignedIn } from '@/components/auth/RequireAuth';
+import { COLLABS_ONLY_ROLES, STAFF_ROLES } from '@/lib/auth/auth-context';
 
 /**
  * Route table.
@@ -190,6 +191,7 @@ const AdminContestRewards = screen(
 const AdminContestSetup = screen(() => import('@/routes/admin/ContestSetup'), 'ContestSetup');
 const AdminContent = screen(() => import('@/routes/admin/Content'), 'AdminContent');
 const AdminActivity = screen(() => import('@/routes/admin/Activity'), 'Activity');
+const AdminClientLinks = screen(() => import('@/routes/admin/ClientLinks'), 'ClientLinks');
 const AdminTikTok = screen(() => import('@/routes/admin/TikTokSettings'), 'TikTokSettings');
 const AdminPaidCollabs = screen(() => import('@/routes/admin/PaidCollabs'), 'PaidCollabs');
 const AdminBrands = screen(() => import('@/routes/admin/Brands'), 'Brands');
@@ -334,6 +336,22 @@ export const router = createBrowserRouter([
     path: '/contact',
     HydrateFallback: RouteFallback,
     lazy: lazyRoute(() => import('@/routes/site/Contact'), 'Contact'),
+  },
+  /*
+   * A CLIENT'S READ-ONLY VIEW OF THE BRANDS THEY WERE SHARED.
+   *
+   * Public because the person opening it has no account here and is never
+   * getting one — Rashid, 2026-09-17: "clients would need no login at all".
+   * What makes it safe is the link itself: 192 random bits, kept only as a
+   * SHA-256, with an expiry and a revoke switch, checked by the `collab-share`
+   * function, which answers with a projection that cannot carry ad spend, ROI,
+   * payment details or anybody's phone number. This route renders what that
+   * function returns and holds no key of its own.
+   */
+  {
+    path: '/share/collabs/:token',
+    HydrateFallback: RouteFallback,
+    lazy: lazyRoute(() => import('@/routes/ShareCollab'), 'ShareCollab'),
   },
   /*
    * THE TWO LEGAL PAGES, public and unauthenticated on purpose.
@@ -513,7 +531,62 @@ export const router = createBrowserRouter([
   },
 
   {
-    Component: () => <RequireAuth allow={['ops', 'admin']} />,
+    /*
+     * PAID COLLABS, ON ITS OWN GUARD, and this is why it is not in the block
+     * below with the rest of /admin.
+     *
+     * Affiliate Team Lead and Operations Lead see this screen and no other.
+     * Leaving Paid Collabs inside the staff guard and adding those roles there
+     * would have opened Applications, Creators, Offers, Contests, Brands,
+     * TikTok and the audit log to them in the same edit — every one of which
+     * reads money.
+     *
+     * The guard decides which SCREEN renders. It is not the boundary: what
+     * they may actually read is `public.is_collabs_viewer()` on the wurxbase
+     * SELECT policies, and writes there still answer to `is_staff()`. If this
+     * list were widened by mistake tomorrow, they would reach a screen whose
+     * every query returns nothing.
+     */
+    Component: () => <RequireAuth allow={[...STAFF_ROLES, ...COLLABS_ONLY_ROLES]} />,
+    children: [
+      {
+        Component: ShellLayout,
+        children: [
+          {
+            path: '/admin/collabs',
+            element: <Navigate to="/admin/collabs/brands" replace />,
+          },
+          {
+            path: '/admin/collabs/:tab',
+            element: <AdminPaidCollabs />,
+          },
+        ],
+      },
+    ],
+  },
+
+  {
+    /*
+     * CLIENT LINKS, ON A NARROWER GUARD THAN THE REST OF STAFF.
+     *
+     * ops and admin only. `STAFF_ROLES` has included ads_manager since
+     * 2026-09-15, and handing a brand's numbers to somebody outside the company
+     * is an owner's decision, not a staff one. The guard only picks the screen:
+     * the real boundary is `collab_share_create` / `_list` / `_revoke`, which
+     * re-check the caller's role in the database, so this list being widened by
+     * mistake would give somebody an empty screen rather than a live link.
+     */
+    Component: () => <RequireAuth allow={['admin', 'ops']} />,
+    children: [
+      {
+        Component: ShellLayout,
+        children: [{ path: '/admin/client-links', element: <AdminClientLinks /> }],
+      },
+    ],
+  },
+
+  {
+    Component: () => <RequireAuth allow={STAFF_ROLES} />,
     children: [
       {
         Component: ShellLayout,
@@ -568,10 +641,17 @@ export const router = createBrowserRouter([
         path: '/admin/tiktok',
         element: <AdminTikTok />,
       },
-      {
-        path: '/admin/collabs',
-        element: <AdminPaidCollabs />,
-      },
+      /*
+       * Paid Collabs is six sidebar rows now, not one row with a tab rail
+       * inside it. The tab is the ROUTE, so the browser back button, a
+       * bookmark and a link into Reporting all work like every other screen in
+       * the product — none of which was true while the tab lived in component
+       * state.
+       *
+       * /admin/collabs on its own redirects to Brands rather than 404ing: it
+       * is what the sidebar pointed at until today and what any saved link
+       * still says.
+       */
       {
         path: '/admin/brands',
         element: <AdminBrands />,

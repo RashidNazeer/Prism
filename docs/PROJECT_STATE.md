@@ -1,69 +1,1052 @@
 # Project state
 
-## NEXT ACTION AFTER COMPACTION
+## NEXT ACTION
 
-**Recorded 2026-08-26 (end of day).**
+**Updated 2026-09-29, after the product groups shipped.**
 
-**THE TIKTOK APP IS SUBMITTED AND WE ARE WAITING ON TIKTOK.** Nothing about it
-is waiting on us. **PARKED 27** holds every submitted value verbatim, so a
-resubmission never has to re-derive them, and **27b** holds the key swap that
-becomes actionable the moment he says it is approved. **Do not start 27b without
-a clear yes from him.**
+Nothing is queued. The last things done were the **contract redesign** and the
+**thumbnail backfill across every brand** (entry below); before them, two Irwin
+Naturals fixes and product groups on a brand's creator table. All on dev,
+waiting on Rashid to look.
 
-**HE ASKED TO MOVE ON TO SOMETHING ELSE.** Ask what he wants next, and answer
-from `docs/PARKED.md` if he asks what is pending. The live candidates, shortest
-useful summary:
+**ONE QUESTION IS OPEN AND HE RAISED IT HIMSELF — SIGNATURES.** Rashid: *"for
+usman signature i am not sure how asad's is being generated but i can get the
+signature as image or what is the best fit u need to tell me that later first
+build ui"*. The UI is built and the existing mechanism is untouched: the Brand
+Representative line is auto-signed by drawing `fields.signerName` (default
+"Aris") in a script face on a canvas. The options to put to him are in
+DECISIONS, "How a signature should get onto the contract".
 
-- **PARKED 29** — five findings from the privacy inventory. The first is that
-  `applications.review_note` is readable by the applicant it is about, which is
-  a real leak of internal notes and the obvious next thing to fix.
-- **PARKED 30a** — production is EMPTY apart from his admin account. He said "we
-  will shift all our data to prod"; his own standing rule is that prod never
-  gets test data, and dev's 41 creators share the password `1234567890`. **Asked
-  twice, never answered. Do not guess.**
-- **PARKED 28** — the three things deliberately left out of brand themes.
-- **PARKED 0** — contest tracking, paused on his call, needs a real data source.
-- **Three builds still have no verdict from him:** Brand World, the multi-colour
-  brand themes, and the rebuilt offers page.
+**Still owed to him, not forgotten:** he has **more changes to the TikTok-first
+signup** and said he would describe them himself — *"few more changes but will
+let u know"*. He tested that round trip on his own phone on 2026-09-29 and it
+worked. Do NOT start step 4 or 5 of the signup plan unprompted; step 4 needs a
+TikTok scope he has not applied for yet.
 
-**WHAT SHIPPED TODAY, and the day's lesson.** `/terms` and `/privacy`; the first
-production launch (58 migrations, 10 Edge Functions); the creator TikTok
-connection, live on prod; and a detour that is worth reading once.
+Everything below is context, not instructions.
 
-I read FOUR scopes off a TikTok **submission dialog** when the app's own
-**Scopes** page listed two, concluded the code was under-requesting, and we
-built and shipped the extra two to dev and production. Requesting a scope the
-app does not have makes TikTok refuse the authorise URL, so **Connect was broken
-on production for about twenty minutes, silently** — nothing errors on our side.
-Reverted, redeployed, proved fixed by signing into prod and reading the scope off
-the live authorise URL.
+## Standing reminders for Rashid
 
-**The asymmetry to carry forward:** too FEW scopes fails at review, weeks later;
-too MANY breaks the product now, for everybody. **When the code and a third
-party disagree, narrow the code first and ask second**, and read the settings
-page rather than a dialog, a recollection, or my own confidence.
+**Updated 2026-09-29. REMIND HIM OF THESE FIRST THING.** He asked to be
+reminded: *"i will do it later remind me please"*. (This used to be a second
+block called NEXT ACTION AFTER COMPACTION; there is only one of those now, at
+the very top, and it is the thing to do next rather than the list to nag.)
 
-**What was kept from it, all dormant and all correct:** six columns on
-`creator_tiktok_connections`, a user/info field list gated on the scope TikTok
-GRANTED, and a totals strip that hides itself when the permission is absent.
-Two genuine fixes also came out of it: `/privacy` had claimed the feature "is
-not available yet" while it was live, and the card still said "Connect it to
-see…" to people who had already connected.
+1. **Link GitHub to Vercel.** Git deploys to dev are BLOCKED
+   (`TEAM_ACCESS_REQUIRED`) until he connects GitHub `RashidNazeer` under
+   Vercel → Account Settings → Authentication. Until then every dev deploy
+   goes through the CLI route in OPERATIONS (Vercel section). PARKED 45.
+2. ~~TikTok resubmission~~ — **DONE. THE APP WAS APPROVED on 2026-09-28.**
+   Products: Login Kit. Scopes: `user.info.basic` and `video.list`, which is
+   exactly what `DISPLAY_SCOPES` already asks for, so nothing had to change.
+   What is still outstanding from that work: **production runs the SANDBOX
+   client key**, and swapping it to the approved one is step 5 of the signup
+   plan — on that day every `open_id` changes and every creator must reconnect.
 
-**Guards, all green:** `verify:creator-tiktok` **29** (section [8] pins
-`DISPLAY_SCOPES` to the app's Scopes page and fails if the card or `/privacy`
-describes data those scopes cannot reach; section [6] asserts the scope on the
-**live authorise URL the deployed function builds**), `verify:tiktok-card` **18**
-in a real browser, `verify:legal` **31**.
+   <details><summary>How it got here (2026-09-22)</summary>He
+   chose to build our own site at the address we already use, and to ship the
+   public pages to production on their own. **What is needed from him:** read
+   the words on dev, and **create the `support@wurxmedia.com` mailbox**, which
+   he said on 2026-09-22 he would do — the legal pages send people there and a
+   reviewer may test it. Then the pages go onto `main` and he resubmits with
+   `public/tiktok-app-icon.png` and `https://wurxmediahub.vercel.app/`.
+   PARKED 27d has the order.</details>
 
-**SIX OF MY OWN CHECKS OR CLAIMS LIED IN THE REASSURING DIRECTION TODAY.** The
-catalogue is in the `checks-that-lie` memory. Today added: a bundle-hash
-comparison that reported production had not deployed when it had (a prod build
-embeds different env values, so its hashes can never match a local dev build),
-and reading a scope list off the wrong page and acting on it with confidence.
+3. **Rotate the Euka keys that were pasted into the chat**, then set the new ones with `supabase secrets set EUKA_API_KEY=... EUKA_API_KEYS=...` on dev
+   (OPERATIONS, "Euka keys"). Never write a key to a file.
+4. **Two demo client links expire on 18 Oct 2026**: "Apothecary - demo for
+   Rashid" and "Apothecary + Penetrex - demo". Stop them from
+   `/admin/client-links` if he no longer wants them; "Sam - NutraHarmony"
+   (until 17 Dec) is his real one, leave it.
 
-**Do not re-explore the codebase.** This file, then PARKED, then only what the
-chosen job names.
+Still queued for him: the Euka data sync (`pnpm wurxbase:sync` dry run,
+`--apply` writes; NEVER offer `wurxbase:copy` instead — PARKED 37).
+
+Answer "what's pending?" from `docs/PARKED.md`.
+
+## WHERE EVERYTHING STANDS
+
+### The public website, and one icon everywhere (2026-09-22)
+
+Built for TikTok's second rejection, live on dev at `65e9872`.
+- **Six new pages** beside the home page and the legal ones: For creators, For
+  brands, How it works, About, FAQ, Contact. A header menu and a three-column
+  footer carry the whole site on every public page, and each page has its own
+  tab title.
+- **The words live in `src/content/site-pages.ts`**, one file, so Rashid can
+  correct the business facts without touching a component. Every company fact
+  in it comes from wurxmedia.com.
+- **One icon:** the dog face from wurxmedia.com is now our tab icon (the same
+  artwork plus the viewBox it was missing) and `public/tiktok-app-icon.png` is
+  the 1024x1024 file to upload to TikTok.
+- **`main` was merged into `dev` first**, so promoting dev can no longer
+  delete the /tiktok page or restore the wording TikTok rejected.
+- **Proven:** `verify:site` 74/74 against the live dev site.
+- **Next:** he reads the words, answers the support@ and noindex questions,
+  then the public pages go to production on their own and he resubmits.
+
+### The contract, redrawn — and thumbnails everywhere (2026-10-02)
+
+**1. THE CONTRACT LOOKS LIKE SOMETHING WURX SENDS.** Rashid, with a mockup:
+*"all i want is to update the ui of the contract it's very boring and also add
+some extra stuff in it ... i want exactly that UI"*.
+
+Cream paper, a black spine with a gold rule, the wordmark stamped in a black
+block, a ghost of the mascot top right, numbered sections with gold numerals,
+gold bullets and hairlines, and a footer with the address and "01 / 04" on every
+page. The signatures moved to a page of their own as three bordered blocks —
+and there are now THREE of them: Brand, Creator and **Agency**, which is the
+"extra stuff". Wurx is a party to this agreement and had nowhere to sign.
+
+**It is a redraw, not a rewrite.** Every word still comes from
+`CONTRACT_SECTIONS` and from whatever the editor has changed. Rashid asked for
+the page flow to stay as it was — *"the second page should be vertical below the
+first one like we currently have"* — because his mockup shows two pages SIDE BY
+SIDE as a design preview. It is still letter portrait, pages one after another.
+
+**Where it lives:** `src/routes/admin/contract-paper.js`, OURS. The vendored
+`contractPdf.js` hands off to it on one fenced line, so re-applying this after
+an upstream pull is re-adding that line rather than diff archaeology.
+
+**A sentence-level bug went with it.** The old renderer split text on
+whitespace and re-joined with single spaces, so a bold run ending mid-sentence
+produced "September 30, 2026 ." — three times on the payment page. The
+tokeniser now carries whether a space was really there, and it is exported so
+`verify:contract-pdf` can test it as a pure function.
+
+**2. THUMBNAILS, EVERYWHERE.** Rashid: *"yes please fix as u just said"*. The
+Irwin fix lives in `reacher-sync`; everywhere else the videos arrive through the
+browser and no server job owns them, so it is a re-runnable script:
+`node scripts/backfill-video-thumbs.mjs` (dry run; `--write` to apply). It only
+ever ADDS a picture to an entry that has none. **1,397 blanks asked about, 1,100
+filled (79%)** across 18 brands — Penetrex 526, Pure Daily Care 203, Aqua Sonic
+177. The 297 left are genuinely not in the store and are re-asked on a later
+run.
+
+**3. THREE SUITES WERE QUIETLY DATE-DEPENDENT, and 1 October proved it.**
+`verify:product-groups` went from 100 green to four failures without a line of
+the feature changing: brands with no October creators are not on the Brands
+screen at all, and brands that were had everybody in one payment status, so the
+status dividers the check insisted on were correctly absent. The fix is
+`ensureAllTime()` in `scripts/browser.mjs`, now shared by three suites — **and
+it is a function because the control is a TOGGLE**: three brands, three clicks,
+and the middle one is silently tested on the current month.
+
+Two assertions were wrong rather than merely fragile, and both are fixed: "no
+creator listed twice" keyed on the NAME, which over a brand's whole history
+reads 272 rows / 114 people as duplication when one person hired twice is two
+legitimate rows (rows now carry `data-wx-id`); and "the status dividers are
+there" is conditional on there being more than one status, with a run-level
+guard so the condition is never vacuous.
+
+**Suites:** `verify:contract-pdf` 32/32 (new), `verify:product-groups` 100/100,
+`verify:product-band` 55/55, `verify:video-thumbs` 14/14,
+`verify:deal-complete` 20/20, `verify:collab-controls` 54/54,
+`verify:collab-contrast` 14/14, isolation clean.
+
+### Two Irwin Naturals fixes (2026-09-29)
+
+Rashid: *"for irwin naturals the top videos row does not show thumbnail please
+check that and for irwin when a deal is completed such as a creator has made 5/5
+videos why does not it automatically move towards payment pending, asad did it
+manually"*. Both were real and both had the same root: **`reacher-sync` writes
+`video_codes` and nothing else**, while every browser path that writes videos
+does more.
+
+**1. Thumbnails. It was every one of them: 0 of 66**, against 4,882 of 6,126
+everywhere else. Reacher has no thumbnail to give — checked against their own
+spec, neither `/videos/list` nor `/videos/performance` carries an image field,
+and their `social-intelligence` routes answer 404 for us (so does the control,
+so that is "not on our plan", not "no data").
+
+**TikTok's own oEmbed works perfectly and is the wrong answer.** It needs no key
+and hands back a real thumbnail — with `x-expires` in the URL, which was THE
+NEXT DAY. Storing it would have put pictures on the screen the afternoon it
+shipped and emptied them again by the weekend, with nothing failing and no test
+going red.
+
+What was used instead: the one public object store every thumbnail on these
+screens already comes from, keyed on TikTok's own video id. Not signed, no
+expiry, and a thumbnail for a video posted in November 2025 still loads. **60 of
+Irwin's 66 resolved (91%)**; the other 6 are genuinely absent and keep the
+play-symbol placeholder. Existence is checked, never assumed — a guessed URL
+would put a broken-image icon in the strip. No new dependency: Irwin was simply
+the one brand never asking the host everything else already uses.
+
+**2. A finished deal now moves itself to Payment Pending.** The status is
+derived from the `videos` flag; the browser recomputes it from the deal on every
+save and the Edge Function never did. Irwin is the only brand Reacher fills,
+which is exactly why it was the only brand where Asad had to do it by hand. One
+creator was sitting stuck when this was written — Danny, 5 of 5 delivered on a
+"$200 / 5 videos" deal — and the sync moved him on its next run.
+
+The rule is forward-only: never backwards, never a row already `Paid`, and
+`payment_status` is not touched at all.
+
+**`parseDealVideos` now exists twice**, in the browser and in Deno. Two copies of
+a rule that decides whether somebody is owed money is a drift waiting to happen
+and the drift would be silent — a creator simply never appears in the pending
+list. `verify:deal-complete` runs BOTH copies over every deal string that exists
+and fails if they ever disagree.
+
+**Also fixed while in there:** the strip rendered `<img>` with no fallback, so a
+URL that stops answering showed a torn-page glyph. It degrades to the
+placeholder now.
+
+**Suites:** `verify:video-thumbs` 14/14 (new), `verify:deal-complete` 20/20
+(new), `verify:reacher` 27/27, `verify:collab-controls` 54/54,
+`verify:product-groups` 98/98, `verify:isolation` clean.
+
+**A doc was wrong and is fixed in the same commit:** OPERATIONS said Irwin has
+no GMV Max campaign connected and that ad spend is expected to show a dash. It
+reports **4 campaigns and 164 spend rows** now, and the brand page shows real
+Ad spend and ROI.
+
+### A brand's creators, grouped by product (2026-09-29)
+
+Rashid, with a mockup: *"we are showing creators of the brand when we open a
+particular brand ... we also have products and we can see. Now what i want is to
+organize and show product wise creators and for the ui i exactly want the ui as
+u can see in ss2"*.
+
+Open a brand and the creator table now splits into a band per product: the
+product's picture, its name, a "N creators" pill, a collapse chevron and a menu
+with Expand all / Collapse all. The payment-status dividers stay exactly where
+they were and the product bands sit inside them, which is what his mockup drew
+and the right way round — payment state is how the team WORKS the list, product
+is how they READ it.
+
+**ONE CREATOR, ONE ROW, and that is the whole design.** Every row carries
+per-creator money — the deal, total views, new-video GMV, L30 GMV, ad spend,
+ROI. Listing somebody again under a second product would show the same money
+twice on one screen, and this is not hypothetical: 10 of Penetrex's 34 September
+creators posted for more than one product, so a row-per-product table is 53 rows
+for 34 people. A creator goes under the product MOST of their videos are for,
+and the band says "1 also posted elsewhere" rather than hiding the overlap.
+
+**The band above and the groups below will show different creator counts, on
+purpose.** The band counts everyone who touched a product, so its counts overlap
+(NUTRAHARMONY: 19 + 18 + 1 + 1 = 39 for 38 people). The groups partition the
+same people, so they add up to exactly the "38 creators" pill beside the search
+box. Two scopes, each reconciling with the total next to it.
+
+A brand with no product on any video keeps its flat table — two of the eleven
+brands on screen in September are like that.
+
+**Suite:** `pnpm verify:product-groups`, 98 checks, 0 failures. It proves the
+partition by name (no creator listed twice), that the counts add up to the rows
+and to the header pill, that the numbering reads 1..N, that collapsing one band
+touches only that band, and that the menu actually does something.
+
+**TWO THINGS WENT WRONG AND BOTH ARE WORTH REMEMBERING.**
+
+1. **Indenting the rows made three controls unclickable.** The grouped rows were
+   indented 22px and the section inset another 24px. That twelve-column grid has
+   no slack: the Status column is 1.16fr of 8.9 and the pill inside it is 151px.
+   Take 46px away and the pill overflows its cell, and an overflowing cell is
+   covered by the cell after it — the status pill, the contract pencil and the
+   eye button all stopped taking their own clicks. Nothing looked broken. The
+   tree is now drawn INSIDE the row's own 24px of left padding, and the row's
+   geometry is byte-for-byte what it was.
+2. **`verify:collab-controls` was standing at six FALSE failures.** Its probe
+   counts a point as "a neighbour is on top of it" whenever
+   `document.elementFromPoint` returns nothing — but that is also what it
+   returns for a point OUTSIDE THE VIEWPORT. The first row sits lower than it
+   used to (the product band, now the group header, are above it), so at 1280
+   and 1024 it was already below a 1000px fold and the suite was describing a
+   bug that does not exist. It now scrolls the row into view, counts empty
+   points separately, and FAILS if it could not sample anything. 54/54.
+
+**Also ran clean:** `verify:product-band` 55/55, `verify:collab-contrast` 14/14,
+`verify:collab-canvas` 77/77. `verify:product-images` has one flaky failure per
+run and it is a different product each time — it fetches pictures straight from
+TikTok's CDN and those fetches time out; nothing to do with this work.
+
+### TikTok-first signup works on a real phone (2026-09-29)
+
+**Rashid tested the full round trip on his own phone and it worked first time.**
+That is the milestone: everything before this was proved by suites, and the one
+thing no suite could cover was a real person approving on tiktok.com in a mobile
+browser.
+
+**Steps 1, 2 and 3 of the five-step plan are done and on dev.**
+
+- **Step 1** — `tiktok_identities`, the permanent ledger that makes "one TikTok
+  account, one application" real: it outlives disconnecting, rejection and
+  account deletion. Plus the staff release (Data -> TikTok -> Creator accounts),
+  handle integrity (verified vs typed), the dev wipe freeing claims, and the
+  `index.html` strip that stops the Supabase client spending TikTok's code.
+- **Step 2** — three live defects closed in the Settings connect flow: a
+  suspended account could finish a connect; a TikTok account someone else had
+  claimed could be taken once they disconnected; swapping accounts left the old
+  token live at TikTok with its videos still attached.
+- **Step 3** — the signup itself. `tiktok-signup` Edge Function (start / finish
+  / claim), the two pending tables, and "Continue with TikTok" on `/signup`.
+
+**THE POSTURE, decided by a 16-agent design-and-attack pass: we mint no
+sessions.** The browser creates the account with the same `signUp` the apply
+form already used, so Supabase issues every session exactly as before. Our
+server only ever answers "whoever holds this ticket proved they control TikTok
+account X". That removes account takeover as a class rather than defending
+against it.
+
+**Suites:** `verify:tiktok-identity` 25/25, `verify:tiktok-guards` 13/13,
+`verify:tiktok-signup` 24/24, `verify:tiktok-release` 16/16,
+`verify:oauth-strip` 8/8, `verify:creator-tiktok` 29/29.
+
+### What is left, and what it waits on
+
+- **Step 4 — the pre-filled handle.** Needs `user.info.profile`, which has NOT
+  been applied for. Until then the handle is read out of a video's share URL
+  (99.56% of 6,171 real URLs in our data), and a creator with no videos types
+  it. **Do not add the scope to `DISPLAY_SCOPES` before it appears on the app's
+  own Scopes page** — more in our list than on the app and TikTok refuses the
+  authorise URL for EVERYONE on deploy.
+- **Step 5 — production.** Production still runs TikTok's SANDBOX client key.
+  On the day it changes, every `open_id` changes with it: that is a new
+  `app_generation`, a one-time amnesty for every barred account, and every
+  existing creator must reconnect. Runbook, not a bug.
+- **Signup and Settings share one return address** (`/oauth/tiktok-creator/callback`)
+  until a second redirect URI is registered on the TikTok app.
+
+### TikTok-first signup: step 1 of 5 is in (2026-09-28)
+
+- After a 16-agent design-and-attack pass, the plan is: **we mint no sessions
+  ourselves.** The browser creates the account exactly as the apply form does
+  today; our server only binds the TikTok identity. That removes the
+  account-takeover class entirely.
+- **Step 1 shipped to dev:** the `tiktok_identities` ledger (one TikTok account,
+  one application — outliving disconnect, rejection and account deletion), the
+  staff release function, the app-key generation stamp, and handle integrity
+  (verified vs typed, uniqueness on verified handles only, applicants locked out
+  of both).
+- **Proven:** `verify:tiktok-identity` 24/24, `verify:creator-tiktok` 29/29.
+- **Steps 1 and 2 are COMPLETE.** Step 2 closed three live defects in the
+  Settings connect flow: a suspended account could finish a connect started
+  before it was suspended; a TikTok account someone else had claimed could be
+  bound to a second profile once the first disconnected; and swapping accounts
+  left the old token live at TikTok with the old account's videos still
+  attached. `verify:tiktok-guards` 13/13.
+- **PKCE IS NOT AVAILABLE TO US.** TikTok's docs say `code_verifier` is
+  "required for mobile and desktop app only", so a leaked authorisation code
+  cannot be cryptographically bound to the browser that started the flow. It is
+  narrowed (the code never reaches the address bar, the nonce lasts 15 minutes,
+  one live nonce per creator) rather than closed. Written down so a green suite
+  is not read as more than it is.
+- **Step 1 is COMPLETE.** The staff release screen is the third tab on
+  Data -> TikTok ("Creator accounts"), the dev wipe releases claims before it
+  deletes accounts, and TikTok's return parameters are stripped in index.html
+  before the Supabase client can try to spend them.
+- Rashid's decisions: rejection is **not** permanent (staff can release and
+  re-review); do not chase "same person across two TikTok accounts"; fix the
+  Settings-flow defects properly; email verification stays parked.
+
+### Irwin's GMV was 97% missing, and is now exact (2026-09-28)
+
+- Chasing one creator Rashid asked about found that **50 of Irwin's 52 videos
+  were stored with $0 GMV**. The brand page read $34.63; the real figure is
+  **$1,181.44**.
+- Cause: the sync added videos once and never refreshed them, while Reacher's
+  GMV lands days after a post. Fixed — filed Reacher videos are now refreshed on
+  every run, growing only, and other sources' rows are never touched.
+- **Reconciled exactly:** Reacher $1,181.44 / 52 videos = Paid Collabs
+  $1,181.44 / 52 videos.
+- Reacher's per-video **ad spend for Irwin started flowing the same day**: 164
+  rows written, so ad spend and ROI now appear on the brand page.
+
+### Product-wise GMV, creators and videos on a brand's page (2026-09-24)
+
+- **Product performance**: a card per product under the top-videos card — its
+  photograph, name, "Product 01", then GMV, views, creators and videos laid
+  across the bottom. 206px tall on a laptop, one row however many products a
+  brand has, stacked two-by-two on a phone. Redesigned twice on 2026-09-24 from
+  Rashid's mockups: flat pills → tall cards → wide compact cards.
+- Built from data we already had — the product name on each synced video — so
+  nothing new is fetched for the figures.
+- **It reconciles with the card above it**, proven per brand: Penetrex
+  $1,327 = $1,327, Apothecary $949 = $949, Biostime $429 = $429.
+- **Proven:** `verify:product-band` 46/46, contrast pass, zero console errors.
+
+### A product becomes compulsory on 1 October (2026-09-24)
+
+- From 1 October, onboarding a creator requires a product. **Rows dated before
+  October are untouched** — the rule reads the row's own onboarding date, not
+  today's, so editing an old creator never starts failing.
+- **Of the 11 brands active this month, 9 can have products fetched** (8 on
+  Euka, Irwin on Reacher). Only **Aqua Sonic and Pure Daily Care** cannot, and
+  both are Cruva brands — for those the product is typed, and the drawer says
+  so rather than leaving a dead end. (44 is the count of distinct brand names
+  across all history, 28 of them dormant rows with no hiring date; it is not
+  the working roster and should not be quoted as one.)
+- The per-product split is now **videos only**. The amount is typed once for the
+  whole deal; the video total is the computed sum and cannot be typed over.
+- **Proven:** `verify:october-product` 15/15, `verify:product-picker` 28/28,
+  `verify:drawer` 84/84, contrast pass, nothing written to Paid Collabs.
+
+### Irwin's ad account is still not connected, and a loaded gun was removed (2026-09-24)
+
+- Asked Reacher directly: **Irwin Naturals has 0 GMV Max campaigns**, so there
+  is no ad spend or ROI to show. Biostime has 6 and Cutler 29, which is how we
+  know the endpoint works rather than the shop being broken.
+- **Found and fixed before it fired:** the spend endpoint refuses a window over
+  90 days and the sync asks for 120. It has never failed only because the call
+  sits behind `if (campaigns > 0)` — so the day Rashid connected the ad account
+  would have been the day the sync started failing. `videoSpend` now chunks the
+  window and sums the parts per video and campaign.
+- **Proven on Biostime:** $11,531.54 spend and $14,138.50 ad revenue over two
+  chunks, 200 rows. `verify:reacher-ads` 13/13, `verify:reacher` 28/28.
+
+### Products now show their real photographs (2026-09-24)
+
+- The onboarding picker shows real product pictures, on EUKA brands and Reacher
+  ones alike: Swisse 8/8, Irwin Naturals 11/11, Penetrex 6/9 (three products
+  genuinely have no image indexed; those are retried in a fortnight).
+- They are looked up by the exact TikTok product id and cached in
+  `collab_product_images`, so the second open of a brand is instant.
+- **Proven:** `verify:product-images` 19/19 (including fetching the URLs) and
+  `verify:drawer` 84/84, which measures in a real browser that the photographs
+  actually render at 100–200% zoom and on a phone.
+- The Reacher sync pill no longer says "· 207 videos".
+
+### Cruva is BLOCKED on one fact from Rashid (2026-09-24)
+
+PDC / Aquasonic / Joymode map to **Pure Daily Care**, **Aqua Sonic** and
+**JOYMODE**, all of which already exist in Paid Collabs. The `CRUVA_API` key in
+`.env.local` is valid — proven against a bogus key of the same shape — but it
+reaches exactly two endpoints, `/community/campaigns/list` and
+`/community/campaigns/get`. There is no videos, creators, products or ad-spend
+endpoint behind it. See OPERATIONS for everything already ruled out, so none of
+it is repeated.
+
+### Onboarding is a side drawer now (2026-09-23)
+
+- The onboarding popup is a right-hand drawer: more room, header and footer
+  fixed, only the middle scrolls, and the small type he asked to keep.
+- Products are a proper dropdown — closed until opened, searchable inside,
+  closes on the arrow, on Escape and after a pick — with a picture per product
+  where the platform has one and a letter tile where it does not.
+- **Proven at six sizes:** `verify:drawer` 78/78 from 100% to 200% zoom and on
+  a phone, including that nothing is painted over the drawer's header.
+
+### Products and per-product deals on onboarding (2026-09-23)
+
+- Onboarding now offers the brand's **real catalogue** in a searchable
+  dropdown, from Euka or Reacher, whichever sells that brand. Typing a product
+  nobody has heard of still works.
+- **More than one product?** Each gets its own amount and videos, and the pair
+  below becomes the computed total. That total is what `deal` carries, so every
+  other screen keeps reading one number.
+- **Proven:** `verify:product-picker` 22/22, including a save whose payload is
+  checked without writing anything to Paid Collabs.
+
+### Irwin Naturals runs on Reacher (2026-09-23)
+
+- Irwin Naturals is on Reacher, not Euka. A `reacher-sync` Edge Function files
+  its videos onto the Paid Collabs rows every fifteen minutes, and its per-video
+  ad spend into the same table the brand page already reads.
+- **First run: 13 videos onto 7 of 27 creators.** A before/after snapshot of
+  every row proved nothing outside Irwin Naturals changed.
+- **No ad spend yet:** that shop has no GMV Max campaign connected in Reacher,
+  so Ad spend and ROI show a dash. It fills by itself once the ad account is
+  connected there.
+- **Proven:** `verify:reacher` 19/19, including a control that fails if Reacher
+  returns nothing.
+
+### Search and filter on a brand's creator list (2026-09-23)
+
+- A search box, a Filter button and a count above a brand's table. Search hits
+  name, handles, category, product, deal and hired-by; filters are payment
+  status, still-owed vs delivered, hired by, and EUKA tier, each chip with its
+  count, and only for values that brand-month contains.
+- **The cards and top-videos totals do not move when the list is narrowed** —
+  they describe the month. The count says "12 of 41 creators" when filtered.
+- **Proven:** `verify:brand-search` 31/31 against the database, both themes,
+  five widths.
+
+### New Video GMV on the Brands screen, and red ad spend (2026-09-21)
+
+- **A sixth card on the Brands screen, New Video GMV**, in green: every
+  brand's new video GMV for the month (or All Time), added up with the very
+  function each brand page's GMV card uses, rounded once.
+- **Ad spend figures on a brand's page are red**; dashes stay grey.
+- **The card row sizes itself by its own width**: six in a row on wide
+  screens, three by two on laptops (1152–1440px), two by three at 1024px. This
+  also fixes figures that were already being cut off below about 1300px.
+- **Proven:** `verify:brands-gmv` 34/34. August 2026: $27,449.47, equal to the
+  database; all 10 brands' GMV cards match the database and add up to it
+  within rounding. `check:contrast` section 5 is new.
+
+### Followers on the Creators tab, and a second source for them (2026-09-18)
+
+Live on dev at `813841b` (CLI deploy, live asset checked against the build).
+- **A Followers column** after TikTok, and **a Followers filter** in the
+  existing Filter panel, with a "No count yet" bucket.
+- **Counts come from Euka's shop data first**, and for everyone it does not
+  cover (380 of 464 people) **from Euka's market intelligence, looked up by
+  handle** and kept in `euka_creator_followers`. Only exact handle matches are
+  stored. The hover says which source a count came from.
+- **It is still filling, by itself.** Euka rations new lookups, so the
+  five-minute sync asks about four handles at a time. At 16:50 UTC on
+  2026-09-18: 75 found, 11 refused and queued for a retry in about a day, 379
+  not yet asked. Expect a day or two to cover the roster. A creator with no
+  TikTok presence Euka knows of will stay "No count yet".
+- **Proven:** `verify:followers` 16/16. Every count on screen matches its source
+  (130 of 166 rows on the tested month, 4 of them from the lookup), and where
+  both sources know a creator they agree within 50% (11 compared).
+
+### Client sharing, step 3: the staff view, copy again, a new address (2026-09-18)
+
+- **The client page is the staff Brands view** minus ad spend, ROI, Status, the
+  contract and the deals circle. The five cards use the staff arithmetic
+  exactly; tier and L30 come from a cache the sync fills, never from Euka
+  during the request. Rashid's GMV, avatar, cost/video and Deal-column
+  corrections are all in; FEATURE_MAP "Client sharing" has the detail.
+- **`/admin/client-links`**: copy a link again, open a row for its address,
+  facts and recent opens, stop sharing, or give it a new address in place.
+- **Proven:** `verify:collab-share` 43/43, `verify:collab-share-ui` 32/32,
+  `verify:client-links` 18/18.
+
+### Client sharing, step 2: month control and the owner's screen (2026-09-17)
+
+- **Month control.** A link carries a whitelist of months (empty = every
+  month). The client's switcher offers only those, "All time" means all of
+  its months, and asking for another month is answered with one it was given.
+- **`/admin/client-links`**, a row in the Paid Collabs group, ops and admin
+  only: make a link (label, brands, months, sections, 7–365 days), see it once,
+  list every link with scope, expiry and views, revoke with a confirm.
+- **Proven:** `verify:collab-share` 43/43 (including month scoping) and
+  `verify:client-links` 12/12 end to end — an owner makes a link, a browser
+  that never logged in opens it, a non-owner cannot reach the screen, and
+  revoking kills it while the client is sitting on the page.
+
+**DONE 2026-09-18 (step 3 above). What was decided:** the client page must show the
+**exact same Brands view as staff**, minus ad spend and ROI. Rashid relayed it
+on 2026-09-17, and answered the specifics: the staff five KPI cards (Budget,
+Allocated, Paid, Videos, Cost/video), the Status column but **no contract
+PDF**, tier badges and L30 GMV **included** (Euka, cached per brand so a shared
+link cannot hammer it), and the table styled like Paid Collabs itself rather
+than the cleaner client layout built first. That supersedes his earlier
+"budget and remaining only" and "no payment status" answers; the DECISIONS
+entry for those says so.
+
+### Client sharing, step 1 of 2 (2026-09-17)
+
+Rashid asked for links that show a client their brand's Paid Collabs work with
+no login, read only, and only the brands on the link. **Step 1 is built and on
+dev: the tables, the server door, the client page and the proof.** Step 2 is
+the admin screen for making links, which he has not approved yet.
+
+- **Built:** `collab_share_links` / `collab_share_views` (RLS on, no policy,
+  service-role grants only), the `collab_share_create/list/revoke` functions
+  (ops and admin only), the `collab-share` Edge Function (`verify_jwt = false`,
+  checks the link itself), and `/share/collabs/:token` → `ShareCollab.tsx`.
+- **His choices that day:** budget and remaining but not allocated, paid or
+  cost per video; each creator's deal and per-video rate but not payment
+  status; spark codes shared; the deals circle and hire tag kept; no phone
+  numbers or emails; ad spend and ROI hidden, which is where this started.
+- **Proven:** `verify:collab-share` 36/36 and `verify:collab-share-ui` 22/22,
+  including that the real phone numbers, emails, payment details and ad spend
+  figures in the database are absent from both the payload and the page, and
+  that every figure on screen matches the database.
+- **Known gaps, said out loud:** no admin screen yet (links are minted by hand,
+  see OPERATIONS); no Euka tier badge or L30 GMV on the client page, because
+  both are live Euka calls and a public page should not hit Euka per view; no
+  per-month scoping on a link.
+
+### Top videos: views, GMV and ad spend totals (2026-09-16)
+
+Rashid's boss wanted three stacked cards beside the ten top videos on a brand
+page, instead of the single GMV total: views (blue), GMV (green) and ad spend
+(red), for the chosen month, or for all time under All Time.
+- **Each video is counted once.** 84 Penetrex videos sit under two deals, and
+  adding the columns would put all-time views at 10.0M instead of 7.9M. The
+  hover text says how many videos were counted once.
+- **Ad spend is Euka's**, the same figure and period as the Ad spend column.
+  It shows a dash when Euka has nothing, never $0.
+- **Proven:** `verify:topvids-stats` 23/23. Penetrex September and All Time
+  were checked against the database, colours in both themes, and seven widths
+  from 1920 to 390. Zero console errors. `check:contrast` has a section for the
+  three cards.
+- **Placement, asked the same day:** "on extreme right … Also in center". The
+  cards sit on the strip's far right edge, centred top to bottom on the row of
+  tiles (picture, name and views). Both checks measure it: 0px gap, 0px off
+  centre.
+- **Found on the way:** under All Time the page's Euka sweep keeps writing
+  fresh views and GMV into the rows while it is open. Figures can tick up
+  while you watch. That is their existing behaviour, not a fault.
+- **Live on dev:** commit df73126, with the cards on the far right, by CLI
+  deploy (PARKED 45). wurxmediahubdev.vercel.app serves `index-B-OCO5zj.js`
+  and `index-DZdrp_OO.css`, the build both checks passed against. `verify:video-days` (29/29) now checks the three cards'
+  position instead of the old total.
+
+### Deals badge and the new L0–L7 tier colours (2026-09-16)
+
+Rashid asked for two things. First, a small circle beside each creator showing
+how many deals we have had with them. Second, a better colour scheme for the
+L1–L7 tags, like Euka's.
+- **Deals badge:** a small circle on the corner of the creator's face, on the
+  brand page and the Creators tab, counting that person's deals **in the month
+  on screen, across every brand**. Under All Time it counts their whole
+  history, and the hover text says which. Beside the tier tag was built first,
+  and it cut names to one letter at 1600px (DECISIONS, 2026-09-16).
+- **Tier colours:** Euka's hues, as tokens `--wx-tier-0`…`7` in both themes,
+  and one rule set that every tier tag and chip reads.
+- **Proven:** `verify:tier-deals` 17/17. Badges match the database on both
+  screens (34 and 166 rows). The badge costs names no width. Every tier tag
+  wears its own ink in dark and light. No sideways scroll at 390px, and zero
+  console errors. `check:contrast` has a new tier section, and it passes.
+- **Live on dev:** commit db88682, by CLI deploy, because git deploys are still
+  blocked (PARKED 45). wurxmediahubdev.vercel.app serves `index-CgqMMlgq.js`,
+  the same file `verify:tier-deals` passed against (20/20, including the All
+  Time pass).
+
+### Paid Collabs ad spend, ROI and spark codes from EUKA (2026-09-15, backfilling)
+
+Rashid: *"let's move with euka for now"*. What was built:
+- The `euka-ads-sync` Edge Function, with the migration
+  `20260915150000_euka_ad_figures.sql`. The migration adds tables, readers,
+  the claim queue, and a pg_cron job that runs every 5 minutes.
+- `collab-ad-figures.tsx` now reads Euka, and WurxUI's spark-code cells fall
+  back to Euka's code.
+
+It is all on dev and live on wurxmediahubdev.vercel.app. The screen code went
+out by CLI deploy, because git deploys are still blocked (PARKED 45). The live
+entry asset, `index-Io5Hejlp.js`, is the same file the on-screen check passed
+against.
+
+**State when recorded:**
+- Connected in Euka: Penetrex, Dr Tobias, Longevity Box, Swisse Wellness,
+  Aurelia, NutraHarmony, and **Apothecary since 2026-09-17** (Rashid linked
+  its account; it needed a discovery run to appear — see OPERATIONS, "when a
+  brand links a new ad account"). Apothecary's August and September spend,
+  $24,530 and $14,976, is now on screen and checked, 5/5. Aurelia's ad account is "Cutler Nutrition Shop Ads", which reports
+  81 campaigns but lists only 43.
+- September was filling first. Penetrex had 2 of 5 campaigns done (157
+  videos, $1,661), and Euka's first-ask 504s were retrying every 4 minutes.
+- The backfill of June to August will take a few hours.
+
+**Proven:**
+- `verify:euka-ads` 21/21.
+- `verify:euka-accounts` 9/9, after the shared-module move.
+- `verify:euka-ads-ui` 5/5. Every Penetrex September creator row (34, 26 of
+  them with figures) showed the same Ad spend and ROI as the database. A video
+  with no code on its row (Dulce Dagda's) showed Euka's spark code, marked
+  "from EUKA". Zero console errors.
+- Build and lint clean.
+
+At the time of that check, 123 of Penetrex's 132 September videos already had
+Euka figures.
+
+### Dev is LIVE at `aab0cf0`, deployed from the CLI (2026-09-15)
+
+**Git deploys are still blocked, so every push until Rashid fixes it needs
+the CLI route.** Pushes `a4052ed` and `aab0cf0` came back `BLOCKED`: "the
+commit author doesn't have permission to create deployments"
+(`TEAM_ACCESS_REQUIRED`). The commit identity is the same one that deployed
+on 09-10. What changed is that the Vercel team (Hobby, sole member
+`wurxmedia-6695`) no longer has a GitHub login linked. **Rashid's fix:**
+Vercel → Account Settings → Authentication → connect GitHub `RashidNazeer`.
+
+**Deployed anyway, from the CLI.** Exactly `aab0cf0` was exported, deployed
+as a preview of the dev project (`dpl_ECGFqPUZMpGXwxK1U97yHbbX1DFH`), and
+`wurxmediahubdev.vercel.app` was aliased to it. Steps are in OPERATIONS
+under Vercel. Verified on the live URL:
+- the entry asset `index-AUz50jHL.js` is the same file as the tested local build
+- `verify:video-days` 30/30 against the live site
+- `verify:ads-manager-ui` 18/18 as Subhan against the live site
+
+Rollback: alias the domain back to the 09-10 deployment
+`dpl_A4CNU9pa7kjVpGgDhZL8NMqCAYLb`.
+
+### Top videos total, and Manage videos by day (2026-09-15)
+
+- The brand page's Top videos strip shows **10** videos, with the **New video
+  GMV column's total** centred beside them. Below about 1090px of strip
+  width, the total sits above them instead.
+- Manage videos has a **Posted** bar: All · Today · Yesterday · any date. Each
+  row shows its posted day, and undated links are counted out loud.
+- `verify:video-days` 30/30: numbers from the database, all widths from 400
+  to 1500px, zero console errors, and the modal wrote nothing ·
+  `verify:collab-chrome` 17/17 · lint and build clean.
+
+### Ads Manager is full staff (2026-09-15)
+
+Rashid: *"ads manager will have the same edit access as asad and rashid has
+which means they can edit anything"*, for the ROLE, not one person.
+**Subhan (`subhan@wurxmedia.com`) is the only Ads Manager, on dev.** The two
+old test Ads Manager accounts were deleted first, as agreed.
+
+- Migration `20260915120000_ads_manager_is_staff.sql` (applied to dev):
+  `is_staff()`, `assert_active_staff`, `review_application`,
+  `refresh_content_preview` and `is_approved_creator` admit `ads_manager`
+  wherever they admitted `ops`. Nothing admin-only changed.
+- Seven Edge Functions admit it too, deployed to dev.
+- App: `STAFF_ROLES` in auth-context drives the router, sidebar and Paid
+  Collabs identity. Home is `/admin`. Inside Paid Collabs it is `superadmin`,
+  as Asad is.
+- Not widened: the two Asad-only deletes (row trash icon, matrix delete),
+  which check his username. Rashid does not have them either.
+- **Production is untouched by this change.**
+
+Proven: `verify:ads-manager` 19/19 (database and Edge Function, with an
+Affiliate Team Lead as the negative control) · `verify:ads-manager-ui` 18/18
+as Subhan in a real browser (Payment Sent, editor Delete, selection, export,
+every admin screen, zero console errors) · `verify:collabs-viewer-rls` 25/25 ·
+`verify:collabs-viewer` 79/79, including Asad's controls ·
+`verify:role-gates` 12/12, which now fails if "staff" disagrees between the
+app, `is_staff()` and any Edge Function · typecheck, lint and build clean.
+
+`verify:collabs-viewer` first failed 2 checks. That was a stale allowlist,
+not this change: it predated the tier and deals filter chips from
+2026-09-10. They are allowlisted now as filters.
+
+**`dev` is at `d8c9f69`, pushed and deployed to wurxmediahubdev.vercel.app,**
+verified against the live site rather than the deploy status.
+
+**PRODUCTION MOVED for the first time since 26 August**, to `5888faa` on
+`main` — and it carries ONLY a copy change. `dev` is now ~40 commits and 7
+migrations ahead of it. The "make it live" decision for all of that is still
+open and untouched.
+
+### Read-only really means read-only now (2026-09-02, later)
+
+Rashid asked whether the three new roles could change a deal's status. They
+could not — the App-level handler refuses `viewer` and the database refuses
+the write on the exact columns that menu touches, proven by probing them as
+each role and reading the rows back with the service key.
+
+**But the question found a real hole underneath it.** Every export path in
+Paid Collabs was open to them: brand budgets, the full deal table, the
+outreach list with email addresses, discovery, the leaderboard and two
+clipboard copies. The permission floor withholding `canExportCsv` was real,
+and `App.jsx` honoured it — but `WurxUI.jsx`, the screen people actually
+see, never asked. **An export is the one thing the database cannot refuse**,
+because the rows are already on their screen and the CSV is built in the
+browser. All seven paths are gated now, at the button and in the function.
+
+Also fixed: the status pill is inert for them rather than a menu that opens
+and then scolds; row selection and the bulk bar are gone; the brand notes
+button is gone; and `_actorUser` is set during render, not only from an
+effect, so the new gates cannot read a stale null and strip an ADMIN of
+their controls on first paint.
+
+The browser check that had passed 42/42 over both holes was a denylist of
+labels somebody had already thought of, run on one tab. It is an allowlist
+across all six tabs, the brand drilldown and the angles tab, and it now
+asserts the admin side too. 116 checks.
+
+One bug surfaced that was always there: the Reporting hero's downward-delta
+chip failed AA in both themes. It only renders when a month is DOWN on the
+one before, so every earlier run had nothing to measure.
+
+### What this session did
+
+**The TikTok app came back REJECTED, and it was our wording.** Their App
+Review Guidelines say "Apps must not be for private or personal use", and the
+word *private* opened both our scope explanation and /terms — the page the
+form sends the reviewer to. The product never matched the rejection: creators
+own their own accounts. Fixed in production as copy only, plus a new public
+`/tiktok` page, because TikTok also require a developed site rather than a
+landing page. Full diagnosis and the drafted resubmission copy are in PARKED
+27.
+
+**Three new roles: Affiliate Team Lead, Operations Lead, Ads Manager.** Their
+own logins, Paid Collabs only, read only. Built WITHOUT touching
+`is_staff()` — that guards seventy policies and widening it would have handed
+them the whole product. Proven by attacking the database as each role and in a
+browser. See DECISIONS and the new `roles-and-access` memory.
+
+**Two Paid Collabs bugs.** The creator editor showed no Delete button to
+ANYBODY, Asad included — a name comparison that could never be true, the same
+fault as the payment gates, missed then because that sweep searched the
+negative form. And the creator picker was switched off while editing although
+the code behind it already handled editing.
+
+**Reacher was explored and dropped.** He said: *"this is not to be built in
+this app reacher is diff forget that now i just wanted to see what's
+available"*. Findings are in PARKED 43 in case it returns. His API key is in
+`cli-secrets.env` as `REACHER_API`.
+
+### Suites, all green on dev
+
+collabs-viewer-rls 34/34 · collabs-viewer 42/42 · collab-controls 45/45 ·
+collab-canvas 86/86 · collab-contrast 14/14 · RLS suite all green · perms 5/5
+· build and lint clean.
+
+
+
+**`dev` is at `191ffaf`, pushed, and DEPLOYED to wurxmediahubdev.vercel.app**
+(verified READY, and verified in a browser against the live site, not just the
+deploy status). **Production is untouched** — no Euka function, no key, old
+code. That is still a separate "make it live" step he has not asked for.
+
+### The performance sheet, 2026-09-01
+
+**Rashid, with Asad's app open beside ours: the numbers were not readable**
+**and the screen did not look like a paid product.** Both were true and both
+were measurable.
+
+A month column was 170px holding two figures, so each half had 53px of room
+for a value that measures 61 — every five-figure GMV in the table printed
+short, "10,160.00" as "10,160.0". Nothing threw and nothing looked broken.
+And nine rounds of their own restyling had piled up in paidcollabs.css with
+nothing ever removed, ending in about 1,100 filled, bordered, rounded boxes
+per brand, a gold header, a gold identity column and a full-strength accent
+border around the whole table.
+
+The sheet is now ruled rather than filled, the column is 184px sized against
+a six-figure month, it opens on the newest month instead of ten months of
+padlocks, and the header pins as you scroll. Green GMV and red ad spend came
+back — a global rule meant for FORM FIELDS was painting every figure
+near-black, the same mistake already carved out once for the creative angle
+cells.
+
+**Two guards were extended, and both had been passing on absence.**
+`verify:collab-contrast` only ever measured the brand LIST — 157 headings —
+and never opened a brand; it also read text nodes, and an `<input>` has none,
+so every figure on the densest screen in the product had never been measured.
+It now opens the sheet and reads values: 1,024 elements including 491 figures,
+and it found **60 real contrast failures** the moment it could see them.
+`verify:collab-controls` gained clipping, geometry and overlap checks — and
+the first version of the clipping check PASSED on the broken width, because it
+measured only the values that happen to exist today. It asserts on 123,456.78
+now. 45/45 and 14/14.
+
+### What this session did, after the last save point
+
+**The Euka endpoint was missing entirely and is now restored.** Their app asks
+for every Euka figure from `/.netlify/functions/euka`, a serverless function
+that lived only in the original developer's Netlify deployment — the vendoring
+copied their `src/` and it sat outside. On Vercel the path 404s and every call
+site degrades to null without erroring, so every figure was silently absent for
+eleven days. Ported to `supabase/functions/euka`, staff-only, key in Edge
+secrets. Four more bugs were found underneath it, three of which are still live
+on Asad's deployment. See FEATURE_MAP and PARKED 36.
+
+**Their eight people can sign in**, each arriving with the role and overrides
+Asad set, verified by signing in as three of them.
+
+**A round of UI bugs he reported, all reproduced in a browser before fixing.**
+Half the controls in Paid Collabs did nothing, and it was one structural
+mistake: one div was the CSS fence, the containing block and the scroller at
+once, so ten portalled overlays rendered unstyled off-screen and every inline
+dialog was measured against a scrolled box. Plus starved grid tracks — mine,
+from adding Ad spend and ROI — where the contract pencil sat on top of the
+status pill and ate the click. Plus a payment gate whose comparison could never
+be false, refusing everyone including Asad with an invisible error. All fixed
+and verified; see DECISIONS for each.
+
+### Suites, all green on dev
+
+euka 32/32 · euka-ui 7/7 · collab-controls 21/21 · roster 21/21 · team 10/10 ·
+perms 5/5 · signin 7/7 · wurxbase 7/7 · write-safety 11/11 · contrast 12/12 ·
+collab-ads 30/30 · collab-ads-ui 17/17 · isolation ok · lint clean.
+
+### Two things he was told and has not decided
+
+- **The Euka key should be rotated.** It was a string literal in Asad's repo
+  and is in that repo's history. One `supabase secrets set` per project.
+- **Telling Asad about the bugs in his own copy** — his "remind me later" from
+  earlier. The list is longer now and three of them are costing him data daily.
+
+**Do not re-explore the codebase.** This file, then `docs/PARKED.md`, then only
+the files the next action names.
+
+--- | --- | --- |
+| Asad | superadmin | asad@wurxmedia.com |
+| Usman | admin | usman@wurxmedia.com |
+| Farkhan Saleem | ipc | farkhan@wurxmedia.com |
+| khushi | ipc | khushi@wurxmedia.com |
+| masifa | ipc | masifa@wurxmedia.com |
+| Shumyle Asim | ipc | shumyle@wurxmedia.com |
+| Fahad | viewer | fahad@wurxmedia.com |
+| Lead | viewer | lead@wurxmedia.com |
+
+All eight are `ops` in our hub. Asad does not need our `admin`: his own row
+carries superadmin and the row beats the mapping. Re-runnable with
+`pnpm wurxbase:link`.
+
+### Done 2026-08-29
+
+- **The plaintext passwords are gone**, column and browser bundle both, with
+  1,198 lines of dead login code.
+- **The colour review is finished.** The guard had been passing its own
+  failures by applying the large-text contrast floor to 10px labels. 30 real
+  failures, all fixed, 12/12 on per-size floors.
+- **Settings was unreachable** in our chrome, and with it User Management,
+  Access Control and God Mode. A gear beside the bell opens it.
+- **A viewer arrived with edit powers.** Their app reads its identity once, at
+  mount, and we were mounting it before the permission lookup returned, so it
+  held the wider fallback role. Found by signing in as Fahad. The sidebar was
+  right and sessionStorage was right; only their app was wrong.
+- **A guard was deleting real data.** The permissions suite restored
+  `hub_email` to `null` rather than to what was there, and wiped one of the
+  eight the day they went in.
+
+Suites on dev: roster 21/21, team 10/10, perms 5/5, signin 7/7, wurxbase 7/7,
+write-safety 11/11, contrast 12/12, collab-ads 30/30, collab-ads-ui 15/15,
+isolation ok. Header checked at 375, 768, 1024 and 1440.
+
+**Do not re-explore the codebase.** This file, then
+`docs/NEXT_UNATTENDED.md`, then PARKED.
+
+--- | --- |
+| Asad | full access |
+| Usman | manager |
+| Farkhan Saleem | editor |
+| khushi | editor |
+| masifa | editor |
+| Shumyle Asim | editor |
+| Fahad | **view only** |
+| Lead | **view only** |
+
+Without them, Fahad and Lead walk in able to edit deals and money. With them,
+everyone keeps exactly the access Asad already gave them.
+
+**DO NOT GUESS THESE.** Matching the wrong human to a row hands somebody
+else's permissions to the wrong person, which is what the column exists to
+stop.
+
+**Two ways to enter them, and the first is now the easy one.** Paid Collabs
+-> the gear in the top bar -> User Management -> pencil on a row -> Hub email
+-> Save. Every row shows its email, and a row without one says "no hub email"
+in red. Or, per id (asad, usman, farkhan_ipc, khushi, masifa, shumyle_ipc,
+fahad, lead):
+
+```sql
+update wurxbase.app_users set hub_email = '...' where id = 'asad';
+```
+
+Then create their hub accounts — `node scripts/create-admin.mjs <email>
+"<password>" ops`, `ops` for everyone except Asad — and do the production
+cutover, which is step 3 of `docs/NEXT_UNATTENDED.md`.
+
+### What he decided on 2026-08-29
+
+**"Delete the old passwords" — yes, and it is done.** The column is dropped on
+dev. The bigger half was that five passwords, superadmin included, were
+hardcoded in `App.jsx` and shipped in the browser bundle; those are gone
+too, along with the 1,198 lines of dead login code that held them. **They are
+still in git history, so treat those five as burned wherever the team reused
+them** — worth telling Asad alongside the bug list he is already owed.
+
+**"Finish the colour review" — yes, and it is done.** It did not need the
+thirty agent votes that were parked. The guard had been passing the failures:
+it applied the large-text floor of 3.0 to 9.5px labels. On the real per-size
+floors, 30 elements failed across the six screens in both themes; all 30 are
+fixed and it is 12/12. See PARKED 35, now closed.
+
+### Found while doing it, and fixed
+
+**Settings was unreachable.** Their panel opened from the user chip, and our
+chrome hides that chip because our own top bar says who you are. That closed
+the door on User Management, Access Control and God Mode — Asad would have
+found it on Monday. A gear beside the bell reopens it, for anybody who has
+something in there.
+
+**Two Sign out buttons inside Paid Collabs** ended a session that no longer
+exists: they cleared the vendored app’s stored user and left a blank screen
+behind, with the person still signed in. Both gone; the hub’s own top bar has
+the real one.
+
+## WHERE EVERYTHING STANDS
+
+**All the work is on the branch `fix/wurxbase-write-safety`. `dev` is still
+at `19a750a`. Nothing merged, nothing deployed, PRODUCTION UNTOUCHED.** His
+live site and the old app both still run exactly as they did.
+
+Suites, all green on dev: write-safety 11/11, perms 4/4, signin 7/7, wurxbase
+7/7, team 10/10, contrast 12/12 (honest thresholds), collab-ads 30/30,
+collab-ads-ui 15/15, isolation ok. Header checked at 375, 768, 1024 and 1440:
+no sideways scroll, gear visible at every width.
+
+**He has already told the team to stop using the old app on Monday.** Closed;
+do not raise it again.
+
+**Do not re-explore the codebase.** This file, then `docs/NEXT_UNATTENDED.md`
+for the Monday checklist, then PARKED. Ask for the eight addresses and wait.
+
+---
+
+### 1. The eight email addresses — the only thing blocking Monday
+
+Ask: *"Which email will each of these people use to log into our hub?"*
+
+| Person | What they can do today |
+| --- | --- |
+| Asad | full access |
+| Usman | manager |
+| Farkhan Saleem | editor |
+| khushi | editor |
+| masifa | editor |
+| Shumyle Asim | editor |
+| Fahad | **view only** |
+| Lead | **view only** |
+
+**Why it matters, in his terms:** without it, Fahad and Lead walk in with full
+edit rights over deals and money. With it, everyone keeps exactly the access
+Asad already gave them.
+
+**DO NOT GUESS THESE.** Matching the wrong human to a row hands somebody else's
+permissions to the wrong person, which is the thing the column exists to stop.
+
+Once he sends them: `update wurxbase.app_users set hub_email = '...' where id = '...'`
+for each of the eight ids (asad, usman, farkhan_ipc, khushi, masifa,
+shumyle_ipc, fahad, lead), then create their WurxMediaHub accounts —
+`node scripts/create-admin.mjs <email> "<password>" ops`, `ops` for everyone
+except Asad. Then the production cutover, which is step 3 of
+`docs/NEXT_UNATTENDED.md`.
+
+### 2. Drop the old passwords? (yes/no)
+
+Eight plaintext passwords sit in `wurxbase.app_users.password`. Nothing has
+read them since their login screen was removed on 2026-08-28. Offered twice
+already, never answered. Yes means one migration dropping the column.
+
+### 3. Finish the colour review? (yes/no)
+
+30 possible dark/light issues were never verified — the agents checking them
+died when his usage limit hit, and he stopped the re-run to save budget with
+*"i will tell you when to run it"*. They are listed in **PARKED 35** as leads,
+NOT as findings. Re-running resumes from cache; only the unfinished ones cost
+anything.
+
+---
+
+## WHERE EVERYTHING STANDS
+
+**All the work is on the branch `fix/wurxbase-write-safety` (`5285cb2`,
+pushed). `dev` is still at `19a750a`. Nothing merged, nothing deployed,
+PRODUCTION UNTOUCHED.** His live site and Asad's old app both still run exactly
+as they did.
+
+**Done overnight, unattended, on his instruction** (he set a timer that woke the
+session when his limit reset):
+
+- **All six data-loss bugs fixed**, and NOT by the design in
+  `docs/WURXBASE_WRITE_SAFETY.md`. That design was written under "no DDL
+  access" and said it could not be made atomic. We own the schema now, so a
+  partial unique index plus a revision column closes it in the database instead.
+  `pnpm verify:write-safety` 11/11.
+- **The permission leak closed.** A person's WurxBase role and overrides come
+  from their own `app_users` row, matched on `hub_email`, not derived from
+  our role. `pnpm verify:wurxbase-perms` 4/4 — it links a real VIEWER row to
+  an ADMIN of ours and proves they arrive as a viewer.
+- **Data refreshed** from their idle project: creators 1258, activity 2376,
+  budgets 44. Their project is quiet all weekend so this stays current.
+- **Two guards repaired**, both of which had been passing by not looking. The
+  contrast guard could not parse `color(srgb ...)` — what Chromium returns for
+  `color-mix` — so every colour-mix background was read as absent and elements
+  were measured against the wrong thing. That found 67 faded-ink declarations.
+
+Suites: write-safety 11/11, perms 4/4, signin 7/7, wurxbase 6/6, contrast 12/12,
+collab-ads 30/30, collab-ads-ui 15/15.
+
+**He has already told the team to stop using the old app on Monday**, so that
+item is closed. Do not raise it again as an open task.
+
+**Do not re-explore the codebase.** This file, then `docs/NEXT_UNATTENDED.md`
+for the Monday checklist, then PARKED. Ask the three questions above and wait.
 
 ---
 

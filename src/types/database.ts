@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.5"
   }
   graphql_public: {
     Tables: {
@@ -1967,6 +1967,198 @@ export type Database = {
           },
         ]
       }
+      euka_ad_sync_stores: {
+        Row: {
+          advertisers: number | null
+          campaigns_listed: number | null
+          campaigns_reported: number | null
+          checked_at: string
+          connected: boolean | null
+          last_error: string | null
+          store_id: string
+          store_name: string | null
+        }
+        Insert: {
+          advertisers?: number | null
+          campaigns_listed?: number | null
+          campaigns_reported?: number | null
+          checked_at?: string
+          connected?: boolean | null
+          last_error?: string | null
+          store_id: string
+          store_name?: string | null
+        }
+        Update: {
+          advertisers?: number | null
+          campaigns_listed?: number | null
+          campaigns_reported?: number | null
+          checked_at?: string
+          connected?: boolean | null
+          last_error?: string | null
+          store_id?: string
+          store_name?: string | null
+        }
+        Relationships: []
+      }
+      euka_ad_sync_units: {
+        Row: {
+          advertiser_id: string
+          advertiser_name: string | null
+          attempts: number
+          campaign_id: string
+          campaign_name: string | null
+          cost: number | null
+          due_at: string
+          last_error: string | null
+          month: string
+          row_count: number | null
+          status: string
+          store_id: string
+          store_name: string | null
+          synced_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          advertiser_id: string
+          advertiser_name?: string | null
+          attempts?: number
+          campaign_id: string
+          campaign_name?: string | null
+          cost?: number | null
+          due_at?: string
+          last_error?: string | null
+          month: string
+          row_count?: number | null
+          status?: string
+          store_id: string
+          store_name?: string | null
+          synced_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          advertiser_id?: string
+          advertiser_name?: string | null
+          attempts?: number
+          campaign_id?: string
+          campaign_name?: string | null
+          cost?: number | null
+          due_at?: string
+          last_error?: string | null
+          month?: string
+          row_count?: number | null
+          status?: string
+          store_id?: string
+          store_name?: string | null
+          synced_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      euka_ad_video_month: {
+        Row: {
+          advertiser_id: string
+          campaign_id: string
+          cost: number
+          currency: string | null
+          gross_revenue: number
+          item_id: string
+          month: string
+          orders: number
+          store_id: string
+          synced_at: string
+        }
+        Insert: {
+          advertiser_id: string
+          campaign_id: string
+          cost?: number
+          currency?: string | null
+          gross_revenue?: number
+          item_id: string
+          month: string
+          orders?: number
+          store_id: string
+          synced_at?: string
+        }
+        Update: {
+          advertiser_id?: string
+          campaign_id?: string
+          cost?: number
+          currency?: string | null
+          gross_revenue?: number
+          item_id?: string
+          month?: string
+          orders?: number
+          store_id?: string
+          synced_at?: string
+        }
+        Relationships: []
+      }
+      euka_spark_codes: {
+        Row: {
+          expired: boolean | null
+          expires_at: string | null
+          item_id: string
+          posted_date: string | null
+          spark_code: string
+          store_id: string
+          synced_at: string
+        }
+        Insert: {
+          expired?: boolean | null
+          expires_at?: string | null
+          item_id: string
+          posted_date?: string | null
+          spark_code: string
+          store_id: string
+          synced_at?: string
+        }
+        Update: {
+          expired?: boolean | null
+          expires_at?: string | null
+          item_id?: string
+          posted_date?: string | null
+          spark_code?: string
+          store_id?: string
+          synced_at?: string
+        }
+        Relationships: []
+      }
+      euka_spark_sync_days: {
+        Row: {
+          attempts: number
+          capped: boolean | null
+          day: string
+          due_at: string
+          last_error: string | null
+          row_count: number | null
+          status: string
+          store_id: string
+          synced_at: string | null
+        }
+        Insert: {
+          attempts?: number
+          capped?: boolean | null
+          day: string
+          due_at?: string
+          last_error?: string | null
+          row_count?: number | null
+          status?: string
+          store_id: string
+          synced_at?: string | null
+        }
+        Update: {
+          attempts?: number
+          capped?: boolean | null
+          day?: string
+          due_at?: string
+          last_error?: string | null
+          row_count?: number | null
+          status?: string
+          store_id?: string
+          synced_at?: string | null
+        }
+        Relationships: []
+      }
       offer_applications: {
         Row: {
           brand_id: string
@@ -3162,6 +3354,19 @@ export type Database = {
       }
     }
     Functions: {
+      ads_totals_for_videos: {
+        Args: { p_from?: string; p_item_ids: string[]; p_to?: string }
+        Returns: {
+          cost: number
+          currency: string
+          first_day: string
+          gross_revenue: number
+          item_id: string
+          last_day: string
+          mixed_currency: boolean
+          orders: number
+        }[]
+      }
       apply_for_contest: {
         Args: { p_actor_id: string; p_contest_id: string; p_note?: string }
         Returns: Json
@@ -3341,7 +3546,89 @@ export type Database = {
         Args: { p_actor_id: string; p_product_id: string }
         Returns: Json
       }
+      euka_ad_claim_units: {
+        Args: { p_limit: number }
+        Returns: {
+          advertiser_id: string
+          advertiser_name: string | null
+          attempts: number
+          campaign_id: string
+          campaign_name: string | null
+          cost: number | null
+          due_at: string
+          last_error: string | null
+          month: string
+          row_count: number | null
+          status: string
+          store_id: string
+          store_name: string | null
+          synced_at: string | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "euka_ad_sync_units"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      euka_ad_replace_unit: {
+        Args: {
+          p_advertiser_id: string
+          p_campaign_id: string
+          p_month: string
+          p_rows: Json
+          p_store_id: string
+        }
+        Returns: number
+      }
+      euka_ad_totals_for_videos: {
+        Args: { p_from?: string; p_item_ids: string[]; p_to?: string }
+        Returns: {
+          cost: number
+          currency: string
+          gross_revenue: number
+          item_id: string
+          mixed_currency: boolean
+          orders: number
+        }[]
+      }
+      euka_ads_run_cycle: { Args: never; Returns: number }
+      euka_ads_set_sync_secret: {
+        Args: { p_secret: string }
+        Returns: undefined
+      }
+      euka_ads_set_sync_url: { Args: { p_url: string }; Returns: undefined }
+      euka_spark_claim_days: {
+        Args: { p_limit: number }
+        Returns: {
+          attempts: number
+          capped: boolean | null
+          day: string
+          due_at: string
+          last_error: string | null
+          row_count: number | null
+          status: string
+          store_id: string
+          synced_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "euka_spark_sync_days"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      euka_spark_codes_for_videos: {
+        Args: { p_item_ids: string[] }
+        Returns: {
+          expired: boolean
+          item_id: string
+          spark_code: string
+        }[]
+      }
       is_approved_creator: { Args: never; Returns: boolean }
+      is_collabs_viewer: { Args: never; Returns: boolean }
       is_service_role: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
       job_is_filmed: { Args: { p_application_id: string }; Returns: boolean }
@@ -3702,6 +3989,9 @@ export type Database = {
         | "creative_strategist"
         | "ops"
         | "admin"
+        | "affiliate_team_lead"
+        | "operations_lead"
+        | "ads_manager"
       application_status: "pending" | "approved" | "rejected"
       content_status: "submitted" | "approved" | "needs_another_take"
       contest_deliverable_type: "gmv" | "video_count"
@@ -3739,12 +4029,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3768,11 +4058,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3793,11 +4083,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3818,11 +4108,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3835,11 +4125,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3854,7 +4144,16 @@ export const Constants = {
   },
   public: {
     Enums: {
-      app_role: ["applicant", "creator", "creative_strategist", "ops", "admin"],
+      app_role: [
+        "applicant",
+        "creator",
+        "creative_strategist",
+        "ops",
+        "admin",
+        "affiliate_team_lead",
+        "operations_lead",
+        "ads_manager",
+      ],
       application_status: ["pending", "approved", "rejected"],
       content_status: ["submitted", "approved", "needs_another_take"],
       contest_deliverable_type: ["gmv", "video_count"],

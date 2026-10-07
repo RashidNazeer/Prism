@@ -16,7 +16,7 @@ const BASE = process.env.BASE_URL || 'http://localhost:4173';
 const pass = [], fail = [];
 const check = (ok, m, d) => (ok ? pass : fail).push(d ? `${m} — ${d}` : m);
 
-const env = Object.fromEntries(readFileSync('d:/Milestone/WurxMediaHub/.env.local', 'utf8')
+const env = Object.fromEntries(readFileSync(process.env.ENV_FILE ? process.env.ENV_FILE : 'd:/Milestone/WurxMediaHub/.env.local', 'utf8')
   .split(/\r?\n/).filter((l) => l.includes('=')).map((l) => { const i = l.indexOf('='); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }));
 const svc = createClient(env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
 
@@ -70,11 +70,18 @@ try {
   if (card.hasButton) {
     await page.locator('button', { hasText: /connect tiktok/i }).first().click();
     await page.waitForTimeout(9000);
-    const after = await page.evaluate(() => ({
-      url: location.href,
-      raw: /Not allowed/i.test(document.body.innerText),
-      alert: (document.querySelector('[role=alert]') || {}).textContent || null,
-    }));
+    /* Pressing Connect NAVIGATES to tiktok.com, so evaluating in the old
+       context throws "Execution context was destroyed" — on the SUCCESS path.
+       Read the URL, and only inspect the page while still on ours. */
+    await page.waitForLoadState("domcontentloaded").catch(() => {});
+    let after = { url: page.url(), raw: false, alert: null };
+    if (after.url.startsWith(BASE)) {
+      after = await page.evaluate(() => ({
+        url: location.href,
+        raw: /Not allowed/i.test(document.body.innerText),
+        alert: (document.querySelector("[role=alert]") || {}).textContent || null,
+      })).catch(() => after);
+    }
     console.log('after pressing: ' + JSON.stringify(after));
     /* Success is either a redirect to TikTok's consent page, or at worst a
        sentence — never the bare refusal. */

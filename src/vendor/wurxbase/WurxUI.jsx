@@ -1,8 +1,56 @@
+/* WURX-ADDED · Ad Spend and ROI ─────────────────────────────────────────────
+   This file is otherwise a VERBATIM copy of the WurxBase app. Every change of
+   ours sits inside a WURX-ADDED ... WURX-END block, so pulling a newer version
+   from upstream is a find-and-reapply job rather than diff archaeology. Nothing
+   of theirs is edited or removed; these blocks only add.
+
+   The import reads OUR ad figures out of a React context that our own route
+   provides. It is NOT our Supabase client and names no project of ours, so this
+   file still cannot reach our database — which is what pnpm verify:isolation
+   asserts on every build. See src/routes/admin/collab-ad-figures.tsx.
+
+   The join needs no brand matching: their video links carry TikTok's numeric
+   video id, and that is the same id our ad figures are keyed on. */
+import {
+  useCollabAdFigures as wxAdsHook,
+  videoIdsOf as wxVideoIds,
+  totalsOf as wxTotals,
+  tiktokVideoId as wxVideoId,
+  money as wxMoney,
+  roiText as wxRoi,
+} from '@/routes/admin/collab-ad-figures';
+/* WURX-END */
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import { can } from './access';
 import { createPortal } from 'react-dom';
-import { supabase } from './supabaseClient';
+import { supabase, selectAll, eukaJson, lastEukaFailure, collabProducts, brandSource, runReacherSync } from './supabaseClient';
+import { godGet, godMoney, godDateParts, colTemplate, colStyle,
+  visibleCols } from './godSettings';
 import { generateContractPdf, defaultContractFields, CONTRACT_SECTIONS, renderContractPdf } from './contractPdf';
+import { mergeContract, getBrandContract, saveBrandContract,
+  fetchBrandContracts } from './brandContract';
 import './paidcollabs.css';
+
+/* WURX-ADDED · where their overlays go.
+
+   Every `createPortal` in this app targeted `document.body`, which is OUTSIDE
+   `.wurxbase-root` — so every rule in their own stylesheet, all of which the
+   vendoring fenced under that class, missed. Ten overlays rendered with no
+   styling whatsoever: the status dropdown came out as a bare full-width block
+   at the bottom of the document, which is why clicking "Payment Pending" and
+   the eye icon appeared to do nothing at all.
+
+   The host is a div our route renders INSIDE `.wurxbase-root` and OUTSIDE
+   `.wurxbase-fence`. Inside the root so their CSS matches; outside the fence
+   because the fence is transformed and contained, which would make every
+   `position: fixed` overlay measure itself against a scrolled box instead of
+   the screen.
+
+   Falls back to `document.body` so their app still renders standalone. */
+function wxPortalHost() {
+  return (typeof document !== 'undefined' && document.getElementById('wurxbase-portal-host')) || document.body;
+}
+
 
 /* ════════════════════════════════════════════════════════════════
    WURX MEDIA · 4-tab month-centric dashboard
@@ -14,7 +62,7 @@ const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 const HIRED_BY_OPTIONS = ['Aris', 'Emily', 'Myles', 'Khushi'];
 
 /* ── EUKA L30 GMV · lookup helpers ─────────────────────────────────
-   Data shape from /.netlify/functions/euka (v2):
+   Data shape from the `euka` Edge Function (see supabaseClient.js):
      { handles: { "<handle>": overallL30Gmv } }
    `last_30d_gmv` from EUKA's creator_level export is the creator's
    OVERALL last-30-days GMV across TikTok Shop — store-independent, so
@@ -128,18 +176,35 @@ function dbEuka(c) {
   const v = c && c.monthly && c.monthly.euka;
   return v && (v.tier || Number(v.l30) > 0) ? v : null;
 }
-/* Creator's EUKA tier · DB value first, live sweep as a top-up */
+/* WURX-ADDED · LIVE FIRST, STORED AS THE FALLBACK. This was the other way
+   round, and that is a second reason our figures differed from theirs.
+
+   `monthly.euka` is a CACHE, refreshed nightly by a scheduled Netlify function
+   (`euka-checkin-background`) that was never vendored in — it lives outside
+   their `src/`, and it writes to the Supabase project that was retired on
+   2026-08-28. So on their deployment the cache is a day old and the DB-first
+   rule is harmless; on ours it is frozen at whatever it held on migration day
+   and drifts further every morning. 800 of 1000 creators carry a stored L30
+   stamped between 29 July and 28 August, and every one of them was being shown
+   in preference to today's number.
+
+   Reading live first fixes it without needing that job: a figure fetched
+   minutes ago beats one cached weeks ago. The cache still earns its place as
+   the fallback, because `creator_level` only covers the last thirty days from
+   today, so a creator who has not posted recently drops out of the live sweep
+   entirely — and their last known figure is much better than a dash. It also
+   covers the seconds before the sweep returns. */
 function creatorTier(c, euka) {
-  const db = dbEuka(c);
-  if (db && db.tier) return db.tier;
   const p = eukaProfileFor(euka, [c?.tiktok_account, c?.tiktok_account_2]);
-  return (p && p.tier) || '';
-}
-/* Creator's overall last-30d GMV · DB value first, live sweep as a top-up */
-function creatorL30(c, euka) {
+  if (p && p.tier) return p.tier;
   const db = dbEuka(c);
-  if (db && Number(db.l30) > 0) return Number(db.l30);
-  return eukaL30For(euka, [c?.tiktok_account, c?.tiktok_account_2]);
+  return (db && db.tier) || '';
+}
+function creatorL30(c, euka) {
+  const live = eukaL30For(euka, [c?.tiktok_account, c?.tiktok_account_2]);
+  if (live != null) return live;
+  const db = dbEuka(c);
+  return db && Number(db.l30) > 0 ? Number(db.l30) : null;
 }
 
 /* Shared cell renderer · '–' when EUKA has no record of this creator */
@@ -163,11 +228,14 @@ function patchUIState(patch) {
 }
 function hiredByPalette(name) {
   switch ((name || '').trim()) {
-    case 'Aris':   return { fg: '#171717', bg: '#F4F4F5', border: '#D4D4D8' };  // soft black on warm gray
-    case 'Emily':  return { fg: '#C2185B', bg: '#FCE4EC', border: '#F5BAD0' };  // pink (unchanged)
-    case 'Myles':  return { fg: '#6D28D9', bg: '#EDE9FE', border: '#A78BFA' };  // rich violet / purple
-    case 'Khushi': return { fg: '#9C5C5C', bg: '#F8E7E1', border: '#E8C8BF' };  // pinkish-brown (rosewood)
-    default:       return { fg: '#5C5C5E', bg: '#F5F5F7', border: '#E0E0E2' };  // neutral gray
+    case 'Aris':   return { fg: '#171717', bg: '#F4F4F5', border: 'var(--wx-border-strong)' };  // soft black on warm gray
+    case 'Emily':  return { fg: '#C2185B', bg: '#FCE4EC', border: 'var(--wx-border-strong)' };  // pink (unchanged)
+    case 'Myles':  return { fg: '#6D28D9', bg: '#EDE9FE', border: 'var(--wx-border-interactive)' };  // rich violet / purple
+    /* WURX-ADDED · rosewood darkened from #9C5C5C, which measured 4.27:1 on its
+       own chip at 11px, under the 4.5 AA asks. Same hue, same chip, readable.
+       The other four here already pass; only this one did not. */
+    case 'Khushi': return { fg: '#8F5050', bg: '#F8E7E1', border: 'var(--wx-border-strong)' };  // pinkish-brown (rosewood)
+    default:       return { fg: '#5C5C5E', bg: '#F5F5F7', border: 'var(--wx-border)' };  // neutral gray
   }
 }
 const AVATAR_GRADIENTS = [
@@ -181,21 +249,31 @@ const AVATAR_GRADIENTS = [
 ];
 
 // Full money format · always 2 decimals + thousands separators · "3,159.67"
-function fmt$(n) {
-  return '$' + Number(n || 0).toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
+/* All three money formatters now go through God Mode, so the currency
+   symbol, compact notation and cents settings reach every screen from one
+   place instead of being decided at each call site. */
+function fmt$(n) { return godMoney(n); }
 /* Brands-section formatter · drops trailing .00 when amount is a whole
    number, keeps real cents otherwise. $1234.00 → "$1,234"  ·  $1234.56 → "$1,234.56" */
-function fmt$Exact(n) {
-  const v = Math.round(Number(n || 0) * 100) / 100;
-  const hasCents = Math.floor(v) !== v;
-  return '$' + v.toLocaleString('en-US', {
-    minimumFractionDigits: hasCents ? 2 : 0,
-    maximumFractionDigits: 2,
-  });
+function fmt$Exact(n) { return godMoney(n); }
+/* Deal sizes and per-video rates are always whole dollars in practice ·
+   printing "$40.00" down a column is just noise. */
+function fmt$Round(n) { return godMoney(n); }
+/* Contact numbers get typed every which way — 3105608722, 310-560-8722,
+   +13105608722, (310)5608722 — and the column reads like noise. Strip to
+   digits and re-print US numbers in one shape.
+
+   Anything that is NOT a 10-digit US number (or 11 digits starting with 1)
+   is returned EXACTLY as it was entered. Guessing a US shape for an
+   international number would silently corrupt a real phone number, which
+   is far worse than an untidy column. */
+function fmtPhone(raw) {
+  const s = String(raw == null ? '' : raw).trim();
+  if (!s) return '';
+  const d = s.replace(/\D/g, '');
+  if (d.length === 10) return `+1 (${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+  if (d.length === 11 && d[0] === '1') return `+1 (${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7)}`;
+  return s;
 }
 function initial(s) { return ((s || '').trim()[0] || '?').toUpperCase(); }
 function gradFor(name) {
@@ -271,6 +349,569 @@ const HIRED_BY_TAGS = {
   emily:  { i: 'E', fg: '#C2185B', bg: '#FCE7F0' },
   khushi: { i: 'K', fg: '#0E7A3A', bg: '#E4F5EB' },
 };
+/* WURX-ADDED · HOW MANY DEALS WE HAVE HAD WITH A PERSON, EVER.
+   Rashid, 2026-09-16: "a small circular avatar showing no of deals with that
+   creator". It sits on the corner of the creator's face (.pc-facewrap), not
+   beside the tier tag: there it took 31px from every name, and at 1600px the
+   brand page's names fell to one letter.
+
+   IT FOLLOWS THE MONTH PICKER. Rashid, 2026-09-16: "month wise ... not overal".
+   A month counts that month's deals across EVERY brand, so a person shows the
+   same number on the brand page and the Creators tab; '' (All Time) counts
+   their whole history. Keyed on the
+   trimmed, lower-cased name, the same key the Creators tab's deals filter and
+   tier count already use, so the three can never disagree about who is one
+   person. */
+function wxDealsByPerson(rows, month) {
+  const m = new Map();
+  (rows || []).forEach((c) => {
+    if (month && monthKey(c && c.hiring_date) !== month) return;
+    const k = String((c && c.name) || '').trim().toLowerCase();
+    if (k) m.set(k, (m.get(k) || 0) + 1);
+  });
+  return m;
+}
+const wxPersonKey = (c) => String((c && c.name) || '').trim().toLowerCase();
+/* WURX-ADDED · which followers bucket somebody is in, for the Creators filter.
+   `none` is a real answer, not an empty one: EUKA only reports a creator while
+   they have been active in one of our shops lately, so 380 of 464 people on dev
+   have no profile at all — a fact worth being able to filter FOR. */
+/* WURX-ADDED · a handle as the follower store keys it: lower case, no @, no
+   URL. Must match normHandle in supabase/functions/_shared/euka-followers.ts. */
+function wxHandleKey(raw) {
+  const t = String(raw || '').trim().toLowerCase();
+  if (!t) return '';
+  const last = t.startsWith('http') ? (t.replace(/\/+$/, '').split('/').pop() || '') : t;
+  return last.replace(/^@+/, '').split(/[?#]/)[0].trim();
+}
+/* WURX-ADDED · a creator's followers: EUKA's live shop data first, then the
+   count looked up by handle in its market intelligence, which reaches the
+   creators the shop data does not (380 of 464 on dev had none). `source` is
+   for the hover text, so a number never hides where it came from. */
+function wxFollowersOf(euka, stored, handles) {
+  const live = Number(eukaProfileFor(euka, handles)?.followers) || 0;
+  if (live > 0) return { n: live, source: 'shop' };
+  for (const h of handles || []) {
+    const n = stored && stored.get ? stored.get(wxHandleKey(h)) : 0;
+    if (n > 0) return { n, source: 'lookup' };
+  }
+  return { n: 0, source: null };
+}
+function wxFollowerBucket(n) {
+  const v = Number(n) || 0;
+  if (!v) return 'none';
+  if (v >= 1e6) return '1m';
+  if (v >= 1e5) return '100k';
+  if (v >= 1e4) return '10k';
+  return 'under10k';
+}
+const WX_FOLLOWER_BUCKETS = [
+  { key: '1m',       label: '1M+' },
+  { key: '100k',     label: '100K – 1M' },
+  { key: '10k',      label: '10K – 100K' },
+  { key: 'under10k', label: 'Under 10K' },
+  { key: 'none',     label: 'No count yet' },
+];
+/* WURX-ADDED · ONE BRAND'S VIDEOS, EACH COUNTED ONCE.
+   The brand page's Views and GMV cards and the Brands screen's New Video GMV
+   card both read this, so the screen-wide total is by construction the brand
+   cards added up. Rashid, 2026-09-21: "sum the new video gmv of all the brands
+   ... be careful on calculations".
+
+   The same TikTok video can sit under two deals of one creator (84 times in
+   Penetrex's history), so it is keyed on TikTok's video id, or the link when
+   there is no id, and kept once. Where two rows carry different synced figures
+   for it, the larger wins: views and GMV only grow, so the larger is the newer
+   sync. `gmv` is NOT rounded here; round once, where it is shown. */
+function wxVideoTotals(list) {
+  const vids = new Map();
+  let dupes = 0;
+  (list || []).forEach((c) => {
+    const seen = new Set();
+    (Array.isArray(c && c.video_codes) ? c.video_codes : []).forEach((r) => {
+      const url = r && String(r.video || '').trim();
+      if (!url) return;
+      const id = wxVideoId(url);
+      const k = id || url;
+      if (seen.has(k)) return;
+      seen.add(k);
+      const cur = vids.get(k);
+      if (cur) dupes++;
+      vids.set(k, {
+        id,
+        views: Math.max(cur ? cur.views : 0, Number(r.views) || 0),
+        gmv: Math.max(cur ? cur.gmv : 0, Number(r.revenue) || 0),
+      });
+    });
+  });
+  const all = [...vids.values()];
+  return {
+    all,
+    dupes,
+    views: all.reduce((t, v) => t + v.views, 0),
+    gmv: all.reduce((t, v) => t + v.gmv, 0),
+  };
+}
+/* WURX-ADDED · THE SAME VIDEOS, BROKEN DOWN BY PRODUCT.
+   Rashid, 2026-09-24: "is it possible to get the product wise gmv, product wise
+   creators and product wise videos ... it should show us product wise
+   everything for the current month that user selected".
+
+   It is, and from data we already hold: 1,042 of the 1,049 videos posted in
+   September carry the product they sold, written by the same EUKA and Reacher
+   syncs that fill the table. Nothing new is fetched to build this.
+
+   IT DEDUPES EXACTLY AS `wxVideoTotals` DOES, and that is the whole point of
+   writing it here beside it rather than inline in the screen. The same TikTok
+   video sits under two deals of one creator 32 times in a single brand-month on
+   dev; counting it twice here would make the products add up to more than the
+   GMV card directly above them, and a breakdown that does not reconcile with
+   the total it sits under is worse than no breakdown. Same key (the TikTok
+   video id), same rule for disagreeing rows (keep the larger figure, since
+   views and GMV only ever grow, so the larger is the newer sync).
+
+   A VIDEO WITH NO PRODUCT IS SHOWN, NOT DROPPED. Seven of those 1,049 have
+   none, and silently discarding them is how a breakdown quietly stops summing
+   to its own total. They gather under one honest label instead. */
+function wxProductTotals(list) {
+  const vids = new Map();
+  (list || []).forEach((c) => {
+    const who = (c && (c.id ?? c.name)) ?? '';
+    const seen = new Set();
+    (Array.isArray(c && c.video_codes) ? c.video_codes : []).forEach((r) => {
+      const url = r && String(r.video || '').trim();
+      if (!url) return;
+      const k = wxVideoId(url) || url;
+      if (seen.has(k)) return;
+      seen.add(k);
+      const gmv = Number(r.revenue) || 0;
+      const cur = vids.get(k);
+      /* One video, one product. Where two rows disagree the richer row wins,
+         which is the same "the larger is the newer sync" rule used above. */
+      if (!cur || gmv > cur.gmv) {
+        vids.set(k, {
+          gmv: Math.max(cur ? cur.gmv : 0, gmv),
+          views: Math.max(cur ? cur.views : 0, Number(r.views) || 0),
+          product: String(r.product || '').trim() || (cur ? cur.product : ''),
+          who: cur ? cur.who : who,
+        });
+      } else if (cur && !cur.product && String(r.product || '').trim()) {
+        cur.product = String(r.product || '').trim();
+      }
+    });
+  });
+  const byProduct = new Map();
+  for (const v of vids.values()) {
+    const name = v.product || '';
+    const key = name.toLowerCase();
+    let row = byProduct.get(key);
+    if (!row) {
+      row = { name, videos: 0, gmv: 0, views: 0, creators: new Set() };
+      byProduct.set(key, row);
+    }
+    row.videos++;
+    row.gmv += v.gmv;
+    row.views += v.views;
+    if (v.who !== '') row.creators.add(v.who);
+  }
+  return [...byProduct.values()]
+    .map((r) => ({ ...r, creators: r.creators.size }))
+    /* Biggest earner first; a product with no GMV yet still appears, ordered by
+       how much work went into it. */
+    .sort((a, b) => b.gmv - a.gmv || b.videos - a.videos);
+}
+
+/* WURX-ADDED · A VIDEO'S PICTURE, OR THE PLACEHOLDER — NEVER A BROKEN ICON.
+   The strip used to render `<img src={v.thumb}>` the moment a thumbnail was
+   stored, with no fallback, so a URL that stops answering shows the browser's
+   torn-page glyph in the middle of the brand page. That mattered little while
+   every thumbnail came from one store that has served them since 2025; it
+   matters now that Irwin's are resolved per video and a picture can exist one
+   week and not the next. The play symbol already means "no picture here", so a
+   failed load says the same thing rather than something alarming. */
+function WxVideoThumb({ src, className, phClassName }) {
+  const [broken, setBroken] = useState(false);
+  useEffect(() => { setBroken(false); }, [src]);
+  if (!src || broken) return <span className={phClassName} aria-hidden>▶</span>;
+  return (
+    <img className={className} src={src} alt="" loading="lazy" onError={() => setBroken(true)} />
+  );
+}
+/* WURX-END */
+
+/* WURX-ADDED · WHAT A PRODUCT LABEL ACTUALLY SAYS — and why it is not just CSS.
+   Clipping these titles from the right produced four Penetrex pills all reading
+   "Penetrex Daily Joint & Muscle Car…" beside four different GMV figures: a list
+   of identical labels, which is worse than no label. On NUTRAHARMONY it is five
+   bands all reading "NUTRA HARMONY Hydrating…".
+
+   The distinguishing words can be at either end — Penetrex's differ at the tail
+   (", 3 Oz. Gel", "Lotion, 8 oz Pump") while Irwin's differ at the head — so the
+   label keeps BOTH ends and loses the middle. A first attempt trimmed the prefix
+   every product shares, which looked neater and then did nothing at all, because
+   one product is called "NEW! Penetrex…" and that makes the shared prefix empty.
+   Middle truncation has no such dependency on the naming happening to be tidy.
+   The full title is always in the tooltip.
+
+   It lives out here because the band's cards and the table's group headers must
+   shorten the same name the same way; two copies drifting apart would have one
+   half of the screen calling a product something the other half does not. */
+function wxShortProduct(name, max = 44) {
+  const s = String(name || '');
+  if (s.length <= max) return s;
+  const head = s.slice(0, Math.ceil(max * 0.55)).trimEnd();
+  const tail = s.slice(-Math.floor(max * 0.35)).trimStart();
+  return `${head}…${tail}`;
+}
+/* WURX-END */
+
+/* WURX-ADDED · WHICH PRODUCT A CREATOR SITS UNDER, AND WHY ONLY ONE.
+   Rashid, 2026-09-29, with a mockup: "we are showing creators of the brand when
+   we open a particular brand ... we also have products and we can see. Now what
+   i want is to organize and show product wise creators".
+
+   ONE CREATOR, ONE ROW. A creator's row carries PER-CREATOR money — the deal,
+   total views, new-video GMV, L30 GMV, ad spend, ROI — so listing the same
+   person again under a second product would show the same money twice on one
+   screen. That is not hypothetical: on dev, 10 of Penetrex's 34 September
+   creators posted for more than one product, and a row-per-product table comes
+   to 53 rows for 34 people, with every figure of those ten counted twice. So a
+   creator is placed under the product MOST of their videos are for, and the
+   header says how many of its creators also posted elsewhere rather than
+   quietly hiding it.
+
+   THE BAND ABOVE ANSWERS A DIFFERENT QUESTION, and its counts will differ on
+   purpose. It counts every creator who touched a product, so its figures
+   overlap and add up to MORE than the brand has creators (NUTRAHARMONY: 19 + 18
+   + 1 + 1 = 39 for 38 people). These groups PARTITION the same people, so they
+   add up to exactly the "N creators" pill they sit under. Two scopes, each
+   reconciling with the total next to it, which is the only way two breakdowns
+   of one list can both be true.
+
+   A CREATOR WITH NO VIDEOS YET STILL BELONGS SOMEWHERE. Ten of Irwin Naturals'
+   27 September creators have none. Those fall back to the product they were
+   onboarded with — which is exactly what that field being compulsory from
+   October is for. The legacy free-text `product` column is used only when it
+   matches a product this brand actually sells: it holds an email address on at
+   least one live row, and a group header is no place to discover that. */
+function wxCreatorProduct(c, known) {
+  const tally = new Map();
+  const seen = new Set();
+  (Array.isArray(c && c.video_codes) ? c.video_codes : []).forEach((r) => {
+    const url = r && String(r.video || '').trim();
+    if (!url) return;
+    /* Deduped on TikTok's video id, the same key `wxVideoTotals` and
+       `wxProductTotals` use. One video filed under two deals of one creator is
+       a single video here too, or "most" would be decided by how many times a
+       row happens to have been duplicated. */
+    const k = wxVideoId(url) || url;
+    if (seen.has(k)) return;
+    seen.add(k);
+    const name = String(r.product || '').trim();
+    if (!name) return;
+    const lk = name.toLowerCase();
+    const cur = tally.get(lk) || { name, videos: 0, gmv: 0 };
+    cur.videos += 1;
+    cur.gmv += Number(r.revenue) || 0;
+    tally.set(lk, cur);
+  });
+  if (tally.size) {
+    const best = [...tally.values()].sort((a, b) =>
+      b.videos - a.videos || b.gmv - a.gmv || a.name.localeCompare(b.name))[0];
+    return { key: best.name.toLowerCase(), name: best.name, alsoOn: tally.size - 1 };
+  }
+  const assigned = (Array.isArray(c && c.products) ? c.products : [])
+    .map((x) => String((x && x.name) || '').trim()).filter(Boolean);
+  if (assigned.length) return { key: assigned[0].toLowerCase(), name: assigned[0], alsoOn: 0 };
+  const legacy = String((c && c.product) || '').trim();
+  const hit = legacy && known ? known.get(legacy.toLowerCase()) : '';
+  if (hit) return { key: legacy.toLowerCase(), name: hit, alsoOn: 0 };
+  return { key: '', name: '', alsoOn: 0 };
+}
+
+/* Every product name this brand is actually known to use, lowercased -> as
+   written. Built from the videos AND from what creators were onboarded with, so
+   a brand whose sync has not run yet is not treated as having no catalogue. */
+function wxKnownProducts(list) {
+  const known = new Map();
+  const add = (n) => {
+    const t = String(n || '').trim();
+    if (t && !known.has(t.toLowerCase())) known.set(t.toLowerCase(), t);
+  };
+  (list || []).forEach((c) => {
+    (Array.isArray(c && c.video_codes) ? c.video_codes : []).forEach((r) => add(r && r.product));
+    (Array.isArray(c && c.products) ? c.products : []).forEach((x) => add(x && x.name));
+  });
+  return known;
+}
+
+/* THE ORDER THE GROUPS APPEAR IN IS THE BAND'S ORDER, not a second opinion.
+   `wxProductTotals` already ranks by GMV then videos and the strip above the
+   table draws itself from it; ranking these independently would leave the two
+   halves of one screen disagreeing about which product is doing best. A product
+   that exists only as an onboarding choice has no GMV to rank by and follows,
+   alphabetically; "no product" is always last. */
+function wxProductOrder(list) {
+  const rank = new Map();
+  wxProductTotals(list).forEach((r, i) => {
+    const k = String(r.name || '').trim().toLowerCase();
+    if (k) rank.set(k, i);
+  });
+  return rank;
+}
+
+function wxSplitByProduct(rows, placed, rank) {
+  const bands = new Map();
+  (rows || []).forEach((c) => {
+    const pl = placed.get(c.id) || { key: '', name: '' };
+    let b = bands.get(pl.key);
+    if (!b) { b = { key: pl.key, name: pl.name, items: [] }; bands.set(pl.key, b); }
+    b.items.push(c);
+  });
+  const LAST = Number.MAX_SAFE_INTEGER;
+  return [...bands.values()].sort((a, b) => {
+    if (!a.key !== !b.key) return a.key ? -1 : 1;
+    const ra = rank.has(a.key) ? rank.get(a.key) : LAST;
+    const rb = rank.has(b.key) ? rank.get(b.key) : LAST;
+    return ra - rb || a.name.localeCompare(b.name);
+  });
+}
+
+/* ONE CATALOGUE FETCH PER BRAND, SHARED. The band and the table groups want the
+   same pictures and `collabProducts` is an Edge Function round trip; asking
+   twice on every brand open would double that for nothing. A FAILURE IS NOT
+   CACHED — it is dropped from the map so the next mount asks again, because "we
+   could not reach the catalogue once" must never harden into "this brand has no
+   pictures" for the rest of the session. */
+const WX_PRODUCT_PICS = new Map();
+function wxProductPics(brand) {
+  const key = String(brand || '').trim();
+  if (!key) return Promise.resolve(new Map());
+  if (!WX_PRODUCT_PICS.has(key)) {
+    const job = (async () => {
+      const res = await collabProducts(key);
+      if (!res) throw new Error('catalogue unavailable');
+      const map = new Map();
+      for (const pr of res.products || []) {
+        const k = String((pr && pr.name) || '').trim().toLowerCase();
+        if (k && pr.image) map.set(k, pr.image);
+      }
+      return map;
+    })();
+    job.catch(() => WX_PRODUCT_PICS.delete(key));
+    WX_PRODUCT_PICS.set(key, job);
+  }
+  return WX_PRODUCT_PICS.get(key).catch(() => new Map());
+}
+function wxUseProductPics(brand) {
+  const [pics, setPics] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    setPics(null);
+    if (!brand) return undefined;
+    wxProductPics(brand).then((m) => { if (alive) setPics(m); });
+    return () => { alive = false; };
+  }, [brand]);
+  return pics;
+}
+
+/* The group header's own menu. Two actions, both real: a brand with seven
+   products makes a long page, and collapsing the lot is the only way to see its
+   shape. A plain absolutely-positioned panel rather than a portal — a portal is
+   how other menus on this screen have twice ended up rendering off-screen. */
+function WxGroupMenu({ onExpandAll, onCollapseAll }) {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDown = (e) => { if (wrap.current && !wrap.current.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); } };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey, true);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey, true);
+    };
+  }, [open]);
+  return (
+    <span className="wx-pgroup-menu" ref={wrap}>
+      <button type="button" className="wx-pgroup-kebab" aria-label="Product group options"
+        aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <circle cx="12" cy="5" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="12" cy="19" r="1.7" />
+        </svg>
+      </button>
+      {open && (
+        <span className="wx-pgroup-pop" role="menu">
+          <button type="button" role="menuitem" onClick={() => { onExpandAll(); setOpen(false); }}>Expand all products</button>
+          <button type="button" role="menuitem" onClick={() => { onCollapseAll(); setOpen(false); }}>Collapse all products</button>
+        </span>
+      )}
+    </span>
+  );
+}
+/* WURX-END */
+
+/* WURX-ADDED · THE BY-PRODUCT BAND on a brand's page.
+
+   One pill per product: its picture, its name, and the three figures Rashid
+   asked for — GMV, creators, videos — for whatever month is on screen.
+
+   THE PICTURES ARRIVE LATE AND THAT IS DELIBERATE. The videos carry a product
+   NAME and no product id, so the only way to a photograph is to match that name
+   against the brand's own catalogue, which is a round trip. The band renders
+   immediately with letter tiles and upgrades in place when the catalogue lands;
+   making the figures wait on a picture would be the wrong way round.
+
+   THE MATCH IS EXACT AND WITHIN ONE BRAND. Same shop, same platform, same
+   string — anything looser would put one product's photograph on another's
+   numbers, and a wrong picture beside a real GMV figure is worse than no
+   picture at all.
+
+   The pill sits on `--pc-card`, which is `--wx-surface-1`: the surface
+   check:contrast section 5 already proves the green GMV ink against. Putting it
+   on the tinted `--pc-card-2` would have been a new, unproven ground for an ink
+   calibrated elsewhere, which is a bug this project has shipped before. */
+function ProductBand({ creators, brand, period }) {
+  const rows = useMemo(() => wxProductTotals(creators), [creators]);
+  /* The pictures come from the shared per-brand cache, because the groups in
+     the table below want exactly the same map and this used to be a second
+     Edge Function round trip for it. */
+  const pics = wxUseProductPics(brand);
+
+  if (!rows.length) return null;
+  const total = rows.reduce((t, r) => t + r.gmv, 0);
+
+  const shortLabel = wxShortProduct;
+
+  /* ONE FIGURE IN THE STRIP: what it is above, the number below.
+     Rashid, 2026-09-24, with a second mockup: "the current card is taking too
+     much space ... it can't take too much space but still show counts
+     properly". The tall card stacked its four figures vertically, which made
+     every card about 300px high; laid across the bottom of a wide card they
+     take about half that, and the row still scrolls so the band stays ONE row
+     however many products a brand has. */
+  const Cell = ({ icon, label, value, ink }) => (
+    <div className="wx-prodcard-cell">
+      <span className="wx-prodcard-cell-top">
+        <span className="wx-prodcard-ico" aria-hidden="true">{icon}</span>
+        <span className="wx-prodcard-lbl">{label}</span>
+      </span>
+      <span className="wx-prodcard-val" style={ink ? { color: ink } : undefined}>{value}</span>
+    </div>
+  );
+
+  return (
+    <div className="wx-prodband" data-wx="product-band" style={{ marginTop: 14 }}>
+      <div className="wx-prodband-head">
+        <h3 className="wx-prodband-title">Product performance</h3>
+        <span className="wx-prodband-chip">{rows.length} product{rows.length === 1 ? '' : 's'}</span>
+        {/* THE PERIOD, NOT A SECOND MONTH PICKER. Rashid's mockup drew a month
+            dropdown here, and the screen already has one in its top bar that
+            every other figure on the page obeys. A second control would be a
+            second source of truth for the same question, and the day the two
+            disagree the band and the KPI cards above it would be describing
+            different months while looking equally authoritative. */}
+        <span className="wx-prodband-period">{period}</span>
+      </div>
+      {/* The row scrolls inside itself. A long catalogue must never make the
+          page scroll sideways — that rule is in CLAUDE.md and it is the thing
+          that makes this safe to add to a screen that is already full. */}
+      <div className="wx-prodband-row" data-wx="product-band-row">
+        {rows.map((r, i) => {
+          const has = !!r.name;
+          const label = has ? r.name : 'No product recorded';
+          const short = has ? shortLabel(r.name) : label;
+          const img = has && pics ? (pics.get(r.name.toLowerCase()) || '') : '';
+          const share = total > 0 ? Math.round((r.gmv / total) * 100) : 0;
+          return (
+            <article key={(r.name || 'none') + i} className="wx-prodcard" data-wx="product-pill"
+              /* Machine-readable, so the guard compares NUMBERS with the card
+                 above rather than parsing "$1,234" back out of the text. */
+              data-gmv={Math.round(r.gmv)} data-creators={r.creators} data-videos={r.videos}
+              title={`${label} · ${fmt$Exact(Math.round(r.gmv))} GMV · ${Number(r.views) > 0 ? `${kNum(r.views)} views · ` : ''}${r.creators} creator${r.creators === 1 ? '' : 's'} · ${r.videos} video${r.videos === 1 ? '' : 's'}${total > 0 ? ` · ${share}% of this month's GMV` : ''}`}>
+              <div className="wx-prodcard-head">
+                <span className="wx-prodcard-shot">
+                  <ProductTile product={{ name: label, image: img }} size={52} />
+                </span>
+                <span className="wx-prodcard-id">
+                  <span className="wx-prodcard-name" style={!has ? { color: 'var(--pc-text-3)', fontStyle: 'italic' } : undefined}>{short}</span>
+                  {/* The rank, said quietly. It was a 2.5rem ghost numeral and
+                      that was a lot of height for a fact worth one line. */}
+                  <span className="wx-prodcard-rank">Product {String(i + 1).padStart(2, '0')}</span>
+                </span>
+              </div>
+              <div className="wx-prodcard-rows">
+                <Cell label="GMV" ink="var(--wx-success)" value={fmt$Exact(Math.round(r.gmv))}
+                  icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="6" y1="20" x2="6" y2="13" /><line x1="12" y1="20" x2="12" y2="8" /><line x1="18" y1="20" x2="18" y2="4" /></svg>} />
+                <Cell label="Views" value={Number(r.views) > 0 ? kNum(r.views) : '–'}
+                  icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" /><circle cx="12" cy="12" r="3" /></svg>} />
+                <Cell label="Creators" value={r.creators}
+                  icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /></svg>} />
+                <Cell label="Videos" value={r.videos}
+                  icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" /></svg>} />
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* WURX-ADDED · A PRODUCT'S PICTURE, or an honest stand-in for it.
+   Rashid, 2026-09-23: "also use product images as well and show selected images
+   properly".
+
+   NOT EVERY PRODUCT HAS ONE, and that is the APIs rather than us: Euka's
+   product list carries titles and figures and no image at all (its one endpoint
+   with `imageUrl` indexes TikTok at large, and answered our own brand id with
+   another company's products), and Reacher carries `primary_image_url` only
+   where that shop's catalogue is populated — Irwin's is not. So a product
+   without a picture gets a letter on a tinted tile, which reads as "no picture"
+   rather than as the wrong product. A broken URL falls back to the same tile. */
+function ProductTile({ product, size = 32, bare = false }) {
+  const [broken, setBroken] = useState(false);
+  const src = !broken ? (product?.image || '') : '';
+  const label = String(product?.name || product?.url || '?').trim();
+  const initial = (label.match(/[a-z0-9]/i) || ['?'])[0].toUpperCase();
+  const box = {
+    width: size, height: size, flexShrink: 0, borderRadius: bare ? 10 : 8,
+    /* `bare` is for the product cards, where the photograph is the hero and a
+       frame around it reads as chrome. The letter stand-in keeps its tile in
+       both modes, because a bare letter floating on the card would look like a
+       mistake rather than a deliberate "no picture". */
+    border: bare ? 0 : '1px solid var(--pc-divider)',
+    background: bare ? 'transparent' : 'var(--pc-card-2)',
+    display: 'grid', placeItems: 'center', overflow: 'hidden',
+  };
+  if (src) {
+    return (
+      <span style={box}>
+        <img src={src} alt="" loading="lazy" onError={() => setBroken(true)}
+          style={{ width: '100%', height: '100%', objectFit: bare ? 'contain' : 'cover', display: 'block' }} />
+      </span>
+    );
+  }
+  return (
+    <span style={{ ...box, background: 'var(--pc-warn-bg)', color: 'var(--pc-warn-fg)', fontSize: size * 0.4, fontWeight: 800 }}
+      title="No picture for this product">
+      {initial}
+    </span>
+  );
+}
+
+function DealsBadge({ n, month }) {
+  if (!n) return null;
+  const deals = `${n} deal${n === 1 ? '' : 's'} with this creator`;
+  return (
+    <span className="pc-dealsbadge" title={month ? `${deals} in ${monthLabel(month)}, across every brand` : `${deals}, all time`}>
+      {n}
+    </span>
+  );
+}
+/* WURX-END */
+
 function HiredByTag({ who }) {
   const name = String(who || '').trim();
   if (!name) return null;
@@ -361,16 +1002,81 @@ function groupByStatus(rows) {
 // Fire-and-forget insert into public.audit_logs. Silently swallows errors
 // (audit table optional · don't break the user's primary action).
 let _auditActor = { actor: '', actor_id: '' };
+/* WURX-ADDED · the whole person, not just their name, so capability questions
+   can be asked as well as identity ones. */
+let _actorUser = null;
 export function setAuditActor(user) {
+  _actorUser = user || null;
   _auditActor = {
     actor:    user?.display  || user?.username || '',
     actor_id: user?.username || user?.id       || '',
   };
 }
-/* "Payment Sent" is Asad-only, always manual · UI components consult this */
+/* Deleting a creator is still Asad-only · UI components consult this */
 export function isAsadActor() {
   const a = String(_auditActor.actor_id || _auditActor.actor || '').trim().toLowerCase();
   return a === 'asad';
+}
+
+/* WURX-ADDED · WHO MAY MARK A CREATOR PAID.
+ *
+ * This was `isAsadActor()`: a string comparison against the literal username
+ * "asad". Their comment called it a hard rule with no exceptions, and it did
+ * work — but it is tied to one person's account name, so the day he is away or
+ * changes account nobody can mark anything paid and there is no setting to fix
+ * it, only a code change. Rashid, asked directly on 2026-08-31, chose to open
+ * it to anyone with edit rights.
+ *
+ * `canEditPay` is their OWN capability for exactly this — "Change payment
+ * status · Mark a creator paid or unpaid" — already granted to superadmin, ipc
+ * and admin, and withheld from apc and viewer. So this is not a new rule
+ * invented here; it is the rule their access model already described, finally
+ * being the one that is enforced. It also means Asad can keep tuning it per
+ * person from Access Control, which the hardcoded name never allowed.
+ *
+ * Still a UI gate, not a boundary: it decides what is offered, and the database
+ * is what actually protects the column. */
+export function canMarkPaid() {
+  return can(_actorUser, 'canEditPay');
+}
+
+/* Whether the actor may move a creator between the three status states at all.
+ * Their own capability for it is `canEdit` — "Edit creators" — held by
+ * superadmin, ipc and admin, and withheld from apc, viewer and client.
+ *
+ * Rashid asked on 2026-09-02 whether the three read-only roles could change a
+ * status, having sensibly refused to click it on live rows to find out. They
+ * could not: the App-level handler refuses `viewer` outright and the database
+ * refuses the write regardless. But the menu still OPENED for them, which on a
+ * money screen reads as permission the moment before it reads as a scolding
+ * toast. A viewer now gets the same pill with no caret and nothing to press. */
+export function canEditStatus() {
+  return can(_actorUser, 'canEdit');
+}
+
+/* Whether the actor may take Paid Collabs data OUT — CSV download or the
+ * clipboard. Their own capability is `canExportCsv`.
+ *
+ * THE FLOOR EXISTED AND THIS SCREEN NEVER ASKED. `forcedPermsFor()` withholds
+ * canExportCsv from the three read-only roles, and App.jsx honours it — but
+ * App.jsx is the old screen. WurxUI is the one people actually see, and every
+ * export path in it was ungated: brand budgets, the full deal table, the
+ * outreach list with emails, discovery, the leaderboard, and two clipboard
+ * copies. A viewer could have taken all of it.
+ *
+ * Unlike a status change, an export is NOT caught by the database. The rows
+ * are already legitimately on their screen; the download happens entirely in
+ * the browser. For exports the UI gate is the only gate there is, which is
+ * exactly why it has to be right. */
+export function canExport() {
+  return can(_actorUser, 'canExportCsv');
+}
+
+/* Row selection exists only to feed the bulk bar — bulk edits or an export.
+ * An actor who can do neither gets no checkboxes rather than a selection that
+ * leads nowhere. */
+export function canSelectRows() {
+  return canEditStatus() || canExport();
 }
 export async function logAudit({ action, target_type, target_id, target_label, changes }) {
   try {
@@ -419,7 +1125,70 @@ function formatHireDate(d) {
 }
 
 /* ════════ MAIN SHELL ════════ */
+/*
+ * THEIR TOP BAR, MOVED INTO OURS.
+ *
+ * Rashid, 2026-08-28: *"the header as u see should be at top replace our simple
+ * header... no need to have logo because we already have in left side, the
+ * notification and clock should obviulsy exist... i want to give it native look
+ * of our own app now"*.
+ *
+ * Rather than cut their header apart and rebuild half of it in our shell, the
+ * whole element is PORTALED into a slot our top bar renders, and CSS strips it
+ * down to the three things he asked to keep: the WURX CREATORS DATABASE
+ * wordmark, the bell and the clock. The logo, the app name, the user chip and
+ * the sign-out button all go, because our own shell already carries every one
+ * of them a few pixels to the left.
+ *
+ * WHY A PORTAL AND NOT A PROP. The bell opens their notification panel and the
+ * clock opens their activity log; both are state deep inside this component and
+ * inside a lazily-loaded chunk. Passing callbacks up through our route to our
+ * shell would mean our shell holding a handle on their internals. A portal
+ * moves the DOM and leaves the ownership exactly where it was.
+ *
+ * IF THE SLOT IS NOT THERE the header renders where it always did, which is
+ * what happens for anyone running this file outside our shell. It degrades to
+ * the app it used to be rather than to nothing.
+ */
+function ChromeSlot({ embedded, children }) {
+  const [slot, setSlot] = useState(() =>
+    typeof document === 'undefined' ? null : document.getElementById('wurxbase-topbar-slot'));
+
+  useEffect(() => {
+    if (!embedded || slot) return undefined;
+    /* Our shell renders the slot above this in the tree, so it is normally
+       there on the first pass. One retry on the next frame covers the case
+       where this chunk finishes loading first. */
+    let raf = requestAnimationFrame(() => setSlot(document.getElementById('wurxbase-topbar-slot')));
+    return () => cancelAnimationFrame(raf);
+  }, [embedded, slot]);
+
+  if (!embedded) return children;
+  if (!slot) return null;
+  return createPortal(children, slot);
+}
+
 export default function WurxUI({
+  /*
+   * EMBEDDED CHROME, added 2026-08-28.
+   *
+   * Rashid: *"pull them out and create new menus item on main menu as Paid
+   * Collabs and put all these tabs there as menu item section... we need to
+   * remove those tabs from top also the header... i want to give it native
+   * look of our own app now"*.
+   *
+   * So when `embedded` is on, this component stops drawing its own top bar
+   * and its own tab rail. The tab arrives as a prop from the route and changes
+   * by calling back, and the two chrome buttons worth keeping — notifications
+   * and the activity log — are portaled into OUR top bar instead.
+   *
+   * It stays optional. Uncontrolled and unembedded, this file still renders
+   * the standalone app it was written as, which is what makes the change safe
+   * to reason about: nothing was deleted, one branch was added.
+   */
+  tab: tabProp,
+  onTabChange,
+  embedded = false,
   creators,
   currentUser,
   perms,
@@ -435,6 +1204,8 @@ export default function WurxUI({
   onSetCreatorStatus,
   onUpdateCreator,
   onOpenSettings,
+  /* WURX-ADDED · see the settings button below */
+  canOpenSettings = false,
   onOpenLogs,
   onSignOut,
   notificationsCount = 0,
@@ -444,7 +1215,22 @@ export default function WurxUI({
 }) {
   // Restore last UI state on mount so refresh keeps the user where they were
   const __initialState = useMemo(() => loadUIState(), []);
-  const [tab, setTab] = useState(__initialState.tab || 'brands');
+  /* Whatever tab you were last on wins on a refresh · the God Mode
+     "opening tab" is the fallback for a fresh session, which is what
+     that setting actually means. */
+  const [ownTab, setOwnTab] = useState(() => __initialState.tab || godGet().home || 'brands');
+  /* Controlled when the route drives it, uncontrolled otherwise. Everything
+     below calls setTab and does not care which of the two it is. */
+  const controlled = typeof tabProp === 'string' && !!onTabChange;
+  const tab = controlled ? tabProp : ownTab;
+  const setTab = useCallback(
+    (next) => {
+      const value = typeof next === 'function' ? next(tab) : next;
+      if (controlled) onTabChange(value);
+      else setOwnTab(value);
+    },
+    [controlled, onTabChange, tab],
+  );
 
   /* ── EUKA L30 GMV · per-store fetch with progressive merge ──
      One store's export takes ~7 s, so we pull stores one URL each
@@ -470,7 +1256,7 @@ export default function WurxUI({
     let cancelled = false;
     function go() { (async () => {
       try {
-        const meta = await fetch('/.netlify/functions/euka').then(r => (r.ok ? r.json() : null));
+        const meta = await eukaJson();
         if (!meta || !Array.isArray(meta.stores) || cancelled) return;
         const merged = {};
         const profiles = {};
@@ -484,8 +1270,7 @@ export default function WurxUI({
             const s = queue.shift();
             let ok = false;
             try {
-              const d = await fetch(`/.netlify/functions/euka?store=${encodeURIComponent(s.id)}`)
-                .then(r => (r.ok ? r.json() : null));
+              const d = await eukaJson({ store: s.id });
               if (d && d.handles && !cancelled) {
                 ok = true;
                 okStores += 1;
@@ -559,7 +1344,7 @@ export default function WurxUI({
 
     idle(() => (async () => {
       try {
-        const meta = await fetch('/.netlify/functions/euka').then(r => (r.ok ? r.json() : null));
+        const meta = await eukaJson();
         if (!meta || !Array.isArray(meta.stores)) return;
         let last = {};
         try { last = JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; } catch { /* fresh */ }
@@ -593,8 +1378,7 @@ export default function WurxUI({
           try {
             const byHandle = {};
             for (const w of windows) {
-              const d = await fetch(`/.netlify/functions/euka?store=${encodeURIComponent(s.id)}&type=videos&from=${w.from}&to=${w.to}`)
-                .then(r => (r.ok ? r.json() : null));
+              const d = await eukaJson({ store: s.id, type: 'videos', from: w.from, to: w.to });
               if (!d || !d.videos) continue;
               mergeAvatars(d.avatars);
               mergeVidProfile(d.tiers);
@@ -630,8 +1414,7 @@ export default function WurxUI({
               const cvTo = isoD(win.end < shopNow() ? win.end : shopNow());
               const all = [];
               for (const h of hs) {
-                const cd = await fetch(`/.netlify/functions/euka?store=${encodeURIComponent(s.id)}&type=cvideos&handle=${encodeURIComponent(h)}&from=${cvFrom}&to=${cvTo}`)
-                  .then(r => (r.ok ? r.json() : null)).catch(() => null);
+                const cd = await eukaJson({ store: s.id, type: 'cvideos', handle: h, from: cvFrom, to: cvTo });
                 if (cd && cd.videos) Object.values(cd.videos).forEach(v => all.push(...v));
               }
               if (!all.length) continue;
@@ -679,12 +1462,31 @@ export default function WurxUI({
   const [month, setMonth] = useState(__initialState.month || currentMonthKey()); // default = current month
   const [allTime, setAllTime] = useState(__initialState.allTime === true);
   useEffect(() => { patchUIState({ tab }); }, [tab]);
+  /* God Mode writes to localStorage from a different component tree, so
+     it announces itself and the nav re-reads on the next render. */
+  const [godRev, setGodRev] = useState(0);
+  useEffect(() => {
+    const bump = () => setGodRev(v => v + 1);
+    window.addEventListener('wurx-god-changed', bump);
+    return () => window.removeEventListener('wurx-god-changed', bump);
+  }, []);
   useEffect(() => { patchUIState({ month }); }, [month]);
   useEffect(() => { patchUIState({ allTime }); }, [allTime]);
   // Afflix-style creator editor state: { mode: 'add'|'edit', creator?, defaultBrand? }
   const [editorState, setEditorState] = useState(null);
   // Keep the audit-log actor up to date so every logAudit() call attributes
   // the change to the signed-in user automatically.
+  //
+  // SET IT DURING RENDER, NOT ONLY IN THE EFFECT. `_actorUser` is a module
+  // variable, so writing it from an effect leaves it null for the whole first
+  // paint — and the effect sets no state, so nothing re-renders to correct it.
+  // While it was only feeding logAudit() that cost an attribution at worst.
+  // Now canEditStatus(), canExport() and canSelectRows() read it too, and a
+  // stale null would silently strip an admin of the status dropdown, the
+  // exports and the row checkboxes until some unrelated fetch happened to
+  // re-render them. This is the same shape as the vendored app latching
+  // identity at mount, which has bitten this integration before.
+  if (currentUser) setAuditActor(currentUser);
   useEffect(() => { setAuditActor(currentUser); }, [currentUser]);
   const openAddCreator = useCallback((defaultBrand) => setEditorState({ mode: 'add', defaultBrand: defaultBrand || '' }), []);
   const openEditCreator = useCallback((c) => setEditorState({ mode: 'edit', creator: c }), []);
@@ -717,7 +1519,7 @@ export default function WurxUI({
     // doesn't silently swallow events forever.
     const ch = supabase
       .channel(`bmb_${Math.random().toString(36).slice(2, 9)}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'brand_monthly_budgets' }, refetchBudgets)
+      .on('postgres_changes', { event: '*', schema: 'wurxbase', table: 'brand_monthly_budgets' }, refetchBudgets)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [refetchBudgets]);
@@ -767,14 +1569,60 @@ export default function WurxUI({
     return set;
   }, [creators, brandState]);
 
-  const TABS = [
-    { id: 'brands',      label: 'Brands' },
-    { id: 'creators',    label: 'Creators' },
-    { id: 'performance', label: 'Performance' },
-    { id: 'reporting',   label: 'Reporting' },
-    { id: 'leaderboard', label: 'Leaderboard' },
-    { id: 'discovery',   label: 'Discovery' },
-  ];
+  /* God Mode can reorder these and switch some off. Read at render time so
+     the change lands the moment the panel is closed. Anything the settings
+     do not mention still appears, so adding a tab to the app never needs a
+     matching settings edit. */
+  const TABS = useMemo(() => {
+    const ALL = [
+      { id: 'brands',      label: 'Brands',      cap: 'tabBrands' },
+      { id: 'creators',    label: 'Creators',    cap: 'tabCreators' },
+      { id: 'performance', label: 'Performance', cap: 'tabPerformance' },
+      { id: 'reporting',   label: 'Reporting',   cap: 'tabReporting' },
+      { id: 'leaderboard', label: 'Leaderboard', cap: 'tabLeaderboard' },
+      { id: 'discovery',   label: 'Discovery',   cap: 'tabDiscovery' },
+    ].filter(t => can(currentUser, t.cap));
+    let g = {};
+    try { g = JSON.parse(localStorage.getItem('wurx_godmode_v1')) || {}; } catch (e) {}
+    const hidden = Array.isArray(g.hidden) ? g.hidden : [];
+    const wanted = Array.isArray(g.tabs) && g.tabs.length ? g.tabs : ALL.map(t => t.id);
+    const ordered = [
+      ...wanted.map(id => ALL.find(t => t.id === id)).filter(Boolean),
+      ...ALL.filter(t => !wanted.includes(t.id)),
+    ];
+    const labels = g.labels || {};
+    const out = ordered
+      .filter(t => !hidden.includes(t.id))
+      .map(t => ({ ...t, label: (labels[t.id] || '').trim() || t.label }));
+    return out.length ? out : ALL;
+    /* godRev is not read inside · it is the signal that the stored
+       settings changed, which is the only thing that can alter this. */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [godRev, currentUser]);
+
+  useEffect(() => {
+    if (TABS.length && !TABS.some(t => t.id === tab)) setTab(TABS[0].id);
+  }, [TABS, tab]);
+
+  /* On a phone the tab rail scrolls, so the live tab can sit off the
+     right edge. Nudge the RAIL, never the element: scrollIntoView walks
+     up to the nearest scrollable ancestor and will happily move the
+     whole page, and doing that on every render is what made the app
+     feel like it had lost its scroll. scrollLeft cannot leave the rail. */
+  const tabsRailRef = useRef(null);
+  useEffect(() => {
+    const rail = tabsRailRef.current;
+    if (!rail) return;
+    const active = rail.querySelector('.pc-tab.active');
+    if (!active) return;
+    if (rail.scrollWidth <= rail.clientWidth + 4) return;   // nothing to scroll
+    const want = active.offsetLeft - (rail.clientWidth - active.offsetWidth) / 2;
+    const max = rail.scrollWidth - rail.clientWidth;
+    const to = Math.max(0, Math.min(max, want));
+    if (Math.abs(rail.scrollLeft - to) < 4) return;
+    try { rail.scrollTo({ left: to, behavior: 'smooth' }); }
+    catch (e) { rail.scrollLeft = to; }
+  }, [tab]);
 
   const userInitial = ((currentUser?.display || '?')[0] || '?').toUpperCase();
   const userGrad = gradFor(currentUser?.display);
@@ -783,7 +1631,8 @@ export default function WurxUI({
     <div className="pc-app" style={{ paddingTop: 6, paddingBottom: 32 }}>
       <div className="pc-shell">
         {/* ═══ HEADER ROW 1 · dark brown bar · brand · actions · profile ═══ */}
-        <header className="pc-header pc-header-dark" style={{ gap: 10, background: 'linear-gradient(180deg, #352B1F 0%, #30271C 100%)', border: '1px solid #3D3325', boxShadow: 'inset 0 1px 0 rgba(245,233,214,0.07), 0 6px 18px rgba(48,39,28,0.28)', padding: '2px 16px 2px 18px', marginBottom: 10, position: 'relative' }}>
+        <ChromeSlot embedded={embedded}>
+        <header className={'pc-header pc-header-dark' + (embedded ? ' pc-header-embedded' : '')} style={{ gap: 10, background: 'linear-gradient(180deg, var(--wx-warning-soft) 0%, var(--wx-warning-soft) 100%)', border: '1px solid var(--wx-warning)', boxShadow: 'inset 0 1px 0 color-mix(in srgb, var(--wx-text) 7%, transparent), 0 6px 18px rgba(48,39,28,0.28)', padding: '2px 16px 2px 18px', marginBottom: 10, position: 'relative' }}>
           <div className="pc-brand" style={{ gap: 12 }}>
             <span className="pc-brand-logo" style={{ width: 60, height: 60, padding: 0, background: 'transparent', boxShadow: 'none', overflow: 'hidden', borderRadius: 13, flex: '0 0 60px' }}>
               <img
@@ -792,9 +1641,9 @@ export default function WurxUI({
                 style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 onError={e => { e.currentTarget.style.display = 'none'; const sib = e.currentTarget.nextElementSibling; if (sib) sib.style.display = 'flex'; }}
               />
-              <span style={{ display: 'none', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,#F5E9D6,#D9C5A4)', color: '#30271C', fontSize: 22, fontWeight: 900, letterSpacing: '-0.5px', borderRadius: 13 }}>W</span>
+              <span style={{ display: 'none', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,var(--wx-surface-2),var(--wx-surface-3))', color: 'var(--wx-warning)', fontSize: 22, fontWeight: 900, letterSpacing: '-0.5px', borderRadius: 13 }}>W</span>
             </span>
-            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.2px', color: '#F5E9D6', paddingLeft: 12, borderLeft: '1px solid rgba(245,233,214,0.20)', whiteSpace: 'nowrap' }}>Paid Collaborations</span>
+            <span className="pc-brand-sub" style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.2px', color: 'var(--wx-text-muted)', paddingLeft: 12, borderLeft: '1px solid color-mix(in srgb, var(--wx-border) 20%, transparent)', whiteSpace: 'nowrap' }}>Paid Collaborations</span>
           </div>
 
           {/* Centered app title · absolutely centered so side widths never shift it */}
@@ -807,51 +1656,83 @@ export default function WurxUI({
           <div style={{ flex: 1 }} />
 
           {/* Actions · light treatment for visibility on dark coffee bg */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div className="pc-head-actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {isSuper && pendingApprovalsCount > 0 && (
               <button onClick={onOpenPendingApprovals} title={`${pendingApprovalsCount} pending`} style={{
                 position: 'relative', width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(245,233,214,0.10)', color: '#FFB04D', transition: 'background 0.15s',
-              }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.16)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
+                background: 'transparent', color: 'var(--wx-warning)', transition: 'background 0.15s',
+              }} onMouseEnter={e => { e.currentTarget.style.background = 'var(--wx-surface-2)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                <span style={{ position: 'absolute', top: 5, right: 5, minWidth: 17, height: 17, padding: '0 5px', borderRadius: 999, background: '#FFB04D', color: '#30271C', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{pendingApprovalsCount > 9 ? '9+' : pendingApprovalsCount}</span>
+                <span style={{ position: 'absolute', top: 5, right: 5, minWidth: 17, height: 17, padding: '0 5px', borderRadius: 999, background: 'var(--wx-warning-soft)', color: 'var(--wx-warning)', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{pendingApprovalsCount > 9 ? '9+' : pendingApprovalsCount}</span>
               </button>
             )}
             <PresenceAvatars currentUser={currentUser} />
-            <button onClick={onOpenNotifications} title="Notifications" style={{
+            <button className="pc-head-bell" onClick={onOpenNotifications} title="Notifications" style={{
               position: 'relative', width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', transition: 'background 0.15s',
-            }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.16)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
+              background: 'transparent', color: 'var(--wx-text-muted)', transition: 'background 0.15s',
+            }} onMouseEnter={e => { e.currentTarget.style.background = 'var(--wx-surface-2)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-              {notificationsCount > 0 && <span style={{ position: 'absolute', top: 8, right: 8, width: 9, height: 9, borderRadius: 999, background: '#FF6B6B', boxShadow: '0 0 0 2px #30271C' }} />}
+              {notificationsCount > 0 && (
+                /* SOLID danger, ringed in the bar behind it. It was painted in
+                   --wx-danger-soft — a 10% wash meant for surfaces, not for a
+                   9px dot — and ringed in a hardcoded near-black that is a dark
+                   smudge on a light top bar. An unread marker nobody can see
+                   is the same as no unread marker. */
+                <span aria-label={notificationsCount + ' unread'} style={{
+                  position: 'absolute', top: 7, right: 7,
+                  minWidth: 10, height: 10, borderRadius: 999,
+                  background: 'var(--wx-danger)',
+                  boxShadow: '0 0 0 2px var(--wx-bg)',
+                }} />
+              )}
             </button>
-            <button onClick={onOpenLogs} title="Activity Logs" style={{
+            <button className="pc-head-logs" onClick={onOpenLogs} title="Activity Logs" style={{
               width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(245,233,214,0.10)', color: '#F5E9D6', transition: 'background 0.15s',
-            }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.16)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; }}>
+              background: 'transparent', color: 'var(--wx-text-muted)', transition: 'background 0.15s',
+            }} onMouseEnter={e => { e.currentTarget.style.background = 'var(--wx-surface-2)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </button>
-            <div style={{ width: 1, height: 30, background: 'rgba(245,233,214,0.18)', margin: '0 5px' }} />
+            {/* WURX-ADDED · the only door to Settings
+                Their Settings panel was opened by the user chip, and embedded
+                we hide that chip because our own top bar already says who you
+                are. That closed the door on everything behind it: User
+                Management, Access Control, God Mode. This is a gear, not a
+                second profile — it says "settings for this section", which is
+                what it now is. Shown only to somebody who has something in
+                there; a viewer's click did nothing, and a control that does
+                nothing is worse than no control. */}
+            {onOpenSettings && canOpenSettings && (
+              <button className="pc-head-settings" onClick={onOpenSettings} title="Paid Collabs settings" aria-label="Paid Collabs settings" style={{
+                width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                background: 'transparent', color: 'var(--wx-text-muted)', transition: 'background 0.15s',
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </button>
+            )}
+            {/* WURX-END */}
+            <div className="pc-head-sep" style={{ width: 1, height: 30, background: 'color-mix(in srgb, var(--wx-surface-2) 18%, transparent)', margin: '0 5px' }} />
             {(() => {
               const isViewer = currentUser?.role === 'viewer';
               const Tag = isViewer ? 'div' : 'button';
               const interactive = !isViewer;
               return (
                 <Tag
+                  className="pc-userchip"
                   onClick={interactive ? onOpenSettings : undefined}
                   title={interactive ? 'Profile · Settings' : `Signed in as ${currentUser?.display || 'User'}`}
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 9,
                     height: 44, padding: '0 14px 0 5px', borderRadius: 999,
-                    background: 'rgba(245,233,214,0.10)', border: 0,
+                    background: 'transparent', border: 0,
                     cursor: interactive ? 'pointer' : 'default',
                     transition: 'background 0.15s ease',
                   }}
-                  onMouseEnter={interactive ? e => { e.currentTarget.style.background = 'rgba(245,233,214,0.16)'; } : undefined}
-                  onMouseLeave={interactive ? e => { e.currentTarget.style.background = 'rgba(245,233,214,0.10)'; } : undefined}
+                  onMouseEnter={interactive ? e => { e.currentTarget.style.background = 'var(--wx-surface-2)'; } : undefined}
+                  onMouseLeave={interactive ? e => { e.currentTarget.style.background = 'transparent'; } : undefined}
                 >
                   <span style={{ width: 34, height: 34, borderRadius: 999, background: userGrad, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
@@ -859,30 +1740,43 @@ export default function WurxUI({
                       <circle cx="12" cy="7" r="4" />
                     </svg>
                   </span>
-                  <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, alignItems: 'flex-start' }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: '#F5E9D6', letterSpacing: '-0.1px' }}>{currentUser?.display || 'User'}</span>
-                    <span style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(245,233,214,0.60)' }}>{isViewer ? 'Viewer' : (currentUser?.role || '')}</span>
+                  <span className="pc-userchip-txt" style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, alignItems: 'flex-start' }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--wx-text-muted)', letterSpacing: '-0.1px' }}>{currentUser?.display || 'User'}</span>
+                    <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--wx-text-muted)' }}>{isViewer ? 'Viewer' : (currentUser?.role || '')}</span>
                   </span>
                 </Tag>
               );
             })()}
-            <button onClick={onSignOut} title="Sign out" style={{
+            {/* NO SIGN-OUT HERE WHEN EMBEDDED. There is one session, the hub's,
+                and its top bar already ends it. This button ended a session
+                that no longer exists: it cleared `ch_user` and left a blank
+                screen behind, with the person still signed in. Rendered only
+                if somebody passes `onSignOut`, which nothing does. */}
+            {onSignOut && <button className="pc-head-out" onClick={onSignOut} title="Sign out" style={{
               width: 44, height: 44, borderRadius: '50%', border: 0, cursor: 'pointer',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(255,107,107,0.12)', color: '#FF6B6B', transition: 'background 0.15s',
+              background: 'color-mix(in srgb, var(--wx-danger-soft) 12%, transparent)', color: 'var(--wx-danger)', transition: 'background 0.15s',
             }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,107,107,0.22)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,107,107,0.12)'; }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            </button>
+            </button>}
           </div>
         </header>
+        </ChromeSlot>
 
-        {/* ═══ TAB BAR + month filter controls ═══ */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
-          <div className="pc-tabs" style={{ marginTop: 0, flex: 1, minWidth: 0 }}>
+        {/* ═══ TAB BAR + month filter controls ═══
+             Embedded, the six tabs are six rows in our sidebar and six routes,
+             so the rail is not drawn at all — two navigations for one thing is
+             worse than either. The month controls stay: they filter the screen
+             you are already on, which is not navigation. */}
+        <div className={embedded ? 'pc-filterbar' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: embedded ? 0 : 16, flexWrap: 'wrap' }}>
+          {embedded ? <div style={{ flex: 1, minWidth: 0 }} /> : (
+          <div className="pc-tabs" ref={tabsRailRef} style={{ marginTop: 0, flex: 1, minWidth: 0 }}>
             {TABS.map(t => (
-              <button key={t.id} className={`pc-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.label}</button>
+              <button key={t.id} className={`pc-tab ${tab === t.id ? 'active' : ''}`}
+                onClick={() => setTab(t.id)}>{t.label}</button>
             ))}
           </div>
+          )}
 
           {/* Right-side filter cluster: month nav + All Time */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
@@ -896,7 +1790,12 @@ export default function WurxUI({
                 background: 'var(--pc-card)', border: '1px solid var(--pc-divider)', cursor: 'pointer',
               }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-                <input type="month" value={month} onChange={e => { if (e.target.value) setMonth(e.target.value); }}
+                {/* WURX-ADDED class · this input is flush inside the pill above,
+                    which already draws the surface and the edge. Our field rule
+                    paints every input a field colour, and on this one that put a
+                    band behind "September 2026" — the box-inside-a-box again.
+                    Named so the rule can leave it alone. */}
+                <input type="month" className="pc-chrome-input" value={month} onChange={e => { if (e.target.value) setMonth(e.target.value); }}
                   style={{ border: 0, background: 'transparent', outline: 'none', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: 'var(--pc-text)', cursor: 'pointer', minWidth: 100 }}
                 />
               </label>
@@ -922,11 +1821,12 @@ export default function WurxUI({
         </div>
 
         {tab === 'brands' && (
-          <BrandsTab creators={filtered} allCreators={creators} budgets={budgets} refetchBudgets={refetchBudgets} month={allTime ? '' : month} allTime={allTime} isSuper={isSuper} perms={perms} eukaL30={eukaL30} onSelectCreator={onSelectCreator} onAddCreator={openAddCreator} onEditCreator={openEditCreator} onDeleteBrand={onDeleteBrand} onSetCreatorStatus={onSetCreatorStatus} onUpdateCreator={onUpdateCreator} />
+          <BrandsTab creators={filtered} allCreators={creators} budgets={budgets} refetchBudgets={refetchBudgets} month={allTime ? '' : month} allTime={allTime} isSuper={isSuper} perms={perms} eukaL30={eukaL30} currentUser={currentUser} onSelectCreator={onSelectCreator} onAddCreator={openAddCreator} onEditCreator={openEditCreator} onDeleteBrand={onDeleteBrand} onSetCreatorStatus={onSetCreatorStatus} onUpdateCreator={onUpdateCreator} />
         )}
         {tab === 'creators' && (
           <CreatorsTab
             creators={filtered}
+            allCreators={creators}
             allTime={allTime}
             month={month}
             eukaL30={eukaL30}
@@ -960,6 +1860,13 @@ export default function WurxUI({
                   creators: filtered,
                   allCreators: creators,
                   activeBrands: activeBrandSet,
+                  /* Lets an empty Creative Angles screen jump to the month the
+                     tests were actually saved in. The month lives HERE, so the
+                     setter has to come from here. */
+                  goToMonth: (year, month0) => {
+                    setAllTime(false);
+                    setMonth(String(year) + '-' + String(month0 + 1).padStart(2, '0'));
+                  },
                   dateFilter: (() => {
                     if (allTime || !month) return { mode: 'all' };
                     const parts = month.split('-');
@@ -1021,7 +1928,7 @@ export default function WurxUI({
 }
 
 /* ════════ BRANDS TAB ════════ */
-function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allTime, isSuper, perms, eukaL30, onSelectCreator, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator }) {
+function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allTime, isSuper, perms, eukaL30, currentUser, onSelectCreator, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator }) {
   const [search, setSearch] = useState('');
   // Track only brand name (string), so re-renders pick up live data from brandRows automatically
   const [drillBrandName, setDrillBrandName] = useState(() => loadUIState().brandsDrill || null);
@@ -1108,6 +2015,30 @@ function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allT
     videos: acc.videos + r.videos,
     videosDone: acc.videosDone + r.videosDone,
   }), { budget: 0, allocated: 0, paid: 0, remaining: 0, videos: 0, videosDone: 0 }), [brandRows]);
+
+  /* WURX-ADDED · NEW VIDEO GMV ACROSS EVERY BRAND, for the sixth card.
+     Rashid, 2026-09-21: "sum the new video gmv of all the brands and add it in
+     the first row of brand's main page".
+
+     Brand by brand, with the very function the brand page's GMV card uses, over
+     the very rows it is given (`row.list` is this screen's creators for that
+     brand, which is what BrandDrilldown receives). So it follows the month
+     picker and All Time exactly as those cards do, and ignores the search box
+     as the other five cards here do. Summed unrounded and rounded once, so it
+     can differ from a calculator run over the rounded brand cards by under a
+     dollar a brand, never more. */
+  const wxGmvAll = useMemo(() => {
+    let gmv = 0, videos = 0, brands = 0, dupes = 0;
+    brandRows.forEach((r) => {
+      const t = wxVideoTotals(r.list);
+      gmv += t.gmv;
+      videos += t.all.length;
+      dupes += t.dupes;
+      if (t.gmv > 0) brands += 1;
+    });
+    return { gmv, videos, brands, dupes };
+  }, [brandRows]);
+  /* WURX-END */
 
   /* ══ INSIGHTS · computed signals worth acting on, shown under the KPIs ══
      Budget philosophy: DEPLOYING the full budget is the goal — 100% used
@@ -1201,7 +2132,10 @@ function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allT
   if (drillBrand) {
     return <BrandDrilldown
       brand={drillBrand}
+      currentUser={currentUser}
       creators={creators.filter(c => (c.brand || '').trim() === drillBrand.brand)}
+      brandCreators={(allCreators || creators).filter(c => (c.brand || '').trim() === drillBrand.brand)}
+      allCreators={allCreators || creators}
       budgets={budgets}
       refetchBudgets={refetchBudgets}
       month={month}
@@ -1223,20 +2157,39 @@ function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allT
 
   return (
     <>
-      <div className="pc-kpis pc-kpis-5" style={{ marginTop: 16, gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
+      {/* WURX-ADDED · six cards, not five: the grid is ours to size now
+          (`wx-kpis-6` in wurxbase-overrides.css) and the sixth is New Video GMV.
+          Theirs read: className="pc-kpis pc-kpis-5" style={{ marginTop: 16,
+          gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }} */}
+      <div className="wx-kpis-wrap">
+      <div className="pc-kpis pc-kpis-5 wx-kpis-6" style={{ marginTop: 16 }}>
+      {/* WURX-END */}
         <KPI label="Total Budget"     value={totals.budget > 0 ? fmt$Exact(totals.budget) : '-'} color="#1259C3" />
         <KPI label="Allocated"        value={fmt$Exact(totals.allocated)}                       color="#8B5CF6" />
         <KPI label="Paid"             value={fmt$Exact(totals.paid)}                            color="#2E7D32" />
         <KPI label="Remaining"        value={fmt$Exact(totals.remaining)}                       color={totals.remaining < 0 ? '#C62828' : '#E65100'} />
         <KPI label="Videos Delivered" value={`${totals.videosDone} / ${totals.videos}`}    color="#0A0A0A" />
+        {/* WURX-ADDED · the same card as the five before it, in GMV green, and
+            carrying its exact figure for the check and the hover. */}
+        <div className="pc-kpi pc-kpi-simple wx-kpi-gmv" style={{ '--kpi-color': 'var(--wx-success)' }}
+          data-value={wxGmvAll.gmv.toFixed(2)}
+          title={`$${wxGmvAll.gmv.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} new video GMV · ${wxGmvAll.videos} video${wxGmvAll.videos === 1 ? '' : 's'} across ${brandRows.length} brand${brandRows.length === 1 ? '' : 's'} · ${allTime ? 'all time' : monthLabel(month)}${wxGmvAll.dupes ? ` · ${wxGmvAll.dupes} video${wxGmvAll.dupes === 1 ? '' : 's'} listed under two deals, counted once` : ''} · the brand pages' GMV cards added up to the cent, then rounded once`}>
+          <div className="pc-kpi-row" style={{ marginBottom: 10 }}>
+            <span className="pc-kpi-dot" style={{ background: 'var(--wx-success)' }} />
+            <div className="pc-kpi-label">New Video GMV</div>
+          </div>
+          <div className="pc-kpi-value">{fmt$Exact(Math.round(wxGmvAll.gmv))}</div>
+        </div>
       </div>
+      </div>
+      {/* WURX-END */}
 
       <div className="pc-toolbar" style={{ marginTop: 14 }}>
         <SearchBox value={search} onChange={setSearch} placeholder="Search brands…" />
         <span style={{ display: 'inline-flex', alignItems: 'center', height: 32, padding: '0 12px', borderRadius: 999, background: 'var(--pc-card-2)', color: 'var(--pc-text-2)', fontSize: 12.5, fontWeight: 700, letterSpacing: '-0.1px', border: '1px solid var(--pc-divider)' }}>
           {filteredBrands.length} {filteredBrands.length === 1 ? 'brand' : 'brands'} · {allTime ? 'all time' : monthLabel(month)}
         </span>
-        <button
+        {canExport() && <button
           className="pc-btn pc-btn-ghost pc-btn-sm"
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
           title="Download this table as CSV"
@@ -1261,7 +2214,7 @@ function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allT
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export
-        </button>
+        </button>}
         {canAddBrand && (
           <button className="pc-btn pc-btn-primary pc-btn-sm" onClick={() => setShowNewBrand(true)} style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
@@ -1307,7 +2260,7 @@ function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allT
                   <div className="pc-brandname">{r.brand}</div>
                   <small className="pc-brandsub">{r.creators} creator{r.creators !== 1 ? 's' : ''} · {r.videosDone}/{r.videos} videos</small>
                 </div>
-                <button
+                {canEditStatus() && <button
                   className={`pc-note-btn ${hasNotes ? 'has' : ''}`}
                   onClick={(e) => { e.stopPropagation(); setNotesBrand(r); }}
                   title={hasNotes ? 'View / edit notes' : 'Add notes'}
@@ -1319,7 +2272,7 @@ function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allT
                     <line x1="8" y1="13" x2="16" y2="13" />
                     <line x1="8" y1="17" x2="13" y2="17" />
                   </svg>
-                </button>
+                </button>}
               </div>
               <div className="pc-num pc-money" data-label="Budget">{r.budget > 0 ? fmt$Exact(r.budget) : <span className="pc-money muted">-</span>}</div>
               <div className="pc-num pc-money" data-label="Allocated">{fmt$Exact(r.allocated)}</div>
@@ -1516,9 +2469,19 @@ function buildEukaVideoPatch(c, vids) {
     if (!m) return;
     if (m.code && !String(r.adCode || '').trim()) { r.adCode = m.code; r.auth = true; codes += 1; }
     if (m.date && !String(r.date || '').trim()) { r.date = m.date; dated += 1; }
-    if (m.views !== r.views || m.revenue !== r.revenue || m.items !== r.items ||
+    /* WURX-ADDED · `items` is guarded like every field beside it.
+       It was the ONLY one of the six written unconditionally, and the only one
+       the posted-videos sweep does not actually know: `views` and `revenue`
+       come from the export and are real for every row, but `items` comes from
+       the dashboard's enrichment, which returns FIVE videos however many you
+       ask for. So a store-wide sweep wrote items:0 over every video outside
+       that five — including the true counts the per-creator sweep had just
+       written from `items_sold_count`, which only reaches ten creators a pass.
+       The column oscillated instead of filling. */
+    if (m.views !== r.views || m.revenue !== r.revenue || (m.items && m.items !== r.items) ||
         (m.product && m.product !== r.product) || (m.thumb && m.thumb !== r.thumb)) {
-      r.views = m.views; r.revenue = m.revenue; r.items = m.items;
+      r.views = m.views; r.revenue = m.revenue;
+      if (m.items) r.items = m.items;
       if (m.product) r.product = m.product;
       if (m.thumb) r.thumb = m.thumb;
       metrics += 1;
@@ -1663,14 +2626,21 @@ function mergeBrandPhoto(storeName, url) {
 let _eukaStoresPromise = null;
 function getEukaStores() {
   if (!_eukaStoresPromise) {
-    _eukaStoresPromise = fetch('/.netlify/functions/euka')
-      .then(r => (r.ok ? r.json() : null))
+    _eukaStoresPromise = eukaJson()
       .then(d => (d && d.stores) || [])
       .catch(() => []);
   }
   return _eukaStoresPromise;
 }
-const _brandPhotoFetched = new Set();
+/* WURX-ADDED · one SHARED promise per store, not a 'has it started' flag.
+   It was a Set: the first BrandFace to mount added the store id and every
+   later one saw it and returned, having never read the result. Whichever
+   mounted second kept its gradient initial until a full page reload — and
+   opening a brand mounts a second face for the same store while the list's
+   fetch is still in the air, so the drilldown's logo was the one that lost.
+   Sharing the promise means every face awaits the same call and all of them
+   get the answer. */
+const _brandPhotoPromise = new Map();
 
 /* Drop-in for the pc-ava brand initial · shows the EUKA brand photo when
    available, falls back to the gradient initial. Same markup shape, so all
@@ -1678,6 +2648,14 @@ const _brandPhotoFetched = new Set();
 function BrandFace({ brand }) {
   const [photo, setPhoto] = useState('');
   const [err, setErr] = useState(false);
+  /* WURX-ADDED · a face for a brand EUKA has no store for.
+     Rashid, 2026-09-23: "can we have a photo (dp) of the brand as well like we
+     have of other brands", about Irwin Naturals, which sells through Reacher.
+     Their lookup below asks Euka for the store's photo and gives up when there
+     is no store; ours is the fallback, never the first choice, so every brand
+     Euka does describe keeps exactly the picture it has today. */
+  const wxOurPhoto = wxAdsHook().brandPhotos.get(String(brand || '').trim().toLowerCase()) || '';
+  /* WURX-END */
   useEffect(() => {
     let alive = true;
     setErr(false);
@@ -1688,25 +2666,48 @@ function BrandFace({ brand }) {
       const key = _normEukaBrand(store.name);
       const cached = getBrandPhotoMap()[key];
       if (cached) { setPhoto(cached); return; }
-      if (_brandPhotoFetched.has(store.id)) return;
-      _brandPhotoFetched.add(store.id);
-      const d = await fetch(`/.netlify/functions/euka?store=${encodeURIComponent(store.id)}&type=photo`)
-        .then(r => (r.ok ? r.json() : null)).catch(() => null);
+      let pending = _brandPhotoPromise.get(store.id);
+      if (!pending) {
+        pending = eukaJson({ store: store.id, type: 'photo' });
+        _brandPhotoPromise.set(store.id, pending);
+      }
+      const d = await pending;
       if (d && d.photo) { mergeBrandPhoto(store.name, d.photo); if (alive) setPhoto(d.photo); }
     })();
     return () => { alive = false; };
   }, [brand]);
-  if (photo && !err) {
+  /* WURX-ADDED · ours only when Euka has nothing, or when Euka's own image
+     fails to load — a broken URL and no URL are the same thing to a reader. */
+  const wxSrc = (photo && !err) ? photo : wxOurPhoto;
+  if (wxSrc) {
     return (
       <span className="pc-ava pc-ava-photo">
-        <img src={photo} alt="" loading="lazy" onError={() => setErr(true)} />
+        <img src={wxSrc} alt="" loading="lazy" onError={() => setErr(true)} data-wx-photo={wxSrc === wxOurPhoto ? 'ours' : 'euka'} />
       </span>
     );
   }
+  /* WURX-END */
   return <span className="pc-ava" style={{ background: gradFor(brand) }}>{initial(brand)}</span>;
 }
 
-function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTime, eukaL30, onBack, onSelectCreator, canEdit, canAdd, canDeleteBrand, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator }) {
+function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, refetchBudgets, month, allTime, eukaL30, currentUser, onBack, onSelectCreator, canEdit, canAdd, canDeleteBrand, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator }) {
+  /* WURX-ADDED · tell our ad figures which month is on screen.
+
+     THIS IS THE WHOLE REASON THE COLUMNS MATCH THE ROW THEY SIT IN. Everything
+     else on this screen — the budget, the allocation, the GMV — is filtered by
+     the month selector above, so an ad spend summed over all time would be a
+     different period sitting in the same line of numbers, inviting a
+     comparison that is not valid. 'All Time' sends '' and means no bounds.
+
+     ONE COMPONENT OWNS THIS because only one brand drilldown is ever open, so
+     a single period is enough and every row and video panel below inherits it
+     without a prop being threaded through them. */
+  const wxSetMonth = wxAdsHook().setMonth;
+  const wxAdsB = wxAdsHook(); /* WURX-ADDED · for the Top videos ad spend total */
+  useEffect(() => {
+    wxSetMonth(allTime ? '' : (month || ''));
+  }, [wxSetMonth, allTime, month]);
+  /* WURX-END */
   /* ── EUKA posted-videos sync · pulls this brand's creator_videos export,
      matches handles to onboarded creators, merges NEW links into each
      creator's video_codes (existing rows never touched · dedupe by video id).
@@ -1756,14 +2757,86 @@ function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTi
     const rank = { danger: 0, warn: 1, good: 2, info: 3 };
     return out.sort((a, b) => rank[a.tone] - rank[b.tone]).slice(0, 4);
   }, [brand, creators, eukaL30, month, allTime]);
+  /* WURX-ADDED · WHICH PLATFORM THIS BRAND'S VIDEOS COME FROM.
+     Rashid, 2026-09-23: "when we click euka videos it says no store found
+     obviously because we are using reacher for Irwin Naturals".
+
+     The button below used to be Euka or nothing. It now follows the brand: Euka
+     where Euka has the store, Reacher where Reacher has the shop, and the label
+     says which before it is pressed rather than after it fails. Asked once per
+     brand, cheaply — `probe` skips the catalogue. */
+  const [wxSource, setWxSource] = useState('');
+  useEffect(() => {
+    let alive = true;
+    setWxSource('');
+    (async () => {
+      const res = await brandSource(brand.brand);
+      if (alive && res) setWxSource(res.source);
+    })();
+    return () => { alive = false; };
+  }, [brand.brand]);
+
+  /* Reacher's equivalent of the Euka sweep: the same job — this brand's posted
+     videos, filed onto the creators they belong to — done by the function that
+     already does it every fifteen minutes. */
+  const syncReacherVideos = async () => {
+    if (vidSync.state === 'busy') return;
+    const flash = (state, msg, detail) => {
+      setVidSync({ state, msg, detail: detail || '' });
+      setTimeout(() => setVidSync({ state: 'idle', msg: '', detail: '' }), detail ? 22000 : 7000);
+    };
+    setVidSync({ state: 'busy', msg: 'Asking Reacher…' });
+    const res = await runReacherSync();
+    if (!res.ok) { flash('err', 'Reacher sync failed', res.message); return; }
+    const bits = [];
+    if (res.videosFiled) bits.push(`+${res.videosFiled} video${res.videosFiled === 1 ? '' : 's'}`);
+    if (res.creatorsMatched) bits.push(`${res.creatorsMatched} creator${res.creatorsMatched === 1 ? '' : 's'}`);
+    if (res.spendWritten) bits.push(`+${res.spendWritten} ad figure${res.spendWritten === 1 ? '' : 's'}`);
+    /* "Nothing new" is the usual answer, because the scheduled run got there
+       first. Say that rather than nothing, or the button looks broken.
+       NO COUNT HERE. It used to read "Already up to date · 207 videos", and
+       Rashid asked what 207 was — fairly, because it is every video Reacher
+       holds for the whole shop, not this brand's filed videos and not anything
+       that just happened. A number nobody can act on, sitting where a result
+       belongs, only invites that question. */
+    flash('done', bits.length ? bits.join(' · ') : 'Already up to date', res.note || '');
+    if (res.videosFiled) window.location.reload();
+  };
+  /* WURX-END */
+
   const syncEukaVideos = async () => {
     if (vidSync.state === 'busy') return;
     setVidSync({ state: 'busy', msg: 'Finding store…' });
-    const flash = (state, msg) => { setVidSync({ state, msg }); setTimeout(() => setVidSync({ state: 'idle', msg: '' }), 7000); };
+    /* Seven seconds is enough for "Already up to date" and nowhere near enough
+       to read why something failed, so a failure stays up three times as long
+       and carries its explanation beside the button rather than inside it. */
+    const flash = (state, msg, detail) => {
+      setVidSync({ state, msg, detail: detail || '' });
+      setTimeout(() => setVidSync({ state: 'idle', msg: '', detail: '' }), detail ? 22000 : 7000);
+    };
     try {
-      const meta = await fetch('/.netlify/functions/euka').then(r => (r.ok ? r.json() : null));
-      const store = eukaStoreForBrand(meta?.stores, brand.brand);
-      if (!store) throw new Error(`No EUKA store named "${brand.brand}"`);
+      const meta = await eukaJson();
+      /* THESE ARE TWO DIFFERENT FAULTS AND THEY USED TO READ THE SAME.
+         `meta` is null when the CALL failed — blocked, signed out, not
+         allowed, EUKA down. Only once it comes back can "this brand has no
+         store" mean anything. Saying the second when the first happened is
+         what sent people hunting through store names. */
+      if (!meta) {
+        const f = lastEukaFailure();
+        const err = new Error("Can't reach EUKA");
+        err.detail = f
+          ? (f.status ? `${f.status} · ` : '') + f.hint + '. Try: ' + f.fix + '.'
+          : 'The request failed and gave no reason.';
+        throw err;
+      }
+      const store = eukaStoreForBrand(meta.stores, brand.brand);
+      if (!store) {
+        const err = new Error('No store for this brand');
+        const names = (meta.stores || []).map(st => st.name).filter(Boolean);
+        err.detail = `EUKA answered, but none of its stores is called "${brand.brand}". `
+          + (names.length ? 'It has: ' + names.slice(0, 12).join(', ') + '.' : 'It returned no stores at all.');
+        throw err;
+      }
 
       // Full backfill from the brand's earliest onboarding · EUKA caps each
       // export at ~60 days, so we sweep ≤55-day windows and merge.
@@ -1774,8 +2847,7 @@ function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTi
       for (let i = 0; i < windows.length; i++) {
         setVidSync({ state: 'busy', msg: `Fetching videos… (${i + 1}/${windows.length})` });
         const w = windows[i];
-        const d = await fetch(`/.netlify/functions/euka?store=${encodeURIComponent(store.id)}&type=videos&from=${w.from}&to=${w.to}`)
-          .then(r => (r.ok ? r.json() : null));
+        const d = await eukaJson({ store: store.id, type: 'videos', from: w.from, to: w.to });
         if (!d || !d.videos) continue;   // empty/old window → keep sweeping
         mergeAvatars(d.avatars);
         mergeVidProfile(d.tiers);
@@ -1802,11 +2874,24 @@ function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTi
       if (removed) bits.push(`−${removed} off-timeline`);
       flash('done', bits.length ? `${bits.join(' · ')} · ${touched} creator${touched !== 1 ? 's' : ''}` : 'Already up to date');
     } catch (e) {
-      flash('err', e?.message || 'Sync failed');
+      flash('err', e?.message || 'Sync failed', e?.detail);
     }
   };
   const [showBudget, setShowBudget] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
+  const [showBrandContract, setShowBrandContract] = useState(false);
+  /* repaint the dot on the button when the terms are saved from the modal */
+  const [bcRev, setBcRev] = useState(0);
+  useEffect(() => {
+    const on = () => setBcRev(v => v + 1);
+    window.addEventListener('wurx-brand-contracts', on);
+    return () => window.removeEventListener('wurx-brand-contracts', on);
+  }, []);
+  const brandContractOn = useMemo(() => {
+    const bc = getBrandContract(brand.brand, month);
+    return !!(bc && (Object.keys(bc.fields || {}).length || Object.keys(bc.custom || {}).length));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brand.brand, month, bcRev]);
   const [videosCreatorId, setVideosCreatorId] = useState(null);  // store ID so popup re-reads live data on every render
   const [expandedId, setExpandedId] = useState(null);            // inline row expansion (EUKA-style video sub-table)
   // Look up the LIVE creator data from props each render · so saves reflect immediately and refresh shows persisted values
@@ -1822,8 +2907,169 @@ function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTi
     catch (e) { alert('Could not update: ' + e.message); }
   };
 
+  /* WURX-ADDED · deals per person in the month on screen, across every brand.
+     This screen's `month` is already '' when All Time is on, which counts the lot. */
+  const wxDealsNow = useMemo(() => wxDealsByPerson(allCreators || brandCreators || creators, month), [allCreators, brandCreators, creators, month]);
+  /* WURX-END */
   const sortedCreators = useMemo(() => [...creators].sort((a, b) => (a.hiring_date || '').localeCompare(b.hiring_date || '')), [creators]);
-  const groups = useMemo(() => groupByStatus(sortedCreators), [sortedCreators]);
+
+  /* WURX-ADDED · SEARCHING AND FILTERING ONE BRAND'S LIST.
+     Rashid, 2026-09-23: "we need to let users search the creators there should
+     be search and filter functionality without disturbing ui".
+
+     IT NARROWS THE TABLE AND NOTHING ELSE. The five cards and the top-videos
+     totals describe the brand's month, not the rows you happen to be looking
+     at, and a budget that moved when you typed a name would be a different
+     number every time somebody searched. The count beside the search box says
+     how many of the month's creators are showing, so a narrowed list can never
+     be mistaken for the whole one. */
+  const [wxSearch, setWxSearch] = useState('');
+  const [wxFilterOpen, setWxFilterOpen] = useState(false);
+  const [wxStatusF, setWxStatusF] = useState(null);
+  const [wxHiredByF, setWxHiredByF] = useState(null);
+  const [wxTierF, setWxTierF] = useState(null);
+  const [wxDeliveryF, setWxDeliveryF] = useState(null);
+  const wxFilterRef = useRef(null);
+  const wxActiveFilters = [wxStatusF, wxHiredByF, wxTierF, wxDeliveryF].filter(Boolean).length;
+  const wxResetFilters = () => { setWxStatusF(null); setWxHiredByF(null); setWxTierF(null); setWxDeliveryF(null); };
+
+  /* Close on a click outside or Escape, like their own filter popover. */
+  useEffect(() => {
+    if (!wxFilterOpen) return;
+    const onDown = (e) => { if (wxFilterRef.current && !wxFilterRef.current.contains(e.target)) setWxFilterOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setWxFilterOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
+  }, [wxFilterOpen]);
+
+  /* One lower-cased haystack per row, built once. Searching rebuilds nothing. */
+  const wxSearchable = useMemo(() => {
+    const m = new Map();
+    sortedCreators.forEach((c) => {
+      m.set(c.id, [c.name, c.tiktok_account, c.tiktok_account_2, c.category, c.product, c.deal, c.hired_by]
+        .map((v) => String(v || '')).join(' ').toLowerCase());
+    });
+    return m;
+  }, [sortedCreators]);
+
+  /* Delivery, the question a brand page is actually for: who still owes videos.
+     `completed` here is the row's own rule — the status flag OR delivery having
+     reached the commitment — so the filter and the progress bar can never
+     disagree. */
+  const wxDeliveryOf = (c) => {
+    const want = parseDealVideos(c.deal);
+    const got = deliveredVideoCount(c);
+    if (c.videos === 'Done' || (want > 0 && got >= want)) return 'complete';
+    return 'outstanding';
+  };
+
+  /* Only the values this brand-month really contains get a chip. A filter for
+     somebody who is not on this brand is a dead end you can click. */
+  const wxHiredByOptions = useMemo(() => {
+    const t = new Map();
+    sortedCreators.forEach((c) => {
+      const k = String(c.hired_by || '').trim();
+      if (k) t.set(k, (t.get(k) || 0) + 1);
+    });
+    return [...t.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }, [sortedCreators]);
+
+  const wxTierOptions = useMemo(() => {
+    const t = new Map();
+    sortedCreators.forEach((c) => {
+      const k = creatorTier(c, eukaL30) || 'none';
+      t.set(k, (t.get(k) || 0) + 1);
+    });
+    return [...t.entries()].sort((a, b) => (a[0] === 'none' ? 1 : b[0] === 'none' ? -1 : a[0].localeCompare(b[0])));
+  }, [sortedCreators, eukaL30]);
+
+  const wxStatusCounts = useMemo(() => {
+    const t = new Map();
+    sortedCreators.forEach((c) => t.set(statusOf(c), (t.get(statusOf(c)) || 0) + 1));
+    return t;
+  }, [sortedCreators]);
+
+  const wxDeliveryCounts = useMemo(() => {
+    const t = new Map();
+    sortedCreators.forEach((c) => { const k = wxDeliveryOf(c); t.set(k, (t.get(k) || 0) + 1); });
+    return t;
+  }, [sortedCreators]);
+
+  const wxVisible = useMemo(() => {
+    let list = sortedCreators;
+    if (wxStatusF) list = list.filter((c) => statusOf(c) === wxStatusF);
+    if (wxHiredByF) list = list.filter((c) => String(c.hired_by || '').trim() === wxHiredByF);
+    if (wxTierF) list = list.filter((c) => (creatorTier(c, eukaL30) || 'none') === wxTierF);
+    if (wxDeliveryF) list = list.filter((c) => wxDeliveryOf(c) === wxDeliveryF);
+    const q = wxSearch.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((c) => (wxSearchable.get(c.id) || '').includes(q));
+  }, [sortedCreators, wxSearch, wxStatusF, wxHiredByF, wxTierF, wxDeliveryF, wxSearchable, eukaL30]);
+
+  const wxNarrowed = wxVisible.length !== sortedCreators.length;
+  /* WURX-END */
+
+  const groups = useMemo(() => groupByStatus(wxVisible), [wxVisible]);
+
+  /* WURX-ADDED · PRODUCT BANDS INSIDE EACH STATUS SECTION.
+     Rashid's mockup keeps the Payment Pending / In Progress / Payment Sent
+     dividers exactly where they are and puts the product groups underneath
+     them, which is the right way round: the payment state is how this team
+     works the list, and the product is how they read it. */
+  const wxProdPics = wxUseProductPics(brand.brand);
+  const wxKnownProds = useMemo(() => wxKnownProducts(sortedCreators), [sortedCreators]);
+  const wxPlaced = useMemo(() => {
+    const m = new Map();
+    sortedCreators.forEach((c) => m.set(c.id, wxCreatorProduct(c, wxKnownProds)));
+    return m;
+  }, [sortedCreators, wxKnownProds]);
+  const wxProdRank = useMemo(() => wxProductOrder(sortedCreators), [sortedCreators]);
+
+  /* GROUP ONLY WHEN THERE IS SOMETHING TO GROUP BY. Fifteen of the brands on
+     dev carry no product on any video and none on any creator; wrapping those
+     in a single "No product recorded" band would be pure furniture, so they
+     keep the flat list they have today. One product is the same case: a lone
+     band around the whole table tells nobody anything. */
+  const wxBandProducts = useMemo(() => {
+    const keys = new Set();
+    wxVisible.forEach((c) => { const pl = wxPlaced.get(c.id); if (pl && pl.key) keys.add(pl.key); });
+    return keys.size >= 2;
+  }, [wxVisible, wxPlaced]);
+
+  const [wxShut, setWxShut] = useState(() => new Set());
+  /* The row number is the row's PLACE IN THE LIST, so it is handed out here, in
+     reading order, once the bands are known. Collapsing a band still consumes
+     its numbers — #14 must not become #9 because somebody folded a group.
+
+     EACH BAND FOLDS ALONE, hence `uid`. The same product appears once under
+     every payment status it has creators in — Dr Tobias's Colon Cleanse is a
+     band under all three — and keying the collapsed set on the product alone
+     meant folding the one you clicked also folded its twins further down the
+     page. Thirteen rows vanished for a click that promised nine. */
+  const wxTable = useMemo(() => {
+    let n = 0;
+    return groups.map((g) => {
+      const bands = wxBandProducts
+        ? wxSplitByProduct(g.items, wxPlaced, wxProdRank)
+        : [{ key: '\u0000flat', name: '', flat: true, items: g.items }];
+      return {
+        ...g,
+        bands: bands.map((b) => ({
+          ...b,
+          uid: `${g.key}::${b.key}`,
+          rows: b.items.map((c) => ({ c, n: ++n })),
+        })),
+      };
+    });
+  }, [groups, wxBandProducts, wxPlaced, wxProdRank]);
+
+  const wxAllBandKeys = useMemo(() => {
+    const keys = [];
+    wxTable.forEach((g) => g.bands.forEach((b) => { if (!b.flat) keys.push(b.uid); }));
+    return keys;
+  }, [wxTable]);
+  /* WURX-END */
 
   return (
     <>
@@ -1850,17 +3096,21 @@ function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTi
         </div>
         <div className="pc-dd-actions">
           {canEdit && (
+            /* WURX-ADJUSTED · the button follows the brand's platform. */
             <button
               className={`pc-btn pc-btn-sm pc-btn-ghost pc-vidsync ${vidSync.state}`}
-              onClick={syncEukaVideos}
+              onClick={wxSource === 'reacher' ? syncReacherVideos : syncEukaVideos}
               disabled={vidSync.state === 'busy'}
-              title="Fetch this brand's posted videos from EUKA now (also runs automatically every 6 hours) · only videos inside each creator's collab window count"
+              data-wx-source={wxSource || 'unknown'}
+              title={wxSource === 'reacher'
+                ? "Fetch this brand's posted videos from Reacher now (it also runs by itself every 15 minutes)"
+                : "Fetch this brand's posted videos from EUKA now (also runs automatically every 6 hours) · only videos inside each creator's collab window count"}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="23 7 16 12 23 17 23 7" />
                 <rect x="1" y="5" width="15" height="14" rx="2" />
               </svg>
-              {vidSync.state === 'idle' ? 'EUKA videos'
+              {vidSync.state === 'idle' ? (wxSource === 'reacher' ? 'Reacher videos' : 'EUKA videos')
                 : vidSync.state === 'busy' ? (vidSync.msg || 'Syncing…')
                 : vidSync.msg}
             </button>
@@ -1874,6 +3124,21 @@ function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTi
             </svg>
             Notes{notesHas ? ' •' : ''}
           </button>
+          {canEdit && (
+            <button className={`pc-btn pc-btn-sm ${brandContractOn ? 'pc-btn-accentlight' : 'pc-btn-ghost'}`}
+              onClick={() => setShowBrandContract(true)}
+              disabled={allTime || !month}
+              title={allTime || !month
+                ? 'Pick a month first · a contract covers one cycle'
+                : 'Terms every creator added this month inherits'}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 12h6M9 16h4" />
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              Contract{brandContractOn ? ' •' : ''}
+            </button>
+          )}
           {canEdit && (
             <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={() => setShowBudget(true)}>Edit budget</button>
           )}
@@ -1892,6 +3157,16 @@ function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTi
           )}
         </div>
         </div>{/* /pc-ddhero-top */}
+
+        {/* WHY it failed, where there is room for a sentence. The button can
+            only hold three words, and "No EUKA store named X" in three words
+            is what sent people hunting through store names for an hour. */}
+        {vidSync.state === 'err' && vidSync.detail && (
+          <div className="pc-euka-why" role="status">
+            <b>{vidSync.msg}</b>
+            <span>{vidSync.detail}</span>
+          </div>
+        )}
 
       </div>{/* /pc-ddhero */}
 
@@ -1931,21 +3206,71 @@ function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTi
             .filter(r => r && String(r.video || '').trim() && Number(r.revenue) > 0)
             .map(r => ({ ...r, name: c.name })))
           .sort((a, b) => Number(b.revenue) - Number(a.revenue))
-          .slice(0, 8);
+          .slice(0, 10);
         if (!tops.length) return null;
+        /*
+         * WURX-ADDED · THREE TOTALS: VIEWS, GMV AND AD SPEND.
+         *
+         * Rashid, 2026-09-16, for his boss, in place of the single New video
+         * GMV total: "3 vertical mini cards ... the sum of views (in blue), GMV
+         * (green) and ad spend (red)", for the month when a month is chosen and
+         * for all time under All Time. They cover every row in the table below,
+         * which is already scoped exactly that way.
+         *
+         * EACH VIDEO IS COUNTED ONCE. On dev the same TikTok video sits under two
+         * deals of one creator 32 times inside a single brand-month (84 across
+         * months), and adding the columns would count its views, its GMV and its
+         * ad money twice. So a total can come in under a calculator run down the
+         * column, and the card's hover text says by how many videos. Where two
+         * rows carry different synced figures for one video the larger is kept:
+         * views and GMV only grow, so the larger is the newer sync.
+         *
+         * Ad spend is Euka's, from the same reader and for the same period as the
+         * Ad spend column. No Euka data is a dash, never $0, and two currencies
+         * are never added together.
+         *
+         * The counting lives in wxVideoTotals, shared with the Brands screen's
+         * New Video GMV card, so that card is always these cards added up.
+         */
+        const wxVT = wxVideoTotals(sortedCreators);
+        const wxDupes = wxVT.dupes;
+        const wxAll = wxVT.all;
+        const wxViews = wxVT.views;
+        const wxGmv = Math.round(wxVT.gmv);
+        const wxIdsAll = wxAll.map((v) => v.id).filter(Boolean);
+        wxAdsB.ensure(wxIdsAll);
+        const wxSpend = wxTotals(wxAdsB.get, wxIdsAll);
+        const wxPeriod = allTime ? 'all time' : monthLabel(month);
+        const wxOnce = wxDupes ? ` · ${wxDupes} video${wxDupes === 1 ? '' : 's'} listed under two deals, counted once` : '';
+        const wxVidsIn = `${wxAll.length} video${wxAll.length === 1 ? '' : 's'} in the table below · ${wxPeriod}${wxOnce}`;
+        const wxSpendState = wxSpend.withData
+          ? (wxSpend.mixedCurrency ? 'mixed' : 'ok')
+          : ((!wxAdsB.ready || wxAdsB.loading) && wxIdsAll.length ? 'pending' : (wxAdsB.error ? 'error' : 'none'));
+        const wxSpendText = { ok: wxMoney(wxSpend.cost, wxSpend.currency), mixed: 'Mixed', pending: '…', error: '–', none: '–' }[wxSpendState];
+        const wxSpendTitle = {
+          ok: `Euka ad spend on ${wxSpend.withData} of ${wxIdsAll.length} videos in the table below · ${wxPeriod}${wxOnce}`,
+          mixed: 'These videos were paid for in more than one currency, so they are not added together',
+          pending: 'Loading ad spend from Euka',
+          error: `Ad spend could not be loaded: ${wxAdsB.error}`,
+          none: `Euka has no ad spend for these videos · ${wxPeriod}`,
+        }[wxSpendState];
+        /* WURX-END */
         return (
           <div className="pc-topvids">
             <div className="pc-topvids-head">
               Top videos by GMV · {allTime ? 'All time' : monthLabel(month)}
-              <span className="pc-topvids-sub">live from EUKA</span>
+              {/* WURX-ADJUSTED · name the platform this brand really sells on. */}
+              <span className="pc-topvids-sub">{wxSource === 'reacher' ? 'live from Reacher' : 'live from EUKA'}</span>
             </div>
+            <div className="pc-topvids-body">
             <div className="pc-topvids-row">
               {tops.map((v, i) => (
                 <a key={i} className="pc-topvid" href={v.video} target="_blank" rel="noreferrer" title={`${v.name} · ${fmt$Exact(Math.round(v.revenue))} GMV · open on TikTok`}>
                   <span className="pc-topvid-frame">
-                    {v.thumb
-                      ? <img className="pc-topvid-thumb" src={v.thumb} alt="" loading="lazy" />
-                      : <span className="pc-topvid-thumb pc-topvid-ph" aria-hidden>▶</span>}
+                    {/* WURX-ADDED · falls back to the placeholder rather than
+                        a broken-image icon. WURX-END */}
+                    <WxVideoThumb src={v.thumb} className="pc-topvid-thumb"
+                      phClassName="pc-topvid-thumb pc-topvid-ph" />
                     <span className="pc-topvid-rank">#{i + 1}</span>
                     <span className="pc-topvid-gmv">{fmt$Exact(Math.round(v.revenue))}</span>
                   </span>
@@ -1954,9 +3279,204 @@ function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTi
                 </a>
               ))}
             </div>
+            {/* WURX-ADDED · views, GMV and ad spend for the period, stacked */}
+            <div className="pc-topvids-totalwrap">
+              <div className="pc-topvids-stats" aria-label={`Totals for ${wxPeriod}`}>
+                <div className="pc-topvids-stat views" data-value={wxViews} title={`${wxViews.toLocaleString()} views across ${wxVidsIn}`}>
+                  <span className="pc-topvids-stat-ico" aria-hidden>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                  </span>
+                  <span className="pc-topvids-stat-lbl">Views</span>
+                  <span className={`pc-topvids-stat-val${wxViews > 0 ? '' : ' none'}`}>{wxViews > 0 ? kNum(wxViews) : '–'}</span>
+                </div>
+                <div className="pc-topvids-stat gmv" data-value={wxGmv} title={`${fmt$Exact(wxGmv)} new video GMV across ${wxVidsIn}`}>
+                  <span className="pc-topvids-stat-ico" aria-hidden>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
+                  </span>
+                  <span className="pc-topvids-stat-lbl">GMV</span>
+                  <span className="pc-topvids-stat-val">{fmt$Exact(wxGmv)}</span>
+                </div>
+                <div className="pc-topvids-stat spend" data-state={wxSpendState} data-value={wxSpendState === 'ok' ? wxSpend.cost.toFixed(2) : ''} title={wxSpendTitle}>
+                  <span className="pc-topvids-stat-ico" aria-hidden>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m3 11 18-5v12L3 14v-3z" /><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" /></svg>
+                  </span>
+                  <span className="pc-topvids-stat-lbl">Ad spend</span>
+                  <span className={`pc-topvids-stat-val${wxSpendState === 'ok' ? '' : ' none'}`}>{wxSpendText}</span>
+                </div>
+              </div>
+            </div>
+            {/* WURX-END */}
+            </div>
           </div>
         );
       })()}
+
+      {/* WURX-ADDED · BY PRODUCT, for the month on screen.
+          Rashid, 2026-09-24: "product wise gmv, product wise creators and
+          product wise videos ... a beautifully iconed and pilled style display
+          without disturbing the ui ... for the current month that user
+          selected".
+
+          It reads the same `sortedCreators` the table below does, so it is
+          scoped to the same month by construction rather than by a second
+          filter that could drift from it, and `wxProductTotals` counts each
+          video once with the same rule as the GMV card above — so the pills add
+          up to that card instead of quietly exceeding it. */}
+      <ProductBand creators={sortedCreators} brand={brand.brand} period={allTime ? 'All time' : monthLabel(month)} />
+
+      {/* WURX-ADDED · search and filter for this brand's creators. Their own
+          toolbar shape, the one the Brands screen and the Creators tab already
+          use, so this row is not a new piece of furniture. */}
+      {sortedCreators.length > 0 && (
+        <div className="pc-toolbar" style={{ marginTop: 14 }}>
+          <SearchBox value={wxSearch} onChange={setWxSearch} placeholder="Search name, handle, category, product…" />
+
+          <div ref={wxFilterRef} style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setWxFilterOpen((o) => !o)}
+              title="Filter this brand's creators"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                height: 36, padding: '0 14px', borderRadius: 999,
+                background: wxFilterOpen || wxActiveFilters > 0 ? 'var(--pc-accent-light)' : 'var(--pc-card-2)',
+                color: wxFilterOpen || wxActiveFilters > 0 ? 'var(--pc-accent)' : 'var(--pc-text-2)',
+                border: `1px solid ${wxActiveFilters > 0 ? 'color-mix(in srgb, var(--pc-accent) 30%, transparent)' : 'var(--pc-divider)'}`,
+                fontSize: 12.5, fontWeight: 700, letterSpacing: '-0.1px',
+                cursor: 'pointer', transition: 'background .15s, color .15s, border-color .15s', lineHeight: 1,
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+              </svg>
+              Filter
+              {wxActiveFilters > 0 && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  minWidth: 18, height: 18, padding: '0 6px', borderRadius: 99,
+                  background: 'var(--pc-accent)', color: 'var(--wx-on-accent)',
+                  fontSize: 10.5, fontWeight: 800, lineHeight: 1,
+                }}>{wxActiveFilters}</span>
+              )}
+            </button>
+
+            {wxFilterOpen && (() => {
+              const pill = (active) => ({
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                height: 28, padding: '0 12px', borderRadius: 8,
+                fontSize: 11.5, fontWeight: 600, letterSpacing: '-0.05px',
+                cursor: 'pointer', lineHeight: 1, fontFamily: 'inherit',
+                transition: 'background .12s, color .12s, border-color .12s',
+                background: active ? 'var(--wx-text)' : 'transparent',
+                color: active ? 'var(--wx-text-inverse)' : 'var(--pc-text-2)',
+                border: `1px solid ${active ? 'var(--wx-text)' : 'var(--pc-divider)'}`,
+              });
+              const sectionTitle = {
+                fontSize: 10, fontWeight: 700, color: 'var(--pc-text-3)',
+                textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8,
+              };
+              const section = { marginBottom: 14 };
+              const row = { display: 'flex', flexWrap: 'wrap', gap: 5 };
+              const count = (n) => (n == null ? null : <span style={{ opacity: 0.55, fontWeight: 700 }}>{n}</span>);
+              const Chips = ({ options, value, onPick }) => (
+                <div style={row}>
+                  {options.map((o) => (
+                    <button key={o.key ?? 'all'} type="button" onClick={() => onPick(o.key)} style={pill(value === o.key)}>
+                      {o.label}{count(o.n)}
+                    </button>
+                  ))}
+                </div>
+              );
+
+              return (
+                <div data-wx="brand-filters" style={{
+                  position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                  width: 320, maxHeight: 'calc(100vh - 200px)', overflowY: 'auto',
+                  background: 'var(--pc-card)', border: '1px solid var(--pc-divider)',
+                  borderRadius: 12, padding: '16px 16px 14px', zIndex: 100,
+                  boxShadow: '0 18px 50px rgba(15,23,42,0.10), 0 4px 12px rgba(15,23,42,0.05)',
+                  animation: 'pc-rise .18s var(--pc-ease)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--pc-divider)' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--pc-text)', letterSpacing: '-0.15px' }}>Filters</div>
+                    {wxActiveFilters > 0 && (
+                      <button type="button" onClick={wxResetFilters}
+                        style={{ background: 'transparent', border: 0, color: 'var(--pc-text-3)', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '2px 6px', borderRadius: 6 }}>
+                        Reset all
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={section}>
+                    <div style={sectionTitle}>Payment status</div>
+                    <Chips
+                      value={wxStatusF}
+                      onPick={setWxStatusF}
+                      options={[
+                        { key: null, label: 'All' },
+                        { key: 'pending', label: 'Payment Pending', n: wxStatusCounts.get('pending') || 0 },
+                        { key: 'progress', label: 'Videos in Progress', n: wxStatusCounts.get('progress') || 0 },
+                        { key: 'sent', label: 'Payment Sent', n: wxStatusCounts.get('sent') || 0 },
+                      ]}
+                    />
+                  </div>
+
+                  <div style={section}>
+                    <div style={sectionTitle}>Videos</div>
+                    <Chips
+                      value={wxDeliveryF}
+                      onPick={setWxDeliveryF}
+                      options={[
+                        { key: null, label: 'All' },
+                        { key: 'outstanding', label: 'Still owed', n: wxDeliveryCounts.get('outstanding') || 0 },
+                        { key: 'complete', label: 'Delivered in full', n: wxDeliveryCounts.get('complete') || 0 },
+                      ]}
+                    />
+                  </div>
+
+                  {wxHiredByOptions.length > 0 && (
+                    <div style={section}>
+                      <div style={sectionTitle}>Hired by</div>
+                      <Chips
+                        value={wxHiredByF}
+                        onPick={setWxHiredByF}
+                        options={[{ key: null, label: 'All' }, ...wxHiredByOptions.map(([name, n]) => ({ key: name, label: name, n }))]}
+                      />
+                    </div>
+                  )}
+
+                  {wxTierOptions.length > 1 && (
+                    <div style={{ marginBottom: 2 }}>
+                      <div style={sectionTitle}>EUKA tier</div>
+                      <Chips
+                        value={wxTierF}
+                        onPick={setWxTierF}
+                        options={[
+                          { key: null, label: 'All' },
+                          ...wxTierOptions.map(([t, n]) => ({ key: t, label: t === 'none' ? 'No tier yet' : t.toUpperCase(), n })),
+                        ]}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* How many of the month's creators are showing. A narrowed list must
+              never be mistaken for the whole one. */}
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', height: 32, padding: '0 12px',
+            borderRadius: 999, background: 'var(--pc-card-2)', color: 'var(--pc-text-2)',
+            fontSize: 12.5, fontWeight: 700, letterSpacing: '-0.1px', border: '1px solid var(--pc-divider)',
+          }}>
+            {wxNarrowed
+              ? `${wxVisible.length} of ${sortedCreators.length} creators`
+              : `${sortedCreators.length} creator${sortedCreators.length === 1 ? '' : 's'}`}
+          </span>
+        </div>
+      )}
+      {/* WURX-END */}
 
       {sortedCreators.length === 0 ? (
         <div className="pc-card"><div className="pc-empty">
@@ -1966,6 +3486,22 @@ function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTi
           <h3>No creators in {monthLabel(month)}</h3>
           <p>Onboard a creator for this brand & month.</p>
           {canAdd && <button className="pc-btn-primary" style={{ marginTop: 16 }} onClick={() => onAddCreator && onAddCreator(brand.brand)}>+ Add creator</button>}
+        </div></div>
+      ) : wxVisible.length === 0 ? (
+        /* WURX-ADDED · the search and filters excluded everybody. Say which,
+           and offer the way back, rather than showing an empty table. */
+        <div className="pc-card"><div className="pc-empty">
+          <span className="pc-empty-ico" aria-hidden>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+          </span>
+          <h3>No creators match</h3>
+          <p>
+            {wxSearch.trim() ? <>Nothing here matches &ldquo;{wxSearch.trim()}&rdquo;</> : 'No creator on this brand matches those filters'}
+            {wxSearch.trim() && wxActiveFilters > 0 ? ' with those filters' : ''}. {sortedCreators.length} creator{sortedCreators.length === 1 ? '' : 's'} on {monthLabel(month)}.
+          </p>
+          <button className="pc-btn-primary" style={{ marginTop: 16 }} onClick={() => { setWxSearch(''); wxResetFilters(); }}>
+            Clear search and filters
+          </button>
         </div></div>
       ) : (
         <div className="pc-card">
@@ -1979,15 +3515,49 @@ function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTi
             <div className="pc-num">New video GMV</div>
             <div className="pc-num">L30 GMV</div>
             <div className="pc-num">Items sold</div>
+            {/* WURX-ADDED · from OUR TikTok ads data, summed over this
+                creator's DISTINCT delivered videos. */}
+            <div className="pc-num">Ad spend</div>
+            <div className="pc-num">ROI</div>
+            {/* WURX-END */}
             <div>Contract</div>
             <div>Status</div>
             <div>Actions</div>
           </div>
-          {groups.map((g, gi) => {
-            const offset = groups.slice(0, gi).reduce((s, x) => s + x.items.length, 0);
+          {/* WURX-ADDED · the same rows, read out of `wxTable` so the product
+              bands and the flat list share one renderer and one numbering. */}
+          {wxTable.map((g) => {
             // Show divider above every group (including the first) when there's
             // more than one status to separate. Single-status lists stay clean.
-            const showDivider = groups.length > 1;
+            const showDivider = wxTable.length > 1;
+            const creatorRow = ({ c, n }) => (
+              <React.Fragment key={c.id}>
+                <DrilldownCreatorRow
+                  c={c}
+                  idx={n}
+                  euka={eukaL30}
+                  deals={wxDealsNow.get(wxPersonKey(c)) || 0}
+                  dealsMonth={month}
+                  open={expandedId === c.id}
+                  onSelect={() => setExpandedId(id => (id === c.id ? null : c.id))}
+                  onSetStatus={setStatus}
+                  onEditContract={() => setContractEditC(c)}
+                  onView={() => setVideosCreatorId(c.id)}
+                  onEditCreator={onEditCreator ? () => onEditCreator(c) : null}
+                  onDelete={onDeleteCreator && isAsadActor() ? () => onDeleteCreator(c.id).catch(() => {}) : null}
+                />
+                {expandedId === c.id && (
+                  <DrilldownVideosPanel
+                    c={c}
+                    euka={eukaL30}
+                    allTime={allTime}
+                    siblings={brandCreators || creators}
+                    onUpdateCreator={onUpdateCreator}
+                    onManage={() => setVideosCreatorId(c.id)}
+                  />
+                )}
+              </React.Fragment>
+            );
             return (
               <React.Fragment key={g.key}>
                 {showDivider && (
@@ -2000,28 +3570,77 @@ function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTi
                     <span className="pc-ct-divider-line" />
                   </div>
                 )}
-                {g.items.map((c, i) => (
-                  <React.Fragment key={c.id}>
-                    <DrilldownCreatorRow
-                      c={c}
-                      idx={offset + i + 1}
-                      euka={eukaL30}
-                      open={expandedId === c.id}
-                      onSelect={() => setExpandedId(id => (id === c.id ? null : c.id))}
-                      onSetStatus={setStatus}
-                      onEditContract={() => setContractEditC(c)}
-                      onView={() => setVideosCreatorId(c.id)}
-                      onEditCreator={onEditCreator ? () => onEditCreator(c) : null}
-                      onDelete={onDeleteCreator && isAsadActor() ? () => onDeleteCreator(c.id).catch(() => {}) : null}
-                    />
-                    {expandedId === c.id && (
-                      <DrilldownVideosPanel c={c} euka={eukaL30} onUpdateCreator={onUpdateCreator} onManage={() => setVideosCreatorId(c.id)} />
-                    )}
-                  </React.Fragment>
-                ))}
+                {g.bands.map((b) => {
+                  if (b.flat) return <React.Fragment key={b.key}>{b.rows.map(creatorRow)}</React.Fragment>;
+                  const shut = wxShut.has(b.uid);
+                  const named = !!b.name;
+                  /* How many of these people ALSO posted for another product.
+                     Said out loud, because the alternative is a reader assuming
+                     this band is everything that creator did. */
+                  const also = b.rows.filter(({ c }) => ((wxPlaced.get(c.id) || {}).alsoOn || 0) > 0).length;
+                  const label = named ? b.name : 'No product recorded';
+                  return (
+                    <section
+                      className={`wx-pgroup${shut ? ' is-shut' : ''}`}
+                      key={b.uid}
+                      data-wx="product-group"
+                      data-product={named ? b.name : ''}
+                      data-count={b.rows.length}
+                    >
+                      <div className="wx-pgroup-head">
+                        <button
+                          type="button"
+                          className="wx-pgroup-toggle"
+                          aria-expanded={!shut}
+                          title={`${label} · ${b.rows.length} creator${b.rows.length === 1 ? '' : 's'} in ${g.label}${also > 0 ? `, ${also} of whom also posted for another product` : ''}. Each creator is listed once, under the product most of their videos are for.`}
+                          onClick={() => setWxShut((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(b.uid)) next.delete(b.uid); else next.add(b.uid);
+                            return next;
+                          })}
+                        >
+                          <span className="wx-pgroup-chev" aria-hidden="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                          </span>
+                          <span className="wx-pgroup-shot">
+                            <ProductTile
+                              product={{ name: label, image: named && wxProdPics ? (wxProdPics.get(b.key) || '') : '' }}
+                              size={34}
+                            />
+                          </span>
+                          {/* Shortened the SAME WAY the band above shortens it,
+                              and in the middle rather than at the end: five of
+                              NUTRAHARMONY's products begin "NUTRA HARMONY" and
+                              an end-clip makes every band read alike. */}
+                          <span className={`wx-pgroup-name${named ? '' : ' is-none'}`}>
+                            {named ? wxShortProduct(b.name, 58) : label}
+                          </span>
+                          <span className="wx-pgroup-count">
+                            {b.rows.length} creator{b.rows.length === 1 ? '' : 's'}
+                          </span>
+                          {also > 0 && (
+                            <span className="wx-pgroup-also">
+                              {also} also posted elsewhere
+                            </span>
+                          )}
+                        </button>
+                        <WxGroupMenu
+                          onExpandAll={() => setWxShut(new Set())}
+                          onCollapseAll={() => setWxShut(new Set(wxAllBandKeys))}
+                        />
+                      </div>
+                      {!shut && (
+                        <div className="wx-pgroup-rows">
+                          {b.rows.map((r) => <div className="wx-prow" key={r.c.id}>{creatorRow(r)}</div>)}
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
               </React.Fragment>
             );
           })}
+          {/* WURX-END */}
         </div>
       )}
 
@@ -2037,6 +3656,17 @@ function BrandDrilldown({ brand, creators, budgets, refetchBudgets, month, allTi
           onClose={() => setShowBudget(false)}
         />
       )}
+      {showBrandContract && (
+        <BrandContractModal
+          brand={brand.brand}
+          month={month}
+          monthLabel={monthLabel(month)}
+          creators={brandCreators || creators}
+          currentUser={currentUser}
+          onClose={() => setShowBrandContract(false)}
+        />
+      )}
+
       {showNotes && (
         <NotesDrawer
           brand={brand.brand}
@@ -2077,6 +3707,268 @@ function saveContractEdits(creatorId, data) {
   try { localStorage.setItem(CONTRACT_EDITS_KEY, JSON.stringify(all)); } catch { /* full */ }
 }
 
+/* ════════════════════════════════════════════════════════════════
+   BrandContractModal · terms set once, inherited by the whole brand
+
+   Only the fields you deliberately switch on are saved. A field left
+   off is not written at all, so each creator keeps deriving it from
+   their own deal · which is why "Videos" and "Payment" are not offered
+   here: those belong to the individual agreement, never to the brand.
+   ════════════════════════════════════════════════════════════════ */
+const BRAND_CONTRACT_FIELDS = [
+  ['paymentMethod', 'Payment method', 'PayPal', 'text'],
+  ['paymentProvider', 'Payment provider', 'EUKA', 'text'],
+  ['periodStart', 'Period start', '', 'date'],
+  ['periodEnd', 'Period end', '', 'date'],
+  ['cycleClose', 'Payment cycle closes', '', 'date'],
+  ['signerName', 'Brand signer', 'Aris', 'text'],
+];
+
+/* Contracts read dates as long prose ("August 2, 2026") but a date field
+   is the only sane way to pick one. These convert between the two so the
+   picker stays a picker and the document keeps its wording.
+   Effective date is deliberately not offered at brand level: it is the
+   day a particular creator's agreement starts, so a single brand-wide
+   value would be wrong for everyone but the first signing. */
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+function longToISO(v) {
+  const t = String(v || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
+  const m = t.match(/^([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})$/);
+  if (!m) return '';
+  const mi = MONTH_NAMES.findIndex(x => x.toLowerCase() === m[1].toLowerCase());
+  if (mi < 0) return '';
+  return `${m[3]}-${String(mi + 1).padStart(2, '0')}-${String(m[2]).padStart(2, '0')}`;
+}
+function isoToLong(v) {
+  const m = String(v || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return String(v || '');
+  return `${MONTH_NAMES[Number(m[2]) - 1]} ${Number(m[3])}, ${m[1]}`;
+}
+
+function BrandContractModal({ brand, month, monthLabel, creators, currentUser, onClose }) {
+  const existing = useMemo(() => getBrandContract(brand, month) || {}, [brand, month]);
+  const [fields, setFields] = useState(() => ({ ...(existing.fields || {}) }));
+  const [custom, setCustom] = useState(() => ({ ...(existing.custom || {}) }));
+  const [tab, setTab] = useState('terms');
+  const [editIdx, setEditIdx] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState(null);
+
+  const on = (k) => Object.prototype.hasOwnProperty.call(fields, k);
+  const toggle = (k, dflt) => setFields(prev => {
+    const next = { ...prev };
+    if (Object.prototype.hasOwnProperty.call(next, k)) delete next[k];
+    else next[k] = dflt;
+    return next;
+  });
+  const setVal = (k, v) => setFields(prev => ({ ...prev, [k]: v }));
+
+  /* The creators of this brand in THIS month. A contract carries period
+     dates, so it belongs to one cycle · applying it to every month would
+     stamp these dates onto creators hired long before or after. */
+  const list = useMemo(
+    () => creators.filter(c => (c.brand || '').trim() === brand
+      && monthKey(c.hiring_date) === month),
+    [creators, brand, month]);
+
+  /* How many carry a personal edit today. Saving overrules those for the
+     fields this brand fixes, so the number is context rather than a
+     limit. */
+  const reach = useMemo(() => {
+    const edits = loadContractEdits();
+    let touched = 0;
+    list.forEach(c => {
+      const e = edits[c.id];
+      if (e && e.fields && Object.keys(e.fields).length) touched += 1;
+    });
+    return { total: list.length, touched };
+  }, [list]);
+
+  const activeKeys = Object.keys(fields);
+  const sectionCount = Object.keys(custom).length;
+
+  async function save() {
+    setBusy(true);
+    try {
+      await saveBrandContract(brand, month, { fields, custom }, currentUser);
+      /* The brand contract is the authority for whatever it fixes, so a
+         creator who had edited one of these fields is brought back onto
+         the brand value. Anything the brand does NOT fix is left exactly
+         as that creator set it, which is what keeps per-creator editing
+         useful. */
+      const keys = Object.keys(fields);
+      const sects = Object.keys(custom);
+      if (keys.length || sects.length) {
+        const edits = loadContractEdits();
+        list.forEach(c => {
+          const e = edits[c.id];
+          if (!e) return;
+          const f = { ...(e.fields || {}) };
+          const cu = { ...(e.custom || {}) };
+          keys.forEach(k => { delete f[k]; });
+          sects.forEach(k => { delete cu[k]; });
+          const empty = !Object.keys(f).length && !Object.keys(cu).length;
+          saveContractEdits(c.id, empty ? null : { fields: f, custom: cu });
+        });
+      }
+      setMsg({ tone: 'good', text: `Saved. ${list.length} creator${list.length === 1 ? '' : 's'} on ${brand} in ${monthLabel} now use these terms.` });
+      setTimeout(() => onClose(), 1400);
+    } catch (e) {
+      setMsg({ tone: 'bad', text: 'Could not save: ' + (e.message || 'unknown error') });
+      setBusy(false);
+    }
+  }
+  async function clearAll() {
+    setBusy(true);
+    try {
+      await saveBrandContract(brand, month, { fields: {}, custom: {} }, currentUser);
+      setFields({}); setCustom({});
+      setMsg({ tone: 'good', text: 'Brand contract cleared. Creators fall back to their own terms.' });
+      setBusy(false);
+    } catch (e) { setMsg({ tone: 'bad', text: 'Could not clear: ' + (e.message || '') }); setBusy(false); }
+  }
+
+  /* preview text uses a stand-in creator so the wording reads naturally */
+  const previewFields = useMemo(() => {
+    const sample = list[0];
+    const base = defaultContractFields({
+      brand,
+      name: sample ? (sample.name || 'Creator') : 'Creator',
+      username: sample ? tiktokHandle(sample.tiktok_account || '') : '@creator',
+      videos: sample ? parseDealVideos(sample.deal) : 5,
+      amount: sample ? parseDealAmount(sample.deal) : 250,
+      hiringDate: sample ? sample.hiring_date : '',
+    });
+    return { ...base, ...fields };
+  }, [brand, list, fields]);
+
+  return (
+    <div className="bc-root" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bc-box">
+        <div className="bc-top">
+          <span className="bc-badge">GLOBAL</span>
+          <div className="bc-ttl">
+            <b>{brand} contract</b>
+            <small>{monthLabel} cycle · every creator added this month inherits it</small>
+          </div>
+          <button className="bc-x" onClick={onClose} title="Close">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+          </button>
+        </div>
+
+        <div className="bc-reach">
+          <span>Applies to <b>{reach.total}</b> creator{reach.total === 1 ? '' : 's'} added in {monthLabel}</span>
+          {reach.touched > 0 && (
+            <span className="bc-note">
+              {reach.touched} {reach.touched === 1 ? 'has an' : 'have'} edited contract{reach.touched === 1 ? '' : 's'} · saving overrules them on these fields
+            </span>
+          )}
+        </div>
+
+        <div className="bc-tabs">
+          <button className={'bc-tab' + (tab === 'terms' ? ' on' : '')} onClick={() => setTab('terms')}>
+            Terms{activeKeys.length > 0 && <i>{activeKeys.length}</i>}
+          </button>
+          <button className={'bc-tab' + (tab === 'text' ? ' on' : '')} onClick={() => setTab('text')}>
+            Clauses{sectionCount > 0 && <i>{sectionCount}</i>}
+          </button>
+        </div>
+
+        <div className="bc-body">
+          {tab === 'terms' && (
+            <>
+              <p className="bc-lead">
+                Switch on only what this cycle fixes. Saving pushes those values onto the{' '}
+                {reach.total} creator{reach.total === 1 ? '' : 's'} added to {brand} in {monthLabel}.
+                Anything left off keeps coming from each creator's own deal, and you can still
+                edit any single creator afterwards.
+              </p>
+              {BRAND_CONTRACT_FIELDS.map(([k, label, dflt, type]) => {
+                const isDate = type === 'date';
+                const fallback = isDate ? isoToLong(new Date().toISOString().slice(0, 10)) : dflt;
+                return (
+                  <div key={k} className={'bc-field' + (on(k) ? ' on' : '')}>
+                    <button className={'bc-switch' + (on(k) ? ' on' : '')} onClick={() => toggle(k, fallback)}><i /></button>
+                    <div className="bc-f-l">
+                      <b>{label}</b>
+                      {!on(k) && <small>from each creator's deal</small>}
+                    </div>
+                    {on(k) && (isDate ? (
+                      <span className="bc-datewrap">
+                        <input className="bc-input bc-date" type="date"
+                          value={longToISO(fields[k])}
+                          onChange={e => setVal(k, e.target.value ? isoToLong(e.target.value) : '')} />
+                        <em>{fields[k] || 'pick a date'}</em>
+                      </span>
+                    ) : (
+                      <input className="bc-input" value={fields[k]} placeholder={dflt}
+                        onChange={e => setVal(k, e.target.value)} />
+                    ))}
+                  </div>
+                );
+              })}
+            </>
+          )}
+
+          {tab === 'text' && (
+            <>
+              <p className="bc-lead">
+                Rewrite a clause for the whole brand. An untouched clause still generates
+                itself from each creator's own figures.
+              </p>
+              {CONTRACT_SECTIONS.map((d, i) => {
+                const isCustom = custom[i] != null;
+                const body = isCustom ? custom[i] : d.tmpl(previewFields);
+                return (
+                  <div key={i} className={'bc-sec' + (isCustom ? ' on' : '')}>
+                    <div className="bc-sec-h">
+                      <b>{d.title}</b>
+                      {isCustom && <span className="bc-tag">brand wording</span>}
+                      <span className="bc-sec-a">
+                        {editIdx === i ? (
+                          <button onClick={() => setEditIdx(null)}>Done</button>
+                        ) : (
+                          <button onClick={() => { setEditIdx(i); if (!isCustom) setCustom(p2 => ({ ...p2, [i]: body })); }}>Edit</button>
+                        )}
+                        {isCustom && (
+                          <button className="bad" onClick={() => {
+                            setCustom(p2 => { const nx = { ...p2 }; delete nx[i]; return nx; });
+                            if (editIdx === i) setEditIdx(null);
+                          }}>Reset</button>
+                        )}
+                      </span>
+                    </div>
+                    {editIdx === i ? (
+                      <textarea className="bc-area" value={custom[i] != null ? custom[i] : body}
+                        onChange={e => setCustom(p2 => ({ ...p2, [i]: e.target.value }))} />
+                    ) : (
+                      <p className="bc-sec-b">{body}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          )}
+        </div>
+
+        <div className="bc-foot">
+          {msg && <span className={'bc-msg ' + msg.tone}>{msg.text}</span>}
+          <span className="bc-spacer" />
+          {(activeKeys.length > 0 || sectionCount > 0) && (
+            <button className="bc-btn" disabled={busy} onClick={clearAll}>Clear brand contract</button>
+          )}
+          <button className="bc-btn" onClick={onClose}>Cancel</button>
+          <button className="bc-btn primary" disabled={busy} onClick={save}>
+            {busy ? 'Saving...' : 'Save for ' + brand}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const CONTRACT_FIELD_DEFS = [
   ['brand', 'Brand'], ['creatorName', 'Creator name'], ['username', 'TikTok username'],
   ['videos', 'Videos (count)'], ['amount', 'Payment (USD)'],
@@ -2097,8 +3989,28 @@ function ContractEditModal({ creator: c, onClose }) {
   }), [c]);
 
   const saved = useMemo(() => loadContractEdits()[c.id] || null, [c.id]);
-  const [fields, setFields] = useState(() => ({ ...defaultContractFields(info), ...(saved?.fields || {}) }));
-  const [custom, setCustom] = useState(() => saved?.custom || {});   // {sectionIdx: bodyText}
+  /* Base terms, then whatever the brand has set, then this creator's own
+     edits. A creator who has never been touched therefore picks up the
+     brand contract automatically, and one who has been edited keeps what
+     was set for them. */
+  /* a creator inherits the contract of the month they were hired in */
+  const hireMonth = monthKey(c.hiring_date);
+  const merged = useMemo(
+    () => mergeContract(defaultContractFields(info), c.brand, hireMonth, saved),
+    [info, c.brand, hireMonth, saved]);
+  /* the brand terms can be saved from another panel while this is open */
+  useEffect(() => {
+    const on = () => {
+      const m = mergeContract(defaultContractFields(info), c.brand, hireMonth, loadContractEdits()[c.id] || null);
+      setFields(m.fields);
+      setCustom(m.custom);
+    };
+    window.addEventListener('wurx-brand-contracts', on);
+    return () => window.removeEventListener('wurx-brand-contracts', on);
+  }, [c.id, c.brand, hireMonth, info]);
+  const [fields, setFields] = useState(() => merged.fields);
+  const [custom, setCustom] = useState(() => merged.custom);
+  const brandKeys = useMemo(() => Object.keys(merged.fromBrand || {}), [merged]);
   const [editIdx, setEditIdx] = useState(null);                      // section in edit mode
   const setField = (k, v) => setFields(prev => ({ ...prev, [k]: v }));
 
@@ -2137,15 +4049,37 @@ function ContractEditModal({ creator: c, onClose }) {
       isCustom: custom[i] != null,
     })), [fields, custom]);
 
-  // Persist edits per creator (so reopening keeps everything)
+  /* Persist ONLY what this creator genuinely differs on.
+     This used to write the whole merged object the moment the editor
+     opened, which quietly gave every creator a full personal snapshot
+     and made the brand contract unable to ever reach them again. Storing
+     a diff means an untouched creator keeps following the brand, and a
+     later change to the brand terms still lands on them. */
   useEffect(() => {
-    saveContractEdits(c.id, { fields, custom });
-  }, [c.id, fields, custom]);
+    const baseline = mergeContract(defaultContractFields(info), c.brand, hireMonth, null);
+    const fDiff = {};
+    Object.keys(fields).forEach(k => {
+      if (String(fields[k] ?? '') !== String(baseline.fields[k] ?? '')) fDiff[k] = fields[k];
+    });
+    const cDiff = {};
+    Object.keys(custom).forEach(i => {
+      const inherited = baseline.custom[i] != null
+        ? baseline.custom[i]
+        : CONTRACT_SECTIONS[i].tmpl(baseline.fields);
+      if (String(custom[i]) !== String(inherited)) cDiff[i] = custom[i];
+    });
+    const empty = !Object.keys(fDiff).length && !Object.keys(cDiff).length;
+    saveContractEdits(c.id, empty ? null : { fields: fDiff, custom: cDiff });
+  }, [c.id, c.brand, hireMonth, info, fields, custom]);
 
   const resetAll = () => {
     saveContractEdits(c.id, null);
-    setFields(defaultContractFields(info));
-    setCustom({});
+    /* back to "no personal edits" · which still means the brand terms,
+       not the bare defaults, otherwise a reset would silently opt this
+       creator out of the brand contract */
+    const m = mergeContract(defaultContractFields(info), c.brand, hireMonth, null);
+    setFields(m.fields);
+    setCustom(m.custom);
   };
 
   return (
@@ -2304,7 +4238,7 @@ function markContractDl(id) {
   try { localStorage.setItem(CONTRACT_DL_KEY, JSON.stringify(m)); } catch { /* storage full/blocked */ }
 }
 
-function DrilldownCreatorRow({ c, idx, euka, open, onSelect, onSetStatus, onEditContract, onView, onEditCreator, onDelete }) {
+function DrilldownCreatorRow({ c, idx, euka, deals, dealsMonth, open, onSelect, onSetStatus, onEditContract, onView, onEditCreator, onDelete }) {
   const amount = parseDealAmount(c.deal);
   const videoCount = parseDealVideos(c.deal);
   const filled = deliveredVideoCount(c);
@@ -2317,6 +4251,23 @@ function DrilldownCreatorRow({ c, idx, euka, open, onSelect, onSetStatus, onEdit
 
   const profile = eukaProfileFor(euka, [c.tiktok_account, c.tiktok_account_2]);
   const tier = creatorTier(c, euka);
+  /* WURX-ADDED · our ad figures for this creator's videos.
+
+     DEDUPED BY TIKTOK VIDEO ID, which is about money rather than tidiness:
+     the same link can sit in video_codes twice after a bulk paste, and adding
+     its cost twice would inflate a brand's real ad spend.
+
+     ROI is revenue over cost computed from the SUMS, never an average of the
+     per-video ratios. A ratio cannot be summed; only this version agrees with
+     what TikTok itself reports. */
+  const wxAds = wxAdsHook();
+  const wxIds = wxVideoIds(c.video_codes);
+  wxAds.ensure(wxIds);
+  const wxT = wxTotals(wxAds.get, wxIds);
+  const wxNote = wxT.withData && wxT.withData < wxIds.length
+    ? ` · from ${wxT.withData} of ${wxIds.length} videos`
+    : '';
+  /* WURX-END */
 
   /* live performance · summed from this collab's synced video rows */
   const vidRows = (Array.isArray(c.video_codes) ? c.video_codes : []).filter(r => r && String(r.video || '').trim());
@@ -2325,7 +4276,18 @@ function DrilldownCreatorRow({ c, idx, euka, open, onSelect, onSetStatus, onEdit
   const itemsSold = vidRows.reduce((s, r) => s + (Number(r.items) || 0), 0);
 
   return (
-    <div className={`pc-ct-row ${open ? 'open' : ''}`} onClick={onSelect} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') onSelect(); }}>
+    <div
+      className={`pc-ct-row ${open ? 'open' : ''}`}
+      /* WURX-ADDED · data-wx-id, so a guard can tell two ROWS apart.
+         `verify:product-groups` proves that grouping by product never lists the
+         same row twice, which matters because every row carries that creator's
+         money. It keyed on the name, and across a brand's whole history that is
+         wrong: one person hired in January and again in July is two legitimate
+         rows, and the check read 272 rows / 114 people as a duplication bug.
+         The row id is the only exact key, and nobody ever sees it. WURX-END */
+      data-wx-id={c.id}
+      onClick={onSelect} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') onSelect(); }}
+    >
       <div className="pc-cell pc-num pc-idxcell" data-label="#"><span className="pc-idx">#{idx}</span></div>
       <div className="pc-cell" data-label="Completed on">
         {(() => {
@@ -2343,7 +4305,7 @@ function DrilldownCreatorRow({ c, idx, euka, open, onSelect, onSetStatus, onEdit
       </div>
       <div className="pc-cell" data-label="Creator">
         <span className="pc-creatorcell">
-          <CreatorFace handle={handle1 || handle2} name={c.name} />
+          {/* WURX-ADDED */}<span className="pc-facewrap"><CreatorFace handle={handle1 || handle2} name={c.name} /><DealsBadge n={deals} month={dealsMonth} /></span>{/* WURX-END */}
           <span className="pc-creatorcell-txt">
             <span className="pc-cname">{c.name || '-'}</span>
             {handle1
@@ -2368,7 +4330,7 @@ function DrilldownCreatorRow({ c, idx, euka, open, onSelect, onSetStatus, onEdit
       <div className="pc-cell pc-num" data-label="Videos">
         {videoCount > 0 ? (
           <div className="pc-vidprog">
-            <span className="pc-vidprog-n" style={filled >= videoCount ? { color: '#0E7A3A' } : undefined}>
+            <span className="pc-vidprog-n" style={filled >= videoCount ? { color: 'var(--wx-success)' } : undefined}>
               {filled}<span className="pc-vidprog-of">/{videoCount}</span>
               {(() => {
                 /* delivery-risk intelligence · collab window closing or closed */
@@ -2400,6 +4362,30 @@ function DrilldownCreatorRow({ c, idx, euka, open, onSelect, onSetStatus, onEdit
       <div className="pc-cell pc-num" data-label="Items sold">
         {itemsSold > 0 ? <span className="pc-metric">{kNum(itemsSold)}</span> : <span className="pc-handle">-</span>}
       </div>
+      {/* WURX-ADDED · ad spend and ROI for this creator's videos.
+
+          A DASH IS NOT A ZERO. No ad data means we cannot answer, which is a
+          different statement from "nothing was spent" — and a wrong zero about
+          money is the kind somebody acts on. */}
+      <div className="pc-cell pc-num wx-collab-figure" data-label="Ad spend"
+        title={wxT.withData
+          ? 'Ad spend across this creator\'s videos' + wxNote
+          : (wxIds.length ? 'No ad data for these videos' : 'No TikTok video links yet')}>
+        {/* In red, like the Ad spend card above the table (Rashid,
+            2026-09-21). Only a figure is red; the dash stays grey. */}
+        {wxT.withData && !wxT.mixedCurrency
+          ? <span className="pc-metric wx-metric-spend">{wxMoney(wxT.cost, wxT.currency)}</span>
+          : <span className="pc-handle">-</span>}
+      </div>
+      <div className="pc-cell pc-num wx-collab-figure" data-label="ROI"
+        title={wxT.roi === null
+          ? 'No ad spend, so there is no return to divide by it'
+          : wxMoney(wxT.revenue, wxT.currency) + ' back on ' + wxMoney(wxT.cost, wxT.currency) + wxNote}>
+        {wxT.roi === null
+          ? <span className="pc-handle">-</span>
+          : <span className="pc-metric">{wxRoi(wxT.roi)}</span>}
+      </div>
+      {/* WURX-END */}
       <div className="pc-cell" data-label="Contract">
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <button
@@ -2413,13 +4399,18 @@ function DrilldownCreatorRow({ c, idx, euka, open, onSelect, onSetStatus, onEdit
                 username: handle1 || handle2 || '',
                 videos: videoCount, amount, hiringDate: c.hiring_date,
               };
-              if (saved && (saved.fields || saved.custom)) {
-                const fields = { ...defaultContractFields(info), ...(saved.fields || {}) };
+              /* Same three-layer merge the editor shows, so the file that
+                 downloads is exactly what is on screen · including the
+                 brand terms for a creator who was never edited. */
+              const m = mergeContract(defaultContractFields(info), c.brand, monthKey(c.hiring_date), saved);
+              const hasAny = Object.keys(m.fromBrand || {}).length
+                || (saved && (saved.fields || saved.custom));
+              if (hasAny) {
                 const sections = CONTRACT_SECTIONS.map((d, i) => ({
                   title: d.title,
-                  body: saved.custom && saved.custom[i] != null ? saved.custom[i] : d.tmpl(fields),
+                  body: m.custom[i] != null ? m.custom[i] : d.tmpl(m.fields),
                 }));
-                renderContractPdf(fields, sections);
+                renderContractPdf(m.fields, sections);
               } else {
                 generateContractPdf(info);
               }
@@ -2489,12 +4480,70 @@ function DrilldownCreatorRow({ c, idx, euka, open, onSelect, onSetStatus, onEdit
    thumbnail for EVERY video, not just the top 50) and persists the refresh.
    "Manage videos" opens the full editor popup (add/edit links & codes). */
 const _cvidFetched = new Set();   // one live refresh per creator per session
-function DrilldownVideosPanel({ c, euka, onUpdateCreator, onManage }) {
+function DrilldownVideosPanel({ c, euka, allTime, siblings, onUpdateCreator, onManage }) {
+  /* WURX-ADDED · ad figures for the videos this panel lists. */
+  const wxAdsP = wxAdsHook();
+  /* The spark code to show for a video: the one saved on this row, else the
+     one EUKA holds for the same TikTok video (euka_spark_codes, synced daily
+     by euka-ads-sync). Rashid, 2026-09-15: spark codes from Euka too. A code
+     saved on the row always wins; Euka only fills a blank. */
+  const wxCode = (r) => {
+    const own = String((r && r.adCode) || '').trim();
+    if (own) return { code: own, expired: false, fromEuka: false };
+    const vid = wxVideoId(r && r.video);
+    const s = vid ? wxAdsP.spark(vid) : null;
+    return s ? { code: s.code, expired: !!s.expired, fromEuka: true } : null;
+  };
+  /* WURX-END */
   const [copiedIdx, setCopiedIdx] = useState(-1);
   const [live, setLive] = useState(false);
-  const rows = (Array.isArray(c.video_codes) ? c.video_codes : [])
+  /*
+   * ONE ROW IS ONE COLLAB, and its videos are that collab's month.
+   *
+   * Erin Cooper has nine Penetrex deals and 88 videos, and every row carries
+   * only its own — so in All time she appears nine times and each expansion
+   * showed fifteen videos, not eighty-eight. Nothing was filtered or lost;
+   * that is simply the shape of the data, and Rashid reasonably read it as a
+   * month filter that All time was ignoring.
+   *
+   * So in ALL TIME the panel gathers the person's videos across every collab
+   * they have on THIS brand. Pick a month and it goes back to that one collab,
+   * because then the collab is what you asked about.
+   *
+   * Deduped by video url: the same post can sit on two rows when collab
+   * windows overlap, and counting it twice would overstate both the count and
+   * the GMV underneath it.
+   */
+  const merged = useMemo(() => {
+    const own = Array.isArray(c.video_codes) ? c.video_codes : [];
+    if (!allTime) return { list: own, collabs: 1 };
+    const key = (c.name || '').trim().toLowerCase();
+    const brand = (c.brand || '').trim();
+    if (!key) return { list: own, collabs: 1 };
+    const seen = new Set();
+    const list = [];
+    let collabs = 0;
+    (siblings || []).forEach((s2) => {
+      if ((s2.name || '').trim().toLowerCase() !== key) return;
+      if ((s2.brand || '').trim() !== brand) return;
+      collabs += 1;
+      (Array.isArray(s2.video_codes) ? s2.video_codes : []).forEach((v) => {
+        const u = String((v && v.video) || '').trim();
+        if (!u || seen.has(u)) return;
+        seen.add(u);
+        list.push(v);
+      });
+    });
+    return { list: list.length || collabs ? list : own, collabs: collabs || 1 };
+  }, [allTime, siblings, c]);
+
+  const rows = merged.list
     .filter(r => r && String(r.video || '').trim())
     .sort((a, b) => String(a.date || '9999').localeCompare(String(b.date || '9999')));
+  /* AFTER `rows`, not before it. Moving this above the merge put a const in
+     its own temporal dead zone and the whole panel threw "Cannot access
+     before initialization" — the expansion simply stopped opening. */
+  wxAdsP.ensure(wxVideoIds(rows));
   const totGmv = rows.reduce((s, r) => s + (Number(r.revenue) || 0), 0);
   /* Engagement rate = (likes + comments) / views. Averaged across only the
      videos that actually carry engagement data — EUKA fills likes on ~85%
@@ -2528,8 +4577,7 @@ function DrilldownVideosPanel({ c, euka, onUpdateCreator, onManage }) {
       try {
         const all = [];
         for (const h of hs) {
-          const d = await fetch(`/.netlify/functions/euka?store=${encodeURIComponent(store.id)}&type=cvideos&handle=${encodeURIComponent(h)}&from=${from}&to=${to}`)
-            .then(r => (r.ok ? r.json() : null)).catch(() => null);
+          const d = await eukaJson({ store: store.id, type: 'cvideos', handle: h, from, to });
           if (d && d.videos) Object.values(d.videos).forEach(v => all.push(...v));
         }
         if (all.length && onUpdateCreator) {
@@ -2551,6 +4599,11 @@ function DrilldownVideosPanel({ c, euka, onUpdateCreator, onManage }) {
         <div className="pc-vxp-top">
           <span className="pc-vxp-title">
             Posted videos <b>{rows.length}</b>
+            {/* A GMV total across nine collabs must never be mistaken for one
+                deal's. If the panel is showing more than this row, it says so. */}
+            {allTime && merged.collabs > 1 && (
+              <span className="pc-vxp-scope">across {merged.collabs} collabs</span>
+            )}
             {isEuka && totGmv > 0 && <span className="pc-vxp-gmvchip">{fmt$Exact(Math.round(totGmv))} GMV</span>}
             {isEuka && avgEng != null && (
               <span className={`pc-vxp-engchip ${avgEng >= 8 ? 'hot' : avgEng >= 4 ? 'ok' : 'low'}`}
@@ -2584,13 +4637,44 @@ function DrilldownVideosPanel({ c, euka, onUpdateCreator, onManage }) {
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
                   {r.date ? `Posted ${formatHireDate(String(r.date).slice(0, 10))}` : 'Posted date not set'}
                 </div>
-                {String(r.adCode || '').trim()
-                  ? <button className={`pc-vxm-code ${copiedIdx === i ? 'copied' : ''}`} onClick={() => copy(i, String(r.adCode).trim())} title={`Copy ad code\n${String(r.adCode).trim()}`}>
-                      {copiedIdx === i
-                        ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>Copied</>
-                        : <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg><span className="pc-vxm-codetxt">{String(r.adCode).trim()}</span></>}
-                    </button>
-                  : <div className="pc-vxm-nocode">No ad code yet</div>}
+                {/* WURX-ADDED · the row's own code, else EUKA's for the same video (wxCode). */}
+                {(() => {
+                  const k = wxCode(r);
+                  return k
+                    ? <button className={`pc-vxm-code ${copiedIdx === i ? 'copied' : ''}`} onClick={() => copy(i, k.code)} title={`Copy ad code\n${k.code}${k.fromEuka ? '\nfrom EUKA' : ''}${k.expired ? ' · expired' : ''}`}>
+                        {copiedIdx === i
+                          ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>Copied</>
+                          : <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg><span className="pc-vxm-codetxt">{k.code}</span></>}
+                      </button>
+                    : <div className="pc-vxm-nocode">No ad code yet</div>;
+                })()}
+                {/* WURX-END */}
+                {/* WURX-ADDED · the same two figures on the CARD layout.
+
+                    THERE ARE TWO LAYOUTS AND BOTH NEED THIS. Brands on EUKA get
+                    the table below; every other brand gets these cards. Adding
+                    the figures only to the table would have shipped a feature
+                    that worked on some brands and silently did nothing on the
+                    rest — and the brand somebody opened first would decide
+                    which impression they formed of it. */}
+                {(() => {
+                  const vid = wxVideoId(r.video);
+                  const f = vid ? wxAdsP.get(vid) : null;
+                  const roi = f && f.cost > 0 ? f.revenue / f.cost : null;
+                  return (
+                    <div className="wx-collab-vm-figures">
+                      <span>
+                        <em>Ad spend</em>
+                        <b>{f && !f.mixedCurrency ? wxMoney(f.cost, f.currency) : '-'}</b>
+                      </span>
+                      <span>
+                        <em>ROI</em>
+                        <b>{roi === null ? '-' : wxRoi(roi)}</b>
+                      </span>
+                    </div>
+                  );
+                })()}
+                {/* WURX-END */}
               </div>
             ))}
           </div>
@@ -2602,14 +4686,18 @@ function DrilldownVideosPanel({ c, euka, onUpdateCreator, onManage }) {
               <div className="pc-num">Engagement</div>
               <div className="pc-num">GMV</div>
               <div className="pc-num">Items sold</div>
+              {/* WURX-ADDED · the same two figures, per video. */}
+              <div className="pc-num">Ad spend</div>
+              <div className="pc-num">ROI</div>
+              {/* WURX-END */}
               <div>Spark code</div>
             </div>
             {rows.map((r, i) => (
               <div className="pc-vxp-row" key={i}>
                 <a className="pc-vxp-vid" href={r.video} target="_blank" rel="noreferrer" title="Open video on TikTok">
-                  {r.thumb
-                    ? <img className="pc-vxp-thumb" src={r.thumb} alt="" loading="lazy" />
-                    : <span className="pc-vxp-thumb pc-vxp-thumb-ph" aria-hidden>▶</span>}
+                  {/* WURX-ADDED · same fallback as the strip above. WURX-END */}
+                  <WxVideoThumb src={r.thumb} className="pc-vxp-thumb"
+                    phClassName="pc-vxp-thumb pc-vxp-thumb-ph" />
                   <span className="pc-vxp-vidtxt">
                     <span className="pc-vxp-prod">{(r.product || '').trim() || 'View video'}</span>
                     <span className="pc-vxp-date">
@@ -2634,14 +4722,41 @@ function DrilldownVideosPanel({ c, euka, onUpdateCreator, onManage }) {
                 </div>
                 <div className="pc-num">{Number(r.revenue) > 0 ? <span className="pc-metric-gmv">{fmt$Exact(Math.round(Number(r.revenue)))}</span> : <span className="pc-vxp-dash">-</span>}</div>
                 <div className="pc-num">{Number(r.items) > 0 ? kNum(r.items) : <span className="pc-vxp-dash">-</span>}</div>
+                {/* WURX-ADDED · what THIS video cost to advertise, and what came
+                    back. Keyed on TikTok's own video id, so it is exact. */}
+                {(() => {
+                  const vid = wxVideoId(r.video);
+                  const f = vid ? wxAdsP.get(vid) : null;
+                  const roi = f && f.cost > 0 ? f.revenue / f.cost : null;
+                  return (
+                    <>
+                      <div className="pc-num wx-collab-figure">
+                        {f && !f.mixedCurrency
+                          ? <span className="pc-metric">{wxMoney(f.cost, f.currency)}</span>
+                          : <span className="pc-vxp-dash">-</span>}
+                      </div>
+                      <div className="pc-num wx-collab-figure">
+                        {roi === null
+                          ? <span className="pc-vxp-dash">-</span>
+                          : <span className="pc-metric">{wxRoi(roi)}</span>}
+                      </div>
+                    </>
+                  );
+                })()}
+                {/* WURX-END */}
                 <div>
-                  {String(r.adCode || '').trim()
-                    ? <button className={`pc-vxp-code ${copiedIdx === i ? 'copied' : ''}`} onClick={() => copy(i, String(r.adCode).trim())} title={`Copy spark code\n${String(r.adCode).trim()}`}>
-                        {copiedIdx === i
-                          ? <>Copied<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg></>
-                          : <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>Copy code</>}
-                      </button>
-                    : <span className="pc-vxp-dash">-</span>}
+                  {/* WURX-ADDED · the row's own code, else EUKA's for the same video (wxCode). */}
+                  {(() => {
+                    const k = wxCode(r);
+                    return k
+                      ? <button className={`pc-vxp-code ${copiedIdx === i ? 'copied' : ''}`} onClick={() => copy(i, k.code)} title={`Copy spark code\n${k.code}${k.fromEuka ? '\nfrom EUKA' : ''}${k.expired ? ' · expired' : ''}`}>
+                          {copiedIdx === i
+                            ? <>Copied<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg></>
+                            : <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>Copy code</>}
+                        </button>
+                      : <span className="pc-vxp-dash">-</span>;
+                  })()}
+                  {/* WURX-END */}
                 </div>
               </div>
             ))}
@@ -2671,7 +4786,7 @@ function WurxStatusDropdown({ c, onChange }) {
     { cls: 'progress', label: 'Videos in Progress', apply: { payment_status: 'Not Yet', videos: 'In Progress' } },
     { cls: 'pending',  label: 'Payment Pending',   apply: { payment_status: 'Not Yet', videos: 'Done' } },
     { cls: 'sent',     label: 'Payment Sent',      apply: { payment_status: 'Paid' } },
-  ].filter(o => o.cls !== 'sent' || isAsadActor());
+  ].filter(o => o.cls !== 'sent' || canMarkPaid());
 
   function toggle(e) {
     e.stopPropagation();
@@ -2693,6 +4808,16 @@ function WurxStatusDropdown({ c, onChange }) {
     return () => { clearTimeout(t); document.removeEventListener('click', close); window.removeEventListener('scroll', close, true); window.removeEventListener('resize', close); };
   }, [open]);
 
+  /* After every hook, never before — this component must keep its hook order
+     stable whichever branch it takes. */
+  if (!canEditStatus()) {
+    return (
+      <span className={`pc-badge ${derived.cls}`} title="Read only">
+        <span className="dot" />{derived.label}
+      </span>
+    );
+  }
+
   return (
     <>
       <button ref={btnRef} className={`pc-badge ${derived.cls} pc-badge-btn`} onClick={toggle} title="Change status">
@@ -2705,7 +4830,7 @@ function WurxStatusDropdown({ c, onChange }) {
               <span className={`pc-statusdot ${s.cls}`} />{s.label}
             </button>
           ))}
-        </div>, document.body)}
+        </div>, wxPortalHost())}
     </>
   );
 }
@@ -2886,8 +5011,8 @@ function BudgetEditor({ brand, month: initialMonth, currentBudget, currentRecord
             {restoredFrom && (
               <div style={{
                 marginTop: 6, padding: '6px 10px',
-                background: 'rgba(46,125,50,0.10)',
-                border: '1px solid rgba(46,125,50,0.28)',
+                background: 'color-mix(in srgb, var(--wx-success-soft) 10%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--wx-success) 28%, transparent)',
                 color: 'var(--pc-success-fg)',
                 borderRadius: 10,
                 fontSize: 11.5, fontWeight: 700,
@@ -2959,8 +5084,22 @@ function todayISO() {
 function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory = [], categories = [], budgets = [], allCreators = [], euka, currentUser, onDelete, onSave, onClose }) {
   const c = creator || {};
   const isAdd = mode === 'add';
-  // Hard delete is Asad-only · every other profile never sees the button
-  const isAsad = (currentUser?.id === 'asad') || (currentUser?.username === 'Asad');
+  /* WURX-ADJUSTED · WHO MAY DELETE A CREATOR.
+     This was `(currentUser?.id === 'asad') || (currentUser?.username === 'Asad')`,
+     and NEITHER HALF COULD EVER BE TRUE: `id` is our auth uuid, and `username`
+     comes from the profile's display name, which is lower case for all eight
+     team accounts — "asad" never equals "Asad". So the button was never
+     rendered for anybody, Asad included, and the report was "there is no
+     delete button" rather than "I am not allowed".
+     Same fault as the payment gates fixed on 2026-08-31; missed then because
+     the sweep searched the negative form (`!==`) and this one is positive.
+     Note the OTHER delete, on the performance matrix, uses the repaired
+     `isAsadActor()` and does work — which is why the two disagreed.
+     Rashid, asked on 2026-09-02, chose their own capability over a name, as he
+     did for `canEditPay`: `canDelete` is "Delete creators · Remove rows
+     permanently", so it is a setting Asad flips per person rather than a
+     literal in this file. */
+  const mayDelete = can(currentUser, 'canDelete');
   const [confirmDel, setConfirmDel] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -3004,9 +5143,158 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
     return [];
   });
   const [prodInput, setProdInput] = useState('');
+  /* WURX-ADDED · the dropdown is CLOSED until it is opened, and the chevron,
+     Escape, a click outside and picking one all close it again. Theirs listed
+     everything permanently, which is what Rashid asked to be rid of. */
+  const [prodOpen, setProdOpen] = useState(false);
+  const prodPanelRef = useRef(null);
+  const prodWrapRef = useRef(null);
+  useEffect(() => {
+    if (!prodOpen) return;
+    const onDown = (e) => { if (prodWrapRef.current && !prodWrapRef.current.contains(e.target)) setProdOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); setProdOpen(false); } };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey, true);
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey, true); };
+  }, [prodOpen]);
+  /* WURX-END */
   const prodKey = (p) => (p.name || p.url || '').toLowerCase().trim();
   const hasProd = (p) => prods.some(x => prodKey(x) === prodKey(p));
-  const toggleProd = (p) => setProds(prev => prev.some(x => prodKey(x) === prodKey(p)) ? prev.filter(x => prodKey(x) !== prodKey(p)) : [...prev, { name: p.name || '', url: p.url || '' }]);
+  const toggleProd = (p) => setProds(prev => prev.some(x => prodKey(x) === prodKey(p)) ? prev.filter(x => prodKey(x) !== prodKey(p)) : [...prev, { name: p.name || '', url: p.url || '', productId: p.id || p.productId || '', image: p.image || '' }]);
+
+  /* WURX-ADDED · THE BRAND'S REAL CATALOGUE, FROM WHICHEVER PLATFORM SELLS IT.
+     Rashid, 2026-09-23: "we want to fetch products for that brand from the api
+     so when we onboard creator it will show us the dropdown to choose the
+     product from, we can also search product because list may be long".
+
+     `collab-products` answers for Euka brands and Reacher ones alike, in one
+     shape, so nothing here knows which platform a brand is on. It is asked once
+     per brand and remembered for as long as the modal is open: onboarding
+     several creators for one brand should not be several round trips.
+
+     NULL IS NOT AN EMPTY LIST. A brand on neither platform, or a call that
+     failed, leaves the typed box and the brand's own focus products exactly as
+     they were — an empty dropdown would say "this brand has no products",
+     which is a different and usually false statement. */
+  const [apiProds, setApiProds] = useState([]);
+  const [apiState, setApiState] = useState('idle');   // idle | loading | ok | none
+  const [apiNote, setApiNote] = useState('');
+  const apiCache = useRef(new Map());
+  useEffect(() => {
+    const brand = (f.brand || '').trim();
+    if (!brand) { setApiProds([]); setApiState('idle'); setApiNote(''); return; }
+    if (apiCache.current.has(brand)) {
+      const hit = apiCache.current.get(brand);
+      setApiProds(hit.products); setApiState(hit.products.length ? 'ok' : 'none'); setApiNote(hit.note || '');
+      return;
+    }
+    let alive = true;
+    setApiState('loading'); setApiNote('');
+    (async () => {
+      const res = await collabProducts(brand);
+      if (!alive) return;
+      const products = res?.products ?? [];
+      apiCache.current.set(brand, { products, note: res?.note || '' });
+      setApiProds(products);
+      setApiNote(res?.note || '');
+      setApiState(products.length ? 'ok' : 'none');
+    })();
+    return () => { alive = false; };
+  }, [f.brand]);
+
+  /* One list to choose from: the catalogue first, then any focus product the
+     brand carries that the catalogue does not, so nothing already typed by the
+     team disappears. Already-chosen products drop out. */
+  const wxPickable = useMemo(() => {
+    const seen = new Set(prods.map(prodKey));
+    const out = [];
+    for (const p of apiProds) {
+      const k = (p.name || '').toLowerCase().trim();
+      if (!k || seen.has(k)) continue;
+      seen.add(k);
+      /* `image` MUST be carried across. This list is rebuilt into fresh objects,
+         and when it was written no product had a picture, so the field was
+         simply never copied — which is why the catalogue went on drawing letter
+         tiles for hours after the pictures had actually started arriving. */
+      out.push({ name: p.name, url: p.url || '', id: p.id || '', price: p.price || '', image: p.image || '', from: 'api' });
+    }
+    for (const p of brandProducts) {
+      const k = (p.name || p.url || '').toLowerCase().trim();
+      if (!k || seen.has(k)) continue;
+      seen.add(k);
+      out.push({ name: p.name || '', url: p.url || '', id: '', price: '', from: 'brand' });
+    }
+    return out;
+  }, [apiProds, brandProducts, prods]);
+
+  /* The search box filters that list; with nothing typed it shows the lot,
+     scrolled. Every word must appear, so "kidney cleanse" finds a product whose
+     name puts them apart. */
+  const wxProdMatches = useMemo(() => {
+    const q = prodInput.trim().toLowerCase();
+    if (!q) return wxPickable;
+    const words = q.split(/\s+/);
+    return wxPickable.filter((p) => {
+      const hay = `${p.name} ${p.url}`.toLowerCase();
+      return words.every((w) => hay.includes(w));
+    });
+  }, [wxPickable, prodInput]);
+
+  /* PER-PRODUCT DEALS. Rashid: "if user has chosen only one product it's fine
+     but more than one he may have different deal of videos and amount on that
+     ... their total sum will be auto in the row below".
+
+     With one product the two fields at the bottom are the deal, exactly as
+     before. With more than one, each product carries its own amount and video
+     count and those two fields become the TOTAL — computed, never typed, so
+     they cannot disagree with the parts. The total is what goes into `deal`,
+     which is the field every other screen reads: the budget, cost per video,
+     the delivery bar and the brand cards all parse that text, and they must
+     keep seeing one number for the row. */
+  const wxMulti = prods.length > 1;
+  /* WURX-ADJUSTED 2026-09-24 · VIDEOS SPLIT PER PRODUCT, MONEY DOES NOT.
+     Rashid: "we only need one checkbox and that should be videos, users will
+     only input no of videos that would be auto sum and amount will be entered
+     manually only, no of videos would be per product".
+
+     It is the right way round. A deal is one sum of money for a body of work;
+     splitting it per product was asking whoever onboards to invent an
+     allocation nobody had agreed, and two typed numbers that must add up to a
+     third is how they come to disagree. The video count genuinely is per
+     product — that is what gets delivered — so that is the only thing split. */
+  const wxSplitTotals = useMemo(() => {
+    let videos = 0, missing = 0;
+    for (const p of prods) {
+      const v = Number(p.videos);
+      if (!Number.isFinite(v) || String(p.videos ?? '') === '') missing++;
+      videos += Number.isFinite(v) ? v : 0;
+    }
+    return { videos, missing };
+  }, [prods]);
+  const setProdField = (i, key, value) => setProds((prev) => prev.map((p, j) => (j === i ? { ...p, [key]: value } : p)));
+
+  /* A PRODUCT IS COMPULSORY FROM OCTOBER, AND NOT ONE DAY EARLIER.
+     Rashid, 2026-09-24: "I want from october and onwards (not before october
+     please) it should be compulsory to choose the product while onboarding".
+
+     THE RULE KEYS ON THE ROW'S OWN ONBOARDING DATE, not on today's. That is
+     what makes it safe: the same modal edits creators hired months ago, and a
+     rule read off the clock would refuse to save a September row every time
+     somebody opened it to fix a phone number — hundreds of existing rows turned
+     unsaveable overnight, which is exactly what "not before October please"
+     forbids. A row dated 2026-09-30 is never blocked; the same row moved to
+     October is, which is correct, because it is then an October deal.
+
+     `onboarded_on` is always filled — today for a new creator, its own date for
+     an existing one — and the fallback below only covers a hand-cleared field,
+     where "today" is the honest reading of what is being created. */
+  const WX_PRODUCT_REQUIRED_FROM = '2026-10-01';
+  const wxProductRequired = useMemo(() => {
+    const raw = String(f.onboarded_on || '').trim();
+    const day = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : todayISO();
+    return day >= WX_PRODUCT_REQUIRED_FROM;
+  }, [f.onboarded_on]);
+  /* WURX-END */
   const removeProd = (idx) => setProds(prev => prev.filter((_, j) => j !== idx));
   const addCustomProd = () => {
     const name = prodInput.trim();
@@ -3017,19 +5305,36 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
     }
     setProdInput('');
   };
+  /* WURX-ADJUSTED · theirs, kept because `hasProd` and the chips still read it,
+     but the picker below now builds its own list from the brand's real
+     catalogue with these folded in — see `wxPickable`. */
   const pickableProducts = brandProducts.filter(p => !hasProd(p));
+  void pickableProducts;
 
   // Name autocomplete from directory · ranked (prefix > word > substring),
   // also matches on TikTok handles, exact matches stay visible for autofill
   const [showSug, setShowSug] = useState(false);
-  const matches = useMemo(() => rankDirectory(directory, f.name), [f.name, directory]);
+  /* WURX-ADJUSTED · the directory suggestions work while EDITING too.
+     They were rendered only when adding, but everything behind them was
+     already written for edit mode — `personHistory` below carries an explicit
+     "editing → exclude self" line, which only makes sense if editing was meant
+     to show them. Rashid: the picker appears when adding a creator and not
+     when editing one.
+     The one thing edit mode does need is to leave the record being edited out
+     of its own suggestion list, so "Hailry" does not offer to auto-fill
+     "Hailry" over itself. */
+  const matches = useMemo(() => {
+    const list = rankDirectory(directory, f.name);
+    if (isAdd || !c.id) return list;
+    return list.filter((d) => String(d.id ?? '') !== String(c.id));
+  }, [f.name, directory, isAdd, c.id]);
 
   // TikTok handle autocomplete · same directory, matched by handle. If the
   // typed username already exists, one tap pulls the whole record in — same
   // autofill behavior as the Name field.
   const [tkSugIdx, setTkSugIdx] = useState(null);      // which tiktok input is focused
   const tkMatches = useMemo(() => {
-    if (!isAdd || tkSugIdx == null) return [];
+    if (tkSugIdx == null) return [];
     const q = _normEukaHandle(tiktoks[tkSugIdx] || '');
     if (q.length < 2) return [];
     return directory
@@ -3160,16 +5465,44 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
   const save = async () => {
     if (!f.name.trim()) { setErr('Name is required'); return; }
     if (!f.brand.trim()) { setErr('Brand is required'); return; }
+    /* WURX-ADDED · the October rule, checked here as well as shown above,
+       because a message beside a field is a prompt and this is a condition. */
+    if (wxProductRequired && !prods.some(p => (p.name || '').trim() || (p.url || '').trim())) {
+      setErr('Choose at least one product — required for creators onboarded from 1 October.');
+      return;
+    }
     setSaving(true);
     setErr('');
-    // Build the Wurx `deal` text from amount + videos_count
+    /* Build the Wurx `deal` text from amount + videos_count.
+       WURX-ADJUSTED · with several products those two are the TOTAL of the
+       per-product rows. `deal` stays one line of free text holding the whole
+       deal, because the budget, cost per video, the delivery bar, the brand
+       cards and every check parse exactly that; the split lives beside it on
+       `products` and is additive. */
+    const wxAmount = f.amount;
+    const wxVideos = wxMulti ? (wxSplitTotals.videos || '') : f.videos_count;
     let dealText = '';
-    if (f.amount && f.videos_count) dealText = `$${f.amount} / ${f.videos_count} videos`;
-    else if (f.amount) dealText = `$${f.amount}`;
-    else if (f.videos_count) dealText = `${f.videos_count} videos`;
+    if (wxAmount && wxVideos) dealText = `$${wxAmount} / ${wxVideos} videos`;
+    else if (wxAmount) dealText = `$${wxAmount}`;
+    else if (wxVideos) dealText = `${wxVideos} videos`;
 
     const cleanTiktoks = tiktoks.map(t => (t || '').trim()).filter(Boolean);
-    const cleanProds = prods.filter(p => (p.name || '').trim() || (p.url || '').trim());
+    const cleanProds = prods
+      .filter(p => (p.name || '').trim() || (p.url || '').trim())
+      /* WURX-ADJUSTED · carry the per-product split, as numbers rather than the
+         strings the inputs hand back, and only when there is one to carry. A
+         single product keeps the shape it has always had. */
+      .map(p => {
+        const out = { name: p.name || '', url: p.url || '' };
+        if (p.productId) out.productId = String(p.productId);
+        if (wxMulti) {
+          /* Videos only. The money is one figure for the whole deal and lives
+             on `deal`, where every other screen already reads it. */
+          const v = Number(p.videos);
+          if (Number.isFinite(v) && String(p.videos ?? '') !== '') out.videos = v;
+        }
+        return out;
+      });
 
     const payload = {
       ...(isAdd ? {} : { id: c.id }),
@@ -3177,7 +5510,7 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
       brand: f.brand.trim(),
       tiktok_account: cleanTiktoks[0] || '',
       tiktok_account_2: cleanTiktoks[1] || '',
-      whatsapp_number: f.phone.trim(),
+      whatsapp_number: fmtPhone(f.phone),
       email: f.email.trim(),
       category: f.category.trim(),
       deal: dealText,
@@ -3196,9 +5529,18 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
     }
   };
 
+  /* WURX-ADJUSTED · A DRAWER, NOT A POPUP.
+     Rashid, 2026-09-23: "instead of showing the popup, we need to use drawer
+     which will actually open a side drawer with all options ... now as we are
+     using drawer you will have enough space to distribute".
+
+     Theirs was `pc-overlay` centring a `pc-modal` capped at 620px inline. The
+     classes stay so every rule they wrote still applies; `wx-drawer` moves the
+     panel to the right edge and gives it the full height, and the inline cap is
+     gone because an inline style beats any stylesheet. */
   return (
-    <div className="pc-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="pc-modal pc-contract-modal pc-cm" style={{ maxWidth: 620 }}>
+    <div className="pc-overlay wx-drawer-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="pc-modal pc-contract-modal pc-cm wx-drawer" role="dialog" aria-modal="true" aria-label={isAdd ? 'Onboard creator' : 'Edit creator'}>
 
         {/* ── Sticky header ── */}
         <div className="pc-cf-head">
@@ -3226,7 +5568,7 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
             onChange={e => { set('name', e.target.value); setShowSug(true); }}
             onFocus={() => setShowSug(true)}
             onBlur={() => setTimeout(() => setShowSug(false), 150)} />
-          {isAdd && showSug && matches.length > 0 && (
+          {showSug && matches.length > 0 && (
             <div className="pc-suggest">
               <div className="pc-suggest-head">Already worked with · tap to auto-fill</div>
               {matches.map((d, i) => (
@@ -3298,7 +5640,7 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
               {tiktoks.length > 1 && (
                 <button type="button" onClick={() => setTiktoks(prev => prev.filter((_, j) => j !== i))} style={{ flex: '0 0 40px', height: 40, borderRadius: 12, border: '1px solid var(--pc-divider)', background: 'var(--pc-card-2)', color: 'var(--pc-error-fg)', cursor: 'pointer', fontSize: 17, fontWeight: 700 }}>×</button>
               )}
-              {isAdd && tkSugIdx === i && tkMatches.length > 0 && (
+              {tkSugIdx === i && tkMatches.length > 0 && (
                 <div className="pc-suggest" style={{ top: '100%' }}>
                   <div className="pc-suggest-head">Username already in database · tap to auto-fill</div>
                   {tkMatches.map((d, k) => (
@@ -3323,7 +5665,9 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
 
         {/* Phone + Email (2-col) */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <div className="pc-field"><label>Phone</label><input className="pc-input" placeholder="WhatsApp number" value={f.phone} onChange={e => set('phone', e.target.value)} /></div>
+          <div className="pc-field"><label>Phone</label><input className="pc-input" placeholder="WhatsApp number" value={f.phone}
+            onChange={e => set('phone', e.target.value)}
+            onBlur={e => set('phone', fmtPhone(e.target.value))} /></div>
           <div className="pc-field"><label>Email</label><input className="pc-input" placeholder="email" value={f.email} onChange={e => set('email', e.target.value)} /></div>
         </div>
 
@@ -3355,40 +5699,216 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
 
         {/* Promoting products */}
         <div className="pc-field">
-          <label>Promoting product{prods.length === 1 ? '' : '(s)'}</label>
+          <label>
+            Promoting product{prods.length === 1 ? '' : '(s)'}
+            {/* WURX-ADDED · required from October. Said here as well as on save,
+                so it is a known condition before the form is filled in rather
+                than a refusal after it. */}
+            {wxProductRequired && (
+              <span data-wx="product-required" style={{
+                marginLeft: 6, fontSize: 10, fontWeight: 800, letterSpacing: '.06em',
+                color: prods.length ? 'var(--pc-text-3)' : 'var(--pc-warn-fg)',
+              }}>REQUIRED</span>
+            )}
+          </label>
+          {/* WURX-ADJUSTED · the chosen products as cards with their picture.
+              Theirs were pills holding a 120-character product name, which
+              overlapped each other and the field below. */}
           {prods.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+            <div data-wx="chosen-products" style={{ display: 'grid', gap: 6, marginBottom: 8 }}>
               {prods.map((p, i) => (
-                <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 28, padding: '0 11px 0 12px', borderRadius: 999, background: 'var(--pc-warn-bg)', color: 'var(--pc-warn-fg)', fontSize: 12, fontWeight: 700 }} title={p.url || p.name}>
-                  <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--pc-warn-fg)' }} />
-                  {p.name || p.url}
-                  <button type="button" onClick={() => removeProd(i)} style={{ width: 18, height: 18, borderRadius: 999, border: 0, background: 'rgba(0,0,0,0.08)', color: 'inherit', cursor: 'pointer', fontSize: 12, lineHeight: 1, marginLeft: 2 }}>×</button>
-                </span>
+                <div key={(p.name || '') + '-' + i} style={{
+                  display: 'flex', alignItems: 'center', gap: 9, minWidth: 0,
+                  padding: '6px 8px', borderRadius: 10,
+                  border: '1px solid var(--pc-divider)', background: 'var(--pc-card-2)',
+                }}>
+                  <ProductTile product={p} size={30} />
+                  <span title={p.name || p.url} style={{
+                    flex: 1, minWidth: 0, fontSize: 12, fontWeight: 600, color: 'var(--pc-text)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>{p.name || p.url}</span>
+                  <button type="button" onClick={() => removeProd(i)} aria-label="Remove this product"
+                    style={{
+                      width: 22, height: 22, flexShrink: 0, borderRadius: 999, border: 0,
+                      background: 'transparent', color: 'var(--pc-text-3)', cursor: 'pointer',
+                      fontSize: 14, lineHeight: 1,
+                    }}>×</button>
+                </div>
               ))}
             </div>
           )}
-          {pickableProducts.length > 0 && (
-            <div style={{ marginBottom: 8 }}>
-              <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--pc-text-2)', marginBottom: 5 }}>From this brand</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {pickableProducts.map((p, i) => (
-                  <button key={i} type="button" onClick={() => toggleProd(p)} style={{ display: 'inline-flex', alignItems: 'center', height: 28, padding: '0 11px', borderRadius: 999, background: 'transparent', color: 'var(--pc-warn-fg)', fontSize: 12, fontWeight: 700, border: '1px dashed var(--pc-warn-fg)', cursor: 'pointer' }}>+ {p.name || p.url}</button>
-                ))}
+          {/* WURX-ADDED · A DROPDOWN, NOT A PERMANENT LIST.
+              Rashid, 2026-09-23: "it should be the dropdown and searchable and
+              it means it should only show the list only when we open the
+              dropdown, click arrow should close the list but currently it
+              remains. also use product images as well and show selected images
+              properly".
+
+              So: a closed control that says how many are chosen, a chevron that
+              turns, a panel that appears on click and closes on the chevron, on
+              Escape, on a click outside and after a pick. The chosen products
+              are cards with their picture, not a row of pills. */}
+          <div ref={prodWrapRef} style={{ position: 'relative' }}>
+          <button type="button" data-wx="product-trigger" onClick={() => setProdOpen((o) => !o)}
+            aria-expanded={prodOpen}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+              height: 40, padding: '0 12px', borderRadius: 12,
+              border: '1px solid var(--pc-divider)', background: 'var(--wx-surface-1)',
+              color: prods.length ? 'var(--pc-text)' : 'var(--pc-text-3)',
+              fontSize: 12.5, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left',
+            }}>
+            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {apiState === 'loading' ? 'Loading this brand\u2019s products\u2026'
+                : prods.length === 0 ? 'Choose products'
+                : `${prods.length} product${prods.length === 1 ? '' : 's'} chosen`}
+            </span>
+            {apiState === 'ok' && <span style={{ color: 'var(--pc-text-3)', fontSize: 11 }}>{wxPickable.length + prods.length}</span>}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"
+              strokeLinecap="round" strokeLinejoin="round"
+              style={{ transform: prodOpen ? 'rotate(180deg)' : 'none', transition: 'transform .16s ease', flexShrink: 0 }}>
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+
+          {prodOpen && (
+            <div data-wx="product-panel" ref={prodPanelRef} style={{
+              marginTop: 6, border: '1px solid var(--pc-divider)', borderRadius: 12,
+              background: 'var(--wx-surface-1)', overflow: 'hidden',
+              boxShadow: '0 14px 40px rgba(15,23,42,0.10)',
+            }}>
+              <div style={{ padding: 8, borderBottom: '1px solid var(--pc-divider)' }}>
+                <input className="pc-input" data-wx="product-search" autoFocus
+                  placeholder="Search products, or type a new one"
+                  value={prodInput}
+                  onChange={e => setProdInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') { e.preventDefault(); addCustomProd(); }
+                    if (e.key === 'Escape') { e.preventDefault(); setProdOpen(false); }
+                  }}
+                  style={{ height: 34, fontSize: 12.5 }} />
               </div>
+              <div data-wx="product-list" style={{ maxHeight: '15rem', overflowY: 'auto' }}>
+                {wxProdMatches.map((p, i) => (
+                  <button key={(p.id || p.name) + '-' + i} type="button"
+                    onClick={() => { toggleProd(p); setProdInput(''); setProdOpen(false); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 9, width: '100%',
+                      padding: '7px 9px', border: 0,
+                      borderBottom: i === wxProdMatches.length - 1 ? 0 : '1px solid var(--pc-divider)',
+                      background: 'transparent', color: 'var(--pc-text)', textAlign: 'left',
+                      fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                    }}>
+                    <ProductTile product={p} size={30} />
+                    <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || p.url}</span>
+                    {p.price && <span style={{ color: 'var(--pc-text-3)', fontSize: 11 }}>${p.price}</span>}
+                    {p.from === 'brand' && <span style={{ color: 'var(--pc-text-3)', fontSize: 9.5, fontWeight: 800, letterSpacing: '.06em' }}>FOCUS</span>}
+                  </button>
+                ))}
+                {wxProdMatches.length === 0 && (
+                  <div style={{ padding: '10px 11px', fontSize: 11.5, color: 'var(--pc-text-3)' }}>
+                    {apiState === 'loading'
+                      ? 'Reading this brand’s catalogue…'
+                      : apiState === 'none'
+                      ? (apiNote || 'No catalogue for this brand — type the product and press +.')
+                      : prodInput.trim()
+                        ? <>Nothing matches &ldquo;{prodInput.trim()}&rdquo;. Press Enter to add it anyway.</>
+                        : 'Everything in this brand\u2019s catalogue is already chosen.'}
+                  </div>
+                )}
+              </div>
+              {prodInput.trim() && (
+                <button type="button" onClick={() => { addCustomProd(); setProdOpen(false); }}
+                  style={{
+                    display: 'block', width: '100%', padding: '8px 11px', border: 0,
+                    borderTop: '1px solid var(--pc-divider)', background: 'var(--pc-card-2)',
+                    color: 'var(--pc-accent)', fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
+                    fontFamily: 'inherit', textAlign: 'left',
+                  }}>
+                  + Add &ldquo;{prodInput.trim()}&rdquo; as a product of your own
+                </button>
+              )}
             </div>
           )}
-          <div style={{ display: 'flex', gap: 6 }}>
-            <input className="pc-input" placeholder="Product name" value={prodInput}
-              onChange={e => setProdInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomProd(); } }} />
-            <button type="button" onClick={addCustomProd} disabled={!prodInput.trim()} style={{ flex: '0 0 40px', height: 40, borderRadius: 12, border: 0, background: prodInput.trim() ? 'var(--pc-accent)' : 'var(--pc-card-2)', color: prodInput.trim() ? 'white' : 'var(--pc-text-3)', cursor: prodInput.trim() ? 'pointer' : 'not-allowed', fontSize: 17, fontWeight: 800 }}>+</button>
           </div>
+          {/* WURX-ADDED · WHAT TO DO WHEN IT IS REQUIRED AND THERE IS NOTHING
+              TO PICK. Of the brands actually being worked (11 in September
+              2026), 9 have a catalogue we can read and 2 do not — Aqua Sonic
+              and Pure Daily Care, both on Cruva. Rarer than it first looked,
+              but still the difference between a rule and a dead end. */}
+          {wxProductRequired && prods.length === 0 && (
+            <div data-wx="product-required-hint" style={{ marginTop: 6, fontSize: 11.5, color: 'var(--pc-warn-fg)' }}>
+              {apiState === 'none'
+                ? 'A product is required from October, and this brand has no catalogue to read — open the list and type the product name, then press Enter.'
+                : 'A product is required for creators onboarded from October.'}
+            </div>
+          )}
+          {/* WURX-END */}
         </div>
 
-        {/* Amount + Videos (2-col) */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <div className="pc-field"><label>Amount ($)</label><input className="pc-input" type="number" inputMode="numeric" placeholder="200" value={f.amount} onChange={e => set('amount', e.target.value)} onWheel={e => e.currentTarget.blur()} /></div>
-          <div className="pc-field"><label>Videos</label><input className="pc-input" type="number" inputMode="numeric" placeholder="5" value={f.videos_count} onChange={e => set('videos_count', e.target.value)} onWheel={e => e.currentTarget.blur()} /></div>
+        {/* WURX-ADDED · VIDEOS PER PRODUCT, once there is more than one.
+            It began (2026-09-23) as an amount and a video count per product.
+            Rashid, 2026-09-24: "we only need one checkbox and that should be
+            videos ... amount will be entered manually only, no of videos would
+            be per product". So the Videos field below is the computed total and
+            the Amount field beside it is typed, as it always was with one
+            product. */}
+        {wxMulti && (
+          <div className="pc-field" data-wx="per-product-deals">
+            <label>Videos per product</label>
+            <div style={{ display: 'grid', gap: 6 }}>
+              {prods.map((p, i) => (
+                /* `minmax(0, 1fr)` and not `1fr`: a grid track refuses to go
+                   below its content's minimum, so one long product name pushed
+                   the amount and video fields off the side of the drawer. The
+                   two fields are in rem so a zoomed browser keeps them usable. */
+                <div key={(p.name || '') + '-' + i} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 5.5rem', gap: 6, alignItems: 'center' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                    <ProductTile product={p} size={26} />
+                    <span title={p.name || p.url} style={{
+                      fontSize: 12, fontWeight: 600, color: 'var(--pc-text-2)',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>{p.name || p.url}</span>
+                  </span>
+                  <input className="pc-input" data-wx={'videos-' + i} type="number" inputMode="numeric" placeholder="videos"
+                    value={p.videos ?? ''} onWheel={e => e.currentTarget.blur()}
+                    onChange={e => setProdField(i, 'videos', e.target.value)} />
+                </div>
+              ))}
+            </div>
+            {wxSplitTotals.missing > 0 && (
+              <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--pc-warn-fg)' }}>
+                {wxSplitTotals.missing} product{wxSplitTotals.missing === 1 ? '' : 's'} still {wxSplitTotals.missing === 1 ? 'needs' : 'need'} a video count.
+              </div>
+            )}
+          </div>
+        )}
+        {/* WURX-END */}
+
+        {/* Amount + Videos (2-col).
+            WURX-ADJUSTED · with more than one product these are the TOTAL, added
+            up from the rows above and not typed. Two ways to say the same number
+            is how they come to disagree, and this one is the number every other
+            screen reads off `deal`. */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }} data-wx={wxMulti ? 'deal-total' : 'deal-single'}>
+          <div className="pc-field">
+            {/* THE MONEY IS TYPED, ALWAYS, however many products there are.
+                It is one deal for one creator, and nobody has agreed a split of
+                it per product. */}
+            <label>Amount ($)</label>
+            <input className="pc-input" data-wx="total-amount" type="number" inputMode="numeric" placeholder="200"
+              value={f.amount}
+              onChange={e => set('amount', e.target.value)} onWheel={e => e.currentTarget.blur()} />
+          </div>
+          <div className="pc-field">
+            <label>{wxMulti ? 'Total videos' : 'Videos'}</label>
+            <input className="pc-input" data-wx="total-videos" type="number" inputMode="numeric" placeholder="5"
+              value={wxMulti ? (wxSplitTotals.videos || '') : f.videos_count}
+              readOnly={wxMulti}
+              title={wxMulti ? 'Added up from the products above' : undefined}
+              style={wxMulti ? { background: 'var(--pc-card-2)', color: 'var(--pc-text)', fontWeight: 800 } : undefined}
+              onChange={e => set('videos_count', e.target.value)} onWheel={e => e.currentTarget.blur()} />
+          </div>
         </div>
 
         {/* Live rate intelligence · computed as you type */}
@@ -3467,7 +5987,10 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
         </div>
 
         {err && (
-          <div style={{ background: 'var(--pc-error-bg)', color: 'var(--pc-error-fg)', borderRadius: 12, padding: '10px 13px', fontSize: 12.5, fontWeight: 600, marginBottom: 12 }}>{err}</div>
+          /* WURX-ADJUSTED · a hook to test against. It had only inline styles,
+             so a check could not tell "the save was refused with a reason" from
+             "the save silently did nothing" — which is the whole difference. */
+          <div data-wx="save-error" style={{ background: 'var(--pc-error-bg)', color: 'var(--pc-error-fg)', borderRadius: 12, padding: '10px 13px', fontSize: 12.5, fontWeight: 600, marginBottom: 12 }}>{err}</div>
         )}
 
         </div>{/* /pc-cm-body */}
@@ -3490,7 +6013,7 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
               </>
             ) : <span className="pc-cm-summary-hint">Fill in the creator's details</span>}
           </div>
-          {!isAdd && isAsad && onDelete && (
+          {!isAdd && mayDelete && onDelete && (
             <button
               className={`pc-btn pc-modal-del ${confirmDel ? 'arm' : ''}`}
               disabled={saving || deleting}
@@ -3504,7 +6027,7 @@ function CreatorEditModal({ mode, creator, defaultBrand, brands = [], directory 
                 try { await onDelete(c.id); onClose(); }
                 catch (e) { setErr(e?.message || 'Delete failed'); setDeleting(false); setConfirmDel(false); }
               }}
-              title={confirmDel ? 'Click again to permanently delete' : `Delete ${c.name || 'creator'} (Asad only)`}
+              title={confirmDel ? 'Click again to permanently delete' : `Delete ${c.name || 'creator'} · permanent, takes this deal and its videos with it`}
             >
               {deleting ? 'Deleting…' : confirmDel ? 'Confirm delete?' : 'Delete'}
             </button>
@@ -3543,6 +6066,8 @@ function CreatorVideosPopup({ creator: c, onUpdateCreator, onEdit, onClose }) {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkText, setBulkText] = useState('');
   const [bulkErr, setBulkErr] = useState('');
+  /* WURX-ADDED · '' is every video; 'YYYY-MM-DD' is the videos posted that day. */
+  const [dayFilter, setDayFilter] = useState('');
   const debounce = useRef(null);
   const latest = useRef(codes);
   const dirty = useRef(false);
@@ -3663,6 +6188,7 @@ function CreatorVideosPopup({ creator: c, onUpdateCreator, onEdit, onClose }) {
     setCodes(next);
     setBulkText('');
     setBulkOpen(false);
+    setDayFilter('');   // WURX-ADDED · pasted rows have no date yet; a filter would hide them
     if (debounce.current) { clearTimeout(debounce.current); debounce.current = null; }
     persist(next);
     if (dupesIntroduced > 0) {
@@ -3708,6 +6234,7 @@ function CreatorVideosPopup({ creator: c, onUpdateCreator, onEdit, onClose }) {
   // Add N blank rows to the end. No persist · blank rows don't need saving;
   // they save when the user types into them.
   const addRows = (n = 1) => {
+    setDayFilter('');   // WURX-ADDED · a new row has no date, so a day filter would hide it
     setCodes(prev => {
       const next = [...prev, ...Array.from({ length: n }, () => ({ video: '', adCode: '', auth: false }))];
       latest.current = next;
@@ -3775,6 +6302,46 @@ function CreatorVideosPopup({ creator: c, onUpdateCreator, onEdit, onClose }) {
     codes.forEach(r => { if (dupKeys.has(videoKey(r.video))) n++; });
     return n;
   }, [codes, dupKeys]);
+
+  /*
+   * WURX-ADDED · SEE ONE DAY'S VIDEOS.
+   *
+   * Rashid, 2026-09-15: "let them view the videos of a certain date … today
+   * or … any date". The date is the POSTED date EUKA reports, written onto
+   * each row by the sweep as YYYY-MM-DD — 89% of saved videos carry one.
+   *
+   * The other 11% are links pasted before EUKA has matched them, and a day
+   * filter can never show those. So the bar SAYS how many are undated rather
+   * than letting a day look emptier than it is.
+   *
+   * The list is filtered, never re-indexed: every row keeps its position in
+   * `codes`, so an edit or a tick made while filtered lands on the right video.
+   * "Today" is the viewer's own calendar day.
+   */
+  const dayOf = (r) => String(r?.date || '').slice(0, 10);
+  const localDay = (offset) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const today = localDay(0);
+  const yesterday = localDay(-1);
+  const shortDay = (d) => { const [, m, dd] = d.split('-'); return `${MONTHS[parseInt(m, 10) - 1]} ${parseInt(dd, 10)}`; };
+  const dayCounts = useMemo(() => {
+    const m = new Map();
+    codes.forEach(r => {
+      if (!isValidUrl(r.video)) return;
+      const d = dayOf(r);
+      if (d) m.set(d, (m.get(d) || 0) + 1);
+    });
+    return m;
+  }, [codes]);
+  const undated = codes.filter(r => isValidUrl(r.video) && !dayOf(r)).length;
+  const latestDay = [...dayCounts.keys()].sort().pop() || '';
+  const visibleRows = codes
+    .map((row, i) => ({ row, i }))
+    .filter(({ row }) => !dayFilter || dayOf(row) === dayFilter);
+  const pickedOther = Boolean(dayFilter) && dayFilter !== today && dayFilter !== yesterday;
 
   return createPortal(
     <div className="pc-overlay pc-vx-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -3874,6 +6441,29 @@ function CreatorVideosPopup({ creator: c, onUpdateCreator, onEdit, onClose }) {
           </div>
         )}
 
+        {/* WURX-ADDED · posted-day filter */}
+        <div className="pc-vx-days" role="group" aria-label="Show the videos posted on one day">
+          <span className="pc-vx-days-lbl">Posted</span>
+          <button type="button" className={`pc-vx-day ${!dayFilter ? 'on' : ''}`} aria-pressed={!dayFilter} onClick={() => setDayFilter('')}>
+            All <b>{filledCount}</b>
+          </button>
+          <button type="button" className={`pc-vx-day ${dayFilter === today ? 'on' : ''}`} aria-pressed={dayFilter === today} onClick={() => setDayFilter(today)}>
+            Today <b>{dayCounts.get(today) || 0}</b>
+          </button>
+          <button type="button" className={`pc-vx-day ${dayFilter === yesterday ? 'on' : ''}`} aria-pressed={dayFilter === yesterday} onClick={() => setDayFilter(yesterday)}>
+            Yesterday <b>{dayCounts.get(yesterday) || 0}</b>
+          </button>
+          <label className={`pc-vx-daypick ${pickedOther ? 'on' : ''}`} title="Pick any day">
+            <input type="date" value={dayFilter} max={today} onChange={e => setDayFilter(e.target.value)} aria-label="Pick a day" />
+            {pickedOther && <b>{dayCounts.get(dayFilter) || 0}</b>}
+          </label>
+          {undated > 0 && (
+            <span className="pc-vx-days-note" title="Links EUKA has not matched to a posted date yet. No day filter can show these.">
+              {undated} without a posted date yet
+            </span>
+          )}
+        </div>
+
         {/* ── Sticky column labels ── */}
         <div className="pc-vx-collabels">
           <span />
@@ -3886,7 +6476,18 @@ function CreatorVideosPopup({ creator: c, onUpdateCreator, onEdit, onClose }) {
         {/* ── Scrollable list ── */}
         <div className="pc-vx-scroll">
           <div className="pc-vx-list">
-            {codes.map((row, i) => {
+            {dayFilter && visibleRows.length === 0 && (
+              <div className="pc-vx-dayempty">
+                No videos posted on {formatHireDate(dayFilter)}.
+                {latestDay && latestDay !== dayFilter && (
+                  <> The latest posted day is{' '}
+                    <button type="button" className="pc-vx-daylink" onClick={() => setDayFilter(latestDay)}>{formatHireDate(latestDay)}</button>.
+                  </>
+                )}
+                {undated > 0 && <> {undated} video{undated === 1 ? ' has' : 's have'} no posted date yet.</>}
+              </div>
+            )}
+            {visibleRows.map(({ row, i }) => {
               const vOk = isValidUrl(row.video);
               const isDup = vOk && dupKeys.has(videoKey(row.video));
               const canDelete = isEmpty(row) && codes.length > Math.max(committed, 1) && i >= committed;
@@ -3903,6 +6504,9 @@ function CreatorVideosPopup({ creator: c, onUpdateCreator, onEdit, onClose }) {
                     <span className="pc-vx-inp-ico"><svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M8 5v14l11-7z" /></svg></span>
                     <input placeholder="Paste TikTok video URL" value={row.video} onChange={e => change(i, 'video', e.target.value)} onBlur={flush} />
                     {isDup && <span className="pc-vx-dupe-pill" title="Duplicate video">DUPE</span>}
+                    {!isDup && dayOf(row) && (
+                      <span className="pc-vx-daytag" title={`Posted ${formatHireDate(dayOf(row))}`}>{shortDay(dayOf(row))}</span>
+                    )}
                   </label>
                   <label className="pc-vx-inp pc-vx-inp-ad">
                     <span className="pc-vx-inp-ico">#</span>
@@ -3958,7 +6562,7 @@ function CreatorVideosPopup({ creator: c, onUpdateCreator, onEdit, onClose }) {
 
       </div>
     </div>,
-    document.body
+    wxPortalHost()
   );
 }
 
@@ -4013,19 +6617,33 @@ function NotesDrawer({ brand, month, initial, onSaved, onClose }) {
         />
       </div>
     </div>,
-    document.body
+    wxPortalHost()
   );
 }
 
 /* ════════ CREATORS TAB ════════ */
-function formatHireDateShort(d) {
-  if (!d) return '-';
-  const parts = String(d).split('-');
-  if (parts.length < 3) return d;
-  return `${MONTHS[parseInt(parts[1], 10) - 1] || '?'} ${parseInt(parts[2], 10)}`;
+/* "2025-08-20" → Aug 20 with a small, quiet '25.
+   The year only matters when scanning across years, so it is present but
+   never competes with the day for attention. */
+function HireDate({ d }) {
+  const p = godDateParts(d);
+  if (!p) return <span className="pc-handle">-</span>;
+  return <span className="pc-hdate">{p.main}{p.year && <i>{p.year}</i>}</span>;
 }
 
-function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, onUpdateCreator, onEditCreator }) {
+/* Every place that renders from God Mode settings subscribes here, so a
+   change in the panel repaints the table instead of waiting for a reload. */
+function useGod() {
+  const [, bump] = useState(0);
+  useEffect(() => {
+    const on = () => bump(v => v + 1);
+    window.addEventListener('wurx-god-changed', on);
+    return () => window.removeEventListener('wurx-god-changed', on);
+  }, []);
+  return godGet();
+}
+
+function CreatorsTab({ creators, allCreators, allTime, month, eukaL30, onSetCreatorStatus, onUpdateCreator, onEditCreator }) {
   const [search, setSearch] = useState('');
   const [sel, setSel] = useState(() => new Set());
   const [videosCreatorId, setVideosCreatorId] = useState(null);
@@ -4033,6 +6651,16 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
   const [statusFilter, setStatusFilter]     = useState(null);  // 'pending' | 'progress' | 'sent' | null
   const [hiredByFilter, setHiredByFilter]   = useState(null);  // 'Aris' | 'Emily' | 'Myles' | 'Khushi' | null
   const [tierFilter, setTierFilter]         = useState(null);  // 'L0'..'L5' | 'none' (unmatched) | null
+  /* How many DEALS one person is on. Asad's team asked for it as "how many
+     creators do we have on 1 deal, on 2, on 3" — a retention question, not a
+     row question, so it counts PEOPLE and filters ROWS. */
+  const [dealsFilter, setDealsFilter]       = useState(null);  // 1, 2, 3 … | null
+  /* WURX-ADDED · Rashid, 2026-09-18: "we also need to have filter so users can
+     filter creators on follower". Buckets rather than a number box: the question
+     is "who is big enough for this brief", and nobody knows whether they mean
+     40,000 or 50,000. 'none' is its own answer — Euka has no profile for that
+     handle, which is not the same as a small following. */
+  const [followersFilter, setFollowersFilter] = useState(null); // '1m'|'100k'|'10k'|'under10k'|'none'|null
   const [filterOpen, setFilterOpen]         = useState(false);
   const filterRef                            = useRef(null);
 
@@ -4046,7 +6674,8 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
     return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
   }, [filterOpen]);
 
-  const activeFilterCount = (statusFilter ? 1 : 0) + (hiredByFilter ? 1 : 0) + (tierFilter ? 1 : 0);
+  const activeFilterCount = (statusFilter ? 1 : 0) + (hiredByFilter ? 1 : 0) + (tierFilter ? 1 : 0) + (dealsFilter ? 1 : 0)
+    + (followersFilter ? 1 : 0);   /* WURX-ADDED */
 
   // Precomputed lowercase haystack per creator · rebuilt only when data changes,
   // so each search keystroke is a cheap Map lookup instead of string-building.
@@ -4058,20 +6687,105 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
     return m;
   }, [creators]);
 
+  /*
+   * DEALS PER PERSON, keyed by name exactly the way the Unique Creators list
+   * keys them. Two places counting "collabs" by different keys would disagree
+   * on screen, and the number people would trust is whichever they saw last.
+   *
+   * Counted from the WHOLE tab scope, never from the filtered list: a count
+   * that shrinks as you filter cannot answer "how many are on two deals".
+   */
+  /*
+   * ONE TIER PER PERSON, and the count and the filter read the SAME map.
+   *
+   * Their own comment already says it — "their tier is a property of the
+   * person, not the deal, so it must only count once" — but only the COUNT
+   * obeyed it. The filter tested every row on its own, so a person whose two
+   * deal rows disagree (a handle typed on one row and not the other) was
+   * counted once by the chip and matched twice by the filter.
+   *
+   * Invisible while the chips were decoration. The moment they became filters
+   * it showed: the L2 chip said 20 and produced 23 creators. A control whose
+   * label does not predict its result is worse than no control.
+   *
+   * Built from the WHOLE list, not the filtered one, so a person's tier does
+   * not change depending on what else is selected.
+   */
+  /* WURX-ADDED · followers per PERSON, largest across their handles and rows,
+     so the filter and the column agree about one human being. */
+  const wxStoredFollowers = wxAdsHook().storedFollowers;
+  const wxFollowersByPerson = useMemo(() => {
+    const m = new Map();
+    creators.forEach((c) => {
+      const k = (c.name || '').trim().toLowerCase();
+      if (!k) return;
+      const n = wxFollowersOf(eukaL30, wxStoredFollowers, [c.tiktok_account, c.tiktok_account_2]).n;
+      if (n > (m.get(k) || 0)) m.set(k, n);
+    });
+    return m;
+  }, [creators, eukaL30, wxStoredFollowers]);
+  /* WURX-END */
+
+  const tierByPerson = useMemo(() => {
+    const m = new Map();
+    creators.forEach((c) => {
+      const k = (c.name || '').trim().toLowerCase();
+      if (!k || m.get(k)) return;              // first row that knows a tier wins
+      const t = creatorTier(c, eukaL30);
+      if (t) m.set(k, t);
+    });
+    return m;
+  }, [creators, eukaL30]);
+
+  /* WURX-ADDED · deals in the month on screen, across every brand. Not
+     dealsByPerson below: that one counts the rows in THIS TAB's view, which the
+     search and the filters narrow too, because it drives the deals filter. */
+  const wxDealsMonth = allTime ? '' : month;
+  const wxDealsNow = useMemo(() => wxDealsByPerson(allCreators || creators, wxDealsMonth), [allCreators, creators, wxDealsMonth]);
+  /* WURX-END */
+  const dealsByPerson = useMemo(() => {
+    const m = new Map();
+    creators.forEach((c) => {
+      const k = (c.name || '').trim().toLowerCase();
+      if (!k) return;
+      m.set(k, (m.get(k) || 0) + 1);
+    });
+    return m;
+  }, [creators]);
+
+  /* How many PEOPLE sit on exactly n deals, ascending. Every count that really
+     occurs gets a chip — no "4+" bucket, because "how many are on seven" is a
+     question somebody will eventually ask and a bucket cannot answer it. */
+  const dealTally = useMemo(() => {
+    const t = new Map();
+    for (const n of dealsByPerson.values()) t.set(n, (t.get(n) || 0) + 1);
+    return [...t.entries()].sort((a, b) => a[0] - b[0]);
+  }, [dealsByPerson]);
+
   const filtered = useMemo(() => {
     let list = creators;
     if (statusFilter)   list = list.filter(c => statusOf(c) === statusFilter);
     if (hiredByFilter)  list = list.filter(c => (c.hired_by || '').trim() === hiredByFilter);
     if (tierFilter) {
       list = list.filter(c => {
-        const t = creatorTier(c, eukaL30);
+        const t = tierByPerson.get((c.name || '').trim().toLowerCase());
         return tierFilter === 'none' ? !t : t === tierFilter;
       });
+    }
+    if (dealsFilter) {
+      list = list.filter(c => dealsByPerson.get((c.name || '').trim().toLowerCase()) === dealsFilter);
+    }
+    /* WURX-ADDED · followers. Read per PERSON, like the tier filter above, so
+       somebody with two rows cannot be in one bucket on one and another on the
+       next. */
+    if (followersFilter) {
+      list = list.filter(c => wxFollowerBucket(wxFollowersByPerson.get((c.name || '').trim().toLowerCase())) === followersFilter);
     }
     const q = search.trim().toLowerCase();
     if (!q) return list;
     return list.filter(c => (searchable.get(c.id) || '').includes(q));
-  }, [creators, search, statusFilter, hiredByFilter, tierFilter, eukaL30, searchable]);
+  }, [creators, search, statusFilter, hiredByFilter, tierFilter, dealsFilter, followersFilter,
+      dealsByPerson, tierByPerson, wxFollowersByPerson, eukaL30, searchable]);
 
   // All-time: collapse to a single bucket so the status dividers below group
   // EVERY creator (across every month) into one Pending / Progress / Sent
@@ -4083,6 +6797,10 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
     return [{ key: month, label: monthLabel(month), rows: sorted }];
   }, [filtered, allTime, month]);
 
+  const [showUnique, setShowUnique] = useState(false);
+  /* re-read on the God Mode signal so column and format changes land
+     without a reload */
+  const god = useGod();
   const uniqueCount = useMemo(() => {
     const set = new Set();
     filtered.forEach(c => set.add((c.name || '').trim().toLowerCase()));
@@ -4101,6 +6819,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
   const clearSel = () => setSel(new Set());
 
   const copyUsernames = async () => {
+    if (!canExport()) return;
     const handles = new Set();
     creators.filter(c => sel.has(c.id)).forEach(c => {
       [c.tiktok_account, c.tiktok_account_2].forEach(t => {
@@ -4127,9 +6846,10 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
 
   const bulkApply = async (patch) => {
     if (bulkBusy) return;
-    /* HARD RULE · bulk "Payment Sent" is Asad-only, no exceptions */
-    if (patch && patch.payment_status === 'Paid' && !isAsadActor()) {
-      alert('Payment Sent can only be set by Asad · manually.');
+    /* Marking paid needs the capability their own access model defines for
+       it. Was a hardcoded check against the username "asad". */
+    if (patch && patch.payment_status === 'Paid' && !canMarkPaid()) {
+      alert('You do not have permission to mark a creator paid.');
       return;
     }
     setBulkBusy(true);
@@ -4155,9 +6875,14 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
 
   // Export selected (or filtered if no selection) to CSV
   const exportCsv = () => {
+    if (!canExport()) return;
     const rows = sel.size > 0 ? creators.filter(c => sel.has(c.id)) : filtered;
     if (rows.length === 0) return;
-    const headers = ['Name', 'TikTok', 'Brand', 'Category', 'Deal', 'Amount', 'Videos', 'Payment Status', 'Hired By', 'Hired Date', 'Email', 'WhatsApp', 'PayPal', 'Zelle'];
+    /* L30 GMV comes from creatorL30, the SAME helper the Unique Creators list
+       exports and the screen renders, so the three can never disagree. It is
+       EUKA's last-30-days figure for that creator, not a month total and not
+       the sheet's typed GMV — see the note in docs about the three sources. */
+    const headers = ['Name', 'TikTok', 'Brand', 'Category', 'Deal', 'Amount', 'Videos', 'L30 GMV', 'Payment Status', 'Hired By', 'Hired Date', 'Email', 'WhatsApp', 'PayPal', 'Zelle'];
     const esc = (v) => {
       const s = String(v ?? '');
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -4167,8 +6892,9 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
       lines.push([
         c.name || '', c.tiktok_account || '', c.brand || '', c.category || '',
         c.deal || '', parseDealAmount(c.deal) || '', parseDealVideos(c.deal) || '',
+        Math.round(creatorL30(c, eukaL30) || 0) || '',
         c.payment_status || '', c.hired_by || '', c.hiring_date || '',
-        c.email || '', c.whatsapp_number || '', c.paypal || '', c.zelle || '',
+        c.email || '', fmtPhone(c.whatsapp_number), c.paypal || '', c.zelle || '',
       ].map(esc).join(','));
     });
     const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
@@ -4189,6 +6915,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
      details found on any of their records and the average rate they were
      actually paid per video. */
   const exportUniqueCsv = () => {
+    if (!canExport()) return;
     const src = sel.size > 0 ? creators.filter(c => sel.has(c.id)) : filtered;
     if (!src.length) return;
 
@@ -4209,7 +6936,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
         if (h) p.handles.add(h);
       });
       if (!p.contact) {
-        const ph = String(c.whatsapp_number || '').trim();
+        const ph = fmtPhone(c.whatsapp_number);
         if (ph) p.contact = ph;
       }
       if (!p.email) {
@@ -4277,29 +7004,93 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
       const key = (c.name || '').trim().toLowerCase();
       if (!key || seen.has(key)) return;
       seen.add(key);
-      const t = creatorTier(c, eukaL30);
+      const t = tierByPerson.get(key);
       if (t) { out[t] = (out[t] || 0) + 1; matched += 1; }
     });
     if (!matched && !eukaL30) return null;   // nothing known yet · hide the pill
     return { out, matched, total: seen.size };
-  }, [eukaL30, listForTierCounts]);
+  }, [eukaL30, listForTierCounts, tierByPerson]);
+
+  /* WURX-ADDED · how many PEOPLE sit in each followers bucket, counted over the
+     same scope the tier chips use, so the numbers beside the two filters mean
+     the same thing. */
+  const wxFollowerCounts = useMemo(() => {
+    const out = {};
+    const seen = new Set();
+    listForTierCounts.forEach((c) => {
+      const k = (c.name || '').trim().toLowerCase();
+      if (!k || seen.has(k)) return;
+      seen.add(k);
+      const b = wxFollowerBucket(wxFollowersByPerson.get(k));
+      out[b] = (out[b] || 0) + 1;
+    });
+    return out;
+  }, [listForTierCounts, wxFollowersByPerson]);
+  /* WURX-END */
 
   return (
     <>
       {/* KPI pills */}
       <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-        <KpiPill label="Unique Creators" value={uniqueCount} />
+        <KpiPill label="Unique Creators" value={uniqueCount}
+          title="Open the list · one row per person"
+          onClick={() => setShowUnique(true)} />
         <KpiPill label="Total Deals" value={filtered.length} />
         <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {/*
+            * THESE READ AS FILTERS, SO THEY ARE FILTERS.
+            *
+            * They were spans: six tier counts sitting at the top of the screen
+            * that looked exactly like the pills everywhere else in this app and
+            * did nothing when pressed. The filter they imply already existed —
+            * buried in the Filter popover — so this wires the obvious control
+            * to the state that was already there rather than adding a second
+            * way to say the same thing.
+            */}
           {tierCounts && (
-            <span className="pc-tierpill" title={`${tierCounts.matched}/${tierCounts.total} matched to an EUKA creator profile`}>
+            <span className="pc-tierpill" title={`${tierCounts.matched}/${tierCounts.total} matched to an EUKA creator profile · click a tier to filter`}>
               <span className="pc-tierpill-l">EUKA Tiers</span>
               {['L0', 'L1', 'L2', 'L3', 'L4', 'L5'].filter(t => tierCounts.out[t] > 0).map(t => (
-                <span key={t} className={`pc-tierpill-chip ${t.toLowerCase()}`}>{t}<b>{tierCounts.out[t]}</b></span>
+                <button
+                  key={t}
+                  type="button"
+                  className={`pc-tierpill-chip ${t.toLowerCase()}${tierFilter === t ? ' on' : ''}`}
+                  aria-pressed={tierFilter === t}
+                  title={tierFilter === t ? `Showing ${t} only · click to clear` : `Show only ${t}`}
+                  onClick={() => setTierFilter(tierFilter === t ? null : t)}
+                >{t}<b>{tierCounts.out[t]}</b></button>
               ))}
               {tierCounts.total - tierCounts.matched > 0 && (
-                <span className="pc-tierpill-chip none">Unmatched<b>{tierCounts.total - tierCounts.matched}</b></span>
+                <button
+                  type="button"
+                  className={`pc-tierpill-chip none${tierFilter === 'none' ? ' on' : ''}`}
+                  aria-pressed={tierFilter === 'none'}
+                  title={tierFilter === 'none' ? 'Showing unmatched only · click to clear' : 'Show only creators with no EUKA match'}
+                  onClick={() => setTierFilter(tierFilter === 'none' ? null : 'none')}
+                >Unmatched<b>{tierCounts.total - tierCounts.matched}</b></button>
               )}
+            </span>
+          )}
+
+          {/*
+            * DEALS PER PERSON, as chips rather than a dropdown, because the
+            * COUNT is half the answer: "how many creators are on two deals"
+            * is readable without pressing anything, and pressing narrows to
+            * them. A dropdown would hide the number being asked for.
+            */}
+          {dealTally.length > 0 && (
+            <span className="pc-tierpill" title="How many people are on this many deals · click to filter">
+              <span className="pc-tierpill-l">Deals</span>
+              {dealTally.map(([n, people]) => (
+                <button
+                  key={n}
+                  type="button"
+                  className={`pc-tierpill-chip deals${dealsFilter === n ? ' on' : ''}`}
+                  aria-pressed={dealsFilter === n}
+                  title={`${people} creator${people === 1 ? '' : 's'} on ${n} deal${n === 1 ? '' : 's'}`}
+                  onClick={() => setDealsFilter(dealsFilter === n ? null : n)}
+                >{n}&times;<b>{people}</b></button>
+              ))}
             </span>
           )}
         </span>
@@ -4335,7 +7126,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
               <span style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 minWidth: 18, height: 18, padding: '0 6px', borderRadius: 99,
-                background: 'var(--pc-accent)', color: '#fff',
+                background: 'var(--pc-accent)', color: 'var(--wx-text-muted)',
                 fontSize: 10.5, fontWeight: 800, lineHeight: 1,
               }}>{activeFilterCount}</span>
             )}
@@ -4386,7 +7177,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
                   {activeFilterCount > 0 && (
                     <button
                       type="button"
-                      onClick={() => { setStatusFilter(null); setHiredByFilter(null); setTierFilter(null); }}
+                      onClick={() => { setStatusFilter(null); setHiredByFilter(null); setTierFilter(null); setDealsFilter(null); setFollowersFilter(null); }}
                       style={{ background: 'transparent', border: 0, color: 'var(--pc-text-3)', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '2px 6px', borderRadius: 6 }}
                     >
                       Reset all
@@ -4432,6 +7223,26 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
                   </div>
                 </div>
 
+                {/* WURX-ADDED · Followers */}
+                <div style={sectionGap}>
+                  <div style={sectionTitle}>Followers</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                    <button type="button" onClick={() => setFollowersFilter(null)} style={pill(followersFilter === null)}>
+                      {followersFilter === null && checkSvg}All
+                    </button>
+                    {WX_FOLLOWER_BUCKETS.filter(b => (wxFollowerCounts[b.key] || 0) > 0).map(b => {
+                      const active = followersFilter === b.key;
+                      return (
+                        <button key={b.key} type="button" onClick={() => setFollowersFilter(active ? null : b.key)} style={pill(active)}
+                          title={b.key === 'none' ? 'Neither EUKA\'s shop data nor a lookup by handle has a follower count for these creators yet. Lookups keep running in the background.' : undefined}>
+                          {active && checkSvg}{b.label} · {wxFollowerCounts[b.key]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                {/* WURX-END */}
+
                 {/* EUKA Tier */}
                 {tierCounts && (
                   <div style={{ marginBottom: 2 }}>
@@ -4462,9 +7273,6 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
           })()}
         </div>
 
-        <span style={{ display: 'inline-flex', alignItems: 'center', height: 36, padding: '0 14px', borderRadius: 999, background: 'var(--pc-card-2)', color: 'var(--pc-text-2)', fontSize: 12.5, fontWeight: 700, letterSpacing: '-0.1px', border: '1px solid var(--pc-divider)' }}>
-          {filtered.length} creators · {allTime ? 'all months' : monthLabel(month)}
-        </span>
       </div>
 
       {filtered.length === 0 ? (
@@ -4472,22 +7280,11 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
       ) : (
         <div className="pc-card">
           {/* Sticky table header · 12 columns (added Hired By at right) */}
-          <div className="pc-cv-head" style={{ gridTemplateColumns: '34px 50px 1.15fr 0.88fr 0.9fr 0.8fr 0.85fr 0.7fr 0.82fr 0.55fr 0.72fr 1fr 0.7fr', textAlign: 'center' }}>
+          <div className="pc-cv-head" style={{ gridTemplateColumns: colTemplate(god), textAlign: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <input type="checkbox" checked={allSelected} onChange={toggleAllVisible} onClick={e => e.stopPropagation()} style={{ width: 16, height: 16, cursor: 'pointer' }} />
+              {canSelectRows() && <input type="checkbox" checked={allSelected} onChange={toggleAllVisible} onClick={e => e.stopPropagation()} style={{ width: 16, height: 16, cursor: 'pointer' }} />}
             </div>
-            <div>#</div>
-            <div>Name</div>
-            <div>Contact</div>
-            <div>TikTok</div>
-            <div>Category</div>
-            <div>Brand</div>
-            <div>Onboarded</div>
-            <div>Deal</div>
-            <div>Rate/Vid</div>
-            <div>L30 GMV</div>
-            <div>Status</div>
-            <div>Hired By</div>
+            {visibleCols(god).map(c => <div key={c.id}>{c.label}</div>)}
           </div>
 
           {grouped.map(g => {
@@ -4520,6 +7317,8 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
                           idx={offset + i + 1}
                           selected={sel.has(c.id)}
                           euka={eukaL30}
+                          deals={wxDealsNow.get(wxPersonKey(c)) || 0}
+                          dealsMonth={wxDealsMonth}
                           onToggle={() => toggle(c.id)}
                           onOpen={() => setVideosCreatorId(c.id)}
                           onSetStatus={setStatus}
@@ -4532,6 +7331,10 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
             );
           })}
         </div>
+      )}
+
+      {showUnique && (
+        <UniqueCreatorsModal rows={filtered} euka={eukaL30} onClose={() => setShowUnique(false)} />
       )}
 
       {/* Bulk action bar · floating bottom pill */}
@@ -4552,18 +7355,19 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
             background: 'var(--pc-accent)', color: 'white',
             fontSize: 12.5, fontWeight: 700,
           }}>
-            <span style={{ minWidth: 18, height: 18, borderRadius: 999, background: 'rgba(255,255,255,0.25)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>{sel.size}</span>
+            <span style={{ minWidth: 18, height: 18, borderRadius: 999, background: 'color-mix(in srgb, var(--wx-surface-1) 25%, transparent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>{sel.size}</span>
             selected
           </span>
 
-          {/* Mark Paid · Asad-only */}
-          {isAsadActor() && (
-            <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={bulkMarkPaid} title="Mark all selected as Paid (Asad only)">
+          {/* Mark Paid · anyone with canEditPay */}
+          {canMarkPaid() && (
+            <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={bulkMarkPaid} title="Mark all selected as Paid">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><path d="M20 6 9 17l-5-5"/></svg>
               Mark Paid
             </button>
           )}
 
+          {canEditStatus() && <>
           {/* Status menu */}
           <div style={{ position: 'relative' }}>
             <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={() => setBulkMenu(m => m === 'status' ? null : 'status')} title="Set status for all selected">
@@ -4582,7 +7386,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
                 {[
                   { k: 'pending',  l: 'Payment Pending' },
                   { k: 'progress', l: 'Videos in Progress' },
-                  ...(isAsadActor() ? [{ k: 'sent', l: 'Payment Sent' }] : []),
+                  ...(canMarkPaid() ? [{ k: 'sent', l: 'Payment Sent' }] : []),
                 ].map(opt => (
                   <button key={opt.k} type="button" onClick={() => bulkSetStatus(opt.k)} style={{
                     background: 'transparent', border: 0, cursor: 'pointer',
@@ -4633,7 +7437,9 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
               </div>
             )}
           </div>
+          </>}
 
+          {canExport() && <>
           {/* Export CSV · every selected row, deal by deal */}
           <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={exportCsv} title="Export the selected rows to CSV · one row per deal, all fields">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -4651,6 +7457,7 @@ function CreatorsTab({ creators, allTime, month, eukaL30, onSetCreatorStatus, on
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             Copy
           </button>
+          </>}
 
           <button className="pc-iconbtn" onClick={() => { clearSel(); setBulkMenu(null); }} title="Clear selection" style={{ width: 32, height: 32 }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -4696,17 +7503,21 @@ const DISCOVERY_MARK_KEY = 'wurx_discovery_marks_v1';
 const getDiscoveryMarks = _lsMapReader(DISCOVERY_MARK_KEY);
 
 async function fetchDiscoveryMarks() {
-  const { data, error } = await supabase
+  /* Paged · a .limit() above 1000 is silently clamped by the server, so
+     once outreach passes a thousand marks a plain limit would quietly stop
+     returning the older ones. */
+  const { data, error } = await selectAll(() => supabase
     .from('activity_logs')
     .select('id,target,details,user_display,created_at')
     .eq('action', 'DISCOVERY_MARK')
-    .order('created_at', { ascending: false })
-    .limit(5000);
+    .order('target', { ascending: true }));
   if (error) throw error;
   const map = {};
   (data || []).forEach(row => {
     const h = String(row.target || '').toLowerCase().trim();
-    // newest row per handle wins (older duplicates are pruned on write)
+    /* One row per handle is enforced by a partial unique index now, so there
+       are no duplicates to pick between. The guard stays because a map is
+       cheap and a wrong mark is somebody messaging a creator twice. */
     if (!h || map[h]) return;
     const color = row.details && row.details.color;
     if (!color) return;
@@ -4718,27 +7529,75 @@ async function fetchDiscoveryMarks() {
 async function saveDiscoveryMark(handle, colorId, actor) {
   const h = String(handle || '').toLowerCase().trim();
   if (!h) return;
-  // one row per handle: clear any existing, then insert the new state
-  await supabase.from('activity_logs').delete().eq('action', 'DISCOVERY_MARK').eq('target', h);
-  if (!colorId) return;
-  const { error } = await supabase.from('activity_logs').insert({
+
+  /*
+   * ═══ THE DELETE USED TO RUN FIRST, WITH NOTHING TO ROLL IT BACK ═══
+   *
+   * "Clear any existing, then insert the new state" — two requests with a
+   * network between them. Change a mark from Messaged to Under review and lose
+   * the connection in the gap, and the mark is simply gone: not reverted, not
+   * reported, gone. The row that stops the team messaging the same creator
+   * twice. And the UI would then restore the old colour it had just destroyed,
+   * so the screen disagreed with the database until somebody reloaded.
+   *
+   * There is one row per handle now, enforced by a partial unique index, so
+   * setting a mark is an UPDATE, and only an INSERT when there is nothing to
+   * update. No delete in that path at all.
+   *
+   * Last write wins on the colour itself, deliberately: a mark is one small
+   * value that somebody is choosing on purpose by clicking a swatch, and
+   * refusing their click because a colleague clicked first would be worse than
+   * accepting it. What must never happen is the value vanishing, and that is
+   * what this removes.
+   */
+  const who = {
     user_id: String(actor?.id || 'unknown'),
     user_display: actor?.display || actor?.username || 'Unknown',
-    action: 'DISCOVERY_MARK',
-    target: h,
-    details: { color: colorId },
-  });
-  if (error) throw error;
+  };
+
+  /* Clearing a mark is deliberate, and there is nothing to preserve. */
+  if (!colorId) {
+    const { error } = await supabase.from('activity_logs')
+      .delete().eq('action', 'DISCOVERY_MARK').eq('target', h);
+    if (error) throw error;
+    return;
+  }
+
+  const stamp = new Date().toISOString();
+  const row = { details: { color: colorId }, updated_at: stamp, ...who };
+
+  const upd = await supabase.from('activity_logs')
+    .update(row).eq('action', 'DISCOVERY_MARK').eq('target', h).select('id');
+  if (upd.error) throw upd.error;
+  if (upd.data && upd.data.length) return;
+
+  /* Nothing to update, so this handle has never been marked. */
+  const ins = await supabase.from('activity_logs')
+    .insert({ action: 'DISCOVERY_MARK', target: h, ...row });
+  if (!ins.error) return;
+
+  /* 23505 means somebody marked the same creator between our update and our
+     insert — which is exactly the race the unique index exists to catch.
+     Their row is there; write ours over it rather than failing the click. */
+  if (ins.error.code === '23505') {
+    const retry = await supabase.from('activity_logs')
+      .update(row).eq('action', 'DISCOVERY_MARK').eq('target', h);
+    if (retry.error) throw retry.error;
+    return;
+  }
+  throw ins.error;
 }
 
+/* Outreach states a creator can be marked with. Dropping an entry here also
+   drops its filter button and its swatch in the mark menu · any row already
+   saved under a removed id keeps its activity_logs record but reads as
+   unmarked, so remove one only when that is intended. */
 const MARK_COLORS = [
   { id: 'sent',    label: 'Messaged',       hex: '#0E7A3A' },
-  { id: 'replied', label: 'Replied',        hex: '#1259C3' },
   { id: 'follow',  label: 'Follow up',      hex: '#D97706' },
   { id: 'warm',    label: 'Interested',     hex: '#8B5CF6' },
   { id: 'review',  label: 'Under review',   hex: '#0E7490' },
   { id: 'reject',  label: 'Rejected',       hex: '#BE185D' },
-  { id: 'no',      label: 'Not interested', hex: '#A8201A' },
 ];
 
 function DiscoveryTab({ creators, currentUser }) {
@@ -4751,7 +7610,8 @@ function DiscoveryTab({ creators, currentUser }) {
   const [minFollowers, setMinFollowers] = useState(0);
   const [sortKey, setSortKey] = useState('gmv');
   const [copied, setCopied] = useState('');
-  const [limit, setLimit] = useState(100);
+  /* how many rows Discovery paints at a time · God Mode owns the default */
+  const [limit, setLimit] = useState(() => Number(godGet().discoverySize) || 40);
   /* marks · localStorage mirror paints instantly, DB is the truth */
   const [marks, setMarks] = useState(() => getDiscoveryMarks());
   const [markOpen, setMarkOpen] = useState('');
@@ -4774,7 +7634,7 @@ function DiscoveryTab({ creators, currentUser }) {
   useEffect(() => {
     const ch = supabase
       .channel('discovery-marks')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs', filter: 'action=eq.DISCOVERY_MARK' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'wurxbase', table: 'activity_logs', filter: 'action=eq.DISCOVERY_MARK' }, () => {
         fetchDiscoveryMarks().then(m => { setMarks(m); getDiscoveryMarks.write(m); }).catch(() => {});
       })
       .subscribe();
@@ -4821,7 +7681,7 @@ function DiscoveryTab({ creators, currentUser }) {
     setState('loading');
     setProgress('Finding stores…');
     try {
-      const meta = await fetch('/.netlify/functions/euka').then(r => (r.ok ? r.json() : null));
+      const meta = await eukaJson();
       if (!meta || !Array.isArray(meta.stores)) throw new Error('Could not reach EUKA');
 
       /* creator_level caps at 1000 rows per call and ignores pagination,
@@ -4866,8 +7726,7 @@ function DiscoveryTab({ creators, currentUser }) {
         while (queue.length) {
           const { s, w } = queue.shift();
           try {
-            const d = await fetch(`/.netlify/functions/euka?store=${encodeURIComponent(s.id)}&type=discovery&from=${w.from}&to=${w.to}`)
-              .then(r => (r.ok ? r.json() : null));
+            const d = await eukaJson({ store: s.id, type: 'discovery', from: w.from, to: w.to });
             if (d && d.people) absorb(s.name, d.people);
           } catch { /* one window failing shouldn't kill the pool */ }
           done += 1;
@@ -4963,6 +7822,7 @@ function DiscoveryTab({ creators, currentUser }) {
   };
 
   const exportCsv = () => {
+    if (!canExport()) return;
     const esc = (s) => `"${String(s ?? '').replace(/"/g, '""')}"`;
     const lines = [['Handle', 'Tier', 'Followers', 'Avg views', 'L30 GMV', 'Post rate %', 'Phone', 'Email', 'Seen on', 'Sampled', 'Posted', 'Outreach', 'Marked by'].map(esc).join(',')];
     rows.forEach(r => lines.push([
@@ -5010,7 +7870,7 @@ function DiscoveryTab({ creators, currentUser }) {
             </div>
           </div>
           <div className="pc-dd-actions">
-            {rows.length > 0 && (
+            {rows.length > 0 && canExport() && (
               <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={exportCsv} title="Download the filtered list as CSV">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
                 Export CSV
@@ -5258,7 +8118,7 @@ function DiscoveryTab({ creators, currentUser }) {
                             )}
                           </span>
                         </>,
-                        document.body
+                        wxPortalHost()
                       )}
                     </span>
                   </div>
@@ -5369,7 +8229,7 @@ const LB_TOPS = [3, 5, 10, 20, 50, 0];   // 0 = everyone
 
 function LeaderboardTab({ creators, allCreators, month, allTime, onPickMonth }) {
   const [metricId, setMetricId] = useState('deals');
-  const [topN, setTopN] = useState(10);
+  const [topN, setTopN] = useState(() => Number(godGet().leaderTop) || 10);
   const [brandFilter, setBrandFilter] = useState('all');
   const [copied, setCopied] = useState('');
 
@@ -5462,10 +8322,12 @@ function LeaderboardTab({ creators, allCreators, month, allTime, onPickMonth }) 
     try { await navigator.clipboard.writeText(txt); setCopied(tag); setTimeout(() => setCopied(c => (c === tag ? '' : c)), 1500); } catch {}
   };
   const copyHandles = () => {
+    if (!canExport()) return;
     const list = shown.map(r => (r.handles[0] ? '@' + r.handles[0] : r.name)).join('\n');
     copyText(list, 'handles');
   };
   const exportCsv = () => {
+    if (!canExport()) return;
     const esc = (s) => `"${String(s ?? '').replace(/"/g, '""')}"`;
     const head = ['Rank', 'Creator', 'Username', 'Tier', 'Brands', metric.label, 'GMV', 'Ad spend', 'ROAS', 'Videos', 'Video GMV', 'Views', 'Items sold', 'Fees paid'];
     const lines = [head.map(esc).join(',')];
@@ -5541,14 +8403,14 @@ function LeaderboardTab({ creators, allCreators, month, allTime, onPickMonth }) 
 
         <div className="lb-tools-sp" />
 
-        <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={copyHandles} disabled={!shown.length}>
+        {canExport() && <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={copyHandles} disabled={!shown.length}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
           {copied === 'handles' ? 'Copied' : 'Copy usernames'}
-        </button>
-        <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={exportCsv} disabled={!shown.length}>
+        </button>}
+{canExport() && <button className="pc-btn pc-btn-ghost pc-btn-sm" onClick={exportCsv} disabled={!shown.length}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
           Export CSV
-        </button>
+        </button>}
       </div>
 
       <div className="lb-caption">
@@ -5674,31 +8536,361 @@ function LeaderboardTab({ creators, allCreators, month, allTime, onPickMonth }) 
   );
 }
 
-function KpiPill({ label, value }) {
+/* Sortable column header · shows which way the active column runs */
+function Th({ k, sort, on, title, children }) {
+  const active = sort && sort.key === k;
   return (
-    <span style={{
+    <button type="button" className={'pc-uc-th' + (active ? ' on' : '')}
+      onClick={() => on(k)} title={title || `Sort by ${children}`}>
+      {children}
+      <span className="pc-uc-arrow" aria-hidden>
+        {active ? (sort.dir === 'asc' ? '▲' : '▼') : '⇅'}
+      </span>
+    </button>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   UniqueCreatorsModal · one row per PERSON
+   The Creators table is deal-shaped: somebody who worked four brands
+   is four rows there. This is that same set collapsed to people, which
+   is what the "Unique Creators" pill counts.
+
+   Grouped on the lowercased name — deliberately the SAME key the pill
+   uses, so the row count here always equals the number on the pill.
+   (creatorDedupKey() matches on handle first and would give a different
+   total, which is exactly the mismatch to avoid.)
+
+   Deal, Brand and Status are left out on purpose: they describe one
+   collab, not a person. Where a person-level value still has to come
+   from a single deal, the rule is stated on the column header:
+     · Onboarded  → their EARLIEST hire date (first time we worked with them)
+     · Rate/Vid   → their LATEST rate (what they cost now)
+   ════════════════════════════════════════════════════════════════ */
+function UniqueCreatorsModal({ rows, euka, onClose }) {
+  const [sel, setSel] = useState(() => new Set());
+  const [q, setQ] = useState('');
+  const [copied, setCopied] = useState(false);
+  /* null = the default order (most recently active first) · clicking any
+     column header takes over from there */
+  const [sort, setSort] = useState(null);
+  const [tier, setTier] = useState(null);   // 'L3' | 'none' (no EUKA match) | null
+
+  const people = useMemo(() => {
+    const map = new Map();
+    rows.forEach(c => {
+      const key = (c.name || '').trim().toLowerCase();
+      if (!key) return;
+      if (!map.has(key)) map.set(key, {
+        key, name: '', handles: [], contact: '', email: '', category: '',
+        tier: '', l30: 0, first: '', last: '', rate: 0, hiredBy: '', deals: 0,
+      });
+      const p = map.get(key);
+      p.deals += 1;
+
+      const nm = String(c.name || '').trim();
+      if (nm.length > p.name.length) p.name = nm;
+
+      [c.tiktok_account, c.tiktok_account_2].forEach(t => {
+        if (!t) return;
+        const h = tiktokHandle(t).replace(/^@/, '').trim();
+        if (h && !p.handles.includes(h)) p.handles.push(h);
+      });
+
+      if (!p.contact)  p.contact  = fmtPhone(c.whatsapp_number);
+      if (!p.email)    p.email    = String(c.email || '').trim();
+      if (!p.category) p.category = String(c.category || '').trim();
+      if (!p.tier)     p.tier     = creatorTier(c, euka) || '';
+
+      const l = creatorL30(c, euka) || 0;
+      if (l > p.l30) p.l30 = l;
+
+      const d = String(c.hiring_date || '').slice(0, 10);
+      if (d) {
+        if (!p.first || d < p.first) p.first = d;
+        /* latest deal wins for the "what do they cost now" figures */
+        if (!p.last || d >= p.last) {
+          p.last = d;
+          if (c.hired_by) p.hiredBy = c.hired_by;
+          const amt = parseDealAmount(c.deal) || 0;
+          const vid = parseDealVideos(c.deal) || 0;
+          if (amt > 0 && vid > 0) p.rate = Math.round(amt / vid);
+        }
+      } else if (!p.rate) {
+        /* no date at all · still take a rate rather than showing nothing */
+        const amt = parseDealAmount(c.deal) || 0;
+        const vid = parseDealVideos(c.deal) || 0;
+        if (amt > 0 && vid > 0) p.rate = Math.round(amt / vid);
+        if (!p.hiredBy && c.hired_by) p.hiredBy = c.hired_by;
+      }
+    });
+    return [...map.values()].sort((a, b) =>
+      String(b.last).localeCompare(String(a.last)) || a.name.localeCompare(b.name));
+  }, [rows, euka]);
+
+  /* Search first · the tier buttons count over THIS list, not the final one,
+     so picking L5 never makes the other tier buttons collapse to zero and
+     strand you (the same trap the Discovery tier filter fell into). */
+  const searched = useMemo(() => {
+    const needle = q.trim().toLowerCase().replace(/^@/, '');
+    if (!needle) return people;
+    return people.filter(p =>
+      p.name.toLowerCase().includes(needle)
+      || p.handles.some(h => h.toLowerCase().includes(needle))
+      || (p.category || '').toLowerCase().includes(needle));
+  }, [people, q]);
+
+  const tierTally = useMemo(() => {
+    const t = { none: 0 };
+    searched.forEach(p => { if (p.tier) t[p.tier] = (t[p.tier] || 0) + 1; else t.none += 1; });
+    return t;
+  }, [searched]);
+  const tierKeys = useMemo(
+    () => Object.keys(tierTally).filter(k => k !== 'none' && tierTally[k] > 0).sort(),
+    [tierTally]);
+
+  const shown = useMemo(() => {
+    const list = !tier ? searched
+      : searched.filter(p => (tier === 'none' ? !p.tier : p.tier === tier));
+    if (!sort) return list;
+
+    const get = {
+      name:     p => p.name.toLowerCase(),
+      contact:  p => p.contact || '',
+      handle:   p => (p.handles[0] || '').toLowerCase(),
+      category: p => (p.category || '').toLowerCase(),
+      first:    p => p.first || '',          // YYYY-MM-DD sorts as text
+      rate:     p => p.rate || 0,
+      l30:      p => p.l30 || 0,
+      hiredBy:  p => (p.hiredBy || '').toLowerCase(),
+    }[sort.key];
+    if (!get) return list;
+
+    /* Blanks always sink to the bottom · a column sorted "highest first"
+       that opens with a screen of dashes is useless either way. */
+    const isBlank = v => v === '' || v === 0 || v == null;
+    return [...list].sort((a, b) => {
+      const A = get(a), B = get(b);
+      if (isBlank(A) !== isBlank(B)) return isBlank(A) ? 1 : -1;
+      const c = typeof A === 'number' ? A - B : String(A).localeCompare(String(B));
+      return sort.dir === 'desc' ? -c : c;
+    });
+  }, [searched, tier, sort]);
+
+  /* Numbers and dates are most useful biggest-first, text A-Z · so each
+     column starts on the direction people actually want, and a second
+     click flips it. */
+  const NUMERIC = ['first', 'rate', 'l30'];
+  const clickSort = (key) => setSort(prev => (
+    prev && prev.key === key
+      ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+      : { key, dir: NUMERIC.includes(key) ? 'desc' : 'asc' }
+  ));
+
+  const allSelected = shown.length > 0 && shown.every(p => sel.has(p.key));
+  const toggle = (k) => setSel(prev => {
+    const nx = new Set(prev);
+    if (nx.has(k)) nx.delete(k); else nx.add(k);
+    return nx;
+  });
+  const toggleAll = () => setSel(prev => {
+    const nx = new Set(prev);
+    if (allSelected) shown.forEach(p => nx.delete(p.key));
+    else shown.forEach(p => nx.add(p.key));
+    return nx;
+  });
+
+  /* Selection drives both actions · with nothing ticked they act on
+     everything currently listed, which is what a "download this list"
+     button is expected to do. */
+  const target = sel.size > 0 ? shown.filter(p => sel.has(p.key)) : shown;
+
+  function copyUsernames() {
+    if (!canExport()) return;
+    const txt = target.map(p => (p.handles[0] ? '@' + p.handles[0] : '')).filter(Boolean).join('\n');
+    if (!txt) return;
+    navigator.clipboard?.writeText(txt).then(() => {
+      setCopied(true); setTimeout(() => setCopied(false), 1600);
+    });
+  }
+  function exportCsv() {
+    if (!canExport()) return;
+    if (!target.length) return;
+    const esc = v => {
+      const t = String(v == null ? '' : v);
+      return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+    };
+    const head = ['Name', 'Username', 'Contact', 'Email', 'Category', 'Tier', 'Onboarded', 'Rate per video', 'L30 GMV', 'Hired By', 'Collabs'];
+    const lines = [head.join(',')];
+    target.forEach(p => lines.push([
+      p.name, p.handles[0] ? '@' + p.handles[0] : '', p.contact, p.email,
+      p.category, p.tier, p.first, p.rate || '', Math.round(p.l30) || '',
+      p.hiredBy, p.deals,
+    ].map(esc).join(',')));
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'wurx-unique-creators-' + new Date().toISOString().slice(0, 10) + '-' + target.length + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }
+
+  const GRID = '40px 46px 1.3fr 0.95fr 1.05fr 0.9fr 0.9fr 0.62fr 0.75fr 0.62fr';
+
+  return (
+    <div className="pc-uc-root" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="pc-uc-box">
+        <div className="pc-uc-top">
+          <div className="pc-uc-ttl">
+            <span>Unique Creators</span>
+            <b>{people.length}</b>
+          </div>
+          <div className="pc-uc-sub">One row per person · a creator working several brands is counted once</div>
+          <button className="pc-uc-x" onClick={onClose} title="Close">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+          </button>
+        </div>
+
+        <div className="pc-uc-tools">
+          <div className="pc-uc-toolrow">
+            <span className="pc-uc-searchwrap">
+              <svg className="pc-uc-sicon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.7" y2="16.7" /></svg>
+              <input className="pc-uc-search" value={q} onChange={e => setQ(e.target.value)}
+                placeholder="Search name, @handle or category…" />
+              {q && <button className="pc-uc-clear" onClick={() => setQ('')} title="Clear search">✕</button>}
+            </span>
+            <span className="pc-uc-count">
+              <b>{shown.length}</b> shown{sel.size > 0 && <em> · {sel.size} selected</em>}
+            </span>
+          </div>
+
+          <div className="pc-uc-toolrow">
+            <span className="pc-uc-flabel">EUKA tier</span>
+            <div className="pc-uc-seg">
+              <button className={'pc-uc-segbtn' + (!tier ? ' on' : '')} onClick={() => setTier(null)}>
+                All<b>{searched.length}</b>
+              </button>
+              {tierKeys.map(t => (
+                <button key={t} className={'pc-uc-segbtn t-' + t.toLowerCase() + (tier === t ? ' on' : '')}
+                  onClick={() => setTier(tier === t ? null : t)}>
+                  {t}<b>{tierTally[t]}</b>
+                </button>
+              ))}
+              {tierTally.none > 0 && (
+                <button className={'pc-uc-segbtn' + (tier === 'none' ? ' on' : '')}
+                  onClick={() => setTier(tier === 'none' ? null : 'none')}
+                  title="No matching EUKA creator profile">
+                  Unmatched<b>{tierTally.none}</b>
+                </button>
+              )}
+            </div>
+            {(tier || sort) && (
+              <button className="pc-uc-reset" onClick={() => { setTier(null); setSort(null); }}>Reset</button>
+            )}
+          </div>
+        </div>
+
+        <div className="pc-uc-scroll">
+          <div className="pc-uc-head" style={{ gridTemplateColumns: GRID }}>
+            <div><input type="checkbox" checked={allSelected} onChange={toggleAll} /></div>
+            <div>#</div>
+            <Th k="name"     sort={sort} on={clickSort}>Name</Th>
+            <Th k="contact"  sort={sort} on={clickSort}>Contact</Th>
+            <Th k="handle"   sort={sort} on={clickSort}>TikTok</Th>
+            <Th k="category" sort={sort} on={clickSort}>Category</Th>
+            <Th k="first"    sort={sort} on={clickSort} title="First time this creator was onboarded">Onboarded</Th>
+            <Th k="rate"     sort={sort} on={clickSort} title="Rate from their most recent deal">Rate/Vid</Th>
+            <Th k="l30"      sort={sort} on={clickSort}>L30 GMV</Th>
+            <Th k="hiredBy"  sort={sort} on={clickSort}>Hired By</Th>
+          </div>
+          {shown.length === 0 ? (
+            <div className="pc-uc-empty">
+              <div className="pc-uc-emptyt">No creators here</div>
+              <div className="pc-uc-emptys">
+                {tier ? 'Nobody in this tier' + (q ? ' matches that search' : '') : 'Nothing matches that search'}
+              </div>
+            </div>
+          ) : shown.map((p, i) => (
+            <div key={p.key} className={'pc-uc-row' + (sel.has(p.key) ? ' on' : '')}
+              style={{ gridTemplateColumns: GRID }} onClick={() => toggle(p.key)}>
+              <div onClick={e => e.stopPropagation()}>
+                <input type="checkbox" checked={sel.has(p.key)} onChange={() => toggle(p.key)} />
+              </div>
+              <div className="pc-uc-n">{i + 1}</div>
+              <div className="pc-uc-name">
+                <CreatorFace handle={p.handles[0]} name={p.name} size={26} />
+                <span className="pc-uc-nm">{p.name}</span>
+                {p.tier && <span className={'pc-tierbadge ' + String(p.tier).toLowerCase()}>{p.tier}</span>}
+              </div>
+              <div className="pc-uc-mut"><span className="pc-uc-txt">{p.contact || '-'}</span></div>
+              <div>
+                {p.handles[0]
+                  ? <a className="pc-handle" href={tiktokUrl(p.handles[0])} target="_blank" rel="noreferrer"
+                    onClick={e => e.stopPropagation()}>@{p.handles[0]}
+                    {p.handles.length > 1 && <span className="pc-more"> +{p.handles.length - 1}</span>}
+                  </a>
+                  : <span className="pc-handle">-</span>}
+              </div>
+              <div className="pc-uc-mut pc-uc-cat"><span className="pc-uc-txt">{p.category || '-'}</span></div>
+              <div className="pc-uc-mut"><span className="pc-uc-txt"><HireDate d={p.first} /></span></div>
+              <div>{p.rate > 0 ? <span className="pc-money">{fmt$Round(p.rate)}</span> : <span className="pc-handle">-</span>}</div>
+              <div>{p.l30 > 0 ? <span className="pc-metric pc-metric-gmv">{fmt$Exact(Math.round(p.l30))}</span> : <span className="pc-handle">-</span>}</div>
+              <div><HiredByTag who={p.hiredBy} /></div>
+            </div>
+          ))}
+        </div>
+
+        <div className="pc-uc-foot">
+          <span className="pc-uc-footlab">
+            {sel.size > 0 ? sel.size + ' selected' : shown.length + ' creators'}
+          </span>
+          {canExport() && <>
+          <button className="pc-uc-btn" onClick={copyUsernames}>
+            {copied ? 'Copied' : 'Copy usernames'}
+          </button>
+          <button className="pc-uc-btn primary" onClick={exportCsv}>Download CSV</button>
+          </>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function KpiPill({ label, value, onClick, title }) {
+  const Tag = onClick ? 'button' : 'span';
+  return (
+    <Tag
+      onClick={onClick}
+      title={title}
+      className={onClick ? 'pc-kpipill-btn' : undefined}
+      style={{
       display: 'inline-flex', alignItems: 'center', gap: 10,
       height: 36, padding: '0 6px 0 16px', borderRadius: 999,
       background: 'var(--pc-card)', border: '1px solid var(--pc-divider)',
       boxShadow: 'var(--pc-shadow)',
       fontSize: 13, fontWeight: 700, letterSpacing: '-0.1px', color: 'var(--pc-text)',
+      fontFamily: 'inherit', cursor: onClick ? 'pointer' : 'default',
     }}>
       {label}
       <span style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         minWidth: 28, height: 26, padding: '0 10px', borderRadius: 999,
-        background: 'linear-gradient(135deg,#4A3A28 0%,#2A2118 100%)', color: '#F5E9D6',
+        /* WURX-ADDED · the number wears text ink. Muted ink on this warning-soft
+           chip measures 4.47:1 at 12.5px, three hundredths under AA — and a
+           count is the one thing on the pill somebody actually reads. */
+        background: 'var(--wx-warning-soft)', color: 'var(--wx-text)',
         fontSize: 12.5, fontWeight: 800, fontVariantNumeric: 'tabular-nums',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12)',
       }}>{value}</span>
-    </span>
+    </Tag>
   );
 }
 
 const cellCenter = { display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0 };
 const cellEllipsis = { maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
 
-function CreatorsTabRow({ c, idx, selected, euka, onToggle, onOpen, onSetStatus }) {
+function CreatorsTabRow({ c, idx, selected, euka, deals, dealsMonth, onToggle, onOpen, onSetStatus }) {
+  const god = useGod();
   const amount = parseDealAmount(c.deal);
   const videoCount = parseDealVideos(c.deal);
   const ratePerVid = videoCount > 0 ? amount / videoCount : 0;
@@ -5706,22 +8898,30 @@ function CreatorsTabRow({ c, idx, selected, euka, onToggle, onOpen, onSetStatus 
   const url = c.tiktok_account ? tiktokUrl(c.tiktok_account) : null;
   const handle2 = c.tiktok_account_2 ? tiktokHandle(c.tiktok_account_2) : '';
   const url2 = c.tiktok_account_2 ? tiktokUrl(c.tiktok_account_2) : null;
-  const contact = c.whatsapp_number || c.email || '';
+  /* formatted at render time, so records saved before this looked right too */
+  const contact = c.whatsapp_number ? fmtPhone(c.whatsapp_number) : (c.email || '');
   const tier = creatorTier(c, euka);
+  /* WURX-ADDED · followers, from the same EUKA profile the brand page prints
+     under a handle. It arrives with the L30 sweep, so it fills in a moment
+     after the table paints, exactly as the tier and L30 columns do. */
+  const wxF = wxFollowersOf(euka, wxAdsHook().storedFollowers, [c.tiktok_account, c.tiktok_account_2]);
+  const wxFollowers = wxF.n;
+  /* WURX-END */
   return (
-    <div className={`pc-cv-row ${selected ? 'sel' : ''}`} onClick={onOpen} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') onOpen(); }} style={{ gridTemplateColumns: '34px 50px 1.15fr 0.88fr 0.9fr 0.8fr 0.85fr 0.7fr 0.82fr 0.55fr 0.72fr 1fr 0.7fr' }}>
+    <div className={`pc-cv-row ${selected ? 'sel' : ''}`} onClick={onOpen} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') onOpen(); }} style={{ gridTemplateColumns: colTemplate(god) }}>
       <div className="pc-cv-check" onClick={e => e.stopPropagation()} style={cellCenter}>
-        <input type="checkbox" checked={selected} onChange={onToggle} style={{ width: 16, height: 16, cursor: 'pointer' }} />
+        {canSelectRows() && <input type="checkbox" checked={selected} onChange={onToggle} style={{ width: 16, height: 16, cursor: 'pointer' }} />}
       </div>
-      <div className="pc-cell" data-label="#" style={cellCenter}><span className="pc-idx">#{idx}</span></div>
-      <div className="pc-cell" data-label="Name" style={{ display: 'flex', alignItems: 'center' }}>
+      <div className="pc-cell" data-label="#" style={{ ...cellCenter, ...colStyle("#", god) }}><span className="pc-idx">#{idx}</span></div>
+      <div className="pc-cell" data-label="Name" style={{ ...colStyle("Name", god),  display: 'flex', alignItems: 'center', gap: 8 }}>
+        {/* WURX-ADDED */}<span className="pc-facewrap"><CreatorFace handle={handle || handle2} name={c.name} size={26} /><DealsBadge n={deals} month={dealsMonth} /></span>{/* WURX-END */}
         <span className="pc-cname" style={{ ...cellEllipsis, flex: 1, minWidth: 0 }}>{c.name || '-'}</span>
-        {tier && <span className={`pc-tierbadge ${String(tier).toLowerCase()}`} title={`EUKA creator tier ${tier}`} style={{ flexShrink: 0, marginLeft: 6 }}>{tier}</span>}
+        {tier && <span className={`pc-tierbadge ${String(tier).toLowerCase()}`} title={`EUKA creator tier ${tier}`} style={{ flexShrink: 0 }}>{tier}</span>}
       </div>
-      <div className="pc-cell" data-label="Contact" style={{ ...cellCenter, fontSize: 12.5, color: 'var(--pc-text-2)', overflow: 'hidden' }}>
+      <div className="pc-cell" data-label="Contact" style={{ ...colStyle("Contact", god),  ...cellCenter, fontSize: 12.5, color: 'var(--pc-text-2)', overflow: 'hidden' }}>
         <span style={cellEllipsis}>{contact || <span className="pc-handle">-</span>}</span>
       </div>
-      <div className="pc-cell" data-label="TikTok" style={cellCenter}>
+      <div className="pc-cell" data-label="TikTok" style={{ ...cellCenter, ...colStyle("TikTok", god) }}>
         {handle
           ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
               <a className="pc-handle" href={url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--pc-accent)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis' }}>{handle}</a>
@@ -5731,25 +8931,32 @@ function CreatorsTabRow({ c, idx, selected, euka, onToggle, onOpen, onSetStatus 
             </span>
           : <span className="pc-handle">-</span>}
       </div>
-      <div className="pc-cell" data-label="Category" style={cellCenter}>{c.category ? <span className="pc-cat" title={c.category}>{c.category}</span> : <span className="pc-handle">-</span>}</div>
-      <div className="pc-cell" data-label="Brand" style={{ ...cellCenter, fontWeight: 600 }}>{c.brand || <span className="pc-handle">-</span>}</div>
-      <div className="pc-cell" data-label="Onboarded" style={{ ...cellCenter, fontSize: 12.5, color: 'var(--pc-text-2)' }}>{formatHireDateShort(c.hiring_date)}</div>
-      <div className="pc-cell" data-label="Deal" style={cellCenter}>
+      {/* WURX-ADDED · Followers */}
+      <div className="pc-cell pc-num" data-label="Followers" style={{ ...cellCenter, ...colStyle("Followers", god) }}>
+        {wxFollowers > 0
+          ? <span className="pc-metric" title={`${wxFollowers.toLocaleString()} TikTok followers · ${wxF.source === 'shop' ? 'EUKA shop data, live' : 'looked up by handle in EUKA market intelligence'}`} data-source={wxF.source}>{kNum(wxFollowers)}</span>
+          : <span className="pc-handle">{euka ? '-' : '…'}</span>}
+      </div>
+      {/* WURX-END */}
+      <div className="pc-cell" data-label="Category" style={{ ...cellCenter, ...colStyle("Category", god) }}>{c.category ? <span className="pc-cat" title={c.category}>{c.category}</span> : <span className="pc-handle">-</span>}</div>
+      <div className="pc-cell" data-label="Brand" style={{ ...colStyle("Brand", god),  ...cellCenter, fontWeight: 600 }}>{c.brand || <span className="pc-handle">-</span>}</div>
+      <div className="pc-cell" data-label="Onboarded" style={{ ...colStyle("Onboarded", god),  ...cellCenter, fontSize: 12.5, color: 'var(--pc-text-2)' }}><HireDate d={c.hiring_date} /></div>
+      <div className="pc-cell" data-label="Deal" style={{ ...cellCenter, ...colStyle("Deal", god) }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
-          {amount > 0 ? <span className="pc-money">{fmt$(amount)}</span> : <span className="pc-handle">-</span>}
+          {amount > 0 ? <span className="pc-money">{fmt$Round(amount)}</span> : <span className="pc-handle">-</span>}
           {videoCount > 0 && (
             <span style={{ display: 'inline-flex', alignItems: 'center', height: 18, padding: '0 6px', borderRadius: 999, background: 'var(--pc-accent-light)', color: 'var(--pc-accent)', fontSize: 10.5, fontWeight: 800, letterSpacing: '0.02em', fontVariantNumeric: 'tabular-nums' }}>{videoCount}v</span>
           )}
         </span>
       </div>
-      <div className="pc-cell" data-label="Rate/Vid" style={cellCenter}>{ratePerVid > 0 ? <span className="pc-money">{fmt$(ratePerVid)}</span> : <span className="pc-handle">-</span>}</div>
-      <div className="pc-cell" data-label="L30 GMV" style={cellCenter}>
+      <div className="pc-cell" data-label="Rate/Vid" style={{ ...cellCenter, ...colStyle("Rate/Vid", god) }}>{ratePerVid > 0 ? <span className="pc-money">{fmt$Round(ratePerVid)}</span> : <span className="pc-handle">-</span>}</div>
+      <div className="pc-cell" data-label="L30 GMV" style={{ ...cellCenter, ...colStyle("L30 GMV", god) }}>
         <EukaL30Cell euka={euka} c={c} handles={[c.tiktok_account, c.tiktok_account_2]} />
       </div>
-      <div className="pc-cell" data-label="Status" style={cellCenter} onClick={e => e.stopPropagation()}>
+      <div className="pc-cell" data-label="Status" style={{ ...cellCenter, ...colStyle("Status", god) }} onClick={e => e.stopPropagation()}>
         <WurxStatusDropdown c={c} onChange={(patch) => onSetStatus(c.id, patch)} />
       </div>
-      <div className="pc-cell" data-label="Hired By" style={cellCenter}>
+      <div className="pc-cell" data-label="Hired By" style={{ ...cellCenter, ...colStyle("Hired By", god) }}>
         {c.hired_by ? (() => {
           const col = hiredByPalette(c.hired_by);
           return (
@@ -5768,6 +8975,183 @@ function CreatorsTabRow({ c, idx, selected, euka, onToggle, onOpen, onSetStatus 
       </div>
     </div>
   );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Performance tab · presentation pieces
+   Label → big number → movement chip, the shape an analytics report is
+   read in: what it is, how big, which way it is going.
+   ════════════════════════════════════════════════════════════════ */
+
+function PfDelta({ pct, invert }) {
+  if (pct == null || !isFinite(pct)) return null;
+  const up = pct >= 0;
+  /* On ad spend a rise is not automatically good, so the arrow still
+     points up but the colour stays neutral. */
+  const tone = invert ? 'flat' : (up ? 'up' : 'down');
+  return (
+    <span className={'pf-delta ' + tone}>
+      {up ? '↑' : '↓'} {up ? '+' : ''}{pct}%
+    </span>
+  );
+}
+
+function PfKpi({ label, value, sub, delta, invert, accent }) {
+  return (
+    <div className="pf-kpi" style={accent ? { '--pf-accent': accent } : undefined}>
+      <div className="pf-kpi-l">{label}</div>
+      <div className="pf-kpi-v">{value}</div>
+      <div className="pf-kpi-f">
+        <PfDelta pct={delta} invert={invert} />
+        {sub && <span className="pf-kpi-s">{sub}</span>}
+      </div>
+    </div>
+  );
+}
+
+/* GMV as a line over ad spend as bars · the two numbers only mean
+   something next to each other, which a single combined chart shows and
+   two separate ones do not. */
+function PfTrend({ series }) {
+  const W = 760, H = 250;
+  const P = { l: 56, r: 58, t: 30, b: 34 };
+  const iw = W - P.l - P.r, ih = H - P.t - P.b;
+  if (!series.length) {
+    return <div className="pf-card pf-chart"><div className="pf-empty">No month data recorded yet</div></div>;
+  }
+  const maxG = Math.max(...series.map(s => s.gmv), 1);
+  const maxA = Math.max(...series.map(s => s.ad), 1);
+  const yG = v => P.t + ih - (v / maxG) * ih;
+  const barW = Math.min(42, (iw / Math.max(series.length, 1)) * 0.5);
+  /* Inset the plot so the first and last bar cannot sit under the axis
+     figures printed in the gutters on either side. */
+  const inset = barW / 2 + 10;
+  const span = Math.max(iw - inset * 2, 1);
+  const x = i => P.l + inset + (series.length === 1 ? span / 2 : (i * span) / (series.length - 1));
+
+  const pts = series.map((s, i) => [x(i), yG(s.gmv)]);
+  const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  const area = line + ` L${pts[pts.length - 1][0].toFixed(1)} ${(P.t + ih).toFixed(1)} L${pts[0][0].toFixed(1)} ${(P.t + ih).toFixed(1)} Z`;
+  const last = series.length - 1;
+
+  return (
+    <div className="pf-card pf-chart">
+      <div className="pf-card-top">
+        <span className="pf-card-t">GMV &amp; Ad spend · last {series.length} months</span>
+        <span className="pf-legend">
+          <i className="pf-lg bar" />Ad spend
+          <i className="pf-lg line" />GMV
+          <i className="pf-lg now" />Latest
+        </span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="pf-svg" preserveAspectRatio="xMidYMid meet">
+        {[0, 0.25, 0.5, 0.75, 1].map(f => (
+          <g key={f}>
+            <line x1={P.l} x2={P.l + iw} y1={P.t + ih * f} y2={P.t + ih * f} className="pf-grid" />
+            <text x={P.l - 10} y={P.t + ih * f + 4} className="pf-ax" textAnchor="end">
+              {fmt$Compact(maxG * (1 - f))}
+            </text>
+            <text x={P.l + iw + 10} y={P.t + ih * f + 4} className="pf-ax ad" textAnchor="start">
+              {fmt$Compact(maxA * (1 - f))}
+            </text>
+          </g>
+        ))}
+        {series.map((s, i) => {
+          const h = (s.ad / maxA) * ih;
+          return <rect key={s.mk} x={x(i) - barW / 2} y={P.t + ih - h} width={barW}
+            height={Math.max(h, s.ad > 0 ? 2 : 0)} rx="4" className="pf-bar" />;
+        })}
+        <path d={area} className="pf-area" />
+        <path d={line} className="pf-line" />
+        {series.map((s, i) => (
+          <g key={s.mk}>
+            <circle cx={x(i)} cy={yG(s.gmv)} r={i === last ? 6 : 4}
+              className={'pf-dot' + (i === last ? ' now' : '')} />
+            {(i === last || i === 0 || s.gmv === maxG) && (
+              <text x={x(i)} y={yG(s.gmv) - 13} className="pf-pt" textAnchor="middle">
+                {fmt$Compact(s.gmv)}
+              </text>
+            )}
+          </g>
+        ))}
+        {series.map((s, i) => (
+          <text key={s.mk} x={x(i)} y={H - 12} className="pf-ax" textAnchor="middle">
+            {monthShortLabel(s.mk)}
+          </text>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+/* ROAS as a dial · "is a dollar of ads coming back as more than a dollar"
+   is a pass/fail question, and a dial answers it faster than a figure. */
+function PfGauge({ roas, gmv, ad }) {
+  const MAX = 5;
+  const v = roas == null ? 0 : Math.max(0, Math.min(MAX, roas));
+  const R = 78, CX = 100, CY = 100, SW = 17;
+  const pol = (deg) => {
+    const r = (Math.PI / 180) * deg;
+    return [CX + R * Math.cos(r), CY + R * Math.sin(r)];
+  };
+  const arc = (from, to) => {
+    const [x1, y1] = pol(from), [x2, y2] = pol(to);
+    return `M${x1.toFixed(1)} ${y1.toFixed(1)} A${R} ${R} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+  };
+  const end = 180 + (v / MAX) * 180;
+  const band = roas == null ? 'none' : roas >= 2 ? 'great' : roas >= 1 ? 'ok' : 'bad';
+  const verdict = roas == null ? 'no ad spend recorded'
+    : roas >= 2 ? 'strong return'
+      : roas >= 1 ? 'above break-even'
+        : 'below break-even';
+
+  return (
+    <div className="pf-card pf-gauge">
+      <div className="pf-card-top"><span className="pf-card-t">Return on ad spend</span></div>
+      <svg viewBox="0 0 200 132" className="pf-gsvg">
+        <path d={arc(180, 360)} className="pf-gtrack" strokeWidth={SW} />
+        {roas != null && <path d={arc(180, end)} className={'pf-gfill ' + band} strokeWidth={SW} />}
+        <text x={CX} y={CY - 6} className="pf-gnum" textAnchor="middle">
+          {roas != null ? roas.toFixed(2) + '×' : '-'}
+        </text>
+        <text x={CX} y={CY + 14} className="pf-gsub" textAnchor="middle">{verdict}</text>
+        <text x={CX - R} y={CY + 22} className="pf-ax" textAnchor="middle">0</text>
+        <text x={CX + R} y={CY + 22} className="pf-ax" textAnchor="middle">{MAX}</text>
+      </svg>
+      <div className="pf-gfoot">
+        <span><b>{fmt$Compact(gmv)}</b> GMV</span>
+        <span className="pf-gsep" />
+        <span><b>{fmt$Compact(ad)}</b> ad spend</span>
+      </div>
+    </div>
+  );
+}
+
+function PfSection({ n, title, sub, right }) {
+  return (
+    <div className="pf-sec">
+      <div className="pf-sec-l">
+        <span className="pf-sec-n">{n}</span>
+        <div>
+          <h3 className="pf-sec-t">{title}</h3>
+          {sub && <div className="pf-sec-s">{sub}</div>}
+        </div>
+      </div>
+      {right}
+    </div>
+  );
+}
+
+/* $1,672.14 → "$1.7K" · axis and dial labels have no room for full figures */
+function fmt$Compact(n) {
+  const v = Math.round(Number(n) || 0);
+  if (Math.abs(v) >= 1000000) return '$' + (v / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (Math.abs(v) >= 1000) return '$' + (v / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return '$' + v;
+}
+function monthShortLabel(mk) {
+  const [y, m] = String(mk).split('-');
+  return (MONTHS[parseInt(m, 10) - 1] || m) + ' ' + String(y).slice(2);
 }
 
 /* ════════ PERFORMANCE TAB ════════
@@ -5794,7 +9178,7 @@ function PerformanceTab({ creators, allCreators, allTime, month, onUpdateCreator
   const brands = useMemo(() => {
     const map = {};
     const ensure = (b) => {
-      if (!map[b]) map[b] = { brand: b, gmv: 0, ad: 0, l30: 0, names: new Set(), videosDelivered: 0, lastActive: '' };
+      if (!map[b]) map[b] = { brand: b, gmv: 0, ad: 0, l30: 0, names: new Set(), l30seen: new Set(), videosDelivered: 0, lastActive: '', months: {} };
       return map[b];
     };
     const touch = (row, mk) => { if (mk && mk > row.lastActive) row.lastActive = mk; };
@@ -5806,9 +9190,14 @@ function PerformanceTab({ creators, allCreators, allTime, month, onUpdateCreator
       const row = ensure(b);
       row.gmv += sumMonthly(c, 'gmv');
       row.ad  += sumMonthly(c, 'adSpent');
-      row.l30 += Number((c.monthly || {}).l30) || 0;
       const k = creatorDedupKey(c);
       if (k) row.names.add(k);
+      /* L30 is a property of the PERSON, and the nightly sync stores it under
+         monthly.euka. Reading monthly.l30 (which nothing writes) was why the
+         tile sat at $0, and adding it per deal row would count a creator
+         working four brands four times. */
+      const l30v = Number(((c.monthly || {}).euka || {}).l30) || Number((c.monthly || {}).l30) || 0;
+      if (l30v > 0 && k && !row.l30seen.has(k)) { row.l30seen.add(k); row.l30 += l30v; }
       /* Most recent month this brand actually did something · a month cell
          carrying money, or a creator hired that month. Drives active vs
          inactive below so a brand that stopped months ago drops out. */
@@ -5819,7 +9208,11 @@ function PerformanceTab({ creators, allCreators, allTime, month, onUpdateCreator
         const mk = kk.split('@')[0];
         if (!/^\d{4}-\d{2}$/.test(mk)) return;
         const cell = m[kk] || {};
-        if ((Number(cell.gmv) || 0) > 0 || (Number(cell.adSpent) || 0) > 0) touch(row, mk);
+        const g = Number(cell.gmv) || 0, ad = Number(cell.adSpent) || 0;
+        if (g > 0 || ad > 0) touch(row, mk);
+        if (!row.months[mk]) row.months[mk] = { gmv: 0, ad: 0 };
+        row.months[mk].gmv += g;
+        row.months[mk].ad += ad;
       });
     });
 
@@ -5832,9 +9225,48 @@ function PerformanceTab({ creators, allCreators, allTime, month, onUpdateCreator
       row.videosDelivered += deliveredVideoCount(c);
     });
 
-    return Object.values(map)
-      .map(b => ({ ...b, uniqueCreators: b.names.size, roas: b.ad > 0 ? b.gmv / b.ad : null }));
+    return Object.values(map).map(b => {
+      /* Movement is measured between the last two months this brand actually
+         earned in · comparing against a silent month would read as a total
+         collapse when really nothing was recorded. */
+      const earned = Object.keys(b.months).filter(k => b.months[k].gmv > 0).sort();
+      let delta = null;
+      if (earned.length >= 2) {
+        const cur = b.months[earned[earned.length - 1]].gmv;
+        const prev = b.months[earned[earned.length - 2]].gmv;
+        if (prev > 0) delta = Math.round(((cur - prev) / prev) * 100);
+      }
+      return { ...b, uniqueCreators: b.names.size, roas: b.ad > 0 ? b.gmv / b.ad : null, delta };
+    });
   }, [source, creators]);
+
+  /* One row per month across every brand · drives the trend chart and the
+     movement chips on the tiles. */
+  const series = useMemo(() => {
+    const m = {};
+    brands.forEach(b => Object.entries(b.months).forEach(([mk, v]) => {
+      if (!m[mk]) m[mk] = { gmv: 0, ad: 0 };
+      m[mk].gmv += v.gmv; m[mk].ad += v.ad;
+    }));
+    return Object.keys(m).sort()
+      .filter(k => m[k].gmv > 0 || m[k].ad > 0)
+      .slice(-8)
+      .map(k => ({ mk: k, ...m[k] }));
+  }, [brands]);
+
+  const mom = useMemo(() => {
+    if (series.length < 2) return {};
+    const cur = series[series.length - 1], prev = series[series.length - 2];
+    const pc = (a, b) => (b > 0 ? Math.round(((a - b) / b) * 100) : null);
+    const cr = cur.ad > 0 ? cur.gmv / cur.ad : null;
+    const pr = prev.ad > 0 ? prev.gmv / prev.ad : null;
+    return {
+      gmv: pc(cur.gmv, prev.gmv),
+      ad: pc(cur.ad, prev.ad),
+      roas: (cr != null && pr != null && pr > 0) ? Math.round(((cr - pr) / pr) * 100) : null,
+      label: monthShortLabel(prev.mk),
+    };
+  }, [series]);
 
   /* Brands live in the month-scoped `creators` pool exactly when the Brands
      tab shows them for the month being viewed · that keeps the two tabs in
@@ -5861,7 +9293,7 @@ function PerformanceTab({ creators, allCreators, allTime, month, onUpdateCreator
      Otherwise: active if the Brands tab lists it for this month, or it did
      something within the last 2 months · anything quieter than that drops
      to inactive instead of sitting in Active forever on old all-time data. */
-  const BRAND_STALE_MONTHS = 2;
+  const BRAND_STALE_MONTHS = Number(godGet().staleMonths) || 2;
   const isActive = (b) => liveThisMonth.has(b.brand) || monthsBack(b.lastActive) <= BRAND_STALE_MONTHS;
   const sectionOf = (b) => brandState[b.brand] || (isActive(b) ? 'active' : 'inactive');
 
@@ -5971,14 +9403,34 @@ function PerformanceTab({ creators, allCreators, allTime, month, onUpdateCreator
    Drop zone + brand rows. Each row is draggable; section header is the drop target. */
 function PerfBrandSection({ title, zone, tone, list, dragging, isOver, onEnter, onLeave, onDrop, onDragStart, onDragEnd, onOpen }) {
   const isDraggingSomething = !!dragging;
-  const accent  = tone === 'green' ? '#16A34A' : '#71717A';
-  const pillBg  = tone === 'green' ? '#E7F6EC' : '#F1F1F4';
-  const pillFg  = tone === 'green' ? '#0E7A3A' : '#3F3F46';
-  const countBg = tone === 'green' ? '#0E7A3A' : '#52525B';
+  /*
+   * TOKENS, not hex. These five were the last hardcoded light-mode colours on
+   * the Performance tab and they are why the count badges failed contrast in
+   * dark mode at 1.10:1 and 1.11:1 — the pill stayed `#F1F1F4` on a near-black
+   * page while its ink flipped to near-white.
+   *
+   * "Active" is a real state, so it keeps the success family; "Inactive" is not
+   * a warning, it is simply the quieter of the two, so it takes neutrals.
+   *
+   * `ringOver` used to build its faint ring by concatenating an alpha suffix
+   * onto the hex (`${accent}55`), which a `var()` cannot do. `color-mix`
+   * gives the same 33% without needing to know the colour.
+   */
+  const accent  = tone === 'green' ? 'var(--wx-success)' : 'var(--wx-border-interactive)';
+  const pillBg  = tone === 'green' ? 'var(--wx-success-soft)' : 'var(--wx-surface-2)';
+  /* WURX-ADDED · the pill's label wears text ink, not the tone.
+     Green-on-green-soft measures 4.31:1 at 12px, under the 4.5 AA asks of text
+     that size. The dot and the fill already say "active"; the word does not
+     have to be the same hue as the thing behind it to mean it. */
+  const pillFg  = 'var(--wx-text)';
+  const countBg = tone === 'green' ? 'var(--wx-success)' : 'var(--wx-text-faint)';
   const ringOver = isOver
-    ? { boxShadow: `0 0 0 2px ${accent}`, background: tone === 'green' ? 'rgba(22,163,74,0.04)' : 'rgba(113,113,122,0.05)' }
+    ? {
+        boxShadow: `0 0 0 2px ${accent}`,
+        background: `color-mix(in srgb, ${accent} 5%, transparent)`,
+      }
     : isDraggingSomething
-      ? { boxShadow: `0 0 0 1px ${accent}55` }
+      ? { boxShadow: `0 0 0 1px color-mix(in srgb, ${accent} 33%, transparent)` }
       : {};
 
   return (
@@ -5991,13 +9443,13 @@ function PerfBrandSection({ title, zone, tone, list, dragging, isOver, onEnter, 
         fontSize: 11.5, fontWeight: 800, letterSpacing: 1,
         marginBottom: 10,
         boxShadow: '0 1px 2px rgba(15,23,42,0.05), 0 4px 12px -6px rgba(15,23,42,0.10)',
-        border: '1px solid rgba(48,39,28,0.05)',
+        border: '1px solid color-mix(in srgb, var(--wx-warning) 5%, transparent)',
       }}>
         <span style={{ width: 7, height: 7, borderRadius: 99, background: accent, display: 'inline-block', boxShadow: `0 0 0 3px ${accent}22` }} />
         <span style={{ textTransform: 'uppercase' }}>{title}</span>
         <span style={{
           minWidth: 22, height: 20, padding: '0 7px', borderRadius: 999,
-          background: countBg, color: '#fff',
+          background: 'var(--wx-accent-soft)', color: 'var(--wx-text)',
           fontSize: 10.5, fontWeight: 800, letterSpacing: 0,
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         }}>{list.length}</span>
@@ -6351,7 +9803,25 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
   };
 
   // Grid template · v186 · compact widths (Creators-tab density)
-  const FROZEN_W = 392;    // 40 rank + name (flex) + 158 handle · long names were clipping
+  /* WURX-ADJUSTED · the sheet's geometry, which was cutting the numbers off.
+     A month column holds two figures side by side. At 170px each half had 53px
+     of room for a number that measures 61px, so every five-figure GMV in the
+     table was truncated mid-digit ("10,160.0", "12,077.1").
+
+     184px gives each half 78px, and the figure it is sized against is
+     123,456.78 (70px) rather than anything currently in the database. One
+     creator, one good month, is six figures on TikTok Shop, and the day that
+     arrives is exactly the day nobody would notice the number had started
+     printing short. `pnpm verify:collab-controls` asserts on that reference
+     string, because a version of it that measured only today's values passed
+     on the broken geometry.
+
+     The identity column pays for part of that: 392 was a quarter of the screen
+     for a name and a handle. 344 fits every name on the roster and every pixel
+     saved is a month you do not have to scroll to. */
+  const FROZEN_W = 344;    // 38 rank + name (flex) + 140 handle
+  const MONTH_W = 184;
+  const SUM = { videos: 82, gmv: 152, ad: 152, del: 58 };
   /* Removing someone here takes them out of THIS matrix only — the creator
      record, their deals and their videos stay untouched everywhere else.
      Stored as monthly.perf = { hidden: true }; every monthly reader sums
@@ -6379,20 +9849,63 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
     if (w && c) c.scrollLeft = w.scrollLeft;
   }, []);
 
+  /* WURX-ADDED · open on the months that have numbers in them.
+     The sheet is wider than any screen and it was opening at scrollLeft 0,
+     which is the OLDEST month — for a brand with ten months of history that is
+     a screen of padlocks and empty cells, and you have to scroll to find out
+     the table has anything in it at all. It opens at the newest month now,
+     which is also the one the header focuses by default, and only on the way
+     in: after that the scroll position is the reader's. */
+  const openedAt = useRef('');
+  useEffect(() => {
+    const w = wrapRef.current;
+    const key = `${brand?.brand || ''}::${months.length}`;
+    if (!w || !months.length || openedAt.current === key) return;
+    /* Land with the NEWEST MONTH against the right edge, measured off the
+       header rather than computed from the column widths — scrolling all the
+       way to the end instead would push every month off-screen behind the
+       three total columns, which is how the first version of this got it
+       wrong on a 1024px laptop. */
+    const tiles = w.querySelectorAll('.pc-mx-head .pc-mxh-tile:not(.mx-sum)');
+    const last = tiles[tiles.length - 1];
+    if (!last) return;
+    openedAt.current = key;
+    w.scrollLeft += last.getBoundingClientRect().right - w.getBoundingClientRect().right;
+  }, [brand?.brand, months.length]);
+
   useEffect(() => {
     let raf = 0;
+    /* WURX-ADJUSTED · the mirror has to know WHICH BOX IS SCROLLING.
+       Their app scrolls the window, so a window listener and a pin line of y=0
+       were right there. Embedded in ours the page never scrolls: the fence
+       does, and a scroll event on an element does not reach a window listener.
+       So on a sheet of a hundred creators the month labels went off the top
+       after twelve rows and never came back, which on a grid whose columns are
+       ONLY distinguished by their heading is the same class of problem as the
+       cut-off numbers. Pin against the scroller's own top edge, not zero,
+       because ours starts below the top bar. */
+    const scrollerOf = (el) => {
+      let n = el?.parentElement;
+      while (n && n !== document.body) {
+        if (/(auto|scroll)/.test(getComputedStyle(n).overflowY)) return n;
+        n = n.parentElement;
+      }
+      return null;
+    };
+    const scroller = scrollerOf(wrapRef.current);
     const measure = () => {
       raf = 0;
       const w = wrapRef.current, h = headRef.current;
       if (!w || !h) return;
       const wr = w.getBoundingClientRect();
       const hh = h.offsetHeight;
-      // pin while the header is above the viewport but the table is still in it
-      const on = wr.top < 0 && wr.bottom > hh + 40;
+      const line = scroller ? Math.max(0, Math.round(scroller.getBoundingClientRect().top)) : 0;
+      // pin while the header is above the scroll line but the table is still in view
+      const on = wr.top < line && wr.bottom > line + hh + 40;
       setStick(prev => {
         if (!on) return prev === null ? prev : null;
-        const next = { left: Math.round(wr.left), width: Math.round(wr.width), height: hh };
-        if (prev && prev.left === next.left && prev.width === next.width && prev.height === next.height) return prev;
+        const next = { left: Math.round(wr.left), width: Math.round(wr.width), height: hh, top: line };
+        if (prev && prev.left === next.left && prev.width === next.width && prev.height === next.height && prev.top === next.top) return prev;
         return next;
       });
       if (cloneRef.current && w) cloneRef.current.scrollLeft = w.scrollLeft;
@@ -6401,12 +9914,27 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
     measure();
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
+    if (scroller) scroller.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
+      if (scroller) scroller.removeEventListener('scroll', onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
   }, [months.length, canon.length]);
+
+  /* WURX-ADDED · line the mirror up the moment it appears.
+     The sync lives inside the measure loop, which runs BEFORE the clone is
+     rendered — on the pass that decides to show it, `cloneRef.current` is still
+     null. Nothing corrected it afterwards unless you happened to scroll
+     sideways, so the pinned header opened at column zero over a body scrolled
+     to July: five months of figures under five wrong month labels, which is a
+     worse failure than having no pinned header at all. */
+  useEffect(() => {
+    if (stick && cloneRef.current && wrapRef.current) {
+      cloneRef.current.scrollLeft = wrapRef.current.scrollLeft;
+    }
+  }, [stick]);
 
   /* ── Focus month ──────────────────────────────────────────────────
      The newest column is the one being filled in (August shows July as
@@ -6435,7 +9963,13 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
     }
     setHiding(false);
   };
-  const tpl = `${FROZEN_W}px ${months.map(() => '170px').join(' ')} 82px 152px 152px${canDelete ? ' 58px' : ''}`;
+  /* The identity column's width is a CUSTOM PROPERTY, not a number, so a media
+     query can narrow it on a small laptop without this component measuring the
+     viewport. 344px of name and handle beside 176px months leaves a 1024px
+     screen showing two months; below that breakpoint the handle goes and the
+     column halves. See "the identity column" in wurxbase-overrides.css. */
+  const tpl = `var(--mx-frozen-w, ${FROZEN_W}px) ${months.map(() => `${MONTH_W}px`).join(' ')} ${SUM.videos}px ${SUM.gmv}px ${SUM.ad}px${canDelete ? ` ${SUM.del}px` : ''}`;
+  const rowStyle = { gridTemplateColumns: tpl };
 
   return (
     <>
@@ -6505,7 +10039,7 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
                   stickyHead below). The page owns vertical scrolling, so CSS
                   sticky can't reach the viewport from inside the horizontal
                   scroll container — the clone is what makes it pin. */}
-              <div className="pc-mx-row pc-mx-head" ref={headRef} style={{ gridTemplateColumns: tpl }}>
+              <div className="pc-mx-row pc-mx-head" ref={headRef} style={rowStyle}>
                 <div className="pc-mx-frozen pc-mx-frozen-head">
                   <div className="pc-mxh pc-mxh-c">#</div>
                   <div className="pc-mxh">Creator</div>
@@ -6530,20 +10064,20 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
                     </button>
                   );
                 })}
-                <div className="pc-mxh-tile pc-mxh-tile-total">
+                <div className="pc-mxh-tile pc-mxh-tile-total mx-sum mx-sum-videos">
                   <span className="pc-mxh-tile-name">Videos</span>
                   <span className="pc-mxh-tile-tval">{grandVideos}</span>
                 </div>
-                <div className="pc-mxh-tile pc-mxh-tile-total">
+                <div className="pc-mxh-tile pc-mxh-tile-total mx-sum mx-sum-gmv">
                   <span className="pc-mxh-tile-name">Total GMV for us</span>
                   <span className="pc-mxh-tile-tval pc-mxh-tile-tval-gmv">{fmt$(grandGmv)}</span>
                 </div>
-                <div className="pc-mxh-tile pc-mxh-tile-total">
+                <div className="pc-mxh-tile pc-mxh-tile-total mx-sum mx-sum-ad">
                   <span className="pc-mxh-tile-name">Total Ad for us</span>
                   <span className="pc-mxh-tile-tval pc-mxh-tile-tval-ad">{fmt$(grandAd)}</span>
                 </div>
                 {canDelete && (
-                  <div className="pc-mxh-tile pc-mxh-tile-total">
+                  <div className="pc-mxh-tile pc-mxh-tile-total mx-sum mx-sum-del">
                     <span className="pc-mxh-tile-name">Del</span>
                   </div>
                 )}
@@ -6561,7 +10095,7 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
                     const hiredMonth = monthKey(rec.hiring_date);
                     const isCohort = !!hiredMonth && hiredMonth === focusMonth;
                     return (
-                      <div className={'pc-mx-row' + (isCohort ? ' mx-cohort' : '')} key={rowKey} style={{ gridTemplateColumns: tpl }}>
+                      <div className={'pc-mx-row' + (isCohort ? ' mx-cohort' : '')} key={rowKey} style={rowStyle}>
                         <div className="pc-mx-frozen">
                           <div className="pc-mx-rank">{String(i + 1).padStart(2, '0')}</div>
                           <div className="pc-mx-name" title={rec.name}>
@@ -6572,7 +10106,11 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
                               </span>
                             )}
                           </div>
-                          <div className="pc-mx-user">{handle ? tiktokHandle(handle) : '–'}</div>
+                          {/* WURX-ADDED · title, because a long handle ellipses
+                              in this column and the name above it already has
+                              one · nothing on this sheet should be unreadable
+                              with no way to recover it */}
+                          <div className="pc-mx-user" title={handle ? tiktokHandle(handle) : ''}>{handle ? tiktokHandle(handle) : '–'}</div>
                         </div>
                         {months.map((m, mi) => {
                           const cell = readCellForHandle(rec, m, handle);
@@ -6605,15 +10143,16 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
                             </div>
                           );
                         })}
-                        <div className="pc-mx-num strong">{isFirstRowOfCreator ? (videosByName[nk] || 0) : <span style={{ color: 'var(--pc-text-3)' }}>·</span>}</div>
-                        <div className="pc-mx-num strong pc-green">{fmt$(sumMonthlyForHandle(rec, handle, 'gmv'))}</div>
-                        <div className="pc-mx-num strong pc-red">{fmt$(sumMonthlyForHandle(rec, handle, 'adSpent'))}</div>
+                        {/* mx-sum-* · these three pin to the right edge, see sumVars */}
+                        <div className="pc-mx-num strong mx-sum mx-sum-videos">{isFirstRowOfCreator ? (videosByName[nk] || 0) : <span style={{ color: 'var(--pc-text-3)' }}>·</span>}</div>
+                        <div className="pc-mx-num strong pc-green mx-sum mx-sum-gmv">{fmt$(sumMonthlyForHandle(rec, handle, 'gmv'))}</div>
+                        <div className="pc-mx-num strong pc-red mx-sum mx-sum-ad">{fmt$(sumMonthlyForHandle(rec, handle, 'adSpent'))}</div>
                         {canDelete && (
                           /* every row gets the button · a creator with two
                              handles renders two rows off the SAME record, so
                              gating it to the first row just looked like the
                              button was randomly missing */
-                          <div className="pc-mx-num">
+                          <div className="pc-mx-num mx-sum mx-sum-del">
                             <button
                               className="pc-actbtn danger"
                               title={`Remove ${rec.name || 'this creator'} from this performance table (Asad only)`}
@@ -6637,11 +10176,11 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
         <div
           className="pc-mx-stickhead"
           ref={cloneRef}
-          style={{ left: stick.left, width: stick.width, height: stick.height }}
+          style={{ left: stick.left, width: stick.width, height: stick.height, top: stick.top }}
           aria-hidden
         >
           <div className="pc-mx">
-            <div className="pc-mx-row pc-mx-head" style={{ gridTemplateColumns: tpl }}>
+            <div className="pc-mx-row pc-mx-head" style={rowStyle}>
               <div className="pc-mx-frozen pc-mx-frozen-head">
                 <div className="pc-mxh pc-mxh-c">#</div>
                 <div className="pc-mxh">Creator</div>
@@ -6650,34 +10189,38 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
               {months.map((m, mi) => {
                 const t = monthTotals[m] || { gmv: 0, ad: 0 };
                 return (
-                  <div key={m} className={'pc-mxh-tile' + (monthBand(mi) ? ' mx-band' : '')}>
+                  <div key={m} className={'pc-mxh-tile' + (monthBand(mi) ? ' mx-band' : '') + (m === focusMonth ? ' mx-focus' : '')}>
                     <span className="pc-mxh-tile-name">{monthShort(m)}</span>
-                    <span className="pc-mxh-tile-gmv">{fmt$(t.gmv)}</span>
-                    <span className="pc-mxh-tile-ad">{fmt$(t.ad)}</span>
+                    {/* WURX-ADJUSTED · blank, not "$0", for a month with nothing
+                        in it — matching the real header this mirrors. It printed
+                        $0 twice per empty month, so the pinned copy did not look
+                        like the thing it is a copy of. */}
+                    <span className="pc-mxh-tile-gmv">{t.gmv > 0 ? fmt$(t.gmv) : ''}</span>
+                    <span className="pc-mxh-tile-ad">{t.ad > 0 ? fmt$(t.ad) : ''}</span>
                   </div>
                 );
               })}
-              <div className="pc-mxh-tile pc-mxh-tile-total">
+              <div className="pc-mxh-tile pc-mxh-tile-total mx-sum mx-sum-videos">
                 <span className="pc-mxh-tile-name">Videos</span>
                 <span className="pc-mxh-tile-tval">{grandVideos}</span>
               </div>
-              <div className="pc-mxh-tile pc-mxh-tile-total">
+              <div className="pc-mxh-tile pc-mxh-tile-total mx-sum mx-sum-gmv">
                 <span className="pc-mxh-tile-name">Total GMV for us</span>
                 <span className="pc-mxh-tile-tval pc-mxh-tile-tval-gmv">{fmt$(grandGmv)}</span>
               </div>
-              <div className="pc-mxh-tile pc-mxh-tile-total">
+              <div className="pc-mxh-tile pc-mxh-tile-total mx-sum mx-sum-ad">
                 <span className="pc-mxh-tile-name">Total Ad for us</span>
                 <span className="pc-mxh-tile-tval pc-mxh-tile-tval-ad">{fmt$(grandAd)}</span>
               </div>
               {canDelete && (
-                <div className="pc-mxh-tile pc-mxh-tile-total">
+                <div className="pc-mxh-tile pc-mxh-tile-total mx-sum mx-sum-del">
                   <span className="pc-mxh-tile-name">Del</span>
                 </div>
               )}
             </div>
           </div>
         </div>,
-        document.body
+        wxPortalHost()
       )}
 
       {confirmHide && createPortal(
@@ -6704,7 +10247,7 @@ function BrandMatrix({ brand, creators, allCreators, onBack, onUpdateCreator, on
             </div>
           </div>
         </div>,
-        document.body
+        wxPortalHost()
       )}
     </>
   );
@@ -6958,15 +10501,15 @@ function PresenceAvatars({ currentUser }) {
   const shown = peers.slice(0, 3);
   const extra = peers.length - shown.length;
   return (
-    <div title={peers.map(p => p.display).join(', ') + ' viewing now'} style={{ display: 'inline-flex', alignItems: 'center', marginRight: 4 }}>
+    <div className="pc-presence" title={peers.map(p => p.display).join(', ') + ' viewing now'} style={{ display: 'inline-flex', alignItems: 'center', marginRight: 4 }}>
       {shown.map((p, i) => {
         const grad = gradFor(p.display || '?');
         return (
           <span key={p.id} style={{
             width: 26, height: 26, borderRadius: 999,
-            background: grad, color: '#fff',
+            background: grad, color: 'var(--wx-text-muted)',
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            border: '2px solid #30271C',
+            border: '2px solid var(--wx-warning)',
             marginLeft: i === 0 ? 0 : -8,
             position: 'relative',
             zIndex: shown.length - i,
@@ -6979,7 +10522,7 @@ function PresenceAvatars({ currentUser }) {
             <span aria-hidden style={{
               position: 'absolute', right: -1, bottom: -1,
               width: 8, height: 8, borderRadius: 999,
-              background: '#22C55E', border: '2px solid #30271C',
+              background: 'var(--wx-success-soft)', border: '2px solid var(--wx-warning)',
             }} />
           </span>
         );
@@ -6987,10 +10530,10 @@ function PresenceAvatars({ currentUser }) {
       {extra > 0 && (
         <span style={{
           minWidth: 26, height: 26, padding: '0 6px',
-          borderRadius: 999, background: 'rgba(245,233,214,0.18)',
-          color: '#F5E9D6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          borderRadius: 999, background: 'color-mix(in srgb, var(--wx-surface-2) 18%, transparent)',
+          color: 'var(--wx-text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 11, fontWeight: 800,
-          border: '2px solid #30271C',
+          border: '2px solid var(--wx-warning)',
           marginLeft: -8, position: 'relative', lineHeight: 1,
         }}>+{extra}</span>
       )}

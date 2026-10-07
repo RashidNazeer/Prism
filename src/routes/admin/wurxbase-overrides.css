@@ -27,19 +27,53 @@
  * surface, never the accent. The accent belongs on its focus ring, where it
  * says "this one is yours" without swallowing the text.
  */
-.wurxbase-root input:not([type='checkbox']):not([type='radio']):not([type='range']),
+/*
+ * THE CREATIVE ANGLE FIGURES ARE EXEMPT, added 2026-08-28 after an audit found
+ * this rule was the cause of two separate complaints rather than the cure.
+ *
+ * Those cells are not fields in the sense this rule means. Each is a small
+ * transparent number inside a bordered pill, and the pill IS the well; painting
+ * the input as well produced the box-inside-a-box Rashid pointed at, and the
+ * fix further down this file could not undo it because this rule is
+ * !important and comes first.
+ *
+ * The ink matters more. Their sheet colours those inputs by KIND — a typed
+ * figure, a figure fetched from EUKA, and a locked one all read differently,
+ * and `color: var(--wx-text) !important` flattened all six of those
+ * declarations into one. That is not a theme bug, it is deleting information.
+ * Every one of their per-kind colours is a --wx-* token and flips correctly, so
+ * the honest fix is to stop overriding them.
+ *
+ * THE PERFORMANCE MATRIX IS EXEMPT FOR THE SAME REASON, added 2026-09-01. Its
+ * cells are `.pc-mx-input`, and they are not fields either: they are the
+ * figures in a sheet, green for GMV and red for ad spend, and this rule was
+ * painting all of them near-black and giving each one a grey fill inside an
+ * already-ruled cell. Rashid photographed the result — a wall of identical
+ * boxes where you cannot tell revenue from spend. Same lesson as the angles:
+ * a rule aimed at FORMS should stop at the edge of a TABLE.
+ */
+.wurxbase-root input:not([type='checkbox']):not([type='radio']):not([type='range']):not(.cx-cell input):not(.pc-mx-input):not(.pc-chrome-input):not(.pc-monthpicker input),
 .wurxbase-root textarea,
 .wurxbase-root select {
   /* !important, and only here. Their sheet carries a later, more specific
      rule that paints fields with the accent, and an override file layered over
      vendored CSS is the one place forcing it is the honest answer rather than a
      specificity arms race. */
-  background: var(--wx-surface-2) !important;
+  /* --wx-field, not --wx-surface-2. On the white card of light mode a
+     surface-2 fill is a grey band behind the text, which reads as an
+     already-made selection — Rashid, 2026-09-03: "it seems like someone has
+     already selected the text". The edge does the work instead; dark keeps a
+     well because a border alone on near-black does not read. */
+  background: var(--wx-field) !important;
   color: var(--wx-text) !important;
-  border-color: var(--wx-border);
+  border-color: var(--wx-border-strong) !important;
+  /* No forced border WIDTH: their own fields already carry one and this only
+     needs to recolour it. Forcing it would put an edge on the borderless
+     chrome inputs that are meant to sit flush inside a pill. */
+  box-shadow: none;
 }
 
-.wurxbase-root input:not([type='checkbox']):not([type='radio']):focus,
+.wurxbase-root input:not([type='checkbox']):not([type='radio']):not(.cx-cell input):not(.pc-mx-input):not(.pc-chrome-input):not(.pc-monthpicker input):focus,
 .wurxbase-root textarea:focus,
 .wurxbase-root select:focus {
   background: var(--wx-surface-1) !important;
@@ -235,4 +269,2497 @@
 .wurxbase-root.wurxbase-root .greet-banner {
   top: auto;
   bottom: 28px;
+}
+
+/* ============================================================================
+   Ad Spend and ROI, the two columns we added to their creators table and the
+   pair of figures we added to their videos modal.
+
+   DOUBLE CLASS ON THE FENCE, and this is not a typo. Their stylesheet lives in
+   the lazily loaded vendor chunk and is injected AFTER this file, so a rule
+   written `.wurxbase-root .x` ties on specificity and loses to anything of
+   theirs. `.wurxbase-root.wurxbase-root` wins by specificity instead of by
+   order. The symptom when you forget: the rule is provably in the built CSS
+   and has no effect on the screen.
+   ============================================================================ */
+
+.wurxbase-root.wurxbase-root .wx-collab-figure {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The figures under each row in the videos modal. Their own `.vm-row-fields`
+   sits directly above, so this reads as part of the same row rather than as a
+   separate block. */
+.wurxbase-root.wurxbase-root .wx-collab-vm-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--wx-border);
+}
+
+.wurxbase-root.wurxbase-root .wx-collab-vm-figures span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.wurxbase-root.wurxbase-root .wx-collab-vm-figures em {
+  font-style: normal;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--wx-text-faint);
+}
+
+.wurxbase-root.wurxbase-root .wx-collab-vm-figures b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--wx-text);
+}
+
+/* ============================================================================
+   Two extra columns on the brand's creator list, and two on the per-video
+   table inside an expanded creator.
+
+   THE GRID TEMPLATE HAS TO BE RESTATED, not extended: these are CSS grids with
+   an explicit column list, so adding a header div without adding a track makes
+   every later cell land in the wrong column. Their originals are in
+   paidcollabs.css; each list below is theirs plus two.
+
+   DOUBLE CLASS ON THE FENCE. Their stylesheet is injected after this file from
+   the lazily loaded vendor chunk, so `.wurxbase-root .x` ties on specificity
+   and loses. The symptom of forgetting: the rule is provably in the built CSS
+   and has no effect on the screen.
+   ============================================================================ */
+
+/* # · Completed · Creator · Deal · Videos · Total views · New video GMV ·
+   L30 GMV · Items sold · AD SPEND · ROI · Contract · Status · Actions
+
+   THE LAST THREE CARRY CONTROLS, SO THEY GET FLOORS, NOT JUST FRACTIONS.
+
+   A fraction can be squeezed below the width of what is in it, and a `.pc-cell`
+   centres its content with overflow visible — so a starved track does not clip,
+   it SPILLS, symmetrically, into the gutters on both sides. Two spilling cells
+   meet in the middle and the one that is `position: relative` wins the hit
+   test regardless of DOM order.
+
+   That is not hypothetical. Adding Ad spend and ROI here took this from their
+   twelve tracks to fourteen without widening anything, and at 1500px Status
+   ended up with 115px for a 151px pill while Contract had 50px for 62px of
+   icon buttons. The pencil — relative, because it hosts a status dot — painted
+   on top of the pill and swallowed the click. Measured: 11% of the pill was
+   dead at 1500px, 26% at 1280, 53% at 1024. Asad could not mark anyone paid
+   because he was clicking the pill and hitting the contract editor.
+
+   Actions was starved too, at 27px for two 28px buttons, which the first pass
+   at this missed. Floors are minimum content widths measured in the browser,
+   with a little air. Below 768px their stylesheet drops the grid entirely and
+   these become cards, so the floors are inert there. */
+.wurxbase-root.wurxbase-root .pc-ct-head,
+.wurxbase-root.wurxbase-root .pc-ct-row {
+  grid-template-columns:
+    0.36fr 0.74fr 1.42fr .66fr .46fr .5fr .64fr .6fr .46fr .58fr .42fr
+    minmax(74px, .44fr) minmax(164px, 1.02fr) minmax(72px, .66fr);
+}
+
+/* Video · Views · Engagement · GMV · Items sold · AD SPEND · ROI · Spark code */
+.wurxbase-root.wurxbase-root .pc-vxp-head,
+.wurxbase-root.wurxbase-root .pc-vxp-row {
+  grid-template-columns: 1.7fr .62fr .62fr .55fr .5fr .62fr .44fr .95fr;
+}
+
+.wurxbase-root.wurxbase-root .wx-collab-figure {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ============================================================================
+   THE REPORTING SCREEN, which nobody had looked at.
+
+   Found on 2026-08-27 by extending the contrast guard to all six tabs; it had
+   been checking four and reporting a pass. Most of what follows is NOT new —
+   `.rp-say`, `.bx-foot` and the aura are byte-identical to what shipped in
+   August — it simply had never been opened.
+
+   DOUBLE CLASS ON THE FENCE. Their stylesheet is injected after this file from
+   the lazily loaded vendor chunk, so a single `.wurxbase-root` ties on
+   specificity and loses.
+   ============================================================================ */
+
+/* The hero board. v382 fills it with a colour, and mapping their hue onto our
+   accent made a brown slab with muted text on it: 13 elements at 1.06:1. A
+   surface is the right ground for a card whose job is to carry text, and every
+   text token then works on it without argument. */
+.wurxbase-root.wurxbase-root .rp-board {
+  background: var(--wx-surface-2) !important;
+  border: 1px solid var(--wx-border);
+}
+
+/* Their soft corner glow. Mapped to a solid surface token it became an opaque
+   disc sitting on top of the chart. Restored to what it was for: a hint. */
+.wurxbase-root.wurxbase-root .rp-board-aura {
+  background: radial-gradient(circle, var(--wx-accent-soft) 0%, transparent 70%) !important;
+  opacity: 0.6;
+}
+
+.wurxbase-root.wurxbase-root .rp-say {
+  color: var(--wx-text) !important;
+}
+.wurxbase-root.wurxbase-root .rp-say-sub,
+.wurxbase-root.wurxbase-root .rep-legend {
+  color: var(--wx-text-muted) !important;
+}
+
+/* The totals row. It was built on --wx-info, which is a SEMANTIC token meaning
+   "information" and has no business being a brand fill — it put a blue band
+   across a gold product. Accent, and the ink that is designed to sit on it. */
+.wurxbase-root.wurxbase-root .bx-foot {
+  background: linear-gradient(150deg, var(--wx-accent-active), var(--wx-accent)) !important;
+  color: var(--wx-on-accent) !important;
+}
+.wurxbase-root.wurxbase-root .bx-foot span,
+.wurxbase-root.wurxbase-root .bx-foot b {
+  color: var(--wx-on-accent) !important;
+}
+
+/* Chart axis labels are SVG text, so they take `fill`, not `color`, and a
+   sweep that only knows about `color` leaves them white on a white ground.
+
+   `.rep-chart` used to be listed here too and matched nothing anywhere in the
+   vendored tree — a fix somebody believed was in place. Removed 2026-08-28. */
+.wurxbase-root.wurxbase-root .rp-board-chart text {
+  fill: var(--wx-text-muted) !important;
+}
+
+/* Small count pills that inherited a faint ink onto a strong fill. */
+.wurxbase-root.wurxbase-root .pc-kpipill-btn span {
+  color: var(--wx-text) !important;
+}
+
+/* SVG chart labels take `fill`, never `color`. The earlier selector guessed the
+   wrong container; this one is anchored on the board itself. */
+.wurxbase-root.wurxbase-root .rp-board svg text,
+.wurxbase-root.wurxbase-root .rp-board svg tspan {
+  fill: var(--wx-text-muted) !important;
+}
+
+/* `small` inside the totals row did not inherit the ink set on its parent. */
+.wurxbase-root.wurxbase-root .bx-foot small,
+.wurxbase-root.wurxbase-root .bx-foot em,
+.wurxbase-root.wurxbase-root .bx-foot i {
+  color: var(--wx-on-accent) !important;
+}
+
+/* The KPI count pills keep a dark fill in BOTH themes, so their ink has to be
+   pinned rather than left to inherit a theme-dependent text token. */
+.wurxbase-root.wurxbase-root .pc-kpipill-btn,
+.wurxbase-root.wurxbase-root .pc-kpipill-btn span,
+.wurxbase-root.wurxbase-root .pc-kpipill-btn b {
+  background-color: var(--wx-surface-2) !important;
+  color: var(--wx-text) !important;
+}
+
+/* ── Creative angle testing: the video rows ──────────────────────────────────
+   Their row hover is `rgba(20,17,12,.014)`, a 1.4% wash. That is a reasonable
+   nudge on their white sheet and it is nothing at all on ours in either theme,
+   so a row that is meant to answer the pointer answers it invisibly. The
+   vendoring pipeline now carries their alpha through faithfully, which is
+   correct and which is exactly why this has to be said here instead: it is a
+   design decision about OUR surfaces, not a mapping of theirs.
+
+   A row hover is `--wx-surface-2`, the same as every other hoverable row in
+   the product. */
+.wurxbase-root.wurxbase-root .cx-tr:hover {
+  background: var(--wx-surface-2);
+}
+
+/* The typed figures. Theirs are white boxes with a 10% neutral hairline, which
+   reskins to a warm hairline on our ground — right, but at 38px tall and
+   13px radius they read as three heavy pills per row rather than as numbers.
+   Quieter box, and the ROW is what separates one video from the next. */
+.wurxbase-root.wurxbase-root .cx-cell {
+  height: 34px;
+  border-radius: 8px;
+  background: var(--wx-surface-1);
+  border-color: var(--wx-border);
+}
+.wurxbase-root.wurxbase-root .cx-cell.auto {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--wx-border) 60%, transparent);
+}
+.wurxbase-root.wurxbase-root .cx-cell:focus-within {
+  border-color: var(--wx-border-interactive);
+  background: var(--wx-surface-2);
+}
+/* A figure is a number: tabular, so columns of them line up down the table.
+   The field is pinned transparent as well: something in our own stack paints a
+   number input, and the result was a filled block sitting inside the bordered
+   box — a box inside a box, three times per row. */
+.wurxbase-root.wurxbase-root .cx-cell input {
+  font-variant-numeric: tabular-nums;
+  background: transparent;
+  appearance: textfield;
+  -webkit-appearance: textfield;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   WHAT THE THEME AUDIT CONFIRMED, 2026-08-28
+   ---------------------------------------------------------------------------
+   Rashid: *"we need to fix dark and light mode issues there coudl be many but i
+   ust shraed one example run adversarial review or do wharever get fix the
+   issue of dark and light mode for this wurx base"*.
+
+   Six categories were audited and every finding below was put to three agents
+   whose instructions were to REFUTE it; these are the ones at least two of
+   three failed to knock down. Where a verifier corrected the original claim,
+   the CORRECTION is what is implemented — several of the first drafts named the
+   wrong line or the wrong ground.
+
+   THE SHAPE OF ALMOST ALL OF IT: the vendoring pipeline mapped fills and inks
+   as separate declarations that never saw each other, so pairs that were
+   legible together came apart. An ink meant for the gold fill ended up on a
+   plain well; a scrim meant to be black became blue. Nothing here is a new
+   colour choice — each one puts a pair back together.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/*
+  THE "NEW ANGLE" BUTTON, which is what he actually pointed at.
+
+  `background: var(--wx-surface-3); color: var(--wx-on-accent)` — the ink that
+  belongs on GOLD, sitting on a plain well. 1.27:1 in dark, 1.28:1 in light, so
+  the label and the + are equally invisible in both. The giveaway is their own
+  next line: `:hover { background: var(--wx-accent) }`. It was always meant to
+  be an accent button and only the resting state was mis-tokenised, which is why
+  it becomes readable the moment you hover — and never on a tablet.
+
+  It also fronts the empty state, so the first thing a new brand-month shows is
+  an invitation nobody can read.
+*/
+.wurxbase-root.wurxbase-root .cx-new {
+  background: var(--wx-accent);
+  color: var(--wx-on-accent);
+}
+.wurxbase-root.wurxbase-root .cx-new:hover:not(:disabled) {
+  background: var(--wx-accent-hover);
+  color: var(--wx-on-accent);
+}
+
+/*
+  SORTABLE COLUMN HEADERS DISAPPEARED UNDER THE CURSOR, in both themes: the
+  label rests at full-strength ink and the hover swapped it to --wx-on-accent
+  while the fill stayed a ~7% wash. 1.30:1 dark, 1.14:1 light.
+
+  Specificity matters here and the first draft of the fix got it wrong: their
+  winning background rule is scoped through .pc-bt-head, so a rule on
+  .pc-bt-sort:hover alone changes the ink and leaves the wash. This is scoped
+  the same way and doubled on top.
+*/
+.wurxbase-root.wurxbase-root .pc-bt-head .pc-bt-sort:hover {
+  background: var(--wx-surface-2);
+  color: var(--wx-text);
+}
+
+/*
+  MODAL HEADER BANDS ran a gradient from a surface into --wx-info — our
+  informational BLUE — while carrying the ink meant for gold. Gold to gold-dark
+  is what the shape was drawn for.
+*/
+.wurxbase-root.wurxbase-root .bc-top,
+.wurxbase-root.wurxbase-root .gm-top,
+.wurxbase-root.wurxbase-root .gm-rail {
+  background: linear-gradient(140deg, var(--wx-accent-active), var(--wx-accent));
+  color: var(--wx-on-accent);
+}
+
+/* The GOD badge faded from a surface into amber under one flat ink, so half the
+   word vanished into its own background. */
+.wurxbase-root.wurxbase-root .gm-mark {
+  background: var(--wx-accent);
+  color: var(--wx-on-accent);
+}
+
+/*
+  THE CONTRACT EDITOR'S STICKY HEADER faded from opaque to a 12% wash, so the
+  rows it is supposed to cover scrolled through its lower half. A sticky band
+  has to be opaque along its whole height or it is not covering anything.
+*/
+.wurxbase-root.wurxbase-root .pc-cf-head {
+  background: var(--wx-surface-1);
+}
+
+/*
+  RINGS DRAWN AS CUT-OUTS, hardcoded #FFF. On the cream ground that is the gap
+  it was drawn as; on near-black it is a bright white halo around every face in
+  the table. --wx-surface-1 is #ffffff in light — pixel-identical to today — and
+  #1a1714 in dark, so the ring goes back to being a gap in both.
+*/
+.wurxbase-root.wurxbase-root .pc-face {
+  box-shadow:
+    0 0 0 2px var(--wx-surface-1),
+    0 1px 3px rgb(0 0 0 / 0.18);
+}
+.wurxbase-root.wurxbase-root .pc-mark-btn.on {
+  box-shadow:
+    0 0 0 2px var(--wx-surface-1),
+    0 1px 3px rgb(0 0 0 / 0.25);
+}
+/* Same idea, on the selected shot in the video picker. The ring sits on the
+   picker SHEET rather than on the page, so it takes surface-1, not --wx-bg. */
+.wurxbase-root.wurxbase-root .cx-pk-v.on .cx-pk-shot {
+  box-shadow:
+    0 0 0 3px var(--wx-surface-1),
+    0 14px 26px -14px rgb(20 17 12 / 0.55);
+}
+
+/*
+  EVERY FULL-SCREEN SCRIM WAS THE WRONG COLOUR, and my first fix for it was
+  wrong too.
+
+  They were painted with --wx-info, the blue we reserve for saying something
+  informational, so every dialog in Paid Collabs read as an alert. I replaced
+  that with --wx-bg at each one's original alpha — which is right in dark mode
+  and wrong in light, where --wx-bg is near-white and a 56% wash of it WASHES
+  THE PAGE OUT rather than dimming it.
+
+  A scrim is the page dimmed. It is dark in both themes, which makes it the one
+  thing in this palette that does not flip, so it is now its own token —
+  --wx-scrim — rather than something borrowed. See tokens.css.
+
+  The Unique Creators overlay (.pc-uc-root) joins them: it was a 50% GOLD wash
+  over the whole screen, which is what Rashid was looking at when he said "look
+  how does it look like this is very bad". Their original was a 50% dark brown;
+  the vendoring kept the alpha and lost the hue.
+*/
+.wurxbase-root.wurxbase-root .bc-root,
+.wurxbase-root.wurxbase-root .gm-root,
+.wurxbase-root.wurxbase-root .cx-pk-root,
+.wurxbase-root.wurxbase-root .cx-cf-root,
+.wurxbase-root.wurxbase-root .ac-root,
+.wurxbase-root.wurxbase-root .pc-uc-root {
+  background: var(--wx-scrim);
+}
+
+/*
+  EVERY PRIMARY BUTTON WAS THE WARNING COLOUR — caution amber where the brand
+  gold belongs, on the most-clicked control in the product. Their rule is
+  already !important, so this has to be too.
+*/
+.wurxbase-root.wurxbase-root .pc-btn-primary {
+  background: var(--wx-accent) !important;
+  color: var(--wx-on-accent) !important;
+}
+.wurxbase-root.wurxbase-root .pc-btn-primary:hover:not(:disabled) {
+  background: var(--wx-accent-hover) !important;
+  color: var(--wx-on-accent) !important;
+}
+
+
+/*
+  THE UNIQUE CREATORS PANEL, the rest of it.
+
+  Its overlay is handled with the other scrims above. Everything else in the
+  panel had the same amber-for-gold substitution the primary buttons had: the
+  header band, the confirm button and the selected segment of the tier filter
+  all painted `--wx-warning`, which is the colour this product uses to say
+  something needs attention. A list of creators does not.
+*/
+.wurxbase-root.wurxbase-root .pc-uc-top,
+.wurxbase-root.wurxbase-root .pc-uc-btn.primary,
+.wurxbase-root.wurxbase-root .pc-uc-segbtn.on {
+  background: var(--wx-accent);
+  color: var(--wx-on-accent);
+}
+
+/* The line under the panel title sat on that band as faded muted ink, which is
+   a text colour for a surface, not for a gold fill. */
+.wurxbase-root.wurxbase-root .pc-uc-sub {
+  color: color-mix(in srgb, var(--wx-on-accent) 78%, transparent);
+}
+
+/* ------------------------------------------------ ink on tinted surfaces -- */
+/*
+ * FAINT INK IS CALIBRATED AGAINST THE PAGE, NOT AGAINST A TINT.
+ *
+ * `--wx-text-faint` is 5.73:1 on `--wx-bg` and `pnpm check:contrast` proves it
+ * in both themes. It is not 5.73:1 on a warning-soft pill or a toned podium,
+ * because the tint moves the ground: the same ink measures 4.02:1 there. Every
+ * failure below is that one mistake, and all of them are 9.5–11px, where AA
+ * asks for 4.5 and gets no discount for being a label.
+ *
+ * Found on 2026-08-29, when `check-collab-contrast.mjs` stopped applying the
+ * large-text floor of 3.0 to text that is not large. It had been reporting
+ * these as passes with a "below AA" note in the same line.
+ *
+ * THE FIX IS THE SAME EVERY TIME: the ink goes to the primary text token and
+ * the tint keeps carrying the meaning. A count pill is still amber, still
+ * blue, still green; only the digits stop being the same hue as what they sit
+ * on. Colour was doing two jobs and could only do one of them well.
+ */
+.wurxbase-root.wurxbase-root .pc-ct-divider-pending .pc-ct-divider-count,
+.wurxbase-root.wurxbase-root .pc-ct-divider-progress .pc-ct-divider-count {
+  color: var(--wx-text);
+}
+
+/* The leaderboard's own labels: "DEALS", "GMV", "CREATOR", "LEADER". All
+   uppercase 9.5px on a toned card, all faint, all short of 4.5. */
+.wurxbase-root.wurxbase-root .lb-pod-label,
+.wurxbase-root.wurxbase-root .lb-pod-stats i,
+.wurxbase-root.wurxbase-root .lb-listhead {
+  color: var(--wx-text);
+}
+.wurxbase-root.wurxbase-root .lb-pod-lead,
+.wurxbase-root.wurxbase-root .lb-pod-sharetxt {
+  color: var(--wx-text);
+}
+
+/* The winner's own name was the accent at 17px on cream — 4.3:1. The podium,
+   the crown and the LEADER pill already say who won; the name only has to be
+   readable. */
+.wurxbase-root.wurxbase-root .lb-pod-name {
+  color: var(--wx-text);
+}
+
+/* -------------------------------------------- the Performance matrix ------ */
+/*
+ * LOCKED AND BANDED WERE THE SAME PAINT, so the screen read as mostly locked.
+ * `.mx-sealed` (a month closed before this creator joined) and `.mx-band` (the
+ * alternating shade) both resolved to `--wx-accent-soft` with an `--wx-accent`
+ * border, in their stylesheet, byte for byte. On Penetrex that is 720 locked
+ * cells against 450 live ones, all wearing the product's accent and the
+ * heaviest border on the screen.
+ *
+ * That fix — a neutral surface for a sealed cell — was superseded on
+ * 2026-09-01 by THE PERFORMANCE SHEET at the end of this file, which stops
+ * filling the cells at all. It is stated once, there, rather than patched
+ * twice here. This note stays only so the reasoning is not lost with it.
+ */
+
+/* ------------------------------------------- the videos & ad codes panel -- */
+/*
+ * THE URL WAS CUT OFF MID-LINK, which is the one thing this panel exists to
+ * show. Their grid gives the video URL and the ad code one fraction each
+ * (`32px 1fr 1fr 72px 42px`) inside an 880px modal, so the URL field lands at
+ * about 350px for a TikTok link that needs roughly 420px — every row read
+ * `https://www.tiktok.com/@handle/vi` and stopped. Rashid: *"clicking eye icon
+ * shows popup but it still hides the text"*.
+ *
+ * The two columns are not equal work. A URL is long and has to be recognised at
+ * a glance; an ad code is a short token. So the panel gets more width and the
+ * URL takes the larger share of it. `min(1100px, 94vw)` rather than a flat
+ * 1100 so it still fits a laptop, and their own 768px rule below turns the grid
+ * into stacked rows where none of this applies.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-modal {
+  max-width: min(1100px, 94vw);
+}
+
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-row,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-headrow {
+  grid-template-columns: 32px 1.75fr 1fr 72px 42px;
+}
+
+/* ------------------------------------------------ their canvas aliases ---- */
+/*
+ * THE INVISIBLE NOTIFICATION. Their stylesheet keeps a set of legacy aliases —
+ * `--bg`, `--paper`, `--paper-deep` — and the retokenising sweep pointed all
+ * three at `--wx-accent-soft`, a 14% gold wash. A colour cannot say what it is
+ * for, and "the page canvas" read as "a tint".
+ *
+ * Mostly that was invisible, because most surfaces are painted from `--pc-*`.
+ * `.notif-panel` and its header are not: they use `background: var(--bg)`. So
+ * the notification panel was drawn with a 14% translucent gold over whatever
+ * was behind it — a box you cannot read, which is exactly what Rashid
+ * photographed while trying to find out why marking a creator paid was
+ * failing. The message was there the whole time; the panel had no background.
+ *
+ * A canvas is a canvas. `--bg` is the page, `--paper` a card, `--paper-deep`
+ * the nested one.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root {
+  --bg: var(--wx-bg);
+  --paper: var(--wx-surface-1);
+  --paper-deep: var(--wx-surface-2);
+}
+
+/*
+ * AND THE PAGE ITSELF, which is the same bug one level up and was visible on
+ * every screen with short content. Rashid photographed Discovery: the top
+ * 375px the page colour, the 473px below it a tan block.
+ *
+ * THREE of their rules paint the container, all `!important`, all at one class
+ * of specificity, so the last one in the file wins:
+ *
+ *   App.css:3047  "App surface — subtle teal tint"     var(--f7-surface)
+ *   App.css:3165  "Canvas: warm cream everywhere"      var(--mc-cream)
+ *   App.css:3730  "Lift body bg so cards stand out"    var(--wx-accent-soft)
+ *
+ * Read the comments: every one of them is a PAGE, and every one was handed a
+ * tint. Upstream, before the retokenising sweep, 3730 was `#F4F5F7` — a
+ * near-white page grey chosen precisely so white cards would lift off it. The
+ * codemod saw a pale colour and called it a tint. Same mistake as `--bg` and
+ * `--paper` above, one level up and across the whole app.
+ *
+ * WHY OUR EXISTING RULE NEVER WON: the one at the top of this file carries no
+ * `!important` at all, so it could not have beaten them from any position in
+ * the cascade. Load order was never the problem.
+ *
+ * IT MUST NAME `.app-root` TOO. That is the element covering the visible area —
+ * `min-height: 100vh`, App.css:23 — and a correction written only for
+ * `.wurxbase-root` leaves the tan block exactly where it is.
+ *
+ * ONLY LIGHT MODE WAS AFFECTED, which is why this survived a contrast pass and
+ * a screenshot review: App.css:3368 already rescues `.app-root` for dark at a
+ * higher specificity. Their file carries 214 dark-only rules and no light-only
+ * rules at all, so light never got the same treatment. Assume any tint bug
+ * found here is light-only until measured otherwise.
+ *
+ * The geometry is NOT part of this. It was tempting to blame `min-height:
+ * 100vh` or our own fixed-height shell, and a counterfactual in a real browser
+ * settled it: remove the 100vh and the band is byte-identical, because
+ * `.wurxbase-shell` is `calc(100dvh - 3.5rem)` by design and is itself painted.
+ * The seam has exactly one cause and it is the colour.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root,
+.wurxbase-root.wurxbase-root.wurxbase-root .app-root {
+  background: var(--wx-bg) !important;
+}
+
+/*
+ * AND THE PANEL ITSELF, painted directly rather than through their aliases.
+ *
+ * Correcting `--bg` above is right, but `theme.css` re-declares the same alias
+ * on a descendant (`.wurxbase-root [data-theme="dark"]`), so what the panel
+ * ends up with depends on where their preference attributes land. A dialog
+ * carrying an error message is not the place to leave that to chance: it was
+ * measuring 3.43:1 with the page showing through it.
+ *
+ * A notification is a raised surface with ordinary ink on it.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .notif-panel,
+.wurxbase-root.wurxbase-root.wurxbase-root .notif-panel-header {
+  background: var(--wx-surface-1) !important;
+  color: var(--wx-text);
+}
+
+.wurxbase-root.wurxbase-root.wurxbase-root .notif-panel-title,
+.wurxbase-root.wurxbase-root.wurxbase-root .notif-panel-count {
+  /* Were the accent on an accent-tinted panel — a heading the same colour as
+     its own background. */
+  color: var(--wx-text) !important;
+}
+
+.wurxbase-root.wurxbase-root.wurxbase-root .notif-panel * {
+  border-color: var(--wx-border);
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE PERFORMANCE SHEET
+   ──────────────────────────────────────────────────────────────────────────
+   Rashid, 2026-09-01, with their app open beside ours: *"numbers are not even
+   properly visible ... this is the paid app so ui should be premium"*.
+
+   Two separate faults, and they compound.
+
+   THE NUMBERS WERE CUT OFF. A month column is 170px holding two figures side
+   by side. Each half came out 77px wide with 12px of padding on each side, so
+   53px of room for a value that measures 61px — every five-figure GMV in the
+   table was truncated mid-digit and read as a smaller number than it is
+   ("10,160.00" printed as "10,160.0"). That is not a cosmetic problem on a
+   screen whose whole job is showing money. The column is now 176px and the
+   padding 9px, which gives each half 69px: enough for 123,456.78.
+
+   IT WAS ALL FILL AND NO STRUCTURE. Nine iterations of their own restyling
+   had accumulated in paidcollabs.css, each adding a layer without removing
+   the last, and the end state painted every single thing: the header a 10%
+   gold wash, the identity column the same gold, every month cell a bordered
+   grey-beige box with a 9px radius and a margin, the banded months gold with
+   a full-strength gold border, the totals gold again, and a solid #8a5f1f
+   border around the lot. On Penetrex that is roughly 1,100 boxes competing
+   with each other, and the actual figures — the only thing on the screen
+   anyone came for — carry no more visual weight than the padlocks.
+
+   A sheet of numbers is structured by RULES AND ALIGNMENT, not by fills. So:
+   the ground is white, the columns are separated by hairlines, one very quiet
+   wash bands alternate months, and the ink does the rest. Everything below
+   removes something.
+
+   This block is deliberately last and deliberately blunt. It is not worth
+   unpicking nine layers inside a 4,400-line vendored file that we re-vendor
+   from upstream; the sheet's presentation is stated once, here.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── the container ── */
+/*
+ * The full-strength accent border made the table look like a warning. A table
+ * is a surface: the quiet border, and the shadow does the lifting.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-matrix-wrap {
+  border: 1px solid var(--wx-border) !important;
+  border-radius: 14px;
+  background: var(--wx-surface-1);
+  box-shadow: var(--wx-shadow-md);
+  /* Months run off the right edge on any laptop. Rashid: "we can have
+     horizontal scrollbar". Make it an obvious, comfortable one rather than a
+     hairline nobody finds. */
+  overflow-x: auto !important;
+  scrollbar-color: var(--wx-border-strong) transparent;
+}
+
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-matrix-wrap::-webkit-scrollbar {
+  height: 12px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-matrix-wrap::-webkit-scrollbar-track {
+  background: var(--wx-surface-2);
+  border-radius: 0 0 13px 13px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-matrix-wrap::-webkit-scrollbar-thumb {
+  background: var(--wx-border-strong);
+  border: 3px solid var(--wx-surface-2);
+  border-radius: 8px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-matrix-wrap::-webkit-scrollbar-thumb:hover {
+  background: var(--wx-text-faint);
+}
+
+/* ── rows ── */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:not(.pc-mx-head) {
+  min-height: 42px;
+  background: var(--wx-surface-1);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:not(.pc-mx-head):hover,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:not(.pc-mx-head):focus-within {
+  background: var(--wx-surface-2) !important;
+  box-shadow: none;
+}
+
+/* ── the month cell ──
+ * Was: a bordered, rounded, margined box with its own fill, per month, per
+ * creator. Now: nothing but the figures, a hairline to its left marking where
+ * the month starts, and — on alternating months — the quietest wash in the
+ * product so ten columns of numbers stay countable across a wide screen.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-left: 1px solid var(--wx-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+/*
+ * The band is written three classes deep on purpose. Their last layer reaches
+ * it as `.pc-mx > .pc-mx-row:not(.pc-mx-head):nth-of-type(2n)
+ * .pc-mx-month-pair.mx-band`, which is seven class-level selectors and
+ * `!important` — so a shorter rule wins on the odd rows and loses on the even
+ * ones, and the band comes out striped in two different golds. This is what
+ * beating it looks like; there is no shorter way to say it.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx.pc-mx .pc-mx-month-pair.pc-mx-month-pair.mx-band,
+.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx.pc-mx > .pc-mx-row:hover .pc-mx-month-pair.mx-band,
+.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx.pc-mx > .pc-mx-row:focus-within .pc-mx-month-pair.mx-band {
+  background: var(--wx-sheet-band) !important;
+}
+
+/*
+ * SEALED MONTHS SHOULD DISAPPEAR. A creator who joined in June has eight
+ * locked months behind them, so on a ten-month sheet most cells are padlocks —
+ * and each one was drawn as a filled, bordered box. The screen read as mostly
+ * locked. A cell you cannot type in is the least important thing in the row.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx.pc-mx .pc-mx-month-pair.pc-mx-month-pair.mx-sealed {
+  background: transparent !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx.pc-mx .pc-mx-month-pair.pc-mx-month-pair.mx-sealed.mx-band {
+  background: var(--wx-sheet-band) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair.mx-sealed .pc-mx-locked {
+  color: var(--wx-border-strong) !important;
+  opacity: 0.75;
+}
+
+/*
+ * An EARLY month — revenue recorded before the deal started — is a real
+ * exception and keeps its marker, but as an underline rather than a fill, so
+ * it reads as an annotation on the number instead of another box.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair.mx-early {
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: inset 0 -2px 0 var(--wx-warning) !important;
+}
+
+/* ── the figures ── */
+/*
+ * GMV green, ad spend red, right-aligned on tabular numerals so the decimal
+ * points line up down the column — which is the whole reason to right-align.
+ * Their own stylesheet set these colours and then lost them under later
+ * layers; a GMV you cannot tell apart from an ad spend at a glance is the
+ * same bug as a GMV you cannot read.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair .pc-mx-input {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0 9px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 12.5px !important;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.1px;
+  text-align: right !important;
+  color: var(--wx-success) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair .pc-mx-input.ad {
+  color: var(--wx-danger) !important;
+  /* the hairline between a month's two halves is lighter than the one between
+     months, so the pair still reads as one cell */
+  border-left: 1px solid var(--wx-sheet-band) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair.mx-early .pc-mx-input {
+  color: var(--wx-warning) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair .pc-mx-input::placeholder {
+  color: var(--wx-text-faint);
+  opacity: 0.55;
+  font-weight: 500;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair .pc-mx-input:hover {
+  background: var(--wx-accent-soft) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair .pc-mx-input:focus {
+  background: var(--wx-surface-1) !important;
+  box-shadow: inset 0 0 0 2px var(--wx-accent) !important;
+  border-radius: 4px !important;
+  position: relative;
+  z-index: 2;
+}
+
+/* ── the identity column ── */
+/*
+ * White, not gold. It is sticky, so once the months scroll it is the only
+ * thing standing between the reader and a wall of numbers: it needs to look
+ * like paper the sheet slides under, which is a shadow's job, not a tint's.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-frozen {
+  background: var(--wx-surface-1) !important;
+  grid-template-columns: 38px 1fr 140px;
+  border-right: 1px solid var(--wx-border) !important;
+  box-shadow: 6px 0 12px -10px rgb(25 21 18 / 0.45);
+  z-index: 20;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:hover .pc-mx-frozen,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:focus-within .pc-mx-frozen {
+  background: var(--wx-surface-2) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-name {
+  color: var(--wx-text) !important;
+  font-weight: 650;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-user {
+  color: var(--wx-text-muted) !important;
+  font-weight: 500;
+}
+/*
+ * The cohort marker is a RULE DOWN THE EDGE and nothing else. It used to be a
+ * green wash across the identity column, and the contrast guard — once it was
+ * taught to open this screen at all — measured the row number at 4.11:1 on it
+ * in dark mode, twenty-three times. The wash was carrying no information the
+ * green edge and the month tag beside the name do not already carry.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row.mx-cohort .pc-mx-frozen,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row.mx-cohort:hover .pc-mx-frozen {
+  box-shadow: inset 3px 0 0 var(--wx-success), 6px 0 12px -10px rgb(25 21 18 / 0.45);
+}
+/*
+ * Their "joined this month" tag keeps its green pill, so its ink takes a fifth
+ * of the text colour to clear AA at 9px — the same correction the status pills
+ * at the top of this file use, and for the same reason.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-newtag {
+  color: color-mix(in srgb, var(--wx-success) 80%, var(--wx-text)) !important;
+}
+
+/*
+ * The brand hero's stat labels — TOTAL GMV, TOTAL AD SPENT, ROAS, VIDEOS — were
+ * `--pc-text-3`, which resolves to the faintest ink we have, at 9.5px on a
+ * tinted card: 4.28:1 in dark. A four-word label above a five-figure number is
+ * the thing that tells you WHICH five-figure number it is.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-pfhero-l {
+  color: var(--wx-text-muted) !important;
+}
+
+/* ── the header ── */
+/*
+ * One band, one weight. The focused month is the single accented thing on the
+ * screen, which is what makes it findable; when every other tile was also
+ * gold, it was not.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row.pc-mx-head,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx-stickhead .pc-mx-row.pc-mx-head {
+  background: var(--wx-surface-2) !important;
+  border-bottom: 1px solid var(--wx-border-strong) !important;
+  min-height: 52px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row.pc-mx-head .pc-mx-frozen,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx-stickhead .pc-mx-frozen {
+  background: var(--wx-surface-2) !important;
+}
+/*
+ * The pinned mirror of the header — the copy that appears once the real one
+ * scrolls out of the fence — wears the same paint as the real one. It was the
+ * gold wash, so scrolling swapped a grey header for a gold one halfway down
+ * the sheet.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx-stickhead {
+  background: var(--wx-surface-2) !important;
+  border-bottom: 1px solid var(--wx-border-strong) !important;
+  box-shadow: var(--wx-shadow-md);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile {
+  margin: 0 !important;
+  padding: 7px 9px !important;
+  border: 0 !important;
+  border-left: 1px solid var(--wx-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  align-items: flex-end;
+  text-align: right;
+}
+/*
+ * THE HEADER IS NOT BANDED, and the focused month is not filled.
+ *
+ * Both were, and both cost contrast where it is least affordable: the header
+ * carries a month's whole GMV and ad spend at 12px and 10.5px, and stacking a
+ * band or an accent wash under them took green to 4.39:1 and red to 4.38:1.
+ * The band exists to help the eye run ACROSS a hundred body rows; the header
+ * has a label in every cell and does not need it, and the focused month is
+ * already the only accent-coloured name on the screen with a 3px rule under
+ * it. Marking one thing twice is what pushed the numbers under the floor.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile.mx-band {
+  background: transparent !important;
+  border-color: var(--wx-border) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile.mx-focus {
+  background: transparent !important;
+  box-shadow: inset 0 -3px 0 var(--wx-accent) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile.mx-focus .pc-mxh-tile-name {
+  color: var(--wx-accent) !important;
+  opacity: 1;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-name {
+  color: var(--wx-text-muted) !important;
+  font-size: 9.5px;
+  letter-spacing: 0.9px;
+  opacity: 1;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-name::before {
+  display: none;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-gmv {
+  color: var(--wx-success) !important;
+  font-size: 12px;
+  font-weight: 700;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-ad {
+  color: var(--wx-danger) !important;
+  font-size: 10.5px;
+  font-weight: 650;
+  opacity: 1;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh {
+  color: var(--wx-text-muted) !important;
+}
+
+/* ── the summary columns ── */
+/*
+ * The three totals sit at the end of the row and SCROLL WITH IT. Pinning them
+ * to the right edge was tried and reverted the same hour: the block is 444px
+ * wide, so between it and the 344px identity column only 422px of the sheet
+ * was ever scrollable — two and a half months on a laptop, against five with
+ * it off. A pin that costs more than it shows is not worth having, and it was
+ * also drawing itself over live figures at every scroll position.
+ *
+ * What is kept from that attempt is the naming. `mx-sum-*` says which column
+ * is which, so nothing here has to count backwards from the end of the row —
+ * and the delete column, which only Asad sees, was exactly what made counting
+ * backwards wrong.
+ *
+ * The specificity is deliberate. Their own later layers reach these cells with
+ * five class selectors and `!important`, so anything shorter loses and the
+ * columns come back wearing gold pills.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row > .pc-mx-num.mx-sum,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row > .pc-mxh-tile.mx-sum {
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--wx-sheet-summary) !important;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+/* the totals side starts here, and says so with one rule rather than a fill */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row > .mx-sum.mx-sum-videos {
+  border-left: 1px solid var(--wx-border-strong) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:hover > .pc-mx-num.mx-sum,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:focus-within > .pc-mx-num.mx-sum {
+  background: var(--wx-surface-2) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row.pc-mx-head > .pc-mxh-tile.mx-sum,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx-stickhead .pc-mxh-tile.mx-sum {
+  background: var(--wx-surface-2) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-num.pc-green { color: var(--wx-success) !important; }
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-num.pc-red { color: var(--wx-danger) !important; }
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-tval { color: var(--wx-text) !important; font-size: 13px; }
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-tval-gmv { color: var(--wx-success) !important; }
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-tval-ad { color: var(--wx-danger) !important; }
+/* the trailing gold washes their later layers added, removed */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:not(.pc-mx-head) > .pc-mx-num:last-child {
+  border-color: transparent;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-foot {
+  background: var(--wx-surface-2) !important;
+}
+
+/* ── narrow screens ──
+ * Below a laptop the sheet keeps scrolling sideways rather than collapsing:
+ * a matrix IS its two axes, and stacking it into cards would destroy the
+ * comparison it exists to make. What changes is that the identity column
+ * shrinks so more than one month is visible beside it.
+ */
+/*
+ * The width is a custom property because the grid template is built in JS and
+ * a media query cannot reach into it. `tpl` in WurxUI.jsx reads
+ * `var(--mx-frozen-w, 344px)` for its first track, so the tiers below are the
+ * only place the identity column's width is decided.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx {
+  --mx-frozen-w: 344px;
+}
+/*
+ * There is no laptop tier between these two, and that was a decision. Narrowing
+ * the column to 288px on a 1024px screen bought two thirds of one extra month
+ * and cost every name its ending — "Erin Coo…", "Christian…". A name you cannot
+ * read is worse than a month you have to scroll to, so the column holds its
+ * width until the screen is genuinely small.
+ */
+@media (max-width: 900px) {
+  /* a tablet · the handle goes entirely, because a name and two months beats a
+     handle and one */
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx {
+    --mx-frozen-w: 196px;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-frozen {
+    grid-template-columns: 30px 1fr 0;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-user,
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh:nth-child(3) {
+    display: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   THE DOWNWARD DELTA ON THE REPORTING HERO
+
+   `.rp-hero-tag i.down` sets a 16% danger wash as its background and then
+   leaves the ink at `--wx-text-muted`. That token is calibrated against the
+   PAGE, not against a tinted chip, so it lands at 4.35:1 in dark and 3.51:1
+   in light — both under the 4.5 an 11px label needs. Its own sibling
+   `i.up` already does the right thing and inks itself in `--wx-success`.
+
+   This is the fourth time a token calibrated for the page has been used on a
+   chip here, and it stayed invisible because the tag only renders when a
+   month is DOWN on the one before. Every earlier run had nothing to measure,
+   so the contrast guard reported green on a bug that was always there.
+
+   Danger ink on a danger wash, matching the up case, and it also reads
+   better: a decline should be red, not grey. */
+.wurxbase-root.wurxbase-root.wurxbase-root .rp-hero-tag i.down {
+  color: var(--wx-danger);
+}
+
+/* Danger ink alone still lands at 4.45:1 in light mode — the 16% wash makes
+   too saturated a chip to carry it. `--wx-danger-soft` is the token already
+   calibrated for a danger surface (10% light, 14% dark), so use it rather
+   than a hand-mixed percentage, and the ink clears AA in both themes. */
+.wurxbase-root.wurxbase-root.wurxbase-root .rp-hero-tag i.down {
+  background: var(--wx-danger-soft);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   "TESTS ALREADY SET UP" — the pointer out of an empty angle screen
+
+   Masifa set up four creative-angle tests and Asad reported he could not
+   see them. His access was never the problem: he is superadmin, and the
+   rows were already in his browser. The tests are scoped to a brand in a
+   MONTH, they were saved against August, and the report opens on the
+   current month — so he was looking at an empty September, and the only
+   thing on screen was "start your first angle".
+
+   A screen scoped to one cycle has to name the cycle, or an empty view
+   reads as lost work. This lists every test that does exist and takes you
+   straight to it. */
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-else {
+  margin-top: 22px;
+  padding-top: 18px;
+  width: 100%;
+  max-width: 560px;
+  border-top: 1px solid color-mix(in srgb, var(--wx-accent) 16%, transparent);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-else-h {
+  font-family: var(--wx-font-mono, ui-monospace, monospace);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--wx-text-muted);
+  margin-bottom: 12px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-else-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-else-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  background: var(--wx-surface-2);
+  border: 1px solid var(--wx-border);
+  color: var(--wx-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: background 0.14s, border-color 0.14s;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-else-item:hover,
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-else-item:focus-visible {
+  background: var(--wx-accent-soft);
+  border-color: color-mix(in srgb, var(--wx-accent) 45%, transparent);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-else-month {
+  color: var(--wx-text-muted);
+  font-weight: 600;
+}
+/* The count sits on an accent chip, so it takes accent INK, never the
+   page's muted ink — that pairing is how the tinted-surface bug keeps
+   coming back. */
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-else-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--wx-accent-soft);
+  color: var(--wx-accent);
+  font-family: var(--wx-font-mono, ui-monospace, monospace);
+  font-size: 0.6875rem;
+  font-weight: 800;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   WHY THE EUKA SYNC FAILED
+
+   Every failure of the EUKA videos button used to arrive as the same
+   sentence — `No EUKA store named "<brand>"` — whether the real cause was
+   a blocked request, an expired session, a role that is not allowed, EUKA
+   itself being down, or the brand genuinely having no store. It names the
+   brand and blames the data, so that is where people look.
+
+   The button can hold three words. This holds the reason. */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-euka-why {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 12px;
+  padding: 11px 14px;
+  border-radius: 0.75rem;
+  background: var(--wx-danger-soft);
+  border: 1px solid color-mix(in srgb, var(--wx-danger) 34%, transparent);
+}
+/* Danger ink on a danger wash, never the page's muted ink — the pairing
+   that keeps failing contrast on tinted chips here. */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-euka-why b {
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--wx-danger);
+  letter-spacing: -0.01em;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-euka-why span {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.55;
+  color: var(--wx-text);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   IMPORTING THE FILLED-IN ANGLE SHEET
+
+   The confirmation is deliberately loud. This puts money on rows, and the
+   figures it writes are the ones the whole test is judged on, so the count
+   of what WOULD change is shown before anything is written. */
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-import {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 13px;
+  border-radius: 999px;
+  cursor: pointer;
+  background: var(--wx-surface-2);
+  border: 1px solid var(--wx-border-strong);
+  color: var(--wx-text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  transition: background 0.14s, border-color 0.14s;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-import:hover,
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-import:focus-visible {
+  background: var(--wx-accent-soft);
+  border-color: color-mix(in srgb, var(--wx-accent) 45%, transparent);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 14px 0 4px;
+  padding: 15px 17px;
+  border-radius: 0.75rem;
+  background: var(--wx-surface-1);
+  border: 1px solid color-mix(in srgb, var(--wx-accent) 40%, transparent);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp > b {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--wx-text);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-rows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: 0.8125rem;
+  color: var(--wx-text-muted);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-rows u {
+  text-decoration: none;
+  font-family: var(--wx-font-mono, ui-monospace, monospace);
+  font-weight: 800;
+  color: var(--wx-text);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-rows .on u { color: var(--wx-accent); }
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-rows .warn,
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-rows .warn u { color: var(--wx-danger); }
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-more {
+  font-size: 0.75rem;
+  color: var(--wx-text-muted);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-more summary { cursor: pointer; font-weight: 700; }
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-more ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  max-height: 150px;
+  overflow-y: auto;
+  word-break: break-all;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-act {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-b {
+  height: 34px;
+  padding: 0 15px;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  background: var(--wx-surface-2);
+  border: 1px solid var(--wx-border-strong);
+  color: var(--wx-text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-b.primary {
+  background: var(--wx-accent);
+  border-color: transparent;
+  color: var(--wx-on-accent, var(--wx-bg));
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-b[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   THE TIER AND DEALS CHIPS ARE CONTROLS NOW
+
+   They were spans that looked exactly like every other pill in this app
+   and did nothing when pressed. They filter the list now, so they have to
+   look pressable and show which one is on.
+
+   THE SELECTED STATE IS AN OUTLINE IN THE CHIP'S OWN INK, not a new
+   background. Each chip already carries a hue — L2 is info, L5 is warning,
+   Unmatched is danger — and every one of those ink-on-wash pairs has been
+   measured against AA. Filling a selected chip with a different colour
+   would invent six new pairs to verify, and this file's history is mostly
+   one lesson: a token calibrated for one surface used on another. An
+   outline in `currentColor` cannot fail, because currentColor is already
+   the ink that passed. */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-tierpill-chip {
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1;
+  transition: filter 0.14s, box-shadow 0.14s;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root button.pc-tierpill-chip:hover {
+  filter: brightness(0.96);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root button.pc-tierpill-chip:focus-visible,
+.wurxbase-root.wurxbase-root.wurxbase-root button.pc-tierpill-chip.on {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+/* Deals chips carry no tier meaning, so they stay neutral rather than
+   borrowing a hue that already means something else on this row. */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-tierpill-chip.deals {
+  background: var(--wx-surface-2);
+  color: var(--wx-text);
+  border-color: var(--wx-border-strong);
+}
+
+/* "across N collabs" — the panel says when it is showing more than the one
+   deal you expanded, because the GMV total beside it would otherwise read as
+   that single deal's. */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vxp-scope {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  margin-left: 8px;
+  border-radius: 999px;
+  background: var(--wx-surface-2);
+  border: 1px solid var(--wx-border-strong);
+  color: var(--wx-text-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ top videos --- */
+/*
+ * TEN THUMBNAILS, AND THREE TOTALS STACKED IN THE SPACE TO THEIR RIGHT:
+ * VIEWS IN BLUE, GMV IN GREEN, AD SPEND IN RED. Rashid, 2026-09-16, for his
+ * boss, replacing the single New video GMV total of the day before. Each one
+ * covers every row in the table below, so each follows the month picker, and
+ * All Time adds up everything.
+ *
+ * TEN 96px THUMBNAILS DO NOT FIT BESIDE THE TOTALS ON A LAPTOP. The first
+ * version let the row shrink and scroll, and the browser check caught the
+ * tenth video sitting hidden under the total at 1500px. So the strip is a size
+ * container:
+ * - wide: full-size thumbnails, the totals on the strip's far right
+ * - laptop: thumbnails shrink (never below 76px) so all ten stay beside them
+ * - narrower: the totals go above as one row and the thumbnails scroll
+ * It is sized by the STRIP's width, not the window's, because the sidebar and
+ * the zoom control both change how much room the strip actually has.
+ *
+ * `--tv-w` is the thumbnail width. The three cards together are one picture
+ * tall, and they are centred top to bottom on the WHOLE tile (picture, name
+ * and views). Centring on the pictures alone left them sitting high beside the
+ * names, and Rashid asked for "center".
+ *
+ * The three colours are the info, success and danger tokens because he asked
+ * for blue, green and red by name. `check:contrast` proves each ink, and the
+ * muted label, on its own 8% tint.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids {
+  container-type: inline-size;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-body {
+  --tv-w: 96px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-body > .pc-topvids-row {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-body .pc-topvid {
+  width: var(--tv-w);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-body .pc-topvid-frame {
+  width: var(--tv-w);
+  height: calc(var(--tv-w) * 4 / 3);
+}
+/* On the strip's far right, and centred top to bottom on the tiles beside
+   them. Rashid, 2026-09-16: "can we put them on extreme right please? Also in
+   center". The wrapper stretches to the row's full height (align-self), and
+   the cards sit in its middle. */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-totalwrap {
+  flex: 1 0 14rem;
+  align-self: stretch;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 16rem;
+  height: calc(var(--tv-w) * 4 / 3);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat {
+  --s: var(--wx-info);
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px 0 7px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--s) 8%, var(--wx-surface-1));
+  border: 1px solid color-mix(in srgb, var(--s) 30%, var(--wx-surface-1));
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat.gmv {
+  --s: var(--wx-success);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat.spend {
+  --s: var(--wx-danger);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat-ico {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  color: var(--s);
+  background: color-mix(in srgb, var(--s) 16%, var(--wx-surface-1));
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat-ico svg {
+  display: block;
+  width: 13px;
+  height: 13px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat-lbl {
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--wx-text-muted);
+  white-space: nowrap;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat-val {
+  margin-left: auto;
+  font-size: 1.0625rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--s);
+  white-space: nowrap;
+}
+/* No figure yet, or none to give: a dash in the label's grey, never a $0. */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat-val.none {
+  color: var(--wx-text-muted);
+  font-weight: 700;
+}
+/* Laptop: ten full-size thumbnails, their gaps, the gap to the totals and the
+   totals (14rem) need 1290px. Under that, the thumbnails shrink so all ten
+   stay. */
+@container (max-width: 1290px) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-body {
+    --tv-w: max(76px, calc((100cqi - 16px - 14rem - 90px) / 10));
+  }
+}
+/* Below 76px a thumbnail stops being a picture. From there the totals go
+   above as one row of three, and the thumbnails return to full size and
+   scroll. */
+@container (max-width: 1090px) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-body {
+    --tv-w: 96px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-totalwrap {
+    order: -1;
+    flex: 0 0 auto;
+    height: auto;
+    justify-content: flex-start;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stats {
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-width: none;
+    height: auto;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-topvids-stat {
+    flex: 1 1 10rem;
+    min-height: 2.5rem;
+  }
+}
+
+/* ------------------------------------------------ videos: one day's posts --- */
+/*
+ * Rashid, 2026-09-15: "let them view the videos of a certain date … today or
+ * any date". Chips for the two days people ask about, a date field for any
+ * other, and the count of undated links said out loud so a day never looks
+ * emptier than it is.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-days {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: var(--pc-card-2);
+  border-bottom: 1px solid var(--pc-divider);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-days-lbl {
+  margin-right: 2px;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--wx-text-muted);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-day {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--wx-border-strong);
+  background: var(--wx-surface-1);
+  color: var(--wx-text-muted);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-day b {
+  color: var(--wx-text);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-day:hover {
+  border-color: var(--wx-border-interactive);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-day.on {
+  background: var(--wx-accent-soft);
+  border-color: var(--wx-accent);
+  color: var(--wx-text);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-day:focus-visible,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-daypick input:focus-visible,
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-daylink:focus-visible {
+  outline: 2px solid var(--wx-accent);
+  outline-offset: 2px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-daypick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-daypick input {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--wx-text);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-days .pc-vx-daypick.on input[type='date'] {
+  border-color: var(--wx-accent) !important;
+  background: var(--wx-accent-soft) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-daypick b {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--wx-text);
+  font-variant-numeric: tabular-nums;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-days-note {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--wx-text-muted);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-daytag {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--wx-surface-2);
+  color: var(--wx-text-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-dayempty {
+  padding: 28px 12px;
+  text-align: center;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--wx-text-muted);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-daylink {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 800;
+  color: var(--wx-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+@media (max-width: 640px) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-days {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-days-note {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+/* ------------------------------------------------------------ tier palette --- */
+/*
+ * L0 TO L7, ONE PALETTE, AND IT IS EUKA'S. Rashid, 2026-09-16, pointing at
+ * Euka's own tier tags: "the color scheme of l1, l2 ..l7 tags is not good".
+ * The team reads these tiers in Euka all day, so each tier keeps Euka's hue:
+ * blue, violet, teal, green, lime, amber, orange, with L0 neutral.
+ *
+ * The inks are tokens (`--wx-tier-0`…`7`, both themes). `pnpm check:contrast`
+ * proves each one against ITS OWN chip, which is the 12% tint below composited
+ * on a card, because a token that passes on the page can still fail on a tint.
+ *
+ * Their v295 block defined a palette and then never used it: every badge and
+ * chip rule under it wrote its own colours, which is how L3 and L4 ended up
+ * the same brown. Every tier surface now reads `--t`, set once per tier here.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l0 { --t: var(--wx-tier-0); }
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l1 { --t: var(--wx-tier-1); }
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l2 { --t: var(--wx-tier-2); }
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l3 { --t: var(--wx-tier-3); }
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l4 { --t: var(--wx-tier-4); }
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l5 { --t: var(--wx-tier-5); }
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l6 { --t: var(--wx-tier-6); }
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l7 { --t: var(--wx-tier-7); }
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip):is(.l0, .l1, .l2, .l3, .l4, .l5, .l6, .l7) {
+  color: var(--t);
+  background: color-mix(in srgb, var(--t) 12%, var(--wx-surface-1));
+  border: 1px solid color-mix(in srgb, var(--t) 40%, var(--wx-surface-1));
+}
+/* Unique Creators: the selected tier button goes solid in its tier's ink. */
+.wurxbase-root.wurxbase-root.wurxbase-root {
+  --tier-l0-fg: var(--wx-tier-0);
+  --tier-l1-fg: var(--wx-tier-1);
+  --tier-l2-fg: var(--wx-tier-2);
+  --tier-l3-fg: var(--wx-tier-3);
+  --tier-l4-fg: var(--wx-tier-4);
+  --tier-l5-fg: var(--wx-tier-5);
+  --tier-l6-fg: var(--wx-tier-6);
+  --tier-l7-fg: var(--wx-tier-7);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-uc-segbtn.on:is(.t-l0, .t-l1, .t-l2, .t-l3, .t-l4, .t-l5, .t-l6, .t-l7) {
+  color: var(--wx-text-inverse);
+}
+
+/* ------------------------------------------------------------- deals badge --- */
+/*
+ * How many deals we have had with this person, EVER: every brand, every month.
+ * Rashid, 2026-09-16: "a small circular avatar showing no of deals with that
+ * creator". Neutral on purpose. The tier tag carries the colour, and a second
+ * hue would read as a second tier.
+ *
+ * IT SITS ON THE FACE'S CORNER, NOT BESIDE THE TIER TAG. Beside the tag it took
+ * 31px from every name, and at 1600px the brand page's names fell from 48px to
+ * 17px, one letter and dots. On the corner it costs the name nothing. The ring
+ * is the card colour, the same ring the face itself wears.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-facewrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-dealsbadge {
+  position: absolute;
+  right: -6px;
+  bottom: -5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.1875rem;
+  border-radius: 999px;
+  background: var(--wx-surface-2);
+  border: 1px solid var(--wx-border-strong);
+  box-shadow: 0 0 0 2px var(--wx-surface-1);
+  color: var(--wx-text);
+  font-size: 0.5625rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  cursor: default;
+}
+/* The Creators tab's face is 26px, not 30. At the same offset the bubble sat
+   on the initial, so it drops lower there, below the letter. */
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-cv-row .pc-dealsbadge {
+  right: -7px;
+  bottom: -8px;
+}
+
+/* ------------------------------------------------------- the client's page --- */
+/*
+ * The share page (`/share/collabs/:token`) wears this same stylesheet so a
+ * client sees the Brands view as staff do. Rashid's boss, 2026-09-17: "exact
+ * same view as we have they will just not be able to see ad spend and roi".
+ *
+ * Only three things there are not theirs: the status is a PILL rather than a
+ * dropdown, because a client may not change anything; the videos open in a
+ * plain panel rather than the editor; and both live under `.wurxbase-root` so
+ * every token and every table rule above still applies.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--wx-stage-due-soft);
+  border: 1px solid color-mix(in srgb, var(--wx-stage-due) 35%, var(--wx-surface-1));
+  color: var(--wx-stage-due);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-videos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 24px 14px;
+  border-bottom: 1px solid var(--pc-divider, var(--wx-border));
+  background: var(--wx-surface-2);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-video {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--wx-surface-1);
+  border: 1px solid var(--wx-border);
+  font-size: 0.8125rem;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-video a {
+  font-weight: 700;
+  color: var(--wx-accent);
+  text-decoration: none;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-video a:hover { text-decoration: underline; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-gmv { font-weight: 700; color: var(--wx-success); }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-product {
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--wx-text-muted);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-video button {
+  margin-left: auto;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--wx-border-interactive);
+  background: var(--wx-surface-1);
+  color: var(--wx-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-video button:hover { background: var(--wx-surface-3); }
+
+/* ============================================================================
+   AD SPEND IN RED, AND NEW VIDEO GMV ON THE BRANDS SCREEN (2026-09-21)
+
+   Rashid: "i want the ad spend column values to be in red color", and "sum the
+   new video gmv of all the brands and add it in the first row of brand's main
+   page". Red and green are the two inks the brand page's own Ad spend and GMV
+   cards already wear, so a figure reads the same colour wherever it appears.
+   check:contrast section 5 proves both inks on a resting row, a hovered row
+   (their gold wash) and the card.
+   ============================================================================ */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-metric-spend {
+  color: var(--wx-danger);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-kpi-gmv .pc-kpi-value {
+  color: var(--wx-success);
+}
+/* SIX CARDS, COUNTED BY THE ROW'S OWN WIDTH, NOT THE WINDOW'S.
+   From 64rem the month controls float right and this row sits beside them, so
+   its width is the window minus the sidebar minus those controls: 355px at a
+   1024px window, 1043px at 1712px. Their five-card row was sized by the window
+   and was already cutting figures off below about 1300px ("$94,090" in a 63px
+   card at 1024). Measured on 2026-09-21: six cards need about 135px each to
+   show every figure whole. So six in a row at 54rem and up, three by two below
+   that, two by three below 26rem. Their own !important rules still take over on
+   a phone-sized window (two columns at 640px, one at 420px). */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-kpis-wrap {
+  container-type: inline-size;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-kpis-6 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@container (width >= 26rem) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-kpis-6 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@container (width >= 54rem) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-kpis-6 {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+/* ============================================================================
+   THE ONBOARDING DRAWER (2026-09-23)
+
+   Rashid: "instead of showing the popup, we need to use drawer which will
+   actually open a side drawer with all options ... now as we are using drawer
+   you will have enough space to distribute. keep the font same because boss
+   likes small fonts but ui should be perfect ... when zooming in zooming out
+   drawer should never overlap or miss something."
+
+   Their modal centred itself and capped at 620px, so a form of twenty fields
+   scrolled inside a box with air either side. As a drawer it gets the full
+   height of the window and a width that grows with the text: 30rem at the
+   default size, so a browser zoomed to 150% gives it MORE room rather than
+   overflowing — every length here is in rem or a viewport unit, and there is
+   not one fixed pixel height in the panel.
+
+   WHY dvh AND NOT vh: on a phone, vh counts the address bar that is not there,
+   so the footer sits below the fold exactly when somebody reaches for it.
+   ============================================================================ */
+
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-overlay.wx-drawer-overlay {
+  align-items: stretch;
+  justify-content: flex-end;
+  padding: 0;
+}
+
+/*
+  IT STARTS BELOW OUR TOP BAR, and that is not a taste decision.
+
+  `.wurxbase-root` and `.wurxbase-fence` both carry `isolation: isolate`, so
+  every z-index inside Paid Collabs — including this overlay's 1000 — is sealed
+  inside that context, which sits under our own app header (`z-40`). A drawer
+  drawn from y=0 therefore had its title and close button painted over by the
+  bar above it: the DOM was right and the screen was wrong.
+
+  Raising the z-index cannot fix that from inside a sealed context, and moving
+  the portal to `document.body` is what left their overlays unstyled before. So
+  the drawer begins where our chrome ends. `--wx-topbar` is 3.5rem because the
+  shell's header is `h-14`, in rem, so it tracks the text size somebody has
+  chosen and stays correct when the browser is zoomed.
+*/
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer {
+  --wx-topbar: 3.5rem;
+  /* Grows with the root font size, so zoom widens the drawer instead of
+     squeezing the form. Capped against the window so it can never be wider
+     than the screen it is drawn on. */
+  width: min(34rem, 100vw);
+  max-width: 100vw;
+  height: calc(100dvh - var(--wx-topbar));
+  max-height: calc(100dvh - var(--wx-topbar));
+  /*
+    THE PANEL ITSELF MUST NOT SCROLL. Their `.pc-modal` scrolls its whole box,
+    which in a drawer means the sticky header scrolls away with everything else
+    — the title and the close button simply leave. Only the middle scrolls now.
+    `overflow-x: hidden` is the second half of the same thought: a 120-character
+    product name must be cut off by its own row, never by widening the panel.
+  */
+  overflow: hidden;
+  /* The offset lives in the shorthand, and that is deliberate: a `margin-top`
+     above a later `margin: 0` in the same block is silently undone, which is
+     exactly how the first attempt put the drawer back under the top bar. */
+  margin: var(--wx-topbar) 0 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 1.25rem 0 0 1.25rem;
+  padding: 0;
+  animation: wx-drawer-in 0.24s var(--pc-ease);
+}
+
+@keyframes wx-drawer-in {
+  from { transform: translateX(2rem); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer { animation: none; }
+}
+
+/* The header and the footer hold still; only the middle scrolls. Without
+   `min-height: 0` a flex child refuses to shrink and the footer is pushed off
+   the bottom of the screen — the "missing something when zoomed" case. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer > .pc-cf-head {
+  flex: 0 0 auto;
+  border-radius: 1.25rem 0 0 0;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer > .pc-cm-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  /* The extra room the drawer earned goes into the gutters, not into wider
+     inputs that then dwarf the small type the boss likes. */
+  padding: 1rem 1.25rem 0.75rem;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer > .pc-cf-foot {
+  flex: 0 0 auto;
+  border-radius: 0 0 0 1.25rem;
+  /* Above the phone's home bar rather than under it. */
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/* On a phone it is the whole screen, square edges, and it comes up rather than
+   in — the same gesture their bottom sheet had. */
+@media (max-width: 40rem) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer {
+    width: 100vw;
+    border-radius: 0;
+    animation-name: wx-drawer-up;
+  }
+  /* The overlay itself stops at the bar too, so the backdrop never sits over
+     chrome that is still usable. */
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-overlay.wx-drawer-overlay { top: var(--wx-topbar, 3.5rem); }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer > .pc-cf-head,
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer > .pc-cf-foot { border-radius: 0; }
+}
+@keyframes wx-drawer-up {
+  from { transform: translateY(2rem); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* A short window — a laptop at 150% zoom, or a phone in landscape — is where a
+   fixed-height panel loses its footer. Nothing here has a fixed height, and the
+   section dividers give back their margins so the fields stay reachable. */
+@media (max-height: 34rem) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer > .pc-cm-body { padding-top: 0.5rem; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer .pc-cm-sec { margin: 0.6rem 0 0.5rem; }
+}
+
+/* ============================================================================
+   BY PRODUCT, on a brand's page (2026-09-24)
+
+   Rashid: "product wise gmv, product wise creators and product wise videos ...
+   a beautifully iconed and pilled style display without disturbing the ui".
+
+   "Without disturbing the UI" is the constraint that shapes all of this. The
+   band borrows the top-videos card's own heading treatment so it reads as
+   another one of their sections rather than a new piece of furniture, and the
+   pill row SCROLLS INSIDE ITSELF: Penetrex has six products and Irwin's names
+   run past 150 characters, and neither may push the page sideways.
+
+   Every size is in rem, so the whole band follows the text-size control in the
+   top bar. The ink on the GMV figure is --wx-success on --pc-card, which is
+   --wx-surface-1 — the ground check:contrast section 5 already proves it
+   against. That is why the pill is not on --pc-card-2.
+   ============================================================================ */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodband {
+  background: var(--pc-card);
+  border: 1px solid var(--pc-divider);
+  border-radius: var(--pc-radius, 0.875rem);
+  box-shadow: var(--pc-shadow);
+  overflow: hidden;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodband-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem 0.7rem;
+  color: var(--pc-text);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodband-title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--pc-text);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodband-chip {
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--pc-card-2);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--pc-text-2);
+  /* It wrapped to two lines at 390px and read as "2 / products". */
+  white-space: nowrap;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodband-period {
+  margin-left: auto;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--pc-divider);
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--pc-text-2);
+  white-space: nowrap;
+}
+/* The scroller. `min-width: 0` is what actually lets it scroll: without it the
+   flex child refuses to shrink below its content and the PAGE scrolls instead,
+   which is the failure this whole block exists to avoid. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodband-row {
+  display: flex;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0 1rem 0.9rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── the cards ──────────────────────────────────────────────────────────
+   Rashid, 2026-09-24, with a second mockup: "the current card is taking too
+   much space ... it's very bad, it can't take too much space but still show
+   counts properly."
+
+   He is right, and the fix is the axis rather than the type size. The tall
+   card stacked four labelled figures down the page and stood about 300px high.
+   Laid ACROSS the bottom of a wide card the same four take roughly half that,
+   and nothing had to shrink to make it fit — the counts are still the biggest
+   thing on the card.
+
+   IT STAYS ONE ROW. Wrapping these into a grid would have been the obvious
+   move and would have made the problem worse: seven products at two per row is
+   four rows, which is taller than what he is complaining about. The row scrolls
+   instead, so the band costs the same height whether a brand has two products
+   or twenty.
+
+   GROW, NEVER SHRINK: a brand with two products fills the band, a brand with
+   seven keeps every card readable and scrolls. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard {
+  position: relative;
+  flex: 1 0 27rem;
+  max-width: 34rem;
+  padding: 0.85rem 1rem 0.75rem;
+  border: 1px solid var(--pc-divider);
+  border-radius: 0.875rem;
+  background: var(--pc-card);
+  transition: border-color 0.16s var(--pc-ease, ease), box-shadow 0.16s var(--pc-ease, ease);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard:hover {
+  border-color: color-mix(in srgb, var(--wx-success) 45%, var(--pc-divider));
+  box-shadow: var(--pc-shadow);
+}
+@media (prefers-reduced-motion: reduce) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard { transition: none; }
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--pc-divider-soft, var(--pc-divider));
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-shot { flex: 0 0 auto; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-id {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+/* ONE LINE. The name is already shortened in JS keeping both ends, which is
+   what stops four Penetrex products reading identically; this is the safety
+   net for anything longer than expected. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--pc-text);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-rank {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--pc-text-3);
+}
+/* The figures, across. Equal columns with a hairline between them, so five
+   numbers of different widths still line up.
+
+   FIVE SINCE 2026-10-07, when Ad spend joined GMV, views, creators and videos.
+   The card's flex-basis grew with it (24rem to 27rem): at the old width a fifth
+   column left about 70px each, and "170/210" beside "$3,579" needs more than
+   that. The row still scrolls, so a wider card costs no page width — it shows
+   slightly fewer products at once, which is the right trade for figures that
+   fit. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-rows {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  padding-top: 0.6rem;
+}
+/* The commitment behind the slash, said quietly: it is the target, not the
+   achievement. Mirrors `.pc-vidprog-of` on the creator rows so the same fact
+   is drawn the same way in both places. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-of {
+  font-size: 0.72em;
+  font-weight: 700;
+  color: var(--pc-text-3);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0 0.6rem;
+  border-left: 1px solid var(--pc-divider-soft, var(--pc-divider));
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-cell:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-cell-top {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  color: var(--pc-text-3);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-ico { display: inline-flex; flex: 0 0 auto; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-lbl {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--pc-text);
+  font-variant-numeric: tabular-nums;
+}
+/* On a phone the cards go full width and stack, and the five figures become
+   two by two (and a last one on its own) rather than five columns of 50px. */
+@media (max-width: 40rem) {
+  /* Title, count and period on ONE line at 390px: at the desktop size they came
+     to 349px against 358px of room, so the period fell to a line of its own. */
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodband-title { font-size: 0.9375rem; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodband-period {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.6875rem;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodband-row {
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard {
+    /* `flex: 0 0 auto`, NOT the row's `1 0 24rem`. Once the container turns
+       vertical, flex-basis stops meaning width and starts meaning HEIGHT — so
+       every card inherited a 24rem floor and sat above 250px of empty card.
+       The figures were right and the card was three times too tall. */
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: none;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-rows {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem 0;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-cell:nth-child(odd) {
+    border-left: 0;
+    padding-left: 0;
+  }
+}
+
+
+/* ------------------------------------------- product groups in the table -- */
+/*
+ * Rashid, 2026-09-29, with a mockup: a brand's creator table grouped by
+ * product — a band per product carrying its picture, its name and how many
+ * creators sit under it, with the rows tucked underneath on a tree.
+ *
+ * THE BAND SITS ON `--pc-card-2` AND ITS INK COMES FROM THE SAME PAIR. That is
+ * the surface the table's own hover state and the status dividers already use,
+ * so no ink here is calibrated against one ground and then shown on another,
+ * which is the colour bug this project keeps re-shipping.
+ *
+ * THE RAIL IS THE ACCENT, HEAVILY DILUTED. It is decoration, not information:
+ * the grouping is already carried by the header, the indent and the count, so
+ * the line never has to be readable, only visible.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup {
+  margin: 0.625rem 0 0.125rem;
+}
+/*
+ * THE INSET IS ON THE HEADER ALONE, AND THE ROWS KEEP THE FULL WIDTH OF THE
+ * CARD. This is not tidiness, it is the bug that shipped and was caught:
+ * indenting the rows by 22px and insetting the section by another 24px took
+ * 46px off a twelve-column grid that has none to give. The Status column is
+ * 1.16fr of 8.9; the pill inside it is 151px and already overflows below about
+ * 1300px. Take another 46px and it overflows at 1500 too — and an overflowing
+ * cell is covered by the cell after it, so `pnpm verify:collab-controls` went
+ * from six failures to fourteen: the status pill, the contract pencil and the
+ * eye button all stopped receiving their own clicks, and the status menu could
+ * no longer be opened at all.
+ *
+ * So the tree is drawn INSIDE the row's own 24px of left padding, where there
+ * was nothing but space, and the row's geometry is byte-for-byte what it was.
+ */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-head {
+  margin: 0 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4375rem 0.5rem 0.4375rem 0.375rem;
+  border: 1px solid var(--pc-divider);
+  border-radius: 0.75rem;
+  background: var(--pc-card-2);
+}
+/* The whole band is the hit target, not just the chevron. A control you can
+   only reach by hitting a 14px glyph is a control a phone cannot use. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-toggle {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.125rem 0.25rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-toggle:focus-visible {
+  outline: 2px solid var(--pc-accent);
+  outline-offset: 2px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-chev {
+  flex: 0 0 auto;
+  display: inline-flex;
+  color: var(--pc-text-3);
+  transition: transform 0.16s var(--pc-ease, ease);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup.is-shut .wx-pgroup-chev {
+  transform: rotate(-90deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-chev { transition: none; }
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-shot { flex: 0 0 auto; display: inline-flex; }
+/* The full name is in the band's tooltip; here it truncates rather than
+   wrapping to three lines and pushing the count off the row. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--pc-text);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-name.is-none {
+  font-style: italic;
+  font-weight: 600;
+  color: var(--pc-text-3);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-count {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: 1.375rem;
+  padding: 0 0.5625rem;
+  border: 1px solid var(--pc-divider);
+  border-radius: 999px;
+  background: var(--pc-card);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--pc-text-2);
+  white-space: nowrap;
+}
+/* Said quietly, because it is a caveat rather than a figure: how many of these
+   people ALSO posted for another product, and so are counted here but not only
+   here. Without it a reader takes the band for the whole of that creator. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-also {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: 1.25rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--wx-accent) 12%, transparent);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--pc-accent);
+  white-space: nowrap;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-menu { position: relative; flex: 0 0 auto; display: inline-flex; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-kebab {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--pc-text-3);
+  cursor: pointer;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-kebab:hover { background: var(--pc-card); color: var(--pc-text-2); }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-kebab:focus-visible { outline: 2px solid var(--pc-accent); outline-offset: 2px; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-pop {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  right: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  min-width: 12rem;
+  padding: 0.25rem;
+  border: 1px solid var(--pc-divider);
+  border-radius: 0.75rem;
+  background: var(--pc-card);
+  box-shadow: var(--pc-shadow);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-pop button {
+  padding: 0.5rem 0.625rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  text-align: left;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--pc-text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-pop button:hover { background: var(--pc-card-2); }
+
+/* The rows, on a tree drawn in the row's own left padding — the rail at 10px
+   and the elbow reaching 18px, where the first column starts at 24px. It hangs
+   from the band and stops at the last child's elbow, so it never runs on past
+   the end of the group. Decoration only: the grouping is already carried by the
+   header, the count and the order, so the line never has to be read. */
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-rows { position: relative; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prow { position: relative; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prow::before {
+  content: '';
+  position: absolute;
+  left: 0.625rem;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--wx-accent) 26%, transparent);
+  pointer-events: none;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prow:last-child::before { display: none; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prow::after {
+  content: '';
+  position: absolute;
+  left: 0.625rem;
+  top: 0;
+  width: 0.5rem;
+  height: 1.375rem;
+  border-left: 1px solid color-mix(in srgb, var(--wx-accent) 26%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--wx-accent) 26%, transparent);
+  border-bottom-left-radius: 0.5rem;
+  pointer-events: none;
+}
+
+/* PHONES AND SMALL TABLETS. Below 768 their table stops being a table: every
+   row becomes a detached card with a gap under it. A tree line drawn through
+   those gaps reads as a rendering fault, so the rail goes and the indent
+   shrinks to something a 375px screen can afford — the band directly above
+   still says which product these are. */
+@media (max-width: 768px) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup { margin: 0.5rem 0 0.125rem; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-head { margin: 0; flex-wrap: wrap; row-gap: 0.375rem; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-toggle { flex-wrap: wrap; row-gap: 0.375rem; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-name { font-size: 0.875rem; flex: 1 1 8rem; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prow::before,
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prow::after { display: none; }
+}
+@media (max-width: 420px) {
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-also { display: none; }
+}
+
+/* ----------------------------------------------- creative angle: Categorise -- */
+/*
+ * The button beside "New angle" that files a brand-month's videos into angles
+ * (src/routes/admin/collab-angle-categorise.tsx). It copies `.cx-new`: a 44px
+ * pill, the surface-3 fill that turns accent on hover, the same easing.
+ *
+ * THE RING DRAWS OUTSIDE THE BUTTON and takes no layout space (it is absolute),
+ * and so does the status line, so starting a run never changes the header's
+ * height or moves a neighbour. The ring is a rect with `pathLength=100`, so the
+ * dash maths in the component is plain percentages.
+ */
+/* THE WRAPPER TAKES NO PART IN LAYOUT. It has to exist in the DOM -- the
+   button and its status belong to one component -- but as a flex item it
+   dragged the status into the row with the button, and whichever of the two
+   had to give way looked wrong: the status hung off the card's right edge, and
+   pushing the pair onto their own line dropped Categorise below Import and New
+   angle, out of line with the buttons it belongs beside.
+
+   `display: contents` dissolves it, so `.cx-h-r` lays out the button and the
+   status directly. The button is then an ordinary item on the buttons' line;
+   the status takes a full-width basis and wraps to its own line underneath,
+   inside the card, which grows by one line while a run is going. */
+.wurxbase-root .wx-cat {
+  display: contents;
+}
+.wurxbase-root .wx-cat-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+.wurxbase-root .wx-cat-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4375rem;
+  height: 2.75rem;
+  padding: 0 1.25rem;
+  border-radius: 999px;
+  border: 0;
+  cursor: pointer;
+  background: var(--wx-surface-3);
+  color: var(--wx-on-accent);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  box-shadow: 0 4px 14px -6px rgba(44, 35, 25, 0.7);
+  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.3, 1), background 0.16s, box-shadow 0.16s;
+}
+.wurxbase-root .wx-cat-btn:hover:not(:disabled) {
+  background: var(--wx-accent);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px -8px rgba(44, 35, 25, 0.75);
+}
+.wurxbase-root .wx-cat-btn:active:not(:disabled) { transform: scale(0.97); }
+.wurxbase-root .wx-cat-btn:focus-visible {
+  outline: 2px solid var(--wx-accent);
+  outline-offset: 3px;
+}
+/* A BUSY BUTTON MUST LOOK BUSY. `cursor: progress` alone is invisible until
+   somebody happens to hover, and at nought per cent the ring has nothing to
+   draw yet, so pressing Categorise looked as though it had done nothing. */
+.wurxbase-root .wx-cat-btn:disabled {
+  cursor: progress;
+  opacity: 0.72;
+  box-shadow: none;
+}
+
+/* 3px clear of the button on every side; the radius is half the 50px height. */
+.wurxbase-root .wx-cat-ring {
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  width: calc(100% + 6px);
+  height: calc(100% + 6px);
+  overflow: visible;
+  pointer-events: none;
+}
+.wurxbase-root .wx-cat-ring rect {
+  rx: 25px;
+  ry: 25px;
+  stroke-width: 2px;
+}
+/* The track carries the whole message at nought per cent: "there is a ring
+   here and it is empty" rather than a button that looks untouched. */
+.wurxbase-root .wx-cat-track { stroke: color-mix(in srgb, var(--wx-accent) 30%, transparent); }
+.wurxbase-root .wx-cat-arc {
+  stroke: var(--wx-accent);
+  /* BUTT, NOT ROUND. A round cap on a dash of zero length still paints its
+     half-circle, so an empty ring showed a stray dot at the twelve o'clock
+     mark and looked like a rendering fault. */
+  stroke-linecap: butt;
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* IN THE FLOW, UNDER THE BUTTON, NOT FLOATING OVER THE PAGE.
+   It was absolutely positioned so the header would not change height. The
+   header did not change height, and the sentence hung off the bottom of the
+   card instead, over whatever was beneath it. A status nobody can read is
+   worth less than a row that grows by one line while something is happening,
+   so the card now grows. A 100% flex basis puts it on its own line under the
+   buttons, centred across the card, and balanced so a two-line status does not
+   come out as a long line and a stub. */
+.wurxbase-root .wx-cat-status {
+  position: static;
+  flex: 1 0 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  color: var(--wx-text-muted);
+}
+.wurxbase-root .wx-cat-status-err { color: var(--wx-danger); }
+
+@media (max-width: 820px) {
+  /* Narrow enough that a hugging pill looks stranded: the wrap takes a share
+     of the row the way `.cx-bm` and `.cx-new` already do, and the button
+     fills it. */
+  .wurxbase-root .cx-h-r .wx-cat-wrap { flex: 1; }
+  .wurxbase-root .cx-h-r .wx-cat-btn { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wurxbase-root .wx-cat-btn,
+  .wurxbase-root .wx-cat-arc { transition: none; }
+  .wurxbase-root .wx-cat-btn:hover:not(:disabled),
+  .wurxbase-root .wx-cat-btn:active:not(:disabled) { transform: none; }
 }

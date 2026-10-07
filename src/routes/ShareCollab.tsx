@@ -1,0 +1,511 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useParams } from 'react-router';
+import { WurxMark } from '@/components/brand/WurxMark';
+import '@/vendor/wurxbase/paidcollabs.css';
+import '@/routes/admin/wurxbase-overrides.css';
+
+/**
+ * WHAT A CLIENT SEES, WITH NO ACCOUNT AT ALL.
+ *
+ * Rashid's boss, 2026-09-17: "we need to show them exact same view as we have
+ * they will just not be able to see ad spend and roi at any cost". So this is
+ * the Paid Collabs BRANDS view — the same five cards, the same top-videos
+ * strip, the same table — wearing the same stylesheet, and nothing else of the
+ * product. "No other section no other data please."
+ *
+ * WHAT IS NOT HERE, and could not be even if this file wanted it: ad spend,
+ * ROI, payment details, phone numbers, emails, internal comments. The
+ * `collab-share` function builds the payload field by field and those fields
+ * are never read into it. This page can only draw what it is given, which is
+ * the point — hiding a column in CSS would leave it one "view source" away.
+ *
+ * ALSO NOT HERE, because a client must not change anything: the status
+ * dropdown is a plain pill, and there is no contract download, no row actions,
+ * no export. Nothing on this page writes.
+ *
+ * It holds no Supabase client, no key and no session, and stores nothing in the
+ * browser.
+ */
+
+type Video = {
+  url: string;
+  date: string | null;
+  views: number;
+  gmv: number;
+  items: number;
+  product: string | null;
+  thumb: string | null;
+  spark: string | null;
+};
+
+type Creator = {
+  name: string;
+  tiktok: string[];
+  hiredBy: string | null;
+  tier: string | null;
+  l30: number | null;
+  onboarded: string | null;
+  completedOn: string | null;
+  deal: number;
+  perVideo: number | null;
+  committed: number;
+  delivered: number;
+  views: number;
+  gmv: number;
+  items: number;
+  videos?: Video[];
+};
+
+type BrandBlock = {
+  brand: string;
+  contentGuide?: string;
+  kpis?: {
+    budget: number;
+    allocated: number;
+    paid: number;
+    remaining: number;
+    creators: number;
+    delivered: number;
+    committed: number;
+    costPerVideo: number;
+    views: number;
+    gmv: number;
+  };
+  topVideos?: { url: string; thumb: string | null; gmv: number; views: number; name: string }[];
+  creators?: Creator[];
+};
+
+type Payload = {
+  label: string;
+  sections: { kpis: boolean; topVideos: boolean; creators: boolean; videos: boolean };
+  months: string[];
+  month: string;
+  expiresAt: string;
+  data: BrandBlock[];
+};
+
+/* Their column widths, minus Ad spend, ROI, Contract and Actions. Inline so it
+   beats the vendored rule, which counts twelve columns. */
+const COLS = '0.36fr 0.74fr 1.7fr .86fr .56fr .6fr .8fr .74fr .56fr';
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthLabel = (key: string) => {
+  if (key === 'all') return 'All time';
+  const [y, m] = key.split('-');
+  return `${MONTHS[Number(m) - 1] ?? '?'} ${y}`;
+};
+const dayLabel = (iso: string | null) => {
+  if (!iso) return '–';
+  const d = new Date(`${iso}T00:00:00Z`);
+  return Number.isNaN(d.getTime()) ? '–' : `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
+};
+const money = (n: number | null | undefined) =>
+  n === null || n === undefined || !Number.isFinite(n)
+    ? '–'
+    : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: n % 1 === 0 ? 0 : 2 }).format(n);
+const kNum = (n: number) =>
+  n >= 1000 ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n) : String(n || 0);
+const handleOf = (raw: string) => {
+  const t = String(raw).trim().replace(/\/$/, '');
+  if (t.startsWith('http')) {
+    const last = t.split('/').pop() ?? '';
+    return last.startsWith('@') ? last : `@${last}`;
+  }
+  return t.startsWith('@') ? t : `@${t}`;
+};
+const profileUrl = (raw: string) =>
+  String(raw).trim().startsWith('http') ? String(raw).trim() : `https://www.tiktok.com/${handleOf(raw)}`;
+const initials = (name: string) =>
+  name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('') || '?';
+
+/* Their hired-by palette, so the tag is the same colour it is on your screen. */
+const HIRED_BY: Record<string, { i: string; fg: string; bg: string }> = {
+  aris: { i: 'A', fg: '#1259C3', bg: '#E7EFFB' },
+  myles: { i: 'M', fg: '#7A3BB5', bg: '#F1E9FB' },
+  emily: { i: 'E', fg: '#C2185B', bg: '#FCE7F0' },
+  khushi: { i: 'K', fg: '#0E7A3A', bg: '#E4F5EB' },
+};
+
+export function ShareCollab() {
+  const { token = '' } = useParams();
+  const [month, setMonth] = useState<string | null>(null);
+  const [brandIdx, setBrandIdx] = useState(0);
+  const [payload, setPayload] = useState<Payload | null>(null);
+  const [state, setState] = useState<'loading' | 'ready' | 'gone' | 'error'>('loading');
+  const [message, setMessage] = useState('');
+  const [open, setOpen] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  useEffect(() => {
+    const meta = document.createElement('meta');
+    meta.name = 'robots';
+    meta.content = 'noindex, nofollow, noarchive';
+    document.head.appendChild(meta);
+    return () => meta.remove();
+  }, []);
+
+  const load = useCallback(async (askedMonth: string | null) => {
+    setState((s) => (s === 'ready' ? 'ready' : 'loading'));
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/collab-share`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(askedMonth ? { token, month: askedMonth } : { token }),
+      });
+      const body = await res.json().catch(() => null);
+      if (res.status === 404) {
+        setMessage(body?.error ?? 'This link is not active any more.');
+        setState('gone');
+        return;
+      }
+      if (!res.ok || !body?.data) {
+        setMessage(body?.error ?? 'Something went wrong loading this page.');
+        setState('error');
+        return;
+      }
+      setPayload(body as Payload);
+      setMonth((body as Payload).month);
+      setState('ready');
+    } catch {
+      setMessage('We could not reach the server. Check your connection and try again.');
+      setState('error');
+    }
+  }, [token]);
+
+  useEffect(() => { void load(null); }, [load]);
+  useEffect(() => {
+    document.title = payload ? `${payload.data.map((b) => b.brand).join(', ')} · Wurx Media` : 'Wurx Media';
+  }, [payload]);
+
+  const brand = payload?.data[brandIdx] ?? payload?.data[0];
+  const expires = useMemo(
+    () => (payload ? new Date(payload.expiresAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }) : ''),
+    [payload]
+  );
+
+  if (state === 'loading' && !payload) {
+    return (
+      <Shell>
+        <div className="space-y-4" aria-busy="true" aria-live="polite">
+          <div className="h-8 w-56 animate-pulse rounded-md bg-surface-2" />
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {[0, 1, 2, 3, 4].map((i) => <div key={i} className="h-24 animate-pulse rounded-xl bg-surface-2" />)}
+          </div>
+          <div className="h-64 animate-pulse rounded-xl bg-surface-2" />
+          <span className="sr-only">Loading this report</span>
+        </div>
+      </Shell>
+    );
+  }
+
+  if (state === 'gone' || state === 'error') {
+    return (
+      <Shell>
+        <div className="mx-auto max-w-md rounded-xl border border-line bg-surface-1 p-8 text-center">
+          <h1 className="text-xl font-extrabold">{state === 'gone' ? 'This link has ended' : 'Something went wrong'}</h1>
+          <p className="mt-3 leading-relaxed text-muted">{message}</p>
+          {state === 'error' && (
+            <button
+              type="button"
+              onClick={() => void load(month)}
+              className="mt-6 rounded-md border border-line-interactive px-4 py-2 text-sm font-semibold hover:bg-surface-2"
+            >
+              Try again
+            </button>
+          )}
+        </div>
+      </Shell>
+    );
+  }
+
+  if (!payload || !brand) return null;
+  const k = brand.kpis;
+
+  return (
+    <Shell>
+      <header className="flex flex-wrap items-center justify-between gap-4" data-month={payload.month}>
+        <div className="min-w-0">
+          <h1 className="text-2xl font-extrabold tracking-tight">{brand.brand}</h1>
+          <p className="mt-1 text-sm text-muted">Creator campaign report · {monthLabel(payload.month)}</p>
+        </div>
+        <span className="rounded-full border border-line bg-surface-2 px-3 py-1 text-xs font-bold uppercase tracking-wider text-muted">
+          Read only
+        </span>
+      </header>
+
+      <div className="mt-6 flex flex-wrap items-center gap-2">
+        {payload.data.length > 1 &&
+          payload.data.map((b, i) => (
+            <button
+              key={b.brand}
+              type="button"
+              onClick={() => setBrandIdx(i)}
+              aria-pressed={i === brandIdx}
+              className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
+                i === brandIdx ? 'bg-accent text-on-accent' : 'border border-line bg-surface-1 hover:bg-surface-2'
+              }`}
+            >
+              {b.brand}
+            </button>
+          ))}
+        {payload.data.length > 1 && <span className="mx-1 h-5 w-px bg-line" aria-hidden />}
+        {[...payload.months.slice(0, 12), ...(payload.months.length > 1 ? ['all'] : [])].map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => { setMonth(m); void load(m); }}
+            aria-pressed={m === payload.month}
+            className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
+              m === payload.month ? 'bg-accent text-on-accent' : 'border border-line bg-surface-1 hover:bg-surface-2'
+            }`}
+          >
+            {monthLabel(m)}
+          </button>
+        ))}
+      </div>
+
+      {/* Everything below wears Paid Collabs' own stylesheet. */}
+      <div className="wurxbase-root mt-6">
+        {k && (
+          <div className="pc-kpis pc-kpis-5" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
+            <Kpi label="Budget" color="#1259C3" value={money(k.budget)}
+              sub={k.budget > 0 ? `${Math.round((k.allocated / k.budget) * 100)}% used` : 'no budget set'} />
+            <Kpi label="Allocated" color="#7A3BB5" value={money(k.allocated)}
+              sub={`${k.creators} creator${k.creators === 1 ? '' : 's'}`} />
+            <Kpi label="Paid" color="#0E7A3A" value={money(k.paid)}
+              sub={k.allocated > 0 ? `${Math.round((k.paid / k.allocated) * 100)}% paid out` : '—'} />
+            <Kpi label="Videos" color="#0EA5E9" value={`${k.delivered}/${k.committed}`}
+              sub={k.committed > 0 ? `${Math.round((k.delivered / k.committed) * 100)}% completed` : '—'} />
+            <Kpi label="Cost / Video" color="#E65100" value={k.costPerVideo > 0 ? money(Math.round(k.costPerVideo)) : '-'}
+              sub="per delivered video" />
+          </div>
+        )}
+
+        {brand.topVideos && brand.topVideos.length > 0 && (
+          <div className="pc-topvids">
+            <div className="pc-topvids-head">
+              Top videos by GMV · {monthLabel(payload.month)}
+              <span className="pc-topvids-sub">live from EUKA</span>
+            </div>
+            <div className="pc-topvids-body">
+              <div className="pc-topvids-row">
+                {brand.topVideos.map((v, i) => (
+                  <a key={v.url + i} className="pc-topvid" href={v.url} target="_blank" rel="noreferrer noopener"
+                    title={`${v.name} · ${money(v.gmv)} GMV · open on TikTok`}>
+                    <span className="pc-topvid-frame">
+                      {v.thumb
+                        ? <img className="pc-topvid-thumb" src={v.thumb} alt="" loading="lazy" />
+                        : <span className="pc-topvid-thumb pc-topvid-ph" aria-hidden>▶</span>}
+                      <span className="pc-topvid-rank">#{i + 1}</span>
+                      <span className="pc-topvid-gmv">{money(v.gmv)}</span>
+                    </span>
+                    <span className="pc-topvid-name">{v.name}</span>
+                    <span className="pc-topvid-views">{v.views > 0 ? `${kNum(v.views)} views` : ' '}</span>
+                  </a>
+                ))}
+              </div>
+              {k && (
+                <div className="pc-topvids-totalwrap">
+                  <div className="pc-topvids-stats" aria-label={`Totals for ${monthLabel(payload.month)}`}>
+                    <div className="pc-topvids-stat views" data-value={k.views} title={`${k.views.toLocaleString()} views`}>
+                      <span className="pc-topvids-stat-ico" aria-hidden>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                      </span>
+                      <span className="pc-topvids-stat-lbl">Views</span>
+                      <span className="pc-topvids-stat-val">{kNum(k.views)}</span>
+                    </div>
+                    <div className="pc-topvids-stat gmv" data-value={k.gmv} title={`${money(k.gmv)} new video GMV`}>
+                      <span className="pc-topvids-stat-ico" aria-hidden>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
+                      </span>
+                      <span className="pc-topvids-stat-lbl">GMV</span>
+                      <span className="pc-topvids-stat-val">{money(k.gmv)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {brand.creators && (
+          <div className="pc-card mt-4">
+            <div className="pc-ct-head" style={{ gridTemplateColumns: COLS }}>
+              <div className="pc-num">#</div>
+              <div>Completed on</div>
+              <div>Creator</div>
+              <div className="pc-num">Deal</div>
+              <div className="pc-num">Videos</div>
+              <div className="pc-num">Total views</div>
+              <div className="pc-num">New video GMV</div>
+              <div className="pc-num">L30 GMV</div>
+              <div className="pc-num">Items sold</div>
+            </div>
+
+            {brand.creators.length === 0 ? (
+              <div className="pc-empty">
+                <h3>No creators in {monthLabel(payload.month)}</h3>
+                <p>Nothing was posted for {brand.brand} in this month.</p>
+              </div>
+            ) : (
+              brand.creators.map((c, i) => {
+                const id = `${c.name}-${i}`;
+                const isOpen = open === id;
+                const tag = c.hiredBy ? HIRED_BY[c.hiredBy.trim().toLowerCase()] : null;
+                return (
+                  <div key={id}>
+                    <div
+                      className={`pc-ct-row ${isOpen ? 'open' : ''}`}
+                      style={{ gridTemplateColumns: COLS, cursor: c.videos?.length ? 'pointer' : 'default' }}
+                      onClick={() => c.videos?.length && setOpen(isOpen ? null : id)}
+                      data-creator={c.name}
+                      data-deal={c.deal}
+                      data-delivered={c.delivered}
+                      data-views={c.views}
+                      data-gmv={c.gmv}
+                    >
+                      <div className="pc-cell pc-num" data-label="#"><span className="pc-idx">#{i + 1}</span></div>
+                      <div className="pc-cell" data-label="Completed on">{c.completedOn ? dayLabel(c.completedOn) : <span className="pc-handle">-</span>}</div>
+                      <div className="pc-cell" data-label="Creator">
+                        <span className="pc-creatorcell">
+                          {/* No deals circle: how many campaigns this person
+                              runs with our other clients is ours, not theirs. */}
+                          <Face name={c.name} handle={c.tiktok[0]} />
+                          <span className="pc-creatorcell-txt">
+                            <span className="pc-cname">{c.name || '-'}</span>
+                            {c.tiktok[0]
+                              ? <a className="pc-handle pc-handle-sub" href={profileUrl(c.tiktok[0])} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}>{handleOf(c.tiktok[0])}</a>
+                              : <span className="pc-handle pc-handle-sub">-</span>}
+                          </span>
+                          {c.tier && <span className={`pc-tierbadge ${c.tier.toLowerCase()}`} title={`EUKA creator tier ${c.tier}`}>{c.tier}</span>}
+                          {tag && <span className="pc-hbtag" style={{ color: tag.fg, background: tag.bg }} title={c.hiredBy ?? ''}>{tag.i}</span>}
+                        </span>
+                      </div>
+                      <div className="pc-cell pc-num" data-label="Deal">
+                        {c.deal > 0
+                          ? <span className="pc-money">{money(c.deal)}{c.perVideo ? <span className="pc-deal-per"> · {money(c.perVideo)}/vid</span> : null}</span>
+                          : <span className="pc-handle">-</span>}
+                      </div>
+                      <div className="pc-cell pc-num" data-label="Videos">
+                        <span className="pc-metric">{c.delivered}{c.committed ? <span style={{ opacity: 0.6 }}>/{c.committed}</span> : null}</span>
+                      </div>
+                      <div className="pc-cell pc-num" data-label="Total views">
+                        {c.views > 0 ? <span className="pc-metric">{kNum(c.views)}</span> : <span className="pc-handle">-</span>}
+                      </div>
+                      <div className="pc-cell pc-num" data-label="New video GMV">
+                        {c.gmv > 0 ? <span className="pc-metric pc-metric-gmv">{money(Math.round(c.gmv))}</span> : <span className="pc-handle">-</span>}
+                      </div>
+                      <div className="pc-cell pc-num" data-label="L30 GMV">
+                        {c.l30 ? <span className="pc-l30-cell">{money(Math.round(c.l30))}</span> : <span className="pc-l30-cell muted">–</span>}
+                      </div>
+                      <div className="pc-cell pc-num" data-label="Items sold">
+                        {c.items > 0 ? <span className="pc-metric">{c.items}</span> : <span className="pc-handle">-</span>}
+                      </div>
+                    </div>
+
+                    {isOpen && c.videos && (
+                      <div className="wx-share-videos">
+                        {c.videos.map((v, vi) => (
+                          <div key={v.url + vi} className="wx-share-video">
+                            <a href={v.url} target="_blank" rel="noreferrer noopener">Video {vi + 1}</a>
+                            <span>{v.date ? dayLabel(v.date) : '–'}</span>
+                            <span>{kNum(v.views)} views</span>
+                            <span className="wx-share-gmv">{money(v.gmv)}</span>
+                            {v.items > 0 && <span>{v.items} sold</span>}
+                            {v.product && <span className="wx-share-product" title={v.product}>{v.product}</span>}
+                            {v.spark && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void navigator.clipboard?.writeText(v.spark ?? '');
+                                  setCopied(v.url + vi);
+                                  window.setTimeout(() => setCopied(null), 1600);
+                                }}
+                              >
+                                {copied === v.url + vi ? 'Copied' : 'Copy spark code'}
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
+
+      <footer className="mt-10 border-t border-line pt-6 text-xs text-muted">
+        <p>Shared with you by Wurx Media. This page is read only and works until {expires}.</p>
+        <p className="mt-1">Figures come from TikTok Shop and update through the day.</p>
+      </footer>
+    </Shell>
+  );
+}
+
+/**
+ * The creator's picture, by the same chain the staff row uses (`CreatorFace`):
+ * their TikTok photo, and an initial when there is none. Rashid: "I told you to
+ * keep the ui same why can't see avatarts".
+ *
+ * The picture comes from unavatar.io by handle, which is where the staff screen
+ * gets it too, so the two screens show the same face. Nothing but the public
+ * handle is sent, and a failure falls back to the initial rather than a gap.
+ */
+function Face({ name, handle }: { name: string; handle?: string }) {
+  const [failed, setFailed] = useState(false);
+  const h = handle ? handleOf(handle).replace(/^@/, '') : '';
+  if (!h || failed) {
+    return (
+      <span className="pc-face" style={{ width: 30, height: 30, fontSize: 12 }}>{initials(name)}</span>
+    );
+  }
+  return (
+    <img
+      className="pc-face"
+      src={`https://unavatar.io/tiktok/${encodeURIComponent(h)}?fallback=false`}
+      alt=""
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      style={{ width: 30, height: 30 }}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
+function Kpi({ label, color, value, sub }: { label: string; color: string; value: string; sub?: string }) {
+  const pct = sub ? Number(sub.match(/(\d+(?:\.\d+)?)\s*%/)?.[1] ?? NaN) : NaN;
+  return (
+    <div className="pc-kpi" style={{ '--kpi-color': color } as React.CSSProperties}>
+      <div className="pc-kpi-row">
+        <span className="pc-kpi-badge" aria-hidden />
+        <div className="pc-kpi-label">{label}</div>
+      </div>
+      <div>
+        <div className="pc-kpi-value">{value}</div>
+        {Number.isFinite(pct) && (
+          <div className="pc-kpi-track" aria-hidden>
+            <div className="pc-kpi-fill" style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} />
+          </div>
+        )}
+        {sub && <div className="pc-kpi-sub">{sub}</div>}
+      </div>
+    </div>
+  );
+}
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-dvh bg-bg px-4 py-8 sm:px-8">
+      <div className="mx-auto w-full max-w-[1600px]">
+        <div className="mb-8 flex items-center justify-between">
+          <WurxMark />
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}

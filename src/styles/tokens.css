@@ -26,6 +26,7 @@
   --wx-surface-1: #1a1714; /* cards, panels */
   --wx-surface-2: #221e1a; /* hover, nested cards */
   --wx-surface-3: #2a251f; /* wells, inputs */
+  --wx-field: #221e1a;    /* what you type into · a well on dark */
 
   /* Text, all verified >= 4.5:1 on EVERY surface, --wx-bg to --wx-surface-3 */
   --wx-text: #f4f0ea; /* 16.97:1 */
@@ -45,6 +46,28 @@
   --wx-accent-soft: rgba(200, 146, 75, 0.14);
   --wx-accent-ring: rgba(200, 146, 75, 0.45);
   --wx-on-accent: #100e0c; /* 6.87:1 sitting on the gold fill */
+
+  /*
+   * A SCRIM IS THE PAGE DIMMED, so it is dark in BOTH themes.
+   *
+   * This is the one place where "dark and light are equal citizens" does NOT
+   * mean "flip it". A modal backdrop exists to take light away from what is
+   * behind it; the light-mode value is a paler dark, not a light. Reach for
+   * `--wx-bg` here and light mode washes the page out instead of dimming it,
+   * which is exactly the bug this token was added to fix.
+   *
+   * Warm rather than neutral black, so it sits in the same family as the rest
+   * of the palette instead of reading as a grey film over a cream page.
+   */
+  --wx-scrim: rgba(16, 14, 12, 0.62);
+
+  /* Ink for a chip whose OWN colour is theme-independent — the live-cursor
+     name tag, painted with one of seven fixed identity hues. --wx-on-accent
+     was used there and it FLIPS: white in light, near-black in dark, so one
+     theme or the other always failed on a background that never moved. Same
+     value in both modes on purpose; the surface it sits on does not change,
+     so neither may the ink. */
+  --wx-on-identity: #ffffff;
 
   /*
    * The three money states, and the only colours allowed to encode where a
@@ -74,6 +97,31 @@
   --wx-warning-soft: rgba(240, 180, 41, 0.14);
   --wx-info: #5cb8e8;
   --wx-info-soft: rgba(92, 184, 232, 0.14);
+
+  /* EUKA creator tiers, L0 to L7. The hue per tier is Euka's own (blue, violet,
+     teal, green, lime, amber, orange), because the team reads these tiers in
+     Euka all day. Each ink is proven against ITS OWN chip, a 12% tint on a
+     card, by check-contrast: a colour that passes on the page can fail on a
+     tint. Rashid, 2026-09-16. */
+  --wx-tier-0: #9d9387;
+  --wx-tier-1: #7fb0ff;
+  --wx-tier-2: #b69cff;
+  --wx-tier-3: #4fd1dc;
+  --wx-tier-4: #6fd26a;
+  --wx-tier-5: #c9dc5e;
+  --wx-tier-6: #f2c14e;
+  --wx-tier-7: #ff9a5a;
+
+  /* The performance sheet.
+     A grid of a hundred creators by ten months is read by scanning, so its
+     structure has to come from rules and one very quiet wash, not from filling
+     every cell. --wx-sheet-band groups a month's two figures into one vertical
+     block; --wx-sheet-summary marks the totals side. Both sit under coloured
+     numerals, so they stay far below anything that could move a contrast
+     ratio: at these strengths green and red keep their full ratio against the
+     sheet. */
+  --wx-sheet-band: rgba(200, 146, 75, 0.055);
+  --wx-sheet-summary: #201c18;
 
   /* Elevation, deep shadows on black read as glow, so keep them tight */
   --wx-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
@@ -132,6 +180,7 @@
   --wx-surface-1: #ffffff;
   --wx-surface-2: #f0ede8;
   --wx-surface-3: #e8e3da;
+  --wx-field: #ffffff;    /* what you type into · defined by its edge, not a fill */
 
   --wx-text: #191512; /* 16.53:1 */
   --wx-text-muted: #736a61; /*  4.83:1 */
@@ -149,6 +198,18 @@
   --wx-accent-soft: rgba(138, 95, 31, 0.1);
   --wx-accent-ring: rgba(138, 95, 31, 0.4);
   --wx-on-accent: #ffffff; /* 5.45:1 on the gold fill */
+
+  /* Lighter than the dark theme's, because there is more light to take away
+     and a cream page under 62% black reads as switched off. */
+  --wx-scrim: rgba(38, 31, 24, 0.42);
+
+  /* Ink for a chip whose OWN colour is theme-independent — the live-cursor
+     name tag, painted with one of seven fixed identity hues. --wx-on-accent
+     was used there and it FLIPS: white in light, near-black in dark, so one
+     theme or the other always failed on a background that never moved. Same
+     value in both modes on purpose; the surface it sits on does not change,
+     so neither may the ink. */
+  --wx-on-identity: #ffffff;
 
   /* The three money states. Each one is darkened from the design's value by
      just enough to clear WCAG AA on a nested card, which is the tightest
@@ -169,6 +230,24 @@
   --wx-warning-soft: rgba(138, 100, 16, 0.1);
   --wx-info: #186d92;
   --wx-info-soft: rgba(24, 109, 146, 0.1);
+
+  /* EUKA creator tiers, L0 to L7. The hue per tier is Euka's own (blue, violet,
+     teal, green, lime, amber, orange), because the team reads these tiers in
+     Euka all day. Each ink is proven against ITS OWN chip, a 12% tint on a
+     card, by check-contrast: a colour that passes on the page can fail on a
+     tint. Rashid, 2026-09-16. */
+  --wx-tier-0: #6d645b;
+  --wx-tier-1: #1f5fbf;
+  --wx-tier-2: #6b3fc0;
+  --wx-tier-3: #0c6b76;
+  --wx-tier-4: #276d1d;
+  --wx-tier-5: #5a6b0c;
+  --wx-tier-6: #845a00;
+  --wx-tier-7: #a8420c;
+
+  /* The performance sheet · see the dark block for what these are for. */
+  --wx-sheet-band: rgba(138, 95, 31, 0.045);
+  --wx-sheet-summary: #faf8f5;
 
   --wx-shadow-sm: 0 1px 2px 0 rgb(25 21 18 / 0.05);
   --wx-shadow-md: 0 1px 2px 0 rgb(25 21 18 / 0.05), 0 8px 24px -12px rgb(25 21 18 / 0.16);

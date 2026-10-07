@@ -14,11 +14,38 @@
  */
 
 declare module '@/vendor/wurxbase/App' {
-  const App: React.ComponentType;
+  /*
+   * The three props our route passes in. Everything else the vendored app
+   * needs it owns itself; these exist because the SHELL is ours now — the six
+   * tabs are six routes in our sidebar, so the tab has to come from the URL,
+   * and the header is portaled into our top bar rather than drawn as a second
+   * bar underneath it.
+   *
+   * All optional: unembedded and uncontrolled, App still renders the
+   * standalone dashboard it was written as.
+   */
+  export interface WurxBaseAppProps {
+    /** One of brands | creators | performance | reporting | leaderboard | discovery. */
+    tab?: string;
+    /** Called when something inside the app changes tab, e.g. a brand drilldown. */
+    onTabChange?: (tab: string) => void;
+    /** Hides its own tab rail and moves its header into our top bar. */
+    embedded?: boolean;
+  }
+  const App: React.ComponentType<WurxBaseAppProps>;
   export default App;
 }
 
-declare module '@/vendor/wurxbase/PaidCollabs' {
-  const PaidCollabsApp: React.ComponentType;
-  export default PaidCollabsApp;
+
+declare module '@/vendor/wurxbase/access' {
+  /*
+   * The capability model, read by OUR sidebar so it can stop offering rows a
+   * person cannot open. A pure function over a role name and a capability key —
+   * no client, no network. `src/lib/wurxbase-identity.ts` is the only thing
+   * that imports it.
+   */
+  export function defaultFor(role: string, key: string): boolean;
+  export function can(user: unknown, key: string): boolean;
+  export const ALL_CAPS: string[];
+  export const ROLE_LIST: string[];
 }

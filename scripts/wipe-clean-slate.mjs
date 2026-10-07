@@ -281,6 +281,35 @@ if (ids.length) {
  * "removed" unconditionally, which is how a bulk delete reports success for
  * accounts that are still there.
  */
+/*
+ * THE TIKTOK IDENTITY LEDGER DOES NOT CASCADE, AND THAT IS DELIBERATE.
+ *
+ * `tiktok_identities.profile_id` is ON DELETE SET NULL, because a claim has to
+ * outlive the account — otherwise deleting a creator would quietly unbar the
+ * TikTok account they applied with, and "one TikTok, one application" would be
+ * one account deletion away from meaningless.
+ *
+ * On DEV that is exactly wrong for a clean slate: wipe the creators, and the
+ * next person to connect the SAME TikTok account is refused by a claim whose
+ * owner no longer exists. Rashid met this on 2026-09-04 with his own account
+ * and it looks like a bug rather than the rule working. So the wipe releases
+ * every claim belonging to an account it is about to delete — released, not
+ * deleted, so the history is still readable.
+ */
+if (ids.length) {
+  const { data: freed, error: freeErr } = await db
+    .from('tiktok_identities')
+    .update({
+      released_at: new Date().toISOString(),
+      release_reason: 'Released by the dev clean-slate wipe: the account that claimed it was removed.',
+    })
+    .in('profile_id', ids)
+    .is('released_at', null)
+    .select('id');
+  if (freeErr) throw new Error(`could not release TikTok claims: ${freeErr.message}`);
+  console.log(`\n  released ${(freed ?? []).length} TikTok identity claim(s) so the accounts can be used again`);
+}
+
 let deleted = 0;
 const failures = [];
 

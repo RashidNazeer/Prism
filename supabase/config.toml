@@ -428,6 +428,14 @@ verify_jwt = true
 [functions.tiktok-creator-callback]
 verify_jwt = false
 
+# PUBLIC, and the reason is written in the file: `start` and `finish` are
+# reached from TikTok's redirect with no session in the tab - a creator
+# approving inside TikTok's in-app browser on a phone is exactly the person this
+# is for. The `claim` action verifies the caller's token itself, against the
+# auth server, the same way tiktok-connect does.
+[functions.tiktok-signup]
+verify_jwt = false
+
 [functions.tiktok-callback]
 verify_jwt = false
 
@@ -440,4 +448,51 @@ verify_jwt = true
 # admin with a real session for a backfill; it checks both itself, so the
 # platform's JWT gate is left off to let the scheduler in at all.
 [functions.tiktok-sync]
+verify_jwt = false
+
+# The Euka read proxy. Nobody signed out has any business here — the store
+# roster it returns includes creator emails and phone numbers under
+# `type=discovery` — so the platform's JWT gate is left ON as a first lock, and
+# the function re-checks the caller's role against `profiles` behind it. The
+# original it replaces had neither: it answered `*` with no Authorization at
+# all.
+[functions.euka]
+verify_jwt = true
+
+[functions.collab-products]
+# A staff session is required and checked inside, like the euka proxy.
+verify_jwt = true
+
+[functions.reacher-sync]
+# Called by pg_cron through pg_net, which carries no JWT, exactly like
+# euka-ads-sync. The function checks x-sync-secret or a staff session itself.
+verify_jwt = false
+
+[functions.euka-ads-sync]
+# Called by pg_cron through pg_net, which carries no JWT. The function checks
+# x-sync-secret, or a staff session, itself.
+verify_jwt = false
+
+# The Categorise button on creative angle testing. A staff session is required
+# and re-checked inside, like the euka proxy. It derives the video list from
+# the database and never accepts URLs from the browser, because the audit
+# machine downloads whatever link it is handed.
+[functions.collab-angles]
+verify_jwt = true
+
+# Its worker. Called by pg_cron through pg_net every minute, which carries no
+# JWT, exactly like euka-ads-sync. The function checks x-sync-secret, or a
+# staff session, itself. WITHOUT THIS BLOCK the platform refuses the
+# scheduler's call with a 401 for ever, and the cron history looks healthy
+# while nothing is ever categorised.
+[functions.collab-angles-sync]
+verify_jwt = false
+
+# The client share view. Public on purpose and the only data route that is: the
+# person opening it has no account here and never will. The link itself is the
+# credential — 192 random bits, stored only as a SHA-256, expiring, revocable —
+# and the function checks it, then answers with a projection that cannot carry
+# ad spend, ROI, payment details or anybody's phone number. Leaving the
+# platform's JWT gate on would simply refuse every client.
+[functions.collab-share]
 verify_jwt = false

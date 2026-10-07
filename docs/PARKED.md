@@ -105,36 +105,63 @@ the tokens, the glass utilities and `FilterBar` all exist.
 
 ---
 
-## 1. Resend email setup (DNS fix + API key)
+## 1. Resend email: the DNS is DONE. What is left is a key and a subdomain.
 
-**Status:** PAUSED, 2026-07-29, at Rashid's request to keep development moving
-**Owner:** Rashid
-**Trigger to raise again:** before any feature depends on an email actually
-arriving. That means: password reset going live, email confirmation being turned
-on, approval notifications, or email-code login.
+**Status:** IN PROGRESS 2026-08-27
+**Owner:** Rashid for the Resend dashboard and GoDaddy, Claude for everything after
+**Trigger:** live now — prod cannot take a real creator without email.
 
-wurxmedia.com is verified in Resend, but the setup is half-broken:
+**THE DNS COMPLAINTS IN THE ORIGINAL VERSION OF THIS ITEM ARE ALL FIXED**, and
+were fixed on 2026-08-01 without anybody updating this file. Verified from the
+command line on 2026-08-27 against `wurxmedia.com`:
 
-- The Resend DKIM record is published on the root domain (`@`) where nothing
-  will read it. It belongs at host `resend._domainkey`.
-- The SPF record for the bounce subdomain (`send`) is missing entirely.
-  Should be `v=spf1 include:amazonses.com ~all`.
-- Optional but worth doing: wurxmedia.com has **no SPF record at all**, which
-  weakens the existing Google Workspace mail. Suggested `@` value:
-  `v=spf1 include:_spf.google.com ~all`.
+| record | state |
+| --- | --- |
+| DKIM at `resend._domainkey` | correct, valid RSA key |
+| root SPF | `v=spf1 include:_spf.google.com ~all` |
+| bounce SPF at `send` | `v=spf1 include:amazonses.com ~all` |
+| MX at `send` | `feedback-smtp.us-east-1.amazonses.com` |
+| DMARC | `p=none`, relaxed alignment |
 
-Consequence while parked: emails from wurxmedia.com (including the existing
-rajil@ sender) go out weakly authenticated and are more likely to land in spam.
-Fine for now. **Fatal for login codes**, because a creator who never receives the
-code cannot get in at all.
+**A WARNING ABOUT HOW THAT WAS NEARLY GOT WRONG AGAIN.** The first check on
+2026-08-27 reported the bounce SPF missing, and it was a LOOKUP TIMEOUT that a
+`catch` had turned into "NOT FOUND". Rashid was told a record was missing when
+it was not. **A DNS check must distinguish NXDOMAIN from a failure to ask** —
+query a second resolver before reporting an absence.
 
-Also still needed: a **new Resend API key** with Sending access only, into
-`C:\Users\RA_shid\.wurx\cli-secrets.env` as `RESEND_API_KEY=`.
+**wurxmedia.com is sending live mail to a real list today, and must not be
+disturbed.** Rashid said so explicitly. Nothing about its records, its sender or
+its API key is to be changed.
 
-Agreed sender once live: `Wurx Media <creators@wurxmedia.com>`. No new domain
-setup needed for that address, domain verification covers every address.
+**The decision taken on 2026-08-27: the app sends from its OWN SUBDOMAIN**, so
+the two reputations are separated. The risk runs in the direction people do not
+expect — a marketing campaign that collects complaints degrades the domain, and
+the casualty is a password reset a creator needs urgently. See DECISIONS.
 
-Full step-by-step instructions were given in chat on 2026-07-29.
+**What is left, in order:**
+
+1. **Rashid:** add the subdomain as a second domain in Resend, and its three
+   records at GoDaddy. Purely additive; no existing record is edited.
+   **The GoDaddy trap:** it appends the domain automatically, so the host is
+   entered WITHOUT `.wurxmedia.com`. Pasting the full name creates
+   `...notify.wurxmedia.com.wurxmedia.com` and the domain never verifies.
+2. **Claude:** verify the records from the command line, against two resolvers.
+3. **Rashid:** create a NEW API key, Sending access only, scoped to the new
+   subdomain. **Do not rotate or reuse the existing key**, which the website
+   uses. Into `C:\Users\RA_shid\.wurx\cli-secrets.env` as `RESEND_API_KEY=`,
+   never into a chat message.
+4. **Claude:** Supabase custom SMTP on DEV (`smtp.resend.com`, 587, user
+   `resend`, password the API key), prove a real password reset arrives, then
+   the same on prod.
+5. **Claude:** the approval notification, as an Edge Function on the Resend HTTP
+   API. Item 2 calls it the single most important email in the product.
+6. **Claude, LAST:** turn email confirmation ON. **Doing this before SMTP is
+   proven locks out every new signup**, because the confirmation mail would go
+   through Supabase's built-in sender or not at all.
+
+**Quota is per ACCOUNT, not per domain**, so a subdomain separates reputation but
+not the sending allowance. Resend's free tier is 3,000/month and 100/day, shared
+with the website's list. Worth checking the plan before real volume.
 
 ---
 
@@ -325,8 +352,9 @@ logins, superadmin included, copied verbatim because the code was to be left
 alone. **Raise before prod, and worth changing those passwords regardless.**
 
 **b. It has its own login.** An admin signs into WurxMediaHub and then signs into
-WurxBase again with `Admin` / `admin.top@wurx`. That is their logic, untouched by
-instruction. **Raise when Rashid tires of the second login.**
+WurxBase again with a second username and password. That is their logic,
+untouched by instruction. **DONE 2026-08-28, the second login is gone; the
+passwords behind it were dropped on 2026-08-29.**
 
 **c. The avatar circles keep their teal, orange, blue and purple.** Those
 gradients live in their JavaScript, not their CSS, so the reskin could not reach
@@ -851,14 +879,365 @@ today. **Creators must never see the budget or the ROAS target.**
 
 ---
 
-## 27. SUBMITTED 2026-08-26. Waiting on TikTok's review.
+## 27d. REJECTED AGAIN 2026-09-15: the website, and the icon
 
-**Status:** BLOCKED, on TikTok
-**Owner:** TikTok's review team. Nothing here is waiting on us.
+**Status: LIVE ON PRODUCTION (2026-09-23, `d3f1555`), WAITING ON RASHID TO
+RESUBMIT.** Rashid said "make it live". The public pages and the icons are on
+`main` and deployed; `verify:site` is 86/86 against **wurxmediahub.vercel.app
+itself**. Twenty-eight files, no migration, no Paid Collabs, no client links —
+dev stays far ahead and the full "make all of it live" decision is untouched.
 
-**Trigger to raise this again: the moment Rashid says the app is approved or
-rejected.** He will hear by email. Do not start the key swap below without a
-clear yes from him.
+**The deploy had to go through the CLI**, with the PRODUCTION project's own
+`.vercel/project.json` (`prj_OLeguFubM4HJApvxEbgDqCpzwNSO`, projectName
+`wurxmediahub`) and `vercel deploy --prod`. The git deploy from the push to
+`main` came back BLOCKED, same `TEAM_ACCESS_REQUIRED` as dev: PARKED 45, and
+still Rashid's to fix.
+
+**What is left: he resubmits.** The exact portal steps are in OPERATIONS,
+"Resubmitting the TikTok app". The two prerequisites that were his are: the
+site live on production (done) and `support@wurxmedia.com` existing (his).
+
+**The history of it, in order:**
+1. ~~Rashid reads the words.~~ He declined ("i don't have enough time") and sent
+   wurxmedia.com and wurxmedia.com/content instead, 2026-09-22. Both were read
+   and the site was corrected against them: the six services, the case studies,
+   how a collaboration really runs, the creator count (ours said 5K+, theirs
+   says 1,000), and the privacy policy, which denied holding phone numbers and
+   payment handles that Paid Collabs has always held. **Anything about the
+   business that is still wrong, only he can catch.**
+2. **`support@wurxmedia.com` has to exist before we resubmit.** Rashid is
+   creating it (2026-09-22). The legal pages tell people to write there, a
+   reviewer may test it, and a creator asking for their data has a legal right
+   to reach somebody. The Contact page gives `rajil@wurxmedia.com`, which
+   wurxmedia.com publishes, so that one is already real.
+3. The public pages go onto `main` on their own, as `5888faa` did.
+4. He resubmits in TikTok's portal with the icon `public/tiktok-app-icon.png`
+   and the Website URL `https://wurxmediahub.vercel.app/`.
+
+**If they reject the vercel.app address itself**, the fallback is option B: the
+same pages on `creators.wurxmedia.com`, which needs a DNS record and moves the
+redirect URIs, the Supabase auth URLs and TikTok's URL verification.
+
+**Raise it when:** he comes back to TikTok, or when he asks what is pending.
+
+The diagnosis below is kept as the record of what was wrong.
+
+**The reviewer's note, verbatim:**
+
+> Changes to your app were not approved for production.
+> Update the following fields and resubmit changes to your app: App icon ·
+> Website URL
+>
+> Note from reviewer: Your website URL cannot be a landing page or login page.
+> You must have an externally facing fully developed website.,A valid official
+> website that houses information about your web and services.,The app icon
+> submitted in the Basic Info does not match the icon displayed on the website.
+> Please ensure the same icon is used consistently across both the TikTok, the
+> website and Browser tab (favicon), then resubmit for review
+
+**What moved since 27:** the "personal or company internal use" objection is
+gone. Only these two fields are named.
+
+### The icon, verified 2026-09-15
+
+| where | what it shows |
+| --- | --- |
+| our browser tab, `public/favicon.svg` | the older geometric gold "W" on a gold square (already PARKED 8) |
+| our site header, `public/wurx-logo.png` | the Wurx dog face and the "WURX Media" wordmark |
+| wurxmedia.com browser tab | the dog face: `/favicon.svg` (vector) and `/favicon.png` (256px) |
+
+Our own site disagreed with itself before TikTok compared anything. **The fix
+is one mark in all three places, and it has to be the dog face**, because that
+is what the official site already shows. Use one file for the TikTok app icon
+and for our favicon.
+
+**Rendering it, and the trap in doing so.** `https://wurxmedia.com/favicon.svg`
+is 512×512 with NO `viewBox`. So stretching it to 1024px does not scale
+what is drawn: the first render put a small face in the top-left corner of
+an empty square. Add `viewBox="0 0 512 512"`, then set width and height to
+1024. That renders centred and crisp (drawn area roughly x 40–469, y 111–403
+of 512). It has a transparent background and a pale face, so look at it on
+white before uploading.
+
+### The website, verified 2026-09-15
+
+Signed out, production (`main` at `62534b7`) serves one scrolling landing page
+(Hero, TrustedBy, BrandMarquee, Platform, HowItWorks, ApplyForm, FinalCta),
+plus `/apply`, sign in, `/terms`, `/privacy` and `/tiktok`, on a `vercel.app`
+address. That is, fairly, a landing page with legal pages attached.
+
+`wurxmedia.com` IS a fully developed official site (About, How it works,
+testimonials, its own privacy and terms). But it says nothing about the hub,
+and TikTok wants Terms and Privacy on the same domain as the app (see the
+note in `router.tsx`).
+
+### The two decisions only he can make
+
+1. **Which website.**
+   - **A, recommended:** turn our own public site into a real website on
+     production. It gets its own pages (for creators, for brands, how it works,
+     about, FAQ and contact) beside `/tiktok`, `/terms` and `/privacy`, with
+     one nav, one footer and the dog face in the tab. Submit
+     `https://wurxmediahub.vercel.app/`. The redirect URIs and the Terms and
+     Privacy URLs stay exactly as they are.
+   - **B:** the same site, on an official subdomain such as
+     `creators.wurxmedia.com`. This is the strongest "official" signal, but it
+     needs DNS on wurxmedia.com. It also moves every redirect URI, the
+     Supabase auth URLs and TikTok's URL verification.
+   - **C:** give `https://wurxmedia.com` as the Website URL. The least
+     building, but that site says nothing about the hub, and Terms, Privacy
+     and the redirects would all sit on a different domain.
+
+   **Not documented anywhere we found:** whether a `vercel.app` address itself
+   counts against "official". B removes that doubt; A does not.
+2. **How it reaches production.** Either the public pages go onto `main` on
+   their own, as the 2026-09-01 copy fix did (`5888faa`), or they wait for the
+   full dev → production promotion.
+
+### Found on the way: `main` has commits that `dev` does not
+
+`git rev-list dev..origin/main` counts 3. One of them is `5888faa`, the
+`/tiktok` page and the Terms/Privacy rewording, and **`dev`'s router has no
+`/tiktok` route**. Any promotion of `dev` to production must merge `main`
+into it first. Otherwise it deletes the page the resubmission points to, and
+may restore the wording TikTok rejected in 27.
+
+---
+
+## 46. Euka ad spend per video: BUILT on dev 2026-09-15, with named gaps
+
+**Status:** BUILT. Rashid chose Euka as the source ("let's move with euka for
+now"), so the "which number wins" question below is settled: Euka wins. The
+design and its rules are in FEATURE_MAP, "Ad spend, ROI and spark codes in
+Paid Collabs come from EUKA".
+
+**What is still open, with the trigger for each:**
+- **Aurelia.** Euka reports 81 campaigns for its ad account but lists only 43,
+  because it refuses paging. The other 38 campaigns' spend cannot be read.
+  Raise it when Aurelia's totals look low, or when Euka fixes paging.
+- **Brands with no ad account connected in Euka** show dashes: Apothecary,
+  Biostime, Cutler Nutrition, Dangle-it, Dr. Harvey's and Nutra Harmony. Raise
+  it when one of them asks why its ad spend is blank.
+- **14 "Cutler Nutrition" GMV Max campaigns never answer.** They sit on
+  Aurelia's ad account ("Product GMV Max_Gross revenue_Cutler Nutrition_…"),
+  for June to September. Euka 504s on every request, even for a single week.
+  As of 2026-09-15 18:40 UTC they were retrying every 4 minutes, up to 20
+  tries. Every other connected brand's months are complete. They may be the
+  campaigns carrying Cutler Nutrition creators' spend, since Cutler's own Euka
+  store has no ad account connected. **Raise it when:** Cutler Nutrition or
+  Aurelia ad spend is asked about and looks blank. The next lever is asking
+  Euka whether these campaigns can be reported at all.
+- **Spark codes on busy days.** A store-day that hits Euka's 150-row cap may be
+  missing codes (`euka_spark_sync_days.capped`). Raise it when a video that
+  has a code in Euka shows none.
+- **Old and new numbers mixed during the backfill.** The copy fills over a few
+  hours, current month first. Until then a month shows whatever has synced so
+  far.
+
+**Everything below was written before the build.**
+
+### What the live test showed
+
+Read-only, through the new `type: 'gmvmax'` mode on the `euka` Edge Function
+(dev only).
+
+- **The base URL was wrong at first.** Every `/v0/gmv-max/...` call answered
+  "Route not found". Euka's spec declares its server as `/api/v1`, and on
+  `https://api.euka.ai/api/v1` the same routes work. The older modes stay on
+  `/v0`.
+- **Ad accounts connected INSIDE Euka** (`/gmv-max/advertisers`): Penetrex
+  has 2 (Biomax-PX, Infirst Healthcare), Dr Tobias has 2, and Aurelia,
+  Longevity Box and Swisse Wellness have 1 each. **Not connected**, so Euka
+  cannot give ad figures for them: Apothecary Brands, Biostime, Cutler
+  Nutrition, Dangle-it, Dr. Harvey's, NUTRAHARMONY STORE.
+- **The ITEM report is the one in Rashid's screenshot.** Given a
+  `campaignId`, `/gmv-max/reports/item` returned EVERY video in the campaign
+  in one call: 608, 327 and 497 rows for three Penetrex campaigns over 30
+  days, `truncated: false`, live from TikTok.
+- **Item ID is the TikTok post id.** 23 of the top 50 Penetrex videos by
+  spend match a video link saved on a Paid Collabs row.
+- **It fills what we cannot.** OUR TikTok ads data had figures for only 2 of
+  those 23. Where both had one they agreed: once exactly (cost 303.79, GMV
+  1149.66, 56 orders), once within 3% (cost 369.46 vs 358.76). That is the
+  recent days being restated, not a real disagreement.
+- **The store-wide creatives report cannot be paged.** It returns 50 rows
+  with `hasMore: true`, and both `page` and `pageSize` get a bare 400 "Input
+  validation failed", even though the spec documents them. Its synced
+  coverage for Penetrex is only 2026-08-04 → 2026-09-14. So a real build reads
+  the campaigns, then one item report for each.
+- **Items sold is not in these reports; they give orders.** The Items sold
+  column already comes from Euka's video exports (`itemsSoldCount` /
+  `items_sold_count`), so it is a separate question from ad spend.
+
+### The decision needed before building
+
+When a video has figures from both our TikTok connection and Euka, which
+wins? **Recommended:** ours where present, because it is read directly from
+TikTok, and Euka only where ours is blank. Either way, every figure keeps the
+month bounds that `collab-ad-figures.tsx` already applies.
+
+**Everything below was written before the live test.**
+**Raise it when:** Rashid wants per-video ad spend for a brand whose ad
+account we have not connected, or asks for Euka to replace or check our
+TikTok ads numbers.
+
+**Rashid, 2026-09-15:** "does euka give us the ad spend for a particular
+video? … if we give post(video) id and it returns cost ad spend gmv created
+etc?"
+
+**Answer, from Euka's own spec at `https://api.euka.ai/openapi.json`:** yes,
+for GMV Max spend, but not as a lookup by post id.
+
+| endpoint | per video | notes |
+| --- | --- | --- |
+| `GET /gmv-max/reports/creatives` | `itemId` (post id), `cost`, `orders`, `grossRevenue`, `costPerOrder`, `roi`, `currency`, `productImpressions`, `productClicks` | a date range, store-wide or one campaign, paged, sortable by cost/orders/revenue/roi. Read from Euka's DAILY sync, which rewrites the last 3 days; `coverage` null means nothing synced, not zero spend |
+| `GET /gmv-max/reports/item` | the same, plus delivery status and click/conversion rates | live from TikTok; `campaignId` required; may be `truncated` |
+| `POST /dashboard/boosted-videos` | `gmvMaxCost`, `gmvMaxRoi`, `adSales`, `acos`, `costPerOrder`, `adItemsSoldCount`, views, creator | at most 100, ranked by TRAILING-YEAR spend, not spend within the dates |
+| `POST /dashboard/top-videos-by-revenue` | the same ad fields | only 5 videos. **We already call this, and discard those fields** |
+| `POST /market-intelligence/tiktok/video/detail` | takes a `video_id` | ESTIMATES only: `ads_roas`, `ad_cpa`, `ads_views`, an ad flag. No spend |
+
+**What it cannot do:** take a post id and return that video's actual spend.
+The way is to pull the creatives report for the dates and match `itemId`.
+
+**Preconditions nobody has checked:**
+1. The brand's TikTok ad account must be connected inside Euka.
+   `GET /gmv-max/advertisers?storeId=` answers that per store.
+2. Both of our Euka keys must be allowed to read GMV Max. `GET /me` shows a
+   key's brand access, not its plan.
+
+**How to test without writing anything:** a temporary read-only mode on the
+`euka` Edge Function calling `/gmv-max/advertisers` and one day of
+`/gmv-max/reports/creatives` per store. The keys live only in Edge secrets.
+
+**Why it might matter:** these are the same five numbers our own TikTok ads
+pipeline reads directly from TikTok, and Euka relays TikTok. So it adds
+nothing for brands whose ad account we already connected. It could fill in
+brands whose ad account is connected to Euka but not to us.
+
+---
+
+## 45. Vercel blocks git deploys: link GitHub to the Vercel account
+
+**Status:** OPEN, on Rashid. He said *"i will do it later remind me please"*.
+**Raise it when:** the start of every session until it is done, and before
+any deploy.
+
+Since 2026-09-14, every push to `dev` comes back `BLOCKED` with "the commit
+author doesn't have permission to create deployments"
+(`TEAM_ACCESS_REQUIRED`). The commit identity is the same one that deployed
+on 09-10. The Vercel team (Hobby plan, sole member `wurxmedia-6695`) has no
+GitHub login linked, so Vercel cannot match GitHub `RashidNazeer` to a member.
+A push to `main` would almost certainly be blocked the same way.
+
+**His fix:** Vercel → Account Settings → Authentication → connect GitHub
+`RashidNazeer`. Then push anything, or Redeploy, and confirm READY.
+
+**Until then:** use the CLI route in OPERATIONS (Vercel section). Export the
+sha with `git archive`, `vercel deploy` a preview of the dev project, then
+`vercel alias set` it to wurxmediahubdev.vercel.app. That is how dev went live
+at `aab0cf0` on 2026-09-15.
+
+---
+
+## 27. REJECTED 2026-09-01. Diagnosed, copy drafted, WAITING ON RASHID.
+
+**Status:** BLOCKED, on two decisions only he can make
+**Owner:** Rashid
+**Raise it when:** he comes back to TikTok, or asks what is pending.
+
+**The reviewer's note, verbatim:**
+
+> Changes to your app were not approved for production. See why
+> Note from reviewer: App will not be approved for personal or company
+> internal use.,TikTok for Developers currently does not support personal or
+> internal company use. Not acceptable: Display posts from the TikTok
+> account(s) you or your team manage on your website.
+
+### THE DIAGNOSIS: it is our wording, and we volunteered the exact banned word
+
+TikTok's **App Review Guidelines**, under "Description", say in as many words:
+**"Apps must not be for private or personal use."** The Content Sharing
+Guidelines carry the published twin of the reviewer's sentence: *"API Clients
+must not be limited to test applications and should be intended for a wide
+audience, not limited to internal groups/private use."* Both pages were last
+updated 2026-08-04, three weeks before we submitted, so they are the rules that
+were actually applied.
+
+We used that word about ourselves, twice, where the reviewer could not miss it:
+
+1. The scope explanation's opening sentence: *"Wurx Media Hub is a **private**
+   platform for TikTok Shop creators who work with our brands."*
+2. `/terms`, the page the form tells them to check, opens "What this platform
+   is" with *"Wurx Media Hub is a **private workspace, not a public
+   marketplace**."* — `src/routes/legal/Terms.tsx:31`.
+
+The sentence that refutes the rejection — *"You are an independent creator, not
+an employee, worker, agent or partner"* — is the 10th of 14 headings, 78% down
+a 1,286-word page, and LegalPage renders no table of contents.
+
+**The product is not the problem.** Nothing in the Login Kit / video.list flow
+matches "display posts from the TikTok account(s) you or your team manage":
+each creator authorises their OWN account and the figures render only to them,
+inside the signed-in app. Verified against the code, not assumed.
+
+**Two things that partly resemble it — handle deliberately, never hide:**
+- `creator_tiktok_videos` carries a staff SELECT policy as well as an own-row
+  one (`20260825235328_creator_tiktok_connection.sql:208-219`). No admin screen
+  reads it today, but **"only the creator can see them" would be a lie**, so
+  the new copy says "that creator and Wurx Media staff helping them".
+- The admin Content screen does embed creators' TikTok posts — but through
+  public oEmbed and links the creators submitted, not through these scopes.
+
+### THE BLOCKER, and it is a decision not a task
+
+**The URLs on that form point at PRODUCTION**, which is frozen, running old
+code and empty (0 profiles, 0 brands, 0 offers). Fixing the wording on dev
+changes nothing a reviewer sees. **A resubmission needs a production deploy,
+which is Rashid's "make it live" call and he has not given it.**
+
+Second documented problem in the same place: TikTok requires *"an externally
+facing fully developed website"* and says the Website URL *"cannot be a landing
+page or login page."* We submitted the bare landing page.
+
+### SHIPPED TO PRODUCTION 2026-09-01 — commit 5888faa on main
+
+Rashid chose copy-only-to-prod over deploying dev, and a public page for the
+connection. Both are live and verified on wurxmediahub.vercel.app:
+
+- **Terms.tsx** no longer says "a private workspace, not a public
+  marketplace". It opens on independent creators and open applications, and
+  carries one sentence a reviewer cannot miss: creators own their own
+  accounts and Wurx operates none of them.
+- **Privacy.tsx** "our own internal rules" became "our staff data handling
+  rules". The "private target" sentence was LEFT — it means a creator's own
+  contest target, which is the honest use of the word.
+- **NEW: /tiktok**, a signed-out page describing the connection — whose
+  account it is, the two permissions, who can see the figures, how to
+  disconnect. Linked from the footer. **This is the URL the resubmission
+  should give as the Website URL**, not the bare landing page.
+- Legal pages redated to 1 September 2026.
+
+**Copy only: 7 files, zero migrations, zero schema, zero behaviour change.**
+dev stays 39 commits and 7 migrations ahead; the "make it live" decision for
+all of that is still open and untouched.
+
+Verified signed out at 1280px in both themes: no horizontal scroll, zero
+console errors, "private workspace" absent from all three pages.
+
+### STILL TO DO — the submission itself, which only Rashid can send
+
+The site is ready. Nobody has resubmitted anything. When he does, use the
+copy below, and change the Website URL to **https://wurxmediahub.vercel.app/tiktok**.
+
+### What he was asked, and has not yet answered
+
+1. **Do we rewrite the Terms and Privacy wording?** It is his legal copy. The
+   change is factual: "private workspace, not a public marketplace" becomes
+   wording that says applications are open and approval-gated, which is what
+   his own landing page already says.
+2. **Does that go to production?** Nothing improves for a reviewer until it does.
+
+**Nothing has been changed and nothing resubmitted.**
 
 ---
 
@@ -908,14 +1287,114 @@ worth blocking on.
 
 ---
 
-### If it comes back REJECTED
+### The resubmission copy, drafted and checked against the code
+
+Every line below was reconciled with what the product actually does. Do not
+soften it into claiming less access than we take — that is the flag reviewers
+look for, and over-claiming carries a permanent-ban clause.
+
+**Public description (107 chars):**
+
+> Independent TikTok Shop creators sign in to see their own sales, commission
+> and video results in one place.
+
+**Scope explanation (981 chars), no "private", "internal", "our team":**
+
+> Wurx Media Hub is for independent TikTok Shop creators. Each owns and runs
+> their own TikTok account; Wurx Media operates none of them. Any creator can
+> apply on our public home page, and approved creators sign in to see the paid
+> offers brands have for them and what their own posts earned.
+>
+> user.info.basic: a creator chooses "Connect TikTok" on their own profile page
+> and authorises with their own account. We use it to know which account is
+> theirs, and to show that account's name and picture back so they can confirm
+> it. Connecting is optional.
+>
+> video.list: we read the list of that creator's own videos and show them the
+> views, likes, comments and shares on the same page. Those figures are seen by
+> that creator and by Wurx Media staff helping them. They are never shown on a
+> public page or any other website.
+>
+> A creator can disconnect on the same screen: we revoke the token and delete
+> the figures. We never post, edit or delete on TikTok, and never read another
+> user's videos.
+
+**Reason box (389 chars):**
+
+> Resubmission after a rejection for personal or company internal use. That was
+> our wording, not our product. Wurx Media Hub is used by independent TikTok
+> Shop creators who own their own accounts, apply through our public home page,
+> and connect by choice. We manage none of their accounts and display nothing
+> from TikTok publicly. Same two scopes, reworded description, Terms and demo
+> video.
+
+**Hold everything else:** Login Kit only, `user.info.basic` + `video.list`
+only, same Web platform, same two redirect URIs. Do NOT rename the app — the
+missing space in "WurxMedia Hub" is not a rejection cause and TikTok's only
+name rule is that it match the site.
+
+### What the research could NOT settle, and he was told
+
+- **There is no appeal route.** Resubmission through the Support form is the
+  only path. No documented cooldown, no documented limit. Review takes days to
+  two weeks.
+- **No publicly documented case of a successful resubmission after this exact
+  boilerplate could be found.** A real gap, not an abandoned search.
+- **Whether an approval-gated app is approvable at all is not publicly
+  documented.** What is written cuts mildly our way — the rule is about the
+  AUDIENCE being wide, not about open registration, and reviewers ask for demo
+  logins, which presupposes gated apps get reviewed. But nobody at TikTok has
+  written "approval-gated is fine". Business risk, not a settled answer.
+- A secondary framing risk, downgraded on verification but worth knowing:
+  TikTok markets the Display API in audience-facing language ("enable their
+  followers to view their TikTok videos without leaving your platform"), and
+  ours is a per-creator dashboard. Borrow their vocabulary only where it is
+  true of surfaces that already exist.
+
+### The old note, kept because it earned its place
 
 **Get their reason verbatim before changing anything.** TikTok's messages have
 twice named the wrong field here — an authorise-page `client_key` error that was
 really sandbox redirect configuration. Their stated reason is the starting
-point, not the diagnosis.
+point, not the diagnosis. That held again this time: the note said "internal
+use", and the actual defect was one adjective in our own copy.
 
 ---
+
+## 27c. THE SANDBOX KEY ON PRODUCTION MAY BLOCK THE REVIEW ITSELF
+
+**Status:** OPEN, and it is a question for Rashid before he resubmits
+**Found:** 2026-09-04, by watching what production actually sends
+
+### THE SWAP MAY HAVE TO HAPPEN BEFORE APPROVAL, NOT AFTER
+
+Production drives the **sandbox** app: pressing Connect there builds an
+authorize URL with `client_key=sbaw82kr6qc82ia76e`. 27b assumes the swap to
+the real key happens once TikTok approve.
+
+**That order may be backwards.** A TikTok sandbox only lets accounts on its
+own target-users list authorise. A reviewer who opens
+`wurxmediahub.vercel.app`, signs up and presses Connect with their OWN TikTok
+account is not on that list — so the connection would fail for them, on the
+exact screen the submission is about, for a reason that has nothing to do
+with the app being reviewed.
+
+**NOT VERIFIED, and it must not be guessed at.** What is confirmed is only
+that production sends the sandbox key. Whether TikTok reviewers test the
+live site themselves, and whether an unapproved app's own key would fare any
+better than the sandbox one, is not documented anywhere we found.
+
+**Two ways to take the risk off the table:**
+
+1. **Give the reviewer the approved creator login** (`mrrashid3255@gmail.com`,
+   role `creator`) **whose TikTok is already connected**, and make the demo
+   video carry the whole flow. Then nothing depends on the reviewer
+   authorising their own account. Cheapest, changes nothing.
+2. **Add the reviewer's TikTok account to the sandbox target users** — only
+possible if TikTok tell us which account they will use, which they do not.
+
+Option 1 is what a submission should carry anyway. Raise it with him before
+he sends the form.
 
 ## 27b. AFTER APPROVAL: the production key swap.
 
@@ -954,10 +1433,16 @@ on the card and `/privacy` in one commit, then reconnecting.
   sandbox.
 
   **Two things that will bite:**
-  - The identification is INFERRED from the prefix (`sbaw` is TikTok's sandbox
-    convention) and the differing lengths. Neither value has ever been seen in
-    full. **Confirm in the portal that the app's own page shows a key starting
-    `awxg` and ending `7g` before swapping.**
+  - **NO LONGER INFERRED — both keys were read in full on 2026-09-04**, out of
+    the authorize URLs the two sites actually build when Connect is pressed:
+
+    | site | client_key it sends |
+    | --- | --- |
+    | `wurxmediahubdev.vercel.app` | `awxghd5gf1cme27g` — the APP's own |
+    | `wurxmediahub.vercel.app` | `sbaw82kr6qc82ia76e` — the SANDBOX |
+
+    The prefix convention held. No portal check is needed to identify them any
+    more; the swap is putting `awxghd5gf1cme27g` and its secret onto production.
   - **The app keeps its own redirect URI list, separate from the sandbox's.**
     **ALREADY HANDLED — verified on the app's Login Kit page 2026-08-26.** Both
     `https://wurxmediahub.vercel.app/oauth/tiktok-creator/callback` and the dev
@@ -970,6 +1455,377 @@ on the card and `/privacy` in one commit, then reconnecting.
   asked yet. **They must never be presented as reconcilable with
   `tiktok_video_daily`:** these are organic lifetime totals for a whole video,
   that is the ad-driven slice, and the card says so in as many words.
+
+## 35. DONE 2026-08-29. The dark/light audit, including the 30 unchecked claims
+
+Rashid said "yes, run it" on 2026-08-29, and the answer turned out not to need
+thirty agent votes. **The guard that should have caught these had been passing
+them.** `check-collab-contrast.mjs` failed below 3.0 and merely warned between
+3.0 and 4.5, on the reasoning that "large text is allowed 3.0" — which is true
+of large text and false of the 9.5px and 11px labels that make up most of these
+screens. It printed lines like `PASS Leaderboard: worst 4.02:1, 12 below AA`:
+the failure was in the pass message.
+
+Given the real per-element floor — 3.0 only at 24px, or 18.66px bold, and 4.5
+for everything else — **30 elements failed across the six screens in both
+themes**, which is the same order as the 30 unverified claims and overlaps them
+substantially. All 30 are now fixed and the guard is 12/12 on the honest
+thresholds.
+
+**One mistake, thirty times: ink calibrated against the page, used on a tint.**
+`--wx-text-faint` is 5.73:1 on `--wx-bg` and `pnpm check:contrast` proves
+it. It is 4.02:1 on a warning-soft pill, because the tint moved the ground. The
+fix each time was to put the ink back on `--wx-text` and let the tinted chip
+keep carrying the meaning — colour was doing two jobs and could only do one
+well. Four were different: a `tw-bg-white` button that stayed white in dark
+mode, a hardcoded `#8C8C8C` footer, a green section label on green, and one
+hired-by chip whose rosewood was 4.27:1 on its own background.
+
+**Status:** DONE
+**Owner:** Claude
+**Raise it when:** Rashid mentions how Paid Collabs looks, or when there is
+session budget to finish the verification.
+
+Rashid, 2026-08-28: *"we need to fix dark and light mode issues there coudl be
+many but i ust shraed one example run adversarial review or do wharever"*.
+
+Six categories were audited, every finding put to three agents told to REFUTE
+it. **13 confirmed and fixed, 13 refuted, and 30 that were never verified at
+all** — their voters died on a session limit, and an unmeasured claim is not a
+finding. They are listed below because several look serious, NOT because they
+are established.
+
+**WHAT WAS FIXED** (all in `src/routes/admin/wurxbase-overrides.css` unless
+noted). The shape of nearly all of it: the vendoring pipeline mapped fills and
+inks as separate declarations that never saw each other, so pairs that were
+legible together came apart.
+
+- **"New angle" was invisible in both themes**, 1.27:1 and 1.28:1 — the ink for
+  the gold fill sitting on a plain well. Their own `:hover` set the accent,
+  which is how we know it was meant to be an accent button all along. It also
+  fronts the empty state, so a new brand-month opened with an unreadable
+  invitation. **This is the example Rashid pointed at.**
+- **Sortable column headers vanished under the cursor**, both themes.
+- Modal header bands ran a gradient into our informational BLUE.
+- **Six full-screen scrims were painted blue**, so every dialog read as an alert.
+- **Every primary button was caution-amber** rather than brand gold.
+- Rings drawn as cut-outs in hardcoded `#FFF` — a white halo round every face
+  in dark mode.
+- A sticky contract header that faded to 12%, so rows scrolled through it.
+- Our own blanket field rule was the cause of two complaints rather than the
+  cure: it painted the angle figures as wells (the box-inside-a-box) and its
+  `color: !important` flattened six per-kind ink colours into one, deleting
+  the "fetched, not typed" signal.
+- A `.rep-chart` selector of ours that matched nothing — a fix somebody
+  believed was in place.
+
+**THE 30 UNVERIFIED, in the auditors' words. Treat as leads, not facts:**
+
+- **[raw-colours]** The brand notes drawer is white with white text in dark mode
+- **[raw-colours]** The Leaderboard's headline figure is hardcoded near-black on a token surface
+- **[raw-colours]** Leaderboard card emphasis is exactly inverted in dark mode
+- **[raw-colours]** Role pills and avatars: the ink was tokenised, the fill was not
+- **[raw-colours]** Every primary button in User Management is filled with a soft token, so it reads as disabled
+- **[raw-colours]** The Remove-member button is invisible until you hover it, then illegible in light mode
+- **[raw-colours]** UMBtnGhost paints itself white on mouse-out and leaves its label near-white on it
+- **[raw-colours]** Hovering a Settings row blanks the row you are pointing at
+- **[raw-colours]** Month and period strips read inside-out in dark mode: the selected chip is the hole
+- **[raw-colours]** The unread-notification dot is painted with a soft token and ringed in near-black
+- **[raw-colours]** --wx-on-accent used as ink on hardcoded categorical fills, which are all dark
+- **[raw-colours]** The creator detail modal is a near-white sheet in dark mode
+- **[raw-colours]** The Tailwind retokenisation was half-done: gradient stops became gold, solid fills stayed blue
+- **[raw-colours]** Near-white hairlines rule the Settings and Activity lists in dark mode
+- **[raw-colours]** SqlQuest is a complete hardcoded light-mode modal, 52 literals, none of which can flip
+- **[raw-colours]** Categorical colour arrays: eleven bare hex lists no stylesheet can reach
+- **[our-overrides]** The SVG-ink !important is needed for one of four text roles in one theme, and flattens all four in both
+- **[our-overrides]** The header's rim light is built from the accent, so it inverts from a highlight into a dark hairline in light mode
+- **[states-and-focus]** The "New angle" button — accent ink on a surface fill, 1.27:1 in dark and 1.28:1 in light
+- **[states-and-focus]** The primary buttons in the video picker and Access Control footers carry the identical defect
+- **[states-and-focus]** The selected role pill in Access Control changes only its ink, to white-on-white in light mode
+- **[states-and-focus]** The selection tick in the video picker is painted the same hex as its own background in dark mode
+- **[states-and-focus]** The selected-video ring is a hardcoded hex that matches the dark panel it sits on
+- **[states-and-focus]** The selected settings nav row uses a 10%-alpha token as ink, invisible in light mode
+- **[states-and-focus]** The notes drawer textarea is hardcoded white, and it is portalled outside the fence so nothing can correct it
+- **[states-and-focus]** Text selection is a 10-14% wash, so selecting a figure looks like nothing happened
+- **[states-and-focus]** Every scrollbar is solid brand gold, and the thumb vanishes when you grab it
+- **[states-and-focus]** The long angle table has a raw near-black Firefox scrollbar on a near-black panel
+- **[states-and-focus]** The only keyboard focus ring in the vendored screen is the green that means "Payment Sent"
+- **[states-and-focus]** Six hover states repaint an element the colour it already was
+
+**A GUARD THAT LIED, AND WHY IT MATTERS MORE THAN ANY OF THEM.**
+`check-collab-contrast.mjs` switched tabs by clicking a button named after
+each one. Moving the six tabs into our sidebar removed those buttons, so
+`if (await b.count())` found nothing, skipped silently, and it measured the
+SAME screen six times while printing six passes — it went from "11 of 12" to
+"12 of 12" on a change that touched no colour. It navigates by URL now and
+**fails if two tabs in a row render an identical set of labels**, because the
+only innocent explanation for that is that navigation stopped working. It also
+signs in as superadmin: the old `lead` user is a viewer with no
+`tabDiscovery`, so the sixth screen was never measured even before this.
+
+**A REAL BUG THE FIXED GUARD FOUND, still open.** Our sidebar shows all six Paid
+Collabs rows to any ops/admin, but the tab a person can actually open is gated
+by their WURXBASE capability. A WurxBase `viewer` or `client` who clicks
+Discovery is silently redirected to Brands with no explanation. Before the
+tabs moved into our sidebar the row simply was not there. Two honest fixes:
+have the vendored app publish its permitted tabs so the sidebar can hide the
+rest, or land on the row and say plainly that this section is not theirs.
+
+## 34. DONE 2026-08-29. WurxBase destroyed saved data on an ordinary click
+
+**All six are fixed** on `fix/wurxbase-write-safety`, and the fix is not the
+one that was designed. Every option in `docs/WURXBASE_WRITE_SAFETY.md` was
+written under "no DDL access on that project"; we have owned the schema since
+2026-08-28, so the recommended JavaScript compare-and-swap — which admitted it
+could not be made atomic — was replaced by one Postgres can enforce:
+
+- a **partial unique index** on `(action, target)` for the three actions that
+  store state, so one row per subject is a fact rather than a habit and
+  insert-then-sweep stops being expressible;
+- a **revision column**, making every save a conditional update that Postgres
+  decides atomically. A stale screen changes nothing instead of flattening the
+  row.
+
+`pnpm verify:write-safety` reproduces the sequence that used to lose data:
+11 checks, including that all three actions are inside the index predicate — a
+typo there would have left one with the old behaviour and nothing would have
+said so.
+
+The other three were not concurrency, they were dialogs that lied: the brand
+delete counted the filtered list on screen and deleted on the brand string
+(5 shown, 17 removed, the extra twelve unreviewed applications, and Undo held
+only the five); "Undo my changes" called `setDraft({})`, removing every
+override the person had including ones somebody else set months earlier; and
+the shared settings row could be written by a session whose load had failed,
+because the guard was set true whether or not it succeeded.
+
+**Original entry follows, for the record.**
+
+## 34-was. WurxBase destroys saved data on an ordinary click, in six places
+
+**Status:** PAUSED, needs a decision from Rashid
+**Owner:** Claude
+**Raise it when:** he asks about Paid Collabs reliability, before anybody new is
+given a WurxBase login, or the next time Asad is in a conversation.
+
+Found 2026-08-28 by a 100-agent audit of every write path in
+`src/vendor/wurxbase/`. **Full detail and the fix design:
+`docs/WURXBASE_WRITE_SAFETY.md`.** Rashid has NOT approved any change yet.
+
+**THE SHAPE, one sentence:** their screens read a `localStorage` mirror rather
+than the database, a save writes whatever is in that mirror and then DELETES the
+stored rows it replaces, and the load that fills the mirror swallows its own
+error — so a screen that failed to load looks identical to a screen with nothing
+saved, and the next click makes that emptiness permanent.
+
+**Twenty-seven confirmed, 24 of them live:**
+
+| Area | What happens | Severity |
+|---|---|---|
+| Access Control / users | Opening the user modal on a failed read reseeds five hardcoded accounts, resetting role and password | loses-saved-data |
+| Access Control / users | "Undo my changes" discards every override ever stored on that person, not the ones you just made | loses-saved-data |
+| Access Control / users | Permissions are loaded once and written wholesale, so a parked panel overwrites everyone else's grants | loses-saved-data |
+| Creative angle testing | On a device whose mirror never loaded, "New angle" replaces the team's whole test for that brand+month with one blank angle | loses-saved-data |
+| Creative angle testing | A second tab or a second teammate silently sweeps the row the other one just saved | loses-saved-data |
+| Creative angle testing | A boot fetch that lands after a save overwrites the mirror wholesale, and the next edit makes the reverted state permanent on the server | loses-saved-data |
+| Brand contracts | An empty modal saves nothing over the top of everything, and reports success | loses-saved-data |
+| Brand contracts | The delete runs before the insert, so a failed save destroys the old row while the screen keeps showing it | loses-saved-data |
+| The creator table | Deleting a brand destroys pending applications the user was never shown, and Undo cannot restore them | loses-saved-data |
+| The creator table | Bulk "Hired By" writes to rows scrolled out of view and bypasses the Asad gate that exists on every other hired_by path | loses-saved-data |
+| The creator table | An EUKA video with no usable date deletes the matching stored row, taking a hand-typed ad code with it | loses-saved-data |
+| Discovery, brand order, realtime | scheduleSettingsSave is missing the load guard its sibling has, so mounting the app writes an empty brand_order over the team's saved order | loses-saved-data |
+| Discovery, brand order, realtime | A realtime refetch rewrites the pending debounced patch, silently discarding a brand reorder the user just made | loses-saved-data |
+| Discovery, brand order, realtime | settingsLoadedRef is set to true even when the settings fetch failed, so the guard lies and the next edit writes a partial list over the shared row | loses-saved-data |
+| Discovery, brand order, realtime | saveDiscoveryMark deletes the existing outreach mark before inserting the new one, with no rollback of the delete, and the UI then restores the old colour it just destroyed | loses-saved-data |
+| God Mode / app settings | God Mode brand delete counts approved creators but deletes every status, silently destroying pending applications | loses-saved-data |
+| Access Control / users | After changing someone's role, toggling a switch off and on again deletes their stored override | corrupts-data |
+| Brand contracts | A stale mirror rolls a teammate's newer terms back on the next edit | corrupts-data |
+| Creative angle testing | Deleting the last angle removes the server row entirely, so the promised five-second Undo exists only in memory | annoyance |
+| Creative angle testing | A half-typed figure in a cell is replaced when a late reload lands | annoyance |
+| God Mode / app settings | app_settings brand_order save fires on mount with no load guard at all — an armed OVERWRITE-FROM-EMPTY held back only by RLS | annoyance |
+| God Mode / app settings | settingsLoadedRef is set to true after a FAILED load, and every app_settings write refusal is swallowed to console only | annoyance |
+| God Mode / app settings | Backup > Restore from file silently resets every God Mode setting when given a valid JSON file that is not a backup, and reports success | annoyance |
+| God Mode / app settings | godGet's module cache is never invalidated, so a second tab's save writes back a stale snapshot over the first tab's settings | annoyance |
+
+**NEEDS NOTHING TO GO WRONG FIRST** — these fire on a good day, on a good
+connection, and are the ones to tell Asad about:
+
+- **God Mode brand delete counts approved creators and deletes every status.**
+  The dialog says "permanently removes its 5 creator records"; it also removes
+  every PENDING application for that brand, which the count never included and
+  Undo cannot restore. Same bug reachable from the Brand Drilldown trash icon.
+- **Access Control "Undo my changes" writes `{}`** — every override that person
+  ever had, including ones set months ago by somebody else.
+- **Two tabs, or two people, and the second save silently wins**, on angle
+  tests, contracts and permissions alike. No conflict warning, no trace.
+- **Bulk "Hired By" writes to rows scrolled out of view** — the floating bar
+  keeps its selection across a brand or month change — and skips the Asad-only
+  gate every other `hired_by` path has.
+- **Mounting the app can write an empty brand order over the team's**, because
+  `scheduleSettingsSave` is missing the load guard its sibling has. One shared
+  `app_settings` row, so it is everyone's ordering.
+
+**DELETE-BEFORE-INSERT, so a failed save destroys the old row:** brand contracts
+and Discovery outreach marks both delete first and have no rollback. The contract
+one is the worst of the pair — it then reports "Could not save", and the mirror
+keeps rendering the old terms, so nobody investigates while recovery is still
+possible.
+
+**2026-08-28: THE GROUND MOVED. RE-READ THE DESIGN BEFORE BUILDING IT.** Every
+option in `docs/WURXBASE_WRITE_SAFETY.md` was written under the constraint
+"no DDL access on that project". That constraint is gone — their tables are in
+our `wurxbase` schema now. A unique index on `(action, target)` plus an
+upsert makes the angle-test AND brand-contract overwrite bugs *impossible*
+rather than unlikely, in one migration, with no JavaScript to maintain across
+releases. The delete-before-insert pair becomes a single upsert. **The
+recommended option C was chosen partly because it did not need DDL; it may no
+longer be the right answer.**
+
+Also changed: Asad ships no more releases, so fixes go straight into
+`src/vendor/wurxbase/` rather than into `wurxbase-patches.mjs`. The
+one-file limitation of that script no longer needs fixing, and neither does the
+build-time assertion about refused patches — both were consequences of
+re-vendoring, which is over.
+
+**WHAT WE CAN FIX ON OUR COPY:** everything now, not just the angle-test path.
+Originally: only the angle-test path, and the design is
+option C in the doc — a compare-and-swap. The mirror starts carrying the id of
+the row it was built from; before writing, `saveAngles` asks the server which
+row it currently holds using the fetch's own ordering, and refuses if it is not
+the one this screen loaded, healing the mirror and telling the user. It fixes all
+three angle findings, leaves their insert and sweep byte-identical so a
+deliberate delete still deletes, and does not bet on `created_at` having a
+default we cannot read. Two one-line swaps and one anchored insertion.
+
+**`scripts/wurxbase-patches.mjs` can only patch one file today** — `FILE` is
+hardcoded to `WurxUI.jsx` — so it needs a small mechanical generalisation first.
+**And a refused patch currently leaves THEIR unpatched file on disk**, which is
+the dangerous version, so the same change must add a build-time assertion.
+
+**REFUTED, do not re-raise:**
+- **The creator table** — The EUKA auto-sync rebuilds the whole video_codes array from a snapshot taken before a long chain of network awaits
+- **The creator table** — DEAD CODE TODAY — DetailModalV2's video editor truncates the array to the deal's video count and strips every metric field, on open-and-close with no edit
+- **The creator table** — SAFE — the live video popup (CreatorVideosPopup) does write the whole array, but every way it can go stale is closed
+- **Discovery, brand order, realtime** — The Discovery realtime handler replaces the entire marks map with no in-flight or ordering guard, and the delete half of a local save triggers it against a row that is briefly gone
+
+## 33. NEVER DRIVE THEIR APP WITH A BROWSER ROBOT
+
+**Status:** RULE, not a task
+**Owner:** Claude
+**Raise it when:** anybody is about to point a Playwright script at
+`/admin/collabs`.
+
+WurxBase talks straight to THEIR production Supabase from the browser, with no
+staging copy and no auth: `bnevtdezskftlrjjgbsg`, publishable key in the
+bundle, every write live. A screenshot script that clicks around that screen is
+not taking screenshots, it is **using the product**, and their code has writes
+on paths that look like reads.
+
+The sharp one is `saveAngles` in `src/vendor/wurxbase/angleStore.js`:
+
+```js
+let sweep = supabase.from('activity_logs').delete().eq('action', ACTION).eq('target', key);
+if (keepId != null) sweep = sweep.neq('id', keepId);   // keepId is null when the list is empty
+await sweep;
+```
+
+**An empty save is an unconditional wipe of that brand-month**, with nothing
+written in its place and no trace left behind. Their screen reads a
+`localStorage` mirror, so a component that commits before the mirror arrives
+commits an empty list.
+
+On 2026-08-27 the `Aurelia::2026-08` angle test rendered at 00:33 PKT and was
+gone at 00:37, while a screenshot script of mine was the only thing on that
+screen. Asad had been working in the app until 00:31, so it cannot be pinned
+either way — which is the point: **there is no way to tell, because their app
+does not log a delete.**
+
+**The rule:** read their database over REST if you need facts. Take screenshots
+of OUR screens. If a shot of theirs is genuinely needed, ask Rashid to open the
+page himself, or accept the screenshot Rashid already sent.
+
+## 32. The vendoring pipeline still mistakes their browns for amber
+
+**Status:** PAUSED
+**Owner:** Claude
+**Raise it when:** the Paid Collabs chrome looks too gold, or before the next
+WurxBase release is vendored in.
+
+`semanticFor` in `scripts/vendor-wurxbase.mjs` decides whether a colour is
+"saying something" from **HSV saturation**, which is a ratio and therefore
+exaggerates wildly in the dark. Their whole chrome is warm dark brown, and
+`#30271C` reads as 0.42 saturated at hue 33 — indistinguishable, to that
+formula, from real amber. So 37 of their brown fills, and a long tail of their
+hairlines, land on `--wx-warning`.
+
+**The correct test is already written down in the comment there:** OKLab chroma.
+Measured across their palette, every neutral sits at or below 0.030 (their
+darkest brown 0.011, their light warm grey 0.030) and every genuinely semantic
+colour at or above 0.105 (deep green `#047857`). A gate at 0.06 sits in open
+space between the two and needs no tuning.
+
+**WHY IT IS NOT SWITCHED ON.** Background and ink are themed as separate
+declarations that never see each other, so a legible pair is luck rather than
+design. Their Print PDF button is dark brown carrying pale cream: today both
+halves go pale and it reads at 3:1. Correct the gate and the background becomes
+a solid accent while the ink stays `--wx-text-muted` — **1.1:1** — and the same
+happens to a count pill on Creators, a KPI pill, and a chip on Performance.
+Tried on 2026-08-27: contrast went from 1 failure to 7.
+
+**So the fix is not a better classifier, it is pairing.** Two honest routes:
+
+1. `themeInlineStyles` already sees a whole `style={{...}}` object at once.
+   When the background in that object resolves to a strong token and the colour
+   resolves to a muted or faint ink, the ink should become `--wx-on-accent`.
+   That covers the inline half, which is where all four regressions were.
+2. For CSS rules, let `pnpm verify:collab-contrast` drive it: it already names
+   the element and both colours, so each survivor becomes a `SWAPS` entry in
+   `scripts/wurxbase-patches.mjs`.
+
+**Do not just flip the gate.** It is a one-line change that looks obviously
+right and breaks four screens.
+
+## 31. WurxBase v382: what the reskin still owes
+
+**Status:** PAUSED
+**Owner:** Claude
+**Raise it when:** Rashid mentions how Paid Collabs looks, or before anybody
+shows that screen to a client.
+
+**a. DONE 2026-08-27, and it was not what this entry said it was.** The blue
+was not the `PALETTE` array at all: `.cx-tr:hover` in their stylesheet is
+`rgba(20,17,12,.014)`, a 1.4% wash, and the pipeline was throwing the alpha
+away and painting it as a solid `--wx-info`. Fixed at the source in
+`parseColour`/`withAlpha`, and the row hover is now ours in
+`wurxbase-overrides.css`, because a faithful 1.4% wash is no hover at all on
+our ground. The `PALETTE` array is still unreachable by the pipeline and still
+tints the angle NUMBER badge, which is correct and wanted.
+Original note: **The Creative angle testing selected row was a solid blue** with underlined
+orange link text on it. The blue is `#1259C3`, from a `PALETTE` array of eight
+categorical colours in `src/vendor/wurxbase/CreativeAngles.jsx` used to tell
+angles apart. **The vendoring pipeline cannot reach it:** it themes colours that
+follow a CSS property name, and a bare array of hex strings has no property to
+key on. Two honest fixes — map that array in `vendor-wurxbase.mjs`, or add a
+swap to `scripts/wurxbase-patches.mjs`, which already supports in-place swaps.
+**Rashid said on 2026-08-27 that he has two changes he wants here. Ask him
+first; this may be one of them.**
+
+**b. DONE 2026-08-28.** It was two badges, not one, and the cause was not the
+badge. `PerfBrandSection` in `WurxUI.jsx` held five hardcoded light-mode
+colours; the count pill stayed `#F1F1F4` on a near-black page while its ink
+flipped to near-white. Tokenised — Active takes the success family because it is
+a real state, Inactive takes neutrals because it is not a warning. Performance
+in dark went from 1.10:1 to a worst of 4.9:1, and
+`pnpm verify:collab-contrast` is 12 of 12.
+
+**c. Their app cannot save its own settings.** `app_settings` returns 401 /
+42501 on every write — their RLS refuses the anon key. Pre-existing, unrelated
+to anything of ours, and harmless: it only means WurxBase cannot persist its own
+preferences from inside our admin. Worth telling Asad rather than fixing here.
+
+**d. Their JSX still holds categorical colour arrays and a few raw hexes**
+that no stylesheet can reach. 447 inline colours in `App.jsx` and 46 in
+`WurxUI.jsx` ARE themed by the pipeline now; what is left is arrays.
 
 ## 28. Brand themes: the three things deliberately left
 
@@ -1061,7 +1917,10 @@ account removes rows and leaves every image. The dev tidy script empties
 orphan. The privacy policy now says we keep things until asked rather than
 inventing a schedule, so this is honest today, but it is not tidy.
 
-**d. The vendored Paid Collabs CSS imports Inter from Google Fonts.** The main
+**d. DONE 2026-08-27. The Google Fonts import is gone**, dropped by
+`scripts/vendor-wurxbase.mjs` on every vendoring, so it cannot come back with
+their next release. Inter is self-hosted here, so nothing changed on screen.
+Original note: **The vendored Paid Collabs CSS imported Inter from Google Fonts.** The main
 product self-hosts every typeface; `src/vendor/wurxbase/App.css` and
 `paidcollabs.css` still `@import` from `fonts.googleapis.com`, and it survives
 into the built CSS. So an admin opening Paid Collabs makes a request to Google.
@@ -1131,3 +1990,361 @@ prod project. Worth running before anybody real signs in.
 script. The legal pages are proven; the rest of the app on prod has been seen by
 nothing with eyes.
 
+## 36. Euka: three things found while fixing the proxy, and deliberately not fixed
+
+**Status:** OPEN
+**Owner:** Claude
+**Raise it when:** somebody compares a number against the old app, or asks
+why two people sweeping the same brand get different videos.
+
+All three were found by measuring the live API on 2026-08-29 while restoring
+the endpoint. None is caused by the port; all three predate it and two of
+them exist on Asad's deployment too.
+
+**a. The video window is asked for in UTC and enforced in the browser's
+local time, and the difference is DELETED rather than skipped.** Euka filters
+`posted_date` on its UTC calendar day. `collabWindowFor` builds
+local-midnight boundaries, and `buildEukaVideoPatch` pushes anything outside
+them into `outIds` and then FILTERS THOSE ROWS OUT of `video_codes` — so a
+video Euka correctly returned is removed from the creator's record and its
+GMV leaves the panel total. Measured on live data: at UTC+5, 143 of 19,381
+rows sit in the lost band, and 590 of 19,381 (3.0%) change side depending on
+the operator's clock. **Two people running the same sweep write different
+video_codes.** Fixing it means comparing in UTC on both sides, which touches
+their merge logic — the piece of this app that has already destroyed data
+twice — so it wants its own change and its own verification.
+
+**b. Euka's own numbers are not stable between identical calls.** Three
+back-to-back identical exports seconds apart: four rows flipped
+`estimated_post_rate` to 0, and one row moved `last_30d_gmv` 1017.05 to
+918.28 with its tier going L1 to L0. The handle set and order were identical
+each time. **There is an irreducible floor under "their number vs our
+number"** — a byte-perfect port still will not tie with a side-by-side
+reading. Worth knowing before anybody spends a day chasing a 2% difference.
+
+**c. The nightly Euka check-in was never ported.**
+`netlify/functions/euka-checkin-background.js` runs at 06:00 daily on their
+deployment, sweeps every store and writes `monthly.euka` back onto creator
+rows — in the Supabase project retired on 2026-08-28. The screens no longer
+depend on it: L30 and tier now read live first and treat the stored value as
+a fallback. What is still missing is the `EUKA_CHECKIN` summary row it wrote
+into `activity_logs`. Port it as a scheduled Edge Function if anybody misses
+that trail.
+
+## 37. The Euka data sync is written and rehearsed, not applied
+
+**Status:** READY, WAITING ON RASHID
+**Owner:** Rashid says go, Claude runs it
+**Raise it when:** he asks about the old app, the video counts, or the
+cutover — or at the start of the next session, because it is the queued item.
+
+`pnpm wurxbase:sync` is a dry run. `--apply` writes. Last rehearsal:
+**10 updates, 1 insert, 0 deletes** — 4 payment marks, 3 delivery flags, 2
+statuses, 4 video lists topped up, 1 creator added. Every one fills a blank.
+
+**Do not reach for `wurxbase:copy` instead.** That one empties each table
+before refilling and would discard the eight `hub_email` links, our audit
+history, and everything entered on our side.
+
+Nineteen of the 25 missing videos are hand-typed links for Aqua Sonic and
+Bentgo, brands with no Euka store, so they exist in no other system and only
+a sync brings them. Six are Euka videos that heal themselves.
+
+## 38. Their old app is still live and still being written to
+
+**Status:** OPEN
+**Raise it when:** anyone compares a number between the two.
+
+On 2026-08-31 Asad added creators at 15:53 and Usman changed workspace
+settings at 16:13, in the OLD app. The same creator went into both databases
+within 24 seconds and now carries a different id in each. Rashid has since
+told Asad to stop; nothing enforces it.
+
+**Their deployment still runs the bugs fixed here on 2026-08-29**, so its
+numbers are actively getting worse: the swallowed 400 from Euka means every
+sweep writes `items: 0` over real counts. Ours has the right figures. Do not
+"correct" ours towards theirs.
+
+## 39. Their app records nothing when money is marked paid
+
+**Status:** OPEN
+**Raise it when:** somebody asks who marked a creator paid, or before the
+prod cutover.
+
+Found while answering exactly that question. Only BULK payment edits write an
+audit row; marking one creator paid from the row writes nothing to either of
+their two trails. Four creators worth $2,310 were marked Paid on their side
+and there is no record of who did it or when — the last logged payment change
+of any kind is 18 May. Our own admin actions are audited properly; this screen
+came from their code and inherited the gap. Worth closing before their team is
+doing it daily.
+
+## 40. Paid Collabs is not usable on a tablet, and that now blocks a screen he uses
+
+**Status:** OPEN, and promoted from 13e
+**Raise it when:** he opens Paid Collabs on anything narrower than a laptop —
+which he does, and which is why this is no longer just a note.
+
+Measured again 2026-09-01 at 768px: the Performance tab renders brand cards
+carrying **no brand name, no GMV, no ad spend** — a drag handle, a chevron and
+a video count. The values are in the DOM; their responsive CSS simply does not
+lay them out. The performance sheet cannot be reached at all from there, so
+everything fixed in it that day is desktop-only.
+
+It is theirs, not ours, and that was measured rather than assumed — see the
+note in memory. Rewriting a table-to-card transformation across six tabs is a
+feature, not a styling pass. But he asked for this screen to be premium, and
+on a tablet it is not a screen yet.
+
+## 41. Two more canvas aliases are mis-roled, and one of them is ink
+
+**Status:** OPEN, found 2026-09-01 while fixing the Discovery colour band
+**Raise it when:** anyone reports an unreadable label in Paid Collabs, or
+before the next re-vendor.
+
+The same codemod mistake that painted the container gold left four more
+aliases on tints: `--mc-cream` and `--mc-cream-lifted` on
+`--wx-warning-soft`, `--f7-surface` on `--wx-info-soft`, `--f7-cream` on
+`--wx-warning-soft` (App.css:3045, :3163). As CANVASES they are now inert,
+because the correction overrides the container outright.
+
+**But `--mc-cream` is also used as INK**, and there it is still wrong. Three
+live buttons — `.esm-add-btn`, `.empty-clear-btn`, `.sp-team-add-btn` — set
+`background: var(--mc-charcoal); color: var(--mc-cream)` on :hover, which
+resolves to a light page grey behind a 10% amber. The label disappears when
+you hover it. Narrow, hover-only, and a different bug from the one that was
+reported, so it was left rather than folded in silently.
+
+The other selectors carrying the same mapping — `.ph-kpi-purple`,
+`.um-add-btn`, `.sp-seg-btn`, `.sp-accent-swatch`, `.login-sky`,
+`.mobile-bottom-nav` — are DEAD CODE, verified: zero JSX uses anywhere in the
+repo. Do not "fix" them; they paint nothing.
+
+## 42. theme.css is entirely inert, and repairing it would turn the app gold
+
+**Status:** OPEN, and it is a trap
+**Raise it when:** anyone tries to make the vendored density, radius or
+motion preferences work, or wonders why theme.css has no effect.
+
+The v382 re-import inserted a space into all 17 of `theme.css`'s attribute
+selectors — `.wurxbase-root [data-theme="dark"]` instead of
+`.wurxbase-root[data-theme="dark"]` — turning every one of them from "this
+element" into "a descendant of this element". Nothing matches, so that whole
+file's dark/density/radius/motion layer has never applied.
+
+**That is currently load-bearing.** theme.css:14 maps five canvas aliases onto
+`var(--wx-accent)` — full-strength brand gold, not a 10% wash. The only
+reason the app is not gold today is that the selectors are broken. Repair the
+selectors without first correcting those five aliases and the whole of Paid
+Collabs turns solid gold.
+
+## 43. The TikTok ads pipeline is not storing most creators' videos
+
+**Status:** OPEN, and it undercuts the product's main promise
+**Raise it when:** anyone asks why a creator's ad spend is blank, or before
+production gets real creators.
+
+Found 2026-09-02 while answering a question about one creator. Erin Cooper
+has **83 Penetrex videos**, and NONE of them are in `tiktok_video_daily`.
+The table holds about **41 distinct videos in total**, over a window of
+30 July to 30 August.
+
+**It is not an access problem.** Asked live, TikTok answered for 33 of her 83
+videos and returned real figures for August: **$3,473.70 ad spend, $5,843.33
+gross revenue, 346 orders, 1.68x**. One video took 57% of the spend. So the
+credentials, the endpoint and the store are all fine — the nightly sync
+simply is not asking about these videos.
+
+Two candidates, neither confirmed: the sync builds its item-id list from a
+source that does not include Paid Collabs video links, or it is scoped
+narrower than the brand. The call it makes is
+`gmv_max/video_list/report/get/` filtered by `item_id IN [...]`, so whatever
+builds that array is where to look (`supabase/functions/tiktok-sync/index.ts`).
+
+**Why it matters more than one creator.** "A creator logs in and sees the ad
+spend behind their own video" is the product. If the pipeline only covers 41
+videos, most creators would see nothing and nobody would know.
+
+## 44. Reacher: REOPENED 2026-09-23 and BUILT, for Irwin Naturals only
+
+**Status:** BUILT on dev. Irwin Naturals syncs from Reacher every 15 minutes.
+See FEATURE_MAP, "Irwin Naturals comes from Reacher, not Euka", and OPERATIONS,
+"Reacher (Irwin Naturals only)".
+
+**What changed since the notes below were written (2026-09-02):**
+- **The account now has FOUR shops, and one of them is ours in a new way:**
+  Irwin Naturals (12832) joined Cutler Nutrition, Biostime and Longevity. Irwin
+  is a Paid Collabs brand with 27 creators and no Euka store, so Reacher is the
+  only source it can have.
+- **The base URL was never recorded here and cost an hour.** It is
+  `https://api.reacherapp.com/public/v1` with `x-api-key` and `x-shop-id`.
+  `reacher.so` is the unrelated email-verification service.
+- **Still no GMV Max data**, on Irwin as on the others: zero campaigns, so no
+  ad spend. Everything else about the shop is alive — 207 videos.
+- **The write risk is handled structurally**: `_shared/reacher.ts` refuses any
+  path not on a four-entry read allow-list.
+
+**The open question from 2026-09-02 still stands:** `est_commission` is not one
+number, and nobody is paid from it until Reacher explain the derivation.
+
+**Raise it when:** Irwin's ad account is connected in Reacher (the spend
+pipeline is built and waiting), or another brand moves onto Reacher.
+
+Rashid, 2026-09-02: *"this is not to be built in this app reacher is diff
+forget that now i just wanted to see what's available"*. Nothing was built.
+
+What was learned, so it need not be re-derived. Reacher is an affiliate
+platform for TikTok Shop sellers, not the email-verification service of the
+same name. **319 endpoints**, essentially their whole product behind an API
+key. His key has **read AND write** (`GET /whoami` returns `can_write: true`);
+reads are 60/min, 3000/hour.
+
+- **Three shops:** Cutler Nutrition and Biostime (US, live, collecting),
+  Longevity (UK, GBP, **inactive** — never logged in, onboarding never
+  finished).
+- **Pro plan $599/month, on trial until 15 September 2026**, Stripe attached
+  and set to charge automatically.
+- **POST does not mean write.** ~59 of their POSTs are reads that carry a
+  filter body; ~48 genuinely write. Their own docs say so on one endpoint.
+- **No order-level creator attribution.** `POST /pnl/orders` has
+  `affiliate_commission` per order x SKU, but no creator field and no
+  order-id lookup — and P&L has `never_run` on both shops, so there is no
+  order data at all until Reacher enable it per shop.
+- **`est_commission` is not one number.** `/creators/list` is lifetime and
+  ignores the date filter; `/creators/performance` is windowed and works. For
+  one creator the two disagreed — a 90-day figure HIGHER than the lifetime
+  one, on less GMV. Do not pay anyone from it without asking Reacher how each
+  is derived.
+- **Reacher holds working login access to the TikTok Shop seller accounts.**
+
+### Re-checked 2026-09-02 evening, on Rashid asking "does it give something new?"
+
+**The key is unchanged** (secrets file untouched since 1 Sep). What changed is
+Reacher, and this time we pulled their machine-readable `openapi.json` rather
+than scraping the docs page — 263 paths, 299 operations, saved to the
+scratchpad. Diffed against yesterday, **seven operations are new and all but
+one are GMV Max**:
+
+- `GET /gmv-max/campaigns/{id}/spend-by-surface`, `/delivery-status`,
+  `/settings`, `/changes`
+- `POST /gmv-max/campaigns` and `PATCH /gmv-max/campaigns/{id}` — WRITES
+- `POST /products/catalog`
+
+**The one that would matter to us was already there and is worth knowing about:**
+`GET /gmv-max/campaigns/{id}/creative-metrics` returns DAILY PER-CREATIVE
+spend, impressions, clicks, conversions, revenue, ROI and the full view-rate
+funnel, keyed by `material_id`. Per-creative is per-video. That is precisely
+the grain PARKED 43 says our own pipeline is missing.
+
+**But there is no GMV Max data behind any of it.** `/gmv-max/campaigns`,
+`/automations`, `/spark-codes` and `/excluded-creators` are all empty on both
+live shops, and `/gmv-max/dashboard` is zeros across every metric. **Verified
+against a live control** rather than trusted: `/creators/performance` on the
+same shops returns 27,525 creators for Cutler and 4,358 for Biostime with real
+August GMV, so the account is alive and the GMV Max side is genuinely not
+connected. (Yesterday an empty response is exactly what made me tell Rashid
+Cutler had no creators. It has 42,045.)
+
+**P&L is still `never_run` on both shops**, so still no order data at all.
+Longevity now returns a clearer refusal — *"no TikTok seller ID on file"* —
+confirming onboarding was never finished.
+
+### THE THING THAT ACTUALLY DECIDES THIS: Reacher barely overlaps with us
+
+| Reacher shop | one of our brands? |
+| --- | --- |
+| Cutler Nutrition | **no** |
+| Longevity | **no** (and inactive) |
+| Biostime | yes — 38 of our 1,277 Paid Collabs rows |
+
+**Penetrex is not in Reacher at all** — our biggest brand at 259 rows and our
+only Brand Hub. So Reacher can never answer PARKED 43, which is a Penetrex
+question. It reaches about **3% of the roster**.
+
+For that 3% it does add something real. Reacher knows **16 of our 19 Biostime
+handles**, and holds August figures our sheet does not:
+
+- `briceyscarbear` $3,610.91 GMV / $999.29 commission — our sheet: blank
+- `supersaiyansolo` $2,780.01 / $586.13 — blank
+- `vsternau`, `neptunenavigates`, `jayden_smith4` — all blank here
+
+Where both have a number they mostly agree — `ka.devore` and `laurendauk`
+match to the cent — and sometimes do not (`southernseed_` $977.31 vs our
+$1,045.27). **`est_commission` is the genuinely new field; we hold no
+commission figure anywhere.** The warning above still stands: their two
+commission numbers disagreed with each other, so nobody gets paid from it
+until Reacher explain how it is derived.
+
+**A trap worth remembering.** A first pass reported "Reacher knows 1 of our 19"
+and it was wrong. `wurxbase.creators.tiktok_account` stores a FULL URL
+(`https://www.tiktok.com/@handle`), not a handle, so every comparison against
+a handle silently misses. Proved by a positive and negative control on their
+filter before believing the miss. Anything joining us to an external creator
+source must extract the handle from that URL.
+
+### Two things with a clock on them
+
+1. **The key can WRITE, and now writes ad campaigns.** `can_write: true` with
+   `POST /gmv-max/campaigns` (create), `PATCH` (update budget, target ROAS,
+   schedule) and `POST /gmv-max/excluded-creators` (cut a creator out of
+   delivery). That is money-moving capability sitting in a file. If Reacher
+   offer a read-only key, take it.
+2. **The trial ends 15 September 2026** — $599/month, Stripe attached, charges
+   automatically. Nothing in this product uses Reacher.
+
+His API key is outside the repo in `cli-secrets.env` as `REACHER_API`. It has
+never been in a chat message or a file in this repo.
+
+
+## Cruva for Pure Daily Care, Aqua Sonic and JOYMODE (parked 2026-09-24)
+
+Rashid asked for the Reacher treatment for the three brands on Cruva. The brands
+all exist; the key is valid; the data endpoints are not reachable with it.
+
+**Trigger to bring this back:** Rashid supplies the three Cruva **Shop IDs** and
+either a key that reaches the data endpoints or the endpoint names from Cruva
+support. Everything already ruled out is in OPERATIONS under "Cruva, what is
+already known" — start there rather than re-probing.
+
+When it does come back, product pictures are already solved for it: the market
+lookup in `_shared/product-images.ts` takes a TikTok product id and no brand id,
+so Cruva products will get photographs the day their catalogue is readable.
+
+## TikTok `user.info.profile` scope (parked 2026-09-29)
+
+**Status:** WAITING ON RASHID
+**Owner:** Rashid to apply, Claude to ship
+
+The declared @handle. Without it the handle is derived from a video's share URL,
+which works for 99.56% of real URLs but yields nothing for a creator with no
+videos — at exactly the moment we promised to fill the box in.
+
+**Trigger:** Rashid applies on the TikTok app and it appears on the app's own
+**Scopes page** (not the submission dialog — reading the dialog instead cost two
+hours on 2026-08-26). Then, in ONE commit: `DISPLAY_SCOPES`, the hardcoded copy
+in the check, the consent list on the creator card, and `/privacy`.
+
+**Never widen our list first.** More in our array than on the app and TikTok
+refuses the authorise URL outright — Connect breaks for every creator on deploy.
+
+## A second TikTok redirect URI (parked 2026-09-29)
+
+**Status:** NICE TO HAVE
+
+Signup and the Settings connect both return to `/oauth/tiktok-creator/callback`
+today; the browser marks which flow it started so the page can tell them apart.
+Safe, and it can only ever end in "start again", never a wrong identity. A
+dedicated `/signup/tiktok/callback` would be cleaner. **Trigger:** whenever a
+second redirect URI is added to the TikTok app.
+
+## Email confirmation is now the weakest link (parked 2026-09-29)
+
+**Status:** RASHID SAID "leave it for now, we will come to verification later"
+
+TikTok-first signup makes identity lopsided: the TikTok half is strongly proven
+and the email half is not proven at all. Nobody checks that a creator's email is
+real, and it is the address used to pay and contact them.
+
+**Trigger:** when Rashid raises verification. Needs SMTP proven FIRST, then
+confirmation switched on LAST — turning it on breaks both signup paths unless
+the flow survives it, which it is built to.

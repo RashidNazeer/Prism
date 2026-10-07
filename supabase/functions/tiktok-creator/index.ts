@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
    * legitimate, and the connection is theirs either way.
    */
   if (!actor.is_active) return reply({ error: 'Not allowed' }, 403);
-  if (!['applicant', 'creator', 'ops', 'admin'].includes(actor.role)) {
+  if (!['applicant', 'creator', 'ops', 'admin', 'ads_manager'].includes(actor.role)) {
     return reply({ error: 'Not allowed' }, 403);
   }
 
@@ -214,6 +214,26 @@ Deno.serve(async (req) => {
     const bytes = new Uint8Array(32);
     crypto.getRandomValues(bytes);
     const state = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+
+    /*
+     * ONE LIVE NONCE PER CREATOR, added 2026-09-28.
+     *
+     * Nothing used to retire a creator's earlier unused states, so pressing
+     * Connect five times left five usable nonces, each good for fifteen
+     * minutes. That widens the only window an attacker has: TikTok does not
+     * support PKCE for web apps (their docs say `code_verifier` is "required
+     * for mobile and desktop app only"), so a code cannot be cryptographically
+     * bound to the browser that started the flow, and the defence is simply to
+     * keep the window narrow and the code out of sight.
+     *
+     * Abandoning a connect and starting again is the ordinary case and still
+     * works — the newest nonce is the live one.
+     */
+    await admin
+      .from('creator_tiktok_oauth_states')
+      .update({ used_at: new Date().toISOString() })
+      .eq('creator_id', creatorId)
+      .is('used_at', null);
 
     const { error: stateErr } = await admin.from('creator_tiktok_oauth_states').insert({
       state,
