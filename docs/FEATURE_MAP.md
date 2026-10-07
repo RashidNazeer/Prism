@@ -4980,3 +4980,25 @@ It keeps the marked-but-unclickable treatment the two it replaces had, because
 nothing is behind it yet either, and that is the rule the list exists for: a
 creator should see the shape of what is coming without being able to click into
 an empty room.
+
+### The channel filter is gone (2026-10-08)
+
+Rashid, circling it: *"the circled this I want you to remove it and keep it all
+time by default."* The All videos / Offer videos / Contest videos tabs are
+removed; the screen always answers for every video, and the date range still
+opens on All time.
+
+**It was his own feature, added 2026-08-20**, and the reason it goes is the
+reason it was a liability: **it could be left switched on.** The tabs held their
+state while every figure on the screen answered a narrower question than the
+heading implied — the screenshot that prompted this had Contest videos selected
+and a $0.00 GMV with nothing on screen saying why. A filter that can be left on
+and is easy to miss costs more than the slice it offers.
+
+The "narrowed to nothing" empty state went with it. It existed only to explain a
+filter that could be left on, and there is no longer one to explain.
+
+**Nothing was removed from the data layer.** `creator_video_performance` and
+`creator_daily_performance` keep their `p_source` parameter and `My content`
+still labels each card's channel, so the question can be asked again without a
+migration.
