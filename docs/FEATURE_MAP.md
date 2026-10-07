@@ -2602,7 +2602,7 @@ denominator of zero under a real delivered count.
 `check-product-band.mjs` passed on the first run with **every** Penetrex card
 reading "–" for ad spend. Nothing was broken: a dash is a legal answer for a
 brand with no ad data, and Penetrex's 2,270 video ids are five RPC round trips
-at 500 an go — far past the 700ms the script waited. The check was green while
+at 500 a go — far past the 700ms the script waited. The check was green while
 the figure it existed to prove had not arrived.
 
 Caught by comparing the band against the **creator rows on the same screen**:
@@ -2616,11 +2616,31 @@ dropped. 73 checks, 0 failures, four widths, zero console errors. Penetrex all
 time: $45,993 / $17,327 / $5,886 / $2,794 / $996 / $235 / $5.46 across its seven
 products.
 
-**The card grew from `flex: 1 0 24rem` to `27rem`** to seat a fifth column: at
-the old width five columns left about 70px each, and "637/992" beside "$45,993"
-needs more. The row still scrolls, so a wider card costs no page width — it
-shows slightly fewer products at once, which is the right trade for figures that
-fit.
+### The line overlapping the number
+
+Rashid, with a screenshot: *"the line is overlapping the number fix it as well"*.
+At five columns the 1.25rem figures were wider than the cells holding them and,
+with nothing to stop them, drew straight over the hairline divider into the next
+column — "133/203" sitting on top of the rule beside it, and the headings
+collapsed to "Crea…" and "Ad s…".
+
+**Three changes, and the card had to get wider.** The type came down to
+`1.1rem`, the cell padding to `0.45rem`, and `flex-basis` went `24rem` →
+`32rem`. The row still scrolls, so a wider card costs no page width; it shows
+slightly fewer products at once, which is the right trade for figures that fit.
+
+**A clipped count is a WRONG number, not a tidy one**, which is why the width
+was measured rather than guessed. `overflow: hidden` alone turned Penetrex's
+"1296/1828" into "1296/18…", and 30rem still clipped it: that value wants 79px
+and the column had 69px. 32rem gives it about 81px. The ellipsis stays as the
+last resort for a value nobody has seen yet — a bigger text size from the top
+bar, a five-digit count — so the failure mode is a cut-off figure inside its own
+column rather than one drawn across its neighbour.
+
+Checked by geometry rather than by eye: a script walks every `.wx-prodcard-cell`
+and asserts no child's bounding box leaves its parent and no `scrollWidth`
+exceeds its `clientWidth`. That is what caught the clip the screenshot could not
+show.
 
 The pill sits on `--pc-card` (`--wx-surface-1`) because that is the ground
 check:contrast section 5 already proves the green GMV ink against; the tinted
