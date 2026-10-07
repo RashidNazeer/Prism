@@ -1,3 +1,18 @@
+/* WURX-ADDED · ANGLE → PRODUCT → VIDEOS ─────────────────────────────────────
+   Umar asked for the Brands screen's shape inside an angle: the angle is the
+   category, the products sit under it, and the videos sit under those -- with
+   the product's picture on the band, as that screen has it.
+
+   `wxAngleRows` is a pure arrangement of rows already on screen and has no
+   React in it, so Node can test it directly. `useProductPics` reads the SAME
+   `collab-products` catalogue the Brands screen reads, so one product cannot
+   show two different pictures on two screens. Neither names a project, so the
+   isolation check still holds. See src/routes/admin/collab-angle-products.ts,
+   collab-angle-product-band.tsx and collab-angle-product-pics.ts. */
+import { wxAngleRows } from '@/routes/admin/collab-angle-products';
+import { WxAngleProductHead } from '@/routes/admin/collab-angle-product-band';
+import { useProductPics as wxUseProductPics } from '@/routes/admin/collab-angle-product-pics';
+/* WURX-END */
 /* WURX-ADDED · Categorise button for Creative angle testing ──────────────────
    Every change of ours to this file sits inside a WURX-ADDED ... WURX-END block,
    so pulling a newer version from upstream is a find-and-reapply job. Nothing
@@ -607,6 +622,7 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
           {rows.map(r => (
             <AngleCard key={r.id} r={r} n={rows.indexOf(r) + 1} open={!shut.has(r.id)} leading={leadId === r.id}
               index={index} fmt={fmt} poolLeft={pool.length} canEdit={canEdit} canType={canType}
+              wxBrand={brand}
               onToggle={() => toggle(r.id)}
               onRename={(t) => patch(r.id, { title: t.trim() || 'Untitled angle' })}
               onRemove={() => setConfirmDel(r.id)}
@@ -650,10 +666,29 @@ export default function CreativeAngles({ creators, brand: brandProp, month, mont
 }
 
 /* ── one angle · a drawer that keeps its figures on the outside ── */
-function AngleCard({ r, n, open, leading, index, fmt, poolLeft, canEdit, canType, onToggle, onRename, onRemove, onDetach, onCell, onAdd }) {
+function AngleCard({ r, n, open, leading, index, fmt, poolLeft, canEdit, canType, wxBrand, onToggle, onRename, onRemove, onDetach, onCell, onAdd }) {
   const s = r.stats;
   const [q, setQ] = useState('');
   const [needOnly, setNeedOnly] = useState(false);
+  /* WURX-ADDED · which product bands are folded shut in THIS angle, and the
+     brand's product pictures.
+
+     Per card, not global: two angles sell different products, so one shared
+     set would fold a band in an angle the user never touched. Open by default,
+     because everything in this drawer was visible before and a drawer that
+     opens empty reads as broken rather than tidy.
+
+     The pictures are fetched once per BRAND and shared by every band in every
+     angle, so this hook costs one Edge Function call for the screen rather than
+     one per card. */
+  const [wxShut, wxSetShut] = useState(() => new Set());
+  const wxToggle = (key) => wxSetShut((s) => {
+    const next = new Set(s);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    return next;
+  });
+  const wxPics = wxUseProductPics(wxBrand);
+  /* WURX-END */
 
   /* Every video in the angle, with its figures resolved once. */
   const all = (r.videos || []).map(url => ({ url, f: videoFig(r, url, index) }));
@@ -741,7 +776,11 @@ function AngleCard({ r, n, open, leading, index, fmt, poolLeft, canEdit, canType
                 {shown.length === 0 && (
                   <div className="cx-dnone">Nothing here matches that.</div>
                 )}
-                {shown.map(({ url, f }) => (
+                {wxAngleRows(shown, wxShut).map(({ url, f, wxHead }) => wxHead ? (
+                  <WxAngleProductHead key={'wx:' + wxHead.key} head={wxHead}
+                    shut={wxShut.has(wxHead.key)} onToggle={() => wxToggle(wxHead.key)} fmt={fmt}
+                    pic={wxPics ? wxPics.get(wxHead.key) : null} />
+                ) : (
                   <div key={url} className={'cx-tr' + (f.v ? '' : ' gone')}>
                     <a className="cx-who" href={url} target="_blank" rel="noreferrer">
                       {f.v && f.v.thumb ? <img src={f.v.thumb} alt="" loading="lazy" /> : <i>&#9654;</i>}
@@ -749,33 +788,9 @@ function AngleCard({ r, n, open, leading, index, fmt, poolLeft, canEdit, canType
                         <b>{f.v ? (f.v.creator || 'Unnamed') : 'Not in this month'}</b>
                         <small>
                           {f.v
-                            ? String(f.v.date || '').slice(0, 10) /* product is on its own line below */
+                            ? String(f.v.date || '').slice(0, 10) /* the product names the band above */
                             : url.replace(/^https?:\/\//, '').slice(0, 30)}
                         </small>
-                        {/* WURX-ADDED · WHICH PRODUCT THIS VIDEO IS FOR.
-
-                            Umar, 2026-10-07: "I want to see for which product
-                            each video is made".
-
-                            The product was already here -- appended to the date
-                            as `date · product` in the line above. It was also
-                            invisible, because `.cx-who small` is one nowrap line
-                            with an ellipsis, and the product sits at the END of
-                            it. So the longer the product name, the less of it
-                            survived: "Penetrex Daily Joint & Muscle Care, 3 Oz.
-                            Gel" is exactly the sort of name that got cut to
-                            nothing. Data that is rendered and then clipped away
-                            looks identical to data that was never there.
-
-                            Its own line, so it gets the column's full width, and
-                            `title` carries the untruncated name for the few that
-                            still overflow. No new query: `brandVideos` has
-                            carried `product` off `video_codes` all along, which
-                            is the same field the Brands screen groups by. */}
-                        {f.v && f.v.product && (
-                          <small className="wx-prod" title={f.v.product}>{f.v.product}</small>
-                        )}
-                        {/* WURX-END */}
                       </span>
                       <u className="cx-go" title="Watch this video">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17 17 7M8 7h9v9" /></svg>

@@ -635,3 +635,64 @@ a trailing comment so it cannot match the original.
 **Proven.** `pnpm build` passes, the patch script is idempotent (16 blocks, a
 second run applies nothing), and `pnpm verify:angles-categorise` passes 53
 checks.
+
+### 2026-10-07, angle -> product -> videos
+
+Umar, pointing at the Brands screen: "under each angle there are products and
+then under each products there are videos", and the band should carry the
+product's picture as that screen's group row does.
+
+So the angle is the category and a product is a foldable band inside it. The
+per-video product chip added earlier that same day is **gone**: inside a band it
+repeated the band's own name on every row.
+
+**The arrangement has no React in it.** `src/routes/admin/collab-angle-products.ts`
+holds `wxAngleRows` and nothing else, so Node can import it and run the shipped
+function. `src/routes/admin/collab-angle-product-band.tsx` is the band;
+`collab-angle-product-pics.ts` fetches the pictures. That split exists so the
+rules below are tested rather than asserted in a comment.
+
+The rules, each one a check in `pnpm verify:angle-products`:
+
+- Biggest earner leads, so the product carrying an angle is read first.
+- A video with no product is kept, under one honest label, always last, even
+  when a real product earns less. Dropping it is how a breakdown stops summing
+  to the angle total above it.
+- If NOT ONE video in the angle names a product there are no bands at all --
+  otherwise the whole list sits inside a single row reading "No product
+  recorded", which is noise.
+- One product spelled `Gel`, `gel` and ` GEL ` is one band.
+- Folding hides rows and never changes a band's counts or figures. A total that
+  moves when you fold a section is a total nobody can trust.
+- Bands are open by default and the fold state is per card: two angles sell
+  different products, so one shared set would fold a band in an angle nobody
+  touched.
+
+**The pictures come from `collab-products`**, the same catalogue the Brands
+screen reads, so one product cannot show two different pictures on two screens.
+One fetch per brand, shared by every band in every angle; a failure is never
+cached; a missing or 404 image falls back to a neutral tile of the same size
+rather than the browser's torn-image glyph.
+
+**Brand-agnostic, and enforced.** `check-angle-products.mjs` refuses a brand
+name anywhere in those three modules, comments included -- it caught one in a
+comment of mine on the first run. There is no brand and no list of known
+products in the grouping; it groups on whatever `product` the rows carry.
+
+**What it still cannot prove.** Whether a given brand's `video_codes` rows carry
+a product at all is a data question. With `SUPABASE_SERVICE_KEY` set the script
+reports coverage brand by brand and fails if a brand with videos has a product
+on none of them. The repo `.env` holds only the publishable key, which is
+refused (`permission denied for schema wurxbase`) because `wurxbase` is granted
+to signed-in roles -- correct behaviour, not a misconfiguration. `docs` note:
+the same answer comes out of the SQL editor without any key, with the query in
+the commit message for this change.
+
+**A trap closed for good.** `wurxbase-patches.mjs` now REFUSES a swap whose `to`
+is a substring of its `from`. Its idempotency check is `src.includes(sw.to)`, so
+such a swap matched the unswapped text, reported "already swapped", exited 0 and
+changed nothing -- which is how the product briefly rendered twice.
+
+**Proven.** `pnpm build`, `pnpm verify:isolation`, `pnpm verify:angle-products`
+(35 checks) and `pnpm verify:angles-categorise` (53 checks) all pass, and the
+patch script is idempotent at 20 blocks.

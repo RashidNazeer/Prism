@@ -2765,38 +2765,116 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   WHICH PRODUCT A VIDEO IS FOR — in the angle drawer's video rows
+   ANGLE → PRODUCT → VIDEOS — the product bands in the angle drawer
    ═══════════════════════════════════════════════════════════════
-   Umar, 2026-10-07: "I want to see for which product each video is made".
+   Umar, 2026-10-07, pointing at the Brands screen: "under each angle there are
+   products and then under each products there are videos".
 
-   The product was never missing from the data. It was appended to the date in
-   `.cx-who small` -- one `nowrap` line with an ellipsis -- so it sat at the far
-   end of the string that gets cut first. A brand whose products are called
-   "Penetrex Daily Joint & Muscle Care, 3 Oz. Gel" lost all of it, every time,
-   and the screen looked exactly as it would if the field were empty.
+   So this band is the same object as a product group on the Brands screen, and
+   it is deliberately built to read like one: a row you can fold, the name, how
+   many videos are inside, and what they did. It sits as a sibling of `.cx-tr`
+   inside `.cx-tbl`, which is a flex column, so it spans the full width without
+   having to agree with the five-column grid the video rows use.
 
-   A chip rather than another grey line, because this row already ends in two
-   lines of muted text and a third would read as more of the same. It is the
-   same `--wx-accent-soft` fill the Brands screen uses for its own product
-   labels, so one product looks like itself on both screens.
-
-   `align-self: flex-start` so the chip hugs its name instead of stretching the
-   full column, and the ellipsis stays as a last resort with the full name on
-   `title`. */
-.wurxbase-root .cx-who small.wx-prod {
-  align-self: flex-start;
-  max-width: 100%;
-  margin-top: 1px;
-  padding: 1px 7px;
-  border-radius: 999px;
+   NOT A STICKY HEADER. `.cx-tbl.long` already pins `.cx-th`, and a second
+   sticky layer inside a 436px scroller would leave about one video visible
+   between them. */
+.wurxbase-root .wx-pg {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 10px 0 2px;
+  padding: 7px 11px;
+  border-radius: 11px;
   background: var(--wx-accent-soft);
+}
+.wurxbase-root .wx-pg:first-child { margin-top: 2px; }
+/* The band that collects videos with no product recorded is a caveat, not a
+   product, so it does not get a product's colour. */
+.wurxbase-root .wx-pg.none { background: var(--wx-surface-2); }
+
+/* THE WHOLE BAND IS THE HIT TARGET, not the chevron -- the same way the group
+   rows on the Brands screen behave. */
+.wurxbase-root .wx-pg-b {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
   color: var(--wx-text);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: -0.1px;
-  line-height: 1.5;
+}
+.wurxbase-root .wx-pg-b:focus-visible { outline: 2px solid var(--wx-accent); outline-offset: 3px; border-radius: 7px; }
+/* THE PRODUCT'S PICTURE, as the Brands screen's group row carries it. The
+   placeholder is the same size and radius as the image, so a brand whose
+   catalogue has no pictures gets a tidy column of tiles rather than names that
+   start at different places. `contain`, not `cover`: a bottle photographed
+   tall is the usual case here and cropping its ends is how a product becomes
+   unrecognisable at 30px. */
+.wurxbase-root .wx-pg-pic {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  object-fit: contain;
+  background: var(--wx-surface-1);
+  border: 1px solid color-mix(in srgb, var(--wx-accent) 8%, transparent);
+}
+.wurxbase-root .wx-pg-pic-none { display: inline-block; }
+.wurxbase-root .wx-pg-b b {
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 900;
+  letter-spacing: -0.2px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.wurxbase-root .cx-who:hover small.wx-prod { color: var(--wx-text); }
+.wurxbase-root .wx-pg-b:hover b { color: var(--wx-accent); }
+.wurxbase-root .wx-pg-chev {
+  flex: 0 0 auto;
+  display: inline-flex;
+  color: var(--wx-text-muted);
+  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.wurxbase-root .wx-pg.shut .wx-pg-chev { transform: rotate(-90deg); }
+.wurxbase-root .wx-pg-n {
+  flex: 0 0 auto;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--wx-surface-1);
+  color: var(--wx-text-muted);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+/* What this product did, in the same ink as the figures above the drawer. */
+.wurxbase-root .wx-pg-f {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  font-size: 11px;
+  font-weight: 800;
+}
+.wurxbase-root .wx-pg-f i { font-style: normal; color: var(--wx-text-muted); }
+.wurxbase-root .wx-pg-f i.g { color: var(--wx-success); }
+.wurxbase-root .wx-pg-f i.a { color: var(--wx-warning); }
+
+@media (max-width: 560px) {
+  /* Stacked, because the name and three figures on one line at this width
+     leaves the name about four characters. */
+  .wurxbase-root .wx-pg { align-items: flex-start; }
+  .wurxbase-root .wx-pg-f { gap: 9px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wurxbase-root .wx-pg-chev { transition: none; }
+}

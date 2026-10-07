@@ -123,11 +123,19 @@ const PATCHES = [
   },
   {
     "file": "src/vendor/wurxbase/CreativeAngles.jsx",
-    "name": "product per video",
+    "name": "product bands import",
+    "mode": "prepend",
+    "re": null,
+    "anchor": null,
+    "body": "/* WURX-ADDED · ANGLE → PRODUCT → VIDEOS ─────────────────────────────────────\n   Umar asked for the Brands screen's shape inside an angle: the angle is the\n   category, the products sit under it, and the videos sit under those -- with\n   the product's picture on the band, as that screen has it.\n\n   `wxAngleRows` is a pure arrangement of rows already on screen and has no\n   React in it, so Node can test it directly. `useProductPics` reads the SAME\n   `collab-products` catalogue the Brands screen reads, so one product cannot\n   show two different pictures on two screens. Neither names a project, so the\n   isolation check still holds. See src/routes/admin/collab-angle-products.ts,\n   collab-angle-product-band.tsx and collab-angle-product-pics.ts. */\nimport { wxAngleRows } from '@/routes/admin/collab-angle-products';\nimport { WxAngleProductHead } from '@/routes/admin/collab-angle-product-band';\nimport { useProductPics as wxUseProductPics } from '@/routes/admin/collab-angle-product-pics';\n/* WURX-END */\n"
+  },
+  {
+    "file": "src/vendor/wurxbase/CreativeAngles.jsx",
+    "name": "product band collapse state",
     "mode": "afterLast",
     "re": null,
-    "anchor": "\n                            : url.replace(/^https?:\\/\\//, '').slice(0, 30)}\n                        </small>\n",
-    "body": "                        {/* WURX-ADDED · WHICH PRODUCT THIS VIDEO IS FOR.\n\n                            Umar, 2026-10-07: \"I want to see for which product\n                            each video is made\".\n\n                            The product was already here -- appended to the date\n                            as `date · product` in the line above. It was also\n                            invisible, because `.cx-who small` is one nowrap line\n                            with an ellipsis, and the product sits at the END of\n                            it. So the longer the product name, the less of it\n                            survived: \"Penetrex Daily Joint & Muscle Care, 3 Oz.\n                            Gel\" is exactly the sort of name that got cut to\n                            nothing. Data that is rendered and then clipped away\n                            looks identical to data that was never there.\n\n                            Its own line, so it gets the column's full width, and\n                            `title` carries the untruncated name for the few that\n                            still overflow. No new query: `brandVideos` has\n                            carried `product` off `video_codes` all along, which\n                            is the same field the Brands screen groups by. */}\n                        {f.v && f.v.product && (\n                          <small className=\"wx-prod\" title={f.v.product}>{f.v.product}</small>\n                        )}\n                        {/* WURX-END */}\n"
+    "anchor": "\n  const [needOnly, setNeedOnly] = useState(false);\n",
+    "body": "  /* WURX-ADDED · which product bands are folded shut in THIS angle, and the\n     brand's product pictures.\n\n     Per card, not global: two angles sell different products, so one shared\n     set would fold a band in an angle the user never touched. Open by default,\n     because everything in this drawer was visible before and a drawer that\n     opens empty reads as broken rather than tidy.\n\n     The pictures are fetched once per BRAND and shared by every band in every\n     angle, so this hook costs one Edge Function call for the screen rather than\n     one per card. */\n  const [wxShut, wxSetShut] = useState(() => new Set());\n  const wxToggle = (key) => wxSetShut((s) => {\n    const next = new Set(s);\n    if (next.has(key)) next.delete(key); else next.add(key);\n    return next;\n  });\n  const wxPics = wxUseProductPics(wxBrand);\n  /* WURX-END */\n"
   }
 ];
 
@@ -161,7 +169,7 @@ const SWAPS = [
        swapped" while changing nothing. The first version of this entry did
        exactly that, and the product rendered twice. */
     from: "String(f.v.date || '').slice(0, 10) + (f.v.product ? ' · ' + f.v.product : '')",
-    to: "String(f.v.date || '').slice(0, 10) /* product is on its own line below */",
+    to: "String(f.v.date || '').slice(0, 10) /* the product names the band above */",
   },
   {
     name: 'keep a product the first row lacked',
@@ -181,6 +189,35 @@ const SWAPS = [
     to: 'if (seen.has(url)) { const p0 = out.find(o => o.url === url); if (p0 && !p0.product && v && v.product) p0.product = String(v.product).trim(); return; }',
   },
   {
+    name: 'group the drawer by product',
+    file: 'src/vendor/wurxbase/CreativeAngles.jsx',
+    /* Only the OPENING of their map is replaced. The arrow body -- their whole
+       video row -- is untouched and still destructures `url` and `f`, because a
+       band row carries `wxHead` and a video row does not. Their closing `))}`
+       still closes correctly: the `(` opened by `: (` takes the first bracket
+       and the `.map(` takes the second.
+
+       Rewriting the row itself was the alternative and it would have meant
+       owning their Cell wiring for ad spend, which is money somebody types. */
+    from: '{shown.map(({ url, f }) => (',
+    to: "{wxAngleRows(shown, wxShut).map(({ url, f, wxHead }) => wxHead ? (\n                  <WxAngleProductHead key={'wx:' + wxHead.key} head={wxHead}\n                    shut={wxShut.has(wxHead.key)} onToggle={() => wxToggle(wxHead.key)} fmt={fmt}\n                    pic={wxPics ? wxPics.get(wxHead.key) : null} />\n                ) : (",
+  },
+  {
+    name: 'angle card knows its brand',
+    file: 'src/vendor/wurxbase/CreativeAngles.jsx',
+    /* The card needs the brand for one reason only: the product pictures are
+       fetched per brand. It is `wxBrand` rather than `brand` so it cannot be
+       mistaken for one of theirs if they ever add a prop of that name. */
+    from: 'function AngleCard({ r, n, open, leading, index, fmt, poolLeft, canEdit, canType,',
+    to: 'function AngleCard({ r, n, open, leading, index, fmt, poolLeft, canEdit, canType, wxBrand,',
+  },
+  {
+    name: 'pass the brand to the angle card',
+    file: 'src/vendor/wurxbase/CreativeAngles.jsx',
+    from: '              index={index} fmt={fmt} poolLeft={pool.length} canEdit={canEdit} canType={canType}',
+    to: '              index={index} fmt={fmt} poolLeft={pool.length} canEdit={canEdit} canType={canType}\n              wxBrand={brand}',
+  },
+  {
     name: 'find by product too',
     file: 'src/vendor/wurxbase/CreativeAngles.jsx',
     /* The filter already matched on product (`v.product` is in its predicate);
@@ -193,6 +230,16 @@ const SWAPS = [
 for (const sw of SWAPS) {
   const file = sw.file || DEFAULT_FILE;
   const src = srcOf(file);
+  /* A SWAP WHOSE `to` IS A SUBSTRING OF ITS `from` SILENTLY DOES NOTHING, and
+     that is the worst outcome this script has: the idempotency check below
+     matches the UNSWAPPED text, so the swap reports "already swapped", exits 0,
+     and the tree ships without the change. It happened on 2026-10-07 -- a `to`
+     that just dropped a trailing clause -- and the product rendered twice.
+     Refuse instead; the fix is to give `to` a trailing comment. */
+  if (sw.from.includes(sw.to)) {
+    fail(`${sw.name}: 'to' is a substring of 'from', so this swap would skip itself as "already swapped" and change nothing`);
+    continue;
+  }
   if (src.includes(sw.to)) { console.log(`  skip  ${sw.name} (already swapped)`); already++; continue; }
   const n = src.split(sw.from).length - 1;
   if (n === 0) { fail(`${sw.name}: nothing to swap; their code changed`); continue; }
