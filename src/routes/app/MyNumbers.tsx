@@ -1,14 +1,8 @@
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, ExternalLink, Radio, TrendingUp } from 'lucide-react';
+import { ExternalLink, Radio, TrendingUp } from 'lucide-react';
 import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { OrdersChart, PerformanceChart } from '@/components/creator/PerformanceChart';
 import {
-  RANGES,
-  rangeToDates,
-  monthKey,
-  monthLabel,
-  monthToDates,
-  shiftMonth,
   useDailyPerformance,
   usePerformanceWindow,
   useVideoPerformance,
@@ -16,10 +10,18 @@ import {
   adStateOf,
   type AdState,
   type DailyPerformance,
-  type RangeKey,
   type VideoPerformance,
   type BrandPerformance,
 } from '@/lib/creator/usePerformance';
+import {
+  ceilingOf,
+  clamp,
+  presetToRange,
+  type DateRange,
+  type PresetKey,
+} from '@/lib/creator/date-range';
+import { DateRangePicker } from '@/components/creator/DateRangePicker';
+import { BrandFilter } from '@/components/creator/BrandFilter';
 import { cn } from '@/lib/utils';
 
 /**
@@ -98,42 +100,93 @@ const money = (n: number, currency: string | null) =>
  */
 export function MyNumbers({ brandId }: { brandId?: string } = {}) {
   const [tab, setTab] = useState<TabKey>('dashboard');
-  const [range, setRange] = useState<RangeKey>('all');
   const [source, setSource] = useState<SourceKey>(null);
 
-  const windowQ = usePerformanceWindow(brandId);
+  /*
+   * WHICH BRAND, when this is the standalone screen.
+   *
+   * Rashid, 2026-10-07: "In the numbers tab I want a drop down to select
+   * different brands for whom I want to see the numbers."
+   *
+   * INSIDE A BRAND HUB THE PROP WINS and the dropdown is never drawn: that
+   * screen IS one brand, and a control offering to leave it would be a second
+   * answer to a question the route has already settled.
+   */
+  const [pickedBrand, setPickedBrand] = useState<string | null>(null);
+  const effectiveBrandId = brandId ?? pickedBrand ?? undefined;
 
   /*
-   * WHICH MONTH, when the range is "By month". Rashid asked to be able to walk
-   * month by month and see exactly what each one made, which is how somebody
-   * actually asks the question: "what did I earn in July".
+   * TWO WINDOWS, and only one of them usually costs a request.
    *
-   * It starts on the newest month that has any data rather than on today's,
-   * because opening on an empty current month would look like the numbers were
-   * missing.
+   * `baseWindow` is the creator's whole history at this route's scope — every
+   * brand on `/app/numbers`, this brand inside a hub. It feeds the brand list,
+   * which must NOT shrink when a brand is chosen, or picking one would empty the
+   * dropdown that picked it.
+   *
+   * `scopedWindow` follows the dropdown and feeds the ranges and the empty
+   * state, so "All time" means all time FOR THIS BRAND. With nothing picked the
+   * two have identical query keys, so React Query serves one request.
    */
-  const [month, setMonth] = useState<string | null>(null);
-  const activeMonth =
-    month ?? (windowQ.data?.latest ? windowQ.data.latest.slice(0, 7) : monthKey(new Date()));
+  const baseWindowQ = usePerformanceWindow(brandId);
+  const windowQ = usePerformanceWindow(effectiveBrandId);
 
-  const { from, to } = useMemo(() => {
-    if (range === 'month') return monthToDates(activeMonth, windowQ.data);
-    return rangeToDates(range, windowQ.data);
-  }, [range, activeMonth, windowQ.data]);
+  /*
+   * ANY DATE RANGE, since 2026-10-07. The four fixed tabs became a calendar
+   * with shortcuts; see `src/lib/creator/date-range.ts` for why none of it
+   * needed a migration.
+   */
+  const [preset, setPreset] = useState<PresetKey>('all');
+  const [custom, setCustom] = useState<DateRange | null>(null);
 
-  // The bounds of the walk: never before their first video, never past the
-  // month we have data for.
-  const firstMonth = windowQ.data?.earliest?.slice(0, 7) ?? activeMonth;
-  const lastMonth = windowQ.data?.latest?.slice(0, 7) ?? monthKey(new Date());
+  const active = useMemo<DateRange | null>(
+    () =>
+      preset === 'custom'
+        ? clamp(custom ?? { from: '', to: '' }, windowQ.data)
+        : presetToRange(preset, windowQ.data),
+    [preset, custom, windowQ.data]
+  );
+  const from = active?.from ?? null;
+  const to = active?.to ?? null;
 
-  const videosQ = useVideoPerformance(from, to, source, brandId);
+  /*
+   * THE BRANDS THIS CREATOR ACTUALLY HAS VIDEOS WITH, over their whole history.
+   *
+   * Taken from the videos rather than from `creator_brand_performance`, which
+   * only knows brands with MONEY rows: a creator whose first two videos have
+   * earned nothing yet would get an empty dropdown from that source, which is
+   * exactly the creator most likely to go looking for one. Taken over the base
+   * window rather than the chosen range for the same reason the window is split
+   * above. With the default "All time" range this is the same query key as the
+   * main video fetch, so it is free until somebody narrows the dates.
+   */
+  const baseFrom = baseWindowQ.data?.earliest ?? null;
+  const baseTo = baseWindowQ.data ? ceilingOf(baseWindowQ.data) : null;
+  const brandSourceQ = useVideoPerformance(
+    brandId ? null : baseFrom,
+    brandId ? null : baseTo,
+    null
+  );
+  const brandOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const v of brandSourceQ.data ?? []) {
+      if (v.brand_id && v.brand_name && !seen.has(v.brand_id))
+        seen.set(v.brand_id, v.brand_name);
+    }
+    return [...seen.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [brandSourceQ.data]);
+
+  const videosQ = useVideoPerformance(from, to, source, effectiveBrandId);
   /*
    * "Where your money came from" is a split BY brand, so inside a single
    * brand's hub it is one row restating the tile above it. Not fetched there
    * at all rather than fetched and hidden, because the round trip is the cost.
+   * The same now applies once the dropdown has narrowed to one brand.
    */
-  const brandsQ = useBrandPerformance(brandId ? null : from, brandId ? null : to);
-  const dailyQ = useDailyPerformance(from, to, source, brandId);
+  const splitOff = Boolean(effectiveBrandId);
+  const brandsQ = useBrandPerformance(splitOff ? null : from, splitOff ? null : to);
+  const dailyQ = useDailyPerformance(from, to, source, effectiveBrandId);
 
   const videos = videosQ.data ?? [];
   const daily = dailyQ.data ?? [];
@@ -190,7 +243,37 @@ export function MyNumbers({ brandId }: { brandId?: string } = {}) {
 
   return (
     <div className="flex flex-col gap-4">
-      <FilterBar>
+      {/*
+        TABS LEFT, FILTERS RIGHT. Rashid asked for the new controls to keep the
+        row "practical and symmetrical", and the row already had three groups of
+        tabs fighting for the same edge. What you are LOOKING AT stays on the
+        left; what you are NARROWING IT BY is pinned right in the action slot,
+        so the bar reads as two halves rather than five things in a queue. Below
+        40rem FilterBar wraps them, and `wx-tap-row` keeps every control at the
+        44px tap floor.
+      */}
+      <FilterBar
+        action={
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {brandId ? null : (
+              <BrandFilter
+                brands={brandOptions}
+                value={pickedBrand}
+                onChange={setPickedBrand}
+              />
+            )}
+            <DateRangePicker
+              preset={preset}
+              range={active}
+              window={windowQ.data}
+              onChange={(p, r) => {
+                setPreset(p);
+                setCustom(p === 'custom' ? r : null);
+              }}
+            />
+          </div>
+        }
+      >
         <FilterTabs label="What to look at">
           {TABS.map((t) => (
             <FilterTab
@@ -204,11 +287,6 @@ export function MyNumbers({ brandId }: { brandId?: string } = {}) {
           ))}
         </FilterTabs>
 
-        {/*
-          The date filter costs nothing, because it never leaves our database.
-          It is deliberately a set of ranges rather than two date pickers: a
-          creator wants "this month" and "since I started", not a calendar.
-        */}
         {/*
           WHICH CHANNEL. It sits beside the period rather than above the tabs
           because it is a filter on the same question, not a different screen:
@@ -226,41 +304,6 @@ export function MyNumbers({ brandId }: { brandId?: string } = {}) {
             </FilterTab>
           ))}
         </FilterTabs>
-
-        <FilterTabs label="Over what period">
-          {RANGES.map((r) => (
-            <FilterTab key={r.key} active={range === r.key} onClick={() => setRange(r.key)}>
-              {r.label}
-            </FilterTab>
-          ))}
-        </FilterTabs>
-
-        {/* The month walker, only while By month is chosen. */}
-        {range === 'month' ? (
-          <div className="border-line bg-surface-2 flex shrink-0 items-center gap-1 rounded-md border p-1">
-            <button
-              type="button"
-              onClick={() => setMonth(shiftMonth(activeMonth, -1))}
-              disabled={activeMonth <= firstMonth}
-              aria-label="Previous month"
-              className="text-muted hover:text-accent grid size-7 place-items-center rounded-sm transition-colors disabled:opacity-30"
-            >
-              <ChevronLeft size={15} aria-hidden />
-            </button>
-            <span className="wx-numeric min-w-[8.5rem] text-center text-[0.8125rem] font-semibold">
-              {monthLabel(activeMonth)}
-            </span>
-            <button
-              type="button"
-              onClick={() => setMonth(shiftMonth(activeMonth, 1))}
-              disabled={activeMonth >= lastMonth}
-              aria-label="Next month"
-              className="text-muted hover:text-accent grid size-7 place-items-center rounded-sm transition-colors disabled:opacity-30"
-            >
-              <ChevronRight size={15} aria-hidden />
-            </button>
-          </div>
-        ) : null}
       </FilterBar>
 
       {loading ? (
@@ -411,8 +454,8 @@ function Dashboard({
           </p>
         </div>
         <p className="text-faint max-w-xs text-[0.75rem] leading-relaxed">
-          We don&rsquo;t run GMV Max behind every video. The ones without ads still count towards
-          your offer.
+          We don&rsquo;t run GMV Max behind every video. The ones without ads still count
+          towards your offer.
         </p>
       </section>
 
@@ -579,8 +622,8 @@ function Content({
 
               {adState === 'none' ? (
                 <p className="text-muted border-line border-t px-4 py-3 text-[0.8125rem] leading-relaxed">
-                  We haven&rsquo;t run ads behind this one, so there is nothing to report. It still
-                  counts towards your offer.
+                  We haven&rsquo;t run ads behind this one, so there is nothing to report. It
+                  still counts towards your offer.
                 </p>
               ) : v.days_with_data === 0 ? (
                 <p className="text-muted border-line border-t px-4 py-3 text-[0.8125rem] leading-relaxed">
@@ -665,8 +708,8 @@ function Footnote() {
     <p className="text-faint flex items-start gap-2 text-[0.75rem] leading-relaxed">
       <TrendingUp size={13} aria-hidden className="mt-0.5 shrink-0" />
       <span>
-        Numbers come straight from TikTok and cover complete days only, up to yesterday. Today is
-        still being counted, so it appears tomorrow. Days follow the ad account&rsquo;s own
+        Numbers come straight from TikTok and cover complete days only, up to yesterday. Today
+        is still being counted, so it appears tomorrow. Days follow the ad account&rsquo;s own
         timezone.
       </span>
     </p>
@@ -677,7 +720,9 @@ function Empty({ title, body }: { title: string; body: string }) {
   return (
     <div className="border-line bg-surface-1 rounded-xl border p-10 text-center">
       <h2 className="font-display text-[1.0625rem] font-bold">{title}</h2>
-      <p className="text-muted mx-auto mt-2 max-w-prose text-[0.875rem] leading-relaxed">{body}</p>
+      <p className="text-muted mx-auto mt-2 max-w-prose text-[0.875rem] leading-relaxed">
+        {body}
+      </p>
     </div>
   );
 }
