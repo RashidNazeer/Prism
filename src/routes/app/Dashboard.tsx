@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
+﻿import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
 import { Briefcase, Check, Clock, Sparkles, Store, X } from 'lucide-react';
@@ -332,7 +332,7 @@ function CreatorHome({
                 THE KPI ROW IS ITS OWN BAND NOW, directly under the money.
                 It used to sit in the right-hand column beneath the timeline,
                 where four small boxes were whatever width was left over after
-                the work list took its share — the "four tiny disconnected
+                the work list took its share â€” the "four tiny disconnected
                 boxes" in the brief. Across the full width they are four equal
                 columns of the same grid everything else uses.
               */}
@@ -345,7 +345,12 @@ function CreatorHome({
                 split is explicit and it only applies from `lg`; below that the
                 two stack in the order the brief asks for, work before activity.
               */}
-              <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-12">
+              {/* `items-stretch`, not `items-start`. Symmetry is the brief's
+                  highest-priority requirement and two cards of different
+                  heights side by side is the most visible way to break it. The
+                  timeline grows to meet the work list; `h-full` on each card
+                  carries the stretch through the wrapper. */}
+              <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12">
                 <div className="lg:col-span-7">
                   <Work rows={work} pending={pending} moved={moved} progress={progress} />
                 </div>
@@ -515,7 +520,7 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
      * THE HERO. Rashid: "Does the $400 financial state feel like the primary
      * piece of information?" It is the only card on the screen carrying the
      * warm wash, which is how it leads without being bigger than everything
-     * else — light rather than size. It does not lift on hover, because it is
+     * else â€” light rather than size. It does not lift on hover, because it is
      * not clickable and a card that moves under the cursor and then does
      * nothing is a promise the interface breaks.
      */
@@ -565,10 +570,21 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
           the headline by construction: each stage belongs to exactly one
           bucket, so a creator can check our arithmetic. */}
       <div className="relative flex flex-col gap-3">
+        {/*
+          18px of saturated fill was louder than the $400 above it. A creator's
+          eye went to the bar first, which inverts the hierarchy the whole card
+          exists to state â€” and on a single-job account the bar is one colour
+          across the full width, so it was a large block of indigo in a screen
+          whose only accent is meant to be gold.
+
+          10px, sunk into its track by an inset shadow, so it reads as a gauge
+          cut into the card rather than a stripe painted across it. Same data,
+          same colours, a third of the weight.
+        */}
         <div
           role="img"
           aria-label={`${fmt(paid)} paid, ${fmt(due)} awaiting payment, ${fmt(working)} in progress`}
-          className="bg-surface-2 flex h-[18px] gap-0.5 overflow-hidden rounded-full"
+          className="bg-surface-3 flex h-2.5 gap-0.5 overflow-hidden rounded-full shadow-[inset_0_1px_2px_rgb(0_0_0/0.25)]"
         >
           {segments.map((s) => (
             <m.span
@@ -639,7 +655,7 @@ function Work({
   progress: Map<string, JobProgress> | undefined;
 }) {
   return (
-    <section className="wx-card flex flex-col gap-4 rounded-2xl p-5">
+    <section className="wx-card flex h-full flex-col gap-4 rounded-2xl p-5">
       <div className="flex items-baseline justify-between gap-2.5">
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Work you took
@@ -793,7 +809,7 @@ function Activity({
   const claimed = new Set<string>();
 
   return (
-    <section className="wx-card flex flex-col gap-4 rounded-2xl p-5">
+    <section className="wx-card flex h-full flex-col gap-4 rounded-2xl p-5">
       <h2 className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         <span aria-hidden className="wx-blink bg-stage-paid size-1.5 rounded-full" />
         Everything that moved
@@ -948,15 +964,18 @@ function Counts({ summary }: { summary: WorkSummary }) {
           <li key={item.label}>
             <Link
               to={item.to}
-              className="wx-card wx-card-lift flex h-full flex-col gap-3 rounded-2xl p-4"
+              /* The icon sits BESIDE the number, not above it. Stacked, each
+                 card was mostly empty and four of them made a band of air
+                 across the widest part of the page. */
+              className="wx-card wx-card-lift flex h-full items-center gap-3.5 rounded-2xl p-4"
             >
               <span
                 aria-hidden
-                className="bg-surface-2 grid size-8 place-items-center rounded-lg shadow-[inset_0_1px_0_0_var(--wx-card-top-light)]"
+                className="bg-surface-2 grid size-9 shrink-0 place-items-center rounded-lg shadow-[inset_0_1px_0_0_var(--wx-card-top-light)]"
               >
-                <Icon size={15} className={item.tone} />
+                <Icon size={16} className={item.tone} />
               </span>
-              <span className="flex flex-col gap-1">
+              <span className="flex min-w-0 flex-col gap-1">
                 <span className="font-display wx-numeric text-[1.75rem] leading-none font-semibold">
                   {item.n}
                 </span>
