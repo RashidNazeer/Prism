@@ -585,3 +585,114 @@ built; the button is the manual trigger and the cron worker drains the queue.
 `src/types/database.ts` has not been regenerated, which matters only once
 something in the screen reads the new tables directly rather than through the
 Edge Function.
+
+### 2026-10-07, which product each video is for
+
+Umar: "I want to see for which product each video is made."
+
+**The product was never missing.** `brandVideos` in `angleStore.js` has always
+returned `product` off `video_codes`, and the angle drawer has always rendered
+it -- appended to the date as `date · product` inside `.cx-who small`. That
+element is a single `white-space: nowrap` line with an ellipsis, and the
+product sits at the END of the string, so it is the first thing cut. For a
+brand whose products are called "Penetrex Daily Joint & Muscle Care, 3 Oz.
+Gel", none of it survived. **Data that is rendered and then clipped away looks
+exactly like data that was never there**, which is why this read as a missing
+feature rather than a styling fault.
+
+Three changes, all through `scripts/wurxbase-patches.mjs` so they survive the
+next re-vendor:
+
+- **swap `product off the date line`** -- the date line goes back to being just
+  the date.
+- **patch `product per video`** -- the product gets its own element,
+  `<small className="wx-prod">`, with the full name on `title`.
+- **swap `find by product too`** -- the drawer's filter already matched on
+  product; only its placeholder failed to say so, so nobody would think to try
+  it. Now "Find a creator or product".
+
+`.wx-prod` is styled in `src/routes/admin/wurxbase-overrides.css` as a chip in
+`--wx-accent-soft`, the same fill the Brands screen uses for its own product
+labels, so one product looks like itself on both screens.
+
+**A data fix came with it.** `swap keep a product the first row lacked`:
+`brandVideos` deduped with `if (seen.has(url)) return;`, so where the same link
+sits on two rows of `video_codes` -- which happens whenever a creator has two
+deals for it, 32 times in one brand-month on dev -- the product was taken from
+whichever row came first, and lost entirely if that row had none. It now
+backfills, never overwrites. This is the rule `wxProductTotals` already applies
+on the Brands screen ("where two rows disagree the richer row wins"), so the
+two screens no longer disagree about what a video sold.
+
+**A trap worth recording, because the patch script cannot catch it.** The first
+version of the date-line swap used `to: "String(f.v.date || '').slice(0, 10)"`
+-- a prefix of its own `from`. The idempotency check is `src.includes(sw.to)`,
+so it matched the UNSWAPPED text, reported "already swapped", and changed
+nothing. The product then rendered twice, once clipped and once not. **A swap
+whose `to` is a substring of its `from` silently no-ops.** The `to` now carries
+a trailing comment so it cannot match the original.
+
+**Proven.** `pnpm build` passes, the patch script is idempotent (16 blocks, a
+second run applies nothing), and `pnpm verify:angles-categorise` passes 53
+checks.
+
+### 2026-10-07, angle -> product -> videos
+
+Umar, pointing at the Brands screen: "under each angle there are products and
+then under each products there are videos", and the band should carry the
+product's picture as that screen's group row does.
+
+So the angle is the category and a product is a foldable band inside it. The
+per-video product chip added earlier that same day is **gone**: inside a band it
+repeated the band's own name on every row.
+
+**The arrangement has no React in it.** `src/routes/admin/collab-angle-products.ts`
+holds `wxAngleRows` and nothing else, so Node can import it and run the shipped
+function. `src/routes/admin/collab-angle-product-band.tsx` is the band;
+`collab-angle-product-pics.ts` fetches the pictures. That split exists so the
+rules below are tested rather than asserted in a comment.
+
+The rules, each one a check in `pnpm verify:angle-products`:
+
+- Biggest earner leads, so the product carrying an angle is read first.
+- A video with no product is kept, under one honest label, always last, even
+  when a real product earns less. Dropping it is how a breakdown stops summing
+  to the angle total above it.
+- If NOT ONE video in the angle names a product there are no bands at all --
+  otherwise the whole list sits inside a single row reading "No product
+  recorded", which is noise.
+- One product spelled `Gel`, `gel` and ` GEL ` is one band.
+- Folding hides rows and never changes a band's counts or figures. A total that
+  moves when you fold a section is a total nobody can trust.
+- Bands are open by default and the fold state is per card: two angles sell
+  different products, so one shared set would fold a band in an angle nobody
+  touched.
+
+**The pictures come from `collab-products`**, the same catalogue the Brands
+screen reads, so one product cannot show two different pictures on two screens.
+One fetch per brand, shared by every band in every angle; a failure is never
+cached; a missing or 404 image falls back to a neutral tile of the same size
+rather than the browser's torn-image glyph.
+
+**Brand-agnostic, and enforced.** `check-angle-products.mjs` refuses a brand
+name anywhere in those three modules, comments included -- it caught one in a
+comment of mine on the first run. There is no brand and no list of known
+products in the grouping; it groups on whatever `product` the rows carry.
+
+**What it still cannot prove.** Whether a given brand's `video_codes` rows carry
+a product at all is a data question. With `SUPABASE_SERVICE_KEY` set the script
+reports coverage brand by brand and fails if a brand with videos has a product
+on none of them. The repo `.env` holds only the publishable key, which is
+refused (`permission denied for schema wurxbase`) because `wurxbase` is granted
+to signed-in roles -- correct behaviour, not a misconfiguration. `docs` note:
+the same answer comes out of the SQL editor without any key, with the query in
+the commit message for this change.
+
+**A trap closed for good.** `wurxbase-patches.mjs` now REFUSES a swap whose `to`
+is a substring of its `from`. Its idempotency check is `src.includes(sw.to)`, so
+such a swap matched the unswapped text, reported "already swapped", exited 0 and
+changed nothing -- which is how the product briefly rendered twice.
+
+**Proven.** `pnpm build`, `pnpm verify:isolation`, `pnpm verify:angle-products`
+(35 checks) and `pnpm verify:angles-categorise` (53 checks) all pass, and the
+patch script is idempotent at 20 blocks.
