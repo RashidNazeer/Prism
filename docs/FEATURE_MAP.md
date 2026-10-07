@@ -4719,3 +4719,51 @@ Aurelia $6,782 / $26,924 / 0.25x, Swisse $4,551 / $23,724 / 0.19x).
 `scripts/check-performance.mjs` was NOT run: it needs `SUPABASE_SERVICE_KEY`,
 which the machine this was built on does not have. It is an RLS test that
 creates and deletes rows, so it exercises nothing this change touches.
+
+### The fix: fall back to the sync, never override what was typed (2026-10-07)
+
+Rashid: *"suggest the appropriate fix and make the fix for me"*.
+
+**The obvious fix would have destroyed history, which is why it is not the one
+built.** Measured on dev before a line was written, comparing the typed matrix
+against `euka_ad_video_month` per brand AND per month:
+
+- The Euka rows begin **2026-06**; the typed cells go back to **2025-12**.
+  Feeding these columns from the sync deletes **21 brand-months**.
+- **Biostime, Aqua Sonic and Pure Daily Care have no Euka rows at all.** They
+  would have gone from real figures to nothing.
+- Where both exist they sometimes agree to the dollar (Apothecary 2026-08:
+  $23,553 both ways) and sometimes do not (Penetrex 2026-06: $24,594 typed
+  against $13,275 synced; Dr Tobias 2026-08: $9,385 against $2,160).
+- But the sync covers **12 brand-months the typed data misses**, including
+  October for seven brands, and NUTRAHARMONY and Irwin Naturals, never typed at
+  all, which between them have 581 delivered videos.
+
+So: **typed if it exists, synced only where nothing was ever typed.** With no
+way to say which is right where they disagree, the figure a human put there
+wins — it is the record of what was agreed and what people have been reading
+for months. No figure on screen changed; 35 brands that showed nothing can now
+show something.
+
+A synced figure carries a dotted underline and the word `synced`, with a
+tooltip saying it is not part of the typed record and that the two sources do
+not always agree. Same ink and size as a typed figure, because it is a real
+number — a loud badge would make the brands we know least about the loudest
+rows on the page.
+
+**All time on both sides**, because the aggregation already says "ALWAYS
+all-time sum across c.monthly"; asking the sync a different question would put
+two periods in one column. Ids are gathered only for brands with nothing typed,
+since a typed brand's figures win regardless.
+
+Verified on dev at 1440/1024/768/375px: every typed figure identical, the two
+newly-populated brands matching the database exactly (NUTRAHARMONY $3,031 /
+$2,473 / 1.23x, Irwin $9,980 / $12,953 / 0.77x), 0 blanks without a reason, 0
+console errors.
+
+**A geometry check caught what the screenshot could not.** At 1024px
+"1.23x·synced" measured wider than the ROAS cell, the tightest column on the
+row, and spilled — invisible at 1440px where it was being looked at. The word
+is now dropped in that column rather than shrunk; the dotted underline and
+tooltip still carry the provenance, and the two columns beside it say it in
+words on the same row.
