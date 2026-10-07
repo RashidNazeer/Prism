@@ -206,6 +206,49 @@ Klassy Network, Cutler Nutritions, Aqua Sonic, Inno Supps and Irwin Naturals
 (see Open items); anything else on that list is a brand whose brief is missing
 from the sheet.
 
+## Turning the feature on
+
+The code is written and builds. It does nothing at all until these four things
+are in place, and each of them fails quietly rather than loudly, which is why
+they are written out here rather than left to be remembered.
+
+```powershell
+# 1. The schema: the briefs, then the queue.
+supabase db push
+
+# 2. Where the audit machine is, and the key it wants. The URL is Umar's
+#    ngrok domain and does not change; the key is AUDITOR_API_KEYS from the
+#    backend's own .env.
+supabase secrets set AUDIT_API_URL=https://atlantic-canine-hurling.ngrok-free.dev --project-ref $env:SUPABASE_PROJECT_REF_DEV
+supabase secrets set AUDIT_API_KEY=<the key> --project-ref $env:SUPABASE_PROJECT_REF_DEV
+
+# 3. The secret the scheduler presents to its own worker. Any 32+ random
+#    characters; it is never seen outside the database and the function.
+supabase secrets set COLLAB_ANGLES_SYNC_SECRET=<32+ random chars> --project-ref $env:SUPABASE_PROJECT_REF_DEV
+
+# 4. Deploy both functions.
+supabase functions deploy collab-angles --project-ref $env:SUPABASE_PROJECT_REF_DEV
+supabase functions deploy collab-angles-sync --project-ref $env:SUPABASE_PROJECT_REF_DEV
+```
+
+Then tell the database the same two things, so `pg_cron` can reach the worker.
+Run this in the SQL editor as the service role, with the SAME secret as step 3:
+
+```sql
+select public.collab_angles_set_sync_secret('<the same 32+ chars>');
+select public.collab_angles_set_sync_url(
+  'https://<project-ref>.supabase.co/functions/v1/collab-angles-sync');
+```
+
+A missing vault entry is not an error: `collab_angles_run_cycle()` returns null
+and the cron job looks perfectly healthy while nothing is ever categorised.
+That is deliberate, because production has no Paid Collabs, but it means the
+only proof the wiring works is a batch actually moving.
+
+Check it with `pnpm verify:angles-categorise`. With `AUDIT_API_URL` and
+`AUDIT_API_KEY` in the environment it also asks the audit machine whether it is
+awake.
+
 ## Build order
 
 1. **The briefs, per brand.** Done on this branch (see the change log).
@@ -469,3 +512,187 @@ are requirements for the implementation.
 - **Added the section "Design rules from the 2026-10-06 review"**, 14 numbered
   rules for whoever implements the feature.
 - No code, migration, vendored file or database was touched.
+
+### 2026-10-07, the feature itself: queue, worker, filing and the button
+
+Umar: *"Complete the integration."* Build-order steps 1a to 6 are now written
+and building. Nothing is deployed and no database has been touched.
+
+**The schema** (`supabase/migrations/20261007090000_collab_angle_queue.sql`):
+`public.collab_angle_videos`, one row per video per brand-month, and
+`public.collab_angle_batches`, one row per backend job. RLS on, read for
+`is_collabs_viewer()`, no write policy, explicit `service_role` grants, both in
+the realtime publication. Plus the two vault setters,
+`collab_angles_run_cycle()` and the `collab-angles-cycle` cron job, each copied
+from their `euka_ads_*` equivalents.
+
+**Talking to the audit machine** (`supabase/functions/_shared/audit-api.ts`).
+The one piece worth reading twice, because three different failures arrive
+looking identical and want opposite responses:
+
+- **Offline**: the machine is a PC behind a tunnel, and an absent machine is
+  answered for by ngrok with an HTML page. That must not spend a retry, fail a
+  batch, or resubmit a job that is still running over there. Any reply that is
+  not JSON, or that carries an `ngrok-error-code` header, is offline.
+- **Refused**: the machine answered, in JSON, that it will not do this. A 4xx.
+  Retrying changes nothing.
+- **Missing job**: a real 404 whose JSON body says `no job <id>`. Only then are
+  the batch's videos re-queued.
+
+`POST /analyze` is not idempotent, so every submission carries the batch id as
+its `label`, and a batch found half-submitted asks `GET /jobs?limit=50` for
+that label before posting again. A lost reply would otherwise start a second
+half-hour job and file the same videos twice.
+
+**The worker** (`supabase/functions/collab-angles-sync/index.ts`), fired every
+minute. A tick claims one batch with a three-minute lease (a conditional
+update, not a row lock, so a function that dies cannot leave a lock behind),
+moves it one step, and returns. Nothing waits for a batch: a batch is a row,
+and its state lives in the database. When a batch finishes and there is budget
+left, the next one is started in the same tick so the machine is not left idle
+for a minute.
+
+**Filing** (`supabase/functions/_shared/angle-store.ts`) replicates
+`angleStore.js` lines 89 to 174 with the service role: read the revision,
+update conditioned on it, bump it, retry up to five times when somebody saved
+underneath us. It only ever adds. Every existing angle keeps every key it had,
+including the ad spend and overrides somebody typed by hand, and a video
+already filed is matched by TikTok video id across every angle of the row and
+left where it is. A placement the machine itself flagged `needs_review` is not
+filed at all, because "fits no angle" and "could not really tell" are
+indistinguishable once filed and nobody would look again.
+
+**The button** (`src/routes/admin/collab-angle-categorise.tsx`), hooked into
+the vendored screen's header through a `WURX-ADDED` fence, with
+`scripts/wurxbase-patches.mjs` generalised so it can patch more than
+`WurxUI.jsx` and the hook survives a re-vendor. The progress ring is an
+absolutely positioned SVG outline that takes no layout space, so the header
+does not move, drawn with `stroke-dasharray` over `done / total` where done
+counts every state a video can end in. It polls every five seconds while work
+is in flight and calls `fetchAngles()` when the filed count rises, so the cards
+fill in without a reload.
+
+**Proven, not assumed.** `pnpm build` passes. `pnpm verify:angles-categorise`
+(new, 43 checks) passes, including a live call to the audit machine. The exact
+request the worker sends was run against the live backend with a two-brief
+brand: it answered `angles_from = ['Colon 14 Day Cleanse: given', 'Lung
+Health: given']`, which is both briefs judged against the angle names stored
+here rather than names it guessed from the documents.
+
+**Not done.** Nothing is deployed: this machine's Supabase account is not in
+the Wurx Media organisation. The automatic nightly run (build order 6) is not
+built; the button is the manual trigger and the cron worker drains the queue.
+`src/types/database.ts` has not been regenerated, which matters only once
+something in the screen reads the new tables directly rather than through the
+Edge Function.
+
+### 2026-10-07, which product each video is for
+
+Umar: "I want to see for which product each video is made."
+
+**The product was never missing.** `brandVideos` in `angleStore.js` has always
+returned `product` off `video_codes`, and the angle drawer has always rendered
+it -- appended to the date as `date · product` inside `.cx-who small`. That
+element is a single `white-space: nowrap` line with an ellipsis, and the
+product sits at the END of the string, so it is the first thing cut. For a
+brand whose products are called "Penetrex Daily Joint & Muscle Care, 3 Oz.
+Gel", none of it survived. **Data that is rendered and then clipped away looks
+exactly like data that was never there**, which is why this read as a missing
+feature rather than a styling fault.
+
+Three changes, all through `scripts/wurxbase-patches.mjs` so they survive the
+next re-vendor:
+
+- **swap `product off the date line`** -- the date line goes back to being just
+  the date.
+- **patch `product per video`** -- the product gets its own element,
+  `<small className="wx-prod">`, with the full name on `title`.
+- **swap `find by product too`** -- the drawer's filter already matched on
+  product; only its placeholder failed to say so, so nobody would think to try
+  it. Now "Find a creator or product".
+
+`.wx-prod` is styled in `src/routes/admin/wurxbase-overrides.css` as a chip in
+`--wx-accent-soft`, the same fill the Brands screen uses for its own product
+labels, so one product looks like itself on both screens.
+
+**A data fix came with it.** `swap keep a product the first row lacked`:
+`brandVideos` deduped with `if (seen.has(url)) return;`, so where the same link
+sits on two rows of `video_codes` -- which happens whenever a creator has two
+deals for it, 32 times in one brand-month on dev -- the product was taken from
+whichever row came first, and lost entirely if that row had none. It now
+backfills, never overwrites. This is the rule `wxProductTotals` already applies
+on the Brands screen ("where two rows disagree the richer row wins"), so the
+two screens no longer disagree about what a video sold.
+
+**A trap worth recording, because the patch script cannot catch it.** The first
+version of the date-line swap used `to: "String(f.v.date || '').slice(0, 10)"`
+-- a prefix of its own `from`. The idempotency check is `src.includes(sw.to)`,
+so it matched the UNSWAPPED text, reported "already swapped", and changed
+nothing. The product then rendered twice, once clipped and once not. **A swap
+whose `to` is a substring of its `from` silently no-ops.** The `to` now carries
+a trailing comment so it cannot match the original.
+
+**Proven.** `pnpm build` passes, the patch script is idempotent (16 blocks, a
+second run applies nothing), and `pnpm verify:angles-categorise` passes 53
+checks.
+
+### 2026-10-07, angle -> product -> videos
+
+Umar, pointing at the Brands screen: "under each angle there are products and
+then under each products there are videos", and the band should carry the
+product's picture as that screen's group row does.
+
+So the angle is the category and a product is a foldable band inside it. The
+per-video product chip added earlier that same day is **gone**: inside a band it
+repeated the band's own name on every row.
+
+**The arrangement has no React in it.** `src/routes/admin/collab-angle-products.ts`
+holds `wxAngleRows` and nothing else, so Node can import it and run the shipped
+function. `src/routes/admin/collab-angle-product-band.tsx` is the band;
+`collab-angle-product-pics.ts` fetches the pictures. That split exists so the
+rules below are tested rather than asserted in a comment.
+
+The rules, each one a check in `pnpm verify:angle-products`:
+
+- Biggest earner leads, so the product carrying an angle is read first.
+- A video with no product is kept, under one honest label, always last, even
+  when a real product earns less. Dropping it is how a breakdown stops summing
+  to the angle total above it.
+- If NOT ONE video in the angle names a product there are no bands at all --
+  otherwise the whole list sits inside a single row reading "No product
+  recorded", which is noise.
+- One product spelled `Gel`, `gel` and ` GEL ` is one band.
+- Folding hides rows and never changes a band's counts or figures. A total that
+  moves when you fold a section is a total nobody can trust.
+- Bands are open by default and the fold state is per card: two angles sell
+  different products, so one shared set would fold a band in an angle nobody
+  touched.
+
+**The pictures come from `collab-products`**, the same catalogue the Brands
+screen reads, so one product cannot show two different pictures on two screens.
+One fetch per brand, shared by every band in every angle; a failure is never
+cached; a missing or 404 image falls back to a neutral tile of the same size
+rather than the browser's torn-image glyph.
+
+**Brand-agnostic, and enforced.** `check-angle-products.mjs` refuses a brand
+name anywhere in those three modules, comments included -- it caught one in a
+comment of mine on the first run. There is no brand and no list of known
+products in the grouping; it groups on whatever `product` the rows carry.
+
+**What it still cannot prove.** Whether a given brand's `video_codes` rows carry
+a product at all is a data question. With `SUPABASE_SERVICE_KEY` set the script
+reports coverage brand by brand and fails if a brand with videos has a product
+on none of them. The repo `.env` holds only the publishable key, which is
+refused (`permission denied for schema wurxbase`) because `wurxbase` is granted
+to signed-in roles -- correct behaviour, not a misconfiguration. `docs` note:
+the same answer comes out of the SQL editor without any key, with the query in
+the commit message for this change.
+
+**A trap closed for good.** `wurxbase-patches.mjs` now REFUSES a swap whose `to`
+is a substring of its `from`. Its idempotency check is `src.includes(sw.to)`, so
+such a swap matched the unswapped text, reported "already swapped", exited 0 and
+changed nothing -- which is how the product briefly rendered twice.
+
+**Proven.** `pnpm build`, `pnpm verify:isolation`, `pnpm verify:angle-products`
+(35 checks) and `pnpm verify:angles-categorise` (53 checks) all pass, and the
+patch script is idempotent at 20 blocks.
