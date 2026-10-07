@@ -585,3 +585,53 @@ built; the button is the manual trigger and the cron worker drains the queue.
 `src/types/database.ts` has not been regenerated, which matters only once
 something in the screen reads the new tables directly rather than through the
 Edge Function.
+
+### 2026-10-07, which product each video is for
+
+Umar: "I want to see for which product each video is made."
+
+**The product was never missing.** `brandVideos` in `angleStore.js` has always
+returned `product` off `video_codes`, and the angle drawer has always rendered
+it -- appended to the date as `date · product` inside `.cx-who small`. That
+element is a single `white-space: nowrap` line with an ellipsis, and the
+product sits at the END of the string, so it is the first thing cut. For a
+brand whose products are called "Penetrex Daily Joint & Muscle Care, 3 Oz.
+Gel", none of it survived. **Data that is rendered and then clipped away looks
+exactly like data that was never there**, which is why this read as a missing
+feature rather than a styling fault.
+
+Three changes, all through `scripts/wurxbase-patches.mjs` so they survive the
+next re-vendor:
+
+- **swap `product off the date line`** -- the date line goes back to being just
+  the date.
+- **patch `product per video`** -- the product gets its own element,
+  `<small className="wx-prod">`, with the full name on `title`.
+- **swap `find by product too`** -- the drawer's filter already matched on
+  product; only its placeholder failed to say so, so nobody would think to try
+  it. Now "Find a creator or product".
+
+`.wx-prod` is styled in `src/routes/admin/wurxbase-overrides.css` as a chip in
+`--wx-accent-soft`, the same fill the Brands screen uses for its own product
+labels, so one product looks like itself on both screens.
+
+**A data fix came with it.** `swap keep a product the first row lacked`:
+`brandVideos` deduped with `if (seen.has(url)) return;`, so where the same link
+sits on two rows of `video_codes` -- which happens whenever a creator has two
+deals for it, 32 times in one brand-month on dev -- the product was taken from
+whichever row came first, and lost entirely if that row had none. It now
+backfills, never overwrites. This is the rule `wxProductTotals` already applies
+on the Brands screen ("where two rows disagree the richer row wins"), so the
+two screens no longer disagree about what a video sold.
+
+**A trap worth recording, because the patch script cannot catch it.** The first
+version of the date-line swap used `to: "String(f.v.date || '').slice(0, 10)"`
+-- a prefix of its own `from`. The idempotency check is `src.includes(sw.to)`,
+so it matched the UNSWAPPED text, reported "already swapped", and changed
+nothing. The product then rendered twice, once clipped and once not. **A swap
+whose `to` is a substring of its `from` silently no-ops.** The `to` now carries
+a trailing comment so it cannot match the original.
+
+**Proven.** `pnpm build` passes, the patch script is idempotent (16 blocks, a
+second run applies nothing), and `pnpm verify:angles-categorise` passes 53
+checks.

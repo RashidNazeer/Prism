@@ -714,7 +714,7 @@ function AngleCard({ r, n, open, leading, index, fmt, poolLeft, canEdit, canType
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" />
                     </svg>
-                    <input value={q} onChange={e => setQ(e.target.value)} placeholder="Find a creator in this angle" />
+                    <input value={q} onChange={e => setQ(e.target.value)} placeholder="Find a creator or product" />
                     {q && (
                       <button type="button" onClick={() => setQ('')} title="Clear">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
@@ -749,9 +749,33 @@ function AngleCard({ r, n, open, leading, index, fmt, poolLeft, canEdit, canType
                         <b>{f.v ? (f.v.creator || 'Unnamed') : 'Not in this month'}</b>
                         <small>
                           {f.v
-                            ? String(f.v.date || '').slice(0, 10) + (f.v.product ? ' · ' + f.v.product : '')
+                            ? String(f.v.date || '').slice(0, 10) /* product is on its own line below */
                             : url.replace(/^https?:\/\//, '').slice(0, 30)}
                         </small>
+                        {/* WURX-ADDED · WHICH PRODUCT THIS VIDEO IS FOR.
+
+                            Umar, 2026-10-07: "I want to see for which product
+                            each video is made".
+
+                            The product was already here -- appended to the date
+                            as `date · product` in the line above. It was also
+                            invisible, because `.cx-who small` is one nowrap line
+                            with an ellipsis, and the product sits at the END of
+                            it. So the longer the product name, the less of it
+                            survived: "Penetrex Daily Joint & Muscle Care, 3 Oz.
+                            Gel" is exactly the sort of name that got cut to
+                            nothing. Data that is rendered and then clipped away
+                            looks identical to data that was never there.
+
+                            Its own line, so it gets the column's full width, and
+                            `title` carries the untruncated name for the few that
+                            still overflow. No new query: `brandVideos` has
+                            carried `product` off `video_codes` all along, which
+                            is the same field the Brands screen groups by. */}
+                        {f.v && f.v.product && (
+                          <small className="wx-prod" title={f.v.product}>{f.v.product}</small>
+                        )}
+                        {/* WURX-END */}
                       </span>
                       <u className="cx-go" title="Watch this video">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17 17 7M8 7h9v9" /></svg>

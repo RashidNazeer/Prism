@@ -2763,3 +2763,40 @@
   .wurxbase-root .wx-cat-btn:hover:not(:disabled),
   .wurxbase-root .wx-cat-btn:active:not(:disabled) { transform: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   WHICH PRODUCT A VIDEO IS FOR — in the angle drawer's video rows
+   ═══════════════════════════════════════════════════════════════
+   Umar, 2026-10-07: "I want to see for which product each video is made".
+
+   The product was never missing from the data. It was appended to the date in
+   `.cx-who small` -- one `nowrap` line with an ellipsis -- so it sat at the far
+   end of the string that gets cut first. A brand whose products are called
+   "Penetrex Daily Joint & Muscle Care, 3 Oz. Gel" lost all of it, every time,
+   and the screen looked exactly as it would if the field were empty.
+
+   A chip rather than another grey line, because this row already ends in two
+   lines of muted text and a third would read as more of the same. It is the
+   same `--wx-accent-soft` fill the Brands screen uses for its own product
+   labels, so one product looks like itself on both screens.
+
+   `align-self: flex-start` so the chip hugs its name instead of stretching the
+   full column, and the ellipsis stays as a last resort with the full name on
+   `title`. */
+.wurxbase-root .cx-who small.wx-prod {
+  align-self: flex-start;
+  max-width: 100%;
+  margin-top: 1px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--wx-accent-soft);
+  color: var(--wx-text);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: -0.1px;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wurxbase-root .cx-who:hover small.wx-prod { color: var(--wx-text); }

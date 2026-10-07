@@ -120,6 +120,14 @@ const PATCHES = [
     "re": null,
     "anchor": "\n            New angle\n          </button>\n        )}\n",
     "body": "        {/* WURX-ADDED · the Categorise button, straight after New angle.\n\n            It renders nothing unless there is a brand, a month and edit rights,\n            so it needs no gate here. onFiled re-reads the angle store when the\n            filer has put videos into angles, so the cards update without a\n            reload. fetchAngles() is already imported above and its rejection is\n            swallowed the same way App.jsx does at boot: a failed refresh is not\n            worth an error on a screen that is otherwise working. */}\n        <CollabAngleCategorise\n          brand={brand}\n          month={month}\n          canEdit={canEdit}\n          onFiled={() => { fetchAngles().catch(() => {}); }}\n        />\n        {/* WURX-END */}\n"
+  },
+  {
+    "file": "src/vendor/wurxbase/CreativeAngles.jsx",
+    "name": "product per video",
+    "mode": "afterLast",
+    "re": null,
+    "anchor": "\n                            : url.replace(/^https?:\\/\\//, '').slice(0, 30)}\n                        </small>\n",
+    "body": "                        {/* WURX-ADDED · WHICH PRODUCT THIS VIDEO IS FOR.\n\n                            Umar, 2026-10-07: \"I want to see for which product\n                            each video is made\".\n\n                            The product was already here -- appended to the date\n                            as `date · product` in the line above. It was also\n                            invisible, because `.cx-who small` is one nowrap line\n                            with an ellipsis, and the product sits at the END of\n                            it. So the longer the product name, the less of it\n                            survived: \"Penetrex Daily Joint & Muscle Care, 3 Oz.\n                            Gel\" is exactly the sort of name that got cut to\n                            nothing. Data that is rendered and then clipped away\n                            looks identical to data that was never there.\n\n                            Its own line, so it gets the column's full width, and\n                            `title` carries the untruncated name for the few that\n                            still overflow. No new query: `brandVideos` has\n                            carried `product` off `video_codes` all along, which\n                            is the same field the Brands screen groups by. */}\n                        {f.v && f.v.product && (\n                          <small className=\"wx-prod\" title={f.v.product}>{f.v.product}</small>\n                        )}\n                        {/* WURX-END */}\n"
   }
 ];
 
@@ -139,6 +147,46 @@ const SWAPS = [
        and a soft accent chip is legible on either ground. */
     from: "background: countBg, color: 'var(--wx-text-muted)',",
     to: "background: 'var(--wx-accent-soft)', color: 'var(--wx-text)',",
+  },
+  {
+    name: 'product off the date line',
+    file: 'src/vendor/wurxbase/CreativeAngles.jsx',
+    /* The other half of the "product per video" patch below. The product moves
+       to its own line, so it has to come OFF this one -- otherwise it shows
+       twice, once clipped and once not.
+
+       `to` CARRIES A COMMENT ON PURPOSE. The idempotency check is
+       `src.includes(sw.to)`, so a `to` that is a prefix of its own `from`
+       matches the UNSWAPPED text and the swap skips itself as "already
+       swapped" while changing nothing. The first version of this entry did
+       exactly that, and the product rendered twice. */
+    from: "String(f.v.date || '').slice(0, 10) + (f.v.product ? ' · ' + f.v.product : '')",
+    to: "String(f.v.date || '').slice(0, 10) /* product is on its own line below */",
+  },
+  {
+    name: 'keep a product the first row lacked',
+    file: 'src/vendor/wurxbase/angleStore.js',
+    /* FIRST ROW WINS LOSES THE PRODUCT. The same link sits on two rows of
+       `video_codes` whenever a creator has two deals for it -- 32 videos in a
+       single brand-month on dev -- and only one of those rows may name the
+       product. Skipping the duplicate outright threw that name away whenever
+       the row that carried it happened to come second, so the chip would be
+       blank on exactly the videos with the most history behind them.
+
+       This is the rule `wxProductTotals` in WurxUI.jsx already applies to the
+       Brands screen ("where two rows disagree the richer row wins"), so the two
+       screens now name a video's product the same way instead of disagreeing.
+       Backfill only: an existing name is never overwritten. */
+    from: 'if (seen.has(url)) return;',
+    to: 'if (seen.has(url)) { const p0 = out.find(o => o.url === url); if (p0 && !p0.product && v && v.product) p0.product = String(v.product).trim(); return; }',
+  },
+  {
+    name: 'find by product too',
+    file: 'src/vendor/wurxbase/CreativeAngles.jsx',
+    /* The filter already matched on product (`v.product` is in its predicate);
+       only the placeholder failed to say so, so nobody would think to try it. */
+    from: 'placeholder="Find a creator in this angle"',
+    to: 'placeholder="Find a creator or product"',
   },
 ];
 
