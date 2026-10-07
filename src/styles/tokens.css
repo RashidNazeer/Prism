@@ -26,7 +26,7 @@
   --wx-surface-1: #1a1714; /* cards, panels */
   --wx-surface-2: #221e1a; /* hover, nested cards */
   --wx-surface-3: #2a251f; /* wells, inputs */
-  --wx-field: #221e1a;    /* what you type into · a well on dark */
+  --wx-field: #221e1a; /* what you type into · a well on dark */
 
   /* Text, all verified >= 4.5:1 on EVERY surface, --wx-bg to --wx-surface-3 */
   --wx-text: #f4f0ea; /* 16.97:1 */
@@ -128,6 +128,42 @@
   --wx-shadow-md: 0 1px 2px 0 rgb(0 0 0 / 0.4), 0 10px 30px -14px rgb(0 0 0 / 0.6);
   --wx-shadow-lg: 0 1px 2px 0 rgb(0 0 0 / 0.5), 0 24px 54px -20px rgb(0 0 0 / 0.75);
 
+  /*
+   * LAYERED DEPTH, 2026-10-08, for the creator dashboard.
+   *
+   * Rashid asked it to read as a premium product rather than an admin panel,
+   * with "subtle but noticeable 3D depth" and explicitly NOT a gaming or crypto
+   * look. Depth here is four thin layers rather than a drop shadow bolted onto
+   * a flat box: a face that is lighter at the top than the bottom, a hairline
+   * that catches light along the top edge, a warm-tinted rim, and a shadow that
+   * sits UNDER the card instead of around it. That is how a real material
+   * behaves under a light source above, and it is what separates "elevated"
+   * from merely "outlined".
+   *
+   * THE VALUES ARE DELIBERATELY SMALL. On a near-black page a wide shadow stops
+   * reading as shadow and starts reading as glow, which is the look he ruled
+   * out — the note above the elevation scale already says so. The lift is two
+   * pixels and the top light is 6% white.
+   *
+   * EVERY ONE HAS A LIGHT TWIN BELOW, and not only because check:contrast fails
+   * the build on parity. On a white page the physics invert: the shadow does
+   * the work, the top highlight is nearly invisible and would just wash the
+   * card out, so it is a white face against a tinted page rather than a lift.
+   */
+  --wx-card-face: linear-gradient(180deg, #1e1a16 0%, #191512 100%);
+  --wx-card-face-hover: linear-gradient(180deg, #231e19 0%, #1c1714 100%);
+  --wx-card-rim: rgba(244, 240, 234, 0.07);
+  --wx-card-rim-hover: rgba(200, 146, 75, 0.3);
+  --wx-card-top-light: rgba(244, 240, 234, 0.06);
+  --wx-card-lift: 0 1px 2px rgb(0 0 0 / 0.5), 0 14px 34px -18px rgb(0 0 0 / 0.72);
+  --wx-card-lift-hover: 0 2px 4px rgb(0 0 0 / 0.55), 0 22px 48px -20px rgb(0 0 0 / 0.8);
+  /* One warm wash behind the hero figure, so the money sits in light. */
+  --wx-hero-wash: radial-gradient(
+    ellipse 70% 130% at 10% -10%,
+    rgba(200, 146, 75, 0.11) 0%,
+    transparent 60%
+  );
+
   /* Ambient brand glow used behind hero content */
   --wx-glow: radial-gradient(
     ellipse 80% 60% at 50% 0%,
@@ -180,7 +216,7 @@
   --wx-surface-1: #ffffff;
   --wx-surface-2: #f0ede8;
   --wx-surface-3: #e8e3da;
-  --wx-field: #ffffff;    /* what you type into · defined by its edge, not a fill */
+  --wx-field: #ffffff; /* what you type into · defined by its edge, not a fill */
 
   --wx-text: #191512; /* 16.53:1 */
   --wx-text-muted: #736a61; /*  4.83:1 */
@@ -253,6 +289,30 @@
   --wx-shadow-md: 0 1px 2px 0 rgb(25 21 18 / 0.05), 0 8px 24px -12px rgb(25 21 18 / 0.16);
   --wx-shadow-lg: 0 1px 2px 0 rgb(25 21 18 / 0.06), 0 20px 46px -18px rgb(25 21 18 / 0.22);
 
+  /*
+   * The depth layer, in daylight. See the dark block for what each one does.
+   *
+   * THE PHYSICS INVERT AND SO DO THE VALUES. In the dark the card is lighter
+   * than the page and a white top edge reads as a light source; on a white page
+   * a white highlight is invisible and a lighter face is indistinguishable from
+   * the background, so here the SHADOW does all the work and the face stays
+   * flat white against a tinted page. Copying the dark values across would have
+   * produced four tokens that technically exist and visibly do nothing, which
+   * is how a design system rots: parity satisfied, intent lost.
+   */
+  --wx-card-face: linear-gradient(180deg, #ffffff 0%, #fdfbf8 100%);
+  --wx-card-face-hover: linear-gradient(180deg, #ffffff 0%, #fffdfa 100%);
+  --wx-card-rim: rgba(25, 21, 18, 0.09);
+  --wx-card-rim-hover: rgba(138, 95, 31, 0.38);
+  --wx-card-top-light: rgba(255, 255, 255, 0.9);
+  --wx-card-lift: 0 1px 2px rgb(25 21 18 / 0.05), 0 10px 26px -14px rgb(25 21 18 / 0.18);
+  --wx-card-lift-hover: 0 2px 5px rgb(25 21 18 / 0.07), 0 18px 40px -16px rgb(25 21 18 / 0.26);
+  --wx-hero-wash: radial-gradient(
+    ellipse 70% 130% at 10% -10%,
+    rgba(138, 95, 31, 0.07) 0%,
+    transparent 60%
+  );
+
   --wx-glow: radial-gradient(
     ellipse 80% 60% at 50% 0%,
     rgba(138, 95, 31, 0.1) 0%,
@@ -282,7 +342,11 @@
 
      The alphas are lower than the dark ones on purpose: ink over paper reads
      far stronger than white over black at the same opacity. */
-  --wx-glass-fill: linear-gradient(135deg, rgba(25, 21, 18, 0.035) 0%, rgba(25, 21, 18, 0) 100%);
+  --wx-glass-fill: linear-gradient(
+    135deg,
+    rgba(25, 21, 18, 0.035) 0%,
+    rgba(25, 21, 18, 0) 100%
+  );
   --wx-glass-panel: rgba(25, 21, 18, 0.022);
   --wx-glass-line: rgba(25, 21, 18, 0.1);
   --wx-glass-rim: inset 1px 1px 0 0 rgba(255, 255, 255, 0.7);
