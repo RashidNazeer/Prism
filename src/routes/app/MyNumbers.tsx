@@ -40,24 +40,21 @@ import { cn } from '@/lib/utils';
  * TWO TABS, and the default is Dashboard because the first question is "how am
  * I doing", not "list my videos".
  *
- * AND A THIRD ROW OF CONTROLS, from 2026-08-20: which CHANNEL the videos came
- * through. Rashid: "in my numbers section users can have a tab like offer
- * videos or contest videos and all videos so that they can differentiate that
- * their which video whether in offers or contest, is going well."
+ * THE CHANNEL FILTER IS GONE, 2026-10-08. It was added on 2026-08-20 at
+ * Rashid's request — "a tab like offer videos or contest videos and all videos
+ * so that they can differentiate" — and he removed it himself, pointing at it:
+ * "the circled this I want you to remove it and keep it all time by default."
  *
- * It filters in the DATABASE, not here, so the chart, the tiles and the cards
- * all answer the same question. Slicing an already-fetched list in the browser
- * would have left the chart showing everything while the tiles showed a
- * subset, which is the exact disagreement this screen was already carrying
- * between its tiles and its chart until this week.
+ * IT COULD BE LEFT SWITCHED ON, which is the part worth remembering. The tabs
+ * held their state while everything else on the screen answered a narrower
+ * question than the heading implied, so a creator who had once pressed Contest
+ * videos came back to a dashboard reading $0.00 with nothing on screen saying
+ * why. A filter that can be left on and is easy to miss costs more than the
+ * slice it offers.
+ *
+ * The RPCs keep their `p_source` parameter and `My content` still labels each
+ * card's channel, so the question can be asked again without a migration.
  */
-
-const SOURCES = [
-  { key: null, label: 'All videos' },
-  { key: 'offer', label: 'Offer videos' },
-  { key: 'contest', label: 'Contest videos' },
-] as const;
-type SourceKey = (typeof SOURCES)[number]['key'];
 
 const TABS = [
   { key: 'dashboard', label: 'Dashboard' },
@@ -100,7 +97,8 @@ const money = (n: number, currency: string | null) =>
  */
 export function MyNumbers({ brandId }: { brandId?: string } = {}) {
   const [tab, setTab] = useState<TabKey>('dashboard');
-  const [source, setSource] = useState<SourceKey>(null);
+  /* Every video, always. See the note at the top of the file. */
+  const source = null;
 
   /*
    * WHICH BRAND, when this is the standalone screen.
@@ -286,24 +284,6 @@ export function MyNumbers({ brandId }: { brandId?: string } = {}) {
             </FilterTab>
           ))}
         </FilterTabs>
-
-        {/*
-          WHICH CHANNEL. It sits beside the period rather than above the tabs
-          because it is a filter on the same question, not a different screen:
-          "how am I doing" and "how am I doing on contest work" are the same
-          question with a narrower subject.
-        */}
-        <FilterTabs label="Which videos">
-          {SOURCES.map((sv) => (
-            <FilterTab
-              key={sv.key ?? 'all'}
-              active={source === sv.key}
-              onClick={() => setSource(sv.key)}
-            >
-              {sv.label}
-            </FilterTab>
-          ))}
-        </FilterTabs>
       </FilterBar>
 
       {loading ? (
@@ -322,22 +302,13 @@ export function MyNumbers({ brandId }: { brandId?: string } = {}) {
           title="No approved videos yet"
           body="A video shows up here once the team has watched it and approved it. Then, when we start running ads behind it, the spend, GMV and orders it makes appear on this screen. Anything still being checked is on your Content page."
         />
-      ) : videos.length === 0 && source !== null ? (
-        /*
-         * NARROWED TO NOTHING, which is a different thing from having nothing.
-         * A creator who has never entered a contest and taps Contest videos
-         * must not be told their numbers are missing; the filter is what is
-         * empty, and the way out is one tap away.
-         */
-        <Empty
-          title={source === 'contest' ? 'No contest videos yet' : 'No offer videos yet'}
-          body={
-            source === 'contest'
-              ? 'Nothing you have filed against a contest has been approved yet. Approved contest videos show their spend and GMV here, the same as offer videos do.'
-              : 'Nothing you have filed against an offer has been approved yet. Tap All videos to see everything you have.'
-          }
-        />
-      ) : !hasAnyData ? (
+      ) : /*
+       * The "narrowed to nothing" empty state went with the channel tabs on
+       * 2026-10-08. It existed because the filter could be left on and leave
+       * a creator staring at zeros; with no filter to leave on, there is
+       * nothing to explain away.
+       */
+      !hasAnyData ? (
         <Empty
           title="Nothing to report yet"
           body="Your videos are in. Numbers appear the day after we start running ads behind them, and they update every night."
