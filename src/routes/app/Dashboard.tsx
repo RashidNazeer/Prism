@@ -266,7 +266,7 @@ function CreatorHome({
      * the scale's own step and it follows the text-size control, which a
      * hardcoded 14px never did.
      */
-    <div className="wx-pop mx-auto flex w-full max-w-[1400px] flex-col gap-4">
+    <div className="wx-pop mx-auto flex w-full max-w-[1400px] flex-col gap-3.5">
       <Header name={name} tier={tier} handle={handle} />
 
       {nothingYet ? (
@@ -350,7 +350,7 @@ function CreatorHome({
                   heights side by side is the most visible way to break it. The
                   timeline grows to meet the work list; `h-full` on each card
                   carries the stretch through the wrapper. */}
-              <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12">
+              <div className="grid grid-cols-1 items-stretch gap-3.5 lg:grid-cols-12">
                 <div className="lg:col-span-7">
                   <Work rows={work} pending={pending} moved={moved} progress={progress} />
                 </div>
@@ -524,7 +524,7 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
      * not clickable and a card that moves under the cursor and then does
      * nothing is a promise the interface breaks.
      */
-    <section className="wx-card wx-card-hero flex flex-col gap-6 overflow-hidden rounded-2xl p-[clamp(1.25rem,2.4vw,1.75rem)]">
+    <section className="wx-card wx-card-hero flex flex-col gap-5 overflow-hidden rounded-2xl p-[clamp(1.125rem,2vw,1.5rem)]">
       {/* `relative` so the content sits above the ::before wash. */}
       <div className="relative flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
@@ -547,17 +547,23 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
           </p>
         </div>
 
-        {/* Right aligned only once it is actually beside the headline. Wrapped
-            onto its own line on a phone, a right-aligned figure floats in the
-            middle of nowhere. */}
-        <div className="flex flex-col gap-0.5 sm:text-right">
+        {/*
+          AN INSET PANEL, not a floating figure. With `justify-between` on a
+          wide screen this sat alone against the right edge with a void between
+          it and the headline, reading as something that had drifted there
+          rather than as the second half of a statement. Given a tinted well and
+          a left hairline it becomes a deliberate counterweight — the same
+          treatment as the three cells below, so the hero has one vocabulary
+          rather than two.
+        */}
+        <div className="bg-surface-2/60 border-line flex flex-col gap-0.5 rounded-xl border-l px-4 py-2.5 shadow-[inset_0_1px_0_0_var(--wx-card-top-light)] sm:text-right">
           <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             In your account
           </p>
           <span
             key={`paid-${moved.key}`}
             className={cn(
-              'font-display text-stage-paid text-[clamp(1.5rem,3.4vw,1.875rem)] font-semibold',
+              'font-display wx-numeric text-stage-paid text-[clamp(1.375rem,3vw,1.75rem)] leading-none font-semibold',
               moved.ids.size > 0 && 'wx-bump'
             )}
           >
@@ -611,7 +617,7 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
             <div
               key={cell.key}
               className={cn(
-                'flex flex-col gap-1.5 rounded-xl p-4 shadow-[inset_0_1px_0_0_var(--wx-card-top-light)]',
+                'flex flex-col gap-1 rounded-xl p-3.5 shadow-[inset_0_1px_0_0_var(--wx-card-top-light)]',
                 cell.tone.soft
               )}
             >
@@ -655,7 +661,7 @@ function Work({
   progress: Map<string, JobProgress> | undefined;
 }) {
   return (
-    <section className="wx-card flex h-full flex-col gap-4 rounded-2xl p-5">
+    <section className="wx-card flex h-full flex-col gap-3.5 rounded-2xl p-4">
       <div className="flex items-baseline justify-between gap-2.5">
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Work you took
@@ -689,7 +695,7 @@ function Work({
             <li
               key={`${row.id}-${moved.key}`}
               className={cn(
-                'bg-surface-2 flex flex-col gap-3 rounded-xl p-4 shadow-[inset_0_1px_0_0_var(--wx-card-top-light)]',
+                'bg-surface-2 flex flex-col gap-2.5 rounded-xl p-3.5 shadow-[inset_0_1px_0_0_var(--wx-card-top-light)]',
                 justMoved && 'wx-flash'
               )}
             >
@@ -809,7 +815,7 @@ function Activity({
   const claimed = new Set<string>();
 
   return (
-    <section className="wx-card flex h-full flex-col gap-4 rounded-2xl p-5">
+    <section className="wx-card flex h-full flex-col gap-3.5 rounded-2xl p-4">
       <h2 className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         <span aria-hidden className="wx-blink bg-stage-paid size-1.5 rounded-full" />
         Everything that moved
@@ -957,17 +963,45 @@ function Counts({ summary }: { summary: WorkSummary }) {
   ];
 
   return (
-    <ul className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-      {items.map((item) => {
+    /*
+     * ONE CARD, FOUR CELLS, 2026-10-08 (second pass).
+     *
+     * They were four separate cards and that was wrong twice over.
+     *
+     * THE GRID. Four equal cards put vertical edges at 25, 50 and 75 percent
+     * while the row beneath them splits seven-five at about 58. Nothing lined
+     * up between the two bands, which is the "shared grid columns" requirement
+     * broken in the most visible way there is. As one card the band has no
+     * internal edges to disagree with anything, and the seven-five split below
+     * is free to be what the content needs.
+     *
+     * THE RECTANGLES. The brief asked for these to stop reading as "four tiny
+     * disconnected boxes" and four cards with four gaps between them is exactly
+     * that, whatever is drawn inside them. Hairlines rather than gaps: the same
+     * four facts, one object.
+     *
+     * The cells still light on hover, because each is still a link — the hover
+     * is a background change rather than a lift, since lifting one quarter of a
+     * card would tear the card.
+     */
+    <ul className="wx-card grid grid-cols-2 overflow-hidden rounded-2xl lg:grid-cols-4">
+      {items.map((item, i) => {
         const Icon = item.icon;
         return (
-          <li key={item.label}>
+          <li
+            key={item.label}
+            className={cn(
+              'border-line',
+              /* Two columns on a phone, four from lg: the dividers have to
+                 follow, or they cut the band in the wrong places. */
+              i % 2 === 1 && 'border-l',
+              i >= 2 && 'border-t lg:border-t-0',
+              i === 2 && 'lg:border-l'
+            )}
+          >
             <Link
               to={item.to}
-              /* The icon sits BESIDE the number, not above it. Stacked, each
-                 card was mostly empty and four of them made a band of air
-                 across the widest part of the page. */
-              className="wx-card wx-card-lift flex h-full items-center gap-3.5 rounded-2xl p-4"
+              className="hover:bg-surface-2/70 flex h-full items-center gap-3 p-4 transition-colors duration-200"
             >
               <span
                 aria-hidden
@@ -975,11 +1009,11 @@ function Counts({ summary }: { summary: WorkSummary }) {
               >
                 <Icon size={16} className={item.tone} />
               </span>
-              <span className="flex min-w-0 flex-col gap-1">
-                <span className="font-display wx-numeric text-[1.75rem] leading-none font-semibold">
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="font-display wx-numeric text-[1.625rem] leading-none font-semibold">
                   {item.n}
                 </span>
-                <span className="text-muted text-[0.78125rem] leading-[1.3]">{item.label}</span>
+                <span className="text-muted text-[0.75rem] leading-[1.3]">{item.label}</span>
               </span>
             </Link>
           </li>

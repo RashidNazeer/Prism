@@ -150,11 +150,14 @@
    * the work, the top highlight is nearly invisible and would just wash the
    * card out, so it is a white face against a tinted page rather than a lift.
    */
-  --wx-card-face: linear-gradient(180deg, #1e1a16 0%, #191512 100%);
-  --wx-card-face-hover: linear-gradient(180deg, #231e19 0%, #1c1714 100%);
-  --wx-card-rim: rgba(244, 240, 234, 0.07);
-  --wx-card-rim-hover: rgba(200, 146, 75, 0.3);
-  --wx-card-top-light: rgba(244, 240, 234, 0.06);
+  /* Widened on the second pass: at 1440 the first range was so close to flat
+     that the material read as a plain panel, which is the opposite of the
+     point. Still well under the threshold where a gradient announces itself. */
+  --wx-card-face: linear-gradient(180deg, #211c17 0%, #171310 100%);
+  --wx-card-face-hover: linear-gradient(180deg, #262019 0%, #1a1613 100%);
+  --wx-card-rim: rgba(244, 240, 234, 0.08);
+  --wx-card-rim-hover: rgba(200, 146, 75, 0.32);
+  --wx-card-top-light: rgba(244, 240, 234, 0.075);
   --wx-card-lift: 0 1px 2px rgb(0 0 0 / 0.5), 0 14px 34px -18px rgb(0 0 0 / 0.72);
   --wx-card-lift-hover: 0 2px 4px rgb(0 0 0 / 0.55), 0 22px 48px -20px rgb(0 0 0 / 0.8);
   /* One warm wash behind the hero figure, so the money sits in light. */
