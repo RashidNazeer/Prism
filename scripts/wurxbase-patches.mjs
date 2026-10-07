@@ -17,8 +17,26 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const FILE = 'src/vendor/wurxbase/WurxUI.jsx';
-let src = readFileSync(FILE, 'utf8').replace(/\r\n/g, '\n');
+/*
+ * MORE THAN ONE VENDORED FILE. Each patch (and each swap) names the file it
+ * targets with `file`, and leaves it out to mean WurxUI.jsx, which is where
+ * every entry started life. Each distinct file is read once, patched in memory
+ * and written once, and only if every patch for ALL files succeeded: a refusal
+ * anywhere means nothing is written anywhere, so the tree is never left with
+ * half of one feature in one file and the other half missing from another.
+ */
+const DEFAULT_FILE = 'src/vendor/wurxbase/WurxUI.jsx';
+const sources = new Map();
+const originals = new Map();
+const srcOf = (file) => {
+  if (!sources.has(file)) {
+    const text = readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
+    sources.set(file, text);
+    originals.set(file, text);
+  }
+  return sources.get(file);
+};
+const setSrc = (file, text) => sources.set(file, text);
 
 let applied = 0, already = 0;
 const fail = (msg) => { console.error('  FAIL  ' + msg); process.exitCode = 1; };
@@ -86,6 +104,22 @@ const PATCHES = [
     "re": null,
     "anchor": "\n                <div className=\"pc-num\">{Number(r.items) > 0 ? kNum(r.items) : <span className=\"pc-vxp-dash\">-</span>}</div>\n",
     "body": "                {/* WURX-ADDED · what THIS video cost to advertise, and what came\n                    back. Keyed on TikTok's own video id, so it is exact. */}\n                {(() => {\n                  const vid = wxVideoId(r.video);\n                  const f = vid ? wxAdsP.get(vid) : null;\n                  const roi = f && f.cost > 0 ? f.revenue / f.cost : null;\n                  return (\n                    <>\n                      <div className=\"pc-num wx-collab-figure\">\n                        {f && !f.mixedCurrency\n                          ? <span className=\"pc-metric\">{wxMoney(f.cost, f.currency)}</span>\n                          : <span className=\"pc-vxp-dash\">-</span>}\n                      </div>\n                      <div className=\"pc-num wx-collab-figure\">\n                        {roi === null\n                          ? <span className=\"pc-vxp-dash\">-</span>\n                          : <span className=\"pc-metric\">{wxRoi(roi)}</span>}\n                      </div>\n                    </>\n                  );\n                })()}\n                {/* WURX-END */}\n"
+  },
+  {
+    "file": "src/vendor/wurxbase/CreativeAngles.jsx",
+    "name": "categorise import",
+    "mode": "prepend",
+    "re": null,
+    "anchor": null,
+    "body": "/* WURX-ADDED · Categorise button for Creative angle testing ──────────────────\n   Every change of ours to this file sits inside a WURX-ADDED ... WURX-END block,\n   so pulling a newer version from upstream is a find-and-reapply job. Nothing\n   of theirs is edited or removed; these blocks only add.\n\n   This imports OUR route component, which asks our `collab-angles` function to\n   sort a brand-month's videos into angles. It is NOT a Supabase client and\n   names no project of ours, so this file still cannot reach our database,\n   which is what pnpm verify:isolation asserts on every build. Same arrangement\n   as the ad figures in WurxUI.jsx. See\n   src/routes/admin/collab-angle-categorise.tsx. */\nimport { CollabAngleCategorise } from '@/routes/admin/collab-angle-categorise';\n/* WURX-END */\n"
+  },
+  {
+    "file": "src/vendor/wurxbase/CreativeAngles.jsx",
+    "name": "categorise button",
+    "mode": "afterLast",
+    "re": null,
+    "anchor": "\n            New angle\n          </button>\n        )}\n",
+    "body": "        {/* WURX-ADDED · the Categorise button, straight after New angle.\n\n            It renders nothing unless there is a brand, a month and edit rights,\n            so it needs no gate here. onFiled re-reads the angle store when the\n            filer has put videos into angles, so the cards update without a\n            reload. fetchAngles() is already imported above and its rejection is\n            swallowed the same way App.jsx does at boot: a failed refresh is not\n            worth an error on a screen that is otherwise working. */}\n        <CollabAngleCategorise\n          brand={brand}\n          month={month}\n          canEdit={canEdit}\n          onFiled={() => { fetchAngles().catch(() => {}); }}\n        />\n        {/* WURX-END */}\n"
   }
 ];
 
@@ -109,21 +143,25 @@ const SWAPS = [
 ];
 
 for (const sw of SWAPS) {
+  const file = sw.file || DEFAULT_FILE;
+  const src = srcOf(file);
   if (src.includes(sw.to)) { console.log(`  skip  ${sw.name} (already swapped)`); already++; continue; }
   const n = src.split(sw.from).length - 1;
   if (n === 0) { fail(`${sw.name}: nothing to swap; their code changed`); continue; }
   if (n > 1) { fail(`${sw.name}: ${n} occurrences, refusing to guess`); continue; }
-  src = src.replace(sw.from, sw.to);
+  setSrc(file, src.replace(sw.from, sw.to));
   console.log(`  ok    ${sw.name} (swapped)`);
   applied++;
 }
 
 for (const p of PATCHES) {
+  const file = p.file || DEFAULT_FILE;
+  const src = srcOf(file);
   const marker = p.body.split('\n')[0].trim();
   if (src.includes(marker)) { console.log(`  skip  ${p.name} (already present)`); already++; continue; }
 
   if (p.mode === 'prepend') {
-    src = p.body + src;
+    setSrc(file, p.body + src);
     console.log(`  ok    ${p.name} (prepended)`);
     applied++;
     continue;
@@ -135,7 +173,7 @@ for (const p of PATCHES) {
     if (!m) { fail(`${p.name}: anchor /${p.re}/ not found`); continue; }
     const all = src.match(new RegExp(p.re, 'g')) || [];
     if (all.length !== 1) { fail(`${p.name}: anchor matched ${all.length} times`); continue; }
-    src = src.slice(0, m.index + m[0].length) + p.body + src.slice(m.index + m[0].length);
+    setSrc(file, src.slice(0, m.index + m[0].length) + p.body + src.slice(m.index + m[0].length));
     console.log(`  ok    ${p.name}`);
     applied++;
     continue;
@@ -145,18 +183,36 @@ for (const p of PATCHES) {
   if (n === 0) { fail(`${p.name}: anchor not found\n        ${p.anchor.trim().slice(0, 100)}`); continue; }
   if (n > 1) { fail(`${p.name}: anchor appears ${n} times, refusing to guess`); continue; }
   const at = src.indexOf(p.anchor) + p.anchor.length;
-  src = src.slice(0, at) + p.body + src.slice(at);
+  setSrc(file, src.slice(0, at) + p.body + src.slice(at));
   console.log(`  ok    ${p.name}`);
   applied++;
 }
 
-const a = (src.match(/WURX-ADDED/g) || []).length;
-const b = (src.match(/WURX-END/g) || []).length;
-if (a !== b) fail(`unbalanced markers: ${a} WURX-ADDED, ${b} WURX-END`);
+/*
+ * THE MARKER CHECK GUARDS WHAT THIS RUN JUST WROTE, so it looks only at files
+ * this run changed. WurxUI.jsx also carries older hand-added blocks that open
+ * with WURX-ADDED and close with a plain `*\/` rather than WURX-END, so its two
+ * counts have never matched (80 and 45 at HEAD) and checking it on a run that
+ * changed nothing in it only produced a failure about somebody else's comments.
+ * A file this run did change is checked, and a fresh one starts balanced.
+ */
+const counts = new Map();
+const changed = [];
+for (const [file, text] of sources) {
+  if (text === originals.get(file)) continue;
+  changed.push(file);
+  const a = (text.match(/WURX-ADDED/g) || []).length;
+  const b = (text.match(/WURX-END/g) || []).length;
+  if (a !== b) fail(`${file}: unbalanced markers: ${a} WURX-ADDED, ${b} WURX-END`);
+  counts.set(file, a);
+}
 
 if (process.exitCode) {
   console.error('\nNOTHING WRITTEN. Fix the anchors above and run again.');
 } else {
-  writeFileSync(FILE, src);
-  console.log(`\n${applied} applied, ${already} already there. ${a} blocks in the file.`);
+  for (const file of changed) writeFileSync(file, sources.get(file));
+  const per = changed.length
+    ? [...counts].map(([f, n]) => `${n} in ${f.split('/').pop()}`).join(', ')
+    : 'no file changed';
+  console.log(`\n${applied} applied, ${already} already there. Blocks: ${per}.`);
 }

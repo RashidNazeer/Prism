@@ -206,6 +206,49 @@ Klassy Network, Cutler Nutritions, Aqua Sonic, Inno Supps and Irwin Naturals
 (see Open items); anything else on that list is a brand whose brief is missing
 from the sheet.
 
+## Turning the feature on
+
+The code is written and builds. It does nothing at all until these four things
+are in place, and each of them fails quietly rather than loudly, which is why
+they are written out here rather than left to be remembered.
+
+```powershell
+# 1. The schema: the briefs, then the queue.
+supabase db push
+
+# 2. Where the audit machine is, and the key it wants. The URL is Umar's
+#    ngrok domain and does not change; the key is AUDITOR_API_KEYS from the
+#    backend's own .env.
+supabase secrets set AUDIT_API_URL=https://atlantic-canine-hurling.ngrok-free.dev --project-ref $env:SUPABASE_PROJECT_REF_DEV
+supabase secrets set AUDIT_API_KEY=<the key> --project-ref $env:SUPABASE_PROJECT_REF_DEV
+
+# 3. The secret the scheduler presents to its own worker. Any 32+ random
+#    characters; it is never seen outside the database and the function.
+supabase secrets set COLLAB_ANGLES_SYNC_SECRET=<32+ random chars> --project-ref $env:SUPABASE_PROJECT_REF_DEV
+
+# 4. Deploy both functions.
+supabase functions deploy collab-angles --project-ref $env:SUPABASE_PROJECT_REF_DEV
+supabase functions deploy collab-angles-sync --project-ref $env:SUPABASE_PROJECT_REF_DEV
+```
+
+Then tell the database the same two things, so `pg_cron` can reach the worker.
+Run this in the SQL editor as the service role, with the SAME secret as step 3:
+
+```sql
+select public.collab_angles_set_sync_secret('<the same 32+ chars>');
+select public.collab_angles_set_sync_url(
+  'https://<project-ref>.supabase.co/functions/v1/collab-angles-sync');
+```
+
+A missing vault entry is not an error: `collab_angles_run_cycle()` returns null
+and the cron job looks perfectly healthy while nothing is ever categorised.
+That is deliberate, because production has no Paid Collabs, but it means the
+only proof the wiring works is a batch actually moving.
+
+Check it with `pnpm verify:angles-categorise`. With `AUDIT_API_URL` and
+`AUDIT_API_KEY` in the environment it also asks the audit machine whether it is
+awake.
+
 ## Build order
 
 1. **The briefs, per brand.** Done on this branch (see the change log).
@@ -469,3 +512,76 @@ are requirements for the implementation.
 - **Added the section "Design rules from the 2026-10-06 review"**, 14 numbered
   rules for whoever implements the feature.
 - No code, migration, vendored file or database was touched.
+
+### 2026-10-07, the feature itself: queue, worker, filing and the button
+
+Umar: *"Complete the integration."* Build-order steps 1a to 6 are now written
+and building. Nothing is deployed and no database has been touched.
+
+**The schema** (`supabase/migrations/20261007090000_collab_angle_queue.sql`):
+`public.collab_angle_videos`, one row per video per brand-month, and
+`public.collab_angle_batches`, one row per backend job. RLS on, read for
+`is_collabs_viewer()`, no write policy, explicit `service_role` grants, both in
+the realtime publication. Plus the two vault setters,
+`collab_angles_run_cycle()` and the `collab-angles-cycle` cron job, each copied
+from their `euka_ads_*` equivalents.
+
+**Talking to the audit machine** (`supabase/functions/_shared/audit-api.ts`).
+The one piece worth reading twice, because three different failures arrive
+looking identical and want opposite responses:
+
+- **Offline**: the machine is a PC behind a tunnel, and an absent machine is
+  answered for by ngrok with an HTML page. That must not spend a retry, fail a
+  batch, or resubmit a job that is still running over there. Any reply that is
+  not JSON, or that carries an `ngrok-error-code` header, is offline.
+- **Refused**: the machine answered, in JSON, that it will not do this. A 4xx.
+  Retrying changes nothing.
+- **Missing job**: a real 404 whose JSON body says `no job <id>`. Only then are
+  the batch's videos re-queued.
+
+`POST /analyze` is not idempotent, so every submission carries the batch id as
+its `label`, and a batch found half-submitted asks `GET /jobs?limit=50` for
+that label before posting again. A lost reply would otherwise start a second
+half-hour job and file the same videos twice.
+
+**The worker** (`supabase/functions/collab-angles-sync/index.ts`), fired every
+minute. A tick claims one batch with a three-minute lease (a conditional
+update, not a row lock, so a function that dies cannot leave a lock behind),
+moves it one step, and returns. Nothing waits for a batch: a batch is a row,
+and its state lives in the database. When a batch finishes and there is budget
+left, the next one is started in the same tick so the machine is not left idle
+for a minute.
+
+**Filing** (`supabase/functions/_shared/angle-store.ts`) replicates
+`angleStore.js` lines 89 to 174 with the service role: read the revision,
+update conditioned on it, bump it, retry up to five times when somebody saved
+underneath us. It only ever adds. Every existing angle keeps every key it had,
+including the ad spend and overrides somebody typed by hand, and a video
+already filed is matched by TikTok video id across every angle of the row and
+left where it is. A placement the machine itself flagged `needs_review` is not
+filed at all, because "fits no angle" and "could not really tell" are
+indistinguishable once filed and nobody would look again.
+
+**The button** (`src/routes/admin/collab-angle-categorise.tsx`), hooked into
+the vendored screen's header through a `WURX-ADDED` fence, with
+`scripts/wurxbase-patches.mjs` generalised so it can patch more than
+`WurxUI.jsx` and the hook survives a re-vendor. The progress ring is an
+absolutely positioned SVG outline that takes no layout space, so the header
+does not move, drawn with `stroke-dasharray` over `done / total` where done
+counts every state a video can end in. It polls every five seconds while work
+is in flight and calls `fetchAngles()` when the filed count rises, so the cards
+fill in without a reload.
+
+**Proven, not assumed.** `pnpm build` passes. `pnpm verify:angles-categorise`
+(new, 43 checks) passes, including a live call to the audit machine. The exact
+request the worker sends was run against the live backend with a two-brief
+brand: it answered `angles_from = ['Colon 14 Day Cleanse: given', 'Lung
+Health: given']`, which is both briefs judged against the angle names stored
+here rather than names it guessed from the documents.
+
+**Not done.** Nothing is deployed: this machine's Supabase account is not in
+the Wurx Media organisation. The automatic nightly run (build order 6) is not
+built; the button is the manual trigger and the cron worker drains the queue.
+`src/types/database.ts` has not been regenerated, which matters only once
+something in the screen reads the new tables directly rather than through the
+Edge Function.

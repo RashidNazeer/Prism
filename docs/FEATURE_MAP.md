@@ -4703,8 +4703,24 @@ First run: 1,397 blanks, 1,100 filled (79%), 188 rows written, across 18 brands.
 The plan, Umar's decisions, the open items and the record of every change are in
 [`CREATIVE_ANGLE_AUTOMATION.md`](CREATIVE_ANGLE_AUTOMATION.md). Read that first.
 
+**Files:** `supabase/migrations/20261006090000_collab_brand_briefs.sql` ·
+`supabase/migrations/20261007090000_collab_angle_queue.sql` ·
+`supabase/functions/collab-angles/` · `supabase/functions/collab-angles-sync/` ·
+`supabase/functions/_shared/audit-api.ts` ·
+`supabase/functions/_shared/angle-store.ts` ·
+`src/routes/admin/collab-angle-categorise.tsx` ·
+`src/routes/admin/wurxbase-overrides.css` (the `wx-cat-` block) ·
+`scripts/wurxbase-patches.mjs` · `scripts/check-angles-categorise.mjs`
+(`pnpm verify:angles-categorise`)
+
 What exists so far:
 
+- The queue (`collab_angle_videos`) and one row per backend job
+  (`collab_angle_batches`), drained by `collab-angles-sync` on a one-minute
+  cron. `collab-angles` is the button's door: it derives the video list from
+  `wurxbase.creators` server side and queues it.
+- A Categorise button in the angle-testing header, hooked into the vendored
+  `CreativeAngles.jsx` through a `WURX-ADDED` fence, with a progress ring.
 - `public.collab_brand_briefs` (`supabase/migrations/20261006090000_collab_brand_briefs.sql`):
   one row per brief, keyed by brand NAME like `collab_brand_photos`, with
   `aliases` for the brand's other spellings. A brand with two focus products
@@ -4726,6 +4742,18 @@ Change rules:
 - **Refresh these rows from the sheet's XLSX export, not its CSV.** Several
   cells are hyperlinks showing a document title, and a CSV export drops the URL
   silently, which reads as "this brand has no brief".
+- **The filer only ever adds.** It writes `wurxbase.activity_logs` conditioned
+  on the `revision` it read and bumps it, exactly as `angleStore.js` does. Drop
+  that and a browser tab left open silently replaces the filing with its own
+  stale copy of the angles.
+- **A video already filed by a person is never moved**, matched by TikTok video
+  id across every angle of the row rather than by comparing link text.
+- **Four things must be in place or the feature does nothing, quietly**: both
+  migrations applied, the `AUDIT_API_URL` / `AUDIT_API_KEY` /
+  `COLLAB_ANGLES_SYNC_SECRET` function secrets, the two vault entries, and both
+  functions deployed. `collab_angles_run_cycle()` returns null rather than
+  raising when the vault is empty, so the cron history looks healthy either
+  way. See "Turning the feature on" in `CREATIVE_ANGLE_AUTOMATION.md`.
 - **Keep the tab in the URL.** Without `?tab=`, Google exports every tab as one
   text and two products' concepts are judged as one brief.
 - **Do not rename an angle in `angles` casually.** The names are the categories

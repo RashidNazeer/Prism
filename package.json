@@ -89,6 +89,8 @@
     "verify:client-links": "node scripts/check-client-links-ui.mjs",
     "verify:followers": "node scripts/check-followers-column.mjs",
     "verify:site": "node scripts/check-public-site.mjs",
+    "verify:angles-categorise": "node scripts/check-angles-categorise.mjs",
+    "verify:angles-live": "node scripts/check-angles-live.mjs",
     "verify:brand-search": "node scripts/check-brand-search.mjs",
     "verify:reacher": "node scripts/check-reacher.mjs",
     "verify:product-picker": "node scripts/check-product-picker.mjs",

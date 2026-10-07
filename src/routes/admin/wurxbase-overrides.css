@@ -2276,7 +2276,7 @@
    seven keeps every card readable and scrolls. */
 .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard {
   position: relative;
-  /* 30rem since the fifth figure arrived: at 24rem the labels collapsed to
+  /* 32rem since the fifth figure arrived: at 24rem the labels collapsed to
      "Crea…" and "Ad s…", a column whose heading has to be guessed; 30rem still
      clipped Penetrex's "1296/1828", and a clipped count is a WRONG number
      rather than a tidy one. Measured, not guessed: that value wants 79px and
@@ -2332,7 +2332,7 @@
    numbers of different widths still line up.
 
    FIVE SINCE 2026-10-07, when Ad spend joined GMV, views, creators and videos.
-   The card's flex-basis grew with it, 24rem to 30rem: at the old width a fifth
+   The card's flex-basis grew with it, 24rem to 32rem: at the old width a fifth
    column left about 70px each, the values drew over the hairline between them
    and the labels collapsed to "Crea…". The row still scrolls, so a wider card
    costs no page width — it shows slightly fewer products at once, which is the
@@ -2651,4 +2651,138 @@
 }
 @media (max-width: 420px) {
   .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-also { display: none; }
+}
+
+/* ----------------------------------------------- creative angle: Categorise -- */
+/*
+ * The button beside "New angle" that files a brand-month's videos into angles
+ * (src/routes/admin/collab-angle-categorise.tsx). It copies `.cx-new`: a 44px
+ * pill, the surface-3 fill that turns accent on hover, the same easing.
+ *
+ * THE RING DRAWS OUTSIDE THE BUTTON and takes no layout space (it is absolute),
+ * and so does the status line, so starting a run never changes the header's
+ * height or moves a neighbour. The ring is a rect with `pathLength=100`, so the
+ * dash maths in the component is plain percentages.
+ */
+/* THE WRAPPER TAKES NO PART IN LAYOUT. It has to exist in the DOM -- the
+   button and its status belong to one component -- but as a flex item it
+   dragged the status into the row with the button, and whichever of the two
+   had to give way looked wrong: the status hung off the card's right edge, and
+   pushing the pair onto their own line dropped Categorise below Import and New
+   angle, out of line with the buttons it belongs beside.
+
+   `display: contents` dissolves it, so `.cx-h-r` lays out the button and the
+   status directly. The button is then an ordinary item on the buttons' line;
+   the status takes a full-width basis and wraps to its own line underneath,
+   inside the card, which grows by one line while a run is going. */
+.wurxbase-root .wx-cat {
+  display: contents;
+}
+.wurxbase-root .wx-cat-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+.wurxbase-root .wx-cat-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4375rem;
+  height: 2.75rem;
+  padding: 0 1.25rem;
+  border-radius: 999px;
+  border: 0;
+  cursor: pointer;
+  background: var(--wx-surface-3);
+  color: var(--wx-on-accent);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  box-shadow: 0 4px 14px -6px rgba(44, 35, 25, 0.7);
+  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.3, 1), background 0.16s, box-shadow 0.16s;
+}
+.wurxbase-root .wx-cat-btn:hover:not(:disabled) {
+  background: var(--wx-accent);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px -8px rgba(44, 35, 25, 0.75);
+}
+.wurxbase-root .wx-cat-btn:active:not(:disabled) { transform: scale(0.97); }
+.wurxbase-root .wx-cat-btn:focus-visible {
+  outline: 2px solid var(--wx-accent);
+  outline-offset: 3px;
+}
+/* A BUSY BUTTON MUST LOOK BUSY. `cursor: progress` alone is invisible until
+   somebody happens to hover, and at nought per cent the ring has nothing to
+   draw yet, so pressing Categorise looked as though it had done nothing. */
+.wurxbase-root .wx-cat-btn:disabled {
+  cursor: progress;
+  opacity: 0.72;
+  box-shadow: none;
+}
+
+/* 3px clear of the button on every side; the radius is half the 50px height. */
+.wurxbase-root .wx-cat-ring {
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  width: calc(100% + 6px);
+  height: calc(100% + 6px);
+  overflow: visible;
+  pointer-events: none;
+}
+.wurxbase-root .wx-cat-ring rect {
+  rx: 25px;
+  ry: 25px;
+  stroke-width: 2px;
+}
+/* The track carries the whole message at nought per cent: "there is a ring
+   here and it is empty" rather than a button that looks untouched. */
+.wurxbase-root .wx-cat-track { stroke: color-mix(in srgb, var(--wx-accent) 30%, transparent); }
+.wurxbase-root .wx-cat-arc {
+  stroke: var(--wx-accent);
+  /* BUTT, NOT ROUND. A round cap on a dash of zero length still paints its
+     half-circle, so an empty ring showed a stray dot at the twelve o'clock
+     mark and looked like a rendering fault. */
+  stroke-linecap: butt;
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* IN THE FLOW, UNDER THE BUTTON, NOT FLOATING OVER THE PAGE.
+   It was absolutely positioned so the header would not change height. The
+   header did not change height, and the sentence hung off the bottom of the
+   card instead, over whatever was beneath it. A status nobody can read is
+   worth less than a row that grows by one line while something is happening,
+   so the card now grows. A 100% flex basis puts it on its own line under the
+   buttons, centred across the card, and balanced so a two-line status does not
+   come out as a long line and a stub. */
+.wurxbase-root .wx-cat-status {
+  position: static;
+  flex: 1 0 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  color: var(--wx-text-muted);
+}
+.wurxbase-root .wx-cat-status-err { color: var(--wx-danger); }
+
+@media (max-width: 820px) {
+  /* Narrow enough that a hugging pill looks stranded: the wrap takes a share
+     of the row the way `.cx-bm` and `.cx-new` already do, and the button
+     fills it. */
+  .wurxbase-root .cx-h-r .wx-cat-wrap { flex: 1; }
+  .wurxbase-root .cx-h-r .wx-cat-btn { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wurxbase-root .wx-cat-btn,
+  .wurxbase-root .wx-cat-arc { transition: none; }
+  .wurxbase-root .wx-cat-btn:hover:not(:disabled),
+  .wurxbase-root .wx-cat-btn:active:not(:disabled) { transform: none; }
 }
