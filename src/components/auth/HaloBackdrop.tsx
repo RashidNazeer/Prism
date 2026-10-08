@@ -63,10 +63,10 @@ const PAINT = { baseColor: 0x14141c, backgroundColor: 0x14141c } as const;
  * own ground is still the last layer underneath them.
  */
 const AURORA = [
-  'radial-gradient(ellipse 55% 45% at 78% 16%, rgba(255, 46, 140, 0.20), transparent 62%)',
-  'radial-gradient(ellipse 60% 50% at 90% 44%, rgba(155, 92, 255, 0.28), transparent 64%)',
-  'radial-gradient(ellipse 52% 46% at 64% 74%, rgba(46, 139, 255, 0.20), transparent 62%)',
-  'radial-gradient(ellipse 48% 40% at 94% 88%, rgba(23, 224, 212, 0.22), transparent 62%)',
+  'radial-gradient(ellipse 55% 45% at 78% 16%, rgba(255, 46, 140, 0.26), transparent 62%)',
+  'radial-gradient(ellipse 60% 50% at 90% 44%, rgba(155, 92, 255, 0.34), transparent 64%)',
+  'radial-gradient(ellipse 52% 46% at 64% 74%, rgba(46, 139, 255, 0.26), transparent 62%)',
+  'radial-gradient(ellipse 48% 40% at 94% 88%, rgba(23, 224, 212, 0.28), transparent 62%)',
   'var(--wx-bg)',
 ].join(', ');
 
@@ -77,8 +77,24 @@ const DARK_FLOOR = [
   'var(--wx-bg)',
 ].join(', ');
 
-/** How much of the page's own ground lies over the field where work is read. */
-const SCRIM = { full: 0, subtle: 0.55 } as const;
+/**
+ * How much of the page's own ground lies over the field where work is read.
+ *
+ * PER THEME, because the two modes draw the halo by different means and need
+ * opposite amounts of taming. Dark is a bright WebGL field and genuinely needs
+ * holding back behind live numbers. Light is already a soft CSS wash, so the
+ * same 0.55 scrim wiped it out: the violet lobe measures 0.19 saturation over
+ * Mist and only 0.09 under that scrim, which behind a page of cards reads as
+ * nothing at all. That is the halo "disappearing completely in light mode" —
+ * it was being drawn and then painted over.
+ *
+ * Light keeps a token 0.12 rather than none, so the aurora stays a tint under
+ * the work rather than competing with it.
+ */
+const SCRIM = {
+  dark: { full: 0, subtle: 0.55 },
+  light: { full: 0, subtle: 0.12 },
+} as const;
 
 export function HaloBackdrop({
   className,
@@ -185,9 +201,10 @@ export function HaloBackdrop({
       {/* The canvas, dark mode only. Empty and harmless in light. */}
       <div ref={hostRef} className="absolute inset-0" />
       {/* THE SCRIM, where there is work to read on top of all this. */}
-      {SCRIM[intensity] > 0 ? (
-        <div className="bg-bg absolute inset-0" style={{ opacity: SCRIM[intensity] }} />
-      ) : null}
+      <div
+        className="bg-bg absolute inset-0 transition-opacity duration-500"
+        style={{ opacity: SCRIM[onLight ? 'light' : 'dark'][intensity] }}
+      />
     </div>
   );
 }

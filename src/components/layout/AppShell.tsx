@@ -222,13 +222,24 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="flex min-w-0 flex-col">
         {/* --------------------------------------------------------- top --- */}
-        {/* Translucent, not opaque. It is sticky, so it still has to stop page
-            content showing through as it scrolls under — `backdrop-blur-xl`
-            does that job, and letting the halo tint the bar is what keeps the
-            bar, the rail and the page reading as one ground instead of three.
-            The hard `border-b` is gone: it drew a dark rule straight across the
-            top of every screen, which is the opposite of a soft bevel. */}
-        <header className="bg-surface-1/70 sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-3 px-4 backdrop-blur-xl sm:px-6">
+        {/*
+          A CARD, LIKE THE RAIL. Rashid circled the top-left corner.
+
+          The bar used to paint a full-bleed band across the content column
+          only, so it stopped dead against the rail and left an L-shaped step
+          there: header band to the right, page ground to the left, a hard
+          vertical edge between them. Once the rail became a floating card that
+          corner was the last seam in the shell.
+
+          So the bar floats too, on the same material, with the same gutter and
+          the same radius. `top-3` rather than `top-0` keeps the gutter while it
+          is stuck. It is opaque — `wx-neo-raised` paints `--wx-surface-1` —
+          which is what stops content showing through as it scrolls under, so
+          the old `backdrop-blur-xl` is gone with it. That is worth having: a
+          `backdrop-filter` anywhere above the vendored admin app has broken its
+          layout three times, and this header is the nearest ancestor to it.
+        */}
+        <header className="wx-neo-raised sticky top-3 z-40 mx-3 mt-3 flex h-14 shrink-0 items-center justify-between gap-3 rounded-2xl px-4 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
             {/* The mark stays on a phone, where there is no rail to carry it.
                 On desktop the rail has it, and it is the collapse control. */}
@@ -337,9 +348,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* `pb-24 lg:pb-0` clears the phone bottom bar. Without it the last
               card on every screen sits underneath the nav and cannot be read,
               which is the classic bottom-navigation bug. */}
-          <div className="w-full px-4 py-4 pb-24 sm:px-6 sm:py-5 lg:px-8 lg:pb-5">
-            {children}
-          </div>
+          {/* `px-3` at every width, matching the header card's `mx-3` and the
+              rail's `p-3`, so the rail, the bar and the work all line up on one
+              gutter. It was `px-4 sm:px-6 lg:px-8`, which left the content
+              sitting inboard of the bar above it at every breakpoint. */}
+          <div className="w-full px-3 py-4 pb-24 sm:py-5 lg:pb-5">{children}</div>
         </main>
       </div>
 
