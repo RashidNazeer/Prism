@@ -190,7 +190,7 @@ export function OfferDialog({
             type="button"
             onClick={() => !busy && onClose()}
             aria-label="Close"
-            className="text-muted hover:text-accent -mt-1 -mr-1 grid size-9 shrink-0 place-items-center rounded-lg transition-colors"
+            className="text-muted hover:text-accent -mt-1 -mr-1 grid size-11 shrink-0 place-items-center rounded-lg transition-colors"
           >
             <X size={17} aria-hidden />
           </button>
@@ -422,8 +422,8 @@ export function OfferDialog({
                 role="status"
                 className="border-stage-due bg-stage-due-soft text-stage-due rounded-md border px-3 py-2 text-[0.8125rem] leading-relaxed"
               >
-                Saved. These {unmatched.length === 1 ? 'line matched' : 'lines matched'} nobody on
-                the platform and {unmatched.length === 1 ? 'was' : 'were'} left off:{' '}
+                Saved. These {unmatched.length === 1 ? 'line matched' : 'lines matched'} nobody
+                on the platform and {unmatched.length === 1 ? 'was' : 'were'} left off:{' '}
                 <span className="font-mono">{unmatched.join(', ')}</span>
               </p>
             ) : null}
@@ -436,28 +436,28 @@ export function OfferDialog({
             */}
             {values.kind === 'high_commission' ? (
               <p className="border-line bg-surface-2 text-muted rounded-md border px-3 py-2 text-[0.8125rem] leading-relaxed">
-                High commission offers never need an application. Any creator who can see this one
-                can take it.
+                High commission offers never need an application. Any creator who can see this
+                one can take it.
               </p>
             ) : (
-            <label className="border-line-interactive bg-surface-2 flex cursor-pointer items-start gap-3 rounded-xl border p-4">
-              <input
-                type="checkbox"
-                name="needsApplication"
-                checked={values.needsApplication}
-                disabled={busy}
-                onChange={(e) => set('needsApplication', e.target.checked)}
-                className="mt-0.5 size-4 cursor-pointer accent-[var(--wx-accent)]"
-              />
-              <span>
-                <span className="block text-[0.875rem] font-medium">Needs application</span>
-                <span className="text-muted mt-0.5 block text-[0.8125rem] leading-relaxed">
-                  {values.needsApplication
-                    ? 'A creator has to apply and be approved before they get this.'
-                    : 'Any approved creator can take this without asking. Nobody signs it off.'}
+              <label className="border-line-interactive bg-surface-2 flex cursor-pointer items-start gap-3 rounded-xl border p-4">
+                <input
+                  type="checkbox"
+                  name="needsApplication"
+                  checked={values.needsApplication}
+                  disabled={busy}
+                  onChange={(e) => set('needsApplication', e.target.checked)}
+                  className="mt-0.5 size-4 cursor-pointer accent-[var(--wx-accent)]"
+                />
+                <span>
+                  <span className="block text-[0.875rem] font-medium">Needs application</span>
+                  <span className="text-muted mt-0.5 block text-[0.8125rem] leading-relaxed">
+                    {values.needsApplication
+                      ? 'A creator has to apply and be approved before they get this.'
+                      : 'Any approved creator can take this without asking. Nobody signs it off.'}
+                  </span>
                 </span>
-              </span>
-            </label>
+              </label>
             )}
           </div>
 

@@ -118,7 +118,7 @@ export function CreatorDetail() {
         <Link
           to="/admin/creators"
           aria-label="Back to all creators"
-          className="border-line text-muted hover:border-accent hover:text-accent grid size-8 shrink-0 place-items-center rounded-lg border transition-colors duration-200"
+          className="border-line text-muted hover:border-accent hover:text-accent grid size-11 shrink-0 place-items-center rounded-lg border transition-colors duration-200 sm:size-8"
         >
           <ArrowLeft size={15} aria-hidden />
         </Link>

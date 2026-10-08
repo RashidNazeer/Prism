@@ -1,223 +1,225 @@
-import { useEffect, useRef } from 'react';
+import { useMemo } from 'react';
+import { m } from 'motion/react';
 import { useTheme } from '@/components/theme/theme-context';
 
 /**
- * THE HALO. The ground the whole product stands on.
+ * THE BACKDROP. The ground the whole product stands on.
  *
- * Rashid asked for VANTA.HALO behind sign-in, then behind every tab. It is a
- * WebGL field, so a few things had to be settled before it could sit under a
- * page people actually work in.
+ * A warped perspective grid on all four sides of the viewport, with beams
+ * running up it in the PRISM spectrum. Same effect in both themes; only the
+ * grid's own colour changes, which is what the page ground is doing anyway.
  *
- * 1. IT IS LAZY. `three` plus `vanta` is roughly 600KB. Imported normally it
- *    lands in the entry chunk and is paid for by every visitor on every route,
- *    including the landing page, which deliberately loads no web fonts at all
- *    because speed is the point there. The dynamic `import()` gives it its own
- *    chunk, fetched only once a screen that wants it is already interactive.
+ * ── WHY THIS, AFTER TWO WEBGL ATTEMPTS ───────────────────────────────────────
  *
- * 2. IT NEVER RUNS WHEN MOTION IS UNWELCOME. `prefers-reduced-motion` is not a
- *    hint here: a slow full-screen WebGL swirl is exactly what that setting
- *    exists to stop. When it is set the module is never even downloaded and the
- *    painted ground below stands in. Same for save-data.
+ * VANTA.HALO could not work in light mode, and that was a property of the
+ * effect rather than a tuning problem: its ring is ADDITIVE LIGHT, so on a
+ * near-white ground every channel is already near 255 and it clips to white.
+ * Measured on the same clip of the same page, dark came back at 0.308
+ * saturation across 593 distinct colours and light at 0.015 across ONE.
  *
- * 3. NOTHING EVER WAITS ON IT. The canvas sits behind the content. If WebGL is
- *    missing, the chunk is blocked or the device is modest, the painted ground
- *    simply stays and nobody is told, because there is nothing they could do.
+ * This paints instead of adding, so white is no harder than Ink. It also costs
+ * nothing like as much: `three` and `vanta` are gone, the 757KB
+ * `threejs-components` build that briefly replaced them is gone, and what is
+ * left is CSS transforms and `motion`, which the app already ships. No WebGL
+ * context, no canvas, and it runs on a phone — where the tubes version could
+ * not, because tubes follow a cursor and a phone has none.
  *
- * ── WHY LIGHT MODE DOES NOT USE VANTA AT ALL ─────────────────────────────────
+ * ── WHAT CHANGED FROM THE PUBLISHED SNIPPET ──────────────────────────────────
  *
- * Because it cannot. HALO's ring is ADDITIVE LIGHT: it adds brightness to the
- * ground rather than painting over it. On Ink that produces the spectrum. On a
- * near-white ground every channel is already near 255, so the ring clips to
- * white and the halo disappears into the page.
+ * It could not be pasted in as written:
  *
- * That is measured, not assumed. The same clip of the same page, both themes:
+ *  - it used `motion.div`. This app wraps everything in `LazyMotion` with
+ *    `strict`, where `motion.*` THROWS at runtime and only `m.*` is allowed.
+ *    That alone would have taken out every screen that renders this;
+ *  - every beam picked `Math.floor(Math.random() * 360)` as an HSL hue, so the
+ *    background was random colour on every render. Every colour in this product
+ *    is a `--wx-*` token, and these are the kit's four spectrum colours in the
+ *    kit's own order;
+ *  - that `Math.random()` ran DURING RENDER, so React could not keep a beam's
+ *    colour stable across re-renders and the whole field reshuffled whenever
+ *    anything above it changed state;
+ *  - `gridColor` defaulted to `hsl(var(--border))`, a shadcn token that does
+ *    not exist here;
+ *  - it was a WRAPPER with `border p-20` around its children. This is a
+ *    backdrop: it fills its container and draws nothing in front.
  *
- *     dark    saturation 0.308   593 distinct colours
- *     light   saturation 0.015     1 distinct colour
- *
- * and taking the scrim off it, 0.55 down to 0.22, moved light from 1 colour to
- * 4. The scrim was never what hid it. No combination of `baseColor`,
- * `backgroundColor` or opacity fixes this, because it is how the shader
- * composites. Several were tried: a light base gave a white blob, a violet base
- * gave a white blob, a dark base gave a grey smudge under a scrim and a dark
- * slab without one, which is the login Rashid called pathetic in light mode.
- *
- * So light mode paints its own aurora in CSS, in the kit's four spectrum
- * colours. It is visible, it costs no WebGL context at all, and unlike the
- * shader it is something we control. Dark keeps VANTA.HALO, which looks
- * genuinely good there.
- *
- * One component, one placement, a ground that changes with the theme, which is
- * what was asked for. Only the technique differs between the two, and only
- * because the shader has a hard limit on a light page.
+ * And it animates forever, so it is switched off entirely under
+ * `prefers-reduced-motion`, where the still grid is left standing.
  */
 
-/** Dark only. Ink on Ink is what lets the ring's own colour do the work. */
-const PAINT = { baseColor: 0x14141c, backgroundColor: 0x14141c } as const;
+/** The kit's spectrum, in the kit's order. Beams cycle through it. */
+const SPECTRUM = ['#ff2e8c', '#9b5cff', '#2e8bff', '#17e0d4'] as const;
+
+/** Grid cell size, as a percentage of the face. */
+const BEAM_SIZE = 5;
 
 /**
- * The light-mode aurora: violet, magenta, blue, cyan.
- *
- * PLACED FOR THE APP, NOT FOR THE LOGIN CARD. The first version put all four
- * lobes between 64% and 94% across, which is the empty right half of the sign-in
- * page and reads beautifully there. Behind the app it is the worst possible
- * place: that is exactly where the content cards sit, and they are opaque. The
- * halo was rendering and had nowhere to be seen, which is why it looked absent
- * in light mode while dark looked fine.
- *
- * Dark gets away with a single bright ring because the one band of exposed
- * ground, the hero at the top of Home, happens to sit under it. So the lobes
- * are now TOP-WEIGHTED and spread the full width: the top of the page is the
- * part of a signed-in screen that is reliably not covered by a card.
- *
- * Stronger, too. These are read through a 12px gutter and one shallow band, not
- * across a whole empty page, so the alphas that suited the login page vanished
- * here. Still washes rather than fills: the kit is explicit that the spectrum
- * colours are accents and never full-bleed backgrounds, and the page's own
- * ground is still the last layer underneath them.
+ * Beam width, SEPARATE from the cell size. The original tied the two together
+ * at 5%, which on a 1440px face is a 72px slab: it read as pink paint thrown
+ * across the page rather than as light travelling up a grid. A beam is now
+ * about a third of a cell.
  */
-const AURORA = [
-  'radial-gradient(ellipse 85% 60% at 22% 6%, rgba(155, 92, 255, 0.42), transparent 66%)',
-  'radial-gradient(ellipse 80% 55% at 70% 2%, rgba(255, 46, 140, 0.36), transparent 64%)',
-  'radial-gradient(ellipse 75% 60% at 96% 30%, rgba(46, 139, 255, 0.34), transparent 66%)',
-  'radial-gradient(ellipse 70% 55% at 50% 96%, rgba(23, 224, 212, 0.30), transparent 66%)',
-  'var(--wx-bg)',
-].join(', ');
+const BEAM_WIDTH = 1.6;
 
-/** The dark ground, for the moment before WebGL arrives and if it never does. */
-const DARK_FLOOR = [
-  'radial-gradient(ellipse 60% 50% at 82% 28%, rgba(155, 92, 255, 0.22), transparent 64%)',
-  'radial-gradient(ellipse 50% 44% at 70% 76%, rgba(23, 224, 212, 0.16), transparent 62%)',
-  'var(--wx-bg)',
-].join(', ');
+/** Light, not pigment. At full strength these compete with the content. */
+const BEAM_OPACITY = 0.5;
+
+const BEAMS_PER_SIDE = 3;
+const BEAM_DURATION = 3;
 
 /**
- * How much of the page's own ground lies over the field where work is read.
- *
- * PER THEME, because the two modes draw the halo by different means and need
- * opposite amounts of taming. Dark is a bright WebGL field and genuinely needs
- * holding back behind live numbers. Light is already a soft CSS wash, so the
- * same 0.55 scrim wiped it out: the violet lobe measures 0.19 saturation over
- * Mist and only 0.09 under that scrim, which behind a page of cards reads as
- * nothing at all. That is the halo "disappearing completely in light mode" —
- * it was being drawn and then painted over.
- *
- * Light keeps a token 0.12 rather than none, so the aurora stays a tint under
- * the work rather than competing with it.
+ * The four faces, each a plane rotated flat and pushed away from one edge of
+ * the viewport, so together they read as a box opening towards the viewer.
+ * `100cqmax`/`100cqi`/`100cqh` are container units, which is what lets each
+ * face size itself from the viewport rather than from a hardcoded length.
  */
-const SCRIM = {
-  dark: { full: 0, subtle: 0.55 },
-  light: { full: 0, subtle: 0 },
-} as const;
+const FACES = [
+  { key: 'top', pos: '', origin: '50% 0%', rot: 'rotateX(-90deg)', w: '100cqi' },
+  { key: 'bottom', pos: 'top-full', origin: '50% 0%', rot: 'rotateX(-90deg)', w: '100cqi' },
+  {
+    key: 'left',
+    pos: 'left-0 top-0',
+    origin: '0% 0%',
+    rot: 'rotate(90deg) rotateX(-90deg)',
+    w: '100cqh',
+  },
+  {
+    key: 'right',
+    pos: 'right-0 top-0',
+    origin: '100% 0%',
+    rot: 'rotate(-90deg) rotateX(-90deg)',
+    w: '100cqh',
+  },
+] as const;
+
+type BeamSpec = { x: number; delay: number; colour: string; ratio: number };
+
+function Beam({ spec, quiet }: { spec: BeamSpec; quiet: boolean }) {
+  const style = {
+    left: `${spec.x}%`,
+    width: `${BEAM_WIDTH}%`,
+    aspectRatio: `1 / ${spec.ratio}`,
+    background: `linear-gradient(${spec.colour}, transparent)`,
+    opacity: BEAM_OPACITY,
+  } as const;
+
+  /* Under reduced motion the beam is not animated and not drawn: a static
+     streak hanging in the grid looks like a rendering fault rather than a
+     paused animation. The grid itself stays. */
+  if (quiet) return null;
+
+  return (
+    <m.div
+      aria-hidden
+      className="absolute top-0"
+      style={style}
+      initial={{ y: '100cqmax', x: '-50%' }}
+      animate={{ y: '-100%', x: '-50%' }}
+      transition={{
+        duration: BEAM_DURATION,
+        delay: spec.delay,
+        repeat: Number.POSITIVE_INFINITY,
+        ease: 'linear',
+      }}
+    />
+  );
+}
 
 export function HaloBackdrop({
   className,
   intensity = 'full',
 }: {
   className?: string;
-  /**
-   * `full` behind the auth pages, where the halo IS the page and there is
-   * nothing on it but one card.
-   *
-   * `subtle` behind the signed-in app, where there is real work on top. A scrim
-   * is used rather than canvas opacity because opacity fades the swirl towards
-   * the page colour and muds it; a scrim keeps the swirl saturated and simply
-   * puts the page's own ground between it and the text.
-   */
+  /** `full` behind the auth pages, `subtle` behind the signed-in app. */
   intensity?: 'full' | 'subtle';
 }) {
-  const hostRef = useRef<HTMLDivElement>(null);
-  const effectRef = useRef<{ destroy?: () => void } | null>(null);
   const { resolved } = useTheme();
   const onLight = resolved === 'light';
 
-  useEffect(() => {
-    /* Light mode never builds a context: see the note at the top. Switching to
-       light therefore tears the canvas down rather than leaving one running
-       behind an aurora that has already replaced it. */
-    if (onLight) return;
-    const host = hostRef.current;
-    if (!host) return;
+  /* Asked once. `matchMedia` rather than a CSS query because this decides
+     whether the beams exist at all, not merely how they look. */
+  const quiet =
+    typeof window !== 'undefined' &&
+    !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-    /* Asked before a single byte is fetched, so the download never happens for
-       somebody who has told their OS they do not want animation. */
-    const quiet = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    const conn = (navigator as { connection?: { saveData?: boolean } }).connection;
-    if (quiet || conn?.saveData) return;
+  /*
+   * BEAMS ARE BUILT ONCE AND KEPT. Everything that was random in the original
+   * is derived from the beam's index instead, so a beam keeps its colour, its
+   * lane and its phase for the life of the component. The offsets are
+   * irrational-ish multiples purely to stop the four sides pulsing in unison.
+   */
+  const beams = useMemo(() => {
+    const cells = Math.floor(100 / BEAM_SIZE);
+    const step = cells / BEAMS_PER_SIDE;
+    return FACES.map((_face, f) =>
+      Array.from({ length: BEAMS_PER_SIDE }, (_, i) => {
+        const n = f * BEAMS_PER_SIDE + i;
+        return {
+          x: Math.floor(i * step) * BEAM_SIZE,
+          delay: (n * 0.77) % BEAM_DURATION,
+          /* `?? SPECTRUM[0]` only to satisfy `noUncheckedIndexedAccess`; the
+             modulo cannot leave the tuple. */
+          colour: SPECTRUM[n % SPECTRUM.length] ?? SPECTRUM[0],
+          ratio: 4 + ((n * 3) % 7),
+        } satisfies BeamSpec;
+      })
+    );
+  }, []);
 
-    let alive = true;
+  const gridColour = onLight ? 'var(--wx-border)' : 'var(--wx-surface-2)';
 
-    (async () => {
-      try {
-        /*
-         * VANTA SHIPS UMD, NOT ESM, so what comes back depends on how the
-         * bundler wrapped it. Observed in dev: `mod.default` is the module
-         * object rather than the factory, and the factory also lands on
-         * `window.VANTA`. Taking the first callable of the three works in dev
-         * AND in a production build without caring which interop path ran. The
-         * alternative is a component that works in one and silently falls back
-         * in the other, which is how this was first found.
-         */
-        const [THREE, mod] = await Promise.all([
-          import('three'),
-          import('vanta/dist/vanta.halo.min.js') as Promise<Record<string, unknown>>,
-        ]);
-        const win = window as unknown as { VANTA?: { HALO?: unknown } };
-        const candidates = [
-          (mod as { default?: { default?: unknown } }).default?.default,
-          mod.default,
-          win.VANTA?.HALO,
-        ];
-        const HALO = candidates.find((c) => typeof c === 'function') as
-          ((o: unknown) => { destroy?: () => void }) | undefined;
-        if (!HALO) throw new Error('vanta halo factory not found');
-        if (!alive || !hostRef.current) return;
-
-        effectRef.current = HALO({
-          el: hostRef.current,
-          THREE,
-          mouseControls: true,
-          touchControls: false /* a swirl that follows a thumb fights the scroll */,
-          gyroControls: false,
-          minHeight: 200,
-          minWidth: 200,
-          amplitudeFactor: 1.4,
-          size: 1.2,
-          /* DOWN AND RIGHT, off the words. Centred, the ring's brightest arc ran
-             straight through "Welcome back" and bleached the second half of it.
-             The card below is opaque, so the halo is free to sit behind that
-             rather than behind the heading. */
-          xOffset: 0.06,
-          yOffset: 0.08,
-          ...PAINT,
-        });
-      } catch {
-        /* No WebGL, a blocked chunk, an old device: the floor below stays. */
-      }
-    })();
-
-    return () => {
-      alive = false;
-      effectRef.current?.destroy?.();
-      effectRef.current = null;
-    };
-  }, [onLight]);
+  /* One cell of the grid, as two hairline gradients crossed. */
+  const gridFace = `linear-gradient(var(--grid-color) 0 1px, transparent 1px var(--beam-size)) 50% -0.5px / var(--beam-size) var(--beam-size), linear-gradient(90deg, var(--grid-color) 0 1px, transparent 1px var(--beam-size)) 50% 50% / var(--beam-size) var(--beam-size)`;
 
   return (
     <div aria-hidden className={className}>
-      {/* THE GROUND. Always painted, so there is never a flash of nothing, the
-          page is complete without a single byte of WebGL, and in light mode it
-          is not a fallback at all — it is the whole effect. */}
+      {/* THE GROUND. Painted first, so the page is complete and coloured even
+          before a single beam moves, and for anyone who never sees one. */}
       <div
         className="absolute inset-0 transition-[background] duration-500"
-        style={{ background: onLight ? AURORA : DARK_FLOOR }}
+        style={{
+          background: onLight
+            ? 'radial-gradient(ellipse 85% 60% at 22% 6%, rgba(155, 92, 255, 0.34), transparent 66%), radial-gradient(ellipse 80% 55% at 70% 2%, rgba(255, 46, 140, 0.28), transparent 64%), radial-gradient(ellipse 75% 60% at 96% 30%, rgba(46, 139, 255, 0.26), transparent 66%), var(--wx-bg)'
+            : 'radial-gradient(ellipse 60% 50% at 82% 28%, rgba(155, 92, 255, 0.22), transparent 64%), radial-gradient(ellipse 50% 44% at 70% 76%, rgba(23, 224, 212, 0.16), transparent 62%), var(--wx-bg)',
+        }}
       />
-      {/* The canvas, dark mode only. Empty and harmless in light. */}
-      <div ref={hostRef} className="absolute inset-0" />
+
+      {/* THE BOX. `container-type: size` is what makes `cq*` units resolve
+          against this element, and `clip-path: inset(0)` stops the rotated
+          faces painting outside it — without it they reach past the viewport
+          and open a horizontal scrollbar at every width. */}
+      <div
+        className="[container-type:size] pointer-events-none absolute inset-0 overflow-hidden [clip-path:inset(0)] [perspective:100px] [transform-style:preserve-3d]"
+        style={
+          {
+            '--grid-color': gridColour,
+            '--beam-size': `${BEAM_SIZE}%`,
+          } as React.CSSProperties
+        }
+      >
+        {FACES.map((face, f) => (
+          <div
+            key={face.key}
+            className={`absolute ${face.pos} [container-type:inline-size] [height:100cqmax] [transform-style:preserve-3d]`}
+            style={{
+              width: face.w,
+              transformOrigin: face.origin,
+              transform: face.rot,
+              background: gridFace,
+              backgroundSize: `${BEAM_SIZE}% ${BEAM_SIZE}%`,
+            }}
+          >
+            {(beams[f] ?? []).map((spec, i) => (
+              <Beam key={i} spec={spec} quiet={quiet} />
+            ))}
+          </div>
+        ))}
+      </div>
+
       {/* THE SCRIM, where there is work to read on top of all this. */}
       <div
         className="bg-bg absolute inset-0 transition-opacity duration-500"
-        style={{ opacity: SCRIM[onLight ? 'light' : 'dark'][intensity] }}
+        style={{ opacity: intensity === 'subtle' ? (onLight ? 0.2 : 0.45) : 0 }}
       />
     </div>
   );

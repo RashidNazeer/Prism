@@ -192,7 +192,7 @@ export function MoneySplit({ summary, moved }: { summary: WorkSummary; moved: Mo
         <span
           key={`total-${moved.key}`}
           className={cn(
-            'font-display text-[clamp(2rem,5vw,2.875rem)] leading-none font-semibold tracking-[-0.03em]',
+            'font-brand text-[clamp(2rem,5vw,2.875rem)] leading-none font-semibold tracking-[-0.03em]',
             moved.ids.size > 0 && 'wx-bump'
           )}
         >

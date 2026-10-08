@@ -526,13 +526,15 @@ function RequestCard({
               </span>
               {terms.amount != null ? (
                 <>
-                  <p className="font-display text-accent wx-numeric mt-1 text-[1.625rem] leading-none font-bold tracking-tight">
+                  <p className="font-brand text-accent wx-numeric mt-1 text-[1.625rem] leading-none font-bold tracking-tight">
                     {money(terms.amount, terms.currency)}
                   </p>
                   <p className="text-muted mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8125rem]">
                     {terms.videos !== null ? (
                       <span>
-                        <span className="wx-numeric text-text font-semibold">{terms.videos}</span>{' '}
+                        <span className="wx-numeric text-text font-semibold">
+                          {terms.videos}
+                        </span>{' '}
                         {terms.videos === 1 ? 'video' : 'videos'}
                       </span>
                     ) : null}

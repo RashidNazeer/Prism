@@ -107,7 +107,7 @@ export function AdminDashboard() {
                 </span>
                 <span
                   className={cn(
-                    'font-display mt-3 text-[1.875rem] leading-none font-semibold',
+                    'font-brand mt-3 text-[1.875rem] leading-none font-semibold',
                     inboxFailed ? 'text-faint' : n && n > 0 ? 'text-stage-due' : 'text-muted'
                   )}
                 >
@@ -252,7 +252,9 @@ export function AdminDashboard() {
         </div>
 
         {activityFailed ? (
-          <p className="text-muted px-5 py-6 text-[0.875rem]">The activity log would not load.</p>
+          <p className="text-muted px-5 py-6 text-[0.875rem]">
+            The activity log would not load.
+          </p>
         ) : (activity ?? []).length === 0 ? (
           <p className="text-muted px-5 py-6 text-[0.875rem]">Nothing has happened yet.</p>
         ) : (
@@ -358,10 +360,7 @@ function MoneyRow({ m, showCurrency }: { m: OpsMoney; showCurrency: boolean }) {
 
       <dl className="mt-4 grid gap-3 sm:grid-cols-3">
         {cells.map((c) => (
-          <div
-            key={c.label}
-            className="border-line bg-surface-2 rounded-lg border px-4 py-3"
-          >
+          <div key={c.label} className="border-line bg-surface-2 rounded-lg border px-4 py-3">
             <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               {c.label}
             </dt>

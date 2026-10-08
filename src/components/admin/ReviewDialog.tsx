@@ -132,7 +132,7 @@ export function ReviewDialog({
             type="button"
             onClick={() => !busy && onClose()}
             aria-label="Close"
-            className="text-muted hover:text-accent -mt-1 -mr-1 grid size-9 shrink-0 place-items-center rounded-lg transition-colors"
+            className="text-muted hover:text-accent -mt-1 -mr-1 grid size-11 shrink-0 place-items-center rounded-lg transition-colors"
           >
             <X size={17} aria-hidden />
           </button>

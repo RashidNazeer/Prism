@@ -148,7 +148,7 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
             onChange={(e) => set({ who: e.target.value })}
             placeholder="Search by handle, name or email"
             aria-label="Search creators on this brand"
-            className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[0.8125rem] focus:outline-none"
+            className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-11 w-full rounded-xl border pr-3 pl-9 text-[0.8125rem] focus:outline-none sm:h-9"
           />
         </div>
 
@@ -160,7 +160,7 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
           name="by"
           value={filters.sort}
           onChange={(e) => set({ by: e.target.value === 'committed' ? '' : e.target.value })}
-          className="h-9 basis-44 text-[0.8125rem]"
+          className="h-11 basis-44 text-[0.8125rem] sm:h-9"
         >
           {SORTS.map((s) => (
             <option key={s.value} value={s.value}>

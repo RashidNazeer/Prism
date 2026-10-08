@@ -52,7 +52,10 @@
  * boxes where you cannot tell revenue from spend. Same lesson as the angles:
  * a rule aimed at FORMS should stop at the edge of a TABLE.
  */
-.wurxbase-root input:not([type='checkbox']):not([type='radio']):not([type='range']):not(.cx-cell input):not(.pc-mx-input):not(.pc-chrome-input):not(.pc-monthpicker input),
+.wurxbase-root
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not(.cx-cell input):not(
+    .pc-mx-input
+  ):not(.pc-chrome-input):not(.pc-monthpicker input),
 .wurxbase-root textarea,
 .wurxbase-root select {
   /* !important, and only here. Their sheet carries a later, more specific
@@ -73,7 +76,10 @@
   box-shadow: none;
 }
 
-.wurxbase-root input:not([type='checkbox']):not([type='radio']):not(.cx-cell input):not(.pc-mx-input):not(.pc-chrome-input):not(.pc-monthpicker input):focus,
+.wurxbase-root
+  input:not([type='checkbox']):not([type='radio']):not(.cx-cell input):not(.pc-mx-input):not(
+    .pc-chrome-input
+  ):not(.pc-monthpicker input):focus,
 .wurxbase-root textarea:focus,
 .wurxbase-root select:focus {
   background: var(--wx-surface-1) !important;
@@ -362,14 +368,14 @@
 .wurxbase-root.wurxbase-root .pc-ct-head,
 .wurxbase-root.wurxbase-root .pc-ct-row {
   grid-template-columns:
-    0.36fr 0.74fr 1.42fr .66fr .46fr .5fr .64fr .6fr .46fr .58fr .42fr
-    minmax(74px, .44fr) minmax(164px, 1.02fr) minmax(72px, .66fr);
+    0.36fr 0.74fr 1.42fr 0.66fr 0.46fr 0.5fr 0.64fr 0.6fr 0.46fr 0.58fr 0.42fr
+    minmax(74px, 0.44fr) minmax(164px, 1.02fr) minmax(72px, 0.66fr);
 }
 
 /* Video · Views · Engagement · GMV · Items sold · AD SPEND · ROI · Spark code */
 .wurxbase-root.wurxbase-root .pc-vxp-head,
 .wurxbase-root.wurxbase-root .pc-vxp-row {
-  grid-template-columns: 1.7fr .62fr .62fr .55fr .5fr .62fr .44fr .95fr;
+  grid-template-columns: 1.7fr 0.62fr 0.62fr 0.55fr 0.5fr 0.62fr 0.44fr 0.95fr;
 }
 
 .wurxbase-root.wurxbase-root .wx-collab-figure {
@@ -505,7 +511,6 @@
   appearance: textfield;
   -webkit-appearance: textfield;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════
    WHAT THE THEME AUDIT CONFIRMED, 2026-08-28
@@ -658,7 +663,6 @@
   color: var(--wx-on-accent) !important;
 }
 
-
 /*
   THE UNIQUE CREATORS PANEL, the rest of it.
 
@@ -766,7 +770,9 @@
   cursor: help;
   white-space: nowrap;
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .wx-synced-dot { color: var(--pc-text-3); }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-synced-dot {
+  color: var(--pc-text-3);
+}
 .wurxbase-root.wurxbase-root.wurxbase-root .wx-synced-tag {
   font-size: 0.68em;
   font-weight: 700;
@@ -915,7 +921,6 @@
   border-color: var(--wx-border);
 }
 
-
 /* ══════════════════════════════════════════════════════════════════════════
    THE PERFORMANCE SHEET
    ──────────────────────────────────────────────────────────────────────────
@@ -991,7 +996,9 @@
   background: var(--wx-surface-1);
 }
 .wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:not(.pc-mx-head):hover,
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:not(.pc-mx-head):focus-within {
+.wurxbase-root.wurxbase-root.wurxbase-root
+  .pc-mx.pc-mx
+  > .pc-mx-row:not(.pc-mx-head):focus-within {
   background: var(--wx-surface-2) !important;
   box-shadow: none;
 }
@@ -1020,9 +1027,17 @@
  * ones, and the band comes out striped in two different golds. This is what
  * beating it looks like; there is no shorter way to say it.
  */
-.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx.pc-mx .pc-mx-month-pair.pc-mx-month-pair.mx-band,
-.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx.pc-mx > .pc-mx-row:hover .pc-mx-month-pair.mx-band,
-.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx.pc-mx > .pc-mx-row:focus-within .pc-mx-month-pair.mx-band {
+.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root
+  .pc-mx.pc-mx.pc-mx
+  .pc-mx-month-pair.pc-mx-month-pair.mx-band,
+.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root
+  .pc-mx.pc-mx.pc-mx
+  > .pc-mx-row:hover
+  .pc-mx-month-pair.mx-band,
+.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root
+  .pc-mx.pc-mx.pc-mx
+  > .pc-mx-row:focus-within
+  .pc-mx-month-pair.mx-band {
   background: var(--wx-sheet-band) !important;
 }
 
@@ -1032,13 +1047,20 @@
  * and each one was drawn as a filled, bordered box. The screen read as mostly
  * locked. A cell you cannot type in is the least important thing in the row.
  */
-.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx.pc-mx .pc-mx-month-pair.pc-mx-month-pair.mx-sealed {
+.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root
+  .pc-mx.pc-mx.pc-mx
+  .pc-mx-month-pair.pc-mx-month-pair.mx-sealed {
   background: transparent !important;
 }
-.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx.pc-mx .pc-mx-month-pair.pc-mx-month-pair.mx-sealed.mx-band {
+.wurxbase-root.wurxbase-root.wurxbase-root.wurxbase-root
+  .pc-mx.pc-mx.pc-mx
+  .pc-mx-month-pair.pc-mx-month-pair.mx-sealed.mx-band {
   background: var(--wx-sheet-band) !important;
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair.mx-sealed .pc-mx-locked {
+.wurxbase-root.wurxbase-root.wurxbase-root
+  .pc-mx.pc-mx
+  .pc-mx-month-pair.mx-sealed
+  .pc-mx-locked {
   color: var(--wx-border-strong) !important;
   opacity: 0.75;
 }
@@ -1084,10 +1106,16 @@
      months, so the pair still reads as one cell */
   border-left: 1px solid var(--wx-sheet-band) !important;
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair.mx-early .pc-mx-input {
+.wurxbase-root.wurxbase-root.wurxbase-root
+  .pc-mx.pc-mx
+  .pc-mx-month-pair.mx-early
+  .pc-mx-input {
   color: var(--wx-warning) !important;
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-month-pair .pc-mx-input::placeholder {
+.wurxbase-root.wurxbase-root.wurxbase-root
+  .pc-mx.pc-mx
+  .pc-mx-month-pair
+  .pc-mx-input::placeholder {
   color: var(--wx-text-faint);
   opacity: 0.55;
   font-weight: 500;
@@ -1117,7 +1145,10 @@
   z-index: 20;
 }
 .wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:hover .pc-mx-frozen,
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:focus-within .pc-mx-frozen {
+.wurxbase-root.wurxbase-root.wurxbase-root
+  .pc-mx.pc-mx
+  > .pc-mx-row:focus-within
+  .pc-mx-frozen {
   background: var(--wx-surface-2) !important;
 }
 .wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-name {
@@ -1136,8 +1167,13 @@
  * green edge and the month tag beside the name do not already carry.
  */
 .wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row.mx-cohort .pc-mx-frozen,
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row.mx-cohort:hover .pc-mx-frozen {
-  box-shadow: inset 3px 0 0 var(--wx-success), 6px 0 12px -10px rgb(25 21 18 / 0.45);
+.wurxbase-root.wurxbase-root.wurxbase-root
+  .pc-mx.pc-mx
+  > .pc-mx-row.mx-cohort:hover
+  .pc-mx-frozen {
+  box-shadow:
+    inset 3px 0 0 var(--wx-success),
+    6px 0 12px -10px rgb(25 21 18 / 0.45);
 }
 /*
  * Their "joined this month" tag keeps its green pill, so its ink takes a fifth
@@ -1215,7 +1251,10 @@
   background: transparent !important;
   box-shadow: inset 0 -3px 0 var(--wx-accent) !important;
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile.mx-focus .pc-mxh-tile-name {
+.wurxbase-root.wurxbase-root.wurxbase-root
+  .pc-mx.pc-mx
+  .pc-mxh-tile.mx-focus
+  .pc-mxh-tile-name {
   color: var(--wx-accent) !important;
   opacity: 1;
 }
@@ -1276,20 +1315,40 @@
   border-left: 1px solid var(--wx-border-strong) !important;
 }
 .wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:hover > .pc-mx-num.mx-sum,
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:focus-within > .pc-mx-num.mx-sum {
+.wurxbase-root.wurxbase-root.wurxbase-root
+  .pc-mx.pc-mx
+  > .pc-mx-row:focus-within
+  > .pc-mx-num.mx-sum {
   background: var(--wx-surface-2) !important;
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row.pc-mx-head > .pc-mxh-tile.mx-sum,
+.wurxbase-root.wurxbase-root.wurxbase-root
+  .pc-mx.pc-mx
+  > .pc-mx-row.pc-mx-head
+  > .pc-mxh-tile.mx-sum,
 .wurxbase-root.wurxbase-root.wurxbase-root .pc-mx-stickhead .pc-mxh-tile.mx-sum {
   background: var(--wx-surface-2) !important;
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-num.pc-green { color: var(--wx-success) !important; }
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-num.pc-red { color: var(--wx-danger) !important; }
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-tval { color: var(--wx-text) !important; font-size: 13px; }
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-tval-gmv { color: var(--wx-success) !important; }
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-tval-ad { color: var(--wx-danger) !important; }
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-num.pc-green {
+  color: var(--wx-success) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-num.pc-red {
+  color: var(--wx-danger) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-tval {
+  color: var(--wx-text) !important;
+  font-size: 13px;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-tval-gmv {
+  color: var(--wx-success) !important;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mxh-tile-tval-ad {
+  color: var(--wx-danger) !important;
+}
 /* the trailing gold washes their later layers added, removed */
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx > .pc-mx-row:not(.pc-mx-head) > .pc-mx-num:last-child {
+.wurxbase-root.wurxbase-root.wurxbase-root
+  .pc-mx.pc-mx
+  > .pc-mx-row:not(.pc-mx-head)
+  > .pc-mx-num:last-child {
   border-color: transparent;
 }
 .wurxbase-root.wurxbase-root.wurxbase-root .pc-mx.pc-mx .pc-mx-foot {
@@ -1408,7 +1467,9 @@
   color: var(--wx-text);
   font-size: 0.75rem;
   font-weight: 700;
-  transition: background 0.14s, border-color 0.14s;
+  transition:
+    background 0.14s,
+    border-color 0.14s;
 }
 .wurxbase-root.wurxbase-root.wurxbase-root .cx-else-item:hover,
 .wurxbase-root.wurxbase-root.wurxbase-root .cx-else-item:focus-visible {
@@ -1491,7 +1552,9 @@
   color: var(--wx-text);
   font-size: 0.8125rem;
   font-weight: 700;
-  transition: background 0.14s, border-color 0.14s;
+  transition:
+    background 0.14s,
+    border-color 0.14s;
 }
 .wurxbase-root.wurxbase-root.wurxbase-root .cx-import:hover,
 .wurxbase-root.wurxbase-root.wurxbase-root .cx-import:focus-visible {
@@ -1526,14 +1589,21 @@
   font-weight: 800;
   color: var(--wx-text);
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-rows .on u { color: var(--wx-accent); }
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-rows .on u {
+  color: var(--wx-accent);
+}
 .wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-rows .warn,
-.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-rows .warn u { color: var(--wx-danger); }
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-rows .warn u {
+  color: var(--wx-danger);
+}
 .wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-more {
   font-size: 0.75rem;
   color: var(--wx-text-muted);
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-more summary { cursor: pointer; font-weight: 700; }
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-more summary {
+  cursor: pointer;
+  font-weight: 700;
+}
 .wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-more ul {
   margin: 8px 0 0;
   padding-left: 18px;
@@ -1562,7 +1632,10 @@
   border-color: transparent;
   color: var(--wx-on-accent, var(--wx-bg));
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-b[disabled] { opacity: 0.5; cursor: not-allowed; }
+.wurxbase-root.wurxbase-root.wurxbase-root .cx-imp-b[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 /* ══════════════════════════════════════════════════════════════════════
    THE TIER AND DEALS CHIPS ARE CONTROLS NOW
@@ -1583,7 +1656,9 @@
   cursor: pointer;
   font-family: inherit;
   line-height: 1;
-  transition: filter 0.14s, box-shadow 0.14s;
+  transition:
+    filter 0.14s,
+    box-shadow 0.14s;
 }
 .wurxbase-root.wurxbase-root.wurxbase-root button.pc-tierpill-chip:hover {
   filter: brightness(0.96);
@@ -1816,7 +1891,9 @@
   font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 .wurxbase-root.wurxbase-root.wurxbase-root .pc-vx-day b {
   color: var(--wx-text);
@@ -1925,15 +2002,32 @@
  * chip rule under it wrote its own colours, which is how L3 and L4 ended up
  * the same brown. Every tier surface now reads `--t`, set once per tier here.
  */
-.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l0 { --t: var(--wx-tier-0); }
-.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l1 { --t: var(--wx-tier-1); }
-.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l2 { --t: var(--wx-tier-2); }
-.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l3 { --t: var(--wx-tier-3); }
-.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l4 { --t: var(--wx-tier-4); }
-.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l5 { --t: var(--wx-tier-5); }
-.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l6 { --t: var(--wx-tier-6); }
-.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l7 { --t: var(--wx-tier-7); }
-.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip):is(.l0, .l1, .l2, .l3, .l4, .l5, .l6, .l7) {
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l0 {
+  --t: var(--wx-tier-0);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l1 {
+  --t: var(--wx-tier-1);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l2 {
+  --t: var(--wx-tier-2);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l3 {
+  --t: var(--wx-tier-3);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l4 {
+  --t: var(--wx-tier-4);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l5 {
+  --t: var(--wx-tier-5);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l6 {
+  --t: var(--wx-tier-6);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root :is(.pc-tierbadge, .pc-tierpill-chip).l7 {
+  --t: var(--wx-tier-7);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root
+  :is(.pc-tierbadge, .pc-tierpill-chip):is(.l0, .l1, .l2, .l3, .l4, .l5, .l6, .l7) {
   color: var(--t);
   background: color-mix(in srgb, var(--t) 12%, var(--wx-surface-1));
   border: 1px solid color-mix(in srgb, var(--t) 40%, var(--wx-surface-1));
@@ -1949,7 +2043,8 @@
   --tier-l6-fg: var(--wx-tier-6);
   --tier-l7-fg: var(--wx-tier-7);
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .pc-uc-segbtn.on:is(.t-l0, .t-l1, .t-l2, .t-l3, .t-l4, .t-l5, .t-l6, .t-l7) {
+.wurxbase-root.wurxbase-root.wurxbase-root
+  .pc-uc-segbtn.on:is(.t-l0, .t-l1, .t-l2, .t-l3, .t-l4, .t-l5, .t-l6, .t-l7) {
   color: var(--wx-text-inverse);
 }
 
@@ -2047,8 +2142,13 @@
   color: var(--wx-accent);
   text-decoration: none;
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-video a:hover { text-decoration: underline; }
-.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-gmv { font-weight: 700; color: var(--wx-success); }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-video a:hover {
+  text-decoration: underline;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-gmv {
+  font-weight: 700;
+  color: var(--wx-success);
+}
 .wurxbase-root.wurxbase-root.wurxbase-root .wx-share-product {
   max-width: 18rem;
   overflow: hidden;
@@ -2067,7 +2167,9 @@
   font-weight: 700;
   cursor: pointer;
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-video button:hover { background: var(--wx-surface-3); }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-share-video button:hover {
+  background: var(--wx-surface-3);
+}
 
 /* ============================================================================
    AD SPEND IN RED, AND NEW VIDEO GMV ON THE BRANDS SCREEN (2026-09-21)
@@ -2181,12 +2283,20 @@
 }
 
 @keyframes wx-drawer-in {
-  from { transform: translateX(2rem); opacity: 0; }
-  to   { transform: translateX(0);    opacity: 1; }
+  from {
+    transform: translateX(2rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer { animation: none; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer {
+    animation: none;
+  }
 }
 
 /* The header and the footer hold still; only the middle scrolls. Without
@@ -2223,21 +2333,35 @@
   }
   /* The overlay itself stops at the bar too, so the backdrop never sits over
      chrome that is still usable. */
-  .wurxbase-root.wurxbase-root.wurxbase-root .pc-overlay.wx-drawer-overlay { top: var(--wx-topbar, 3.5rem); }
+  .wurxbase-root.wurxbase-root.wurxbase-root .pc-overlay.wx-drawer-overlay {
+    top: var(--wx-topbar, 3.5rem);
+  }
   .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer > .pc-cf-head,
-  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer > .pc-cf-foot { border-radius: 0; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer > .pc-cf-foot {
+    border-radius: 0;
+  }
 }
 @keyframes wx-drawer-up {
-  from { transform: translateY(2rem); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+  from {
+    transform: translateY(2rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* A short window — a laptop at 150% zoom, or a phone in landscape — is where a
    fixed-height panel loses its footer. Nothing here has a fixed height, and the
    section dividers give back their margins so the fields stay reachable. */
 @media (max-height: 34rem) {
-  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer > .pc-cm-body { padding-top: 0.5rem; }
-  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer .pc-cm-sec { margin: 0.6rem 0 0.5rem; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer > .pc-cm-body {
+    padding-top: 0.5rem;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-drawer .pc-cm-sec {
+    margin: 0.6rem 0 0.5rem;
+  }
 }
 
 /* ============================================================================
@@ -2345,14 +2469,18 @@
   border: 1px solid var(--pc-divider);
   border-radius: 0.875rem;
   background: var(--pc-card);
-  transition: border-color 0.16s var(--pc-ease, ease), box-shadow 0.16s var(--pc-ease, ease);
+  transition:
+    border-color 0.16s var(--pc-ease, ease),
+    box-shadow 0.16s var(--pc-ease, ease);
 }
 .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard:hover {
   border-color: color-mix(in srgb, var(--wx-success) 45%, var(--pc-divider));
   box-shadow: var(--pc-shadow);
 }
 @media (prefers-reduced-motion: reduce) {
-  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard { transition: none; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard {
+    transition: none;
+  }
 }
 .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-head {
   display: flex;
@@ -2362,7 +2490,9 @@
   padding-bottom: 0.7rem;
   border-bottom: 1px solid var(--pc-divider-soft, var(--pc-divider));
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-shot { flex: 0 0 auto; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-shot {
+  flex: 0 0 auto;
+}
 .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-id {
   display: flex;
   flex-direction: column;
@@ -2429,7 +2559,10 @@
   min-width: 0;
   color: var(--pc-text-3);
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-ico { display: inline-flex; flex: 0 0 auto; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-ico {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
 .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodcard-lbl {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2466,7 +2599,9 @@
 @media (max-width: 40rem) {
   /* Title, count and period on ONE line at 390px: at the desktop size they came
      to 349px against 358px of room, so the period fell to a line of its own. */
-  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodband-title { font-size: 0.9375rem; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodband-title {
+    font-size: 0.9375rem;
+  }
   .wurxbase-root.wurxbase-root.wurxbase-root .wx-prodband-period {
     padding: 0.25rem 0.5rem;
     font-size: 0.6875rem;
@@ -2493,7 +2628,6 @@
     padding-left: 0;
   }
 }
-
 
 /* ------------------------------------------- product groups in the table -- */
 /*
@@ -2568,9 +2702,14 @@
   transform: rotate(-90deg);
 }
 @media (prefers-reduced-motion: reduce) {
-  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-chev { transition: none; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-chev {
+    transition: none;
+  }
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-shot { flex: 0 0 auto; display: inline-flex; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-shot {
+  flex: 0 0 auto;
+  display: inline-flex;
+}
 /* The full name is in the band's tooltip; here it truncates rather than
    wrapping to three lines and pushing the count off the row. */
 .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-name {
@@ -2620,7 +2759,11 @@
   color: var(--pc-accent);
   white-space: nowrap;
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-menu { position: relative; flex: 0 0 auto; display: inline-flex; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-menu {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+}
 .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-kebab {
   width: 1.75rem;
   height: 1.75rem;
@@ -2633,8 +2776,14 @@
   color: var(--pc-text-3);
   cursor: pointer;
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-kebab:hover { background: var(--pc-card); color: var(--pc-text-2); }
-.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-kebab:focus-visible { outline: 2px solid var(--pc-accent); outline-offset: 2px; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-kebab:hover {
+  background: var(--pc-card);
+  color: var(--pc-text-2);
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-kebab:focus-visible {
+  outline: 2px solid var(--pc-accent);
+  outline-offset: 2px;
+}
 .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-pop {
   position: absolute;
   top: calc(100% + 0.375rem);
@@ -2661,15 +2810,21 @@
   cursor: pointer;
   white-space: nowrap;
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-pop button:hover { background: var(--pc-card-2); }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-pop button:hover {
+  background: var(--pc-card-2);
+}
 
 /* The rows, on a tree drawn in the row's own left padding — the rail at 10px
    and the elbow reaching 18px, where the first column starts at 24px. It hangs
    from the band and stops at the last child's elbow, so it never runs on past
    the end of the group. Decoration only: the grouping is already carried by the
    header, the count and the order, so the line never has to be read. */
-.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-rows { position: relative; }
-.wurxbase-root.wurxbase-root.wurxbase-root .wx-prow { position: relative; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-rows {
+  position: relative;
+}
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prow {
+  position: relative;
+}
 .wurxbase-root.wurxbase-root.wurxbase-root .wx-prow::before {
   content: '';
   position: absolute;
@@ -2680,7 +2835,9 @@
   background: color-mix(in srgb, var(--wx-accent) 26%, transparent);
   pointer-events: none;
 }
-.wurxbase-root.wurxbase-root.wurxbase-root .wx-prow:last-child::before { display: none; }
+.wurxbase-root.wurxbase-root.wurxbase-root .wx-prow:last-child::before {
+  display: none;
+}
 .wurxbase-root.wurxbase-root.wurxbase-root .wx-prow::after {
   content: '';
   position: absolute;
@@ -2700,15 +2857,31 @@
    shrinks to something a 375px screen can afford — the band directly above
    still says which product these are. */
 @media (max-width: 768px) {
-  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup { margin: 0.5rem 0 0.125rem; }
-  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-head { margin: 0; flex-wrap: wrap; row-gap: 0.375rem; }
-  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-toggle { flex-wrap: wrap; row-gap: 0.375rem; }
-  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-name { font-size: 0.875rem; flex: 1 1 8rem; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup {
+    margin: 0.5rem 0 0.125rem;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-head {
+    margin: 0;
+    flex-wrap: wrap;
+    row-gap: 0.375rem;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-toggle {
+    flex-wrap: wrap;
+    row-gap: 0.375rem;
+  }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-name {
+    font-size: 0.875rem;
+    flex: 1 1 8rem;
+  }
   .wurxbase-root.wurxbase-root.wurxbase-root .wx-prow::before,
-  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prow::after { display: none; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-prow::after {
+    display: none;
+  }
 }
 @media (max-width: 420px) {
-  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-also { display: none; }
+  .wurxbase-root.wurxbase-root.wurxbase-root .wx-pgroup-also {
+    display: none;
+  }
 }
 
 /* ----------------------------------------------- creative angle: Categorise -- */
@@ -2750,22 +2923,47 @@
   height: 2.75rem;
   padding: 0 1.25rem;
   border-radius: 999px;
-  border: 0;
   cursor: pointer;
+  /*
+   * THE INK IS `--wx-text`, NOT `--wx-on-accent`. Rashid, 2026-10-08: this
+   * button was unreadable, and it was unreadable in BOTH themes.
+   *
+   * `--wx-on-accent` is the ink for something sitting on the accent FILL, and
+   * this button's resting fill is `--wx-surface-3`. On that surface the two are
+   * near enough the same colour: light resolved to white on #f7f7fb, dark to
+   * #14141c on #14141c. So the label was switched off until you hovered and the
+   * fill finally became the accent the ink was chosen for. `--wx-on-accent` is
+   * still right in the hover rule below, where the fill really is the accent.
+   *
+   * The border exists for the same reason. On a near-white page a near-white
+   * pill with no edge has no shape either, and WCAG 1.4.11 asks 3:1 of a
+   * control's boundary. The shadow was tinted with the old warm Wurx brown;
+   * it is Ink now, like every other shadow in the product.
+   */
   background: var(--wx-surface-3);
-  color: var(--wx-on-accent);
+  color: var(--wx-text);
+  border: 1px solid var(--wx-border-interactive);
   font-family: inherit;
   font-size: 0.8125rem;
   font-weight: 800;
-  box-shadow: 0 4px 14px -6px rgba(44, 35, 25, 0.7);
-  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.3, 1), background 0.16s, box-shadow 0.16s;
+  box-shadow: 0 4px 14px -6px rgba(20, 20, 28, 0.35);
+  transition:
+    transform 0.16s cubic-bezier(0.2, 0.8, 0.3, 1),
+    background 0.16s,
+    box-shadow 0.16s,
+    color 0.16s,
+    border-color 0.16s;
 }
 .wurxbase-root .wx-cat-btn:hover:not(:disabled) {
   background: var(--wx-accent);
+  color: var(--wx-on-accent);
+  border-color: var(--wx-accent);
   transform: translateY(-1px);
-  box-shadow: 0 8px 20px -8px rgba(44, 35, 25, 0.75);
+  box-shadow: 0 8px 20px -8px rgba(20, 20, 28, 0.4);
 }
-.wurxbase-root .wx-cat-btn:active:not(:disabled) { transform: scale(0.97); }
+.wurxbase-root .wx-cat-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
 .wurxbase-root .wx-cat-btn:focus-visible {
   outline: 2px solid var(--wx-accent);
   outline-offset: 3px;
@@ -2796,7 +2994,9 @@
 }
 /* The track carries the whole message at nought per cent: "there is a ring
    here and it is empty" rather than a button that looks untouched. */
-.wurxbase-root .wx-cat-track { stroke: color-mix(in srgb, var(--wx-accent) 30%, transparent); }
+.wurxbase-root .wx-cat-track {
+  stroke: color-mix(in srgb, var(--wx-accent) 30%, transparent);
+}
 .wurxbase-root .wx-cat-arc {
   stroke: var(--wx-accent);
   /* BUTT, NOT ROUND. A round cap on a dash of zero length still paints its
@@ -2828,21 +3028,31 @@
   overflow-wrap: anywhere;
   color: var(--wx-text-muted);
 }
-.wurxbase-root .wx-cat-status-err { color: var(--wx-danger); }
+.wurxbase-root .wx-cat-status-err {
+  color: var(--wx-danger);
+}
 
 @media (max-width: 820px) {
   /* Narrow enough that a hugging pill looks stranded: the wrap takes a share
      of the row the way `.cx-bm` and `.cx-new` already do, and the button
      fills it. */
-  .wurxbase-root .cx-h-r .wx-cat-wrap { flex: 1; }
-  .wurxbase-root .cx-h-r .wx-cat-btn { width: 100%; }
+  .wurxbase-root .cx-h-r .wx-cat-wrap {
+    flex: 1;
+  }
+  .wurxbase-root .cx-h-r .wx-cat-btn {
+    width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .wurxbase-root .wx-cat-btn,
-  .wurxbase-root .wx-cat-arc { transition: none; }
+  .wurxbase-root .wx-cat-arc {
+    transition: none;
+  }
   .wurxbase-root .wx-cat-btn:hover:not(:disabled),
-  .wurxbase-root .wx-cat-btn:active:not(:disabled) { transform: none; }
+  .wurxbase-root .wx-cat-btn:active:not(:disabled) {
+    transform: none;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2871,10 +3081,14 @@
   border-radius: 11px;
   background: var(--wx-accent-soft);
 }
-.wurxbase-root .wx-pg:first-child { margin-top: 2px; }
+.wurxbase-root .wx-pg:first-child {
+  margin-top: 2px;
+}
 /* The band that collects videos with no product recorded is a caveat, not a
    product, so it does not get a product's colour. */
-.wurxbase-root .wx-pg.none { background: var(--wx-surface-2); }
+.wurxbase-root .wx-pg.none {
+  background: var(--wx-surface-2);
+}
 
 /* THE WHOLE BAND IS THE HIT TARGET, not the chevron -- the same way the group
    rows on the Brands screen behave. */
@@ -2892,7 +3106,11 @@
   text-align: left;
   color: var(--wx-text);
 }
-.wurxbase-root .wx-pg-b:focus-visible { outline: 2px solid var(--wx-accent); outline-offset: 3px; border-radius: 7px; }
+.wurxbase-root .wx-pg-b:focus-visible {
+  outline: 2px solid var(--wx-accent);
+  outline-offset: 3px;
+  border-radius: 7px;
+}
 /* THE PRODUCT'S PICTURE, as the Brands screen's group row carries it. The
    placeholder is the same size and radius as the image, so a brand whose
    catalogue has no pictures gets a tidy column of tiles rather than names that
@@ -2908,7 +3126,9 @@
   background: var(--wx-surface-1);
   border: 1px solid color-mix(in srgb, var(--wx-accent) 8%, transparent);
 }
-.wurxbase-root .wx-pg-pic-none { display: inline-block; }
+.wurxbase-root .wx-pg-pic-none {
+  display: inline-block;
+}
 .wurxbase-root .wx-pg-b b {
   min-width: 0;
   font-size: 12.5px;
@@ -2918,14 +3138,18 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.wurxbase-root .wx-pg-b:hover b { color: var(--wx-accent); }
+.wurxbase-root .wx-pg-b:hover b {
+  color: var(--wx-accent);
+}
 .wurxbase-root .wx-pg-chev {
   flex: 0 0 auto;
   display: inline-flex;
   color: var(--wx-text-muted);
   transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
-.wurxbase-root .wx-pg.shut .wx-pg-chev { transform: rotate(-90deg); }
+.wurxbase-root .wx-pg.shut .wx-pg-chev {
+  transform: rotate(-90deg);
+}
 .wurxbase-root .wx-pg-n {
   flex: 0 0 auto;
   padding: 1px 8px;
@@ -2945,17 +3169,30 @@
   font-size: 11px;
   font-weight: 800;
 }
-.wurxbase-root .wx-pg-f i { font-style: normal; color: var(--wx-text-muted); }
-.wurxbase-root .wx-pg-f i.g { color: var(--wx-success); }
-.wurxbase-root .wx-pg-f i.a { color: var(--wx-warning); }
+.wurxbase-root .wx-pg-f i {
+  font-style: normal;
+  color: var(--wx-text-muted);
+}
+.wurxbase-root .wx-pg-f i.g {
+  color: var(--wx-success);
+}
+.wurxbase-root .wx-pg-f i.a {
+  color: var(--wx-warning);
+}
 
 @media (max-width: 560px) {
   /* Stacked, because the name and three figures on one line at this width
      leaves the name about four characters. */
-  .wurxbase-root .wx-pg { align-items: flex-start; }
-  .wurxbase-root .wx-pg-f { gap: 9px; }
+  .wurxbase-root .wx-pg {
+    align-items: flex-start;
+  }
+  .wurxbase-root .wx-pg-f {
+    gap: 9px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wurxbase-root .wx-pg-chev { transition: none; }
+  .wurxbase-root .wx-pg-chev {
+    transition: none;
+  }
 }

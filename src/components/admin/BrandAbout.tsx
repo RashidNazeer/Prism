@@ -338,7 +338,7 @@ function ProductRow({ product, onEdit }: { product: BrandProduct; onEdit: () => 
             type="button"
             onClick={onEdit}
             aria-label={`Edit ${product.name}`}
-            className="text-muted hover:bg-surface-2 hover:text-accent grid size-9 place-items-center rounded-lg transition-colors duration-200"
+            className="text-muted hover:bg-surface-2 hover:text-accent grid size-11 place-items-center rounded-lg transition-colors duration-200"
           >
             <Pencil size={15} aria-hidden />
           </button>
@@ -346,7 +346,7 @@ function ProductRow({ product, onEdit }: { product: BrandProduct; onEdit: () => 
             type="button"
             onClick={() => setConfirming(true)}
             aria-label={`Delete ${product.name}`}
-            className="text-muted hover:bg-surface-2 hover:text-danger grid size-9 place-items-center rounded-lg transition-colors duration-200"
+            className="text-muted hover:bg-surface-2 hover:text-danger grid size-11 place-items-center rounded-lg transition-colors duration-200"
           >
             <Trash2 size={15} aria-hidden />
           </button>

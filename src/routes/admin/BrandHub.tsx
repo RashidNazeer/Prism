@@ -165,7 +165,7 @@ export function BrandHub() {
         <Link
           to="/admin/brands"
           aria-label="Back to all brands"
-          className="border-line text-muted hover:border-accent hover:text-accent grid size-8 shrink-0 place-items-center rounded-lg border transition-colors duration-200"
+          className="border-line text-muted hover:border-accent hover:text-accent grid size-11 shrink-0 place-items-center rounded-lg border transition-colors duration-200 sm:size-8"
         >
           <ArrowLeft size={15} aria-hidden />
         </Link>
@@ -469,10 +469,7 @@ function MoneyByStage({ m, showCurrency }: { m: BrandMoney; showCurrency: boolea
 
       <dl className="mt-4 grid gap-3 sm:grid-cols-3">
         {cells.map((c) => (
-          <div
-            key={c.key}
-            className="border-line bg-surface-2 rounded-lg border px-3.5 py-3"
-          >
+          <div key={c.key} className="border-line bg-surface-2 rounded-lg border px-3.5 py-3">
             <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               {c.label}
             </dt>
@@ -531,10 +528,7 @@ function ContentLanded({ content }: { content: BrandContent | undefined }) {
       ) : (
         <dl className="mt-4 grid gap-3 sm:grid-cols-3">
           {cells.map((c) => (
-            <div
-              key={c.key}
-              className="border-line bg-surface-2 rounded-lg border px-3.5 py-3"
-            >
+            <div key={c.key} className="border-line bg-surface-2 rounded-lg border px-3.5 py-3">
               <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                 {c.label}
               </dt>

@@ -423,7 +423,7 @@ function Board({ counts }: { counts: ContentTotals }) {
           Videos posted
         </p>
         <p className="flex flex-wrap items-baseline gap-2.5">
-          <span className="font-display text-[clamp(2.375rem,7vw,3.625rem)] leading-none font-semibold tracking-[-0.03em]">
+          <span className="font-brand text-[clamp(2.375rem,7vw,3.625rem)] leading-none font-semibold tracking-[-0.03em]">
             {counts.all}
           </span>
           <span className="text-muted text-[0.8125rem]">across the roster</span>

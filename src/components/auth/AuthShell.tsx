@@ -1,4 +1,4 @@
-﻿import { Link } from 'react-router';
+import { Link } from 'react-router';
 import type { ReactNode } from 'react';
 import { PrismMark } from '@/components/brand/PrismMark';
 import { HaloBackdrop } from '@/components/auth/HaloBackdrop';
@@ -33,7 +33,7 @@ export function AuthShell({
       </div>
 
       <main className="relative w-full max-w-md">
-        <Link to="/" className="inline-flex" aria-label="Prism home">
+        <Link to="/" className="inline-flex min-h-11 items-center" aria-label="Prism home">
           <PrismMark height={30} />
         </Link>
 

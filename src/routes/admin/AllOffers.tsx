@@ -338,7 +338,12 @@ export function AllOffers() {
       </FilterBar>
 
       {/* ------------------------------------------------------------ grid -- */}
-      <div className={cn('mt-4 transition-opacity duration-200', isPlaceholderData && 'opacity-60')}>
+      <div
+        className={cn(
+          'mt-4 transition-opacity duration-200',
+          isPlaceholderData && 'opacity-60'
+        )}
+      >
         {isLoading ? (
           <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -383,7 +388,9 @@ export function AllOffers() {
                */
               <li
                 key={offer.id}
-                className={cn(openId === offer.id && 'sm:col-span-2 xl:col-span-3 2xl:col-span-4')}
+                className={cn(
+                  openId === offer.id && 'sm:col-span-2 xl:col-span-3 2xl:col-span-4'
+                )}
               >
                 <OfferCard
                   offer={offer}
@@ -463,7 +470,9 @@ function OfferCard({
   // The rate a creator actually earns per video, which is the number an admin
   // compares offers on and the only arithmetic on this screen.
   const perVideo =
-    hasTerms && offer.video_count! > 0 ? Number(offer.reward_amount) / offer.video_count! : null;
+    hasTerms && offer.video_count! > 0
+      ? Number(offer.reward_amount) / offer.video_count!
+      : null;
 
   return (
     <div
@@ -555,12 +564,14 @@ function OfferCard({
           */}
           {hasTerms ? (
             <div>
-              <p className="font-display text-accent wx-numeric text-[1.75rem] leading-none font-bold tracking-tight">
+              <p className="font-brand text-accent wx-numeric text-[1.75rem] leading-none font-bold tracking-tight">
                 {money(offer.reward_amount, offer.currency)}
               </p>
               <p className="text-muted mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8125rem]">
                 <span>
-                  <span className="wx-numeric text-text font-semibold">{offer.video_count}</span>{' '}
+                  <span className="wx-numeric text-text font-semibold">
+                    {offer.video_count}
+                  </span>{' '}
                   {offer.video_count === 1 ? 'video' : 'videos'}
                 </span>
                 {perVideo !== null ? (
@@ -640,7 +651,9 @@ function OfferCard({
         >
           <div className="flex flex-col gap-4 px-4 py-4 lg:px-5 lg:py-5">
             {/* The title in full, because the card clamped it. */}
-            <p className="text-text text-[0.875rem] leading-relaxed font-semibold">{offer.title}</p>
+            <p className="text-text text-[0.875rem] leading-relaxed font-semibold">
+              {offer.title}
+            </p>
 
             {offer.description ? (
               <p className="text-muted text-[0.8125rem] leading-relaxed">{offer.description}</p>
@@ -709,7 +722,12 @@ function OfferCard({
                       key={f.id}
                       className="border-line bg-surface-2 flex min-w-0 items-center gap-2 rounded-full border py-1 pr-3 pl-1"
                     >
-                      <CreatorFace src={avatars[f.id]} name={f.name} handle={f.handle} size={22} />
+                      <CreatorFace
+                        src={avatars[f.id]}
+                        name={f.name}
+                        handle={f.handle}
+                        size={22}
+                      />
                       <span className="text-text min-w-0 truncate text-[0.8125rem]">
                         {f.name ?? f.handle ?? 'Unknown creator'}
                       </span>

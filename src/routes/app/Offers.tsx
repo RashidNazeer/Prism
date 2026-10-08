@@ -168,7 +168,7 @@ export function Offers() {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search offers or brands"
                 aria-label="Search offers or brands"
-                className="wx-neo-inset border-line-interactive placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[0.8125rem] focus:outline-none"
+                className="wx-neo-inset border-line-interactive placeholder:text-faint hover:border-accent/60 focus:border-accent h-11 w-full rounded-xl border pr-3 pl-9 text-[0.8125rem] focus:outline-none sm:h-9"
               />
             </div>
 
@@ -180,7 +180,7 @@ export function Offers() {
               name="brand"
               value={brandId}
               onChange={(e) => setBrandId(e.target.value)}
-              className="h-9 basis-44 text-[0.8125rem]"
+              className="h-11 basis-44 text-[0.8125rem] sm:h-9"
             >
               <option value="">All brands</option>
               {brands.map((b) => (

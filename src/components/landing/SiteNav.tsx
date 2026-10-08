@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, m } from 'motion/react';
 import { Link, useNavigate } from 'react-router';
 import { Menu, X } from 'lucide-react';
@@ -76,15 +76,19 @@ export function SiteNav() {
   return (
     <header
       className={cn(
-        'fixed inset-x-0 top-0 z-50 transition-all duration-300 ease-brand',
+        'ease-brand fixed inset-x-0 top-0 z-50 transition-all duration-300',
         scrolled || open
-          ? 'border-b border-line bg-bg/85 backdrop-blur-xl'
+          ? 'border-line bg-bg/85 border-b backdrop-blur-xl'
           : 'border-b border-transparent'
       )}
     >
       <Container>
         <nav className="flex h-16 items-center justify-between gap-4">
-          <Link to="/" className="shrink-0" aria-label="WurxMediaHub home">
+          <Link
+            to="/"
+            className="inline-flex min-h-11 shrink-0 items-center"
+            aria-label="WurxMediaHub home"
+          >
             <PrismMark />
           </Link>
 
@@ -109,20 +113,16 @@ export function SiteNav() {
                 everyone who has already applied. */}
             <Link
               to="/login"
-              className="hidden items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm whitespace-nowrap text-muted transition-colors duration-200 ease-brand hover:text-accent sm:inline-flex"
+              className="text-muted ease-brand hover:text-accent hidden min-h-11 items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm whitespace-nowrap transition-colors duration-200 sm:inline-flex"
             >
               <span className="hidden lg:inline">Already a partner?</span>
-              <span className="font-medium text-text underline-offset-4 hover:text-accent hover:underline">
+              <span className="text-text hover:text-accent font-medium underline-offset-4 hover:underline">
                 Sign in
               </span>
             </Link>
 
             <ThemeToggle />
-            <Button
-              size="sm"
-              className="hidden sm:inline-flex"
-              onClick={apply}
-            >
+            <Button size="sm" className="hidden sm:inline-flex" onClick={apply}>
               Apply
             </Button>
             <button
@@ -131,7 +131,7 @@ export function SiteNav() {
               aria-expanded={open}
               aria-controls="mobile-menu"
               aria-label={open ? 'Close menu' : 'Open menu'}
-              className="border-line bg-surface-1/60 text-muted hover:border-line-interactive hover:text-accent ease-brand grid size-10 place-items-center rounded-full border transition-colors duration-200 lg:hidden"
+              className="border-line bg-surface-1/60 text-muted hover:border-line-interactive hover:text-accent ease-brand grid size-11 place-items-center rounded-full border transition-colors duration-200 lg:hidden"
             >
               {open ? <X size={17} aria-hidden /> : <Menu size={17} aria-hidden />}
             </button>

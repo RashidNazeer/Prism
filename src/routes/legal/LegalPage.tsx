@@ -1,4 +1,4 @@
-﻿import { useEffect, type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { PrismMark } from '@/components/brand/PrismMark';
 import { Container } from '@/components/layout/Section';
@@ -59,7 +59,7 @@ export function LegalPage({
           <div className="flex h-16 items-center justify-between gap-4">
             <Link
               to="/"
-              className="rounded-md focus-visible:outline-2"
+              className="inline-flex min-h-11 items-center rounded-md focus-visible:outline-2"
               aria-label="Wurx Media Hub, back to the home page"
             >
               <PrismMark className="h-6 w-auto" />
@@ -67,7 +67,7 @@ export function LegalPage({
             <div className="flex items-center gap-2">
               <Link
                 to="/"
-                className="text-muted hover:text-accent rounded-md px-2 py-1 text-[0.875rem] font-medium transition-colors"
+                className="text-muted hover:text-accent inline-flex min-h-11 items-center rounded-md px-2 py-1 text-[0.875rem] font-medium transition-colors"
               >
                 Home
               </Link>

@@ -158,7 +158,7 @@ function Figure({
       </p>
       <p
         className={cn(
-          'font-display mt-1.5 text-[1.625rem] leading-none font-bold',
+          'font-brand mt-1.5 text-[1.625rem] leading-none font-bold',
           tone === 'paid' ? 'text-stage-paid' : tone === 'due' ? 'text-stage-due' : 'text-text'
         )}
       >

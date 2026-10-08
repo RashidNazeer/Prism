@@ -153,7 +153,7 @@ export function OfferCard({
               <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                 Videos
               </span>
-              <span className="font-display mt-1 block text-[1.5rem] leading-none font-semibold">
+              <span className="font-brand mt-1 block text-[1.5rem] leading-none font-semibold">
                 {videoCount}
               </span>
             </span>
@@ -164,7 +164,7 @@ export function OfferCard({
                 You get
               </span>
               <span
-                className="font-display mt-1 block text-[1.5rem] leading-none font-semibold"
+                className="font-brand mt-1 block text-[1.5rem] leading-none font-semibold"
                 style={{ color: 'var(--wx-brand-accent-ink, var(--wx-accent))' }}
               >
                 {money(rewardAmount, currency)}

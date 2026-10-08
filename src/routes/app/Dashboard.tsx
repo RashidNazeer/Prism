@@ -440,7 +440,7 @@ function Header({
         {/* An h2, not an h1: the top bar owns the page's only one. This greets
             the person rather than naming the section, so unlike the other
             creator screens it earns its row and stays. */}
-        <h2 className="font-display text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
+        <h2 className="font-brand text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
           {greet(name)}
         </h2>
         {/* One line saying what the screen is for. The brief asked for it and
@@ -535,7 +535,7 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
             <span
               key={`total-${moved.key}`}
               className={cn(
-                'font-display text-[clamp(2.375rem,7vw,3.625rem)] leading-none font-semibold tracking-[-0.03em]',
+                'font-brand text-[clamp(2.375rem,7vw,3.625rem)] leading-none font-semibold tracking-[-0.03em]',
                 moved.ids.size > 0 && 'wx-bump'
               )}
             >
@@ -629,7 +629,7 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
               <dd
                 key={`${cell.key}-${moved.key}`}
                 className={cn(
-                  'font-display wx-numeric text-[1.5rem] leading-none font-semibold',
+                  'font-brand wx-numeric text-[1.5rem] leading-none font-semibold',
                   moved.ids.size > 0 && 'wx-bump'
                 )}
               >
@@ -1004,7 +1004,7 @@ function Counts({ summary }: { summary: WorkSummary }) {
                 <Icon size={16} className={item.tone} />
               </span>
               <span className="flex min-w-0 flex-col gap-0.5">
-                <span className="font-display wx-numeric text-[1.625rem] leading-none font-semibold">
+                <span className="font-brand wx-numeric text-[1.625rem] leading-none font-semibold">
                   {item.n}
                 </span>
                 <span className="text-muted text-[0.75rem] leading-[1.3]">{item.label}</span>

@@ -34,7 +34,7 @@ export function Brands() {
 
   return (
     <>
-      <h1 className="font-display text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
+      <h1 className="font-brand text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
         Brand hubs
       </h1>
       <p className="text-muted mt-2 max-w-2xl text-[0.9375rem] leading-relaxed">

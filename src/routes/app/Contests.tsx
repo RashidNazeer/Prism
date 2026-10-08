@@ -652,7 +652,7 @@ function ContestCard({
             ) : null}
           </div>
 
-          <h3 className="font-display max-w-2xl text-[1.5rem] leading-tight font-bold text-white sm:text-[1.75rem]">
+          <h3 className="font-brand max-w-2xl text-[1.5rem] leading-tight font-bold text-white sm:text-[1.75rem]">
             {contest.name}
           </h3>
 
@@ -842,7 +842,7 @@ function Countdown({ to, now }: { to: string; now: number }) {
     <span className="flex items-end gap-4">
       {boxes.map((b) => (
         <span key={b.label} className="flex flex-col">
-          <span className="font-display wx-numeric text-[1.75rem] leading-none font-bold text-white">
+          <span className="font-brand wx-numeric text-[1.75rem] leading-none font-bold text-white">
             {b.value}
           </span>
           <span className="mt-1 font-mono text-[0.625rem] tracking-[0.12em] text-white/60 uppercase">

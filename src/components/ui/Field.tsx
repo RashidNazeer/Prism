@@ -1,4 +1,4 @@
-﻿import { ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { useId, useState, type ComponentProps, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -18,10 +18,12 @@ import { cn } from '@/lib/utils';
  * next to the cards rather than part of them.
  */
 const controlBase = [
-  // wx-neo-inset: things that receive are pressed INTO the page. It supplies
-  // the fill and shadow but no border, so the 1px border below is the
-  // non-shadow boundary (WCAG 1.4.11, and the only edge in forced-colors).
-  'wx-neo-inset w-full rounded-lg border px-4 text-[0.9375rem]',
+  // wx-neo-inset: things that receive are pressed INTO the page. The inset
+  // shadow IS the field now — Rashid, 2026-10-08: no border lines anywhere,
+  // shadows only. The 1px edge that used to carry the WCAG 1.4.11 boundary is
+  // restored only under forced-colors (see global.css), where the OS discards
+  // shadows and an unbordered field would be invisible.
+  'wx-neo-inset w-full rounded-lg px-4 text-[0.9375rem]',
   'placeholder:text-faint',
   'transition-colors duration-200 ease-brand',
   // An outline, not a ring: a ring is a box-shadow and would replace the inset.
@@ -29,10 +31,14 @@ const controlBase = [
   'disabled:cursor-not-allowed disabled:opacity-60',
 ].join(' ');
 
+/*
+ * INVALID IS A RING, NOT A BORDER, now that borders are gone. `outline` rather
+ * than `ring`, because a ring is a box-shadow and would replace the inset that
+ * makes the field a field. The error TEXT is still what announces the problem;
+ * this only has to draw the eye to the right box.
+ */
 const controlState = (invalid?: boolean) =>
-  invalid
-    ? 'border-danger focus:border-danger'
-    : 'border-line-interactive hover:border-accent/60 focus:border-accent';
+  invalid ? 'outline outline-2 outline-offset-1 outline-danger' : '';
 
 export function Label({ htmlFor, children }: { htmlFor: string; children: ReactNode }) {
   return (
@@ -122,7 +128,7 @@ export function PasswordInput({
         type="button"
         onClick={() => setVisible((v) => !v)}
         aria-label={visible ? 'Hide password' : 'Show password'}
-        className="text-muted hover:text-accent focus-visible:outline-accent absolute top-1/2 right-2 grid size-9 -translate-y-1/2 place-items-center rounded-lg transition-colors focus-visible:outline-2"
+        className="text-muted hover:text-accent focus-visible:outline-accent absolute top-1/2 right-1 grid size-11 -translate-y-1/2 place-items-center rounded-lg transition-colors focus-visible:outline-2"
       >
         {visible ? <EyeOff size={17} aria-hidden /> : <Eye size={17} aria-hidden />}
       </button>

@@ -21,10 +21,22 @@
 [data-theme='dark'] {
   color-scheme: dark;
 
-  /* Surfaces, layered from the page up */
+  /*
+   * Surfaces, layered from the page up.
+   *
+   * DARKER AND LESS PURPLE, 2026-10-08, at Rashid's request. These were
+   * `#211d33` and `#2a2540`, the second being the kit's own "Ink raised". Both
+   * lean noticeably violet, and with a violet accent, violet links and a violet
+   * beam in the backdrop the whole dark theme had a purple cast on every
+   * surface rather than just on the things meant to carry the brand.
+   *
+   * The new pair keeps Ink's slight blue (it is `#14141C`, not neutral black)
+   * and drops most of the red that was making it read as purple: hue moves from
+   * about 255 degrees to about 240, and both steps sit closer to the page.
+   */
   --wx-bg: #14141c; /* page background */
-  --wx-surface-1: #211d33; /* cards, panels */
-  --wx-surface-2: #2a2540; /* hover, nested cards */
+  --wx-surface-1: #1a1a26; /* cards, panels */
+  --wx-surface-2: #222231; /* hover, nested cards */
   --wx-surface-3: #14141c; /* wells, inputs */
   --wx-field: #14141c; /* what you type into Â· a well on dark */
 
@@ -326,8 +338,27 @@
      does the describing and can be near-opaque white, while the shadow stays a
      cool blue-grey rather than black — black here reads as dirt, which is what
      makes most neomorphism look muddy. */
-  --wx-neo-light: rgba(255, 255, 255, 0.9);
-  --wx-neo-dark: rgba(130, 130, 160, 0.32);
+  /*
+   * THE SHADOW IS INK NOW, AND SOFTER. Rashid asked for the light-mode shadows
+   * to be improved, and the brand kit already specifies them:
+   *
+   *     --prism-shadow-card    0 1px 3px  rgba(20,20,28,0.06)
+   *     --prism-shadow-raised  0 12px 32px rgba(20,20,28,0.10)
+   *     --prism-shadow-float   0 12px 32px rgba(20,20,28,0.18)
+   *
+   * Two things follow. The tint is INK, not the cool blue-grey that was here:
+   * the kit tints every shadow with its own near-black, and a blue-grey shadow
+   * on a Mist page reads as a smudge of a different colour rather than as the
+   * absence of light. And the kit's geometry is far softer than ours was — a
+   * 32px blur against our 14px — which is the difference between a card that
+   * sits on the page and one with a hard rim drawn round it.
+   *
+   * The alpha here is above the kit's 0.10 because a neomorphic shadow is
+   * OFFSET DIAGONALLY and split with a highlight, so each half carries less
+   * weight than the kit's single centred drop shadow.
+   */
+  --wx-neo-light: rgba(255, 255, 255, 0.95);
+  --wx-neo-dark: rgba(20, 20, 28, 0.14);
   --wx-hairline: rgba(255, 255, 255, 0.7);
   --wx-pressed-surface: #ececf3;
 
@@ -402,7 +433,18 @@
   --wx-glass-blur: 24px;
 
   --wx-accent-gradient: linear-gradient(135deg, #6a2fe0 0%, #0b6f69 100%);
-  --wx-accent-gradient-hover: linear-gradient(135deg, #74501a 0%, #8f6624 100%);
+  /*
+   * Was `#74501a -> #8f6624`, a brown-gold ramp, so hovering the primary action
+   * in LIGHT mode turned it gold. It is the twin of the dark-mode bug fixed
+   * earlier and was missed because only the dark pair was checked. The resting
+   * gradient beside it runs violet into cyan, so hover was not deepening the
+   * button, it was changing its hue entirely.
+   *
+   * It now darkens along its own ramp: the accent's own hover violet into a
+   * deeper cyan ink. White clears AA on both ends (6.01:1 on the cyan before
+   * darkening, more after).
+   */
+  --wx-accent-gradient-hover: linear-gradient(135deg, #4a16b8 0%, #0a5f5a 100%);
 }
 
 /* ---------------------------------------------------------------------------

@@ -318,7 +318,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={() => setDrawerOpen(true)}
               aria-label="Open menu"
               aria-expanded={drawerOpen}
-              className="border-line text-muted hover:border-accent hover:text-accent grid size-10 place-items-center rounded-full border transition-colors duration-200 lg:hidden"
+              /* `size-11` is the 44px tap floor. It was `size-10`, and it now
+                 sits beside a ThemeToggle and a TextSizeMenu that are both 44px,
+                 so it was the odd one out as well as under the floor. The border
+                 is gone with every other border in the app; the neomorphic
+                 material carries the shape. */
+              className="wx-neo-raised-sm wx-neo-press text-muted hover:text-accent grid size-11 place-items-center rounded-full transition-colors duration-200 lg:hidden"
             >
               <Menu size={18} aria-hidden />
             </button>
@@ -352,7 +357,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               rail's `p-3`, so the rail, the bar and the work all line up on one
               gutter. It was `px-4 sm:px-6 lg:px-8`, which left the content
               sitting inboard of the bar above it at every breakpoint. */}
-          <div className="w-full px-3 py-4 pb-24 sm:py-5 lg:pb-5">{children}</div>
+          {/* The bottom clearance is TIED TO THE BAR, not a guess. `pb-24` was
+              a flat 96px against a bar of about 56px plus the safe-area inset —
+              fine at the default text size, but the bar is sized in rem and
+              grows with the text-size control, so at Large it could creep past
+              96px and sit on top of the last card. This cannot drift apart. */}
+          <div className="w-full px-3 py-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:py-5 lg:pb-5">
+            {children}
+          </div>
         </main>
       </div>
 
@@ -392,7 +404,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               /* `bg-bg` lives here now that `AppSidebar` paints nothing of its
                  own. The drawer slides over live content, so unlike the rail it
                  has to be fully opaque. */
-              className="bg-bg fixed inset-y-0 left-0 z-50 w-[min(300px,86vw)] shadow-lg lg:hidden"
+              /* rem, not px, so the drawer widens with the text-size setting
+                 instead of clipping bigger labels at a fixed 300px. */
+              className="bg-bg fixed inset-y-0 left-0 z-50 w-[min(18.75rem,86vw)] shadow-lg lg:hidden"
             >
               {sidebar('drawer')}
             </m.aside>

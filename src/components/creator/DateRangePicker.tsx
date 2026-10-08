@@ -177,7 +177,7 @@ export function DateRangePicker({
         aria-haspopup="dialog"
         aria-expanded={open}
         className={cn(
-          'wx-neo-raised-sm wx-neo-press border-line-interactive! text-muted hover:text-accent inline-flex min-h-8 shrink-0 items-center gap-2 rounded-md px-2.5 text-[0.8125rem] font-medium',
+          'wx-neo-raised-sm wx-neo-press border-line-interactive! text-muted hover:text-accent inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md px-2.5 text-[0.8125rem] font-medium sm:min-h-8',
           open && 'text-accent'
         )}
       >
@@ -207,7 +207,7 @@ export function DateRangePicker({
                   aria-label="Earlier months"
                   disabled={!canBack}
                   onClick={() => setLeftMonth((m) => shiftMonthKey(m, -1))}
-                  className="text-muted hover:text-accent grid size-7 shrink-0 place-items-center rounded-md disabled:opacity-30"
+                  className="text-muted hover:text-accent grid size-11 shrink-0 place-items-center rounded-md disabled:opacity-30"
                 >
                   <ChevronLeft size={16} aria-hidden />
                 </button>
@@ -229,7 +229,7 @@ export function DateRangePicker({
                   aria-label="Later months"
                   disabled={!canFwd}
                   onClick={() => setLeftMonth((m) => shiftMonthKey(m, 1))}
-                  className="text-muted hover:text-accent grid size-7 shrink-0 place-items-center rounded-md disabled:opacity-30"
+                  className="text-muted hover:text-accent grid size-11 shrink-0 place-items-center rounded-md disabled:opacity-30"
                 >
                   <ChevronRight size={16} aria-hidden />
                 </button>
@@ -261,7 +261,7 @@ export function DateRangePicker({
                     onClick={() => choosePreset(p.key)}
                     aria-pressed={preset === p.key}
                     className={cn(
-                      'hover:text-accent min-h-8 rounded-md px-2 text-[0.75rem] font-medium',
+                      'hover:text-accent min-h-11 rounded-md px-2 text-[0.75rem] font-medium sm:min-h-8',
                       preset === p.key
                         ? 'wx-neo-pressed text-accent border-accent border'
                         : 'wx-neo-raised-sm wx-neo-press text-muted'
@@ -328,7 +328,7 @@ function Month({
               aria-pressed={isEnd}
               aria-label={dayLabel(day)}
               className={cn(
-                'wx-numeric grid h-8 place-items-center rounded-sm text-[0.75rem] transition-colors',
+                'wx-numeric grid h-11 place-items-center rounded-sm text-[0.75rem] transition-colors sm:h-8',
                 outside && 'text-faint cursor-not-allowed opacity-40',
                 !outside && !inRange && 'text-muted hover:bg-surface-2 hover:text-accent',
                 /* The middle of a range is a wash, the ends are solid: the shape

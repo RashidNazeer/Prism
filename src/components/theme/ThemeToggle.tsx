@@ -26,10 +26,13 @@ export function ThemeToggle({ className }: { className?: string }) {
       aria-label={`${LABELS[mode]}. Click to change.`}
       title={LABELS[mode]}
       className={cn(
-        'relative grid size-10 place-items-center overflow-hidden rounded-full',
-        'border border-line bg-surface-1/60 text-muted backdrop-blur-sm',
-        'transition-colors duration-200 ease-brand',
-        'hover:border-line-interactive hover:text-accent',
+        /* Same material, size and shape as the text-size trigger and the menu
+           button it sits beside: a 44px neomorphic circle. It used to be a
+           translucent bordered pill, so three controls on one row were drawn
+           three different ways. No border, per the borderless material. */
+        'relative grid size-11 place-items-center overflow-hidden rounded-full',
+        'wx-neo-raised-sm wx-neo-press text-muted',
+        'ease-brand hover:text-accent transition-colors duration-200',
         className
       )}
     >

@@ -27,21 +27,27 @@ const button = cva(
         // the inset shadow; only the fill is held.
         primary:
           'wx-neo-raised-sm wx-neo-press bg-accent! text-on-accent hover:bg-accent-hover! active:bg-accent-hover! disabled:shadow-none',
-        // border-line-interactive! replaces the utility's faint hairline:
-        // a shadow-only edge fails WCAG 1.4.11 and vanishes under forced-colors,
-        // so the 1px boundary must itself clear 3:1.
-        secondary:
-          'wx-neo-raised-sm wx-neo-press border-line-interactive! hover:text-accent disabled:shadow-none',
+        // NO BORDER. Rashid, 2026-10-08: no border lines anywhere, buttons
+        // included, shadows only. The 3:1 boundary this used to carry is
+        // restored for the one case where it is actually load-bearing — the
+        // `forced-colors` block in global.css, where the OS discards shadows and
+        // a shadow-only button would otherwise be an invisible rectangle.
+        secondary: 'wx-neo-raised-sm wx-neo-press hover:text-accent disabled:shadow-none',
         // Flat at rest so a row of ghost actions does not read as a row of
         // buttons; it still sinks on press so a tap is acknowledged.
         ghost: 'text-muted hover:bg-surface-2 hover:text-accent active:wx-neo-pressed',
         link: 'text-accent underline-offset-4 hover:underline',
       },
+      // PILLS, AT EVERY SIZE. The brand kit: "Buttons, tags and chart bars are
+      // full pills." These were rounded-lg / xl / xl / 2xl, so a button's shape
+      // changed with its size and no two sizes agreed — the asymmetry Rashid
+      // asked about. `rounded-full` is one shape for all four, and it matches
+      // the round icon buttons beside them in the top bar.
       size: {
-        sm: 'h-9 rounded-lg px-3.5 text-[0.8125rem]',
-        md: 'h-[44px] rounded-xl px-5 text-sm',
-        lg: 'h-13 rounded-xl px-7 text-[0.9375rem]',
-        xl: 'h-15 rounded-2xl px-9 text-base font-semibold',
+        sm: 'h-9 pointer-coarse:h-11 rounded-full px-4 text-[0.8125rem]',
+        md: 'h-11 rounded-full px-5 text-sm',
+        lg: 'h-13 rounded-full px-7 text-[0.9375rem]',
+        xl: 'h-15 rounded-full px-9 text-base font-semibold',
       },
     },
     defaultVariants: { variant: 'primary', size: 'md' },

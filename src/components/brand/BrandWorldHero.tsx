@@ -123,15 +123,21 @@ export function BrandWorldHero({
         <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
           <span
             className="absolute -top-40 -right-28 h-[26rem] w-[26rem] rounded-full border"
-            style={{ borderColor: 'color-mix(in srgb, var(--wx-brand-hero-text) 16%, transparent)' }}
+            style={{
+              borderColor: 'color-mix(in srgb, var(--wx-brand-hero-text) 16%, transparent)',
+            }}
           />
           <span
             className="absolute -top-24 -right-12 h-[18rem] w-[18rem] rounded-full border"
-            style={{ borderColor: 'color-mix(in srgb, var(--wx-brand-hero-text) 10%, transparent)' }}
+            style={{
+              borderColor: 'color-mix(in srgb, var(--wx-brand-hero-text) 10%, transparent)',
+            }}
           />
           <span
             className="absolute -bottom-36 -left-24 h-[16rem] w-[16rem] rounded-full"
-            style={{ background: 'color-mix(in srgb, var(--wx-brand-hero-text) 6%, transparent)' }}
+            style={{
+              background: 'color-mix(in srgb, var(--wx-brand-hero-text) 6%, transparent)',
+            }}
           />
         </div>
       )}
@@ -158,7 +164,7 @@ export function BrandWorldHero({
           ) : null}
         </div>
 
-        <h2 className="font-display mt-4 text-[clamp(2rem,5.2vw,3.6rem)] leading-[0.98] font-semibold tracking-[-0.035em]">
+        <h2 className="font-brand mt-4 text-[clamp(2rem,5.2vw,3.6rem)] leading-[0.98] font-semibold tracking-[-0.035em]">
           Create with {brand.name}.
         </h2>
 

@@ -766,7 +766,7 @@ function MoneyCard({
           <span
             key={line.amount}
             className={cn(
-              'wx-numeric font-display text-[1.625rem] leading-none font-bold',
+              'wx-numeric font-brand text-[1.625rem] leading-none font-bold',
               tone === 'due' ? 'text-stage-due' : 'text-stage-paid'
             )}
           >

@@ -53,10 +53,14 @@ export function TextSizeMenu({ className }: { className?: string }) {
         aria-label="Text size"
         title="Text size"
         className={cn(
-          'border-line bg-surface-1/60 text-muted ease-brand grid size-10 place-items-center',
-          'rounded-full border backdrop-blur-sm transition-colors duration-200',
-          'hover:border-line-interactive hover:text-accent',
-          open && 'border-accent text-accent'
+          /* Matches ThemeToggle and the menu button exactly: a 44px neomorphic
+             circle, no border, no backdrop blur. The three sit on one row and
+             were drawn three different ways. Open reads as PRESSED now, which
+             is what the material says "this control is active" with, rather
+             than as a border colour the material no longer has. */
+          'wx-neo-raised-sm wx-neo-press text-muted ease-brand grid size-11 place-items-center',
+          'hover:text-accent rounded-full transition-colors duration-200',
+          open && 'wx-neo-pressed text-accent'
         )}
       >
         <Type size={16} strokeWidth={2} aria-hidden />
@@ -66,7 +70,9 @@ export function TextSizeMenu({ className }: { className?: string }) {
         <div
           role="menu"
           aria-label="Text size"
-          className="border-line bg-surface-1 absolute top-full right-0 z-50 mt-2 w-44 rounded-lg border p-1 shadow-lg"
+          /* A raised card like every other popover, not a bordered box with a
+             drop shadow under it. */
+          className="wx-neo-raised absolute top-full right-0 z-50 mt-2 w-44 rounded-xl p-1"
         >
           {UI_SCALES.map((s) => {
             const active = s.value === scale;
@@ -81,9 +87,11 @@ export function TextSizeMenu({ className }: { className?: string }) {
                   setOpen(false);
                 }}
                 className={cn(
-                  'ease-brand flex min-h-9 w-full items-center gap-2 rounded-md px-2.5 text-left',
+                  'ease-brand flex min-h-11 w-full items-center gap-2 rounded-md px-2.5 text-left',
                   'transition-colors duration-150',
-                  active ? 'bg-accent-soft text-accent font-semibold' : 'text-muted hover:bg-surface-2 hover:text-text'
+                  active
+                    ? 'bg-accent-soft text-accent font-semibold'
+                    : 'text-muted hover:bg-surface-2 hover:text-text'
                 )}
               >
                 {/* Each option is drawn at the size it sets, so the choice is

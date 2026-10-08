@@ -4,26 +4,69 @@
 /* ============================================================================
    Type, for signed-in screens only.
 
-   Two variable faces, SELF-HOSTED from /public/fonts, never fetched from a
-   third party: Inter for the interface and Sora for display figures and
-   headings, which is the pairing the approved design uses. Together the latin
-   subsets are 59 KB, and the latin-ext files are only pulled if an accented
-   character actually appears.
+   PRISM type, SELF-HOSTED from /public/fonts, never fetched from a third
+   party (the brand kit's own `@import` of Google Fonts is deliberately NOT
+   copied):
+
+     Caprasimo  display. One weight (400). Wordmark, headlines, big numbers,
+                and ONLY at 24px (1.5rem) and up. Utility: `font-brand`.
+     Figtree    interface. One variable file covering 400 to 600 (the kit's
+                three weights): 20 KB latin against about 60 KB for three
+                statics. Utilities: `font-sans`, and `font-display` (which
+                now means "the interface face at heading weight").
 
    Declaring a face costs nothing. A browser downloads it the first time
    something on screen is set in it, which is why these are safe to declare
    here and scope to `.wx-app` below: the public landing page never asks for
    them, so its measured payload is unchanged.
    ============================================================================ */
-/* INTER, NOT INSTRUMENT SANS, SINCE 2026-08-15. Rashid asked for the design's
-   own body face, and the design pairs Sora headings with Inter body. Sora was
-   already ours, so this is the half that was missing.
-
-   IT COSTS 36 KB MORE on the signed-in bundle: Inter's latin subset is 47 KB
-   against Instrument Sans' 11 KB, because it is a variable face carrying the
-   whole 400 to 700 axis. Worth saying out loud rather than discovering later.
-   It is cached after the first signed-in page, and the PUBLIC landing page
-   still downloads nothing, because these are scoped to `.wx-app` below. */
+@font-face {
+  font-family: 'Caprasimo';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/caprasimo-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Caprasimo';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/caprasimo-latin-ext.woff2') format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/figtree-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/figtree-latin-ext.woff2') format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+/* INTER IS KEPT ON PURPOSE, for one reason: the vendored Paid Collabs app
+   (src/vendor/wurxbase, not ours to edit) names 'Inter' in about a dozen
+   font-family declarations. Without the face those controls would silently fall
+   back to the system font. Nothing of ours uses it. Drop these two blocks and
+   the two inter-*.woff2 files when that app is re-skinned (Phase 6). */
 @font-face {
   font-family: 'Inter';
   font-style: normal;
@@ -45,37 +88,32 @@
     U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
     U+2C60-2C7F, U+A720-A7FF;
 }
-@font-face {
-  font-family: 'Sora';
-  font-style: normal;
-  font-weight: 400 700;
-  font-display: swap;
-  src: url('/fonts/sora-latin.woff2') format('woff2');
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
-    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Sora';
-  font-style: normal;
-  font-weight: 400 700;
-  font-display: swap;
-  src: url('/fonts/sora-latin-ext.woff2') format('woff2');
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
-    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
-    U+2C60-2C7F, U+A720-A7FF;
+
+/* The kit's type scale, converted to rem against the browser's 16px (the
+   unit the kit's px were drawn at): caption 13px = 0.8125rem, body 15px =
+   0.9375rem, lead 18px = 1.125rem, h3 24px = 1.5rem, h2 30px = 1.875rem,
+   h1 48px = 3rem, display 96px = 6rem. Because they are rem they follow the
+   root size `ui-scale.ts` sets, so the person using the app can still resize
+   them. Defined here, not in tokens.css (another process owns that file).
+   Utilities: text-caption, text-body, text-lead, text-h3, text-h2, text-h1,
+   text-display. */
+:root {
+  --wx-font-brand: 'Caprasimo', Georgia, 'Times New Roman', serif;
+  --wx-tracking-brand: -0.015em;
+  --wx-lh-body: 1.55;
 }
 
 /* The shell every signed-in screen sits in. Overriding the tokens HERE rather
-   than in tokens.css is what keeps the two faces off the public page. */
+   than in tokens.css is what keeps the faces off the public page. */
 .wx-app {
   --wx-font-sans:
-    'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
-    Arial, sans-serif;
-  --wx-font-display:
-    'Sora', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
+  /* "Display" in the existing utilities (font-display) is used at every size
+     from 0.6875rem up, and the kit allows Caprasimo only from 1.5rem. So the
+     old utility now resolves to Figtree; Caprasimo is the explicit `font-brand`
+     utility, applied where the size is 1.5rem or more. */
+  --wx-font-display: var(--wx-font-sans);
 
   font-family: var(--wx-font-sans);
 }
@@ -131,7 +169,18 @@
 
   --font-sans: var(--wx-font-sans);
   --font-display: var(--wx-font-display);
+  --font-brand: var(--wx-font-brand);
   --font-mono: var(--wx-font-mono);
+
+  /* PRISM scale, see the conversion note above `.wx-app`. */
+  --text-caption: 0.8125rem;
+  --text-body: 0.9375rem;
+  --text-body--line-height: var(--wx-lh-body);
+  --text-lead: 1.125rem;
+  --text-h3: 1.5rem;
+  --text-h2: 1.875rem;
+  --text-h1: 3rem;
+  --text-display: 6rem;
 
   --radius-sm: var(--wx-radius-sm);
   --radius-md: var(--wx-radius-md);
@@ -204,10 +253,18 @@
   h3,
   h4 {
     font-family: var(--wx-font-display);
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: -0.025em;
     line-height: 1.08;
     text-wrap: balance;
+  }
+
+  /* Caprasimo, the PRISM display face. One weight, -0.015em tracking, and only
+     for type of 1.5rem (24px) and up. Below that, use the interface face. The
+     tracking-* and text-* utilities still win over these defaults. */
+  .font-brand {
+    font-weight: 400;
+    letter-spacing: var(--wx-tracking-brand);
   }
 
   /* Tabular figures for columns of numbers, leaderboards, data tables, where
@@ -433,30 +490,41 @@
  * disagreeing light and a soft interface stops reading as a material and
  * starts reading as blur.
  *
- * THE HAIRLINE RIDES WITH THE SHADOW, ALWAYS. A control whose only boundary is
- * a shadow fails WCAG 1.4.11, which asks 3:1 of a non-text boundary, and under
- * `forced-colors` shadows are dropped entirely so a shadow-only control simply
- * disappears. These utilities bake the border in rather than leaving each
- * caller to remember it.
+ * NO BORDERS. SHADOW ONLY. Rashid, 2026-10-08: "Get rid of the border lines
+ * completely even in buttons and just rely on shadows and neomorphic effect in
+ * the whole app." That is the whole point of the material, and the hairline was
+ * fighting it on every surface.
+ *
+ * THE ONE PLACE THE BORDER COMES BACK is `forced-colors`, at the bottom of this
+ * block. Windows High Contrast DISCARDS box-shadow outright, so a shadow-only
+ * button there is not a subtle button, it is an invisible one — a blank page
+ * with text floating on it. The border is restored for those users only, where
+ * the neomorphism they have asked the OS to remove is not on screen anyway.
+ * Nobody using the product normally sees a line; nobody relying on High
+ * Contrast loses the control.
  *
  * OFFSETS IN rem, so the material scales with the text-size control like
  * everything else.
  */
+/*
+ * THE BLUR IS ROUGHLY DOUBLE THE OFFSET, following the kit, whose own card
+ * shadow is `0 12px 32px`. The old 0.375rem/0.875rem was nearly 1:2 and read as
+ * a rim rather than as light falling off an edge — which is most of what made
+ * the surfaces look outlined even before the hairline is counted.
+ */
 @utility wx-neo-raised {
   background: var(--wx-surface-1);
-  border: 1px solid var(--wx-hairline);
   box-shadow:
-    -0.375rem -0.375rem 0.875rem var(--wx-neo-light),
-    0.375rem 0.375rem 0.875rem var(--wx-neo-dark);
+    -0.5rem -0.5rem 1.5rem var(--wx-neo-light),
+    0.5rem 0.5rem 1.5rem var(--wx-neo-dark);
 }
 
 /* The small sibling: buttons, chips, icon wells. */
 @utility wx-neo-raised-sm {
   background: var(--wx-surface-1);
-  border: 1px solid var(--wx-hairline);
   box-shadow:
-    -0.1875rem -0.1875rem 0.4375rem var(--wx-neo-light),
-    0.1875rem 0.1875rem 0.4375rem var(--wx-neo-dark);
+    -0.25rem -0.25rem 0.75rem var(--wx-neo-light),
+    0.25rem 0.25rem 0.75rem var(--wx-neo-dark);
 }
 
 /* Things that RECEIVE: inputs, search, progress tracks, chart wells. */
@@ -487,6 +555,32 @@
     box-shadow:
       inset 0.1875rem 0.1875rem 0.375rem var(--wx-neo-dark),
       inset -0.125rem -0.125rem 0.3125rem var(--wx-neo-light);
+  }
+}
+
+/*
+ * THE SAFETY NET FOR THE BORDERLESS MATERIAL.
+ *
+ * Windows High Contrast does not dim a box-shadow, it DISCARDS it. With the
+ * hairline gone, every card, button, input and chip in the product would be an
+ * invisible rectangle there: a blank page with text floating on it, no way to
+ * tell a button from a paragraph.
+ *
+ * `forced-colors` also replaces our palette with the user's own, so these use
+ * the system keywords rather than our tokens — `ButtonBorder` for things you
+ * press and `CanvasText` for surfaces — which is the only way to honour the
+ * colours they have chosen. Nobody using the product normally sees any of this;
+ * the neomorphism they have asked the OS to strip is not on screen for them
+ * anyway, so nothing is lost by giving them an edge instead.
+ */
+@media (forced-colors: active) {
+  .wx-neo-raised,
+  .wx-neo-inset {
+    border: 1px solid CanvasText;
+  }
+  .wx-neo-raised-sm,
+  .wx-neo-pressed {
+    border: 1px solid ButtonBorder;
   }
 }
 

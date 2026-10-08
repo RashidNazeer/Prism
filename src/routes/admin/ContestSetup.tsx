@@ -209,7 +209,11 @@ const TABS: { value: ContestTab; label: string; icon: typeof Trophy }[] = [
 ];
 
 const isTab = (v: string | null): v is ContestTab =>
-  v === 'details' || v === 'rewards' || v === 'visibility' || v === 'settings' || v === 'summary';
+  v === 'details' ||
+  v === 'rewards' ||
+  v === 'visibility' ||
+  v === 'settings' ||
+  v === 'summary';
 
 export function ContestSetup() {
   const { id: brandId, contestId } = useParams<{ id: string; contestId: string }>();
@@ -554,7 +558,7 @@ export function ContestSetup() {
                 level under that. Size and weight are unchanged, so nothing
                 about it reads smaller. */}
             <div className="mt-1 flex flex-wrap items-center gap-2.5">
-              <h2 className="font-display text-text truncate text-[1.625rem] leading-tight font-bold">
+              <h2 className="font-brand text-text truncate text-[1.625rem] leading-tight font-bold">
                 {isNew ? 'New contest' : form.name || 'Contest'}
               </h2>
               {/*
@@ -975,7 +979,8 @@ export function ContestSetup() {
 
               {/* ---------------------------------------------------- money -- */}
               <Card
-                step={4} title="Only Wurx sees this"
+                step={4}
+                title="Only Wurx sees this"
                 note="No creator can read anything in this box. It is not hidden by a filter, it is in a table they cannot reach."
               >
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -1015,7 +1020,6 @@ export function ContestSetup() {
                   )}
                 </Field>
               </Card>
-
             </form>
 
             {/*
@@ -1073,7 +1077,11 @@ export function ContestSetup() {
 
             {/* -------------------------------------------------- settings -- */}
             {tab === 'settings' ? (
-              <form id="contest-status-form" onSubmit={onSubmit} className="flex flex-col gap-4">
+              <form
+                id="contest-status-form"
+                onSubmit={onSubmit}
+                className="flex flex-col gap-4"
+              >
                 {/* ------------------------------------------------- live yet -- */}
                 <Card title="Is it running">
                   <Field label="Status">
@@ -1208,7 +1216,10 @@ function CloseContest({
     return (
       <p className="text-muted max-w-prose text-[0.8125rem] leading-relaxed">
         This contest is closed. Rewards already earned can still be paid from{' '}
-        <Link to="/admin/contests/rewards" className="text-accent font-semibold hover:underline">
+        <Link
+          to="/admin/contests/rewards"
+          className="text-accent font-semibold hover:underline"
+        >
           Contest rewards
         </Link>
         .
@@ -1253,8 +1264,8 @@ function CloseContest({
       {owed.data && owed.data.count > 0 ? (
         <p className="bg-stage-due-soft text-stage-due mt-3 rounded-xl px-3.5 py-2.5 text-[0.8125rem] leading-relaxed font-medium">
           {money(owed.data.amount, currency)} is still owed across {owed.data.count} reward
-          {owed.data.count === 1 ? '' : 's'}. Closing does not cancel it, and you can still pay it
-          from Contest rewards afterwards.
+          {owed.data.count === 1 ? '' : 's'}. Closing does not cancel it, and you can still pay
+          it from Contest rewards afterwards.
         </p>
       ) : null}
 

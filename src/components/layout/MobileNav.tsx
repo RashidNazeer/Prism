@@ -150,14 +150,21 @@ export function MobileNav({ items, className }: { items: NavItem[]; className?: 
                 className={cn(
                   /* 44px floor is a real physical minimum for a thumb, which is
                      why it is the one sanctioned px value in the codebase. */
-                  'relative z-20 flex min-h-[56px] flex-col items-center justify-center gap-1 px-1 py-2 transition-colors',
+                  /* `min-h-14` (3.5rem) rather than a fixed 56px, so the row
+                     grows with the text-size control like everything else and
+                     still clears the 44px tap floor at every setting. */
+                  'relative z-20 flex min-h-14 flex-col items-center justify-center gap-1 px-1 py-2 transition-colors',
                   active ? 'text-accent' : 'text-muted'
                 )}
               >
                 {Icon ? <Icon size={20} aria-hidden strokeWidth={active ? 2.4 : 2} /> : null}
                 {/* The label is always drawn, never revealed on hover: a phone
                     has no hover, and an icon alone is a guess. */}
-                <span className="w-full truncate text-center text-[0.625rem] leading-none font-semibold">
+                {/* 0.6875rem, up from 0.625rem. At the default root that is 11px
+                    rather than 10px — still small, but 10px on a phone is below
+                    what most people can read at arm's length, and this is the
+                    only label telling you where a tab goes. */}
+                <span className="w-full truncate text-center text-[0.6875rem] leading-none font-semibold">
                   {item.label}
                 </span>
               </NavLink>

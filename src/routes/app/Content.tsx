@@ -263,7 +263,7 @@ export function Content() {
                       onChange={(e) => setSearch(e.target.value)}
                       placeholder="Search by ad code, brand or offer"
                       aria-label="Search your content"
-                      className="wx-neo-inset border-line-interactive placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[0.8125rem] focus:outline-none"
+                      className="wx-neo-inset border-line-interactive placeholder:text-faint hover:border-accent/60 focus:border-accent h-11 w-full rounded-xl border pr-3 pl-9 text-[0.8125rem] focus:outline-none sm:h-9"
                     />
                   </div>
                   <label className="sr-only" htmlFor="content-brand">
@@ -274,7 +274,7 @@ export function Content() {
                     name="brand"
                     value={brandId}
                     onChange={(e) => setBrandId(e.target.value)}
-                    className="h-9 basis-44 text-[0.8125rem]"
+                    className="h-11 basis-44 text-[0.8125rem] sm:h-9"
                   >
                     <option value="">All brands</option>
                     {brands.map((b) => (
@@ -401,7 +401,7 @@ function Summary({
             Videos posted
           </p>
           <p className="flex flex-wrap items-baseline gap-2.5">
-            <span className="font-display text-[clamp(2.375rem,7vw,3.625rem)] leading-none font-semibold tracking-[-0.03em]">
+            <span className="font-brand text-[clamp(2.375rem,7vw,3.625rem)] leading-none font-semibold tracking-[-0.03em]">
               {counts.all}
             </span>
             <span className="text-muted text-[0.8125rem]">
