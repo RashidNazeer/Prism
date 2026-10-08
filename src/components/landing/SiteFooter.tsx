@@ -1,5 +1,5 @@
-import { Link } from 'react-router';
-import { WurxMark } from '@/components/brand/WurxMark';
+﻿import { Link } from 'react-router';
+import { PrismMark } from '@/components/brand/PrismMark';
 import { Container } from '@/components/layout/Section';
 import { focusApplyForm } from '@/lib/focus-apply';
 
@@ -9,7 +9,7 @@ export function SiteFooter() {
       <Container>
         <div className="flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-xs">
-            <WurxMark />
+            <PrismMark />
             <p className="mt-4 text-sm leading-relaxed text-faint">
               The creator platform behind Wurx Media&rsquo;s TikTok Shop brands.
             </p>

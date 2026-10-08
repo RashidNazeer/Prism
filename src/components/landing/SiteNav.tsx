@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { AnimatePresence, m } from 'motion/react';
 import { Link, useNavigate } from 'react-router';
 import { Menu, X } from 'lucide-react';
-import { WurxMark } from '@/components/brand/WurxMark';
+import { PrismMark } from '@/components/brand/PrismMark';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Container } from '@/components/layout/Section';
@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 /**
  * THE MENU IS PAGES NOW, NOT SECTIONS OF ONE PAGE.
  *
- * It was `#how`, `#platform`, `#brands` — anchors into the marketing page,
+ * It was `#how`, `#platform`, `#brands` â€” anchors into the marketing page,
  * which is precisely what TikTok rejected the app for on 2026-09-15: "Your
  * website URL cannot be a landing page or login page. You must have an
  * externally facing fully developed website." Anchors also did nothing at all
@@ -38,7 +38,7 @@ export function SiteNav() {
    *
    * `focusApplyForm` scrolls to the form in the home page's hero and returns
    * false when that form is not on the page. It now IS on six other pages'
-   * headers — so on About or the FAQ, "Apply" silently did nothing. Where there
+   * headers â€” so on About or the FAQ, "Apply" silently did nothing. Where there
    * is no form, go to the one at /apply.
    */
   const apply = () => {
@@ -85,7 +85,7 @@ export function SiteNav() {
       <Container>
         <nav className="flex h-16 items-center justify-between gap-4">
           <Link to="/" className="shrink-0" aria-label="WurxMediaHub home">
-            <WurxMark />
+            <PrismMark />
           </Link>
 
           {/* `lg`, not `md`: six page links and the sign-in cluster do not fit

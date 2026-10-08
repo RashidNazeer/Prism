@@ -1,6 +1,6 @@
-import { m } from 'motion/react';
+﻿import { m } from 'motion/react';
 import { ArrowRight, BarChart3, Store, Trophy } from 'lucide-react';
-import { WurxMark } from '@/components/brand/WurxMark';
+import { PrismMark } from '@/components/brand/PrismMark';
 import { OnboardingOverlay, Stagger } from '@/components/creator/OnboardingOverlay';
 
 /**
@@ -49,7 +49,7 @@ export function WelcomeMoment({
 
         <div className="relative">
           <Stagger>
-            <WurxMark height={30} />
+            <PrismMark height={30} />
           </Stagger>
 
           <Stagger delay={0.12}>

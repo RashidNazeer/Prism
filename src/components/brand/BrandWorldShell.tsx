@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { m } from 'motion/react';
 import { ArrowLeft, LogOut, Menu, X } from 'lucide-react';
-import { WurxMark } from '@/components/brand/WurxMark';
+import { PrismMark } from '@/components/brand/PrismMark';
 import { useTheme } from '@/components/theme/theme-context';
 import {
   contrast,
@@ -138,7 +138,7 @@ export function BrandWorldShell({
           className="flex items-center gap-2 rounded-md px-1.5 py-1 opacity-80 transition hover:opacity-100 focus-visible:outline-2"
           style={{ color: 'var(--wx-brand-rail-text)' }}
         >
-          <WurxMark className="h-5 w-auto" />
+          <PrismMark className="h-5 w-auto" />
         </Link>
         <Link
           to="/app"

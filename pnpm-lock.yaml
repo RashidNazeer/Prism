@@ -47,6 +47,12 @@ importers:
       tailwind-merge:
         specifier: ^3.6.0
         version: 3.6.0
+      three:
+        specifier: 0.134.0
+        version: 0.134.0
+      vanta:
+        specifier: ^0.5.24
+        version: 0.5.24
       xlsx:
         specifier: ^0.18.5
         version: 0.18.5
@@ -1055,6 +1061,9 @@ packages:
   text-segmentation@1.0.3:
     resolution: {integrity: sha512-iOiPUo/BGnZ6+54OsWxZidGCsdU8YbE4PSpdPinp7DeMtUJNJBoJ/ouUSTJjHkh1KntHaltHl/gDs2FC4i5+Nw==}
 
+  three@0.134.0:
+    resolution: {integrity: sha512-LbBerg7GaSPjYtTOnu41AMp7tV6efUNR3p4Wk5NzkSsNTBuA5mDGOfwwZL1jhhVMLx9V20HolIUo0+U3AXehbg==}
+
   tinyglobby@0.2.17:
     resolution: {integrity: sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g==}
     engines: {node: '>=12.0.0'}
@@ -1078,6 +1087,9 @@ packages:
 
   utrie@1.0.2:
     resolution: {integrity: sha512-1MLa5ouZiOmQzUbjbu9VmjLzn1QLXBhwpUa7kdLUQK+KQ5KA9I1vk5U4YHe/X2Ch7PYnJfWuWT+VbuxbGwljhw==}
+
+  vanta@0.5.24:
+    resolution: {integrity: sha512-fvieEbHy1ZS23zrcX+topzqAgA4Uct1enngOEWLFBgs9TtOf6RDFOYatH7KSVdrABzQDMCQ5myQy+nTSZZwLzg==}
 
   vite@8.1.5:
     resolution: {integrity: sha512-7ULLwsCdYx/nRyrpiEwvqb5TFHrMVZyBt+rg/OAXT7rgj/z+DtTDyKFeLAdDkubDVDKD8jOsndmy7m55XcfUsw==}
@@ -1859,6 +1871,8 @@ snapshots:
       utrie: 1.0.2
     optional: true
 
+  three@0.134.0: {}
+
   tinyglobby@0.2.17:
     dependencies:
       fdir: 6.5.0(picomatch@4.0.5)
@@ -1878,6 +1892,8 @@ snapshots:
     dependencies:
       base64-arraybuffer: 1.0.2
     optional: true
+
+  vanta@0.5.24: {}
 
   vite@8.1.5(@types/node@24.13.3)(jiti@2.7.0):
     dependencies:

@@ -28,6 +28,7 @@ export function PrismMark({
   className,
   height = 26,
   markOnly = false,
+  onDark: forceDark,
 }: {
   className?: string;
   /** Rendered height in px. */
@@ -37,9 +38,18 @@ export function PrismMark({
    * the full wordmark would be clipped to something unreadable.
    */
   markOnly?: boolean;
+  /**
+   * Force the white artwork regardless of theme.
+   *
+   * For the places whose ground is dark whatever the theme is — the sign-in
+   * page sits on an Ink halo even in light mode, and the ink wordmark on it
+   * renders as an invisible word beside a floating spectrum stripe, which is
+   * how this was found.
+   */
+  onDark?: boolean;
 }) {
   const { resolved } = useTheme();
-  const onDark = resolved === 'dark';
+  const onDark = forceDark ?? resolved === 'dark';
 
   const file = markOnly
     ? onDark

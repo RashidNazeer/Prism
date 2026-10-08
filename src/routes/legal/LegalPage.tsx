@@ -1,6 +1,6 @@
-import { useEffect, type ReactNode } from 'react';
+﻿import { useEffect, type ReactNode } from 'react';
 import { Link } from 'react-router';
-import { WurxMark } from '@/components/brand/WurxMark';
+import { PrismMark } from '@/components/brand/PrismMark';
 import { Container } from '@/components/layout/Section';
 import { SiteFooter } from '@/components/landing/SiteFooter';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
@@ -37,7 +37,7 @@ export function LegalPage({
   /*
    * ITS OWN TAB TITLE. All three of these pages wore index.html's title, so a
    * reviewer with Terms, Privacy and Connecting TikTok open saw three
-   * identical tabs — which reads as one page pretending to be three, the exact
+   * identical tabs â€” which reads as one page pretending to be three, the exact
    * impression the 2026-09-15 rejection was about.
    */
   useEffect(() => {
@@ -62,7 +62,7 @@ export function LegalPage({
               className="rounded-md focus-visible:outline-2"
               aria-label="Wurx Media Hub, back to the home page"
             >
-              <WurxMark className="h-6 w-auto" />
+              <PrismMark className="h-6 w-auto" />
             </Link>
             <div className="flex items-center gap-2">
               <Link
