@@ -251,7 +251,7 @@ export function AllOffers() {
             onChange={(e) => setSearchDraft(e.target.value)}
             placeholder="Search offers"
             aria-label="Search offers by title"
-            className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-10 w-full rounded-md border pr-3 pl-9 text-[0.875rem] focus:outline-none"
+            className="wx-neo-inset placeholder:text-faint focus-visible:ring-accent/50 h-10 w-full rounded-md pr-3 pl-9 text-[0.875rem] focus:outline-none focus-visible:ring-2"
           />
         </form>
 
@@ -351,14 +351,14 @@ export function AllOffers() {
             ))}
           </ul>
         ) : isError ? (
-          <div className="border-line bg-surface-1 rounded-md border px-6 py-14 text-center shadow-md">
+          <div className="bg-surface-1 rounded-md px-6 py-14 text-center shadow-md">
             <p className="font-semibold">That list would not load</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
-          <div className="border-line bg-surface-1 rounded-md border px-6 py-16 text-center shadow-md">
+          <div className="bg-surface-1 rounded-md px-6 py-16 text-center shadow-md">
             <Tag size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">No offers match that</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -477,15 +477,14 @@ function OfferCard({
   return (
     <div
       className={cn(
-        'wx-glass flex overflow-hidden rounded-md transition-[border-color,box-shadow,transform] duration-300',
+        'wx-neo-raised flex overflow-hidden rounded-md transition-[border-color,box-shadow,transform] duration-300',
         // Stacked normally. Open and wide, the details sit BESIDE the card, so
         // the thing that was clicked stays the size and shape it was clicked at.
         open ? 'flex-col lg:flex-row lg:items-stretch' : 'flex-col',
         // Lifted only while it is closed. A panel that rises as it opens reads
         // as the page moving rather than as a drawer.
-        !open &&
-          'hover:border-line-strong hover:-translate-y-0.5 hover:shadow-[var(--wx-glass-glow)]',
-        open && 'border-accent/60 shadow-[var(--wx-glass-glow)]',
+        !open && 'hover:-translate-y-0.5 hover:shadow-[var(--wx-glass-glow)]',
+        open && 'shadow-[var(--wx-glass-glow)]',
         offer.status === 'inactive' && 'opacity-75'
       )}
     >
@@ -506,7 +505,7 @@ function OfferCard({
             an anchor inside a button is invalid HTML that browsers resolve by
             guessing. The brand is a real link inside the panel instead.
           */}
-          <span className="bg-surface-2 border-line text-text min-w-0 truncate rounded-full border px-2.5 py-1 font-mono text-[0.625rem] font-semibold tracking-[0.12em] uppercase">
+          <span className="wx-neo-raised-sm text-text min-w-0 truncate rounded-full px-2.5 py-1 font-mono text-[0.625rem] font-semibold tracking-[0.12em] uppercase">
             {offer.brand?.name ?? 'Unknown brand'}
           </span>
 
@@ -720,7 +719,7 @@ function OfferCard({
                   {faces.map((f) => (
                     <li
                       key={f.id}
-                      className="border-line bg-surface-2 flex min-w-0 items-center gap-2 rounded-full border py-1 pr-3 pl-1"
+                      className="wx-neo-raised-sm flex min-w-0 items-center gap-2 rounded-full py-1 pr-3 pl-1"
                     >
                       <CreatorFace
                         src={avatars[f.id]}
@@ -748,7 +747,7 @@ function OfferCard({
               {offer.brand ? (
                 <Link
                   to={`/admin/brands/${offer.brand.id}`}
-                  className="border-line-interactive bg-surface-1 text-text hover:border-accent hover:text-accent inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[0.8125rem] font-medium transition-colors"
+                  className="wx-neo-raised-sm wx-neo-press text-text hover:text-accent inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium transition-colors"
                 >
                   <Tag size={14} aria-hidden />
                   Open {offer.brand.name}

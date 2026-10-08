@@ -1103,9 +1103,9 @@ function InReview({
             <span
               className={`relative grid size-8 place-items-center rounded-full text-[0.6875rem] ${
                 s.state === 'done'
-                  ? 'border-accent bg-accent text-on-accent'
+                  ? 'bg-accent text-on-accent'
                   : s.state === 'now'
-                    ? 'border-accent bg-accent-soft text-accent'
+                    ? 'bg-accent-soft text-accent'
                     : 'wx-neo-raised-sm text-faint'
               }`}
             >

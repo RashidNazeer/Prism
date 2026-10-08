@@ -79,7 +79,7 @@ export function Brands() {
             >
               <Link
                 to={`/app/brands/${brand.slug}`}
-                className="wx-neo-raised hover:border-accent flex h-full flex-col rounded-xl p-5 transition-colors duration-200"
+                className="wx-neo-raised flex h-full flex-col rounded-xl p-5 transition-colors duration-200"
               >
                 <div className="flex items-center gap-3">
                   <span className="wx-neo-inset grid size-[44px] shrink-0 place-items-center overflow-hidden rounded-full">

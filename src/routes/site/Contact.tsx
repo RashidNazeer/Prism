@@ -23,7 +23,7 @@ export function Contact() {
       <Section>
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           <Reveal>
-            <div className="border-line bg-surface-1 h-full rounded-2xl border p-7">
+            <div className="wx-neo-raised h-full rounded-2xl p-7">
               <h2 className="text-lg font-bold">Email</h2>
               <p className="text-muted mt-3 leading-relaxed">
                 The fastest way to reach us, for creators and brands alike.
@@ -38,7 +38,7 @@ export function Contact() {
           </Reveal>
 
           <Reveal delay={0.06}>
-            <div className="border-line bg-surface-1 h-full rounded-2xl border p-7">
+            <div className="wx-neo-raised h-full rounded-2xl p-7">
               <h2 className="text-lg font-bold">Phone</h2>
               <p className="text-muted mt-3 leading-relaxed">
                 Office hours, United States Mountain Time.
@@ -53,7 +53,7 @@ export function Contact() {
           </Reveal>
 
           <Reveal delay={0.12}>
-            <div className="border-line bg-surface-1 h-full rounded-2xl border p-7">
+            <div className="wx-neo-raised h-full rounded-2xl p-7">
               <h2 className="text-lg font-bold">Post</h2>
               <p className="text-muted mt-3 leading-relaxed">{COMPANY.legalName}</p>
               <p className="text-muted mt-1 leading-relaxed">{COMPANY.address}</p>
@@ -71,24 +71,24 @@ export function Contact() {
                 <div>
                   <dt className="text-text font-semibold">Creators</dt>
                   <dd className="mt-1">
-                    Questions about an application, a deal, a payment or your figures. If you have
-                    not applied yet, use the form rather than email — it reaches the people hiring
-                    this month.
+                    Questions about an application, a deal, a payment or your figures. If you
+                    have not applied yet, use the form rather than email — it reaches the people
+                    hiring this month.
                   </dd>
                 </div>
                 <div>
                   <dt className="text-text font-semibold">Brands</dt>
                   <dd className="mt-1">
-                    TikTok Shop growth, creator programmes and what a campaign with us looks like.
-                    The agency side is at wurxmedia.com, and the same team answers both.
+                    TikTok Shop growth, creator programmes and what a campaign with us looks
+                    like. The agency side is at wurxmedia.com, and the same team answers both.
                   </dd>
                 </div>
                 <div>
                   <dt className="text-text font-semibold">Privacy and account deletion</dt>
                   <dd className="mt-1">
-                    Ask us what we hold about you, correct it, or have it deleted. We answer these
-                    ourselves rather than through a form, and the Privacy page explains what we
-                    keep and for how long.
+                    Ask us what we hold about you, correct it, or have it deleted. We answer
+                    these ourselves rather than through a form, and the Privacy page explains
+                    what we keep and for how long.
                   </dd>
                 </div>
                 <div>
@@ -106,25 +106,25 @@ export function Contact() {
                 What to expect
               </h2>
               <p className="text-muted mt-6 leading-relaxed">
-                We are a small team and we answer email ourselves, usually within one working day.
-                Wurx Media works United States hours, so a message sent overnight is read the next
-                morning Mountain Time.
+                We are a small team and we answer email ourselves, usually within one working
+                day. Wurx Media works United States hours, so a message sent overnight is read
+                the next morning Mountain Time.
               </p>
               <p className="text-muted mt-4 leading-relaxed">
-                If your question is about a specific video, deal or payment, tell us the brand and
-                the month. Our records are kept per brand and per month, so naming both gets you a
-                precise answer instead of a request for more detail.
+                If your question is about a specific video, deal or payment, tell us the brand
+                and the month. Our records are kept per brand and per month, so naming both gets
+                you a precise answer instead of a request for more detail.
               </p>
             </div>
           </div>
         </Reveal>
 
         <Reveal>
-          <div className="border-line bg-surface-1 mt-12 rounded-2xl border p-7">
+          <div className="wx-neo-raised mt-12 rounded-2xl p-7">
             <h2 className="text-lg font-bold">Want to create for our brands?</h2>
             <p className="text-muted mt-3 max-w-2xl leading-relaxed">
-              Apply rather than email, and your application reaches the people hiring this month.
-              It takes a minute and costs nothing.
+              Apply rather than email, and your application reaches the people hiring this
+              month. It takes a minute and costs nothing.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <ButtonLink to="/apply" size="lg">

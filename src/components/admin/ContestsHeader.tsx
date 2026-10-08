@@ -93,7 +93,9 @@ export function ContestsHeader({ subtitle }: { subtitle?: string }) {
       </div>
 
       {subtitle ? (
-        <p className="text-muted mt-2.5 max-w-prose text-[0.8125rem] leading-relaxed">{subtitle}</p>
+        <p className="text-muted mt-2.5 max-w-prose text-[0.8125rem] leading-relaxed">
+          {subtitle}
+        </p>
       ) : null}
 
       {picking ? <BrandPicker onClose={() => setPicking(false)} /> : null}
@@ -154,7 +156,7 @@ function BrandPicker({ onClose }: { onClose: () => void }) {
       />
       <div
         ref={panelRef}
-        className="border-line bg-surface-1 relative max-h-[100dvh] w-full max-w-md overflow-y-auto rounded-t-xl border p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-xl"
+        className="bg-surface-1 relative max-h-[100dvh] w-full max-w-md overflow-y-auto rounded-t-xl p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-xl"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -196,7 +198,7 @@ function BrandPicker({ onClose }: { onClose: () => void }) {
                     onClose();
                     navigate(`/admin/brands/${b.id}/contests/new`);
                   }}
-                  className="border-line bg-surface-2 hover:border-accent hover:text-accent ease-brand flex min-h-12 w-full items-center rounded-lg border px-4 text-left text-[0.875rem] font-medium transition-colors"
+                  className="wx-neo-raised-sm wx-neo-press hover:text-accent ease-brand flex min-h-12 w-full items-center rounded-lg px-4 text-left text-[0.875rem] font-medium transition-colors"
                 >
                   {b.name}
                 </button>

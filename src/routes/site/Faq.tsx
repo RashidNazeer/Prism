@@ -23,7 +23,7 @@ export function Faq() {
         <dl className="grid max-w-4xl gap-5">
           {FAQ.map((item, i) => (
             <Reveal key={item.q} delay={i * 0.04}>
-              <div className="border-line bg-surface-1 rounded-2xl border p-7">
+              <div className="wx-neo-raised rounded-2xl p-7">
                 <dt className="text-lg font-bold">{item.q}</dt>
                 <dd className="text-muted mt-3 leading-relaxed">{item.a}</dd>
               </div>

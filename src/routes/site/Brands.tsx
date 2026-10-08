@@ -43,9 +43,9 @@ export function Brands() {
             One connected team, six services
           </h2>
           <p className="text-muted mt-5 max-w-2xl leading-relaxed">
-            A content agency delivers videos and the job ends at delivery. Wurx runs whole TikTok
-            Shops, which is why a creator budget is an input into a system here rather than a
-            production quota.
+            A content agency delivers videos and the job ends at delivery. Wurx runs whole
+            TikTok Shops, which is why a creator budget is an input into a system here rather
+            than a production quota.
           </p>
         </Reveal>
         <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -67,7 +67,7 @@ export function Brands() {
         <dl className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {RESULTS.map((r, i) => (
             <Reveal key={r.label} delay={i * 0.05}>
-              <div className="border-line bg-surface-1 h-full rounded-2xl border p-7">
+              <div className="wx-neo-raised h-full rounded-2xl p-7">
                 <dt className="font-display wx-numeric text-3xl font-extrabold tracking-[-0.02em]">
                   {r.value}
                 </dt>
@@ -88,14 +88,14 @@ export function Brands() {
             The agency behind the hub
           </h2>
           <p className="text-muted mt-5 max-w-2xl leading-relaxed">
-            {COMPANY.tagline} The hub is not sold separately: it is how we run the creator side of
-            the brands we work with, and how those creators see what their work produced.
+            {COMPANY.tagline} The hub is not sold separately: it is how we run the creator side
+            of the brands we work with, and how those creators see what their work produced.
           </p>
         </Reveal>
         <dl className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {COMPANY_FACTS.map((f, i) => (
             <Reveal key={f.label} delay={i * 0.06}>
-              <div className="border-line bg-surface-1 rounded-2xl border p-7">
+              <div className="wx-neo-raised rounded-2xl p-7">
                 <dt className="font-display wx-numeric text-3xl font-extrabold tracking-[-0.02em]">
                   {f.value}
                 </dt>

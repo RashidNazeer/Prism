@@ -41,7 +41,7 @@ export function FilterBar({
       className={cn(
         // `wx-tap-row` keeps every control in here thumb-sized on a phone and
         // lets it be dense above `sm`. See global.css for why it is px.
-        'wx-glass-panel wx-tap-row flex flex-wrap items-center gap-2 rounded-lg p-2',
+        'wx-neo-raised wx-tap-row flex flex-wrap items-center gap-2 rounded-lg p-2',
         className
       )}
     >
@@ -85,7 +85,7 @@ export function FilterTabs({
       role="tablist"
       aria-label={label}
       className={cn(
-        'bg-surface-2 border-line flex max-w-full flex-wrap items-center gap-0.5 rounded-md border p-1',
+        'wx-neo-inset flex max-w-full flex-wrap items-center gap-0.5 rounded-md p-1',
         className
       )}
     >

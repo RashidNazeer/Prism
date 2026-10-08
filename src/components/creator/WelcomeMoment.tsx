@@ -53,7 +53,7 @@ export function WelcomeMoment({
           </Stagger>
 
           <Stagger delay={0.12}>
-            <p className="border-accent/40 bg-accent-soft text-accent mt-7 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-[0.6875rem] tracking-[0.16em] uppercase">
+            <p className="bg-accent-soft text-accent mt-7 inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-mono text-[0.6875rem] tracking-[0.16em] uppercase">
               <m.span
                 aria-hidden
                 animate={{ opacity: [1, 0.35, 1] }}
@@ -111,7 +111,7 @@ export function WelcomeMoment({
             disabled={busy}
             whileHover={{ scale: 1.015 }}
             whileTap={{ scale: 0.985 }}
-            className="group border-accent text-accent ease-brand hover:text-on-accent relative flex h-13 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border bg-transparent text-[0.9375rem] font-semibold transition-colors duration-300 disabled:opacity-60"
+            className="wx-neo-raised-sm wx-neo-press group text-accent ease-brand hover:text-on-accent relative flex h-13 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl text-[0.9375rem] font-semibold transition-colors duration-300 disabled:opacity-60"
           >
             <span
               aria-hidden

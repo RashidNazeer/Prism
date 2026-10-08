@@ -42,7 +42,7 @@ export function Activity() {
     <>
       <div
         className={cn(
-          'border-line bg-surface-1 overflow-hidden rounded-xl border shadow-md transition-opacity duration-200',
+          'bg-surface-1 overflow-hidden rounded-xl shadow-md transition-opacity duration-200',
           isPlaceholderData && 'opacity-60'
         )}
       >
@@ -148,7 +148,9 @@ function Row({ entry }: { entry: AuditEntry }) {
         })}
       </span>
       {note ? (
-        <p className="text-muted w-full text-[0.8125rem] leading-relaxed">&ldquo;{note}&rdquo;</p>
+        <p className="text-muted w-full text-[0.8125rem] leading-relaxed">
+          &ldquo;{note}&rdquo;
+        </p>
       ) : null}
     </div>
   );

@@ -127,7 +127,7 @@ export function BrandLookField({
               value={hex}
               disabled={disabled}
               onChange={(e) => onChange(e.target.value)}
-              className="border-line h-[2.75rem] w-[3.25rem] shrink-0 cursor-pointer rounded-md border bg-transparent p-1"
+              className="wx-neo-inset h-[2.75rem] w-[3.25rem] shrink-0 cursor-pointer rounded-md p-1"
             />
             <Input
               id={id}
@@ -211,7 +211,7 @@ function AreaEditor({
   const setStops = (next: string[]) => onChange({ ...(value as BrandArea), stops: next });
 
   return (
-    <div className={cn('border-line rounded-xl border', on && 'bg-surface-2/40')}>
+    <div className={cn('wx-neo-inset rounded-xl', on && 'bg-surface-2/40')}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 p-3">
         <button
           type="button"
@@ -237,8 +237,15 @@ function AreaEditor({
         {/* The current colours, readable at a glance whether it is open or not. */}
         <span
           aria-hidden
-          className="border-line h-7 w-16 shrink-0 rounded-md border"
-          style={{ background: on ? stopsToCss(light.map((s) => s.used), 90) : undefined }}
+          className="wx-neo-raised-sm h-7 w-16 shrink-0 rounded-md"
+          style={{
+            background: on
+              ? stopsToCss(
+                  light.map((s) => s.used),
+                  90
+                )
+              : undefined,
+          }}
         >
           {on ? null : (
             <span className="text-faint grid h-full place-items-center text-[0.625rem] font-semibold">
@@ -290,9 +297,11 @@ function AreaEditor({
                     value={stop}
                     disabled={disabled}
                     onChange={(e) =>
-                      setStops(stops.map((s, j) => (j === i ? e.target.value.toLowerCase() : s)))
+                      setStops(
+                        stops.map((s, j) => (j === i ? e.target.value.toLowerCase() : s))
+                      )
                     }
-                    className="border-line h-[2.25rem] w-[2.75rem] cursor-pointer rounded-md border bg-transparent p-1"
+                    className="wx-neo-inset h-[2.25rem] w-[2.75rem] cursor-pointer rounded-md p-1"
                   />
                   {stops.length > 1 ? (
                     <button
@@ -314,7 +323,9 @@ function AreaEditor({
                 type="button"
                 /* The new colour starts as a copy of the last one, so adding a
                    stop cannot change the look until somebody moves it. */
-                onClick={() => setStops([...stops, stops[stops.length - 1] ?? DEFAULT_BRAND_COLOR])}
+                onClick={() =>
+                  setStops([...stops, stops[stops.length - 1] ?? DEFAULT_BRAND_COLOR])
+                }
                 disabled={disabled}
                 className="border-line text-muted hover:border-accent hover:text-accent flex h-[2.25rem] items-center gap-1.5 rounded-md border border-dashed px-2.5 text-[0.75rem] font-semibold transition-colors"
               >
@@ -370,10 +381,10 @@ function AreaEditor({
                     onClick={() => onChange({ ...(value as BrandArea), tone })}
                     aria-pressed={active}
                     className={cn(
-                      'rounded-full border px-2.5 py-1 text-[0.75rem] font-semibold transition-colors',
+                      'rounded-full px-2.5 py-1 text-[0.75rem] font-semibold transition-colors',
                       active
-                        ? 'border-accent bg-accent-soft text-accent'
-                        : 'border-line text-muted hover:text-text'
+                        ? 'wx-neo-pressed text-accent'
+                        : 'wx-neo-raised-sm text-muted hover:text-text'
                     )}
                   >
                     {label}
@@ -406,7 +417,7 @@ function AreaEditor({
 /** A miniature of the creator's world: rail, hero, a card, a button. */
 function Preview({ title, p }: { title: string; p: BrandPalette }) {
   return (
-    <div className="border-line overflow-hidden rounded-xl border">
+    <div className="wx-neo-raised overflow-hidden rounded-xl">
       <div
         className="text-[0.5625rem] font-bold tracking-[0.12em] uppercase"
         style={{ background: p.surface2, color: p.muted, padding: '0.375rem 0.625rem' }}
@@ -423,8 +434,14 @@ function Preview({ title, p }: { title: string; p: BrandPalette }) {
             style={{ background: p.railText, opacity: 0.85 }}
           />
           <div className="mt-2 h-4 rounded" style={{ background: p.railActive }} aria-hidden />
-          <div className="mt-1.5 h-1.5 w-2/3 rounded-full" style={{ background: p.railMuted }} />
-          <div className="mt-1.5 h-1.5 w-1/2 rounded-full" style={{ background: p.railMuted }} />
+          <div
+            className="mt-1.5 h-1.5 w-2/3 rounded-full"
+            style={{ background: p.railMuted }}
+          />
+          <div
+            className="mt-1.5 h-1.5 w-1/2 rounded-full"
+            style={{ background: p.railMuted }}
+          />
         </div>
         <div className="min-w-0 flex-1">
           <div

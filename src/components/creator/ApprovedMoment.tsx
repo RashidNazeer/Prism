@@ -104,7 +104,7 @@ export function ApprovedMoment({
               disabled={busy}
               whileHover={{ scale: 1.015 }}
               whileTap={{ scale: 0.985 }}
-              className="group border-accent text-accent ease-brand hover:text-on-accent relative flex h-13 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border bg-transparent text-[0.9375rem] font-semibold transition-colors duration-300 disabled:opacity-60"
+              className="wx-neo-raised-sm wx-neo-press group text-accent ease-brand hover:text-on-accent relative flex h-13 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl text-[0.9375rem] font-semibold transition-colors duration-300 disabled:opacity-60"
             >
               <span
                 aria-hidden

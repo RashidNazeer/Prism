@@ -134,7 +134,7 @@ export function RowActions({
           e.stopPropagation();
           setOpen((v) => !v);
         }}
-        className="border-line-interactive text-muted hover:border-accent hover:text-accent pointer-events-auto grid size-10 place-items-center rounded-lg border transition-colors duration-200"
+        className="wx-neo-raised-sm wx-neo-press text-muted hover:text-accent pointer-events-auto grid size-10 place-items-center rounded-lg transition-colors duration-200"
       >
         <MoreVertical size={16} aria-hidden />
       </button>
@@ -146,7 +146,7 @@ export function RowActions({
               role="menu"
               aria-label={`Actions for @${handle}`}
               style={{ top: pos.top, right: pos.right }}
-              className="border-line bg-surface-1 fixed z-50 w-56 overflow-hidden rounded-xl border py-1 shadow-lg"
+              className="bg-surface-1 fixed z-50 w-56 overflow-hidden rounded-xl py-1 shadow-lg"
             >
               <a
                 role="menuitem"

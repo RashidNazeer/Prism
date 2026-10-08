@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { claimTikTokSignup, forgetIdentity, pendingIdentity, startTikTokSignup, type PendingIdentity } from '@/lib/signup/tiktokSignup';
+import {
+  claimTikTokSignup,
+  forgetIdentity,
+  pendingIdentity,
+  startTikTokSignup,
+  type PendingIdentity,
+} from '@/lib/signup/tiktokSignup';
 import { useNavigate, Link } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, m } from 'motion/react';
@@ -231,13 +237,13 @@ export function ApplyForm() {
       // Warm the lazily loaded validator and database client as soon as anyone
       // touches the form, so the first submit never waits on a download.
       onFocus={() => void warm()}
-      className="rounded-2xl border border-line bg-surface-1 p-6 shadow-lg sm:p-7"
+      className="bg-surface-1 rounded-2xl p-6 shadow-lg sm:p-7"
     >
       <div className="flex items-center gap-4">
-        <h2 className="font-mono text-[0.6875rem] font-medium tracking-[0.16em] text-muted uppercase">
+        <h2 className="text-muted font-mono text-[0.6875rem] font-medium tracking-[0.16em] uppercase">
           {alreadySignedIn ? 'Finish your application' : 'Apply to join'}
         </h2>
-        <span className="h-px flex-1 bg-line" aria-hidden />
+        <span className="bg-line h-px flex-1" aria-hidden />
       </div>
 
       <FormError>{formError}</FormError>
@@ -262,34 +268,32 @@ export function ApplyForm() {
           >
             {tiktokBusy ? 'Opening TikTok…' : 'Continue with TikTok'}
           </Button>
-          <p className="mt-2 text-center text-[0.75rem] leading-relaxed text-muted">
-            We only read your handle and your public video stats — never your
-            password, and we can never post anything.
+          <p className="text-muted mt-2 text-center text-[0.75rem] leading-relaxed">
+            We only read your handle and your public video stats — never your password, and we
+            can never post anything.
           </p>
           {tiktokError ? (
-            <p role="alert" className="mt-2 text-center text-[0.75rem] text-danger">
+            <p role="alert" className="text-danger mt-2 text-center text-[0.75rem]">
               {tiktokError}
             </p>
           ) : null}
           <div className="mt-5 flex items-center gap-3" aria-hidden>
-            <span className="h-px flex-1 bg-line" />
-            <span className="font-mono text-[0.625rem] tracking-[0.16em] text-muted uppercase">
+            <span className="bg-line h-px flex-1" />
+            <span className="text-muted font-mono text-[0.625rem] tracking-[0.16em] uppercase">
               or fill it in yourself
             </span>
-            <span className="h-px flex-1 bg-line" />
+            <span className="bg-line h-px flex-1" />
           </div>
         </div>
       )}
 
       {verified ? (
-        <div
-          className="mt-6 rounded-xl border border-success/40 bg-success-soft p-3"
-          data-wx="tiktok-verified"
-        >
+        <div className="bg-success-soft mt-6 rounded-xl p-3" data-wx="tiktok-verified">
           <p className="text-[0.875rem] font-semibold">
-            Thanks — TikTok confirmed {verified.handle ? `@${verified.handle}` : 'your account'}.
+            Thanks — TikTok confirmed {verified.handle ? `@${verified.handle}` : 'your account'}
+            .
           </p>
-          <p className="mt-1 text-[0.8125rem] leading-relaxed text-muted">
+          <p className="text-muted mt-1 text-[0.8125rem] leading-relaxed">
             {verified.handle
               ? 'Your handle is filled in below. Now choose an email and a password.'
               : 'We could not read a handle yet — add one below and we will confirm it once you post.'}
@@ -461,7 +465,7 @@ export function ApplyForm() {
             {alreadySignedIn ? 'Submit application' : 'Apply, takes 60 seconds'}
             <ArrowRight
               size={17}
-              className="transition-transform duration-200 ease-brand group-hover:translate-x-0.5"
+              className="ease-brand transition-transform duration-200 group-hover:translate-x-0.5"
               aria-hidden
             />
           </>
@@ -469,9 +473,9 @@ export function ApplyForm() {
       </Button>
 
       {!alreadySignedIn && (
-        <p className="mt-4 text-center text-[0.8125rem] text-faint">
+        <p className="text-faint mt-4 text-center text-[0.8125rem]">
           Already applied?{' '}
-          <Link to="/login" className="font-medium text-accent hover:underline">
+          <Link to="/login" className="text-accent font-medium hover:underline">
             Sign in
           </Link>
         </p>

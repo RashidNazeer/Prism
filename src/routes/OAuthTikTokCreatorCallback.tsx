@@ -43,7 +43,8 @@ export function OAuthTikTokCreatorCallback() {
      * spend as its own. Reading them from there is the normal path; the query
      * string is only a fallback for a page that somehow loaded without it.
      */
-    const stash = (window as unknown as { __wxOAuthReturn?: Record<string, string | null> }).__wxOAuthReturn;
+    const stash = (window as unknown as { __wxOAuthReturn?: Record<string, string | null> })
+      .__wxOAuthReturn;
     const params = new URLSearchParams(window.location.search);
     const code = stash?.code ?? params.get('code');
     const state = stash?.state ?? params.get('state');
@@ -114,7 +115,7 @@ export function OAuthTikTokCreatorCallback() {
 
   return (
     <div className="bg-bg text-text flex min-h-dvh items-center justify-center p-6">
-      <div className="border-line bg-surface-1 w-full max-w-md rounded-xl border p-8 text-center shadow-md">
+      <div className="bg-surface-1 w-full max-w-md rounded-xl p-8 text-center shadow-md">
         <PrismMark className="mx-auto h-6 w-auto" />
 
         {phase === 'working' ? (
@@ -142,7 +143,7 @@ export function OAuthTikTokCreatorCallback() {
             <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">{message}</p>
             <Link
               to="/app/profile"
-              className="border-line hover:border-accent hover:text-accent mt-6 inline-flex rounded-md border px-4 py-2 text-[0.875rem] font-semibold transition-colors"
+              className="wx-neo-raised-sm wx-neo-press hover:text-accent mt-6 inline-flex rounded-md px-4 py-2 text-[0.875rem] font-semibold transition-colors"
             >
               Back to your profile
             </Link>

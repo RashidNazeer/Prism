@@ -175,14 +175,14 @@ export function Brands() {
             ))}
           </ul>
         ) : isError ? (
-          <div className="border-line bg-surface-1 rounded-xl border px-6 py-14 text-center shadow-md">
+          <div className="bg-surface-1 rounded-xl px-6 py-14 text-center shadow-md">
             <p className="font-semibold">That list would not load</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
-          <div className="border-line bg-surface-1 rounded-xl border px-6 py-16 text-center shadow-md">
+          <div className="bg-surface-1 rounded-xl px-6 py-16 text-center shadow-md">
             <Store size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">
               {filters.search || filters.active !== 'active' || filters.budget !== 'any'
@@ -209,7 +209,7 @@ export function Brands() {
                 <li key={brand.id}>
                   <Link
                     to={`/admin/brands/${brand.id}`}
-                    className="border-line bg-surface-1 hover:border-accent flex h-full flex-col rounded-xl border p-5 shadow-md transition-colors duration-200"
+                    className="bg-surface-1 flex h-full flex-col rounded-xl p-5 shadow-md transition-colors duration-200"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <span className="min-w-0">

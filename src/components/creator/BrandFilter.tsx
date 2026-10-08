@@ -50,7 +50,7 @@ export function BrandFilter({
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value || null)}
         className={cn(
-          'wx-neo-raised-sm wx-neo-press border-line-interactive! text-muted hover:text-accent min-h-8 w-full appearance-none rounded-md py-1 pr-8 pl-2.5 text-[0.8125rem] font-medium',
+          'wx-neo-raised-sm wx-neo-press text-muted hover:text-accent min-h-8 w-full appearance-none rounded-md py-1 pr-8 pl-2.5 text-[0.8125rem] font-medium',
           value && 'text-accent'
         )}
       >

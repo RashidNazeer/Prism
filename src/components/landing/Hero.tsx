@@ -1,4 +1,4 @@
-﻿import { m } from 'motion/react';
+import { m } from 'motion/react';
 import { Container } from '@/components/layout/Section';
 import { HaloBackdrop } from '@/components/auth/HaloBackdrop';
 import { ButtonLink } from '@/components/ui/Button';

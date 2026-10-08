@@ -109,10 +109,14 @@ export function ContestVideoDecision({
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="What needs changing? The creator reads this."
-          className="border-line-interactive bg-surface-1 placeholder:text-faint focus:border-accent w-full rounded-xl border px-3 py-2 text-[0.8125rem] focus:outline-none"
+          className="wx-neo-inset placeholder:text-faint focus-visible:ring-accent/50 w-full rounded-xl px-3 py-2 text-[0.8125rem] focus:outline-none focus-visible:ring-2"
         />
         <div className="mt-2 flex flex-wrap gap-2">
-          <Button size="sm" disabled={review.isPending} onClick={() => decide('needs_another_take')}>
+          <Button
+            size="sm"
+            disabled={review.isPending}
+            onClick={() => decide('needs_another_take')}
+          >
             {review.isPending ? 'Sending...' : 'Send back'}
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setAsking(false)}>

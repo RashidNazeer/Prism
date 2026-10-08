@@ -168,7 +168,7 @@ export function Offers() {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search offers or brands"
                 aria-label="Search offers or brands"
-                className="wx-neo-inset border-line-interactive placeholder:text-faint hover:border-accent/60 focus:border-accent h-11 w-full rounded-xl border pr-3 pl-9 text-[0.8125rem] focus:outline-none sm:h-9"
+                className="wx-neo-inset placeholder:text-faint focus-visible:ring-accent/50 h-11 w-full rounded-xl pr-3 pl-9 text-[0.8125rem] focus:outline-none focus-visible:ring-2 sm:h-9"
               />
             </div>
 

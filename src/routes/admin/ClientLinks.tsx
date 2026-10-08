@@ -1,5 +1,14 @@
 import { useMemo, useState } from 'react';
-import { Check, ChevronRight, Copy, ExternalLink, Link2, Plus, RefreshCw, ShieldOff } from 'lucide-react';
+import {
+  Check,
+  ChevronRight,
+  Copy,
+  ExternalLink,
+  Link2,
+  Plus,
+  RefreshCw,
+  ShieldOff,
+} from 'lucide-react';
 import { z } from 'zod';
 import { FilterBar } from '@/components/layout/FilterBar';
 import { Button } from '@/components/ui/Button';
@@ -38,13 +47,32 @@ import {
  * recovered, only replaced, and the panel says so in those words.
  */
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_NAMES = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 const monthLabel = (key: string) => {
   const [y, m] = key.split('-');
   return `${MONTH_NAMES[Number(m) - 1] ?? '?'} ${y}`;
 };
 const dayLabel = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  iso
+    ? new Date(iso).toLocaleDateString(undefined, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+    : '';
 
 const NewLink = z.object({
   label: z.string().trim().min(1, 'Give it a name you will recognise').max(80),
@@ -67,10 +95,17 @@ export function ClientLinks() {
   const [allMonths, setAllMonths] = useState(true);
   const [months, setMonths] = useState<string[]>([]);
   const [days, setDays] = useState(90);
-  const [sections, setSections] = useState({ kpis: true, topVideos: true, creators: true, videos: true });
+  const [sections, setSections] = useState({
+    kpis: true,
+    topVideos: true,
+    creators: true,
+    videos: true,
+  });
   const [expanded, setExpanded] = useState<string | null>(null);
   const [problem, setProblem] = useState('');
-  const [minted, setMinted] = useState<{ url: string; label: string; expires: string } | null>(null);
+  const [minted, setMinted] = useState<{ url: string; label: string; expires: string } | null>(
+    null
+  );
   const [copied, setCopied] = useState(false);
   const [confirming, setConfirming] = useState<string | null>(null);
 
@@ -85,8 +120,9 @@ export function ClientLinks() {
     const q = search.trim().toLowerCase();
     const all = links.data ?? [];
     if (!q) return all;
-    return all.filter((l) =>
-      l.label.toLowerCase().includes(q) || l.brands.some((b) => b.toLowerCase().includes(q))
+    return all.filter(
+      (l) =>
+        l.label.toLowerCase().includes(q) || l.brands.some((b) => b.toLowerCase().includes(q))
     );
   }, [links.data, search]);
 
@@ -131,7 +167,13 @@ export function ClientLinks() {
     <>
       <FilterBar
         action={
-          <Button size="sm" onClick={() => { setOpen((v) => !v); setProblem(''); }}>
+          <Button
+            size="sm"
+            onClick={() => {
+              setOpen((v) => !v);
+              setProblem('');
+            }}
+          >
             <Plus size={15} aria-hidden />
             New link
           </Button>
@@ -148,14 +190,14 @@ export function ClientLinks() {
 
       {/* the link, the one time it can be seen */}
       {minted && (
-        <div className="border-accent bg-accent-soft mt-4 rounded-xl border p-5">
+        <div className="bg-accent-soft mt-4 rounded-xl p-5">
           <p className="font-bold">Your link is ready.</p>
           <p className="text-muted mt-1 text-[0.875rem]">
-            {minted.label} · works until {minted.expires}. Anyone who has it can read the brands on it.
-            You can copy it again later by opening it in the list.
+            {minted.label} · works until {minted.expires}. Anyone who has it can read the brands
+            on it. You can copy it again later by opening it in the list.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <code className="bg-surface-1 border-line min-w-0 flex-1 truncate rounded-md border px-3 py-2 text-[0.8125rem]">
+            <code className="wx-neo-inset min-w-0 flex-1 truncate rounded-md px-3 py-2 text-[0.8125rem]">
               {minted.url}
             </code>
             <Button
@@ -178,7 +220,7 @@ export function ClientLinks() {
 
       {/* the form */}
       {open && (
-        <div className="border-line bg-surface-1 mt-4 rounded-xl border p-5">
+        <div className="wx-neo-raised mt-4 rounded-xl p-5">
           <div className="grid gap-5 lg:grid-cols-2">
             <div>
               <Label htmlFor="link-label">Who is it for</Label>
@@ -200,14 +242,21 @@ export function ClientLinks() {
                     onClick={() => {
                       const next = toggle(brands, b.brand);
                       setBrands(next);
-                      setMonths((m) => m.filter((x) =>
-                        (scope.data ?? []).filter((s) => next.includes(s.brand)).some((s) => s.months.includes(x))));
+                      setMonths((m) =>
+                        m.filter((x) =>
+                          (scope.data ?? [])
+                            .filter((s) => next.includes(s.brand))
+                            .some((s) => s.months.includes(x))
+                        )
+                      );
                     }}
                   >
                     {b.brand}
                   </Chip>
                 ))}
-                {scope.isLoading && <span className="text-muted text-[0.8125rem]">Loading brands…</span>}
+                {scope.isLoading && (
+                  <span className="text-muted text-[0.8125rem]">Loading brands…</span>
+                )}
               </div>
             </div>
 
@@ -217,7 +266,13 @@ export function ClientLinks() {
                 Every month, or only the ones you pick. The client sees no others.
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
-                <Chip on={allMonths} onClick={() => { setAllMonths(true); setMonths([]); }}>
+                <Chip
+                  on={allMonths}
+                  onClick={() => {
+                    setAllMonths(true);
+                    setMonths([]);
+                  }}
+                >
                   Every month
                 </Chip>
                 <Chip on={!allMonths} onClick={() => setAllMonths(false)}>
@@ -230,7 +285,11 @@ export function ClientLinks() {
                     <span className="text-muted text-[0.8125rem]">Pick a brand first.</span>
                   )}
                   {monthsOnOffer.map((m) => (
-                    <Chip key={m} on={months.includes(m)} onClick={() => setMonths(toggle(months, m))}>
+                    <Chip
+                      key={m}
+                      on={months.includes(m)}
+                      onClick={() => setMonths(toggle(months, m))}
+                    >
                       {monthLabel(m)}
                     </Chip>
                   ))}
@@ -242,16 +301,28 @@ export function ClientLinks() {
                 Ad spend, ROI, what we pay out and any contact details are never shared.
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
-                <Chip on={sections.kpis} onClick={() => setSections((s) => ({ ...s, kpis: !s.kpis }))}>
+                <Chip
+                  on={sections.kpis}
+                  onClick={() => setSections((s) => ({ ...s, kpis: !s.kpis }))}
+                >
                   Top numbers
                 </Chip>
-                <Chip on={sections.topVideos} onClick={() => setSections((s) => ({ ...s, topVideos: !s.topVideos }))}>
+                <Chip
+                  on={sections.topVideos}
+                  onClick={() => setSections((s) => ({ ...s, topVideos: !s.topVideos }))}
+                >
                   Top videos
                 </Chip>
-                <Chip on={sections.creators} onClick={() => setSections((s) => ({ ...s, creators: !s.creators }))}>
+                <Chip
+                  on={sections.creators}
+                  onClick={() => setSections((s) => ({ ...s, creators: !s.creators }))}
+                >
                   Creators
                 </Chip>
-                <Chip on={sections.videos} onClick={() => setSections((s) => ({ ...s, videos: !s.videos }))}>
+                <Chip
+                  on={sections.videos}
+                  onClick={() => setSections((s) => ({ ...s, videos: !s.videos }))}
+                >
                   Their videos
                 </Chip>
               </div>
@@ -274,7 +345,9 @@ export function ClientLinks() {
             </div>
           </div>
 
-          {problem && <p className="text-danger mt-4 text-[0.875rem] font-semibold">{problem}</p>}
+          {problem && (
+            <p className="text-danger mt-4 text-[0.875rem] font-semibold">{problem}</p>
+          )}
 
           <div className="mt-5 flex items-center gap-2">
             <Button onClick={() => void submit()} disabled={create.isPending}>
@@ -292,21 +365,21 @@ export function ClientLinks() {
         {links.isLoading ? (
           <ul className="space-y-2">
             {[0, 1, 2].map((i) => (
-              <li key={i} className="border-line bg-surface-1 rounded-xl border p-5">
+              <li key={i} className="wx-neo-raised rounded-xl p-5">
                 <div className="wx-skeleton h-4 w-48 rounded" />
                 <div className="wx-skeleton mt-3 h-3 w-72 rounded" />
               </li>
             ))}
           </ul>
         ) : links.isError ? (
-          <div className="border-line bg-surface-1 rounded-xl border px-6 py-14 text-center">
+          <div className="wx-neo-raised rounded-xl px-6 py-14 text-center">
             <p className="font-semibold">The links would not load</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem]">
               {(links.error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
-          <div className="border-line bg-surface-1 rounded-xl border px-6 py-16 text-center">
+          <div className="wx-neo-raised rounded-xl px-6 py-16 text-center">
             <Link2 size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">
               {search ? 'No link matches that' : 'No client links yet'}
@@ -320,7 +393,7 @@ export function ClientLinks() {
         ) : (
           <ul className="space-y-2">
             {rows.map((l) => (
-              <li key={l.id} className="border-line bg-surface-1 overflow-hidden rounded-xl border">
+              <li key={l.id} className="wx-neo-raised overflow-hidden rounded-xl">
                 <LinkRow
                   link={l}
                   open={expanded === l.id}
@@ -399,7 +472,12 @@ function LinkRow({
   return (
     <>
       <div className="flex flex-wrap items-start justify-between gap-3 p-5">
-        <button type="button" onClick={onToggle} aria-expanded={open} className="min-w-0 flex-1 text-left">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          className="min-w-0 flex-1 text-left"
+        >
           <span className="flex flex-wrap items-center gap-2">
             <ChevronRight
               size={15}
@@ -409,7 +487,7 @@ function LinkRow({
             <span className="font-bold">{link.label}</span>
             <span
               className={cn(
-                'rounded-full px-2 py-0.5 text-[0.6875rem] font-extrabold uppercase tracking-wider',
+                'rounded-full px-2 py-0.5 text-[0.6875rem] font-extrabold tracking-wider uppercase',
                 link.is_live ? 'bg-success-soft text-success' : 'bg-surface-2 text-muted'
               )}
             >
@@ -421,7 +499,9 @@ function LinkRow({
             {link.months.length === 0 ? 'every month' : link.months.map(monthLabel).join(', ')}
           </span>
           <span className="text-faint mt-1 block text-[0.75rem]">
-            {link.revoked_at ? `Stopped ${dayLabel(link.revoked_at)}` : `Works until ${dayLabel(link.expires_at)}`}
+            {link.revoked_at
+              ? `Stopped ${dayLabel(link.revoked_at)}`
+              : `Works until ${dayLabel(link.expires_at)}`}
             {' · '}
             {link.view_count === 0
               ? 'never opened'
@@ -440,7 +520,12 @@ function LinkRow({
             (confirming ? (
               <>
                 <span className="text-[0.8125rem] font-semibold">Stop it?</span>
-                <Button size="sm" variant="secondary" className="text-danger hover:text-danger" onClick={onRevoke}>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="text-danger hover:text-danger"
+                  onClick={onRevoke}
+                >
                   Yes, stop
                 </Button>
                 <Button size="sm" variant="ghost" onClick={onCancel}>
@@ -463,14 +548,18 @@ function LinkRow({
             <>
               <p className="text-[0.8125rem] font-bold">The link</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <code className="border-line bg-surface-1 min-w-0 flex-1 truncate rounded-md border px-3 py-2 text-[0.8125rem]">
+                <code className="wx-neo-inset min-w-0 flex-1 truncate rounded-md px-3 py-2 text-[0.8125rem]">
                   {url}
                 </code>
                 <Button size="sm" onClick={copy}>
                   {copied ? <Check size={15} aria-hidden /> : <Copy size={15} aria-hidden />}
                   {copied ? 'Copied' : 'Copy'}
                 </Button>
-                <Button size="sm" variant="secondary" onClick={() => window.open(url, '_blank', 'noopener')}>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => window.open(url, '_blank', 'noopener')}
+                >
                   <ExternalLink size={15} aria-hidden />
                   Open
                 </Button>
@@ -480,7 +569,8 @@ function LinkRow({
             <p className="text-[0.8125rem]">
               <span className="font-bold">This link cannot be shown again.</span>{' '}
               <span className="text-muted">
-                It was made before we started keeping a copy. Give it a new address and send that instead.
+                It was made before we started keeping a copy. Give it a new address and send
+                that instead.
               </span>
             </p>
           )}
@@ -488,7 +578,14 @@ function LinkRow({
           {/* what this client can see */}
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Fact label="Brands" value={link.brands.join(', ')} />
-            <Fact label="Months" value={link.months.length === 0 ? 'Every month' : link.months.map(monthLabel).join(', ')} />
+            <Fact
+              label="Months"
+              value={
+                link.months.length === 0
+                  ? 'Every month'
+                  : link.months.map(monthLabel).join(', ')
+              }
+            />
             <Fact label="Sections" value={parts.join(', ') || 'nothing'} />
             <Fact
               label="Made"
@@ -532,9 +629,12 @@ function Opens({ id }: { id: string }) {
             {new Set(rows.map((r) => r.visitor)).size} different reader
             {new Set(rows.map((r) => r.visitor)).size === 1 ? '' : 's'}
           </p>
-          <ul className="border-line bg-surface-1 mt-2 max-h-52 divide-y divide-line overflow-auto rounded-md border">
+          <ul className="wx-neo-raised divide-line mt-2 max-h-52 divide-y overflow-auto rounded-md">
             {rows.map((r, i) => (
-              <li key={i} className="flex items-center justify-between gap-3 px-3 py-2 text-[0.8125rem]">
+              <li
+                key={i}
+                className="flex items-center justify-between gap-3 px-3 py-2 text-[0.8125rem]"
+              >
                 <span>{new Date(r.viewed_at).toLocaleString()}</span>
                 <span className="text-faint font-mono text-[0.75rem]">{r.visitor || '—'}</span>
               </li>
@@ -549,24 +649,31 @@ function Opens({ id }: { id: string }) {
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-faint text-[0.6875rem] font-extrabold uppercase tracking-wider">{label}</p>
+      <p className="text-faint text-[0.6875rem] font-extrabold tracking-wider uppercase">
+        {label}
+      </p>
       <p className="mt-0.5 text-[0.8125rem]">{value}</p>
     </div>
   );
 }
 
-
-function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
+function Chip({
+  on,
+  onClick,
+  children,
+}: {
+  on: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={on}
       className={cn(
-        'rounded-md border px-3 py-1.5 text-[0.8125rem] font-semibold transition-colors',
-        on
-          ? 'border-accent bg-accent text-on-accent'
-          : 'border-line bg-surface-1 hover:bg-surface-2'
+        'rounded-md px-3 py-1.5 text-[0.8125rem] font-semibold transition-colors',
+        on ? 'bg-accent text-on-accent' : 'wx-neo-raised-sm wx-neo-press'
       )}
     >
       {children}

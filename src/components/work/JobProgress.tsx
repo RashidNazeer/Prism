@@ -89,7 +89,7 @@ export function JobProgressBar({
         {showAction ? (
           <Link
             to={addVideoHref!}
-            className="wx-neo-raised-sm wx-neo-press border-line-interactive! text-text hover:text-accent inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[0.78125rem] font-medium"
+            className="wx-neo-raised-sm wx-neo-press text-text hover:text-accent inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[0.78125rem] font-medium"
           >
             <Video size={13} aria-hidden />
             Add a video

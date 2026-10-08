@@ -91,7 +91,7 @@ export function CreatorDetail() {
   if (isError || !creator) {
     return (
       <>
-        <div className="border-line bg-surface-1 max-w-lg rounded-xl border p-8 text-center shadow-md">
+        <div className="bg-surface-1 max-w-lg rounded-xl p-8 text-center shadow-md">
           <p className="font-semibold">No such creator</p>
           <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
             The account may have been closed. Nothing else is affected.
@@ -118,7 +118,7 @@ export function CreatorDetail() {
         <Link
           to="/admin/creators"
           aria-label="Back to all creators"
-          className="border-line text-muted hover:border-accent hover:text-accent grid size-11 shrink-0 place-items-center rounded-lg border transition-colors duration-200 sm:size-8"
+          className="wx-neo-raised-sm wx-neo-press text-muted hover:text-accent grid size-11 shrink-0 place-items-center rounded-lg transition-colors duration-200 sm:size-8"
         >
           <ArrowLeft size={15} aria-hidden />
         </Link>
@@ -155,10 +155,7 @@ export function CreatorDetail() {
           { label: 'Awaiting payment', value: mine?.due ?? 0, text: 'text-stage-due' },
           { label: 'Paid', value: mine?.paid ?? 0, text: 'text-stage-paid' },
         ].map((c) => (
-          <div
-            key={c.label}
-            className="border-line bg-surface-1 rounded-xl border px-5 py-4 shadow-md"
-          >
+          <div key={c.label} className="bg-surface-1 rounded-xl px-5 py-4 shadow-md">
             <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               {c.label}
             </dt>
@@ -215,7 +212,7 @@ function WorkTab({ jobs, loading }: { jobs: CreatorJob[]; loading: boolean }) {
 
   if (jobs.length === 0) {
     return (
-      <div className="border-line bg-surface-1 mt-5 rounded-xl border px-6 py-16 text-center shadow-md">
+      <div className="bg-surface-1 mt-5 rounded-xl px-6 py-16 text-center shadow-md">
         <Video size={26} aria-hidden className="text-faint mx-auto" />
         <p className="mt-4 font-semibold">Nothing taken yet</p>
         <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -234,10 +231,7 @@ function WorkTab({ jobs, loading }: { jobs: CreatorJob[]; loading: boolean }) {
         const standing = standingFor(job.stage_updated_at);
 
         return (
-          <li
-            key={job.id}
-            className="border-line bg-surface-1 rounded-xl border p-4 shadow-md sm:p-5"
-          >
+          <li key={job.id} className="bg-surface-1 rounded-xl p-4 shadow-md sm:p-5">
             <div className="flex flex-wrap items-start justify-between gap-x-5 gap-y-2">
               <div className="min-w-0 flex-1 basis-52">
                 <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
@@ -322,12 +316,12 @@ function HistoryTab({ creatorId }: { creatorId: string }) {
   return (
     <div className="mt-5">
       {(rows ?? []).length === 0 ? (
-        <div className="border-line bg-surface-1 rounded-xl border px-6 py-14 text-center shadow-md">
+        <div className="bg-surface-1 rounded-xl px-6 py-14 text-center shadow-md">
           <History size={26} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">Nothing recorded yet</p>
         </div>
       ) : (
-        <ul className="border-line bg-surface-1 divide-line divide-y rounded-xl border shadow-md">
+        <ul className="bg-surface-1 divide-line divide-y rounded-xl shadow-md">
           {(rows ?? []).map((row) => (
             <li
               key={row.id}
@@ -422,7 +416,7 @@ function AccountTab({
     <div className="mt-5 grid max-w-3xl gap-4">
       <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {facts.map((f) => (
-          <div key={f.label} className="border-line bg-surface-1 rounded-lg border px-5 py-4">
+          <div key={f.label} className="wx-neo-raised rounded-lg px-5 py-4">
             <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               {f.label}
             </dt>

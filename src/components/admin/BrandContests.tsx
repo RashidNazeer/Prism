@@ -80,7 +80,7 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
       {/* ------------------------------------------------------- controls -- */}
       <div className="flex flex-wrap items-center gap-3">
         <div
-          className="border-line flex rounded-full border p-1"
+          className="wx-neo-raised-sm flex rounded-full p-1"
           role="tablist"
           aria-label="Filter contests"
         >
@@ -220,7 +220,7 @@ function ContestRow({ contest, now }: { contest: Contest; now: number }) {
   return (
     <Link
       to={`/admin/brands/${contest.brandId}/contests/${contest.id}`}
-      className="ease-brand border-line bg-surface-1 hover:border-line-strong block rounded-xl border p-5 shadow-md transition-colors"
+      className="ease-brand bg-surface-1 block rounded-xl p-5 shadow-md transition-colors"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
@@ -242,7 +242,9 @@ function ContestRow({ contest, now }: { contest: Contest; now: number }) {
             itself rather than summarised in a sentence on a list row.
           */}
           {contest.description ? (
-            <p className="text-muted mt-1 line-clamp-1 text-[0.8125rem]">{contest.description}</p>
+            <p className="text-muted mt-1 line-clamp-1 text-[0.8125rem]">
+              {contest.description}
+            </p>
           ) : null}
         </div>
 
@@ -267,11 +269,13 @@ function Empty({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="border-line bg-surface-1 flex flex-col items-start gap-3 rounded-xl border p-8 shadow-md">
-      <div className="bg-surface-3 border-line-strong grid size-[44px] place-items-center rounded-lg border">
+    <div className="bg-surface-1 flex flex-col items-start gap-3 rounded-xl p-8 shadow-md">
+      <div className="wx-neo-inset grid size-[44px] place-items-center rounded-lg">
         <Trophy size={19} className="text-muted" aria-hidden />
       </div>
-      <h3 className="font-display text-text text-[1.3125rem] leading-tight font-bold">{title}</h3>
+      <h3 className="font-display text-text text-[1.3125rem] leading-tight font-bold">
+        {title}
+      </h3>
       <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">{body}</p>
       {action}
     </div>

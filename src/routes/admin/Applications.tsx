@@ -161,10 +161,10 @@ export function Applications() {
           aria-pressed={filters.workedWithWurx}
           onClick={() => setFilters({ workedWithWurx: !filters.workedWithWurx })}
           className={cn(
-            'inline-flex h-10 shrink-0 items-center gap-2 rounded-md border px-3 text-[0.8125rem] font-medium transition-colors duration-200',
+            'inline-flex h-10 shrink-0 items-center gap-2 rounded-md px-3 text-[0.8125rem] font-medium transition-colors duration-200',
             filters.workedWithWurx
-              ? 'border-accent bg-accent-soft text-accent'
-              : 'border-line-interactive bg-surface-1 text-muted hover:border-accent hover:text-accent'
+              ? 'wx-neo-pressed text-accent'
+              : 'wx-neo-raised-sm wx-neo-press text-muted hover:text-accent'
           )}
         >
           <Star size={14} aria-hidden />
@@ -190,7 +190,7 @@ export function Applications() {
             onChange={(e) => setSearchDraft(e.target.value)}
             placeholder="Search by handle"
             aria-label="Search by TikTok handle"
-            className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-10 w-full rounded-md border pr-3 pl-9 text-[0.875rem] focus:outline-none"
+            className="wx-neo-inset placeholder:text-faint focus-visible:ring-accent/50 h-10 w-full rounded-md pr-3 pl-9 text-[0.875rem] focus:outline-none focus-visible:ring-2"
           />
         </form>
 
@@ -207,7 +207,7 @@ export function Applications() {
 
       {/* --------------------------------------------------------- bulk bar */}
       {selected.size > 0 ? (
-        <div className="border-accent bg-accent-soft mt-4 flex flex-wrap items-center gap-2.5 rounded-md border px-4 py-3">
+        <div className="bg-accent-soft mt-4 flex flex-wrap items-center gap-2.5 rounded-md px-4 py-3">
           <p className="text-[0.875rem] font-medium">
             <span className="wx-numeric">{selected.size}</span> selected
           </p>
@@ -235,7 +235,12 @@ export function Applications() {
       ) : null}
 
       {/* -------------------------------------------------------------- grid */}
-      <div className={cn('mt-4 transition-opacity duration-200', isPlaceholderData && 'opacity-60')}>
+      <div
+        className={cn(
+          'mt-4 transition-opacity duration-200',
+          isPlaceholderData && 'opacity-60'
+        )}
+      >
         {isLoading ? (
           <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -243,14 +248,14 @@ export function Applications() {
             ))}
           </ul>
         ) : isError ? (
-          <div className="border-line bg-surface-1 rounded-md border px-6 py-14 text-center shadow-md">
+          <div className="bg-surface-1 rounded-md px-6 py-14 text-center shadow-md">
             <p className="font-semibold">That list would not load</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
-          <div className="border-line bg-surface-1 rounded-md border px-6 py-16 text-center shadow-md">
+          <div className="bg-surface-1 rounded-md px-6 py-16 text-center shadow-md">
             <Inbox size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">
               {filtered ? 'Nothing matches those filters' : 'No applications waiting'}
@@ -398,8 +403,8 @@ function ApplicationCard({
   return (
     <li
       className={cn(
-        'wx-glass hover:border-line-strong relative flex flex-col overflow-hidden rounded-md transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-[var(--wx-glass-glow)]',
-        checked && 'border-accent/60 shadow-[var(--wx-glass-glow)]'
+        'wx-neo-raised relative flex flex-col overflow-hidden rounded-md transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-[var(--wx-glass-glow)]',
+        checked && 'shadow-[var(--wx-glass-glow)]'
       )}
     >
       <Link

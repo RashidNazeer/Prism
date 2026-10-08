@@ -136,7 +136,7 @@ export function BrandHub() {
   if (isError || !brand) {
     return (
       <>
-        <div className="border-line bg-surface-1 max-w-lg rounded-xl border p-8 text-center shadow-md">
+        <div className="bg-surface-1 max-w-lg rounded-xl p-8 text-center shadow-md">
           <p className="font-semibold">
             {isError ? 'That brand would not load' : 'No such brand'}
           </p>
@@ -165,7 +165,7 @@ export function BrandHub() {
         <Link
           to="/admin/brands"
           aria-label="Back to all brands"
-          className="border-line text-muted hover:border-accent hover:text-accent grid size-11 shrink-0 place-items-center rounded-lg border transition-colors duration-200 sm:size-8"
+          className="wx-neo-raised-sm wx-neo-press text-muted hover:text-accent grid size-11 shrink-0 place-items-center rounded-lg transition-colors duration-200 sm:size-8"
         >
           <ArrowLeft size={15} aria-hidden />
         </Link>
@@ -242,7 +242,7 @@ export function BrandHub() {
                 <s.icon size={15} aria-hidden />
                 {s.label}
                 {'soon' in s ? (
-                  <span className="border-line text-faint rounded-full border px-1.5 py-0.5 font-mono text-[0.5625rem] tracking-[0.1em] uppercase">
+                  <span className="wx-neo-raised-sm text-faint rounded-full px-1.5 py-0.5 font-mono text-[0.5625rem] tracking-[0.1em] uppercase">
                     {s.soon}
                   </span>
                 ) : null}
@@ -315,7 +315,7 @@ function Overview({ brand }: { brand: Brand }) {
     <div className="mt-6 grid max-w-4xl gap-6">
       {/* Budget first, because it is the only fact here that changes on its own
           and the only one with a consequence. Everything below is reference. */}
-      <div className="border-line bg-surface-1 rounded-xl border px-5 py-4 shadow-md">
+      <div className="bg-surface-1 rounded-xl px-5 py-4 shadow-md">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Budget committed to creators
@@ -436,7 +436,7 @@ function MoneyByStage({ m, showCurrency }: { m: BrandMoney; showCurrency: boolea
   ];
 
   return (
-    <section className="border-line bg-surface-1 rounded-xl border p-5 shadow-md">
+    <section className="bg-surface-1 rounded-xl p-5 shadow-md">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Where the committed money has got to
@@ -469,7 +469,7 @@ function MoneyByStage({ m, showCurrency }: { m: BrandMoney; showCurrency: boolea
 
       <dl className="mt-4 grid gap-3 sm:grid-cols-3">
         {cells.map((c) => (
-          <div key={c.key} className="border-line bg-surface-2 rounded-lg border px-3.5 py-3">
+          <div key={c.key} className="wx-neo-inset rounded-lg px-3.5 py-3">
             <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               {c.label}
             </dt>
@@ -508,7 +508,7 @@ function ContentLanded({ content }: { content: BrandContent | undefined }) {
   ];
 
   return (
-    <section className="border-line bg-surface-1 rounded-xl border p-5 shadow-md">
+    <section className="bg-surface-1 rounded-xl p-5 shadow-md">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           What has been filmed for this brand
@@ -528,7 +528,7 @@ function ContentLanded({ content }: { content: BrandContent | undefined }) {
       ) : (
         <dl className="mt-4 grid gap-3 sm:grid-cols-3">
           {cells.map((c) => (
-            <div key={c.key} className="border-line bg-surface-2 rounded-lg border px-3.5 py-3">
+            <div key={c.key} className="wx-neo-inset rounded-lg px-3.5 py-3">
               <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                 {c.label}
               </dt>
@@ -555,7 +555,7 @@ function Fact({
   accent?: boolean;
 }) {
   return (
-    <div className="border-line bg-surface-1 rounded-xl border px-5 py-4">
+    <div className="wx-neo-raised rounded-xl px-5 py-4">
       <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         {label}
       </dt>
@@ -664,7 +664,7 @@ function Offers({
           ))}
         </ul>
       ) : offers.length === 0 ? (
-        <div className="border-line bg-surface-1 mt-4 rounded-xl border px-6 py-14 text-center shadow-md">
+        <div className="bg-surface-1 mt-4 rounded-xl px-6 py-14 text-center shadow-md">
           <Ticket size={26} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">
             {filtered ? 'Nothing matches that' : 'No offers yet'}
@@ -741,8 +741,10 @@ function OfferCard({ offer, onEdit }: { offer: Offer; onEdit: () => void }) {
   return (
     <div
       className={cn(
-        'bg-surface-1 flex h-full flex-col rounded-xl border p-5',
-        offer.status === 'active' ? 'border-line' : 'border-line border-dashed'
+        'flex h-full flex-col rounded-xl p-5',
+        offer.status === 'active'
+          ? 'wx-neo-raised'
+          : 'bg-surface-1 border-line border border-dashed'
       )}
     >
       <div className="flex flex-wrap items-center gap-2">
@@ -810,7 +812,7 @@ function OfferCard({ offer, onEdit }: { offer: Offer; onEdit: () => void }) {
       )}
 
       {confirming ? (
-        <div className="border-danger/40 bg-danger-soft mt-4 rounded-xl border p-4">
+        <div className="bg-danger-soft mt-4 rounded-xl p-4">
           <p className="text-danger text-[0.8125rem] leading-relaxed font-medium">
             Delete this offer? It is removed for good, though the audit log keeps a record of
             what it was.

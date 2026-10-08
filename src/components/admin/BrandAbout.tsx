@@ -238,7 +238,7 @@ function Products({ brandId, brandName }: { brandId: string; brandName: string }
           ))}
         </ul>
       ) : rows.length === 0 ? (
-        <div className="border-line bg-surface-1 mt-4 rounded-xl border px-6 py-12 text-center shadow-md">
+        <div className="bg-surface-1 mt-4 rounded-xl px-6 py-12 text-center shadow-md">
           <Package size={24} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">No products yet</p>
           <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -280,14 +280,14 @@ function ProductRow({ product, onEdit }: { product: BrandProduct; onEdit: () => 
   return (
     <div
       className={cn(
-        'bg-surface-1 rounded-xl border p-4',
-        product.is_active ? 'border-line' : 'border-line border-dashed'
+        'rounded-xl p-4',
+        product.is_active ? 'wx-neo-raised' : 'bg-surface-1 border-line border border-dashed'
       )}
     >
       {/* Stacks on a phone, one row from small up. Nothing here is allowed to
           push the page sideways. */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-        <span className="border-line bg-surface-2 grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl border">
+        <span className="wx-neo-inset grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl">
           {product.image_url ? (
             <img src={product.image_url} alt="" className="size-full object-cover" />
           ) : (
@@ -354,7 +354,7 @@ function ProductRow({ product, onEdit }: { product: BrandProduct; onEdit: () => 
       </div>
 
       {confirming ? (
-        <div className="border-danger/40 bg-danger-soft mt-4 rounded-xl border p-4">
+        <div className="bg-danger-soft mt-4 rounded-xl p-4">
           <p className="text-danger text-[0.8125rem] leading-relaxed font-medium">
             Delete {product.name}? It goes for good, though the audit log keeps a record of what
             it was.

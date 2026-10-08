@@ -62,7 +62,7 @@ export function Creators() {
         <ul className="mt-10 grid max-w-4xl gap-4">
           {CREATOR_PROMISES.map((line, i) => (
             <Reveal key={line} delay={i * 0.05}>
-              <li className="border-line bg-surface-1 text-muted flex gap-4 rounded-xl border p-5 leading-relaxed">
+              <li className="wx-neo-raised text-muted flex gap-4 rounded-xl p-5 leading-relaxed">
                 <span className="bg-accent mt-2 size-1.5 shrink-0 rounded-full" aria-hidden />
                 <span>{line}</span>
               </li>

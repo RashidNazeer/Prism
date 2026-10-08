@@ -371,13 +371,13 @@ function ContestRow({
   return (
     <Link
       to={`/admin/brands/${c.brandId}/contests/${c.id}`}
-      className="wx-glass wx-glass-hover group flex h-full flex-col gap-4 rounded-xl p-5"
+      className="wx-neo-raised wx-glass-hover group flex h-full flex-col gap-4 rounded-xl p-5"
     >
       {/* --------------------------------------------- brand and status -- */}
       <div className="flex flex-wrap items-start justify-between gap-2">
         {/* The brand is plain text in a pill, not a second link: a link inside
             a link is invalid, and the whole card is already the target. */}
-        <span className="bg-surface-2 border-line text-text shrink-0 rounded-full border px-3 py-1 text-[0.6875rem] font-semibold tracking-[0.1em] uppercase">
+        <span className="wx-neo-raised-sm text-text shrink-0 rounded-full px-3 py-1 text-[0.6875rem] font-semibold tracking-[0.1em] uppercase">
           {row.brandName ?? 'Unknown brand'}
         </span>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -417,7 +417,7 @@ function ContestRow({
             <span className="text-text text-[0.8125rem] font-semibold">
               {formatDeadline(c.expiresAt, c.expiresAtTimezone)}
             </span>
-            <span className="bg-surface-2 text-muted border-line shrink-0 rounded-md border px-2 py-0.5 font-mono text-[0.6875rem]">
+            <span className="wx-neo-inset text-muted shrink-0 rounded-md px-2 py-0.5 font-mono text-[0.6875rem]">
               {left}
             </span>
           </span>
@@ -471,8 +471,8 @@ function Panel({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="border-line bg-surface-1 flex flex-col items-start gap-3 rounded-xl border p-6 shadow-md sm:p-8">
-      <div className="bg-surface-3 border-line-strong grid size-[44px] place-items-center rounded-lg border">
+    <div className="bg-surface-1 flex flex-col items-start gap-3 rounded-xl p-6 shadow-md sm:p-8">
+      <div className="wx-neo-inset grid size-[44px] place-items-center rounded-lg">
         <Trophy size={19} className="text-muted" aria-hidden />
       </div>
       <h2 className="font-display text-text text-[1.1875rem] leading-tight font-bold">

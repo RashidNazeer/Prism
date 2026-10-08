@@ -64,7 +64,7 @@ export function ImageUploadField({
       <div className="mt-2 flex flex-wrap items-center gap-4">
         <span
           className={cn(
-            'border-line bg-surface-2 grid size-20 shrink-0 place-items-center overflow-hidden border',
+            'wx-neo-inset grid size-20 shrink-0 place-items-center overflow-hidden',
             shape === 'round' ? 'rounded-full' : 'rounded-xl'
           )}
         >
@@ -89,7 +89,7 @@ export function ImageUploadField({
             id={id}
             disabled={busy}
             onClick={() => inputRef.current?.click()}
-            className="border-line-interactive bg-surface-2 hover:border-accent hover:text-accent inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-[0.8125rem] font-medium transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60"
+            className="wx-neo-raised-sm wx-neo-press hover:text-accent inline-flex h-10 items-center gap-2 rounded-xl px-4 text-[0.8125rem] font-medium transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Upload size={15} aria-hidden />
             {upload.isPending ? 'Uploading...' : value ? 'Replace' : 'Choose image'}

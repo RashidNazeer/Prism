@@ -260,14 +260,14 @@ export function OfferRequests() {
             ))}
           </ul>
         ) : isError ? (
-          <div className="border-line bg-surface-1 rounded-md border px-6 py-14 text-center shadow-md">
+          <div className="bg-surface-1 rounded-md px-6 py-14 text-center shadow-md">
             <p className="font-semibold">That queue would not load</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
-          <div className="border-line bg-surface-1 rounded-md border px-6 py-16 text-center shadow-md">
+          <div className="bg-surface-1 rounded-md px-6 py-16 text-center shadow-md">
             <Handshake size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">
               {filters.status === 'pending' && !filters.search && !filters.brandId
@@ -450,11 +450,10 @@ function RequestCard({
   return (
     <div
       className={cn(
-        'wx-glass flex overflow-hidden rounded-md transition-[border-color,box-shadow,transform] duration-300',
+        'wx-neo-raised flex overflow-hidden rounded-md transition-[border-color,box-shadow,transform] duration-300',
         open ? 'flex-col lg:flex-row lg:items-stretch' : 'flex-col',
-        !open &&
-          'hover:border-line-strong hover:-translate-y-0.5 hover:shadow-[var(--wx-glass-glow)]',
-        open && 'border-accent/60 shadow-[var(--wx-glass-glow)]'
+        !open && 'hover:-translate-y-0.5 hover:shadow-[var(--wx-glass-glow)]',
+        open && 'shadow-[var(--wx-glass-glow)]'
       )}
     >
       <div className={cn('flex min-w-0 flex-col', open && 'lg:w-[23rem] lg:shrink-0')}>
@@ -510,7 +509,7 @@ function RequestCard({
             <div>
               {/* Plain text, not a link: this whole block is a button, and an
                   anchor inside one is invalid. The brand links from the panel. */}
-              <span className="bg-surface-2 border-line text-text mb-2 inline-block max-w-full truncate rounded-full border px-2.5 py-1 font-mono text-[0.625rem] font-semibold tracking-[0.12em] uppercase">
+              <span className="wx-neo-raised-sm text-text mb-2 inline-block max-w-full truncate rounded-full px-2.5 py-1 font-mono text-[0.625rem] font-semibold tracking-[0.12em] uppercase">
                 {row.brand?.name ?? 'Unknown brand'}
               </span>
               {/* Two lines exactly, so no card in a row is taller or shorter
@@ -714,7 +713,7 @@ function RequestCard({
               {row.brand ? (
                 <Link
                   to={`/admin/brands/${row.brand.id}`}
-                  className="border-line-interactive bg-surface-1 text-text hover:border-accent hover:text-accent inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[0.8125rem] font-medium transition-colors"
+                  className="wx-neo-raised-sm wx-neo-press text-text hover:text-accent inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium transition-colors"
                 >
                   <Handshake size={14} aria-hidden />
                   Open {row.brand.name}
@@ -723,7 +722,7 @@ function RequestCard({
               {agreed ? (
                 <Link
                   to={`/admin/content?search=${encodeURIComponent(row.creator_handle ?? '')}`}
-                  className="border-line-interactive bg-surface-1 text-text hover:border-accent hover:text-accent inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[0.8125rem] font-medium transition-colors"
+                  className="wx-neo-raised-sm wx-neo-press text-text hover:text-accent inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium transition-colors"
                 >
                   <Video size={14} aria-hidden />
                   Their videos

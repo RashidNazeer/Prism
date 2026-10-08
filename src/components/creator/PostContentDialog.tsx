@@ -339,10 +339,8 @@ export function PostContentDialog({
               disabled={busy}
               onClick={() => setAuthorized((v) => !v)}
               className={cn(
-                'flex w-full items-center gap-3 rounded-lg border px-4 py-3.5 text-left transition-colors duration-200',
-                authorized
-                  ? 'bg-stage-paid-soft border-stage-paid/40'
-                  : 'wx-neo-inset border-transparent'
+                'flex w-full items-center gap-3 rounded-lg px-4 py-3.5 text-left transition-colors duration-200',
+                authorized ? 'bg-stage-paid-soft' : 'wx-neo-inset border-transparent'
               )}
             >
               <span

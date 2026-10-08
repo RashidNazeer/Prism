@@ -130,7 +130,7 @@ function Loaded({
           now, which is how this was found.
         */}
         <div className="grid min-w-0 gap-6">
-          <section className="border-line bg-surface-1 min-w-0 rounded-xl border p-6 shadow-md">
+          <section className="bg-surface-1 min-w-0 rounded-xl p-6 shadow-md">
             <h2 className="text-lg font-bold">Application</h2>
             <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
               <Row label="Niche" value={niche} />
@@ -184,7 +184,7 @@ function Loaded({
             </div>
           </section>
 
-          <section className="border-line bg-surface-1 min-w-0 rounded-xl border p-6 shadow-md">
+          <section className="bg-surface-1 min-w-0 rounded-xl p-6 shadow-md">
             <h2 className="text-lg font-bold">Account</h2>
             {application.applicant ? (
               <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
@@ -229,7 +229,7 @@ function Loaded({
           {application.status === 'pending' ? (
             <ReviewPanel application={application} />
           ) : (
-            <section className="border-line bg-surface-1 min-w-0 rounded-xl border p-6 shadow-md">
+            <section className="bg-surface-1 min-w-0 rounded-xl p-6 shadow-md">
               <h2 className="text-lg font-bold">Decision</h2>
               <div className="mt-4">
                 <StatusBadge status={application.status} />
@@ -250,7 +250,7 @@ function Loaded({
                 />
               </dl>
               {application.review_note ? (
-                <p className="border-line bg-surface-2 text-muted mt-5 rounded-xl border px-4 py-3 text-[0.875rem] leading-relaxed">
+                <p className="wx-neo-inset text-muted mt-5 rounded-xl px-4 py-3 text-[0.875rem] leading-relaxed">
                   {application.review_note}
                 </p>
               ) : null}
@@ -262,7 +262,7 @@ function Loaded({
           )}
 
           {/* --------------------------------------------------- audit trail */}
-          <section className="border-line bg-surface-1 min-w-0 rounded-xl border p-6 shadow-md">
+          <section className="bg-surface-1 min-w-0 rounded-xl p-6 shadow-md">
             <h2 className="text-sm font-semibold">History</h2>
             {history && history.length > 0 ? (
               <ul className="mt-4 grid gap-3 text-[0.8125rem]">
@@ -332,7 +332,7 @@ function Row({
 
 function Empty({ title, body }: { title: string; body: string }) {
   return (
-    <div className="border-line bg-surface-1 mt-8 max-w-lg rounded-xl border p-8 text-center shadow-md">
+    <div className="bg-surface-1 mt-8 max-w-lg rounded-xl p-8 text-center shadow-md">
       <p className="font-semibold">{title}</p>
       <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">{body}</p>
       <ButtonLink to="/admin/applications" variant="secondary" size="sm" className="mt-5">

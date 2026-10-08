@@ -146,7 +146,7 @@ export function Leaderboards({ brandId }: { brandId?: string } = {}) {
             }}
             placeholder="Find a creator"
             aria-label="Find a creator"
-            className="wx-neo-inset border-line-interactive placeholder:text-faint hover:border-accent/60 focus:border-accent h-10 w-full rounded-md border pr-3 pl-9 text-[0.875rem] focus:outline-none"
+            className="wx-neo-inset placeholder:text-faint focus-visible:ring-accent/50 h-10 w-full rounded-md pr-3 pl-9 text-[0.875rem] focus:outline-none focus-visible:ring-2"
           />
         </div>
       </FilterBar>

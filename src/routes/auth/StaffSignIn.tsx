@@ -64,7 +64,7 @@ export function StaffSignIn() {
   return (
     <AuthShell
       eyebrow={
-        <span className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent-soft px-3 py-1.5 font-mono text-[0.6875rem] tracking-[0.16em] text-accent uppercase">
+        <span className="bg-accent-soft text-accent inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-mono text-[0.6875rem] tracking-[0.16em] uppercase">
           <ShieldCheck size={13} aria-hidden />
           Staff access
         </span>
@@ -76,7 +76,7 @@ export function StaffSignIn() {
         // sign up link: there is no such thing for staff.
         <>
           Not on the team?{' '}
-          <Link to="/login" className="font-medium text-accent hover:underline">
+          <Link to="/login" className="text-accent font-medium hover:underline">
             Creator sign in
           </Link>
         </>
@@ -123,7 +123,7 @@ export function StaffSignIn() {
         <div className="mt-3 text-right">
           <Link
             to="/forgot-password"
-            className="text-[0.8125rem] text-muted underline-offset-4 hover:text-accent hover:underline"
+            className="text-muted hover:text-accent text-[0.8125rem] underline-offset-4 hover:underline"
           >
             Forgot your password?
           </Link>
@@ -137,7 +137,7 @@ export function StaffSignIn() {
               Sign in
               <ArrowRight
                 size={17}
-                className="transition-transform duration-200 ease-brand group-hover:translate-x-0.5"
+                className="ease-brand transition-transform duration-200 group-hover:translate-x-0.5"
                 aria-hidden
               />
             </>

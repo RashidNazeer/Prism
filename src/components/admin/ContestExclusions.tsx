@@ -116,7 +116,7 @@ export function ContestExclusions({ contestId, rows, loading }: Props) {
   }
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5 shadow-md">
+    <section className="bg-surface-1 flex flex-col gap-4 rounded-xl p-5 shadow-md">
       <div>
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Barred from this contest
@@ -130,7 +130,7 @@ export function ContestExclusions({ contestId, rows, loading }: Props) {
       <form
         onSubmit={(e) => void onSubmit(e)}
         aria-busy={busy}
-        className="border-line-strong bg-surface-2 flex flex-col gap-4 rounded-xl border p-4"
+        className="wx-neo-inset flex flex-col gap-4 rounded-xl p-4"
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
@@ -224,7 +224,7 @@ export function ContestExclusions({ contestId, rows, loading }: Props) {
         </div>
       ) : rows.length === 0 ? (
         <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
-          <div className="bg-surface-3 border-line-strong grid size-[44px] place-items-center rounded-lg border">
+          <div className="wx-neo-inset grid size-[44px] place-items-center rounded-lg">
             <UserX size={19} className="text-muted" aria-hidden />
           </div>
           <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
@@ -269,7 +269,7 @@ function ExclusionRow({
   const second = row.handle && row.email ? row.email : null;
 
   return (
-    <div className="border-line bg-surface-1 rounded-xl border p-4">
+    <div className="wx-neo-raised rounded-xl p-4">
       <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
         <div className="min-w-0 flex-1 basis-56">
           <p className="text-text text-[0.9375rem] font-semibold break-words">{who}</p>
@@ -277,7 +277,9 @@ function ExclusionRow({
             <p className="text-muted mt-0.5 text-[0.8125rem] break-words">{second}</p>
           ) : null}
 
-          <p className={cn('mt-1.5 text-[0.8125rem]', row.userId ? 'text-muted' : 'text-faint')}>
+          <p
+            className={cn('mt-1.5 text-[0.8125rem]', row.userId ? 'text-muted' : 'text-faint')}
+          >
             {row.userId
               ? 'Matched to an account, so a rename cannot get around it'
               : 'This bar has not matched an account yet, which is normal for somebody who has not signed up'}
@@ -291,7 +293,7 @@ function ExclusionRow({
           ) : null}
 
           {row.reason ? (
-            <p className="border-line bg-surface-2 text-muted mt-2.5 max-w-prose rounded-xl border px-3 py-2 text-[0.8125rem] leading-relaxed break-words">
+            <p className="wx-neo-inset text-muted mt-2.5 max-w-prose rounded-xl px-3 py-2 text-[0.8125rem] leading-relaxed break-words">
               <span className="text-faint mr-2 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
                 Staff only
               </span>
@@ -318,7 +320,7 @@ function ExclusionRow({
       </div>
 
       {confirming ? (
-        <div className="border-line-strong bg-surface-2 mt-3 rounded-xl border p-3">
+        <div className="wx-neo-inset mt-3 rounded-xl p-3">
           <p className="text-muted max-w-prose text-[0.8125rem] leading-relaxed">
             Lift the bar on {who}? They can enter this contest again from that moment. The
             blocked attempts counter goes with it.

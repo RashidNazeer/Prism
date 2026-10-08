@@ -131,7 +131,7 @@ export function SiteNav() {
               aria-expanded={open}
               aria-controls="mobile-menu"
               aria-label={open ? 'Close menu' : 'Open menu'}
-              className="border-line bg-surface-1/60 text-muted hover:border-line-interactive hover:text-accent ease-brand grid size-11 place-items-center rounded-full border transition-colors duration-200 lg:hidden"
+              className="wx-neo-raised-sm wx-neo-press text-muted hover:text-accent ease-brand grid size-11 place-items-center rounded-full transition-colors duration-200 lg:hidden"
             >
               {open ? <X size={17} aria-hidden /> : <Menu size={17} aria-hidden />}
             </button>

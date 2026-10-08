@@ -418,10 +418,7 @@ export function ContestProgressQueue({
 
   return (
     <section
-      className={cn(
-        'border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5 shadow-md',
-        className
-      )}
+      className={cn('bg-surface-1 flex flex-col gap-4 rounded-xl p-5 shadow-md', className)}
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div>
@@ -478,7 +475,7 @@ export function ContestProgressQueue({
         </div>
       ) : rows.length === 0 ? (
         <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
-          <div className="bg-surface-3 border-line-strong grid size-[44px] place-items-center rounded-lg border">
+          <div className="wx-neo-inset grid size-[44px] place-items-center rounded-lg">
             <Check size={19} className="text-muted" aria-hidden />
           </div>
           <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
@@ -603,7 +600,7 @@ function ClaimCard({
   }
 
   return (
-    <article className="border-line bg-surface-1 rounded-xl border p-4 sm:p-5">
+    <article className="wx-neo-raised rounded-xl p-4 sm:p-5">
       {/* ------------------------------------------------------------ who -- */}
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
@@ -719,7 +716,7 @@ function ClaimCard({
               return (
                 <li
                   key={video.id}
-                  className="border-line bg-surface-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border px-3.5 py-3"
+                  className="wx-neo-inset flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl px-3.5 py-3"
                 >
                   <span className="min-w-0 flex-1 basis-52">
                     <a
@@ -762,9 +759,9 @@ function ClaimCard({
         )}
 
         <p className="text-faint mt-2 max-w-prose text-[0.75rem] leading-relaxed">
-          Confirming these figures is not a decision about the videos, and it is not what pays for
-          them either. Each video is watched on its own, and a video reward is owed once the last
-          one is approved.
+          Confirming these figures is not a decision about the videos, and it is not what pays
+          for them either. Each video is watched on its own, and a video reward is owed once the
+          last one is approved.
         </p>
       </div>
 
@@ -856,7 +853,7 @@ function Change({
   delta: string | null;
 }) {
   return (
-    <div className="bg-surface-2 border-line rounded-xl border px-3.5 py-3">
+    <div className="wx-neo-inset rounded-xl px-3.5 py-3">
       <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         {label}
       </span>

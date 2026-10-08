@@ -160,7 +160,7 @@ export function AdminContent() {
                   onChange={(e) => set({ q: e.target.value })}
                   placeholder="Search by handle or ad code"
                   aria-label="Search content"
-                  className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-10 w-full rounded-md border pr-3 pl-9 text-[0.875rem] focus:outline-none"
+                  className="wx-neo-inset placeholder:text-faint focus-visible:ring-accent/50 h-10 w-full rounded-md pr-3 pl-9 text-[0.875rem] focus:outline-none focus-visible:ring-2"
                 />
               </div>
 
@@ -223,14 +223,14 @@ export function AdminContent() {
                 ))}
               </ul>
             ) : isError ? (
-              <div className="border-line bg-surface-1 rounded-xl border px-6 py-14 text-center shadow-md">
+              <div className="bg-surface-1 rounded-xl px-6 py-14 text-center shadow-md">
                 <p className="font-semibold">That would not load</p>
                 <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
                   {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
                 </p>
               </div>
             ) : rows.length === 0 ? (
-              <div className="border-line bg-surface-1 rounded-xl border px-6 py-16 text-center shadow-md">
+              <div className="bg-surface-1 rounded-xl px-6 py-16 text-center shadow-md">
                 <Video size={26} aria-hidden className="text-faint mx-auto" />
                 <p className="mt-4 font-semibold">Nothing here</p>
                 <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -344,7 +344,7 @@ function ByBrand({
   const most = Math.max(...rows.map((r) => r.all), 1);
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-xl border p-5 shadow-md">
+    <section className="bg-surface-1 flex flex-col gap-[14px] rounded-xl p-5 shadow-md">
       <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         Where it is coming from
       </h2>
@@ -355,7 +355,7 @@ function ByBrand({
             <button
               type="button"
               onClick={() => onPick(brand.id)}
-              className="border-line bg-surface-2 hover:border-text flex w-full flex-col gap-2.5 rounded-[16px] border p-3.5 text-left transition-colors duration-200"
+              className="wx-neo-raised-sm wx-neo-press flex w-full flex-col gap-2.5 rounded-[16px] p-3.5 text-left transition-colors duration-200"
             >
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <span className="text-[0.90625rem] font-semibold">{brand.name}</span>
@@ -417,7 +417,7 @@ function Board({ counts }: { counts: ContentTotals }) {
   ];
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-5 rounded-xl border p-[clamp(18px,2.4vw,26px)] shadow-md">
+    <section className="bg-surface-1 flex flex-col gap-5 rounded-xl p-[clamp(18px,2.4vw,26px)] shadow-md">
       <div className="flex flex-col gap-1">
         <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Videos posted
@@ -552,7 +552,7 @@ function Review({ row, progress }: { row: ContentRow; progress: JobProgress | un
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="What needs changing? The creator reads this."
-          className="border-line-interactive bg-surface-1 placeholder:text-faint focus:border-accent w-full rounded-xl border px-3 py-2 text-[0.8125rem] focus:outline-none"
+          className="wx-neo-inset placeholder:text-faint focus-visible:ring-accent/50 w-full rounded-xl px-3 py-2 text-[0.8125rem] focus:outline-none focus-visible:ring-2"
         />
         <div className="flex flex-wrap gap-2">
           <Button

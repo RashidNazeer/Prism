@@ -64,7 +64,7 @@ export function ContestVideoQueue() {
   };
 
   return (
-    <section className="border-line bg-surface-1 rounded-xl border p-4 sm:p-5">
+    <section className="wx-neo-raised rounded-xl p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-[1.0625rem] font-bold">Contest videos</h2>
         <p className="text-faint text-[0.8125rem]">
@@ -73,8 +73,8 @@ export function ContestVideoQueue() {
       </div>
 
       <p className="text-muted mt-1 max-w-prose text-[0.8125rem] leading-relaxed">
-        Every video filed against a contest, watched one at a time. A video only counts towards a
-        contest target once it is approved, and the reward is owed the moment the last one is.
+        Every video filed against a contest, watched one at a time. A video only counts towards
+        a contest target once it is approved, and the reward is owed the moment the last one is.
       </p>
 
       {/* Row one is the work, per the screen chrome rules. */}
@@ -128,10 +128,7 @@ export function ContestVideoQueue() {
               row.approved + 1 >= row.nextTarget;
 
             return (
-              <li
-                key={row.id}
-                className="border-line bg-surface-2 rounded-xl border px-3.5 py-3.5"
-              >
+              <li key={row.id} className="wx-neo-inset rounded-xl px-3.5 py-3.5">
                 <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
                   <div className="flex min-w-0 flex-1 basis-64 items-start gap-2.5">
                     <CreatorFace
@@ -198,7 +195,11 @@ export function ContestVideoQueue() {
                 ) : null}
 
                 <div className="mt-2.5">
-                  <ContestVideoDecision contentId={row.id} status={row.status} variant="block" />
+                  <ContestVideoDecision
+                    contentId={row.id}
+                    status={row.status}
+                    variant="block"
+                  />
                 </div>
               </li>
             );

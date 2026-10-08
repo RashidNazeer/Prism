@@ -3196,3 +3196,29 @@
     transition: none;
   }
 }
+
+/* ------------------------------------------- creative angle: brand picker -- */
+/*
+ * THE BRAND MENU OPENED LEFTWARDS, OFF THE PAGE. Rashid, 2026-10-09: the names
+ * in it were cut in half — "Harvey's" rendered as "arvey's".
+ *
+ * `paidcollabs.css` anchors `.cx-bm-pop` with `right: 0` and gives it
+ * `min-width: 270px`. The trigger that opens it is about 185px wide and sits at
+ * the LEFT end of the header row, so an anchor on its right edge pushes roughly
+ * 85px of panel out past the left edge of the content column, where an overflow
+ * ancestor clips it. The panel was never too narrow; its left third was simply
+ * outside the page.
+ *
+ * Anchoring left opens it into the empty space to its right instead. The
+ * max-width is the other half: on a narrow screen a 270px panel anchored left
+ * would run off the other edge, so it is clamped to the viewport with a gutter.
+ *
+ * This lives here rather than in `paidcollabs.css` because that file is
+ * vendored — re-running `vendor-wurxbase.mjs` would silently revert a fix made
+ * there.
+ */
+.wurxbase-root .cx-bm-pop {
+  right: auto;
+  left: 0;
+  max-width: min(21rem, calc(100vw - 2rem));
+}

@@ -177,7 +177,7 @@ export function OfferDialog({
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        className="border-line bg-surface-1 relative max-h-[100dvh] w-full max-w-xl overflow-y-auto rounded-t-2xl border p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
+        className="bg-surface-1 relative max-h-[100dvh] w-full max-w-xl overflow-y-auto rounded-t-2xl p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -331,7 +331,7 @@ export function OfferDialog({
             {previewable ? (
               <p
                 role="status"
-                className="border-line bg-surface-2 text-muted rounded-xl border px-4 py-3 text-[0.875rem]"
+                className="wx-neo-inset text-muted rounded-xl px-4 py-3 text-[0.875rem]"
               >
                 <span className="text-text font-semibold">
                   {videos} {videos === 1 ? 'video' : 'videos'} for{' '}
@@ -420,7 +420,7 @@ export function OfferDialog({
             {unmatched.length > 0 ? (
               <p
                 role="status"
-                className="border-stage-due bg-stage-due-soft text-stage-due rounded-md border px-3 py-2 text-[0.8125rem] leading-relaxed"
+                className="bg-stage-due-soft text-stage-due rounded-md px-3 py-2 text-[0.8125rem] leading-relaxed"
               >
                 Saved. These {unmatched.length === 1 ? 'line matched' : 'lines matched'} nobody
                 on the platform and {unmatched.length === 1 ? 'was' : 'were'} left off:{' '}
@@ -435,12 +435,12 @@ export function OfferDialog({
               hiding it here removes a control that could only ever lie.
             */}
             {values.kind === 'high_commission' ? (
-              <p className="border-line bg-surface-2 text-muted rounded-md border px-3 py-2 text-[0.8125rem] leading-relaxed">
+              <p className="wx-neo-inset text-muted rounded-md px-3 py-2 text-[0.8125rem] leading-relaxed">
                 High commission offers never need an application. Any creator who can see this
                 one can take it.
               </p>
             ) : (
-              <label className="border-line-interactive bg-surface-2 flex cursor-pointer items-start gap-3 rounded-xl border p-4">
+              <label className="wx-neo-inset flex cursor-pointer items-start gap-3 rounded-xl p-4">
                 <input
                   type="checkbox"
                   name="needsApplication"

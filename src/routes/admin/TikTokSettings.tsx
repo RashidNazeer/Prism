@@ -166,7 +166,7 @@ export function TikTokSettings() {
       {actionError ? (
         <p
           role="alert"
-          className="border-danger/40 bg-danger-soft text-danger rounded-lg border p-3 text-[0.8125rem] leading-relaxed"
+          className="bg-danger-soft text-danger rounded-lg p-3 text-[0.8125rem] leading-relaxed"
         >
           {actionError}
         </p>
@@ -179,7 +179,9 @@ export function TikTokSettings() {
           loading={accounts.isPending || adAccounts.isPending}
           connected={connected}
           brands={brands.data ?? []}
-          onMap={(advertiserId, storeId, brandId) => map.mutate({ advertiserId, storeId, brandId })}
+          onMap={(advertiserId, storeId, brandId) =>
+            map.mutate({ advertiserId, storeId, brandId })
+          }
           mappingStore={
             map.isPending && map.variables
               ? `${map.variables.advertiserId}:${map.variables.storeId}`
@@ -278,10 +280,7 @@ function AccountsTab({
       {accounts.map((account) => {
         const stores = storesByAccount.get(account.advertiser_id) ?? [];
         return (
-          <section
-            key={account.advertiser_id}
-            className="border-line bg-surface-1 rounded-xl border"
-          >
+          <section key={account.advertiser_id} className="wx-neo-raised rounded-xl">
             <header className="border-line flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b px-4 py-3">
               <h2 className="font-display text-[1rem] font-bold">
                 {account.name ?? 'Unnamed ad account'}
@@ -298,66 +297,68 @@ function AccountsTab({
                 brand and no spend to read from it yet.
               </p>
             ) : (
-            <ul className="divide-line divide-y">
-              {stores.map((s) => (
-                <li
-                  key={`${s.advertiser_id}:${s.store_id}`}
-                  className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3"
-                >
-                  <div className="min-w-[10rem] flex-1">
-                    <p className="text-[0.875rem] font-medium">
-                      {s.store_name ?? 'Unnamed store'}
-                    </p>
-                    {s.brand_id ? (
-                      <p className="text-muted mt-0.5 flex items-center gap-1.5 text-[0.75rem]">
-                        <Link2 size={12} aria-hidden />
-                        Showing as {s.brand_name}
+              <ul className="divide-line divide-y">
+                {stores.map((s) => (
+                  <li
+                    key={`${s.advertiser_id}:${s.store_id}`}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3"
+                  >
+                    <div className="min-w-[10rem] flex-1">
+                      <p className="text-[0.875rem] font-medium">
+                        {s.store_name ?? 'Unnamed store'}
                       </p>
-                    ) : (
-                      <p className="text-warning mt-0.5 text-[0.75rem]">
-                        Not matched to a brand yet
-                      </p>
-                    )}
-                    {/*
+                      {s.brand_id ? (
+                        <p className="text-muted mt-0.5 flex items-center gap-1.5 text-[0.75rem]">
+                          <Link2 size={12} aria-hidden />
+                          Showing as {s.brand_name}
+                        </p>
+                      ) : (
+                        <p className="text-warning mt-0.5 text-[0.75rem]">
+                          Not matched to a brand yet
+                        </p>
+                      )}
+                      {/*
                       TikTok's own flag. A store without it will never return a
                       single figure, and finding that out weeks later as an
                       empty report is worse than being told now.
                     */}
-                    {s.is_gmv_max_available === false ? (
-                      <p className="text-warning mt-0.5 flex items-center gap-1.5 text-[0.75rem]">
-                        <AlertTriangle size={12} aria-hidden />
-                        GMV Max is not switched on for this store
-                      </p>
-                    ) : null}
-                  </div>
+                      {s.is_gmv_max_available === false ? (
+                        <p className="text-warning mt-0.5 flex items-center gap-1.5 text-[0.75rem]">
+                          <AlertTriangle size={12} aria-hidden />
+                          GMV Max is not switched on for this store
+                        </p>
+                      ) : null}
+                    </div>
 
-                  {/*
+                    {/*
                     A plain select rather than a dialog. Mapping is something an
                     admin will do a handful of times and then change rarely, and
                     a two-click popup for one decision is worse than a control
                     that shows the current answer while it sits there.
                   */}
-                  <label className="flex shrink-0 items-center gap-2">
-                    <span className="text-faint text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
-                      Brand
-                    </span>
-                    <select
-                      value={s.brand_id ?? ''}
-                      disabled={mappingStore === `${s.advertiser_id}:${s.store_id}`}
-                      onChange={(e) => onMap(s.advertiser_id, s.store_id, e.target.value || null)}
-                      className="border-line bg-surface-2 h-10 min-w-[11rem] rounded-md border px-2 text-[0.8125rem]"
-                    >
-                      <option value="">Not matched</option>
-                      {brands.map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </li>
-              ))}
-            </ul>
+                    <label className="flex shrink-0 items-center gap-2">
+                      <span className="text-faint text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
+                        Brand
+                      </span>
+                      <select
+                        value={s.brand_id ?? ''}
+                        disabled={mappingStore === `${s.advertiser_id}:${s.store_id}`}
+                        onChange={(e) =>
+                          onMap(s.advertiser_id, s.store_id, e.target.value || null)
+                        }
+                        className="wx-neo-inset h-10 min-w-[11rem] rounded-md px-2 text-[0.8125rem]"
+                      >
+                        <option value="">Not matched</option>
+                        {brands.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
         );
@@ -433,10 +434,7 @@ function ConnectionTab({
   return (
     <div className="flex flex-col gap-4">
       {connections.map((health) => (
-        <section
-          key={health.id}
-          className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5"
-        >
+        <section key={health.id} className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5">
           <div className="flex items-start gap-3">
             {health.last_error ? (
               <AlertTriangle size={20} aria-hidden className="text-warning mt-0.5 shrink-0" />
@@ -476,7 +474,7 @@ function ConnectionTab({
           </dl>
 
           {health.last_error ? (
-            <p className="border-warning/40 bg-warning-soft text-warning rounded-md border p-3 text-[0.8125rem] leading-relaxed">
+            <p className="bg-warning-soft text-warning rounded-md p-3 text-[0.8125rem] leading-relaxed">
               {health.last_error}
             </p>
           ) : null}
@@ -486,7 +484,7 @@ function ConnectionTab({
               variant="secondary"
               onClick={() => onDisconnect(health.id)}
               disabled={disconnectingId !== null}
-              className="text-danger hover:border-danger hover:text-danger h-10 rounded-md text-[0.875rem]"
+              className="text-danger hover:text-danger h-10 rounded-md text-[0.875rem]"
             >
               <Unplug size={15} aria-hidden />
               {disconnectingId === health.id ? 'Disconnecting' : 'Disconnect'}
@@ -504,8 +502,8 @@ function ConnectionTab({
         </section>
       ))}
 
-      <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5">
-      {/*
+      <section className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5">
+        {/*
         THE NUMBERS ARRIVE ON THEIR OWN, once a night. This button exists for
         the first run and for testing, because waiting until 03:20 UTC to find
         out whether a new brand mapping works is not a way to work.
@@ -513,40 +511,38 @@ function ConnectionTab({
         A day already pulled is skipped without an API call, so pressing it
         twice costs nothing and it is safe to lean on.
       */}
-      {/* No top border: this is the first thing in its own card now that the
+        {/* No top border: this is the first thing in its own card now that the
           connections are listed above it, and the rule was drawing a line under
           nothing. */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          variant="secondary"
-          onClick={() => onPull(30)}
-          disabled={pulling}
-          className="h-10 rounded-md text-[0.875rem]"
-        >
-          <Download size={15} aria-hidden />
-          {pulling ? 'Pulling' : 'Pull the last 30 days'}
-        </Button>
-        <p className="text-muted text-[0.75rem] leading-relaxed">
-          Runs every night at 03:20 UTC by itself. Complete days only, so today appears tomorrow.
-        </p>
-      </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => onPull(30)}
+            disabled={pulling}
+            className="h-10 rounded-md text-[0.875rem]"
+          >
+            <Download size={15} aria-hidden />
+            {pulling ? 'Pulling' : 'Pull the last 30 days'}
+          </Button>
+          <p className="text-muted text-[0.75rem] leading-relaxed">
+            Runs every night at 03:20 UTC by itself. Complete days only, so today appears
+            tomorrow.
+          </p>
+        </div>
 
-      {pullResult ? (
-        <p
-          className={cn(
-            'rounded-md border p-3 text-[0.8125rem] leading-relaxed',
-            pullResult.failures.length > 0
-              ? 'border-warning/40 bg-warning-soft text-warning'
-              : 'border-line text-muted'
-          )}
-        >
-          {pullResult.failures.length > 0
-            ? `${pullResult.failures.length} day(s) could not be pulled: ${pullResult.failures[0]?.reason}`
-            : `Pulled ${pullResult.rowsWritten} video-day${pullResult.rowsWritten === 1 ? '' : 's'} in ${pullResult.calls} call${pullResult.calls === 1 ? '' : 's'}${pullResult.daysSkipped > 0 ? `, skipping ${pullResult.daysSkipped} day(s) already stored` : ''}.`}
-        </p>
-      ) : null}
-
-    </section>
+        {pullResult ? (
+          <p
+            className={cn(
+              'rounded-md p-3 text-[0.8125rem] leading-relaxed',
+              pullResult.failures.length > 0 ? 'bg-warning-soft text-warning' : 'text-muted'
+            )}
+          >
+            {pullResult.failures.length > 0
+              ? `${pullResult.failures.length} day(s) could not be pulled: ${pullResult.failures[0]?.reason}`
+              : `Pulled ${pullResult.rowsWritten} video-day${pullResult.rowsWritten === 1 ? '' : 's'} in ${pullResult.calls} call${pullResult.calls === 1 ? '' : 's'}${pullResult.daysSkipped > 0 ? `, skipping ${pullResult.daysSkipped} day(s) already stored` : ''}.`}
+          </p>
+        ) : null}
+      </section>
     </div>
   );
 }
@@ -597,10 +593,7 @@ function IdentitiesTab({
   }
   if (error) {
     return (
-      <p
-        role="alert"
-        className="border-danger/40 bg-danger-soft text-danger rounded-lg border p-3 text-[0.8125rem]"
-      >
+      <p role="alert" className="bg-danger-soft text-danger rounded-lg p-3 text-[0.8125rem]">
         {error}
       </p>
     );
@@ -621,7 +614,7 @@ function IdentitiesTab({
     const who = r.profile?.display_name || r.profile?.email || null;
     const isOpen = openFor === r.id;
     return (
-      <li className="border-line bg-surface-1 rounded-xl border p-3 sm:p-4">
+      <li className="wx-neo-raised rounded-xl p-3 sm:p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-[0.9375rem] font-bold">
@@ -646,7 +639,13 @@ function IdentitiesTab({
               can apply again
             </span>
           ) : (
-            <Button variant="secondary" onClick={() => { setOpenFor(isOpen ? null : r.id); setReason(''); }}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setOpenFor(isOpen ? null : r.id);
+                setReason('');
+              }}
+            >
               {isOpen ? 'Cancel' : 'Let this account apply again'}
             </Button>
           )}
@@ -659,7 +658,7 @@ function IdentitiesTab({
             </label>
             <input
               id={`reason-${r.id}`}
-              className="border-line bg-surface-2 min-w-0 flex-1 rounded-md border px-3 py-2 text-[0.875rem]"
+              className="wx-neo-inset min-w-0 flex-1 rounded-md px-3 py-2 text-[0.875rem]"
               placeholder="Why? e.g. rejected in August, invited back for Q4"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -679,10 +678,7 @@ function IdentitiesTab({
   return (
     <div className="flex flex-col gap-4">
       {releaseError ? (
-        <p
-          role="alert"
-          className="border-danger/40 bg-danger-soft text-danger rounded-lg border p-3 text-[0.8125rem]"
-        >
+        <p role="alert" className="bg-danger-soft text-danger rounded-lg p-3 text-[0.8125rem]">
           {releaseError}
         </p>
       ) : null}
@@ -720,9 +716,11 @@ function IdentitiesTab({
 
 function Empty({ title, body }: { title: string; body: string }) {
   return (
-    <div className="border-line bg-surface-1 rounded-xl border p-8 text-center">
+    <div className="wx-neo-raised rounded-xl p-8 text-center">
       <h2 className="font-display text-[1.0625rem] font-bold">{title}</h2>
-      <p className="text-muted mx-auto mt-2 max-w-prose text-[0.875rem] leading-relaxed">{body}</p>
+      <p className="text-muted mx-auto mt-2 max-w-prose text-[0.875rem] leading-relaxed">
+        {body}
+      </p>
     </div>
   );
 }

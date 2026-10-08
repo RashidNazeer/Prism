@@ -140,7 +140,7 @@ export function ContestProducts({ contestId, brandId, selected, loading }: Props
   }
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5 shadow-md">
+    <section className="bg-surface-1 flex flex-col gap-4 rounded-xl p-5 shadow-md">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
@@ -207,7 +207,7 @@ export function ContestProducts({ contestId, brandId, selected, loading }: Props
         </div>
       ) : live.length === 0 && strays.length === 0 ? (
         <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
-          <div className="bg-surface-3 border-line-strong grid size-[44px] place-items-center rounded-lg border">
+          <div className="wx-neo-inset grid size-[44px] place-items-center rounded-lg">
             <Package size={19} className="text-muted" aria-hidden />
           </div>
           <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
@@ -254,7 +254,11 @@ export function ContestProducts({ contestId, brandId, selected, loading }: Props
         just sits there fully ticked and an admin has to count it themselves to
         work out whether anything is missing.
       */}
-      {!loading && !isPending && !isError && live.length > 0 && live.every((p) => chosen.has(p.id)) ? (
+      {!loading &&
+      !isPending &&
+      !isError &&
+      live.length > 0 &&
+      live.every((p) => chosen.has(p.id)) ? (
         <p className="text-muted text-[0.8125rem]">
           No more products to link with this contest. Every product this brand has is already on
           it.
@@ -280,10 +284,8 @@ function ProductRow({
   return (
     <label
       className={cn(
-        'ease-brand flex min-h-[44px] cursor-pointer flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border p-4 transition-colors',
-        checked
-          ? 'border-accent bg-accent-soft'
-          : 'border-line bg-surface-1 hover:border-line-strong',
+        'ease-brand flex min-h-[44px] cursor-pointer flex-wrap items-center gap-x-4 gap-y-3 rounded-xl p-4 transition-colors',
+        checked ? 'wx-neo-pressed text-accent' : 'wx-neo-raised-sm',
         busy && 'cursor-not-allowed opacity-70'
       )}
     >
@@ -295,7 +297,7 @@ function ProductRow({
         className="size-5 shrink-0 cursor-pointer accent-[var(--wx-accent)]"
       />
 
-      <span className="border-line bg-surface-2 grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl border">
+      <span className="wx-neo-inset grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl">
         {product.image_url ? (
           <img src={product.image_url} alt="" className="size-full object-cover" />
         ) : (

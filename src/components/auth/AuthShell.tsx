@@ -51,9 +51,7 @@ export function AuthShell({
           <p className="text-muted mt-3 leading-relaxed text-pretty">{subtitle}</p>
         ) : null}
 
-        <div className="border-line bg-surface-1 mt-8 rounded-2xl border p-6 shadow-lg sm:p-7">
-          {children}
-        </div>
+        <div className="bg-surface-1 mt-8 rounded-2xl p-6 shadow-lg sm:p-7">{children}</div>
 
         {footer ? <div className="text-muted mt-6 text-center text-sm">{footer}</div> : null}
       </main>
@@ -67,7 +65,7 @@ export function FormError({ children }: { children: ReactNode }) {
   return (
     <p
       role="alert"
-      className="border-danger/40 bg-danger-soft text-danger mb-5 rounded-xl border px-4 py-3 text-[0.875rem] leading-relaxed"
+      className="bg-danger-soft text-danger mb-5 rounded-xl px-4 py-3 text-[0.875rem] leading-relaxed"
     >
       {children}
     </p>

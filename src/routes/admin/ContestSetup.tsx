@@ -625,7 +625,7 @@ export function ContestSetup() {
         </div>
 
         {contestFailed && !isNew ? (
-          <div className="border-line bg-surface-1 flex flex-col items-start gap-3 rounded-xl border p-8 shadow-md">
+          <div className="bg-surface-1 flex flex-col items-start gap-3 rounded-xl p-8 shadow-md">
             <h2 className="font-display text-text text-[1.3125rem] leading-tight font-bold">
               That contest could not be opened
             </h2>
@@ -648,7 +648,7 @@ export function ContestSetup() {
         ) : showSkeleton ? (
           <div className="wx-skeleton h-[420px] rounded-xl" />
         ) : showGone ? (
-          <div className="border-line bg-surface-1 flex flex-col items-start gap-3 rounded-xl border p-8 shadow-md">
+          <div className="bg-surface-1 flex flex-col items-start gap-3 rounded-xl p-8 shadow-md">
             <h2 className="font-display text-text text-[1.3125rem] leading-tight font-bold">
               There is no contest here any more
             </h2>
@@ -1255,7 +1255,7 @@ function CloseContest({
   }
 
   return (
-    <div className="border-line-strong bg-surface-2 rounded-xl border p-4">
+    <div className="wx-neo-inset rounded-xl p-4">
       <p className="text-text max-w-prose text-[0.8125rem] leading-relaxed font-medium">
         Close this contest? Nobody can enter it, claim on it or have figures confirmed on it
         again. Everybody in it is told on their own timeline.
@@ -1365,7 +1365,7 @@ function DeleteContest({
   }
 
   return (
-    <div className="border-danger/40 bg-danger-soft rounded-xl border p-4">
+    <div className="bg-danger-soft rounded-xl p-4">
       <p className="text-danger max-w-prose text-[0.8125rem] leading-relaxed font-medium">
         Delete this contest? It goes for good, along with its deliverables and its budget. The
         activity log keeps a record of what it was. Nobody can be in it: if anybody is waiting
@@ -1414,7 +1414,7 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5 shadow-md">
+    <section className="bg-surface-1 flex flex-col gap-4 rounded-xl p-5 shadow-md">
       <div>
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           {step ? <span className="text-accent">{step}. </span> : null}

@@ -290,7 +290,7 @@ export function ContestDeliverables({ contestId, currency, rows, loading }: Prop
   }
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5 shadow-md">
+    <section className="bg-surface-1 flex flex-col gap-4 rounded-xl p-5 shadow-md">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
         <div>
           <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
@@ -324,7 +324,7 @@ export function ContestDeliverables({ contestId, currency, rows, loading }: Prop
         </div>
       ) : ordered.length === 0 ? (
         <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
-          <div className="bg-surface-3 border-line-strong grid size-[44px] place-items-center rounded-lg border">
+          <div className="wx-neo-inset grid size-[44px] place-items-center rounded-lg">
             <Target size={19} className="text-muted" aria-hidden />
           </div>
           <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
@@ -406,8 +406,10 @@ function DeliverableCard({
   return (
     <div
       className={cn(
-        'bg-surface-1 rounded-xl border p-4',
-        row.isActive ? 'border-line' : 'border-line border-dashed opacity-70'
+        'rounded-xl p-4',
+        row.isActive
+          ? 'wx-neo-raised'
+          : 'bg-surface-1 border-line border border-dashed opacity-70'
       )}
     >
       <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
@@ -431,7 +433,9 @@ function DeliverableCard({
             ) : null}
           </div>
 
-          <p className="text-text mt-2 text-[0.9375rem] font-semibold break-words">{row.title}</p>
+          <p className="text-text mt-2 text-[0.9375rem] font-semibold break-words">
+            {row.title}
+          </p>
 
           {row.detail ? (
             <p className="text-muted mt-1 max-w-prose text-[0.8125rem] leading-relaxed break-words">
@@ -665,7 +669,7 @@ function DeliverableDialog({
         initial={reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={reduced ? { duration: 0 } : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        className="border-line bg-surface-1 relative max-h-[100dvh] w-full max-w-xl overflow-y-auto rounded-t-2xl border p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
+        className="bg-surface-1 relative max-h-[100dvh] w-full max-w-xl overflow-y-auto rounded-t-2xl p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">

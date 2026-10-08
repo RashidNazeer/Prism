@@ -228,7 +228,7 @@ export function TikTokConnection() {
           ) : null}
 
           {confirmingDisconnect ? (
-            <div className="border-danger/40 bg-danger-soft mt-4 rounded-xl border p-4">
+            <div className="bg-danger-soft mt-4 rounded-xl p-4">
               <p className="text-danger text-[0.8125rem] leading-relaxed font-medium">
                 Disconnect your TikTok account? We will forget the link and delete the figures
                 we pulled in. Nothing on TikTok itself changes, and you can reconnect whenever

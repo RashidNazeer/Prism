@@ -223,10 +223,7 @@ export function BrandWorldShell({
                 >
                   <span className="truncate">{s.label}</span>
                   {locked ? (
-                    <span
-                      className="shrink-0 rounded-full border px-1.5 py-0.5 text-[0.5625rem] tracking-wider uppercase"
-                      style={{ borderColor: 'currentColor' }}
-                    >
+                    <span className="shrink-0 rounded-full px-1.5 py-0.5 text-[0.5625rem] tracking-wider uppercase opacity-70">
                       {s.soon}
                     </span>
                   ) : null}

@@ -156,14 +156,14 @@ export function Creators() {
           ))}
         </ul>
       ) : isError ? (
-        <div className="border-line bg-surface-1 mt-4 rounded-xl border px-6 py-14 text-center shadow-md">
+        <div className="bg-surface-1 mt-4 rounded-xl px-6 py-14 text-center shadow-md">
           <p className="font-semibold">That list would not load</p>
           <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
             {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
           </p>
         </div>
       ) : rows.length === 0 ? (
-        <div className="border-line bg-surface-1 mt-4 rounded-xl border px-6 py-16 text-center shadow-md">
+        <div className="bg-surface-1 mt-4 rounded-xl px-6 py-16 text-center shadow-md">
           <Users size={26} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">
             {filtered ? 'Nobody matches that' : 'No creators yet'}
@@ -234,7 +234,7 @@ function CreatorCard({
   return (
     <Link
       to={`/admin/creators/${row.id}`}
-      className="border-line bg-surface-1 hover:border-accent/60 flex h-full flex-col rounded-xl border p-4 shadow-md transition-colors sm:p-5"
+      className="bg-surface-1 flex h-full flex-col rounded-xl p-4 shadow-md transition-colors sm:p-5"
     >
       <div className="flex items-start gap-3">
         <CreatorFace src={face} name={row.display_name} handle={row.tiktok_handle} size={40} />

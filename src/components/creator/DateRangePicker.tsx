@@ -177,7 +177,7 @@ export function DateRangePicker({
         aria-haspopup="dialog"
         aria-expanded={open}
         className={cn(
-          'wx-neo-raised-sm wx-neo-press border-line-interactive! text-muted hover:text-accent inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md px-2.5 text-[0.8125rem] font-medium sm:min-h-8',
+          'wx-neo-raised-sm wx-neo-press text-muted hover:text-accent inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md px-2.5 text-[0.8125rem] font-medium sm:min-h-8',
           open && 'text-accent'
         )}
       >
@@ -263,7 +263,7 @@ export function DateRangePicker({
                     className={cn(
                       'hover:text-accent min-h-11 rounded-md px-2 text-[0.75rem] font-medium sm:min-h-8',
                       preset === p.key
-                        ? 'wx-neo-pressed text-accent border-accent border'
+                        ? 'wx-neo-pressed text-accent'
                         : 'wx-neo-raised-sm wx-neo-press text-muted'
                     )}
                   >

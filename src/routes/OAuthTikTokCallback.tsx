@@ -34,7 +34,8 @@ export function OAuthTikTokCallback() {
     /* Taken off the address before the Supabase client loaded â€” see the script
        in index.html. That client is `detectSessionInUrl: true` with PKCE and
        would otherwise try to spend TikTok's `code` as its own. */
-    const stash = (window as unknown as { __wxOAuthReturn?: Record<string, string | null> }).__wxOAuthReturn;
+    const stash = (window as unknown as { __wxOAuthReturn?: Record<string, string | null> })
+      .__wxOAuthReturn;
     const params = new URLSearchParams(window.location.search);
     const authCode = stash?.code ?? params.get('auth_code') ?? params.get('code');
     const nonce = stash?.state ?? params.get('state');
@@ -71,16 +72,12 @@ export function OAuthTikTokCallback() {
 
   return (
     <main className="bg-bg grid min-h-dvh place-items-center px-6 py-12">
-      <div className="border-line bg-surface-1 w-full max-w-md rounded-xl border p-8 text-center">
+      <div className="wx-neo-raised w-full max-w-md rounded-xl p-8 text-center">
         <PrismMark height={26} className="mx-auto" />
 
         {state === 'working' ? (
           <>
-            <Loader2
-              size={30}
-              aria-hidden
-              className="text-accent mx-auto mt-7 animate-spin"
-            />
+            <Loader2 size={30} aria-hidden className="text-accent mx-auto mt-7 animate-spin" />
             <h1 className="font-display mt-5 text-[1.25rem] font-bold">Connecting TikTok</h1>
             <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
               Swapping the code TikTok gave us for an access token. This takes a moment.
@@ -98,7 +95,7 @@ export function OAuthTikTokCallback() {
                 : 'The connection is saved.'}
             </p>
             {message ? (
-              <p className="text-warning border-line mt-4 rounded-md border p-3 text-[0.8125rem] leading-relaxed">
+              <p className="text-warning mt-4 rounded-md p-3 text-[0.8125rem] leading-relaxed">
                 One thing did not finish: {message} Press Re-check on the TikTok screen.
               </p>
             ) : null}
@@ -116,7 +113,7 @@ export function OAuthTikTokCallback() {
             <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">{message}</p>
             <Link
               to="/admin/tiktok"
-              className="border-line hover:bg-surface-2 ease-brand mt-6 inline-flex min-h-[44px] items-center rounded-md border px-5 text-[0.875rem] font-semibold transition-colors duration-200"
+              className="wx-neo-raised-sm wx-neo-press hover:bg-surface-2 ease-brand mt-6 inline-flex min-h-[44px] items-center rounded-md px-5 text-[0.875rem] font-semibold transition-colors duration-200"
             >
               Back to the TikTok screen
             </Link>

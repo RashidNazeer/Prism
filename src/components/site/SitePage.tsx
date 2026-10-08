@@ -61,7 +61,9 @@ export function SitePage({
             <h1 className="font-display mt-5 max-w-4xl text-[clamp(2rem,4.5vw,3.25rem)] leading-[1.05] font-extrabold tracking-[-0.02em]">
               {title}
             </h1>
-            {intro && <p className="text-muted mt-6 max-w-2xl text-lg leading-relaxed">{intro}</p>}
+            {intro && (
+              <p className="text-muted mt-6 max-w-2xl text-lg leading-relaxed">{intro}</p>
+            )}
           </Container>
         </header>
         {children}
@@ -83,7 +85,7 @@ export function SiteCard({
 }) {
   return (
     <div
-      className={`border-line bg-surface-1 hover:border-line-interactive ease-brand h-full rounded-2xl border p-7 transition-colors duration-300 ${className ?? ''}`}
+      className={`wx-neo-raised ease-brand h-full rounded-2xl p-7 transition-colors duration-300 ${className ?? ''}`}
     >
       <h3 className="text-lg font-bold">{title}</h3>
       <div className="text-muted mt-3 leading-relaxed">{children}</div>

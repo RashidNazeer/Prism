@@ -153,9 +153,8 @@ export function BrandWorldHero({
           <BrandChip brand={brand} size={34} />
           {brand.tagline ? (
             <span
-              className="rounded-full border px-2.5 py-1 text-[0.6875rem] font-bold tracking-[0.08em] uppercase"
+              className="rounded-full px-2.5 py-1 text-[0.6875rem] font-bold tracking-[0.08em] uppercase"
               style={{
-                borderColor: 'color-mix(in srgb, var(--wx-brand-hero-text) 26%, transparent)',
                 background: 'color-mix(in srgb, var(--wx-brand-hero-text) 12%, transparent)',
               }}
             >
@@ -196,9 +195,8 @@ export function BrandWorldHero({
           <button
             type="button"
             onClick={onExplore}
-            className="group/cta mt-7 inline-flex items-center gap-2.5 rounded-lg border px-6 py-3.5 text-[0.9375rem] font-bold backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-2xl"
+            className="group/cta mt-7 inline-flex items-center gap-2.5 rounded-lg px-6 py-3.5 text-[0.9375rem] font-bold backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-2xl"
             style={{
-              borderColor: 'color-mix(in srgb, var(--wx-brand-hero-text) 45%, transparent)',
               background: 'color-mix(in srgb, var(--wx-brand-hero-text) 12%, transparent)',
               color: 'var(--wx-brand-hero-text)',
             }}

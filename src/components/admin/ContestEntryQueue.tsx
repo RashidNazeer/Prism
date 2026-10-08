@@ -203,10 +203,7 @@ export function ContestEntryQueue({
 
   return (
     <section
-      className={cn(
-        'border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5 shadow-md',
-        className
-      )}
+      className={cn('bg-surface-1 flex flex-col gap-4 rounded-xl p-5 shadow-md', className)}
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div>
@@ -245,13 +242,13 @@ export function ContestEntryQueue({
         </div>
       ) : rows.length === 0 ? (
         <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
-          <div className="bg-surface-3 border-line-strong grid size-[44px] place-items-center rounded-lg border">
+          <div className="wx-neo-inset grid size-[44px] place-items-center rounded-lg">
             <DoorOpen size={19} className="text-muted" aria-hidden />
           </div>
           <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
             Nobody is waiting to get in
           </h3>
-          <p className="text-muted max-w-prose text=[14px] text-[0.875rem] leading-relaxed">
+          <p className="text-muted text=[14px] max-w-prose text-[0.875rem] leading-relaxed">
             {contestId
               ? 'Nobody has asked to join this contest and been left waiting. A request lands here the moment somebody applies.'
               : 'No creator is waiting on a decision about joining a contest. Contests that let people in automatically never appear here.'}
@@ -343,7 +340,7 @@ function EntryCard({
   }
 
   return (
-    <article className="border-line bg-surface-2 rounded-2xl border p-4">
+    <article className="wx-neo-inset rounded-2xl p-4">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -376,7 +373,7 @@ function EntryCard({
       </div>
 
       {row.note ? (
-        <p className="text-muted border-line bg-surface-1 mt-3 rounded-xl border px-3.5 py-2.5 text-[0.8125rem] leading-relaxed">
+        <p className="wx-neo-raised text-muted mt-3 rounded-xl px-3.5 py-2.5 text-[0.8125rem] leading-relaxed">
           {row.note}
         </p>
       ) : null}

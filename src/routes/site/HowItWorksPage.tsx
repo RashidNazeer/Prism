@@ -22,7 +22,7 @@ export function HowItWorksPage() {
         <ol className="grid gap-5 lg:grid-cols-2">
           {CREATOR_JOURNEY.map((step, i) => (
             <Reveal key={step.n} delay={i * 0.06}>
-              <li className="border-line bg-surface-1 hover:border-line-interactive ease-brand h-full rounded-2xl border p-7 transition-colors duration-300">
+              <li className="wx-neo-raised ease-brand h-full rounded-2xl p-7 transition-colors duration-300">
                 <span
                   className="wx-numeric bg-accent font-display text-on-accent grid size-[44px] place-items-center rounded-xl text-sm font-bold"
                   aria-hidden
@@ -45,15 +45,15 @@ export function HowItWorksPage() {
           </h2>
           <div className="text-muted mt-6 grid max-w-4xl gap-4 leading-relaxed">
             <p>
-              Revenue and items sold come from the brand&rsquo;s own TikTok Shop reporting, matched
-              to the videos you posted for that brand. Ad spend comes from the brand&rsquo;s TikTok
-              ad account, for the videos it was spent on.
+              Revenue and items sold come from the brand&rsquo;s own TikTok Shop reporting,
+              matched to the videos you posted for that brand. Ad spend comes from the
+              brand&rsquo;s TikTok ad account, for the videos it was spent on.
             </p>
             <p>
-              Nothing is re-typed by hand on the way to your screen, and there is no separate set of
-              figures for staff. When a number is missing, the hub shows a dash rather than a zero,
-              because &ldquo;we cannot answer that yet&rdquo; and &ldquo;nothing was earned&rdquo;
-              are different statements.
+              Nothing is re-typed by hand on the way to your screen, and there is no separate
+              set of figures for staff. When a number is missing, the hub shows a dash rather
+              than a zero, because &ldquo;we cannot answer that yet&rdquo; and &ldquo;nothing
+              was earned&rdquo; are different statements.
             </p>
           </div>
           <div className="mt-8 flex flex-wrap gap-3">

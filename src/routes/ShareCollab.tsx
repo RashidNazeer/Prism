@@ -88,7 +88,20 @@ type Payload = {
    beats the vendored rule, which counts twelve columns. */
 const COLS = '0.36fr 0.74fr 1.7fr .86fr .56fr .6fr .8fr .74fr .56fr';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 const monthLabel = (key: string) => {
   if (key === 'all') return 'All time';
   const [y, m] = key.split('-');
@@ -97,14 +110,24 @@ const monthLabel = (key: string) => {
 const dayLabel = (iso: string | null) => {
   if (!iso) return 'â€“';
   const d = new Date(`${iso}T00:00:00Z`);
-  return Number.isNaN(d.getTime()) ? 'â€“' : `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
+  return Number.isNaN(d.getTime())
+    ? 'â€“'
+    : `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
 };
 const money = (n: number | null | undefined) =>
   n === null || n === undefined || !Number.isFinite(n)
     ? 'â€“'
-    : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: n % 1 === 0 ? 0 : 2 }).format(n);
+    : new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: n % 1 === 0 ? 0 : 2,
+      }).format(n);
 const kNum = (n: number) =>
-  n >= 1000 ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n) : String(n || 0);
+  n >= 1000
+    ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(
+        n
+      )
+    : String(n || 0);
 const handleOf = (raw: string) => {
   const t = String(raw).trim().replace(/\/$/, '');
   if (t.startsWith('http')) {
@@ -114,9 +137,16 @@ const handleOf = (raw: string) => {
   return t.startsWith('@') ? t : `@${t}`;
 };
 const profileUrl = (raw: string) =>
-  String(raw).trim().startsWith('http') ? String(raw).trim() : `https://www.tiktok.com/${handleOf(raw)}`;
+  String(raw).trim().startsWith('http')
+    ? String(raw).trim()
+    : `https://www.tiktok.com/${handleOf(raw)}`;
 const initials = (name: string) =>
-  name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('') || '?';
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('') || '?';
 
 /* Their hired-by palette, so the tag is the same colour it is on your screen. */
 const HIRED_BY: Record<string, { i: string; fg: string; bg: string }> = {
@@ -144,42 +174,59 @@ export function ShareCollab() {
     return () => meta.remove();
   }, []);
 
-  const load = useCallback(async (askedMonth: string | null) => {
-    setState((s) => (s === 'ready' ? 'ready' : 'loading'));
-    try {
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/collab-share`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(askedMonth ? { token, month: askedMonth } : { token }),
-      });
-      const body = await res.json().catch(() => null);
-      if (res.status === 404) {
-        setMessage(body?.error ?? 'This link is not active any more.');
-        setState('gone');
-        return;
-      }
-      if (!res.ok || !body?.data) {
-        setMessage(body?.error ?? 'Something went wrong loading this page.');
+  const load = useCallback(
+    async (askedMonth: string | null) => {
+      setState((s) => (s === 'ready' ? 'ready' : 'loading'));
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/collab-share`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(askedMonth ? { token, month: askedMonth } : { token }),
+          }
+        );
+        const body = await res.json().catch(() => null);
+        if (res.status === 404) {
+          setMessage(body?.error ?? 'This link is not active any more.');
+          setState('gone');
+          return;
+        }
+        if (!res.ok || !body?.data) {
+          setMessage(body?.error ?? 'Something went wrong loading this page.');
+          setState('error');
+          return;
+        }
+        setPayload(body as Payload);
+        setMonth((body as Payload).month);
+        setState('ready');
+      } catch {
+        setMessage('We could not reach the server. Check your connection and try again.');
         setState('error');
-        return;
       }
-      setPayload(body as Payload);
-      setMonth((body as Payload).month);
-      setState('ready');
-    } catch {
-      setMessage('We could not reach the server. Check your connection and try again.');
-      setState('error');
-    }
-  }, [token]);
+    },
+    [token]
+  );
 
-  useEffect(() => { void load(null); }, [load]);
   useEffect(() => {
-    document.title = payload ? `${payload.data.map((b) => b.brand).join(', ')} Â· Wurx Media` : 'Wurx Media';
+    void load(null);
+  }, [load]);
+  useEffect(() => {
+    document.title = payload
+      ? `${payload.data.map((b) => b.brand).join(', ')} Â· Wurx Media`
+      : 'Wurx Media';
   }, [payload]);
 
   const brand = payload?.data[brandIdx] ?? payload?.data[0];
   const expires = useMemo(
-    () => (payload ? new Date(payload.expiresAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }) : ''),
+    () =>
+      payload
+        ? new Date(payload.expiresAt).toLocaleDateString(undefined, {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })
+        : '',
     [payload]
   );
 
@@ -187,11 +234,13 @@ export function ShareCollab() {
     return (
       <Shell>
         <div className="space-y-4" aria-busy="true" aria-live="polite">
-          <div className="h-8 w-56 animate-pulse rounded-md bg-surface-2" />
+          <div className="bg-surface-2 h-8 w-56 animate-pulse rounded-md" />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {[0, 1, 2, 3, 4].map((i) => <div key={i} className="h-24 animate-pulse rounded-xl bg-surface-2" />)}
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-surface-2 h-24 animate-pulse rounded-xl" />
+            ))}
           </div>
-          <div className="h-64 animate-pulse rounded-xl bg-surface-2" />
+          <div className="bg-surface-2 h-64 animate-pulse rounded-xl" />
           <span className="sr-only">Loading this report</span>
         </div>
       </Shell>
@@ -201,14 +250,16 @@ export function ShareCollab() {
   if (state === 'gone' || state === 'error') {
     return (
       <Shell>
-        <div className="mx-auto max-w-md rounded-xl border border-line bg-surface-1 p-8 text-center">
-          <h1 className="text-xl font-extrabold">{state === 'gone' ? 'This link has ended' : 'Something went wrong'}</h1>
-          <p className="mt-3 leading-relaxed text-muted">{message}</p>
+        <div className="wx-neo-raised mx-auto max-w-md rounded-xl p-8 text-center">
+          <h1 className="text-xl font-extrabold">
+            {state === 'gone' ? 'This link has ended' : 'Something went wrong'}
+          </h1>
+          <p className="text-muted mt-3 leading-relaxed">{message}</p>
           {state === 'error' && (
             <button
               type="button"
               onClick={() => void load(month)}
-              className="mt-6 rounded-md border border-line-interactive px-4 py-2 text-sm font-semibold hover:bg-surface-2"
+              className="wx-neo-raised-sm wx-neo-press mt-6 rounded-md px-4 py-2 text-sm font-semibold"
             >
               Try again
             </button>
@@ -223,12 +274,17 @@ export function ShareCollab() {
 
   return (
     <Shell>
-      <header className="flex flex-wrap items-center justify-between gap-4" data-month={payload.month}>
+      <header
+        className="flex flex-wrap items-center justify-between gap-4"
+        data-month={payload.month}
+      >
         <div className="min-w-0">
           <h1 className="text-2xl font-extrabold tracking-tight">{brand.brand}</h1>
-          <p className="mt-1 text-sm text-muted">Creator campaign report Â· {monthLabel(payload.month)}</p>
+          <p className="text-muted mt-1 text-sm">
+            Creator campaign report Â· {monthLabel(payload.month)}
+          </p>
         </div>
-        <span className="rounded-full border border-line bg-surface-2 px-3 py-1 text-xs font-bold uppercase tracking-wider text-muted">
+        <span className="wx-neo-raised-sm text-muted rounded-full px-3 py-1 text-xs font-bold tracking-wider uppercase">
           Read only
         </span>
       </header>
@@ -242,42 +298,84 @@ export function ShareCollab() {
               onClick={() => setBrandIdx(i)}
               aria-pressed={i === brandIdx}
               className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
-                i === brandIdx ? 'bg-accent text-on-accent' : 'border border-line bg-surface-1 hover:bg-surface-2'
+                i === brandIdx ? 'bg-accent text-on-accent' : 'wx-neo-raised-sm wx-neo-press'
               }`}
             >
               {b.brand}
             </button>
           ))}
-        {payload.data.length > 1 && <span className="mx-1 h-5 w-px bg-line" aria-hidden />}
-        {[...payload.months.slice(0, 12), ...(payload.months.length > 1 ? ['all'] : [])].map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => { setMonth(m); void load(m); }}
-            aria-pressed={m === payload.month}
-            className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
-              m === payload.month ? 'bg-accent text-on-accent' : 'border border-line bg-surface-1 hover:bg-surface-2'
-            }`}
-          >
-            {monthLabel(m)}
-          </button>
-        ))}
+        {payload.data.length > 1 && <span className="bg-line mx-1 h-5 w-px" aria-hidden />}
+        {[...payload.months.slice(0, 12), ...(payload.months.length > 1 ? ['all'] : [])].map(
+          (m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => {
+                setMonth(m);
+                void load(m);
+              }}
+              aria-pressed={m === payload.month}
+              className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
+                m === payload.month
+                  ? 'bg-accent text-on-accent'
+                  : 'wx-neo-raised-sm wx-neo-press'
+              }`}
+            >
+              {monthLabel(m)}
+            </button>
+          )
+        )}
       </div>
 
       {/* Everything below wears Paid Collabs' own stylesheet. */}
       <div className="wurxbase-root mt-6">
         {k && (
-          <div className="pc-kpis pc-kpis-5" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
-            <Kpi label="Budget" color="#1259C3" value={money(k.budget)}
-              sub={k.budget > 0 ? `${Math.round((k.allocated / k.budget) * 100)}% used` : 'no budget set'} />
-            <Kpi label="Allocated" color="#7A3BB5" value={money(k.allocated)}
-              sub={`${k.creators} creator${k.creators === 1 ? '' : 's'}`} />
-            <Kpi label="Paid" color="#0E7A3A" value={money(k.paid)}
-              sub={k.allocated > 0 ? `${Math.round((k.paid / k.allocated) * 100)}% paid out` : 'â€”'} />
-            <Kpi label="Videos" color="#0EA5E9" value={`${k.delivered}/${k.committed}`}
-              sub={k.committed > 0 ? `${Math.round((k.delivered / k.committed) * 100)}% completed` : 'â€”'} />
-            <Kpi label="Cost / Video" color="#E65100" value={k.costPerVideo > 0 ? money(Math.round(k.costPerVideo)) : '-'}
-              sub="per delivered video" />
+          <div
+            className="pc-kpis pc-kpis-5"
+            style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}
+          >
+            <Kpi
+              label="Budget"
+              color="#1259C3"
+              value={money(k.budget)}
+              sub={
+                k.budget > 0
+                  ? `${Math.round((k.allocated / k.budget) * 100)}% used`
+                  : 'no budget set'
+              }
+            />
+            <Kpi
+              label="Allocated"
+              color="#7A3BB5"
+              value={money(k.allocated)}
+              sub={`${k.creators} creator${k.creators === 1 ? '' : 's'}`}
+            />
+            <Kpi
+              label="Paid"
+              color="#0E7A3A"
+              value={money(k.paid)}
+              sub={
+                k.allocated > 0
+                  ? `${Math.round((k.paid / k.allocated) * 100)}% paid out`
+                  : 'â€”'
+              }
+            />
+            <Kpi
+              label="Videos"
+              color="#0EA5E9"
+              value={`${k.delivered}/${k.committed}`}
+              sub={
+                k.committed > 0
+                  ? `${Math.round((k.delivered / k.committed) * 100)}% completed`
+                  : 'â€”'
+              }
+            />
+            <Kpi
+              label="Cost / Video"
+              color="#E65100"
+              value={k.costPerVideo > 0 ? money(Math.round(k.costPerVideo)) : '-'}
+              sub="per delivered video"
+            />
           </div>
         )}
 
@@ -290,33 +388,76 @@ export function ShareCollab() {
             <div className="pc-topvids-body">
               <div className="pc-topvids-row">
                 {brand.topVideos.map((v, i) => (
-                  <a key={v.url + i} className="pc-topvid" href={v.url} target="_blank" rel="noreferrer noopener"
-                    title={`${v.name} Â· ${money(v.gmv)} GMV Â· open on TikTok`}>
+                  <a
+                    key={v.url + i}
+                    className="pc-topvid"
+                    href={v.url}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    title={`${v.name} Â· ${money(v.gmv)} GMV Â· open on TikTok`}
+                  >
                     <span className="pc-topvid-frame">
-                      {v.thumb
-                        ? <img className="pc-topvid-thumb" src={v.thumb} alt="" loading="lazy" />
-                        : <span className="pc-topvid-thumb pc-topvid-ph" aria-hidden>â–¶</span>}
+                      {v.thumb ? (
+                        <img className="pc-topvid-thumb" src={v.thumb} alt="" loading="lazy" />
+                      ) : (
+                        <span className="pc-topvid-thumb pc-topvid-ph" aria-hidden>
+                          â–¶
+                        </span>
+                      )}
                       <span className="pc-topvid-rank">#{i + 1}</span>
                       <span className="pc-topvid-gmv">{money(v.gmv)}</span>
                     </span>
                     <span className="pc-topvid-name">{v.name}</span>
-                    <span className="pc-topvid-views">{v.views > 0 ? `${kNum(v.views)} views` : ' '}</span>
+                    <span className="pc-topvid-views">
+                      {v.views > 0 ? `${kNum(v.views)} views` : ' '}
+                    </span>
                   </a>
                 ))}
               </div>
               {k && (
                 <div className="pc-topvids-totalwrap">
-                  <div className="pc-topvids-stats" aria-label={`Totals for ${monthLabel(payload.month)}`}>
-                    <div className="pc-topvids-stat views" data-value={k.views} title={`${k.views.toLocaleString()} views`}>
+                  <div
+                    className="pc-topvids-stats"
+                    aria-label={`Totals for ${monthLabel(payload.month)}`}
+                  >
+                    <div
+                      className="pc-topvids-stat views"
+                      data-value={k.views}
+                      title={`${k.views.toLocaleString()} views`}
+                    >
                       <span className="pc-topvids-stat-ico" aria-hidden>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.4"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
                       </span>
                       <span className="pc-topvids-stat-lbl">Views</span>
                       <span className="pc-topvids-stat-val">{kNum(k.views)}</span>
                     </div>
-                    <div className="pc-topvids-stat gmv" data-value={k.gmv} title={`${money(k.gmv)} new video GMV`}>
+                    <div
+                      className="pc-topvids-stat gmv"
+                      data-value={k.gmv}
+                      title={`${money(k.gmv)} new video GMV`}
+                    >
                       <span className="pc-topvids-stat-ico" aria-hidden>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.4"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                          <polyline points="17 6 23 6 23 12" />
+                        </svg>
                       </span>
                       <span className="pc-topvids-stat-lbl">GMV</span>
                       <span className="pc-topvids-stat-val">{money(k.gmv)}</span>
@@ -356,7 +497,10 @@ export function ShareCollab() {
                   <div key={id}>
                     <div
                       className={`pc-ct-row ${isOpen ? 'open' : ''}`}
-                      style={{ gridTemplateColumns: COLS, cursor: c.videos?.length ? 'pointer' : 'default' }}
+                      style={{
+                        gridTemplateColumns: COLS,
+                        cursor: c.videos?.length ? 'pointer' : 'default',
+                      }}
                       onClick={() => c.videos?.length && setOpen(isOpen ? null : id)}
                       data-creator={c.name}
                       data-deal={c.deal}
@@ -364,8 +508,16 @@ export function ShareCollab() {
                       data-views={c.views}
                       data-gmv={c.gmv}
                     >
-                      <div className="pc-cell pc-num" data-label="#"><span className="pc-idx">#{i + 1}</span></div>
-                      <div className="pc-cell" data-label="Completed on">{c.completedOn ? dayLabel(c.completedOn) : <span className="pc-handle">-</span>}</div>
+                      <div className="pc-cell pc-num" data-label="#">
+                        <span className="pc-idx">#{i + 1}</span>
+                      </div>
+                      <div className="pc-cell" data-label="Completed on">
+                        {c.completedOn ? (
+                          dayLabel(c.completedOn)
+                        ) : (
+                          <span className="pc-handle">-</span>
+                        )}
+                      </div>
                       <div className="pc-cell" data-label="Creator">
                         <span className="pc-creatorcell">
                           {/* No deals circle: how many campaigns this person
@@ -373,33 +525,88 @@ export function ShareCollab() {
                           <Face name={c.name} handle={c.tiktok[0]} />
                           <span className="pc-creatorcell-txt">
                             <span className="pc-cname">{c.name || '-'}</span>
-                            {c.tiktok[0]
-                              ? <a className="pc-handle pc-handle-sub" href={profileUrl(c.tiktok[0])} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}>{handleOf(c.tiktok[0])}</a>
-                              : <span className="pc-handle pc-handle-sub">-</span>}
+                            {c.tiktok[0] ? (
+                              <a
+                                className="pc-handle pc-handle-sub"
+                                href={profileUrl(c.tiktok[0])}
+                                target="_blank"
+                                rel="noreferrer noopener"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {handleOf(c.tiktok[0])}
+                              </a>
+                            ) : (
+                              <span className="pc-handle pc-handle-sub">-</span>
+                            )}
                           </span>
-                          {c.tier && <span className={`pc-tierbadge ${c.tier.toLowerCase()}`} title={`EUKA creator tier ${c.tier}`}>{c.tier}</span>}
-                          {tag && <span className="pc-hbtag" style={{ color: tag.fg, background: tag.bg }} title={c.hiredBy ?? ''}>{tag.i}</span>}
+                          {c.tier && (
+                            <span
+                              className={`pc-tierbadge ${c.tier.toLowerCase()}`}
+                              title={`EUKA creator tier ${c.tier}`}
+                            >
+                              {c.tier}
+                            </span>
+                          )}
+                          {tag && (
+                            <span
+                              className="pc-hbtag"
+                              style={{ color: tag.fg, background: tag.bg }}
+                              title={c.hiredBy ?? ''}
+                            >
+                              {tag.i}
+                            </span>
+                          )}
                         </span>
                       </div>
                       <div className="pc-cell pc-num" data-label="Deal">
-                        {c.deal > 0
-                          ? <span className="pc-money">{money(c.deal)}{c.perVideo ? <span className="pc-deal-per"> Â· {money(c.perVideo)}/vid</span> : null}</span>
-                          : <span className="pc-handle">-</span>}
+                        {c.deal > 0 ? (
+                          <span className="pc-money">
+                            {money(c.deal)}
+                            {c.perVideo ? (
+                              <span className="pc-deal-per"> Â· {money(c.perVideo)}/vid</span>
+                            ) : null}
+                          </span>
+                        ) : (
+                          <span className="pc-handle">-</span>
+                        )}
                       </div>
                       <div className="pc-cell pc-num" data-label="Videos">
-                        <span className="pc-metric">{c.delivered}{c.committed ? <span style={{ opacity: 0.6 }}>/{c.committed}</span> : null}</span>
+                        <span className="pc-metric">
+                          {c.delivered}
+                          {c.committed ? (
+                            <span style={{ opacity: 0.6 }}>/{c.committed}</span>
+                          ) : null}
+                        </span>
                       </div>
                       <div className="pc-cell pc-num" data-label="Total views">
-                        {c.views > 0 ? <span className="pc-metric">{kNum(c.views)}</span> : <span className="pc-handle">-</span>}
+                        {c.views > 0 ? (
+                          <span className="pc-metric">{kNum(c.views)}</span>
+                        ) : (
+                          <span className="pc-handle">-</span>
+                        )}
                       </div>
                       <div className="pc-cell pc-num" data-label="New video GMV">
-                        {c.gmv > 0 ? <span className="pc-metric pc-metric-gmv">{money(Math.round(c.gmv))}</span> : <span className="pc-handle">-</span>}
+                        {c.gmv > 0 ? (
+                          <span className="pc-metric pc-metric-gmv">
+                            {money(Math.round(c.gmv))}
+                          </span>
+                        ) : (
+                          <span className="pc-handle">-</span>
+                        )}
                       </div>
                       <div className="pc-cell pc-num" data-label="L30 GMV">
-                        {c.l30 ? <span className="pc-l30-cell">{money(Math.round(c.l30))}</span> : <span className="pc-l30-cell muted">â€“</span>}
+                        {c.l30 ? (
+                          <span className="pc-l30-cell">{money(Math.round(c.l30))}</span>
+                        ) : (
+                          <span className="pc-l30-cell muted">â€“</span>
+                        )}
                       </div>
                       <div className="pc-cell pc-num" data-label="Items sold">
-                        {c.items > 0 ? <span className="pc-metric">{c.items}</span> : <span className="pc-handle">-</span>}
+                        {c.items > 0 ? (
+                          <span className="pc-metric">{c.items}</span>
+                        ) : (
+                          <span className="pc-handle">-</span>
+                        )}
                       </div>
                     </div>
 
@@ -407,12 +614,18 @@ export function ShareCollab() {
                       <div className="wx-share-videos">
                         {c.videos.map((v, vi) => (
                           <div key={v.url + vi} className="wx-share-video">
-                            <a href={v.url} target="_blank" rel="noreferrer noopener">Video {vi + 1}</a>
+                            <a href={v.url} target="_blank" rel="noreferrer noopener">
+                              Video {vi + 1}
+                            </a>
                             <span>{v.date ? dayLabel(v.date) : 'â€“'}</span>
                             <span>{kNum(v.views)} views</span>
                             <span className="wx-share-gmv">{money(v.gmv)}</span>
                             {v.items > 0 && <span>{v.items} sold</span>}
-                            {v.product && <span className="wx-share-product" title={v.product}>{v.product}</span>}
+                            {v.product && (
+                              <span className="wx-share-product" title={v.product}>
+                                {v.product}
+                              </span>
+                            )}
                             {v.spark && (
                               <button
                                 type="button"
@@ -438,7 +651,7 @@ export function ShareCollab() {
         )}
       </div>
 
-      <footer className="mt-10 border-t border-line pt-6 text-xs text-muted">
+      <footer className="border-line text-muted mt-10 border-t pt-6 text-xs">
         <p>Shared with you by Wurx Media. This page is read only and works until {expires}.</p>
         <p className="mt-1">Figures come from TikTok Shop and update through the day.</p>
       </footer>
@@ -460,7 +673,9 @@ function Face({ name, handle }: { name: string; handle?: string }) {
   const h = handle ? handleOf(handle).replace(/^@/, '') : '';
   if (!h || failed) {
     return (
-      <span className="pc-face" style={{ width: 30, height: 30, fontSize: 12 }}>{initials(name)}</span>
+      <span className="pc-face" style={{ width: 30, height: 30, fontSize: 12 }}>
+        {initials(name)}
+      </span>
     );
   }
   return (
@@ -476,7 +691,17 @@ function Face({ name, handle }: { name: string; handle?: string }) {
   );
 }
 
-function Kpi({ label, color, value, sub }: { label: string; color: string; value: string; sub?: string }) {
+function Kpi({
+  label,
+  color,
+  value,
+  sub,
+}: {
+  label: string;
+  color: string;
+  value: string;
+  sub?: string;
+}) {
   const pct = sub ? Number(sub.match(/(\d+(?:\.\d+)?)\s*%/)?.[1] ?? NaN) : NaN;
   return (
     <div className="pc-kpi" style={{ '--kpi-color': color } as React.CSSProperties}>
@@ -488,7 +713,10 @@ function Kpi({ label, color, value, sub }: { label: string; color: string; value
         <div className="pc-kpi-value">{value}</div>
         {Number.isFinite(pct) && (
           <div className="pc-kpi-track" aria-hidden>
-            <div className="pc-kpi-fill" style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} />
+            <div
+              className="pc-kpi-fill"
+              style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
+            />
           </div>
         )}
         {sub && <div className="pc-kpi-sub">{sub}</div>}
@@ -499,7 +727,7 @@ function Kpi({ label, color, value, sub }: { label: string; color: string; value
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-dvh bg-bg px-4 py-8 sm:px-8">
+    <div className="bg-bg min-h-dvh px-4 py-8 sm:px-8">
       <div className="mx-auto w-full max-w-[1600px]">
         <div className="mb-8 flex items-center justify-between">
           <PrismMark />
