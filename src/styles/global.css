@@ -374,7 +374,7 @@
  *
  * HOVER IS TWO PIXELS. The brief said 2-4px and "keep this extremely
  * restrained"; on a dark page anything more reads as a card detaching from the
- * screen. `translateY` and `box-shadow` only, both compositor-friendly — never
+ * screen. `translateY` and `box-shadow` only, both compositor-friendly â€” never
  * width, height or top, which force layout on every frame of the transition.
  */
 @utility wx-card {
@@ -422,6 +422,71 @@
   }
   .wx-card-lift:hover {
     transform: none;
+  }
+}
+
+/*
+ * THE NEOMORPHIC SURFACE SET, PRISM.
+ *
+ * ONE LIGHT, ABOVE AND LEFT. The highlight is always offset (-x,-y) and the
+ * shadow (+x,+y). Every surface in the product obeys it, in both themes. One
+ * disagreeing light and a soft interface stops reading as a material and
+ * starts reading as blur.
+ *
+ * THE HAIRLINE RIDES WITH THE SHADOW, ALWAYS. A control whose only boundary is
+ * a shadow fails WCAG 1.4.11, which asks 3:1 of a non-text boundary, and under
+ * `forced-colors` shadows are dropped entirely so a shadow-only control simply
+ * disappears. These utilities bake the border in rather than leaving each
+ * caller to remember it.
+ *
+ * OFFSETS IN rem, so the material scales with the text-size control like
+ * everything else.
+ */
+@utility wx-neo-raised {
+  background: var(--wx-surface-1);
+  border: 1px solid var(--wx-hairline);
+  box-shadow:
+    -0.375rem -0.375rem 0.875rem var(--wx-neo-light),
+    0.375rem 0.375rem 0.875rem var(--wx-neo-dark);
+}
+
+/* The small sibling: buttons, chips, icon wells. */
+@utility wx-neo-raised-sm {
+  background: var(--wx-surface-1);
+  border: 1px solid var(--wx-hairline);
+  box-shadow:
+    -0.1875rem -0.1875rem 0.4375rem var(--wx-neo-light),
+    0.1875rem 0.1875rem 0.4375rem var(--wx-neo-dark);
+}
+
+/* Things that RECEIVE: inputs, search, progress tracks, chart wells. */
+@utility wx-neo-inset {
+  background: var(--wx-surface-3);
+  box-shadow:
+    inset 0.25rem 0.25rem 0.5625rem var(--wx-neo-dark),
+    inset -0.25rem -0.25rem 0.5625rem var(--wx-neo-light);
+}
+
+/* The moment of contact. Raised goes IN; it does not merely darken. */
+@utility wx-neo-pressed {
+  background: var(--wx-pressed-surface);
+  box-shadow:
+    inset 0.1875rem 0.1875rem 0.375rem var(--wx-neo-dark),
+    inset -0.125rem -0.125rem 0.3125rem var(--wx-neo-light);
+}
+
+/* Press physics. Without this the softness reads as blur rather than material,
+   so it is FEEDBACK, not decoration, and it survives reduced-motion below. */
+@utility wx-neo-press {
+  transition:
+    box-shadow 160ms var(--wx-ease),
+    background 160ms var(--wx-ease);
+
+  &:active {
+    background: var(--wx-pressed-surface);
+    box-shadow:
+      inset 0.1875rem 0.1875rem 0.375rem var(--wx-neo-dark),
+      inset -0.125rem -0.125rem 0.3125rem var(--wx-neo-light);
   }
 }
 
@@ -521,7 +586,7 @@
 */
 /*
  * THE OUTER SHELL. It carries `.wurxbase-root`, so every fenced selector in
- * their stylesheet matches inside it — and it is deliberately NOT the
+ * their stylesheet matches inside it â€” and it is deliberately NOT the
  * containing block and NOT the scroller.
  *
  * Split out on 2026-08-31. One div used to be all three at once, and that is
@@ -529,7 +594,7 @@
  * overlays to `document.body`: the status dropdown, the video/ad-code modal
  * behind the eye icon, the notes drawer, the Discovery mark popup, the sticky
  * matrix header, the confirm dialog and more. `document.body` is OUTSIDE
- * `.wurxbase-root`, so every one of those got ZERO styling — the status menu
+ * `.wurxbase-root`, so every one of those got ZERO styling â€” the status menu
  * landed as an unstyled full-width block at the bottom of the document, which
  * reads exactly like "clicking does nothing".
  *
@@ -541,7 +606,7 @@
  *
  * So the two jobs are now two elements: this shell provides the class name and
  * nothing else, `.wurxbase-fence` inside it does the containing and scrolling,
- * and `#wurxbase-portal-host` sits beside the fence — inside the shell, so
+ * and `#wurxbase-portal-host` sits beside the fence â€” inside the shell, so
  * their CSS matches; outside the fence, so `position: fixed` means the screen.
  */
 @utility wurxbase-shell {
@@ -561,7 +626,7 @@
   isolation: isolate;
 
   /*
-   * NO `transform`, NO `contain`, ON PURPOSE — and this is the third time this
+   * NO `transform`, NO `contain`, ON PURPOSE â€” and this is the third time this
    * corner has been rewritten, so the history matters.
    *
    * Both properties make an element the containing block for every
@@ -569,7 +634,7 @@
    * mobile nav covering our sidebar, and it worked. What it also did was
    * redefine "fixed" for every dialog in their app: measured against this box
    * instead of the screen. When the box was 7,607px tall, modals opened 3,413px
-   * down the page. Making it viewport-sized hid that — until a dialog was
+   * down the page. Making it viewport-sized hid that â€” until a dialog was
    * opened from a SCROLLED table, when it landed 948px tall against a fence
    * offset by 600px, hung off the bottom, and dragged the fence back to zero as
    * the browser scrolled its autofocused input into view. Rashid: *"it opens
@@ -581,8 +646,8 @@
    *
    * So the containment goes, and every `position: fixed` in their app means the
    * screen again. What it was protecting against is handled where it belongs:
-   * the two pieces of their fixed chrome that are actually visible in here —
-   * `.app-footer` and `.footer-hover-zone` — are hidden by wurxbase-chrome.css,
+   * the two pieces of their fixed chrome that are actually visible in here â€”
+   * `.app-footer` and `.footer-hover-zone` â€” are hidden by wurxbase-chrome.css,
    * the same file that already removes their header, tab rail and sign-out.
    * Verified at rest: those two were the ONLY visible fixed elements inside
    * this fence.
@@ -592,14 +657,14 @@
    * THE FENCE IS EXACTLY THE VIEWPORT, AND THEIR APP SCROLLS INSIDE IT.
    *
    * Changed 2026-08-28. It used to be `min-height`, so the element grew to
-   * whatever their content needed — 7,607px on the Creators tab. Being the
+   * whatever their content needed â€” 7,607px on the Creators tab. Being the
    * containing block, that is also the box every `position: fixed` descendant
    * is measured against, and their modal overlays are `inset: 0` centred. So
    * the Unique Creators panel opened 3,413px down the page: the screen dimmed,
    * and the dialog was nowhere. Rashid: *"when i click unique creators look how
    * does it look like this is very bad"*. Every modal in Paid Collabs had it.
    *
-   * The containment cannot simply be dropped — it is what stops their fixed
+   * The containment cannot simply be dropped â€” it is what stops their fixed
    * FOOTER, bulk bar and mobile nav covering our sidebar, which is the bug it
    * was added for and which a browser test caught by failing to click
    * "Dashboard" for thirty seconds.

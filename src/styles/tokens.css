@@ -1,4 +1,4 @@
-/* ============================================================================
+﻿/* ============================================================================
    WurxMediaHub, Design Tokens
    ----------------------------------------------------------------------------
    THE RULE: no component may ever hardcode a colour. Every colour in this app
@@ -22,30 +22,30 @@
   color-scheme: dark;
 
   /* Surfaces, layered from the page up */
-  --wx-bg: #100e0c; /* page background */
-  --wx-surface-1: #1a1714; /* cards, panels */
-  --wx-surface-2: #221e1a; /* hover, nested cards */
-  --wx-surface-3: #2a251f; /* wells, inputs */
-  --wx-field: #221e1a; /* what you type into · a well on dark */
+  --wx-bg: #1b1b26; /* page background */
+  --wx-surface-1: #212130; /* cards, panels */
+  --wx-surface-2: #282838; /* hover, nested cards */
+  --wx-surface-3: #15151e; /* wells, inputs */
+  --wx-field: #15151e; /* what you type into Â· a well on dark */
 
   /* Text, all verified >= 4.5:1 on EVERY surface, --wx-bg to --wx-surface-3 */
-  --wx-text: #f4f0ea; /* 16.97:1 */
-  --wx-text-muted: #9d9387; /*  6.38:1 */
-  --wx-text-faint: #938b80; /*  5.73:1 */
-  --wx-text-inverse: #100e0c;
+  --wx-text: #f5f5fa; /* 16.97:1 */
+  --wx-text-muted: #b9b9c8; /*  6.38:1 */
+  --wx-text-faint: #a2a2b6; /*  5.73:1 */
+  --wx-text-inverse: #1b1b26;
 
   /* Borders, subtle is decorative only; interactive is for inputs/buttons */
-  --wx-border: #2c2721;
-  --wx-border-strong: #3d3730;
-  --wx-border-interactive: #6e675c; /* >= 3:1 on bg, for focusable controls */
+  --wx-border: #2e2e40;
+  --wx-border-strong: #3e3e54;
+  --wx-border-interactive: #7c7c96; /* >= 3:1 on bg, for focusable controls */
 
   /* Brand accent, the Wurx gold reads beautifully on near-black */
-  --wx-accent: #c8924b; /* 6.87:1 on bg */
-  --wx-accent-hover: #d8a35e; /* 8.35:1 */
-  --wx-accent-active: #b8823b;
-  --wx-accent-soft: rgba(200, 146, 75, 0.14);
-  --wx-accent-ring: rgba(200, 146, 75, 0.45);
-  --wx-on-accent: #100e0c; /* 6.87:1 sitting on the gold fill */
+  --wx-accent: #a878ff; /* 6.87:1 on bg */
+  --wx-accent-hover: #bc97ff; /* 8.35:1 */
+  --wx-accent-active: #cbb0ff;
+  --wx-accent-soft: rgba(168, 120, 255, 0.16);
+  --wx-accent-ring: rgba(168, 120, 255, 0.5);
+  --wx-on-accent: #14141c; /* 6.87:1 sitting on the gold fill */
 
   /*
    * A SCRIM IS THE PAGE DIMMED, so it is dark in BOTH themes.
@@ -59,9 +59,9 @@
    * Warm rather than neutral black, so it sits in the same family as the rest
    * of the palette instead of reading as a grey film over a cream page.
    */
-  --wx-scrim: rgba(16, 14, 12, 0.62);
+  --wx-scrim: rgba(20, 20, 28, 0.62);
 
-  /* Ink for a chip whose OWN colour is theme-independent — the live-cursor
+  /* Ink for a chip whose OWN colour is theme-independent â€” the live-cursor
      name tag, painted with one of seven fixed identity hues. --wx-on-accent
      was used there and it FLIPS: white in light, near-black in dark, so one
      theme or the other always failed on a background that never moved. Same
@@ -89,21 +89,21 @@
   --wx-stage-paid-soft: rgba(91, 204, 128, 0.16);
 
   /* Semantic, all >= 4.5:1 on bg */
-  --wx-success: #3ecf8e;
-  --wx-success-soft: rgba(62, 207, 142, 0.14);
-  --wx-danger: #f06a6a;
-  --wx-danger-soft: rgba(240, 106, 106, 0.14);
+  --wx-success: #17e0d4;
+  --wx-success-soft: rgba(23, 224, 212, 0.16);
+  --wx-danger: #ff7a94;
+  --wx-danger-soft: rgba(255, 122, 148, 0.16);
   --wx-warning: #f0b429;
   --wx-warning-soft: rgba(240, 180, 41, 0.14);
-  --wx-info: #5cb8e8;
-  --wx-info-soft: rgba(92, 184, 232, 0.14);
+  --wx-info: #5ca8ff;
+  --wx-info-soft: rgba(92, 168, 255, 0.16);
 
   /* EUKA creator tiers, L0 to L7. The hue per tier is Euka's own (blue, violet,
      teal, green, lime, amber, orange), because the team reads these tiers in
      Euka all day. Each ink is proven against ITS OWN chip, a 12% tint on a
      card, by check-contrast: a colour that passes on the page can fail on a
      tint. Rashid, 2026-09-16. */
-  --wx-tier-0: #9d9387;
+  --wx-tier-0: #a2a2b6;
   --wx-tier-1: #7fb0ff;
   --wx-tier-2: #b69cff;
   --wx-tier-3: #4fd1dc;
@@ -120,8 +120,33 @@
      numerals, so they stay far below anything that could move a contrast
      ratio: at these strengths green and red keep their full ratio against the
      sheet. */
-  --wx-sheet-band: rgba(200, 146, 75, 0.055);
-  --wx-sheet-summary: #201c18;
+  --wx-sheet-band: rgba(168, 120, 255, 0.06);
+  --wx-sheet-summary: #1d1d2a;
+
+  /*
+   * THE NEOMORPHIC LAYER, PRISM, 2026-10-08.
+   *
+   * One light source, ABOVE AND TO THE LEFT: the highlight offsets to (-x,-y)
+   * and the shadow to (+x,+y), in every component, in both themes, without
+   * exception. A single disagreeing light is all it takes for a soft interface
+   * to stop reading as a material and start reading as blur.
+   *
+   * DARK IS REDRAWN, NOT INVERTED, and this is the part that is usually got
+   * wrong. A 90%-white highlight on a near-black page does not read as a lit
+   * edge, it reads as a GLOW — the exact look the brief rules out. So dark
+   * keeps its highlight at 4.5% white, puts real black in the shadow, and makes
+   * the page the DARKEST surface in the stack rather than the lightest.
+   *
+   * THE HAIRLINE IS NOT DECORATION. A control whose only boundary is a shadow
+   * fails WCAG 1.4.11, which asks 3:1 of a non-text boundary — and under
+   * `forced-colors` shadows are dropped altogether, so a shadow-only control
+   * vanishes entirely. Every interactive surface carries this as well as its
+   * shadows. It is the single rule that keeps this style usable.
+   */
+  --wx-neo-light: rgba(255, 255, 255, 0.045);
+  --wx-neo-dark: rgba(0, 0, 0, 0.55);
+  --wx-hairline: rgba(255, 255, 255, 0.06);
+  --wx-pressed-surface: #181822;
 
   /* Elevation, deep shadows on black read as glow, so keep them tight */
   --wx-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
@@ -142,7 +167,7 @@
    *
    * THE VALUES ARE DELIBERATELY SMALL. On a near-black page a wide shadow stops
    * reading as shadow and starts reading as glow, which is the look he ruled
-   * out — the note above the elevation scale already says so. The lift is two
+   * out â€” the note above the elevation scale already says so. The lift is two
    * pixels and the top light is 6% white.
    *
    * EVERY ONE HAS A LIGHT TWIN BELOW, and not only because check:contrast fails
@@ -215,34 +240,34 @@
 [data-theme='light'] {
   color-scheme: light;
 
-  --wx-bg: #f6f4f1;
-  --wx-surface-1: #ffffff;
-  --wx-surface-2: #f0ede8;
-  --wx-surface-3: #e8e3da;
-  --wx-field: #ffffff; /* what you type into · defined by its edge, not a fill */
+  --wx-bg: #ececf3;
+  --wx-surface-1: #f1f1f7;
+  --wx-surface-2: #f7f7fb;
+  --wx-surface-3: #e2e2eb;
+  --wx-field: #e2e2eb; /* what you type into Â· defined by its edge, not a fill */
 
-  --wx-text: #191512; /* 16.53:1 */
-  --wx-text-muted: #736a61; /*  4.83:1 */
-  --wx-text-faint: #6d645b; /*  5.28:1 */
-  --wx-text-inverse: #f6f4f1;
+  --wx-text: #14141c; /* 16.53:1 */
+  --wx-text-muted: #4a4a5a; /*  4.83:1 */
+  --wx-text-faint: #62627a;
+  --wx-text-inverse: #f7f7fb;
 
-  --wx-border: #e3ded6;
-  --wx-border-strong: #d2ccc1;
-  --wx-border-interactive: #8f8474; /* >= 3:1 on bg */
+  --wx-border: #dcdce6;
+  --wx-border-strong: #c9c9d6;
+  --wx-border-interactive: #80809a; /* >= 3:1 on bg */
 
   /* Brand gold, darkened so it survives a light background */
-  --wx-accent: #8a5f1f; /* 5.13:1 on bg */
-  --wx-accent-hover: #6f4c18; /* 7.05:1 */
-  --wx-accent-active: #5c3f14;
-  --wx-accent-soft: rgba(138, 95, 31, 0.1);
-  --wx-accent-ring: rgba(138, 95, 31, 0.4);
+  --wx-accent: #6a2fe0; /* 5.13:1 on bg */
+  --wx-accent-hover: #4a16b8; /* 7.05:1 */
+  --wx-accent-active: #3a0f96;
+  --wx-accent-soft: rgba(106, 47, 224, 0.1);
+  --wx-accent-ring: rgba(106, 47, 224, 0.4);
   --wx-on-accent: #ffffff; /* 5.45:1 on the gold fill */
 
   /* Lighter than the dark theme's, because there is more light to take away
      and a cream page under 62% black reads as switched off. */
-  --wx-scrim: rgba(38, 31, 24, 0.42);
+  --wx-scrim: rgba(20, 20, 28, 0.42);
 
-  /* Ink for a chip whose OWN colour is theme-independent — the live-cursor
+  /* Ink for a chip whose OWN colour is theme-independent â€” the live-cursor
      name tag, painted with one of seven fixed identity hues. --wx-on-accent
      was used there and it FLIPS: white in light, near-black in dark, so one
      theme or the other always failed on a background that never moved. Same
@@ -256,37 +281,47 @@
      brighter #b46e00 is only 3.48:1 there and nobody could read the label. */
   --wx-stage-live: #4e56d3;
   --wx-stage-live-soft: rgba(78, 86, 211, 0.1);
-  --wx-stage-due: #9f5b00;
-  --wx-stage-due-soft: rgba(159, 91, 0, 0.14);
+  --wx-stage-due: #965500;
+  --wx-stage-due-soft: rgba(150, 85, 0, 0.14);
   --wx-stage-paid: #007c3a;
   --wx-stage-paid-soft: rgba(0, 124, 58, 0.12);
 
-  --wx-success: #0f7a43;
-  --wx-success-soft: rgba(15, 122, 67, 0.1);
-  --wx-danger: #b02424;
-  --wx-danger-soft: rgba(176, 36, 36, 0.1);
-  --wx-warning: #8a6410;
-  --wx-warning-soft: rgba(138, 100, 16, 0.1);
-  --wx-info: #186d92;
-  --wx-info-soft: rgba(24, 109, 146, 0.1);
+  --wx-success: #0b6f69;
+  --wx-success-soft: rgba(11, 111, 105, 0.1);
+  --wx-danger: #b42318;
+  --wx-danger-soft: rgba(180, 35, 24, 0.1);
+  --wx-warning: #8a5a00;
+  --wx-warning-soft: rgba(138, 90, 0, 0.1);
+  --wx-info: #0b5cc4;
+  --wx-info-soft: rgba(11, 92, 196, 0.1);
 
   /* EUKA creator tiers, L0 to L7. The hue per tier is Euka's own (blue, violet,
      teal, green, lime, amber, orange), because the team reads these tiers in
      Euka all day. Each ink is proven against ITS OWN chip, a 12% tint on a
      card, by check-contrast: a colour that passes on the page can fail on a
      tint. Rashid, 2026-09-16. */
-  --wx-tier-0: #6d645b;
+  --wx-tier-0: #62627a;
   --wx-tier-1: #1f5fbf;
   --wx-tier-2: #6b3fc0;
   --wx-tier-3: #0c6b76;
   --wx-tier-4: #276d1d;
-  --wx-tier-5: #5a6b0c;
+  --wx-tier-5: #4f5e0a;
   --wx-tier-6: #845a00;
   --wx-tier-7: #a8420c;
 
-  /* The performance sheet · see the dark block for what these are for. */
+  /* The performance sheet Â· see the dark block for what these are for. */
   --wx-sheet-band: rgba(138, 95, 31, 0.045);
   --wx-sheet-summary: #faf8f5;
+
+  /* The neomorphic layer in daylight. See the dark block for the rules.
+     The values are NOT the dark ones flipped: on a light ground the highlight
+     does the describing and can be near-opaque white, while the shadow stays a
+     cool blue-grey rather than black — black here reads as dirt, which is what
+     makes most neomorphism look muddy. */
+  --wx-neo-light: rgba(255, 255, 255, 0.9);
+  --wx-neo-dark: rgba(130, 130, 160, 0.32);
+  --wx-hairline: rgba(255, 255, 255, 0.7);
+  --wx-pressed-surface: #e7e7ef;
 
   --wx-shadow-sm: 0 1px 2px 0 rgb(25 21 18 / 0.05);
   --wx-shadow-md: 0 1px 2px 0 rgb(25 21 18 / 0.05), 0 8px 24px -12px rgb(25 21 18 / 0.16);
@@ -318,7 +353,7 @@
 
   --wx-glow: radial-gradient(
     ellipse 80% 60% at 50% 0%,
-    rgba(138, 95, 31, 0.1) 0%,
+    rgba(106, 47, 224, 0.1) 0%,
     transparent 70%
   );
   --wx-grid-line: rgba(25, 21, 18, 0.05);

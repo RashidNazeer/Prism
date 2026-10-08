@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+﻿import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
 import { AnimatePresence, m } from 'motion/react';
 import { Menu } from 'lucide-react';
@@ -6,12 +6,13 @@ import { WurxMark } from '@/components/brand/WurxMark';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { TextSizeMenu } from '@/components/layout/TextSizeMenu';
 import { AppSidebar } from '@/components/layout/AppSidebar';
+import { MobileNav } from '@/components/layout/MobileNav';
 import { IdentitySwapBanner } from '@/components/auth/IdentitySwapBanner';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import { useFocusTrap } from '@/lib/use-focus-trap';
-import { sectionDescriptionFor, sectionTitleFor } from '@/lib/nav';
+import { navForRole, sectionDescriptionFor, sectionTitleFor } from '@/lib/nav';
 
 const COLLAPSE_KEY = 'wurxmediahub-sidebar-collapsed';
 
@@ -34,6 +35,26 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { pathname } = useLocation();
   const drawerRef = useRef<HTMLElement>(null);
+
+  /*
+   * THE FIVE THE PHONE BAR CARRIES.
+   *
+   * Flattened from the SAME `navForRole` the rail renders, so the bar and the
+   * drawer can never disagree about where a link goes â€” one definition, two
+   * renderers. Anything marked `soon` is dropped: a bottom bar is for places
+   * you can actually get to.
+   *
+   * Capped at five because a sixth puts the labels under 60px on a 375px screen
+   * and they start truncating to nonsense.
+   */
+  const bottomNav = useMemo(
+    () =>
+      navForRole(profile?.role ?? claims?.role)
+        .flatMap((g) => g.items)
+        .filter((i) => i.to && !i.soon)
+        .slice(0, 5),
+    [profile?.role, claims?.role]
+  );
 
   // The drawer covers the page, so Tab must not walk out of it into content
   // the user cannot see. Focus lands on the first nav link, not the close
@@ -119,7 +140,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       className={cn(
         // `wx-app` switches the type tokens over to the two self-hosted faces.
         // It lives here so the public landing page never asks for them.
-        'wx-app min-h-dvh bg-bg lg:grid',
+        'wx-app bg-bg min-h-dvh lg:grid',
         /*
          * 15rem, down from 17.5rem on 2026-08-16. Rashid: the rail is too wide
          * and there is a lot of dead space to the right of every label, which
@@ -142,7 +163,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <IdentitySwapBanner />
 
       {/* ------------------------------------------------- desktop rail --- */}
-      <aside className="sticky top-0 hidden h-dvh border-r border-line lg:block">
+      <aside className="border-line sticky top-0 hidden h-dvh border-r lg:block">
         {sidebar('rail')}
       </aside>
 
@@ -256,9 +277,25 @@ export function AppShell({ children }: { children: ReactNode }) {
               spaces, show the content early. It was py-6/py-8 under a top bar
               that already costs 57px, so every screen in the product started a
               third of the way down. */}
-          <div className="w-full px-4 py-4 sm:px-6 sm:py-5 lg:px-8">{children}</div>
+          {/* `pb-24 lg:pb-0` clears the phone bottom bar. Without it the last
+              card on every screen sits underneath the nav and cannot be read,
+              which is the classic bottom-navigation bug. */}
+          <div className="w-full px-4 py-4 pb-24 sm:px-6 sm:py-5 lg:px-8 lg:pb-5">
+            {children}
+          </div>
         </main>
       </div>
+
+      {/*
+        THE PHONE BAR. Rashid, 2026-10-08: the limelight treatment on phones,
+        the traditional rail on anything larger.
+
+        FIVE DESTINATIONS, NOT ALL OF THEM. A bottom bar is for the places
+        somebody goes constantly; the drawer still holds everything. Items are
+        taken from the same `navForRole` definition the rail uses, so the two
+        can never drift apart â€” one source, two renderers.
+      */}
+      {bottomNav.length > 0 ? <MobileNav items={bottomNav} /> : null}
 
       <AnimatePresence>
         {drawerOpen && (
@@ -282,7 +319,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed inset-y-0 left-0 z-50 w-[min(300px,86vw)] border-r border-line shadow-lg lg:hidden"
+              className="border-line fixed inset-y-0 left-0 z-50 w-[min(300px,86vw)] border-r shadow-lg lg:hidden"
             >
               {sidebar('drawer')}
             </m.aside>

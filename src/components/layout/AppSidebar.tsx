@@ -406,9 +406,15 @@ function NavRow({
       title={collapsed ? item.label : undefined}
       className={cn(
         base,
+        /* NEOMORPHIC, PRISM 2026-10-08. The current page is PRESSED INTO the
+           rail rather than tinted on top of it — in a soft material the way you
+           say "you are here" is that the surface has been pushed in. The accent
+           ink and the indicator bar still carry the meaning, so the state is
+           never conveyed by depth alone, which would vanish under
+           `forced-colors`. Everything else lifts very slightly on hover. */
         active
-          ? 'bg-accent-soft text-accent font-semibold'
-          : 'text-muted hover:bg-surface-2 hover:text-text'
+          ? 'wx-neo-pressed text-accent font-semibold'
+          : 'text-muted hover:wx-neo-raised-sm hover:text-text'
       )}
     >
       {/*
