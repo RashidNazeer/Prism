@@ -1,4 +1,4 @@
-﻿/* ============================================================================
+/* ============================================================================
    WurxMediaHub, Design Tokens
    ----------------------------------------------------------------------------
    THE RULE: no component may ever hardcode a colour. Every colour in this app
@@ -57,6 +57,9 @@
   --wx-accent-active: #f3eeff;
   --wx-accent-soft: rgba(168, 120, 255, 0.16);
   --wx-accent-ring: rgba(168, 120, 255, 0.5);
+  /* What a FILLED accent button casts. Tinted with the accent, not ink, so a
+     violet button reads as lit rather than as grubby. See wx-neo-accent. */
+  --wx-accent-shadow: rgba(168, 120, 255, 0.28);
   --wx-on-accent: #14141c; /* 6.87:1 sitting on the violet fill */
 
   /*
@@ -280,6 +283,9 @@
   --wx-accent-active: #4a16b8;
   --wx-accent-soft: rgba(155, 92, 255, 0.12);
   --wx-accent-ring: rgba(106, 47, 224, 0.4);
+  /* See the dark block. Heavier here: a tinted shadow has to carry against a
+     near-white page, where a faint one simply disappears. */
+  --wx-accent-shadow: rgba(106, 47, 224, 0.36);
   --wx-on-accent: #ffffff; /* 5.45:1 on the violet fill */
 
   /* Lighter than the dark theme's, because there is more light to take away

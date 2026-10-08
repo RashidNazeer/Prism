@@ -1,5 +1,6 @@
-import { m } from 'motion/react';
+﻿import { m } from 'motion/react';
 import { Container } from '@/components/layout/Section';
+import { HaloBackdrop } from '@/components/auth/HaloBackdrop';
 import { ButtonLink } from '@/components/ui/Button';
 import { ApplyForm } from './ApplyForm';
 
@@ -17,10 +18,17 @@ const item = {
 export function Hero() {
   return (
     <div id="top" className="relative overflow-hidden">
+      {/* The product's own backdrop, not the old Wurx grid-and-glow pair that
+          was here. The landing page is the first thing anyone sees, and it was
+          the last place still drawing the previous identity.
+
+          BEHIND THE HERO, NOT THE WHOLE PAGE. The sections below it paint their
+          own opaque grounds, so a full-page backdrop would be bought and then
+          covered; this is the screenful that is actually open. The fade at the
+          bottom hands over to them without a seam. */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="wx-grid absolute inset-0" />
-        <div className="wx-glow absolute inset-0" />
-        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-bg to-transparent" />
+        <HaloBackdrop className="absolute inset-0" />
+        <div className="from-bg absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t to-transparent" />
       </div>
 
       <Container className="relative">
@@ -29,10 +37,10 @@ export function Hero() {
         <div className="grid items-start gap-12 pt-24 pb-20 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:pt-28 lg:pb-24">
           <m.div variants={container} initial="hidden" animate="show" className="lg:pt-6">
             <m.div variants={item}>
-              <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface-1/70 px-3.5 py-1.5 font-mono text-[0.6875rem] tracking-[0.18em] text-muted uppercase backdrop-blur-sm">
+              <span className="wx-neo-raised-sm text-muted inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-mono text-[0.6875rem] tracking-[0.18em] uppercase backdrop-blur-sm">
                 <span className="relative flex size-1.5">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-70" />
-                  <span className="relative inline-flex size-1.5 rounded-full bg-accent" />
+                  <span className="bg-accent absolute inline-flex size-full animate-ping rounded-full opacity-70" />
+                  <span className="bg-accent relative inline-flex size-1.5 rounded-full" />
                 </span>
                 Creator applications open
               </span>
@@ -49,12 +57,11 @@ export function Hero() {
 
             <m.p
               variants={item}
-              className="mt-6 max-w-lg text-[1.0625rem] leading-relaxed text-muted text-pretty"
+              className="text-muted mt-6 max-w-lg text-[1.0625rem] leading-relaxed text-pretty"
             >
-              WurxMediaHub is the creator platform behind Wurx Media&rsquo;s TikTok Shop
-              brands. One login, every brand you work with, and the real performance
-              data behind your videos. No screenshots, no guessing, no waiting on a
-              reply in the group chat.
+              WurxMediaHub is the creator platform behind Wurx Media&rsquo;s TikTok Shop brands.
+              One login, every brand you work with, and the real performance data behind your
+              videos. No screenshots, no guessing, no waiting on a reply in the group chat.
             </m.p>
 
             <m.div variants={item} className="mt-8">

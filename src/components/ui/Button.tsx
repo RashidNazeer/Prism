@@ -20,13 +20,14 @@ const button = cva(
   {
     variants: {
       variant: {
-        // Raised like every button, but filled with the accent. The ! is
-        // deliberate: wx-neo-raised-sm and wx-neo-press both set background
-        // (surface-1, then the pressed surface), which would swallow the accent
-        // and leave on-accent text unreadable. The press still reads through
-        // the inset shadow; only the fill is held.
-        primary:
-          'wx-neo-raised-sm wx-neo-press bg-accent! text-on-accent hover:bg-accent-hover! active:bg-accent-hover! disabled:shadow-none',
+        // MOULDED, NOT LIFTED. This was `wx-neo-raised-sm wx-neo-press`, which
+        // draws its highlight OUTSIDE the element — invisible on a violet pill
+        // sitting on a near-white page, so the primary button was the one
+        // control in the product with no material at all. `wx-neo-accent` puts
+        // the dome on the button and tints its cast with the accent, and brings
+        // its own press and disabled states, so no `!` fill override is needed
+        // any more: nothing it sets touches `background`.
+        primary: 'wx-neo-accent bg-accent text-on-accent hover:bg-accent-hover',
         // NO BORDER. Rashid, 2026-10-08: no border lines anywhere, buttons
         // included, shadows only. The 3:1 boundary this used to carry is
         // restored for the one case where it is actually load-bearing — the
