@@ -56,17 +56,31 @@ import { useTheme } from '@/components/theme/theme-context';
 const PAINT = { baseColor: 0x14141c, backgroundColor: 0x14141c } as const;
 
 /**
- * The light-mode aurora: magenta, violet, blue, cyan, in the kit's own order.
+ * The light-mode aurora: violet, magenta, blue, cyan.
  *
- * Kept to soft washes rather than fills, because the kit is explicit that the
- * spectrum colours are accents and are never full-bleed backgrounds. The page's
- * own ground is still the last layer underneath them.
+ * PLACED FOR THE APP, NOT FOR THE LOGIN CARD. The first version put all four
+ * lobes between 64% and 94% across, which is the empty right half of the sign-in
+ * page and reads beautifully there. Behind the app it is the worst possible
+ * place: that is exactly where the content cards sit, and they are opaque. The
+ * halo was rendering and had nowhere to be seen, which is why it looked absent
+ * in light mode while dark looked fine.
+ *
+ * Dark gets away with a single bright ring because the one band of exposed
+ * ground, the hero at the top of Home, happens to sit under it. So the lobes
+ * are now TOP-WEIGHTED and spread the full width: the top of the page is the
+ * part of a signed-in screen that is reliably not covered by a card.
+ *
+ * Stronger, too. These are read through a 12px gutter and one shallow band, not
+ * across a whole empty page, so the alphas that suited the login page vanished
+ * here. Still washes rather than fills: the kit is explicit that the spectrum
+ * colours are accents and never full-bleed backgrounds, and the page's own
+ * ground is still the last layer underneath them.
  */
 const AURORA = [
-  'radial-gradient(ellipse 55% 45% at 78% 16%, rgba(255, 46, 140, 0.26), transparent 62%)',
-  'radial-gradient(ellipse 60% 50% at 90% 44%, rgba(155, 92, 255, 0.34), transparent 64%)',
-  'radial-gradient(ellipse 52% 46% at 64% 74%, rgba(46, 139, 255, 0.26), transparent 62%)',
-  'radial-gradient(ellipse 48% 40% at 94% 88%, rgba(23, 224, 212, 0.28), transparent 62%)',
+  'radial-gradient(ellipse 85% 60% at 22% 6%, rgba(155, 92, 255, 0.42), transparent 66%)',
+  'radial-gradient(ellipse 80% 55% at 70% 2%, rgba(255, 46, 140, 0.36), transparent 64%)',
+  'radial-gradient(ellipse 75% 60% at 96% 30%, rgba(46, 139, 255, 0.34), transparent 66%)',
+  'radial-gradient(ellipse 70% 55% at 50% 96%, rgba(23, 224, 212, 0.30), transparent 66%)',
   'var(--wx-bg)',
 ].join(', ');
 
@@ -93,7 +107,7 @@ const DARK_FLOOR = [
  */
 const SCRIM = {
   dark: { full: 0, subtle: 0.55 },
-  light: { full: 0, subtle: 0.12 },
+  light: { full: 0, subtle: 0 },
 } as const;
 
 export function HaloBackdrop({
