@@ -82,7 +82,7 @@ export function Profile() {
           <TikTokConnection />
 
           {/* ------------------------------------------------------- name -- */}
-          <section className="border-line bg-surface-1 rounded-xl border p-6 shadow-md">
+          <section className="wx-neo-raised rounded-xl p-6">
             <h2 className="text-lg font-bold">Your name</h2>
             <p className="text-muted mt-1.5 text-[0.875rem] leading-relaxed">
               What the Wurx team and your brand hubs call you.
@@ -129,7 +129,7 @@ export function Profile() {
           </section>
 
           {/* ---------------------------------------------------- account -- */}
-          <section className="border-line bg-surface-1 rounded-xl border p-6 shadow-md">
+          <section className="wx-neo-raised rounded-xl p-6">
             <h2 className="text-lg font-bold">Account</h2>
             <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
               <Row label="Email" value={profile?.email ?? ''} breakAll />
@@ -155,7 +155,7 @@ export function Profile() {
 
           {/* ------------------------------------------------ application -- */}
           {application ? (
-            <section className="border-line bg-surface-1 rounded-xl border p-6 shadow-md">
+            <section className="wx-neo-raised rounded-xl p-6">
               <h2 className="text-lg font-bold">Your application</h2>
               <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
                 <Row label="TikTok handle" value={`@${application.tiktok_handle}`} breakAll />

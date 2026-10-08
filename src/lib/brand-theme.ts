@@ -162,7 +162,12 @@ export function contrast(aHex: string, bHex: string): number {
  * near-white, because READABLE BEATS ON-BRAND, every time. Nobody has ever
  * praised a tint they could not read.
  */
-function readableOn(bgs: string | string[], hue: number, chroma: number, ratio: number): string {
+function readableOn(
+  bgs: string | string[],
+  hue: number,
+  chroma: number,
+  ratio: number
+): string {
   /*
    * AGAINST EVERY BACKGROUND IT WILL EVER SIT ON, not just the first one.
    *
@@ -559,8 +564,8 @@ export type BrandPalette = {
 
 export type BrandTheme = { light: BrandPalette; dark: BrandPalette };
 
-/** The Wurx gold, used when a brand has chosen no colour of its own. */
-export const DEFAULT_BRAND_COLOR = '#c8924b';
+/** The PRISM accent violet, used when a brand has chosen no colour of its own. */
+export const DEFAULT_BRAND_COLOR = '#6A2FE0';
 
 /*
  * A FLOOR AND A CEILING ON CHROMA, and both are there for a reason.
@@ -613,7 +618,10 @@ type Fills = {
  * existed. That is not politeness, it is what lets the 88-colour sweep keep
  * meaning what it meant.
  */
-export function deriveBrandTheme(brandHex: string, config?: BrandThemeConfig | null): BrandTheme {
+export function deriveBrandTheme(
+  brandHex: string,
+  config?: BrandThemeConfig | null
+): BrandTheme {
   const rgb = hexToRgb(brandHex) ?? hexToRgb(DEFAULT_BRAND_COLOR)!;
   const base = rgbToOklch(rgb);
   const h = base.h;
@@ -689,7 +697,11 @@ export function deriveBrandTheme(brandHex: string, config?: BrandThemeConfig | n
        */
       accentStops: [
         derived.accent,
-        shiftL(derived.accent, mode === 'light' ? -0.06 : 0.06, bandFor('accent', mode, 'auto')),
+        shiftL(
+          derived.accent,
+          mode === 'light' ? -0.06 : 0.06,
+          bandFor('accent', mode, 'auto')
+        ),
       ],
       ink: { hero: { h, c }, rail: { h, c }, page: { h, c }, accent: { h, c } },
     };
@@ -711,9 +723,7 @@ export function deriveBrandTheme(brandHex: string, config?: BrandThemeConfig | n
        */
       const only = firstOf(stops, derived.heroFrom);
       f.heroStops =
-        stops.length > 1
-          ? stops
-          : [only, shiftL(only, tone === 'light' ? -0.07 : 0.09, band)];
+        stops.length > 1 ? stops : [only, shiftL(only, tone === 'light' ? -0.07 : 0.09, band)];
       f.heroAngle = clampTo(Math.round(hero.angle ?? DEFAULT_ANGLE), 0, 360);
       f.ink.hero = inkBase(firstOf(hero.stops, brandHex), { h, c });
     }
@@ -779,9 +789,7 @@ export function deriveBrandTheme(brandHex: string, config?: BrandThemeConfig | n
         .map((s) => fitStop(s, 'accent', mode).used);
       const solo = firstOf(stops, derived.accent);
       f.accentStops =
-        stops.length > 1
-          ? stops
-          : [solo, shiftL(solo, mode === 'light' ? -0.06 : 0.06, band)];
+        stops.length > 1 ? stops : [solo, shiftL(solo, mode === 'light' ? -0.06 : 0.06, band)];
       f.ink.accent = inkBase(firstOf(accent.stops, brandHex), { h, c });
     }
 
@@ -879,7 +887,12 @@ const STOP_CONTRACT: ReadonlyArray<{
   { label: 'rail secondary text, every stop', fg: 'railMuted', stops: 'railStops', min: 3 },
   { label: 'body text, every page stop', fg: 'text', stops: 'pageStops', min: 4.5 },
   { label: 'secondary text, every page stop', fg: 'muted', stops: 'pageStops', min: 3 },
-  { label: 'button label, every accent stop', fg: 'accentText', stops: 'accentStops', min: 4.5 },
+  {
+    label: 'button label, every accent stop',
+    fg: 'accentText',
+    stops: 'accentStops',
+    min: 4.5,
+  },
 ];
 
 /** Every pair that fails, with what it measured. Empty means the theme is safe. */
@@ -895,7 +908,8 @@ export function auditBrandTheme(brandHex: string, config?: BrandThemeConfig | nu
     for (const pair of STOP_CONTRACT) {
       for (const bg of p[pair.stops] as string[]) {
         const got = contrast(p[pair.fg] as string, bg);
-        if (got < pair.min) bad.push({ mode, label: `${pair.label} (${bg})`, got, min: pair.min });
+        if (got < pair.min)
+          bad.push({ mode, label: `${pair.label} (${bg})`, got, min: pair.min });
       }
     }
   }
@@ -907,7 +921,7 @@ export function auditBrandTheme(brandHex: string, config?: BrandThemeConfig | nu
  *
  * IT ALSO REBINDS THE ORDINARY `--wx-*` TOKENS, and that is what makes a brand
  * world actually feel like one. The first version themed only the shell, so a
- * deep green rail framed a page of Wurx-gold cards and grey text: the chrome
+ * deep green rail framed a page of off-brand cards and grey text: the chrome
  * had changed and the content had not. Every card, button, heading and hairline
  * in this product already reads from `--wx-bg`, `--wx-surface-1`, `--wx-text`
  * and friends, so pointing those at the brand's palette for the subtree themes

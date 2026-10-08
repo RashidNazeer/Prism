@@ -53,7 +53,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Keep the mobile browser chrome in step with the page. Missing this is a
     // classic light/dark mismatch: dark page, white status bar.
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', resolved === 'dark' ? '#0a0a0a' : '#faf8f3');
+    if (meta) meta.setAttribute('content', resolved === 'dark' ? '#14141c' : '#f7f7fb');
   }, [resolved]);
 
   // Stay consistent across tabs: changing the theme in one tab updates the rest.

@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
  *
  * Colour never carries meaning alone: every state is also named in the legend
  * underneath and in the accessible label, so this reads correctly in greyscale,
- * to a screen reader, and to somebody who cannot separate amber from green.
+ * to a screen reader, and to somebody who cannot separate the bar colours.
  */
 
 export type DeliverableType = 'gmv' | 'video_count';
@@ -67,7 +67,7 @@ export function DeliverableProgress({
   const labelId = useId();
 
   // Claimed is a CUMULATIVE total that includes whatever is already confirmed,
-  // so the amber band is the part beyond it rather than the whole claim. Without
+  // so the claimed band is the part beyond it rather than the whole claim. Without
   // this the two would overlap and the bar would read past 100 percent.
   const safeTarget = target > 0 ? target : 0;
   const confirmedShare = safeTarget ? Math.min(1, confirmed / safeTarget) : 0;
@@ -105,7 +105,9 @@ export function DeliverableProgress({
         aria-label={
           `${title}. ${fmt(confirmed, type, currency)} confirmed of ` +
           `${fmt(safeTarget, type, currency)}${
-            awaiting ? `, plus ${fmt(claimed - confirmed, type, currency)} waiting to be confirmed` : ''
+            awaiting
+              ? `, plus ${fmt(claimed - confirmed, type, currency)} waiting to be confirmed`
+              : ''
           }.`
         }
         className="bg-surface-3 relative h-2.5 w-full overflow-hidden rounded-full"
@@ -197,7 +199,9 @@ export function DeliverableDonut({
       viewBox={`0 0 ${size} ${size}`}
       role="img"
       aria-label={`${Math.round(confirmedShare * 100)} percent confirmed${
-        pendingShare > 0 ? `, ${Math.round(pendingShare * 100)} percent waiting to be confirmed` : ''
+        pendingShare > 0
+          ? `, ${Math.round(pendingShare * 100)} percent waiting to be confirmed`
+          : ''
       }`}
       className="shrink-0"
     >

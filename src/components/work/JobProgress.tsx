@@ -65,19 +65,19 @@ export function JobProgressBar({
 
       {denominator ? (
         <div
-          className={cn('bg-line mt-1.5 flex h-[6px] gap-[2px] overflow-hidden rounded-[3px]')}
+          className={cn('wx-neo-inset mt-2 flex h-2.5 gap-[2px] overflow-hidden rounded-full')}
           role="img"
           aria-label={progressSentence(progress)}
         >
           {approvedPct > 0 ? (
             <span
-              className="bg-stage-paid h-full rounded-[3px]"
+              className="bg-stage-paid h-full rounded-full"
               style={{ width: `${approvedPct}%` }}
             />
           ) : null}
           {waitingPct > 0 ? (
             <span
-              className="bg-stage-live h-full rounded-[3px]"
+              className="bg-stage-live h-full rounded-full"
               style={{ width: `${waitingPct}%` }}
             />
           ) : null}
@@ -89,7 +89,7 @@ export function JobProgressBar({
         {showAction ? (
           <Link
             to={addVideoHref!}
-            className="border-line-interactive text-text hover:border-accent hover:text-accent inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-[0.78125rem] font-medium transition-colors"
+            className="wx-neo-raised-sm wx-neo-press border-line-interactive! text-text hover:text-accent inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[0.78125rem] font-medium"
           >
             <Video size={13} aria-hidden />
             Add a video

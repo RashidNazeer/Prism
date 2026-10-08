@@ -12,7 +12,9 @@ export function Container({
 }) {
   // max-w-7xl (1280px): on a ~1280px viewport the content fills the width and
   // the awkward sliver of side margin disappears.
-  return <div className={cn('mx-auto w-full max-w-7xl px-5 sm:px-8', className)}>{children}</div>;
+  return (
+    <div className={cn('mx-auto w-full max-w-7xl px-5 sm:px-8', className)}>{children}</div>
+  );
 }
 
 /** Vertical rhythm for a page section. */
@@ -35,12 +37,12 @@ export function Section({
 
 /**
  * Small uppercase label above a section heading. Monospace and letter-spaced,
- * with a live gold dot, the one recurring motif across the marketing page.
+ * with a live accent dot, the one recurring motif across the marketing page.
  */
 export function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-2 font-mono text-[0.6875rem] tracking-[0.18em] text-muted uppercase">
-      <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+    <span className="text-muted inline-flex items-center gap-2 font-mono text-[0.6875rem] tracking-[0.18em] uppercase">
+      <span className="bg-accent size-1.5 rounded-full" aria-hidden />
       {children}
     </span>
   );

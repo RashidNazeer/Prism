@@ -20,9 +20,9 @@ import type { JobProgress } from '@/lib/work/job-progress';
 type Moved = { ids: Set<string>; key: number };
 
 const TONE = {
-  working: { text: 'text-stage-live', bar: 'bg-stage-live', soft: 'bg-stage-live-soft' },
-  due: { text: 'text-stage-due', bar: 'bg-stage-due', soft: 'bg-stage-due-soft' },
-  paid: { text: 'text-stage-paid', bar: 'bg-stage-paid', soft: 'bg-stage-paid-soft' },
+  working: { text: 'text-stage-live', bar: 'bg-stage-live', soft: 'bg-stage-live-soft!' },
+  due: { text: 'text-stage-due', bar: 'bg-stage-due', soft: 'bg-stage-due-soft!' },
+  paid: { text: 'text-stage-paid', bar: 'bg-stage-paid', soft: 'bg-stage-paid-soft!' },
 } as const;
 
 const toneFor = (stage: OfferStage) => TONE[STAGE_META[stage].bucket];
@@ -48,7 +48,7 @@ export function PipelineBoard({
   ];
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-[18px] rounded-xl border p-[clamp(18px,2.4vw,26px)] shadow-md">
+    <section className="wx-neo-raised flex flex-col gap-[18px] rounded-xl p-[clamp(18px,2.4vw,26px)]">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Your pipeline, stage by stage
@@ -76,8 +76,8 @@ export function PipelineBoard({
             <li
               key={`${stage}-${moved.key}`}
               className={cn(
-                'border-line flex min-h-[150px] flex-col gap-2.5 rounded-lg border p-3',
-                here.length > 0 ? tone.soft : 'bg-surface-2',
+                'wx-neo-inset flex min-h-[150px] flex-col gap-2.5 rounded-lg p-3',
+                here.length > 0 && tone.soft,
                 justMoved && 'wx-flash'
               )}
             >
@@ -116,7 +116,7 @@ export function PipelineBoard({
                     <p
                       key={row.id}
                       className={cn(
-                        'border-line bg-surface-1 rounded-lg border px-[7px] py-[5px] text-[0.71875rem] leading-[1.25]',
+                        'wx-neo-raised-sm rounded-lg px-[7px] py-[5px] text-[0.71875rem] leading-[1.25]',
                         moved.ids.has(row.id) && 'wx-pop'
                       )}
                     >
@@ -183,7 +183,7 @@ export function MoneySplit({ summary, moved }: { summary: WorkSummary; moved: Mo
   ];
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5 shadow-md">
+    <section className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5">
       <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         Where the money sits
       </h2>
@@ -205,7 +205,9 @@ export function MoneySplit({ summary, moved }: { summary: WorkSummary; moved: Mo
         {bars.map((bar) => (
           <div key={bar.key} className="flex flex-col gap-1.5">
             <div className="flex items-baseline justify-between gap-2.5">
-              <dt className={cn('text-[0.8125rem] font-semibold', bar.tone.text)}>{bar.label}</dt>
+              <dt className={cn('text-[0.8125rem] font-semibold', bar.tone.text)}>
+                {bar.label}
+              </dt>
               <dd
                 key={`${bar.key}-${moved.key}`}
                 className={cn(

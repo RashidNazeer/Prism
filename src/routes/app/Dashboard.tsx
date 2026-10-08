@@ -1,4 +1,4 @@
-﻿import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
 import { Briefcase, Check, Clock, Sparkles, Store, X } from 'lucide-react';
@@ -452,12 +452,12 @@ function Header({
 
       <div className="flex items-center gap-2">
         {tier ? (
-          <span className="wx-card rounded-full px-3 py-1.5 text-[0.75rem] font-semibold tracking-[0.02em] capitalize">
+          <span className="wx-neo-raised-sm rounded-full px-3 py-1.5 text-[0.75rem] font-semibold tracking-[0.02em] capitalize">
             {tier} creator
           </span>
         ) : null}
         {handle ? (
-          <span className="wx-card text-muted wx-numeric rounded-full px-3 py-1.5 text-[0.75rem]">
+          <span className="wx-neo-raised-sm text-muted wx-numeric rounded-full px-3 py-1.5 text-[0.75rem]">
             @{handle}
           </span>
         ) : null}
@@ -524,7 +524,7 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
      * not clickable and a card that moves under the cursor and then does
      * nothing is a promise the interface breaks.
      */
-    <section className="wx-card wx-card-hero flex flex-col gap-5 overflow-hidden rounded-2xl p-[clamp(1.125rem,2vw,1.5rem)]">
+    <section className="wx-neo-raised flex flex-col gap-5 overflow-hidden rounded-2xl p-[clamp(1.125rem,2vw,1.5rem)]">
       {/* `relative` so the content sits above the ::before wash. */}
       <div className="relative flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
@@ -556,7 +556,7 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
           treatment as the three cells below, so the hero has one vocabulary
           rather than two.
         */}
-        <div className="bg-surface-2/60 border-line flex flex-col gap-0.5 rounded-xl border-l px-4 py-2.5 shadow-[inset_0_1px_0_0_var(--wx-card-top-light)] sm:text-right">
+        <div className="wx-neo-inset flex flex-col gap-0.5 rounded-xl px-4 py-2.5 sm:text-right">
           <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             In your account
           </p>
@@ -581,7 +581,7 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
           eye went to the bar first, which inverts the hierarchy the whole card
           exists to state â€” and on a single-job account the bar is one colour
           across the full width, so it was a large block of indigo in a screen
-          whose only accent is meant to be gold.
+          whose only accent is meant to be the violet accent.
 
           10px, sunk into its track by an inset shadow, so it reads as a gauge
           cut into the card rather than a stripe painted across it. Same data,
@@ -590,7 +590,7 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
         <div
           role="img"
           aria-label={`${fmt(paid)} paid, ${fmt(due)} awaiting payment, ${fmt(working)} in progress`}
-          className="bg-surface-3 flex h-2.5 gap-0.5 overflow-hidden rounded-full shadow-[inset_0_1px_2px_rgb(0_0_0/0.25)]"
+          className="wx-neo-inset flex h-2.5 gap-0.5 overflow-hidden rounded-full"
         >
           {segments.map((s) => (
             <m.span
@@ -616,10 +616,7 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
           {cells.map((cell) => (
             <div
               key={cell.key}
-              className={cn(
-                'flex flex-col gap-1 rounded-xl p-3.5 shadow-[inset_0_1px_0_0_var(--wx-card-top-light)]',
-                cell.tone.soft
-              )}
+              className={cn('flex flex-col gap-1 rounded-xl p-3.5', cell.tone.soft)}
             >
               <dt
                 className={cn(
@@ -661,7 +658,7 @@ function Work({
   progress: Map<string, JobProgress> | undefined;
 }) {
   return (
-    <section className="wx-card flex h-full flex-col gap-3.5 rounded-2xl p-4">
+    <section className="wx-neo-raised flex h-full flex-col gap-3.5 rounded-2xl p-4">
       <div className="flex items-baseline justify-between gap-2.5">
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Work you took
@@ -695,7 +692,7 @@ function Work({
             <li
               key={`${row.id}-${moved.key}`}
               className={cn(
-                'bg-surface-2 flex flex-col gap-2.5 rounded-xl p-3.5 shadow-[inset_0_1px_0_0_var(--wx-card-top-light)]',
+                'wx-neo-inset flex flex-col gap-2.5 rounded-xl p-3.5',
                 justMoved && 'wx-flash'
               )}
             >
@@ -765,7 +762,7 @@ function Work({
       {pending.length > 0 ? (
         <div className="border-line flex flex-col gap-2 border-t pt-3.5">
           {pending.map((row) => (
-            <div key={row.id} className="bg-surface-2 flex flex-col gap-1 rounded-xl p-3">
+            <div key={row.id} className="wx-neo-inset flex flex-col gap-1 rounded-xl p-3">
               <p className="flex flex-wrap items-center gap-2">
                 <span className="text-muted text-[0.6875rem] font-bold tracking-[0.08em] uppercase">
                   {row.status === 'pending' ? 'Waiting on a decision' : 'Not accepted'}
@@ -815,7 +812,7 @@ function Activity({
   const claimed = new Set<string>();
 
   return (
-    <section className="wx-card flex h-full flex-col gap-3.5 rounded-2xl p-4">
+    <section className="wx-neo-raised flex h-full flex-col gap-3.5 rounded-2xl p-4">
       <h2 className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         <span aria-hidden className="wx-blink bg-stage-paid size-1.5 rounded-full" />
         Everything that moved
@@ -868,7 +865,7 @@ function Activity({
                     <span
                       aria-hidden
                       className={cn(
-                        'size-2 shrink-0 rounded-full ring-2 ring-[color:var(--wx-card-face)]',
+                        'ring-surface-1 size-2 shrink-0 rounded-full ring-2',
                         tone.dot
                       )}
                     />
@@ -984,7 +981,7 @@ function Counts({ summary }: { summary: WorkSummary }) {
      * is a background change rather than a lift, since lifting one quarter of a
      * card would tear the card.
      */
-    <ul className="wx-card grid grid-cols-2 overflow-hidden rounded-2xl lg:grid-cols-4">
+    <ul className="wx-neo-raised grid grid-cols-2 overflow-hidden rounded-2xl lg:grid-cols-4">
       {items.map((item, i) => {
         const Icon = item.icon;
         return (
@@ -999,13 +996,10 @@ function Counts({ summary }: { summary: WorkSummary }) {
               i === 2 && 'lg:border-l'
             )}
           >
-            <Link
-              to={item.to}
-              className="hover:bg-surface-2/70 flex h-full items-center gap-3 p-4 transition-colors duration-200"
-            >
+            <Link to={item.to} className="wx-neo-press flex h-full items-center gap-3 p-4">
               <span
                 aria-hidden
-                className="bg-surface-2 grid size-9 shrink-0 place-items-center rounded-lg shadow-[inset_0_1px_0_0_var(--wx-card-top-light)]"
+                className="wx-neo-inset grid size-9 shrink-0 place-items-center rounded-lg"
               >
                 <Icon size={16} className={item.tone} />
               </span>
@@ -1107,12 +1101,12 @@ function InReview({
             ) : null}
 
             <span
-              className={`relative grid size-8 place-items-center rounded-full border text-[0.6875rem] ${
+              className={`relative grid size-8 place-items-center rounded-full text-[0.6875rem] ${
                 s.state === 'done'
                   ? 'border-accent bg-accent text-on-accent'
                   : s.state === 'now'
                     ? 'border-accent bg-accent-soft text-accent'
-                    : 'border-line bg-surface-1 text-faint'
+                    : 'wx-neo-raised-sm text-faint'
               }`}
             >
               {s.state === 'done' ? (
@@ -1143,7 +1137,7 @@ function InReview({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-        className="border-line bg-surface-1 mt-10 w-full rounded-2xl border px-6 py-5 text-left shadow-sm"
+        className="wx-neo-raised mt-10 w-full rounded-2xl px-6 py-5 text-left"
       >
         <p className="text-faint font-mono text-[0.625rem] tracking-[0.14em] uppercase">
           Under review
@@ -1181,7 +1175,7 @@ function Rejected({ note }: { note: string | null }) {
         are running, rather than the quality of your work, and it is not permanent.
       </p>
       {note ? (
-        <p className="border-line bg-surface-1 text-muted mt-6 rounded-2xl border px-5 py-4 text-left text-[0.875rem] leading-relaxed">
+        <p className="wx-neo-raised text-muted mt-6 rounded-2xl px-5 py-4 text-left text-[0.875rem] leading-relaxed">
           {note}
         </p>
       ) : null}
@@ -1216,7 +1210,7 @@ function Skeleton() {
         <div className="wx-skeleton h-10 w-72 max-w-full" />
       </div>
 
-      <div className="border-line bg-surface-1 flex flex-col gap-[18px] rounded-xl border p-[22px] shadow-md">
+      <div className="wx-neo-raised flex flex-col gap-[18px] rounded-xl p-[22px]">
         <div className="wx-skeleton h-3.5 w-[150px]" />
         <div className="wx-skeleton h-[46px] w-[210px]" />
         <div className="wx-skeleton h-4 w-full rounded-full" />
@@ -1228,13 +1222,13 @@ function Skeleton() {
       </div>
 
       <div className="grid [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] gap-[14px]">
-        <div className="border-line bg-surface-1 flex flex-col gap-3.5 rounded-xl border p-5">
+        <div className="wx-neo-raised flex flex-col gap-3.5 rounded-xl p-5">
           <div className="wx-skeleton h-3 w-28" />
           {[0, 1, 2].map((i) => (
             <div key={i} className="wx-skeleton h-[58px]" />
           ))}
         </div>
-        <div className="border-line bg-surface-1 flex flex-col gap-3.5 rounded-xl border p-5">
+        <div className="wx-neo-raised flex flex-col gap-3.5 rounded-xl p-5">
           <div className="wx-skeleton h-3 w-24" />
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="wx-skeleton h-[38px]" />

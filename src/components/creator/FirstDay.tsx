@@ -31,7 +31,7 @@ export default function FirstDay() {
 
   return (
     <>
-      <section className="border-line bg-surface-1 flex flex-col gap-5 rounded-xl border p-6 shadow-md">
+      <section className="wx-neo-raised flex flex-col gap-5 rounded-xl p-6">
         <div className="flex max-w-[560px] flex-col gap-2">
           <h2 className="font-display text-[clamp(1.25rem,3vw,1.6875rem)] font-semibold tracking-[-0.015em]">
             You are approved. Nothing taken yet.
@@ -46,7 +46,7 @@ export default function FirstDay() {
           {OFFER_STAGES.map((stage, i) => (
             <li
               key={stage}
-              className="border-line bg-surface-2 flex flex-col gap-1.5 rounded-xl border px-3 py-2.5"
+              className="wx-neo-inset flex flex-col gap-1.5 rounded-xl px-3 py-2.5"
             >
               <span className="text-muted text-[0.625rem] font-bold tracking-[0.1em]">
                 Stage {i + 1}
@@ -83,17 +83,21 @@ export default function FirstDay() {
           </div>
           <div className="flex flex-col gap-0.5">
             <dt className="text-muted text-[0.75rem]">Brands open to you</dt>
-            <dd className="font-display text-[1.1875rem] font-semibold">{brands?.length ?? 0}</dd>
+            <dd className="font-display text-[1.1875rem] font-semibold">
+              {brands?.length ?? 0}
+            </dd>
           </div>
           <div className="flex flex-col gap-0.5">
             <dt className="text-muted text-[0.75rem]">Offers you can take</dt>
-            <dd className="font-display text-[1.1875rem] font-semibold">{offers?.length ?? 0}</dd>
+            <dd className="font-display text-[1.1875rem] font-semibold">
+              {offers?.length ?? 0}
+            </dd>
           </div>
         </dl>
       </section>
 
       {starters.length > 0 ? (
-        <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-xl border p-5 shadow-md">
+        <section className="wx-neo-raised flex flex-col gap-[14px] rounded-xl p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2.5">
             <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               Start here
@@ -107,7 +111,7 @@ export default function FirstDay() {
             {starters.map((offer) => (
               <li
                 key={offer.id}
-                className="border-line bg-surface-2 flex flex-wrap items-center gap-3 rounded-lg border p-3.5"
+                className="wx-neo-inset flex flex-wrap items-center gap-3 rounded-lg p-3.5"
               >
                 <span
                   aria-hidden

@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { m } from 'motion/react';
 import { ArrowLeft, LogOut, Menu, X } from 'lucide-react';
@@ -123,7 +123,7 @@ export function BrandWorldShell({
       // colours rather than the light theme's darkening filter, which would
       // render it nearly black on a deep brand background. A brand that chose a
       // pale menu is the exception, and there the filter has to come back or
-      // the mark is a white shape on cream.
+      // the mark is a white shape on a pale ground.
       style={{ ['--wx-mark-filter' as string]: paleRail ? '' : 'none' }}
     >
       {/* ----------------------------------------------- the way back out -- */}
@@ -173,7 +173,9 @@ export function BrandWorldShell({
                 >
                   <BrandChip brand={b} />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[0.8125rem] font-semibold">{b.name}</span>
+                    <span className="block truncate text-[0.8125rem] font-semibold">
+                      {b.name}
+                    </span>
                     {b.tagline ? (
                       <span
                         className="block truncate text-[0.6875rem]"
@@ -274,9 +276,9 @@ export function BrandWorldShell({
             transition={{ duration: 0.18, ease: 'easeOut' }}
             className="absolute inset-y-0 left-0 w-[17rem] max-w-[85vw] border-r shadow-2xl"
             style={{
-          background: 'var(--wx-brand-rail-wash)',
-          borderColor: 'var(--wx-brand-rail-edge)',
-        }}
+              background: 'var(--wx-brand-rail-wash)',
+              borderColor: 'var(--wx-brand-rail-edge)',
+            }}
           >
             <button
               type="button"
@@ -309,17 +311,19 @@ export function BrandWorldShell({
             type="button"
             onClick={() => setRailOpen(true)}
             aria-label="Open the menu"
-            className="rounded-md p-1.5"
+            className="wx-neo-raised-sm wx-neo-press grid size-11 shrink-0 place-items-center rounded-full"
             style={{ color: 'var(--wx-brand-text)' }}
           >
             <Menu className="h-5 w-5" aria-hidden />
           </button>
           <BrandChip brand={brand} />
-          <span className="min-w-0 flex-1 truncate text-[0.875rem] font-semibold">{brand.name}</span>
+          <span className="min-w-0 flex-1 truncate text-[0.875rem] font-semibold">
+            {brand.name}
+          </span>
           <Link
             to="/app"
             aria-label="Leave this brand"
-            className="rounded-md p-1.5"
+            className="wx-neo-raised-sm wx-neo-press grid size-11 shrink-0 place-items-center rounded-full"
             style={{ color: 'var(--wx-brand-muted)' }}
           >
             <LogOut className="h-4 w-4" aria-hidden />

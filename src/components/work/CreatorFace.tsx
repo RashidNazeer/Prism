@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
  *
  * So a creator with no picture, a picture that has gone missing from the
  * bucket, and one still on its way all look the same for as long as that is
- * true: their initial, in the brand gold, exactly as the sidebar already draws
+ * true: their initial, in the accent colour, exactly as the sidebar already draws
  * the signed-in person.
  *
  * NOT the vendored WurxBase treatment, which hashes the name into one of seven

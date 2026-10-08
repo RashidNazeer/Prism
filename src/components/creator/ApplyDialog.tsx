@@ -86,18 +86,18 @@ export function ApplyDialog({
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        className="relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-line bg-surface-1 p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
+        className="wx-neo-raised relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl p-6 sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold">{offer.title}</h2>
-            <p className="mt-1 text-[0.875rem] text-muted">{brandName}</p>
+            <p className="text-muted mt-1 text-[0.875rem]">{brandName}</p>
           </div>
           <button
             type="button"
             onClick={() => !busy && onClose()}
             aria-label="Close"
-            className="-mt-1 -mr-1 grid size-9 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:text-accent"
+            className="text-muted hover:text-accent -mt-1 -mr-1 grid size-9 shrink-0 place-items-center rounded-lg transition-colors"
           >
             <X size={17} aria-hidden />
           </button>
@@ -107,10 +107,10 @@ export function ApplyDialog({
           <FormError>{apply.error ? (apply.error as Error).message : ''}</FormError>
 
           {/* Exactly what they are agreeing to, restated. */}
-          <div className="rounded-xl border border-line bg-surface-2 px-4 py-3.5">
+          <div className="wx-neo-inset rounded-xl px-4 py-3.5">
             {hasTerms ? (
               <>
-                <span className="font-mono text-[0.625rem] tracking-[0.14em] text-faint uppercase">
+                <span className="text-faint font-mono text-[0.625rem] tracking-[0.14em] uppercase">
                   You would be asking for
                 </span>
                 <span className="wx-numeric mt-1 block text-[0.9375rem] font-semibold">
@@ -121,12 +121,12 @@ export function ApplyDialog({
                 </span>
               </>
             ) : (
-              <span className="text-[0.875rem] leading-relaxed text-muted">
+              <span className="text-muted text-[0.875rem] leading-relaxed">
                 The team will confirm what this one involves with you directly.
               </span>
             )}
             {offer.description ? (
-              <span className="mt-3 block border-t border-line pt-3 text-[0.8125rem] leading-relaxed text-muted">
+              <span className="border-line text-muted mt-3 block border-t pt-3 text-[0.8125rem] leading-relaxed">
                 {offer.description}
               </span>
             ) : null}

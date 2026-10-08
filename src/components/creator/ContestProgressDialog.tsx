@@ -422,7 +422,7 @@ export function ContestProgressDialog({
         initial={reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={reduced ? { duration: 0 } : { duration: 0.22, ease: EASE }}
-        className="border-line bg-surface-1 relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
+        className="wx-neo-raised relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl p-6 sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -503,7 +503,7 @@ export function ContestProgressDialog({
               </div>
             ) : null}
 
-            <div className="border-line bg-surface-2 mt-4 rounded-xl border px-4 py-4">
+            <div className="wx-neo-inset mt-4 rounded-xl px-4 py-4">
               <p className="text-faint text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                 What you have achieved
               </p>
@@ -635,7 +635,7 @@ export function ContestProgressDialog({
                 decides whether a link is already on this entry, and it refuses a
                 duplicate by name.
               */
-              <p className="text-muted border-line mt-4 rounded-xl border px-3.5 py-3 text-[0.8125rem] leading-relaxed">
+              <p className="text-muted wx-neo-inset mt-4 rounded-xl px-3.5 py-3 text-[0.8125rem] leading-relaxed">
                 Your earlier videos would not load just now. You can still add the new ones.
               </p>
             ) : earlier.length > 0 ? (
@@ -654,7 +654,7 @@ export function ContestProgressDialog({
             {rows.length > 0 ? (
               <div className="mt-5 flex flex-col gap-4">
                 {rows.map((row, i) => (
-                  <div key={i} className="border-line bg-surface-2 rounded-xl border px-4 py-4">
+                  <div key={i} className="wx-neo-inset rounded-xl px-4 py-4">
                     <p className="text-text text-[0.8125rem] font-semibold">
                       New video {floor + i + 1}
                     </p>
@@ -782,7 +782,9 @@ export function ContestProgressDialog({
                 {sent.added > 0 ? (
                   <div className="flex items-baseline justify-between gap-4">
                     <dt className="text-muted text-[0.8125rem]">New videos sent</dt>
-                    <dd className="font-display text-[0.9375rem] font-semibold">{sent.added}</dd>
+                    <dd className="font-display text-[0.9375rem] font-semibold">
+                      {sent.added}
+                    </dd>
                   </div>
                 ) : null}
               </dl>
@@ -832,7 +834,7 @@ function Targets({
 }) {
   if (terms.length === 0) {
     return (
-      <div className="border-line bg-surface-2 rounded-xl border px-4 py-3.5">
+      <div className="wx-neo-inset rounded-xl px-4 py-3.5">
         <p className="text-text text-[0.875rem] font-semibold">No targets on this one yet</p>
         <p className="text-muted mt-1 text-[0.8125rem] leading-relaxed">
           Tell us where you have got to anyway. The team will confirm your figures and say what
@@ -850,7 +852,7 @@ function Targets({
   const only = terms.length === 1 ? terms[0]! : null;
 
   return (
-    <div className="border-line bg-surface-2 rounded-xl border px-4 py-4">
+    <div className="wx-neo-inset rounded-xl px-4 py-4">
       <p className="text-faint text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         What you are going for
       </p>
@@ -992,7 +994,7 @@ function EarlierVideo({ video, index }: { video: VideoRow; index: number }) {
         : 'With the team';
 
   return (
-    <li className="border-line bg-surface-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border px-3.5 py-3">
+    <li className="wx-neo-inset flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl px-3.5 py-3">
       <span className="text-faint shrink-0 font-mono text-[0.75rem]">{index}</span>
       <a
         href={video.video_url}

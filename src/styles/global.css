@@ -490,7 +490,7 @@
   }
 }
 
-/* Under-lighting, on hover only. Gold here, indigo in the design. */
+/* Under-lighting, on hover only. Violet accent here. */
 @utility wx-glass-hover {
   transition:
     transform 300ms var(--wx-ease),

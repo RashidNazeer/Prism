@@ -50,13 +50,13 @@ export function ApprovedMoment({
                   initial={{ scale: 0.4, opacity: 0.55 }}
                   animate={{ scale: 1.9, opacity: 0 }}
                   transition={{ duration: 1.5, delay: 0.25, ease: 'easeOut' }}
-                  className="absolute inset-0 rounded-full bg-success"
+                  className="bg-success absolute inset-0 rounded-full"
                 />
                 <m.span
                   initial={{ scale: 0.3, rotate: -25 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ type: 'spring', stiffness: 260, damping: 14, delay: 0.15 }}
-                  className="relative grid size-20 place-items-center rounded-full bg-success-soft text-success"
+                  className="bg-success-soft text-success relative grid size-20 place-items-center rounded-full"
                 >
                   <Check size={34} strokeWidth={2.6} aria-hidden />
                 </m.span>
@@ -70,17 +70,17 @@ export function ApprovedMoment({
             </Stagger>
 
             <Stagger delay={0.4}>
-              <p className="mt-3 leading-relaxed text-muted text-pretty">
+              <p className="text-muted mt-3 leading-relaxed text-pretty">
                 Your application was approved. You are officially a Wurx creator.
               </p>
             </Stagger>
 
             {tier ? (
               <Stagger delay={0.5}>
-                <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-accent-soft px-3.5 py-1.5 font-mono text-[0.6875rem] tracking-[0.16em] text-accent uppercase">
+                <p className="bg-accent-soft text-accent mt-5 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-mono text-[0.6875rem] tracking-[0.16em] uppercase">
                   {tier} tier
                 </p>
-                <p className="mt-3 text-[0.875rem] leading-relaxed text-muted">
+                <p className="text-muted mt-3 text-[0.875rem] leading-relaxed">
                   {TIER_COPY[tier]}
                 </p>
               </Stagger>
@@ -88,7 +88,7 @@ export function ApprovedMoment({
 
             {note ? (
               <Stagger delay={0.58}>
-                <p className="mt-6 rounded-2xl border border-line bg-surface-2 px-5 py-4 text-left text-[0.875rem] leading-relaxed text-muted">
+                <p className="wx-neo-inset text-muted mt-6 rounded-2xl px-5 py-4 text-left text-[0.875rem] leading-relaxed">
                   {note}
                 </p>
               </Stagger>
@@ -104,17 +104,17 @@ export function ApprovedMoment({
               disabled={busy}
               whileHover={{ scale: 1.015 }}
               whileTap={{ scale: 0.985 }}
-              className="group relative flex h-13 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border border-accent bg-transparent text-[0.9375rem] font-semibold text-accent transition-colors duration-300 ease-brand hover:text-on-accent disabled:opacity-60"
+              className="group border-accent text-accent ease-brand hover:text-on-accent relative flex h-13 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border bg-transparent text-[0.9375rem] font-semibold transition-colors duration-300 disabled:opacity-60"
             >
               <span
                 aria-hidden
-                className="absolute inset-0 origin-left scale-x-0 bg-accent transition-transform duration-500 ease-brand group-hover:scale-x-100"
+                className="bg-accent ease-brand absolute inset-0 origin-left scale-x-0 transition-transform duration-500 group-hover:scale-x-100"
               />
               <span className="relative">{busy ? 'One moment...' : 'See my hub'}</span>
               <ArrowRight
                 size={17}
                 aria-hidden
-                className="relative transition-transform duration-300 ease-brand group-hover:translate-x-1"
+                className="ease-brand relative transition-transform duration-300 group-hover:translate-x-1"
               />
             </m.button>
           </Stagger>

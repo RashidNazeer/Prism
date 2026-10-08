@@ -7,6 +7,7 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { TextSizeMenu } from '@/components/layout/TextSizeMenu';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { MobileNav } from '@/components/layout/MobileNav';
+import { HaloBackdrop } from '@/components/auth/HaloBackdrop';
 import { IdentitySwapBanner } from '@/components/auth/IdentitySwapBanner';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -37,22 +38,31 @@ export function AppShell({ children }: { children: ReactNode }) {
   const drawerRef = useRef<HTMLElement>(null);
 
   /*
-   * THE FIVE THE PHONE BAR CARRIES.
+   * WHAT THE PHONE BAR CARRIES: EVERYWHERE YOU CAN GO.
    *
    * Flattened from the SAME `navForRole` the rail renders, so the bar and the
-   * drawer can never disagree about where a link goes â€” one definition, two
-   * renderers. Anything marked `soon` is dropped: a bottom bar is for places
-   * you can actually get to.
+   * drawer can never disagree about where a link goes — one definition, two
+   * renderers. Anything marked `soon` is still dropped: a bottom bar is for
+   * places you can actually get to.
    *
-   * Capped at five because a sixth puts the labels under 60px on a 375px screen
-   * and they start truncating to nonsense.
+   * THE `.slice(0, 5)` IS GONE, and it was a real bug, not a trim. Rashid,
+   * 2026-10-08: "why all the the nav bar elements are not in smaller screens?
+   * and the navigator is also not accurate. It doesnot point to the tab you are
+   * on". Those are one fault. A creator has seven destinations; the cap showed
+   * five. Open the sixth — Contests, My content, My profile — and the bar not
+   * only lacked the item, it had nothing matching the current URL to light, so
+   * the lamp went out and the bar pointed at nothing. Capping a navigator at
+   * five only works if nobody can reach a sixth.
+   *
+   * The bar scrolls sideways instead. `MobileNav` keeps every item at a
+   * thumb-sized minimum and brings the active one into view, which beats
+   * hiding a destination and lying about where you are.
    */
   const bottomNav = useMemo(
     () =>
       navForRole(profile?.role ?? claims?.role)
         .flatMap((g) => g.items)
-        .filter((i) => i.to && !i.soon)
-        .slice(0, 5),
+        .filter((i) => i.to && !i.soon),
     [profile?.role, claims?.role]
   );
 
@@ -140,7 +150,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       className={cn(
         // `wx-app` switches the type tokens over to the two self-hosted faces.
         // It lives here so the public landing page never asks for them.
-        'wx-app bg-bg min-h-dvh lg:grid',
+        'wx-app min-h-dvh lg:grid',
+        /* The halo IS the ground now, on every tab, so nothing here paints
+           over it. See the backdrop below. */
+        'bg-transparent',
         /*
          * 15rem, down from 17.5rem on 2026-08-16. Rashid: the rail is too wide
          * and there is a lot of dead space to the right of every label, which
@@ -162,16 +175,60 @@ export function AppShell({ children }: { children: ReactNode }) {
       */}
       <IdentitySwapBanner />
 
+      {/*
+        THE HALO, ON EVERY TAB. Rashid, 2026-10-08: "each tab must have the halo
+        background". It had been wired to Home alone.
+
+        ONE CANVAS FOR THE WHOLE SHELL, mounted here rather than per route, so
+        moving between tabs does not tear down a WebGL context and start a new
+        swirl — the ground stays put and the content changes on top of it. The
+        same reason the theme switch repaints rather than rebuilds.
+
+        FULL VIEWPORT, UNDER THE RAIL TOO. It used to stop at the content column
+        while the rail and the top bar painted their own grounds, which drew a
+        hard seam straight down the page at the rail's edge. One ground, three
+        translucent layers above it.
+
+        `subtle` because there is real work on top of this now, not one sign-in
+        card. At full strength the swirl is a rainbow smear behind live numbers:
+        it was fighting the data and dragging yellows and greens onto a screen
+        whose palette has neither. `-z-10` keeps it under every card and
+        `pointer-events-none` keeps it out of the way; the component itself
+        skips the download entirely under reduced motion or save-data.
+      */}
+      <HaloBackdrop intensity="subtle" className="pointer-events-none fixed inset-0 -z-10" />
+
       {/* ------------------------------------------------- desktop rail --- */}
-      <aside className="border-line sticky top-0 hidden h-dvh border-r lg:block">
-        {sidebar('rail')}
+      {/*
+        A CARD ON THE BACKGROUND, not a panel welded to the page edge. Rashid,
+        2026-10-08: "The side bar must be like a card placed on the background
+        on the left side of the page."
+
+        So the `border-r` is gone — that rule was a dark line down the full
+        height of the screen, and with the halo now running underneath the rail
+        it was the seam that made the shell look like two pasted-together
+        screens — and the rail floats inside its own padding instead, on the
+        same neomorphic material as every other card in the product.
+
+        `h-[calc(100dvh-1.5rem)]` rather than `h-dvh`, because the card has to
+        stop short of both edges or the gap only appears at the top and it
+        reads as a panel that slipped down rather than a card.
+      */}
+      <aside className="sticky top-0 hidden h-dvh p-3 lg:block">
+        <div className="wx-neo-raised flex h-[calc(100dvh-1.5rem)] flex-col overflow-hidden rounded-2xl">
+          {sidebar('rail')}
+        </div>
       </aside>
 
       <div className="flex min-w-0 flex-col">
         {/* --------------------------------------------------------- top --- */}
-        {/* Opaque at every width. It is sticky, so a transparent band on
-            desktop meant page content scrolled visibly underneath it. */}
-        <header className="border-line bg-surface-1/90 sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-3 border-b px-4 backdrop-blur-xl sm:px-6">
+        {/* Translucent, not opaque. It is sticky, so it still has to stop page
+            content showing through as it scrolls under — `backdrop-blur-xl`
+            does that job, and letting the halo tint the bar is what keeps the
+            bar, the rail and the page reading as one ground instead of three.
+            The hard `border-b` is gone: it drew a dark rule straight across the
+            top of every screen, which is the opposite of a soft bevel. */}
+        <header className="bg-surface-1/70 sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-3 px-4 backdrop-blur-xl sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             {/* The mark stays on a phone, where there is no rail to carry it.
                 On desktop the rail has it, and it is the collapse control. */}
@@ -290,10 +347,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         THE PHONE BAR. Rashid, 2026-10-08: the limelight treatment on phones,
         the traditional rail on anything larger.
 
-        FIVE DESTINATIONS, NOT ALL OF THEM. A bottom bar is for the places
-        somebody goes constantly; the drawer still holds everything. Items are
-        taken from the same `navForRole` definition the rail uses, so the two
-        can never drift apart â€” one source, two renderers.
+        EVERY DESTINATION, not a chosen few — see `bottomNav` above for why the
+        five-item cap had to go. Items come from the same `navForRole`
+        definition the rail uses, so the two can never drift apart: one source,
+        two renderers.
       */}
       {bottomNav.length > 0 ? <MobileNav items={bottomNav} /> : null}
 
@@ -319,7 +376,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-              className="border-line fixed inset-y-0 left-0 z-50 w-[min(300px,86vw)] border-r shadow-lg lg:hidden"
+              /* `bg-bg` lives here now that `AppSidebar` paints nothing of its
+                 own. The drawer slides over live content, so unlike the rail it
+                 has to be fully opaque. */
+              className="bg-bg fixed inset-y-0 left-0 z-50 w-[min(300px,86vw)] shadow-lg lg:hidden"
             >
               {sidebar('drawer')}
             </m.aside>

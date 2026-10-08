@@ -51,14 +51,14 @@ export function Brands() {
           ))}
         </ul>
       ) : isError ? (
-        <div className="border-line bg-surface-1 mt-6 rounded-xl border px-6 py-14 text-center shadow-md">
+        <div className="wx-neo-raised mt-6 rounded-xl px-6 py-14 text-center">
           <p className="font-semibold">That list would not load</p>
           <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
             {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
           </p>
         </div>
       ) : rows.length === 0 ? (
-        <div className="border-line bg-surface-1 mt-6 rounded-xl border px-6 py-16 text-center shadow-md">
+        <div className="wx-neo-raised mt-6 rounded-xl px-6 py-16 text-center">
           <Store size={26} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">No brands open yet</p>
           <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -79,10 +79,10 @@ export function Brands() {
             >
               <Link
                 to={`/app/brands/${brand.slug}`}
-                className="border-line bg-surface-1 hover:border-accent flex h-full flex-col rounded-xl border p-5 shadow-md transition-colors duration-200"
+                className="wx-neo-raised hover:border-accent flex h-full flex-col rounded-xl p-5 transition-colors duration-200"
               >
                 <div className="flex items-center gap-3">
-                  <span className="border-line bg-surface-2 grid size-[44px] shrink-0 place-items-center overflow-hidden rounded-full border">
+                  <span className="wx-neo-inset grid size-[44px] shrink-0 place-items-center overflow-hidden rounded-full">
                     {brand.logo_url ? (
                       <img src={brand.logo_url} alt="" className="size-full object-cover" />
                     ) : (

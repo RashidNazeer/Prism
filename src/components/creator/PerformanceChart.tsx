@@ -14,7 +14,7 @@ import type { DailyPerformance } from '@/lib/creator/usePerformance';
  * and an amount of dollars share no scale, so putting them together would mean
  * inventing one.
  *
- * GOLD AND BLUE, warm against cool, which is the pairing that survives
+ * VIOLET AND BLUE, two distinct hues, which is the pairing that survives
  * colour blindness: the two most common forms confuse red with green, not warm
  * with cool. Both series are also labelled directly at their last point, so
  * identity never depends on colour alone.
@@ -54,7 +54,10 @@ export function PerformanceChart({
 
   const model = useMemo(() => {
     if (rows.length === 0) return null;
-    const max = Math.max(...rows.map((r) => Math.max(Number(r.cost), Number(r.gross_revenue))), 1);
+    const max = Math.max(
+      ...rows.map((r) => Math.max(Number(r.cost), Number(r.gross_revenue))),
+      1
+    );
     // A round ceiling, so the gridline labels are numbers a person would say.
     const step = Math.pow(10, Math.floor(Math.log10(max)));
     const ceiling = Math.ceil(max / step) * step;
@@ -112,7 +115,7 @@ export function PerformanceChart({
         </span>
       </figcaption>
 
-      <div className="relative">
+      <div className="wx-neo-inset relative rounded-xl p-2">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${VB_W} ${VB_H}`}
@@ -163,25 +166,20 @@ export function PerformanceChart({
                 cx={model.x(hover)}
                 cy={model.y(Number(active.gross_revenue))}
                 r={5}
-                className="fill-accent stroke-bg"
+                className="fill-accent stroke-surface-3"
                 strokeWidth={2}
               />
               <circle
                 cx={model.x(hover)}
                 cy={model.y(Number(active.cost))}
                 r={5}
-                className="fill-info stroke-bg"
+                className="fill-info stroke-surface-3"
                 strokeWidth={2}
               />
             </g>
           ) : null}
 
-          <text
-            x={PAD.left}
-            y={VB_H - 8}
-            className="fill-faint wx-numeric"
-            fontSize={11}
-          >
+          <text x={PAD.left} y={VB_H - 8} className="fill-faint wx-numeric" fontSize={11}>
             {shortDate(rows[0]!.stat_date)}
           </text>
           {rows.length > 1 ? (
@@ -201,11 +199,13 @@ export function PerformanceChart({
             as the rest of the product and wraps like text should. */}
         {active ? (
           <div
-            className="border-line bg-surface-1 pointer-events-none absolute top-2 rounded-lg border px-3 py-2 shadow-lg"
+            className="wx-neo-raised-sm pointer-events-none absolute top-2 rounded-lg px-3 py-2"
             style={{
               left: `${(model.x(hover!) / VB_W) * 100}%`,
               transform:
-                model.x(hover!) > VB_W / 2 ? 'translateX(-100%) translateX(-8px)' : 'translateX(8px)',
+                model.x(hover!) > VB_W / 2
+                  ? 'translateX(-100%) translateX(-8px)'
+                  : 'translateX(8px)',
             }}
           >
             <p className="text-[0.6875rem] font-semibold tracking-wide uppercase">
@@ -242,7 +242,11 @@ export function OrdersChart({ rows }: { rows: DailyPerformance[] }) {
       <figcaption className="text-muted mb-3 text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
         Orders by day
       </figcaption>
-      <div className="flex h-24 items-end gap-[2px]" role="img" aria-label="Orders for each day">
+      <div
+        className="wx-neo-inset flex h-28 items-end gap-[2px] rounded-xl p-2"
+        role="img"
+        aria-label="Orders for each day"
+      >
         {rows.map((r) => {
           const h = (Number(r.orders) / max) * 100;
           return (

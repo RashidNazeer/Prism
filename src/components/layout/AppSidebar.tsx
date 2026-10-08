@@ -1,4 +1,4 @@
-﻿import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router';
 import { LogOut, Plus, X } from 'lucide-react';
 import { PrismMark } from '@/components/brand/PrismMark';
@@ -19,7 +19,7 @@ import type { AppRole } from '@/lib/auth/auth-context';
  * inner edge rather than a tint alone.
  *
  * WHAT DID NOT COME ACROSS IS THE PALETTE, and that was his call: the design is
- * indigo and violet on navy, and Wurx is gold on near-black, locked to
+ * indigo and violet on navy, and the Wurx palette was gold on near-black, locked to
  * wurxmedia.com in CLAUDE.md. So every surface, gradient and glow here is a
  * `--wx-*` token and the design's structure is what was copied.
  *
@@ -118,8 +118,20 @@ export function AppSidebar({
     return () => el.removeEventListener('scroll', remember);
   });
 
+  /*
+   * THE ROOT PAINTS NOTHING, AND THAT IS DELIBERATE.
+   *
+   * It used to be `bg-bg`, which is what made the rail a flush panel welded to
+   * the page edge. Rashid, 2026-10-08: the sidebar should read as "a card
+   * placed on the background on the left side of the page".
+   *
+   * So the ground now belongs to whoever mounts this. The desktop rail wraps it
+   * in a floating neomorphic card; the mobile drawer gives it a solid `bg-bg`,
+   * because unlike the rail it slides over live content and has to be opaque.
+   * One component, two grounds.
+   */
   return (
-    <div className="bg-bg flex h-full flex-col">
+    <div className="flex h-full flex-col bg-transparent">
       {/* ---------------------------------------------------------- brand -- */}
       <div
         className={cn(

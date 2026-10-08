@@ -164,3 +164,89 @@ has none).
 
 Dark is **redrawn, not inverted**: a pale highlight on black reads as glow, so dark keeps the
 highlight at 4–5% white and uses true black for the shadow.
+
+---
+
+## Session 2026-10-08 (b): shell, halo, spectrum
+
+Rashid reviewed light mode and raised six things. All six are fixed; what follows is what
+was actually wrong, because several of my first diagnoses were incorrect.
+
+### The phone nav: one bug, not two
+
+"Why all the nav bar elements are not in smaller screens? And the navigator is also not
+accurate, it doesn't point to the tab you are on."
+
+Both halves were `.slice(0, 5)` in `AppShell`. A creator has seven destinations. Open the
+sixth and the bar not only lacked the item, it had nothing matching the current URL to
+light, so `activeIndex` was `-1` and the lamp went out. The cap is gone: up to five share
+the width, beyond that each keeps a thumb-sized minimum and the bar scrolls, with the
+active item scrolled into view. Also fixed in `MobileNav`: the lamp is the list's first
+child, so `children[activeIndex]` pointed one item left of the truth whenever a lamp was
+drawn. It now queries `[data-nav-item]`, and re-measures on `document.fonts.ready` and via
+`ResizeObserver` (neither the rail collapsing nor the text-size control fires `resize`).
+
+### The halo: VANTA cannot work on a light ground
+
+The important finding, measured rather than assumed. HALO's ring is **additive light**. On
+Ink it produces the spectrum; on a near-white ground every channel is already near 255, so
+it clips to white and vanishes. Same clip, same page:
+
+| theme | mean saturation | distinct colours |
+| ----- | --------------- | ---------------- |
+| dark  | 0.308           | 593              |
+| light | 0.015           | 1                |
+
+Removing the scrim (0.55 to 0.22) moved light from 1 colour to 4, so the scrim was never
+what hid it. A light base, a violet base and a dark base were all tried; the first two gave
+a white blob and the third a dark slab, which is the login Rashid called pathetic.
+
+**So light mode paints its own aurora in CSS** in the kit's four spectrum colours, and dark
+keeps VANTA. After: light saturation 0.128 with luminance still 0.875 (a light page).
+The halo is now mounted once in `AppShell` for every tab rather than on Home alone, so
+moving between tabs does not tear down a WebGL context.
+
+### Colour: the spectrum was collapsed onto violet
+
+"I see only purple everywhere." Correct, and against the kit, which assigns
+magenta = accent 1, violet = accent 2 and **primary interactive only**, blue = accent 3,
+cyan = accent 4 / growth. Fixed in light mode:
+
+- `--wx-info` was `#5a1fd0`, a **violet under a blue tint**. Now `#1559ce`.
+- `--wx-stage-live` likewise violet with a blue tint. Now `#1559ce`.
+- `--wx-danger-soft` was a leftover **red** under a magenta ink. Now magenta.
+
+`#1559CE` is derived (6.26:1 on white): the kit ships dark inks for violet, cyan and
+magenta but **none for blue**.
+
+The kit also says spectrum colours are never full-bleed backgrounds, so the card gradients,
+the sheet band and the glass glow are Ink-tinted neutrals rather than the violet I had just
+put there.
+
+### Live gold still in the palette
+
+Not just stale comments. `--wx-accent-gradient-hover` was `#d8a15b -> #f0bb72`, so hovering
+the primary button in dark mode turned it **gold**. Also gold: `--wx-card-rim-hover`, two
+card gradients, `--wx-sheet-band`, `--wx-glass-glow` and `--wx-warning-soft` (a yellow wash
+under a magenta ink). All replaced. `DEFAULT_BRAND_COLOR` is now PRISM violet.
+
+### The "black border lines"
+
+My first guess, double borders on neo surfaces, was **wrong** - there were none. The real
+cause was cards never converted at all, still `border border-line bg-surface-1 shadow-*`,
+sitting beside converted ones. Creator screens, the Brand Hub and the shell are now one
+material. The top bar's `border-b` and the rail's `border-r` are gone; both drew a hard
+rule across a soft page.
+
+### The sidebar is a card
+
+Per Rashid. `AppSidebar` paints nothing now; the rail wraps it in a floating
+`wx-neo-raised` card inside `p-3`, and the mobile drawer supplies its own `bg-bg` because
+it slides over live content and must be opaque.
+
+### Not verified
+
+Nothing under `/app/*` has been seen in a browser - there is still no creator login on dev.
+The login page is verified in both themes with real WebGL (SwiftShader; the repo's
+`browser.mjs` uses `--disable-gpu`, so it cannot test this). Responsive widths for the new
+rail card and scrolling phone bar are unverified.

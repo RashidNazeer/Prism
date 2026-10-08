@@ -85,7 +85,7 @@ export function TikTokConnection() {
   }
 
   return (
-    <section className="border-line bg-surface-1 rounded-xl border p-5 shadow-md">
+    <section className="wx-neo-raised rounded-xl p-5">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         {/* min-w-0 flex-1, and no max-width. With a fixed `max-w-lg` the
             paragraph was nearly as wide as the card, so the Connected pill
@@ -138,9 +138,7 @@ export function TikTokConnection() {
           */}
           <ul className="text-muted mt-4 grid gap-1.5 text-[0.8125rem]">
             <li>We read your name and profile picture, so we can show you who is connected.</li>
-            <li>
-              We read your own videos and their view, like, comment and share counts.
-            </li>
+            <li>We read your own videos and their view, like, comment and share counts.</li>
             <li>
               <strong className="text-text font-semibold">
                 We can never post, edit or delete anything.
@@ -232,16 +230,18 @@ export function TikTokConnection() {
           {confirmingDisconnect ? (
             <div className="border-danger/40 bg-danger-soft mt-4 rounded-xl border p-4">
               <p className="text-danger text-[0.8125rem] leading-relaxed font-medium">
-                Disconnect your TikTok account? We will forget the link and delete the figures we
-                pulled in. Nothing on TikTok itself changes, and you can reconnect whenever you
-                like.
+                Disconnect your TikTok account? We will forget the link and delete the figures
+                we pulled in. Nothing on TikTok itself changes, and you can reconnect whenever
+                you like.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button
                   size="sm"
                   disabled={busy}
                   onClick={() =>
-                    act.mutate('disconnect', { onSuccess: () => setConfirmingDisconnect(false) })
+                    act.mutate('disconnect', {
+                      onSuccess: () => setConfirmingDisconnect(false),
+                    })
                   }
                 >
                   {busy ? 'Disconnecting...' : 'Yes, disconnect'}
@@ -282,7 +282,11 @@ export function TikTokConnection() {
                       key={v.video_id}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.28, ease: 'easeOut', delay: Math.min(i, 6) * 0.04 }}
+                      transition={{
+                        duration: 0.28,
+                        ease: 'easeOut',
+                        delay: Math.min(i, 6) * 0.04,
+                      }}
                     >
                       <VideoRow video={v} />
                     </m.li>
@@ -297,9 +301,9 @@ export function TikTokConnection() {
                 */}
                 <p className="text-faint mt-4 text-[0.75rem] leading-relaxed">
                   These are TikTok&rsquo;s own totals for each video, all of its views and likes
-                  since you posted it. They are a different measure from the sales figures on
-                  My numbers, which count only what the ads behind a video brought in, so the
-                  two will not add up against each other.
+                  since you posted it. They are a different measure from the sales figures on My
+                  numbers, which count only what the ads behind a video brought in, so the two
+                  will not add up against each other.
                 </p>
               </>
             )}
@@ -401,10 +405,15 @@ function Stat({ label, value }: { label: string; value: number | null }) {
 /** One video, with the four figures a creator came for. */
 function VideoRow({ video }: { video: TikTokVideo }) {
   return (
-    <div className="border-line bg-surface-2/40 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border p-3">
+    <div className="wx-neo-inset flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl p-3">
       <span className="bg-surface-2 grid h-14 w-10 shrink-0 place-items-center overflow-hidden rounded-md">
         {video.cover_image_url ? (
-          <img src={video.cover_image_url} alt="" className="size-full object-cover" loading="lazy" />
+          <img
+            src={video.cover_image_url}
+            alt=""
+            className="size-full object-cover"
+            loading="lazy"
+          />
         ) : (
           <Video size={14} aria-hidden className="text-faint" />
         )}
@@ -429,7 +438,11 @@ function VideoRow({ video }: { video: TikTokVideo }) {
           label="comments"
           value={video.comment_count}
         />
-        <Figure icon={<Share2 size={13} aria-hidden />} label="shares" value={video.share_count} />
+        <Figure
+          icon={<Share2 size={13} aria-hidden />}
+          label="shares"
+          value={video.share_count}
+        />
       </span>
     </div>
   );

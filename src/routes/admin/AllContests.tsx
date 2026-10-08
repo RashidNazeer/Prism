@@ -365,7 +365,7 @@ function ContestRow({
    * on the top line, the name big underneath, then a rule, then the closing
    * date on the left and the entrant count on the right.
    *
-   * The glass, the rim light and the gold under-glow on hover are the design's,
+   * The glass, the rim light and the accent under-glow on hover are the design's,
    * in Wurx colours, and both themes carry them: see `wx-glass` in global.css.
    */
   return (
@@ -475,7 +475,9 @@ function Panel({
       <div className="bg-surface-3 border-line-strong grid size-[44px] place-items-center rounded-lg border">
         <Trophy size={19} className="text-muted" aria-hidden />
       </div>
-      <h2 className="font-display text-text text-[1.1875rem] leading-tight font-bold">{title}</h2>
+      <h2 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
+        {title}
+      </h2>
       <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">{body}</p>
       {action}
     </div>

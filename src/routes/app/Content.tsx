@@ -183,14 +183,14 @@ export function Content() {
         ) : isLoading || workLoading ? (
           <Skeleton />
         ) : isError ? (
-          <div className="border-line bg-surface-1 rounded-xl border px-6 py-14 text-center shadow-md">
+          <div className="wx-neo-raised rounded-xl px-6 py-14 text-center">
             <p className="font-semibold">That would not load</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : jobs.length === 0 ? (
-          <div className="border-line bg-surface-1 rounded-xl border px-6 py-16 text-center shadow-md">
+          <div className="wx-neo-raised rounded-xl px-6 py-16 text-center">
             <Video size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">Nothing to film yet</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -263,7 +263,7 @@ export function Content() {
                       onChange={(e) => setSearch(e.target.value)}
                       placeholder="Search by ad code, brand or offer"
                       aria-label="Search your content"
-                      className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[0.8125rem] focus:outline-none"
+                      className="wx-neo-inset border-line-interactive placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[0.8125rem] focus:outline-none"
                     />
                   </div>
                   <label className="sr-only" htmlFor="content-brand">
@@ -286,7 +286,7 @@ export function Content() {
                 </div>
 
                 {shown.length === 0 ? (
-                  <div className="border-line bg-surface-1 rounded-xl border px-6 py-16 text-center shadow-md">
+                  <div className="wx-neo-raised rounded-xl px-6 py-16 text-center">
                     <Video size={26} aria-hidden className="text-faint mx-auto" />
                     <p className="mt-4 font-semibold">
                       {rows.length === 0 ? 'No videos yet' : 'Nothing matches that'}
@@ -394,7 +394,7 @@ function Summary({
   ];
 
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-5 rounded-xl border p-[clamp(18px,2.4vw,26px)] shadow-md">
+    <section className="wx-neo-raised flex flex-col gap-5 rounded-xl p-[clamp(18px,2.4vw,26px)]">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
@@ -442,7 +442,7 @@ function Jobs({
   onAdd: (applicationId: string) => void;
 }) {
   return (
-    <section className="border-line bg-surface-1 flex flex-col gap-[14px] rounded-xl border p-5 shadow-md">
+    <section className="wx-neo-raised flex flex-col gap-[14px] rounded-xl p-5">
       <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         What each job still needs
       </h2>
@@ -455,8 +455,8 @@ function Jobs({
             <li
               key={job.id}
               className={cn(
-                'border-line flex flex-col gap-2.5 rounded-[16px] border p-3.5',
-                p.done ? 'bg-stage-paid-soft' : 'bg-surface-2'
+                'wx-neo-inset flex flex-col gap-2.5 rounded-[16px] p-3.5',
+                p.done && 'bg-stage-paid-soft!'
               )}
             >
               <div className="flex items-start justify-between gap-3">
@@ -474,7 +474,7 @@ function Jobs({
               </div>
 
               {p.required !== null ? (
-                <div className="bg-surface-1 flex h-2 gap-0.5 overflow-hidden rounded-full">
+                <div className="wx-neo-inset flex h-2 gap-0.5 overflow-hidden rounded-full">
                   {Array.from({ length: p.required }).map((_, i) => (
                     <span
                       key={i}

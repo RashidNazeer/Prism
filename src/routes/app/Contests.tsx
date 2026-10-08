@@ -29,6 +29,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Field';
 import { ContestStateChip } from '@/components/work/ContestStateChip';
 import { cn } from '@/lib/utils';
+import { NeoCardSkeleton } from '@/components/brand/NeoSkeleton';
 import { money } from '@/lib/money';
 import { formatDeadline } from '@/lib/contest-time';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -129,7 +130,7 @@ function ViewSwitch({
     <div
       role="tablist"
       aria-label="Contests view"
-      className="bg-surface-2 mt-5 flex w-fit gap-1 rounded-xl p-[3px]"
+      className="wx-neo-inset mt-5 flex w-fit gap-1 rounded-xl p-1"
     >
       {options.map((o) => {
         const active = view === o.key;
@@ -142,7 +143,7 @@ function ViewSwitch({
             onClick={() => onChange(o.key)}
             className={cn(
               'ease-brand min-h-[44px] rounded-lg px-4 text-[0.8125rem] font-semibold transition-colors',
-              active ? 'bg-surface-1 text-text shadow-sm' : 'text-muted hover:text-text'
+              active ? 'wx-neo-raised-sm text-text' : 'text-muted hover:text-text'
             )}
           >
             {o.label}
@@ -315,7 +316,7 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
             <div
               role="tablist"
               aria-label="Filter contests"
-              className="bg-surface-2 flex min-w-max gap-1 rounded-xl p-[3px]"
+              className="wx-neo-inset flex min-w-max gap-1 rounded-xl p-1"
             >
               {TABS.map((t) => (
                 <button
@@ -325,8 +326,10 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
                   aria-selected={tab === t.value}
                   onClick={() => setTab(t.value)}
                   className={cn(
-                    'ease-brand inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-[9px] px-3.5 text-[0.8125rem] font-medium transition-colors',
-                    tab === t.value ? 'bg-text text-inverse' : 'text-muted hover:text-text'
+                    'ease-brand inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-lg px-3.5 text-[0.8125rem] font-medium transition-colors',
+                    tab === t.value
+                      ? 'wx-neo-raised-sm text-text'
+                      : 'text-muted hover:text-text'
                   )}
                 >
                   {t.label}
@@ -334,7 +337,7 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
                     <span
                       className={cn(
                         'ml-1.5 font-mono text-[0.75rem]',
-                        tab === t.value ? 'text-inverse/70' : 'text-muted'
+                        tab === t.value ? 'text-accent' : 'text-muted'
                       )}
                     >
                       {counts[t.value]}
@@ -364,7 +367,7 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
               />
             </div>
 
-{/*
+            {/*
               No brand dropdown inside a Brand Hub. The page IS a brand, so the
               only thing this control could do there is take the creator to a
               different one from inside this one's tabs.
@@ -396,7 +399,7 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
           {isLoading ? (
             <ul className="mt-4 grid gap-4">
               {Array.from({ length: 4 }).map((_, i) => (
-                <li key={i} className="wx-skeleton h-[32rem] rounded-xl" />
+                <NeoCardSkeleton key={i} as="li" className="h-[32rem]" />
               ))}
             </ul>
           ) : isError ? (
@@ -508,7 +511,7 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
  * IT HAS TO BE RIGHT WITH NO ARTWORK AT ALL, and that is not a nicety: every
  * contest on this platform had a null `banner_url` until an admin uploaded one,
  * because the column existed for nine days with no control to fill it. So the
- * hero falls back to a gold-on-near-black gradient built from tokens, the side
+ * hero falls back to an accent-on-dark gradient built from tokens, the side
  * panel drops its picture and keeps its ticks, and nothing shifts position.
  *
  * THE SCRIM IS NOT DECORATION. The name, the description and the countdown are
@@ -584,7 +587,7 @@ function ContestCard({
   const shown = tabs.some((t) => t.key === panel) ? panel : (tabs[0]?.key ?? 'details');
 
   return (
-    <div className="border-line bg-surface-1 flex h-full flex-col overflow-hidden rounded-xl border shadow-md">
+    <div className="wx-neo-raised flex h-full flex-col overflow-hidden rounded-xl">
       {/* ------------------------------------------------------------ hero -- */}
       <div className="relative isolate min-h-[15rem] overflow-hidden sm:min-h-[17rem] lg:min-h-[20rem]">
         {contest.bannerUrl ? (
@@ -734,48 +737,48 @@ function ContestCard({
 
         {shown === 'details' ? (
           <div className="grid gap-4 sm:grid-cols-3">
-        <Fact icon={<Store size={15} aria-hidden />} label="Brand">
-          {contest.brand?.name ?? 'Unknown brand'}
-        </Fact>
-        <Fact icon={<Ticket size={15} aria-hidden />} label="Entries accepted">
-          {door === 'open'
-            ? 'Open to enter'
-            : door === 'off'
-              ? 'Not running'
-              : door === 'settled'
-                ? 'Settled'
-                : door === 'cancelled'
-                  ? 'Cancelled'
-                  : 'Closed'}
-        </Fact>
-        <Fact icon={<UserRound size={15} aria-hidden />} label="Approved by">
-          {contest.needsAdminApproval ? 'The Wurx team' : 'Nobody, it is automatic'}
-        </Fact>
+            <Fact icon={<Store size={15} aria-hidden />} label="Brand">
+              {contest.brand?.name ?? 'Unknown brand'}
+            </Fact>
+            <Fact icon={<Ticket size={15} aria-hidden />} label="Entries accepted">
+              {door === 'open'
+                ? 'Open to enter'
+                : door === 'off'
+                  ? 'Not running'
+                  : door === 'settled'
+                    ? 'Settled'
+                    : door === 'cancelled'
+                      ? 'Cancelled'
+                      : 'Closed'}
+            </Fact>
+            <Fact icon={<UserRound size={15} aria-hidden />} label="Approved by">
+              {contest.needsAdminApproval ? 'The Wurx team' : 'Nobody, it is automatic'}
+            </Fact>
           </div>
         ) : null}
 
         {shown === 'why' && perks.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-6">
-          <div className="min-w-[14rem] flex-1">
-            <ul className="flex flex-col gap-2">
-              {perks.map((line) => (
-                <li key={line} className="flex items-start gap-2.5">
-                  <Check size={15} aria-hidden className="text-accent mt-0.5 shrink-0" />
-                  <span className="text-muted text-[0.875rem] leading-relaxed">{line}</span>
-                </li>
-              ))}
-            </ul>
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="min-w-[14rem] flex-1">
+              <ul className="flex flex-col gap-2">
+                {perks.map((line) => (
+                  <li key={line} className="flex items-start gap-2.5">
+                    <Check size={15} aria-hidden className="text-accent mt-0.5 shrink-0" />
+                    <span className="text-muted text-[0.875rem] leading-relaxed">{line}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {contest.cardImageUrl ? (
+              <img
+                src={contest.cardImageUrl}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="h-32 w-32 shrink-0 rounded-xl object-cover sm:h-40 sm:w-40"
+              />
+            ) : null}
           </div>
-          {contest.cardImageUrl ? (
-            <img
-              src={contest.cardImageUrl}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              className="h-32 w-32 shrink-0 rounded-xl object-cover sm:h-40 sm:w-40"
-            />
-          ) : null}
-        </div>
         ) : null}
       </div>
 
@@ -863,7 +866,7 @@ function Fact({
 }) {
   return (
     <div className="flex items-start gap-2.5">
-      <span className="bg-accent-soft text-accent mt-0.5 grid size-7 shrink-0 place-items-center rounded-full">
+      <span className="wx-neo-inset text-accent mt-0.5 grid size-7 shrink-0 place-items-center rounded-full">
         {icon}
       </span>
       <span className="min-w-0">
@@ -1096,7 +1099,7 @@ function ContestAction({
 
   if (door !== 'open') {
     return (
-      <p className="text-muted bg-surface-2 rounded-xl px-3.5 py-3 text-[0.8125rem] leading-relaxed">
+      <p className="text-muted wx-neo-inset rounded-xl px-3.5 py-3 text-[0.8125rem] leading-relaxed">
         {door === 'cancelled'
           ? 'This contest was called off.'
           : door === 'settled'
@@ -1113,7 +1116,7 @@ function ContestAction({
    */
   if (!canEnterAtAll) {
     return (
-      <p className="text-muted bg-surface-2 rounded-xl px-3.5 py-3 text-[0.8125rem] leading-relaxed">
+      <p className="text-muted wx-neo-inset rounded-xl px-3.5 py-3 text-[0.8125rem] leading-relaxed">
         This is the creator view. Entering a contest is something only a creator account does.
       </p>
     );
@@ -1223,7 +1226,7 @@ function TargetControl({ entryId, target }: { entryId: string; target: number | 
   }
 
   return (
-    <div className="border-line bg-surface-2 mt-3 rounded-xl border px-3.5 py-3">
+    <div className="wx-neo-inset mt-3 rounded-xl px-3.5 py-3">
       <label
         htmlFor={`target-${entryId}`}
         className="text-muted block text-[0.8125rem] font-semibold"
@@ -1312,7 +1315,7 @@ function Note({
         'flex items-start gap-2.5 rounded-xl px-3.5 py-3 text-[0.875rem]',
         tone === 'pending' && 'bg-stage-due-soft text-stage-due',
         tone === 'danger' && 'bg-danger-soft text-danger',
-        tone === 'neutral' && 'bg-surface-2 text-text'
+        tone === 'neutral' && 'wx-neo-inset text-text'
       )}
     >
       <span className="mt-0.5 shrink-0">{icon}</span>
@@ -1323,8 +1326,8 @@ function Note({
 
 function Empty({ title, body }: { title: string; body: string }) {
   return (
-    <div className="border-line bg-surface-1 mt-4 rounded-xl border px-6 py-14 text-center shadow-md">
-      <span className="bg-surface-3 border-line-strong mx-auto grid size-12 place-items-center rounded-lg border">
+    <div className="wx-neo-raised mt-4 rounded-xl px-6 py-14 text-center">
+      <span className="wx-neo-inset mx-auto grid size-12 place-items-center rounded-lg">
         <Trophy size={20} aria-hidden className="text-muted" />
       </span>
       <p className="font-display mt-4 text-[1.1875rem] font-semibold">{title}</p>

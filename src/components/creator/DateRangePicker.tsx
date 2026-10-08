@@ -177,8 +177,8 @@ export function DateRangePicker({
         aria-haspopup="dialog"
         aria-expanded={open}
         className={cn(
-          'border-line bg-surface-2 text-muted hover:border-accent hover:text-accent inline-flex min-h-8 shrink-0 items-center gap-2 rounded-md border px-2.5 text-[0.8125rem] font-medium transition-colors',
-          open && 'border-accent text-accent'
+          'wx-neo-raised-sm wx-neo-press border-line-interactive! text-muted hover:text-accent inline-flex min-h-8 shrink-0 items-center gap-2 rounded-md px-2.5 text-[0.8125rem] font-medium',
+          open && 'text-accent'
         )}
       >
         <CalendarDays size={14} aria-hidden />
@@ -196,7 +196,7 @@ export function DateRangePicker({
                 left: pos.left,
                 width: `min(${PANEL_W}rem, calc(100vw - 1rem))`,
               }}
-              className="border-line bg-surface-1 fixed z-50 rounded-xl border p-3 shadow-lg"
+              className="wx-neo-raised fixed z-50 rounded-xl p-3"
             >
               {/* The two months. One below 48rem, because two will not fit a
                   phone without the page scrolling sideways, which is the rule
@@ -261,10 +261,10 @@ export function DateRangePicker({
                     onClick={() => choosePreset(p.key)}
                     aria-pressed={preset === p.key}
                     className={cn(
-                      'border-line hover:border-accent hover:text-accent min-h-8 rounded-md border px-2 text-[0.75rem] font-medium transition-colors',
+                      'hover:text-accent min-h-8 rounded-md px-2 text-[0.75rem] font-medium',
                       preset === p.key
-                        ? 'bg-accent-soft text-accent border-accent'
-                        : 'text-muted'
+                        ? 'wx-neo-pressed text-accent border-accent border'
+                        : 'wx-neo-raised-sm wx-neo-press text-muted'
                     )}
                   >
                     {p.label}

@@ -28,7 +28,7 @@ export interface CreatorBrand {
   description: string | null;
   /**
    * The one colour an admin picked for this brand's world. Null is normal and
-   * every screen is designed for it: the hub falls back to the Wurx gold.
+   * every screen is designed for it: the hub falls back to the PRISM violet.
    * Everything else about the look is derived from this in
    * `src/lib/brand-theme.ts`, including every text colour.
    */

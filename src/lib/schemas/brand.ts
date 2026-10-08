@@ -66,7 +66,11 @@ function needsApplicationFor(v: { kind: string; needsApplication: boolean }): bo
 export const offerSchema = z
   .object({
     badgeTitle: z.string().trim().max(32, 'Keep the badge under 32 characters'),
-    title: z.string().trim().min(1, 'Give the offer a title').max(120, 'That title is too long'),
+    title: z
+      .string()
+      .trim()
+      .min(1, 'Give the offer a title')
+      .max(120, 'That title is too long'),
     description: z.string().trim().max(2000, 'That description is too long'),
     videoCount: optionalCount,
     rewardAmount: optionalMoney,
@@ -169,7 +173,9 @@ const angleField = z.number().int().min(0).max(360).optional();
 const toneField = z.enum(['auto', 'light']).optional();
 
 /** The hero is the only area big enough for four colours and a direction. */
-const heroArea = z.object({ stops: stopsField(4), angle: angleField, tone: toneField }).strict();
+const heroArea = z
+  .object({ stops: stopsField(4), angle: angleField, tone: toneField })
+  .strict();
 /** The menu can be pale or deep, but it does not have a direction to choose. */
 const railArea = z.object({ stops: stopsField(3), tone: toneField }).strict();
 /** Pages and buttons follow the light or dark theme the CREATOR chose, so no tone. */
@@ -208,8 +214,8 @@ export const brandAboutSchema = z.object({
   tagline: z.string().trim().max(160, 'Keep the tagline to one line'),
   description: z.string().trim().max(4000, 'That description is too long'),
   /*
-   * ONE COLOUR, and the empty string is a real answer meaning "use the Wurx
-   * gold". Anything else has to be a six digit hex, checked here, again in the
+   * ONE COLOUR, and the empty string is a real answer meaning "use the PRISM
+   * violet". Anything else has to be a six digit hex, checked here, again in the
    * Edge Function and again by the column, because this value decides what
    * every creator at this brand looks at.
    *

@@ -34,7 +34,10 @@ export function StageTracker({ stage, className }: { stage: OfferStage; classNam
 
   return (
     <div className={className}>
-      <ol className="flex gap-[3px]" aria-label={`Stage: ${STAGE_META[stage].label}`}>
+      <ol
+        className="wx-neo-inset flex gap-[3px] rounded-full p-1"
+        aria-label={`Stage: ${STAGE_META[stage].label}`}
+      >
         {OFFER_STAGES.map((s, i) => (
           <li
             key={s}
@@ -42,10 +45,10 @@ export function StageTracker({ stage, className }: { stage: OfferStage; classNam
             // would make a screen reader read the pipeline twice.
             aria-hidden
             className={cn(
-              'h-[5px] flex-1 rounded-[3px]',
+              'h-[5px] flex-1 rounded-full',
               i < at && 'bg-text/25',
               i === at && BAR[bucket],
-              i > at && 'bg-line'
+              i > at && 'bg-text/10'
             )}
           />
         ))}

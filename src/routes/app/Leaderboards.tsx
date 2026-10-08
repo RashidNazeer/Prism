@@ -10,6 +10,7 @@ import {
   type LeaderboardRow,
 } from '@/lib/creator/useLeaderboard';
 import { cn } from '@/lib/utils';
+import { NeoCardSkeleton } from '@/components/brand/NeoSkeleton';
 
 /**
  * The leaderboard: what every creator's videos have actually sold.
@@ -145,7 +146,7 @@ export function Leaderboards({ brandId }: { brandId?: string } = {}) {
             }}
             placeholder="Find a creator"
             aria-label="Find a creator"
-            className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-10 w-full rounded-md border pr-3 pl-9 text-[0.875rem] focus:outline-none"
+            className="wx-neo-inset border-line-interactive placeholder:text-faint hover:border-accent/60 focus:border-accent h-10 w-full rounded-md border pr-3 pl-9 text-[0.875rem] focus:outline-none"
           />
         </div>
       </FilterBar>
@@ -154,15 +155,15 @@ export function Leaderboards({ brandId }: { brandId?: string } = {}) {
 
       {board.isPending ? (
         <div className="flex flex-col gap-3">
-          <div className="wx-skeleton h-40 rounded-xl" />
-          <div className="wx-skeleton h-64 rounded-xl" />
+          <NeoCardSkeleton className="h-40" />
+          <NeoCardSkeleton className="h-64" />
         </div>
       ) : board.error ? (
         <p role="alert" className="text-danger text-[0.875rem]">
           {(board.error as Error).message}
         </p>
       ) : rows.length === 0 ? (
-        <div className="border-line bg-surface-1 rounded-xl border p-8 text-center">
+        <div className="wx-neo-raised rounded-xl p-8 text-center">
           <p className="text-[1.0625rem] font-bold">
             {search.trim() ? 'Nobody by that name' : 'The board is empty for now'}
           </p>
@@ -199,7 +200,7 @@ function YourStanding({
   standing: import('@/lib/creator/useLeaderboard').MyStanding | null;
   loading: boolean;
 }) {
-  if (loading) return <div className="wx-skeleton h-24 rounded-xl" />;
+  if (loading) return <NeoCardSkeleton className="h-24" />;
 
   /*
    * NOT ON IT YET IS A REAL STATE, not an error and not a zero. A creator whose
@@ -208,7 +209,7 @@ function YourStanding({
    */
   if (!standing) {
     return (
-      <section className="wx-glass border-line rounded-xl border p-5">
+      <section className="wx-neo-raised rounded-xl p-5">
         <p className="text-[1.0625rem] font-bold">You are not on the board yet</p>
         <p className="text-muted mt-1 max-w-prose text-[0.875rem] leading-relaxed">
           You appear here once ads start running behind a video the team has approved, and your
@@ -219,8 +220,8 @@ function YourStanding({
   }
 
   return (
-    <section className="wx-glass border-line relative overflow-hidden rounded-xl border p-5">
-      {/* A single wash of the brand gold, behind the numbers rather than on
+    <section className="wx-neo-raised relative overflow-hidden rounded-xl p-5">
+      {/* A single wash of the brand accent, behind the numbers rather than on
           them. The design's glow is a purple shadow; ours is the accent we
           already have, at a strength that survives both themes. */}
       <div
@@ -233,7 +234,7 @@ function YourStanding({
       />
       <div className="relative flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
         <div className="flex items-center gap-4">
-          <span className="bg-accent-soft text-accent grid size-14 shrink-0 place-items-center rounded-full">
+          <span className="wx-neo-inset text-accent grid size-14 shrink-0 place-items-center rounded-full">
             <Trophy size={22} aria-hidden />
           </span>
           <div className="min-w-0">
@@ -249,7 +250,9 @@ function YourStanding({
               they are in the bottom anything.
             */}
             <p className="text-muted mt-0.5 text-[0.875rem]">
-              {standing.top_percent <= 50 ? `Top ${standing.top_percent}% of creators, on ` : 'On '}
+              {standing.top_percent <= 50
+                ? `Top ${standing.top_percent}% of creators, on `
+                : 'On '}
               {standing.videos} {standing.videos === 1 ? 'video' : 'videos'}
             </p>
           </div>
@@ -309,8 +312,8 @@ function Podium({ rows, faces }: { rows: LeaderboardRow[]; faces: Record<string,
           <article
             key={row.creator_id}
             className={cn(
-              'border-line relative rounded-xl border p-5 text-center',
-              isFirst ? 'wx-glass sm:pb-7' : 'bg-surface-1',
+              'wx-neo-raised relative rounded-xl p-5 text-center',
+              isFirst && 'sm:pb-7',
               /*
                 A PODIUM IS 2-1-3 SIDE BY SIDE AND 1-2-3 STACKED. The DOM order
                 is the podium, because that is what it has to be when the three
@@ -320,13 +323,15 @@ function Podium({ rows, faces }: { rows: LeaderboardRow[]; faces: Record<string,
               */
               isFirst ? 'order-first sm:order-none' : '',
               row.rank === 3 ? 'order-last sm:order-none' : '',
-              row.is_me && 'ring-accent ring-2'
+              row.is_me && 'outline-accent outline-2'
             )}
           >
             <span
               className={cn(
                 'absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full px-2.5 py-0.5 font-mono text-[0.6875rem] font-bold',
-                isFirst ? 'bg-accent text-on-accent' : 'bg-surface-3 text-muted'
+                isFirst
+                  ? 'wx-neo-raised-sm bg-accent! text-on-accent'
+                  : 'wx-neo-raised-sm text-muted'
               )}
             >
               #{row.rank}
@@ -355,10 +360,8 @@ function Podium({ rows, faces }: { rows: LeaderboardRow[]; faces: Record<string,
 
             <p
               className={cn(
-                'wx-numeric mt-3 rounded-md py-2 font-mono font-extrabold',
-                isFirst
-                  ? 'bg-accent-soft text-accent text-[1.375rem]'
-                  : 'bg-surface-2 text-[1.0625rem]'
+                'wx-neo-inset wx-numeric mt-3 rounded-md py-2 font-mono font-extrabold',
+                isFirst ? 'text-accent text-[1.375rem]' : 'text-[1.0625rem]'
               )}
             >
               {gmv(row.gmv, row.currency)}
@@ -390,7 +393,7 @@ function Board({
   fetching: boolean;
 }) {
   return (
-    <section className="border-line bg-surface-1 overflow-hidden rounded-xl border">
+    <section className="wx-neo-raised overflow-hidden rounded-xl">
       {/*
         A HEADER ROW ONLY WHERE THERE IS ROOM FOR ONE. Below `sm` every row
         becomes a stacked card, per the responsive rule: a five column table at
@@ -468,7 +471,7 @@ function Board({
             type="button"
             disabled={page === 0 || fetching}
             onClick={() => onPage(Math.max(0, page - 1))}
-            className="text-muted hover:text-accent inline-flex min-h-[44px] items-center gap-1 text-[0.8125rem] font-semibold disabled:opacity-30"
+            className="wx-neo-raised-sm wx-neo-press text-muted hover:text-accent inline-flex min-h-[44px] items-center gap-1 rounded-md px-3 text-[0.8125rem] font-semibold disabled:opacity-30"
           >
             <ChevronLeft size={15} aria-hidden />
             Back
@@ -480,7 +483,7 @@ function Board({
             type="button"
             disabled={page + 1 >= pages || fetching}
             onClick={() => onPage(page + 1)}
-            className="text-muted hover:text-accent inline-flex min-h-[44px] items-center gap-1 text-[0.8125rem] font-semibold disabled:opacity-30"
+            className="wx-neo-raised-sm wx-neo-press text-muted hover:text-accent inline-flex min-h-[44px] items-center gap-1 rounded-md px-3 text-[0.8125rem] font-semibold disabled:opacity-30"
           >
             Next
             <ChevronRight size={15} aria-hidden />

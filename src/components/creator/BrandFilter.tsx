@@ -50,8 +50,8 @@ export function BrandFilter({
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value || null)}
         className={cn(
-          'border-line bg-surface-2 text-muted hover:border-accent hover:text-accent focus:border-accent min-h-8 w-full appearance-none rounded-md border py-1 pr-8 pl-2.5 text-[0.8125rem] font-medium transition-colors',
-          value && 'border-accent text-accent'
+          'wx-neo-raised-sm wx-neo-press border-line-interactive! text-muted hover:text-accent min-h-8 w-full appearance-none rounded-md py-1 pr-8 pl-2.5 text-[0.8125rem] font-medium',
+          value && 'text-accent'
         )}
       >
         <option value="">All brands</option>

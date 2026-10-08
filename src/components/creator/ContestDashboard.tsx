@@ -49,8 +49,8 @@ export function ContestDashboard({ contests }: { contests: CreatorContest[] }) {
 
   if (mine.length === 0) {
     return (
-      <div className="border-line bg-surface-1 mt-6 flex flex-col items-start gap-3 rounded-xl border p-8 shadow-md">
-        <div className="bg-surface-3 border-line-strong grid size-[44px] place-items-center rounded-lg border">
+      <div className="wx-neo-raised mt-6 flex flex-col items-start gap-3 rounded-xl p-8">
+        <div className="wx-neo-raised-sm grid size-[44px] place-items-center rounded-lg">
           <Trophy size={19} className="text-muted" aria-hidden />
         </div>
         <h2 className="font-display text-text text-[1.3125rem] leading-tight font-bold">
@@ -152,8 +152,10 @@ function Figure({
   tone?: 'paid' | 'due';
 }) {
   return (
-    <div className="border-line bg-surface-1 rounded-xl border p-4 shadow-md">
-      <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">{label}</p>
+    <div className="wx-neo-raised rounded-xl p-4">
+      <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
+        {label}
+      </p>
       <p
         className={cn(
           'font-display mt-1.5 text-[1.625rem] leading-none font-bold',
@@ -182,11 +184,13 @@ function ContestCard({ contest }: { contest: CreatorContest }) {
   const headline =
     (unreached.length > 0
       ? unreached.reduce((a, b) => (a.rewardAmount >= b.rewardAmount ? a : b))
-      : contest.deliverables.reduce((a, b) => (a.rewardAmount >= b.rewardAmount ? a : b), contest.deliverables[0]!)) ??
-    null;
+      : contest.deliverables.reduce(
+          (a, b) => (a.rewardAmount >= b.rewardAmount ? a : b),
+          contest.deliverables[0]!
+        )) ?? null;
 
   return (
-    <section className="border-line bg-surface-1 rounded-xl border p-5 shadow-md">
+    <section className="wx-neo-raised rounded-xl p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
@@ -214,7 +218,7 @@ function ContestCard({ contest }: { contest: CreatorContest }) {
 
       {/* Where they stand. Never a name, never anybody else's figures. */}
       {standing && standing.entrants > 1 ? (
-        <div className="border-line bg-surface-2 mt-4 flex flex-wrap gap-x-6 gap-y-2 rounded-lg border p-3.5">
+        <div className="wx-neo-inset mt-4 flex flex-wrap gap-x-6 gap-y-2 rounded-lg p-3.5">
           <Standing label="On GMV" place={standing.gmvPlace} of={standing.entrants} />
           <Standing label="On videos" place={standing.videoPlace} of={standing.entrants} />
           <p className="text-faint basis-full text-[0.75rem] leading-snug">
@@ -256,7 +260,7 @@ function ContestCard({ contest }: { contest: CreatorContest }) {
               return (
                 <li
                   key={w.id}
-                  className="border-line bg-surface-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 rounded-xl border px-3.5 py-3"
+                  className="wx-neo-inset flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 rounded-xl px-3.5 py-3"
                 >
                   <span className="min-w-0 flex-1 basis-44">
                     <span className="text-text block text-[0.8125rem] font-semibold break-words">

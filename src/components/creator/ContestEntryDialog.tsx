@@ -112,7 +112,7 @@ export function DeliverableRows({
       {rows.map((d) => (
         <li
           key={d.id}
-          className="border-line bg-surface-2 flex flex-wrap items-start justify-between gap-x-4 gap-y-1 rounded-xl border px-3.5 py-3"
+          className="wx-neo-inset flex flex-wrap items-start justify-between gap-x-4 gap-y-1 rounded-xl px-3.5 py-3"
         >
           <span className="min-w-0 flex-1 basis-40">
             <span className="text-text block text-[0.875rem] leading-snug font-semibold">
@@ -256,7 +256,7 @@ export function ContestEntryDialog({
         initial={reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={reduced ? { duration: 0 } : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        className="border-line bg-surface-1 relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
+        className="wx-neo-raised relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl p-6 sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -329,7 +329,7 @@ export function ContestEntryDialog({
           ) : null}
 
           {/* ---------------------------------- exactly what they agree to -- */}
-          <div className="border-line bg-surface-2 rounded-xl border px-4 py-3.5">
+          <div className="wx-neo-inset rounded-xl px-4 py-3.5">
             <p className="text-faint text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               {instant ? 'What you are agreeing to' : 'What you are asking for'}
             </p>

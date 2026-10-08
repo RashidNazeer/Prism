@@ -24,6 +24,8 @@ import { money, percent } from '@/lib/money';
 import { useCatalogueLive } from '@/lib/creator/useCatalogueLive';
 import { useMyJobProgress } from '@/lib/work/job-progress';
 import { cn } from '@/lib/utils';
+import { NeoCardSkeleton } from '@/components/brand/NeoSkeleton';
+import { useTheme } from '@/components/theme/theme-context';
 import { BrandWorldShell } from '@/components/brand/BrandWorldShell';
 import { BrandWorldHero } from '@/components/brand/BrandWorldHero';
 import { useCreatorBrands } from '@/lib/creator/useCreatorBrands';
@@ -50,10 +52,10 @@ function SectionLoading() {
     <div className="mt-6 flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="wx-skeleton h-24 rounded-xl" />
+          <NeoCardSkeleton key={i} className="h-24" />
         ))}
       </div>
-      <div className="wx-skeleton h-64 rounded-xl" />
+      <NeoCardSkeleton className="h-64" />
     </div>
   );
 }
@@ -108,6 +110,7 @@ export function BrandHub() {
   const requested = params.get('section') ?? 'overview';
   const section = BUILT.has(requested) ? requested : 'overview';
 
+  const { resolved } = useTheme();
   const { claims } = useAuth();
   const { data: profile } = useProfile();
   const role = profile?.role ?? claims?.role;
@@ -120,6 +123,27 @@ export function BrandHub() {
   const { data: offers, isLoading: offersLoading } = useCreatorOffers(brand?.id);
   const { data: products, isLoading: productsLoading } = useCreatorProducts(brand?.id);
   const { data: mine } = useMyOfferApplications(brand?.id);
+
+  /*
+   * THE NEOMORPHIC MATERIAL INSIDE A BRAND WORLD. `paletteToVars` re-points
+   * surface-1 and surface-3 at the brand, but not the two tokens the material
+   * also reads for a press, so both are settled here for this subtree only.
+   * Light: the brand's own deeper surface (surface-2 is darker than surface-1
+   * there). Dark: surface-2 is LIGHTER than the card, which would make every
+   * well bulge instead of sink, so wells and presses are the brand's card
+   * colour taken down a step with the neo-dark shadow token. Still the brand's
+   * hue, still no literal colour.
+   */
+  const neoVars = (
+    resolved === 'dark'
+      ? {
+          ['--wx-surface-3' as string]:
+            'color-mix(in srgb, var(--wx-surface-1) 75%, var(--wx-neo-dark))',
+          ['--wx-pressed-surface' as string]:
+            'color-mix(in srgb, var(--wx-surface-1) 75%, var(--wx-neo-dark))',
+        }
+      : { ['--wx-pressed-surface' as string]: 'var(--wx-surface-2)' }
+  ) as React.CSSProperties;
 
   const go = (key: string) => {
     const p = new URLSearchParams();
@@ -146,7 +170,7 @@ export function BrandHub() {
      */
     return (
       <div className="bg-bg text-text flex min-h-screen items-center justify-center p-6">
-        <div className="border-line bg-surface-1 max-w-md rounded-xl border p-8 text-center shadow-md">
+        <div className="wx-neo-raised max-w-md rounded-xl p-8 text-center">
           <p className="font-semibold">No brand hubs yet</p>
           <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
             When Wurx opens a brand to you, it appears here with its own space: its offers, its
@@ -174,7 +198,7 @@ export function BrandHub() {
         <div className="max-w-3xl space-y-4">
           <div className="wx-skeleton h-10 w-64" />
           <div className="wx-skeleton h-10 w-full" />
-          <div className="wx-skeleton h-40 rounded-xl" />
+          <NeoCardSkeleton className="h-40" />
         </div>
       </>
     );
@@ -183,7 +207,7 @@ export function BrandHub() {
   if (isError || !brand) {
     return (
       <>
-        <div className="border-line bg-surface-1 max-w-lg rounded-xl border p-8 text-center shadow-md">
+        <div className="wx-neo-raised max-w-lg rounded-xl p-8 text-center">
           <p className="font-semibold">That brand hub is not open</p>
           <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
             It may have been retired, or it may not be one of yours. Nothing else is affected.
@@ -224,7 +248,7 @@ export function BrandHub() {
         />
       ) : null}
 
-      <div className="min-w-0 flex-1 px-5 py-6 sm:px-8 sm:py-8">
+      <div className="min-w-0 flex-1 px-5 py-6 sm:px-8 sm:py-8" style={neoVars}>
         {section === 'offers' ? (
           <Offers
             offers={offers ?? []}
@@ -300,11 +324,11 @@ function Overview({
         {loading ? (
           <ul className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <li key={i} className="wx-skeleton h-[19rem] rounded-2xl" />
+              <NeoCardSkeleton key={i} as="li" rounded="rounded-2xl" className="h-[19rem]" />
             ))}
           </ul>
         ) : products.length === 0 ? (
-          <div className="border-line bg-surface-1 mt-4 rounded-2xl border px-6 py-12 text-center shadow-md">
+          <div className="wx-neo-raised mt-4 rounded-2xl px-6 py-12 text-center">
             <Package size={24} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">Products are on their way</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -325,14 +349,14 @@ function Overview({
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.32, ease: 'easeOut', delay: Math.min(i, 6) * 0.05 }}
-                className="group border-line bg-surface-1 hover:border-accent/40 relative flex flex-col overflow-hidden rounded-2xl border shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                className="group wx-neo-raised relative flex flex-col overflow-hidden rounded-2xl transition-transform duration-300 hover:-translate-y-1"
               >
                 {/*
                   THE PICTURE LEADS, because a product a creator has never held
                   is a photograph before it is a name. Square, so a grid of them
                   lines up whatever shape the brand uploaded.
                 */}
-                <div className="bg-surface-2 relative aspect-square overflow-hidden">
+                <div className="wx-neo-inset relative aspect-square overflow-hidden">
                   {product.image_url ? (
                     <img
                       src={product.image_url}
@@ -348,7 +372,7 @@ function Overview({
                   )}
 
                   {product.badge_title ? (
-                    <span className="bg-surface-1/90 text-accent absolute top-3 left-3 rounded-full px-2.5 py-1 text-[0.625rem] font-bold tracking-[0.12em] uppercase shadow-sm backdrop-blur">
+                    <span className="wx-neo-raised-sm text-accent absolute top-3 left-3 rounded-full px-2.5 py-1 text-[0.625rem] font-bold tracking-[0.12em] uppercase">
                       {product.badge_title}
                     </span>
                   ) : null}
@@ -360,7 +384,7 @@ function Overview({
                     card.
                   */}
                   {percent(product.commission_rate) ? (
-                    <span className="bg-accent text-on-accent absolute right-3 bottom-3 rounded-full px-3 py-1.5 shadow-lg">
+                    <span className="wx-neo-raised-sm bg-accent! text-on-accent absolute right-3 bottom-3 rounded-full px-3 py-1.5">
                       <span className="font-display text-[1rem] leading-none font-bold">
                         {percent(product.commission_rate)}
                       </span>
@@ -497,10 +521,10 @@ function Offers({
   if (loading) {
     return (
       <div className="mt-2">
-        <div className="wx-skeleton h-[5.5rem] rounded-2xl" />
+        <NeoCardSkeleton rounded="rounded-2xl" className="h-[5.5rem]" />
         <ul className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <li key={i} className="wx-skeleton h-64 rounded-xl" />
+            <NeoCardSkeleton key={i} as="li" className="h-64" />
           ))}
         </ul>
       </div>
@@ -509,7 +533,7 @@ function Offers({
 
   if (offers.length === 0) {
     return (
-      <div className="border-line bg-surface-1 mt-2 max-w-2xl rounded-2xl border px-6 py-14 text-center shadow-md">
+      <div className="wx-neo-raised mt-2 max-w-2xl rounded-2xl px-6 py-14 text-center">
         <Ticket size={26} aria-hidden className="text-faint mx-auto" />
         <p className="mt-4 font-semibold">No offers open right now</p>
         <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -671,7 +695,7 @@ function OfferSummary({
 
   return (
     <div
-      className="border-line flex flex-wrap items-center gap-x-7 gap-y-4 rounded-2xl border px-5 py-4 shadow-sm"
+      className="wx-neo-raised flex flex-wrap items-center gap-x-7 gap-y-4 rounded-2xl px-5 py-4"
       /*
         THE BRAND'S OWN COLOUR, at a whisper. Held at 9% over the card surface
         because a creator reads figures off this: a saturated panel behind

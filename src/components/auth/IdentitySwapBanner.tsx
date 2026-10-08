@@ -54,9 +54,9 @@ export function IdentitySwapBanner() {
        * through the words and the whole thing was unreadable. Creators are
        * mostly on phones, which is where this warning matters most.
        *
-       * So: an opaque amber-tinted panel, mixed from the same token against the
+       * So: an opaque magenta-tinted panel, mixed from the same token against the
        * card surface, which stays legible in both themes and at every width.
-       * The amber still carries the meaning, through the icon, the rule and the
+       * The magenta still carries the meaning, through the icon, the rule and the
        * text.
        */
       className="border-stage-due/40 fixed inset-x-0 top-0 z-[100] border-b bg-[color-mix(in_srgb,var(--wx-stage-due)_12%,var(--wx-surface-1))] px-4 py-3 shadow-lg"

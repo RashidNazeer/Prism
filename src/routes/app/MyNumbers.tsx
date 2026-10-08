@@ -22,6 +22,7 @@ import {
 } from '@/lib/creator/date-range';
 import { DateRangePicker } from '@/components/creator/DateRangePicker';
 import { BrandFilter } from '@/components/creator/BrandFilter';
+import { NeoCardSkeleton } from '@/components/brand/NeoSkeleton';
 import { cn } from '@/lib/utils';
 
 /**
@@ -288,8 +289,8 @@ export function MyNumbers({ brandId }: { brandId?: string } = {}) {
 
       {loading ? (
         <div className="flex flex-col gap-3">
-          <div className="wx-skeleton h-24 rounded-xl" />
-          <div className="wx-skeleton h-64 rounded-xl" />
+          <NeoCardSkeleton className="h-24" />
+          <NeoCardSkeleton className="h-64" />
         </div>
       ) : windowQ.data && windowQ.data.videos === 0 ? (
         /*
@@ -387,7 +388,7 @@ function Dashboard({
         behind it, and a creator who does not know that reads an empty card as
         the product losing their money rather than as no campaign.
       */}
-      <section className="border-line bg-surface-1 flex flex-wrap items-center gap-x-8 gap-y-3 rounded-xl border p-4">
+      <section className="wx-neo-raised flex flex-wrap items-center gap-x-8 gap-y-3 rounded-xl p-4">
         <div>
           <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
             Videos posted
@@ -430,16 +431,16 @@ function Dashboard({
         </p>
       </section>
 
-      <section className="border-line bg-surface-1 rounded-xl border p-5">
+      <section className="wx-neo-raised rounded-xl p-5">
         <PerformanceChart rows={rows} currency={currency} />
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="border-line bg-surface-1 rounded-xl border p-5">
+        <section className="wx-neo-raised rounded-xl p-5">
           <OrdersChart rows={rows} />
         </section>
 
-        <section className="border-line bg-surface-1 flex flex-col gap-4 rounded-xl border p-5">
+        <section className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5">
           <div>
             <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
               Best day
@@ -501,7 +502,7 @@ function Stat({
   big?: boolean;
 }) {
   return (
-    <div className="border-line bg-surface-1 rounded-xl border p-4">
+    <div className="wx-neo-raised rounded-xl p-4">
       <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
         {label}
       </p>
@@ -538,7 +539,7 @@ function Content({
           return (
             <article
               key={v.item_id}
-              className="border-line bg-surface-1 flex flex-col overflow-hidden rounded-xl border"
+              className="wx-neo-raised flex flex-col overflow-hidden rounded-xl"
             >
               <div className="flex gap-3 p-4">
                 {v.thumbnail_url ? (
@@ -549,7 +550,7 @@ function Content({
                     className="border-line h-16 w-12 shrink-0 rounded-md border object-cover"
                   />
                 ) : (
-                  <div className="bg-surface-2 border-line h-16 w-12 shrink-0 rounded-md border" />
+                  <div className="wx-neo-inset h-16 w-12 shrink-0 rounded-md" />
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[0.875rem] font-semibold">
@@ -636,13 +637,13 @@ function AdBadge({ state }: { state: AdState }) {
   }
   if (state === 'ran') {
     return (
-      <span className="bg-surface-2 text-muted inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold">
+      <span className="wx-neo-raised-sm text-muted inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold">
         Ads finished
       </span>
     );
   }
   return (
-    <span className="border-line text-faint inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[0.6875rem] font-semibold">
+    <span className="wx-neo-raised-sm text-faint inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold">
       No ads
     </span>
   );
@@ -689,7 +690,7 @@ function Footnote() {
 
 function Empty({ title, body }: { title: string; body: string }) {
   return (
-    <div className="border-line bg-surface-1 rounded-xl border p-10 text-center">
+    <div className="wx-neo-raised rounded-xl p-10 text-center">
       <h2 className="font-display text-[1.0625rem] font-bold">{title}</h2>
       <p className="text-muted mx-auto mt-2 max-w-prose text-[0.875rem] leading-relaxed">
         {body}
@@ -720,7 +721,7 @@ function ByBrand({ brands }: { brands: BrandPerformance[] }) {
   const best = Math.max(...brands.map((b) => Number(b.gmv) || 0), 0);
 
   return (
-    <section className="border-line bg-surface-1 rounded-xl border p-4 sm:p-5">
+    <section className="wx-neo-raised rounded-xl p-4 sm:p-5">
       <h2 className="text-[1rem] font-bold">Where your money came from</h2>
       <p className="text-muted mt-0.5 text-[0.8125rem]">
         Split by the brand whose ads ran behind each video.
@@ -730,7 +731,7 @@ function ByBrand({ brands }: { brands: BrandPerformance[] }) {
         {brands.map((b) => (
           <li
             key={b.brand_id ?? 'unmatched'}
-            className="border-line bg-surface-2 relative overflow-hidden rounded-xl border px-3.5 py-3"
+            className="wx-neo-inset relative overflow-hidden rounded-xl px-3.5 py-3"
           >
             <div
               aria-hidden

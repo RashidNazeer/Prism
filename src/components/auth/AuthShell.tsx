@@ -34,29 +34,28 @@ export function AuthShell({
 
       <main className="relative w-full max-w-md">
         <Link to="/" className="inline-flex" aria-label="Prism home">
-          <PrismMark onDark height={30} />
+          <PrismMark height={30} />
         </Link>
 
         {eyebrow ? <div className="mt-9">{eyebrow}</div> : null}
 
-        {/* Fixed light ink, NOT `text-text`. This page's ground is the Ink halo
-            in both themes, so a token that flips with the theme painted a black
-            heading onto a black field in light mode — which is exactly how this
-            was caught. */}
+        {/* Back on tokens. These were forced white while the halo was Ink in
+            both themes; now the halo follows the theme, so the ordinary ink
+            is correct again and light mode is a light page. */}
         <h1
-          className={`${eyebrow ? 'mt-4' : 'mt-9'} text-[clamp(1.75rem,4vw,2.25rem)] font-extrabold text-white`}
+          className={`${eyebrow ? 'mt-4' : 'mt-9'} text-text text-[clamp(1.75rem,4vw,2.25rem)] font-extrabold`}
         >
           {title}
         </h1>
         {subtitle ? (
-          <p className="mt-3 leading-relaxed text-pretty text-white/70">{subtitle}</p>
+          <p className="text-muted mt-3 leading-relaxed text-pretty">{subtitle}</p>
         ) : null}
 
         <div className="border-line bg-surface-1 mt-8 rounded-2xl border p-6 shadow-lg sm:p-7">
           {children}
         </div>
 
-        {footer ? <div className="mt-6 text-center text-sm text-white/70">{footer}</div> : null}
+        {footer ? <div className="text-muted mt-6 text-center text-sm">{footer}</div> : null}
       </main>
     </div>
   );

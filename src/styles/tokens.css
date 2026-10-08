@@ -22,30 +22,30 @@
   color-scheme: dark;
 
   /* Surfaces, layered from the page up */
-  --wx-bg: #1b1b26; /* page background */
-  --wx-surface-1: #212130; /* cards, panels */
-  --wx-surface-2: #282838; /* hover, nested cards */
-  --wx-surface-3: #15151e; /* wells, inputs */
-  --wx-field: #15151e; /* what you type into Â· a well on dark */
+  --wx-bg: #14141c; /* page background */
+  --wx-surface-1: #211d33; /* cards, panels */
+  --wx-surface-2: #2a2540; /* hover, nested cards */
+  --wx-surface-3: #14141c; /* wells, inputs */
+  --wx-field: #14141c; /* what you type into Â· a well on dark */
 
   /* Text, all verified >= 4.5:1 on EVERY surface, --wx-bg to --wx-surface-3 */
-  --wx-text: #f5f5fa; /* 16.97:1 */
+  --wx-text: #ffffff; /* 16.97:1 */
   --wx-text-muted: #b9b9c8; /*  6.38:1 */
-  --wx-text-faint: #a2a2b6; /*  5.73:1 */
-  --wx-text-inverse: #1b1b26;
+  --wx-text-faint: #b9b9c8; /*  5.73:1 */
+  --wx-text-inverse: #14141c;
 
   /* Borders, subtle is decorative only; interactive is for inputs/buttons */
-  --wx-border: #2e2e40;
-  --wx-border-strong: #3e3e54;
-  --wx-border-interactive: #7c7c96; /* >= 3:1 on bg, for focusable controls */
+  --wx-border: #4a4a5a;
+  --wx-border-strong: #6b6b7b;
+  --wx-border-interactive: #b9b9c8; /* >= 3:1 on bg, for focusable controls */
 
-  /* Brand accent, the Wurx gold reads beautifully on near-black */
-  --wx-accent: #a878ff; /* 6.87:1 on bg */
-  --wx-accent-hover: #bc97ff; /* 8.35:1 */
-  --wx-accent-active: #cbb0ff;
+  /* Accent 2, violet: the kit's PRIMARY INTERACTIVE colour, and the only thing violet is for. */
+  --wx-accent: #b98cff; /* 6.87:1 on bg */
+  --wx-accent-hover: #f3eeff; /* 8.35:1 */
+  --wx-accent-active: #f3eeff;
   --wx-accent-soft: rgba(168, 120, 255, 0.16);
   --wx-accent-ring: rgba(168, 120, 255, 0.5);
-  --wx-on-accent: #14141c; /* 6.87:1 sitting on the gold fill */
+  --wx-on-accent: #14141c; /* 6.87:1 sitting on the violet fill */
 
   /*
    * A SCRIM IS THE PAGE DIMMED, so it is dark in BOTH themes.
@@ -81,21 +81,24 @@
    * the money bar looked like one block. This ramp also says something true.
    * Green is in your account, amber is about to be, indigo is still moving.
    */
-  --wx-stage-live: #8ea0ff;
-  --wx-stage-live-soft: rgba(142, 160, 255, 0.16);
-  --wx-stage-due: #f5ae4b;
-  --wx-stage-due-soft: rgba(245, 174, 75, 0.16);
-  --wx-stage-paid: #5bcc80;
-  --wx-stage-paid-soft: rgba(91, 204, 128, 0.16);
+  --wx-stage-live: #7cb6ff;
+  --wx-stage-live-soft: rgba(92, 168, 255, 0.16);
+  --wx-stage-due: #ff7ab0;
+  --wx-stage-due-soft: rgba(255, 111, 168, 0.16);
+  --wx-stage-paid: #17e0d4;
+  --wx-stage-paid-soft: rgba(23, 224, 212, 0.16);
 
   /* Semantic, all >= 4.5:1 on bg */
   --wx-success: #17e0d4;
   --wx-success-soft: rgba(23, 224, 212, 0.16);
-  --wx-danger: #ff7a94;
+  --wx-danger: #ff7ab0;
   --wx-danger-soft: rgba(255, 122, 148, 0.16);
-  --wx-warning: #f0b429;
-  --wx-warning-soft: rgba(240, 180, 41, 0.14);
-  --wx-info: #5ca8ff;
+  --wx-warning: #ff7ab0;
+  /* Was a gold `rgba(240,180,41,.14)` — the last live Wurx gold in the dark
+     palette, and it sat UNDER a magenta `--wx-warning`, so every warning was a
+     pink word on a yellow wash. Now the tint of its own ink. */
+  --wx-warning-soft: rgba(255, 122, 176, 0.16);
+  --wx-info: #7cb6ff;
   --wx-info-soft: rgba(92, 168, 255, 0.16);
 
   /* EUKA creator tiers, L0 to L7. The hue per tier is Euka's own (blue, violet,
@@ -103,7 +106,7 @@
      Euka all day. Each ink is proven against ITS OWN chip, a 12% tint on a
      card, by check-contrast: a colour that passes on the page can fail on a
      tint. Rashid, 2026-09-16. */
-  --wx-tier-0: #a2a2b6;
+  --wx-tier-0: #b9b9c8;
   --wx-tier-1: #7fb0ff;
   --wx-tier-2: #b69cff;
   --wx-tier-3: #4fd1dc;
@@ -120,8 +123,8 @@
      numerals, so they stay far below anything that could move a contrast
      ratio: at these strengths green and red keep their full ratio against the
      sheet. */
-  --wx-sheet-band: rgba(168, 120, 255, 0.06);
-  --wx-sheet-summary: #1d1d2a;
+  --wx-sheet-band: rgba(255, 255, 255, 0.05);
+  --wx-sheet-summary: #2a2540;
 
   /*
    * THE NEOMORPHIC LAYER, PRISM, 2026-10-08.
@@ -146,7 +149,7 @@
   --wx-neo-light: rgba(255, 255, 255, 0.045);
   --wx-neo-dark: rgba(0, 0, 0, 0.55);
   --wx-hairline: rgba(255, 255, 255, 0.06);
-  --wx-pressed-surface: #181822;
+  --wx-pressed-surface: #14141c;
 
   /* Elevation, deep shadows on black read as glow, so keep them tight */
   --wx-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
@@ -180,25 +183,25 @@
      point. Still well under the threshold where a gradient announces itself. */
   --wx-card-face: linear-gradient(180deg, #211c17 0%, #171310 100%);
   --wx-card-face-hover: linear-gradient(180deg, #262019 0%, #1a1613 100%);
-  --wx-card-rim: rgba(244, 240, 234, 0.08);
-  --wx-card-rim-hover: rgba(200, 146, 75, 0.32);
-  --wx-card-top-light: rgba(244, 240, 234, 0.075);
+  --wx-card-rim: rgba(255, 255, 255, 0.08);
+  --wx-card-rim-hover: rgba(185, 140, 255, 0.32);
+  --wx-card-top-light: rgba(255, 255, 255, 0.075);
   --wx-card-lift: 0 1px 2px rgb(0 0 0 / 0.5), 0 14px 34px -18px rgb(0 0 0 / 0.72);
   --wx-card-lift-hover: 0 2px 4px rgb(0 0 0 / 0.55), 0 22px 48px -20px rgb(0 0 0 / 0.8);
   /* One warm wash behind the hero figure, so the money sits in light. */
   --wx-hero-wash: radial-gradient(
     ellipse 70% 130% at 10% -10%,
-    rgba(200, 146, 75, 0.11) 0%,
+    rgba(255, 255, 255, 0.05) 0%,
     transparent 60%
   );
 
   /* Ambient brand glow used behind hero content */
   --wx-glow: radial-gradient(
     ellipse 80% 60% at 50% 0%,
-    rgba(200, 146, 75, 0.16) 0%,
+    rgba(255, 255, 255, 0.07) 0%,
     transparent 70%
   );
-  --wx-grid-line: rgba(244, 240, 234, 0.04);
+  --wx-grid-line: rgba(255, 255, 255, 0.04);
 
   /* Partner logos are white artwork on an OPAQUE BLACK background.
      `screen` blending drops the black away against a dark page and leaves the
@@ -221,47 +224,51 @@
      moment somebody switches theme. */
   --wx-glass-fill: linear-gradient(
     135deg,
-    rgba(244, 240, 234, 0.055) 0%,
-    rgba(244, 240, 234, 0) 100%
+    rgba(255, 255, 255, 0.055) 0%,
+    rgba(255, 255, 255, 0) 100%
   );
-  --wx-glass-panel: rgba(244, 240, 234, 0.035);
-  --wx-glass-line: rgba(244, 240, 234, 0.1);
+  --wx-glass-panel: rgba(255, 255, 255, 0.035);
+  --wx-glass-line: rgba(255, 255, 255, 0.1);
   /* The top-left rim light. One inset stroke reads as a light source above. */
-  --wx-glass-rim: inset 1px 1px 0 0 rgba(244, 240, 234, 0.1);
-  /* Under-lighting on hover, in brand gold rather than the design's indigo. */
-  --wx-glass-glow: 0 0 40px rgba(200, 146, 75, 0.18);
+  --wx-glass-rim: inset 1px 1px 0 0 rgba(255, 255, 255, 0.1);
+  /* Under-lighting on hover. Was the Wurx gold `rgba(200,146,75,.18)`, which is
+     #c8924b exactly. Now the accent violet. */
+  --wx-glass-glow: 0 0 40px rgba(185, 140, 255, 0.18);
   --wx-glass-blur: 24px;
 
-  /* The gradient the design puts on its primary action. Gold to amber here. */
+  /* The gradient on the primary action: violet into cyan, along the spectrum.
+     The HOVER was still `#d8a15b → #f0bb72`, a gold-to-amber ramp — not a stale
+     comment but a live value, so hovering the main button in dark mode turned
+     it gold. It now brightens along the same spectrum it starts on. */
   --wx-accent-gradient: linear-gradient(135deg, #a878ff 0%, #17e0d4 100%);
-  --wx-accent-gradient-hover: linear-gradient(135deg, #d8a15b 0%, #f0bb72 100%);
+  --wx-accent-gradient-hover: linear-gradient(135deg, #b98cff 0%, #4fe9df 100%);
 }
 
 [data-theme='light'] {
   color-scheme: light;
 
-  --wx-bg: #ececf3;
-  --wx-surface-1: #f1f1f7;
+  --wx-bg: #f7f7fb;
+  --wx-surface-1: #ffffff;
   --wx-surface-2: #f7f7fb;
-  --wx-surface-3: #e2e2eb;
-  --wx-field: #e2e2eb; /* what you type into Â· defined by its edge, not a fill */
+  --wx-surface-3: #f7f7fb;
+  --wx-field: #f7f7fb; /* what you type into Â· defined by its edge, not a fill */
 
   --wx-text: #14141c; /* 16.53:1 */
   --wx-text-muted: #4a4a5a; /*  4.83:1 */
-  --wx-text-faint: #62627a;
-  --wx-text-inverse: #f7f7fb;
+  --wx-text-faint: #6b6b7b;
+  --wx-text-inverse: #ffffff;
 
-  --wx-border: #dcdce6;
-  --wx-border-strong: #c9c9d6;
-  --wx-border-interactive: #80809a; /* >= 3:1 on bg */
+  --wx-border: #ececf3;
+  --wx-border-strong: #b9b9c8;
+  --wx-border-interactive: #6b6b7b; /* >= 3:1 on bg */
 
-  /* Brand gold, darkened so it survives a light background */
+  /* Accent 2, violet, darkened so it survives a light background */
   --wx-accent: #6a2fe0; /* 5.13:1 on bg */
   --wx-accent-hover: #4a16b8; /* 7.05:1 */
-  --wx-accent-active: #3a0f96;
-  --wx-accent-soft: rgba(106, 47, 224, 0.1);
+  --wx-accent-active: #4a16b8;
+  --wx-accent-soft: rgba(155, 92, 255, 0.12);
   --wx-accent-ring: rgba(106, 47, 224, 0.4);
-  --wx-on-accent: #ffffff; /* 5.45:1 on the gold fill */
+  --wx-on-accent: #ffffff; /* 5.45:1 on the violet fill */
 
   /* Lighter than the dark theme's, because there is more light to take away
      and a cream page under 62% black reads as switched off. */
@@ -279,28 +286,29 @@
      just enough to clear WCAG AA on a nested card, which is the tightest
      surface any of them sits on. Amber is the one that needed it most: the
      brighter #b46e00 is only 3.48:1 there and nobody could read the label. */
-  --wx-stage-live: #4e56d3;
-  --wx-stage-live-soft: rgba(78, 86, 211, 0.1);
-  --wx-stage-due: #965500;
-  --wx-stage-due-soft: rgba(150, 85, 0, 0.14);
-  --wx-stage-paid: #007c3a;
-  --wx-stage-paid-soft: rgba(0, 124, 58, 0.12);
+  --wx-stage-live: #1559ce; /* Accent 3 blue, matching its own soft tint. */
+  --wx-stage-live-soft: rgba(46, 139, 255, 0.12);
+  --wx-stage-due: #b0145c;
+  --wx-stage-due-soft: rgba(255, 46, 140, 0.12);
+  --wx-stage-paid: #0b6f69;
+  --wx-stage-paid-soft: rgba(23, 224, 212, 0.14);
 
   --wx-success: #0b6f69;
-  --wx-success-soft: rgba(11, 111, 105, 0.1);
-  --wx-danger: #b42318;
-  --wx-danger-soft: rgba(180, 35, 24, 0.1);
-  --wx-warning: #8a5a00;
-  --wx-warning-soft: rgba(138, 90, 0, 0.1);
-  --wx-info: #0b5cc4;
-  --wx-info-soft: rgba(11, 92, 196, 0.1);
+  --wx-success-soft: rgba(23, 224, 212, 0.14);
+  --wx-danger: #b0145c;
+  --wx-danger-soft: rgba(255, 46, 140, 0.12); /* magenta, matching --wx-danger */
+  --wx-warning: #b0145c;
+  /* Was a brown-gold `rgba(138,90,0,.10)`, under a magenta `--wx-warning`. */
+  --wx-warning-soft: rgba(176, 20, 92, 0.1);
+  --wx-info: #1559ce; /* Accent 3 blue. Was #5a1fd0, a VIOLET under a blue tint. */
+  --wx-info-soft: rgba(46, 139, 255, 0.12);
 
   /* EUKA creator tiers, L0 to L7. The hue per tier is Euka's own (blue, violet,
      teal, green, lime, amber, orange), because the team reads these tiers in
      Euka all day. Each ink is proven against ITS OWN chip, a 12% tint on a
      card, by check-contrast: a colour that passes on the page can fail on a
      tint. Rashid, 2026-09-16. */
-  --wx-tier-0: #62627a;
+  --wx-tier-0: #4a4a5a;
   --wx-tier-1: #1f5fbf;
   --wx-tier-2: #6b3fc0;
   --wx-tier-3: #0c6b76;
@@ -310,7 +318,7 @@
   --wx-tier-7: #a8420c;
 
   /* The performance sheet Â· see the dark block for what these are for. */
-  --wx-sheet-band: rgba(138, 95, 31, 0.045);
+  --wx-sheet-band: rgba(20, 20, 28, 0.035);
   --wx-sheet-summary: #faf8f5;
 
   /* The neomorphic layer in daylight. See the dark block for the rules.
@@ -321,7 +329,7 @@
   --wx-neo-light: rgba(255, 255, 255, 0.9);
   --wx-neo-dark: rgba(130, 130, 160, 0.32);
   --wx-hairline: rgba(255, 255, 255, 0.7);
-  --wx-pressed-surface: #e7e7ef;
+  --wx-pressed-surface: #ececf3;
 
   --wx-shadow-sm: 0 1px 2px 0 rgb(25 21 18 / 0.05);
   --wx-shadow-md: 0 1px 2px 0 rgb(25 21 18 / 0.05), 0 8px 24px -12px rgb(25 21 18 / 0.16);
@@ -340,23 +348,23 @@
    */
   --wx-card-face: linear-gradient(180deg, #ffffff 0%, #fdfbf8 100%);
   --wx-card-face-hover: linear-gradient(180deg, #ffffff 0%, #fffdfa 100%);
-  --wx-card-rim: rgba(25, 21, 18, 0.09);
-  --wx-card-rim-hover: rgba(138, 95, 31, 0.38);
+  --wx-card-rim: rgba(20, 20, 28, 0.09);
+  --wx-card-rim-hover: rgba(106, 47, 224, 0.38);
   --wx-card-top-light: rgba(255, 255, 255, 0.9);
   --wx-card-lift: 0 1px 2px rgb(25 21 18 / 0.05), 0 10px 26px -14px rgb(25 21 18 / 0.18);
   --wx-card-lift-hover: 0 2px 5px rgb(25 21 18 / 0.07), 0 18px 40px -16px rgb(25 21 18 / 0.26);
   --wx-hero-wash: radial-gradient(
     ellipse 70% 130% at 10% -10%,
-    rgba(138, 95, 31, 0.07) 0%,
+    rgba(20, 20, 28, 0.035) 0%,
     transparent 60%
   );
 
   --wx-glow: radial-gradient(
     ellipse 80% 60% at 50% 0%,
-    rgba(106, 47, 224, 0.1) 0%,
+    rgba(20, 20, 28, 0.05) 0%,
     transparent 70%
   );
-  --wx-grid-line: rgba(25, 21, 18, 0.05);
+  --wx-grid-line: rgba(20, 20, 28, 0.05);
 
   /* Invert first (white artwork on black becomes black artwork on white), then
      `multiply` drops the white away against the pale page. Without this the
@@ -382,14 +390,15 @@
      far stronger than white over black at the same opacity. */
   --wx-glass-fill: linear-gradient(
     135deg,
-    rgba(25, 21, 18, 0.035) 0%,
-    rgba(25, 21, 18, 0) 100%
+    rgba(20, 20, 28, 0.035) 0%,
+    rgba(20, 20, 28, 0) 100%
   );
-  --wx-glass-panel: rgba(25, 21, 18, 0.022);
-  --wx-glass-line: rgba(25, 21, 18, 0.1);
+  --wx-glass-panel: rgba(20, 20, 28, 0.022);
+  --wx-glass-line: rgba(20, 20, 28, 0.1);
   --wx-glass-rim: inset 1px 1px 0 0 rgba(255, 255, 255, 0.7);
-  /* Gold, darkened to the light-mode gold, or the glow is invisible on paper. */
-  --wx-glass-glow: 0 0 40px rgba(138, 95, 31, 0.16);
+  /* Was the light-mode gold `rgba(138,95,31,.16)`, which is #8a5f1f. The violet
+     is darkened the same way, or the glow is invisible on paper. */
+  --wx-glass-glow: 0 0 40px rgba(106, 47, 224, 0.16);
   --wx-glass-blur: 24px;
 
   --wx-accent-gradient: linear-gradient(135deg, #6a2fe0 0%, #0b6f69 100%);

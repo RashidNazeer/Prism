@@ -14,20 +14,14 @@ import { cn } from '@/lib/utils';
  */
 export function LockedUntilApproved({ className }: { className?: string }) {
   return (
-    <div
-      className={cn(
-        'rounded-2xl border border-line bg-surface-1 px-6 py-14 text-center',
-        className
-      )}
-    >
-      <span className="mx-auto grid size-14 place-items-center rounded-full bg-accent-soft text-accent">
+    <div className={cn('wx-neo-raised rounded-2xl px-6 py-14 text-center', className)}>
+      <span className="wx-neo-inset text-accent mx-auto grid size-14 place-items-center rounded-full">
         <Clock size={22} aria-hidden />
       </span>
       <p className="mt-5 font-semibold">This opens when you are approved</p>
-      <p className="mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed text-muted">
-        Brand hubs, their products and their offers are for creators on the roster. A
-        real person is reading your application, and this unlocks the moment they say
-        yes.
+      <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
+        Brand hubs, their products and their offers are for creators on the roster. A real
+        person is reading your application, and this unlocks the moment they say yes.
       </p>
       <ButtonLink to="/app" variant="secondary" size="sm" className="mt-6">
         Back to home

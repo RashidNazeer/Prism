@@ -90,8 +90,8 @@ export function OfferCard({
      */
     <div
       className={cn(
-        'group border-line bg-surface-1 relative flex h-full flex-col overflow-hidden rounded-xl border p-5 shadow-md transition-all duration-300',
-        'hover:border-accent/45 hover:-translate-y-0.5 hover:shadow-xl'
+        'group wx-neo-raised relative flex h-full flex-col overflow-hidden rounded-xl p-5 transition-transform duration-300',
+        'hover:-translate-y-0.5'
       )}
     >
       {agreed ? (
@@ -106,7 +106,7 @@ export function OfferCard({
           to={`/app/brands/${offer.brand.slug}`}
           className="text-muted hover:text-accent flex items-center gap-2.5 transition-colors"
         >
-          <span className="border-line bg-surface-2 grid size-7 shrink-0 place-items-center overflow-hidden rounded-full border">
+          <span className="wx-neo-inset grid size-7 shrink-0 place-items-center overflow-hidden rounded-full">
             {offer.brand.logo_url ? (
               <img src={offer.brand.logo_url} alt="" className="size-full object-cover" />
             ) : (
@@ -194,7 +194,7 @@ export function OfferCard({
       */}
       {offer.description ? (
         <details className="group border-line mt-3 border-t pt-3">
-          <summary className="text-muted hover:text-text marker:content-none flex cursor-pointer list-none items-center gap-1.5 text-[0.8125rem] font-semibold transition-colors [&::-webkit-details-marker]:hidden">
+          <summary className="text-muted hover:text-text flex cursor-pointer list-none items-center gap-1.5 text-[0.8125rem] font-semibold transition-colors marker:content-none [&::-webkit-details-marker]:hidden">
             <ChevronDown
               size={14}
               aria-hidden
@@ -203,17 +203,14 @@ export function OfferCard({
             <span className="group-open:hidden">What this involves</span>
             <span className="hidden group-open:inline">Hide the detail</span>
           </summary>
-          <p className="text-muted mt-2.5 text-[0.875rem] leading-relaxed">{offer.description}</p>
+          <p className="text-muted mt-2.5 text-[0.875rem] leading-relaxed">
+            {offer.description}
+          </p>
         </details>
       ) : null}
 
       <div className="mt-auto pt-4">
-        <OfferAction
-          offer={offer}
-          request={request}
-          progress={progress}
-          onApply={onApply}
-        />
+        <OfferAction offer={offer} request={request} progress={progress} onApply={onApply} />
       </div>
     </div>
   );
@@ -254,18 +251,24 @@ function OfferAction({
         <div
           className={cn(
             'rounded-xl px-3.5 py-3',
-            stage === 'paid' ? 'bg-stage-paid-soft' : 'bg-surface-2'
+            stage === 'paid' ? 'bg-stage-paid-soft' : 'wx-neo-inset'
           )}
         >
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <span
-              className={cn('text-[0.875rem] font-semibold', stage === 'paid' && 'text-stage-paid')}
+              className={cn(
+                'text-[0.875rem] font-semibold',
+                stage === 'paid' && 'text-stage-paid'
+              )}
             >
               {stage === 'paid' ? 'Paid out' : 'You are in'}
             </span>
             {request.committed_amount != null ? (
               <span
-                className={cn('font-display text-[0.9375rem] font-semibold', stageTextTone(stage))}
+                className={cn(
+                  'font-display text-[0.9375rem] font-semibold',
+                  stageTextTone(stage)
+                )}
               >
                 {money(request.committed_amount, request.currency)}
               </span>
@@ -359,7 +362,9 @@ function OfferAction({
         <Note tone="danger" icon={<X size={15} aria-hidden />}>
           <span className="font-semibold">Not this time</span>
           {request.decision_note ? (
-            <span className="text-muted mt-0.5 block text-[0.8125rem]">{request.decision_note}</span>
+            <span className="text-muted mt-0.5 block text-[0.8125rem]">
+              {request.decision_note}
+            </span>
           ) : null}
         </Note>
         <Button variant="secondary" size="sm" className="mt-2" onClick={onApply}>

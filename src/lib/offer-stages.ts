@@ -130,7 +130,7 @@ export const stageProgress = (stage: OfferStage): number =>
 /**
  * Tailwind text colour for a stage's money bucket, so anything printed NEXT to
  * a tracker agrees with it. Without this the committed amount on an offer card
- * came out indigo while the bar under it was amber, which is two answers to one
+ * came out indigo while the bar under it was magenta, which is two answers to one
  * question.
  */
 export const stageTextTone = (stage: OfferStage): string =>

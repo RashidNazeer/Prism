@@ -168,7 +168,7 @@ export function Offers() {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search offers or brands"
                 aria-label="Search offers or brands"
-                className="border-line-interactive bg-surface-1 placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[0.8125rem] focus:outline-none"
+                className="wx-neo-inset border-line-interactive placeholder:text-faint hover:border-accent/60 focus:border-accent h-9 w-full rounded-xl border pr-3 pl-9 text-[0.8125rem] focus:outline-none"
               />
             </div>
 
@@ -199,14 +199,14 @@ export function Offers() {
               ))}
             </ul>
           ) : isError ? (
-            <div className="border-line bg-surface-1 mt-4 rounded-xl border px-6 py-14 text-center shadow-md">
+            <div className="wx-neo-raised mt-4 rounded-xl px-6 py-14 text-center">
               <p className="font-semibold">That list would not load</p>
               <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
                 {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
               </p>
             </div>
           ) : shown.length === 0 ? (
-            <div className="border-line bg-surface-1 mt-4 rounded-xl border px-6 py-16 text-center shadow-md">
+            <div className="wx-neo-raised mt-4 rounded-xl px-6 py-16 text-center">
               <Ticket size={26} aria-hidden className="text-faint mx-auto" />
               <p className="mt-4 font-semibold">
                 {(offers ?? []).length === 0 ? 'No offers yet' : 'Nothing matches that'}

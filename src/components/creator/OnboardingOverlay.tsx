@@ -13,13 +13,7 @@ import { useFocusTrap } from '@/lib/use-focus-trap';
  * It still scrolls inside itself and traps focus, for the same reasons every
  * other modal here does.
  */
-export function OnboardingOverlay({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
+export function OnboardingOverlay({ label, children }: { label: string; children: ReactNode }) {
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, { initialSelector: 'button' });
 
@@ -43,7 +37,7 @@ export function OnboardingOverlay({
         initial={{ opacity: 0, y: 28, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-        className="relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-line bg-surface-1 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-3xl"
+        className="wx-neo-raised relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-3xl"
       >
         {children}
       </m.div>

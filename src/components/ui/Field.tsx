@@ -1,4 +1,4 @@
-import { ChevronDown, Eye, EyeOff } from 'lucide-react';
+﻿import { ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { useId, useState, type ComponentProps, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -18,10 +18,14 @@ import { cn } from '@/lib/utils';
  * next to the cards rather than part of them.
  */
 const controlBase = [
-  'w-full rounded-lg border bg-surface-3 px-4 text-[0.9375rem]',
+  // wx-neo-inset: things that receive are pressed INTO the page. It supplies
+  // the fill and shadow but no border, so the 1px border below is the
+  // non-shadow boundary (WCAG 1.4.11, and the only edge in forced-colors).
+  'wx-neo-inset w-full rounded-lg border px-4 text-[0.9375rem]',
   'placeholder:text-faint',
   'transition-colors duration-200 ease-brand',
-  'focus:outline-none focus-visible:outline-none',
+  // An outline, not a ring: a ring is a box-shadow and would replace the inset.
+  'focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
   'disabled:cursor-not-allowed disabled:opacity-60',
 ].join(' ');
 
@@ -34,7 +38,7 @@ export function Label({ htmlFor, children }: { htmlFor: string; children: ReactN
   return (
     <label
       htmlFor={htmlFor}
-      className="block font-mono text-[0.6875rem] font-medium tracking-[0.14em] text-muted uppercase"
+      className="text-muted block font-mono text-[0.6875rem] font-medium tracking-[0.14em] uppercase"
     >
       {children}
     </label>
@@ -51,7 +55,11 @@ export function Field({
   label: string;
   error?: string | undefined;
   hint?: string;
-  children: (ids: { id: string; describedBy: string | undefined; invalid: boolean }) => ReactNode;
+  children: (ids: {
+    id: string;
+    describedBy: string | undefined;
+    invalid: boolean;
+  }) => ReactNode;
 }) {
   const id = useId();
   const errorId = `${id}-error`;
@@ -63,11 +71,11 @@ export function Field({
       <Label htmlFor={id}>{label}</Label>
       <div className="mt-2">{children({ id, describedBy, invalid: Boolean(error) })}</div>
       {error ? (
-        <p id={errorId} role="alert" className="mt-1.5 text-[0.8125rem] text-danger">
+        <p id={errorId} role="alert" className="text-danger mt-1.5 text-[0.8125rem]">
           {error}
         </p>
       ) : hint ? (
-        <p id={hintId} className="mt-1.5 text-[0.8125rem] text-faint">
+        <p id={hintId} className="text-faint mt-1.5 text-[0.8125rem]">
           {hint}
         </p>
       ) : null}
@@ -114,7 +122,7 @@ export function PasswordInput({
         type="button"
         onClick={() => setVisible((v) => !v)}
         aria-label={visible ? 'Hide password' : 'Show password'}
-        className="absolute top-1/2 right-2 grid size-9 -translate-y-1/2 place-items-center rounded-lg text-muted transition-colors hover:text-accent"
+        className="text-muted hover:text-accent focus-visible:outline-accent absolute top-1/2 right-2 grid size-9 -translate-y-1/2 place-items-center rounded-lg transition-colors focus-visible:outline-2"
       >
         {visible ? <EyeOff size={17} aria-hidden /> : <Eye size={17} aria-hidden />}
       </button>
@@ -131,7 +139,12 @@ export function Textarea({
     <textarea
       {...props}
       aria-invalid={invalid || undefined}
-      className={cn(controlBase, controlState(invalid), 'min-h-28 resize-y py-3 leading-relaxed', className)}
+      className={cn(
+        controlBase,
+        controlState(invalid),
+        'min-h-28 resize-y py-3 leading-relaxed',
+        className
+      )}
     />
   );
 }
@@ -161,7 +174,7 @@ export function Select({
       <ChevronDown
         size={17}
         aria-hidden
-        className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-muted"
+        className="text-muted pointer-events-none absolute top-1/2 right-4 -translate-y-1/2"
       />
     </div>
   );
