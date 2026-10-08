@@ -4,16 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!--
-      ONE MARK, THE DOG FACE, the same one wurxmedia.com wears.
+      ONE MARK, THE PRISM APP-ICON TILE.
 
       TikTok rejected the app on 2026-09-15 with: "The app icon submitted in the
       Basic Info does not match the icon displayed on the website. Please ensure
       the same icon is used consistently across both the TikTok, the website and
-      Browser tab (favicon)". This tab wore the old Wurx mark; it is now the PRISM i.
+      Browser tab (favicon)". So all three are rendered from one source.
 
-      The PNG is for the browsers and link previews that ignore SVG favicons;
-      /tiktok-app-icon.png (1024px, on white) is the file uploaded to TikTok,
-      rendered from the same artwork.
+      THE SQUARE TILE, NOT THE BARE `i`. The kit is explicit: "Icon 16px tall;
+      below that, use the app icon tile." The `i` glyph is 40x96, so in a 16px
+      browser tab it was a sliver with most of its box empty.
+
+      The PNG is for browsers and link previews that ignore SVG favicons;
+      /tiktok-app-icon.png (1024px) is the file uploaded to TikTok, rendered
+      from the LIGHT tile because theirs is specified on white.
     -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="256x256" href="/favicon.png" />
@@ -23,7 +27,7 @@
       index.html, so that request was answering with 4KB of HTML labelled
       `text/html`. Harmless in a tab, not harmless everywhere â€” the vendored
       Paid Collabs code uses `/favicon.ico` as its desktop-notification icon,
-      which was therefore a broken image. 16, 32 and 48px, same dog face.
+      which was therefore a broken image. 16, 32 and 48px, same PRISM tile.
     -->
     <link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/favicon.png" />
@@ -33,7 +37,8 @@
       name="description"
       content="The creator platform behind Wurx Media's TikTok Shop brands. Real GMV, real commission and real leaderboards, with one login for every brand you work with."
     />
-    <meta name="theme-color" content="#0a0a0a" />
+    <!-- PRISM Ink. Was #0a0a0a, the old Wurx near-black. -->
+    <meta name="theme-color" content="#14141c" />
     <meta name="robots" content="noindex" />
 
     <meta property="og:type" content="website" />
@@ -66,7 +71,7 @@
           document.documentElement.dataset.theme = resolved;
           document
             .querySelector('meta[name="theme-color"]')
-            .setAttribute('content', resolved === 'dark' ? '#0a0a0a' : '#faf8f3');
+            .setAttribute('content', resolved === 'dark' ? '#14141c' : '#f7f7fb');
         } catch (e) {
           document.documentElement.dataset.theme = 'dark';
         }
