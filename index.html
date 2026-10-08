@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
@@ -21,14 +21,14 @@
       AND A REAL .ico. Browsers ask for /favicon.ico whether or not a page links
       one, and this is a single-page app: every unknown path is rewritten to
       index.html, so that request was answering with 4KB of HTML labelled
-      `text/html`. Harmless in a tab, not harmless everywhere — the vendored
+      `text/html`. Harmless in a tab, not harmless everywhere â€” the vendored
       Paid Collabs code uses `/favicon.ico` as its desktop-notification icon,
       which was therefore a broken image. 16, 32 and 48px, same dog face.
     -->
     <link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/favicon.png" />
 
-    <title>WurxMediaHub | Your numbers. Finally yours.</title>
+    <title>Prism | See your true TikTok Shop results.</title>
     <meta
       name="description"
       content="The creator platform behind Wurx Media's TikTok Shop brands. Real GMV, real commission and real leaderboards, with one login for every brand you work with."
@@ -37,7 +37,7 @@
     <meta name="robots" content="noindex" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="WurxMediaHub | Your numbers. Finally yours." />
+    <meta property="og:title" content="Prism | See your true TikTok Shop results." />
     <meta
       property="og:description"
       content="The creator platform behind Wurx Media's TikTok Shop brands."
@@ -81,7 +81,7 @@
        * `?code=` in the address and tries to exchange it for a session using
        * whatever PKCE verifier it has in storage. TikTok sends us back to
        * /oauth/tiktok/callback and /oauth/tiktok-creator/callback with exactly
-       * that shape — `?code=...&state=...` — and the client will grab it.
+       * that shape â€” `?code=...&state=...` â€” and the client will grab it.
        *
        * The React route already strips the address bar, but that runs in an
        * effect, long AFTER the client has been constructed. This has to happen
@@ -89,7 +89,7 @@
        * the theme script rather than in the app.
        *
        * The parameters are handed to the page on `window.__wxOAuthReturn`
-       * instead, so nothing is lost — and they leave the address bar, the
+       * instead, so nothing is lost â€” and they leave the address bar, the
        * referrer and the history entry at the same time.
        */
       (function () {

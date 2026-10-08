@@ -2,7 +2,7 @@
 import { Link, useLocation } from 'react-router';
 import { AnimatePresence, m } from 'motion/react';
 import { Menu } from 'lucide-react';
-import { WurxMark } from '@/components/brand/WurxMark';
+import { PrismMark } from '@/components/brand/PrismMark';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { TextSizeMenu } from '@/components/layout/TextSizeMenu';
 import { AppSidebar } from '@/components/layout/AppSidebar';
@@ -176,7 +176,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             {/* The mark stays on a phone, where there is no rail to carry it.
                 On desktop the rail has it, and it is the collapse control. */}
             <Link to="/" aria-label="WurxMediaHub home" className="shrink-0 lg:hidden">
-              <WurxMark />
+              <PrismMark />
             </Link>
 
             {section ? (

@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
-import { WurxMark } from '@/components/brand/WurxMark';
+import { PrismMark } from '@/components/brand/PrismMark';
 import '@/vendor/wurxbase/paidcollabs.css';
 import '@/routes/admin/wurxbase-overrides.css';
 
@@ -9,15 +9,15 @@ import '@/routes/admin/wurxbase-overrides.css';
  *
  * Rashid's boss, 2026-09-17: "we need to show them exact same view as we have
  * they will just not be able to see ad spend and roi at any cost". So this is
- * the Paid Collabs BRANDS view — the same five cards, the same top-videos
- * strip, the same table — wearing the same stylesheet, and nothing else of the
+ * the Paid Collabs BRANDS view â€” the same five cards, the same top-videos
+ * strip, the same table â€” wearing the same stylesheet, and nothing else of the
  * product. "No other section no other data please."
  *
  * WHAT IS NOT HERE, and could not be even if this file wanted it: ad spend,
  * ROI, payment details, phone numbers, emails, internal comments. The
  * `collab-share` function builds the payload field by field and those fields
  * are never read into it. This page can only draw what it is given, which is
- * the point — hiding a column in CSS would leave it one "view source" away.
+ * the point â€” hiding a column in CSS would leave it one "view source" away.
  *
  * ALSO NOT HERE, because a client must not change anything: the status
  * dropdown is a plain pill, and there is no contract download, no row actions,
@@ -95,13 +95,13 @@ const monthLabel = (key: string) => {
   return `${MONTHS[Number(m) - 1] ?? '?'} ${y}`;
 };
 const dayLabel = (iso: string | null) => {
-  if (!iso) return '–';
+  if (!iso) return 'â€“';
   const d = new Date(`${iso}T00:00:00Z`);
-  return Number.isNaN(d.getTime()) ? '–' : `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
+  return Number.isNaN(d.getTime()) ? 'â€“' : `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
 };
 const money = (n: number | null | undefined) =>
   n === null || n === undefined || !Number.isFinite(n)
-    ? '–'
+    ? 'â€“'
     : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: n % 1 === 0 ? 0 : 2 }).format(n);
 const kNum = (n: number) =>
   n >= 1000 ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n) : String(n || 0);
@@ -174,7 +174,7 @@ export function ShareCollab() {
 
   useEffect(() => { void load(null); }, [load]);
   useEffect(() => {
-    document.title = payload ? `${payload.data.map((b) => b.brand).join(', ')} · Wurx Media` : 'Wurx Media';
+    document.title = payload ? `${payload.data.map((b) => b.brand).join(', ')} Â· Wurx Media` : 'Wurx Media';
   }, [payload]);
 
   const brand = payload?.data[brandIdx] ?? payload?.data[0];
@@ -226,7 +226,7 @@ export function ShareCollab() {
       <header className="flex flex-wrap items-center justify-between gap-4" data-month={payload.month}>
         <div className="min-w-0">
           <h1 className="text-2xl font-extrabold tracking-tight">{brand.brand}</h1>
-          <p className="mt-1 text-sm text-muted">Creator campaign report · {monthLabel(payload.month)}</p>
+          <p className="mt-1 text-sm text-muted">Creator campaign report Â· {monthLabel(payload.month)}</p>
         </div>
         <span className="rounded-full border border-line bg-surface-2 px-3 py-1 text-xs font-bold uppercase tracking-wider text-muted">
           Read only
@@ -273,9 +273,9 @@ export function ShareCollab() {
             <Kpi label="Allocated" color="#7A3BB5" value={money(k.allocated)}
               sub={`${k.creators} creator${k.creators === 1 ? '' : 's'}`} />
             <Kpi label="Paid" color="#0E7A3A" value={money(k.paid)}
-              sub={k.allocated > 0 ? `${Math.round((k.paid / k.allocated) * 100)}% paid out` : '—'} />
+              sub={k.allocated > 0 ? `${Math.round((k.paid / k.allocated) * 100)}% paid out` : 'â€”'} />
             <Kpi label="Videos" color="#0EA5E9" value={`${k.delivered}/${k.committed}`}
-              sub={k.committed > 0 ? `${Math.round((k.delivered / k.committed) * 100)}% completed` : '—'} />
+              sub={k.committed > 0 ? `${Math.round((k.delivered / k.committed) * 100)}% completed` : 'â€”'} />
             <Kpi label="Cost / Video" color="#E65100" value={k.costPerVideo > 0 ? money(Math.round(k.costPerVideo)) : '-'}
               sub="per delivered video" />
           </div>
@@ -284,18 +284,18 @@ export function ShareCollab() {
         {brand.topVideos && brand.topVideos.length > 0 && (
           <div className="pc-topvids">
             <div className="pc-topvids-head">
-              Top videos by GMV · {monthLabel(payload.month)}
+              Top videos by GMV Â· {monthLabel(payload.month)}
               <span className="pc-topvids-sub">live from EUKA</span>
             </div>
             <div className="pc-topvids-body">
               <div className="pc-topvids-row">
                 {brand.topVideos.map((v, i) => (
                   <a key={v.url + i} className="pc-topvid" href={v.url} target="_blank" rel="noreferrer noopener"
-                    title={`${v.name} · ${money(v.gmv)} GMV · open on TikTok`}>
+                    title={`${v.name} Â· ${money(v.gmv)} GMV Â· open on TikTok`}>
                     <span className="pc-topvid-frame">
                       {v.thumb
                         ? <img className="pc-topvid-thumb" src={v.thumb} alt="" loading="lazy" />
-                        : <span className="pc-topvid-thumb pc-topvid-ph" aria-hidden>▶</span>}
+                        : <span className="pc-topvid-thumb pc-topvid-ph" aria-hidden>â–¶</span>}
                       <span className="pc-topvid-rank">#{i + 1}</span>
                       <span className="pc-topvid-gmv">{money(v.gmv)}</span>
                     </span>
@@ -383,7 +383,7 @@ export function ShareCollab() {
                       </div>
                       <div className="pc-cell pc-num" data-label="Deal">
                         {c.deal > 0
-                          ? <span className="pc-money">{money(c.deal)}{c.perVideo ? <span className="pc-deal-per"> · {money(c.perVideo)}/vid</span> : null}</span>
+                          ? <span className="pc-money">{money(c.deal)}{c.perVideo ? <span className="pc-deal-per"> Â· {money(c.perVideo)}/vid</span> : null}</span>
                           : <span className="pc-handle">-</span>}
                       </div>
                       <div className="pc-cell pc-num" data-label="Videos">
@@ -396,7 +396,7 @@ export function ShareCollab() {
                         {c.gmv > 0 ? <span className="pc-metric pc-metric-gmv">{money(Math.round(c.gmv))}</span> : <span className="pc-handle">-</span>}
                       </div>
                       <div className="pc-cell pc-num" data-label="L30 GMV">
-                        {c.l30 ? <span className="pc-l30-cell">{money(Math.round(c.l30))}</span> : <span className="pc-l30-cell muted">–</span>}
+                        {c.l30 ? <span className="pc-l30-cell">{money(Math.round(c.l30))}</span> : <span className="pc-l30-cell muted">â€“</span>}
                       </div>
                       <div className="pc-cell pc-num" data-label="Items sold">
                         {c.items > 0 ? <span className="pc-metric">{c.items}</span> : <span className="pc-handle">-</span>}
@@ -408,7 +408,7 @@ export function ShareCollab() {
                         {c.videos.map((v, vi) => (
                           <div key={v.url + vi} className="wx-share-video">
                             <a href={v.url} target="_blank" rel="noreferrer noopener">Video {vi + 1}</a>
-                            <span>{v.date ? dayLabel(v.date) : '–'}</span>
+                            <span>{v.date ? dayLabel(v.date) : 'â€“'}</span>
                             <span>{kNum(v.views)} views</span>
                             <span className="wx-share-gmv">{money(v.gmv)}</span>
                             {v.items > 0 && <span>{v.items} sold</span>}
@@ -502,7 +502,7 @@ function Shell({ children }: { children: React.ReactNode }) {
     <div className="min-h-dvh bg-bg px-4 py-8 sm:px-8">
       <div className="mx-auto w-full max-w-[1600px]">
         <div className="mb-8 flex items-center justify-between">
-          <WurxMark />
+          <PrismMark />
         </div>
         {children}
       </div>

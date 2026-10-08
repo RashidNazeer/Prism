@@ -1,4 +1,4 @@
-import { ShieldAlert } from 'lucide-react';
+﻿import { ShieldAlert } from 'lucide-react';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -16,7 +16,7 @@ export function Suspended() {
   return (
     <AuthShell
       title="Your account is on hold"
-      subtitle="Access has been paused by the Wurx team. Nothing has been deleted."
+      subtitle="Access has been paused by the Prism team. Nothing has been deleted."
     >
       <div className="text-center">
         <span className="mx-auto grid size-12 place-items-center rounded-full bg-warning-soft text-warning">

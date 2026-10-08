@@ -1,7 +1,7 @@
-import { useLayoutEffect, useRef } from 'react';
+﻿import { useLayoutEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router';
 import { LogOut, Plus, X } from 'lucide-react';
-import { WurxMark } from '@/components/brand/WurxMark';
+import { PrismMark } from '@/components/brand/PrismMark';
 import { prefetchRoute } from '@/app/router';
 import { cn } from '@/lib/utils';
 import { isNavItemActive, navForRole, type NavItem } from '@/lib/nav';
@@ -150,7 +150,7 @@ export function AppSidebar({
               collapsed && 'justify-center'
             )}
           >
-            <WurxMark markOnly={collapsed} height={collapsed ? 26 : 24} />
+            <PrismMark markOnly={collapsed} height={collapsed ? 26 : 24} />
             {!collapsed ? (
               <span className="text-faint -mt-0.5 hidden text-[0.6875rem] leading-none font-medium sm:block">
                 Creator Platform
@@ -164,7 +164,7 @@ export function AppSidebar({
             onClick={onNavigate}
             className={cn('flex items-center gap-3', collapsed && 'justify-center')}
           >
-            <WurxMark markOnly={collapsed} height={collapsed ? 26 : 24} />
+            <PrismMark markOnly={collapsed} height={collapsed ? 26 : 24} />
             <span className="text-faint -mt-0.5 hidden text-[0.6875rem] leading-none font-medium sm:block">
               Creator Platform
             </span>
@@ -216,7 +216,7 @@ export function AppSidebar({
         {/*
           THE GAP LIVES ON THE HEADING, NOT ON THE GROUP.
           It was `mb-3.5` on every group plus `pb-1` under every heading, which
-          on eight groups was about 100px of nothing in a menu 12 items long —
+          on eight groups was about 100px of nothing in a menu 12 items long â€”
           Rashid, 2026-08-21: *"too much gap between and too many sections"*.
           Now the space is a top margin on the heading, so a group WITHOUT one
           (Dashboard, and the creator's profile row) sits straight under the
@@ -407,7 +407,7 @@ function NavRow({
       className={cn(
         base,
         /* NEOMORPHIC, PRISM 2026-10-08. The current page is PRESSED INTO the
-           rail rather than tinted on top of it — in a soft material the way you
+           rail rather than tinted on top of it â€” in a soft material the way you
            say "you are here" is that the surface has been pushed in. The accent
            ink and the indicator bar still carry the meaning, so the state is
            never conveyed by depth alone, which would vanish under

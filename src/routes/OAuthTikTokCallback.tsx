@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
-import { WurxMark } from '@/components/brand/WurxMark';
+import { PrismMark } from '@/components/brand/PrismMark';
 import { finishTikTokConnect } from '@/lib/tiktok';
 
 /**
@@ -31,7 +31,7 @@ export function OAuthTikTokCallback() {
     if (started.current) return;
     started.current = true;
 
-    /* Taken off the address before the Supabase client loaded — see the script
+    /* Taken off the address before the Supabase client loaded â€” see the script
        in index.html. That client is `detectSessionInUrl: true` with PKCE and
        would otherwise try to spend TikTok's `code` as its own. */
     const stash = (window as unknown as { __wxOAuthReturn?: Record<string, string | null> }).__wxOAuthReturn;
@@ -72,7 +72,7 @@ export function OAuthTikTokCallback() {
   return (
     <main className="bg-bg grid min-h-dvh place-items-center px-6 py-12">
       <div className="border-line bg-surface-1 w-full max-w-md rounded-xl border p-8 text-center">
-        <WurxMark height={26} className="mx-auto" />
+        <PrismMark height={26} className="mx-auto" />
 
         {state === 'working' ? (
           <>

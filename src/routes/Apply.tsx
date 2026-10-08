@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { WurxMark } from '@/components/brand/WurxMark';
+import { PrismMark } from '@/components/brand/PrismMark';
 import { ButtonLink } from '@/components/ui/Button';
 import { ApplyForm } from '@/components/landing/ApplyForm';
 import { allowIndexing } from '@/lib/seo';
@@ -26,7 +26,7 @@ export function Apply() {
 
       <div className="relative mx-auto w-full max-w-lg">
         <div className="flex items-center justify-between gap-4">
-          <WurxMark />
+          <PrismMark />
           <ButtonLink to="/" variant="ghost" size="sm" className="group">
             <ArrowLeft
               size={15}
@@ -38,7 +38,7 @@ export function Apply() {
         </div>
 
         <h1 className="mt-10 text-[clamp(1.875rem,5vw,2.5rem)] font-extrabold">
-          Join the Wurx creator roster
+          Join the Prism creator roster
         </h1>
         <p className="mt-4 leading-relaxed text-muted text-pretty">
           Tell us where to find you and what you make. Every application is read by a

@@ -435,7 +435,7 @@ function Header({
           <span aria-hidden className="text-line">
             /
           </span>
-          WurxMediaHub
+          Prism
         </p>
         {/* An h2, not an h1: the top bar owns the page's only one. This greets
             the person rather than naming the section, so unlike the other

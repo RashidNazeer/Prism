@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
-import { WurxMark } from '@/components/brand/WurxMark';
+import { PrismMark } from '@/components/brand/PrismMark';
 import { useTikTokFinish } from '@/lib/creator/useTikTokAccount';
 import { finishTikTokSignup, signupInFlight } from '@/lib/signup/tiktokSignup';
 
@@ -78,8 +78,8 @@ export function OAuthTikTokCreatorCallback() {
      * question is answered here without a round trip and without the server
      * telling a stranger which states exist.
      *
-     * If the marker is missing — TikTok's in-app browser handing the return to
-     * a different browser — this falls through to the creator flow and refuses
+     * If the marker is missing â€” TikTok's in-app browser handing the return to
+     * a different browser â€” this falls through to the creator flow and refuses
      * there. Safe: it can end in "start again", never in the wrong identity.
      */
     if (signupInFlight()) {
@@ -115,7 +115,7 @@ export function OAuthTikTokCreatorCallback() {
   return (
     <div className="bg-bg text-text flex min-h-dvh items-center justify-center p-6">
       <div className="border-line bg-surface-1 w-full max-w-md rounded-xl border p-8 text-center shadow-md">
-        <WurxMark className="mx-auto h-6 w-auto" />
+        <PrismMark className="mx-auto h-6 w-auto" />
 
         {phase === 'working' ? (
           <>

@@ -7,9 +7,9 @@
    the other, and every text/background pair below is contrast-checked by
    `pnpm check:contrast` (scripts/check-contrast.mjs), which runs in the build.
 
-   Palette source: wurxmedia.com, near-black base, warm gold accent (#c8924b),
-   cream text (#f5efe1). Light mode is the same brand language on warm paper,
-   with the gold darkened to #8a5f1f so it stays readable (the raw brand gold is
+   Palette source: the PRISM brand kit. Ink #14141C, white and mist grounds,
+   violet as the single interactive accent, and the spectrum as accents only.
+   Light is the primary design and dark is derived from it. (The old Wurx gold
    only 2.58:1 on paper, it would have been unreadable).
 
    The surfaces were retuned on 2026-08-10 to the values in the creator home
@@ -76,7 +76,7 @@
    * the three up and get the headline figure.
    *
    * Indigo, amber, green. NOT accent/warning/success, which is the obvious
-   * choice and unreadable: in light mode the brand gold (#8a5f1f) and the
+   * choice and unreadable: in light mode the interactive violet and the
    * warning amber (#8a6410) are within a hair of each other, so two thirds of
    * the money bar looked like one block. This ramp also says something true.
    * Green is in your account, amber is about to be, indigo is still moving.
@@ -233,7 +233,7 @@
   --wx-glass-blur: 24px;
 
   /* The gradient the design puts on its primary action. Gold to amber here. */
-  --wx-accent-gradient: linear-gradient(135deg, #c8924b 0%, #e0a95f 100%);
+  --wx-accent-gradient: linear-gradient(135deg, #a878ff 0%, #17e0d4 100%);
   --wx-accent-gradient-hover: linear-gradient(135deg, #d8a15b 0%, #f0bb72 100%);
 }
 
@@ -392,7 +392,7 @@
   --wx-glass-glow: 0 0 40px rgba(138, 95, 31, 0.16);
   --wx-glass-blur: 24px;
 
-  --wx-accent-gradient: linear-gradient(135deg, #8a5f1f 0%, #a3762c 100%);
+  --wx-accent-gradient: linear-gradient(135deg, #6a2fe0 0%, #0b6f69 100%);
   --wx-accent-gradient-hover: linear-gradient(135deg, #74501a 0%, #8f6624 100%);
 }
 

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ============================================================================
  * THE WORDS ON THE PUBLIC WEBSITE PAGES. Edit here, not in the components.
  * ============================================================================
@@ -12,7 +12,7 @@
  * a person.
  *
  * EVERY COMPANY FACT BELOW IS TAKEN FROM wurxmedia.com, the official site, on
- * 2026-09-22 — the address, the phone number, the email, the founders, the
+ * 2026-09-22 â€” the address, the phone number, the email, the founders, the
  * headline figures. Our site and the official site must not tell a reviewer two
  * different stories. If the official site changes, change these with it.
  *
@@ -28,7 +28,7 @@
 export const COMPANY = {
   legalName: 'Wurx Media LLC',
   tradingName: 'Wurx Media',
-  product: 'Wurx Media Hub',
+  product: 'Prism',
   address: '30 N Gould St #61420, Sheridan, WY 82801, USA',
   phone: '+1 (307) 430-1048',
   phoneHref: 'tel:+13074301048',
@@ -48,18 +48,18 @@ export const COMPANY_FACTS = [
 ] as const;
 
 /**
- * The six services, from wurxmedia.com/content, "Our Services · One connected
+ * The six services, from wurxmedia.com/content, "Our Services Â· One connected
  * team". Condensed, and nothing added: a reviewer asked for "information about
  * our web and services", and the brands reading this page are buying these.
  *
  * TWO OF THEM ARE WHAT THIS HUB IS. "Paid Collaborations" is the deal a creator
- * signs here, and "Creator Community" is the Brand Hub itself — which is why
+ * signs here, and "Creator Community" is the Brand Hub itself â€” which is why
  * the hub is not sold separately and this page does not price it.
  */
 export const SERVICES = [
   {
     title: 'Shop Management',
-    body: 'The day-to-day operation of a TikTok Shop: listings, pricing, promotions, inventory sync and compliance — the layer that decides whether the traffic content earns actually converts.',
+    body: 'The day-to-day operation of a TikTok Shop: listings, pricing, promotions, inventory sync and compliance â€” the layer that decides whether the traffic content earns actually converts.',
   },
   {
     title: 'Affiliate Program',
@@ -87,14 +87,14 @@ export const SERVICES = [
 export const RESULTS = [
   { value: '$12.7M', label: 'Cutler Nutrition, TikTok Shop GMV in 12 months' },
   { value: '3,144%', label: 'M3 Naturals, monthly GMV growth in 6 months' },
-  { value: '$5.5M+', label: 'BrüMate, GMV generated, #1 in Drinkware' },
+  { value: '$5.5M+', label: 'BrÃ¼Mate, GMV generated, #1 in Drinkware' },
   { value: '213%', label: 'Inno Supps, off-site GMV lift from TikTok Shop content' },
 ] as const;
 
 /* ------------------------------------------------------ for creators ----- */
 
 export const CREATOR_INTRO =
-  'Wurx Media Hub is where the creators who post for our brands see their own numbers. Not an estimate, not a screenshot somebody sent you at the end of the month: the GMV your videos actually made, the commission on it, and the ad money we put behind your content.';
+  'Prism is where the creators who post for our brands see their own numbers. Not an estimate, not a screenshot somebody sent you at the end of the month: the GMV your videos actually made, the commission on it, and the ad money we put behind your content.';
 
 /**
  * What working with Wurx is actually like, from wurxmedia.com/content: a brief
@@ -112,15 +112,15 @@ export const CREATOR_WORKING = [
   },
   {
     title: 'A community for each brand, with coaching in it',
-    body: 'Every creator on a brand goes into that brand’s hub together: the brief, the contests, the leaderboard and our team, rather than a group chat that goes quiet in week three.',
+    body: 'Every creator on a brand goes into that brandâ€™s hub together: the brief, the contests, the leaderboard and our team, rather than a group chat that goes quiet in week three.',
   },
   {
     title: 'Your best video may be run as an advert',
     body: 'We agree ad rights at the brief stage, so a video that performs can be put behind paid spend instead of dying in the feed. You can see that spend in the hub, on your own video.',
   },
   {
-    title: 'Paid on the deal, from the brand’s budget',
-    body: 'A paid collaboration is a flat fee for an agreed number of videos. Wurx pays you; the money comes out of the brand’s campaign budget, which is why the hub tracks both.',
+    title: 'Paid on the deal, from the brandâ€™s budget',
+    body: 'A paid collaboration is a flat fee for an agreed number of videos. Wurx pays you; the money comes out of the brandâ€™s campaign budget, which is why the hub tracks both.',
   },
 ] as const;
 
@@ -139,7 +139,7 @@ export const CREATOR_POINTS = [
   },
   {
     title: 'One login for every brand',
-    body: 'Work with four of our brands and there are still one set of details to remember. Each brand has its own hub, in that brand’s colours.',
+    body: 'Work with four of our brands and there are still one set of details to remember. Each brand has its own hub, in that brandâ€™s colours.',
   },
   {
     title: 'Briefs, contests and leaderboards',
@@ -162,7 +162,7 @@ export const CREATOR_PROMISES = [
 /* -------------------------------------------------------- for brands ----- */
 
 export const BRAND_INTRO =
-  'Wurx Media is a full-service TikTok Shop agency: shop management, affiliate programmes, paid collaborations, GMV Max media, a creator community per brand, and the pipeline that turns winning TikTok content into Meta ad creative. Wurx Media Hub is the machinery behind the creator half of that — the roster, the briefs, the contests, and the numbers that say which creator and which video actually produced revenue.';
+  'Wurx Media is a full-service TikTok Shop agency: shop management, affiliate programmes, paid collaborations, GMV Max media, a creator community per brand, and the pipeline that turns winning TikTok content into Meta ad creative. Wurx Media Hub is the machinery behind the creator half of that â€” the roster, the briefs, the contests, and the numbers that say which creator and which video actually produced revenue.';
 
 export const BRAND_POINTS = [
   {
@@ -183,7 +183,7 @@ export const BRAND_POINTS = [
   },
   {
     title: 'A read-only link for your team',
-    body: 'Share your brand’s numbers with someone who has no account here. They see the work, never your ad spend or ROI, and the link can be stopped at any time.',
+    body: 'Share your brandâ€™s numbers with someone who has no account here. They see the work, never your ad spend or ROI, and the link can be stopped at any time.',
   },
 ] as const;
 
@@ -222,7 +222,7 @@ export const CREATOR_JOURNEY = [
 export const FAQ = [
   {
     q: 'Who can apply?',
-    a: 'Any TikTok creator who wants to post for the brands we work with. There is no follower minimum written down: what we look at is your account, your niche and your videos against the brands hiring that month. We are honest when a brand is not a fit — we would rather tell you than leave you waiting.',
+    a: 'Any TikTok creator who wants to post for the brands we work with. There is no follower minimum written down: what we look at is your account, your niche and your videos against the brands hiring that month. We are honest when a brand is not a fit â€” we would rather tell you than leave you waiting.',
   },
   {
     q: 'Does it cost anything?',
@@ -230,7 +230,7 @@ export const FAQ = [
   },
   {
     q: 'Do I have to connect my TikTok account?',
-    a: 'No. You can use the hub without connecting TikTok. Connecting it lets the hub show your own video figures alongside the brand’s, and you can disconnect at any time from your profile page.',
+    a: 'No. You can use the hub without connecting TikTok. Connecting it lets the hub show your own video figures alongside the brandâ€™s, and you can disconnect at any time from your profile page.',
   },
   {
     q: 'What does connecting TikTok let you do?',
@@ -242,15 +242,15 @@ export const FAQ = [
   },
   {
     q: 'Where do the GMV figures come from?',
-    a: 'From the brand’s own TikTok Shop reporting for the videos you posted for them, and the ad spend from the brand’s TikTok ad account. They are the same figures our own team works from.',
+    a: 'From the brandâ€™s own TikTok Shop reporting for the videos you posted for them, and the ad spend from the brandâ€™s TikTok ad account. They are the same figures our own team works from.',
   },
   {
     q: 'How and when do I get paid?',
-    a: 'On the deal you agreed before you posted: a flat fee for an agreed number of videos, or a retainer. Wurx pays you, out of the brand’s campaign budget, and the hub shows each deal as delivered and as paid so you can see where yours stands rather than asking.',
+    a: 'On the deal you agreed before you posted: a flat fee for an agreed number of videos, or a retainer. Wurx pays you, out of the brandâ€™s campaign budget, and the hub shows each deal as delivered and as paid so you can see where yours stands rather than asking.',
   },
   {
     q: 'Do I get the product?',
-    a: 'Where a brand is sending samples, that is arranged with your deal before you film — sample flow is part of how we run a campaign, not an afterthought. The brief says what is coming and what the brand wants shown.',
+    a: 'Where a brand is sending samples, that is arranged with your deal before you film â€” sample flow is part of how we run a campaign, not an afterthought. The brief says what is coming and what the brand wants shown.',
   },
   {
     q: 'Can my video be used as an advert?',
