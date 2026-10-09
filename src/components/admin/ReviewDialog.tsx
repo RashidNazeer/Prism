@@ -51,7 +51,7 @@ export function ReviewDialog({
   // and goes back where it came from on close. Deliberately NOT re-run when
   // `busy` flips: an effect that re-focuses on every state change yanks the
   // cursor out from under someone mid-decision.
-  useFocusTrap(panelRef, { initialSelector: 'select, textarea' });
+  useFocusTrap(panelRef, { initialSelector: '[aria-haspopup="listbox"], textarea' });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

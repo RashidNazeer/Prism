@@ -58,7 +58,7 @@ export function SitePage({
               <span className="bg-accent size-1.5 rounded-full" aria-hidden />
               {eyebrow}
             </span>
-            <h1 className="font-display mt-5 max-w-4xl text-[clamp(2rem,4.5vw,3.25rem)] leading-[1.05] font-extrabold tracking-[-0.02em]">
+            <h1 className="font-brand mt-5 max-w-4xl text-[clamp(2rem,4.5vw,3.25rem)] leading-[1.05] font-normal tracking-[-0.02em]">
               {title}
             </h1>
             {intro && (

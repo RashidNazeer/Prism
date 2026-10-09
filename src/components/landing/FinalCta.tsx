@@ -52,7 +52,7 @@ export function FinalCta() {
               />
             </div>
             <div className="relative">
-              <h2 className="mx-auto max-w-2xl text-[clamp(1.875rem,4vw,3rem)] font-extrabold">
+              <h2 className="font-brand mx-auto max-w-2xl text-[clamp(1.875rem,4vw,3rem)] font-normal">
                 <ScrollWords text="Find out what your videos are actually making." />
               </h2>
               <p className="text-muted mx-auto mt-6 max-w-lg text-lg leading-relaxed text-pretty">

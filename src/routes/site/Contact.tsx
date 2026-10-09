@@ -30,7 +30,7 @@ export function Contact() {
               </p>
               <a
                 href={`mailto:${COMPANY.email}`}
-                className="text-accent mt-4 inline-block font-medium underline-offset-4 hover:underline"
+                className="text-accent mt-4 inline-flex min-h-11 items-center font-medium underline-offset-4 hover:underline"
               >
                 {COMPANY.email}
               </a>
@@ -45,7 +45,7 @@ export function Contact() {
               </p>
               <a
                 href={COMPANY.phoneHref}
-                className="text-accent mt-4 inline-block font-medium underline-offset-4 hover:underline"
+                className="text-accent mt-4 inline-flex min-h-11 items-center font-medium underline-offset-4 hover:underline"
               >
                 {COMPANY.phone}
               </a>
@@ -64,7 +64,7 @@ export function Contact() {
         <Reveal>
           <div className="mt-12 grid gap-10 lg:grid-cols-2">
             <div>
-              <h2 className="font-display text-2xl font-extrabold tracking-[-0.02em]">
+              <h2 className="font-brand text-2xl font-normal tracking-[-0.02em]">
                 Who answers what
               </h2>
               <dl className="text-muted mt-6 grid gap-5 leading-relaxed">
@@ -102,7 +102,7 @@ export function Contact() {
             </div>
 
             <div>
-              <h2 className="font-display text-2xl font-extrabold tracking-[-0.02em]">
+              <h2 className="font-brand text-2xl font-normal tracking-[-0.02em]">
                 What to expect
               </h2>
               <p className="text-muted mt-6 leading-relaxed">

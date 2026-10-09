@@ -1,6 +1,7 @@
-import { ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useId, useState, type ComponentProps, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { ListboxSelect, type SelectProps } from '@/components/ui/Select';
 
 /**
  * Form primitives. Every input in the product uses these so focus rings, error
@@ -155,33 +156,17 @@ export function Textarea({
   );
 }
 
-export function Select({
-  className,
-  invalid,
-  children,
-  ...props
-}: ComponentProps<'select'> & { invalid?: boolean }) {
+/**
+ * Same call shape as a native select (`<option>` children, `onChange` with
+ * `e.target.value`), but the open list is ours, so it follows the theme on every
+ * OS. See `Select.tsx` for why, and for the keyboard contract.
+ */
+export function Select({ className, invalid, ...props }: SelectProps) {
   return (
-    <div className="relative">
-      <select
-        {...props}
-        aria-invalid={invalid || undefined}
-        className={cn(
-          controlBase,
-          controlState(invalid),
-          // appearance-none removes the OS arrow, which cannot be themed and
-          // looks wrong in dark mode on Windows.
-          'h-12 cursor-pointer appearance-none pr-11',
-          className
-        )}
-      >
-        {children}
-      </select>
-      <ChevronDown
-        size={17}
-        aria-hidden
-        className="text-muted pointer-events-none absolute top-1/2 right-4 -translate-y-1/2"
-      />
-    </div>
+    <ListboxSelect
+      {...props}
+      invalid={invalid}
+      className={cn(controlBase, controlState(invalid), 'h-12', className)}
+    />
   );
 }

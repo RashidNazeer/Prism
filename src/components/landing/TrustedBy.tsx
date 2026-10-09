@@ -48,7 +48,7 @@ export function TrustedBy() {
                     <CountUp
                       value={stat.value}
                       delay={i * 180}
-                      className="wx-lining font-display block text-[clamp(2rem,5vw,3rem)] leading-none font-extrabold tracking-tight tabular-nums"
+                      className="wx-lining font-brand block text-[clamp(2rem,5vw,3rem)] leading-none font-normal tracking-tight tabular-nums"
                     />
                   </TiltLift>
                   <span className="text-faint mt-3 block font-mono text-[0.6875rem] tracking-[0.16em] uppercase">

@@ -145,9 +145,15 @@ export function SiteNav() {
           <ul className="hidden items-center gap-1 justify-self-center lg:flex">
             {LINKS.map((l) => (
               <li key={l.href}>
+                {/* `pointer-coarse:min-h-11` rather than a width breakpoint.
+                    These links only appear from `lg`, which looks like desktop
+                    — but 1024x768 is also an iPad in landscape, and measured
+                    there they are 33px, well under the tap floor. Width does
+                    not tell you whether a finger is doing the pointing; the
+                    pointer type does. A mouse keeps the tighter 33px. */}
                 <Link
                   to={l.href}
-                  className="text-muted hover:text-accent ease-brand rounded-lg px-3 py-2 text-sm transition-colors duration-200"
+                  className="text-muted hover:text-accent ease-brand inline-flex items-center rounded-lg px-3 py-2 text-sm transition-colors duration-200 pointer-coarse:min-h-11"
                 >
                   {l.label}
                 </Link>
@@ -175,7 +181,21 @@ export function SiteNav() {
             </Link>
 
             <ThemeToggle />
-            <Button size="sm" className="hidden sm:inline-flex" onClick={apply}>
+            {/* `max-lg:h-11` is the 44px tap floor. `size="sm"` is 36px tall,
+                which is fine beside a cursor but under the floor on the phones
+                and tablets most of this audience is on — and this is the
+                header's primary action. It keeps the tighter 36px from `lg`,
+                where the links appear and a mouse is doing the pointing. */}
+            {/* The 44px tap floor. `size="sm"` is 36px, fine beside a cursor
+                and under the floor for a finger — and this is the header's
+                primary action. `max-lg` covers phones and tablets by width;
+                `pointer-coarse` catches a touch device wide enough to show the
+                links, such as an iPad in landscape, which width alone misses. */}
+            <Button
+              size="sm"
+              className="hidden max-lg:h-11 sm:inline-flex pointer-coarse:h-11"
+              onClick={apply}
+            >
               Apply
             </Button>
             <button

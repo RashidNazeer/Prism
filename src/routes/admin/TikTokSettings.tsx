@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { Button } from '@/components/ui/Button';
+import { ListboxSelect } from '@/components/ui/Select';
 import {
   useMappableBrands,
   useTikTokAdAccounts,
@@ -340,13 +341,13 @@ function AccountsTab({
                       <span className="text-faint text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
                         Brand
                       </span>
-                      <select
+                      <ListboxSelect
                         value={s.brand_id ?? ''}
                         disabled={mappingStore === `${s.advertiser_id}:${s.store_id}`}
                         onChange={(e) =>
                           onMap(s.advertiser_id, s.store_id, e.target.value || null)
                         }
-                        className="wx-neo-inset h-10 min-w-[11rem] rounded-md px-2 text-[0.8125rem]"
+                        className="wx-neo-inset h-11 min-w-[11rem] rounded-md px-2.5 text-[0.8125rem] disabled:opacity-60 sm:h-10"
                       >
                         <option value="">Not matched</option>
                         {brands.map((b) => (
@@ -354,7 +355,7 @@ function AccountsTab({
                             {b.name}
                           </option>
                         ))}
-                      </select>
+                      </ListboxSelect>
                     </label>
                   </li>
                 ))}

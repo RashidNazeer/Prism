@@ -1,4 +1,4 @@
-﻿import { m, useReducedMotion } from 'motion/react';
+import { m, useReducedMotion } from 'motion/react';
 import {
   Container,
   LoadWords,
@@ -123,7 +123,7 @@ export function Hero() {
                   container above. */}
               <m.h1
                 variants={headline}
-                className="mt-6 text-left text-[clamp(2.75rem,6vw,4.5rem)] font-extrabold"
+                className="font-brand mt-6 text-left text-[clamp(2.75rem,6vw,4.5rem)] font-normal"
               >
                 <LoadWords text="Your numbers." quiet={quiet ?? false} />
                 <br />

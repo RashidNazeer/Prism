@@ -54,7 +54,10 @@ export function SignIn() {
       footer={
         <>
           No account yet?{' '}
-          <Link to="/signup" className="font-medium text-accent hover:underline">
+          <Link
+            to="/signup"
+            className="text-accent inline-flex items-center font-medium hover:underline max-lg:min-h-11 pointer-coarse:min-h-11"
+          >
             Apply to join
           </Link>
         </>
@@ -101,7 +104,7 @@ export function SignIn() {
         <div className="mt-3 text-right">
           <Link
             to="/forgot-password"
-            className="text-[0.8125rem] text-muted underline-offset-4 hover:text-accent hover:underline"
+            className="text-muted hover:text-accent inline-flex items-center text-[0.8125rem] underline-offset-4 hover:underline max-lg:min-h-11 pointer-coarse:min-h-11"
           >
             Forgot your password?
           </Link>
@@ -115,7 +118,7 @@ export function SignIn() {
               Sign in
               <ArrowRight
                 size={17}
-                className="transition-transform duration-200 ease-brand group-hover:translate-x-0.5"
+                className="ease-brand transition-transform duration-200 group-hover:translate-x-0.5"
                 aria-hidden
               />
             </>

@@ -1,4 +1,4 @@
-﻿import { m, useReducedMotion, useScroll, useTransform, type MotionValue } from 'motion/react';
+import { m, useReducedMotion, useScroll, useTransform, type MotionValue } from 'motion/react';
 import { useRef } from 'react';
 import {
   Section,
@@ -81,7 +81,7 @@ export function HowItWorks() {
         <Reveal className="relative">
           <Eyebrow>How it works</Eyebrow>
         </Reveal>
-        <h2 className="relative mt-5 max-w-3xl text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold">
+        <h2 className="font-brand relative mt-5 max-w-3xl text-[clamp(2rem,4.5vw,3.25rem)] font-normal">
           <ScrollWords text="Three steps from application to earning creator" />
         </h2>
 

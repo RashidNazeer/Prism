@@ -39,7 +39,7 @@ export function Creators() {
       <Section className="border-line border-t">
         <Reveal>
           <Eyebrow>Working with us</Eyebrow>
-          <h2 className="font-display mt-5 max-w-3xl text-[clamp(1.5rem,3.5vw,2.25rem)] font-extrabold tracking-[-0.02em]">
+          <h2 className="font-brand mt-5 max-w-3xl text-[clamp(1.5rem,3.5vw,2.25rem)] font-normal tracking-[-0.02em]">
             What a collaboration actually looks like
           </h2>
         </Reveal>
@@ -55,7 +55,7 @@ export function Creators() {
       <Section className="border-line border-t">
         <Reveal>
           <Eyebrow>What we will never do</Eyebrow>
-          <h2 className="font-display mt-5 max-w-3xl text-[clamp(1.5rem,3.5vw,2.25rem)] font-extrabold tracking-[-0.02em]">
+          <h2 className="font-brand mt-5 max-w-3xl text-[clamp(1.5rem,3.5vw,2.25rem)] font-normal tracking-[-0.02em]">
             Your account stays yours
           </h2>
         </Reveal>
@@ -84,7 +84,7 @@ export function Creators() {
 
       <Section className="border-line border-t">
         <Reveal>
-          <h2 className="font-display max-w-3xl text-[clamp(1.5rem,3.5vw,2.25rem)] font-extrabold tracking-[-0.02em]">
+          <h2 className="font-brand max-w-3xl text-[clamp(1.5rem,3.5vw,2.25rem)] font-normal tracking-[-0.02em]">
             Applying takes a minute, and costs nothing
           </h2>
           <p className="text-muted mt-5 max-w-2xl leading-relaxed">

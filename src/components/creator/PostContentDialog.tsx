@@ -45,7 +45,7 @@ export function PostContentDialog({
   onClose: () => void;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
-  useFocusTrap(panelRef, { initialSelector: 'select, input' });
+  useFocusTrap(panelRef, { initialSelector: '[aria-haspopup="listbox"], input' });
 
   const mutate = useMyContentMutation();
   const busy = mutate.isPending;

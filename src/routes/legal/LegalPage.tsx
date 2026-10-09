@@ -86,7 +86,7 @@ export function LegalPage({
             right rather than the thing that leaves a gap when you zoom out.
           */}
           <div className="max-w-2xl">
-            <h1 className="font-display text-[clamp(1.75rem,4vw,2.5rem)] leading-tight font-semibold tracking-[-0.02em]">
+            <h1 className="font-brand text-[clamp(1.75rem,4vw,2.5rem)] leading-tight font-normal tracking-[-0.02em]">
               {title}
             </h1>
             <p className="text-faint mt-3 font-mono text-[0.75rem] tracking-[0.1em] uppercase">

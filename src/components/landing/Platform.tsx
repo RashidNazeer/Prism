@@ -56,7 +56,7 @@ export function Platform() {
         <Reveal className="relative">
           <Eyebrow>The platform</Eyebrow>
         </Reveal>
-        <h2 className="relative mt-5 max-w-4xl text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold">
+        <h2 className="font-brand relative mt-5 max-w-4xl text-[clamp(2rem,4.5vw,3.25rem)] font-normal">
           <ScrollWords text="Most agencies show you a screenshot. We give you the dashboard." />
         </h2>
         <Reveal depth={{ rise: 50, tilt: 10, from: 0.97 }} className="relative">

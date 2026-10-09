@@ -81,7 +81,7 @@ export function About() {
                   <dd className="mt-1">
                     <a
                       href={`mailto:${COMPANY.email}`}
-                      className="text-accent underline-offset-4 hover:underline"
+                      className="text-accent inline-flex min-h-11 items-center underline-offset-4 hover:underline"
                     >
                       {COMPANY.email}
                     </a>
@@ -92,7 +92,7 @@ export function About() {
                   <dd className="mt-1">
                     <a
                       href={COMPANY.phoneHref}
-                      className="text-accent underline-offset-4 hover:underline"
+                      className="text-accent inline-flex min-h-11 items-center underline-offset-4 hover:underline"
                     >
                       {COMPANY.phone}
                     </a>
@@ -105,7 +105,7 @@ export function About() {
                       href={COMPANY.site}
                       target="_blank"
                       rel="noreferrer noopener"
-                      className="text-accent underline-offset-4 hover:underline"
+                      className="text-accent inline-flex min-h-11 items-center underline-offset-4 hover:underline"
                     >
                       wurxmedia.com
                     </a>
@@ -125,7 +125,7 @@ export function About() {
           {COMPANY_FACTS.map((f, i) => (
             <Reveal key={f.label} delay={i * 0.06}>
               <div className="wx-neo-raised rounded-2xl p-7">
-                <dt className="font-display wx-numeric text-3xl font-extrabold tracking-[-0.02em]">
+                <dt className="font-brand wx-numeric text-3xl font-normal tracking-[-0.02em]">
                   {f.value}
                 </dt>
                 <dd className="text-muted mt-2 text-sm leading-relaxed">{f.label}</dd>

@@ -538,7 +538,7 @@ function DeliverableDialog({
   const panelRef = useRef<HTMLDivElement>(null);
   // The type select, not the close button: a keyboard user opening this should
   // land on the first decision rather than on the exit.
-  useFocusTrap(panelRef, { initialSelector: 'select' });
+  useFocusTrap(panelRef, { initialSelector: '[aria-haspopup="listbox"]' });
 
   const reduced = useReducedMotion();
   const [values, setValues] = useState<Draft>(initial);

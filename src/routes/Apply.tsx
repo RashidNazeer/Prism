@@ -1,4 +1,4 @@
-﻿import { useEffect } from 'react';
+import { useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { PrismMark } from '@/components/brand/PrismMark';
 import { ButtonLink } from '@/components/ui/Button';
@@ -29,7 +29,7 @@ export function Apply() {
       <div className="relative mx-auto w-full max-w-lg">
         <div className="flex items-center justify-between gap-4">
           <PrismMark />
-          <ButtonLink to="/" variant="ghost" size="sm" className="group">
+          <ButtonLink to="/" variant="ghost" size="sm" className="group max-lg:h-11">
             <ArrowLeft
               size={15}
               className="ease-brand transition-transform duration-200 group-hover:-translate-x-0.5"
@@ -39,7 +39,7 @@ export function Apply() {
           </ButtonLink>
         </div>
 
-        <h1 className="mt-10 text-[clamp(1.875rem,5vw,2.5rem)] font-extrabold">
+        <h1 className="font-brand mt-10 text-[clamp(1.875rem,5vw,2.5rem)] font-normal">
           Join the Prism creator roster
         </h1>
         <p className="text-muted mt-4 leading-relaxed text-pretty">

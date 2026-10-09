@@ -128,10 +128,26 @@
     </script>
 
     <!--
-      No web fonts on purpose. Google Fonts cost 102 KB and a render-blocking
-      round trip to a third party. The type stacks in src/styles/tokens.css use
-      the faces already installed on the device.
+      The two PRISM faces, self-hosted (no third party, no render-blocking CSS
+      round trip). Preloaded so the swap from the fallback happens as early as
+      it can, which is what keeps the headline from visibly re-flowing. Only
+      the latin subsets: the latin-ext files are fetched on demand by
+      unicode-range. `crossorigin` is required for font preloads.
     -->
+    <link
+      rel="preload"
+      href="/fonts/figtree-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/caprasimo-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
   </head>
   <body>
     <div id="root"></div>

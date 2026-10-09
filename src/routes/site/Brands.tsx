@@ -39,7 +39,7 @@ export function Brands() {
       <Section className="border-line border-t">
         <Reveal>
           <Eyebrow>Our services</Eyebrow>
-          <h2 className="font-display mt-5 max-w-3xl text-[clamp(1.5rem,3.5vw,2.25rem)] font-extrabold tracking-[-0.02em]">
+          <h2 className="font-brand mt-5 max-w-3xl text-[clamp(1.5rem,3.5vw,2.25rem)] font-normal tracking-[-0.02em]">
             One connected team, six services
           </h2>
           <p className="text-muted mt-5 max-w-2xl leading-relaxed">
@@ -60,7 +60,7 @@ export function Brands() {
       <Section className="border-line border-t">
         <Reveal>
           <Eyebrow>Results</Eyebrow>
-          <h2 className="font-display mt-5 max-w-3xl text-[clamp(1.5rem,3.5vw,2.25rem)] font-extrabold tracking-[-0.02em]">
+          <h2 className="font-brand mt-5 max-w-3xl text-[clamp(1.5rem,3.5vw,2.25rem)] font-normal tracking-[-0.02em]">
             Real brands, real numbers
           </h2>
         </Reveal>
@@ -68,7 +68,7 @@ export function Brands() {
           {RESULTS.map((r, i) => (
             <Reveal key={r.label} delay={i * 0.05}>
               <div className="wx-neo-raised h-full rounded-2xl p-7">
-                <dt className="font-display wx-numeric text-3xl font-extrabold tracking-[-0.02em]">
+                <dt className="font-brand wx-numeric text-3xl font-normal tracking-[-0.02em]">
                   {r.value}
                 </dt>
                 <dd className="text-muted mt-2 text-sm leading-relaxed">{r.label}</dd>
@@ -84,7 +84,7 @@ export function Brands() {
       <Section className="border-line border-t">
         <Reveal>
           <Eyebrow>Wurx Media</Eyebrow>
-          <h2 className="font-display mt-5 max-w-3xl text-[clamp(1.5rem,3.5vw,2.25rem)] font-extrabold tracking-[-0.02em]">
+          <h2 className="font-brand mt-5 max-w-3xl text-[clamp(1.5rem,3.5vw,2.25rem)] font-normal tracking-[-0.02em]">
             The agency behind the hub
           </h2>
           <p className="text-muted mt-5 max-w-2xl leading-relaxed">
@@ -96,7 +96,7 @@ export function Brands() {
           {COMPANY_FACTS.map((f, i) => (
             <Reveal key={f.label} delay={i * 0.06}>
               <div className="wx-neo-raised rounded-2xl p-7">
-                <dt className="font-display wx-numeric text-3xl font-extrabold tracking-[-0.02em]">
+                <dt className="font-brand wx-numeric text-3xl font-normal tracking-[-0.02em]">
                   {f.value}
                 </dt>
                 <dd className="text-muted mt-2 text-sm leading-relaxed">{f.label}</dd>

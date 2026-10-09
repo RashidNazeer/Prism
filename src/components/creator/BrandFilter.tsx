@@ -1,5 +1,5 @@
-import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ListboxSelect } from '@/components/ui/Select';
 
 /**
  * WHOSE NUMBERS AM I LOOKING AT.
@@ -7,11 +7,11 @@ import { cn } from '@/lib/utils';
  * Rashid, 2026-10-07: "In the numbers tab I want a drop down to select
  * different brands for whom I want to see the numbers."
  *
- * A NATIVE `<select>`, deliberately. The screen already carries one hand-built
- * popover (the date range), and a second custom listbox beside it would be two
- * bespoke keyboard implementations to keep correct for no gain. A native select
- * gets type-ahead, arrow keys and the platform's own wheel on a phone for free —
- * which matters here, because most creators on this product are on a phone.
+ * WAS A NATIVE `<select>`, deliberately, until 2026-10-09. Its open list is drawn
+ * by the OS, so on a dark app it came up as a white panel with a blue bar, and
+ * Rashid asked for every dropdown to follow the app's own theme. It is now the
+ * shared themed listbox (`ui/Select.tsx`), which carries the keyboard contract
+ * the native one gave for free: arrows, Home/End, type-ahead, Enter, Escape.
  *
  * THE NARROWING IS NOT A SECURITY BOUNDARY AND DOES NOT NEED TO BE. The RPCs
  * behind this screen are `security invoker` and every one of them filters on
@@ -44,28 +44,21 @@ export function BrandFilter({
   if (brands.length === 0) return null;
 
   return (
-    <div className="relative shrink-0">
-      <select
-        aria-label="Which brand"
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value || null)}
-        className={cn(
-          'wx-neo-raised-sm wx-neo-press text-muted hover:text-accent min-h-8 w-full appearance-none rounded-md py-1 pr-8 pl-2.5 text-[0.8125rem] font-medium',
-          value && 'text-accent'
-        )}
-      >
-        <option value="">All brands</option>
-        {brands.map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.name}
-          </option>
-        ))}
-      </select>
-      <ChevronDown
-        size={14}
-        aria-hidden
-        className="text-muted pointer-events-none absolute top-1/2 right-2 -translate-y-1/2"
-      />
-    </div>
+    <ListboxSelect
+      aria-label="Which brand"
+      value={value ?? ''}
+      onChange={(e) => onChange(e.target.value || null)}
+      className={cn(
+        'wx-neo-raised-sm wx-neo-press text-muted hover:text-accent min-h-11 max-w-full shrink-0 rounded-md py-1 pr-2 pl-2.5 text-[0.8125rem] font-medium sm:min-h-8',
+        value && 'text-accent'
+      )}
+    >
+      <option value="">All brands</option>
+      {brands.map((b) => (
+        <option key={b.id} value={b.id}>
+          {b.name}
+        </option>
+      ))}
+    </ListboxSelect>
   );
 }

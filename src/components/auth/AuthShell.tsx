@@ -43,7 +43,7 @@ export function AuthShell({
             both themes; now the halo follows the theme, so the ordinary ink
             is correct again and light mode is a light page. */}
         <h1
-          className={`${eyebrow ? 'mt-4' : 'mt-9'} text-text text-[clamp(1.75rem,4vw,2.25rem)] font-extrabold`}
+          className={`${eyebrow ? 'mt-4' : 'mt-9'} text-text font-brand text-[clamp(1.75rem,4vw,2.25rem)] font-normal`}
         >
           {title}
         </h1>
