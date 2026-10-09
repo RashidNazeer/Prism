@@ -13,6 +13,15 @@
  * greys, fully saturated primaries and a full hue circle at several
  * saturations, because the whole risk here is a colour nobody thought to try.
  *
+ * SINCE 2026-10-09 PART OF THIS GUARD IS VACUOUS. A Brand Hub now renders inside
+ * the PRISM shell and takes only the brand's accent and hero (see
+ * `paletteToAccentVars`), so the brand's own page, card and rail colours are
+ * never on screen. These assertions still pass but no longer protect anything
+ * users see: rail text on the rail, body and secondary text on the brand page
+ * and card surfaces, and the accent used as text on a brand surface. Still
+ * meaningful: hero text on every hero stop, and the button label on every accent
+ * stop. The vacuous ones are left in place on purpose; do not weaken them.
+ *
  * No database and no browser. Runs inside `pnpm build`, so a change to the
  * derivation that quietly breaks one hue cannot reach a deploy.
  */
@@ -52,8 +61,14 @@ try {
   process.on('exit', () => rmSync(dir, { recursive: true, force: true }));
 }
 
-const { deriveBrandTheme, auditBrandTheme, contrast, CONTRACT, AREA_META, readBrandThemeConfig } =
-  mod;
+const {
+  deriveBrandTheme,
+  auditBrandTheme,
+  contrast,
+  CONTRACT,
+  AREA_META,
+  readBrandThemeConfig,
+} = mod;
 
 /* ------------------------------------------------------------- the sweep -- */
 
@@ -113,7 +128,9 @@ for (const hex of colours) {
     failures++;
     console.error(`  FAIL  ${hex}`);
     for (const b of bad.slice(0, 4)) {
-      console.error(`        ${b.mode.padEnd(5)} ${b.label}: ${b.got.toFixed(2)}:1, needs ${b.min}:1`);
+      console.error(
+        `        ${b.mode.padEnd(5)} ${b.label}: ${b.got.toFixed(2)}:1, needs ${b.min}:1`
+      );
     }
   }
   // Track the tightest margin per pair, so a change that erodes headroom shows.
@@ -128,7 +145,9 @@ for (const hex of colours) {
   }
 }
 
-console.log(`\nBrand themes checked: ${colours.length} colours x 2 modes x ${CONTRACT.length} pairs`);
+console.log(
+  `\nBrand themes checked: ${colours.length} colours x 2 modes x ${CONTRACT.length} pairs`
+);
 
 /* --------------------------------------------- the multi-colour sweep -- */
 /*
@@ -200,10 +219,14 @@ for (let i = 0; i < RANDOM_THEMES; i++) {
 }
 
 if (themeFailures) {
-  console.error(`\n  FAIL  ${themeFailures} of ${RANDOM_THEMES} random custom themes are unreadable`);
+  console.error(
+    `\n  FAIL  ${themeFailures} of ${RANDOM_THEMES} random custom themes are unreadable`
+  );
   failures += themeFailures;
 } else {
-  console.log(`  PASS  ${RANDOM_THEMES} random multi-colour themes, every stop of every gradient`);
+  console.log(
+    `  PASS  ${RANDOM_THEMES} random multi-colour themes, every stop of every gradient`
+  );
 }
 
 /*
@@ -230,7 +253,9 @@ const moved = [
 for (const [what, ok] of moved) {
   if (ok) console.log(`  PASS  a custom ${what} changes the palette`);
   else {
-    console.error(`  FAIL  a custom ${what} changed nothing, so the override is not being applied`);
+    console.error(
+      `  FAIL  a custom ${what} changed nothing, so the override is not being applied`
+    );
     failures++;
   }
 }
@@ -260,14 +285,21 @@ const junk = [
   { hero: { stops: ['nope', 'javascript:alert(1)'] } },
 ];
 const survivors = junk.filter((j) => readBrandThemeConfig(j) !== null);
-if (survivors.length === 0) console.log('  PASS  malformed themes read back as "no custom areas"');
+if (survivors.length === 0)
+  console.log('  PASS  malformed themes read back as "no custom areas"');
 else {
-  console.error(`  FAIL  ${survivors.length} malformed theme(s) were accepted: ${JSON.stringify(survivors)}`);
+  console.error(
+    `  FAIL  ${survivors.length} malformed theme(s) were accepted: ${JSON.stringify(survivors)}`
+  );
   failures++;
 }
 
 const kept = readBrandThemeConfig({
-  hero: { stops: ['#DC0945', 'nope', '#1d3149', '#c8924b', '#000000', '#ffffff'], angle: 999, tone: 'light' },
+  hero: {
+    stops: ['#DC0945', 'nope', '#1d3149', '#c8924b', '#000000', '#ffffff'],
+    angle: 999,
+    tone: 'light',
+  },
   page: { stops: ['#dc0945'], tone: 'light', angle: 40 },
 });
 const keptOk =
@@ -292,7 +324,9 @@ else {
  */
 const sample = deriveBrandTheme('#173d36');
 if (sample.light.page === sample.dark.page) {
-  console.error('  FAIL  light and dark derive the same page colour, so one mode is not being built');
+  console.error(
+    '  FAIL  light and dark derive the same page colour, so one mode is not being built'
+  );
   failures++;
 } else {
   console.log('  PASS  light and dark derive genuinely different palettes');
@@ -308,7 +342,9 @@ if (grey.light.accent === grey.light.page) {
 }
 
 console.log('\n  tightest margins seen:');
-const rows = [...worst.entries()].sort((a, b) => a[1].got / a[1].min - b[1].got / b[1].min).slice(0, 6);
+const rows = [...worst.entries()]
+  .sort((a, b) => a[1].got / a[1].min - b[1].got / b[1].min)
+  .slice(0, 6);
 for (const [key, v] of rows) {
   console.log(`    ${key.padEnd(42)} ${v.got.toFixed(2)}:1 (needs ${v.min}) worst at ${v.hex}`);
 }
@@ -317,4 +353,6 @@ if (failures) {
   console.error(`\n${failures} brand colour(s) produce an unreadable hub.\n`);
   process.exit(1);
 }
-console.log('\nEvery brand colour an admin could pick derives a readable hub, in both modes.\n');
+console.log(
+  '\nEvery brand colour an admin could pick derives a readable hub, in both modes.\n'
+);
