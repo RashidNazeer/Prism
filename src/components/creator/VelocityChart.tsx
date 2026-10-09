@@ -206,7 +206,7 @@ export function VelocityChart({
       y,
       line,
       area,
-      barW: Math.max(1.5, slot * 0.68),
+      barW: Math.max(1.5, slot * 0.6),
       ranks,
       peak,
       allZero: values.every((v) => v === 0),
@@ -387,7 +387,9 @@ export function VelocityChart({
                   const n = model.ranks.size;
                   const rank = model.ranks.get(i) ?? 0;
                   const wPct = (model.barW / VB_W) * 100;
-                  const leftPct = ((model.x(i) - model.barW / 2) / VB_W) * 100;
+                  /* Centred on the day, so capping the width keeps the bar on
+                     its own tick instead of sliding it off to the left. */
+                  const centrePct = (model.x(i) / VB_W) * 100;
                   /* One bar has no older and no newer, so a ramp would be
                      meaningless on it. It takes the primary accent flat. */
                   const ramp =
@@ -401,10 +403,36 @@ export function VelocityChart({
                   return (
                     <span
                       key={rows[i]?.stat_date ?? i}
-                      className="absolute bottom-0 rounded-full transition-opacity"
+                      /*
+                        FULL PILLS. The kit says so, and Rashid asked for it
+                        again on 2026-10-10 after seeing a flat-bottomed
+                        version.
+
+                        What it costs, so nobody rediscovers it as a bug: once
+                        a day's height falls to around the bar width, a full
+                        pill reads as a dot sitting on the axis rather than as
+                        a bar. Nothing is misreported when that happens, the
+                        top of the mark is still at the true value, it just
+                        stops looking like a column. It is a deliberate trade
+                        for the kit's shape, not an oversight.
+                      */
+                      className="absolute bottom-0 -translate-x-1/2 rounded-full transition-opacity"
                       style={{
-                        left: `${leftPct}%`,
+                        left: `${centrePct}%`,
+                        /*
+                          A SHARE OF THE SLOT, UP TO A CEILING.
+                          The share alone is right for a dense range and absurd
+                          for a short one: it is a fraction of plot width over
+                          day count, so seven days across a 1470px plot gave
+                          210px slots and 143px bars. With `rounded-full` on top
+                          that is a 71px corner radius, and the chart came out
+                          as a row of lozenges rather than bars. The ceiling is
+                          in rem, so it follows the reader's text size like
+                          everything else, and the share still governs dense
+                          ranges where it is the sensible rule.
+                        */
                         width: `${wPct}%`,
+                        maxWidth: '3.25rem',
                         height: `${(v / model.ceiling) * 100}%`,
                         minHeight: '0.1875rem',
                         /*
@@ -457,14 +485,35 @@ export function VelocityChart({
           </div>
 
           <div />
-          <div className="text-subtle mt-1.5 flex justify-between text-[0.6875rem] leading-none">
-            {rows.map((r, i) =>
-              i % labelEvery === 0 || i === rows.length - 1 ? (
-                <span key={r.stat_date} className="wx-numeric">
+          {/*
+            EACH DATE SITS UNDER ITS OWN MARK, not spread edge to edge.
+
+            This was a flex row with `justify-between`, which distributes
+            labels evenly across the full width regardless of where the marks
+            actually are. For a line that happens to be right, because line
+            points also run edge to edge. For bars it is wrong: bars are
+            centred in slots and inset by half a slot, so on a real account
+            "Oct 1" sat at the far left while its bar stood 100px inboard, and
+            every label named the wrong column. Positioning from the same `x()`
+            the marks use means the two cannot drift apart again.
+          */}
+          <div className="text-subtle relative mt-1.5 h-4 text-[0.6875rem] leading-none">
+            {rows.map((r, i) => {
+              if (i % labelEvery !== 0 && i !== rows.length - 1) return null;
+              const at = (model.x(i) / VB_W) * 100;
+              /* A label centred on an edge mark would hang outside the plot,
+                 so the first and last pull in against their own edge. */
+              const shift = at < 4 ? '0' : at > 96 ? '-100%' : '-50%';
+              return (
+                <span
+                  key={r.stat_date}
+                  className="wx-numeric absolute top-0 whitespace-nowrap"
+                  style={{ left: `${at}%`, transform: `translateX(${shift})` }}
+                >
                   {shortDate(r.stat_date)}
                 </span>
-              ) : null
-            )}
+              );
+            })}
           </div>
         </div>
       )}
