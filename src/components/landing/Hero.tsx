@@ -1,5 +1,10 @@
-﻿import { m } from 'motion/react';
-import { Container, ParallaxLayer, useSectionScroll } from '@/components/layout/Section';
+﻿import { m, useReducedMotion } from 'motion/react';
+import {
+  Container,
+  LoadWords,
+  ParallaxLayer,
+  useSectionScroll,
+} from '@/components/layout/Section';
 import { HaloBackdrop } from '@/components/auth/HaloBackdrop';
 import { ButtonLink } from '@/components/ui/Button';
 import { ApplyForm } from './ApplyForm';
@@ -28,7 +33,12 @@ const item = {
  * They still travel as a group, so the plane still moves against the backdrop
  * and the copy. They just stay level with each other while doing it.
  */
-const FLOAT_TRAVEL = -28;
+const FLOAT_TRAVEL = -84;
+
+const headline = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.11, delayChildren: 0.1 } },
+};
 
 const FLOATS = [
   { label: 'Your GMV', dot: 'bg-accent' },
@@ -38,6 +48,7 @@ const FLOATS = [
 
 export function Hero() {
   const { ref, progress } = useSectionScroll(['start start', 'end start']);
+  const quiet = useReducedMotion();
 
   return (
     <div id="top" ref={ref as never} className="relative overflow-hidden">
@@ -52,7 +63,7 @@ export function Hero() {
 
           THE FARTHEST PLANE. It travels down at a fraction of the scroll, so it
           lags the page: the slowest layer, which is what reads as far away. */}
-      <ParallaxLayer progress={progress} from={0} to={140} className="absolute inset-0">
+      <ParallaxLayer progress={progress} from={0} to={260} className="absolute inset-0">
         <div aria-hidden className="pointer-events-none absolute inset-0">
           <HaloBackdrop className="absolute inset-0" />
         </div>
@@ -71,20 +82,22 @@ export function Hero() {
         <ParallaxLayer
           progress={progress}
           from={0}
-          to={-120}
+          to={-240}
+          rotateTo={40}
           className="absolute -top-10 -left-24 size-[26rem] bg-[radial-gradient(closest-side,var(--wx-danger-soft),transparent)]"
         />
         <ParallaxLayer
           progress={progress}
           from={0}
-          to={-220}
-          scaleTo={1.15}
+          to={-420}
+          scaleTo={1.5}
           className="absolute top-1/3 left-[38%] size-[20rem] bg-[radial-gradient(closest-side,var(--wx-info-soft),transparent)]"
         />
         <ParallaxLayer
           progress={progress}
           from={0}
-          to={-60}
+          to={-110}
+          scaleTo={0.8}
           className="absolute right-[-8rem] bottom-0 size-[24rem] bg-[radial-gradient(closest-side,var(--wx-success-soft),transparent)]"
         />
       </div>
@@ -93,7 +106,7 @@ export function Hero() {
         {/* pt-24 clears the 64px fixed header with a little breathing room and
             no more, the previous pt-36 left a dead band under the nav. */}
         <div className="grid items-start gap-12 pt-24 pb-20 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:pt-28 lg:pb-24">
-          <ParallaxLayer progress={progress} from={0} to={-48} className="lg:pt-6">
+          <ParallaxLayer progress={progress} from={0} to={-96} className="lg:pt-6">
             <m.div variants={container} initial="hidden" animate="show">
               <m.div variants={item}>
                 <span className="wx-neo-raised-sm text-muted inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-mono text-[0.6875rem] tracking-[0.18em] uppercase backdrop-blur-sm">
@@ -105,13 +118,20 @@ export function Hero() {
                 </span>
               </m.div>
 
+              {/* The headline assembles word by word, each on its own offset and
+                  rolled a few degrees, and the stagger inherits from the
+                  container above. */}
               <m.h1
-                variants={item}
+                variants={headline}
                 className="mt-6 text-left text-[clamp(2.75rem,6vw,4.5rem)] font-extrabold"
               >
-                Your numbers.
+                <LoadWords text="Your numbers." quiet={quiet ?? false} />
                 <br />
-                <span className="text-accent">Finally yours.</span>
+                <LoadWords
+                  text="Finally yours."
+                  className="text-accent"
+                  quiet={quiet ?? false}
+                />
               </m.h1>
 
               <m.p

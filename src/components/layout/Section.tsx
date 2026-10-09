@@ -1,5 +1,12 @@
-import { useRef, type ReactNode } from 'react';
-import { m, useReducedMotion, useScroll, useTransform, type MotionValue } from 'motion/react';
+import { useEffect, useRef, type ReactNode } from 'react';
+import {
+  m,
+  useInView,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+  type MotionValue,
+} from 'motion/react';
 import { cn } from '@/lib/utils';
 
 /** Page gutter + max width. Every section uses this so nothing drifts. */
@@ -97,6 +104,10 @@ export interface ScrollDepthOptions {
   tilt?: number;
   /** Scale it starts at, settling to 1. */
   from?: number;
+  /** Degrees it starts rolled about its centre (rotate), settling to 0. Alternate the sign across a row. */
+  roll?: number;
+  /** Where in the viewport (0 = top, 1 = bottom) it finishes settling. Lower is slower. Default 0.55. */
+  settle?: number;
 }
 
 /**
@@ -130,22 +141,30 @@ function ScrollDepth({
   rise = 56,
   tilt = 14,
   from = 0.94,
+  roll = 0,
+  settle = 0.55,
 }: ScrollDepthOptions & { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
-    offset: ['start end', 'start 0.55'],
+    offset: ['start end', `start ${settle}`],
   });
-  const y = useTransform(scrollYProgress, [0, 1], [rise, 0]);
-  const rotateX = useTransform(scrollYProgress, [0, 1], [tilt, 0]);
-  const scale = useTransform(scrollYProgress, [0, 1], [from, 1]);
   const opacity = useTransform(scrollYProgress, [0, 0.55], [0, 1]);
+  /* ONE transform string, and `none` once the block has arrived. A 3D transform
+     promotes the element to its own compositing layer even when it resolves to
+     identity, and a layer is rasterised once, so text inside goes soft on a
+     non-retina screen. Nothing that is not moving may carry a transform. */
+  const transform = useTransform(scrollYProgress, (p) => {
+    if (p >= 0.999) return 'none';
+    const t = 1 - p;
+    return `perspective(1200px) translateY(${Math.round(rise * t)}px) rotateX(${(tilt * t).toFixed(2)}deg) rotate(${(roll * t).toFixed(2)}deg) scale(${(1 - (1 - from) * t).toFixed(4)})`;
+  });
 
   return (
     <m.div
       ref={ref}
       className={className}
-      style={{ y, rotateX, scale, opacity, transformPerspective: 1200, originY: 0 }}
+      style={{ transform, opacity, transformOrigin: '50% 0%' }}
     >
       {children}
     </m.div>
@@ -181,6 +200,7 @@ export function ParallaxLayer({
   from,
   to,
   scaleTo,
+  rotateTo,
   className,
   children,
 }: {
@@ -189,16 +209,217 @@ export function ParallaxLayer({
   to: number;
   /** Optional scale at progress 1 (starts at 1). */
   scaleTo?: number;
+  /** Optional rotation in degrees at progress 1 (starts at 0). For glow discs, not for text. */
+  rotateTo?: number;
   className?: string;
   children?: ReactNode;
 }) {
   const quiet = useReducedMotion();
-  const y = useTransform(progress, [0, 1], [from, to]);
-  const scale = useTransform(progress, [0, 1], [1, scaleTo ?? 1]);
+  /* Whole-pixel translation (fractional offsets under text soften glyphs), and
+     `none` when the layer is at identity rather than an identity matrix. */
+  const transform = useTransform(progress, (p) => {
+    const y = Math.round(from + (to - from) * p);
+    const s = 1 + ((scaleTo ?? 1) - 1) * p;
+    const r = (rotateTo ?? 0) * p;
+    if (y === 0 && s === 1 && r === 0) return 'none';
+    return `translateY(${y}px) rotate(${r.toFixed(2)}deg) scale(${s.toFixed(4)})`;
+  });
   if (quiet) return <div className={className}>{children}</div>;
   return (
-    <m.div className={className} style={{ y, scale }}>
+    <m.div className={className} style={{ transform }}>
       {children}
     </m.div>
+  );
+}
+
+/* ============================================================================
+   HEADLINES THAT ASSEMBLE, NUMBERS THAT COUNT, A PAGE THAT KNOWS HOW FAR IT IS
+   ============================================================================ */
+
+/** Splits text into words, each keeping its trailing space so wrapping is unchanged. */
+function wordsOf(text: string) {
+  return text.split(' ').filter(Boolean);
+}
+
+function ScrollWord({
+  progress,
+  index,
+  count,
+  children,
+}: {
+  progress: MotionValue<number>;
+  index: number;
+  count: number;
+  children: ReactNode;
+}) {
+  /* Each word owns a slice of the progress, overlapping its neighbours, so the
+     line assembles left to right under the thumb. */
+  const start = (index / count) * 0.5;
+  const end = start + 0.5;
+  const opacity = useTransform(progress, [start, start + 0.3], [0, 1]);
+  const transform = useTransform(progress, (p) => {
+    const t = 1 - Math.min(Math.max((p - start) / (end - start), 0), 1);
+    if (t === 0) return 'none';
+    return `translateY(${Math.round(34 * t)}px) rotate(${((index % 2 ? 4 : -4) * t).toFixed(2)}deg)`;
+  });
+  return (
+    <m.span className="inline-block" style={{ transform, opacity }}>
+      {children}
+    </m.span>
+  );
+}
+
+/**
+ * A heading whose words arrive one after another as it scrolls into view, each
+ * rising and straightening on its own offset. Scroll-linked, so scrolling back
+ * un-says it. Plain text under `prefers-reduced-motion`.
+ */
+export function ScrollWords({ text, className }: { text: string; className?: string }) {
+  const quiet = useReducedMotion();
+  const ref = useRef<HTMLSpanElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.98', 'start 0.62'] });
+  if (quiet) return <span className={className}>{text}</span>;
+  const words = wordsOf(text);
+  return (
+    <span ref={ref} className={className}>
+      {words.map((w, i) => (
+        <span key={`${w}-${i}`}>
+          <ScrollWord progress={scrollYProgress} index={i} count={words.length}>
+            {w}
+          </ScrollWord>
+          {i < words.length - 1 ? ' ' : null}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * Splits a phrase into words for a parent `m.*` with `variants` to stagger on
+ * load. Children use the `hidden`/`show` variant names, so they inherit the
+ * parent's orchestration. Pass `quiet` to render plain text.
+ */
+export function LoadWords({
+  text,
+  className,
+  quiet,
+}: {
+  text: string;
+  className?: string;
+  quiet?: boolean;
+}) {
+  if (quiet) return <span className={className}>{text}</span>;
+  const words = wordsOf(text);
+  return (
+    <span className={className}>
+      {words.map((w, i) => (
+        <span key={`${w}-${i}`}>
+          <m.span
+            className="inline-block"
+            variants={{
+              hidden: { opacity: 0, y: 40, rotate: i % 2 ? 5 : -5 },
+              show: {
+                opacity: 1,
+                y: 0,
+                rotate: 0,
+                transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] },
+              },
+            }}
+          >
+            {w}
+          </m.span>
+          {i < words.length - 1 ? ' ' : null}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * A figure that counts up to its real value when it scrolls into view, then
+ * stops EXACTLY on it. The value is split into prefix / number / suffix
+ * ("100M+", "1,000+") so the unit never changes while it counts.
+ *
+ * The final value is what React renders, so with scripts slow, with reduced
+ * motion, or in a crawler it is the true figure. The animation only rewrites the
+ * text node in place with rAF: no React state, no re-render per frame, and no
+ * layout change because the box is centred and tabular.
+ */
+export function CountUp({
+  value,
+  className,
+  duration = 1600,
+  delay = 0,
+}: {
+  value: string;
+  className?: string;
+  duration?: number;
+  delay?: number;
+}) {
+  const quiet = useReducedMotion();
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: '0px 0px -12% 0px' });
+  const match = /^(\D*)([\d,]+(?:\.\d+)?)(.*)$/.exec(value);
+
+  useEffect(() => {
+    const node = ref.current?.firstChild;
+    if (!match || !node) return;
+    if (quiet) {
+      node.nodeValue = value;
+      return;
+    }
+    const prefix = match[1] ?? '';
+    const numText = match[2] ?? '0';
+    const suffix = match[3] ?? '';
+    const target = Number(numText.replace(/,/g, ''));
+    const decimals = numText.includes('.') ? (numText.split('.')[1] ?? '').length : 0;
+    const grouped = numText.includes(',');
+    const fmt = (n: number) =>
+      `${prefix}${n.toLocaleString('en-US', {
+        useGrouping: grouped,
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      })}${suffix}`;
+    if (!inView) {
+      node.nodeValue = fmt(0);
+      return;
+    }
+    let raf = 0;
+    const t0 = performance.now() + delay;
+    const tick = (now: number) => {
+      const p = Math.min(Math.max((now - t0) / duration, 0), 1);
+      const eased = 1 - Math.pow(1 - p, 4);
+      node.nodeValue = p >= 1 ? value : fmt(target * eased);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // `match` is derived from `value`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inView, quiet, value, duration, delay]);
+
+  return (
+    <span ref={ref} className={className}>
+      {value}
+    </span>
+  );
+}
+
+/**
+ * A hairline along the top of the viewport that fills with how far down the
+ * page you are. It is the one element that belongs to no section, which is the
+ * point: it carries across every boundary. `scaleX` only; absent under reduced
+ * motion.
+ */
+export function PageProgress() {
+  const quiet = useReducedMotion();
+  const { scrollYProgress } = useScroll();
+  if (quiet) return null;
+  return (
+    <m.div
+      aria-hidden
+      className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[3px] origin-left bg-[image:var(--wx-accent-gradient)]"
+      style={{ scaleX: scrollYProgress }}
+    />
   );
 }

@@ -1,4 +1,4 @@
-import { Container, Reveal } from '@/components/layout/Section';
+import { Container, CountUp, Reveal } from '@/components/layout/Section';
 import { TiltCard, TiltLift } from '@/components/ui/TiltCard';
 import { STATS } from '@/content/site';
 import { BrandMarquee } from './BrandMarquee';
@@ -27,16 +27,29 @@ export function TrustedBy() {
         <ul className="grid gap-5 sm:grid-cols-3">
           {STATS.map((stat, i) => (
             <li key={stat.label}>
-              <Reveal depth={{ rise: 40 + i * 28, tilt: 16, from: 0.92 }} className="h-full">
+              <Reveal
+                depth={{
+                  rise: 90 + i * 50,
+                  tilt: 24,
+                  from: 0.84,
+                  roll: (i - 1) * 5,
+                  settle: 0.7,
+                }}
+                className="h-full"
+              >
                 <TiltCard className="wx-neo-raised h-full rounded-2xl px-6 py-9 text-center">
                   <span
                     className={`${BARS[i] ?? 'bg-accent'} mx-auto mb-6 block h-1 w-10 rounded-full`}
                     aria-hidden
                   />
                   <TiltLift depth={22}>
-                    <span className="wx-lining font-display block text-[clamp(2rem,5vw,3rem)] leading-none font-extrabold tracking-tight">
-                      {stat.value}
-                    </span>
+                    {/* Counts up to the real figure as the card arrives, each
+                        a beat after the last. */}
+                    <CountUp
+                      value={stat.value}
+                      delay={i * 180}
+                      className="wx-lining font-display block text-[clamp(2rem,5vw,3rem)] leading-none font-extrabold tracking-tight tabular-nums"
+                    />
                   </TiltLift>
                   <span className="text-faint mt-3 block font-mono text-[0.6875rem] tracking-[0.16em] uppercase">
                     {stat.label}

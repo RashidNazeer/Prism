@@ -7,6 +7,7 @@ import { HowItWorks } from '@/components/landing/HowItWorks';
 import { Platform } from '@/components/landing/Platform';
 import { FinalCta } from '@/components/landing/FinalCta';
 import { SiteFooter } from '@/components/landing/SiteFooter';
+import { PageProgress } from '@/components/layout/Section';
 import { RouteFallback } from '@/components/layout/RouteFallback';
 import { useAuth, HOME_FOR_ROLE } from '@/lib/auth/auth-context';
 import { allowIndexing } from '@/lib/seo';
@@ -54,6 +55,7 @@ export function Landing() {
 
   return (
     <div className="bg-bg min-h-dvh">
+      <PageProgress />
       <SiteNav />
       {/* `overflow-x-clip` (not `hidden`, which would make <main> a scroll
           container): the scroll layers only ever move vertically, but a rotated

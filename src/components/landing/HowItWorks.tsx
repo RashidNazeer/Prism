@@ -1,10 +1,11 @@
-import { m, useReducedMotion, useScroll, useTransform } from 'motion/react';
+﻿import { m, useReducedMotion, useScroll, useTransform, type MotionValue } from 'motion/react';
 import { useRef } from 'react';
 import {
   Section,
   Eyebrow,
   ParallaxLayer,
   Reveal,
+  ScrollWords,
   useSectionScroll,
 } from '@/components/layout/Section';
 import { TiltCard, TiltLift } from '@/components/ui/TiltCard';
@@ -18,22 +19,41 @@ import { STEPS } from '@/content/site';
  * information. Hidden below `md`, where the cards stack and a horizontal thread
  * would join nothing.
  */
+/** Where each node sits along the thread (the centre of each card column) and the
+ *  progress at which the fill reaches it. */
+const NODES = [1 / 6, 3 / 6, 5 / 6] as const;
+
+function ThreadNode({ at, progress }: { at: number; progress: MotionValue<number> }) {
+  /* The fill is `0.04 + 0.96 * progress`, so invert that for when it arrives. */
+  const arrive = Math.max((at - 0.04) / 0.96, 0.05);
+  const scale = useTransform(progress, [arrive - 0.07, arrive, arrive + 0.05], [0.4, 1.45, 1]);
+  const opacity = useTransform(progress, [arrive - 0.07, arrive], [0.25, 1]);
+  return (
+    <m.span
+      className="bg-accent absolute top-1/2 -mt-2.5 -ml-2.5 size-5 rounded-full"
+      style={{ left: `${at * 100}%`, scale, opacity }}
+    />
+  );
+}
+
 function ProgressThread({ target }: { target: React.RefObject<HTMLElement | null> }) {
   const quiet = useReducedMotion();
   const { scrollYProgress } = useScroll({
     target,
-    offset: ['start 0.8', 'end 0.55'],
+    offset: ['start 0.85', 'end 0.5'],
   });
   const scaleX = useTransform(scrollYProgress, [0, 1], [0.04, 1]);
   return (
-    <div
-      className="wx-neo-inset mt-14 hidden h-2 overflow-hidden rounded-full md:block"
-      aria-hidden
-    >
-      <m.div
-        className="h-full origin-left rounded-full bg-[image:var(--wx-accent-gradient)]"
-        style={quiet ? undefined : { scaleX }}
-      />
+    <div className="relative mt-14 hidden md:block" aria-hidden>
+      <div className="wx-neo-inset h-2 overflow-hidden rounded-full">
+        <m.div
+          className="h-full origin-left rounded-full bg-[image:var(--wx-accent-gradient)]"
+          style={quiet ? undefined : { scaleX }}
+        />
+      </div>
+      {quiet
+        ? null
+        : NODES.map((at) => <ThreadNode key={at} at={at} progress={scrollYProgress} />)}
     </div>
   );
 }
@@ -50,18 +70,20 @@ export function HowItWorks() {
         <div aria-hidden className="pointer-events-none absolute inset-0">
           <ParallaxLayer
             progress={progress}
-            from={80}
-            to={-80}
+            from={200}
+            to={-200}
+            scaleTo={1.35}
+            rotateTo={60}
             className="absolute -top-24 -right-20 size-[28rem] bg-[radial-gradient(closest-side,var(--wx-accent-soft),transparent)]"
           />
         </div>
 
-        <Reveal depth={{ rise: 36, tilt: 8, from: 0.98 }} className="relative">
+        <Reveal className="relative">
           <Eyebrow>How it works</Eyebrow>
-          <h2 className="mt-5 max-w-3xl text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold">
-            Three steps from application to earning creator
-          </h2>
         </Reveal>
+        <h2 className="relative mt-5 max-w-3xl text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold">
+          <ScrollWords text="Three steps from application to earning creator" />
+        </h2>
 
         <ProgressThread target={listRef} />
 
@@ -70,7 +92,16 @@ export function HowItWorks() {
             <li key={step.n} className="h-full">
               {/* Each card arrives from a different distance, so the row builds
                   left to right instead of landing as one slab. */}
-              <Reveal depth={{ rise: 48 + i * 36, tilt: 18, from: 0.9 }} className="h-full">
+              <Reveal
+                depth={{
+                  rise: 90 + i * 60,
+                  tilt: 26,
+                  from: 0.84,
+                  roll: (i - 1) * 5,
+                  settle: 0.65,
+                }}
+                className="h-full"
+              >
                 {/* The step number lifts off its own card; the heading and body
                     do not. Long copy on a raised plane is harder to read, and
                     lifting everything would defeat the parallax, which only
