@@ -213,7 +213,7 @@ export function ShareCollab() {
   }, [load]);
   useEffect(() => {
     document.title = payload
-      ? `${payload.data.map((b) => b.brand).join(', ')} Â· Wurx Media`
+      ? `${payload.data.map((b) => b.brand).join(', ')} · Wurx Media`
       : 'Wurx Media';
   }, [payload]);
 
@@ -281,7 +281,7 @@ export function ShareCollab() {
         <div className="min-w-0">
           <h1 className="text-2xl font-extrabold tracking-tight">{brand.brand}</h1>
           <p className="text-muted mt-1 text-sm">
-            Creator campaign report Â· {monthLabel(payload.month)}
+            Creator campaign report · {monthLabel(payload.month)}
           </p>
         </div>
         <span className="wx-neo-raised-sm text-muted rounded-full px-3 py-1 text-xs font-bold tracking-wider uppercase">
@@ -382,7 +382,7 @@ export function ShareCollab() {
         {brand.topVideos && brand.topVideos.length > 0 && (
           <div className="pc-topvids">
             <div className="pc-topvids-head">
-              Top videos by GMV Â· {monthLabel(payload.month)}
+              Top videos by GMV · {monthLabel(payload.month)}
               <span className="pc-topvids-sub">live from EUKA</span>
             </div>
             <div className="pc-topvids-body">
@@ -394,7 +394,7 @@ export function ShareCollab() {
                     href={v.url}
                     target="_blank"
                     rel="noreferrer noopener"
-                    title={`${v.name} Â· ${money(v.gmv)} GMV Â· open on TikTok`}
+                    title={`${v.name} · ${money(v.gmv)} GMV · open on TikTok`}
                   >
                     <span className="pc-topvid-frame">
                       {v.thumb ? (
@@ -563,7 +563,7 @@ export function ShareCollab() {
                           <span className="pc-money">
                             {money(c.deal)}
                             {c.perVideo ? (
-                              <span className="pc-deal-per"> Â· {money(c.perVideo)}/vid</span>
+                              <span className="pc-deal-per"> · {money(c.perVideo)}/vid</span>
                             ) : null}
                           </span>
                         ) : (

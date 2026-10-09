@@ -38,7 +38,7 @@
   --wx-surface-1: #1a1a26; /* cards, panels */
   --wx-surface-2: #222231; /* hover, nested cards */
   --wx-surface-3: #14141c; /* wells, inputs */
-  --wx-field: #14141c; /* what you type into Â· a well on dark */
+  --wx-field: #14141c; /* what you type into · a well on dark */
 
   /* Text, all verified >= 4.5:1 on EVERY surface, --wx-bg to --wx-surface-3 */
   --wx-text: #ffffff; /* 16.97:1 */
@@ -270,7 +270,7 @@
   --wx-surface-1: #ffffff;
   --wx-surface-2: #f7f7fb;
   --wx-surface-3: #f7f7fb;
-  --wx-field: #f7f7fb; /* what you type into Â· defined by its edge, not a fill */
+  --wx-field: #f7f7fb; /* what you type into · defined by its edge, not a fill */
 
   --wx-text: #14141c; /* 16.53:1 */
   --wx-text-muted: #4a4a5a; /*  4.83:1 */
@@ -339,7 +339,7 @@
   --wx-tier-6: #845a00;
   --wx-tier-7: #a8420c;
 
-  /* The performance sheet Â· see the dark block for what these are for. */
+  /* The performance sheet · see the dark block for what these are for. */
   --wx-sheet-band: rgba(20, 20, 28, 0.035);
   --wx-sheet-summary: #faf8f5;
 

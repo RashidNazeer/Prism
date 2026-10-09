@@ -48,7 +48,7 @@ export const COMPANY_FACTS = [
 ] as const;
 
 /**
- * The six services, from wurxmedia.com/content, "Our Services Â· One connected
+ * The six services, from wurxmedia.com/content, "Our Services · One connected
  * team". Condensed, and nothing added: a reviewer asked for "information about
  * our web and services", and the brands reading this page are buying these.
  *
@@ -87,7 +87,7 @@ export const SERVICES = [
 export const RESULTS = [
   { value: '$12.7M', label: 'Cutler Nutrition, TikTok Shop GMV in 12 months' },
   { value: '3,144%', label: 'M3 Naturals, monthly GMV growth in 6 months' },
-  { value: '$5.5M+', label: 'BrÃ¼Mate, GMV generated, #1 in Drinkware' },
+  { value: '$5.5M+', label: 'BrüMate, GMV generated, #1 in Drinkware' },
   { value: '213%', label: 'Inno Supps, off-site GMV lift from TikTok Shop content' },
 ] as const;
 
