@@ -179,7 +179,15 @@ export function HaloBackdrop({
         className="absolute inset-0 transition-[background] duration-500"
         style={{
           background: onLight
-            ? 'radial-gradient(ellipse 85% 60% at 22% 6%, rgba(155, 92, 255, 0.34), transparent 66%), radial-gradient(ellipse 80% 55% at 70% 2%, rgba(255, 46, 140, 0.28), transparent 64%), radial-gradient(ellipse 75% 60% at 96% 30%, rgba(46, 139, 255, 0.26), transparent 66%), var(--wx-bg)'
+            ? /* MORE COLOUR IN DAYLIGHT, at Rashid's request. These were
+                 0.34/0.28/0.26 across three lobes and read as a pale wash on a
+                 near-white page. Stronger now, and a fourth and fifth lobe
+                 carry the cyan and a second magenta into the lower half, so a
+                 long screen is not plain Mist once the top three fall off.
+                 Still washes rather than fills — the kit forbids the spectrum
+                 as a full-bleed background — and every figure sits on an opaque
+                 card, so this layer never carries text. */
+              'radial-gradient(ellipse 85% 60% at 22% 6%, rgba(155, 92, 255, 0.50), transparent 66%), radial-gradient(ellipse 80% 55% at 70% 2%, rgba(255, 46, 140, 0.42), transparent 64%), radial-gradient(ellipse 75% 60% at 96% 30%, rgba(46, 139, 255, 0.40), transparent 66%), radial-gradient(ellipse 70% 55% at 52% 98%, rgba(23, 224, 212, 0.36), transparent 66%), radial-gradient(ellipse 60% 48% at 4% 74%, rgba(255, 46, 140, 0.24), transparent 64%), var(--wx-bg)'
             : 'radial-gradient(ellipse 60% 50% at 82% 28%, rgba(155, 92, 255, 0.22), transparent 64%), radial-gradient(ellipse 50% 44% at 70% 76%, rgba(23, 224, 212, 0.16), transparent 62%), var(--wx-bg)',
         }}
       />
@@ -219,7 +227,10 @@ export function HaloBackdrop({
       {/* THE SCRIM, where there is work to read on top of all this. */}
       <div
         className="bg-bg absolute inset-0 transition-opacity duration-500"
-        style={{ opacity: intensity === 'subtle' ? (onLight ? 0.2 : 0.45) : 0 }}
+        /* Light's scrim drops to 0.08: the aurora is a soft wash to begin with,
+           and 0.2 of Mist over it was taking back most of the colour just added.
+           Dark keeps more, because its field is genuinely bright. */
+        style={{ opacity: intensity === 'subtle' ? (onLight ? 0.08 : 0.45) : 0 }}
       />
     </div>
   );

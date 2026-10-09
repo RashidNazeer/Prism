@@ -163,6 +163,10 @@
    */
   --wx-neo-light: rgba(255, 255, 255, 0.045);
   --wx-neo-dark: rgba(0, 0, 0, 0.55);
+  /* The light theme's twin, see there. Nearly absent on Ink: a contact shadow
+     needs a ground paler than itself to read against, and a second black layer
+     on a near-black page only muddies the card's edge. */
+  --wx-neo-contact: rgba(0, 0, 0, 0.3);
   --wx-hairline: rgba(255, 255, 255, 0.06);
   --wx-pressed-surface: #14141c;
 
@@ -363,8 +367,18 @@
    * OFFSET DIAGONALLY and split with a highlight, so each half carries less
    * weight than the kit's single centred drop shadow.
    */
-  --wx-neo-light: rgba(255, 255, 255, 0.95);
-  --wx-neo-dark: rgba(20, 20, 28, 0.14);
+  /* DEEPER, AT RASHID'S REQUEST: more shadow, and on the darker side. Was
+     0.14, which sat between the kit's `raised` (0.10) and `float` (0.18) and
+     read as too timid on a near-white page. 0.24 is past `float` on purpose —
+     a neomorphic shadow is split diagonally with a highlight, so each half
+     carries less weight than the kit's single centred drop. Still Ink-tinted,
+     never grey: a grey shadow on Mist reads as dirt. */
+  --wx-neo-light: rgba(255, 255, 255, 1);
+  --wx-neo-dark: rgba(20, 20, 28, 0.24);
+  /* The kit's `card` shadow, 0 1px 3px rgba(20,20,28,0.06), used as a tight
+     contact shadow under the soft one. It is what stops a raised surface
+     looking like it is floating a centimetre off the page. */
+  --wx-neo-contact: rgba(20, 20, 28, 0.1);
   --wx-hairline: rgba(255, 255, 255, 0.7);
   --wx-pressed-surface: #ececf3;
 

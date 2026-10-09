@@ -111,7 +111,21 @@ export function SiteNav() {
                the height, so the ends read as full curves; when the card
                tightens to 3.5rem on scroll the browser clamps it to 1.75rem and
                it stays a pill rather than jumping shape. */
-            'wx-neo-raised ease-brand grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 rounded-[2rem] px-5 transition-[height,border-radius] duration-300 sm:px-6',
+            /*
+             * TWO COLUMNS UNTIL THE LINKS EXIST, THREE AFTER.
+             *
+             * This was the three-column template at every width, and on a phone
+             * it broke: the links `<ul>` is `hidden lg:flex`, so it vacates its
+             * grid cell entirely, and auto-placement then slid the action
+             * cluster INTO the middle column. Measured at 375px: the card ran
+             * 20..355 while its contents stopped at 237, leaving 118px of dead
+             * space on the right and the whole row bunched left.
+             *
+             * Below `lg` there is nothing to centre, so two columns is the
+             * honest description: mark left, actions right. The symmetric
+             * three-column template starts exactly where the links do.
+             */
+            'wx-neo-raised ease-brand grid grid-cols-[1fr_auto] items-center gap-4 rounded-[2rem] px-5 transition-[height,border-radius] duration-300 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]',
             /* The one thing scroll still changes. The card tightens slightly
                once you are into the page, which reads as it settling rather
                than as a second style of header. */

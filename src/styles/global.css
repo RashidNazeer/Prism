@@ -2,7 +2,7 @@
 @import './tokens.css';
 
 /* ============================================================================
-   Type, for signed-in screens only.
+   Type, site-wide.
 
    PRISM type, SELF-HOSTED from /public/fonts, never fetched from a third
    party (the brand kit's own `@import` of Google Fonts is deliberately NOT
@@ -16,9 +16,9 @@
                 now means "the interface face at heading weight").
 
    Declaring a face costs nothing. A browser downloads it the first time
-   something on screen is set in it, which is why these are safe to declare
-   here and scope to `.wx-app` below: the public landing page never asks for
-   them, so its measured payload is unchanged.
+   something on screen is set in it, and `unicode-range` keeps the latin-ext
+   files unfetched for English text. They apply site-wide (see `:root` below),
+   public pages included.
    ============================================================================ */
 @font-face {
   font-family: 'Caprasimo';
@@ -119,9 +119,12 @@
   --wx-lh-body: 1.55;
 }
 
-/* The shell every signed-in screen sits in. Overriding the tokens HERE rather
-   than in tokens.css is what keeps the faces off the public page. */
-.wx-app {
+/* The brand type, for the whole site: public pages AND the signed-in shell.
+   Overridden HERE rather than in tokens.css (another process owns that file).
+   It used to be scoped to `.wx-app` so the landing page loaded no web fonts;
+   Rashid asked for the brand type there too. The cost is two small woff2
+   files, fetched only when something on screen uses them. */
+:root {
   --wx-font-sans:
     'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
@@ -130,7 +133,9 @@
      old utility now resolves to Figtree; Caprasimo is the explicit `font-brand`
      utility, applied where the size is 1.5rem or more. */
   --wx-font-display: var(--wx-font-sans);
+}
 
+.wx-app {
   font-family: var(--wx-font-sans);
 }
 
@@ -531,9 +536,14 @@
  */
 @utility wx-neo-raised {
   background: var(--wx-surface-1);
+  /* THREE LAYERS, NOT TWO. The highlight and the soft shadow give the bevel;
+     the tight contact shadow underneath is what stops the card reading as if it
+     were floating a centimetre above the page. Rashid asked for more shadow and
+     darker — this is the "more". */
   box-shadow:
     -0.5rem -0.5rem 1.5rem var(--wx-neo-light),
-    0.5rem 0.5rem 1.5rem var(--wx-neo-dark);
+    0.5rem 0.5rem 1.5rem var(--wx-neo-dark),
+    0 0.0625rem 0.1875rem var(--wx-neo-contact);
 }
 
 /* The small sibling: buttons, chips, icon wells. */
@@ -541,7 +551,8 @@
   background: var(--wx-surface-1);
   box-shadow:
     -0.25rem -0.25rem 0.75rem var(--wx-neo-light),
-    0.25rem 0.25rem 0.75rem var(--wx-neo-dark);
+    0.25rem 0.25rem 0.75rem var(--wx-neo-dark),
+    0 0.0625rem 0.125rem var(--wx-neo-contact);
 }
 
 /* Things that RECEIVE: inputs, search, progress tracks, chart wells. */

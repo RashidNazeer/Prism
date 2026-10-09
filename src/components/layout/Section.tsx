@@ -157,7 +157,13 @@ function ScrollDepth({
   const transform = useTransform(scrollYProgress, (p) => {
     if (p >= 0.999) return 'none';
     const t = 1 - p;
-    return `perspective(1200px) translateY(${Math.round(rise * t)}px) rotateX(${(tilt * t).toFixed(2)}deg) rotate(${(roll * t).toFixed(2)}deg) scale(${(1 - (1 - from) * t).toFixed(4)})`;
+    /* SUB-PIXEL WHILE MOVING. This rounded `translateY` to whole pixels, which
+       made every scroll-driven block advance in 1px steps — the judder Rashid
+       reported. Rounding bought nothing here: the element already drops to
+       `none` the instant it settles, so the rounding only ever applied while
+       the block was in motion, which is precisely when a fractional offset is
+       invisible and smoothness is the whole point. */
+    return `perspective(1200px) translateY(${(rise * t).toFixed(2)}px) rotateX(${(tilt * t).toFixed(2)}deg) rotate(${(roll * t).toFixed(2)}deg) scale(${(1 - (1 - from) * t).toFixed(4)})`;
   });
 
   return (
@@ -215,14 +221,18 @@ export function ParallaxLayer({
   children?: ReactNode;
 }) {
   const quiet = useReducedMotion();
-  /* Whole-pixel translation (fractional offsets under text soften glyphs), and
-     `none` when the layer is at identity rather than an identity matrix. */
+  /* Sub-pixel translation, and `none` at identity rather than an identity
+     matrix. This rounded to whole pixels, which stepped the parallax 1px at a
+     time and was a large part of the scroll judder: these layers travel
+     hundreds of pixels, so the steps were obvious. See `ScrollDepth` above. */
   const transform = useTransform(progress, (p) => {
-    const y = Math.round(from + (to - from) * p);
+    const y = from + (to - from) * p;
     const s = 1 + ((scaleTo ?? 1) - 1) * p;
     const r = (rotateTo ?? 0) * p;
-    if (y === 0 && s === 1 && r === 0) return 'none';
-    return `translateY(${y}px) rotate(${r.toFixed(2)}deg) scale(${s.toFixed(4)})`;
+    /* A tolerance, not an equality test. `y` is a float now, so it lands on
+       0.0001 rather than 0 and the identity case would never be recognised. */
+    if (Math.abs(y) < 0.05 && Math.abs(s - 1) < 0.0005 && Math.abs(r) < 0.05) return 'none';
+    return `translateY(${y.toFixed(2)}px) rotate(${r.toFixed(2)}deg) scale(${s.toFixed(4)})`;
   });
   if (quiet) return <div className={className}>{children}</div>;
   return (
@@ -260,7 +270,9 @@ function ScrollWord({
   const transform = useTransform(progress, (p) => {
     const t = 1 - Math.min(Math.max((p - start) / (end - start), 0), 1);
     if (t === 0) return 'none';
-    return `translateY(${Math.round(34 * t)}px) rotate(${((index % 2 ? 4 : -4) * t).toFixed(2)}deg)`;
+    /* Sub-pixel while the word is travelling; it drops to `none` the moment it
+       lands, so nothing is read off a fractional offset. See `ScrollDepth`. */
+    return `translateY(${(34 * t).toFixed(2)}px) rotate(${((index % 2 ? 4 : -4) * t).toFixed(2)}deg)`;
   });
   return (
     <m.span className="inline-block" style={{ transform, opacity }}>
