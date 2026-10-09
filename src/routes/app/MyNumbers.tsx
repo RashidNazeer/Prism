@@ -1,7 +1,7 @@
 import { useId, useMemo, useState, type ReactNode } from 'react';
 import { ChevronDown, ExternalLink, Radio, TrendingUp } from 'lucide-react';
 import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
-import { OrdersChart, PerformanceChart } from '@/components/creator/PerformanceChart';
+import { VelocityPanel, useVelocityData } from '@/components/creator/VelocityCard';
 import {
   useDailyPerformance,
   usePerformanceWindow,
@@ -23,7 +23,6 @@ import {
 import { DateRangePicker } from '@/components/creator/DateRangePicker';
 import { BrandFilter } from '@/components/creator/BrandFilter';
 import { NeoCardSkeleton } from '@/components/brand/NeoSkeleton';
-import { TiltCard, TiltLift } from '@/components/ui/TiltCard';
 import { cn } from '@/lib/utils';
 
 /**
@@ -188,6 +187,20 @@ export function MyNumbers({ brandId }: { brandId?: string } = {}) {
   const brandsQ = useBrandPerformance(splitOff ? null : from, splitOff ? null : to);
   const dailyQ = useDailyPerformance(from, to, source, effectiveBrandId);
 
+  /*
+   * THE SAME FIGURES HOME SHOWS, from the same hook.
+   *
+   * Its current-window query has the same key as `dailyQ` above, so React
+   * Query serves one request for both; the only extra round trip is the
+   * previous window, which is what makes the comparisons possible.
+   */
+  const velocity = useVelocityData({
+    range: active,
+    floor: windowQ.data?.earliest ?? null,
+    source,
+    brandId: effectiveBrandId,
+  });
+
   const videos = videosQ.data ?? [];
   const daily = dailyQ.data ?? [];
 
@@ -317,6 +330,8 @@ export function MyNumbers({ brandId }: { brandId?: string } = {}) {
         />
       ) : tab === 'dashboard' ? (
         <Dashboard
+          velocity={velocity}
+          videoCount={windowQ.data?.videos ?? 0}
           totals={totals}
           daily={daily}
           videos={videos}
@@ -369,6 +384,8 @@ function jumpTo(id: string) {
  * explanation of why a young ROI can swing), never the figure itself.
  */
 function Dashboard({
+  velocity,
+  videoCount,
   totals,
   daily,
   videos,
@@ -378,6 +395,8 @@ function Dashboard({
   inBrandHub,
   latestDataDate,
 }: {
+  velocity: ReturnType<typeof useVelocityData>;
+  videoCount: number;
   totals: { cost: number; revenue: number; orders: number; roi: number | null };
   daily: DailyPerformance[];
   videos: VideoPerformance[];
@@ -425,93 +444,40 @@ function Dashboard({
           The money
         </h2>
 
-        <div className="wx-golden items-start">
-          {/*
-            THE PRIMARY CARD, the only tilted one. `lift={2}`: the chart inside
-            has a hover read-out, and at the default 6 degrees a wide card's edge
-            travels far enough to slide the point being read out from under the
-            cursor (see TiltCard).
-          */}
-          <TiltCard
-            as="div"
-            lift={2}
-            className="wx-neo-raised flex flex-col gap-5 rounded-xl p-5 sm:p-6"
-          >
-            <div>
-              <p className={SECTION_LABEL}>GMV, your headline number</p>
-              <TiltLift depth={20}>
-                <p className="font-display wx-numeric text-accent text-h2 sm:text-h1 mt-2 leading-none font-bold">
-                  {money(totals.revenue, currency)}
-                </p>
-              </TiltLift>
-              <p className="text-muted text-body mt-3 max-w-prose">
-                GMV is the total value of what shoppers bought through your videos.{' '}
-                {adCounts.withAds > 0 ? (
-                  <>
-                    Across {adCounts.withAds} {adCounts.withAds === 1 ? 'video' : 'videos'} with
-                    ads, {money(totals.cost, currency)} of ad spend produced{' '}
-                    {money(totals.revenue, currency)} in GMV and {totals.orders}{' '}
-                    {totals.orders === 1 ? 'order' : 'orders'}.
-                  </>
-                ) : (
-                  <>No ads have run behind your videos in this period yet.</>
-                )}
+        {/*
+          THE SAME PANEL AS HOME, and deliberately the same arithmetic.
+          Rashid, 2026-10-10: "Fix my numbers tab in same way". This screen used
+          to draw its own GMV card, its own spend/orders/ROI stack and its own
+          two charts, which meant two screens computing the same four figures in
+          two places. They now come from one hook, so Home and My numbers can
+          never disagree about what a creator earned.
+
+          No controls are passed: the range picker and the brand dropdown
+          already live in this screen's filter bar, and a second set inside the
+          card would be two answers to one question.
+        */}
+        <VelocityPanel videos={videoCount} {...velocity} />
+
+        {/* The one thing the panel does not say, kept because it is the figure
+            creators most often misread. */}
+        {totals.roi !== null && thin ? (
+          <div className="mt-3">
+            <Disclosure label="Why your ROI can swing this early">
+              <p className="text-faint text-caption pb-1 leading-relaxed">
+                This rests on only {money(totals.cost, currency)} of spend, {totals.orders}{' '}
+                {totals.orders === 1 ? 'order' : 'orders'} and {rows.length}{' '}
+                {rows.length === 1 ? 'day' : 'days'}, so it can swing a lot. Sales often land
+                days after the spend, which makes a low early ratio common. It becomes a useful
+                guide as more spend and orders build up.
               </p>
-            </div>
-
-            <div id="mn-trend" className="scroll-mt-24">
-              <PerformanceChart rows={rows} currency={currency} />
-            </div>
-
-            <div>
-              <Disclosure label="Orders by day">
-                <div className="pb-1">
-                  <OrdersChart rows={rows} />
-                </div>
-              </Disclosure>
-              <p className="text-faint text-caption leading-relaxed">
-                {latestDataDate ? `Complete days up to ${formatDay(latestDataDate)}. ` : ''}
-                {rows.length} {rows.length === 1 ? 'day' : 'days'} of data in this view.
-              </p>
-            </div>
-          </TiltCard>
-
-          {/* The cost side: flat, quieter, one card instead of three. */}
-          <div className="wx-neo-raised divide-line flex flex-col divide-y rounded-xl p-5 sm:p-6">
-            <Metric
-              label="Ad spend"
-              value={money(totals.cost, currency)}
-              note="What was spent on ads behind your videos."
-            />
-            <Metric
-              label="Orders"
-              value={String(totals.orders)}
-              note="Purchases the ads can be tied to."
-            />
-            <Metric
-              label="Return on ad spend (ROI)"
-              value={totals.roi === null ? '—' : `${totals.roi.toFixed(2)}x`}
-              badge={totals.roi !== null && thin ? 'Early read' : undefined}
-              note={
-                totals.roi === null
-                  ? 'Nothing has been spent on ads yet, so there is no return to measure.'
-                  : `GMV divided by ad spend. For every ${money(1, currency)} spent, ${money(totals.roi, currency)} of sales came back.`
-              }
-            >
-              {totals.roi !== null && thin ? (
-                <Disclosure label="Why this can swing">
-                  <p className="text-faint text-caption pb-1 leading-relaxed">
-                    This rests on only {money(totals.cost, currency)} of spend, {totals.orders}{' '}
-                    {totals.orders === 1 ? 'order' : 'orders'} and {rows.length}{' '}
-                    {rows.length === 1 ? 'day' : 'days'}, so it can swing a lot. Sales often
-                    land days after the spend, which makes a low early ratio common. It becomes
-                    a useful guide as more spend and orders build up.
-                  </p>
-                </Disclosure>
-              ) : null}
-            </Metric>
+            </Disclosure>
           </div>
-        </div>
+        ) : null}
+
+        <p className="text-faint text-caption mt-2 leading-relaxed">
+          {latestDataDate ? `Complete days up to ${formatDay(latestDataDate)}. ` : ''}
+          {rows.length} {rows.length === 1 ? 'day' : 'days'} of data in this view.
+        </p>
       </section>
 
       {/* ------------------------- 2. videos & ads | best day and top video -- */}
@@ -629,41 +595,6 @@ function Disclosure({ label, children }: { label: string; children: ReactNode })
       <div id={id} role="region" aria-label={label} hidden={!open}>
         {children}
       </div>
-    </div>
-  );
-}
-
-/**
- * One figure in the cost column. The value is exactly what was computed: `0.00x`
- * renders as `0.00x` and `$0.52` as `$0.52`. A label, the figure, one sentence
- * saying what it is, and optionally a pill and a disclosure for the caveat.
- */
-function Metric({
-  label,
-  value,
-  note,
-  badge,
-  children,
-}: {
-  label: string;
-  value: string;
-  note: string;
-  badge?: string;
-  children?: ReactNode;
-}) {
-  return (
-    <div className="py-4 first:pt-0 last:pb-0">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className={SECTION_LABEL}>{label}</p>
-        {badge ? (
-          <span className="bg-info-soft text-info text-caption inline-flex rounded-full px-2 py-0.5 font-semibold">
-            {badge}
-          </span>
-        ) : null}
-      </div>
-      <p className="font-display wx-numeric text-h3 mt-1 leading-tight font-bold">{value}</p>
-      <p className="text-muted text-caption mt-1 leading-relaxed">{note}</p>
-      {children}
     </div>
   );
 }

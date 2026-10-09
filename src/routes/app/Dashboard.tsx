@@ -8,41 +8,15 @@ import {
   type CSSProperties,
   type ReactNode,
 } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
 import { m } from 'motion/react';
-import {
-  ArrowRight,
-  Briefcase,
-  Check,
-  ChevronDown,
-  Clock,
-  Minus,
-  Sparkles,
-  Store,
-  TrendingDown,
-  TrendingUp,
-  X,
-} from 'lucide-react';
+import { Check, ChevronDown, Clock, Sparkles, X } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/Button';
 import { TiltCard, TiltLift } from '@/components/ui/TiltCard';
-import { DateRangePicker } from '@/components/creator/DateRangePicker';
-import {
-  useBrandPerformance,
-  useDailyPerformance,
-  usePerformanceWindow,
-  type BrandPerformance,
-  type DailyPerformance,
-} from '@/lib/creator/usePerformance';
-import {
-  addDays,
-  clamp,
-  presetToRange,
-  type DateRange,
-  type PresetKey,
-} from '@/lib/creator/date-range';
 import { WelcomeMoment } from '@/components/creator/WelcomeMoment';
 import { ApprovedMoment } from '@/components/creator/ApprovedMoment';
 import { PipelineBoard, PipelineJobs } from '@/components/creator/PipelineBoard';
+import { VelocityCard } from '@/components/creator/VelocityCard';
 import { ContestEarnings } from '@/components/creator/ContestEarnings';
 import { useContestEarnings } from '@/lib/creator/useContestEarnings';
 import { JobProgressBar } from '@/components/work/JobProgress';
@@ -68,7 +42,7 @@ import {
   type StageEvent,
   type WorkSummary,
 } from '@/lib/creator/useMyWork';
-import { needsFilming, useMyJobProgress, type JobProgress } from '@/lib/work/job-progress';
+import { useMyJobProgress, type JobProgress } from '@/lib/work/job-progress';
 
 /**
  * The empty board, split off into its own chunk.
@@ -366,32 +340,42 @@ function CreatorHome({
       ) : (
         <>
           {/*
-            THE GOLDEN FRAME. The wide column is the money and what to do about
-            it: the journey, then the jobs sitting on it. The narrow column is
-            the evidence around it: ad numbers, contest money, counts, history.
-            Only the journey tilts; everything else is flat so the eye has one
-            place to land first.
+            PERFORMANCE FIRST, THEN THE THREE STANDING QUESTIONS.
+            Rashid's design, 2026-10-10. What a creator opens this screen to ask
+            is "what did my videos sell", so that is the hero and it carries the
+            chart that explains it. Underneath, one card each for the three
+            things that do not have a time axis: what have I been paid, what am
+            I committed to, what is running.
+
+            Those three replace a journey, a jobs list, a counts grid and an ad
+            card stacked in two columns. Nothing was deleted to get here. The
+            seven-stage money journey IS the Pipeline tab, one click away and
+            linked from the cash card, which is the right place for stage detail
+            and the wrong place for a landing screen.
           */}
-          <div className="wx-golden items-start">
-            <div className="flex min-w-0 flex-col gap-3.5">
-              <Journey summary={summary} rows={work} moved={moved} progress={progress} />
-              <Jobs rows={work} pending={pending} moved={moved} progress={progress} />
-            </div>
+          <VelocityCard />
 
-            <div className="flex min-w-0 flex-col gap-3.5">
-              {/* The only part of Home that has a time axis, so the only part that
-                  owns a date range. See AdNumbers. */}
-              <AdNumbers />
+          {/*
+            THE MONEY JOURNEY KEEPS ITS PLACE, and takes the cash card's.
+            Rashid asked for it back, 2026-10-10. It was briefly replaced by a
+            narrow "cash and earnings" card, which was a mistake: the two said
+            the same thing (agreed, and how much of it has landed) and the
+            journey says it better, because its four stops add up to its own
+            headline and a creator can check our arithmetic against it. Two
+            cards answering one question is how the figures start disagreeing.
 
-              {/* Its own card, never inside the journey: the journey adds its stops
-                  up to its own headline, which is what lets a creator check our
-                  arithmetic, and a contest reward in there would break the sum. */}
-              <ContestEarnings />
+            Full width, above the row: it is a horizontal track with four stops
+            and a figure under each, and it has nowhere to put them in a third
+            of the screen.
+          */}
+          <Journey summary={summary} rows={work} moved={moved} progress={progress} />
 
-              <Counts summary={summary} work={work} pending={pending} />
-              <Activity rows={rows ?? []} events={events ?? []} moved={moved} />
-            </div>
-          </div>{' '}
+          <div className="grid grid-cols-1 items-stretch gap-3.5 lg:grid-cols-2">
+            <ContractCard rows={work} pending={pending} progress={progress} moved={moved} />
+            <SprintCard />
+          </div>
+
+          <Activity rows={rows ?? []} events={events ?? []} moved={moved} compact />
         </>
       )}
     </div>
@@ -494,6 +478,548 @@ function Header({
 type Moved = { ids: Set<string>; key: number };
 
 /* ------------------------------------------------------------- journey --- */
+
+/* ---------------------------------------------------------------- jobs --- */
+
+/* ------------------------------------------------------------ activity --- */
+
+function Activity({
+  rows,
+  events,
+  moved,
+  compact = false,
+}: {
+  rows: MyWorkRow[];
+  events: StageEvent[];
+  moved: Moved;
+  /**
+   * Pipeline drops the coloured dot column. The board beside it already says
+   * which bucket everything is in, in colour, seven times over, so repeating it
+   * per row is noise rather than information.
+   */
+  compact?: boolean;
+}) {
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  /* The newest few lead; the rest are one click away, none removed. */
+  const [all, setAll] = useState(false);
+  const FEW = 4;
+  const shown = all ? events : events.slice(0, FEW);
+
+  // Only the NEWEST event for a piece of work that just moved says "just now".
+  // Events arrive newest first, so the first one wins and the rest keep their
+  // date, which is what actually happened.
+  const claimed = new Set<string>();
+
+  return (
+    <section className="wx-neo-raised flex h-full flex-col gap-3.5 rounded-2xl p-4">
+      <h2 className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
+        <span aria-hidden className="wx-blink bg-stage-paid size-1.5 rounded-full" />
+        Everything that moved
+      </h2>
+
+      {events.length === 0 ? (
+        <p className="text-muted py-2 text-[0.8125rem] leading-relaxed">
+          Nothing has moved yet. Every step the team takes on your work lands here as it
+          happens.
+        </p>
+      ) : (
+        /*
+         * A TIMELINE, not a list of rows in a box. Rashid: "The timeline should
+         * feel integrated into the card rather than like a list pasted into a
+         * box."
+         *
+         * The rail is drawn by each row rather than as one absolute line down
+         * the section, so it cannot drift out of step with the dots when a row
+         * wraps to two lines or three. Every row paints its own segment and the
+         * last one stops short, which is what makes the sequence read as having
+         * an end rather than running off the bottom edge.
+         *
+         * THE BORDERS BETWEEN ROWS ARE GONE. With a rail joining the dots, a
+         * horizontal rule through every row cut the very line that was meant to
+         * connect them.
+         */
+        <ol className="flex flex-col">
+          {shown.map((event, i) => {
+            const row = byId.get(event.application_id);
+            const tone = toneFor(event.to_stage);
+            const fresh =
+              moved.ids.has(event.application_id) && !claimed.has(event.application_id);
+            if (fresh) claimed.add(event.application_id);
+            const last = i === shown.length - 1;
+
+            return (
+              <li
+                key={`${event.id}-${moved.key}`}
+                className={cn(
+                  'group grid gap-3',
+                  compact
+                    ? 'grid-cols-[1fr_auto] py-2.5'
+                    : 'grid-cols-[0.875rem_1fr_auto] pb-4',
+                  fresh && 'wx-pop'
+                )}
+              >
+                {compact ? null : (
+                  /* The dot and its segment of rail, as one column. */
+                  <span className="flex flex-col items-center gap-1 pt-1">
+                    <span
+                      aria-hidden
+                      className={cn(
+                        'ring-surface-1 size-2 shrink-0 rounded-full ring-2',
+                        tone.dot
+                      )}
+                    />
+                    {last ? null : <span aria-hidden className="bg-line w-px flex-1" />}
+                  </span>
+                )}
+
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <p className="text-[0.875rem] leading-[1.3] font-semibold">
+                    {STAGE_META[event.to_stage].label}
+                  </p>
+                  <p className="text-muted text-[0.78125rem] leading-[1.35]">
+                    {row?.brand?.name ? `${row.brand.name}, ` : ''}
+                    {row?.offer?.title ?? 'an offer'}
+                  </p>
+                  {event.note ? (
+                    <p className="text-stage-live text-[0.78125rem] leading-[1.35]">
+                      {event.note}
+                    </p>
+                  ) : null}
+                </div>
+
+                <time
+                  dateTime={event.created_at}
+                  className="text-muted pt-0.5 text-[0.75rem] whitespace-nowrap"
+                >
+                  {fresh ? 'just now' : dayMonth(event.created_at)}
+                </time>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+
+      {events.length > FEW ? (
+        <button
+          type="button"
+          aria-expanded={all}
+          onClick={() => setAll(!all)}
+          className="text-accent focus-visible:ring-accent inline-flex min-h-11 items-center gap-1 self-start rounded-md text-[0.8125rem] font-semibold hover:underline focus-visible:ring-2 focus-visible:outline-none"
+        >
+          {all ? 'Show fewer' : `Show all ${events.length}`}
+          <ChevronDown
+            size={12}
+            aria-hidden
+            className={cn('shrink-0 transition-transform duration-200', all && 'rotate-180')}
+          />
+        </button>
+      ) : null}
+    </section>
+  );
+}
+
+const dayMonth = (iso: string) =>
+  new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+
+/* -------------------------------------------------------------- waiting -- */
+
+const STEPS = [
+  { label: 'Applied', state: 'done' as const },
+  { label: 'In review', state: 'now' as const },
+  { label: 'Approved', state: 'next' as const },
+];
+
+function InReview({
+  name,
+  handle,
+  appliedAt,
+}: {
+  name: string;
+  handle: string;
+  appliedAt: string;
+}) {
+  return (
+    <div className="mx-auto flex max-w-xl flex-col items-center py-6 text-center sm:py-12">
+      {/* A slow double ring around a clock. It never stops, so the screen
+          always looks alive rather than like a page that failed to load. */}
+      <div className="relative grid size-28 place-items-center">
+        {[0, 1].map((i) => (
+          <m.span
+            key={i}
+            aria-hidden
+            initial={{ scale: 0.6, opacity: 0.5 }}
+            animate={{ scale: 1.6, opacity: 0 }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              delay: i * 1.5,
+              ease: 'easeOut',
+            }}
+            className="border-accent absolute inset-0 rounded-full border"
+          />
+        ))}
+        <m.span
+          animate={{ y: [0, -5, 0] }}
+          transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut' }}
+          className="bg-accent-soft text-accent relative grid size-20 place-items-center rounded-full"
+        >
+          <Clock size={30} aria-hidden />
+        </m.span>
+      </div>
+
+      <m.h1
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="mt-8 text-[clamp(1.6rem,5vw,2.25rem)] font-extrabold text-balance"
+      >
+        Thank you for joining{name ? `, ${name}` : ''}
+      </m.h1>
+
+      <m.p
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+        className="text-muted mt-4 max-w-md leading-relaxed text-pretty"
+      >
+        Your application is with our team. A real person reads every one, so it takes a little
+        time rather than a moment.
+      </m.p>
+
+      {/* Where they are, at a glance. */}
+      <m.ol
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="mt-9 flex w-full max-w-sm items-start justify-between gap-2"
+      >
+        {STEPS.map((s, i) => (
+          <li key={s.label} className="relative flex flex-1 flex-col items-center gap-2">
+            {i > 0 ? (
+              <span
+                aria-hidden
+                className={`absolute top-4 right-1/2 left-[-50%] h-px ${
+                  s.state === 'next' ? 'bg-line' : 'bg-accent'
+                }`}
+              />
+            ) : null}
+
+            <span
+              className={`relative grid size-8 place-items-center rounded-full text-[0.6875rem] ${
+                s.state === 'done'
+                  ? 'bg-accent text-on-accent'
+                  : s.state === 'now'
+                    ? 'bg-accent-soft text-accent'
+                    : 'wx-neo-raised-sm text-faint'
+              }`}
+            >
+              {s.state === 'done' ? (
+                <Check size={14} aria-hidden />
+              ) : s.state === 'now' ? (
+                <m.span
+                  aria-hidden
+                  animate={{ opacity: [1, 0.25, 1] }}
+                  transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                  className="bg-accent size-2 rounded-full"
+                />
+              ) : (
+                <span aria-hidden className="bg-line-strong size-2 rounded-full" />
+              )}
+            </span>
+            <span
+              className={`font-mono text-[0.625rem] tracking-[0.12em] uppercase ${
+                s.state === 'next' ? 'text-faint' : 'text-muted'
+              }`}
+            >
+              {s.label}
+            </span>
+          </li>
+        ))}
+      </m.ol>
+
+      <m.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        className="wx-neo-raised mt-10 w-full rounded-2xl px-6 py-5 text-left"
+      >
+        <p className="text-faint font-mono text-[0.625rem] tracking-[0.14em] uppercase">
+          Under review
+        </p>
+        <p className="mt-2 text-lg font-bold break-all">@{handle}</p>
+        <p className="text-muted mt-1 text-[0.8125rem]">
+          Applied{' '}
+          {new Date(appliedAt).toLocaleDateString(undefined, {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })}
+        </p>
+        <p className="border-line text-muted mt-4 flex items-start gap-2 border-t pt-4 text-[0.8125rem] leading-relaxed">
+          <Sparkles size={15} aria-hidden className="text-accent mt-0.5 shrink-0" />
+          Keep this page open if you like. The moment a decision is made it changes here on its
+          own, with no refresh and no email needed.
+        </p>
+      </m.div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------- rejected -- */
+
+function Rejected({ note }: { note: string | null }) {
+  return (
+    <div className="mx-auto max-w-lg py-8 text-center sm:py-14">
+      <span className="bg-danger-soft text-danger mx-auto grid size-16 place-items-center rounded-full">
+        <X size={26} aria-hidden />
+      </span>
+      <h2 className="mt-6 text-[clamp(1.5rem,5vw,2rem)] font-extrabold">Not this time</h2>
+      <p className="text-muted mt-4 leading-relaxed text-pretty">
+        We are not able to take you on right now. This is usually about fit with the brands we
+        are running, rather than the quality of your work, and it is not permanent.
+      </p>
+      {note ? (
+        <p className="wx-neo-raised text-muted mt-6 rounded-2xl px-5 py-4 text-left text-[0.875rem] leading-relaxed">
+          {note}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/* ----------------------------------------------------------- unfinished -- */
+
+function Unfinished() {
+  return (
+    <div className="mx-auto max-w-lg py-8 text-center sm:py-14">
+      <h2 className="text-[clamp(1.5rem,5vw,2rem)] font-extrabold">Finish your application</h2>
+      <p className="text-muted mt-4 leading-relaxed text-pretty">
+        Your account is ready, but we do not have your application details yet. It takes about a
+        minute.
+      </p>
+      <ButtonLink to="/apply" className="mt-6">
+        Complete it now
+      </ButtonLink>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------ skeletons -- */
+
+function Skeleton() {
+  return (
+    <div className="flex max-w-[1140px] flex-col gap-[14px]">
+      <div className="flex flex-col gap-2 px-0.5 py-1">
+        <div className="wx-skeleton h-3.5 w-40" />
+        <div className="wx-skeleton h-10 w-72 max-w-full" />
+      </div>
+
+      <div className="wx-neo-raised flex flex-col gap-[18px] rounded-xl p-[22px]">
+        <div className="wx-skeleton h-3.5 w-[150px]" />
+        <div className="wx-skeleton h-[46px] w-[210px]" />
+        <div className="wx-skeleton h-4 w-full rounded-full" />
+        <div className="grid [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))] gap-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="wx-skeleton h-[74px]" />
+          ))}
+        </div>
+      </div>
+
+      <div className="grid [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] gap-[14px]">
+        <div className="wx-neo-raised flex flex-col gap-3.5 rounded-xl p-5">
+          <div className="wx-skeleton h-3 w-28" />
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="wx-skeleton h-[58px]" />
+          ))}
+        </div>
+        <div className="wx-neo-raised flex flex-col gap-3.5 rounded-xl p-5">
+          <div className="wx-skeleton h-3 w-24" />
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="wx-skeleton h-[38px]" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------- the three standing cards - */
+
+/**
+ * THE THREE QUESTIONS THAT HAVE NO TIME AXIS.
+ *
+ * The velocity card above them answers "how are my videos selling, lately",
+ * and owns the date range for it. These three answer things that are simply
+ * TRUE RIGHT NOW: what has reached me, what I have agreed to, what is running.
+ * A "last 30 days" on any of them would be meaningless, which is exactly why
+ * the range deliberately stops at the card above.
+ *
+ * All three always render something. A card that disappears when it has nothing
+ * leaves a hole in a three-column row, which is the bug that left a third of
+ * the Pipeline tab blank. An empty state is a design, not a failure.
+ */
+
+/**
+ * What this creator has actually agreed to deliver.
+ *
+ * ONE contract, not a list: the list is the Pipeline tab. The one shown is the
+ * furthest along, because that is the one with a deadline attached to it.
+ */
+function ContractCard({
+  rows,
+  pending,
+  progress,
+  moved,
+}: {
+  rows: MyWorkRow[];
+  /* Requests that have no stage yet: pending AND rejected, as the caller
+     builds it. Only the pending ones are still a live question. */
+  pending: MyWorkRow[];
+  progress?: Map<string, JobProgress>;
+  moved: Moved;
+}) {
+  const waiting = pending.filter((r) => r.status === 'pending').length;
+  const lead = [...rows].sort(
+    (a, b) =>
+      stageIndex((b.stage ?? 'pending_request') as OfferStage) -
+      stageIndex((a.stage ?? 'pending_request') as OfferStage)
+  )[0];
+
+  if (!lead) {
+    return (
+      <section
+        aria-label="Active contract"
+        className="wx-neo-raised flex min-w-0 flex-col gap-2 rounded-2xl p-[clamp(1.125rem,2vw,1.5rem)]"
+      >
+        <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
+          Active contract
+        </h2>
+        <p className="text-[0.9375rem] font-semibold">Nothing signed yet</p>
+        <p className="text-muted text-[0.8125rem] leading-[1.45]">
+          {waiting > 0
+            ? `You have ${waiting} request${waiting === 1 ? '' : 's'} waiting on a decision. We will tell you the moment one lands.`
+            : 'When a brand takes you on, the deal and what it pays appear here.'}
+        </p>
+        <ButtonLink to="/app/offers" variant="secondary" className="mt-auto self-start">
+          See what is open
+        </ButtonLink>
+      </section>
+    );
+  }
+
+  const p = progress?.get(lead.id);
+  const meta = STAGE_META[(lead.stage ?? 'pending_request') as OfferStage];
+  const justMoved = moved.ids.has(lead.id);
+
+  return (
+    <section
+      aria-label="Active contract"
+      className={cn(
+        'wx-neo-raised flex min-w-0 flex-col gap-3 rounded-2xl p-[clamp(1.125rem,2vw,1.5rem)]',
+        justMoved && 'wx-flash'
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
+          Active contract
+        </h2>
+        <span className="text-accent truncate text-[0.6875rem] font-semibold tracking-[0.08em] uppercase">
+          {lead.brand?.name ?? 'A brand'}
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <p className="text-[0.9375rem] leading-[1.3] font-semibold break-words">
+          {lead.offer?.title ?? 'An offer'}
+        </p>
+        <p className="text-muted text-[0.75rem] leading-[1.4]">{meta.creatorHint}</p>
+      </div>
+
+      {p && p.required !== null ? (
+        <div className="flex flex-col gap-1.5">
+          <JobProgressBar progress={p} />
+          <p className="text-muted wx-numeric text-[0.75rem] font-semibold">
+            {p.approved} of {p.required} videos approved
+          </p>
+        </div>
+      ) : null}
+
+      <div className="wx-neo-inset mt-auto flex items-center justify-between gap-3 rounded-lg px-3 py-2">
+        <span className="text-muted text-[0.75rem]">Fee</span>
+        <span className="font-display wx-numeric text-[0.9375rem] font-semibold">
+          {lead.committed_amount === null
+            ? 'To confirm'
+            : money(lead.committed_amount, lead.currency)}
+        </span>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Contest money, which is a separate pot and must never be added to offer money.
+ *
+ * Rule M10. A contest reward inside the cash card would break the sum a creator
+ * uses to check us, so it gets its own card and says plainly what it is.
+ */
+function SprintCard() {
+  const q = useContestEarnings();
+  const pots = q.data ?? [];
+  const owed = pots.reduce((n, p) => n + p.owed, 0);
+  const paid = pots.reduce((n, p) => n + p.paid, 0);
+  const currency = pots[0]?.currency ?? 'USD';
+  const fmt = (n: number) => money(Math.round(n * 100) / 100, currency);
+
+  return (
+    <section
+      aria-label="Contests"
+      className="wx-neo-raised flex min-w-0 flex-col gap-3 rounded-2xl p-[clamp(1.125rem,2vw,1.5rem)]"
+    >
+      <h2 className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
+        <Sparkles size={13} aria-hidden className="text-accent" />
+        Contests
+      </h2>
+
+      {q.isPending ? (
+        <div className="wx-skeleton h-24 rounded-xl" />
+      ) : owed === 0 && paid === 0 ? (
+        <>
+          <p className="text-[0.9375rem] font-semibold">No contest winnings yet</p>
+          <p className="text-muted text-[0.8125rem] leading-[1.45]">
+            Contests are extra money on top of your deals. Anything you win lands here, kept
+            separate from your offer money.
+          </p>
+          <ButtonLink to="/app/contests" variant="secondary" className="mt-auto self-start">
+            See what is running
+          </ButtonLink>
+        </>
+      ) : (
+        <>
+          <div className="flex flex-col gap-1">
+            <span className="text-muted text-[0.75rem]">Won, on its way to you</span>
+            <span className="font-brand wx-numeric text-accent text-[clamp(1.75rem,3vw,2.25rem)] leading-none font-semibold">
+              {fmt(owed)}
+            </span>
+          </div>
+          <div className="wx-neo-inset flex items-center justify-between gap-3 rounded-lg px-3 py-2">
+            <span className="text-muted text-[0.75rem]">Already paid out</span>
+            <span className="wx-numeric text-stage-paid text-[0.8125rem] font-semibold">
+              {fmt(paid)}
+            </span>
+          </div>
+          <p className="text-subtle text-[0.6875rem] leading-[1.4]">
+            Kept apart from your offer money on purpose, so neither figure hides the other.
+          </p>
+          <ButtonLink to="/app/contests" variant="secondary" className="mt-auto self-start">
+            See your contests
+          </ButtonLink>
+        </>
+      )}
+    </section>
+  );
+}
+
+/* ------------------------------------------------------ the money journey - */
 
 /**
  * FOUR STOPS ON ONE LINE: agreed, filming, approved, paid.
@@ -806,1186 +1332,5 @@ function DrillRows({ items, empty }: { items: DrillItem[]; empty: string }) {
         </li>
       ))}
     </ul>
-  );
-}
-
-/* ---------------------------------------------------------------- jobs --- */
-
-/**
- * The jobs, each saying what happens next and where to do it.
- *
- * Sorted by the caller, earliest stage first. "10 videos, $40 each" is the
- * agreed amount divided by the agreed video count, both frozen at approval
- * (`committed_*`), never the offer's live values: re-scoping an offer does not
- * change a deal that is already under way.
- */
-function Jobs({
-  rows,
-  pending,
-  moved,
-  progress,
-}: {
-  rows: MyWorkRow[];
-  pending: MyWorkRow[];
-  moved: Moved;
-  progress: Map<string, JobProgress> | undefined;
-}) {
-  return (
-    <section className="wx-neo-raised flex flex-col gap-3.5 rounded-2xl p-4">
-      <div className="flex items-baseline justify-between gap-2.5">
-        <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
-          Your jobs
-        </h2>
-        <p className="text-muted wx-numeric text-[0.8125rem]">{jobsWord(rows.length)}</p>
-      </div>
-
-      <ul className="grid grid-cols-1 gap-3 2xl:grid-cols-2">
-        {rows.map((row) => {
-          const stage = row.stage ?? 'pending_request';
-          const at = stageIndex(stage);
-          const tone = toneFor(stage);
-          const justMoved = moved.ids.has(row.id);
-          const p = progress?.get(row.id);
-          const count = row.committed_video_count;
-          const each =
-            row.committed_amount !== null && count
-              ? money(
-                  Math.round((Number(row.committed_amount) / count) * 100) / 100,
-                  row.currency
-                )
-              : null;
-          const detail = [
-            count ? `${count} ${count === 1 ? 'video' : 'videos'}` : null,
-            each ? `${each} each` : null,
-          ]
-            .filter(Boolean)
-            .join(' · ');
-          /* The one sentence of what to do. Filming outranks the stage's generic
-             hint because it is the thing only this person can move. */
-          const action =
-            p && needsFilming(p) ? 'Film your next video' : STAGE_META[stage].creatorHint;
-
-          return (
-            <li
-              key={`${row.id}-${moved.key}`}
-              className={cn(
-                'wx-neo-inset flex flex-col gap-2.5 rounded-xl p-3.5',
-                justMoved && 'wx-flash'
-              )}
-            >
-              <div className="flex items-start gap-3">
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <p className="text-muted truncate text-[0.6875rem] font-semibold tracking-[0.1em] uppercase">
-                    {row.brand?.name ?? 'A brand'}
-                  </p>
-                  <p className="text-[0.96875rem] leading-[1.25] font-semibold break-words">
-                    {row.offer?.title ?? 'An offer'}
-                  </p>
-                  {detail ? <p className="text-muted text-[0.78125rem]">{detail}</p> : null}
-                </div>
-                <p className="font-display wx-numeric shrink-0 text-[1.375rem] leading-none font-semibold whitespace-nowrap">
-                  {row.committed_amount === null
-                    ? 'To confirm'
-                    : money(row.committed_amount, row.currency)}
-                </p>
-              </div>
-
-              <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <span className={cn('text-[0.78125rem] font-semibold', tone.text)}>
-                  {at + 1}. {STAGE_META[stage].label}
-                </span>
-                <span className="text-[0.78125rem] font-semibold">{action}</span>
-                {justMoved ? (
-                  <span className="text-stage-live text-[0.6875rem] font-semibold">
-                    just now
-                  </span>
-                ) : null}
-              </p>
-
-              {/* How much they have filmed, and the way to add the next one. */}
-              {p ? (
-                <JobProgressBar
-                  progress={p}
-                  addVideoHref={`/app/content?job=${row.id}`}
-                  className="border-line border-t pt-[11px]"
-                  compact
-                />
-              ) : null}
-
-              {p ? <PaceLine progress={p} since={row.decided_at ?? row.created_at} /> : null}
-            </li>
-          );
-        })}
-
-        {/* ALWAYS THE LAST CELL. At 1, 3, 5 jobs it fills the odd gap in the
-            two-column grid; at 2, 4, 6 it just reads as the end of the list.
-            Deliberately flat (no shadow) until hovered, so it never competes
-            with real work. No count: the open-offer number is not on this
-            page and a new query is not worth it for a sentence. */}
-        <li className="flex">
-          <Link
-            to="/app/offers"
-            className="text-muted hover:text-text hover:wx-neo-inset focus-visible:ring-accent flex min-h-11 w-full items-center justify-between gap-3 rounded-xl p-3.5 transition-colors focus-visible:ring-2 focus-visible:outline-none"
-          >
-            <span className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-[0.875rem] font-semibold">Looking for more work?</span>
-              <span className="text-[0.78125rem] leading-[1.4]">
-                See what else is open to you.
-              </span>
-            </span>
-            <ArrowRight size={18} aria-hidden className="text-accent shrink-0" />
-          </Link>
-        </li>
-      </ul>
-
-      {pending.length > 0 ? (
-        <div className="border-line flex flex-col gap-2 border-t pt-3.5">
-          {pending.map((row) => (
-            <div key={row.id} className="wx-neo-inset flex flex-col gap-1 rounded-xl p-3">
-              <p className="flex flex-wrap items-center gap-2">
-                <span className="text-muted text-[0.6875rem] font-bold tracking-[0.08em] uppercase">
-                  {row.status === 'pending' ? 'Waiting on a decision' : 'Not accepted'}
-                </span>
-                <span className="text-[0.875rem] font-semibold">
-                  {row.offer?.title ?? 'An offer'}
-                </span>
-                <span className="text-muted text-[0.8125rem]">{row.brand?.name}</span>
-              </p>
-              <p className="text-muted text-[0.78125rem] leading-[1.4]">
-                {row.status === 'pending'
-                  ? `Asked on ${dayMonth(row.created_at)}. We will tell you the moment there is an answer.`
-                  : (row.decision_note ??
-                    'This one went to somebody else. You can ask again any time.')}
-              </p>
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
-/**
- * GOAL AND PACE, for a job with a number of videos attached.
- *
- * THE PLAN SAID "THE PACE NEEDED TO FINISH ON TIME", and nothing in the data
- * can answer that: an offer has no deadline, and neither does an application or
- * the `job_progress` view. A "needed pace" drawn against an invented date would
- * be a number we made up, on the screen whose whole point is that its numbers
- * are real. So this reports the pace the creator IS keeping and where that
- * lands, and leaves "needed" for the day a deadline exists.
- *
- * COUNTS APPROVED VIDEOS ONLY, the same rule `remaining` uses: a video still
- * with the team is not yet one of the five, so a projection built on it would
- * promise a finish nobody has agreed to.
- *
- * NOTHING UNTIL THREE DAYS IN. One approved video on day one projects as
- * "finished by Thursday" or "never", and both are noise.
- */
-function PaceLine({ progress, since }: { progress: JobProgress; since: string }) {
-  if (progress.required === null || progress.done) return null;
-
-  const days = (Date.now() - Date.parse(since)) / 86_400_000;
-  const toFilm = needsFilming(progress);
-
-  let pace: string;
-  if (progress.approved === 0) {
-    pace =
-      progress.waiting > 0 ? 'Your first video is with the team.' : 'No video approved yet.';
-  } else if (!(days >= 3)) {
-    return null;
-  } else {
-    const perDay = progress.approved / days;
-    const left = (progress.remaining ?? 0) / perDay;
-    const perWeek = Math.round(perDay * 7 * 10) / 10;
-    pace =
-      left > 365
-        ? `${perWeek} a week so far: at that pace this takes over a year.`
-        : `${perWeek} a week so far: at that pace the last one is approved around ${new Date(
-            Date.now() + left * 86_400_000
-          ).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}.`;
-  }
-
-  return (
-    <p className="text-muted text-[0.78125rem] leading-[1.4]">
-      <span className="text-text font-semibold">Pace </span>
-      {pace}
-      {toFilm ? ` ${progress.remaining! - progress.waiting} still to film.` : ''}
-    </p>
-  );
-}
-
-/* ------------------------------------------------------------ activity --- */
-
-function Activity({
-  rows,
-  events,
-  moved,
-  compact = false,
-}: {
-  rows: MyWorkRow[];
-  events: StageEvent[];
-  moved: Moved;
-  /**
-   * Pipeline drops the coloured dot column. The board beside it already says
-   * which bucket everything is in, in colour, seven times over, so repeating it
-   * per row is noise rather than information.
-   */
-  compact?: boolean;
-}) {
-  const byId = new Map(rows.map((r) => [r.id, r]));
-  /* The newest few lead; the rest are one click away, none removed. */
-  const [all, setAll] = useState(false);
-  const FEW = 4;
-  const shown = all ? events : events.slice(0, FEW);
-
-  // Only the NEWEST event for a piece of work that just moved says "just now".
-  // Events arrive newest first, so the first one wins and the rest keep their
-  // date, which is what actually happened.
-  const claimed = new Set<string>();
-
-  return (
-    <section className="wx-neo-raised flex h-full flex-col gap-3.5 rounded-2xl p-4">
-      <h2 className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
-        <span aria-hidden className="wx-blink bg-stage-paid size-1.5 rounded-full" />
-        Everything that moved
-      </h2>
-
-      {events.length === 0 ? (
-        <p className="text-muted py-2 text-[0.8125rem] leading-relaxed">
-          Nothing has moved yet. Every step the team takes on your work lands here as it
-          happens.
-        </p>
-      ) : (
-        /*
-         * A TIMELINE, not a list of rows in a box. Rashid: "The timeline should
-         * feel integrated into the card rather than like a list pasted into a
-         * box."
-         *
-         * The rail is drawn by each row rather than as one absolute line down
-         * the section, so it cannot drift out of step with the dots when a row
-         * wraps to two lines or three. Every row paints its own segment and the
-         * last one stops short, which is what makes the sequence read as having
-         * an end rather than running off the bottom edge.
-         *
-         * THE BORDERS BETWEEN ROWS ARE GONE. With a rail joining the dots, a
-         * horizontal rule through every row cut the very line that was meant to
-         * connect them.
-         */
-        <ol className="flex flex-col">
-          {shown.map((event, i) => {
-            const row = byId.get(event.application_id);
-            const tone = toneFor(event.to_stage);
-            const fresh =
-              moved.ids.has(event.application_id) && !claimed.has(event.application_id);
-            if (fresh) claimed.add(event.application_id);
-            const last = i === shown.length - 1;
-
-            return (
-              <li
-                key={`${event.id}-${moved.key}`}
-                className={cn(
-                  'group grid gap-3',
-                  compact
-                    ? 'grid-cols-[1fr_auto] py-2.5'
-                    : 'grid-cols-[0.875rem_1fr_auto] pb-4',
-                  fresh && 'wx-pop'
-                )}
-              >
-                {compact ? null : (
-                  /* The dot and its segment of rail, as one column. */
-                  <span className="flex flex-col items-center gap-1 pt-1">
-                    <span
-                      aria-hidden
-                      className={cn(
-                        'ring-surface-1 size-2 shrink-0 rounded-full ring-2',
-                        tone.dot
-                      )}
-                    />
-                    {last ? null : <span aria-hidden className="bg-line w-px flex-1" />}
-                  </span>
-                )}
-
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <p className="text-[0.875rem] leading-[1.3] font-semibold">
-                    {STAGE_META[event.to_stage].label}
-                  </p>
-                  <p className="text-muted text-[0.78125rem] leading-[1.35]">
-                    {row?.brand?.name ? `${row.brand.name}, ` : ''}
-                    {row?.offer?.title ?? 'an offer'}
-                  </p>
-                  {event.note ? (
-                    <p className="text-stage-live text-[0.78125rem] leading-[1.35]">
-                      {event.note}
-                    </p>
-                  ) : null}
-                </div>
-
-                <time
-                  dateTime={event.created_at}
-                  className="text-muted pt-0.5 text-[0.75rem] whitespace-nowrap"
-                >
-                  {fresh ? 'just now' : dayMonth(event.created_at)}
-                </time>
-              </li>
-            );
-          })}
-        </ol>
-      )}
-
-      {events.length > FEW ? (
-        <button
-          type="button"
-          aria-expanded={all}
-          onClick={() => setAll(!all)}
-          className="text-accent focus-visible:ring-accent inline-flex min-h-11 items-center gap-1 self-start rounded-md text-[0.8125rem] font-semibold hover:underline focus-visible:ring-2 focus-visible:outline-none"
-        >
-          {all ? 'Show fewer' : `Show all ${events.length}`}
-          <ChevronDown
-            size={12}
-            aria-hidden
-            className={cn('shrink-0 transition-transform duration-200', all && 'rotate-180')}
-          />
-        </button>
-      ) : null}
-    </section>
-  );
-}
-
-const dayMonth = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
-
-/* -------------------------------------------------------------- counts --- */
-
-/**
- * THE KPI BAND.
- *
- * Rashid: "Instead of four tiny disconnected boxes, make them feel like a
- * single coordinated component." They were in the right-hand column under the
- * timeline, taking whatever width was left; now they are four equal columns of
- * the page grid, directly under the money.
- *
- * AN ICON EACH, in a tinted well, because four bare numerals in a row are hard
- * to tell apart at a glance and the brief asked for icon / number / label. The
- * icons repeat ones already used elsewhere for the same ideas rather than
- * introducing a second vocabulary.
- *
- * THESE ONES DO LIFT, because every one of them is a link that goes somewhere.
- *
- * TWO COLUMNS ON A PHONE, not one. Four full-width rows pushed the work list
- * below the fold on a 375px screen, and these are a glance, not the point of
- * the page.
- */
-function Counts({
-  summary,
-  work,
-  pending,
-}: {
-  summary: WorkSummary;
-  work: MyWorkRow[];
-  pending: MyWorkRow[];
-}) {
-  const [open, setOpen] = useState<string | null>(null);
-
-  /* What each count is made of, built from rows already in memory. */
-  const drill = (key: string): DrillItem[] => {
-    const ask = (r: MyWorkRow): DrillItem => ({
-      id: r.id,
-      top: r.brand?.name ?? 'A brand',
-      title: r.offer?.title ?? 'An offer',
-      note:
-        r.status === 'approved'
-          ? STAGE_META[r.stage ?? 'pending_request'].label
-          : `Asked on ${dayMonth(r.created_at)}`,
-    });
-    if (key === 'offers') return work.map(ask);
-    if (key === 'waiting') return pending.filter((r) => r.status === 'pending').map(ask);
-    if (key === 'declined') return pending.filter((r) => r.status === 'rejected').map(ask);
-    const byBrand = new Map<string, DrillItem & { n: number }>();
-    for (const r of work) {
-      const had = byBrand.get(r.brand_id);
-      if (had) had.n += 1;
-      else
-        byBrand.set(r.brand_id, {
-          id: r.brand_id,
-          top: 'Brand',
-          title: r.brand?.name ?? 'A brand',
-          n: 1,
-        });
-    }
-    return [...byBrand.values()].map(({ n, ...b }) => ({
-      ...b,
-      note: `${n} ${n === 1 ? 'job' : 'jobs'}`,
-    }));
-  };
-
-  const items = [
-    {
-      key: 'offers',
-      empty: 'You are not on any offers yet.',
-      n: summary.approved,
-      label: 'offers you are on',
-      to: '/app/offers?tab=in',
-      icon: Briefcase,
-      tone: 'text-stage-live',
-    },
-    {
-      key: 'brands',
-      empty: 'No brands yet.',
-      n: summary.brands,
-      label: 'brands you work with',
-      to: '/app/brands',
-      icon: Store,
-      tone: 'text-accent',
-    },
-    {
-      key: 'waiting',
-      empty: 'Nothing is waiting on a decision.',
-      n: summary.waiting,
-      label: 'waiting on a decision',
-      to: '/app/offers',
-      icon: Clock,
-      tone: 'text-stage-due',
-    },
-    {
-      key: 'declined',
-      empty: 'Nothing has been turned down.',
-      n: summary.declined,
-      label: 'not accepted',
-      to: '/app/offers',
-      icon: X,
-      tone: 'text-muted',
-    },
-  ];
-
-  return (
-    /*
-     * ONE CARD, FOUR CELLS, 2026-10-08 (second pass).
-     *
-     * They were four separate cards and that was wrong twice over.
-     *
-     * THE GRID. Four equal cards put vertical edges at 25, 50 and 75 percent
-     * while the row beneath them splits seven-five at about 58. Nothing lined
-     * up between the two bands, which is the "shared grid columns" requirement
-     * broken in the most visible way there is. As one card the band has no
-     * internal edges to disagree with anything, and the seven-five split below
-     * is free to be what the content needs.
-     *
-     * THE RECTANGLES. The brief asked for these to stop reading as "four tiny
-     * disconnected boxes" and four cards with four gaps between them is exactly
-     * that, whatever is drawn inside them. Hairlines rather than gaps: the same
-     * four facts, one object.
-     *
-     * 2026-10-09: the cells used to be links. Each is now a disclosure that opens
-     * what the count is made of, in place, and the old destination is a link at
-     * the foot of what it opens, so nothing became harder to reach. Flat on purpose:
-     * it is supporting evidence, and the screen has one tilting card.
-     *
-     * No `overflow-hidden` any more: it flattens `preserve-3d`, which is what
-     * the lifted figures stand on.
-     */
-    <section aria-label="Your counts" className="wx-neo-raised rounded-2xl">
-      <ul className="grid grid-cols-2">
-        {items.map((item, i) => {
-          const Icon = item.icon;
-          const isOpen = open === item.key;
-          return (
-            <li
-              key={item.key}
-              className={cn(
-                'border-line relative',
-                /* Two columns on a phone, four from lg: the dividers have to
-                 follow, or they cut the band in the wrong places. */
-                i % 2 === 1 && 'border-l',
-                i >= 2 && 'border-t'
-              )}
-            >
-              <div className="flex h-full items-center gap-3 p-4">
-                <span
-                  aria-hidden
-                  className="wx-neo-inset grid size-9 shrink-0 place-items-center rounded-lg"
-                >
-                  <Icon size={16} className={item.tone} />
-                </span>
-                <span className="flex min-w-0 flex-col gap-0.5">
-                  {/* Clicks pass through the lifted figure to the toggle's
-                      stretched hit area below; a lifted plane would otherwise
-                      swallow them. */}
-                  <span className="font-brand wx-numeric pointer-events-none block text-[1.625rem] leading-none font-semibold">
-                    {item.n}
-                  </span>
-                  <button
-                    type="button"
-                    aria-expanded={isOpen}
-                    aria-controls="counts-drill"
-                    onClick={() => setOpen(isOpen ? null : item.key)}
-                    className="text-muted focus-visible:after:ring-accent flex min-h-11 items-center gap-1 text-left text-[0.75rem] leading-[1.3] after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2"
-                  >
-                    {item.label}
-                    <ChevronDown
-                      size={12}
-                      aria-hidden
-                      className={cn(
-                        'shrink-0 transition-transform duration-200',
-                        isOpen && 'rotate-180'
-                      )}
-                    />
-                  </button>
-                </span>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-
-      {open ? (
-        <div
-          id="counts-drill"
-          role="region"
-          aria-label={items.find((x) => x.key === open)?.label}
-          className="border-line wx-pop flex flex-col gap-3 border-t p-4"
-        >
-          <DrillRows
-            items={drill(open)}
-            empty={items.find((x) => x.key === open)?.empty ?? ''}
-          />
-          <Link
-            to={items.find((x) => x.key === open)?.to ?? '/app/offers'}
-            className="text-accent focus-visible:ring-accent inline-flex min-h-11 items-center self-start rounded-md text-[0.8125rem] font-semibold hover:underline focus-visible:ring-2 focus-visible:outline-none"
-          >
-            Open the full list
-          </Link>
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------ ad numbers -- */
-
-const DAY_MS = 86_400_000;
-const spanDays = (r: DateRange) =>
-  Math.round((Date.parse(`${r.to}T00:00:00Z`) - Date.parse(`${r.from}T00:00:00Z`)) / DAY_MS) +
-  1;
-
-/**
- * THE WINDOW IMMEDIATELY BEFORE THIS ONE, the same number of days long.
- *
- * Built from `addDays` in date-range.ts, which is UTC throughout, so a window
- * can never be a day out for a creator east of Greenwich. A range that is itself
- * partial (this month, nine days in) is not a special case: the previous window
- * is nine days too, so the two are always like for like.
- */
-function previousWindow(r: DateRange): DateRange {
-  const n = spanDays(r);
-  return { from: addDays(r.from, -n), to: addDays(r.from, -1) };
-}
-
-type Delta = { kind: 'pct'; pct: number } | { kind: 'new' } | null;
-
-/**
- * A change, or the honest absence of one.
- *
- * Previous zero and current positive is "new", never an infinite percentage.
- * Both zero says nothing at all: "0% vs last month" on a figure that has never
- * moved is a sentence with no information in it. Compared at cent precision, so
- * float dust in a sum cannot turn nothing into "+0.00001%".
- */
-function deltaOf(cur: number | null, prev: number | null): Delta {
-  if (cur === null || prev === null) return null;
-  const c = Math.round(cur * 100) / 100;
-  const p = Math.round(prev * 100) / 100;
-  if (p === 0) return c === 0 ? null : { kind: 'new' };
-  return { kind: 'pct', pct: ((c - p) / p) * 100 };
-}
-
-function sumDaily(rows: DailyPerformance[]) {
-  let cost = 0;
-  let revenue = 0;
-  let orders = 0;
-  for (const r of rows) {
-    cost += Number(r.cost);
-    revenue += Number(r.gross_revenue);
-    orders += Number(r.orders);
-  }
-  return { cost, revenue, orders, roi: cost > 0 ? revenue / cost : null };
-}
-
-/**
- * THE ONE PART OF HOME WITH A TIME AXIS.
- *
- * The money and the counts above and below are STATE: what is agreed, paid or
- * waiting right now. They have no "last 30 days" to be compared with, so the
- * range deliberately does not touch them. These four figures come from the same
- * daily ad rows My numbers reads, which is where a range means something.
- *
- * NO NEW QUERY SHAPE. `creator_daily_performance` already aggregates to one row
- * per day in SQL and takes `p_from`/`p_to`, so the previous period is the same
- * call with the window before. The browser only adds up one row per day (a few
- * dozen, a few hundred at most) rather than fetching videos and reducing them,
- * and the sparkline is those same rows. Both calls carry the hook's five minute
- * `staleTime`: the data changes once a night.
- */
-function AdNumbers() {
-  const windowQ = usePerformanceWindow();
-  const [preset, setPreset] = useState<PresetKey>('30');
-  const [custom, setCustom] = useState<DateRange | null>(null);
-  const [open, setOpen] = useState<string | null>(null);
-
-  const range = useMemo<DateRange | null>(
-    () =>
-      preset === 'custom'
-        ? clamp(custom ?? { from: '', to: '' }, windowQ.data)
-        : presetToRange(preset, windowQ.data),
-    [preset, custom, windowQ.data]
-  );
-
-  /*
-   * PREVIOUS PERIOD, and how much of it exists. The window can reach back past
-   * the creator's first video, where there is no data to be compared with:
-   *  - wholly before it: no comparison at all ("All time" lands here, correctly);
-   *  - partly before it: compared PER DAY over the days that do exist. Comparing
-   *    30 days against 12 would call every creator's second month a triumph.
-   */
-  const floor = windowQ.data?.earliest ?? null;
-  const prev = useMemo(() => {
-    if (!range || !floor) return null;
-    const w = previousWindow(range);
-    if (w.to < floor) return null;
-    const from = w.from < floor ? floor : w.from;
-    return { range: w, covered: spanDays({ from, to: w.to }), full: spanDays(w) };
-  }, [range, floor]);
-
-  const curQ = useDailyPerformance(range?.from ?? null, range?.to ?? null);
-  const prevQ = useDailyPerformance(prev?.range.from ?? null, prev?.range.to ?? null);
-  /* Only fetched once somebody opens a card. */
-  const brandsQ = useBrandPerformance(open ? (range?.from ?? null) : null, range?.to ?? null);
-
-  const cur = useMemo(() => sumDaily(curQ.data ?? []), [curQ.data]);
-  const before = useMemo(() => {
-    if (!prev || !prevQ.data) return null;
-    const s = sumDaily(prevQ.data);
-    /* Scaled up to the current length when only part of it is on record. */
-    const k = spanDays(range!) / prev.covered;
-    return prev.covered === prev.full
-      ? s
-      : { ...s, cost: s.cost * k, revenue: s.revenue * k, orders: s.orders * k };
-  }, [prev, prevQ.data, range]);
-
-  /* Nothing to say for a creator with no ad data at all. */
-  if (windowQ.isPending) return <div className="wx-skeleton h-36 rounded-xl" />;
-  if (!range || !windowQ.data || windowQ.data.videos === 0) return null;
-
-  const rows = curQ.data ?? [];
-  const currency = rows.find((r) => r.currency)?.currency ?? null;
-  const fmt = (n: number) => money(Math.round(n * 100) / 100, currency ?? 'USD');
-  const partial = Boolean(prev && prev.covered < prev.full);
-  const days = spanDays(range);
-  const vs = prev
-    ? partial
-      ? `vs the ${prev.covered} days before, per day`
-      : `vs previous ${days} ${days === 1 ? 'day' : 'days'}`
-    : null;
-
-  const kpis: KpiProps[] = [
-    {
-      id: 'gmv',
-      label: 'GMV',
-      value: fmt(cur.revenue),
-      delta: deltaOf(cur.revenue, before?.revenue ?? null),
-      series: rows.map((r) => Number(r.gross_revenue)),
-      spark: 'text-accent',
-      good: 'up',
-      metric: (b) => fmt(Number(b.gmv)),
-    },
-    {
-      id: 'spend',
-      label: 'Ad spend',
-      value: fmt(cur.cost),
-      delta: deltaOf(cur.cost, before?.cost ?? null),
-      series: rows.map((r) => Number(r.cost)),
-      spark: 'text-muted',
-      /* More spend is neither good nor bad on its own, so it is never coloured
-         as if it were. */
-      good: 'neutral',
-      metric: (b) => fmt(Number(b.spend)),
-    },
-    {
-      id: 'orders',
-      label: 'Orders',
-      value: String(cur.orders),
-      delta: deltaOf(cur.orders, before?.orders ?? null),
-      series: rows.map((r) => Number(r.orders)),
-      spark: 'text-muted',
-      good: 'up',
-      metric: (b) => String(b.orders),
-    },
-    {
-      id: 'roi',
-      label: 'ROI',
-      value: cur.roi === null ? '-' : `${cur.roi.toFixed(2)}x`,
-      delta: deltaOf(cur.roi, before?.roi ?? null),
-      series: rows.map((r) =>
-        Number(r.cost) > 0 ? Number(r.gross_revenue) / Number(r.cost) : 0
-      ),
-      spark: 'text-muted',
-      good: 'up',
-      metric: (b) => (b.roi === null ? '-' : `${Number(b.roi).toFixed(2)}x`),
-    },
-  ];
-
-  const openKpi = kpis.find((k) => k.id === open) ?? null;
-
-  return (
-    /*
-     * ONE CARD, FOUR CELLS. Four tilting boxes with four sparklines was the
-     * loudest thing on the screen for what is supporting evidence. Every figure,
-     * comparison and sparkline is still here; the box count went from four to one
-     * and none of them tilt. Whichever cell is open drills into brands below the
-     * grid, so one list is open at a time.
-     */
-    <section aria-label="Your ad numbers" className="wx-neo-raised rounded-2xl">
-      <div className="flex flex-wrap items-center justify-between gap-2 p-4 pb-2">
-        <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
-          Your ad numbers
-        </h2>
-        <DateRangePicker
-          preset={preset}
-          range={range}
-          window={windowQ.data}
-          onChange={(p, r) => {
-            setPreset(p);
-            setCustom(p === 'custom' ? r : null);
-            setOpen(null);
-          }}
-        />
-      </div>
-
-      {curQ.isPending ? (
-        <div className="p-4 pt-2">
-          <div className="wx-skeleton h-40 rounded-xl" />
-        </div>
-      ) : curQ.isError ? (
-        <p className="text-muted wx-neo-inset m-4 mt-2 rounded-xl p-4 text-[0.8125rem]">
-          We could not load your ad numbers just now. Refresh in a moment.
-        </p>
-      ) : (
-        <ul className="grid grid-cols-2">
-          {kpis.map((k, i) => (
-            <li
-              key={k.id}
-              className={cn('border-line relative', i % 2 === 1 && 'border-l', 'border-t')}
-            >
-              <Kpi
-                {...k}
-                vs={vs}
-                open={open === k.id}
-                onToggle={() => setOpen(open === k.id ? null : k.id)}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {openKpi ? (
-        <div
-          id="ads-drill"
-          role="region"
-          aria-label={`${openKpi.label} by brand`}
-          className="border-line wx-pop border-t p-4"
-        >
-          {brandsQ.isFetching && !brandsQ.data ? (
-            <div className="wx-skeleton h-12 rounded-md" />
-          ) : !brandsQ.data || brandsQ.data.length === 0 ? (
-            <p className="text-muted text-[0.8125rem] leading-relaxed">
-              Nothing to split by brand in this period.
-            </p>
-          ) : (
-            <DrillRows
-              empty=""
-              items={brandsQ.data.map((b) => ({
-                id: b.brand_id ?? 'unmatched',
-                top: 'Brand',
-                title: b.brand_name ?? 'Not matched to a brand',
-                figure: openKpi.metric(b),
-              }))}
-            />
-          )}
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
-interface KpiProps {
-  id: string;
-  label: string;
-  value: string;
-  delta: Delta;
-  series: number[];
-  spark: string;
-  /** Which direction is good news, or neither. Decides the delta's colour. */
-  good: 'up' | 'neutral';
-  /** How a brand row shows this metric. */
-  metric: (b: BrandPerformance) => string;
-}
-
-/** One cell of the ad-numbers card. Flat: the card is supporting evidence. */
-function Kpi({
-  label,
-  value,
-  delta,
-  vs,
-  series,
-  spark,
-  good,
-  open,
-  onToggle,
-}: KpiProps & {
-  vs: string | null;
-  open: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <div className="relative flex h-full flex-col gap-1.5 p-4">
-      {/* The toggle is the label; its hit area is stretched over the cell so the
-          whole KPI is clickable while the control stays a real button with a
-          real name. */}
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls="ads-drill"
-        onClick={onToggle}
-        className="text-muted focus-visible:after:ring-accent flex min-h-11 items-center justify-between gap-2 text-left text-[0.6875rem] font-semibold tracking-[0.12em] uppercase after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2"
-      >
-        <span>
-          {label}
-          <span className="sr-only">, see which brands it came from</span>
-        </span>
-        <ChevronDown
-          size={14}
-          aria-hidden
-          className={cn('shrink-0 transition-transform duration-200', open && 'rotate-180')}
-        />
-      </button>
-
-      <p className="font-display wx-numeric text-[clamp(1.25rem,2.4vw,1.625rem)] leading-none font-bold break-words">
-        {value}
-      </p>
-
-      {/* RESERVED SLOT for the comparison line, so figure, comparison and
-          sparkline start at the same y in all four. */}
-      <div className="min-h-8" aria-hidden={delta && vs ? undefined : true}>
-        <DeltaLine delta={delta} vs={vs} good={good} />
-      </div>
-      <div className="mt-auto">
-        <Spark values={series} className={spark} />
-      </div>
-    </div>
-  );
-}
-/** "+24% vs previous 30 days", or "new", or nothing. Never colour alone. */
-function DeltaLine({
-  delta,
-  vs,
-  good,
-}: {
-  delta: Delta;
-  vs: string | null;
-  good: 'up' | 'neutral';
-}) {
-  if (!delta || !vs) return null;
-
-  if (delta.kind === 'new') {
-    return (
-      <p className="text-muted flex flex-wrap items-center gap-x-1.5 text-[0.75rem] leading-[1.3]">
-        <span className="text-accent font-semibold">New</span>
-        <span>{vs}</span>
-      </p>
-    );
-  }
-
-  const rounded = Math.round(delta.pct);
-  const up = rounded > 0;
-  const flat = rounded === 0;
-  const Icon = flat ? Minus : up ? TrendingUp : TrendingDown;
-  const tone = flat || good === 'neutral' ? 'text-muted' : up ? 'text-success' : 'text-danger';
-  const shown = Math.min(Math.abs(rounded), 999);
-
-  return (
-    <p className="text-muted flex flex-wrap items-center gap-x-1.5 text-[0.75rem] leading-[1.3]">
-      <span className={cn('wx-numeric inline-flex items-center gap-1 font-semibold', tone)}>
-        <Icon size={12} aria-hidden />
-        <span className="sr-only">{flat ? 'No change' : up ? 'Up' : 'Down'}</span>
-        {flat ? '0%' : `${up ? '+' : '-'}${shown}%${Math.abs(rounded) > 999 ? '+' : ''}`}
-      </span>
-      <span>{vs}</span>
-    </p>
-  );
-}
-
-/**
- * THE SHAPE OF A FIGURE OVER THE CHOSEN RANGE.
- *
- * Hand-drawn SVG rather than a piece of `PerformanceChart`: that component is a
- * full two-series chart with axes, a legend and a tooltip, and a 28px line has
- * none of those. `aria-hidden` because it is a hint at a trend and never the
- * only way to read a value; every number it draws is printed above it. The
- * stroke is `currentColor`, so the colour is whatever token the caller's text
- * class names, and it follows both themes.
- */
-function Spark({ values, className }: { values: number[]; className?: string }) {
-  if (values.length < 2) return null;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const span = max - min;
-  const points = values
-    .map((v, i) => {
-      const x = (i / (values.length - 1)) * 100;
-      const y = span === 0 ? 14 : 25 - ((v - min) / span) * 22;
-      return `${x.toFixed(2)},${y.toFixed(2)}`;
-    })
-    .join(' ');
-
-  return (
-    <svg
-      aria-hidden
-      focusable="false"
-      viewBox="0 0 100 28"
-      preserveAspectRatio="none"
-      className={cn('mt-1 h-7 w-full overflow-visible', className)}
-    >
-      <polyline
-        points={points}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.75}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  );
-}
-
-/* -------------------------------------------------------------- waiting -- */
-
-const STEPS = [
-  { label: 'Applied', state: 'done' as const },
-  { label: 'In review', state: 'now' as const },
-  { label: 'Approved', state: 'next' as const },
-];
-
-function InReview({
-  name,
-  handle,
-  appliedAt,
-}: {
-  name: string;
-  handle: string;
-  appliedAt: string;
-}) {
-  return (
-    <div className="mx-auto flex max-w-xl flex-col items-center py-6 text-center sm:py-12">
-      {/* A slow double ring around a clock. It never stops, so the screen
-          always looks alive rather than like a page that failed to load. */}
-      <div className="relative grid size-28 place-items-center">
-        {[0, 1].map((i) => (
-          <m.span
-            key={i}
-            aria-hidden
-            initial={{ scale: 0.6, opacity: 0.5 }}
-            animate={{ scale: 1.6, opacity: 0 }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              delay: i * 1.5,
-              ease: 'easeOut',
-            }}
-            className="border-accent absolute inset-0 rounded-full border"
-          />
-        ))}
-        <m.span
-          animate={{ y: [0, -5, 0] }}
-          transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut' }}
-          className="bg-accent-soft text-accent relative grid size-20 place-items-center rounded-full"
-        >
-          <Clock size={30} aria-hidden />
-        </m.span>
-      </div>
-
-      <m.h1
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="mt-8 text-[clamp(1.6rem,5vw,2.25rem)] font-extrabold text-balance"
-      >
-        Thank you for joining{name ? `, ${name}` : ''}
-      </m.h1>
-
-      <m.p
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-        className="text-muted mt-4 max-w-md leading-relaxed text-pretty"
-      >
-        Your application is with our team. A real person reads every one, so it takes a little
-        time rather than a moment.
-      </m.p>
-
-      {/* Where they are, at a glance. */}
-      <m.ol
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="mt-9 flex w-full max-w-sm items-start justify-between gap-2"
-      >
-        {STEPS.map((s, i) => (
-          <li key={s.label} className="relative flex flex-1 flex-col items-center gap-2">
-            {i > 0 ? (
-              <span
-                aria-hidden
-                className={`absolute top-4 right-1/2 left-[-50%] h-px ${
-                  s.state === 'next' ? 'bg-line' : 'bg-accent'
-                }`}
-              />
-            ) : null}
-
-            <span
-              className={`relative grid size-8 place-items-center rounded-full text-[0.6875rem] ${
-                s.state === 'done'
-                  ? 'bg-accent text-on-accent'
-                  : s.state === 'now'
-                    ? 'bg-accent-soft text-accent'
-                    : 'wx-neo-raised-sm text-faint'
-              }`}
-            >
-              {s.state === 'done' ? (
-                <Check size={14} aria-hidden />
-              ) : s.state === 'now' ? (
-                <m.span
-                  aria-hidden
-                  animate={{ opacity: [1, 0.25, 1] }}
-                  transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-                  className="bg-accent size-2 rounded-full"
-                />
-              ) : (
-                <span aria-hidden className="bg-line-strong size-2 rounded-full" />
-              )}
-            </span>
-            <span
-              className={`font-mono text-[0.625rem] tracking-[0.12em] uppercase ${
-                s.state === 'next' ? 'text-faint' : 'text-muted'
-              }`}
-            >
-              {s.label}
-            </span>
-          </li>
-        ))}
-      </m.ol>
-
-      <m.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-        className="wx-neo-raised mt-10 w-full rounded-2xl px-6 py-5 text-left"
-      >
-        <p className="text-faint font-mono text-[0.625rem] tracking-[0.14em] uppercase">
-          Under review
-        </p>
-        <p className="mt-2 text-lg font-bold break-all">@{handle}</p>
-        <p className="text-muted mt-1 text-[0.8125rem]">
-          Applied{' '}
-          {new Date(appliedAt).toLocaleDateString(undefined, {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          })}
-        </p>
-        <p className="border-line text-muted mt-4 flex items-start gap-2 border-t pt-4 text-[0.8125rem] leading-relaxed">
-          <Sparkles size={15} aria-hidden className="text-accent mt-0.5 shrink-0" />
-          Keep this page open if you like. The moment a decision is made it changes here on its
-          own, with no refresh and no email needed.
-        </p>
-      </m.div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------- rejected -- */
-
-function Rejected({ note }: { note: string | null }) {
-  return (
-    <div className="mx-auto max-w-lg py-8 text-center sm:py-14">
-      <span className="bg-danger-soft text-danger mx-auto grid size-16 place-items-center rounded-full">
-        <X size={26} aria-hidden />
-      </span>
-      <h2 className="mt-6 text-[clamp(1.5rem,5vw,2rem)] font-extrabold">Not this time</h2>
-      <p className="text-muted mt-4 leading-relaxed text-pretty">
-        We are not able to take you on right now. This is usually about fit with the brands we
-        are running, rather than the quality of your work, and it is not permanent.
-      </p>
-      {note ? (
-        <p className="wx-neo-raised text-muted mt-6 rounded-2xl px-5 py-4 text-left text-[0.875rem] leading-relaxed">
-          {note}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-/* ----------------------------------------------------------- unfinished -- */
-
-function Unfinished() {
-  return (
-    <div className="mx-auto max-w-lg py-8 text-center sm:py-14">
-      <h2 className="text-[clamp(1.5rem,5vw,2rem)] font-extrabold">Finish your application</h2>
-      <p className="text-muted mt-4 leading-relaxed text-pretty">
-        Your account is ready, but we do not have your application details yet. It takes about a
-        minute.
-      </p>
-      <ButtonLink to="/apply" className="mt-6">
-        Complete it now
-      </ButtonLink>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------ skeletons -- */
-
-function Skeleton() {
-  return (
-    <div className="flex max-w-[1140px] flex-col gap-[14px]">
-      <div className="flex flex-col gap-2 px-0.5 py-1">
-        <div className="wx-skeleton h-3.5 w-40" />
-        <div className="wx-skeleton h-10 w-72 max-w-full" />
-      </div>
-
-      <div className="wx-neo-raised flex flex-col gap-[18px] rounded-xl p-[22px]">
-        <div className="wx-skeleton h-3.5 w-[150px]" />
-        <div className="wx-skeleton h-[46px] w-[210px]" />
-        <div className="wx-skeleton h-4 w-full rounded-full" />
-        <div className="grid [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))] gap-3">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="wx-skeleton h-[74px]" />
-          ))}
-        </div>
-      </div>
-
-      <div className="grid [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] gap-[14px]">
-        <div className="wx-neo-raised flex flex-col gap-3.5 rounded-xl p-5">
-          <div className="wx-skeleton h-3 w-28" />
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="wx-skeleton h-[58px]" />
-          ))}
-        </div>
-        <div className="wx-neo-raised flex flex-col gap-3.5 rounded-xl p-5">
-          <div className="wx-skeleton h-3 w-24" />
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="wx-skeleton h-[38px]" />
-          ))}
-        </div>
-      </div>
-    </div>
   );
 }

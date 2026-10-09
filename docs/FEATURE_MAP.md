@@ -1199,6 +1199,41 @@ from Pending request to Paid, moved by staff and watched by the creator.
   creator with no contest money, which is most of them, so the right-hand third
   of the page was simply blank. A component that is only sometimes there cannot
   be half the frame.
+- **Home leads with `VelocityCard`, and My numbers shows the same panel from the
+  same hook.** Rashid's design, 2026-10-10. `useVelocityData` fetches the window
+  and the one before it, `VelocityPanel` draws, `VelocityCard` is Home's
+  container that owns a date range. The split exists because the two screens
+  need identical figures but different chrome: Home has one picker of its own,
+  My numbers already has a range picker and a brand dropdown in its filter bar
+  and must not grow a second set. Two screens summing the same rows in two
+  places is how a creator comes to see two answers to one question.
+- **Bars for amounts, a line for a rate. This is a correctness rule, not taste.**
+  GMV, ad spend and orders are discrete daily totals: nothing flows from Tuesday
+  into Wednesday, so a line between them draws slopes that never happened. On a
+  real account that is not subtle. Three spend days inside a 56 day window drew
+  a smooth decline across seven week labels and read as a gradual wind-down of
+  something that had simply stopped. ROI is the exception because it is a RATE:
+  days do not add up to a total ROI, and what anybody reads off it is direction.
+  `shapeFor()` in `VelocityChart.tsx` is the whole rule.
+- **The bar colour ramp is keyed to RANK, not to the calendar, and it is
+  ordinal.** Oldest magenta, newest cyan, through the four kit accents in the
+  order the brand guidelines fix them, ending on cyan because the kit calls cyan
+  growth. Spreading the ramp over the calendar is the obvious reading and it
+  fails: bars bunched at one end of a long window all land on nearly the same
+  hue. By rank they always differ. The hue gap says which came first and never
+  how far apart, which is what the x-axis underneath is for, so colour is
+  redundant with position and never the only route to the meaning.
+- **Chart bars are HTML, not SVG `rect`s.** The plot stretches with
+  `preserveAspectRatio="none"`, which scales x and y differently, so an SVG `rx`
+  comes out elliptical and varies with the viewport. The kit asks for full pills
+  on chart bars, and an HTML `border-radius` resolves against the element's own
+  box, so a pill stays a pill at every width. The same reasoning puts the hover
+  dot in HTML. Bars window one shared gradient through `background-size` and
+  `background-position-x` rather than each painting its own ramp.
+- **Bar dimming keys off `hover`, never off `activeIndex`.** `activeIndex` falls
+  back to the best day so the tooltip has something to say at rest. Keying the
+  opacity to it put every bar except the peak at half strength before anyone
+  touched the chart, and the whole chart arrived looking washed out.
 - **This file and everything under `src/` is UTF-8, and no source file may be
   round-tripped through Windows PowerShell.** `Get-Content`/`Set-Content` in
   5.1 read as the ANSI codepage and write back as UTF-8, which silently

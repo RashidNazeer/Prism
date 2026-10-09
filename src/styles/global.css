@@ -179,6 +179,15 @@
   --color-stage-paid: var(--wx-stage-paid);
   --color-stage-paid-soft: var(--wx-stage-paid-soft);
 
+  /* Chart marks only. See the note on --wx-chart-1 in tokens.css. */
+  --color-chart-1: var(--wx-chart-1);
+  --color-chart-2: var(--wx-chart-2);
+  --color-chart-3: var(--wx-chart-3);
+  --color-chart-4: var(--wx-chart-4);
+  --color-chart-bar: var(--wx-chart-bar);
+  --color-chart-bar-peak: var(--wx-chart-bar-peak);
+  --color-chart-grid: var(--wx-chart-grid);
+
   --color-success: var(--wx-success);
   --color-success-soft: var(--wx-success-soft);
   --color-danger: var(--wx-danger);

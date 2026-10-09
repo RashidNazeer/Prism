@@ -103,6 +103,34 @@
   --wx-stage-paid: #17e0d4;
   --wx-stage-paid-soft: rgba(23, 224, 212, 0.16);
 
+  /*
+   * THE SPECTRUM, FOR MARKS ON A CHART ONLY.
+   *
+   * The four kit accents in the order the brand guidelines fix them: magenta,
+   * violet, blue, cyan, "use them in this order whenever they appear together".
+   * Cyan is the kit's growth colour, which is why a ramp keyed to time ends on
+   * it: the newest day should land on growth, not start there.
+   *
+   * They exist separately from the stage colours because a stage colour names a
+   * STATE: `--wx-stage-due` is "awaiting payment", and running a GMV bar
+   * through it would be saying so. These name a POSITION IN AN ORDER, nothing
+   * more, which is why they are safe for time and unsafe for identity.
+   *
+   * Use the ramp only for something genuinely ordered, and only where the chart
+   * already says the same thing another way, so colour is never the only route
+   * to the meaning. Never use two of them for two series that have to be told
+   * apart: that takes two clearly different hues and a direct label, which is
+   * what `PerformanceChart` does.
+   */
+  --wx-chart-1: #ff7ab0;
+  --wx-chart-2: #b98cff;
+  --wx-chart-3: #7cb6ff;
+  --wx-chart-4: #17e0d4;
+  /* Volume bars sit UNDER the line and must never compete with it. */
+  --wx-chart-bar: rgba(168, 120, 255, 0.36);
+  --wx-chart-bar-peak: rgba(23, 224, 212, 0.85);
+  --wx-chart-grid: rgba(255, 255, 255, 0.08);
+
   /* Semantic, all >= 4.5:1 on bg */
   --wx-success: #17e0d4;
   --wx-success-soft: rgba(23, 224, 212, 0.16);
@@ -314,6 +342,21 @@
   --wx-stage-due-soft: rgba(255, 46, 140, 0.12);
   --wx-stage-paid: #0b6f69;
   --wx-stage-paid-soft: rgba(23, 224, 212, 0.14);
+
+  /*
+   * THE SPECTRUM, light. Same four kit accents, taken to their dark inks so a
+   * 2px stroke still reads on a near-white card. The bright values the dark
+   * mode uses are the ones that disappear on white, which is the whole reason
+   * the kit publishes a dark ink per accent. See the note in the dark block for
+   * what these are and are not for.
+   */
+  --wx-chart-1: #b0145c;
+  --wx-chart-2: #6a2fe0;
+  --wx-chart-3: #1559ce;
+  --wx-chart-4: #0b6f69;
+  --wx-chart-bar: rgba(155, 92, 255, 0.26);
+  --wx-chart-bar-peak: rgba(11, 111, 105, 0.72);
+  --wx-chart-grid: rgba(20, 20, 28, 0.08);
 
   --wx-success: #0b6f69;
   --wx-success-soft: rgba(23, 224, 212, 0.14);
