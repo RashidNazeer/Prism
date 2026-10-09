@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { m } from 'motion/react';
+/* No `motion` import any more: the beams moved to a CSS keyframe so they run
+   on the compositor instead of the main thread. See `Beam` below. */
 import { useTheme } from '@/components/theme/theme-context';
 
 /**
@@ -108,19 +109,30 @@ function Beam({ spec, quiet }: { spec: BeamSpec; quiet: boolean }) {
      paused animation. The grid itself stays. */
   if (quiet) return null;
 
+  /*
+   * A PLAIN DIV ON A CSS ANIMATION, NOT A MOTION COMPONENT.
+   *
+   * This was an `m.div` with `repeat: Infinity`. Motion gives an animation to
+   * the compositor when it can, and it cannot here, because the travel is in
+   * CONTAINER UNITS (`100cqmax`) and the Web Animations API will not accept
+   * them. So twelve beams were being recomputed and written on the MAIN THREAD
+   * every frame, for as long as the page was open — competing with scrolling,
+   * which is the one thing the main thread must not be late for.
+   *
+   * The identical keyframe in CSS runs on the compositor and costs the main
+   * thread nothing after the first frame. See `wx-beam` in global.css.
+   */
   return (
-    <m.div
+    <div
       aria-hidden
-      className="absolute top-0"
-      style={style}
-      initial={{ y: '100cqmax', x: '-50%' }}
-      animate={{ y: '-100%', x: '-50%' }}
-      transition={{
-        duration: BEAM_DURATION,
-        delay: spec.delay,
-        repeat: Number.POSITIVE_INFINITY,
-        ease: 'linear',
-      }}
+      className="wx-beam absolute top-0"
+      style={
+        {
+          ...style,
+          '--wx-beam-dur': `${BEAM_DURATION}s`,
+          '--wx-beam-delay': `${spec.delay}s`,
+        } as React.CSSProperties
+      }
     />
   );
 }

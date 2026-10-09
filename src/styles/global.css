@@ -356,9 +356,59 @@
 }
 
 /* Monochrome partner logo: white-on-black artwork made to sit on either theme. */
+/*
+ * PER LOGO, NOT ON THE TRACK, AND THAT IS MEASURED RATHER THAN ASSUMED.
+ *
+ * Hoisting these onto `.wx-marquee-track` looked like an obvious win — one
+ * render surface instead of sixteen — and it made the scroll three times
+ * worse: frames over 20ms went from 7 (2.7%) to 56 (21.7%), and the worst
+ * frame from 49.9ms to 83.4ms.
+ *
+ * The reason is size. The track is `width: max-content` and holds the whole
+ * duplicated row, so blending it means compositing one enormous surface
+ * against the backdrop every frame. Sixteen small images each blend a few
+ * thousand pixels; their container blends tens of thousands. Small and many
+ * beats large and one, when the thing is moving.
+ */
 .wx-logo {
   mix-blend-mode: var(--wx-logo-blend);
   filter: var(--wx-logo-filter);
+}
+
+/*
+ * THE BACKDROP'S BEAMS, IN CSS RATHER THAN IN JAVASCRIPT.
+ *
+ * These were twelve `m.div`s with `repeat: Infinity`. Motion hands an animation
+ * to the compositor when it can, but it cannot here: the travel is expressed in
+ * CONTAINER UNITS (`100cqmax`), which the Web Animations API will not take. So
+ * all twelve were being recalculated and written on the MAIN THREAD every
+ * frame, forever — directly competing with scrolling, which is the one thing
+ * the main thread must not be late for. That is a mechanism for judder, not a
+ * guess about one.
+ *
+ * A CSS keyframe on `transform` runs on the compositor instead, so the beams
+ * cost the main thread nothing at all once started. Each beam's phase and
+ * length come in as custom properties, which keeps one keyframe for all twelve.
+ */
+@keyframes wx-beam-rise {
+  from {
+    transform: translate(-50%, 100cqmax);
+  }
+  to {
+    transform: translate(-50%, -100%);
+  }
+}
+
+@utility wx-beam {
+  animation: wx-beam-rise var(--wx-beam-dur, 3s) linear var(--wx-beam-delay, 0s) infinite;
+}
+
+/* The backdrop already declines to render beams under reduced motion; this is
+   the belt-and-braces half, in case one is ever rendered another way. */
+@media (prefers-reduced-motion: reduce) {
+  .wx-beam {
+    animation: none;
+  }
 }
 
 .wx-marquee-track {

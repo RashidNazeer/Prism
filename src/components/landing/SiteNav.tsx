@@ -125,7 +125,14 @@ export function SiteNav() {
              * honest description: mark left, actions right. The symmetric
              * three-column template starts exactly where the links do.
              */
-            'wx-neo-raised ease-brand grid grid-cols-[1fr_auto] items-center gap-4 rounded-[2rem] px-5 transition-[height,border-radius] duration-300 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]',
+            /* THE LIVE BACKGROUND SHOWS THROUGH. Rashid asked for it: the card
+               was fully opaque `--wx-surface-1`, so the moving backdrop stopped
+               dead at its edge. `bg-surface-1/80` lets the beams and the colour
+               travel behind the bar while leaving enough body for the labels to
+               stay readable. Deliberately NO `backdrop-blur`: a backdrop filter
+               re-blurs everything behind it every frame, and what is behind
+               this one never stops moving. */
+            'wx-neo-raised bg-surface-1/80 ease-brand grid grid-cols-[1fr_auto] items-center gap-4 rounded-[2rem] px-5 transition-[height,border-radius] duration-300 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]',
             /* The one thing scroll still changes. The card tightens slightly
                once you are into the page, which reads as it settling rather
                than as a second style of header. */
@@ -151,9 +158,15 @@ export function SiteNav() {
                     there they are 33px, well under the tap floor. Width does
                     not tell you whether a finger is doing the pointing; the
                     pointer type does. A mouse keeps the tighter 33px. */}
+                {/* The material, on hover and on press. These were plain text
+                    with only a colour change, which made them the one set of
+                    controls in the product that did not behave like the
+                    material. `wx-neo-press` gives the push; the raised pill
+                    only appears on hover, because six permanently raised pills
+                    in a row would read as a toolbar rather than as navigation. */}
                 <Link
                   to={l.href}
-                  className="text-muted hover:text-accent ease-brand inline-flex items-center rounded-lg px-3 py-2 text-sm transition-colors duration-200 pointer-coarse:min-h-11"
+                  className="text-muted hover:text-accent hover:wx-neo-raised-sm wx-neo-press ease-brand inline-flex items-center rounded-full px-3.5 py-2 text-sm transition-colors duration-200 pointer-coarse:min-h-11"
                 >
                   {l.label}
                 </Link>

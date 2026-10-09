@@ -23,10 +23,13 @@ function LogoRow({ ariaHidden }: { ariaHidden?: boolean }) {
             loading="lazy"
             decoding="async"
             style={{ height: brand.h ?? 32 }}
-            className="wx-logo w-auto max-w-none opacity-80 transition-opacity duration-300 ease-brand hover:opacity-100"
+            className="wx-logo ease-brand w-auto max-w-none opacity-80 transition-opacity duration-300 hover:opacity-100"
             draggable={false}
           />
-          <span className="px-8 text-lg leading-none text-accent select-none sm:px-11" aria-hidden>
+          <span
+            className="text-accent px-8 text-lg leading-none select-none sm:px-11"
+            aria-hidden
+          >
             &middot;
           </span>
         </li>

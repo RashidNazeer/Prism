@@ -109,7 +109,13 @@ export function Hero() {
           <ParallaxLayer progress={progress} from={0} to={-96} className="lg:pt-6">
             <m.div variants={container} initial="hidden" animate="show">
               <m.div variants={item}>
-                <span className="wx-neo-raised-sm text-muted inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-mono text-[0.6875rem] tracking-[0.18em] uppercase backdrop-blur-sm">
+                {/* No `backdrop-blur-sm`. A backdrop filter re-blurs everything
+                    behind the element every frame, and what is behind this one
+                    is a continuously animating background — so it was paying
+                    for a blur nobody could see. `wx-neo-raised-sm` already
+                    gives it an opaque surface, which is the only reason the
+                    blur was there. */}
+                <span className="wx-neo-raised-sm text-muted inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-mono text-[0.6875rem] tracking-[0.18em] uppercase">
                   <span className="relative flex size-1.5">
                     <span className="bg-accent absolute inline-flex size-full animate-ping rounded-full opacity-70" />
                     <span className="bg-accent relative inline-flex size-1.5 rounded-full" />
