@@ -92,6 +92,8 @@ export function TiltCard({
   const frame = useRef(0);
   const Component = Tag as ElementType;
 
+  const settle = useRef<number>(0);
+
   const reset = useCallback(() => {
     const el = ref.current;
     if (!el) return;
@@ -99,6 +101,24 @@ export function TiltCard({
     el.style.setProperty('--tilt-x', '0deg');
     el.style.setProperty('--tilt-y', '0deg');
     el.style.setProperty('--tilt-glow', '0');
+
+    /*
+     * THE FLAG OUTLIVES THE POINTER, ON PURPOSE.
+     *
+     * `data-tilt` is what puts the 3D transform on the element, and the
+     * transform is what costs the card its text sharpness on a non-retina
+     * screen (see `wx-tilt` in global.css). So it has to come off — but not
+     * immediately, or the card would snap flat instead of settling back, since
+     * the transition needs the transform present to animate.
+     *
+     * It is dropped once the 320ms settle has run. The timer is cleared on
+     * re-entry so a pointer sweeping back and forth never strips the transform
+     * mid-tilt.
+     */
+    window.clearTimeout(settle.current);
+    settle.current = window.setTimeout(() => {
+      el.removeAttribute('data-tilt');
+    }, 340);
   }, []);
 
   useEffect(() => {
@@ -111,6 +131,10 @@ export function TiltCard({
     if (quiet || coarse) return;
 
     const onMove = (e: PointerEvent) => {
+      /* Cancel any pending flag removal and mark the card live, so the
+         transform exists for as long as it is being used and no longer. */
+      window.clearTimeout(settle.current);
+      el.setAttribute('data-tilt', 'on');
       cancelAnimationFrame(frame.current);
       frame.current = requestAnimationFrame(() => {
         /* `getBoundingClientRect` is a layout read, so it happens inside the
@@ -137,6 +161,7 @@ export function TiltCard({
     el.addEventListener('pointercancel', reset);
     return () => {
       cancelAnimationFrame(frame.current);
+      window.clearTimeout(settle.current);
       el.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerleave', reset);
       el.removeEventListener('pointercancel', reset);

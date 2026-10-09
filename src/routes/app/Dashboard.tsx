@@ -11,6 +11,7 @@ import {
 import { Link, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
 import {
+  ArrowRight,
   Briefcase,
   Check,
   ChevronDown,
@@ -46,6 +47,13 @@ import { ContestEarnings } from '@/components/creator/ContestEarnings';
 import { useContestEarnings } from '@/lib/creator/useContestEarnings';
 import { JobProgressBar } from '@/components/work/JobProgress';
 import { cn } from '@/lib/utils';
+import { TIER_LABEL } from '@/lib/tiers';
+import type { CreatorTier } from '@/lib/auth/auth-context';
+
+/** Narrows a plain string from the profile to a known tier, without a cast. */
+function isCreatorTier(value: string): value is CreatorTier {
+  return Object.hasOwn(TIER_LABEL, value);
+}
 import { money } from '@/lib/money';
 import { STAGE_META, stageIndex, type OfferStage } from '@/lib/offer-stages';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -448,9 +456,9 @@ function Header({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {tier ? (
-          <span className="wx-neo-raised-sm rounded-full px-3 py-1.5 text-[0.75rem] font-semibold tracking-[0.02em] capitalize">
-            {tier} creator
+        {tier && isCreatorTier(tier) ? (
+          <span className="wx-neo-raised-sm rounded-full px-3 py-1.5 text-[0.75rem] font-semibold tracking-[0.02em]">
+            {TIER_LABEL[tier]} tier
           </span>
         ) : null}
         {handle ? (
@@ -889,6 +897,26 @@ function Jobs({
             </li>
           );
         })}
+
+        {/* ALWAYS THE LAST CELL. At 1, 3, 5 jobs it fills the odd gap in the
+            two-column grid; at 2, 4, 6 it just reads as the end of the list.
+            Deliberately flat (no shadow) until hovered, so it never competes
+            with real work. No count: the open-offer number is not on this
+            page and a new query is not worth it for a sentence. */}
+        <li className="flex">
+          <Link
+            to="/app/offers"
+            className="text-muted hover:text-text hover:wx-neo-inset focus-visible:ring-accent flex min-h-11 w-full items-center justify-between gap-3 rounded-xl p-3.5 transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          >
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <span className="text-[0.875rem] font-semibold">Looking for more work?</span>
+              <span className="text-[0.78125rem] leading-[1.4]">
+                See what else is open to you.
+              </span>
+            </span>
+            <ArrowRight size={18} aria-hidden className="text-accent shrink-0" />
+          </Link>
+        </li>
       </ul>
 
       {pending.length > 0 ? (
@@ -1499,7 +1527,15 @@ function AdNumbers() {
           We could not load your ad numbers just now. Refresh in a moment.
         </p>
       ) : (
-        <div className="grid grid-cols-2 items-start gap-3.5 lg:grid-cols-4">
+        /* Equal-height rows while closed. Once a drill-down is open the row
+           aligns to the top instead, so the other three do not stretch into
+           empty raised surfaces to match the one that grew. */
+        <div
+          className={cn(
+            'grid grid-cols-2 gap-3.5 lg:grid-cols-4',
+            open === null ? 'items-stretch' : 'items-start'
+          )}
+        >
           {kpis.map((k) => (
             <Kpi
               key={k.id}
@@ -1553,8 +1589,10 @@ function Kpi({
 }) {
   const id = `kpi-${kpiId}`;
   return (
-    <TiltCard className="wx-neo-raised rounded-xl">
-      <div className="relative flex flex-col gap-1.5 p-4">
+    <TiltCard className="wx-neo-raised flex h-full flex-col rounded-xl">
+      {/* flex-1 column: the sparkline is pushed to the card's floor with
+          `mt-auto`, so it shares one baseline however tall the rest is. */}
+      <div className="relative flex flex-1 flex-col gap-1.5 p-4">
         {/* The toggle is the label; its hit area is stretched over the card so
             the whole KPI is clickable while the control stays a real button
             with a real name. */}
@@ -1582,8 +1620,16 @@ function Kpi({
           </p>
         </TiltLift>
 
-        <DeltaLine delta={delta} vs={vs} good={good} />
-        <Spark values={series} className={spark} />
+        {/* RESERVED SLOT for the comparison line (two lines of 0.75rem text).
+            A card with no delta keeps the space, so figure, comparison and
+            sparkline start at the same y in all four. Nothing is faked into
+            it, and while empty it is hidden from assistive tech. */}
+        <div className="min-h-8" aria-hidden={delta && vs ? undefined : true}>
+          <DeltaLine delta={delta} vs={vs} good={good} />
+        </div>
+        <div className="mt-auto">
+          <Spark values={series} className={spark} />
+        </div>
       </div>
 
       {open ? (

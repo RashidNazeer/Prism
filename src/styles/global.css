@@ -641,11 +641,29 @@
   --tilt-glow: 0;
 
   position: relative;
-  transform: perspective(1000px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
-  transform-style: preserve-3d;
-  /* Slower on the way back than on the way in: the return is the card settling,
-     and settling that matches the chase reads as mechanical. */
+
+  /*
+   * NO TRANSFORM AT REST, AND THIS IS A TEXT-QUALITY FIX, NOT A TIDINESS ONE.
+   *
+   * A 3D transform promotes the element to its own compositing layer, and that
+   * layer is rasterised once at its own resolution. On a non-retina screen the
+   * glyphs inside it are resampled and every card's text goes soft — which is
+   * what Rashid is seeing. It applied `perspective() rotateX(0) rotateY(0)`
+   * permanently, so an untouched card paid the full cost for an effect that was
+   * doing nothing: a zero-degree rotation still produces a `matrix3d`.
+   *
+   * So the transform exists only while the card is actually being tilted.
+   * `TiltCard` sets `data-tilt="on"` on entry and removes it once the card has
+   * finished settling back, which puts the element back on the page's own layer
+   * and restores native subpixel text rendering the moment the pointer leaves.
+   */
+  transform: none;
   transition: transform 320ms var(--wx-ease);
+
+  &[data-tilt='on'] {
+    transform: perspective(1000px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+    transform-style: preserve-3d;
+  }
 
   /*
    * THE MOVING HIGHLIGHT, and the one rule the whole material depends on.
@@ -676,11 +694,18 @@
   }
 }
 
-/* The layer that actually reads as 3D. See TiltCard.tsx. */
+/* The layer that actually reads as 3D. See TiltCard.tsx. Lifted only while the
+   card is tilting, for the same text-rendering reason as above: at rest this is
+   an ordinary element on the page's own layer. */
 @utility wx-tilt-lift {
   --tilt-depth: 20px;
-  transform: translateZ(var(--tilt-depth));
-  transform-style: preserve-3d;
+  transform: none;
+  transition: transform 320ms var(--wx-ease);
+
+  [data-tilt='on'] & {
+    transform: translateZ(var(--tilt-depth));
+    transform-style: preserve-3d;
+  }
 }
 
 /*
