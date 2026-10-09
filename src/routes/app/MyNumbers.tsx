@@ -23,6 +23,7 @@ import {
 import { DateRangePicker } from '@/components/creator/DateRangePicker';
 import { BrandFilter } from '@/components/creator/BrandFilter';
 import { NeoCardSkeleton } from '@/components/brand/NeoSkeleton';
+import { TiltCard, TiltLift } from '@/components/ui/TiltCard';
 import { cn } from '@/lib/utils';
 
 /**
@@ -323,6 +324,7 @@ export function MyNumbers({ brandId }: { brandId?: string } = {}) {
           adCounts={adCounts}
           brands={brandsQ.data ?? []}
           inBrandHub={Boolean(brandId)}
+          latestDataDate={latestDataDate}
         />
       ) : (
         <Content videos={videos} currency={currency} latestDataDate={latestDataDate} />
@@ -333,6 +335,26 @@ export function MyNumbers({ brandId }: { brandId?: string } = {}) {
 
 /* ------------------------------------------------------------- dashboard -- */
 
+/*
+ * HOW MUCH DATA BEHIND A RATIO IS ENOUGH TO LEAN ON.
+ *
+ * This never hides or changes a figure. It only decides whether the screen adds
+ * a plain-English "early read" caveat beside a ratio. Seven days and five orders
+ * are a judgement call, not a statistical threshold; they are named here so the
+ * day somebody disagrees there is one place to change.
+ */
+const THIN_DAYS = 7;
+const THIN_ORDERS = 5;
+
+const SECTION_LABEL = 'text-muted text-[0.6875rem] font-semibold tracking-[0.12em] uppercase';
+
+function jumpTo(id: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const quiet = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({ behavior: quiet ? 'auto' : 'smooth', block: 'start' });
+}
+
 function Dashboard({
   totals,
   daily,
@@ -341,6 +363,7 @@ function Dashboard({
   adCounts,
   brands,
   inBrandHub,
+  latestDataDate,
 }: {
   totals: { cost: number; revenue: number; orders: number; roi: number | null };
   daily: DailyPerformance[];
@@ -350,171 +373,340 @@ function Dashboard({
   brands: BrandPerformance[];
   /** Inside one brand's hub, so a per-brand split would be one row of itself. */
   inBrandHub: boolean;
+  latestDataDate: string | null;
 }) {
   const rows = daily;
   const best = [...rows].sort((a, b) => Number(b.gross_revenue) - Number(a.gross_revenue))[0];
   const topVideo = videos[0];
+  const showBrands = !inBrandHub && brands.length > 1;
+
+  const thin = rows.length < THIN_DAYS || totals.orders < THIN_ORDERS;
+
+  const sections = [
+    { id: 'mn-money', label: 'Money' },
+    { id: 'mn-videos', label: 'Videos & ads' },
+    { id: 'mn-trend', label: 'Day by day' },
+    ...(showBrands ? [{ id: 'mn-brands', label: 'By brand' }] : []),
+  ];
 
   return (
-    <div className="flex flex-col gap-4">
-      {/*
-        Four numbers, and GMV is the big one. It is the figure a creator came to
-        see, so it is not one tile of four equal tiles.
-      */}
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="GMV" value={money(totals.revenue, currency)} big />
-        <Stat label="Ad spend" value={money(totals.cost, currency)} />
-        <Stat label="Orders" value={String(totals.orders)} />
-        <Stat
-          label="ROI"
-          value={totals.roi === null ? '—' : `${totals.roi.toFixed(2)}x`}
-          hint={totals.roi === null ? 'no spend yet' : 'GMV for every 1 spent'}
+    <div className="flex flex-col gap-6">
+      {/* On-page navigation: every section below is one tap away. */}
+      <nav aria-label="Sections on this page" className="flex flex-wrap items-center gap-2">
+        <span className={SECTION_LABEL}>Jump to</span>
+        {sections.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => jumpTo(s.id)}
+            className="wx-neo-raised-sm text-muted hover:text-text focus-visible:outline-line-interactive min-h-[44px] rounded-full px-4 text-[0.8125rem] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            {s.label}
+          </button>
+        ))}
+      </nav>
+
+      {/* ------------------------------------------------------- 1. money -- */}
+      <section id="mn-money" aria-labelledby="mn-money-h" className="scroll-mt-24">
+        <SectionHead
+          id="mn-money-h"
+          title="The money"
+          body="What your ads brought in, what they cost, and how those two compare."
         />
-      </section>
 
-      {/*
-        WHICH BRAND PAID YOU WHAT. Rashid asked for it by name: "let creators
-        see that in which brand they got how many money so they can analyse."
-
-        Only when there is more than one. A creator working for a single brand
-        would just be reading their own total again with a heading on it, and a
-        panel that repeats the number above it teaches people to stop reading
-        panels.
-      */}
-      {!inBrandHub && brands.length > 1 ? <ByBrand brands={brands} /> : null}
-
-      {/*
-        WHICH OF YOUR VIDEOS ARE CARRYING ADS. Not every video gets GMV Max
-        behind it, and a creator who does not know that reads an empty card as
-        the product losing their money rather than as no campaign.
-      */}
-      <section className="wx-neo-raised flex flex-wrap items-center gap-x-8 gap-y-3 rounded-xl p-4">
-        <div>
-          <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
-            Videos posted
-          </p>
-          <p className="font-display wx-numeric mt-1 text-[1.375rem] font-bold">
-            {adCounts.total}
-          </p>
-        </div>
-        <div className="border-line h-9 border-l" aria-hidden />
-        <div>
-          <p className="text-muted flex items-center gap-1.5 text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
-            <Radio size={12} aria-hidden className="text-success" />
-            Ads running
-          </p>
-          <p className="font-display wx-numeric text-success mt-1 text-[1.375rem] font-bold">
-            {adCounts.running}
-          </p>
-        </div>
-        {adCounts.ran > 0 ? (
-          <div>
-            <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
-              Ads finished
-            </p>
-            <p className="font-display wx-numeric mt-1 text-[1.375rem] font-bold">
-              {adCounts.ran}
-            </p>
-          </div>
-        ) : null}
-        <div>
-          <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
-            No ads
-          </p>
-          <p className="font-display wx-numeric text-faint mt-1 text-[1.375rem] font-bold">
-            {adCounts.none}
-          </p>
-        </div>
-        <p className="text-faint max-w-xs text-[0.75rem] leading-relaxed">
-          We don&rsquo;t run GMV Max behind every video. The ones without ads still count
-          towards your offer.
-        </p>
-      </section>
-
-      <section className="wx-neo-raised rounded-xl p-5">
-        <PerformanceChart rows={rows} currency={currency} />
-      </section>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="wx-neo-raised rounded-xl p-5">
-          <OrdersChart rows={rows} />
-        </section>
-
-        <section className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5">
-          <div>
-            <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
-              Best day
-            </p>
-            {best ? (
-              <p className="mt-1">
-                <span className="font-display wx-numeric text-[1.25rem] font-bold">
-                  {money(Number(best.gross_revenue), currency)}
-                </span>
-                <span className="text-muted ml-2 text-[0.8125rem]">
-                  on{' '}
-                  {new Date(`${best.stat_date}T00:00:00Z`).toLocaleDateString(undefined, {
-                    day: 'numeric',
-                    month: 'long',
-                    timeZone: 'UTC',
-                  })}
-                </span>
+        <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+          {/* Headline: GMV, with a sentence that says what it adds up to. */}
+          <TiltCard
+            as="div"
+            className="wx-neo-raised flex flex-col justify-between gap-5 rounded-xl p-5 sm:p-6"
+          >
+            <div>
+              <p className={SECTION_LABEL}>GMV, your headline number</p>
+              <TiltLift depth={20}>
+                <p className="font-display wx-numeric text-accent mt-2 text-[2.5rem] leading-none font-bold sm:text-[3rem]">
+                  {money(totals.revenue, currency)}
+                </p>
+              </TiltLift>
+              <p className="text-muted mt-3 max-w-prose text-[0.875rem] leading-relaxed">
+                GMV is the total value of what shoppers bought through your videos.{' '}
+                {adCounts.withAds > 0 ? (
+                  <>
+                    Across {adCounts.withAds} {adCounts.withAds === 1 ? 'video' : 'videos'} with
+                    ads, {money(totals.cost, currency)} of ad spend produced{' '}
+                    {money(totals.revenue, currency)} in GMV and {totals.orders}{' '}
+                    {totals.orders === 1 ? 'order' : 'orders'}.
+                  </>
+                ) : (
+                  <>No ads have run behind your videos in this period yet.</>
+                )}
               </p>
-            ) : (
-              <p className="text-muted mt-1 text-[0.875rem]">Nothing yet.</p>
-            )}
+            </div>
+            <p className="text-faint text-[0.75rem] leading-relaxed">
+              {latestDataDate ? `Complete days up to ${formatDay(latestDataDate)}. ` : ''}
+              {rows.length} {rows.length === 1 ? 'day' : 'days'} of data in this view.
+            </p>
+          </TiltCard>
+
+          {/* Supporting figures, each one saying what it is. */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+            <Stat
+              label="Ad spend"
+              value={money(totals.cost, currency)}
+              note="What was spent on ads behind your videos."
+            />
+            <Stat
+              label="Orders"
+              value={String(totals.orders)}
+              note="Purchases the ads can be tied to."
+            />
+            <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
+              <RoiCard
+                roi={totals.roi}
+                cost={totals.cost}
+                orders={totals.orders}
+                days={rows.length}
+                thin={thin}
+                currency={currency}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ------------------------------------------------ 2. videos & ads -- */}
+      <section id="mn-videos" aria-labelledby="mn-videos-h" className="scroll-mt-24">
+        <SectionHead
+          id="mn-videos-h"
+          title="Videos and ads"
+          body="Which of your videos have ads behind them. This is what explains most empty cards."
+        />
+        <AdsBand counts={adCounts} />
+      </section>
+
+      {/* ----------------------------------------------- 3. day by day -- */}
+      <section id="mn-trend" aria-labelledby="mn-trend-h" className="scroll-mt-24">
+        <SectionHead
+          id="mn-trend-h"
+          title="Day by day"
+          body="How spend and GMV moved, and your best moments."
+        />
+
+        <div className="wx-neo-raised mt-3 rounded-xl p-5">
+          <PerformanceChart rows={rows} currency={currency} />
+        </div>
+
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+          <div className="wx-neo-raised rounded-xl p-5">
+            <OrdersChart rows={rows} />
           </div>
 
-          <div className="border-line border-t pt-4">
-            <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
-              Top performer
-            </p>
-            {topVideo && Number(topVideo.gross_revenue) > 0 ? (
-              <>
-                <p className="mt-1 truncate text-[0.9375rem] font-semibold">
-                  {topVideo.video_title || 'Your video'}
+          <div className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5">
+            <div>
+              <p className={SECTION_LABEL}>Best day</p>
+              {best && Number(best.gross_revenue) > 0 ? (
+                <p className="mt-1">
+                  <span className="font-display wx-numeric text-[1.25rem] font-bold">
+                    {money(Number(best.gross_revenue), currency)}
+                  </span>
+                  <span className="text-muted ml-2 text-[0.8125rem]">
+                    on {formatDay(best.stat_date)}
+                  </span>
                 </p>
-                <p className="text-muted wx-numeric mt-0.5 text-[0.8125rem]">
-                  {money(Number(topVideo.gross_revenue), currency)} from{' '}
-                  {money(Number(topVideo.cost), currency)} spend
+              ) : (
+                <p className="text-muted mt-1 text-[0.875rem]">
+                  No day has made GMV yet. Your best day appears here when one does.
                 </p>
-              </>
-            ) : (
-              <p className="text-muted mt-1 text-[0.875rem]">Nothing yet.</p>
-            )}
+              )}
+            </div>
+
+            <div className="border-line border-t pt-4">
+              <p className={SECTION_LABEL}>Top performer</p>
+              {topVideo && Number(topVideo.gross_revenue) > 0 ? (
+                <>
+                  <p className="mt-1 truncate text-[0.9375rem] font-semibold">
+                    {topVideo.video_title || 'Your video'}
+                  </p>
+                  <p className="text-muted wx-numeric mt-0.5 text-[0.8125rem]">
+                    {money(Number(topVideo.gross_revenue), currency)} from{' '}
+                    {money(Number(topVideo.cost), currency)} spend
+                  </p>
+                </>
+              ) : (
+                <p className="text-muted mt-1 text-[0.875rem]">
+                  No video has made GMV yet. Open My content to see each one.
+                </p>
+              )}
+            </div>
           </div>
+        </div>
+      </section>
+
+      {/* -------------------------------------------------- 4. by brand -- */}
+      {/*
+        WHICH BRAND PAID YOU WHAT. Rashid asked for it by name. Only when there is
+        more than one: a single brand would just restate the total above.
+      */}
+      {showBrands ? (
+        <section id="mn-brands" aria-labelledby="mn-brands-h" className="scroll-mt-24">
+          <ByBrand brands={brands} />
         </section>
-      </div>
+      ) : null}
 
       <Footnote />
     </div>
   );
 }
 
-function Stat({
-  label,
-  value,
-  hint,
-  big,
+function SectionHead({ id, title, body }: { id: string; title: string; body: string }) {
+  return (
+    <div>
+      <h2 id={id} className="font-display text-[1.0625rem] font-bold">
+        {title}
+      </h2>
+      <p className="text-muted mt-0.5 text-[0.8125rem] leading-relaxed">{body}</p>
+    </div>
+  );
+}
+
+const formatDay = (iso: string) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  });
+
+function Stat({ label, value, note }: { label: string; value: string; note: string }) {
+  return (
+    <TiltCard as="div" className="wx-neo-raised flex flex-col rounded-xl p-4">
+      <p className={SECTION_LABEL}>{label}</p>
+      <TiltLift depth={14}>
+        <p className="font-display wx-numeric mt-1.5 text-[1.5rem] font-bold">{value}</p>
+      </TiltLift>
+      <p className="text-faint mt-1.5 text-[0.75rem] leading-relaxed">{note}</p>
+    </TiltCard>
+  );
+}
+
+/**
+ * ROI, shown exactly as computed and then explained.
+ *
+ * Rashid's rule is that no figure is hidden or softened, so `0.00x` renders as
+ * `0.00x`. What this adds is the two things a bare ratio cannot say: what it is
+ * measuring, and how much data stands behind it. A ratio of sums over 52 cents
+ * is true and nearly meaningless, and the screen says both.
+ */
+function RoiCard({
+  roi,
+  cost,
+  orders,
+  days,
+  thin,
+  currency,
 }: {
-  label: string;
-  value: string;
-  hint?: string;
-  big?: boolean;
+  roi: number | null;
+  cost: number;
+  orders: number;
+  days: number;
+  thin: boolean;
+  currency: string | null;
 }) {
   return (
-    <div className="wx-neo-raised rounded-xl p-4">
-      <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
-        {label}
+    <TiltCard as="div" className="wx-neo-raised rounded-xl p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className={SECTION_LABEL}>Return on ad spend (ROI)</p>
+        {roi !== null && thin ? (
+          <span className="bg-info-soft text-info inline-flex rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold">
+            Early read
+          </span>
+        ) : null}
+      </div>
+      <TiltLift depth={14}>
+        <p className="font-display wx-numeric mt-1.5 text-[1.5rem] font-bold">
+          {roi === null ? '—' : `${roi.toFixed(2)}x`}
+        </p>
+      </TiltLift>
+      <p className="text-muted mt-1.5 text-[0.8125rem] leading-relaxed">
+        {roi === null
+          ? 'Nothing has been spent on ads yet, so there is no return to measure.'
+          : `GMV divided by ad spend. For every ${money(1, currency)} spent, ${money(roi, currency)} of sales came back.`}
       </p>
-      <p
-        className={cn(
-          'font-display wx-numeric mt-1.5 font-bold',
-          big ? 'text-accent text-[1.75rem]' : 'text-[1.375rem]'
-        )}
+      {roi !== null && thin ? (
+        <p className="text-faint mt-1.5 text-[0.75rem] leading-relaxed">
+          This rests on only {money(cost, currency)} of spend, {orders}{' '}
+          {orders === 1 ? 'order' : 'orders'} and {days} {days === 1 ? 'day' : 'days'}, so it
+          can swing a lot. Sales often land days after the spend, which makes a low early ratio
+          common. It becomes a useful guide as more spend and orders build up.
+        </p>
+      ) : null}
+    </TiltCard>
+  );
+}
+
+/**
+ * Four counts, one picture. Every count is always shown, zero included: a "0"
+ * under No ads is an answer, and a missing tile is a question.
+ */
+function AdsBand({
+  counts,
+}: {
+  counts: { running: number; ran: number; none: number; total: number; withAds: number };
+}) {
+  const share = (n: number) => (counts.total > 0 ? (n / counts.total) * 100 : 0);
+  const parts = [
+    {
+      key: 'running',
+      label: 'Ads running',
+      n: counts.running,
+      bar: 'bg-success',
+      ink: 'text-success',
+    },
+    { key: 'ran', label: 'Ads finished', n: counts.ran, bar: 'bg-info', ink: 'text-info' },
+    { key: 'none', label: 'No ads', n: counts.none, bar: 'bg-line-strong', ink: 'text-faint' },
+  ];
+
+  return (
+    <div className="wx-neo-raised mt-3 rounded-xl p-5">
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+        <div>
+          <p className={SECTION_LABEL}>Videos posted</p>
+          <p className="font-display wx-numeric mt-1 text-[1.75rem] leading-none font-bold">
+            {counts.total}
+          </p>
+        </div>
+        <p className="text-faint max-w-sm text-[0.75rem] leading-relaxed">
+          We don&rsquo;t run GMV Max behind every video. The ones without ads still count
+          towards your offer.
+        </p>
+      </div>
+
+      <div
+        className="wx-neo-inset mt-4 flex h-3 overflow-hidden rounded-full"
+        role="img"
+        aria-label={`${counts.running} running, ${counts.ran} finished, ${counts.none} without ads, out of ${counts.total} videos`}
       >
-        {value}
-      </p>
-      {hint ? <p className="text-faint mt-0.5 text-[0.6875rem]">{hint}</p> : null}
+        {parts.map((p) =>
+          p.n > 0 ? (
+            <div key={p.key} className={p.bar} style={{ width: `${share(p.n)}%` }} />
+          ) : null
+        )}
+      </div>
+
+      <dl className="mt-4 grid grid-cols-3 gap-3">
+        {parts.map((p) => (
+          <div key={p.key}>
+            <dt className="text-muted flex items-center gap-1.5 text-[0.75rem] font-semibold">
+              <span className={cn('inline-block h-2 w-2 rounded-full', p.bar)} aria-hidden />
+              {p.key === 'running' ? (
+                <Radio size={12} aria-hidden className="text-success" />
+              ) : null}
+              {p.label}
+            </dt>
+            <dd className={cn('font-display wx-numeric mt-1 text-[1.375rem] font-bold', p.ink)}>
+              {p.n}
+            </dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }
@@ -547,7 +739,7 @@ function Content({
                     src={v.thumbnail_url}
                     alt=""
                     loading="lazy"
-                    className="border-line h-16 w-12 shrink-0 rounded-md border object-cover"
+                    className="h-16 w-12 shrink-0 rounded-md object-cover"
                   />
                 ) : (
                   <div className="wx-neo-inset h-16 w-12 shrink-0 rounded-md" />

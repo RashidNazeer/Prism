@@ -12,6 +12,7 @@ import { AnimatePresence, m } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
 import { Field, Input, PasswordInput, Select, Textarea } from '@/components/ui/Field';
 import { Button } from '@/components/ui/Button';
+import { TiltCard } from '@/components/ui/TiltCard';
 import { FormError } from '@/components/auth/AuthShell';
 import { friendlyAuthError } from '@/lib/auth/auth-errors';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -230,13 +231,17 @@ export function ApplyForm() {
   }
 
   return (
-    <form
+    <TiltCard
+      as="form"
       id="apply-form"
       onSubmit={onSubmit}
       noValidate
       // Warm the lazily loaded validator and database client as soon as anyone
       // touches the form, so the first submit never waits on a download.
       onFocus={() => void warm()}
+      /* A much shallower tilt than the other cards, because this one is full of
+         things you click into. See the `lift` note in TiltCard. */
+      lift={2}
       className="wx-neo-raised rounded-2xl p-6 sm:p-7"
     >
       <div className="flex items-center gap-4">
@@ -480,6 +485,6 @@ export function ApplyForm() {
           </Link>
         </p>
       )}
-    </form>
+    </TiltCard>
   );
 }

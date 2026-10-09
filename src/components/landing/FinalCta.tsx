@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import { ParallaxLayer, Reveal, Section, useSectionScroll } from '@/components/layout/Section';
 import { Button, ButtonLink } from '@/components/ui/Button';
+import { TiltCard } from '@/components/ui/TiltCard';
 import { focusApplyForm } from '@/lib/focus-apply';
 
 export function FinalCta() {
@@ -14,7 +15,12 @@ export function FinalCta() {
             which is the strongest depth cue on the page: the card is a window
             and the glow is behind it. */}
         <Reveal depth={{ rise: 64, tilt: 12, from: 0.92 }}>
-          <div className="wx-neo-raised relative overflow-hidden rounded-3xl px-7 py-16 text-center sm:px-14 sm:py-20">
+          {/* `overflow-hidden` stays: the glow planes inside are wider than the
+              card and would spill without it. It flattens `preserve-3d`, so the
+              card tilts as a whole and nothing inside rises onto its own plane
+              — which is right here, since the content is centred and the depth
+              is coming from the glow moving behind it. */}
+          <TiltCard className="wx-neo-raised relative overflow-hidden rounded-3xl px-7 py-16 text-center sm:px-14 sm:py-20">
             <div aria-hidden className="wx-glow pointer-events-none absolute inset-0" />
             <div aria-hidden className="pointer-events-none absolute inset-0">
               <ParallaxLayer
@@ -58,7 +64,7 @@ export function FinalCta() {
                 </ButtonLink>
               </div>
             </div>
-          </div>
+          </TiltCard>
         </Reveal>
       </div>
     </Section>

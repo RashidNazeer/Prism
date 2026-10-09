@@ -24,6 +24,9 @@ import type { DailyPerformance } from '@/lib/creator/usePerformance';
  * as everything else and follow the text-size setting.
  */
 
+/** Fewer days than this and the chart says it is too little to show a trend. */
+const SPARSE_DAYS = 7;
+
 const PAD = { top: 16, right: 16, bottom: 26, left: 52 };
 const VB_W = 760;
 const VB_H = 240;
@@ -115,6 +118,21 @@ export function PerformanceChart({
         </span>
       </figcaption>
 
+      {/*
+        SAY SO WHEN THERE IS NOT ENOUGH TO CALL A TREND. A line through two points
+        looks like a trajectory and is not one. The chart still draws everything,
+        with a mark on every real day, and states how little is behind it.
+      */}
+      {rows.length < SPARSE_DAYS ? (
+        <p className="text-muted mb-3 text-[0.8125rem] leading-relaxed">
+          Only {rows.length} {rows.length === 1 ? 'day' : 'days'} of data so far, so this shows
+          what happened on {rows.length === 1 ? 'that day' : 'those days'} rather than a trend.
+          {model.ceiling <= 1
+            ? ` The scale tops out at ${money(model.ceiling, currency)}.`
+            : ''}
+        </p>
+      ) : null}
+
       <div className="wx-neo-inset relative rounded-xl p-2">
         <svg
           ref={svgRef}
@@ -150,6 +168,26 @@ export function PerformanceChart({
 
           <path d={model.spend} fill="none" className="stroke-info" strokeWidth={2} />
           <path d={model.gmv} fill="none" className="stroke-accent" strokeWidth={2} />
+
+          {/* A mark on each real day, so sparse data reads as points, not a line. */}
+          {rows.length <= 14
+            ? rows.map((r, i) => (
+                <g key={r.stat_date}>
+                  <circle
+                    cx={model.x(i)}
+                    cy={model.y(Number(r.cost))}
+                    r={3.5}
+                    className="fill-info"
+                  />
+                  <circle
+                    cx={model.x(i)}
+                    cy={model.y(Number(r.gross_revenue))}
+                    r={3.5}
+                    className="fill-accent"
+                  />
+                </g>
+              ))
+            : null}
 
           {active && hover !== null ? (
             <g>
@@ -252,7 +290,7 @@ export function OrdersChart({ rows }: { rows: DailyPerformance[] }) {
           return (
             <div
               key={r.stat_date}
-              className="group relative flex-1"
+              className="group relative max-w-12 flex-1"
               style={{ height: '100%' }}
               title={`${shortDate(r.stat_date)}: ${r.orders} orders`}
             >

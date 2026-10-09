@@ -1,4 +1,13 @@
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Suspense,
+  lazy,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
 import {
@@ -38,7 +47,7 @@ import { useContestEarnings } from '@/lib/creator/useContestEarnings';
 import { JobProgressBar } from '@/components/work/JobProgress';
 import { cn } from '@/lib/utils';
 import { money } from '@/lib/money';
-import { OFFER_STAGES, STAGE_META, stageIndex, type OfferStage } from '@/lib/offer-stages';
+import { STAGE_META, stageIndex, type OfferStage } from '@/lib/offer-stages';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import { useApplication } from '@/lib/auth/useApplication';
@@ -278,23 +287,26 @@ function CreatorHome({
   const noOfferWork = summary.approved === 0 && summary.waiting === 0;
   const nothingYet = noOfferWork && !hasContestMoney;
 
+  const showSwitch = !nothingYet && !noOfferWork;
+
   return (
     /*
-     * ONE GRID, 2026-10-08. Rashid: "Use a strong grid system. Everything
-     * should feel intentionally aligned ... almost architectural."
+     * THE MONEY JOURNEY IS THE SPINE, 2026-10-09. Rashid asked for an entirely new
+     * way to present the data: one line that money travels along, with the jobs
+     * sitting at whichever stop they have reached.
      *
-     * The cap moved 1140 to 1400 and the content centres inside it. At 1140 on
-     * a wide screen the dashboard sat in the left two thirds with the rest of
-     * the page empty beside it, which is the "large unused areas" in his brief:
-     * not too little content, a container too narrow to use the room.
-     *
-     * ONE GAP VALUE EVERYWHERE. It was `gap-[14px]` between sections and other
-     * numbers inside them, so nothing lined up across a boundary. `gap-4` is
-     * the scale's own step and it follows the text-size control, which a
-     * hardcoded 14px never did.
+     * What this replaced: seven figures on screen with four of them zero, a
+     * greeting and a sentence describing the page that cost ~270px before the
+     * first number, and a money bar that rendered solid and full-width while $0
+     * of $400 was actually paid. See `Journey` for how each is answered.
      */
     <div className="wx-pop mx-auto flex w-full max-w-[1400px] flex-col gap-3.5">
-      <Header name={name} tier={tier} handle={handle} />
+      <Header
+        name={name}
+        tier={tier}
+        handle={handle}
+        trailing={showSwitch ? <ViewSwitch view={view} onChange={setView} /> : null}
+      />
 
       {nothingYet ? (
         <Suspense fallback={<div className="wx-skeleton h-[420px] rounded-xl" />}>
@@ -303,19 +315,10 @@ function CreatorHome({
       ) : noOfferWork ? (
         /*
          * CONTEST MONEY, BUT NO OFFER WORK AT ALL. Contests are open to every
-         * approved creator regardless of which brands they work with, so this
-         * is a real person, not an edge case.
-         *
-         * The money card is NOT DRAWN for them, and that is the whole point of
-         * this branch. It would be a hero block reading "$0 across 0 jobs" over
-         * an empty flow bar and three zero cells, sitting above the only money
-         * they actually have. Every figure in it would be true and the screen
-         * would read as broken, which is the thing the owner's layout rules are
-         * written against.
-         *
-         * So their money leads, and the first day panel underneath does its
-         * real job: getting them onto an offer. No view switch either, because
-         * Pipeline would be seven empty stages.
+         * approved creator regardless of which brands they work with, so this is
+         * a real person, not an edge case. The journey is NOT drawn for them:
+         * there are no jobs to put on it. Their money leads and the first day
+         * panel does its real job, getting them onto an offer.
          */
         <>
           <ContestEarnings />
@@ -323,74 +326,45 @@ function CreatorHome({
             <FirstDay />
           </Suspense>
         </>
+      ) : view === 'pipeline' ? (
+        <>
+          <PipelineBoard summary={summary} rows={work} moved={moved} progress={progress} />
+
+          <div className="grid [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))] items-start gap-3.5">
+            <MoneySplit summary={summary} moved={moved} />
+            <Activity rows={rows ?? []} events={events ?? []} moved={moved} compact />
+          </div>
+
+          {/* Its own row rather than a third cell in that grid: contest money is
+              a separate pot and must never sit in a layout that reads as part of
+              the offer money beside it. See rule M10. */}
+          <ContestEarnings />
+        </>
       ) : (
         <>
-          <ViewSwitch view={view} onChange={setView} />
+          <Journey summary={summary} rows={work} moved={moved} progress={progress} />
 
-          {view === 'pipeline' ? (
-            <>
-              <PipelineBoard summary={summary} rows={work} moved={moved} progress={progress} />
+          {/* Right under the journey, so the next action is one glance from the
+              line it belongs to. */}
+          <Jobs rows={work} pending={pending} moved={moved} progress={progress} />
 
-              <div className="grid [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))] items-start gap-[14px]">
-                <MoneySplit summary={summary} moved={moved} />
-                <Activity rows={rows ?? []} events={events ?? []} moved={moved} compact />
-              </div>
+          {/* Its own card, never inside the journey: the journey adds its stops up
+              to its own headline, which is what lets a creator check our
+              arithmetic, and a contest reward in there would break the sum. */}
+          <ContestEarnings />
 
-              {/* Its own row rather than a third cell in that grid: contest
-                  money is a separate pot and must never sit in a layout that
-                  reads as part of the offer money beside it. See rule M10. */}
-              <ContestEarnings />
-            </>
-          ) : (
-            <>
-              <Money summary={summary} moved={moved} rows={work} />
+          {/* The only part of Home that has a time axis, so the only part that
+              owns a date range. See AdNumbers. */}
+          <AdNumbers />
 
-              {/*
-                DIRECTLY UNDER THE MONEY CARD, and never inside it. The card
-                above adds its three cells up to its own headline, which is what
-                lets a creator check our arithmetic; a contest reward in there
-                would break the addition. Renders nothing at all until there is
-                contest money, so a creator in no contest sees the screen they
-                have always seen.
-              */}
-              <ContestEarnings />
-
-              {/* The only part of Home that has a time axis, so the only part
-                  that owns a date range. See AdNumbers. */}
-              <AdNumbers />
-
-              {/*
-                THE KPI ROW IS ITS OWN BAND NOW, directly under the money.
-                It used to sit in the right-hand column beneath the timeline,
-                where four small boxes were whatever width was left over after
-                the work list took its share â€” the "four tiny disconnected
-                boxes" in the brief. Across the full width they are four equal
-                columns of the same grid everything else uses.
-              */}
+          <div className="grid grid-cols-1 items-start gap-3.5 lg:grid-cols-12">
+            <div className="lg:col-span-5">
               <Counts summary={summary} work={work} pending={pending} />
-
-              {/*
-                SEVEN AND FIVE, not auto-fit. `repeat(auto-fit,minmax(320px,1fr))`
-                gave two equal columns, so the work a creator came to act on got
-                exactly as much room as the log of what already happened. The
-                split is explicit and it only applies from `lg`; below that the
-                two stack in the order the brief asks for, work before activity.
-              */}
-              {/* `items-stretch`, not `items-start`. Symmetry is the brief's
-                  highest-priority requirement and two cards of different
-                  heights side by side is the most visible way to break it. The
-                  timeline grows to meet the work list; `h-full` on each card
-                  carries the stretch through the wrapper. */}
-              <div className="grid grid-cols-1 items-stretch gap-3.5 lg:grid-cols-12">
-                <div className="lg:col-span-7">
-                  <Work rows={work} pending={pending} moved={moved} progress={progress} />
-                </div>
-                <div className="lg:col-span-5">
-                  <Activity rows={rows ?? []} events={events ?? []} moved={moved} />
-                </div>
-              </div>
-            </>
-          )}
+            </div>
+            <div className="lg:col-span-7">
+              <Activity rows={rows ?? []} events={events ?? []} moved={moved} />
+            </div>
+          </div>
         </>
       )}
     </div>
@@ -445,146 +419,154 @@ function ViewSwitch({ view, onChange }: { view: View; onChange: (v: View) => voi
 
 /* --------------------------------------------------------------- header -- */
 
-/** An eyebrow, a greeting, and who we think you are. Nothing else. */
+/**
+ * ONE COMPACT ROW, 2026-10-09. The eyebrow, the 2.5rem greeting and the sentence
+ * describing the page used to cost roughly 270px before a single number. A
+ * greeting is a courtesy, not content, so it is one line and the journey starts
+ * directly beneath it. An h2, not an h1: the top bar owns the page's only one.
+ */
 function Header({
   name,
   tier,
   handle,
+  trailing,
 }: {
   name: string;
   tier: string | null;
   handle: string | null;
+  trailing?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-[14px] px-0.5 py-1">
-      <div className="flex flex-col gap-1.5">
-        <p className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
-          {/* The one thing on the page allowed to move forever. It is telling
-              the truth: the websocket is open and this screen is current. */}
-          <span aria-hidden className="wx-blink bg-stage-paid size-1.5 rounded-full" />
-          Live
-          <span aria-hidden className="text-line">
-            /
-          </span>
-          Prism
-        </p>
-        {/* An h2, not an h1: the top bar owns the page's only one. This greets
-            the person rather than naming the section, so unlike the other
-            creator screens it earns its row and stays. */}
-        <h2 className="font-brand text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-0.5">
+      <div className="flex min-w-0 items-center gap-2.5">
+        {/* The one thing on the page allowed to move forever. It is telling the
+            truth: the websocket is open and this screen is current. */}
+        <span aria-hidden className="wx-blink bg-stage-paid size-1.5 shrink-0 rounded-full" />
+        <h2 className="font-brand truncate text-[1.25rem] leading-tight font-semibold tracking-[-0.01em]">
           {greet(name)}
         </h2>
-        {/* One line saying what the screen is for. The brief asked for it and
-            the greeting alone never said why any of this was on the page. */}
-        <p className="text-muted text-[0.875rem] leading-[1.4]">
-          Here is where your work stands and what it has earned.
-        </p>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {tier ? (
           <span className="wx-neo-raised-sm rounded-full px-3 py-1.5 text-[0.75rem] font-semibold tracking-[0.02em] capitalize">
             {tier} creator
           </span>
         ) : null}
         {handle ? (
-          <span className="wx-neo-raised-sm text-muted wx-numeric rounded-full px-3 py-1.5 text-[0.75rem]">
+          <span className="wx-neo-raised-sm text-muted wx-numeric max-w-[12rem] truncate rounded-full px-3 py-1.5 text-[0.75rem]">
             @{handle}
           </span>
         ) : null}
+        {trailing}
       </div>
     </div>
   );
 }
 
-/* --------------------------------------------------------------- money --- */
-
 type Moved = { ids: Set<string>; key: number };
 
-function Money({
+/* ------------------------------------------------------------- journey --- */
+
+/**
+ * FOUR STOPS ON ONE LINE: agreed, filming, approved, paid.
+ *
+ * The seven pipeline stages fold onto four stops, and each stage lands on
+ * exactly one, so the amounts sitting on the stops always add up to the headline
+ * (and to the three buckets `summarise` reports). A stop shows the money that is
+ * SITTING THERE NOW, not money that has passed through it, which is why a job
+ * that is filming does not also appear under "agreed".
+ *
+ *   agreed    pending_request, sample_requested, sample_shipped (being set up)
+ *   filming   content_pending, content_completed
+ *   approved  payment_pending (approved, money on its way)
+ *   paid      paid
+ */
+const STOPS = [
+  { key: 'agreed', label: 'Agreed', hint: 'being set up', tone: BUCKET_TONE.working },
+  { key: 'filming', label: 'Filming', hint: 'being made', tone: BUCKET_TONE.working },
+  { key: 'approved', label: 'Approved', hint: 'money on its way', tone: BUCKET_TONE.due },
+  { key: 'paid', label: 'Paid', hint: 'in your account', tone: BUCKET_TONE.paid },
+] as const;
+
+function stopOf(stage: OfferStage): number {
+  const i = stageIndex(stage);
+  return i < 3 ? 0 : i < 5 ? 1 : i === 5 ? 2 : 3;
+}
+
+const jobsWord = (n: number) => `${n} ${n === 1 ? 'job' : 'jobs'}`;
+
+function Journey({
   summary,
-  moved,
   rows,
+  moved,
+  progress,
 }: {
   summary: WorkSummary;
-  moved: Moved;
-  /** Approved work, already sorted. The drill-down below is filtered from it. */
+  /** Approved work, already sorted. */
   rows: MyWorkRow[];
+  moved: Moved;
+  progress: Map<string, JobProgress> | undefined;
 }) {
-  const { paid, due, working, total, currency } = summary.money;
-  /* Which cell is open. One at a time: two lists open at once is the "wall" the
-     timeline's eight-row cap was written against. */
-  const [openCell, setOpenCell] = useState<'paid' | 'due' | 'working' | null>(null);
+  const { paid, total, currency } = summary.money;
+  /* One stop open at a time: two lists open at once is the wall the timeline's
+     eight-row cap was written against. */
+  const [openStop, setOpenStop] = useState<number | null>(null);
   const fmt = (n: number) => money(Math.round(n * 100) / 100, currency);
-  const share = (n: number) => (total > 0 ? (n / total) * 100 : 0);
 
-  /** How many jobs sit in each money bucket, straight off the stage counts. */
-  const jobsIn = (bucket: 'working' | 'due' | 'paid') =>
-    OFFER_STAGES.filter((s) => STAGE_META[s].bucket === bucket).reduce(
-      (n, s) => n + summary.byStage[s].count,
-      0
-    );
+  const stops = useMemo(
+    () =>
+      STOPS.map((s, i) => {
+        const jobs = rows.filter((r) => stopOf(r.stage ?? 'pending_request') === i);
+        const amount = jobs.reduce((n, r) => n + (Number(r.committed_amount ?? 0) || 0), 0);
+        const unpriced = jobs.some((r) => r.committed_amount === null);
+        return { ...s, jobs, amount, unpriced };
+      }),
+    [rows]
+  );
 
-  const cells = [
-    {
-      key: 'paid' as const,
-      label: 'Paid',
-      value: paid,
-      tone: BUCKET_TONE.paid,
-      sub: `${jobsIn('paid')} ${jobsIn('paid') === 1 ? 'job' : 'jobs'} settled`,
-    },
-    {
-      key: 'due' as const,
-      label: 'Awaiting payment',
-      value: due,
-      tone: BUCKET_TONE.due,
-      sub:
-        jobsIn('due') > 0
-          ? `${jobsIn('due')} ${jobsIn('due') === 1 ? 'job' : 'jobs'} approved, money on its way`
-          : 'nothing approved right now',
-    },
-    {
-      key: 'working' as const,
-      label: 'In progress',
-      value: working,
-      tone: BUCKET_TONE.working,
-      sub: `${jobsIn('working')} ${jobsIn('working') === 1 ? 'job' : 'jobs'} under way`,
-    },
-  ];
+  /* How far the furthest job has got. The line fills up to there and no further,
+     so it can never read as complete while the money has not moved. */
+  const furthest = stops.reduce((at, s, i) => (s.jobs.length > 0 ? i : at), -1);
 
-  const segments = [
-    { key: 'paid', value: paid, className: 'bg-stage-paid' },
-    { key: 'due', value: due, className: 'bg-stage-due' },
-    { key: 'working', value: working, className: 'bg-stage-live' },
-  ].filter((s) => s.value > 0);
+  /* "0 of 10" under Filming: videos approved against videos agreed, over the
+     jobs that are actually at that stop. */
+  const videos = useMemo(() => {
+    let done = 0;
+    let need = 0;
+    for (const r of stops[1]?.jobs ?? []) {
+      const p = progress?.get(r.id);
+      if (p && p.required !== null) {
+        done += p.approved;
+        need += p.required;
+      }
+    }
+    return need > 0 ? { done, need } : null;
+  }, [stops, progress]);
+
+  /* Stops with jobs get twice the room of empty ones. Empty stops stay on the
+     line as a thin marker; this is layout only, every figure is still printed. */
+  const cols = stops
+    .map((s) => (s.jobs.length > 0 ? 'minmax(0,2fr)' : 'minmax(0,1fr)'))
+    .join(' ');
+  const open = openStop === null ? null : stops[openStop];
 
   return (
     /*
-     * THE HERO. Rashid: "Does the $400 financial state feel like the primary
-     * piece of information?" It is the only card on the screen carrying the
-     * warm wash, which is how it leads without being bigger than everything
-     * else â€” light rather than size. It does not lift on hover, because it is
-     * not clickable and a card that moves under the cursor and then does
-     * nothing is a promise the interface breaks.
-     */
-    /*
-     * A TILT CARD, 2026-10-09. `overflow-hidden` is gone from it: any overflow
-     * other than visible flattens `preserve-3d`, which would put the headline
-     * back on the card's own plane and leave the tilt as a plain wobble. Nothing
-     * inside needed the clip.
+     * A TILT CARD. `overflow-hidden` is deliberately absent: any overflow other
+     * than visible flattens `preserve-3d`, which would put the headline back on
+     * the card's own plane. Only the two headline figures are lifted; the line
+     * and its labels stay flat so they stay sharp.
      */
     <TiltCard
       as="section"
       className="wx-neo-raised flex flex-col gap-5 rounded-2xl p-[clamp(1.125rem,2vw,1.5rem)]"
     >
-      {/* `relative` so the content sits above the ::before wash. */}
       <div className="relative flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
-            Agreed with you so far
+            Agreed with you
           </p>
-          {/* The headline is the one thing lifted. The sentence beside it stays
-              on the card, which is what gives the lift something to rise from. */}
           <div className="flex flex-wrap items-baseline gap-2.5">
             <TiltLift>
               <span
@@ -598,152 +580,158 @@ function Money({
               </span>
             </TiltLift>
             <span className="text-muted text-[0.8125rem]">
-              across {summary.approved} {summary.approved === 1 ? 'job' : 'jobs'}
+              across {jobsWord(summary.approved)}
             </span>
           </div>
         </div>
 
-        {/*
-          AN INSET PANEL, not a floating figure. With `justify-between` on a
-          wide screen this sat alone against the right edge with a void between
-          it and the headline, reading as something that had drifted there
-          rather than as the second half of a statement. Given a tinted well and
-          a left hairline it becomes a deliberate counterweight — the same
-          treatment as the three cells below, so the hero has one vocabulary
-          rather than two.
-        */}
         <div className="wx-neo-inset flex flex-col gap-0.5 rounded-xl px-4 py-2.5 sm:text-right">
           <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             In your account
           </p>
-          <span
-            key={`paid-${moved.key}`}
-            className={cn(
-              'font-display wx-numeric text-stage-paid text-[clamp(1.375rem,3vw,1.75rem)] leading-none font-semibold',
-              moved.ids.size > 0 && 'wx-bump'
-            )}
-          >
-            {fmt(paid)}
-          </span>
+          <TiltLift depth={14}>
+            <span
+              key={`paid-${moved.key}`}
+              className={cn(
+                'font-display wx-numeric text-stage-paid block text-[clamp(1.375rem,3vw,1.75rem)] leading-none font-semibold',
+                moved.ids.size > 0 && 'wx-bump'
+              )}
+            >
+              {fmt(paid)}
+            </span>
+          </TiltLift>
+          {/* The honest version of the old bar: how much of the deal has landed. */}
+          <p className="text-muted wx-numeric text-[0.75rem]">
+            {fmt(paid)} of {fmt(total)} paid
+          </p>
         </div>
       </div>
 
-      {/* Every agreed pound, and where it currently sits. The three add up to
-          the headline by construction: each stage belongs to exactly one
-          bucket, so a creator can check our arithmetic. */}
-      <div className="relative flex flex-col gap-3">
-        {/*
-          18px of saturated fill was louder than the $400 above it. A creator's
-          eye went to the bar first, which inverts the hierarchy the whole card
-          exists to state â€” and on a single-job account the bar is one colour
-          across the full width, so it was a large block of indigo in a screen
-          whose only accent is meant to be the violet accent.
-
-          10px, sunk into its track by an inset shadow, so it reads as a gauge
-          cut into the card rather than a stripe painted across it. Same data,
-          same colours, a third of the weight.
-        */}
-        <div
-          role="img"
-          aria-label={`${fmt(paid)} paid, ${fmt(due)} awaiting payment, ${fmt(working)} in progress`}
-          className="wx-neo-inset flex h-2.5 gap-0.5 overflow-hidden rounded-full"
-        >
-          {segments.map((s) => (
-            <m.span
+      {/*
+        THE LINE. Vertical on a phone, where four columns would be ~80px each;
+        horizontal from `sm`. The same markup does both: the connector is
+        positioned per breakpoint and the column widths come from `--cols`.
+      */}
+      <ol
+        aria-label="Where your money is"
+        style={{ '--cols': cols } as CSSProperties}
+        className="relative grid grid-cols-1 sm:[grid-template-columns:var(--cols)]"
+      >
+        {stops.map((s, i) => {
+          const reached = i <= furthest;
+          const here = i === furthest;
+          const has = s.jobs.length > 0;
+          const isOpen = openStop === i;
+          return (
+            <li
               key={s.key}
-              initial={{ width: 0 }}
-              animate={{ width: `${share(s.value)}%` }}
-              transition={{ duration: 0.9, ease: [0.2, 0.8, 0.2, 1] }}
-              className={s.className}
-            />
-          ))}
-        </div>
+              className="relative grid grid-cols-[1.5rem_1fr] gap-x-3 pb-4 last:pb-0 sm:grid-cols-1 sm:gap-y-2 sm:pr-3 sm:pb-0"
+            >
+              {i < stops.length - 1 ? (
+                <span
+                  aria-hidden
+                  className={cn(
+                    'absolute top-6 bottom-0 left-[0.6875rem] w-0.5 rounded-full sm:top-[0.6875rem] sm:right-0 sm:bottom-auto sm:left-6 sm:h-0.5 sm:w-auto',
+                    i < furthest ? 'bg-accent' : 'bg-line'
+                  )}
+                />
+              ) : null}
 
-        {/*
-          THREE EQUAL CELLS, always three columns from `sm` up. `auto-fit` with
-          a 170px floor dropped to 2 + 1 at some widths, which put "In progress"
-          alone on a row looking like a conclusion rather than one third of a
-          split. These are parts of one number and have to read as one row.
+              <span
+                aria-hidden
+                className={cn(
+                  'relative z-10 grid size-6 shrink-0 place-items-center rounded-full',
+                  reached ? 'bg-accent text-on-accent' : 'wx-neo-inset',
+                  here && 'ring-accent/40 ring-4'
+                )}
+              >
+                {reached ? (
+                  <Check size={14} />
+                ) : (
+                  <span className="bg-line-strong size-2 rounded-full" />
+                )}
+              </span>
 
-          Each keeps its bucket tint and gains the top hairline, so they read as
-          inset panels within the hero rather than three loose chips on it.
-        */}
-        {/*
-          EACH CELL IS A DISCLOSURE, 2026-10-09. "$400 in progress" now opens the
-          jobs it is made of, right here, instead of sending anybody to another
-          tab to find out. A real button with `aria-expanded`, so it works from
-          the keyboard and is announced; the list opens beneath the row rather
-          than inside a cell, because a cell is a third of the card wide.
-        */}
-        <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-          {cells.map((cell) => {
-            const open = openCell === cell.key;
-            return (
-              <li key={cell.key} className="flex">
+              {has ? (
                 <button
                   type="button"
-                  aria-expanded={open}
-                  aria-controls="hero-drill"
-                  onClick={() => setOpenCell(open ? null : cell.key)}
-                  className={cn(
-                    'focus-visible:ring-accent flex min-h-11 w-full flex-col gap-1 rounded-xl p-3.5 text-left focus-visible:ring-2 focus-visible:outline-none',
-                    cell.tone.soft
-                  )}
+                  aria-expanded={isOpen}
+                  aria-controls="journey-drill"
+                  onClick={() => setOpenStop(isOpen ? null : i)}
+                  className="focus-visible:ring-accent flex min-h-11 w-full min-w-0 flex-col gap-0.5 rounded-lg p-1 text-left focus-visible:ring-2 focus-visible:outline-none"
                 >
                   <span
                     className={cn(
-                      'flex items-center justify-between gap-2 text-[0.6875rem] font-semibold tracking-[0.1em] uppercase',
-                      cell.tone.text
+                      'flex items-center gap-1 text-[0.6875rem] font-semibold tracking-[0.1em] uppercase',
+                      s.tone.text
                     )}
                   >
-                    {cell.label}
+                    {s.label}
                     <ChevronDown
-                      size={14}
+                      size={12}
                       aria-hidden
-                      className={cn('transition-transform duration-200', open && 'rotate-180')}
+                      className={cn(
+                        'shrink-0 transition-transform duration-200',
+                        isOpen && 'rotate-180'
+                      )}
                     />
                   </span>
                   <span
-                    key={`${cell.key}-${moved.key}`}
+                    key={`${s.key}-${moved.key}`}
                     className={cn(
-                      'font-brand wx-numeric text-[1.5rem] leading-none font-semibold',
+                      'font-brand wx-numeric text-[1.375rem] leading-none font-semibold',
                       moved.ids.size > 0 && 'wx-bump'
                     )}
                   >
-                    {fmt(cell.value)}
+                    {fmt(s.amount)}
                   </span>
-                  <span className="text-muted text-[0.75rem] leading-[1.35]">{cell.sub}</span>
+                  <span className="text-muted text-[0.75rem] leading-[1.35]">
+                    {jobsWord(s.jobs.length)}, {s.hint}
+                    {s.unpriced ? ', fee to confirm' : ''}
+                  </span>
+                  {s.key === 'filming' && videos ? (
+                    <span className="wx-numeric text-[0.8125rem] font-semibold">
+                      {videos.done} of {videos.need} videos approved
+                    </span>
+                  ) : null}
                 </button>
-              </li>
-            );
-          })}
-        </ul>
+              ) : (
+                /* An empty stop is a marker, not a card. It still says what it
+                   holds, which is nothing, so no figure is hidden. */
+                <div className="flex min-h-6 min-w-0 flex-col justify-center gap-0.5 p-1">
+                  <span className="text-muted text-[0.6875rem] font-semibold tracking-[0.1em] uppercase">
+                    {s.label}
+                  </span>
+                  <span className="text-muted wx-numeric text-[0.8125rem]">{fmt(0)} here</span>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ol>
 
-        {openCell ? (
-          <div
-            id="hero-drill"
-            role="region"
-            aria-label={`Jobs that make up ${cells.find((c) => c.key === openCell)?.label.toLowerCase()}`}
-            className="wx-neo-inset wx-pop rounded-xl p-3"
-          >
-            <DrillRows
-              empty="No jobs in here right now."
-              items={rows
-                .filter((r) => STAGE_META[r.stage ?? 'pending_request'].bucket === openCell)
-                .map((r) => ({
-                  id: r.id,
-                  top: r.brand?.name ?? 'A brand',
-                  title: r.offer?.title ?? 'An offer',
-                  note: STAGE_META[r.stage ?? 'pending_request'].label,
-                  figure:
-                    r.committed_amount === null
-                      ? 'To confirm'
-                      : money(r.committed_amount, r.currency),
-                }))}
-            />
-          </div>
-        ) : null}
-      </div>
+      {open ? (
+        <div
+          id="journey-drill"
+          role="region"
+          aria-label={`Jobs at ${open.label.toLowerCase()}`}
+          className="wx-neo-inset wx-pop rounded-xl p-3"
+        >
+          <DrillRows
+            empty="No jobs in here right now."
+            items={open.jobs.map((r) => ({
+              id: r.id,
+              top: r.brand?.name ?? 'A brand',
+              title: r.offer?.title ?? 'An offer',
+              note: STAGE_META[r.stage ?? 'pending_request'].label,
+              figure:
+                r.committed_amount === null
+                  ? 'To confirm'
+                  : money(r.committed_amount, r.currency),
+            }))}
+          />
+        </div>
+      ) : null}
     </TiltCard>
   );
 }
@@ -794,9 +782,17 @@ function DrillRows({ items, empty }: { items: DrillItem[]; empty: string }) {
   );
 }
 
-/* ---------------------------------------------------------------- work --- */
+/* ---------------------------------------------------------------- jobs --- */
 
-function Work({
+/**
+ * The jobs, each saying what happens next and where to do it.
+ *
+ * Sorted by the caller, earliest stage first. "10 videos, $40 each" is the
+ * agreed amount divided by the agreed video count, both frozen at approval
+ * (`committed_*`), never the offer's live values: re-scoping an offer does not
+ * change a deal that is already under way.
+ */
+function Jobs({
   rows,
   pending,
   moved,
@@ -808,37 +804,41 @@ function Work({
   progress: Map<string, JobProgress> | undefined;
 }) {
   return (
-    <section className="wx-neo-raised flex h-full flex-col gap-3.5 rounded-2xl p-4">
+    <section className="wx-neo-raised flex flex-col gap-3.5 rounded-2xl p-4">
       <div className="flex items-baseline justify-between gap-2.5">
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
-          Work you took
+          Your jobs
         </h2>
-        <p className="text-muted wx-numeric text-[0.8125rem]">
-          {rows.length} {rows.length === 1 ? 'job' : 'jobs'}
-        </p>
+        <p className="text-muted wx-numeric text-[0.8125rem]">{jobsWord(rows.length)}</p>
       </div>
 
-      <ul className="flex flex-col gap-3">
+      <ul className="grid grid-cols-1 gap-3 xl:grid-cols-2">
         {rows.map((row) => {
           const stage = row.stage ?? 'pending_request';
           const at = stageIndex(stage);
           const tone = toneFor(stage);
           const justMoved = moved.ids.has(row.id);
+          const p = progress?.get(row.id);
+          const count = row.committed_video_count;
+          const each =
+            row.committed_amount !== null && count
+              ? money(
+                  Math.round((Number(row.committed_amount) / count) * 100) / 100,
+                  row.currency
+                )
+              : null;
+          const detail = [
+            count ? `${count} ${count === 1 ? 'video' : 'videos'}` : null,
+            each ? `${each} each` : null,
+          ]
+            .filter(Boolean)
+            .join(' · ');
+          /* The one sentence of what to do. Filming outranks the stage's generic
+             hint because it is the thing only this person can move. */
+          const action =
+            p && needsFilming(p) ? 'Film your next video' : STAGE_META[stage].creatorHint;
 
           return (
-            /*
-             * A WORK ITEM, not a generic card. Rashid listed what it has to
-             * communicate at a glance: project, earnings, progress, the current
-             * action and a way to act. The money is the second biggest figure
-             * on the page after the hero, because it is the answer to "what is
-             * this job worth" and it was previously the same size as the
-             * offer's title.
-             *
-             * It sits on `--wx-surface-2`, a step above the card holding it,
-             * rather than on the same surface with a border. A card drawn on
-             * its own colour inside its parent reads as a sheet lying on it;
-             * the border version read as a box drawn on a box.
-             */
             <li
               key={`${row.id}-${moved.key}`}
               className={cn(
@@ -854,6 +854,7 @@ function Work({
                   <p className="text-[0.96875rem] leading-[1.25] font-semibold break-words">
                     {row.offer?.title ?? 'An offer'}
                   </p>
+                  {detail ? <p className="text-muted text-[0.78125rem]">{detail}</p> : null}
                 </div>
                 <p className="font-display wx-numeric shrink-0 text-[1.375rem] leading-none font-semibold whitespace-nowrap">
                   {row.committed_amount === null
@@ -862,30 +863,11 @@ function Work({
                 </p>
               </div>
 
-              {/* Seven steps, always all seven. Somebody at "sample shipped"
-                  wants to know what comes next as much as what came before. */}
-              <ol className="flex gap-[3px]" aria-label={`Stage: ${STAGE_META[stage].label}`}>
-                {OFFER_STAGES.map((s, i) => (
-                  <li
-                    key={s}
-                    aria-hidden
-                    className={cn(
-                      'h-[5px] flex-1 rounded-[3px]',
-                      i < at && 'bg-text/25',
-                      i === at && tone.bar,
-                      i > at && 'bg-line'
-                    )}
-                  />
-                ))}
-              </ol>
-
-              <p className="flex flex-wrap items-center gap-2">
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                 <span className={cn('text-[0.78125rem] font-semibold', tone.text)}>
                   {at + 1}. {STAGE_META[stage].label}
                 </span>
-                <span className="text-muted text-[0.78125rem]">
-                  {STAGE_META[stage].creatorHint}
-                </span>
+                <span className="text-[0.78125rem] font-semibold">{action}</span>
                 {justMoved ? (
                   <span className="text-stage-live text-[0.6875rem] font-semibold">
                     just now
@@ -893,24 +875,17 @@ function Work({
                 ) : null}
               </p>
 
-              {/* What the stage cannot say: how much of it they have filmed.
-                  "Content pending" told them to go and shoot; it never told
-                  them how many were left, or gave them anywhere to put one. */}
-              {progress?.get(row.id) ? (
+              {/* How much they have filmed, and the way to add the next one. */}
+              {p ? (
                 <JobProgressBar
-                  progress={progress.get(row.id)!}
+                  progress={p}
                   addVideoHref={`/app/content?job=${row.id}`}
                   className="border-line border-t pt-[11px]"
                   compact
                 />
               ) : null}
 
-              {progress?.get(row.id) ? (
-                <PaceLine
-                  progress={progress.get(row.id)!}
-                  since={row.decided_at ?? row.created_at}
-                />
-              ) : null}
+              {p ? <PaceLine progress={p} since={row.decided_at ?? row.created_at} /> : null}
             </li>
           );
         })}
@@ -1244,7 +1219,7 @@ function Counts({
      * the lifted figures stand on.
      */
     <TiltCard className="wx-neo-raised rounded-2xl">
-      <ul className="grid grid-cols-2 lg:grid-cols-4">
+      <ul className="grid grid-cols-2">
         {items.map((item, i) => {
           const Icon = item.icon;
           const isOpen = open === item.key;
@@ -1256,8 +1231,7 @@ function Counts({
                 /* Two columns on a phone, four from lg: the dividers have to
                  follow, or they cut the band in the wrong places. */
                 i % 2 === 1 && 'border-l',
-                i >= 2 && 'border-t lg:border-t-0',
-                i === 2 && 'lg:border-l'
+                i >= 2 && 'border-t'
               )}
             >
               <div className="flex h-full items-center gap-3 p-4">

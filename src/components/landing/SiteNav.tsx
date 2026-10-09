@@ -106,7 +106,12 @@ export function SiteNav() {
                links 116px left of centre at 1024px. Measured. A zero minimum
                makes the two outer columns mathematically equal at every width,
                which is the only way the middle column is actually centred. */
-            'wx-neo-raised ease-brand grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 rounded-2xl px-4 transition-[height,border-radius] duration-300 sm:px-5',
+            /* `rounded-[2rem]` is the kit's largest container radius, "xl 32 ·
+               raised", which is what this card is. At 4rem tall that is half
+               the height, so the ends read as full curves; when the card
+               tightens to 3.5rem on scroll the browser clamps it to 1.75rem and
+               it stays a pill rather than jumping shape. */
+            'wx-neo-raised ease-brand grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 rounded-[2rem] px-5 transition-[height,border-radius] duration-300 sm:px-6',
             /* The one thing scroll still changes. The card tightens slightly
                once you are into the page, which reads as it settling rather
                than as a second style of header. */
@@ -189,7 +194,7 @@ export function SiteNav() {
             className="overflow-hidden lg:hidden"
           >
             <Container>
-              <ul className="wx-neo-raised mt-2 flex flex-col gap-1 rounded-2xl p-3">
+              <ul className="wx-neo-raised mt-2 flex flex-col gap-1 rounded-[2rem] p-3">
                 {LINKS.map((l) => (
                   <li key={l.href}>
                     <Link

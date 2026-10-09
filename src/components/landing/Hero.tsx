@@ -16,15 +16,24 @@ const item = {
 };
 
 /**
- * What a creator actually sees on the other side of the login. Each one floats
- * at its own height above the page, which is the point: they drift against each
- * other as you scroll, and that relative drift is what reads as depth.
- * `from`/`to` are px of travel across the hero's time on screen.
+ * What a creator actually sees on the other side of the login.
+ *
+ * ONE ROW, ONE BASELINE. These each had their own travel (-16, -44, -28), so
+ * they drifted past one another — which reads as depth on a backdrop but as a
+ * misalignment on a row of labels, because three chips of the same kind sitting
+ * at three different heights look broken rather than deliberate. Rashid asked
+ * for them aligned, and he is right: depth belongs on the planes BEHIND the
+ * copy, not on a row the eye reads as a set.
+ *
+ * They still travel as a group, so the plane still moves against the backdrop
+ * and the copy. They just stay level with each other while doing it.
  */
+const FLOAT_TRAVEL = -28;
+
 const FLOATS = [
-  { label: 'Your GMV', dot: 'bg-accent', to: -16 },
-  { label: 'Commission earned', dot: 'bg-info', to: -44 },
-  { label: 'Ad spend behind your videos', dot: 'bg-success', to: -28 },
+  { label: 'Your GMV', dot: 'bg-accent' },
+  { label: 'Commission earned', dot: 'bg-info' },
+  { label: 'Ad spend behind your videos', dot: 'bg-success' },
 ] as const;
 
 export function Hero() {
@@ -109,10 +118,13 @@ export function Hero() {
                 variants={item}
                 className="text-muted mt-6 max-w-lg text-[1.0625rem] leading-relaxed text-pretty"
               >
-                WurxMediaHub is the creator platform behind Wurx Media&rsquo;s TikTok Shop
-                brands. One login, every brand you work with, and the real performance data
-                behind your videos. No screenshots, no guessing, no waiting on a reply in the
-                group chat.
+                {/* The old product name was still here, in the first paragraph
+                    of the landing page. "Wurx Media" stays: the kit itself says
+                    "Creator community by Wurx Media", so that is the company,
+                    not the retired identity. */}
+                Prism is the creator platform behind Wurx Media&rsquo;s TikTok Shop brands. One
+                login, every brand you work with, and the real performance data behind your
+                videos. No screenshots, no guessing, no waiting on a reply in the group chat.
               </m.p>
 
               <m.div variants={item} className="mt-8">
@@ -121,25 +133,26 @@ export function Hero() {
                 </ButtonLink>
               </m.div>
 
-              {/* THE NEAREST PLANE. Three chips, each at its own travel, so they
-                  slide past the copy and past one another. It is also the first
-                  thing on the page to say what is behind the login. */}
-              <m.ul
-                variants={item}
-                className="mt-10 flex flex-wrap gap-x-3 gap-y-4"
-                aria-label="What you see inside"
-              >
-                {FLOATS.map((f) => (
-                  <li key={f.label}>
-                    <ParallaxLayer progress={progress} from={0} to={f.to} className="block">
-                      <span className="wx-neo-raised-sm text-text inline-flex items-center gap-2.5 rounded-full px-4 py-2.5 text-[0.8125rem] font-semibold">
-                        <span className={`${f.dot} size-2 rounded-full`} aria-hidden />
+              {/* THE NEAREST PLANE. The parallax is on the ROW, not on each
+                  chip, so the three stay level with one another while the whole
+                  set drifts against the copy behind it. `items-center` keeps
+                  them on one baseline even when the longest wraps. */}
+              <ParallaxLayer progress={progress} from={0} to={FLOAT_TRAVEL} className="block">
+                <m.ul
+                  variants={item}
+                  className="mt-10 flex flex-wrap items-center gap-x-3 gap-y-3"
+                  aria-label="What you see inside"
+                >
+                  {FLOATS.map((f) => (
+                    <li key={f.label} className="flex">
+                      <span className="wx-neo-raised-sm text-text inline-flex min-h-11 items-center gap-2.5 rounded-full px-4 text-[0.8125rem] font-semibold">
+                        <span className={`${f.dot} size-2 shrink-0 rounded-full`} aria-hidden />
                         {f.label}
                       </span>
-                    </ParallaxLayer>
-                  </li>
-                ))}
-              </m.ul>
+                    </li>
+                  ))}
+                </m.ul>
+              </ParallaxLayer>
             </m.div>
           </ParallaxLayer>
 

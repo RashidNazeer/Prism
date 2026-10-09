@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  type ComponentPropsWithoutRef,
+  type ElementType,
+  type ReactNode,
+} from 'react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -57,16 +64,33 @@ export function TiltCard({
   className,
   as: Tag = 'div',
   lift = MAX_TILT,
+  ...rest
 }: {
   children: ReactNode;
   className?: string;
-  /** `section`, `li`, `article` — whatever the surrounding markup needs. */
-  as?: 'div' | 'section' | 'article' | 'li';
-  /** Override the tilt ceiling. 0 disables tilt but keeps the highlight. */
+  /** `section`, `li`, `article`, `form` — whatever the markup needs. */
+  as?: 'div' | 'section' | 'article' | 'li' | 'form';
+  /**
+   * Override the tilt ceiling. 0 disables tilt but keeps the highlight.
+   *
+   * TURN THIS DOWN ON ANYTHING YOU CLICK INTO. Tilt moves the card's edges, so
+   * on a form it moves the inputs you are aiming at — at the default 6 degrees
+   * a wide card's edge travels about 26px, which is enough to make a field
+   * slide out from under the cursor. Around 2 keeps the material feeling alive
+   * while leaving the targets where the eye put them.
+   */
   lift?: number;
-}) {
+  /* Everything else goes straight to the element. Without this the component
+     could only ever be a decorative box: a `form` needs its `onSubmit`, a
+     `section` its `aria-label`, and wrapping them in an extra div to get those
+     back would mean two nested cards.
+     Typed from `form` because its props are a superset here — every global HTML
+     attribute plus the form-specific ones — so a `div` or `li` caller still
+     typechecks for anything it could legitimately pass. */
+} & Omit<ComponentPropsWithoutRef<'form'>, 'className' | 'children'>) {
   const ref = useRef<HTMLElement>(null);
   const frame = useRef(0);
+  const Component = Tag as ElementType;
 
   const reset = useCallback(() => {
     const el = ref.current;
@@ -120,9 +144,12 @@ export function TiltCard({
   }, [lift, reset]);
 
   return (
-    <Tag ref={ref as never} className={cn('wx-tilt', className)}>
+    /* `ElementType` rather than the literal union: a polymorphic tag cannot be
+       narrowed to one element's handler types without TypeScript insisting
+       every handler is a div's. The union above still constrains CALLERS. */
+    <Component ref={ref as never} className={cn('wx-tilt', className)} {...rest}>
       {children}
-    </Tag>
+    </Component>
   );
 }
 
