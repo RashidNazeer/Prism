@@ -1,5 +1,12 @@
 import { BarChart3, FileText, Target, Trophy, Users, Wallet } from 'lucide-react';
-import { Section, Eyebrow, Reveal } from '@/components/layout/Section';
+import {
+  Section,
+  Eyebrow,
+  ParallaxLayer,
+  Reveal,
+  useSectionScroll,
+} from '@/components/layout/Section';
+import { TiltCard, TiltLift } from '@/components/ui/TiltCard';
 import { FEATURES } from '@/content/site';
 
 const ICONS = {
@@ -11,36 +18,78 @@ const ICONS = {
   users: Users,
 };
 
-export function Platform() {
-  return (
-    <Section id="platform" className="border-line border-t">
-      <Reveal>
-        <Eyebrow>The platform</Eyebrow>
-        <h2 className="mt-5 max-w-4xl text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold">
-          Most agencies show you a screenshot. We give you the dashboard.
-        </h2>
-        <p className="text-muted mt-6 max-w-xl text-lg leading-relaxed text-pretty">
-          Every brand you work with gets its own hub, themed as itself, with your real
-          performance inside. Transparency is not a feature here. It is the whole product.
-        </p>
-      </Reveal>
+/** The spectrum, in the kit's order, one per card. Accents on the icon only. */
+const TONES = [
+  'text-danger',
+  'text-accent',
+  'text-info',
+  'text-success',
+  'text-danger',
+  'text-accent',
+] as const;
 
-      <ul className="bg-line mt-14 grid gap-px overflow-hidden rounded-2xl shadow-md sm:grid-cols-2 lg:grid-cols-3">
-        {FEATURES.map((f, i) => {
-          const Icon = ICONS[f.icon];
-          return (
-            <Reveal key={f.title} delay={(i % 3) * 0.06} className="bg-surface-1">
-              <li className="group ease-brand hover:bg-surface-2 h-full p-7 transition-colors duration-300">
-                <span className="bg-accent-soft text-accent grid size-10 place-items-center rounded-xl">
-                  <Icon size={18} aria-hidden />
-                </span>
-                <h3 className="mt-5 text-lg font-bold">{f.title}</h3>
-                <p className="text-muted mt-2.5 text-[0.9375rem] leading-relaxed">{f.body}</p>
+export function Platform() {
+  const { ref, progress } = useSectionScroll(['start end', 'end start']);
+
+  return (
+    <Section id="platform" className="overflow-x-clip">
+      <div ref={ref as never} className="relative">
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          <ParallaxLayer
+            progress={progress}
+            from={120}
+            to={-120}
+            className="absolute -top-20 -left-32 size-[30rem] bg-[radial-gradient(closest-side,var(--wx-info-soft),transparent)]"
+          />
+          <ParallaxLayer
+            progress={progress}
+            from={-60}
+            to={160}
+            className="absolute right-[-10rem] bottom-0 size-[26rem] bg-[radial-gradient(closest-side,var(--wx-danger-soft),transparent)]"
+          />
+        </div>
+
+        <Reveal depth={{ rise: 36, tilt: 8, from: 0.98 }} className="relative">
+          <Eyebrow>The platform</Eyebrow>
+          <h2 className="mt-5 max-w-4xl text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold">
+            Most agencies show you a screenshot. We give you the dashboard.
+          </h2>
+          <p className="text-muted mt-6 max-w-xl text-lg leading-relaxed text-pretty">
+            Every brand you work with gets its own hub, themed as itself, with your real
+            performance inside. Transparency is not a feature here. It is the whole product.
+          </p>
+        </Reveal>
+
+        <ul className="relative mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map((f, i) => {
+            const Icon = ICONS[f.icon];
+            return (
+              <li key={f.title} className="h-full">
+                {/* Three different distances across a row, so each row of cards
+                    arrives in a ripple. */}
+                <Reveal
+                  depth={{ rise: 44 + (i % 3) * 30, tilt: 14, from: 0.93 }}
+                  className="h-full"
+                >
+                  <TiltCard className="wx-neo-raised ease-brand h-full rounded-2xl p-7">
+                    <TiltLift depth={22}>
+                      <span
+                        className={`wx-neo-raised-sm ${TONES[i % TONES.length]} grid size-11 place-items-center rounded-xl`}
+                      >
+                        <Icon size={19} aria-hidden />
+                      </span>
+                    </TiltLift>
+                    <h3 className="mt-5 text-lg font-bold">{f.title}</h3>
+                    <p className="text-muted mt-2.5 text-[0.9375rem] leading-relaxed">
+                      {f.body}
+                    </p>
+                  </TiltCard>
+                </Reveal>
               </li>
-            </Reveal>
-          );
-        })}
-      </ul>
+            );
+          })}
+        </ul>
+      </div>
     </Section>
   );
 }

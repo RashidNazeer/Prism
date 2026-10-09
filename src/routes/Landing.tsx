@@ -53,9 +53,12 @@ export function Landing() {
   }
 
   return (
-    <div className="min-h-dvh bg-bg">
+    <div className="bg-bg min-h-dvh">
       <SiteNav />
-      <main>
+      {/* `overflow-x-clip` (not `hidden`, which would make <main> a scroll
+          container): the scroll layers only ever move vertically, but a rotated
+          card or an oversized glow disc must never be able to widen the page. */}
+      <main className="overflow-x-clip">
         <Hero />
         <TrustedBy />
         <HowItWorks />

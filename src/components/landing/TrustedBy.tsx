@@ -1,11 +1,15 @@
 import { Container, Reveal } from '@/components/layout/Section';
+import { TiltCard, TiltLift } from '@/components/ui/TiltCard';
 import { STATS } from '@/content/site';
 import { BrandMarquee } from './BrandMarquee';
+
+/** One spectrum accent per figure, violet first because it is the interactive one. */
+const BARS = ['bg-accent', 'bg-info', 'bg-success'] as const;
 
 /** Social proof band: the brands we run, then the headline numbers. */
 export function TrustedBy() {
   return (
-    <section id="brands" className="border-line bg-surface-1 scroll-mt-20 border-y">
+    <section id="brands" className="bg-bg scroll-mt-20">
       {/* Full-bleed: the marquee runs edge to edge, not inside the container. */}
       <div className="py-9">
         <Container className="pb-7">
@@ -16,24 +20,32 @@ export function TrustedBy() {
         <BrandMarquee />
       </div>
 
-      <Container className="pb-16 sm:pb-20">
-        <Reveal>
-          <dl className="bg-line grid gap-px overflow-hidden rounded-2xl shadow-md sm:grid-cols-3">
-            {STATS.map((stat) => (
-              <div key={stat.label} className="bg-bg px-6 py-9 text-center">
-                <dt className="sr-only">{stat.label}</dt>
-                <dd>
-                  <span className="wx-lining font-display block text-[clamp(2rem,5vw,3rem)] leading-none font-extrabold tracking-tight">
-                    {stat.value}
-                  </span>
+      <Container className="pt-4 pb-16 sm:pb-20">
+        {/* Three raised cards that rise out of the page one after another, each
+            at its own distance, rather than one strip fading in. The figure
+            floats above its own card on `TiltLift`, as on the step cards. */}
+        <ul className="grid gap-5 sm:grid-cols-3">
+          {STATS.map((stat, i) => (
+            <li key={stat.label}>
+              <Reveal depth={{ rise: 40 + i * 28, tilt: 16, from: 0.92 }} className="h-full">
+                <TiltCard className="wx-neo-raised h-full rounded-2xl px-6 py-9 text-center">
+                  <span
+                    className={`${BARS[i] ?? 'bg-accent'} mx-auto mb-6 block h-1 w-10 rounded-full`}
+                    aria-hidden
+                  />
+                  <TiltLift depth={22}>
+                    <span className="wx-lining font-display block text-[clamp(2rem,5vw,3rem)] leading-none font-extrabold tracking-tight">
+                      {stat.value}
+                    </span>
+                  </TiltLift>
                   <span className="text-faint mt-3 block font-mono text-[0.6875rem] tracking-[0.16em] uppercase">
                     {stat.label}
                   </span>
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </Reveal>
+                </TiltCard>
+              </Reveal>
+            </li>
+          ))}
+        </ul>
       </Container>
     </section>
   );
