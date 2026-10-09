@@ -73,28 +73,57 @@ export function SiteNav() {
     };
   }, [open]);
 
+  /*
+   * A CARD ON THE BACKGROUND, not a bar welded to the top of the page.
+   * Rashid, 2026-10-09: "make it like a card rounded at the edges on top of the
+   * page and should look like placed on the background".
+   *
+   * So the header itself paints NOTHING — it only supplies the gutter that lets
+   * the card float. The full-bleed `bg-bg/85` and the `border-b` are gone: both
+   * were what made it read as a bar fixed to the edge of the window.
+   */
   return (
-    <header
-      className={cn(
-        'ease-brand fixed inset-x-0 top-0 z-50 transition-all duration-300',
-        scrolled || open
-          ? 'border-line bg-bg/85 border-b backdrop-blur-xl'
-          : 'border-b border-transparent'
-      )}
-    >
+    <header className="fixed inset-x-0 top-0 z-50 pt-3 sm:pt-4">
       <Container>
-        <nav className="flex h-16 items-center justify-between gap-4">
+        <nav
+          className={cn(
+            /*
+             * SYMMETRY COMES FROM THE GRID, NOT FROM EYEBALLING IT.
+             *
+             * This was `flex justify-between`, which spaces three groups of
+             * DIFFERENT widths — so the links sat wherever the mark and the
+             * action cluster left them, never actually centred. The right-hand
+             * group is much the wider of the two ("Already a partner? Sign in",
+             * a toggle and a button), so the links were pushed noticeably left.
+             *
+             * Two equal `1fr` columns with the links in an `auto` column
+             * between them puts the links dead centre and keeps them there at
+             * every width, whatever the two outer groups happen to contain.
+             */
+            /* `minmax(0,1fr)`, not plain `1fr`. A bare `1fr` is `minmax(auto,
+               1fr)`, so its minimum is its CONTENT — and the right-hand group is
+               wider than the mark, so it grew its own column and pushed the
+               links 116px left of centre at 1024px. Measured. A zero minimum
+               makes the two outer columns mathematically equal at every width,
+               which is the only way the middle column is actually centred. */
+            'wx-neo-raised ease-brand grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 rounded-2xl px-4 transition-[height,border-radius] duration-300 sm:px-5',
+            /* The one thing scroll still changes. The card tightens slightly
+               once you are into the page, which reads as it settling rather
+               than as a second style of header. */
+            scrolled && !open ? 'h-14' : 'h-16'
+          )}
+        >
           <Link
             to="/"
-            className="inline-flex min-h-11 shrink-0 items-center"
-            aria-label="WurxMediaHub home"
+            className="inline-flex min-h-11 shrink-0 items-center justify-self-start"
+            aria-label="Prism home"
           >
             <PrismMark />
           </Link>
 
           {/* `lg`, not `md`: six page links and the sign-in cluster do not fit
               a tablet. Below that they are in the menu button beside them. */}
-          <ul className="hidden items-center gap-1 lg:flex">
+          <ul className="hidden items-center gap-1 justify-self-center lg:flex">
             {LINKS.map((l) => (
               <li key={l.href}>
                 <Link
@@ -107,7 +136,7 @@ export function SiteNav() {
             ))}
           </ul>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 justify-self-end">
             {/* Existing partners had no way in from a desktop: "Sign in" only
                 existed inside the mobile menu. This is the return path for
                 everyone who has already applied. */}
@@ -115,7 +144,12 @@ export function SiteNav() {
               to="/login"
               className="text-muted ease-brand hover:text-accent hidden min-h-11 items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm whitespace-nowrap transition-colors duration-200 sm:inline-flex"
             >
-              <span className="hidden lg:inline">Already a partner?</span>
+              {/* `xl`, not `lg`. At exactly 1024 the six links, the mark, this
+                  sentence, the toggle and the Apply button genuinely do not fit,
+                  and something has to give — making the columns equal only
+                  moves the problem. This phrase is the least load-bearing thing
+                  in the row: "Sign in" beside it still says what it does. */}
+              <span className="hidden xl:inline">Already a partner?</span>
               <span className="text-text hover:text-accent font-medium underline-offset-4 hover:underline">
                 Sign in
               </span>
@@ -147,10 +181,15 @@ export function SiteNav() {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-            className="border-line overflow-hidden border-t lg:hidden"
+            /* ITS OWN CARD, BENEATH THE NAV CARD. It used to be a panel bolted
+               under a full-width bar with a `border-t` joining them. With the
+               nav floating, that panel would have hung in mid-air attached to
+               nothing, so it becomes a second card with the same radius and a
+               gutter between. */
+            className="overflow-hidden lg:hidden"
           >
             <Container>
-              <ul className="flex flex-col gap-1 py-4">
+              <ul className="wx-neo-raised mt-2 flex flex-col gap-1 rounded-2xl p-3">
                 {LINKS.map((l) => (
                   <li key={l.href}>
                     <Link

@@ -18,4 +18,4 @@ Disallow: /signup
 Disallow: /forgot-password
 Disallow: /reset-password
 
-Sitemap: https://wurxmediahub.vercel.app/sitemap.xml
+Sitemap: https://prismwurx.vercel.app/sitemap.xml
