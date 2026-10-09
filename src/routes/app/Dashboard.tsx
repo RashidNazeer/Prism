@@ -308,7 +308,7 @@ function CreatorHome({
      * first number, and a money bar that rendered solid and full-width while $0
      * of $400 was actually paid. See `Journey` for how each is answered.
      */
-    <div className="wx-pop mx-auto flex w-full max-w-[1400px] flex-col gap-3.5">
+    <div className="wx-pop flex w-full flex-col gap-3.5">
       <Header
         name={name}
         tier={tier}
@@ -340,38 +340,43 @@ function CreatorHome({
 
           {/* The money split that used to sit beside this now lives in the board's
               own header, so the totals are said once. */}
-          <Activity rows={rows ?? []} events={events ?? []} moved={moved} compact />
-
-          {/* Its own row rather than a third cell in that grid: contest money is
-              a separate pot and must never sit in a layout that reads as part of
-              the offer money beside it. See rule M10. */}
-          <ContestEarnings />
+          {/* Activity on the wide side, contest money on the narrow one. Contest
+              money is a separate pot and never sits inside a card that reads as
+              part of the offer money. See rule M10. */}
+          <div className="wx-golden items-start">
+            <Activity rows={rows ?? []} events={events ?? []} moved={moved} compact />
+            <ContestEarnings />
+          </div>
         </>
       ) : (
         <>
-          <Journey summary={summary} rows={work} moved={moved} progress={progress} />
-
-          {/* Right under the journey, so the next action is one glance from the
-              line it belongs to. */}
-          <Jobs rows={work} pending={pending} moved={moved} progress={progress} />
-
-          {/* Its own card, never inside the journey: the journey adds its stops up
-              to its own headline, which is what lets a creator check our
-              arithmetic, and a contest reward in there would break the sum. */}
-          <ContestEarnings />
-
-          {/* The only part of Home that has a time axis, so the only part that
-              owns a date range. See AdNumbers. */}
-          <AdNumbers />
-
-          <div className="grid grid-cols-1 items-start gap-3.5 lg:grid-cols-12">
-            <div className="lg:col-span-5">
-              <Counts summary={summary} work={work} pending={pending} />
+          {/*
+            THE GOLDEN FRAME. The wide column is the money and what to do about
+            it: the journey, then the jobs sitting on it. The narrow column is
+            the evidence around it: ad numbers, contest money, counts, history.
+            Only the journey tilts; everything else is flat so the eye has one
+            place to land first.
+          */}
+          <div className="wx-golden items-start">
+            <div className="flex min-w-0 flex-col gap-3.5">
+              <Journey summary={summary} rows={work} moved={moved} progress={progress} />
+              <Jobs rows={work} pending={pending} moved={moved} progress={progress} />
             </div>
-            <div className="lg:col-span-7">
+
+            <div className="flex min-w-0 flex-col gap-3.5">
+              {/* The only part of Home that has a time axis, so the only part that
+                  owns a date range. See AdNumbers. */}
+              <AdNumbers />
+
+              {/* Its own card, never inside the journey: the journey adds its stops
+                  up to its own headline, which is what lets a creator check our
+                  arithmetic, and a contest reward in there would break the sum. */}
+              <ContestEarnings />
+
+              <Counts summary={summary} work={work} pending={pending} />
               <Activity rows={rows ?? []} events={events ?? []} moved={moved} />
             </div>
-          </div>
+          </div>{' '}
         </>
       )}
     </div>
@@ -819,7 +824,7 @@ function Jobs({
         <p className="text-muted wx-numeric text-[0.8125rem]">{jobsWord(rows.length)}</p>
       </div>
 
-      <ul className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-3 2xl:grid-cols-2">
         {rows.map((row) => {
           const stage = row.stage ?? 'pending_request';
           const at = stageIndex(stage);
@@ -1014,6 +1019,10 @@ function Activity({
   compact?: boolean;
 }) {
   const byId = new Map(rows.map((r) => [r.id, r]));
+  /* The newest few lead; the rest are one click away, none removed. */
+  const [all, setAll] = useState(false);
+  const FEW = 4;
+  const shown = all ? events : events.slice(0, FEW);
 
   // Only the NEWEST event for a piece of work that just moved says "just now".
   // Events arrive newest first, so the first one wins and the rest keep their
@@ -1049,13 +1058,13 @@ function Activity({
          * connect them.
          */
         <ol className="flex flex-col">
-          {events.map((event, i) => {
+          {shown.map((event, i) => {
             const row = byId.get(event.application_id);
             const tone = toneFor(event.to_stage);
             const fresh =
               moved.ids.has(event.application_id) && !claimed.has(event.application_id);
             if (fresh) claimed.add(event.application_id);
-            const last = i === events.length - 1;
+            const last = i === shown.length - 1;
 
             return (
               <li
@@ -1108,6 +1117,22 @@ function Activity({
           })}
         </ol>
       )}
+
+      {events.length > FEW ? (
+        <button
+          type="button"
+          aria-expanded={all}
+          onClick={() => setAll(!all)}
+          className="text-accent focus-visible:ring-accent inline-flex min-h-11 items-center gap-1 self-start rounded-md text-[0.8125rem] font-semibold hover:underline focus-visible:ring-2 focus-visible:outline-none"
+        >
+          {all ? 'Show fewer' : `Show all ${events.length}`}
+          <ChevronDown
+            size={12}
+            aria-hidden
+            className={cn('shrink-0 transition-transform duration-200', all && 'rotate-180')}
+          />
+        </button>
+      ) : null}
     </section>
   );
 }
@@ -1238,14 +1263,13 @@ function Counts({
      *
      * 2026-10-09: the cells used to be links. Each is now a disclosure that opens
      * what the count is made of, in place, and the old destination is a link at
-     * the foot of what it opens, so nothing became harder to reach. The whole
-     * band is one TiltCard and only the four figures are lifted; the lists that
-     * open are flat text and would be harder to read on a moving plane.
+     * the foot of what it opens, so nothing became harder to reach. Flat on purpose:
+     * it is supporting evidence, and the screen has one tilting card.
      *
      * No `overflow-hidden` any more: it flattens `preserve-3d`, which is what
      * the lifted figures stand on.
      */
-    <TiltCard className="wx-neo-raised rounded-2xl">
+    <section aria-label="Your counts" className="wx-neo-raised rounded-2xl">
       <ul className="grid grid-cols-2">
         {items.map((item, i) => {
           const Icon = item.icon;
@@ -1272,11 +1296,9 @@ function Counts({
                   {/* Clicks pass through the lifted figure to the toggle's
                       stretched hit area below; a lifted plane would otherwise
                       swallow them. */}
-                  <TiltLift className="pointer-events-none" depth={16}>
-                    <span className="font-brand wx-numeric block text-[1.625rem] leading-none font-semibold">
-                      {item.n}
-                    </span>
-                  </TiltLift>
+                  <span className="font-brand wx-numeric pointer-events-none block text-[1.625rem] leading-none font-semibold">
+                    {item.n}
+                  </span>
                   <button
                     type="button"
                     aria-expanded={isOpen}
@@ -1320,7 +1342,7 @@ function Counts({
           </Link>
         </div>
       ) : null}
-    </TiltCard>
+    </section>
   );
 }
 
@@ -1497,9 +1519,18 @@ function AdNumbers() {
     },
   ];
 
+  const openKpi = kpis.find((k) => k.id === open) ?? null;
+
   return (
-    <section aria-label="Your ad numbers" className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-0.5">
+    /*
+     * ONE CARD, FOUR CELLS. Four tilting boxes with four sparklines was the
+     * loudest thing on the screen for what is supporting evidence. Every figure,
+     * comparison and sparkline is still here; the box count went from four to one
+     * and none of them tilt. Whichever cell is open drills into brands below the
+     * grid, so one list is open at a time.
+     */
+    <section aria-label="Your ad numbers" className="wx-neo-raised rounded-2xl">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-4 pb-2">
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Your ad numbers
         </h2>
@@ -1516,38 +1547,57 @@ function AdNumbers() {
       </div>
 
       {curQ.isPending ? (
-        <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="wx-skeleton h-32 rounded-xl" />
-          ))}
+        <div className="p-4 pt-2">
+          <div className="wx-skeleton h-40 rounded-xl" />
         </div>
       ) : curQ.isError ? (
-        <p className="text-muted wx-neo-inset rounded-xl p-4 text-[0.8125rem]">
+        <p className="text-muted wx-neo-inset m-4 mt-2 rounded-xl p-4 text-[0.8125rem]">
           We could not load your ad numbers just now. Refresh in a moment.
         </p>
       ) : (
-        /* Equal-height rows while closed. Once a drill-down is open the row
-           aligns to the top instead, so the other three do not stretch into
-           empty raised surfaces to match the one that grew. */
-        <div
-          className={cn(
-            'grid grid-cols-2 gap-3.5 lg:grid-cols-4',
-            open === null ? 'items-stretch' : 'items-start'
-          )}
-        >
-          {kpis.map((k) => (
-            <Kpi
+        <ul className="grid grid-cols-2">
+          {kpis.map((k, i) => (
+            <li
               key={k.id}
-              {...k}
-              vs={vs}
-              open={open === k.id}
-              onToggle={() => setOpen(open === k.id ? null : k.id)}
-              brands={brandsQ.data}
-              brandsPending={brandsQ.isFetching && !brandsQ.data}
-            />
+              className={cn('border-line relative', i % 2 === 1 && 'border-l', 'border-t')}
+            >
+              <Kpi
+                {...k}
+                vs={vs}
+                open={open === k.id}
+                onToggle={() => setOpen(open === k.id ? null : k.id)}
+              />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
+
+      {openKpi ? (
+        <div
+          id="ads-drill"
+          role="region"
+          aria-label={`${openKpi.label} by brand`}
+          className="border-line wx-pop border-t p-4"
+        >
+          {brandsQ.isFetching && !brandsQ.data ? (
+            <div className="wx-skeleton h-12 rounded-md" />
+          ) : !brandsQ.data || brandsQ.data.length === 0 ? (
+            <p className="text-muted text-[0.8125rem] leading-relaxed">
+              Nothing to split by brand in this period.
+            </p>
+          ) : (
+            <DrillRows
+              empty=""
+              items={brandsQ.data.map((b) => ({
+                id: b.brand_id ?? 'unmatched',
+                top: 'Brand',
+                title: b.brand_name ?? 'Not matched to a brand',
+                figure: openKpi.metric(b),
+              }))}
+            />
+          )}
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -1565,8 +1615,8 @@ interface KpiProps {
   metric: (b: BrandPerformance) => string;
 }
 
+/** One cell of the ad-numbers card. Flat: the card is supporting evidence. */
 function Kpi({
-  id: kpiId,
   label,
   value,
   delta,
@@ -1574,93 +1624,51 @@ function Kpi({
   series,
   spark,
   good,
-  metric,
   open,
   onToggle,
-  brands,
-  brandsPending,
 }: KpiProps & {
   vs: string | null;
   open: boolean;
   onToggle: () => void;
-  brands: BrandPerformance[] | undefined;
-  brandsPending: boolean;
 }) {
-  const id = `kpi-${kpiId}`;
   return (
-    <TiltCard className="wx-neo-raised flex h-full flex-col rounded-xl">
-      {/* flex-1 column: the sparkline is pushed to the card's floor with
-          `mt-auto`, so it shares one baseline however tall the rest is. */}
-      <div className="relative flex flex-1 flex-col gap-1.5 p-4">
-        {/* The toggle is the label; its hit area is stretched over the card so
-            the whole KPI is clickable while the control stays a real button
-            with a real name. */}
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-controls={id}
-          onClick={onToggle}
-          className="text-muted focus-visible:after:ring-accent flex min-h-11 items-center justify-between gap-2 text-left text-[0.6875rem] font-semibold tracking-[0.12em] uppercase after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2"
-        >
-          <span>
-            {label}
-            <span className="sr-only">, see which brands it came from</span>
-          </span>
-          <ChevronDown
-            size={14}
-            aria-hidden
-            className={cn('shrink-0 transition-transform duration-200', open && 'rotate-180')}
-          />
-        </button>
+    <div className="relative flex h-full flex-col gap-1.5 p-4">
+      {/* The toggle is the label; its hit area is stretched over the cell so the
+          whole KPI is clickable while the control stays a real button with a
+          real name. */}
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="ads-drill"
+        onClick={onToggle}
+        className="text-muted focus-visible:after:ring-accent flex min-h-11 items-center justify-between gap-2 text-left text-[0.6875rem] font-semibold tracking-[0.12em] uppercase after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2"
+      >
+        <span>
+          {label}
+          <span className="sr-only">, see which brands it came from</span>
+        </span>
+        <ChevronDown
+          size={14}
+          aria-hidden
+          className={cn('shrink-0 transition-transform duration-200', open && 'rotate-180')}
+        />
+      </button>
 
-        <TiltLift className="pointer-events-none">
-          <p className="font-display wx-numeric text-[clamp(1.25rem,2.4vw,1.625rem)] leading-none font-bold break-words">
-            {value}
-          </p>
-        </TiltLift>
+      <p className="font-display wx-numeric text-[clamp(1.25rem,2.4vw,1.625rem)] leading-none font-bold break-words">
+        {value}
+      </p>
 
-        {/* RESERVED SLOT for the comparison line (two lines of 0.75rem text).
-            A card with no delta keeps the space, so figure, comparison and
-            sparkline start at the same y in all four. Nothing is faked into
-            it, and while empty it is hidden from assistive tech. */}
-        <div className="min-h-8" aria-hidden={delta && vs ? undefined : true}>
-          <DeltaLine delta={delta} vs={vs} good={good} />
-        </div>
-        <div className="mt-auto">
-          <Spark values={series} className={spark} />
-        </div>
+      {/* RESERVED SLOT for the comparison line, so figure, comparison and
+          sparkline start at the same y in all four. */}
+      <div className="min-h-8" aria-hidden={delta && vs ? undefined : true}>
+        <DeltaLine delta={delta} vs={vs} good={good} />
       </div>
-
-      {open ? (
-        <div
-          id={id}
-          role="region"
-          aria-label={`${label} by brand`}
-          className="border-line wx-pop border-t p-4"
-        >
-          {brandsPending ? (
-            <div className="wx-skeleton h-12 rounded-md" />
-          ) : !brands || brands.length === 0 ? (
-            <p className="text-muted text-[0.8125rem] leading-relaxed">
-              Nothing to split by brand in this period.
-            </p>
-          ) : (
-            <DrillRows
-              empty=""
-              items={brands.map((b) => ({
-                id: b.brand_id ?? 'unmatched',
-                top: 'Brand',
-                title: b.brand_name ?? 'Not matched to a brand',
-                figure: metric(b),
-              }))}
-            />
-          )}
-        </div>
-      ) : null}
-    </TiltCard>
+      <div className="mt-auto">
+        <Spark values={series} className={spark} />
+      </div>
+    </div>
   );
 }
-
 /** "+24% vs previous 30 days", or "new", or nothing. Never colour alone. */
 function DeltaLine({
   delta,

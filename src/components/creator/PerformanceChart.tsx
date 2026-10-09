@@ -124,7 +124,7 @@ export function PerformanceChart({
         with a mark on every real day, and states how little is behind it.
       */}
       {rows.length < SPARSE_DAYS ? (
-        <p className="text-muted mb-3 text-[0.8125rem] leading-relaxed">
+        <p className="text-muted text-caption mb-3 leading-relaxed">
           Only {rows.length} {rows.length === 1 ? 'day' : 'days'} of data so far, so this shows
           what happened on {rows.length === 1 ? 'that day' : 'those days'} rather than a trend.
           {model.ceiling <= 1

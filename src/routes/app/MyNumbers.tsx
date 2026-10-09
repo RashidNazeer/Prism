@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { ExternalLink, Radio, TrendingUp } from 'lucide-react';
+import { useId, useMemo, useState, type ReactNode } from 'react';
+import { ChevronDown, ExternalLink, Radio, TrendingUp } from 'lucide-react';
 import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { OrdersChart, PerformanceChart } from '@/components/creator/PerformanceChart';
 import {
@@ -346,7 +346,7 @@ export function MyNumbers({ brandId }: { brandId?: string } = {}) {
 const THIN_DAYS = 7;
 const THIN_ORDERS = 5;
 
-const SECTION_LABEL = 'text-muted text-[0.6875rem] font-semibold tracking-[0.12em] uppercase';
+const SECTION_LABEL = 'text-muted text-[0.75rem] font-semibold tracking-[0.12em] uppercase';
 
 function jumpTo(id: string) {
   const el = document.getElementById(id);
@@ -355,6 +355,19 @@ function jumpTo(id: string) {
   el.scrollIntoView({ behavior: quiet ? 'auto' : 'smooth', block: 'start' });
 }
 
+/**
+ * THE ONE QUESTION THIS SCREEN ANSWERS: "what did my videos make, and is it moving?"
+ *
+ * So the wide column of the golden split holds the headline GMV and the day-by-day
+ * line it came from, in one card, and that card is the only thing on the screen
+ * that tilts. Everything else is the SUPPORT for that number: what it cost (narrow
+ * column, beside it), whether ads are behind the videos at all, and the best day
+ * and top video.
+ *
+ * NOTHING HERE IS HIDDEN, only ordered. Every figure is on the page and exact.
+ * What moved behind a disclosure is secondary DETAIL (orders by day, the long
+ * explanation of why a young ROI can swing), never the figure itself.
+ */
 function Dashboard({
   totals,
   daily,
@@ -384,13 +397,13 @@ function Dashboard({
 
   const sections = [
     { id: 'mn-money', label: 'Money' },
-    { id: 'mn-videos', label: 'Videos & ads' },
     { id: 'mn-trend', label: 'Day by day' },
+    { id: 'mn-videos', label: 'Videos & ads' },
     ...(showBrands ? [{ id: 'mn-brands', label: 'By brand' }] : []),
   ];
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       {/* On-page navigation: every section below is one tap away. */}
       <nav aria-label="Sections on this page" className="flex flex-wrap items-center gap-2">
         <span className={SECTION_LABEL}>Jump to</span>
@@ -399,35 +412,39 @@ function Dashboard({
             key={s.id}
             type="button"
             onClick={() => jumpTo(s.id)}
-            className="wx-neo-raised-sm text-muted hover:text-text focus-visible:outline-line-interactive min-h-[44px] rounded-full px-4 text-[0.8125rem] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="wx-neo-raised-sm text-muted hover:text-text focus-visible:outline-line-interactive text-caption min-h-[44px] rounded-full px-4 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             {s.label}
           </button>
         ))}
       </nav>
 
-      {/* ------------------------------------------------------- 1. money -- */}
+      {/* ------------------------------- 1. GMV and its line | what it cost -- */}
       <section id="mn-money" aria-labelledby="mn-money-h" className="scroll-mt-24">
-        <SectionHead
-          id="mn-money-h"
-          title="The money"
-          body="What your ads brought in, what they cost, and how those two compare."
-        />
+        <h2 id="mn-money-h" className="sr-only">
+          The money
+        </h2>
 
-        <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-          {/* Headline: GMV, with a sentence that says what it adds up to. */}
+        <div className="wx-golden items-start">
+          {/*
+            THE PRIMARY CARD, the only tilted one. `lift={2}`: the chart inside
+            has a hover read-out, and at the default 6 degrees a wide card's edge
+            travels far enough to slide the point being read out from under the
+            cursor (see TiltCard).
+          */}
           <TiltCard
             as="div"
-            className="wx-neo-raised flex flex-col justify-between gap-5 rounded-xl p-5 sm:p-6"
+            lift={2}
+            className="wx-neo-raised flex flex-col gap-5 rounded-xl p-5 sm:p-6"
           >
             <div>
               <p className={SECTION_LABEL}>GMV, your headline number</p>
               <TiltLift depth={20}>
-                <p className="font-display wx-numeric text-accent mt-2 text-[2.5rem] leading-none font-bold sm:text-[3rem]">
+                <p className="font-display wx-numeric text-accent text-h2 sm:text-h1 mt-2 leading-none font-bold">
                   {money(totals.revenue, currency)}
                 </p>
               </TiltLift>
-              <p className="text-muted mt-3 max-w-prose text-[0.875rem] leading-relaxed">
+              <p className="text-muted text-body mt-3 max-w-prose">
                 GMV is the total value of what shoppers bought through your videos.{' '}
                 {adCounts.withAds > 0 ? (
                   <>
@@ -441,98 +458,105 @@ function Dashboard({
                 )}
               </p>
             </div>
-            <p className="text-faint text-[0.75rem] leading-relaxed">
-              {latestDataDate ? `Complete days up to ${formatDay(latestDataDate)}. ` : ''}
-              {rows.length} {rows.length === 1 ? 'day' : 'days'} of data in this view.
-            </p>
+
+            <div id="mn-trend" className="scroll-mt-24">
+              <PerformanceChart rows={rows} currency={currency} />
+            </div>
+
+            <div>
+              <Disclosure label="Orders by day">
+                <div className="pb-1">
+                  <OrdersChart rows={rows} />
+                </div>
+              </Disclosure>
+              <p className="text-faint text-caption leading-relaxed">
+                {latestDataDate ? `Complete days up to ${formatDay(latestDataDate)}. ` : ''}
+                {rows.length} {rows.length === 1 ? 'day' : 'days'} of data in this view.
+              </p>
+            </div>
           </TiltCard>
 
-          {/* Supporting figures, each one saying what it is. */}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-            <Stat
+          {/* The cost side: flat, quieter, one card instead of three. */}
+          <div className="wx-neo-raised divide-line flex flex-col divide-y rounded-xl p-5 sm:p-6">
+            <Metric
               label="Ad spend"
               value={money(totals.cost, currency)}
               note="What was spent on ads behind your videos."
             />
-            <Stat
+            <Metric
               label="Orders"
               value={String(totals.orders)}
               note="Purchases the ads can be tied to."
             />
-            <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
-              <RoiCard
-                roi={totals.roi}
-                cost={totals.cost}
-                orders={totals.orders}
-                days={rows.length}
-                thin={thin}
-                currency={currency}
-              />
-            </div>
+            <Metric
+              label="Return on ad spend (ROI)"
+              value={totals.roi === null ? '—' : `${totals.roi.toFixed(2)}x`}
+              badge={totals.roi !== null && thin ? 'Early read' : undefined}
+              note={
+                totals.roi === null
+                  ? 'Nothing has been spent on ads yet, so there is no return to measure.'
+                  : `GMV divided by ad spend. For every ${money(1, currency)} spent, ${money(totals.roi, currency)} of sales came back.`
+              }
+            >
+              {totals.roi !== null && thin ? (
+                <Disclosure label="Why this can swing">
+                  <p className="text-faint text-caption pb-1 leading-relaxed">
+                    This rests on only {money(totals.cost, currency)} of spend, {totals.orders}{' '}
+                    {totals.orders === 1 ? 'order' : 'orders'} and {rows.length}{' '}
+                    {rows.length === 1 ? 'day' : 'days'}, so it can swing a lot. Sales often
+                    land days after the spend, which makes a low early ratio common. It becomes
+                    a useful guide as more spend and orders build up.
+                  </p>
+                </Disclosure>
+              ) : null}
+            </Metric>
           </div>
         </div>
       </section>
 
-      {/* ------------------------------------------------ 2. videos & ads -- */}
+      {/* ------------------------- 2. videos & ads | best day and top video -- */}
       <section id="mn-videos" aria-labelledby="mn-videos-h" className="scroll-mt-24">
         <SectionHead
           id="mn-videos-h"
           title="Videos and ads"
           body="Which of your videos have ads behind them. This is what explains most empty cards."
         />
-        <AdsBand counts={adCounts} />
-      </section>
+        <div className="wx-golden mt-3 items-start">
+          <AdsBand counts={adCounts} />
 
-      {/* ----------------------------------------------- 3. day by day -- */}
-      <section id="mn-trend" aria-labelledby="mn-trend-h" className="scroll-mt-24">
-        <SectionHead
-          id="mn-trend-h"
-          title="Day by day"
-          body="How spend and GMV moved, and your best moments."
-        />
-
-        <div className="wx-neo-raised mt-3 rounded-xl p-5">
-          <PerformanceChart rows={rows} currency={currency} />
-        </div>
-
-        <div className="mt-3 grid gap-3 lg:grid-cols-2">
-          <div className="wx-neo-raised rounded-xl p-5">
-            <OrdersChart rows={rows} />
-          </div>
-
-          <div className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5">
-            <div>
+          <div className="wx-neo-raised divide-line flex flex-col divide-y rounded-xl p-5">
+            <div className="pb-4">
               <p className={SECTION_LABEL}>Best day</p>
               {best && Number(best.gross_revenue) > 0 ? (
                 <p className="mt-1">
-                  <span className="font-display wx-numeric text-[1.25rem] font-bold">
+                  <span className="font-display wx-numeric text-lead font-bold">
                     {money(Number(best.gross_revenue), currency)}
                   </span>
-                  <span className="text-muted ml-2 text-[0.8125rem]">
+                  <span className="text-muted text-caption ml-2">
                     on {formatDay(best.stat_date)}
                   </span>
                 </p>
               ) : (
-                <p className="text-muted mt-1 text-[0.875rem]">
+                <p className="text-muted text-caption mt-1">
                   No day has made GMV yet. Your best day appears here when one does.
                 </p>
               )}
             </div>
 
-            <div className="border-line border-t pt-4">
+            <div className="pt-4">
               <p className={SECTION_LABEL}>Top performer</p>
               {topVideo && Number(topVideo.gross_revenue) > 0 ? (
                 <>
-                  <p className="mt-1 truncate text-[0.9375rem] font-semibold">
+                  <p className="text-body mt-1 truncate font-semibold">
                     {topVideo.video_title || 'Your video'}
                   </p>
-                  <p className="text-muted wx-numeric mt-0.5 text-[0.8125rem]">
+                  <p className="text-muted wx-numeric text-caption mt-0.5">
                     {money(Number(topVideo.gross_revenue), currency)} from{' '}
                     {money(Number(topVideo.cost), currency)} spend
                   </p>
                 </>
               ) : (
-                <p className="text-muted mt-1 text-[0.875rem]">
+                <p className="text-muted text-caption mt-1">
                   No video has made GMV yet. Open My content to see each one.
                 </p>
               )}
@@ -541,7 +565,7 @@ function Dashboard({
         </div>
       </section>
 
-      {/* -------------------------------------------------- 4. by brand -- */}
+      {/* -------------------------------------------------- 3. by brand -- */}
       {/*
         WHICH BRAND PAID YOU WHAT. Rashid asked for it by name. Only when there is
         more than one: a single brand would just restate the total above.
@@ -560,10 +584,10 @@ function Dashboard({
 function SectionHead({ id, title, body }: { id: string; title: string; body: string }) {
   return (
     <div>
-      <h2 id={id} className="font-display text-[1.0625rem] font-bold">
+      <h2 id={id} className="font-display text-lead font-bold">
         {title}
       </h2>
-      <p className="text-muted mt-0.5 text-[0.8125rem] leading-relaxed">{body}</p>
+      <p className="text-muted text-caption mt-0.5 leading-relaxed">{body}</p>
     </div>
   );
 }
@@ -575,70 +599,72 @@ const formatDay = (iso: string) =>
     timeZone: 'UTC',
   });
 
-function Stat({ label, value, note }: { label: string; value: string; note: string }) {
+/**
+ * PROGRESSIVE DISCLOSURE, not removal. The content stays in the DOM (hidden, not
+ * unmounted) and is exact; this only decides whether it is shouted. A real button
+ * with `aria-expanded` and `aria-controls`, at the 44px tap floor.
+ */
+function Disclosure({ label, children }: { label: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
   return (
-    <TiltCard as="div" className="wx-neo-raised flex flex-col rounded-xl p-4">
-      <p className={SECTION_LABEL}>{label}</p>
-      <TiltLift depth={14}>
-        <p className="font-display wx-numeric mt-1.5 text-[1.5rem] font-bold">{value}</p>
-      </TiltLift>
-      <p className="text-faint mt-1.5 text-[0.75rem] leading-relaxed">{note}</p>
-    </TiltCard>
+    <div>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen((o) => !o)}
+        className="text-muted hover:text-text focus-visible:outline-line-interactive text-caption inline-flex min-h-[44px] items-center gap-1.5 rounded-md font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
+      >
+        {label}
+        <ChevronDown
+          size={14}
+          aria-hidden
+          className={cn(
+            'transition-transform motion-reduce:transition-none',
+            open && 'rotate-180'
+          )}
+        />
+      </button>
+      <div id={id} role="region" aria-label={label} hidden={!open}>
+        {children}
+      </div>
+    </div>
   );
 }
 
 /**
- * ROI, shown exactly as computed and then explained.
- *
- * Rashid's rule is that no figure is hidden or softened, so `0.00x` renders as
- * `0.00x`. What this adds is the two things a bare ratio cannot say: what it is
- * measuring, and how much data stands behind it. A ratio of sums over 52 cents
- * is true and nearly meaningless, and the screen says both.
+ * One figure in the cost column. The value is exactly what was computed: `0.00x`
+ * renders as `0.00x` and `$0.52` as `$0.52`. A label, the figure, one sentence
+ * saying what it is, and optionally a pill and a disclosure for the caveat.
  */
-function RoiCard({
-  roi,
-  cost,
-  orders,
-  days,
-  thin,
-  currency,
+function Metric({
+  label,
+  value,
+  note,
+  badge,
+  children,
 }: {
-  roi: number | null;
-  cost: number;
-  orders: number;
-  days: number;
-  thin: boolean;
-  currency: string | null;
+  label: string;
+  value: string;
+  note: string;
+  badge?: string;
+  children?: ReactNode;
 }) {
   return (
-    <TiltCard as="div" className="wx-neo-raised rounded-xl p-4">
+    <div className="py-4 first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className={SECTION_LABEL}>Return on ad spend (ROI)</p>
-        {roi !== null && thin ? (
-          <span className="bg-info-soft text-info inline-flex rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold">
-            Early read
+        <p className={SECTION_LABEL}>{label}</p>
+        {badge ? (
+          <span className="bg-info-soft text-info text-caption inline-flex rounded-full px-2 py-0.5 font-semibold">
+            {badge}
           </span>
         ) : null}
       </div>
-      <TiltLift depth={14}>
-        <p className="font-display wx-numeric mt-1.5 text-[1.5rem] font-bold">
-          {roi === null ? '—' : `${roi.toFixed(2)}x`}
-        </p>
-      </TiltLift>
-      <p className="text-muted mt-1.5 text-[0.8125rem] leading-relaxed">
-        {roi === null
-          ? 'Nothing has been spent on ads yet, so there is no return to measure.'
-          : `GMV divided by ad spend. For every ${money(1, currency)} spent, ${money(roi, currency)} of sales came back.`}
-      </p>
-      {roi !== null && thin ? (
-        <p className="text-faint mt-1.5 text-[0.75rem] leading-relaxed">
-          This rests on only {money(cost, currency)} of spend, {orders}{' '}
-          {orders === 1 ? 'order' : 'orders'} and {days} {days === 1 ? 'day' : 'days'}, so it
-          can swing a lot. Sales often land days after the spend, which makes a low early ratio
-          common. It becomes a useful guide as more spend and orders build up.
-        </p>
-      ) : null}
-    </TiltCard>
+      <p className="font-display wx-numeric text-h3 mt-1 leading-tight font-bold">{value}</p>
+      <p className="text-muted text-caption mt-1 leading-relaxed">{note}</p>
+      {children}
+    </div>
   );
 }
 
@@ -665,15 +691,15 @@ function AdsBand({
   ];
 
   return (
-    <div className="wx-neo-raised mt-3 rounded-xl p-5">
+    <div className="wx-neo-raised rounded-xl p-5">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div>
           <p className={SECTION_LABEL}>Videos posted</p>
-          <p className="font-display wx-numeric mt-1 text-[1.75rem] leading-none font-bold">
+          <p className="font-display wx-numeric text-h3 mt-1 leading-none font-bold">
             {counts.total}
           </p>
         </div>
-        <p className="text-faint max-w-sm text-[0.75rem] leading-relaxed">
+        <p className="text-faint text-caption max-w-sm leading-relaxed">
           We don&rsquo;t run GMV Max behind every video. The ones without ads still count
           towards your offer.
         </p>
@@ -694,14 +720,14 @@ function AdsBand({
       <dl className="mt-4 grid grid-cols-3 gap-3">
         {parts.map((p) => (
           <div key={p.key}>
-            <dt className="text-muted flex items-center gap-1.5 text-[0.75rem] font-semibold">
+            <dt className="text-muted text-caption flex items-center gap-1.5 font-semibold">
               <span className={cn('inline-block h-2 w-2 rounded-full', p.bar)} aria-hidden />
               {p.key === 'running' ? (
                 <Radio size={12} aria-hidden className="text-success" />
               ) : null}
               {p.label}
             </dt>
-            <dd className={cn('font-display wx-numeric mt-1 text-[1.375rem] font-bold', p.ink)}>
+            <dd className={cn('font-display wx-numeric text-lead mt-1 font-bold', p.ink)}>
               {p.n}
             </dd>
           </div>
@@ -797,11 +823,15 @@ function Content({
                     : ''}
                 </p>
               ) : (
-                <dl className="border-line grid grid-cols-2 gap-x-4 gap-y-3 border-t px-4 py-3">
-                  <Figure label="GMV" value={money(Number(v.gross_revenue), currency)} accent />
-                  <Figure label="Spend" value={money(Number(v.cost), currency)} />
-                  <Figure label="Orders" value={String(v.orders)} />
-                  <Figure label="ROI" value={roi === null ? '—' : `${roi.toFixed(2)}x`} />
+                /* GMV leads, large; spend, orders and ROI sit under it as one
+                   quiet row. Same four figures, one obvious one. */
+                <dl className="border-line flex flex-col gap-3 border-t px-4 py-3">
+                  <Figure label="GMV" value={money(Number(v.gross_revenue), currency)} lead />
+                  <div className="grid grid-cols-3 gap-x-3">
+                    <Figure label="Spend" value={money(Number(v.cost), currency)} />
+                    <Figure label="Orders" value={String(v.orders)} />
+                    <Figure label="ROI" value={roi === null ? '—' : `${roi.toFixed(2)}x`} />
+                  </div>
                 </dl>
               )}
             </article>
@@ -841,16 +871,16 @@ function AdBadge({ state }: { state: AdState }) {
   );
 }
 
-function Figure({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function Figure({ label, value, lead }: { label: string; value: string; lead?: boolean }) {
   return (
-    <div>
-      <dt className="text-faint text-[0.625rem] font-semibold tracking-[0.12em] uppercase">
+    <div className="min-w-0">
+      <dt className="text-faint text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
         {label}
       </dt>
       <dd
         className={cn(
-          'wx-numeric mt-0.5 text-[0.9375rem] font-semibold',
-          accent && 'text-accent'
+          'wx-numeric mt-0.5 truncate font-semibold',
+          lead ? 'text-accent font-display text-h3 leading-tight' : 'text-body'
         )}
       >
         {value}
@@ -913,9 +943,11 @@ function ByBrand({ brands }: { brands: BrandPerformance[] }) {
   const best = Math.max(...brands.map((b) => Number(b.gmv) || 0), 0);
 
   return (
-    <section className="wx-neo-raised rounded-xl p-4 sm:p-5">
-      <h2 className="text-[1rem] font-bold">Where your money came from</h2>
-      <p className="text-muted mt-0.5 text-[0.8125rem]">
+    <div className="wx-neo-raised rounded-xl p-4 sm:p-5">
+      <h2 id="mn-brands-h" className="font-display text-lead font-bold">
+        Where your money came from
+      </h2>
+      <p className="text-muted text-caption mt-0.5">
         Split by the brand whose ads ran behind each video.
       </p>
 
@@ -950,6 +982,6 @@ function ByBrand({ brands }: { brands: BrandPerformance[] }) {
           </li>
         ))}
       </ul>
-    </section>
+    </div>
   );
 }
