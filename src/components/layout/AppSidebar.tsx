@@ -302,12 +302,25 @@ export function AppSidebar({
           The design's footer is a divider with Settings and Logout under it.
           Ours keeps the identity, because a product where you can be signed in
           as two different people in two tabs had better say which one you are. */}
-      <div className={cn('border-line shrink-0 border-t', collapsed ? 'p-2' : 'p-2.5')}>
+      {/*
+        NO `border-t`. Rashid has circled this corner twice. Borders are gone
+        product-wide and this was one of the last hard rules left in the shell:
+        a dark line straight across a card that is otherwise held together by
+        shadow. The footer is separated by space and by its own material now.
+      */}
+      <div className={cn('shrink-0', collapsed ? 'p-2' : 'p-2.5')}>
         {collapsed ? (
-          <div className="grid gap-1.5">
+          /*
+           * TWO EQUAL CIRCLES, STACKED. The avatar was 36px and the sign-out
+           * 44px, centred independently, so a narrow rail ended in two
+           * different-sized blobs that did not line up with each other or with
+           * the 44px nav icons above them. Both are 44px now, which is also the
+           * tap floor, so the column reads as one stack.
+           */
+          <div className="grid justify-items-center gap-2">
             <p
               title={`${name || 'Signed in'}${email ? ` (${email})` : ''}`}
-              className="bg-accent-soft text-accent mx-auto grid size-9 place-items-center rounded-full font-mono text-[0.8125rem] font-bold uppercase"
+              className="bg-accent-soft text-accent grid size-11 place-items-center rounded-full font-mono text-[0.8125rem] font-bold uppercase"
             >
               {initial}
             </p>
@@ -316,14 +329,16 @@ export function AppSidebar({
               disabled={signingOut}
               onClick={onSignOut}
               title="Sign out"
-              className="text-muted hover:bg-surface-2 hover:text-danger mx-auto grid size-[44px] place-items-center rounded-lg transition-colors duration-200 disabled:opacity-50"
+              className="wx-neo-raised-sm wx-neo-press text-muted hover:text-danger grid size-11 place-items-center rounded-full transition-colors duration-200 disabled:opacity-50"
             >
               <LogOut size={15} aria-hidden />
               <span className="sr-only">Sign out</span>
             </button>
           </div>
         ) : (
-          <div className="wx-glass-panel flex items-center gap-2.5 rounded-xl py-2 pr-1.5 pl-2.5">
+          /* `wx-neo-inset`, not `wx-glass-panel`: the glass utility still draws
+             a 1px edge, and this is a well at the foot of the rail. */
+          <div className="wx-neo-inset flex items-center gap-2.5 rounded-xl py-2 pr-1.5 pl-2.5">
             <span
               aria-hidden
               className="bg-accent-soft text-accent grid size-9 shrink-0 place-items-center rounded-full font-mono text-[0.8125rem] font-bold uppercase"
@@ -343,7 +358,7 @@ export function AppSidebar({
               title="Sign out"
               // Turns danger on hover, the way the design's Logout does. It is
               // the one row in here that ends a session.
-              className="text-muted hover:bg-surface-1 hover:text-danger grid size-[44px] shrink-0 place-items-center rounded-lg transition-colors duration-200 disabled:opacity-50"
+              className="wx-neo-raised-sm wx-neo-press text-muted hover:text-danger grid size-11 shrink-0 place-items-center rounded-full transition-colors duration-200 disabled:opacity-50"
             >
               <LogOut size={15} aria-hidden />
               <span className="sr-only">{signingOut ? 'Signing out' : 'Sign out'}</span>
@@ -402,8 +417,11 @@ function NavRow({
         ) : (
           <>
             <span className="truncate">{item.label}</span>
+            {/* The "soon"/"later" pill. Was an outlined chip, the last border
+                in the rail; the inset well says "not yet" better anyway,
+                because it reads as recessed rather than as another button. */}
             {item.soon ? (
-              <span className="border-line text-faint ml-auto shrink-0 rounded-full border px-1.5 py-0.5 font-mono text-[0.5625rem] tracking-[0.1em] uppercase">
+              <span className="wx-neo-inset text-faint ml-auto shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[0.5625rem] tracking-[0.1em] uppercase">
                 {item.soon}
               </span>
             ) : null}
