@@ -42,7 +42,7 @@ import {
 } from '@/lib/creator/date-range';
 import { WelcomeMoment } from '@/components/creator/WelcomeMoment';
 import { ApprovedMoment } from '@/components/creator/ApprovedMoment';
-import { MoneySplit, PipelineBoard } from '@/components/creator/PipelineBoard';
+import { PipelineBoard } from '@/components/creator/PipelineBoard';
 import { ContestEarnings } from '@/components/creator/ContestEarnings';
 import { useContestEarnings } from '@/lib/creator/useContestEarnings';
 import { JobProgressBar } from '@/components/work/JobProgress';
@@ -338,10 +338,9 @@ function CreatorHome({
         <>
           <PipelineBoard summary={summary} rows={work} moved={moved} progress={progress} />
 
-          <div className="grid [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))] items-start gap-3.5">
-            <MoneySplit summary={summary} moved={moved} />
-            <Activity rows={rows ?? []} events={events ?? []} moved={moved} compact />
-          </div>
+          {/* The money split that used to sit beside this now lives in the board's
+              own header, so the totals are said once. */}
+          <Activity rows={rows ?? []} events={events ?? []} moved={moved} compact />
 
           {/* Its own row rather than a third cell in that grid: contest money is
               a separate pot and must never sit in a layout that reads as part of
