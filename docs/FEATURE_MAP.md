@@ -710,8 +710,8 @@ nothing can tell that they have stopped matching.** `SHOT_COLLAPSED=1` on
 `shots-admin.mjs` exists because the rail is otherwise only reachable by
 clicking, which is why nobody had looked at it.
 
-Rashid: *"the menu bar is very borign too much gap between and too many sections
-modify it"*. Eight headings above twelve links, five of them over a single item.
+Rashid: _"the menu bar is very borign too much gap between and too many sections
+modify it"_. Eight headings above twelve links, five of them over a single item.
 
 **TWO RULES, and they are the whole change:**
 
@@ -750,8 +750,8 @@ even though Requests no longer sits under an Offers heading.
 
 **Files:** `src/routes/app/Contests.tsx`, `src/lib/creator/useCreatorContests.ts`
 
-Rashid: *"contest is not a normal thing dude it must represent a brand with
-images emojis taglines"*. It was a bordered box with a heading and some labelled
+Rashid: _"contest is not a normal thing dude it must represent a brand with
+images emojis taglines"_. It was a bordered box with a heading and some labelled
 rows â€” the same card an offer got, holding a different noun.
 
 **Four bands:** the HERO (brand pill, state, name, description, countdown), what
@@ -765,10 +765,10 @@ and squeezes the countdown.
 **THE CROP IS THE WHOLE PROBLEM, and it is different on every screen.** `cover`
 keeps the larger dimension and trims the other, so:
 
-| Width | Box vs photo | What gets trimmed |
-| --- | --- | --- |
-| laptop | box is WIDER than 16:9 | top and bottom â€” the dark left column survives |
-| phone | box is TALLER than 16:9 | **the sides**, centred |
+| Width  | Box vs photo            | What gets trimmed                                |
+| ------ | ----------------------- | ------------------------------------------------ |
+| laptop | box is WIDER than 16:9  | top and bottom â€” the dark left column survives |
+| phone  | box is TALLER than 16:9 | **the sides**, centred                           |
 
 The phone case shipped broken for one build: the middle of a product shot is the
 product, so white hero text landed on a white tube and all but vanished. Fixed
@@ -804,12 +804,12 @@ reads as a broken clock. Days, hours, minutes only.
 `supabase/functions/manage-contest/index.ts`, `src/lib/admin/useContests.ts`,
 `scripts/check-contests.mjs`
 
-Rashid, with a design: *"admin has to sroll on one page to see who accepted
-what's going on each and everything this is very bad"*. He was right. That
+Rashid, with a design: _"admin has to sroll on one page to see who accepted
+what's going on each and everything this is very bad"_. He was right. That
 screen was the form, the rewards, the entry queue, the progress queue, the
 products and the exclusions, all stacked, on one scroll.
 
-**Five tabs, in the URL**: Details Â· Rewards Â· Visibility Â· Settings Â· Summary.
+**Five tabs, in the URL**: Details · Rewards · Visibility · Settings · Summary.
 In the URL so "look at the rewards on this one" is a link, and so the back
 button behaves. A NEW contest is locked to Details, because everything on the
 other four hangs off an id that does not exist yet.
@@ -831,11 +831,11 @@ him something to point at when he says which part is wrong.
 
 **HOW MANY IMAGES A CONTEST NEEDS: two, and one already existed.**
 
-| | where | status |
-| --- | --- | --- |
-| hero, behind the name and countdown | `contests.banner_url` | existed since 2026-08-13, with **no upload control** â€” the old form's own comment said so |
-| the picture beside "why join" | `contests.card_image_url` | new |
-| the brand's mark | `brands.logo_url` | existed |
+|                                     | where                     | status                                                                                      |
+| ----------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------- |
+| hero, behind the name and countdown | `contests.banner_url`     | existed since 2026-08-13, with **no upload control** â€” the old form's own comment said so |
+| the picture beside "why join"       | `contests.card_image_url` | new                                                                                         |
+| the brand's mark                    | `brands.logo_url`         | existed                                                                                     |
 
 Both new fields are OPTIONAL and every screen is designed to be right without
 them, because the first contests will have neither and a layout that only works
@@ -875,11 +875,11 @@ the other half of what he asked for and is the next step.
 Rashid, from his boss: offers divide into three, and the type carries a guard
 rail rather than a note in the description.
 
-| kind | who sees it | application |
-| --- | --- | --- |
-| **Retainer campaign** | only named creators. Required, and a live one cannot be empty | admin's choice |
-| **Volume** | everyone, minus anyone named. His addition: exclude the people who already have their own deal | admin's choice |
-| **High commission** | everyone, unless narrowed to named creators | **forced off**, checkbox hidden |
+| kind                  | who sees it                                                                                    | application                     |
+| --------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------- |
+| **Retainer campaign** | only named creators. Required, and a live one cannot be empty                                  | admin's choice                  |
+| **Volume**            | everyone, minus anyone named. His addition: exclude the people who already have their own deal | admin's choice                  |
+| **High commission**   | everyone, unless narrowed to named creators                                                    | **forced off**, checkbox hidden |
 
 **THE LEAK THIS CLOSED WAS LIVE.** Before it, every approved creator could read
 every active offer, so all 41 creators on dev could read all 31 Penetrex deals:
@@ -957,9 +957,9 @@ on.
 
 **Files:** `src/routes/admin/Applications.tsx`, `scripts/shots-admin.mjs`
 
-Rashid, and he was right to be sharp about it: *"this is not waht i expcected
+Rashid, and he was right to be sharp about it: _"this is not waht i expcected
 make it more beautiful ... like horiontal cards you are always ptting content in
-a row why why why?"* Offers and Requests had become cards and this was still a
+a row why why why?"_ Offers and Requests had become cards and this was still a
 six-column table with a heading row.
 
 **IT NAVIGATES, IT DOES NOT EXPAND.** That is the one real difference from the
@@ -1005,8 +1005,8 @@ tool lie rather than fail:
 **Files:** `src/routes/admin/OfferRequests.tsx`,
 `src/components/layout/FilterBar.tsx`, `scripts/check-offer-requests.mjs`
 
-Rashid, straight after the offers grid: *"i like it do something with this as
-well do the same"*. Same language throughout â€” `rounded-md`, three sections
+Rashid, straight after the offers grid: _"i like it do something with this as
+well do the same"_. Same language throughout â€” `rounded-md`, three sections
 split by hairlines, the money as the hero with the rate as its caption, an open
 card spanning the row with the details beside it above `lg`.
 
@@ -1057,12 +1057,12 @@ no idea how many videos buys it is exactly what that check exists to catch.
 `src/components/work/CreatorStack.tsx`, `src/components/work/CreatorFace.tsx`,
 `scripts/shots-admin.mjs`
 
-Rashid: *"Look at the offers ui how boring it is ... horizontal cards rather
+Rashid: _"Look at the offers ui how boring it is ... horizontal cards rather
 than having one row it's wasting the time ... card will be minimal ... just
 show mian thing such as offer name, deal value ad brand name that's it but
 somethign extra for creators we can show avatras ... keep the corner radius very
 low and clicking on it should show details ... i am expecting something perfect
-polish the ui please."*
+polish the ui please."_
 
 It was one full-width row per offer carrying four labelled columns. Now it is a
 grid: 1 / 2 / 3 / 4 columns at 375 / 640 / 1280 / 1536.
@@ -1183,6 +1183,31 @@ from Pending request to Paid, moved by staff and watched by the creator.
   "what is sitting where", which is what somebody asks when three jobs are in
   flight and one has gone quiet. `PipelineBoard` is the only thing that reads
   `summary.byStage`, which `summarise()` had always computed and nothing used.
+- **The rail draws dots and labels, never a job card. `PipelineBoard` is the
+  rail, `PipelineJobs` is the work on it, and they must stay apart.** They were
+  one component, with each job rendered inside its own stop, and the stop
+  holding it took `minmax(0,3fr)` against `1fr` for the empty ones. Two things
+  broke at once: the line between stop four and stop five came out three times
+  longer than every other gap, and the occupied stop made the grid row as tall
+  as its card, leaving six one-word labels floating in a 280px band. Roughly a
+  thousand pixels of nothing across the middle of the screen. Seven equal
+  columns is therefore a correctness rule, not a taste one: a rail that draws
+  unequal gaps is telling the creator something false about distance.
+- **Both tabs use the same `wx-golden` frame, and the narrow column must always
+  have something in it.** Pipeline used to put `Activity` on the wide side and
+  `ContestEarnings` on the narrow one. `ContestEarnings` renders nothing for a
+  creator with no contest money, which is most of them, so the right-hand third
+  of the page was simply blank. A component that is only sometimes there cannot
+  be half the frame.
+- **This file and everything under `src/` is UTF-8, and no source file may be
+  round-tripped through Windows PowerShell.** `Get-Content`/`Set-Content` in
+  5.1 read as the ANSI codepage and write back as UTF-8, which silently
+  re-encodes every non-ASCII character. It reached users: the public site
+  rendered the u-umlaut in a client's name as two wrong letters, and a
+  non-breaking space holding a pipeline label open came out as a visible
+  capital A with a circumflex under all six empty stops. Use `node`, or the editing
+  tools, and prefer plain ASCII in source. `min-height` on a flex item holds a
+  line open without any character at all.
 - `STAGE_META.short` exists for the places a stage is a COLUMN rather than a
   sentence: the seven-card board and the first-day grid. `creatorHint` wraps to
   three lines in a 142px column. Adding a stage means writing both.
@@ -1621,9 +1646,9 @@ the screen belongs to whoever has been waiting longest.
 `scripts/seed-penetrex-contest.mjs`
 **Tables:** `contest_submissions`, `contest_awards`, `contest_entry_events`
 
-Rashid, walking the flow: *"money is only owed when all videos are up for both
+Rashid, walking the flow: _"money is only owed when all videos are up for both
 contest and offer it's like they will submit the video when admin see one by one
-and all are approved only then money is owed."*
+and all are approved only then money is owed."_
 
 **Change rules**
 
@@ -1690,9 +1715,9 @@ and all are approved only then money is owed."*
 `src/lib/creator/usePerformance.ts`, `src/routes/app/MyNumbers.tsx`
 **View:** `creator_videos`
 
-Rashid: *"we are receiving videos from user from 2 channels that is offers and
+Rashid: _"we are receiving videos from user from 2 channels that is offers and
 contest ... when admin approves contest videos only then creators should be able
-to see the stats of contest videos."*
+to see the stats of contest videos."_
 
 **Change rules**
 
@@ -1736,9 +1761,9 @@ to see the stats of contest videos."*
 `src/lib/creator/useLeaderboard.ts`, `src/routes/app/Leaderboards.tsx`,
 `src/components/work/CreatorFace.tsx`, `scripts/check-leaderboard.mjs`
 
-Step 9, unlocked. Rashid: *"it should show the actual money other creators have
+Step 9, unlocked. Rashid: _"it should show the actual money other creators have
 made and where do the creator himself stands ... by gmv i mean the sum of the
-gmv of all the videos of creator X."*
+gmv of all the videos of creator X."_
 
 **Change rules**
 
@@ -1799,11 +1824,11 @@ gmv of all the videos of creator X."*
 `src/lib/creator/usePerformance.ts`, `src/routes/app/MyNumbers.tsx`,
 `scripts/check-leaderboard.mjs`, `scripts/check-performance.mjs`
 
-Rashid, before onboarding brands with their own ad accounts: *"there should be
+Rashid, before onboarding brands with their own ad accounts: _"there should be
 proper matching of the brands with ad account ... their gmv should always be the
 sum of every brand every offer/contest they are in ... the creator should never
 be able to see the breakdown of other creators. This is production base scalable
-saas and money sensitive please be careful here."*
+saas and money sensitive please be careful here."_
 
 Found by a five-agent audit with a refuter per finding. Twelve claims were
 REFUTED and are not bugs; three CRITICALs and six HIGHs were real.
@@ -1849,8 +1874,8 @@ REFUTED and are not bugs; three CRITICALs and six HIGHs were real.
   one the new grant supersedes. Before that, connecting brand B silently froze
   brand A.
 - **The settings screen lists connections, plural**, each with its own
-  Disconnect and last-checked date, and Connect stays available as *Connect
-  another*. It used to render EITHER Connect OR Re-check, so a second Business
+  Disconnect and last-checked date, and Connect stays available as _Connect
+  another_. It used to render EITHER Connect OR Re-check, so a second Business
   Center could not be started at all. The pull button is one job for the whole
   project and sits outside the list.
 - **The sweep is ordered and shares its ceiling.** `.order('advertiser_id')`,
@@ -1982,19 +2007,19 @@ call and nothing creator-facing has been built yet.
 **Creators are never told this exists.** They read numbers. No connect button,
 no mention of TikTok as a data source, nothing in their nav.
 
-| piece | where |
-| --- | --- |
-| tables + RLS | `supabase/migrations/20260817172922_tiktok_ads_connection.sql` |
-| health view | `supabase/migrations/20260817182000_tiktok_connection_health.sql` |
-| TikTok client, region guard | `supabase/functions/_shared/tiktok.ts` |
-| account/store sync | `supabase/functions/_shared/tiktok-sync.ts` |
-| admin actions | `supabase/functions/tiktok-connect/index.ts` |
-| the public exchange | `supabase/functions/tiktok-callback/index.ts` |
-| browser calls | `src/lib/tiktok.ts` |
-| queries | `src/lib/admin/useTikTok.ts` |
-| the screen | `src/routes/admin/TikTokSettings.tsx` (Data â†’ TikTok) |
-| the callback page | `src/routes/OAuthTikTokCallback.tsx` (`/oauth/tiktok/callback`, PUBLIC) |
-| the suite | `scripts/check-tiktok.mjs`, `pnpm verify:tiktok`, 37 checks |
+| piece                       | where                                                                   |
+| --------------------------- | ----------------------------------------------------------------------- |
+| tables + RLS                | `supabase/migrations/20260817172922_tiktok_ads_connection.sql`          |
+| health view                 | `supabase/migrations/20260817182000_tiktok_connection_health.sql`       |
+| TikTok client, region guard | `supabase/functions/_shared/tiktok.ts`                                  |
+| account/store sync          | `supabase/functions/_shared/tiktok-sync.ts`                             |
+| admin actions               | `supabase/functions/tiktok-connect/index.ts`                            |
+| the public exchange         | `supabase/functions/tiktok-callback/index.ts`                           |
+| browser calls               | `src/lib/tiktok.ts`                                                     |
+| queries                     | `src/lib/admin/useTikTok.ts`                                            |
+| the screen                  | `src/routes/admin/TikTokSettings.tsx` (Data â†’ TikTok)                 |
+| the callback page           | `src/routes/OAuthTikTokCallback.tsx` (`/oauth/tiktok/callback`, PUBLIC) |
+| the suite                   | `scripts/check-tiktok.mjs`, `pnpm verify:tiktok`, 37 checks             |
 
 **Four things about this that are load-bearing and easy to undo by accident:**
 
@@ -2004,8 +2029,8 @@ no mention of TikTok as a data source, nothing in their nav.
 2. **The call must not leave from India.** Supabase runs a function in the
    region nearest the caller; from Pakistan that is Mumbai, and TikTok blocks
    every Indian IP, answering `code -1 "Client IP address is in banned Country
-   list"`, which reads exactly like a bad secret. Callers pin `x-region:
-   ap-northeast-1` via `src/lib/tiktok.ts`, and the function refuses before
+list"`, which reads exactly like a bad secret. Callers pin `x-region:
+ap-northeast-1` via `src/lib/tiktok.ts`, and the function refuses before
    calling out if it finds itself in an unverified region.
 3. **TikTok returns HTTP 200 on failure.** The verdict is the `code` field.
    `callTikTok` is the only door and treats non-zero as thrown.
@@ -2020,15 +2045,15 @@ the spend, GMV, orders and ROI behind their own videos. Two tabs: **Dashboard**
 (totals, spend-vs-GMV over time, orders per day, best day, top performer) and
 **My content** (a card per video).
 
-| piece | where |
-| --- | --- |
-| cache + read functions | `supabase/migrations/20260818040000_tiktok_video_performance.sql` |
-| the nightly schedule | `..._tiktok_nightly_schedule.sql`, `..._tiktok_schedule_url.sql` |
-| the only thing that calls TikTok | `supabase/functions/tiktok-sync/index.ts` |
-| creator queries | `src/lib/creator/usePerformance.ts` |
-| charts | `src/components/creator/PerformanceChart.tsx` |
-| the screen | `src/routes/app/MyNumbers.tsx` |
-| the suite | `scripts/check-performance.mjs`, `pnpm verify:performance` |
+| piece                            | where                                                             |
+| -------------------------------- | ----------------------------------------------------------------- |
+| cache + read functions           | `supabase/migrations/20260818040000_tiktok_video_performance.sql` |
+| the nightly schedule             | `..._tiktok_nightly_schedule.sql`, `..._tiktok_schedule_url.sql`  |
+| the only thing that calls TikTok | `supabase/functions/tiktok-sync/index.ts`                         |
+| creator queries                  | `src/lib/creator/usePerformance.ts`                               |
+| charts                           | `src/components/creator/PerformanceChart.tsx`                     |
+| the screen                       | `src/routes/app/MyNumbers.tsx`                                    |
+| the suite                        | `scripts/check-performance.mjs`, `pnpm verify:performance`        |
 
 **The approval gate, added 2026-08-19, is the first thing to know.** Every
 function and the row policy filter on `content_submissions.status = 'approved'`.
@@ -2107,12 +2132,13 @@ from them, as the brand's GMV.
 
 ## Ad spend, ROI and spark codes in Paid Collabs come from EUKA (2026-09-15)
 
-Rashid: *"when euka is giving data we can rely on euka â€¦ let's move with euka
-for now"*. For every brand whose TikTok ad account is connected INSIDE Euka,
+Rashid: _"when euka is giving data we can rely on euka â€¦ let's move with euka
+for now"_. For every brand whose TikTok ad account is connected INSIDE Euka,
 Paid Collabs shows ad spend and ROI per video and per creator for the month on
 screen, plus the spark code.
 
 **How the numbers get there**
+
 - **The sync.** The `euka-ads-sync` Edge Function copies Euka's GMV Max item
   reports into `euka_ad_video_month`: one row per video, campaign, ad account
   and month, and only where money moved. It copies spark codes into
@@ -2127,6 +2153,7 @@ screen, plus the spark code.
   nothing. A manual run is staff-only, because it spends Euka calls.
 
 **Why a sync and not a live call.** Measured on dev that day:
+
 - The first request for a report window returns a 504 after about 45s; the
   same request a few seconds later answers in about 6s.
 - One month across every store took 74 calls and 65 seconds.
@@ -2138,6 +2165,7 @@ makes one quick retry when at least 12s remain. A failure waits 10 minutes
 before retrying, doubling each time up to 12 hours.
 
 **Rules learned the hard way**
+
 - **Base URL.** GMV Max lives under `https://api.euka.ai/api/v1`, not `/v0`.
 - **No paging.** Euka rejects `page` and `pageSize`, even though its spec
   documents them. Each ad account's campaigns are read as three lists (live,
@@ -2207,13 +2235,14 @@ deals, and the column counts it twice.
 version let the row scroll, which hid the tenth video under the total at
 1500px. The strip is now a CSS size container (`container-type: inline-size`
 on `.pc-topvids`) with exactly two shapes:
+
 - over 1290px: full-size thumbnails, the total centred in the space to
   their right
 - 1090â€“1290px: thumbnails shrink (`--tv-w`, never below 76px) so all ten
   stay beside the total
 - under 1090px: the total goes above as one line and the thumbnails scroll
 
-The total is given 14rem so its caption ("18 of 22 creators Â· May 2026")
+The total is given 14rem so its caption ("18 of 22 creators · May 2026")
 stays on one line. The thresholds are that arithmetic: ten thumbnails, nine
 gaps, the gap before the total, and the total's 14rem.
 
@@ -2239,10 +2268,10 @@ database first, and the check proves the modal wrote nothing.
 
 ## The public website (2026-09-22)
 
-Built because TikTok rejected the Display API app on 2026-09-15: *"Your website
+Built because TikTok rejected the Display API app on 2026-09-15: _"Your website
 URL cannot be a landing page or login page. You must have an externally facing
-fully developed website"*, and *"The app icon submitted in the Basic Info does
-not match the icon displayed on the website"*.
+fully developed website"_, and _"The app icon submitted in the Basic Info does
+not match the icon displayed on the website"_.
 
 **The pages.** `/` (the marketing page, unchanged), `/creators`, `/brands`,
 `/how-it-works`, `/about`, `/faq`, `/contact`, plus the three that already
@@ -2250,6 +2279,7 @@ existed, `/tiktok`, `/terms` and `/privacy`. Each is its own route, lazily
 loaded like every other route here, and sets **its own `document.title`** â€”
 `SitePage` for the six, and `LegalPage` for the three, which all wore
 index.html's title until now.
+
 - **`/brands` is the public page. `/app/brands` is a creator's own hubs**,
   behind the login. Different things, one letter apart in a router file.
 - **The copy is in `src/content/site-pages.ts`**, nothing is hardcoded in a
@@ -2281,10 +2311,10 @@ wurxmedia.com file, so the day theirs changes ours fails.
 
 ## Client sharing: read-only links into Paid Collabs (2026-09-17)
 
-Rashid: *"a client sharing section which asad and superadmin maybe boss can
+Rashid: _"a client sharing section which asad and superadmin maybe boss can
 manage where they can create a link per brand or maybe multiple brands in one
 link ... Clients would need no login at all ... Only read access and only the
-brand they have been shared."*
+brand they have been shared."_
 
 **The shape of it.** `public.collab_share_links` holds a label, the brands, four
 section switches, an expiry, a revoked flag and a view count â€” and the link
@@ -2319,7 +2349,7 @@ whitelist of `YYYY-MM`; empty means every month. The client's switcher offers
 only those months, "All time" on a scoped link means all of ITS months, and a
 month asked for outside the list is answered with one inside it rather than
 refused â€” a client who edits the URL sees no more than one who clicks. Rashid:
-*"we need to have custom control ... like which month data"*.
+_"we need to have custom control ... like which month data"_.
 
 **The owner's screen** is `/admin/client-links` (`ClientLinks.tsx`, hooks in
 `lib/admin/useClientLinks.ts`), a row in the Paid Collabs group marked
@@ -2329,15 +2359,16 @@ admin only, at the route and again in the database. It makes a link (label,
 brands, months, sections, 7â€“365 days), shows it **once**, lists every link with
 its scope, expiry and view count, and revokes with a confirm.
 
-**THE CLIENT PAGE IS THE STAFF BRANDS VIEW.** Rashid's boss, 2026-09-17: *"we
+**THE CLIENT PAGE IS THE STAFF BRANDS VIEW.** Rashid's boss, 2026-09-17: _"we
 need to show them exact same view as we have they will just not be able to see
-ad spend and roi at any cost"*. `ShareCollab.tsx` imports `paidcollabs.css` and
+ad spend and roi at any cost"_. `ShareCollab.tsx` imports `paidcollabs.css` and
 our overrides and renders inside `.wurxbase-root`, so it inherits every rule the
 staff table uses â€” the five KPI cards with their progress bars, the top-videos
 strip, the tier tags, the creator faces (unavatar, by handle), the hire tag. The
 column template is set inline because theirs counts twelve columns and this one
 has nine: #, Completed on, Creator, Deal, Videos, Total views, New video GMV,
 L30 GMV, Items sold.
+
 - **Gone:** Ad spend, ROI, Status, Contract, Actions, and the **deals circle**
   on the face. Ad spend and ROI are not in the payload at all, and neither is
   the status or the deal count (the circle counts OUR deals with a creator,
@@ -2345,7 +2376,7 @@ L30 GMV, Items sold.
   Deal column stays. Nothing on the page writes: no select, no input, no export.
 - **The five cards use the staff formulas, not near relatives.** Allocated is
   summed from the rows, Paid is rows whose `payment_status` is exactly `Paid`,
-  Cost/video is allocated Ã· committed videos. A client once saw $238 against
+  Cost/video is allocated ÷ committed videos. A client once saw $238 against
   staff's $46 because it divided by delivered; the UI check now compares all
   five cards against the staff arithmetic.
 - **Tier and L30 GMV** are read from `collab_share_euka_cache` ONLY; the page
@@ -2379,9 +2410,9 @@ details, new address, stop).
 
 ## One TikTok account, one application: the identity ledger (2026-09-28)
 
-Rashid, designing TikTok-first signup: *"the same person should never be able to
-apply again"*, and later, *"it should not be permanent, we should let admin
-review the rejected again"*.
+Rashid, designing TikTok-first signup: _"the same person should never be able to
+apply again"_, and later, _"it should not be permanent, we should let admin
+review the rejected again"_.
 
 ### Why a second table rather than the connection we already had
 
@@ -2454,9 +2485,9 @@ before asserting it blocks.
 
 ## Add-never-replace was half a rule, and the other half was money (2026-09-28)
 
-Rashid: *"there is a creator on Irwin Naturals with name clarkepayne3.0 ... on
+Rashid: _"there is a creator on Irwin Naturals with name clarkepayne3.0 ... on
 tiktok shop i can see his videos and gmv but just wanna be sure what does reacher
-give us"*.
+give us"_.
 
 Reacher gave **$1,036.40** across three videos. We had all three videos and
 **$0.00** on every one of them.
@@ -2488,8 +2519,8 @@ equal the source".
 
 ## By product, on a brand's page (2026-09-24)
 
-**Redesigned TWICE the same day.** First after Rashid sent a mockup: *"u are
-very bad at design see how beautiful this is, i want cards like this"*. He was right. The first
+**Redesigned TWICE the same day.** First after Rashid sent a mockup: _"u are
+very bad at design see how beautiful this is, i want cards like this"_. He was right. The first
 version was three unlabelled numbers in a row â€” legible, and it read as a data
 strip rather than as a product. What the mockup had that it did not: labels, a
 ghost rank numeral, the photograph given room, one row per figure with a circled
@@ -2500,8 +2531,8 @@ the band instead of leaving it two thirds white space, and a brand with seven
 keeps every card readable and lets the row scroll rather than squeezing seven
 into the width of four.
 
-**Then again, an hour later:** *"the current card is taking too much space ...
-it's very bad, it can't take too much space but still show counts properly"*.
+**Then again, an hour later:** _"the current card is taking too much space ...
+it's very bad, it can't take too much space but still show counts properly"_.
 He was right again, and the fix was the AXIS rather than the type size. The tall
 card stacked four labelled figures down the page and stood about 300px high;
 laid ACROSS the bottom of a wide card the same four take 206px, and nothing had
@@ -2525,9 +2556,9 @@ a phone the row becomes a column, so `flex: 1 0 24rem` gave every card a 24rem
 FLOOR ON ITS HEIGHT: correct figures sitting above 250px of empty card. `flex: 0
 0 auto` in the phone query is the fix, and the band went from 805px to 450px.
 
-Rashid: *"is it possible to get the product wise gmv, product wise creators and
+Rashid: _"is it possible to get the product wise gmv, product wise creators and
 product wise videos ... a beautifully iconed and pilled style display without
-disturbing the ui ... for the current month that user selected"*.
+disturbing the ui ... for the current month that user selected"_.
 
 It was possible with no new data at all. **1,042 of the 1,049 videos posted in
 September already carry the product they sold**, written by the same EUKA and
@@ -2568,9 +2599,9 @@ one product's photograph beside another's money.
 
 ### Expected videos and ad spend (2026-10-07)
 
-Rashid: *"the videos part must also show the number of expected videos like
+Rashid: _"the videos part must also show the number of expected videos like
 shown product wise 5/10 ... and i want the cards to show the summed up ad spend
-as well in each card"*. Five figures now: GMV, views, creators, **videos
+as well in each card"_. Five figures now: GMV, views, creators, **videos
 delivered over promised**, and **ad spend**.
 
 **Ad spend was the easy half.** It shares the GMV's scope â€” this product's own
@@ -2588,7 +2619,7 @@ for. Two rules were put to Rashid on 2026-10-07 and he chose the first:
   product. Same scope as the `creators` figure beside it, which already counts a
   person under each product they touched. The two therefore agree, and a card
   can never show videos against a blank commitment.
-- *Rejected:* attributing a promise only to the creator's MAIN product. That
+- _Rejected:_ attributing a promise only to the creator's MAIN product. That
   makes the cards sum exactly to the brand's `314 / 313` KPI, and in exchange
   prints "12 / 0" on every side product.
 
@@ -2618,7 +2649,7 @@ products.
 
 ### The line overlapping the number
 
-Rashid, with a screenshot: *"the line is overlapping the number fix it as well"*.
+Rashid, with a screenshot: _"the line is overlapping the number fix it as well"_.
 At five columns the 1.25rem figures were wider than the cells holding them and,
 with nothing to stop them, drew straight over the hairline divider into the next
 column â€” "133/203" sitting on top of the rule beside it, and the headings
@@ -2657,10 +2688,10 @@ only timing.
 
 ## A product is compulsory from October, and videos split but money does not (2026-09-24)
 
-Rashid: *"I want from october and onwards (not before october please) it should
-be compulsory to choose the product while onboarding"* and *"we only need one
+Rashid: _"I want from october and onwards (not before october please) it should
+be compulsory to choose the product while onboarding"_ and _"we only need one
 checkbox and that should be videos, users will only input no of videos that
-would be auto sum and amount will be entered manually only"*.
+would be auto sum and amount will be entered manually only"_.
 
 ### The date the rule reads is the ROW'S, never the clock's
 
@@ -2683,16 +2714,16 @@ covers only a hand-cleared field.
 this note said "9 of 44", which was true of the distinct brand names across all
 history and wrong about the business: 28 of those 44 are legacy rows with no
 hiring date at all, dormant for months. Rashid saw "44" and said, correctly,
-*"we have only 11"* â€” the Brands screen lists the brands active in the selected
+_"we have only 11"_ â€” the Brands screen lists the brands active in the selected
 month, and that is the roster onboarding actually touches.
 
 Measured on 2026-09-24, of the **11 brands active in September 2026**:
 
-| Source | Brands |
-|---|---|
-| Euka | 8 â€” Apothecary, Aurelia, Biostime, Dr Tobias, Dr. Harvey's, NUTRAHARMONY STORE, Penetrex, Swisse |
-| Reacher | 1 â€” Irwin Naturals |
-| **Neither** | **2 â€” Aqua Sonic, Pure Daily Care** |
+| Source      | Brands                                                                                             |
+| ----------- | -------------------------------------------------------------------------------------------------- |
+| Euka        | 8 â€” Apothecary, Aurelia, Biostime, Dr Tobias, Dr. Harvey's, NUTRAHARMONY STORE, Penetrex, Swisse |
+| Reacher     | 1 â€” Irwin Naturals                                                                               |
+| **Neither** | **2 â€” Aqua Sonic, Pure Daily Care**                                                              |
 
 So the gap is two brands, and both are Cruva ones. The escape hatch still
 matters â€” the picker has always accepted a typed product, and when a brand has
@@ -2719,8 +2750,8 @@ Per-product `amount` is no longer written to `products` at all.
 
 ### The error banner got a `data-wx` hook
 
-Not cosmetic: without one, a check cannot tell *refused with a reason* from
-*silently did nothing*, and those are the only two outcomes this rule has.
+Not cosmetic: without one, a check cannot tell _refused with a reason_ from
+_silently did nothing_, and those are the only two outcomes this rule has.
 
 **Guarded by `pnpm verify:october-product`** (15 checks), which proves BOTH
 directions â€” that a 30 September row still saves with no product, and that a
@@ -2730,8 +2761,8 @@ row is then proved against the database rather than assumed.
 
 ## The products get their photographs (2026-09-24)
 
-Rashid: *"also check if images can be fetcheable for cruva and euka so we can
-show images of product in dropdown"*.
+Rashid: _"also check if images can be fetcheable for cruva and euka so we can
+show images of product in dropdown"_.
 
 **THE PREVIOUS ANSWER WAS TRUE AND STILL WRONG.** It said no picture comes with
 a product, and cited real evidence: EUKA's `dashboard/products-performance`
@@ -2762,7 +2793,7 @@ that owns the brand id being passed.
 **Cached in `collab_product_images`, keyed on the TikTok product id**, because a
 hundred products times one HTTP call per drawer open would make the picker
 slower than the typing it replaced. A photograph changes about never, so a hit
-is kept indefinitely; a MISS is stored too â€” *that* is what stops the same empty
+is kept indefinitely; a MISS is stored too â€” _that_ is what stops the same empty
 lookup running on every open â€” and retried after a fortnight, since a listing
 that went up this week often has no image indexed yet. A lookup that **times
 out** writes no row at all, deliberately: a timeout is not a miss, and recording
@@ -2791,7 +2822,7 @@ opens reports "0 loaded" about pictures that are merely still arriving.
 
 ## The sync pill stops quoting a number nobody asked for (2026-09-24)
 
-It read *"Already up to date Â· 207 videos"* and Rashid asked what 207 was. Fair
+It read _"Already up to date · 207 videos"_ and Rashid asked what 207 was. Fair
 question: it was every video Reacher holds for the whole shop â€” not this brand's
 filed videos, not anything that had just happened, and nothing anyone could act
 on. A figure with no owner, sitting where a result belongs. Now it just says
@@ -2799,13 +2830,13 @@ on. A figure with no owner, sitting where a result belongs. Now it just says
 
 ## Onboarding is a drawer, and the products are a real dropdown (2026-09-23)
 
-Rashid, after using the first version: *"instead of showing the popup we need to
+Rashid, after using the first version: _"instead of showing the popup we need to
 use drawer which will actually open a side drawer with all options ... for
 choosing multiple products the ui is very bad, I said it should be the dropdown
 and searchable and it means it should only show the list only when we open the
 dropdown, click arrow should close the list ... also use product images ... keep
 the font same because boss like small fonts but ui should be perfect ... when
-zooming in zooming out drawer should never overlap or miss something"*.
+zooming in zooming out drawer should never overlap or miss something"_.
 
 **The drawer** (`wx-drawer` on their own `.pc-modal`, so every rule they wrote
 still applies): right edge, full height, header and footer fixed, only the
@@ -2853,16 +2884,17 @@ on Escape without closing the drawer.
 
 ## The product picker on onboarding, and a deal per product (2026-09-23)
 
-Rashid: *"when we onboard a creator we need to write product name â€” we want to
+Rashid: _"when we onboard a creator we need to write product name â€” we want to
 fetch products for that brand from the api so it will show us the dropdown to
 choose the product from, we can also search product because list may be long
 ... if user has chosen only one product it's fine but more than one he may have
 different deal of videos and amount on that ... their total sum will be auto in
-the row below ... do it for reacher and euka as well"*.
+the row below ... do it for reacher and euka as well"_.
 
 **One door, two platforms.** `collab-products` takes a brand name, finds that
 brand's Euka store or Reacher shop, and answers ONE shape â€” `{ id, name, image,
 price, status }` â€” so the modal never knows which platform a brand is on:
+
 - **Euka:** `POST /api/v1/dashboard/products-performance`, with the Euka BRAND
   id (not the store id â€” `storeBrandPair` exists because that mismatch is easy)
   and a 120-day window. **`pageSize` caps at 100**; 200 is a 400.
@@ -2906,9 +2938,9 @@ by looking.
 
 ## Irwin Naturals comes from Reacher, not Euka (2026-09-23)
 
-Rashid: *"there is one brand we have Irwin Naturals, for that brand we have
+Rashid: _"there is one brand we have Irwin Naturals, for that brand we have
 Reacher api not euka ... we need same operations as we are currently doing with
-euka api ... Please do not disturb anything, just for Irwin Naturals"*.
+euka api ... Please do not disturb anything, just for Irwin Naturals"_.
 
 **Reacher is a different TikTok Shop affiliate platform** (reacherapp.com â€” NOT
 `reacher.email`, the email checker of the same name, which cost an hour). The
@@ -2916,9 +2948,10 @@ Wurx key sees four shops; Irwin Naturals, shop **12832**, is the only one that
 is also one of our brands, and it has no Euka store at all.
 
 **The API, read off their own spec:**
+
 - base `https://api.reacherapp.com/public/v1`
 - `x-api-key: rk_live_â€¦` **and** `x-shop-id` on every call. `Authorization:
-  Bearer` answers "Invalid token format", which is what a wrong guess looks
+Bearer` answers "Invalid token format", which is what a wrong guess looks
   like here.
 - most reads are POSTs with a filter body; **`page_size` is capped at 100**, and
   101 is a 422 rather than a truncated page.
@@ -2931,6 +2964,7 @@ before a request is made. Adding a path is the deliberate act.
 
 **What `reacher-sync` does**, every fifteen minutes (`reacher-cycle` in pg_cron,
 secret and URL in the vault, exactly like the Euka job):
+
 1. Reads every video Reacher holds for the shop in a 120-day window.
 2. **Files the ones we do not have onto the matching Irwin row**, in the same
    `video_codes` shape the team types by hand, plus `src: 'reacher'` for
@@ -2974,15 +3008,15 @@ row carries, anything that is not PNG/JPEG/WebP, and anything over the bucket's
 and the creator-avatar sync had spent it**, which is why `--file` and `--url`
 exist beside `--tiktok`.
 
-**THE VIDEOS BUTTON FOLLOWS THE BRAND (2026-09-23).** Rashid: *"when we click
+**THE VIDEOS BUTTON FOLLOWS THE BRAND (2026-09-23).** Rashid: _"when we click
 euka videos it says no store found obviously because we are using reacher for
-Irwin Naturals"*. That button asked Euka for every brand, and for Irwin the
+Irwin Naturals"_. That button asked Euka for every brand, and for Irwin the
 honest answer was "EUKA answered, but none of its stores is called Irwin
 Naturals" â€” a true sentence about the wrong platform. It now reads the brand's
 source once on open (`collab-products` with `probe: true`, which skips the
 catalogue) and: says **Reacher videos** or **EUKA videos** BEFORE it is pressed,
 runs `reacher-sync` or the Euka sweep accordingly, and reports what changed â€”
-"Already up to date Â· 207 videos" is the usual answer for Irwin, because the
+"Already up to date · 207 videos" is the usual answer for Irwin, because the
 scheduled run got there first. The strip above the table names the same source
 rather than always saying "live from EUKA".
 
@@ -2997,12 +3031,13 @@ figures appear while Ad spend stays a dash.
 
 ## Search and filter on a brand's own creator list (2026-09-23)
 
-Rashid: *"we need to let users search the creators there should be search and
-filter functionality without disturbing ui"*. The Creators tab had both; a
+Rashid: _"we need to let users search the creators there should be search and
+filter functionality without disturbing ui"_. The Creators tab had both; a
 brand's own page had neither, and Penetrex alone lists 41 rows in one month.
 
 **One row above the table**, the same `pc-toolbar` shape the Brands screen and
 the Creators tab already use: a search box, a Filter button, and a count.
+
 - **Search** covers name, both TikTok handles, category, product, deal and who
   hired them, from one lower-cased haystack per row built once.
 - **Filters:** payment status, videos (still owed / delivered in full), hired
@@ -3037,9 +3072,9 @@ five widths keep search and Filter usable with no sideways scroll.
 
 ## New Video GMV on the Brands screen, and red ad spend (2026-09-21)
 
-Rashid: *"i want the ad spend column values to be in red color"*, and *"sum
+Rashid: _"i want the ad spend column values to be in red color"_, and _"sum
 the new video gmv of all the brands and add it in the first row of brand's
-main page ... do not disturb UI and be careful on calculations"*.
+main page ... do not disturb UI and be careful on calculations"_.
 
 **Ad spend figures on a brand's page are `--wx-danger`** (`.wx-metric-spend`),
 the ink of the Ad spend card above the table. A dash stays grey. ROI is
@@ -3049,6 +3084,7 @@ unchanged.
 in `--wx-success`. It is computed brand by brand with `wxVideoTotals`
 (WurxUI.jsx), the SAME function the brand page's Views and GMV cards now call,
 over the same rows each brand page receives (`row.list`). So:
+
 - it follows the month picker and All Time exactly as those cards do, and
   ignores the search box, as the other five cards on that row do;
 - each TikTok video counts once per brand (the larger synced figure kept);
@@ -3079,9 +3115,9 @@ resting row and on a hovered row (their gold wash), both themes.
 
 ## Top videos: views, GMV and ad spend totals (2026-09-16)
 
-Rashid, for his boss, in place of the single GMV total: *"3 vertical mini
+Rashid, for his boss, in place of the single GMV total: _"3 vertical mini
 cards â€¦ sum of views (in blue), GMV (green) and ad spend (red) â€¦ month wise
-â€¦ and if he chooses all time show him sum of all time"*.
+â€¦ and if he chooses all time show him sum of all time"_.
 
 **They cover every row in the table below**, which the month picker already
 scopes: one month, or everything under All Time. They do not cover the ten
@@ -3094,6 +3130,7 @@ Adding the columns would put Penetrex's all-time views at 10.0M instead of
 can come in under a calculator run down the column, and the hover text says
 how many videos were counted once. Where two rows carry different synced
 figures for one video, the larger is kept, because views and GMV only grow.
+
 - **Views:** the videos' synced view counts.
 - **GMV:** New video GMV (each video's revenue), added up, then rounded once.
 - **Ad spend:** Euka's, from the same reader and the same period as the Ad
@@ -3134,7 +3171,7 @@ pointing at Euka's own tier tags.
 `wurxbase.creators`. With a month chosen it counts that month's deals across
 EVERY brand, so the same person reads the same on the brand page and the
 Creators tab; under All Time it counts their whole history. Rashid asked for
-this after seeing the lifetime version: *"month wise brand deals not overal"*.
+this after seeing the lifetime version: _"month wise brand deals not overal"_.
 Brand-and-month together was rejected, because a brand page row IS that
 brand's deal for that month, so the circle would say 1 on nearly every row.
 People are matched on the trimmed, lower-cased name,
@@ -3142,6 +3179,7 @@ the same key the Creators tab's deals filter already uses. It sits on the bottom
 creator's round face (`.pc-facewrap`) on the brand page
 (`DrilldownCreatorRow`) and the Creators tab (`CreatorsTabRow`). It shows
 even when the person has no tier yet, and never shows a zero.
+
 - **Beside the tier tag was built first and rejected.** It took 31px from
   every name. At 1600px the brand page's names fell from 48px to 17px ("B.."),
   and at 1440px they were already squeezed before it. On the face's corner it
@@ -3164,6 +3202,7 @@ green, L5 lime, L6 amber, L7 orange, L0 neutral. The team reads tiers in Euka
 all day. The inks are tokens (`--wx-tier-0`â€¦`7`, both themes). Every tag and
 chip is a 12% tint of its ink on a card with a 40% border
 (`wurxbase-overrides.css`, "tier palette").
+
 - **Their v295 block defined a tier palette and then never used it.** Every
   badge and chip rule under it set its own colours, which is how L3 and L4
   were the same brown, and why L5â€“L7 read as warnings. All tier surfaces now
@@ -3179,10 +3218,10 @@ tag must wear its own tier's token, eight distinct inks.
 
 ## Followers on the Creators tab (2026-09-18)
 
-Rashid: *"can we add a new column of followers as well"*, then *"we also need
-to have filter so users can filter creators on follower"*, then, on the gaps,
-*"is there any other way of fetching their follower count other than euka?
-maybe through handle"*.
+Rashid: _"can we add a new column of followers as well"_, then _"we also need
+to have filter so users can filter creators on follower"_, then, on the gaps,
+_"is there any other way of fetching their follower count other than euka?
+maybe through handle"_.
 
 **The column** (`followers` in `godSettings.js`, after TikTok) and **the
 filter** (a Followers section in the Creators tab's existing Filter panel, with
@@ -3190,11 +3229,12 @@ buckets from `WX_FOLLOWER_BUCKETS` and a "No count yet" bucket; Reset all
 clears it) both read ONE function, `wxFollowersOf(euka, stored, handles)` in
 `WurxUI.jsx`, so the chip counts and the cells can never disagree. It returns
 `{ n, source }`:
+
 1. **`shop`** â€” the live Euka shop profiles the tab already sweeps for tiers
    and L30 (the largest figure across stores and both of the creator's handles).
 2. **`lookup`** â€” otherwise, `public.euka_creator_followers`, loaded once per
    visit by `collab-ad-figures.tsx` (`storedFollowers`, paged, `found = true`).
-The cell's hover names the source, and carries `data-source` for the check.
+   The cell's hover names the source, and carries `data-source` for the check.
 
 **Why a second source.** The shop exports describe only creators active in one
 of OUR shops in the last 30 days: 380 of 464 people had no count, and none of
@@ -3202,6 +3242,7 @@ those gaps were spelling mismatches. Euka's market intelligence
 (`POST /api/v1/market-intelligence/tiktok/creator/rank`) searches TikTok's
 whole creator population by keyword and returns `creator_handle` and
 `creator_followers`.
+
 - **A search is not a lookup.** Only a result whose normalised handle EQUALS
   ours is stored (`followersForHandle` in `_shared/euka-followers.ts`); a near
   match is somebody else. Where both sources know a creator the two counts must
@@ -3215,7 +3256,7 @@ whole creator population by keyword and returns `creator_handle` and
   first, then the oldest), 1.2s apart, and re-checks each after 30 days.
 - **Euka rations fresh lookups.** A handle it has answered before comes back
   at once; new ones, after a few dozen, get `503 "Market Intelligence service
-  is unavailable"`. Two failures in a row end the batch. A failure is written
+is unavailable"`. Two failures in a row end the batch. A failure is written
   with `found = false`, the reason in `last_error`, and a `checked_at` that
   brings it back in about a day. Left unrecorded, one failing handle sat first
   in every run and nobody behind it was ever asked.
@@ -3321,15 +3362,15 @@ their call sites degrade on null. But the EUKA videos button turned that
 null into `No EUKA store named "<brand>"`, so **six different faults arrived
 as one sentence that names the brand and blames the data**:
 
-| what actually happened | what it used to say |
-| --- | --- |
+| what actually happened                     | what it used to say   |
+| ------------------------------------------ | --------------------- |
 | request blocked before it left the browser | No EUKA store named X |
-| session rejected by the server (401) | No EUKA store named X |
-| account not on the EUKA allow-list (403) | No EUKA store named X |
-| function not deployed (404) | No EUKA store named X |
-| `EUKA_API_KEY` unset (500) | No EUKA store named X |
-| EUKA itself down (502) | No EUKA store named X |
-| the brand really has no store | No EUKA store named X |
+| session rejected by the server (401)       | No EUKA store named X |
+| account not on the EUKA allow-list (403)   | No EUKA store named X |
+| function not deployed (404)                | No EUKA store named X |
+| `EUKA_API_KEY` unset (500)                 | No EUKA store named X |
+| EUKA itself down (502)                     | No EUKA store named X |
+| the brand really has no store              | No EUKA store named X |
 
 `lastEukaFailure()` in `supabaseClient.js` now keeps the reason and the
 button prints it in the drilldown, where a sentence fits. The genuine
@@ -3368,7 +3409,7 @@ held every one.
 **The screen was the bug.** Every test is August; the report opens on the
 CURRENT month. He was looking at an empty September that said only "start
 your first angle" â€” nothing on it hinted four tests existed a month back.
-Every empty state now lists the tests that DO exist (brand Â· month Â· count)
+Every empty state now lists the tests that DO exist (brand · month · count)
 and one click goes there.
 
 **Wire the month jump through `WurxUI.jsx`, not `App.jsx`.** App has its own
@@ -3387,14 +3428,14 @@ Eight roles. **The model is allow-list throughout**, which is the single most
 important thing to know: a role that exists but is named nowhere can read and
 write nothing, so adding one is safe by construction.
 
-| role | reaches |
-| --- | --- |
-| `admin` | everything Â· Paid Collabs superadmin |
-| `ops` | the admin app Â· Paid Collabs admin |
-| `creator` / `applicant` | the creator app |
-| `creative_strategist` | /studio |
-| `ads_manager` | STAFF since 2026-09-15: everything `ops` reaches Â· Paid Collabs superadmin |
-| `affiliate_team_lead` / `operations_lead` | Paid Collabs only, READ only |
+| role                                      | reaches                                                                    |
+| ----------------------------------------- | -------------------------------------------------------------------------- |
+| `admin`                                   | everything · Paid Collabs superadmin                                       |
+| `ops`                                     | the admin app · Paid Collabs admin                                         |
+| `creator` / `applicant`                   | the creator app                                                            |
+| `creative_strategist`                     | /studio                                                                    |
+| `ads_manager`                             | STAFF since 2026-09-15: everything `ops` reaches · Paid Collabs superadmin |
+| `affiliate_team_lead` / `operations_lead` | Paid Collabs only, READ only                                               |
 
 **Never add a role to `public.is_staff()` to let somebody SEE a screen.** It
 guards SEVENTY policies across creators, applications, offers, contests,
@@ -3404,14 +3445,15 @@ SELECT only; writes to wurxbase still answer to `is_staff()`.
 
 ### Ads Manager became staff (2026-09-15)
 
-Rashid: *"ads manager will have the same edit access as asad and rashid has
-which means they can edit anything"*, and asked whether that meant Subhan
+Rashid: _"ads manager will have the same edit access as asad and rashid has
+which means they can edit anything"_, and asked whether that meant Subhan
 or the role, he chose the role. So `ads_manager` is in `is_staff()` now,
 deliberately. The rule above is about people who only read; this is the
 owner deciding who is staff.
 
 **"Staff" is written in THREE places and they must agree.**
 `pnpm verify:role-gates` asserts it from source:
+
 1. `STAFF_ROLES` in `src/lib/auth/auth-context.ts`, which the router, the
    sidebar and the Paid Collabs identity hook all read.
 2. `public.is_staff()`, plus the definer functions that read `profiles.role`
@@ -3494,8 +3536,7 @@ a list of button labels somebody had thought of ("save", "delete",
 The status pill's label is the status itself, and the Brands tab was never
 looked at. It is an ALLOWLIST across all six tabs now, plus the brand
 drilldown and the angles tab, and it asserts the ADMIN side too â€” a gate
-that over-fires is as much a bug as one that never fires. 42 checks became
-116.
+that over-fires is as much a bug as one that never fires. 42 checks became 116.
 
 **A contrast bug surfaced that had always been there.** The Reporting
 hero's downward-delta chip inks itself in `--wx-text-muted` on a danger
@@ -3534,7 +3575,7 @@ months across, every cell an editable GMV and ad spend. It is the densest
 surface in the product and the only one that is almost entirely numbers.
 
 **Its geometry lives in `WurxUI.jsx`, its paint in `wurxbase-overrides.css`.**
-`FROZEN_W` 344 Â· `MONTH_W` 184 Â· `SUM` 82/152/152/58. The month width is
+`FROZEN_W` 344 · `MONTH_W` 184 · `SUM` 82/152/152/58. The month width is
 not a taste decision: two figures share it, and each half must hold
 **123,456.78** â€” a six-figure month, not the largest number in the database
 today. At 170px each half had 53px for a value measuring 61 and every
@@ -3575,11 +3616,11 @@ failures on first run.
 
 **Three elements, three jobs, and mixing them broke half the controls.**
 
-| element | job |
-| --- | --- |
+| element                          | job                                         |
+| -------------------------------- | ------------------------------------------- |
 | `.wurxbase-root .wurxbase-shell` | carries the class their CSS is fenced under |
-| `.wurxbase-fence` | the scroller |
-| `#wurxbase-portal-host` | where every overlay is portalled |
+| `.wurxbase-fence`                | the scroller                                |
+| `#wurxbase-portal-host`          | where every overlay is portalled            |
 
 **Every `createPortal` in the vendored tree goes to `wxPortalHost()`, never
 `document.body`.** `document.body` is outside `.wurxbase-root`, so their own
@@ -3603,7 +3644,6 @@ TESTING and POSITION rather than existence, because in all three of the bugs
 it was written for, every element existed, was visible, and was correctly
 styled the whole time.
 
-
 ### Where the Euka figures come from (2026-08-29)
 
 Every Euka-derived number on these screens â€” last-30-day GMV, creator tiers,
@@ -3625,14 +3665,14 @@ days. The visible symptom was a red pill on a brand: `No EUKA store named
 we do not own destructure these by key, so a renamed key is a blank column
 rather than an error:
 
-| call | returns |
-| --- | --- |
-| `eukaJson()` | `{ range, stores: [{id,name}] }` |
-| `eukaJson({store})` | `{ range, handles, profiles, shop }` |
-| `eukaJson({store,type:'videos'})` | `{ range, videos, avatars, brandPhoto, tiers }` |
-| `eukaJson({store,type:'cvideos',handle})` | `{ range, videos: {handle: rows} }` |
-| `eukaJson({store,type:'discovery'})` | `{ range, people }` |
-| `eukaJson({store,type:'photo'})` | `{ photo }` |
+| call                                      | returns                                         |
+| ----------------------------------------- | ----------------------------------------------- |
+| `eukaJson()`                              | `{ range, stores: [{id,name}] }`                |
+| `eukaJson({store})`                       | `{ range, handles, profiles, shop }`            |
+| `eukaJson({store,type:'videos'})`         | `{ range, videos, avatars, brandPhoto, tiers }` |
+| `eukaJson({store,type:'cvideos',handle})` | `{ range, videos: {handle: rows} }`             |
+| `eukaJson({store,type:'discovery'})`      | `{ range, people }`                             |
+| `eukaJson({store,type:'photo'})`          | `{ photo }`                                     |
 
 **NOT EVERY BRAND HAS A STORE, and that is not a bug.** Euka has ten stores;
 Paid Collabs tracks thirty brands. Six match. A brand with no store shows no
@@ -3656,7 +3696,6 @@ and callers needing more history sweep several.
 **Verify with** `pnpm verify:euka` (every mode against live Euka, plus the door:
 a creator and a signed-out caller are both refused) and `pnpm verify:euka-ui`
 (the red pill is gone from a real browser, and a brand photo rendered).
-
 
 ### The team, and how somebody is recognised (2026-08-29)
 
@@ -3702,19 +3741,18 @@ against `--wx-bg` and measures 4.02:1 on a warning-soft pill. Thirty labels
 across these six screens were that one mistake. The chip keeps its hue; the
 text stops competing with it.
 
-
 The whole WurxBase dashboard runs inside our admin at `/admin/collabs`, sidebar
 item **Paid Collabs** under Data. **Admin only**; no creator nav mentions it and
 no creator route reaches it.
 
-| piece | where |
-| --- | --- |
-| their app, verbatim | `src/vendor/wurxbase/` |
-| the seam | `src/routes/admin/PaidCollabs.tsx` |
-| our corrections | `src/routes/admin/wurxbase-overrides.css` |
-| the header, ours | `src/routes/admin/wurxbase-chrome.css` |
-| shooting it | `scripts/shots-collabs.mjs` |
-| the fence | `wurxbase-fence` in `src/styles/global.css` |
+| piece               | where                                       |
+| ------------------- | ------------------------------------------- |
+| their app, verbatim | `src/vendor/wurxbase/`                      |
+| the seam            | `src/routes/admin/PaidCollabs.tsx`          |
+| our corrections     | `src/routes/admin/wurxbase-overrides.css`   |
+| the header, ours    | `src/routes/admin/wurxbase-chrome.css`      |
+| shooting it         | `scripts/shots-collabs.mjs`                 |
+| the fence           | `wurxbase-fence` in `src/styles/global.css` |
 
 **`src/vendor/wurxbase/` is a verbatim copy and stays one.** Rashid's
 instruction: the code, features and logic change by not one line; only the look
@@ -3779,12 +3817,12 @@ changes.
 
 ## Being signed in as somebody else (2026-08-19)
 
-| what | where |
-| --- | --- |
-| detection | `src/lib/auth/AuthProvider.tsx` |
-| the banner | `src/components/auth/IdentitySwapBanner.tsx` |
-| mounted for both sides | `src/components/layout/AppShell.tsx` |
-| proof | `scripts/check-session.mjs` section 9 |
+| what                   | where                                        |
+| ---------------------- | -------------------------------------------- |
+| detection              | `src/lib/auth/AuthProvider.tsx`              |
+| the banner             | `src/components/auth/IdentitySwapBanner.tsx` |
+| mounted for both sides | `src/components/layout/AppShell.tsx`         |
+| proof                  | `scripts/check-session.mjs` section 9        |
 
 **One session per browser per origin, and that cannot be changed.** Supabase
 keeps it in localStorage, which belongs to the origin and not to the tab, so
@@ -3809,22 +3847,21 @@ that is telling them something untrue; they stop reading banners.
 washes for tinting cards. On a phone this one wrapped to five lines and the page
 showed through it.
 
-
 ## Brand Hub, the creator side of a brand (2026-08-24, reshaped 2026-10-09)
 
-**Files:** `src/routes/app/BrandHub.tsx` (`AccentScope`, `HubNav`) Â·
-`src/components/brand/BrandWorldHero.tsx` (`BrandWorldHero`, `BrandChip`) Â·
-`src/lib/brand-theme.ts` Â· `scripts/check-brand-theme.mjs` Â· `scripts/shots-hub.mjs`
-Â· migration `20260824170709_brand_world_look.sql`
+**Files:** `src/routes/app/BrandHub.tsx` (`AccentScope`, `HubNav`) ·
+`src/components/brand/BrandWorldHero.tsx` (`BrandWorldHero`, `BrandChip`) ·
+`src/lib/brand-theme.ts` · `scripts/check-brand-theme.mjs` · `scripts/shots-hub.mjs`
+· migration `20260824170709_brand_world_look.sql`
 
 **REVERSED 2026-10-09. This was a "brand world", and it is not any more.** It
 began (2026-08-24) as a full-screen world OUTSIDE `ShellLayout`, with its own
 `WorldLayout`, its own rail and top bar, and a whole palette derived from the
 brand that repointed the page, cards, menu, text and borders.
-`BrandWorldShell.tsx` and `WorldLayout.tsx` are now deleted. Rashid: *"this page
+`BrandWorldShell.tsx` and `WorldLayout.tsx` are now deleted. Rashid: _"this page
 has a completely different design language why? and it loads like a completely
 separate app which is very annoying it is a part of the app Prism please design
-it accordingly."* Two real faults sat under that: it looked like a different
+it accordingly."_ Two real faults sat under that: it looked like a different
 product, and entering or leaving a hub unmounted the whole shell and mounted
 another, a full remount.
 
@@ -3882,13 +3919,13 @@ applies as written, it says so.
 
 ## Multi-colour brand themes (2026-08-25)
 
-**Files:** `src/lib/brand-theme.ts` (the whole thing) Â·
-`src/components/admin/BrandLookField.tsx` Â· `scripts/check-brand-theme.mjs` Â·
-`src/lib/schemas/brand.ts` Â· `supabase/functions/manage-brand/index.ts` Â·
+**Files:** `src/lib/brand-theme.ts` (the whole thing) ·
+`src/components/admin/BrandLookField.tsx` · `scripts/check-brand-theme.mjs` ·
+`src/lib/schemas/brand.ts` · `supabase/functions/manage-brand/index.ts` ·
 migration `20260825174347_brand_theme_areas.sql`
 
-Rashid: *"some brands have multo color themes so our app should be designed
-accoridnlgy"*. An admin now colours four areas independently, up to four colours
+Rashid: _"some brands have multo color themes so our app should be designed
+accoridnlgy"_. An admin now colours four areas independently, up to four colours
 each (since 2026-10-09 only the hero and the accent are offered; see the Brand
 Hub entry above), and anything they do not touch is still derived from `brands.brand_color`
 exactly as before.
@@ -3946,10 +3983,10 @@ before the migration was written.
 ## The creator offers page (2026-08-25)
 
 **Files:** `src/routes/app/BrandHub.tsx` (`Offers`, `OfferSummary`,
-`bucketFor`) Â· `src/components/creator/OfferCard.tsx`
+`bucketFor`) · `src/components/creator/OfferCard.tsx`
 
-Rashid: *"polish the ui more specially the offers page of brand hubs for
-creators"*. It was a bare grid in database order.
+Rashid: _"polish the ui more specially the offers page of brand hubs for
+creators"_. It was a bare grid in database order.
 
 - **`bucketFor` is ONE function** because the strip, the tab counts and the card
   list must agree. Three copies is how a tab reads "Under way 2" and draws
@@ -3973,9 +4010,9 @@ to the numbers cannot land in one and miss the other.
 
 ## Brand-scoped creator numbers (2026-08-24)
 
-**Files:** migration `20260824152633_brand_scoped_creator_numbers.sql` Â·
-`src/lib/creator/usePerformance.ts` Â· `useLeaderboard.ts` Â· `useCreatorContests.ts`
-Â· `scripts/check-brand-numbers.mjs`
+**Files:** migration `20260824152633_brand_scoped_creator_numbers.sql` ·
+`src/lib/creator/usePerformance.ts` · `useLeaderboard.ts` · `useCreatorContests.ts`
+· `scripts/check-brand-numbers.mjs`
 
 **The rule, and it is Rashid's:** a video belongs to a brand through the offer or
 contest it was filed against. The MONEY belongs to the brand whose ad account
@@ -3994,12 +4031,11 @@ brand's money rows on them.
 3. **Rank is computed INSIDE the brand**, underneath the `rank()`, or the board
    opens on "#7 of 3".
 
-
 ## The two legal pages (2026-08-26)
 
-**Files:** `src/routes/legal/LegalPage.tsx` (the shell) Â· `Terms.tsx` Â·
-`Privacy.tsx` Â· `legal-contact.ts` Â· `scripts/check-legal.mjs` Â·
-`src/styles/global.css` (the `wx-prose` utility) Â·
+**Files:** `src/routes/legal/LegalPage.tsx` (the shell) · `Terms.tsx` ·
+`Privacy.tsx` · `legal-contact.ts` · `scripts/check-legal.mjs` ·
+`src/styles/global.css` (the `wx-prose` utility) ·
 `src/components/landing/SiteFooter.tsx`
 
 `/terms` and `/privacy`, public and unauthenticated. They exist because
@@ -4011,8 +4047,8 @@ same domain as the app, and a reviewer opens them.
 1. **The privacy policy may only claim what the code enforces.** It was written
    from an actual four-way inventory of the migrations, Edge Functions, storage
    buckets and third-party calls, then reconciled line by line. The first draft
-   contained a flat falsehood that survived until the inventory caught it: *"Other
-   creators cannot see your figures."* The leaderboard shows every creator every
+   contained a flat falsehood that survived until the inventory caught it: _"Other
+   creators cannot see your figures."_ The leaderboard shows every creator every
    other creator's name, face, GMV, ad spend, orders and video count, on Rashid's
    own 2026-08-20 decision. **An overclaiming privacy policy is a false statement,
    not a tidy one.**
@@ -4042,12 +4078,12 @@ they sat correctly in the source AND the bundle.
 
 ## The creator TikTok connection (2026-08-26)
 
-**Files:** `supabase/migrations/20260825235328_creator_tiktok_connection.sql` Â·
-`20260826000638_creator_tiktok_tokens_reachable.sql` Â·
-`supabase/functions/_shared/tiktok-display.ts` Â· `tiktok-creator/` Â·
-`tiktok-creator-callback/` Â· `src/lib/creator/useTikTokAccount.ts` Â·
-`src/components/creator/TikTokConnection.tsx` Â·
-`src/routes/OAuthTikTokCreatorCallback.tsx` Â· `scripts/check-creator-tiktok.mjs`
+**Files:** `supabase/migrations/20260825235328_creator_tiktok_connection.sql` ·
+`20260826000638_creator_tiktok_tokens_reachable.sql` ·
+`supabase/functions/_shared/tiktok-display.ts` · `tiktok-creator/` ·
+`tiktok-creator-callback/` · `src/lib/creator/useTikTokAccount.ts` ·
+`src/components/creator/TikTokConnection.tsx` ·
+`src/routes/OAuthTikTokCreatorCallback.tsx` · `scripts/check-creator-tiktok.mjs`
 
 A creator connects their OWN TikTok account and sees their profile, their
 follower count, and the views, likes, comments and shares on their own videos.
@@ -4058,10 +4094,10 @@ written.
 **TWO SCOPES. `user.info.basic` and `video.list`, and that is what the app is
 approved for.**
 
-| scope | what it gives | where it shows |
-| --- | --- | --- |
-| `user.info.basic` | open id, display name, avatar | the name and face on the card |
-| `video.list` | per-video views, likes, comments, shares | the video rows |
+| scope             | what it gives                            | where it shows                |
+| ----------------- | ---------------------------------------- | ----------------------------- |
+| `user.info.basic` | open id, display name, avatar            | the name and face on the card |
+| `video.list`      | per-video views, likes, comments, shares | the video rows                |
 
 **`DISPLAY_SCOPES` MUST EQUAL THE APP'S SCOPES PAGE, and the two ways of getting
 it wrong fail completely differently.** Both happened on 2026-08-26, in this
@@ -4091,12 +4127,12 @@ same commit, or the product starts over-claiming.
 
 **THE SECOND TIKTOK INTEGRATION, and it shares nothing with the first.**
 
-| | ads (2026-08-17) | creator (2026-08-26) |
-| --- | --- | --- |
-| host | business-api.tiktok.com | open.tiktokapis.com |
-| authorises | a BRAND's ad account | a CREATOR's own account |
-| done by | a Wurx admin | the creator, for themselves |
-| gives | cost, GMV, orders | views, likes, comments, shares |
+|            | ads (2026-08-17)        | creator (2026-08-26)           |
+| ---------- | ----------------------- | ------------------------------ |
+| host       | business-api.tiktok.com | open.tiktokapis.com            |
+| authorises | a BRAND's ad account    | a CREATOR's own account        |
+| done by    | a Wurx admin            | the creator, for themselves    |
+| gives      | cost, GMV, orders       | views, likes, comments, shares |
 
 Different apps, different credentials, different hosts. Do not merge the two
 shared modules. Confusing them cost a whole round of scope applications on
@@ -4108,7 +4144,7 @@ shared modules. Confusing them cost a whole round of scope applications on
    first, because a schema PostgREST does not expose looked like the strongest
    possible protection. It was: `.schema('private')` returns **PGRST106 Invalid
    schema** for every role, service_role included, because the exposed-schema
-   list is PostgREST *configuration* and is checked before the role is. The
+   list is PostgREST _configuration_ and is checked before the role is. The
    callback would have taken a live token, thrown it away, said "Connected", and
    never been able to revoke the grant it left running at TikTok. Tokens now
    live in `public.creator_tiktok_tokens` with **RLS on and NO POLICIES**, which
@@ -4147,17 +4183,17 @@ shared modules. Confusing them cost a whole round of scope applications on
    back to the basic fields rather than failing, so widening the ask cannot
    break connections that already exist.
 10. **A withheld figure is hidden or dashed, and the two are different.** No
-   permission granted â†’ the totals strip is not rendered at all. Permission
-   granted but the number missing â†’ a dash. Rendering three dashes for somebody
-   who never granted the scope tells them they have no followers, no likes and
-   no videos, which is a lie about their own account rather than an absence.
+    permission granted â†’ the totals strip is not rendered at all. Permission
+    granted but the number missing â†’ a dash. Rendering three dashes for somebody
+    who never granted the scope tells them they have no followers, no likes and
+    no videos, which is a lie about their own account rather than an absence.
 11. **`likes_count` is `bigint`.** A large account's lifetime likes pass 2^31,
-   and an `integer` would overflow into silent nonsense on somebody's own
-   profile.
+    and an `integer` would overflow into silent nonsense on somebody's own
+    profile.
 12. **`profile_deep_link` is third-party data going into an `href`.** React
-   escapes text but renders `href="javascript:..."` happily, so the scheme is
-   checked before it becomes a link. Not a live threat from TikTok; it is the
-   one string on that card somebody else chooses.
+    escapes text but renders `href="javascript:..."` happily, so the scheme is
+    checked before it becomes a link. Not a live threat from TikTok; it is the
+    one string on that card somebody else chooses.
 
 **Guards, two of them.**
 
@@ -4178,11 +4214,11 @@ than assumed, and asserts 375 / 768 / 1440 with no sideways scroll.
 
 ## Ad Spend and ROI inside Paid Collabs (2026-08-26)
 
-**Files:** `supabase/migrations/20260826170848_ads_totals_for_videos.sql` Â·
-`src/routes/admin/collab-ad-math.ts` Â· `src/routes/admin/collab-ad-figures.tsx` Â·
-`src/routes/admin/PaidCollabs.tsx` Â· `src/routes/admin/wurxbase-overrides.css` Â·
-`src/vendor/wurxbase/WurxUI.jsx` (WURX-ADDED blocks) Â·
-`scripts/check-collab-ads.mjs` Â· `scripts/check-collab-ads-ui.mjs`
+**Files:** `supabase/migrations/20260826170848_ads_totals_for_videos.sql` ·
+`src/routes/admin/collab-ad-math.ts` · `src/routes/admin/collab-ad-figures.tsx` ·
+`src/routes/admin/PaidCollabs.tsx` · `src/routes/admin/wurxbase-overrides.css` ·
+`src/vendor/wurxbase/WurxUI.jsx` (WURX-ADDED blocks) ·
+`scripts/check-collab-ads.mjs` · `scripts/check-collab-ads-ui.mjs`
 
 Two columns on a brand's creator list â€” **Ad spend** and **ROI** â€” and the same
 two figures against each individual video inside an expanded creator.
@@ -4276,7 +4312,7 @@ period switch.
 
 ## Vendoring a WurxBase release (2026-08-27)
 
-**Files:** `scripts/vendor-wurxbase.mjs` Â· `scripts/wurxbase-patches.mjs` Â·
+**Files:** `scripts/vendor-wurxbase.mjs` · `scripts/wurxbase-patches.mjs` ·
 `scripts/check-collab-contrast.mjs`
 
 ```bash
@@ -4294,12 +4330,12 @@ still carried the answers. It will not be reconstructible twice.
 
 **THE COLOUR MAPPING IS FOUR PASSES, IN DESCENDING CONFIDENCE.**
 
-| pass | what it is | v382 |
-| --- | --- | --- |
+| pass     | what it is                                                         | v382  |
+| -------- | ------------------------------------------------------------------ | ----- |
 | verbatim | the selector+property existed before, so OUR value is kept exactly | 3,995 |
-| learned | their colour lined up against our token elsewhere in the file | 754 |
-| curated | a hand-written table for what their new UI introduced | 510 |
-| nearest | perceptual, in OKLab, restricted to tokens of the same ROLE | 474 |
+| learned  | their colour lined up against our token elsewhere in the file      | 754   |
+| curated  | a hand-written table for what their new UI introduced              | 510   |
+| nearest  | perceptual, in OKLab, restricted to tokens of the same ROLE        | 474   |
 
 Only the last can be wrong, so it is counted and printed. **The reference copy
 is read from `git show HEAD:`, never from the working tree** â€” read it from
@@ -4364,7 +4400,7 @@ by looking harder:
    readable. Twelve invented failures on the one screen with real ones.
 3. **The inline-style pass themed only the FIRST colour in a value**, so a
    two-stop gradient kept its second stop: `var(--wx-warning-soft) 0%,
-   #2A2118 100%`, a permanently dark pill behind theme-coloured ink.
+#2A2118 100%`, a permanently dark pill behind theme-coloured ink.
 4. **The backreference in that pass pointed at the wrong group.** `STYLE_PROP`
    is itself a capture group, so the quote is group 2 and `\1` asked the value
    to be closed by the property NAME. It matched nothing, themed none of the 468
@@ -4388,9 +4424,9 @@ Reported as "showing no data", investigated, **not a bug**. Worth writing down s
 nobody spends an evening on it twice.
 
 An angle test is one row in THEIR `activity_logs`, action `CREATIVE_ANGLE`,
-target `"Brand::YYYY-MM"` â€” their own comment explains why: *"this belongs in
+target `"Brand::YYYY-MM"` â€” their own comment explains why: _"this belongs in
 its own table, but the project has no DDL access, so it rides in activity_logs
-the way the brand contracts and Discovery marks already do."*
+the way the brand contracts and Discovery marks already do."_
 
 **So it is scoped to ONE brand in ONE month**, deliberately: comparing a
 September hook against a January one measures the season, not the hook. Pick a
@@ -4483,8 +4519,8 @@ more exposed than before â€” the key that could read it shipped in the page
 
 ### Paid Collabs: one sign-in, and rows that mean what they say (2026-08-28)
 
-**There is no second login.** Rashid: *"when admin is already in app no need of
-signin obviously so remove it"*. Their screen checked a typed password against
+**There is no second login.** Rashid: _"when admin is already in app no need of
+signin obviously so remove it"_. Their screen checked a typed password against
 `app_users.password` â€” plaintext, in a table anyone with the browser key could
 read â€” so it was never the boundary. Our own sign-in and the RLS on the
 `wurxbase` schema are.
@@ -4492,10 +4528,10 @@ read â€” so it was never the boundary. Our own sign-in and the RLS on the
 **`src/lib/wurxbase-identity.ts` is the whole bridge**, and the only place the
 mapping lives:
 
-| our role | theirs | what that means |
-| --- | --- | --- |
-| `admin` | `superadmin` | everything, God Mode and user management included |
-| `ops` | `admin` | every tab and every daily action; no God Mode, no managing users, no hard delete |
+| our role | theirs       | what that means                                                                  |
+| -------- | ------------ | -------------------------------------------------------------------------------- |
+| `admin`  | `superadmin` | everything, God Mode and user management included                                |
+| `ops`    | `admin`      | every tab and every daily action; no God Mode, no managing users, no hard delete |
 
 Nobody else reaches the route â€” it is behind `allow={['ops','admin']}`.
 
@@ -4516,7 +4552,7 @@ person's name, and swallows failures because a footnote must not cost somebody
 their screen.
 
 **THE SIDEBAR ONLY OFFERS ROWS THAT OPEN.** Rashid, on tabs a person lacks:
-*"if it was u remove it i dont want any leak"*. `navForRole` prunes the Paid
+_"if it was u remove it i dont want any leak"_. `navForRole` prunes the Paid
 Collabs group through `wurxbaseTabsFor`, and drops the heading if nothing
 survives. It does NOT know about per-person `custom_perms` or a God Mode tab
 hidden for the workspace â€” both live in their database and would make the
@@ -4528,16 +4564,15 @@ broken.
 straight away, the session names the real person, our admin maps to their
 superadmin, and zero console errors.
 
-
 ## Product groups on a brand's creator table (2026-09-29)
 
-`src/vendor/wurxbase/WurxUI.jsx` Â· `wxCreatorProduct`, `wxKnownProducts`,
+`src/vendor/wurxbase/WurxUI.jsx` · `wxCreatorProduct`, `wxKnownProducts`,
 `wxProductOrder`, `wxSplitByProduct`, `wxProductPics`, `WxGroupMenu`, and the
 `wxTable` memo in the brand drilldown. Styles: `.wx-pgroup*` / `.wx-prow` in
 `src/routes/admin/wurxbase-overrides.css`. Guard: `pnpm verify:product-groups`.
 
-Rashid: *"organize and show product wise creators and for the ui i exactly want
-the ui as u can see in ss2"*.
+Rashid: _"organize and show product wise creators and for the ui i exactly want
+the ui as u can see in ss2"_.
 
 **ONE CREATOR APPEARS ONCE. This is the rule the whole feature rests on.** The
 row is per-creator and carries per-creator money; listing somebody under each of
@@ -4600,10 +4635,9 @@ cache shared by the band and the groups â€” it was two Edge Function round 
 A FAILURE is dropped from the cache so the next mount asks again: "could not
 reach the catalogue once" must never harden into "this brand has no pictures".
 
-
 ## Thumbnails for videos we file ourselves (2026-09-29)
 
-`supabase/functions/_shared/video-thumbs.ts` Â· called from `reacher-sync`.
+`supabase/functions/_shared/video-thumbs.ts` · called from `reacher-sync`.
 Guard: `pnpm verify:video-thumbs`.
 
 **REACHER HAS NO THUMBNAIL.** Their spec: `/videos/list` and
@@ -4639,8 +4673,8 @@ torn-page glyph in the middle of the brand page.
 
 `supabase/functions/reacher-sync/index.ts`. Guard: `pnpm verify:deal-complete`.
 
-Rashid: *"why does not it automatically move towards payment pending, asad did it
-manually"*. Because this function wrote `video_codes` and nothing else, while
+Rashid: _"why does not it automatically move towards payment pending, asad did it
+manually"_. Because this function wrote `video_codes` and nothing else, while
 BOTH browser paths that write videos â€” the EUKA merge and the video editor's
 save â€” recompute the `videos` flag from the deal every time. **Irwin is the only
 brand Reacher fills, which is why it was the only brand where it had to be done
@@ -4667,21 +4701,20 @@ dev are exactly that and none is a bug â€” a deal gets renegotiated, a link
 gets pasted, a creator is released early. Staff own that direction. The only
 rule the machine enforces is that it never LEAVES somebody out.
 
-
 ## The creator contract, redrawn (2026-10-02)
 
-`src/routes/admin/contract-paper.js` (ours) Â· `src/routes/admin/wurx-mark.js`
-(the wordmark, inline) Â· `src/vendor/wurxbase/contractPdf.js` delegates to it.
+`src/routes/admin/contract-paper.js` (ours) · `src/routes/admin/wurx-mark.js`
+(the wordmark, inline) · `src/vendor/wurxbase/contractPdf.js` delegates to it.
 Guard: `pnpm verify:contract-pdf`.
 
-Rashid, with a mockup: *"update the ui of the contract it's very boring and also
-add some extra stuff in it ... i want exactly that UI"*.
+Rashid, with a mockup: _"update the ui of the contract it's very boring and also
+add some extra stuff in it ... i want exactly that UI"_.
 
 **A REDRAW, NOT A REWRITE.** The words all still come from `CONTRACT_SECTIONS`
 and the per-creator editor. What changed is the paper.
 
-**IT STAYS LETTER PORTRAIT, PAGES STACKED.** Rashid: *"the second page should be
-vertical below the first one like we currently have"*. His mockup shows two
+**IT STAYS LETTER PORTRAIT, PAGES STACKED.** Rashid: _"the second page should be
+vertical below the first one like we currently have"_. His mockup shows two
 pages side by side because it is a design preview; that is not the document.
 
 **THE WORDMARK IS INLINE BASE64, NOT A FETCH.** The PDF is drawn in a click
@@ -4716,7 +4749,7 @@ face. See DECISIONS.
 
 ## Backfilling video thumbnails (2026-10-02)
 
-`scripts/backfill-video-thumbs.mjs` Â· dry run by default, `--write` to apply.
+`scripts/backfill-video-thumbs.mjs` · dry run by default, `--write` to apply.
 
 Irwin's blanks are fixed inside `reacher-sync` because that function files
 Irwin's videos. Everywhere else videos arrive through the BROWSER and no
@@ -4739,14 +4772,14 @@ First run: 1,397 blanks, 1,100 filled (79%), 188 rows written, across 18 brands.
 The plan, Umar's decisions, the open items and the record of every change are in
 [`CREATIVE_ANGLE_AUTOMATION.md`](CREATIVE_ANGLE_AUTOMATION.md). Read that first.
 
-**Files:** `supabase/migrations/20261006090000_collab_brand_briefs.sql` Â·
-`supabase/migrations/20261007090000_collab_angle_queue.sql` Â·
-`supabase/functions/collab-angles/` Â· `supabase/functions/collab-angles-sync/` Â·
-`supabase/functions/_shared/audit-api.ts` Â·
-`supabase/functions/_shared/angle-store.ts` Â·
-`src/routes/admin/collab-angle-categorise.tsx` Â·
-`src/routes/admin/wurxbase-overrides.css` (the `wx-cat-` block) Â·
-`scripts/wurxbase-patches.mjs` Â· `scripts/check-angles-categorise.mjs`
+**Files:** `supabase/migrations/20261006090000_collab_brand_briefs.sql` ·
+`supabase/migrations/20261007090000_collab_angle_queue.sql` ·
+`supabase/functions/collab-angles/` · `supabase/functions/collab-angles-sync/` ·
+`supabase/functions/_shared/audit-api.ts` ·
+`supabase/functions/_shared/angle-store.ts` ·
+`src/routes/admin/collab-angle-categorise.tsx` ·
+`src/routes/admin/wurxbase-overrides.css` (the `wx-cat-` block) ·
+`scripts/wurxbase-patches.mjs` · `scripts/check-angles-categorise.mjs`
 (`pnpm verify:angles-categorise`)
 
 What exists so far:
@@ -4801,31 +4834,31 @@ Change rules:
 ## Why the Performance tab was mostly dashes (2026-10-07)
 
 **Files:** `src/vendor/wurxbase/WurxUI.jsx` (`WxBlank`, `wxMoneyBlank`, the
-`wxRows`/`wxCells`/`wxEntered` counters in `PerformanceTab`) Â·
+`wxRows`/`wxCells`/`wxEntered` counters in `PerformanceTab`) ·
 `src/routes/admin/wurxbase-overrides.css`
 
-Rashid, with a screenshot of brand after brand showing "-": *"figure out why
-data is not being shown? What is the reason for missing data."*
+Rashid, with a screenshot of brand after brand showing "-": _"figure out why
+data is not being shown? What is the reason for missing data."_
 
 ### The reason
 
 **The Performance tab's GMV, Ad and ROAS columns have exactly one source: the
 month cells somebody types into the matrix by hand.** The file says so at the
-top of `PerformanceTab` â€” *"Aggregates ONLY from the manually-entered monthly
+top of `PerformanceTab` â€” _"Aggregates ONLY from the manually-entered monthly
 matrix data (`creators.monthly` JSONB). Per-deal `c.gmv` / `c.ad_spent` fields
-are NOT used here."* Nothing syncs into those cells. The nightly Euka sync does
+are NOT used here."_ Nothing syncs into those cells. The nightly Euka sync does
 write into `monthly`, but only `monthly.euka.l30`.
 
 Measured against dev rather than inferred, by reproducing the tab's own
 arithmetic over all 1,484 creator rows: **9 of 44 brands have ever had a figure
 entered.** The other 35 have zero cells.
 
-| | last month entered |
-|---|---|
-| Penetrex, Swisse | **2026-08** |
-| Dr. Harvey's, Biostime, Dr Tobias, Aurelia, Apothecary | 2026-09 |
-| Aqua Sonic, Pure Daily Care | **2026-08 only, ever** |
-| 35 others incl. NUTRAHARMONY, Irwin, Bentgo, JOYMODE | never |
+|                                                        | last month entered     |
+| ------------------------------------------------------ | ---------------------- |
+| Penetrex, Swisse                                       | **2026-08**            |
+| Dr. Harvey's, Biostime, Dr Tobias, Aurelia, Apothecary | 2026-09                |
+| Aqua Sonic, Pure Daily Care                            | **2026-08 only, ever** |
+| 35 others incl. NUTRAHARMONY, Irwin, Bentgo, JOYMODE   | never                  |
 
 So on 2026-10-07 nobody had entered September for Penetrex or Swisse, and
 nobody had entered October for anyone. Even where it is filled it is partial:
@@ -4862,7 +4895,7 @@ creates and deletes rows, so it exercises nothing this change touches.
 
 ### The fix: fall back to the sync, never override what was typed (2026-10-07)
 
-Rashid: *"suggest the appropriate fix and make the fix for me"*.
+Rashid: _"suggest the appropriate fix and make the fix for me"_.
 
 **The obvious fix would have destroyed history, which is why it is not the one
 built.** Measured on dev before a line was written, comparing the typed matrix
@@ -4902,21 +4935,22 @@ $2,473 / 1.23x, Irwin $9,980 / $12,953 / 0.77x), 0 blanks without a reason, 0
 console errors.
 
 **A geometry check caught what the screenshot could not.** At 1024px
-"1.23xÂ·synced" measured wider than the ROAS cell, the tightest column on the
+"1.23x·synced" measured wider than the ROAS cell, the tightest column on the
 row, and spilled â€” invisible at 1440px where it was being looked at. The word
 is now dropped in that column rather than shrunk; the dotted underline and
 tooltip still carry the provenance, and the two columns beside it say it in
 words on the same row.
+
 ## Any date range, and one brand at a time, on My numbers (2026-10-07)
 
-**Files:** `src/lib/creator/date-range.ts` (new, pure) Â·
-`src/components/creator/DateRangePicker.tsx` (new) Â·
-`src/components/creator/BrandFilter.tsx` (new) Â· `src/routes/app/MyNumbers.tsx`
+**Files:** `src/lib/creator/date-range.ts` (new, pure) ·
+`src/components/creator/DateRangePicker.tsx` (new) ·
+`src/components/creator/BrandFilter.tsx` (new) · `src/routes/app/MyNumbers.tsx`
 
-Rashid, with a screenshot of a two-month picker: *"the data can be displayed for
-any date range ... Make it like a calender okay?"* and *"In the numbers tab I
+Rashid, with a screenshot of a two-month picker: _"the data can be displayed for
+any date range ... Make it like a calender okay?"_ and _"In the numbers tab I
 want a drop down to select different brands for whom I want to see the
-numbers."*
+numbers."_
 
 ### Nothing in the database had to change
 
@@ -4940,11 +4974,11 @@ button that opens a two-month calendar with nine shortcuts. Six are Rashid's
 from the picker he sent; "All time" is kept because it was the default and is
 the honest answer for a creator three weeks in; **"This month" and "Last month"
 are kept because the control they replace was a month walker he asked for by
-name** â€” *"what did I earn in July"* â€” and losing that in a redesign would be a
+name** â€” _"what did I earn in July"_ â€” and losing that in a redesign would be a
 regression dressed as an improvement.
 
-The note that was deleted said the ranges were *"deliberately a set of ranges
-rather than two date pickers"*. That was right while the only questions were
+The note that was deleted said the ranges were _"deliberately a set of ranges
+rather than two date pickers"_. That was right while the only questions were
 this week and this month; it stops being right the moment somebody wants a
 campaign's fortnight.
 
@@ -5007,8 +5041,8 @@ popover at 375px is the untested risk; a browser check is written and ready at
 
 **Files:** `src/routes/app/BrandHub.tsx`
 
-Rashid, circling them: *"I want the circled elements removed and instead there
-should be only one element named Creators Library"*. "Campaigns & briefs"
+Rashid, circling them: _"I want the circled elements removed and instead there
+should be only one element named Creators Library"_. "Campaigns & briefs"
 (Next) and "Creative studio" (Later) are gone; "Creators Library" takes their
 place.
 
@@ -5019,8 +5053,8 @@ an empty room.
 
 ### The channel filter is gone (2026-10-08)
 
-Rashid, circling it: *"the circled this I want you to remove it and keep it all
-time by default."* The All videos / Offer videos / Contest videos tabs are
+Rashid, circling it: _"the circled this I want you to remove it and keep it all
+time by default."_ The All videos / Offer videos / Contest videos tabs are
 removed; the screen always answers for every video, and the date range still
 opens on All time.
 

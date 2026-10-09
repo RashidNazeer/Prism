@@ -42,7 +42,7 @@ import {
 } from '@/lib/creator/date-range';
 import { WelcomeMoment } from '@/components/creator/WelcomeMoment';
 import { ApprovedMoment } from '@/components/creator/ApprovedMoment';
-import { PipelineBoard } from '@/components/creator/PipelineBoard';
+import { PipelineBoard, PipelineJobs } from '@/components/creator/PipelineBoard';
 import { ContestEarnings } from '@/components/creator/ContestEarnings';
 import { useContestEarnings } from '@/lib/creator/useContestEarnings';
 import { JobProgressBar } from '@/components/work/JobProgress';
@@ -336,16 +336,31 @@ function CreatorHome({
         </>
       ) : view === 'pipeline' ? (
         <>
-          <PipelineBoard summary={summary} rows={work} moved={moved} progress={progress} />
-
-          {/* The money split that used to sit beside this now lives in the board's
+          {/* The money split that used to sit beside this now lives in the rail's
               own header, so the totals are said once. */}
-          {/* Activity on the wide side, contest money on the narrow one. Contest
-              money is a separate pot and never sits inside a card that reads as
-              part of the offer money. See rule M10. */}
+          <PipelineBoard summary={summary} rows={work} moved={moved} />
+
+          {/*
+            THE SAME GOLDEN FRAME AS OVERVIEW, and for the same reason: the two
+            tabs are one screen at two zoom levels, so they must not re-arrange
+            themselves under the person reading. The wide column is the work,
+            the narrow one is the record of it.
+
+            This used to be Activity on the wide side and ContestEarnings on the
+            narrow one. ContestEarnings renders NOTHING for a creator with no
+            contest money, which is most of them, so the narrow column was empty
+            and the right-hand third of the page was blank. A column that is
+            only sometimes there cannot be half the frame. Contest money keeps
+            its own card and never sits inside one that reads as offer money —
+            rule M10 — it just sits above the history now instead of beside it.
+          */}
           <div className="wx-golden items-start">
-            <Activity rows={rows ?? []} events={events ?? []} moved={moved} compact />
-            <ContestEarnings />
+            <PipelineJobs summary={summary} rows={work} moved={moved} progress={progress} />
+
+            <div className="flex min-w-0 flex-col gap-3.5">
+              <ContestEarnings />
+              <Activity rows={rows ?? []} events={events ?? []} moved={moved} compact />
+            </div>
           </div>
         </>
       ) : (
