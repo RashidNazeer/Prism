@@ -3810,17 +3810,46 @@ washes for tinting cards. On a phone this one wrapped to five lines and the page
 showed through it.
 
 
-## Brand World, the creator side of a Brand Hub (2026-08-24)
+## Brand Hub, the creator side of a brand (2026-08-24, reshaped 2026-10-09)
 
-**Files:** `src/routes/app/BrandHub.tsx` Â· `src/components/brand/BrandWorldShell.tsx`
-Â· `src/components/brand/BrandWorldHero.tsx` Â· `src/components/layout/WorldLayout.tsx`
-Â· `src/lib/brand-theme.ts` Â· `scripts/check-brand-theme.mjs` Â· `scripts/shots-hub.mjs`
+**Files:** `src/routes/app/BrandHub.tsx` (`AccentScope`, `HubNav`) Â·
+`src/components/brand/BrandWorldHero.tsx` (`BrandWorldHero`, `BrandChip`) Â·
+`src/lib/brand-theme.ts` Â· `scripts/check-brand-theme.mjs` Â· `scripts/shots-hub.mjs`
 Â· migration `20260824170709_brand_world_look.sql`
 
-**Shape.** `/app/brands` and `/app/brands/:slug` sit OUTSIDE `ShellLayout`, under
-their own `WorldLayout`, so the Wurx sidebar and top bar are gone. The rail
-carries two lists: the brands, and the open brand's sections. `/app/brands` with
-no slug opens the first brand rather than an index.
+**REVERSED 2026-10-09. This was a "brand world", and it is not any more.** It
+began (2026-08-24) as a full-screen world OUTSIDE `ShellLayout`, with its own
+`WorldLayout`, its own rail and top bar, and a whole palette derived from the
+brand that repointed the page, cards, menu, text and borders.
+`BrandWorldShell.tsx` and `WorldLayout.tsx` are now deleted. Rashid: *"this page
+has a completely different design language why? and it loads like a completely
+separate app which is very annoying it is a part of the app Prism please design
+it accordingly."* Two real faults sat under that: it looked like a different
+product, and entering or leaving a hub unmounted the whole shell and mounted
+another, a full remount.
+
+**Shape now.** A hub is a normal PRISM screen wearing a brand's accent.
+`/app/brands` and `/app/brands/:slug` are children of the same `ShellLayout` as
+every other `/app/*` screen, so the rail, top bar, halo backdrop and text scale
+persist and there is no shell remount in or out of a hub. `/app/brands` with no
+slug still opens the first brand rather than an index. Inside the content:
+
+- `AccentScope` (a plain `<div data-brand-world>`, in `BrandHub.tsx`) sets the
+  accent family on its own subtree only: `--wx-accent`, `-hover`, `-active`,
+  `-soft`, `-ring`, `-shadow`, `-gradient`, `-gradient-hover` and `--wx-on-accent`,
+  plus the `--wx-brand-hero-*` and `--wx-brand-accent*` variables the hero and
+  `OfferCard` read. That is `paletteToAccentVars` (it replaced `paletteToVars`).
+  It does NOT touch `--wx-bg`, `--wx-surface-*`, `--wx-text*` or `--wx-border*`.
+- Sections are a `HubNav` row built from the shell's `FilterBar` / `FilterTabs`,
+  with the brand switcher pinned right when a creator has more than one brand.
+  There is no brand rail.
+- The admin look editor offers only "Hero banner" and "Buttons and highlights".
+  The `rail` ("Menu") and `page` ("Pages and cards") areas are RETIRED: still
+  accepted by the Zod schema so brands saved earlier keep validating, never
+  offered and never read. See `EDITABLE_AREA_KEYS` in `brand-theme.ts`.
+
+The numbered rules below were written for the old world. Where one no longer
+applies as written, it says so.
 
 **The rules that are not obvious.**
 
@@ -3835,9 +3864,14 @@ no slug opens the first brand rather than an index.
    version computed each text colour against one background and used it on
    several, and `check-brand-theme` failed all 88 test colours immediately. Body
    text derived against the page then printed on a card; hero text derived
-   against the dark end of a gradient then shown over the light end.
-3. **The world rebinds the ordinary `--wx-*` tokens for its subtree**, which is
-   what themes every existing component with no component changes. Success,
+   against the dark end of a gradient then shown over the light end. (Since
+   2026-10-09 only the hero and accent pairs are rendered; the page, card and
+   rail pairs are still audited but vacuous. See the header of
+   `check-brand-theme.mjs`.)
+3. **The hub rebinds the ordinary `--wx-*` ACCENT tokens for its subtree**, which
+   is what themes every existing button, tab and link with no component changes.
+   (Until 2026-10-09 it also rebound the page, surface, text and border tokens.
+   That is what made it a separate-looking world, and it was removed.) Success,
    danger and warning are deliberately NOT rebound: a red brand must not turn
    every approved badge into a warning.
 4. **`check-contrast` cannot see a database colour**, which is the whole reason
@@ -3855,13 +3889,15 @@ migration `20260825174347_brand_theme_areas.sql`
 
 Rashid: *"some brands have multo color themes so our app should be designed
 accoridnlgy"*. An admin now colours four areas independently, up to four colours
-each, and anything they do not touch is still derived from `brands.brand_color`
+each (since 2026-10-09 only the hero and the accent are offered; see the Brand
+Hub entry above), and anything they do not touch is still derived from `brands.brand_color`
 exactly as before.
 
 **The shape.** `brands.theme` jsonb, or null. Four optional areas â€” `hero`,
 `rail`, `page`, `accent` â€” each `{ stops: [hexâ€¦] }`, plus `angle` on the hero
 and `tone` on the hero and rail. **Fills only.** `brand_theme_ok()` refuses an
-unknown key, which is how a `text` colour would arrive.
+unknown key, which is how a `text` colour would arrive. `rail` and `page` are
+retired since 2026-10-09 but remain valid in the shape.
 
 **The rules that are not obvious, and four of the five cost something to learn.**
 
@@ -3885,7 +3921,7 @@ unknown key, which is how a `text` colour would arrive.
    ran accent â†’ heroTo, which in dark mode is 0.72 lightness down to 0.42, so
    half of every gradient button was far darker than the colour its label was
    chosen against. Nothing measured it because the gradient was assembled in
-   `paletteToVars` while the contract named `accent`. It is now a tight step
+   `paletteToVars` (now `paletteToAccentVars`) while the contract named `accent`. It is now a tight step
    AWAY from the ink, the same shape Wurx's own tokens use.
 5. **`brand-theme.ts` must stay ONE file.** `check-brand-theme.mjs` transpiles
    it with raw `tsc` and imports it from plain Node; the moment it imports a

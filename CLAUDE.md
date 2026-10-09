@@ -1,4 +1,12 @@
-# WurxMediaHub, agent working notes
+# PRISM, agent working notes
+
+The product is **PRISM**. Wurx Media is the company that makes it — the brand
+kit's own line is "Creator community by Wurx Media" — so the company name is
+correct in an about or a footer, and wrong anywhere it names the product. The
+old WurxMediaHub identity, its gold and cream and its dog mark, are retired.
+Note the repo, the Vercel projects and the Supabase projects still carry the old
+name, and the browser storage keys deliberately do too: renaming those keys
+would sign out every existing user and reset their preferences.
 
 Creator platform for Wurx Media's TikTok Shop brands. Creators apply once, get
 approved, and enter branded **Brand Hubs** where they see their real numbers
@@ -130,11 +138,29 @@ asking. On prod, ask twice.
 - Dark and light are equal citizens. A token added to one mode MUST be added to
   the other, `pnpm check:contrast` enforces parity and WCAG AA in both and
   fails the build otherwise.
-- Palette from wurxmedia.com: near-black `#0a0a0a`, gold `#c8924b`, cream
-  `#f5efe1`. Light mode darkens the gold to `#8a5f1f` for readability.
-- Fonts: Archivo Black (display), Inter (UI), JetBrains Mono (numbers/labels).
-- Brand Hub theming overrides `--wx-*` at the hub level from the database, so a
-  hub feels like the brand, not like Wurx.
+- Palette is PRISM's, from `Redesign UI/prism_brand_kit`. Ink `#14141C`, White,
+  Mist `#F7F7FB`, Line `#ECECF3`, Body `#4A4A5A`, Muted `#6B6B7B`. The four
+  spectrum colours are **accents only** — magenta `#FF2E8C`, violet `#9B5CFF`
+  (the interactive one), blue `#2E8BFF`, cyan `#17E0D4` (growth/positive) —
+  and the kit forbids them as paragraph text or full-bleed backgrounds. For
+  text use the dark inks: `#5A1FD0`, `#0B6F69`, `#B0145C`.
+- Fonts: Caprasimo (display, one weight, 24px and up only) and Figtree
+  (interface, 400/500/600). Both self-hosted in `public/fonts`. The old Wurx
+  faces are gone; `'Inter'` survives only as an ALIAS pointing at Figtree,
+  because the vendored Paid Collabs app names it in dozens of rules.
+- **No borders anywhere.** Shape comes from the `wx-neo-*` shadow utilities.
+  The one exception is the `forced-colors` block in `global.css`: Windows High
+  Contrast discards `box-shadow`, so a shadow-only control would be invisible
+  there. Keep internal dividers — a rule between two rows inside a card is not
+  an outline.
+- **A Brand Hub is a PRISM screen wearing a brand's accent**, not a world of
+  its own. Rashid, 2026-10-09: "it is a part of the app Prism please design it
+  accordingly." It renders inside `AppShell` like every other creator screen —
+  same rail, same top bar, same material — and the brand supplies its accent
+  colour, its logo and its hero art inside the content area. It must never
+  repaint the page ground, the rail, the top bar or the surface tokens. It used
+  to mount outside `AppShell` with a whole derived palette, which both looked
+  like a different product and forced a full shell remount on entry and exit.
 - Skeletons, never bare spinners. Designed empty and error states.
 - **Layout of every admin screen** (Rashid's rules, apply to new features too):
   the working content starts high, headers stay compact, and reference data
@@ -174,6 +200,16 @@ the browser. Route-level code splitting. Sensible `staleTime` per resource.
 
 `dev` branch → wurxmediahubdev.vercel.app → Supabase `wurxmediahub-dev`
 `main` branch → wurxmediahub.vercel.app → Supabase `wurxmediahub-prod`
+
+**PRISM has its own home: prismwurx.vercel.app**, and Rashid asked that it not
+be tied to the wurxmediahub domains. It is a separate Vercel project; confirm
+which branch it builds before assuming a push will appear there.
+
+**Two remotes.** `origin` is `RashidNazeer/WurxMediaHub`, `prism` is
+`RashidNazeer/Prism`, and both carry every branch. Push to BOTH, or they drift.
+The credential on this machine authenticates as GitHub user `umar551869`, while
+commits are authored `RashidNazeer <wurxmedia@gmail.com>` — those are different
+things and both are correct.
 
 All work happens on `dev`. Prod changes only when Rashid says "make it live".
 Dev may hold seed data. Prod never gets test data.

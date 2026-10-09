@@ -1,5 +1,5 @@
-import { lazy, Suspense, useState } from 'react';
-import { Navigate, useParams, useSearchParams } from 'react-router';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { Link, Navigate, useParams, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
 import { Package, Ticket } from 'lucide-react';
 import { ApplyDialog } from '@/components/creator/ApplyDialog';
@@ -26,8 +26,14 @@ import { useMyJobProgress } from '@/lib/work/job-progress';
 import { cn } from '@/lib/utils';
 import { NeoCardSkeleton } from '@/components/brand/NeoSkeleton';
 import { useTheme } from '@/components/theme/theme-context';
-import { BrandWorldShell } from '@/components/brand/BrandWorldShell';
-import { BrandWorldHero } from '@/components/brand/BrandWorldHero';
+import { BrandChip, BrandWorldHero } from '@/components/brand/BrandWorldHero';
+import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
+import {
+  DEFAULT_BRAND_COLOR,
+  deriveBrandTheme,
+  paletteToAccentVars,
+  readBrandThemeConfig,
+} from '@/lib/brand-theme';
 import { useCreatorBrands } from '@/lib/creator/useCreatorBrands';
 
 /*
@@ -40,11 +46,58 @@ import { useCreatorBrands } from '@/lib/creator/useCreatorBrands';
  * fold all three into the Brand Hub chunk, so a creator browsing a brand's
  * offers would download the whole numbers screen to look at a product list.
  */
-const HubNumbers = lazy(() => import('./MyNumbers').then((m) => ({ default: m.MyNumbers })));
-const HubContests = lazy(() => import('./Contests').then((m) => ({ default: m.Contests })));
-const HubLeaderboards = lazy(() =>
-  import('./Leaderboards').then((m) => ({ default: m.Leaderboards }))
-);
+const loadNumbers = () => import('./MyNumbers').then((mod) => ({ default: mod.MyNumbers }));
+const loadContests = () => import('./Contests').then((mod) => ({ default: mod.Contests }));
+const loadLeaderboards = () =>
+  import('./Leaderboards').then((mod) => ({ default: mod.Leaderboards }));
+
+const HubNumbers = lazy(loadNumbers);
+const HubContests = lazy(loadContests);
+const HubLeaderboards = lazy(loadLeaderboards);
+
+const SECTION_LOADERS: Record<string, () => Promise<unknown>> = {
+  numbers: loadNumbers,
+  contests: loadContests,
+  leaderboards: loadLeaderboards,
+};
+
+/**
+ * START DOWNLOADING THE SECTION'S JAVASCRIPT THE MOMENT THE ROUTE MOUNTS.
+ *
+ * `lazy()` only fetches a chunk when the component first renders, and that is
+ * after the brand has resolved, so the network sat idle through the brand read.
+ * Calling the same `import()` early puts the chunk in flight alongside the data.
+ * The module cache makes it free when `lazy` asks for it again.
+ *
+ * The section being opened goes first; the others wait for an idle moment so
+ * a creator who only wants the offers does not compete with them for bandwidth.
+ */
+function useWarmSectionChunks(section: string) {
+  useEffect(() => {
+    void SECTION_LOADERS[section]?.();
+
+    const rest = Object.entries(SECTION_LOADERS).filter(([key]) => key !== section);
+    const run = () => {
+      for (const [, load] of rest) void load();
+    };
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(run, { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(run, 1500);
+    return () => window.clearTimeout(id);
+  }, [section]);
+}
+
+/**
+ * Starts the creator's job progress read at once on the Offers tab, instead of
+ * when the offers list finally renders. It needs no brand id (the view is
+ * filtered by row level security) and shares its cache entry with `Offers`.
+ */
+function WarmJobProgress() {
+  useMyJobProgress();
+  return null;
+}
 
 /** Skeletons, never a bare spinner. Roughly the shape of what is arriving. */
 function SectionLoading() {
@@ -110,7 +163,6 @@ export function BrandHub() {
   const requested = params.get('section') ?? 'overview';
   const section = BUILT.has(requested) ? requested : 'overview';
 
-  const { resolved } = useTheme();
   const { claims } = useAuth();
   const { data: profile } = useProfile();
   const role = profile?.role ?? claims?.role;
@@ -118,32 +170,12 @@ export function BrandHub() {
 
   // Admin edits to brands, offers and products land here without a reload.
   useCatalogueLive();
+  useWarmSectionChunks(section);
 
   const { data: brand, isLoading, isError } = useCreatorBrand(slug);
   const { data: offers, isLoading: offersLoading } = useCreatorOffers(brand?.id);
   const { data: products, isLoading: productsLoading } = useCreatorProducts(brand?.id);
   const { data: mine } = useMyOfferApplications(brand?.id);
-
-  /*
-   * THE NEOMORPHIC MATERIAL INSIDE A BRAND WORLD. `paletteToVars` re-points
-   * surface-1 and surface-3 at the brand, but not the two tokens the material
-   * also reads for a press, so both are settled here for this subtree only.
-   * Light: the brand's own deeper surface (surface-2 is darker than surface-1
-   * there). Dark: surface-2 is LIGHTER than the card, which would make every
-   * well bulge instead of sink, so wells and presses are the brand's card
-   * colour taken down a step with the neo-dark shadow token. Still the brand's
-   * hue, still no literal colour.
-   */
-  const neoVars = (
-    resolved === 'dark'
-      ? {
-          ['--wx-surface-3' as string]:
-            'color-mix(in srgb, var(--wx-surface-1) 75%, var(--wx-neo-dark))',
-          ['--wx-pressed-surface' as string]:
-            'color-mix(in srgb, var(--wx-surface-1) 75%, var(--wx-neo-dark))',
-        }
-      : { ['--wx-pressed-surface' as string]: 'var(--wx-surface-2)' }
-  ) as React.CSSProperties;
 
   const go = (key: string) => {
     const p = new URLSearchParams();
@@ -155,11 +187,11 @@ export function BrandHub() {
    * NO SLUG MEANS "TAKE ME INTO A BRAND", not "show me a list of brands".
    * Rashid: "by default, one of the brand hub should be selected with it's own
    * theme". `/app/brands` therefore opens the first one rather than an index
-   * page nobody asked for. Replace rather than push, so Back leaves the world
+   * page nobody asked for. Replace rather than push, so Back leaves the hub
    * instead of bouncing between the redirect and its target.
    */
   if (!slug) {
-    if (brandsLoading) return <WorldSkeleton />;
+    if (brandsLoading) return <HubSkeleton />;
     const first = brands?.[0];
     if (first) return <Navigate to={`/app/brands/${first.slug}`} replace />;
     /*
@@ -169,17 +201,15 @@ export function BrandHub() {
      * something had broken when nothing had.
      */
     return (
-      <div className="bg-bg text-text flex min-h-screen items-center justify-center p-6">
-        <div className="wx-neo-raised max-w-md rounded-xl p-8 text-center">
-          <p className="font-semibold">No brand hubs yet</p>
-          <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
-            When Wurx opens a brand to you, it appears here with its own space: its offers, its
-            contests and your numbers for it.
-          </p>
-          <ButtonLink to="/app" variant="secondary" size="sm" className="mt-5">
-            Back to your dashboard
-          </ButtonLink>
-        </div>
+      <div className="wx-neo-raised max-w-md rounded-xl p-8 text-center">
+        <p className="font-semibold">No brand hubs yet</p>
+        <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
+          When Wurx opens a brand to you, it appears here with its own space: its offers, its
+          contests and your numbers for it.
+        </p>
+        <ButtonLink to="/app" variant="secondary" size="sm" className="mt-5">
+          Back to your dashboard
+        </ButtonLink>
       </div>
     );
   }
@@ -192,17 +222,7 @@ export function BrandHub() {
     );
   }
 
-  if (isLoading) {
-    return (
-      <>
-        <div className="max-w-3xl space-y-4">
-          <div className="wx-skeleton h-10 w-64" />
-          <div className="wx-skeleton h-10 w-full" />
-          <NeoCardSkeleton className="h-40" />
-        </div>
-      </>
-    );
-  }
+  if (isLoading) return <HubSkeleton />;
 
   if (isError || !brand) {
     return (
@@ -221,24 +241,27 @@ export function BrandHub() {
   }
 
   /*
-   * THE SECTIONS ARE THE RAIL NOW, not a row of pills above the content.
-   * Rashid: "all offers, overview contest my numbers, for selected brands,
-   * would be the menu on left side". Choosing a brand and choosing a section
-   * are the same gesture in the same place, which is what makes this read as
-   * moving around one world rather than loading pages.
+   * THE SECTIONS ARE A TAB ROW IN THE CONTENT NOW, in the shell's own
+   * `FilterBar`, because the shell's rail is the app's and belongs to the app.
+   * Row one is the work: the sections, and the brand switcher pinned right when
+   * a creator has more than one. Choosing a brand and choosing a section are
+   * still two gestures in one place.
    */
   return (
-    <BrandWorldShell
-      brand={brand}
-      brands={brands?.length ? brands : [brand]}
-      sections={SECTIONS}
-      section={section}
-      onSection={go}
-    >
+    <AccentScope brand={brand}>
+      {section === 'offers' ? <WarmJobProgress /> : null}
+      <HubNav
+        brand={brand}
+        brands={brands?.length ? brands : [brand]}
+        section={section}
+        onSection={go}
+      />
+
       {/*
         The hero only leads the OVERVIEW. On a working section a creator came
         to do something, and a half screen of brand poetry above their numbers
-        is the "content starts high" rule broken in a nicer font.
+        is the "content starts high" rule broken in a nicer font. Elsewhere the
+        brand's name stays in the document as an h2, as on any record screen.
       */}
       {section === 'overview' ? (
         <BrandWorldHero
@@ -246,9 +269,11 @@ export function BrandHub() {
           offerCount={offers?.length ?? 0}
           onExplore={() => go('offers')}
         />
-      ) : null}
+      ) : (
+        <h2 className="sr-only">{brand.name}</h2>
+      )}
 
-      <div className="min-w-0 flex-1 px-5 py-6 sm:px-8 sm:py-8" style={neoVars}>
+      <div className="min-w-0 flex-1">
         {section === 'offers' ? (
           <Offers
             offers={offers ?? []}
@@ -272,19 +297,127 @@ export function BrandHub() {
           <Overview brand={brand} products={products ?? []} loading={productsLoading} />
         )}
       </div>
-    </BrandWorldShell>
+    </AccentScope>
+  );
+}
+
+/**
+ * THE BRAND, AS AN ACCENT. This is the whole of what a hub repaints.
+ *
+ * It sets the accent-family tokens and the hero's colours on THIS element, so
+ * they reach only the hub's subtree and leaving the route is enough to undo
+ * them. The page ground, the rail, the top bar and every surface, text and
+ * border token are PRISM's and are never touched here.
+ *
+ * It must not carry a `backdrop-filter`: nothing above `.wurxbase-root` may,
+ * and keeping this element plain means it can never become one of them.
+ *
+ * `data-brand-world` is kept because `scripts/shots-hub.mjs` finds the hub by it.
+ *
+ * Still follows the theme toggle: the brand has a dark face and a light face,
+ * derived separately, so a creator working at night stays in the dark. Memoised
+ * because the derivation is a few hundred contrast measurements and would
+ * otherwise run on every render of the hub, including each keystroke inside it.
+ */
+function AccentScope({ brand, children }: { brand: CreatorBrand; children: React.ReactNode }) {
+  const { resolved } = useTheme();
+  const vars = useMemo(() => {
+    const theme = deriveBrandTheme(
+      brand.brand_color ?? DEFAULT_BRAND_COLOR,
+      readBrandThemeConfig(brand.theme)
+    );
+    return paletteToAccentVars(resolved === 'dark' ? theme.dark : theme.light);
+  }, [brand.brand_color, brand.theme, resolved]);
+
+  return (
+    <div
+      data-brand-world={brand.slug}
+      style={vars as React.CSSProperties}
+      className="flex min-w-0 flex-col gap-4"
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Row one of a hub: its sections as tabs, and the other brands pinned right. */
+function HubNav({
+  brand,
+  brands,
+  section,
+  onSection,
+}: {
+  brand: CreatorBrand;
+  brands: CreatorBrand[];
+  section: string;
+  onSection: (key: string) => void;
+}) {
+  return (
+    <FilterBar
+      action={
+        brands.length > 1 ? (
+          <nav aria-label="Your brands" className="max-w-full overflow-x-auto">
+            <ul className="flex items-center gap-1">
+              {brands.map((b) => {
+                const active = b.slug === brand.slug;
+                const to =
+                  section === 'overview'
+                    ? `/app/brands/${b.slug}`
+                    : `/app/brands/${b.slug}?section=${section}`;
+                return (
+                  <li key={b.id} className="shrink-0">
+                    <Link
+                      to={to}
+                      aria-current={active ? 'page' : undefined}
+                      className={cn(
+                        'flex min-h-8 items-center gap-2 rounded-md px-2 text-[0.8125rem] font-medium transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2',
+                        active ? 'wx-neo-inset text-text' : 'text-muted hover:text-accent'
+                      )}
+                    >
+                      <BrandChip brand={b} size={20} />
+                      <span className="whitespace-nowrap">{b.name}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        ) : undefined
+      }
+    >
+      <FilterTabs label={`${brand.name} sections`}>
+        {SECTIONS.map((s) =>
+          'soon' in s ? (
+            <button
+              key={s.key}
+              type="button"
+              role="tab"
+              aria-selected={false}
+              disabled
+              title={`${s.label} arrives with ${s.soon}`}
+              className="text-muted flex min-h-8 shrink-0 cursor-default items-center gap-1.5 rounded-sm px-2.5 text-[0.8125rem] font-medium opacity-60"
+            >
+              {s.label}
+              <span className="text-[0.5625rem] tracking-wider uppercase">{s.soon}</span>
+            </button>
+          ) : (
+            <FilterTab key={s.key} active={s.key === section} onClick={() => onSection(s.key)}>
+              {s.label}
+            </FilterTab>
+          )
+        )}
+      </FilterTabs>
+    </FilterBar>
   );
 }
 
 /** While we work out which brand to open. Skeletons, never a bare spinner. */
-function WorldSkeleton() {
+function HubSkeleton() {
   return (
-    <div className="flex min-h-screen">
-      <div className="bg-surface-2 hidden w-[16.5rem] shrink-0 lg:block" />
-      <div className="flex-1 p-6">
-        <div className="wx-skeleton h-48 rounded-xl" />
-        <div className="wx-skeleton mt-5 h-8 w-64 rounded-md" />
-      </div>
+    <div className="flex flex-col gap-4">
+      <NeoCardSkeleton className="h-14" />
+      <div className="wx-skeleton h-48 rounded-xl" />
+      <div className="wx-skeleton h-8 w-64 rounded-md" />
     </div>
   );
 }

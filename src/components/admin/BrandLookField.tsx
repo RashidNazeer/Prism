@@ -4,6 +4,7 @@ import { Field, Input } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
 import {
   AREA_KEYS,
+  EDITABLE_AREA_KEYS,
   AREA_META,
   DEFAULT_ANGLE,
   DEFAULT_BRAND_COLOR,
@@ -18,7 +19,11 @@ import {
 } from '@/lib/brand-theme';
 
 /**
- * What a brand's world looks like, and every part of it an admin can decide.
+ * How a brand looks inside its hub, and every part of it an admin can decide.
+ *
+ * Since 2026-10-09 a hub is a normal PRISM screen wearing the brand's accent and
+ * hero, so only "Hero banner" and "Buttons and highlights" are offered. "Menu"
+ * and "Pages and cards" are retired (see `EDITABLE_AREA_KEYS`).
  *
  * WHAT THIS USED TO BE, AND WHY IT CHANGED. Until 2026-08-25 this was one
  * colour picker, and the comment above it argued that handing an admin five
@@ -150,7 +155,14 @@ export function BrandLookField({
 
           {/* --------------------------------------------------- the areas -- */}
           <div className="grid gap-2">
-            {AREA_KEYS.map((key) => (
+            {/* `EDITABLE_AREA_KEYS`, not `AREA_KEYS`. "Menu" and "Pages and
+                cards" are retired: a hub now renders inside the PRISM shell and
+                supplies only an accent, a logo and a hero, so nothing reads
+                those colours. Offering them would be a control that lies — you
+                pick a colour, you save it, and the product ignores it. The keys
+                remain in the schema so brands saved before the change still
+                validate; see the note in brand-theme.ts. */}
+            {EDITABLE_AREA_KEYS.map((key) => (
               <AreaEditor
                 key={key}
                 area={key}
@@ -360,7 +372,7 @@ function AreaEditor({
             /*
               THE ONE THING THAT IS NOT A COLOUR, and it is here because it
               changes which BAND the colours are held in rather than what any of
-              them are. A brand that is cream and charcoal wants a pale menu,
+              them are. A brand that is cream and charcoal wants a pale hero,
               and without this every pick would be pulled down into the deep
               band and come back as a dark version of their cream.
             */
@@ -414,59 +426,61 @@ function AreaEditor({
 
 /* ---------------------------------------------------------- the preview -- */
 
-/** A miniature of the creator's world: rail, hero, a card, a button. */
+/**
+ * A miniature of the hub as a creator actually sees it: a PRISM screen with
+ * the brand's hero across the top and the brand's accent on the things you
+ * press.
+ *
+ * REDRAWN 2026-10-09, and it had to be. This used to paint a brand-coloured
+ * RAIL down the left, a brand-coloured page behind it and a brand-coloured
+ * card — none of which exist any more, because a hub now renders inside the
+ * PRISM shell and supplies only an accent, a logo and a hero.
+ *
+ * That made it worse than no preview at all. The header of this file says the
+ * previews "are the real thing, not decoration", and the reason given is that
+ * Rashid checks in a browser and does not read code — so a preview he can
+ * trust is worth more than a pretty one. A preview showing a rail he will
+ * never see is precisely the thing that header exists to prevent.
+ *
+ * So the chrome here uses OUR tokens, exactly as the real shell does, and only
+ * the hero and the accent come from the brand. If a colour cannot change
+ * anything on screen, it cannot change anything in here either.
+ */
 function Preview({ title, p }: { title: string; p: BrandPalette }) {
   return (
     <div className="wx-neo-raised overflow-hidden rounded-xl">
-      <div
-        className="text-[0.5625rem] font-bold tracking-[0.12em] uppercase"
-        style={{ background: p.surface2, color: p.muted, padding: '0.375rem 0.625rem' }}
-      >
+      <div className="bg-surface-2 text-muted px-2.5 py-1.5 text-[0.5625rem] font-bold tracking-[0.12em] uppercase">
         {title}
       </div>
-      <div className="flex h-[7.5rem]" style={{ background: stopsToCss(p.pageStops, 165) }}>
+      {/* The page ground is PRISM's, not the brand's. */}
+      <div className="bg-bg h-[7.5rem] p-2">
+        {/* The hero: the brand's own gradient, which is still real. */}
         <div
-          className="w-[28%] shrink-0 p-2"
-          style={{ background: stopsToCss(p.railStops, 180) }}
+          className="flex h-[42%] items-center rounded-md px-2.5"
+          style={{ background: stopsToCss(p.heroStops, p.heroAngle) }}
         >
-          <div
-            className="h-2 w-3/4 rounded-full"
-            style={{ background: p.railText, opacity: 0.85 }}
-          />
-          <div className="mt-2 h-4 rounded" style={{ background: p.railActive }} aria-hidden />
-          <div
-            className="mt-1.5 h-1.5 w-2/3 rounded-full"
-            style={{ background: p.railMuted }}
-          />
-          <div
-            className="mt-1.5 h-1.5 w-1/2 rounded-full"
-            style={{ background: p.railMuted }}
-          />
+          <span className="text-[0.625rem] font-bold" style={{ color: p.heroText }}>
+            Create with&hellip;
+          </span>
         </div>
-        <div className="min-w-0 flex-1">
-          <div
-            className="flex h-[42%] items-center px-2.5"
-            style={{ background: stopsToCss(p.heroStops, p.heroAngle) }}
-          >
-            <span className="text-[0.625rem] font-bold" style={{ color: p.heroText }}>
-              Create with&hellip;
-            </span>
-          </div>
-          <div className="flex items-center gap-2 p-2.5">
+        <div className="mt-2 flex items-center gap-2">
+          {/* A PRISM card, because that is what a hub's cards are now. */}
+          <div className="wx-neo-raised-sm flex-1 rounded-md p-2">
+            <div className="bg-faint h-1.5 w-1/2 rounded-full opacity-60" />
+            {/* The one thing inside a card the brand still colours: an accent
+                figure or link. */}
             <div
-              className="flex-1 rounded-md p-2"
-              style={{ background: p.surface, border: `1px solid ${p.line}` }}
-            >
-              <div className="h-1.5 w-1/2 rounded-full" style={{ background: p.muted }} />
-              <div className="mt-1.5 h-2.5 w-3/4 rounded" style={{ background: p.accentInk }} />
-            </div>
-            <span
-              className="rounded-md px-2 py-1 text-[0.5625rem] font-bold"
-              style={{ background: stopsToCss(p.accentStops, 135), color: p.accentText }}
-            >
-              Apply
-            </span>
+              className="mt-1.5 h-2.5 w-3/4 rounded"
+              style={{ background: p.accentInk }}
+              aria-hidden
+            />
           </div>
+          <span
+            className="rounded-full px-2 py-1 text-[0.5625rem] font-bold"
+            style={{ background: stopsToCss(p.accentStops, 135), color: p.accentText }}
+          >
+            Apply
+          </span>
         </div>
       </div>
     </div>

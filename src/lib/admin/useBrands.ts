@@ -36,7 +36,7 @@ export interface Brand {
   store_id: string;
   /** Creator facing: the brand's own story. */
   logo_url: string | null;
-  /** The one colour a creator's Brand World is built from. Null means the PRISM violet. */
+  /** The one colour a creator's Brand Hub takes its accent and hero from. Null means the PRISM violet. */
   brand_color: string | null;
   /** The picture behind that world's hero. Optional. */
   hero_url: string | null;

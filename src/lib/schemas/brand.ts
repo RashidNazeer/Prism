@@ -222,7 +222,9 @@ export const brandAboutSchema = z.object({
    * There is deliberately NO readability rule here. Whether a hub is legible is
    * a property of the palette derived from the colour, not of the colour, and
    * `src/lib/brand-theme.ts` guarantees it for every possible input by
-   * choosing each text colour against the background it lands on.
+   * choosing each text colour against the background it lands on. (A hub now
+   * only wears this colour as an accent and hero inside the PRISM shell, since
+   * 2026-10-09; the guarantee still covers the parts that are drawn.)
    */
   brandColor: z
     .string()
@@ -244,8 +246,12 @@ export const brandAboutSchema = z.object({
    * colour against every fill it will cross. Add a `text` here and that
    * guarantee is gone, silently, for every brand.
    *
-   * Null is the normal state and means "derive all four areas from
-   * brandColor", which is what every brand looked like before 2026-08-25.
+   * Null is the normal state and means "derive every area from brandColor",
+   * which is what every brand looked like before 2026-08-25.
+   *
+   * Only `hero` and `accent` are offered and read since 2026-10-09. `rail` and
+   * `page` are RETIRED but stay in this schema so brands saved earlier, which
+   * still hold those values, keep validating. They are never offered or read.
    */
   theme: brandThemeSchema,
 });

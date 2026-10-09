@@ -362,7 +362,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               fine at the default text size, but the bar is sized in rem and
               grows with the text-size control, so at Large it could creep past
               96px and sit on top of the last card. This cannot drift apart. */}
-          <div className="w-full px-3 py-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:py-5 lg:pb-5">
+          {/* The bar is about 3.5rem tall and now floats 0.75rem above the
+              safe area, so the clearance is the bar plus both gutters. It was
+              4.5rem, from when the bar sat flush against the window edge. */}
+          <div className="w-full px-3 py-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:py-5 lg:pb-5">
             {children}
           </div>
         </main>

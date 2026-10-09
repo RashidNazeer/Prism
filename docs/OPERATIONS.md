@@ -142,7 +142,11 @@ pnpm check:brand-theme      # no database, no browser. Derives a full palette
                             # for 88 brand colours, including pure yellow,
                             # white, black and a full hue circle, and asserts
                             # 13 text-on-background pairs clear WCAG AA in both
-                            # modes. RUNS INSIDE pnpm build, because a brand
+                            # modes. Since 2026-10-09 a hub only renders the
+                            # brand's accent and hero, so the rail, page and
+                            # card pairs still pass but are vacuous; only the
+                            # hero and button-label pairs guard what is seen.
+                            # RUNS INSIDE pnpm build, because a brand
                             # colour lives in the DATABASE and check:contrast,
                             # which only reads tokens.css, cannot see it.
                             # Since 2026-08-25 it also throws 1200 DETERMINISTIC
@@ -1157,8 +1161,14 @@ for everything) **and** `brands.theme` (jsonb, or null).
 }
 ```
 
+**Since 2026-10-09 only `hero` and `accent` are offered and read.** `rail` and
+`page` are retired: a hub renders inside the PRISM shell and the brand supplies
+only an accent, a logo and a hero. Old rows that still hold `rail` or `page` keep
+validating and are simply ignored, so there is nothing to migrate.
+
 Hero takes up to four stops, the rest up to three. `angle` is hero-only,
-`tone` is hero and menu only, and every hex must be lower case. **Fills only:
+`tone` is hero and menu only (the menu half is retired), and every hex must be
+lower case. **Fills only:
 there is no text colour in this shape and adding one would silently remove the
 readability guarantee for every brand.** `brand_theme_ok()` refuses an unknown
 key for exactly that reason, so a hand-written `update` cannot smuggle one in.
@@ -1180,7 +1190,8 @@ colour keeps its hue and its chroma and has only its LIGHTNESS clamped into what
 the area can carry, so no combination reaches a place where one ink cannot be
 read. The one that cost time: a band must never straddle the middle of the
 lightness axis, because a button's label is a single colour. See
-`bandFor()` in `src/lib/brand-theme.ts`.
+`bandFor()` in `src/lib/brand-theme.ts`. The rail and page bands in that table
+are no longer reachable from the editor.
 
 **`src/lib/brand-theme.ts` must stay one file.** `check-brand-theme.mjs`
 transpiles it with raw `tsc` and imports it from plain Node; a sibling import

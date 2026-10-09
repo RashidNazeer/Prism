@@ -1,7 +1,34 @@
 import { m } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
-import { BrandChip } from '@/components/brand/BrandWorldShell';
 import type { CreatorBrand } from '@/lib/creator/useCreatorBrands';
+
+/** A brand's logo, or its initial on an accent-tinted square when it has none. */
+export function BrandChip({ brand, size = 28 }: { brand: CreatorBrand; size?: number }) {
+  const style = { width: size, height: size };
+  if (brand.logo_url) {
+    return (
+      <img
+        src={brand.logo_url}
+        alt=""
+        style={style}
+        className="shrink-0 rounded-lg object-cover"
+        loading="lazy"
+      />
+    );
+  }
+  return (
+    <span
+      style={{
+        ...style,
+        background: 'color-mix(in srgb, var(--wx-accent) 22%, transparent)',
+      }}
+      className="text-text grid shrink-0 place-items-center rounded-lg text-[0.75rem] font-bold"
+      aria-hidden
+    >
+      {brand.name.slice(0, 1).toUpperCase()}
+    </span>
+  );
+}
 
 /**
  * The first thing a creator sees inside a brand.
@@ -47,7 +74,7 @@ export function BrandWorldHero({
        * The steps are `rem`, so they follow the text-size setting rather than
        * clipping the words at Large.
        */
-      className="relative isolate flex min-h-[16rem] flex-col justify-center overflow-hidden px-5 pt-8 pb-10 sm:min-h-[18rem] sm:px-8 sm:pt-10 sm:pb-14 lg:min-h-[21rem] xl:min-h-[24rem] 2xl:min-h-[28rem]"
+      className="relative isolate flex min-h-[16rem] flex-col justify-center overflow-hidden rounded-xl px-5 pt-8 pb-10 sm:min-h-[18rem] sm:px-8 sm:pt-10 sm:pb-14 lg:min-h-[21rem] xl:min-h-[24rem] 2xl:min-h-[28rem]"
       /*
        * THE ANGLE AND THE STOPS ARE THE ADMIN'S NOW, not this file's.
        *

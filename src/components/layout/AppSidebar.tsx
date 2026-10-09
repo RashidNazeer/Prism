@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router';
-import { LogOut, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LogOut, Plus, X } from 'lucide-react';
 import { PrismMark } from '@/components/brand/PrismMark';
 import { prefetchRoute } from '@/app/router';
 import { cn } from '@/lib/utils';
@@ -136,7 +136,10 @@ export function AppSidebar({
       <div
         className={cn(
           'flex shrink-0 items-center gap-3',
-          collapsed ? 'justify-center px-2 py-4' : 'justify-between px-4 py-4'
+          /* Collapsed, the mark and the toggle stack, so the toggle is still on
+             screen and still obviously a button. It used to centre the mark
+             alone, which is how the rail became a one-way door. */
+          collapsed ? 'flex-col justify-center gap-3 px-2 py-4' : 'justify-between px-4 py-4'
         )}
       >
         {/*
@@ -150,38 +153,53 @@ export function AppSidebar({
           screen reader are told the truth about what it does. In the drawer it
           stays a link home, because a drawer has no collapsed state to toggle.
         */}
+        <Link
+          to="/"
+          aria-label="Prism home"
+          onClick={onNavigate}
+          className={cn('flex items-center gap-3', collapsed && 'justify-center')}
+        >
+          <PrismMark markOnly={collapsed} height={collapsed ? 26 : 24} />
+          {!collapsed ? (
+            <span className="text-faint -mt-0.5 hidden text-[0.6875rem] leading-none font-medium sm:block">
+              Creator Platform
+            </span>
+          ) : null}
+        </Link>
+
+        {/*
+          A REAL, VISIBLE COLLAPSE BUTTON. Rashid, 2026-10-09: "on clicking
+          Creator platform the bar collapses and there is no way to bring it
+          back there should be a collapse and expand button."
+
+          The mark itself used to be the toggle — his own earlier request, so
+          the arrow could leave the top bar and give that space to the section
+          name. The trouble is that a logo does not look like a control. It was
+          labelled correctly for a screen reader, but with nothing on screen
+          saying it could be pressed, collapsing the rail was a one-way door for
+          anyone using their eyes.
+
+          So the mark goes back to being a link home, which is what a logo
+          means, and the collapsing is its own button with a chevron that points
+          the way it will move. It stays visible when collapsed, which is the
+          whole point.
+        */}
         {onToggleCollapse ? (
           <button
             type="button"
             onClick={onToggleCollapse}
             aria-label={collapsed ? 'Expand the menu' : 'Collapse the menu'}
-            aria-pressed={collapsed}
+            aria-expanded={!collapsed}
             title={collapsed ? 'Expand the menu' : 'Collapse the menu'}
-            className={cn(
-              'ease-brand flex items-center gap-3 rounded-lg transition-opacity duration-200 hover:opacity-80',
-              collapsed && 'justify-center'
+            className="wx-neo-raised-sm wx-neo-press text-muted hover:text-accent ease-brand grid size-8 shrink-0 place-items-center rounded-full transition-colors duration-200"
+          >
+            {collapsed ? (
+              <ChevronRight size={15} aria-hidden />
+            ) : (
+              <ChevronLeft size={15} aria-hidden />
             )}
-          >
-            <PrismMark markOnly={collapsed} height={collapsed ? 26 : 24} />
-            {!collapsed ? (
-              <span className="text-faint -mt-0.5 hidden text-[0.6875rem] leading-none font-medium sm:block">
-                Creator Platform
-              </span>
-            ) : null}
           </button>
-        ) : (
-          <Link
-            to="/"
-            aria-label="WurxMediaHub home"
-            onClick={onNavigate}
-            className={cn('flex items-center gap-3', collapsed && 'justify-center')}
-          >
-            <PrismMark markOnly={collapsed} height={collapsed ? 26 : 24} />
-            <span className="text-faint -mt-0.5 hidden text-[0.6875rem] leading-none font-medium sm:block">
-              Creator Platform
-            </span>
-          </Link>
-        )}
+        ) : null}
         {onClose ? (
           <button
             type="button"

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
 
 /**
@@ -27,10 +27,11 @@ export interface CreatorBrand {
   tagline: string | null;
   description: string | null;
   /**
-   * The one colour an admin picked for this brand's world. Null is normal and
-   * every screen is designed for it: the hub falls back to the PRISM violet.
-   * Everything else about the look is derived from this in
-   * `src/lib/brand-theme.ts`, including every text colour.
+   * The one colour an admin picked for this brand. Null is normal and every
+   * screen is designed for it: the hub falls back to the PRISM violet. The hub
+   * is a normal PRISM screen wearing this as its accent and hero; the accent
+   * and hero are derived from it in `src/lib/brand-theme.ts`, including every
+   * text colour on them.
    */
   brand_color: string | null;
   /** The picture behind the hero, optional. */
@@ -104,10 +105,33 @@ export function useCreatorBrands() {
  * generated once and never regenerated on rename for exactly that reason.
  */
 export function useCreatorBrand(slug: string | undefined) {
+  const queryClient = useQueryClient();
+
   return useQuery({
     queryKey: ['creator', 'brand', slug],
     enabled: Boolean(slug),
     staleTime: 60_000,
+    /*
+     * SEEDED FROM THE BRAND LIST WHEN THAT IS ALREADY IN THE CACHE. The list
+     * selects exactly the same columns, so the row is identical, and a creator
+     * arriving from the list or the brand switcher resolves the slug with no
+     * request at all. `initialDataUpdatedAt` copies the list's own timestamp, so
+     * the 60 second `staleTime` counts from when the row was really fetched: a
+     * stale list seeds the hub instantly and then refetches in the background.
+     *
+     * Nothing is seeded when the list is missing (a link opened cold in a new
+     * tab) or does not contain the slug (retired, or not theirs). Those fall
+     * through to the query below, which is the same database read as before and
+     * still the one that answers "that hub is not open". Which rows exist is
+     * still decided by row level security when the list was fetched; this adds
+     * no filter of its own.
+     */
+    initialData: (): CreatorBrand | null | undefined => {
+      const list = queryClient.getQueryData<CreatorBrand[]>(['creator', 'brands']);
+      const hit = list?.find((b) => b.slug === slug);
+      return hit;
+    },
+    initialDataUpdatedAt: () => queryClient.getQueryState(['creator', 'brands'])?.dataUpdatedAt,
     queryFn: async (): Promise<CreatorBrand | null> => {
       const { data, error } = await getSupabase()
         .from('brands')

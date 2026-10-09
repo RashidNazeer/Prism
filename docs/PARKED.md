@@ -89,7 +89,9 @@ Done: `/app/offers`, `/app/contests`, `/app/content`, `/app/profile`. `/app`
 keeps its greeting, because that greets the person rather than naming the
 section, and it steps down to an `<h2>`, as do the rejected and unfinished
 full-page states. `/app/numbers` and `/app/leaderboards` never had one.
-`/app/brands` is now the full-screen Brand World with its own rail, and
+`/app/brands` was made the full-screen Brand World with its own rail on
+2026-08-24, and was folded back into the shell on 2026-10-09 (it is now a
+`ShellLayout` child, so it takes the shell's one `<h1>` like the rest), and
 `src/routes/app/Brands.tsx` is orphaned (PARKED 25a).
 
 **Every creator route now has exactly one `<h1>`**, asserted in a browser at
@@ -763,6 +765,12 @@ as the next change to that surface.**
 
 **Parked 2026-08-24**, when the creator Brand Hub became a full-screen world.
 
+**UPDATE 2026-10-09: it is no longer a world.** The hub is a normal PRISM screen
+inside `ShellLayout` wearing the brand's accent, with a `HubNav` tab row in place
+of the brand rail (Rashid: it looked like a different product and loaded like a
+separate app). Items below were written for the world and are annotated where
+that changes them.
+
 **a. `src/routes/app/Brands.tsx` is now orphaned.** `/app/brands` opens the
 first brand rather than a list, so nothing routes to that screen any more. It
 is still in the repo. **Delete it, or give it a home**, next time that area is
@@ -770,7 +778,9 @@ touched. It was left rather than deleted because removing a whole screen in a
 commit about theming is the sort of thing nobody finds again.
 
 **b. Only ONE brand exists on dev, so the brand SWITCHER cannot really be
-seen.** The rail renders the list correctly with one entry, but nobody has
+seen.** (The switcher is now the right-hand side of the `HubNav` row, shown only
+when a creator has more than one brand, so with one brand it is not drawn at all.)
+The rail renders the list correctly with one entry, but nobody has
 watched a creator move between two worlds and the colours change. **Raise this
 the moment a second brand exists**, and re-shoot: switching is the whole point
 of the rail.
@@ -783,14 +793,15 @@ a hero ever comes back wrong after a save.**
 **d. The world has no automated suite of its own.** `scripts/shots-hub.mjs`
 photographs five sections at four widths in both themes and fails on a console
 error, a sideways scroll or a world that never renders, which is real cover.
-But nothing asserts the RAIL: that both lists are present, that a locked tab
+(There is no brand rail now; the equivalent is the `HubNav` row.) But nothing asserts the RAIL: that both lists are present, that a locked tab
 refuses a click, that the Leave link goes home. **Worth adding when the second
 brand arrives**, since that is when the switcher becomes testable.
 
 **e. Applicants reach the world.** They are allowed onto the route on purpose,
 because the JWT role lags approval by up to an hour, and they see the
 "this opens when you are approved" panel. That panel is NOT themed by the
-brand and sits on the plain Wurx background. Minor, and noted so nobody reads
+brand and sits on the plain Wurx background. (Now that the hub sits inside the
+shell this is the same for every state of it, not a gap.) Minor, and noted so nobody reads
 it as the theming failing.
 
 ---
@@ -1836,7 +1847,9 @@ things below, which is the moment each becomes worth doing rather than before.
 
 Multi-colour themes shipped on 2026-08-25. An admin colours the hero, the menu,
 the pages and the buttons independently, up to four colours each. These were
-considered and left out on purpose.
+considered and left out on purpose. (Since 2026-10-09 only the hero and the
+buttons are offered; the menu and pages areas are retired, and the hub is a PRISM
+screen in the shell, so "brand world" below means the hub.)
 
 **a. The stage colours and the status colours are still not themed.** Inside a
 brand world the seven-step tracker is blue, an approved badge is green and a
@@ -1858,7 +1871,7 @@ alongside the four areas, read only when present. Do not add it speculatively.
 dashboard, the offers list outside a hub and the whole admin panel stay Wurx
 gold. A creator only enters a brand's colours by entering that brand.
 
-**Also worth knowing:** `text-accent` inside a brand world resolves to the
+**Also worth knowing:** `text-accent` inside a brand hub resolves to the
 brand's FILL colour, not the measured ink. It clears AA in practice, because the
 accent band sits on the opposite side of the lightness axis from the page band
 in each mode, but `--wx-brand-accent-ink` is the value with the guarantee on it.

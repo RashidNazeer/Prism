@@ -1425,7 +1425,8 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   nest under `ShellLayout`, and its rail carries two lists: the brands, and the
   open brand's sections. `/app/brands` opens the first brand rather than an
   index. The way out is a slim Wurx strip at the top of the rail, chosen over
-  hiding it in an avatar menu.
+  hiding it in an avatar menu. **REVERSED 2026-10-09: a hub is a screen of the
+  app again, nested under `ShellLayout`. See the entry at the end of this file.**
 - 2026-08-24: **An admin picks ONE colour, and the product derives the rest.**
   Every other colour lives in `tokens.css` where `check:contrast` fails the
   build; a colour in a database row bypasses that guard entirely, so a palette
@@ -1435,6 +1436,9 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   it lands on. `check-brand-theme.mjs` runs 88 colours through 13 pairs in both
   modes inside `pnpm build`. Rejected: three pickers with a warning, and a full
   palette, both of which move the risk onto whoever is filling the form.
+  **NARROWED 2026-10-09:** the principle stands, but only the accent and the hero
+  are rendered now, so the page, cards, rail and their text colours are still
+  derived and audited but never shown. See the entry at the end of this file.
 - 2026-08-24: **A brand world honours the theme toggle**, rather than being one
   fixed look the admin designs. Dark and light stay equal citizens, so a brand
   has a dark face and a light face and a creator working at night stays in the
@@ -1446,6 +1450,8 @@ line-height: 1.08 }` with Inter for body. We adopted the same recipe, applied
   palette themes every existing component with no component changes. Success,
   danger, warning and the stage colours are deliberately NOT rebound: they are
   semantic, and a red brand must not turn every approved badge into a warning.
+  **REVERSED 2026-10-09 for everything except the accent family.** Success,
+  danger and warning staying unbound still holds. See the entry at the end.
 - 2026-08-24: **The creator screens lost their title rows too, and the one
   line each was saying moved into the top bar.** Rashid, on Contests: *"write
   this everything. line in header and remove Contests ... as we did in admin
@@ -2614,3 +2620,41 @@ have that font installed.
 already-signed, or always printed and signed by hand. If they are sent signed,
 it is option 1 and the image needs to be treated as sensitive — a signature
 image in a public bucket is a forgery kit.
+
+## A Brand Hub is a PRISM screen wearing the brand's accent, not a world (2026-10-09)
+
+**Decision:** `/app/brands` and `/app/brands/:slug` are children of the same
+`ShellLayout` as every other `/app/*` screen. The brand supplies an accent, a logo
+and a hero, applied inside the content by `AccentScope` in `BrandHub.tsx`, and
+nothing else. Sections are a `HubNav` row built from the shell's `FilterBar` and
+`FilterTabs`. The admin look editor offers only "Hero banner" and "Buttons and
+highlights".
+
+**Why.** Rashid: *"this page has a completely different design language why? and
+it loads like a completely separate app which is very annoying it is a part of
+the app Prism please design it accordingly."* Both halves were true. The look
+was different because the hub repointed `--wx-bg`, the surfaces, the text and the
+borders from a palette derived from the brand. And it loaded like another app
+because it sat outside `ShellLayout` with its own `WorldLayout`, so every entry
+and exit unmounted the whole shell and mounted a different one.
+
+**What this reverses.** Three 2026-08-24 entries: that a creator opening a brand
+"leaves Wurx and enters that brand" (full-screen, own rail), that the world
+rebinds the ordinary `--wx-*` tokens for its subtree, and that
+`brand-theme.ts` derives the rail, page and cards. `BrandWorldShell.tsx` and
+`WorldLayout.tsx` are deleted; `paletteToVars` became `paletteToAccentVars`,
+which sets only the accent family and the hero and `OfferCard` variables.
+
+**What it keeps.** The brand still honours the theme toggle, success, danger and
+warning are still never rebound, an admin still picks fills and the product still
+picks inks, and `brand-theme.ts` is still one file.
+
+**Consequences.** `rail` and `page` are retired as editable areas: still accepted
+by the Zod schema so brands saved earlier keep validating, never offered and never
+read (`EDITABLE_AREA_KEYS`). `check-brand-theme.mjs` still passes, but its rail,
+body-text-on-brand-surface and accent-as-text-on-brand-surface assertions no
+longer protect anything on screen; they were left in place deliberately rather
+than weakened.
+
+**Rejected:** keeping the world and only adding a "back to app" link, which fixes
+neither the look nor the remount.

@@ -102,9 +102,22 @@ export function MobileNav({ items, className }: { items: NavItem[]; className?: 
     <nav
       aria-label="Sections"
       className={cn(
-        /* `pb-[env(safe-area-inset-bottom)]` keeps it clear of the home
-           indicator; without it the last 34px of an iPhone eats the labels. */
-        'wx-neo-raised fixed inset-x-0 bottom-0 z-40 rounded-t-2xl pb-[env(safe-area-inset-bottom)] lg:hidden',
+        /*
+          A FLOATING CARD, like the rail and the top bar. Rashid, 2026-10-09.
+          It was pinned flush to the window with only its top corners rounded,
+          which made it the one piece of chrome still welded to an edge.
+
+          The safe-area inset moves from PADDING to the BOTTOM OFFSET. Padding
+          would have grown the card downward until it touched the home
+          indicator again, which is the thing the inset exists to avoid; as an
+          offset it lifts the whole card clear instead, and the gutter stays
+          even on every side.
+        */
+        /* `overflow-hidden` clips the limelight to the card's curve. The lamp
+           sits at `-top-px` and its cone overhangs; against the old square
+           edges that was invisible, and against a 1.75rem radius it would hang
+           outside the corner. */
+        'wx-neo-raised fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 overflow-hidden rounded-[1.75rem] lg:hidden',
         className
       )}
     >
@@ -131,7 +144,9 @@ export function MobileNav({ items, className }: { items: NavItem[]; className?: 
             className="pointer-events-none absolute top-0 left-0 z-10 motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-out"
             style={{ transform: `translateX(${lamp.left}px)` }}
           >
-            <span className="bg-accent absolute -top-px left-1/2 h-[3px] w-11 -translate-x-1/2 rounded-full" />
+            {/* rem, not px: the one sanctioned px in this codebase is the 44px
+                tap floor, and this is decoration. */}
+            <span className="bg-accent absolute -top-px left-1/2 h-[0.1875rem] w-11 -translate-x-1/2 rounded-full" />
             <span
               className="from-accent/25 absolute top-0 left-1/2 h-14 w-24 -translate-x-1/2 bg-gradient-to-b to-transparent"
               style={{ clipPath: 'polygon(18% 100%, 34% 0, 66% 0, 82% 100%)' }}

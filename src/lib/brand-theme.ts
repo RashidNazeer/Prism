@@ -1,6 +1,14 @@
 /**
- * A brand's colours in, a whole readable world out, in both themes.
+ * A brand's colours in, a readable accent and hero out, in both themes.
  *
+ * SCOPE CHANGED ON 2026-10-09. This module used to derive a whole palette (page,
+ * cards, menu rail, every text colour) that a Brand Hub rebound over the PRISM
+ * tokens, so a hub was a separate-looking "world". A hub is now an ordinary PRISM
+ * screen inside the shell, wearing the brand's ACCENT and hero (see
+ * `paletteToAccentVars`). The full palette is still DERIVED and AUDITED here,
+ * because the derivation is the one source for the accent and hero, but the page,
+ * surface, text, border and rail fields are no longer rendered. See the note on
+ * `paletteToAccentVars` for what that does to the audit.
  * WHY THIS EXISTS AT ALL. Every other colour in this product lives in
  * `src/styles/tokens.css`, and `pnpm check:contrast` fails the build if dark
  * and light drift apart or if any pair drops below WCAG AA. A Brand Hub's
@@ -31,9 +39,12 @@
  * running inside the build. Splitting this file is a two line change that
  * silently disarms the alarm, so it stays whole.
  *
- * Rashid, on what a hub should feel like: a creator opens a brand and lands in
- * "a new world" that is the brand's, not Wurx's. This is the machinery under
- * that. He picks the colours; the readability is not his problem.
+ * Rashid, on what a hub should feel like. On 2026-08-24 he asked for "a new
+ * world" that is the brand's, not Wurx's. On 2026-10-09 he reversed that: the
+ * hub "has a completely different design language ... it loads like a completely
+ * separate app ... it is a part of the app". So the brand now tints the product
+ * rather than replacing it. This is still the machinery under that. He picks the
+ * colours; the readability is not his problem.
  */
 
 /* ------------------------------------------------------------- colour maths -- */
@@ -263,7 +274,25 @@ export type BrandThemeConfig = {
 
 export const AREA_KEYS = ['hero', 'rail', 'page', 'accent'] as const;
 
-/** How each area is described to an admin, and what it is allowed to carry. */
+/**
+ * The areas an admin can still actually change.
+ *
+ * `rail` and `page` are RETIRED. A brand hub now renders inside the PRISM shell
+ * and only supplies an accent, a logo and a hero, so nothing reads a brand's
+ * menu or page colours any more. Leaving them in the editor would be a control
+ * that lies: you pick a colour, you save it, and the product ignores it.
+ *
+ * They stay in `AREA_KEYS` and in the Zod schema on purpose, because brands
+ * saved before the change still have those values stored and must keep
+ * validating. They are simply never offered and never read.
+ */
+export const EDITABLE_AREA_KEYS = ['hero', 'accent'] as const;
+
+/**
+ * How each area is described to an admin, and what it is allowed to carry.
+ * The `rail` and `page` entries are retired (see `EDITABLE_AREA_KEYS`): they are
+ * kept so stored themes still read, and are never shown to an admin.
+ */
 export const AREA_META: Record<
   BrandAreaKey,
   { label: string; hint: string; max: number; tone: boolean; angle: boolean }
@@ -515,7 +544,11 @@ export function canonicalBrandTheme(raw: unknown): BrandThemeConfig | null {
 
 /* -------------------------------------------------------------- the palette -- */
 
-/** Every custom property a brand world sets. Names match `--wx-brand-*`. */
+/**
+ * Everything derived for one brand in one mode. Only the accent and hero fields
+ * reach the screen now (via `paletteToAccentVars`); the page, surface, line,
+ * text, muted and rail fields are still derived and audited but unrendered.
+ */
 export type BrandPalette = {
   /** The page behind everything, and the first stop of its wash. */
   page: string;
@@ -687,7 +720,7 @@ export function deriveBrandTheme(
        * falling to 0.42: half of every gradient button far darker than the half
        * its label colour was chosen against. Nothing measured it, because the
        * contract named `accent` and the gradient was assembled separately down
-       * in `paletteToVars`. The moment every stop went into the audit, the
+       * in `paletteToVars` (now `paletteToAccentVars`). The moment every stop went into the audit, the
        * 88-colour sweep failed on it immediately.
        *
        * It now steps AWAY FROM THE INK by a fixed amount and no further: deeper
@@ -917,71 +950,65 @@ export function auditBrandTheme(brandHex: string, config?: BrandThemeConfig | nu
 }
 
 /**
- * The custom properties for one mode, ready to spread onto a style attribute.
+ * The custom properties a Brand Hub sets, ready to spread onto a style attribute.
  *
- * IT ALSO REBINDS THE ORDINARY `--wx-*` TOKENS, and that is what makes a brand
- * world actually feel like one. The first version themed only the shell, so a
- * deep green rail framed a page of off-brand cards and grey text: the chrome
- * had changed and the content had not. Every card, button, heading and hairline
- * in this product already reads from `--wx-bg`, `--wx-surface-1`, `--wx-text`
- * and friends, so pointing those at the brand's palette for the subtree themes
- * the entire world without touching a single component.
+ * THE HUB IS INSIDE THE PRISM SHELL, so the brand is an ACCENT and not a world.
+ * Rashid, 2026-10-09, on opening /app/brands/penetrex: "this page has a
+ * completely different design language ... it is a part of the app". The first
+ * version of this function repointed `--wx-bg`, the surfaces, the text and the
+ * borders, which is what made a hub look like a separate app. Those four
+ * families are PRISM's and stay PRISM's. What is left is deliberately small:
+ *
+ *   - the accent family, so every button, tab, link and ring inside the hub
+ *     takes the brand's colour through the tokens the rest of the product
+ *     already reads, with no component knowing a brand exists;
+ *   - the hero's own colours, because the hero is the brand's imagery;
+ *   - `--wx-brand-accent-ink`, the accent walked until it clears 4.5:1 as TEXT.
+ *
+ * EVERY MIX HERE IS AGAINST PRISM'S TOKENS (`--wx-text`, `--wx-surface-1`), not
+ * against the brand's own page and card colours. Those colours are no longer on
+ * screen, and mixing toward a surface that is not there would tint a hover with
+ * a colour nothing else in the view shares. The variable is resolved on the hub's
+ * own element, where the PRISM values are the inherited ones.
  *
  * WHAT IS DELIBERATELY LEFT ALONE: success, danger, warning and the stage
  * colours. Those are semantic. A rejection has to look like a rejection in
  * every brand, and a brand whose colour happens to be red must not turn every
  * approved badge into a warning.
+ *
+ * VACUOUS CONTRACT PAIRS, written down so nobody trusts them: with the brand's
+ * own page, card and rail no longer rendered, these `CONTRACT` and
+ * `STOP_CONTRACT` pairs still pass but protect nothing on screen: every `rail*`
+ * pair, `text`/`muted` on `page`/`surface`/`surface2`/`pageStops`, and
+ * `accentInk` on `surface`. The live pairs are the hero ones and the button
+ * label on the accent. They are left in place rather than weakened, so the
+ * guard cannot be loosened by accident.
+ *
+ * KNOWN GAP, written down so nobody assumes otherwise: the derivation measures
+ * `accentInk` and the page text against the BRAND's derived surfaces. Those are
+ * no longer what the accent sits on, so "accent as text on a card" in CONTRACT
+ * now proves less than its label says. The accent band is pinned to one side of
+ * the lightness axis per mode, which keeps it readable on any pale light-mode
+ * or deep dark-mode surface in practice, but that is a property of the band and
+ * not a measurement against PRISM's surfaces.
  */
-export function paletteToVars(p: BrandPalette): Record<string, string> {
+export function paletteToAccentVars(p: BrandPalette): Record<string, string> {
   const accentWash = stopsToCss(p.accentStops, 135);
   const accentWashHover = stopsToCss([...p.accentStops].reverse(), 135);
 
   return {
-    /* ---- the ordinary tokens, repointed for this subtree only ---------- */
-    '--wx-bg': p.page,
-    '--wx-surface-1': p.surface,
-    '--wx-surface-2': p.surface2,
-    '--wx-surface-3': p.surface2,
-    '--wx-text': p.text,
-    '--wx-text-muted': p.muted,
-    '--wx-text-faint': `color-mix(in srgb, ${p.muted} 72%, ${p.page})`,
-    '--wx-text-inverse': p.page,
-    '--wx-border': p.line,
-    '--wx-border-strong': `color-mix(in srgb, ${p.line} 55%, ${p.text})`,
-    '--wx-border-interactive': `color-mix(in srgb, ${p.line} 40%, ${p.accent})`,
+    /* ---- the accent family, repointed for this subtree only ------------ */
     '--wx-accent': p.accent,
-    '--wx-accent-hover': `color-mix(in srgb, ${p.accent} 86%, ${p.text})`,
-    '--wx-accent-active': `color-mix(in srgb, ${p.accent} 74%, ${p.text})`,
-    '--wx-accent-soft': `color-mix(in srgb, ${p.accent} 14%, ${p.surface})`,
+    '--wx-accent-hover': `color-mix(in srgb, ${p.accent} 86%, var(--wx-text))`,
+    '--wx-accent-active': `color-mix(in srgb, ${p.accent} 74%, var(--wx-text))`,
+    '--wx-accent-soft': `color-mix(in srgb, ${p.accent} 14%, var(--wx-surface-1))`,
     '--wx-accent-ring': `color-mix(in srgb, ${p.accent} 45%, transparent)`,
+    '--wx-accent-shadow': `color-mix(in srgb, ${p.accent} 36%, transparent)`,
     '--wx-accent-gradient': accentWash,
     '--wx-accent-gradient-hover': accentWashHover,
     '--wx-on-accent': p.accentText,
-    '--wx-grid-line': `color-mix(in srgb, ${p.line} 60%, transparent)`,
 
-    /* ---- and the world's own, for the rail and the hero ---------------- */
-    '--wx-brand-page': p.page,
-    /* The page as the admin drew it, one colour or several. Painted on the
-     * world's own element rather than on `--wx-bg`, because a thousand places
-     * read `--wx-bg` expecting a COLOUR and would break on a gradient. */
-    '--wx-brand-page-wash': stopsToCss(p.pageStops, 165),
-    '--wx-brand-surface': p.surface,
-    '--wx-brand-surface-2': p.surface2,
-    '--wx-brand-line': p.line,
-    '--wx-brand-text': p.text,
-    '--wx-brand-muted': p.muted,
-    '--wx-brand-rail': p.rail,
-    '--wx-brand-rail-wash': stopsToCss(p.railStops, 180),
-    /*
-     * The hairline where the rail meets the page. It used to be a hardcoded
-     * `rgba(255,255,255,0.10)`, which is invisible on a pale rail and was fine
-     * only while every rail was dark. Drawn from the rail's own TEXT colour
-     * instead, so it follows the rail whichever side of the divide it sits on.
-     */
-    '--wx-brand-rail-edge': `color-mix(in srgb, ${p.railText} 14%, transparent)`,
-    '--wx-brand-rail-text': p.railText,
-    '--wx-brand-rail-muted': p.railMuted,
-    '--wx-brand-rail-active': p.railActive,
+    /* ---- and the brand's own, for the hero and the accent as text ------- */
     '--wx-brand-hero-from': p.heroFrom,
     '--wx-brand-hero-to': p.heroTo,
     '--wx-brand-hero-wash': stopsToCss(p.heroStops, p.heroAngle),

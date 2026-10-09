@@ -2,7 +2,6 @@ import { lazy } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
 import { RouteFallback } from '@/components/layout/RouteFallback';
 import { ShellLayout } from '@/components/layout/ShellLayout';
-import { WorldLayout } from '@/components/layout/WorldLayout';
 import { RequireAuth, RedirectIfSignedIn } from '@/components/auth/RequireAuth';
 import { COLLABS_ONLY_ROLES, STAFF_ROLES } from '@/lib/auth/auth-context';
 
@@ -181,9 +180,15 @@ const AdminApplicationDetail = screen(
   'ApplicationDetail'
 );
 const AdminAllOffers = screen(() => import('@/routes/admin/AllOffers'), 'AllOffers');
-const AdminOfferRequests = screen(() => import('@/routes/admin/OfferRequests'), 'OfferRequests');
+const AdminOfferRequests = screen(
+  () => import('@/routes/admin/OfferRequests'),
+  'OfferRequests'
+);
 const AdminAllContests = screen(() => import('@/routes/admin/AllContests'), 'AllContests');
-const AdminContestClaims = screen(() => import('@/routes/admin/ContestClaims'), 'ContestClaims');
+const AdminContestClaims = screen(
+  () => import('@/routes/admin/ContestClaims'),
+  'ContestClaims'
+);
 const AdminContestRewards = screen(
   () => import('@/routes/admin/ContestRewards'),
   'ContestRewards'
@@ -197,7 +202,10 @@ const AdminPaidCollabs = screen(() => import('@/routes/admin/PaidCollabs'), 'Pai
 const AdminBrands = screen(() => import('@/routes/admin/Brands'), 'Brands');
 const AdminBrandHub = screen(() => import('@/routes/admin/BrandHub'), 'BrandHub');
 const AdminCreators = screen(() => import('@/routes/admin/Creators'), 'Creators');
-const AdminCreatorDetail = screen(() => import('@/routes/admin/CreatorDetail'), 'CreatorDetail');
+const AdminCreatorDetail = screen(
+  () => import('@/routes/admin/CreatorDetail'),
+  'CreatorDetail'
+);
 
 const StudioHome = screen(() => import('@/routes/studio/StudioHome'), 'StudioHome');
 
@@ -491,32 +499,22 @@ export const router = createBrowserRouter([
             path: '/app/leaderboards',
             element: <CreatorBoard />,
           },
-        ],
-      },
-    ],
-  },
-  /*
-   * THE BRAND WORLD IS FULL SCREEN, so it does NOT nest under ShellLayout.
-   *
-   * Rashid: "user will land in new world in full screen all menu items will be
-   * hidden". The world draws its own rail, carrying the brand switcher and that
-   * brand's sections, so leaving it inside AppShell would put the Wurx sidebar
-   * beside the brand's own and defeat the whole idea.
-   *
-   * Same `RequireAuth` as the rest of the creator app, and the same allow list:
-   * an applicant may reach it and is shown the "this opens when you are
-   * approved" panel, because the JWT role lags approval by up to an hour and
-   * bouncing somebody who has just been approved is worse than a panel.
-   *
-   * It keeps its own `WorldLayout` only to apply the text-size setting, which
-   * ShellLayout does for every other signed-in screen.
-   */
-  {
-    Component: () => <RequireAuth allow={['applicant', 'creator']} />,
-    children: [
-      {
-        Component: WorldLayout,
-        children: [
+          /*
+           * THE BRAND HUB IS A SCREEN OF THIS APP, so it nests here with the rest.
+           *
+           * It used to sit outside ShellLayout and draw its own rail and top bar,
+           * and every entry into or out of a hub unmounted the whole shell and
+           * mounted a different one: a full remount, which is what made it load
+           * "like a completely separate app" (Rashid, 2026-10-09). Nested here the
+           * rail, the top bar and the backdrop stay mounted across the move and
+           * only the content area suspends, exactly as for Offers or My numbers.
+           *
+           * The brand survives as an accent colour, a logo and a hero, applied
+           * inside the content by BrandHub. It does not repaint the page.
+           *
+           * Applicants may reach it, as with the routes above, and are shown the
+           * "this opens when you are approved" panel by the screen itself.
+           */
           {
             path: '/app/brands',
             element: <CreatorBrandHub />,
@@ -591,91 +589,91 @@ export const router = createBrowserRouter([
       {
         Component: ShellLayout,
         children: [
-      {
-        path: '/admin',
-        element: <AdminHome />,
-      },
-      {
-        path: '/admin/applications',
-        element: <AdminApplications />,
-      },
-      {
-        path: '/admin/applications/:id',
-        element: <AdminApplicationDetail />,
-      },
-      // Offers is a section with two screens: the catalogue of everything we
-      // run, and the queue of creators waiting on a decision. They answer
-      // different questions and are worked at different times.
-      {
-        path: '/admin/offers',
-        element: <AdminAllOffers />,
-      },
-      {
-        path: '/admin/offers/requests',
-        element: <AdminOfferRequests />,
-      },
-      // Three screens, three jobs: what is running, who is waiting on us, and
-      // what it has cost. Different questions, worked at different times of day,
-      // and a screen that tries to answer two of them answers neither well.
-      {
-        path: '/admin/contests',
-        element: <AdminAllContests />,
-      },
-      {
-        path: '/admin/contests/claims',
-        element: <AdminContestClaims />,
-      },
-      {
-        path: '/admin/contests/rewards',
-        element: <AdminContestRewards />,
-      },
-      {
-        path: '/admin/content',
-        element: <AdminContent />,
-      },
-      {
-        path: '/admin/activity',
-        element: <AdminActivity />,
-      },
-      {
-        path: '/admin/tiktok',
-        element: <AdminTikTok />,
-      },
-      /*
-       * Paid Collabs is six sidebar rows now, not one row with a tab rail
-       * inside it. The tab is the ROUTE, so the browser back button, a
-       * bookmark and a link into Reporting all work like every other screen in
-       * the product — none of which was true while the tab lived in component
-       * state.
-       *
-       * /admin/collabs on its own redirects to Brands rather than 404ing: it
-       * is what the sidebar pointed at until today and what any saved link
-       * still says.
-       */
-      {
-        path: '/admin/brands',
-        element: <AdminBrands />,
-      },
-      {
-        path: '/admin/brands/:id',
-        element: <AdminBrandHub />,
-      },
-      // A full screen rather than a dialog, ruled 2026-08-13: a contest carries
-      // a dozen fields plus three lists inside it. `new` and an id share one
-      // component, because creating and editing are the same form with one
-      // different verb on the button.
-      {
-        path: '/admin/brands/:id/contests/:contestId',
-        element: <AdminContestSetup />,
-      },
-      {
-        path: '/admin/creators',
-        element: <AdminCreators />,
-      },
-      {
-        path: '/admin/creators/:id',
-        element: <AdminCreatorDetail />,
-      },
+          {
+            path: '/admin',
+            element: <AdminHome />,
+          },
+          {
+            path: '/admin/applications',
+            element: <AdminApplications />,
+          },
+          {
+            path: '/admin/applications/:id',
+            element: <AdminApplicationDetail />,
+          },
+          // Offers is a section with two screens: the catalogue of everything we
+          // run, and the queue of creators waiting on a decision. They answer
+          // different questions and are worked at different times.
+          {
+            path: '/admin/offers',
+            element: <AdminAllOffers />,
+          },
+          {
+            path: '/admin/offers/requests',
+            element: <AdminOfferRequests />,
+          },
+          // Three screens, three jobs: what is running, who is waiting on us, and
+          // what it has cost. Different questions, worked at different times of day,
+          // and a screen that tries to answer two of them answers neither well.
+          {
+            path: '/admin/contests',
+            element: <AdminAllContests />,
+          },
+          {
+            path: '/admin/contests/claims',
+            element: <AdminContestClaims />,
+          },
+          {
+            path: '/admin/contests/rewards',
+            element: <AdminContestRewards />,
+          },
+          {
+            path: '/admin/content',
+            element: <AdminContent />,
+          },
+          {
+            path: '/admin/activity',
+            element: <AdminActivity />,
+          },
+          {
+            path: '/admin/tiktok',
+            element: <AdminTikTok />,
+          },
+          /*
+           * Paid Collabs is six sidebar rows now, not one row with a tab rail
+           * inside it. The tab is the ROUTE, so the browser back button, a
+           * bookmark and a link into Reporting all work like every other screen in
+           * the product — none of which was true while the tab lived in component
+           * state.
+           *
+           * /admin/collabs on its own redirects to Brands rather than 404ing: it
+           * is what the sidebar pointed at until today and what any saved link
+           * still says.
+           */
+          {
+            path: '/admin/brands',
+            element: <AdminBrands />,
+          },
+          {
+            path: '/admin/brands/:id',
+            element: <AdminBrandHub />,
+          },
+          // A full screen rather than a dialog, ruled 2026-08-13: a contest carries
+          // a dozen fields plus three lists inside it. `new` and an id share one
+          // component, because creating and editing are the same form with one
+          // different verb on the button.
+          {
+            path: '/admin/brands/:id/contests/:contestId',
+            element: <AdminContestSetup />,
+          },
+          {
+            path: '/admin/creators',
+            element: <AdminCreators />,
+          },
+          {
+            path: '/admin/creators/:id',
+            element: <AdminCreatorDetail />,
+          },
         ],
       },
     ],
