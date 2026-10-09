@@ -165,7 +165,23 @@ export function AppShell({ children }: { children: ReactNode }) {
          * Large gets a rail with room for the bigger words rather than a fixed
          * 240px box with clipped labels in it.
          */
-        collapsed ? 'lg:grid-cols-[4rem_minmax(0,1fr)]' : 'lg:grid-cols-[15rem_minmax(0,1fr)]'
+        /*
+         * 5.5rem COLLAPSED, NOT 4rem, AND THAT IS ARITHMETIC RATHER THAN TASTE.
+         *
+         * The rail became a floating card with a `p-3` gutter, and the gutter
+         * was never paid for. At 4rem the column is 64px, the gutter takes 24
+         * of them, and the card is left 40px wide. The footer's own `p-2` takes
+         * 16 more, so a 44px control — the tap floor, and the size of the
+         * avatar, the sign-out and every nav row — was being asked to fit in 24
+         * px. It overflowed by 20px and the card's `overflow-hidden` clipped
+         * what spilled, which is the squeezed, off-centre rail Rashid
+         * screenshotted.
+         *
+         * 5.5rem is 88px: minus the 24px gutter leaves a 64px card, minus the
+         * 16px padding leaves 48px, so a 44px target sits inside it with 2px to
+         * spare on each side. Expanded is untouched at 15rem.
+         */
+        collapsed ? 'lg:grid-cols-[5.5rem_minmax(0,1fr)]' : 'lg:grid-cols-[15rem_minmax(0,1fr)]'
       )}
     >
       {/*
