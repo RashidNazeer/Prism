@@ -51,7 +51,7 @@ export function AuthShell({
           <p className="text-muted mt-3 leading-relaxed text-pretty">{subtitle}</p>
         ) : null}
 
-        <div className="bg-surface-1 mt-8 rounded-2xl p-6 shadow-lg sm:p-7">{children}</div>
+        <div className="wx-neo-raised mt-8 rounded-2xl p-6 sm:p-7">{children}</div>
 
         {footer ? <div className="text-muted mt-6 text-center text-sm">{footer}</div> : null}
       </main>

@@ -1,8 +1,35 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
-import { Briefcase, Check, Clock, Sparkles, Store, X } from 'lucide-react';
+import {
+  Briefcase,
+  Check,
+  ChevronDown,
+  Clock,
+  Minus,
+  Sparkles,
+  Store,
+  TrendingDown,
+  TrendingUp,
+  X,
+} from 'lucide-react';
 import { ButtonLink } from '@/components/ui/Button';
+import { TiltCard, TiltLift } from '@/components/ui/TiltCard';
+import { DateRangePicker } from '@/components/creator/DateRangePicker';
+import {
+  useBrandPerformance,
+  useDailyPerformance,
+  usePerformanceWindow,
+  type BrandPerformance,
+  type DailyPerformance,
+} from '@/lib/creator/usePerformance';
+import {
+  addDays,
+  clamp,
+  presetToRange,
+  type DateRange,
+  type PresetKey,
+} from '@/lib/creator/date-range';
 import { WelcomeMoment } from '@/components/creator/WelcomeMoment';
 import { ApprovedMoment } from '@/components/creator/ApprovedMoment';
 import { MoneySplit, PipelineBoard } from '@/components/creator/PipelineBoard';
@@ -24,7 +51,7 @@ import {
   type StageEvent,
   type WorkSummary,
 } from '@/lib/creator/useMyWork';
-import { useMyJobProgress, type JobProgress } from '@/lib/work/job-progress';
+import { needsFilming, useMyJobProgress, type JobProgress } from '@/lib/work/job-progress';
 
 /**
  * The empty board, split off into its own chunk.
@@ -316,7 +343,7 @@ function CreatorHome({
             </>
           ) : (
             <>
-              <Money summary={summary} moved={moved} />
+              <Money summary={summary} moved={moved} rows={work} />
 
               {/*
                 DIRECTLY UNDER THE MONEY CARD, and never inside it. The card
@@ -328,6 +355,10 @@ function CreatorHome({
               */}
               <ContestEarnings />
 
+              {/* The only part of Home that has a time axis, so the only part
+                  that owns a date range. See AdNumbers. */}
+              <AdNumbers />
+
               {/*
                 THE KPI ROW IS ITS OWN BAND NOW, directly under the money.
                 It used to sit in the right-hand column beneath the timeline,
@@ -336,7 +367,7 @@ function CreatorHome({
                 boxes" in the brief. Across the full width they are four equal
                 columns of the same grid everything else uses.
               */}
-              <Counts summary={summary} />
+              <Counts summary={summary} work={work} pending={pending} />
 
               {/*
                 SEVEN AND FIVE, not auto-fit. `repeat(auto-fit,minmax(320px,1fr))`
@@ -470,8 +501,20 @@ function Header({
 
 type Moved = { ids: Set<string>; key: number };
 
-function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
+function Money({
+  summary,
+  moved,
+  rows,
+}: {
+  summary: WorkSummary;
+  moved: Moved;
+  /** Approved work, already sorted. The drill-down below is filtered from it. */
+  rows: MyWorkRow[];
+}) {
   const { paid, due, working, total, currency } = summary.money;
+  /* Which cell is open. One at a time: two lists open at once is the "wall" the
+     timeline's eight-row cap was written against. */
+  const [openCell, setOpenCell] = useState<'paid' | 'due' | 'working' | null>(null);
   const fmt = (n: number) => money(Math.round(n * 100) / 100, currency);
   const share = (n: number) => (total > 0 ? (n / total) * 100 : 0);
 
@@ -524,27 +567,40 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
      * not clickable and a card that moves under the cursor and then does
      * nothing is a promise the interface breaks.
      */
-    <section className="wx-neo-raised flex flex-col gap-5 overflow-hidden rounded-2xl p-[clamp(1.125rem,2vw,1.5rem)]">
+    /*
+     * A TILT CARD, 2026-10-09. `overflow-hidden` is gone from it: any overflow
+     * other than visible flattens `preserve-3d`, which would put the headline
+     * back on the card's own plane and leave the tilt as a plain wobble. Nothing
+     * inside needed the clip.
+     */
+    <TiltCard
+      as="section"
+      className="wx-neo-raised flex flex-col gap-5 rounded-2xl p-[clamp(1.125rem,2vw,1.5rem)]"
+    >
       {/* `relative` so the content sits above the ::before wash. */}
       <div className="relative flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Agreed with you so far
           </p>
-          <p className="flex flex-wrap items-baseline gap-2.5">
-            <span
-              key={`total-${moved.key}`}
-              className={cn(
-                'font-brand text-[clamp(2.375rem,7vw,3.625rem)] leading-none font-semibold tracking-[-0.03em]',
-                moved.ids.size > 0 && 'wx-bump'
-              )}
-            >
-              {fmt(total)}
-            </span>
+          {/* The headline is the one thing lifted. The sentence beside it stays
+              on the card, which is what gives the lift something to rise from. */}
+          <div className="flex flex-wrap items-baseline gap-2.5">
+            <TiltLift>
+              <span
+                key={`total-${moved.key}`}
+                className={cn(
+                  'font-brand block text-[clamp(2.375rem,7vw,3.625rem)] leading-none font-semibold tracking-[-0.03em]',
+                  moved.ids.size > 0 && 'wx-bump'
+                )}
+              >
+                {fmt(total)}
+              </span>
+            </TiltLift>
             <span className="text-muted text-[0.8125rem]">
               across {summary.approved} {summary.approved === 1 ? 'job' : 'jobs'}
             </span>
-          </p>
+          </div>
         </div>
 
         {/*
@@ -612,35 +668,129 @@ function Money({ summary, moved }: { summary: WorkSummary; moved: Moved }) {
           Each keeps its bucket tint and gains the top hairline, so they read as
           inset panels within the hero rather than three loose chips on it.
         */}
-        <dl className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-          {cells.map((cell) => (
-            <div
-              key={cell.key}
-              className={cn('flex flex-col gap-1 rounded-xl p-3.5', cell.tone.soft)}
-            >
-              <dt
-                className={cn(
-                  'text-[0.6875rem] font-semibold tracking-[0.1em] uppercase',
-                  cell.tone.text
-                )}
-              >
-                {cell.label}
-              </dt>
-              <dd
-                key={`${cell.key}-${moved.key}`}
-                className={cn(
-                  'font-brand wx-numeric text-[1.5rem] leading-none font-semibold',
-                  moved.ids.size > 0 && 'wx-bump'
-                )}
-              >
-                {fmt(cell.value)}
-              </dd>
-              <dd className="text-muted text-[0.75rem] leading-[1.35]">{cell.sub}</dd>
-            </div>
-          ))}
-        </dl>
+        {/*
+          EACH CELL IS A DISCLOSURE, 2026-10-09. "$400 in progress" now opens the
+          jobs it is made of, right here, instead of sending anybody to another
+          tab to find out. A real button with `aria-expanded`, so it works from
+          the keyboard and is announced; the list opens beneath the row rather
+          than inside a cell, because a cell is a third of the card wide.
+        */}
+        <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+          {cells.map((cell) => {
+            const open = openCell === cell.key;
+            return (
+              <li key={cell.key} className="flex">
+                <button
+                  type="button"
+                  aria-expanded={open}
+                  aria-controls="hero-drill"
+                  onClick={() => setOpenCell(open ? null : cell.key)}
+                  className={cn(
+                    'focus-visible:ring-accent flex min-h-11 w-full flex-col gap-1 rounded-xl p-3.5 text-left focus-visible:ring-2 focus-visible:outline-none',
+                    cell.tone.soft
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'flex items-center justify-between gap-2 text-[0.6875rem] font-semibold tracking-[0.1em] uppercase',
+                      cell.tone.text
+                    )}
+                  >
+                    {cell.label}
+                    <ChevronDown
+                      size={14}
+                      aria-hidden
+                      className={cn('transition-transform duration-200', open && 'rotate-180')}
+                    />
+                  </span>
+                  <span
+                    key={`${cell.key}-${moved.key}`}
+                    className={cn(
+                      'font-brand wx-numeric text-[1.5rem] leading-none font-semibold',
+                      moved.ids.size > 0 && 'wx-bump'
+                    )}
+                  >
+                    {fmt(cell.value)}
+                  </span>
+                  <span className="text-muted text-[0.75rem] leading-[1.35]">{cell.sub}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
+        {openCell ? (
+          <div
+            id="hero-drill"
+            role="region"
+            aria-label={`Jobs that make up ${cells.find((c) => c.key === openCell)?.label.toLowerCase()}`}
+            className="wx-neo-inset wx-pop rounded-xl p-3"
+          >
+            <DrillRows
+              empty="No jobs in here right now."
+              items={rows
+                .filter((r) => STAGE_META[r.stage ?? 'pending_request'].bucket === openCell)
+                .map((r) => ({
+                  id: r.id,
+                  top: r.brand?.name ?? 'A brand',
+                  title: r.offer?.title ?? 'An offer',
+                  note: STAGE_META[r.stage ?? 'pending_request'].label,
+                  figure:
+                    r.committed_amount === null
+                      ? 'To confirm'
+                      : money(r.committed_amount, r.currency),
+                }))}
+            />
+          </div>
+        ) : null}
       </div>
-    </section>
+    </TiltCard>
+  );
+}
+
+/**
+ * The rows a disclosure opens onto.
+ *
+ * ONE LIST SHAPE FOR EVERY DRILL-DOWN on Home, so a job reads the same whether
+ * it was reached from a money cell or from a count. Plain rows, no tilt: a list
+ * where every row leans towards the cursor is noise.
+ */
+interface DrillItem {
+  id: string;
+  top: string;
+  title: string;
+  note?: string;
+  figure?: string;
+}
+
+function DrillRows({ items, empty }: { items: DrillItem[]; empty: string }) {
+  if (items.length === 0) {
+    return <p className="text-muted py-1 text-[0.8125rem] leading-relaxed">{empty}</p>;
+  }
+  return (
+    <ul className="flex flex-col">
+      {items.map((it) => (
+        <li
+          key={it.id}
+          className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0"
+        >
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <p className="text-muted truncate text-[0.6875rem] font-semibold tracking-[0.1em] uppercase">
+              {it.top}
+            </p>
+            <p className="text-[0.875rem] leading-[1.3] font-semibold break-words">
+              {it.title}
+            </p>
+            {it.note ? <p className="text-muted text-[0.75rem]">{it.note}</p> : null}
+          </div>
+          {it.figure ? (
+            <p className="wx-numeric shrink-0 text-[0.9375rem] font-semibold whitespace-nowrap">
+              {it.figure}
+            </p>
+          ) : null}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -754,6 +904,13 @@ function Work({
                   compact
                 />
               ) : null}
+
+              {progress?.get(row.id) ? (
+                <PaceLine
+                  progress={progress.get(row.id)!}
+                  since={row.decided_at ?? row.created_at}
+                />
+              ) : null}
             </li>
           );
         })}
@@ -783,6 +940,56 @@ function Work({
         </div>
       ) : null}
     </section>
+  );
+}
+
+/**
+ * GOAL AND PACE, for a job with a number of videos attached.
+ *
+ * THE PLAN SAID "THE PACE NEEDED TO FINISH ON TIME", and nothing in the data
+ * can answer that: an offer has no deadline, and neither does an application or
+ * the `job_progress` view. A "needed pace" drawn against an invented date would
+ * be a number we made up, on the screen whose whole point is that its numbers
+ * are real. So this reports the pace the creator IS keeping and where that
+ * lands, and leaves "needed" for the day a deadline exists.
+ *
+ * COUNTS APPROVED VIDEOS ONLY, the same rule `remaining` uses: a video still
+ * with the team is not yet one of the five, so a projection built on it would
+ * promise a finish nobody has agreed to.
+ *
+ * NOTHING UNTIL THREE DAYS IN. One approved video on day one projects as
+ * "finished by Thursday" or "never", and both are noise.
+ */
+function PaceLine({ progress, since }: { progress: JobProgress; since: string }) {
+  if (progress.required === null || progress.done) return null;
+
+  const days = (Date.now() - Date.parse(since)) / 86_400_000;
+  const toFilm = needsFilming(progress);
+
+  let pace: string;
+  if (progress.approved === 0) {
+    pace =
+      progress.waiting > 0 ? 'Your first video is with the team.' : 'No video approved yet.';
+  } else if (!(days >= 3)) {
+    return null;
+  } else {
+    const perDay = progress.approved / days;
+    const left = (progress.remaining ?? 0) / perDay;
+    const perWeek = Math.round(perDay * 7 * 10) / 10;
+    pace =
+      left > 365
+        ? `${perWeek} a week so far: at that pace this takes over a year.`
+        : `${perWeek} a week so far: at that pace the last one is approved around ${new Date(
+            Date.now() + left * 86_400_000
+          ).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}.`;
+  }
+
+  return (
+    <p className="text-muted text-[0.78125rem] leading-[1.4]">
+      <span className="text-text font-semibold">Pace </span>
+      {pace}
+      {toFilm ? ` ${progress.remaining! - progress.waiting} still to film.` : ''}
+    </p>
   );
 }
 
@@ -927,9 +1134,53 @@ const dayMonth = (iso: string) =>
  * below the fold on a 375px screen, and these are a glance, not the point of
  * the page.
  */
-function Counts({ summary }: { summary: WorkSummary }) {
+function Counts({
+  summary,
+  work,
+  pending,
+}: {
+  summary: WorkSummary;
+  work: MyWorkRow[];
+  pending: MyWorkRow[];
+}) {
+  const [open, setOpen] = useState<string | null>(null);
+
+  /* What each count is made of, built from rows already in memory. */
+  const drill = (key: string): DrillItem[] => {
+    const ask = (r: MyWorkRow): DrillItem => ({
+      id: r.id,
+      top: r.brand?.name ?? 'A brand',
+      title: r.offer?.title ?? 'An offer',
+      note:
+        r.status === 'approved'
+          ? STAGE_META[r.stage ?? 'pending_request'].label
+          : `Asked on ${dayMonth(r.created_at)}`,
+    });
+    if (key === 'offers') return work.map(ask);
+    if (key === 'waiting') return pending.filter((r) => r.status === 'pending').map(ask);
+    if (key === 'declined') return pending.filter((r) => r.status === 'rejected').map(ask);
+    const byBrand = new Map<string, DrillItem & { n: number }>();
+    for (const r of work) {
+      const had = byBrand.get(r.brand_id);
+      if (had) had.n += 1;
+      else
+        byBrand.set(r.brand_id, {
+          id: r.brand_id,
+          top: 'Brand',
+          title: r.brand?.name ?? 'A brand',
+          n: 1,
+        });
+    }
+    return [...byBrand.values()].map(({ n, ...b }) => ({
+      ...b,
+      note: `${n} ${n === 1 ? 'job' : 'jobs'}`,
+    }));
+  };
+
   const items = [
     {
+      key: 'offers',
+      empty: 'You are not on any offers yet.',
       n: summary.approved,
       label: 'offers you are on',
       to: '/app/offers?tab=in',
@@ -937,6 +1188,8 @@ function Counts({ summary }: { summary: WorkSummary }) {
       tone: 'text-stage-live',
     },
     {
+      key: 'brands',
+      empty: 'No brands yet.',
       n: summary.brands,
       label: 'brands you work with',
       to: '/app/brands',
@@ -944,6 +1197,8 @@ function Counts({ summary }: { summary: WorkSummary }) {
       tone: 'text-accent',
     },
     {
+      key: 'waiting',
+      empty: 'Nothing is waiting on a decision.',
       n: summary.waiting,
       label: 'waiting on a decision',
       to: '/app/offers',
@@ -951,6 +1206,8 @@ function Counts({ summary }: { summary: WorkSummary }) {
       tone: 'text-stage-due',
     },
     {
+      key: 'declined',
+      empty: 'Nothing has been turned down.',
       n: summary.declined,
       label: 'not accepted',
       to: '/app/offers',
@@ -977,43 +1234,495 @@ function Counts({ summary }: { summary: WorkSummary }) {
      * that, whatever is drawn inside them. Hairlines rather than gaps: the same
      * four facts, one object.
      *
-     * The cells still light on hover, because each is still a link — the hover
-     * is a background change rather than a lift, since lifting one quarter of a
-     * card would tear the card.
+     * 2026-10-09: the cells used to be links. Each is now a disclosure that opens
+     * what the count is made of, in place, and the old destination is a link at
+     * the foot of what it opens, so nothing became harder to reach. The whole
+     * band is one TiltCard and only the four figures are lifted; the lists that
+     * open are flat text and would be harder to read on a moving plane.
+     *
+     * No `overflow-hidden` any more: it flattens `preserve-3d`, which is what
+     * the lifted figures stand on.
      */
-    <ul className="wx-neo-raised grid grid-cols-2 overflow-hidden rounded-2xl lg:grid-cols-4">
-      {items.map((item, i) => {
-        const Icon = item.icon;
-        return (
-          <li
-            key={item.label}
-            className={cn(
-              'border-line',
-              /* Two columns on a phone, four from lg: the dividers have to
+    <TiltCard className="wx-neo-raised rounded-2xl">
+      <ul className="grid grid-cols-2 lg:grid-cols-4">
+        {items.map((item, i) => {
+          const Icon = item.icon;
+          const isOpen = open === item.key;
+          return (
+            <li
+              key={item.key}
+              className={cn(
+                'border-line relative',
+                /* Two columns on a phone, four from lg: the dividers have to
                  follow, or they cut the band in the wrong places. */
-              i % 2 === 1 && 'border-l',
-              i >= 2 && 'border-t lg:border-t-0',
-              i === 2 && 'lg:border-l'
-            )}
-          >
-            <Link to={item.to} className="wx-neo-press flex h-full items-center gap-3 p-4">
-              <span
-                aria-hidden
-                className="wx-neo-inset grid size-9 shrink-0 place-items-center rounded-lg"
-              >
-                <Icon size={16} className={item.tone} />
-              </span>
-              <span className="flex min-w-0 flex-col gap-0.5">
-                <span className="font-brand wx-numeric text-[1.625rem] leading-none font-semibold">
-                  {item.n}
+                i % 2 === 1 && 'border-l',
+                i >= 2 && 'border-t lg:border-t-0',
+                i === 2 && 'lg:border-l'
+              )}
+            >
+              <div className="flex h-full items-center gap-3 p-4">
+                <span
+                  aria-hidden
+                  className="wx-neo-inset grid size-9 shrink-0 place-items-center rounded-lg"
+                >
+                  <Icon size={16} className={item.tone} />
                 </span>
-                <span className="text-muted text-[0.75rem] leading-[1.3]">{item.label}</span>
-              </span>
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  {/* Clicks pass through the lifted figure to the toggle's
+                      stretched hit area below; a lifted plane would otherwise
+                      swallow them. */}
+                  <TiltLift className="pointer-events-none" depth={16}>
+                    <span className="font-brand wx-numeric block text-[1.625rem] leading-none font-semibold">
+                      {item.n}
+                    </span>
+                  </TiltLift>
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    aria-controls="counts-drill"
+                    onClick={() => setOpen(isOpen ? null : item.key)}
+                    className="text-muted focus-visible:after:ring-accent flex min-h-11 items-center gap-1 text-left text-[0.75rem] leading-[1.3] after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2"
+                  >
+                    {item.label}
+                    <ChevronDown
+                      size={12}
+                      aria-hidden
+                      className={cn(
+                        'shrink-0 transition-transform duration-200',
+                        isOpen && 'rotate-180'
+                      )}
+                    />
+                  </button>
+                </span>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      {open ? (
+        <div
+          id="counts-drill"
+          role="region"
+          aria-label={items.find((x) => x.key === open)?.label}
+          className="border-line wx-pop flex flex-col gap-3 border-t p-4"
+        >
+          <DrillRows
+            items={drill(open)}
+            empty={items.find((x) => x.key === open)?.empty ?? ''}
+          />
+          <Link
+            to={items.find((x) => x.key === open)?.to ?? '/app/offers'}
+            className="text-accent focus-visible:ring-accent inline-flex min-h-11 items-center self-start rounded-md text-[0.8125rem] font-semibold hover:underline focus-visible:ring-2 focus-visible:outline-none"
+          >
+            Open the full list
+          </Link>
+        </div>
+      ) : null}
+    </TiltCard>
+  );
+}
+
+/* ------------------------------------------------------------ ad numbers -- */
+
+const DAY_MS = 86_400_000;
+const spanDays = (r: DateRange) =>
+  Math.round((Date.parse(`${r.to}T00:00:00Z`) - Date.parse(`${r.from}T00:00:00Z`)) / DAY_MS) +
+  1;
+
+/**
+ * THE WINDOW IMMEDIATELY BEFORE THIS ONE, the same number of days long.
+ *
+ * Built from `addDays` in date-range.ts, which is UTC throughout, so a window
+ * can never be a day out for a creator east of Greenwich. A range that is itself
+ * partial (this month, nine days in) is not a special case: the previous window
+ * is nine days too, so the two are always like for like.
+ */
+function previousWindow(r: DateRange): DateRange {
+  const n = spanDays(r);
+  return { from: addDays(r.from, -n), to: addDays(r.from, -1) };
+}
+
+type Delta = { kind: 'pct'; pct: number } | { kind: 'new' } | null;
+
+/**
+ * A change, or the honest absence of one.
+ *
+ * Previous zero and current positive is "new", never an infinite percentage.
+ * Both zero says nothing at all: "0% vs last month" on a figure that has never
+ * moved is a sentence with no information in it. Compared at cent precision, so
+ * float dust in a sum cannot turn nothing into "+0.00001%".
+ */
+function deltaOf(cur: number | null, prev: number | null): Delta {
+  if (cur === null || prev === null) return null;
+  const c = Math.round(cur * 100) / 100;
+  const p = Math.round(prev * 100) / 100;
+  if (p === 0) return c === 0 ? null : { kind: 'new' };
+  return { kind: 'pct', pct: ((c - p) / p) * 100 };
+}
+
+function sumDaily(rows: DailyPerformance[]) {
+  let cost = 0;
+  let revenue = 0;
+  let orders = 0;
+  for (const r of rows) {
+    cost += Number(r.cost);
+    revenue += Number(r.gross_revenue);
+    orders += Number(r.orders);
+  }
+  return { cost, revenue, orders, roi: cost > 0 ? revenue / cost : null };
+}
+
+/**
+ * THE ONE PART OF HOME WITH A TIME AXIS.
+ *
+ * The money and the counts above and below are STATE: what is agreed, paid or
+ * waiting right now. They have no "last 30 days" to be compared with, so the
+ * range deliberately does not touch them. These four figures come from the same
+ * daily ad rows My numbers reads, which is where a range means something.
+ *
+ * NO NEW QUERY SHAPE. `creator_daily_performance` already aggregates to one row
+ * per day in SQL and takes `p_from`/`p_to`, so the previous period is the same
+ * call with the window before. The browser only adds up one row per day (a few
+ * dozen, a few hundred at most) rather than fetching videos and reducing them,
+ * and the sparkline is those same rows. Both calls carry the hook's five minute
+ * `staleTime`: the data changes once a night.
+ */
+function AdNumbers() {
+  const windowQ = usePerformanceWindow();
+  const [preset, setPreset] = useState<PresetKey>('30');
+  const [custom, setCustom] = useState<DateRange | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
+
+  const range = useMemo<DateRange | null>(
+    () =>
+      preset === 'custom'
+        ? clamp(custom ?? { from: '', to: '' }, windowQ.data)
+        : presetToRange(preset, windowQ.data),
+    [preset, custom, windowQ.data]
+  );
+
+  /*
+   * PREVIOUS PERIOD, and how much of it exists. The window can reach back past
+   * the creator's first video, where there is no data to be compared with:
+   *  - wholly before it: no comparison at all ("All time" lands here, correctly);
+   *  - partly before it: compared PER DAY over the days that do exist. Comparing
+   *    30 days against 12 would call every creator's second month a triumph.
+   */
+  const floor = windowQ.data?.earliest ?? null;
+  const prev = useMemo(() => {
+    if (!range || !floor) return null;
+    const w = previousWindow(range);
+    if (w.to < floor) return null;
+    const from = w.from < floor ? floor : w.from;
+    return { range: w, covered: spanDays({ from, to: w.to }), full: spanDays(w) };
+  }, [range, floor]);
+
+  const curQ = useDailyPerformance(range?.from ?? null, range?.to ?? null);
+  const prevQ = useDailyPerformance(prev?.range.from ?? null, prev?.range.to ?? null);
+  /* Only fetched once somebody opens a card. */
+  const brandsQ = useBrandPerformance(open ? (range?.from ?? null) : null, range?.to ?? null);
+
+  const cur = useMemo(() => sumDaily(curQ.data ?? []), [curQ.data]);
+  const before = useMemo(() => {
+    if (!prev || !prevQ.data) return null;
+    const s = sumDaily(prevQ.data);
+    /* Scaled up to the current length when only part of it is on record. */
+    const k = spanDays(range!) / prev.covered;
+    return prev.covered === prev.full
+      ? s
+      : { ...s, cost: s.cost * k, revenue: s.revenue * k, orders: s.orders * k };
+  }, [prev, prevQ.data, range]);
+
+  /* Nothing to say for a creator with no ad data at all. */
+  if (windowQ.isPending) return <div className="wx-skeleton h-36 rounded-xl" />;
+  if (!range || !windowQ.data || windowQ.data.videos === 0) return null;
+
+  const rows = curQ.data ?? [];
+  const currency = rows.find((r) => r.currency)?.currency ?? null;
+  const fmt = (n: number) => money(Math.round(n * 100) / 100, currency ?? 'USD');
+  const partial = Boolean(prev && prev.covered < prev.full);
+  const days = spanDays(range);
+  const vs = prev
+    ? partial
+      ? `vs the ${prev.covered} days before, per day`
+      : `vs previous ${days} ${days === 1 ? 'day' : 'days'}`
+    : null;
+
+  const kpis: KpiProps[] = [
+    {
+      id: 'gmv',
+      label: 'GMV',
+      value: fmt(cur.revenue),
+      delta: deltaOf(cur.revenue, before?.revenue ?? null),
+      series: rows.map((r) => Number(r.gross_revenue)),
+      spark: 'text-accent',
+      good: 'up',
+      metric: (b) => fmt(Number(b.gmv)),
+    },
+    {
+      id: 'spend',
+      label: 'Ad spend',
+      value: fmt(cur.cost),
+      delta: deltaOf(cur.cost, before?.cost ?? null),
+      series: rows.map((r) => Number(r.cost)),
+      spark: 'text-muted',
+      /* More spend is neither good nor bad on its own, so it is never coloured
+         as if it were. */
+      good: 'neutral',
+      metric: (b) => fmt(Number(b.spend)),
+    },
+    {
+      id: 'orders',
+      label: 'Orders',
+      value: String(cur.orders),
+      delta: deltaOf(cur.orders, before?.orders ?? null),
+      series: rows.map((r) => Number(r.orders)),
+      spark: 'text-muted',
+      good: 'up',
+      metric: (b) => String(b.orders),
+    },
+    {
+      id: 'roi',
+      label: 'ROI',
+      value: cur.roi === null ? '-' : `${cur.roi.toFixed(2)}x`,
+      delta: deltaOf(cur.roi, before?.roi ?? null),
+      series: rows.map((r) =>
+        Number(r.cost) > 0 ? Number(r.gross_revenue) / Number(r.cost) : 0
+      ),
+      spark: 'text-muted',
+      good: 'up',
+      metric: (b) => (b.roi === null ? '-' : `${Number(b.roi).toFixed(2)}x`),
+    },
+  ];
+
+  return (
+    <section aria-label="Your ad numbers" className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-0.5">
+        <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
+          Your ad numbers
+        </h2>
+        <DateRangePicker
+          preset={preset}
+          range={range}
+          window={windowQ.data}
+          onChange={(p, r) => {
+            setPreset(p);
+            setCustom(p === 'custom' ? r : null);
+            setOpen(null);
+          }}
+        />
+      </div>
+
+      {curQ.isPending ? (
+        <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="wx-skeleton h-32 rounded-xl" />
+          ))}
+        </div>
+      ) : curQ.isError ? (
+        <p className="text-muted wx-neo-inset rounded-xl p-4 text-[0.8125rem]">
+          We could not load your ad numbers just now. Refresh in a moment.
+        </p>
+      ) : (
+        <div className="grid grid-cols-2 items-start gap-3.5 lg:grid-cols-4">
+          {kpis.map((k) => (
+            <Kpi
+              key={k.id}
+              {...k}
+              vs={vs}
+              open={open === k.id}
+              onToggle={() => setOpen(open === k.id ? null : k.id)}
+              brands={brandsQ.data}
+              brandsPending={brandsQ.isFetching && !brandsQ.data}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+interface KpiProps {
+  id: string;
+  label: string;
+  value: string;
+  delta: Delta;
+  series: number[];
+  spark: string;
+  /** Which direction is good news, or neither. Decides the delta's colour. */
+  good: 'up' | 'neutral';
+  /** How a brand row shows this metric. */
+  metric: (b: BrandPerformance) => string;
+}
+
+function Kpi({
+  id: kpiId,
+  label,
+  value,
+  delta,
+  vs,
+  series,
+  spark,
+  good,
+  metric,
+  open,
+  onToggle,
+  brands,
+  brandsPending,
+}: KpiProps & {
+  vs: string | null;
+  open: boolean;
+  onToggle: () => void;
+  brands: BrandPerformance[] | undefined;
+  brandsPending: boolean;
+}) {
+  const id = `kpi-${kpiId}`;
+  return (
+    <TiltCard className="wx-neo-raised rounded-xl">
+      <div className="relative flex flex-col gap-1.5 p-4">
+        {/* The toggle is the label; its hit area is stretched over the card so
+            the whole KPI is clickable while the control stays a real button
+            with a real name. */}
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={id}
+          onClick={onToggle}
+          className="text-muted focus-visible:after:ring-accent flex min-h-11 items-center justify-between gap-2 text-left text-[0.6875rem] font-semibold tracking-[0.12em] uppercase after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2"
+        >
+          <span>
+            {label}
+            <span className="sr-only">, see which brands it came from</span>
+          </span>
+          <ChevronDown
+            size={14}
+            aria-hidden
+            className={cn('shrink-0 transition-transform duration-200', open && 'rotate-180')}
+          />
+        </button>
+
+        <TiltLift className="pointer-events-none">
+          <p className="font-display wx-numeric text-[clamp(1.25rem,2.4vw,1.625rem)] leading-none font-bold break-words">
+            {value}
+          </p>
+        </TiltLift>
+
+        <DeltaLine delta={delta} vs={vs} good={good} />
+        <Spark values={series} className={spark} />
+      </div>
+
+      {open ? (
+        <div
+          id={id}
+          role="region"
+          aria-label={`${label} by brand`}
+          className="border-line wx-pop border-t p-4"
+        >
+          {brandsPending ? (
+            <div className="wx-skeleton h-12 rounded-md" />
+          ) : !brands || brands.length === 0 ? (
+            <p className="text-muted text-[0.8125rem] leading-relaxed">
+              Nothing to split by brand in this period.
+            </p>
+          ) : (
+            <DrillRows
+              empty=""
+              items={brands.map((b) => ({
+                id: b.brand_id ?? 'unmatched',
+                top: 'Brand',
+                title: b.brand_name ?? 'Not matched to a brand',
+                figure: metric(b),
+              }))}
+            />
+          )}
+        </div>
+      ) : null}
+    </TiltCard>
+  );
+}
+
+/** "+24% vs previous 30 days", or "new", or nothing. Never colour alone. */
+function DeltaLine({
+  delta,
+  vs,
+  good,
+}: {
+  delta: Delta;
+  vs: string | null;
+  good: 'up' | 'neutral';
+}) {
+  if (!delta || !vs) return null;
+
+  if (delta.kind === 'new') {
+    return (
+      <p className="text-muted flex flex-wrap items-center gap-x-1.5 text-[0.75rem] leading-[1.3]">
+        <span className="text-accent font-semibold">New</span>
+        <span>{vs}</span>
+      </p>
+    );
+  }
+
+  const rounded = Math.round(delta.pct);
+  const up = rounded > 0;
+  const flat = rounded === 0;
+  const Icon = flat ? Minus : up ? TrendingUp : TrendingDown;
+  const tone = flat || good === 'neutral' ? 'text-muted' : up ? 'text-success' : 'text-danger';
+  const shown = Math.min(Math.abs(rounded), 999);
+
+  return (
+    <p className="text-muted flex flex-wrap items-center gap-x-1.5 text-[0.75rem] leading-[1.3]">
+      <span className={cn('wx-numeric inline-flex items-center gap-1 font-semibold', tone)}>
+        <Icon size={12} aria-hidden />
+        <span className="sr-only">{flat ? 'No change' : up ? 'Up' : 'Down'}</span>
+        {flat ? '0%' : `${up ? '+' : '-'}${shown}%${Math.abs(rounded) > 999 ? '+' : ''}`}
+      </span>
+      <span>{vs}</span>
+    </p>
+  );
+}
+
+/**
+ * THE SHAPE OF A FIGURE OVER THE CHOSEN RANGE.
+ *
+ * Hand-drawn SVG rather than a piece of `PerformanceChart`: that component is a
+ * full two-series chart with axes, a legend and a tooltip, and a 28px line has
+ * none of those. `aria-hidden` because it is a hint at a trend and never the
+ * only way to read a value; every number it draws is printed above it. The
+ * stroke is `currentColor`, so the colour is whatever token the caller's text
+ * class names, and it follows both themes.
+ */
+function Spark({ values, className }: { values: number[]; className?: string }) {
+  if (values.length < 2) return null;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min;
+  const points = values
+    .map((v, i) => {
+      const x = (i / (values.length - 1)) * 100;
+      const y = span === 0 ? 14 : 25 - ((v - min) / span) * 22;
+      return `${x.toFixed(2)},${y.toFixed(2)}`;
+    })
+    .join(' ');
+
+  return (
+    <svg
+      aria-hidden
+      focusable="false"
+      viewBox="0 0 100 28"
+      preserveAspectRatio="none"
+      className={cn('mt-1 h-7 w-full overflow-visible', className)}
+    >
+      <polyline
+        points={points}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.75}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
   );
 }
 

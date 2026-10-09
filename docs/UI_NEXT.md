@@ -100,7 +100,17 @@ something.
 Interactive is only worth it when the interaction answers a question. Ranked by
 value per unit of work.
 
-### 2.1 Time range on everything (highest value)
+### 2.1 Time range on everything (highest value) — BUILT, with a correction
+
+> **What this section got wrong.** "Every figure on the page becomes a
+> comparison the moment a range exists" is not true of Home. Most of it —
+> the hero money, the counts band, the pipeline — is a **current-state
+> snapshot** (agreed, paid, waiting), which has no time axis to compare across.
+> Only the ad numbers (GMV, spend, orders, ROI) are daily rows.
+>
+> So the range drives a new **"Your ad numbers"** band rather than the whole
+> page. The lesson generalises: before promising a comparison, check the figure
+> is a _series_ and not a _balance_.
 
 `DateRangePicker` already exists, is well tested, and is used on My numbers. Put
 it on Home. Every figure on the page becomes a comparison the moment a range
@@ -138,11 +148,21 @@ the hovered date, and make the legend a toggle. On touch there is no hover, so
 the crosshair must follow a drag — that is the whole reason this is listed as
 work rather than a one-liner.
 
-### 2.5 Goal and pace
+### 2.5 Goal and pace — BUILT, with a correction
 
-If a creator has a retainer of 10 videos, show progress against it _and_ the
-pace needed to finish on time. The data exists (`JobProgress`). This turns the
-dashboard from a report into a prompt.
+> **What this section got wrong.** "The pace needed to finish on time" cannot be
+> computed, because **nothing in the schema carries a deadline** — not offers,
+> not applications, not `job_progress`. A "needed pace" with no due date would
+> be invented, and inventing a number on the one screen whose whole promise is
+> transparency is the worst possible place to do it.
+>
+> So it reports the creator's **actual** pace and the finish date that pace
+> implies: "2.1 a week so far: at that pace the last one is approved around
+> 3 Nov." Only approved videos count, it stays quiet until a job is three days
+> old, and it says nothing once the job is done.
+>
+> **A needed pace needs a deadline on offers first.** That is a schema change,
+> so it belongs in `PARKED.md`, not here.
 
 ---
 

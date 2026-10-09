@@ -237,7 +237,7 @@ export function ApplyForm() {
       // Warm the lazily loaded validator and database client as soon as anyone
       // touches the form, so the first submit never waits on a download.
       onFocus={() => void warm()}
-      className="bg-surface-1 rounded-2xl p-6 shadow-lg sm:p-7"
+      className="wx-neo-raised rounded-2xl p-6 sm:p-7"
     >
       <div className="flex items-center gap-4">
         <h2 className="text-muted font-mono text-[0.6875rem] font-medium tracking-[0.16em] uppercase">

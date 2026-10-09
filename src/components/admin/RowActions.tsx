@@ -146,7 +146,7 @@ export function RowActions({
               role="menu"
               aria-label={`Actions for @${handle}`}
               style={{ top: pos.top, right: pos.right }}
-              className="bg-surface-1 fixed z-50 w-56 overflow-hidden rounded-xl py-1 shadow-lg"
+              className="wx-neo-raised fixed z-50 w-56 overflow-hidden rounded-xl py-1"
             >
               <a
                 role="menuitem"

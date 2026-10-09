@@ -156,7 +156,7 @@ function BrandPicker({ onClose }: { onClose: () => void }) {
       />
       <div
         ref={panelRef}
-        className="bg-surface-1 relative max-h-[100dvh] w-full max-w-md overflow-y-auto rounded-t-xl p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-xl"
+        className="wx-neo-raised relative max-h-[100dvh] w-full max-w-md overflow-y-auto rounded-t-xl p-6 sm:max-h-[calc(100dvh-3rem)] sm:rounded-xl"
       >
         <div className="flex items-start justify-between gap-4">
           <div>

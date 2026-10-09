@@ -49,7 +49,7 @@ export function ContentCard({
   const tone = TONE[meta.tone];
 
   return (
-    <article className="bg-surface-1 flex h-full flex-col gap-3 rounded-xl p-3 shadow-md transition-shadow duration-300 hover:shadow-lg">
+    <article className="wx-neo-raised ease-brand flex h-full flex-col gap-3 rounded-xl p-3 transition-transform duration-300 hover:-translate-y-0.5">
       <VideoThumb row={row} onPlay={onPlay} />
 
       <div className="flex min-w-0 flex-1 flex-col gap-2 px-1 pb-1">

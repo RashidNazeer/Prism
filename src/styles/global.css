@@ -621,6 +621,102 @@
 }
 
 /*
+ * DEPTH ON A CARD. The CSS half of `src/components/ui/TiltCard.tsx`, which
+ * explains the reasoning; this is the paint.
+ *
+ * THE PERSPECTIVE IS ON THE CARD, NOT A WRAPPER. Putting it on a shared parent
+ * would give every card in a grid ONE vanishing point, so cards at the edges
+ * would lean differently from cards in the middle for no reason the eye can
+ * justify. Per-card perspective means each one is lit and viewed on its own
+ * terms, which is also how the neomorphic shadows already work.
+ *
+ * `transform-style: preserve-3d` is what lets `wx-tilt-lift` sit on its own
+ * plane rather than being flattened back onto the card.
+ */
+@utility wx-tilt {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  --tilt-mx: 50%;
+  --tilt-my: 50%;
+  --tilt-glow: 0;
+
+  position: relative;
+  transform: perspective(1000px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transform-style: preserve-3d;
+  /* Slower on the way back than on the way in: the return is the card settling,
+     and settling that matches the chase reads as mechanical. */
+  transition: transform 320ms var(--wx-ease);
+
+  /*
+   * THE MOVING HIGHLIGHT, and the one rule the whole material depends on.
+   *
+   * The light in this product comes from the top-left, always — every neo
+   * shadow is built on it. So this is NOT a spotlight that follows the cursor
+   * wherever it goes: it is the existing highlight responding to the card
+   * turning under a fixed light. It is biased towards the top-left corner and
+   * only drifts within that quadrant, which is why the figures below are offset
+   * rather than centred on the pointer.
+   *
+   * Get this wrong and it is not just this card that looks off — it disagrees
+   * with every static card beside it.
+   */
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(
+      60% 60% at calc(var(--tilt-mx) * 0.45 + 12%) calc(var(--tilt-my) * 0.45 + 10%),
+      rgb(255 255 255 / 0.22),
+      transparent 70%
+    );
+    opacity: var(--tilt-glow);
+    transition: opacity 320ms var(--wx-ease);
+  }
+}
+
+/* The layer that actually reads as 3D. See TiltCard.tsx. */
+@utility wx-tilt-lift {
+  --tilt-depth: 20px;
+  transform: translateZ(var(--tilt-depth));
+  transform-style: preserve-3d;
+}
+
+/*
+ * OFF WHERE IT CANNOT BE USED, AND THAT IS NOT MERELY TIDINESS.
+ *
+ * `TiltCard` already declines to attach its listener under reduced motion or on
+ * a coarse pointer, so the rotation variables stay at 0 — but leaving the CSS
+ * in place is NOT harmless, which a measurement caught:
+ *
+ *   coarse pointer   x=0deg  y=0deg  glow=0   transform=matrix3d  lift=raised
+ *
+ * At zero rotation the card still resolves to a `matrix3d`, which promotes it
+ * to its own compositing layer for nothing, and `translateZ(20px)` under a
+ * perspective moves the lifted figure CLOSER TO THE VIEWER — so it renders
+ * measurably larger. On a phone, where none of this can ever be triggered, the
+ * only visible effect was a silently upscaled number.
+ *
+ * So the declarations are withdrawn rather than neutralised, and the queries
+ * mirror the component's own gating exactly.
+ */
+@media (prefers-reduced-motion: reduce), (hover: none), (pointer: coarse) {
+  .wx-tilt {
+    transform: none;
+    transition: none;
+    transform-style: flat;
+  }
+  .wx-tilt::after {
+    display: none;
+  }
+  .wx-tilt-lift {
+    transform: none;
+    transform-style: flat;
+  }
+}
+
+/*
  * THE SAFETY NET FOR THE BORDERLESS MATERIAL.
  *
  * Windows High Contrast does not dim a box-shadow, it DISCARDS it. With the

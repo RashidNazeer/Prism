@@ -122,7 +122,7 @@ export function ReviewDialog({
         // Bottom sheet on a phone, centred card from `sm` up. Capped to the
         // viewport and scrolling inside itself, so every part of it stays
         // reachable however short the screen is.
-        className="bg-surface-1 relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl p-6 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
+        className="wx-neo-raised relative max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl p-6 sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <h2 className="text-lg font-bold">
