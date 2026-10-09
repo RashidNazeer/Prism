@@ -248,14 +248,30 @@ export function AppShell({ children }: { children: ReactNode }) {
           corner was the last seam in the shell.
 
           So the bar floats too, on the same material, with the same gutter and
-          the same radius. `top-3` rather than `top-0` keeps the gutter while it
-          is stuck. It is opaque — `wx-neo-raised` paints `--wx-surface-1` —
-          which is what stops content showing through as it scrolls under, so
-          the old `backdrop-blur-xl` is gone with it. That is worth having: a
-          `backdrop-filter` anywhere above the vendored admin app has broken its
-          layout three times, and this header is the nearest ancestor to it.
+          the same radius. It is opaque — `wx-neo-raised` paints
+          `--wx-surface-1` — which is what stops content showing through as it
+          scrolls under, so the old `backdrop-blur-xl` is gone with it. That is
+          worth having: a `backdrop-filter` anywhere above the vendored admin
+          app has broken its layout three times, and this header is the nearest
+          ancestor to it.
+
+          `top-0`, NOT `top-3`, AND THAT IS A BUG FIX. This used to stick at
+          `top-3` to keep the gutter while stuck, on the reasoning that an
+          opaque card stops content showing through. It does stop it showing
+          THROUGH. It does nothing about the 12px window the offset leaves
+          ABOVE the card, and page content scrolled straight across it: a strip
+          of live, half-cut text sliding along the top of the screen on every
+          screen in the product. Rashid caught it on Reporting, where "All
+          Brands" and the month nav were sliced in half along that line, but it
+          was never about Reporting. Reproduced on My numbers before touching
+          anything, by asking the browser what it painted six pixels above the
+          card: page content, at every scroll position past the first.
+
+          `mt-3` still gives the gutter at rest, which is where the floating
+          card is actually looked at. Once you scroll, the card meets the top
+          edge and there is no window left to leak through.
         */}
-        <header className="wx-neo-raised sticky top-3 z-40 mx-3 mt-3 flex h-14 shrink-0 items-center justify-between gap-3 rounded-2xl px-4 sm:px-5">
+        <header className="wx-neo-raised sticky top-0 z-40 mx-3 mt-3 flex h-14 shrink-0 items-center justify-between gap-3 rounded-2xl px-4 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
             {/* The mark stays on a phone, where there is no rail to carry it.
                 On desktop the rail has it, and it is the collapse control. */}
