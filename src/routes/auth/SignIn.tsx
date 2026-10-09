@@ -101,7 +101,9 @@ export function SignIn() {
           </Field>
         </div>
 
-        <div className="mt-3 text-right">
+        {/* Centred, not right aligned. It was the one thing in the card still
+            pushed to an edge, and on a centred card that reads as a mistake. */}
+        <div className="mt-3 text-center">
           <Link
             to="/forgot-password"
             className="text-muted hover:text-accent inline-flex items-center text-[0.8125rem] underline-offset-4 hover:underline max-lg:min-h-11 pointer-coarse:min-h-11"
