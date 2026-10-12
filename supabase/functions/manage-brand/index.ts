@@ -1,4 +1,4 @@
-/**
+﻿/**
  * manage-brand
  * ---------------------------------------------------------------------------
  * Create and edit brands, their story, their products, and the offers inside
@@ -188,8 +188,11 @@ const BrandAboutBody = z.object({
    * input to reject.
    */
   theme: BrandTheme.nullish(),
+  // The founder, shown in the hub introduction. All optional.
+  founderName: z.string().trim().max(120).nullish(),
+  founderRole: z.string().trim().max(120).nullish(),
+  founderNote: z.string().trim().max(1000).nullish(),
 });
-
 const percent = z
   .number()
   .finite()
@@ -224,6 +227,26 @@ const DeleteProductBody = z.object({
   productId: z.uuid(),
 });
 
+/** One line of a brief's hooks, do's or don'ts. */
+const briefLines = z.array(z.string().trim().max(280, 'Keep each line under 280 characters')).max(10, 'Ten lines at most');
+
+const BriefBody = z.object({
+  action: z.literal('brief.save'),
+  briefId: z.uuid().nullish(),
+  brandId: z.uuid('A brief must belong to a brand'),
+  title: z.string().trim().min(1, 'A brief needs a title').max(120),
+  whatToMake: z.string().trim().max(2000).nullish(),
+  hooks: briefLines.default([]),
+  dos: briefLines.default([]),
+  donts: briefLines.default([]),
+  isActive: z.boolean().default(true),
+});
+
+const DeleteBriefBody = z.object({
+  action: z.literal('brief.delete'),
+  briefId: z.uuid(),
+});
+
 const Body = z.discriminatedUnion('action', [
   BrandBody,
   BrandAboutBody,
@@ -231,6 +254,8 @@ const Body = z.discriminatedUnion('action', [
   DeleteOfferBody,
   ProductBody,
   DeleteProductBody,
+  BriefBody,
+  DeleteBriefBody,
 ]);
 
 /** SQLSTATE from the database functions to something HTTP shaped. */
@@ -381,6 +406,26 @@ Deno.serve(async (req) => {
       p_brand_color: input.brandColor ?? null,
       p_hero_url: input.heroUrl ?? null,
       p_theme: input.theme ?? null,
+      p_founder_name: input.founderName ?? null,
+      p_founder_role: input.founderRole ?? null,
+      p_founder_note: input.founderNote ?? null,
+    });
+  } else if (input.action === 'brief.save') {
+    rpc = await admin.rpc('save_brand_brief', {
+      p_actor_id: actor.id,
+      p_brand_id: input.brandId,
+      p_title: input.title,
+      p_what_to_make: input.whatToMake ?? null,
+      p_hooks: input.hooks,
+      p_dos: input.dos,
+      p_donts: input.donts,
+      p_is_active: input.isActive,
+      p_brief_id: input.briefId ?? null,
+    });
+  } else if (input.action === 'brief.delete') {
+    rpc = await admin.rpc('delete_brand_brief', {
+      p_actor_id: actor.id,
+      p_brief_id: input.briefId,
     });
   } else if (input.action === 'product.save') {
     rpc = await admin.rpc('save_product', {

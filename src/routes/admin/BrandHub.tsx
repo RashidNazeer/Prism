@@ -4,27 +4,23 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  Gift,
-  Info,
-  LayoutDashboard,
-  Megaphone,
   Pencil,
-  Percent,
   Plus,
   Search,
-  Tag,
   Ticket,
   Trash2,
-  Trophy,
-  Users,
 } from 'lucide-react';
 import { BrandAbout } from '@/components/admin/BrandAbout';
+import { BrandBriefs } from '@/components/admin/BrandBriefs';
 import { BrandContests } from '@/components/admin/BrandContests';
 import { BrandCreators } from '@/components/admin/BrandCreators';
 import { BrandDialog } from '@/components/admin/BrandDialog';
+import { BrandLeaderboard } from '@/components/admin/BrandLeaderboard';
+import { BrandProducts } from '@/components/admin/BrandProducts';
 import { OfferDialog } from '@/components/admin/OfferDialog';
-import { FilterBar } from '@/components/layout/FilterBar';
+import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { Button, ButtonLink } from '@/components/ui/Button';
+import { DataError } from '@/components/ui/DataState';
 import { Input, Select } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
 import { useManageBrand } from '@/lib/admin/useManageBrand';
@@ -58,28 +54,40 @@ const isOfferStatusFilter = (v: string | null): v is BrandOfferStatusFilter =>
  * Everything that belongs to one brand lives behind these tabs.
  *
  * Two layout rules from CLAUDE.md are load bearing here. The brand's facts sit
- * under Overview rather than stacked above the work, and the hub OPENS on
- * Offers, because that is what somebody came to a brand to do. Landing on a
- * summary would push the offers below a screenful of things they already know.
+ * under Overview, last, rather than stacked above the work, and the hub OPENS
+ * on About, the first step of the fixed structure every hub shares. The tabs
+ * follow the order a creator meets the hub: introduction and founder, products
+ * and their commission, briefs, offers, contests, then its creators and
+ * leaderboard (read only).
  */
 const SECTIONS = [
-  { key: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { key: 'offers', label: 'Offers', icon: Tag },
-  { key: 'about', label: 'About', icon: Info },
-  { key: 'campaigns', label: 'Campaigns', icon: Megaphone, soon: 'Next' },
-  { key: 'contests', label: 'Contests', icon: Trophy },
-  { key: 'promotions', label: 'Promotions', icon: Gift, soon: 'Later' },
-  { key: 'discounts', label: 'Discounts', icon: Percent, soon: 'Later' },
-  { key: 'creators', label: 'Creators', icon: Users },
+  { key: 'about', label: 'About' },
+  { key: 'products', label: 'Products' },
+  { key: 'briefs', label: 'Briefs' },
+  { key: 'offers', label: 'Offers' },
+  { key: 'contests', label: 'Contests' },
+  { key: 'creators', label: 'Creators' },
+  { key: 'overview', label: 'Overview' },
 ] as const;
 
-const BUILT = new Set(['overview', 'offers', 'about', 'creators', 'contests']);
+type SectionKey = (typeof SECTIONS)[number]['key'];
+
+const isSection = (v: string | null): v is SectionKey => SECTIONS.some((s) => s.key === v);
 
 export function BrandHub() {
   const { id } = useParams<{ id: string }>();
   const [params, setParams] = useSearchParams();
-  const requested = params.get('section') ?? 'offers';
-  const section = BUILT.has(requested) ? requested : 'offers';
+  /*
+   * The hub OPENS on About, the first step of the fixed structure every hub
+   * shares. Offers used to be the default because it was the busiest tab; the
+   * editor now reads in the order a creator meets the hub, so the first thing a
+   * manager sees is the first thing a creator does.
+   */
+  const rawSection = params.get('section');
+  const section: SectionKey = isSection(rawSection) ? rawSection : 'about';
+  // Read once, then narrow, like the filters below.
+  const rawView = params.get('view');
+  const peopleView: 'board' | 'roster' = rawView === 'roster' ? 'roster' : 'board';
 
   // Read once, then narrow: a second `params.get` is a fresh `string | null`
   // as far as TypeScript is concerned.
@@ -90,8 +98,13 @@ export function BrandHub() {
     page: Math.max(1, Number(params.get('page') ?? '1') || 1),
   };
 
-  const { data: brand, isLoading, isError, error } = useBrand(id);
-  const { data: offerPage, isLoading: offersLoading } = useOffers(id, offerFilters);
+  const { data: brand, isLoading, isError, error, refetch } = useBrand(id);
+  const {
+    data: offerPage,
+    isLoading: offersLoading,
+    isError: offersFailed,
+    refetch: refetchOffers,
+  } = useOffers(id, offerFilters);
 
   const [editingBrand, setEditingBrand] = useState(false);
   const [offerDialog, setOfferDialog] = useState<{ offer?: Offer } | null>(null);
@@ -105,7 +118,7 @@ export function BrandHub() {
    */
   const go = (key: string) => {
     const p = new URLSearchParams();
-    if (key !== 'offers') p.set('section', key);
+    if (key !== 'about') p.set('section', key);
     setParams(p, { replace: true });
   };
 
@@ -124,30 +137,43 @@ export function BrandHub() {
   if (isLoading) {
     return (
       <>
-        <div className="max-w-3xl space-y-4">
+        <div className="space-y-4">
           <div className="wx-skeleton h-8 w-56 rounded" />
-          <div className="wx-skeleton h-10 w-full rounded" />
+          <div className="wx-skeleton h-12 w-full rounded-lg" />
           <div className="wx-skeleton h-36 rounded-xl" />
         </div>
       </>
     );
   }
 
-  if (isError || !brand) {
+  if (isError) {
     return (
-      <>
-        <div className="bg-surface-1 max-w-lg rounded-xl p-8 text-center shadow-md">
-          <p className="font-semibold">
-            {isError ? 'That brand would not load' : 'No such brand'}
-          </p>
-          <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
-            {(error as Error)?.message ?? 'It may have been removed. Nothing else is affected.'}
-          </p>
-          <ButtonLink to="/admin/brands" variant="secondary" size="sm" className="mt-5">
+      <div className="grid gap-4">
+        <DataError
+          title="That brand would not load"
+          body={(error as Error)?.message ?? 'Something went wrong. Nothing has been changed.'}
+          onRetry={() => refetch()}
+        />
+        <div>
+          <ButtonLink to="/admin/brands" variant="secondary" size="sm">
             Back to brands
           </ButtonLink>
         </div>
-      </>
+      </div>
+    );
+  }
+
+  if (!brand) {
+    return (
+      <div className="bg-surface-1 rounded-xl p-8 text-center shadow-md">
+        <p className="font-semibold">No such brand</p>
+        <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
+          It may have been removed. Nothing else is affected.
+        </p>
+        <ButtonLink to="/admin/brands" variant="secondary" size="sm" className="mt-5">
+          Back to brands
+        </ButtonLink>
+      </div>
     );
   }
 
@@ -174,7 +200,7 @@ export function BrandHub() {
           <img
             src={brand.logo_url}
             alt=""
-            className="border-line size-8 shrink-0 rounded-full border object-cover"
+            className="size-8 shrink-0 rounded-full object-cover shadow-md"
           />
         ) : null}
 
@@ -187,90 +213,74 @@ export function BrandHub() {
             Retired
           </span>
         ) : null}
-
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => setEditingBrand(true)}
-          // 44px, because sm is 36px and this is reachable on a phone.
-          className="ml-auto min-h-[44px] shrink-0"
-        >
-          <Pencil size={14} aria-hidden />
-          Edit brand
-        </Button>
       </div>
 
       {/* ----------------------------------------------------------- tabs -- */}
       {/*
-        NOT a `FilterTabs`, on purpose. These are the record's sections, not a
-        filter on the list below, and three things here cannot survive the trip:
-        the unbuilt sections are `disabled` so nobody lands on an empty page,
-        they carry a "Next"/"Later" badge saying when they arrive, and each has
-        an icon. `FilterTab` has no room for any of that. The precedent is
-        `ContestsHeader`, which keeps its own section nav as a row of its own for
-        the same reason. The filter row that DOES belong in a `FilterBar` is the
-        one inside the Offers tab, below.
+        The record's sections, in the order a creator meets them: the
+        introduction, products, briefs, offers and contests, then the creators.
+        Overview, the reference facts a brand manager rarely needs, comes last.
+
+        One row in the shared `FilterBar`, with `FilterTabs` inside it, so it
+        cannot drift from the screens Rashid approved. It wraps rather than
+        scrolls at 375px, so no section hides behind an edge. The hub used to
+        carry three greyed-out tabs for work that did not exist yet; they are
+        gone, because a fixed structure has nothing in it that is "coming".
       */}
-      <div className="-mx-4 mt-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-        <div
-          role="tablist"
-          aria-label="Brand hub sections"
-          className="border-line inline-flex min-w-full gap-1 border-b pb-px sm:min-w-0"
-        >
-          {SECTIONS.map((s) => {
-            const active = s.key === section;
-            const built = BUILT.has(s.key);
-            return (
-              <button
-                key={s.key}
-                role="tab"
-                type="button"
-                aria-selected={active}
-                disabled={!built}
-                onClick={() => go(s.key)}
-                className={cn(
-                  // min-h-[44px] is 44px, the smallest thing a thumb should have to
-                  // hit. These were 41px, which the contests suite caught.
-                  'flex min-h-[44px] shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-[0.875rem] font-medium transition-colors duration-200',
-                  active
-                    ? 'border-accent text-accent'
-                    : built
-                      ? 'text-muted hover:text-text border-transparent'
-                      : 'text-faint cursor-default border-transparent'
-                )}
-              >
-                <s.icon size={15} aria-hidden />
-                {s.label}
-                {'soon' in s ? (
-                  <span className="wx-neo-raised-sm text-faint rounded-full px-1.5 py-0.5 font-mono text-[0.5625rem] tracking-[0.1em] uppercase">
-                    {s.soon}
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <FilterBar className="mt-4">
+        <FilterTabs label="Brand hub sections">
+          {SECTIONS.map((s) => (
+            <FilterTab key={s.key} active={s.key === section} onClick={() => go(s.key)}>
+              {s.label}
+            </FilterTab>
+          ))}
+        </FilterTabs>
+      </FilterBar>
 
       {/* -------------------------------------------------------- content -- */}
-      {section === 'overview' ? (
-        <Overview brand={brand} />
-      ) : section === 'about' ? (
+      {section === 'about' ? (
         <BrandAbout brand={brand} />
-      ) : section === 'creators' ? (
-        <BrandCreators brandId={brand.id} brandName={brand.name} />
-      ) : section === 'contests' ? (
-        <BrandContests brandId={brand.id} brandName={brand.name} />
-      ) : (
+      ) : section === 'products' ? (
+        <BrandProducts brandId={brand.id} brandName={brand.name} />
+      ) : section === 'briefs' ? (
+        <BrandBriefs brandId={brand.id} brandName={brand.name} />
+      ) : section === 'offers' ? (
         <Offers
           offers={offerPage?.rows ?? []}
           total={offerPage?.total ?? 0}
           filters={offerFilters}
           loading={offersLoading}
+          failed={offersFailed}
+          onRetry={() => void refetchOffers()}
           onSet={set}
           onNew={() => setOfferDialog({})}
           onEdit={(offer) => setOfferDialog({ offer })}
         />
+      ) : section === 'contests' ? (
+        <BrandContests brandId={brand.id} brandName={brand.name} />
+      ) : section === 'creators' ? (
+        <>
+          <FilterBar className="mt-3">
+            <FilterTabs label="Creators view">
+              <FilterTab active={peopleView === 'board'} onClick={() => set({ view: '' })}>
+                Leaderboard
+              </FilterTab>
+              <FilterTab
+                active={peopleView === 'roster'}
+                onClick={() => set({ view: 'roster' })}
+              >
+                Who is on it
+              </FilterTab>
+            </FilterTabs>
+          </FilterBar>
+          {peopleView === 'board' ? (
+            <BrandLeaderboard brandId={brand.id} brandName={brand.name} />
+          ) : (
+            <BrandCreators brandId={brand.id} brandName={brand.name} />
+          )}
+        </>
+      ) : (
+        <Overview brand={brand} onEdit={() => setEditingBrand(true)} />
       )}
 
       {editingBrand ? (
@@ -298,7 +308,7 @@ export function BrandHub() {
  * spend against budget, live campaigns. Keeping them here is what stops the
  * Offers tab turning back into a wall of things you already know.
  */
-function Overview({ brand }: { brand: Brand }) {
+function Overview({ brand, onEdit }: { brand: Brand; onEdit: () => void }) {
   /*
    * Counts come from the DATABASE now, not from filtering the offers array.
    * That array is one page since the Offers tab started paging, so measuring it
@@ -312,7 +322,17 @@ function Overview({ brand }: { brand: Brand }) {
   const budget = budgetOf(brand);
 
   return (
-    <div className="mt-6 grid max-w-4xl gap-6">
+    <div className="mt-5 grid gap-5">
+      {/* The brand's own facts live behind this one button: name, store,
+          client, budget and whether it is retired. It is here, not in the
+          header, because it is reference data and the hub opens on the work. */}
+      <div className="flex justify-end">
+        <Button variant="secondary" onClick={onEdit} className="min-h-[44px] sm:min-h-0">
+          <Pencil size={14} aria-hidden />
+          Edit brand details
+        </Button>
+      </div>
+
       {/* Budget first, because it is the only fact here that changes on its own
           and the only one with a consequence. Everything below is reference. */}
       <div className="bg-surface-1 rounded-xl px-5 py-4 shadow-md">
@@ -359,7 +379,6 @@ function Overview({ brand }: { brand: Brand }) {
           that does not divide evenly leaves a visible empty block at the end.
           This grid grows as the hub gains facts, so it must not care. */}
       <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <Fact label="Store id" value={brand.store_id} mono />
         <Fact label="Client" value={brand.client_name || 'Not set'} />
         <Fact
           label="Budget allocated"
@@ -387,10 +406,6 @@ function Overview({ brand }: { brand: Brand }) {
         />
         <Fact label="Status" value={brand.is_active ? 'Active' : 'Retired'} />
       </dl>
-
-      <p className="text-faint text-[0.8125rem] leading-relaxed">
-        Campaigns, contests and promotions land here as those parts of the hub are built.
-      </p>
     </div>
   );
 }
@@ -579,6 +594,8 @@ function Offers({
   total,
   filters,
   loading,
+  failed,
+  onRetry,
   onSet,
   onNew,
   onEdit,
@@ -587,6 +604,8 @@ function Offers({
   total: number;
   filters: BrandOfferFilters;
   loading: boolean;
+  failed: boolean;
+  onRetry: () => void;
   onSet: (patch: Record<string, string>) => void;
   onNew: () => void;
   onEdit: (offer: Offer) => void;
@@ -663,6 +682,13 @@ function Offers({
             <li key={i} className="wx-skeleton h-36 rounded-xl" />
           ))}
         </ul>
+      ) : failed ? (
+        <DataError
+          className="mt-4"
+          title="The offers would not load"
+          body="Nothing has been changed. Try again in a moment."
+          onRetry={onRetry}
+        />
       ) : offers.length === 0 ? (
         <div className="bg-surface-1 mt-4 rounded-xl px-6 py-14 text-center shadow-md">
           <Ticket size={26} aria-hidden className="text-faint mx-auto" />
@@ -742,9 +768,7 @@ function OfferCard({ offer, onEdit }: { offer: Offer; onEdit: () => void }) {
     <div
       className={cn(
         'flex h-full flex-col rounded-xl p-5',
-        offer.status === 'active'
-          ? 'wx-neo-raised'
-          : 'bg-surface-1 border-line border border-dashed'
+        offer.status === 'active' ? 'wx-neo-raised' : 'bg-surface-1 shadow-md'
       )}
     >
       <div className="flex flex-wrap items-center gap-2">

@@ -44,6 +44,10 @@ export interface Brand {
   theme: unknown;
   tagline: string | null;
   description: string | null;
+  /** Creator facing: who started the brand. All optional. */
+  founder_name: string | null;
+  founder_role: string | null;
+  founder_note: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -111,11 +115,24 @@ export interface BrandProduct {
   updated_at: string;
 }
 
+export interface BrandBrief {
+  id: string;
+  brand_id: string;
+  title: string;
+  what_to_make: string | null;
+  hooks: string[];
+  dos: string[];
+  donts: string[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 const COMMERCIAL_COLUMNS =
   'client_name, budget_allocated, budget_used, budget_used_percent, currency';
 
 const BRAND_COLUMNS =
-  'id, name, slug, store_id, logo_url, brand_color, hero_url, theme, tagline, description, is_active, created_at, updated_at, ' +
+  'id, name, slug, store_id, logo_url, brand_color, hero_url, theme, tagline, description, founder_name, founder_role, founder_note, is_active, created_at, updated_at, ' +
   `brand_commercials(${COMMERCIAL_COLUMNS})`;
 
 /**
@@ -124,7 +141,7 @@ const BRAND_COLUMNS =
  * would otherwise silently drop any brand missing its commercial row.
  */
 const BRAND_COLUMNS_INNER =
-  'id, name, slug, store_id, logo_url, brand_color, hero_url, theme, tagline, description, is_active, created_at, updated_at, ' +
+  'id, name, slug, store_id, logo_url, brand_color, hero_url, theme, tagline, description, founder_name, founder_role, founder_note, is_active, created_at, updated_at, ' +
   `brand_commercials!inner(${COMMERCIAL_COLUMNS})`;
 
 const OFFER_COLUMNS =
@@ -470,6 +487,26 @@ export function useProducts(brandId: string | undefined) {
         .order('created_at', { ascending: true });
       if (error) throw error;
       return (data ?? []) as unknown as BrandProduct[];
+    },
+  });
+}
+
+/** Every brief on one brand, oldest first, so the order is the order they were written. */
+export function useBriefs(brandId: string | undefined) {
+  return useQuery({
+    queryKey: ['admin', 'briefs', brandId],
+    enabled: Boolean(brandId),
+    staleTime: 15_000,
+    queryFn: async (): Promise<BrandBrief[]> => {
+      const { data, error } = await getSupabase()
+        .from('brand_briefs' as never)
+        .select(
+          'id, brand_id, title, what_to_make, hooks, dos, donts, is_active, created_at, updated_at'
+        )
+        .eq('brand_id', brandId!)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as unknown as BrandBrief[];
     },
   });
 }
