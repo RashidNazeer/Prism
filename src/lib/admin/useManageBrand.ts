@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
-import type { Brand, BrandProduct, Offer } from '@/lib/admin/useBrands';
+import type { Brand, BrandBrief, BrandProduct, Offer } from '@/lib/admin/useBrands';
 import type { BrandThemeConfig } from '@/lib/brand-theme';
 
 /**
@@ -77,7 +77,25 @@ export type BrandAboutPayload = {
    * hub creators cannot read.
    */
   theme: BrandThemeConfig | null;
+  /** The founder, shown in the hub introduction. All optional. */
+  founderName: string | null;
+  founderRole: string | null;
+  founderNote: string | null;
 };
+
+export type BriefSavePayload = {
+  action: 'brief.save';
+  briefId?: string | null;
+  brandId: string;
+  title: string;
+  whatToMake: string | null;
+  hooks: string[];
+  dos: string[];
+  donts: string[];
+  isActive: boolean;
+};
+
+export type BriefDeletePayload = { action: 'brief.delete'; briefId: string };
 
 export type ProductSavePayload = {
   action: 'product.save';
@@ -102,10 +120,12 @@ export type ManagePayload =
   | OfferSavePayload
   | OfferDeletePayload
   | ProductSavePayload
-  | ProductDeletePayload;
+  | ProductDeletePayload
+  | BriefSavePayload
+  | BriefDeletePayload;
 
 export interface ManageResult {
-  row: Brand | Offer | BrandProduct;
+  row: Brand | Offer | BrandProduct | BrandBrief;
   /** Pasted lines that matched no creator. Empty on everything but offers. */
   unmatched: string[];
 }
@@ -119,7 +139,10 @@ export function useManageBrand() {
         body: payload,
       });
       if (error) throw new Error(await messageFrom(error));
-      const body = data as { result: Brand | Offer | BrandProduct; unmatched?: string[] };
+      const body = data as {
+        result: Brand | Offer | BrandProduct | BrandBrief;
+        unmatched?: string[];
+      };
       /*
        * `unmatched` rides back on a SUCCESSFUL save of an offer whose pasted
        * creator list had lines we could not match to anybody. Rashid asked for
@@ -143,6 +166,7 @@ export function useManageBrand() {
       void queryClient.invalidateQueries({ queryKey: ['admin', 'offer-kind-counts'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'offer-audience'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'briefs'] });
       void queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
       // The creator hub reads the same rows through different queries, so an
       // admin who is also looking at a hub sees their own edit there too.

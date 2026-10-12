@@ -339,7 +339,7 @@ function AreaEditor({
                   setStops([...stops, stops[stops.length - 1] ?? DEFAULT_BRAND_COLOR])
                 }
                 disabled={disabled}
-                className="border-line text-muted hover:border-accent hover:text-accent flex h-[2.25rem] items-center gap-1.5 rounded-md border border-dashed px-2.5 text-[0.75rem] font-semibold transition-colors"
+                className="wx-neo-raised-sm wx-neo-press text-muted hover:text-accent flex h-[2.25rem] items-center gap-1.5 rounded-md px-2.5 text-[0.75rem] font-semibold transition-colors"
               >
                 <Plus size={13} aria-hidden />
                 Add colour

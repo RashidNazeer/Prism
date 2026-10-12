@@ -218,7 +218,7 @@ export function ContestProducts({ contestId, brandId, selected, loading }: Props
             they are added once there and every one of them can be picked here afterwards. A
             contest does not need any.
           </p>
-          <ButtonLink to={`/admin/brands/${brandId}?section=about`} variant="secondary">
+          <ButtonLink to={`/admin/brands/${brandId}?section=products`} variant="secondary">
             Add products to this brand
             <ExternalLink size={15} aria-hidden />
           </ButtonLink>

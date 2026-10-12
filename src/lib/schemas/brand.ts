@@ -236,6 +236,10 @@ export const brandAboutSchema = z.object({
     .trim()
     .max(2048, 'That image address is too long')
     .transform((v) => (v === '' ? null : v)),
+  // The founder, shown in the hub introduction. All three are optional.
+  founderName: z.string().trim().max(120, 'That name is too long'),
+  founderRole: z.string().trim().max(120, 'That role is too long'),
+  founderNote: z.string().trim().max(1000, 'Keep the note under 1000 characters'),
   /*
    * EVERYTHING BEYOND THE ONE COLOUR, and every value in here is a FILL.
    *
@@ -294,6 +298,38 @@ export const productSchema = z.object({
 });
 
 export type ProductInput = z.input<typeof productSchema>;
+
+/**
+ * A brief, as a creator reads it before filming.
+ *
+ * The three lists are typed one line per row, so the form holds them as plain
+ * text and this splits them: trimmed, empty lines dropped, ten lines and 280
+ * characters a line at most.
+ */
+const briefLines = (what: string) =>
+  z
+    .string()
+    .transform((v) =>
+      v
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+    )
+    .refine((a) => a.length <= 10, { message: `Keep ${what} to ten lines or fewer` })
+    .refine((a) => a.every((s) => s.length <= 280), {
+      message: 'Keep each line under 280 characters',
+    });
+
+export const briefSchema = z.object({
+  title: z.string().trim().min(1, 'Give the brief a title').max(120, 'That title is too long'),
+  whatToMake: z.string().trim().max(2000, 'Keep this under 2000 characters'),
+  hooks: briefLines('the hooks'),
+  dos: briefLines("the do's"),
+  donts: briefLines("the don'ts"),
+  isActive: z.boolean(),
+});
+
+export type BriefInput = z.input<typeof briefSchema>;
 
 /** First error per field, in the shape the form components expect. */
 export function collectFieldErrors<T extends z.ZodType>(

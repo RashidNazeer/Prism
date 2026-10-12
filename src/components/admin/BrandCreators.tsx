@@ -1,6 +1,7 @@
 import { Link, useSearchParams } from 'react-router';
 import { ChevronLeft, ChevronRight, Search, Users, Video } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { DataError } from '@/components/ui/DataState';
 import { Select } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
 import { CreatorFace } from '@/components/work/CreatorFace';
@@ -80,7 +81,7 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
     setParams(p, { replace: true });
   };
 
-  const { data, isLoading, isError, error } = useBrandRoster(brandId, filters);
+  const { data, isLoading, isError, error, refetch } = useBrandRoster(brandId, filters);
   const { data: counts } = useRosterCounts(brandId);
 
   const rows = data?.rows ?? [];
@@ -91,15 +92,9 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
   const filtered = Boolean(filters.search) || filters.tab !== 'all';
 
   return (
-    <section className="mt-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-muted text-[0.875rem] leading-relaxed">
-          Everyone who has ever asked for one of this brand's offers.
-        </p>
-      </div>
-
+    <section className="mt-4">
       {/* ----------------------------------------------------------- tabs -- */}
-      <div className="-mx-4 mt-3 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         <div
           role="tablist"
           aria-label="Filter creators"
@@ -178,12 +173,12 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
           ))}
         </ul>
       ) : isError ? (
-        <div className="bg-surface-1 mt-4 rounded-xl px-6 py-14 text-center shadow-md">
-          <p className="font-semibold">That roster would not load</p>
-          <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
-            {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
-          </p>
-        </div>
+        <DataError
+          className="mt-4"
+          title="The creators would not load"
+          body={(error as Error)?.message ?? 'Something went wrong reaching the database.'}
+          onRetry={() => refetch()}
+        />
       ) : rows.length === 0 ? (
         <div className="bg-surface-1 mt-4 rounded-xl px-6 py-16 text-center shadow-md">
           <Users size={26} aria-hidden className="text-faint mx-auto" />
