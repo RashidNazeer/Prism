@@ -37,7 +37,35 @@
       which was therefore a broken image. 16, 32 and 48px, same PRISM tile.
     -->
     <link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48" href="/favicon.ico" />
-    <link rel="apple-touch-icon" href="/favicon.png" />
+    <!--
+      THE HOME SCREEN ICON, and a different file from the favicon on purpose.
+      iOS ignores the web app manifest completely and reads only this tag, it
+      does not honour transparency (a transparent corner comes out black), and
+      it applies its own rounding. So this one is 180x180, opaque and square:
+      the same PRISM tile with its corner radius and hairline removed, leaving
+      iOS a clean field to round by itself. The favicon keeps the rounded tile,
+      because a browser tab does no rounding of its own.
+    -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <!--
+      INSTALLABLE. The manifest is what turns "Add to Home Screen" from a
+      bookmark into an app: a real icon, a launch straight into /app, and no
+      address bar. Chrome reads this together with /sw.js; iOS reads the
+      apple-* tags instead and ignores the manifest entirely, which is why both
+      sets have to be here.
+    -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!--
+      `default`, not `black-translucent`. Translucent puts the page UNDER the
+      status bar, and this app's top bar is a floating card pinned to the top of
+      the viewport: it would sit beneath the clock. `default` keeps the status
+      bar opaque and the layout honest.
+    -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Prism" />
 
     <title>Prism | See your true TikTok Shop results.</title>
     <meta
