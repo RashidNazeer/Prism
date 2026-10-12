@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { m } from 'motion/react';
 import { ArrowRight, Trophy } from 'lucide-react';
@@ -121,7 +121,7 @@ function CurrencyBlock({
       <dl className="grid [grid-template-columns:repeat(auto-fit,minmax(150px,1fr))] gap-2.5">
         <Cell
           label="Owed to you"
-          value={fmt(row.owed)}
+          value={row.owed > 0 ? fmt(row.owed) : 'Nothing yet'}
           tone="due"
           sub={
             row.owedCount === 0
@@ -131,7 +131,7 @@ function CurrencyBlock({
         />
         <Cell
           label="Paid to you"
-          value={fmt(row.paid)}
+          value={row.paid > 0 ? fmt(row.paid) : 'Nothing yet'}
           tone="paid"
           bumpKey={bump}
           sub={

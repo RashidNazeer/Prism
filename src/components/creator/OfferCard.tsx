@@ -1,10 +1,25 @@
-import { Link } from 'react-router';
+﻿import { Link } from 'react-router';
 import { Check, ChevronDown, Clock, Store, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { StageTracker } from '@/components/creator/StageTracker';
 import { JobProgressBar } from '@/components/work/JobProgress';
 import { cn } from '@/lib/utils';
 import { money } from '@/lib/money';
+
+/**
+ * Major units, never cents. A null currency means several currencies, so the bare
+ * number is shown with no symbol rather than a guessed dollar sign.
+ */
+export function formatAmount(value: string | number | null, currency: string | null): string {
+  if (value === null || value === '') return 'To confirm';
+  if (currency === null) {
+    const n = Number(value);
+    return Number.isFinite(n)
+      ? n.toLocaleString(undefined, { maximumFractionDigits: n % 1 === 0 ? 0 : 2 })
+      : 'To confirm';
+  }
+  return money(value, currency);
+}
 import { STAGE_META, stageTextTone } from '@/lib/offer-stages';
 import { useApplyForOffer, type MyOfferApplication } from '@/lib/creator/useOfferApplications';
 import type { JobProgress } from '@/lib/work/job-progress';
@@ -66,7 +81,8 @@ export function OfferCard({
   const currency = agreed ? request.currency : offer.currency;
 
   const hasVideos = videoCount !== null;
-  const hasReward = rewardAmount !== null;
+  /* An approved job with no agreed amount says so; it never shows 0 or hides the slot. */
+  const hasReward = rewardAmount !== null || agreed;
   const perVideo =
     videoCount && videoCount > 1 && rewardAmount != null
       ? Number(rewardAmount) / videoCount
@@ -167,11 +183,11 @@ export function OfferCard({
                 className="font-brand mt-1 block text-[1.5rem] leading-none font-semibold"
                 style={{ color: 'var(--wx-brand-accent-ink, var(--wx-accent))' }}
               >
-                {money(rewardAmount, currency)}
+                {formatAmount(rewardAmount, currency)}
               </span>
               {perVideo !== null ? (
                 <span className="text-faint mt-1.5 block text-[0.75rem]">
-                  {money(perVideo, currency)} per video
+                  {formatAmount(perVideo, currency)} per video
                 </span>
               ) : null}
             </span>
@@ -270,7 +286,7 @@ function OfferAction({
                   stageTextTone(stage)
                 )}
               >
-                {money(request.committed_amount, request.currency)}
+                {formatAmount(request.committed_amount, request.currency)}
               </span>
             ) : null}
           </div>

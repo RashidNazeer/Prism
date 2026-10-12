@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Check,
   Clock,
@@ -26,6 +27,7 @@ import {
   ContestProgressSummary,
 } from '@/components/creator/ContestProgressDialog';
 import { Button } from '@/components/ui/Button';
+import { DataError, EmptyState } from '@/components/ui/DataState';
 import { Input, Select } from '@/components/ui/Field';
 import { ContestStateChip } from '@/components/work/ContestStateChip';
 import { cn } from '@/lib/utils';
@@ -227,7 +229,14 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
    * entries right now. So a card that has an entry to draw always has the
    * figures to draw on it, and there is no third loading state on this screen.
    */
-  const { contests, isLoading, isError, error } = useCreatorContests(hubBrandId);
+  const { contests, isLoading, isError } = useCreatorContests(hubBrandId);
+  const queryClient = useQueryClient();
+  /* The hook hands back no refetch, so retry invalidates the two reads it is built from. */
+  const retry = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['creator', 'contests'] }),
+      queryClient.invalidateQueries({ queryKey: ['creator', 'contest-entries'] }),
+    ]);
 
   const brands = useMemo(() => {
     const seen = new Map<string, string>();
@@ -305,7 +314,22 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
       ) : view === 'progress' ? (
         <>
           <ViewSwitch view={view} onChange={setView} />
-          <ContestDashboard contests={contests} />
+          {isLoading ? (
+            <ul className="mt-6 grid gap-4">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <NeoCardSkeleton key={i} as="li" className="h-64" />
+              ))}
+            </ul>
+          ) : isError ? (
+            <DataError
+              className="mt-6"
+              title="We could not load your progress"
+              body="That is on our side, not yours. Your figures are safe with the team."
+              onRetry={retry}
+            />
+          ) : (
+            <ContestDashboard contests={contests} />
+          )}
         </>
       ) : (
         <>
@@ -397,24 +421,28 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
 
           {/* ------------------------------------------------------- list -- */}
           {isLoading ? (
-            <ul className="mt-4 grid gap-4">
+            <ul className="mt-4 grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,28rem),1fr))] gap-4">
               {Array.from({ length: 4 }).map((_, i) => (
                 <NeoCardSkeleton key={i} as="li" className="h-[32rem]" />
               ))}
             </ul>
           ) : isError ? (
-            <Empty
-              title="That list would not load"
-              body={error?.message ?? 'Something went wrong reaching the database.'}
+            <DataError
+              className="mt-4"
+              title="We could not load the contests"
+              body="That is on our side, not yours. Nothing you have entered or earned is lost."
+              onRetry={retry}
             />
           ) : shown.length === 0 ? (
             contests.length === 0 ? (
-              <Empty
-                title="No contests yet"
-                body="A contest is an event with a deadline and a prize. The moment a brand you work with puts one up, it lands here."
+              <EmptyState
+                className="mt-4"
+                title="No contests open right now"
+                body="A contest has a deadline and rewards for hitting targets. When a brand you work with runs one, it lands here."
               />
             ) : (
-              <Empty
+              <EmptyState
+                className="mt-4"
                 title="Nothing matches that"
                 body="Try a different search, another brand, or a different tab."
               />
@@ -422,7 +450,7 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
           ) : (
             <>
               {live.length > 0 ? (
-                <ul className="mt-4 grid gap-4">
+                <ul className="mt-4 grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,28rem),1fr))] gap-4">
                   {live.map((contest, i) => (
                     <m.li
                       key={contest.id}
@@ -457,7 +485,7 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
                   <p className="text-faint mt-1.5 max-w-prose text-[0.8125rem] leading-relaxed">
                     Their door has shut and you are not in them, so there is nothing to do here.
                   </p>
-                  <ul className="mt-3 grid gap-4">
+                  <ul className="mt-3 grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,28rem),1fr))] gap-4">
                     {shut.map((contest) => (
                       <li key={contest.id}>
                         <ContestCard
@@ -620,7 +648,7 @@ function ContestCard({
         />
 
         <div
-          className="flex h-full flex-col gap-3 p-5 sm:p-6 lg:max-w-[60%]"
+          className="flex h-full flex-col gap-3 p-5 sm:p-6 lg:max-w-[85%]"
           style={{ textShadow: '0 1px 12px rgba(0,0,0,0.65), 0 1px 2px rgba(0,0,0,0.5)' }}
         >
           {/* The brand, on its own mark. A contest belongs to a brand before it
@@ -962,7 +990,7 @@ function ContestAction({
                 ? 'This one has been settled. Your outcome is on your entry.'
                 : door === 'open'
                   ? 'Your place is held. Film what it asks for before the deadline.'
-                  : 'Closed to new entries. Your work carries on and still pays exactly what you were promised.'}
+                  : 'Closed to new entries. Your work still pays exactly what you were promised.'}
           </p>
           {contest.cancelMessage ? (
             <p className="text-muted mt-2 text-[0.8125rem] leading-relaxed">
@@ -1321,17 +1349,5 @@ function Note({
       <span className="mt-0.5 shrink-0">{icon}</span>
       <span className="min-w-0">{children}</span>
     </p>
-  );
-}
-
-function Empty({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="wx-neo-raised mt-4 rounded-xl px-6 py-14 text-center">
-      <span className="wx-neo-inset mx-auto grid size-12 place-items-center rounded-lg">
-        <Trophy size={20} aria-hidden className="text-muted" />
-      </span>
-      <p className="font-display mt-4 text-[1.1875rem] font-semibold">{title}</p>
-      <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">{body}</p>
-    </div>
   );
 }
