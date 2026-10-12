@@ -120,7 +120,13 @@ export function Offers() {
       ) : (
         <>
           {/* ------------------------------------------------------- tabs -- */}
-          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          {/* Bleeds to the PAGE GUTTER, which is `px-3`. It was `-mx-4 px-4`,
+              4px wider than the gutter on each side, so the strip hung past the
+              viewport and took the whole page sideways with it: measured as 4px
+              of horizontal page scroll at 375, which the house rule forbids at
+              any width. The scroller clips its own contents; it just must not
+              be wider than the column it sits in. */}
+          <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">
             <div
               role="tablist"
               aria-label="Filter offers"

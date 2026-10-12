@@ -336,7 +336,10 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
           <ViewSwitch view={view} onChange={setView} />
 
           {/* ------------------------------------------------------- tabs -- */}
-          <div className="-mx-4 mt-5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          {/* `-mx-3 px-3`, matching the page gutter. See the same fix in
+              Offers.tsx: bleeding by 4 against a 3 gutter put 4px of
+              horizontal scroll on the page at 375. */}
+          <div className="-mx-3 mt-5 overflow-x-auto px-3 sm:mx-0 sm:px-0">
             <div
               role="tablist"
               aria-label="Filter contests"

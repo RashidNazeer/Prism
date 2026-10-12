@@ -46,7 +46,22 @@ export function FilterBar({
       )}
     >
       {children}
-      {action ? <div className="ml-auto shrink-0">{action}</div> : null}
+      {/*
+        `max-w-full` as well as `shrink-0`.
+
+        `shrink-0` is right for the usual action, a button whose label must not
+        be squashed. It is wrong on its own for an action that is itself a
+        scroller: the brand switcher on a hub is a `nav` with `overflow-x-auto`
+        and `max-w-full`, and its `max-w-full` resolved against a wrapper that
+        could never shrink, so the scroller was always exactly as wide as its
+        contents and never clipped anything. Four brand chips put 2px of
+        horizontal scroll on the whole page at 375.
+
+        Capping the wrapper at the bar's own width bounds the scroller without
+        letting a button's label squash, and the bar already wraps, so a wide
+        action simply takes its own line.
+      */}
+      {action ? <div className="ml-auto max-w-full shrink-0">{action}</div> : null}
     </div>
   );
 }
