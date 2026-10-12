@@ -94,7 +94,10 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
   return (
     <section className="mt-4">
       {/* ----------------------------------------------------------- tabs -- */}
-      <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      {/* `-mx-3 px-3`, matching the page gutter. The same `-mx-4 px-4` against
+          a `px-3` gutter was measured putting 4px of horizontal page scroll on
+          Offers and Contests at 375; admin is held to the same rule. */}
+      <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">
         <div
           role="tablist"
           aria-label="Filter creators"
