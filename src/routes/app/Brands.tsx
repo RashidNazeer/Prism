@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { m } from 'motion/react';
 import { Store, Tag } from 'lucide-react';
+import { DataError, EmptyState } from '@/components/ui/DataState';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
@@ -28,20 +29,12 @@ export function Brands() {
   // Admin edits to brands, offers and products land here without a reload.
   useCatalogueLive();
 
-  const { data: brands, isLoading, isError, error } = useCreatorBrands();
+  const { data: brands, isLoading, isError, refetch } = useCreatorBrands();
   const rows = brands ?? [];
   const { data: counts } = useCreatorOfferCounts(rows.map((b) => b.id));
 
   return (
     <>
-      <h1 className="font-brand text-[clamp(1.625rem,4.4vw,2.5rem)] leading-[1.05] font-semibold tracking-[-0.02em]">
-        Brand hubs
-      </h1>
-      <p className="text-muted mt-2 max-w-2xl text-[0.9375rem] leading-relaxed">
-        The brands you can work with. Open one to see what it sells, what it pays, and the
-        offers you can take.
-      </p>
-
       {!approved ? (
         <LockedUntilApproved className="mt-6" />
       ) : isLoading ? (
@@ -51,21 +44,18 @@ export function Brands() {
           ))}
         </ul>
       ) : isError ? (
-        <div className="wx-neo-raised mt-6 rounded-xl px-6 py-14 text-center">
-          <p className="font-semibold">That list would not load</p>
-          <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
-            {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
-          </p>
-        </div>
+        <DataError
+          className="mt-6"
+          title="Your brand hubs would not load"
+          body="Something went wrong on our side, not yours. Try again in a moment."
+          onRetry={() => refetch()}
+        />
       ) : rows.length === 0 ? (
-        <div className="wx-neo-raised mt-6 rounded-xl px-6 py-16 text-center">
-          <Store size={26} aria-hidden className="text-faint mx-auto" />
-          <p className="mt-4 font-semibold">No brands open yet</p>
-          <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
-            Nothing is live for you right now. This fills up as brands come on board, and you
-            will find them here first.
-          </p>
-        </div>
+        <EmptyState
+          className="mt-6"
+          title="You are not in a brand hub yet"
+          body="When a brand opens its hub to you, it appears here first, with what it sells and what it wants from you."
+        />
       ) : (
         <ul className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {rows.map((brand, i) => (
@@ -82,7 +72,7 @@ export function Brands() {
                 className="wx-neo-raised flex h-full flex-col rounded-xl p-5 transition-colors duration-200"
               >
                 <div className="flex items-center gap-3">
-                  <span className="wx-neo-inset grid size-[44px] shrink-0 place-items-center overflow-hidden rounded-full">
+                  <span className="wx-neo-inset grid size-11 shrink-0 place-items-center overflow-hidden rounded-full">
                     {brand.logo_url ? (
                       <img src={brand.logo_url} alt="" className="size-full object-cover" />
                     ) : (
@@ -98,20 +88,20 @@ export function Brands() {
                     ) : null}
                   </span>
                 </div>
-
                 {brand.description ? (
                   <p className="text-muted mt-4 line-clamp-3 text-[0.875rem] leading-relaxed">
                     {brand.description}
                   </p>
                 ) : null}
-
-                <div className="mt-auto pt-5">
-                  <span className="bg-surface-2 text-muted inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.75rem]">
-                    <Tag size={12} aria-hidden />
-                    <span className="wx-numeric">{counts?.[brand.id] ?? 0}</span>
-                    {(counts?.[brand.id] ?? 0) === 1 ? 'offer' : 'offers'}
-                  </span>
-                </div>
+                {(counts?.[brand.id] ?? 0) > 0 ? (
+                  <div className="mt-auto pt-5">
+                    <span className="bg-surface-2 text-muted inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.75rem]">
+                      <Tag size={12} aria-hidden />
+                      <span className="wx-numeric">{counts?.[brand.id]}</span>
+                      {counts?.[brand.id] === 1 ? 'offer' : 'offers'}
+                    </span>
+                  </div>
+                ) : null}{' '}
               </Link>
             </m.li>
           ))}
