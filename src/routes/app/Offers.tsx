@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import { m } from 'motion/react';
-import { Search, Ticket } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { ApplyDialog } from '@/components/creator/ApplyDialog';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
 import { OfferCard } from '@/components/creator/OfferCard';
+import { DataError, EmptyState } from '@/components/ui/DataState';
 import { Select } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -64,7 +65,7 @@ export function Offers() {
   // Admin edits to brands, offers and products land here without a reload.
   useCatalogueLive();
 
-  const { data: offers, isLoading, isError, error } = useAllCreatorOffers();
+  const { data: offers, isLoading, isError, refetch } = useAllCreatorOffers();
   const { data: requests } = useAllMyRequests();
   // How much of each job has been filmed. Keyed by REQUEST, not by offer: five
   // videos for three hundred is a promise made to one creator on one request.
@@ -193,32 +194,34 @@ export function Offers() {
 
           {/* ------------------------------------------------------- list -- */}
           {isLoading ? (
-            <ul className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <ul className="mt-4 grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-3">
               {Array.from({ length: 6 }).map((_, i) => (
                 <li key={i} className="wx-skeleton h-52 rounded-xl" />
               ))}
             </ul>
           ) : isError ? (
-            <div className="wx-neo-raised mt-4 rounded-xl px-6 py-14 text-center">
-              <p className="font-semibold">That list would not load</p>
-              <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
-                {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
-              </p>
-            </div>
+            <DataError
+              className="mt-4"
+              title="We could not load the offers"
+              body="That is on our side, not yours. Nothing is lost, and trying again usually works."
+              onRetry={() => refetch()}
+            />
           ) : shown.length === 0 ? (
-            <div className="wx-neo-raised mt-4 rounded-xl px-6 py-16 text-center">
-              <Ticket size={26} aria-hidden className="text-faint mx-auto" />
-              <p className="mt-4 font-semibold">
-                {(offers ?? []).length === 0 ? 'No offers yet' : 'Nothing matches that'}
-              </p>
-              <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
-                {(offers ?? []).length === 0
-                  ? 'New offers land here as soon as a brand puts one up.'
-                  : 'Try a different search, brand or tab.'}
-              </p>
-            </div>
+            <EmptyState
+              className="mt-4"
+              title={
+                (offers ?? []).length === 0
+                  ? 'Nothing to apply for right now'
+                  : 'Nothing matches that'
+              }
+              body={
+                (offers ?? []).length === 0
+                  ? 'New offers land here.'
+                  : 'Try a different search, brand or tab.'
+              }
+            />
           ) : (
-            <ul className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <ul className="mt-4 grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-3">
               {shown.map((offer, i) => (
                 <m.li
                   key={offer.id}

@@ -1,5 +1,5 @@
-import { Link } from 'react-router';
-import { Trophy } from 'lucide-react';
+﻿import { Link } from 'react-router';
+import { EmptyState } from '@/components/ui/DataState';
 import { cn } from '@/lib/utils';
 import { formatDeadline, timeLeft } from '@/lib/contest-time';
 import { DeliverableDonut, DeliverableProgress } from '@/components/work/DeliverableProgress';
@@ -35,13 +35,15 @@ function isReached(d: CreatorContestDeliverable, gmv: number, videos: number): b
   return d.targetValue > 0 && have >= d.targetValue;
 }
 
-const money = (n: number, currency: string) =>
-  new Intl.NumberFormat('en-GB', {
-    style: 'currency',
-    currency: /^[A-Z]{3}$/.test(currency) ? currency : 'USD',
-    maximumFractionDigits: 0,
-  }).format(n);
-
+/** Whole units. A missing currency means several, so the bare number shows, never a guessed symbol. */
+const money = (n: number, currency: string | null) =>
+  currency && /^[A-Z]{3}$/.test(currency)
+    ? new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency,
+        maximumFractionDigits: 0,
+      }).format(n)
+    : n.toLocaleString(undefined, { maximumFractionDigits: 0 });
 export function ContestDashboard({ contests }: { contests: CreatorContest[] }) {
   // Only the ones they are actually in. A contest they have not entered has no
   // progress to show, and padding this screen with them would bury the work.
@@ -49,21 +51,13 @@ export function ContestDashboard({ contests }: { contests: CreatorContest[] }) {
 
   if (mine.length === 0) {
     return (
-      <div className="wx-neo-raised mt-6 flex flex-col items-start gap-3 rounded-xl p-8">
-        <div className="wx-neo-raised-sm grid size-[44px] place-items-center rounded-lg">
-          <Trophy size={19} className="text-muted" aria-hidden />
-        </div>
-        <h2 className="font-display text-text text-[1.3125rem] leading-tight font-bold">
-          You are not in a contest yet
-        </h2>
-        <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">
-          Enter one and this becomes the screen that tells you how close you are to each target,
-          what has been confirmed, and where you sit against everybody else in it.
-        </p>
-      </div>
+      <EmptyState
+        className="mt-6"
+        title="You are not in a contest yet"
+        body="Enter one and this becomes the screen that shows how close you are to each target, what the team has confirmed, and what you have only told us so far."
+      />
     );
   }
-
   /* -------------------------------------------------------- the headline -- */
 
   /*
@@ -110,32 +104,34 @@ export function ContestDashboard({ contests }: { contests: CreatorContest[] }) {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Figure
           label="Owed to you"
-          value={money(owed, currency)}
+          value={owed > 0 ? money(owed, currency) : 'Nothing yet'}
           tone={owed > 0 ? 'due' : undefined}
           note="Earned and confirmed. Waiting to be paid."
         />
         <Figure
           label="Paid to you"
-          value={money(paid, currency)}
+          value={paid > 0 ? money(paid, currency) : 'Nothing yet'}
           tone="paid"
           note="From contests, and already sent"
         />
         <Figure
           label="Still to play for"
-          value={money(reachable, currency)}
+          value={reachable > 0 ? money(reachable, currency) : 'Nothing left'}
           note="Across every target you have not reached yet"
         />
         <Figure
           label="Waiting on the team"
-          value={String(waiting)}
+          value={waiting > 0 ? String(waiting) : 'Nothing'}
           tone={waiting > 0 ? 'due' : undefined}
           note={waiting === 1 ? 'One claim being checked' : 'Claims being checked'}
         />
       </div>
 
-      {mine.map((c) => (
-        <ContestCard key={c.id} contest={c} />
-      ))}
+      <div className="grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,30rem),1fr))] items-start gap-4">
+        {mine.map((c) => (
+          <ContestCard key={c.id} contest={c} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -301,7 +297,7 @@ function ContestCard({ contest }: { contest: CreatorContest }) {
 
       {contest.pendingClaim ? (
         <p className="text-stage-due mt-4 text-[0.8125rem] font-medium">
-          One claim is with the team. Nothing moves above until they confirm it.
+          Your figures are with the team. Nothing above counts until they confirm them.
         </p>
       ) : null}
 
