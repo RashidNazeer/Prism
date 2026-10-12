@@ -456,7 +456,7 @@ function Dashboard({
           already live in this screen's filter bar, and a second set inside the
           card would be two answers to one question.
         */}
-        <VelocityPanel videos={videoCount} {...velocity} />
+        <VelocityPanel videos={videoCount} latest={latestDataDate} {...velocity} />
 
         {/* The one thing the panel does not say, kept because it is the figure
             creators most often misread. */}

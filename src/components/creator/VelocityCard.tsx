@@ -3,6 +3,7 @@ import { TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { money } from '@/lib/money';
 import { DateRangePicker } from '@/components/creator/DateRangePicker';
+import { DataError, Freshness } from '@/components/ui/DataState';
 import { VelocityChart, type VelocityMetric } from '@/components/creator/VelocityChart';
 import {
   usePerformanceWindow,
@@ -116,6 +117,11 @@ export function useVelocityData({
     currency: rows.find((r) => r.currency)?.currency ?? null,
     isPending: curQ.isPending,
     isError: curQ.isError,
+    /* Both windows, because a retry that only refetches half of a comparison
+       leaves the card showing a delta against stale numbers. */
+    onRetry: async () => {
+      await Promise.all([curQ.refetch(), prevQ.refetch()]);
+    },
   };
 }
 
@@ -137,6 +143,7 @@ const pctText = (d: Delta) =>
 
 export function VelocityPanel({
   videos,
+  latest,
   rows,
   cur,
   before,
@@ -144,10 +151,17 @@ export function VelocityPanel({
   currency,
   isPending,
   isError,
+  onRetry,
   controls,
 }: {
   /** How many videos this creator has on record at this scope. */
   videos: number;
+  /**
+   * The last day there is data for. Results run to the end of yesterday, never
+   * to this minute, and a screen that does not say so invites "why is today
+   * missing".
+   */
+  latest: string | null;
   rows: DailyPerformance[];
   cur: Totals;
   before: Totals | null;
@@ -155,6 +169,8 @@ export function VelocityPanel({
   currency: string | null;
   isPending: boolean;
   isError: boolean;
+  /** Lets the failed state offer a way out instead of a dead end. */
+  onRetry?: () => Promise<unknown> | void;
   /** Range and brand pickers, when the surrounding screen does not own them. */
   controls?: ReactNode;
 }) {
@@ -241,10 +257,13 @@ export function VelocityPanel({
               Live
             </span>
           </h2>
-          <p className="text-muted text-[0.8125rem] leading-[1.4]">
-            {videos} {videos === 1 ? 'video' : 'videos'} on record
-            {' • '}
-            {vs}
+          <p className="text-muted flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8125rem] leading-[1.4]">
+            <span>
+              {videos} {videos === 1 ? 'video' : 'videos'} on record
+              {' • '}
+              {vs}
+            </span>
+            <Freshness to={latest} />
           </p>
         </div>
 
@@ -282,9 +301,13 @@ export function VelocityPanel({
       </div>
 
       {isError ? (
-        <p className="text-muted wx-neo-inset rounded-xl p-4 text-[0.8125rem]">
-          We could not load your selling numbers just now. Refresh in a moment.
-        </p>
+        /* A dead end before: a sentence and nothing to do about it. */
+        <DataError
+          title="We could not load your numbers"
+          body="Something went wrong on our side, not yours. Your figures are safe."
+          onRetry={onRetry}
+          className="wx-neo-inset shadow-none"
+        />
       ) : isPending ? (
         <>
           <div className="wx-skeleton h-28 rounded-xl" />
@@ -423,6 +446,7 @@ export function VelocityCard() {
   return (
     <VelocityPanel
       videos={windowQ.data.videos}
+      latest={windowQ.data.latest}
       {...data}
       controls={
         <DateRangePicker
