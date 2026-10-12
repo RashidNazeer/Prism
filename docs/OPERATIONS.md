@@ -2029,6 +2029,73 @@ The catalogue is fetched ONCE per brand and shared with the product groups
 below, via `wxProductPics` — a module-level promise cache in `WurxUI.jsx`. A
 failed fetch is dropped from it so the next mount asks again.
 
+### A demo creator with a full history
+
+```bash
+SUPABASE_SERVICE_KEY=... node scripts/seed-demo-creator.mjs          # make her
+SUPABASE_SERVICE_KEY=... node scripts/seed-demo-creator.mjs --clean  # remove it all
+```
+
+`rudely@wurxmedia.com` / `1234567890`, a Rising creator with three jobs across
+three brands at three different stages — paid, awaiting payment, still filming
+— so the money card has something in every cell instead of two zeros. Sixteen
+videos, fourteen approved and two with the team, with real ad figures behind
+them so My numbers shows GMV, spend, orders and ROI.
+
+**It walks the real path.** Every row comes from the function the product
+itself calls: `review_application`, `save_offer`, `apply_for_offer`,
+`review_offer_application`, `set_offer_stage`, `submit_content`,
+`review_content`. A creator assembled by direct inserts looks right in the
+tables and wrong on the screens — no audit trail, no stage events, no committed
+budget.
+
+**IT LEAVES PENETREX ALONE.** Penetrex is the only brand with real commercials
+and it has $350 free of a $23,000 budget that is the actual August retainer.
+The demo creates its own brands instead (Aurelia, Dr Tobias, Swisse, marked
+`client_name = 'Demo data (seed-demo-creator)'` and `store_id` prefixed
+`demo-`), and `--clean` removes them again — but only if nobody else's work has
+arrived against them since.
+
+**`--clean` recomputes `brand_commercials.budget_used`.** Deleting offers leaves
+the committed money behind; that has already cost this project once.
+
+Re-running is safe: the account, the brands and the offers are all reused
+rather than duplicated.
+
+### "A brand is missing" / "it is not syncing"
+
+```bash
+pnpm verify:brand-visibility   # 24 checks, needs SUPABASE_SERVICE_KEY + preview
+```
+
+**Check the MONTH before anything else, and check it on the machine that cannot
+see the brand.** The Brands screen lists the brands with a creator or a budget
+in the selected month, and that month is remembered per browser in
+`wurx_ui_state_v1`. A brand with a budget and no creators lives in one month
+only.
+
+**The tell that it is not permissions:** the same account behaving differently
+on two laptops. Policies follow the account. If the account is not the variable,
+stop looking at RLS.
+
+To confirm from the outside, read `wurxbase.brand_monthly_budgets` for the brand
+and note its `month`; then read it again signed in AS the person who cannot see
+it, which proves the row is readable to them. Both were true for HoneySticks on
+2026-10-09, which is what pointed at the browser.
+
+A month chosen today still sticks; one chosen on an earlier day no longer does.
+
+### A platform that answers for some brands and not others
+
+`collab-products` returns **200 with an empty list and a `note`** when EUKA or
+Reacher cannot answer — it is not an error from our side and must not be read as
+one. The note is a sentence for the person; `upstreamStatus` carries the code.
+
+**Always run a control brand in the same breath.** EUKA 503s for HoneySticks on
+every attempt while returning ten products for Penetrex seconds later, so "EUKA
+is down" and "our key is wrong" were both wrong. One brand failing is their
+store, not their service.
+
 ### The creator contract PDF
 
 ```bash

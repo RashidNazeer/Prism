@@ -1,0 +1,74 @@
+{
+  "color": {
+    "ink": "#14141C",
+    "white": "#FFFFFF",
+    "mist": "#F7F7FB",
+    "line": "#ECECF3",
+    "body": "#4A4A5A",
+    "muted": "#6B6B7B",
+    "subtle": "#B9B9C8",
+    "inkRaised": "#2A2540",
+    "spectrum": {
+      "magenta": "#FF2E8C",
+      "violet": "#9B5CFF",
+      "blue": "#2E8BFF",
+      "cyan": "#17E0D4"
+    },
+    "tint": {
+      "violet": "#F3EEFF",
+      "cyan": "#E3FBF9",
+      "magenta": "#FFE6F1"
+    },
+    "onTint": {
+      "violet": "#5A1FD0",
+      "cyan": "#0B6F69",
+      "magenta": "#B0145C"
+    },
+    "link": "#6A2FE0",
+    "linkHover": "#4A16B8"
+  },
+  "font": {
+    "display": "'Caprasimo', serif",
+    "body": "'Figtree', system-ui, sans-serif"
+  },
+  "fontWeight": {
+    "display": 400,
+    "regular": 400,
+    "medium": 500,
+    "semibold": 600
+  },
+  "fontSize": {
+    "caption": 13,
+    "body": 15,
+    "lead": 18,
+    "h3": 24,
+    "h2": 30,
+    "h1": 48,
+    "display": 96
+  },
+  "radius": {
+    "sm": 12,
+    "md": 18,
+    "lg": 24,
+    "xl": 32,
+    "icon": 48,
+    "pill": 999
+  },
+  "shadow": {
+    "card": "0 1px 3px rgba(20,20,28,0.06)",
+    "raised": "0 12px 32px rgba(20,20,28,0.10)",
+    "float": "0 12px 32px rgba(20,20,28,0.18)"
+  },
+  "space": {
+    "1": 4,
+    "2": 8,
+    "3": 12,
+    "4": 16,
+    "5": 20,
+    "6": 24,
+    "8": 32,
+    "10": 40,
+    "12": 48,
+    "16": 64
+  }
+}

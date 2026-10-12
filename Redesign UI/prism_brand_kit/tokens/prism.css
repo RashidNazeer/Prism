@@ -1,0 +1,59 @@
+/* PRISM brand tokens. Source of truth: tokens/prism.tokens.json */
+@import url('https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600&display=swap');
+
+:root {
+  --prism-color-ink: #14141C;
+  --prism-color-white: #FFFFFF;
+  --prism-color-mist: #F7F7FB;
+  --prism-color-line: #ECECF3;
+  --prism-color-body: #4A4A5A;
+  --prism-color-muted: #6B6B7B;
+  --prism-color-subtle: #B9B9C8;
+  --prism-color-ink-raised: #2A2540;
+  --prism-color-spectrum-magenta: #FF2E8C;
+  --prism-color-spectrum-violet: #9B5CFF;
+  --prism-color-spectrum-blue: #2E8BFF;
+  --prism-color-spectrum-cyan: #17E0D4;
+  --prism-color-tint-violet: #F3EEFF;
+  --prism-color-tint-cyan: #E3FBF9;
+  --prism-color-tint-magenta: #FFE6F1;
+  --prism-color-on-tint-violet: #5A1FD0;
+  --prism-color-on-tint-cyan: #0B6F69;
+  --prism-color-on-tint-magenta: #B0145C;
+  --prism-color-link: #6A2FE0;
+  --prism-color-link-hover: #4A16B8;
+  --prism-font-display: 'Caprasimo', serif;
+  --prism-font-body: 'Figtree', system-ui, sans-serif;
+  --prism-font-weight-display: 400;
+  --prism-font-weight-regular: 400;
+  --prism-font-weight-medium: 500;
+  --prism-font-weight-semibold: 600;
+  --prism-font-size-caption: 13px;
+  --prism-font-size-body: 15px;
+  --prism-font-size-lead: 18px;
+  --prism-font-size-h3: 24px;
+  --prism-font-size-h2: 30px;
+  --prism-font-size-h1: 48px;
+  --prism-font-size-display: 96px;
+  --prism-radius-sm: 12px;
+  --prism-radius-md: 18px;
+  --prism-radius-lg: 24px;
+  --prism-radius-xl: 32px;
+  --prism-radius-icon: 48px;
+  --prism-radius-pill: 999px;
+  --prism-shadow-card: 0 1px 3px rgba(20,20,28,0.06);
+  --prism-shadow-raised: 0 12px 32px rgba(20,20,28,0.10);
+  --prism-shadow-float: 0 12px 32px rgba(20,20,28,0.18);
+  --prism-space-1: 4px;
+  --prism-space-2: 8px;
+  --prism-space-3: 12px;
+  --prism-space-4: 16px;
+  --prism-space-5: 20px;
+  --prism-space-6: 24px;
+  --prism-space-8: 32px;
+  --prism-space-10: 40px;
+  --prism-space-12: 48px;
+  --prism-space-16: 64px;
+  /* The spectrum stripe used inside the i (top → bottom) */
+  --prism-stripe: linear-gradient(#17E0D4 0 25%, #2E8BFF 25% 50%, #9B5CFF 50% 75%, #FF2E8C 75%);
+}
