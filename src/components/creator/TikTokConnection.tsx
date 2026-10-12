@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { m } from 'motion/react';
 import {
   BadgeCheck,
@@ -13,6 +13,7 @@ import {
   Video,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { DataError } from '@/components/ui/DataState';
 import { cn } from '@/lib/utils';
 import {
   useTikTokAccount,
@@ -42,8 +43,8 @@ import {
  *
  * The card printed the response body straight into the page, so a creator saw
  * the word "Not allowed" in red under a button they had just pressed. It told
- * them nothing — not what was wrong, not whether it was their fault, not what
- * to do — and it is what Rashid photographed on 2026-09-04.
+ * them nothing â€” not what was wrong, not whether it was their fault, not what
+ * to do â€” and it is what Rashid photographed on 2026-09-04.
  *
  * An Edge Function's refusal is written for a log. This is written for the
  * person holding the phone.
@@ -66,9 +67,11 @@ function humanError(message: string): string {
 }
 
 export function TikTokConnection() {
-  const { data: account, isLoading } = useTikTokAccount();
+  const accountQuery = useTikTokAccount();
+  const { data: account, isLoading } = accountQuery;
   const connected = Boolean(account);
-  const { data: videos, isLoading: videosLoading } = useTikTokVideos(connected);
+  const videosQuery = useTikTokVideos(connected);
+  const { data: videos, isLoading: videosLoading } = videosQuery;
   const act = useTikTokAction();
   const [confirmingDisconnect, setConfirmingDisconnect] = useState(false);
 
@@ -81,18 +84,28 @@ export function TikTokConnection() {
   };
 
   if (isLoading) {
-    return <div className="wx-skeleton h-40 rounded-xl" />;
+    return <div className="wx-skeleton h-72 rounded-xl" />;
+  }
+
+  if (accountQuery.isError) {
+    return (
+      <DataError
+        title="We could not check your TikTok connection"
+        body="Something went wrong on our side, not yours. Nothing has changed on your account."
+        onRetry={() => accountQuery.refetch()}
+      />
+    );
   }
 
   return (
-    <section className="wx-neo-raised rounded-xl p-5">
+    <section className="wx-neo-raised rounded-xl p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         {/* min-w-0 flex-1, and no max-width. With a fixed `max-w-lg` the
             paragraph was nearly as wide as the card, so the Connected pill
             wrapped onto a line of its own and read as stranded rather than as
             a status on the heading. */}
         <div className="min-w-0 flex-1">
-          <h2 className="font-semibold">Your TikTok account</h2>
+          <h2 className="text-lg font-bold">Connect TikTok</h2>
           <p className="text-muted mt-1 text-[0.875rem] leading-relaxed">
             {/*
               TWO SENTENCES, BECAUSE ONE OF THEM IS WRONG HALF THE TIME. This
@@ -114,6 +127,23 @@ export function TikTokConnection() {
         ) : null}
       </div>
 
+      {/*
+        SAY WHAT IT CAN AND CANNOT DO, in both states and before they click
+        rather than after. Somebody about to hand a third party access to their
+        account deserves the answer at the moment they are deciding, and
+        somebody already connected deserves to be able to re-read it.
+
+        THIS SENTENCE IS A PROMISE, AND IT MUST MATCH `DISPLAY_SCOPES`. A scope
+        added without this changing means the product is lying to somebody at
+        the precise moment they are deciding whether to trust it.
+      */}
+      <p className="wx-neo-inset text-muted mt-5 rounded-lg px-4 py-3 text-[0.8125rem] leading-relaxed">
+        We read your name and your own videos&rsquo; view, like, comment and share counts.{' '}
+        <strong className="text-text font-semibold">
+          We can never post, edit or delete anything.
+        </strong>
+      </p>
+
       {!connected ? (
         <div className="mt-5">
           <Button onClick={start} disabled={busy}>
@@ -124,29 +154,9 @@ export function TikTokConnection() {
             )}
             {busy ? 'Opening TikTok...' : 'Connect TikTok'}
           </Button>
-          {/*
-            SAY WHAT IT CAN AND CANNOT DO, before they click rather than after.
-            Somebody about to hand a third party access to their account
-            deserves the answer at the moment they are deciding.
-
-            SO THIS LIST IS A PROMISE, AND IT MUST MATCH `DISPLAY_SCOPES`
-            EXACTLY. When the profile and stats scopes were added it still read
-            "we only ever read your own public videos", which had quietly become
-            untrue. A scope added without a line added here means the product is
-            lying to somebody at the precise moment they are deciding whether to
-            trust it.
-          */}
-          <ul className="text-muted mt-4 grid gap-1.5 text-[0.8125rem]">
-            <li>We read your name and profile picture, so we can show you who is connected.</li>
-            <li>We read your own videos and their view, like, comment and share counts.</li>
-            <li>
-              <strong className="text-text font-semibold">
-                We can never post, edit or delete anything.
-              </strong>{' '}
-              The permissions we ask for cannot do those things.
-            </li>
-            <li>You can disconnect at any time, from right here.</li>
-          </ul>
+          <p className="text-faint mt-3 text-[0.8125rem]">
+            You can disconnect at any time, from right here.
+          </p>
           {act.error ? (
             <p role="alert" className="text-danger mt-3 text-[0.8125rem]">
               {humanError((act.error as Error).message)}
@@ -155,7 +165,7 @@ export function TikTokConnection() {
         </div>
       ) : (
         <>
-          <div className="border-line mt-4 border-t pt-4">
+          <div className="mt-5">
             <div className="flex flex-wrap items-start gap-3">
               {account?.avatar_url ? (
                 <img
@@ -266,8 +276,14 @@ export function TikTokConnection() {
                   <li key={i} className="wx-skeleton h-20 rounded-xl" />
                 ))}
               </ul>
+            ) : videosQuery.isError ? (
+              <DataError
+                title="We could not load your videos"
+                body="Your connection is fine. Something went wrong fetching the list."
+                onRetry={() => videosQuery.refetch()}
+              />
             ) : !videos || videos.length === 0 ? (
-              <div className="border-line rounded-xl border border-dashed px-5 py-8 text-center">
+              <div className="wx-neo-inset rounded-xl px-5 py-8 text-center">
                 <Video size={20} aria-hidden className="text-faint mx-auto" />
                 <p className="mt-3 text-[0.875rem] font-semibold">No videos pulled in yet</p>
                 <p className="text-muted mx-auto mt-1.5 max-w-xs text-[0.8125rem] leading-relaxed">
@@ -336,7 +352,7 @@ function granted(scope: string | undefined, want: string): boolean {
  * THE HREF IS THIRD-PARTY DATA GOING INTO THE DOM, so the scheme is checked
  * rather than assumed. React escapes text but will happily render
  * `href="javascript:..."`, and `profile_deep_link` arrives from an API response
- * — the one string in this component that somebody else chooses. If it is not
+ * â€” the one string in this component that somebody else chooses. If it is not
  * plain https the handle still shows, just not as a link.
  */
 function Handle({ account }: { account: TikTokAccount }) {
@@ -355,7 +371,7 @@ function Handle({ account }: { account: TikTokAccount }) {
       className="text-muted hover:text-accent block truncate text-[0.8125rem] transition-colors"
     >
       {handle}
-      <span className="sr-only"> — open this profile on TikTok in a new tab</span>
+      <span className="sr-only"> â€” open this profile on TikTok in a new tab</span>
     </a>
   );
 }
@@ -364,8 +380,8 @@ function Handle({ account }: { account: TikTokAccount }) {
  * The account totals: followers, lifetime likes, how many videos they have.
  *
  * HIDDEN ENTIRELY when the stats permission was not granted, rather than shown
- * as three dashes. Those are different statements — "TikTok did not tell us
- * this number" and "you never gave us permission to ask" — and a row of dashes
+ * as three dashes. Those are different statements â€” "TikTok did not tell us
+ * this number" and "you never gave us permission to ask" â€” and a row of dashes
  * says the first while meaning the second, which reads as a product that is
  * broken rather than one respecting a choice somebody made.
  *
@@ -379,7 +395,7 @@ function AccountStats({ account }: { account: TikTokAccount }) {
   if (!granted(account.scope, 'user.info.stats')) return null;
 
   return (
-    <dl className="border-line mt-4 grid grid-cols-3 gap-2 border-t pt-4">
+    <dl className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
       <Stat label="Followers" value={account.follower_count} />
       <Stat label="Likes" value={account.likes_count} />
       <Stat label="Videos" value={account.video_count} />
@@ -389,7 +405,7 @@ function AccountStats({ account }: { account: TikTokAccount }) {
 
 function Stat({ label, value }: { label: string; value: number | null }) {
   return (
-    <div className="min-w-0">
+    <div className="wx-neo-inset min-w-0 rounded-lg px-3 py-2.5">
       <dt className="text-faint font-mono text-[0.625rem] tracking-[0.12em] uppercase">
         {label}
       </dt>
@@ -478,7 +494,7 @@ function Figure({
  *
  * THE ROUNDING BOUNDARY IS THE BUG HERE, and it was a real one: 999,600 is
  * under a million, so it took the "k" branch, and `(999.6).toFixed(0)` is
- * "1000" — printing "1000k" for a video with nearly a million views. The
+ * "1000" â€” printing "1000k" for a video with nearly a million views. The
  * threshold has to be where the ROUNDED value crosses, not where the raw one
  * does.
  */
