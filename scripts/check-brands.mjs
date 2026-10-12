@@ -153,7 +153,10 @@ try {
   await page.goto(`${BASE}/admin/brands`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(2000);
 
-  await page.getByRole('button', { name: /add brand/i }).first().click();
+  await page
+    .getByRole('button', { name: /add brand/i })
+    .first()
+    .click();
   await page.waitForTimeout(700);
   check((await page.getByRole('dialog').count()) > 0, 'the add brand dialog opens');
 
@@ -161,7 +164,10 @@ try {
   await page.fill('input[name="storeId"]', STORE_ID);
   await page.fill('input[name="clientName"]', 'Test Client Ltd');
   await page.fill('input[name="budget"]', BUDGET);
-  await page.getByRole('button', { name: /^add brand$/i }).last().click();
+  await page
+    .getByRole('button', { name: /^add brand$/i })
+    .last()
+    .click();
 
   const brand = await waitFor(
     async () =>
@@ -221,11 +227,17 @@ try {
   console.log('\n[2] Two brands cannot share a store id');
   await page.goto(`${BASE}/admin/brands`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1500);
-  await page.getByRole('button', { name: /add brand/i }).first().click();
+  await page
+    .getByRole('button', { name: /add brand/i })
+    .first()
+    .click();
   await page.waitForTimeout(700);
   await page.fill('input[name="name"]', `${BRAND_NAME} clone`);
   await page.fill('input[name="storeId"]', STORE_ID);
-  await page.getByRole('button', { name: /^add brand$/i }).last().click();
+  await page
+    .getByRole('button', { name: /^add brand$/i })
+    .last()
+    .click();
 
   const refused = await page
     .getByText(/already uses that store id/i)
@@ -240,7 +252,10 @@ try {
     .eq('store_id', STORE_ID);
   check(brandCount === 1, `and only one brand exists with that store id (${brandCount})`);
 
-  await page.getByRole('button', { name: /^cancel$/i }).last().click();
+  await page
+    .getByRole('button', { name: /^cancel$/i })
+    .last()
+    .click();
   await page.waitForTimeout(600);
 
   /* ----------------------------------------------------- [3] the offer -- */
@@ -280,15 +295,15 @@ try {
     (await page.getByText(/\$25,000/).count()) > 0,
     'Overview carries the budget, as money rather than a raw number'
   );
-  check(
-    (await page.getByText(STORE_ID).count()) > 0,
-    'and the store id'
-  );
+  check((await page.getByText(STORE_ID).count()) > 0, 'and the store id');
 
   await page.getByRole('tab', { name: /^offers$/i }).click();
   await page.waitForTimeout(800);
 
-  await page.getByRole('button', { name: /new offer|create the first offer/i }).first().click();
+  await page
+    .getByRole('button', { name: /new offer|create the first offer/i })
+    .first()
+    .click();
   await page.waitForTimeout(700);
 
   // An empty field must LOOK empty. These started life as "5" and "300", which
@@ -341,7 +356,10 @@ try {
   // Same dialog, still open. Fill it in properly this time.
   await page.fill('input[name="title"]', 'Starter bundle');
   await page.fill('input[name="badgeTitle"]', 'TOP PICK');
-  await page.fill('textarea[name="description"]', 'Five in-feed videos, posted within 30 days.');
+  await page.fill(
+    'textarea[name="description"]',
+    'Five in-feed videos, posted within 30 days.'
+  );
   await page.fill('input[name="videoCount"]', '5');
   await page.fill('input[name="rewardAmount"]', '300');
   await page.waitForTimeout(400);
@@ -356,7 +374,9 @@ try {
       (
         await admin
           .from('offers')
-          .select('id, title, badge_title, video_count, reward_amount, currency, status, needs_application')
+          .select(
+            'id, title, badge_title, video_count, reward_amount, currency, status, needs_application'
+          )
           .eq('brand_id', brandId)
           .maybeSingle()
       ).data,
@@ -412,7 +432,10 @@ try {
    * The thing a real click would catch, an overlay swallowing input, is covered
    * by the "dialog closes itself" check above.
    */
-  await page.getByRole('button', { name: /^edit$/i }).first().click();
+  await page
+    .getByRole('button', { name: /^edit$/i })
+    .first()
+    .click();
   await page.waitForTimeout(1200);
 
   // Opening the editor once threw, which took the whole page down with it:
@@ -467,9 +490,8 @@ try {
     .catch(() => false);
   check(cardUpdated, 'the card updated without a reload');
 
-
   /* --------------------------------------------- [4b] the brand's story -- */
-  console.log("\n[4b] The About tab, and products");
+  console.log('\n[4b] The About tab, and products');
   await page.getByRole('tab', { name: /^about$/i }).click();
   await page.waitForSelector('input[name="tagline"]', { state: 'visible', timeout: 20000 });
 
@@ -482,21 +504,13 @@ try {
 
   const about = await waitFor(
     async () =>
-      (
-        await admin
-          .from('brands')
-          .select('tagline, description')
-          .eq('id', brandId)
-          .single()
-      ).data,
+      (await admin.from('brands').select('tagline, description').eq('id', brandId).single())
+        .data,
     (r) => r?.tagline === 'Recovery, Simplified',
     "the brand's story to save"
   );
   check(about?.tagline === 'Recovery, Simplified', 'the tagline saves');
-  check(
-    (about?.description ?? '').startsWith('A test brand'),
-    'and so does the description'
-  );
+  check((about?.description ?? '').startsWith('A test brand'), 'and so does the description');
 
   const { data: aboutLog } = await admin
     .from('audit_log')
@@ -505,7 +519,23 @@ try {
     .eq('action', 'brand.about_updated');
   check((aboutLog ?? []).length > 0, 'and the edit is audited like every other write');
 
-  await page.getByRole('button', { name: /add product|add the first product/i }).first().click();
+  /*
+   * PRODUCTS HAVE THEIR OWN TAB NOW. They used to sit under the bottom half of
+   * About, so this walked straight from saving the story into adding a product
+   * without moving. Since 2026-10-12 the brand hub follows the order a creator
+   * reads it in — About, Products, Briefs, Offers, Contests, Creators — and
+   * products are a tab of their own, so this has to go there first.
+   */
+  await page.getByRole('tab', { name: /^products$/i }).click();
+  await page.waitForSelector('[data-section="products"], button', {
+    state: 'visible',
+    timeout: 20000,
+  });
+
+  await page
+    .getByRole('button', { name: /add product|add the first product/i })
+    .first()
+    .click();
   await page.waitForSelector('input[name="externalProductId"]', {
     state: 'visible',
     timeout: 20000,
@@ -518,7 +548,10 @@ try {
   await page.fill('input[name="badgeTitle"]', 'HERO');
   // `.last()`: the section's own "Add product" button is still on the page
   // behind the dialog, so an unqualified locator matches two things.
-  await page.getByRole('button', { name: /^add product$/i }).last().click();
+  await page
+    .getByRole('button', { name: /^add product$/i })
+    .last()
+    .click();
 
   const product = await waitFor(
     async () =>
@@ -675,7 +708,10 @@ try {
 
   // b2. A retired brand takes its offers and products with it.
   await admin.from('brands').update({ is_active: false }).eq('id', brandId);
-  const whileRetired = await asUser(spyPage, `/rest/v1/offers?brand_id=eq.${brandId}&select=id`);
+  const whileRetired = await asUser(
+    spyPage,
+    `/rest/v1/offers?brand_id=eq.${brandId}&select=id`
+  );
   const retiredProducts = await asUser(
     spyPage,
     `/rest/v1/brand_products?brand_id=eq.${brandId}&select=id`
@@ -721,11 +757,10 @@ try {
     `inserting a product is refused (HTTP ${insertProduct.status})`
   );
 
-  const raiseCommission = await asUser(
-    spyPage,
-    `/rest/v1/brand_products?id=eq.${product.id}`,
-    { method: 'PATCH', body: JSON.stringify({ commission_rate: 99 }) }
-  );
+  const raiseCommission = await asUser(spyPage, `/rest/v1/brand_products?id=eq.${product.id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ commission_rate: 99 }),
+  });
   const { data: afterCommission } = await admin
     .from('brand_products')
     .select('commission_rate')
@@ -769,7 +804,10 @@ try {
       rewardAmount: 100000,
     }),
   });
-  check(viaFunction.status === 403, `the Edge Function refuses a creator (HTTP ${viaFunction.status})`);
+  check(
+    viaFunction.status === 403,
+    `the Edge Function refuses a creator (HTTP ${viaFunction.status})`
+  );
 
   const { data: denied } = await admin
     .from('audit_log')
@@ -789,13 +827,19 @@ try {
       p_reward_amount: 100000,
     }),
   });
-  check(directRpc.status >= 400, `save_offer is unreachable with a user token (HTTP ${directRpc.status})`);
+  check(
+    directRpc.status >= 400,
+    `save_offer is unreachable with a user token (HTTP ${directRpc.status})`
+  );
 
   const directBrand = await asUser(spyPage, '/rest/v1/rpc/save_brand', {
     method: 'POST',
     body: JSON.stringify({ p_actor_id: spy.user.id, p_name: 'Mine', p_store_id: 'x' }),
   });
-  check(directBrand.status >= 400, `save_brand is unreachable too (HTTP ${directBrand.status})`);
+  check(
+    directBrand.status >= 400,
+    `save_brand is unreachable too (HTTP ${directBrand.status})`
+  );
 
   // g. No token at all.
   const anonCall = await fetch(`${URL_BASE}/functions/v1/manage-brand`, {
@@ -815,14 +859,11 @@ try {
   // The attacks above prove the database holds. This proves the screen a real
   // creator actually looks at is built on that, and that nothing internal
   // leaked into the markup on the way.
-  console.log("\n[5b] The hub, as the creator sees it");
+  console.log('\n[5b] The hub, as the creator sees it');
 
   await spyPage.goto(`${BASE}/app/brands`, { waitUntil: 'domcontentloaded' });
   await spyPage.waitForTimeout(2500);
-  check(
-    (await spyPage.getByText(BRAND_NAME).count()) > 0,
-    'the brand is listed for them'
-  );
+  check((await spyPage.getByText(BRAND_NAME).count()) > 0, 'the brand is listed for them');
 
   await spyPage.goto(`${BASE}/app/brands/${brand.slug}`, { waitUntil: 'domcontentloaded' });
   /*
@@ -851,10 +892,7 @@ try {
     (await spyPage.getByText('Recovery, Simplified').count()) > 0,
     'the tagline the admin wrote is there'
   );
-  check(
-    (await spyPage.getByText('Recovery Cream, 2 oz').count()) > 0,
-    'so is the product'
-  );
+  check((await spyPage.getByText('Recovery Cream, 2 oz').count()) > 0, 'so is the product');
   check((await spyPage.getByText('25%').count()) > 0, 'with the commission on it');
 
   // The whole point of the split, checked on the rendered page rather than only
@@ -891,10 +929,7 @@ try {
     (await spyPage.getByText(/opens when you are approved/i).count()) > 0,
     'somebody still in review is told what they are waiting for'
   );
-  check(
-    (await spyPage.getByText(BRAND_NAME).count()) === 0,
-    'and sees no brand names at all'
-  );
+  check((await spyPage.getByText(BRAND_NAME).count()) === 0, 'and sees no brand names at all');
   await admin.from('profiles').update({ role: 'creator', tier: 'pro' }).eq('id', spy.user.id);
 
   const spyReal = spyErrors.filter(
@@ -905,14 +940,23 @@ try {
 
   /* ------------------------------------------------------- [6] deleting -- */
   console.log('\n[6] Deleting an offer keeps the record');
-  // Back to the Offers tab explicitly. The admin page was last left on About,
-  // which has its own "Delete <product>" buttons, so a first-match locator
-  // there deletes a product and then reports that the offer survived.
+  // Back to the Offers tab explicitly. The page was last left on Products
+  // (About, before products moved to their own tab), which carries its own
+  // "Delete <product>" buttons, so a first-match locator there deletes a
+  // product and then cheerfully reports that the offer survived.
+  //
+  // Reloading the record no longer lands on Offers either: since 2026-10-12 the
+  // hub opens on About, the first thing a creator sees. So say which tab.
   await page.goto(`${BASE}/admin/brands/${brandId}`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(2500);
+  await page.getByRole('tab', { name: /^offers$/i }).click();
+  await page.waitForTimeout(1500);
   // The button is labelled "Delete Starter bundle", not just "Delete": with
   // several offers on screen, "Delete" alone tells a screen reader nothing.
-  await page.getByRole('button', { name: /^delete\s+\S/i }).first().click();
+  await page
+    .getByRole('button', { name: /^delete\s+\S/i })
+    .first()
+    .click();
   await page.waitForTimeout(500);
   await page.getByRole('button', { name: /yes, delete/i }).click();
 
@@ -946,7 +990,10 @@ try {
   // number into those only gets a made up one typed in. Run last, on an empty
   // brand, so it cannot disturb anything above.
   console.log('\n[6b] An offer with no fixed terms');
-  await page.getByRole('button', { name: /new offer|create the first offer/i }).first().click();
+  await page
+    .getByRole('button', { name: /new offer|create the first offer/i })
+    .first()
+    .click();
   await page.waitForSelector('input[name="title"]', { state: 'visible', timeout: 20000 });
 
   await page.fill('input[name="title"]', 'Boosted commission');
