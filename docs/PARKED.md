@@ -54,12 +54,30 @@ one card out of four and leave the rest on the month, which is worse than no
 control. `month` is also the contract cycle in that file rather than merely a
 filter, and it has 252 references.
 
-**What it needs.** The same pattern one level up: a `euka_video_day` cache fed
-from Euka's `creator_videos` export, which already accepts a from/to window
-(`supabase/functions/euka/index.ts`, `type: 'videos'`). With per-day video rows,
-views and GMV become range-able and the control can scope the whole block
-honestly. Expect it to be the heavier of the two — that export takes tens of
-seconds and is per store rather than per campaign.
+**UPDATE, same day: the picker IS now built**, and it scopes exactly what it
+honestly can. `CollabPeriodPicker` replaces the native `<input type="month">`
+with presets (Last 7 / 30 / 90 days, This month, Last month), a month grid and a
+custom From/To range. A month still drives the whole page as before; a range
+moves only the Euka ad figures, and the control SAYS SO on itself while a range
+is active rather than leaving it to be discovered by someone reconciling totals.
+Not yet opened in a browser by Claude — there is no staff login for dev — so
+Rashid is testing it.
+
+**One trap left behind, on purpose rather than by accident.** The picker adds
+new `WURX-ADDED` blocks to `src/vendor/wurxbase/WurxUI.jsx` (the import, the
+`wxRange` state beside `month`, the control itself) plus a `periodKey` prop on
+`BrandDrilldown`. These are NOT registered in `scripts/wurxbase-patches.mjs`, so
+the next WurxBase release would drop them when `vendor:wurxbase` re-copies the
+file. Register them before pulling a new upstream version — and update the
+existing "BrandDrilldown month effect" entry too, because its body is the old
+two-line effect this work replaced.
+
+**What still needs doing.** The same pattern one level up: a `euka_video_day`
+cache fed from Euka's `creator_videos` export, which already accepts a from/to
+window (`supabase/functions/euka/index.ts`, `type: 'videos'`). With per-day video
+rows, views and GMV become range-able too and the range can scope the whole
+block rather than one card. Expect it to be the heavier of the two — that export
+takes tens of seconds and runs per store rather than per campaign.
 
 ## 0. Contests: what is left, as of 2026-08-14 (evening)
 
