@@ -1,5 +1,16 @@
 # Project state
 
+> **THIS FILE IS STALE BELOW THIS LINE, as of 2026-10-13.** Everything from the
+> PRISM rebrand onwards is missing from it: the rebrand itself, the Home and My
+> numbers rebuild, the pipeline split, the five-agent redesign of Offers,
+> Contests, the brand hub, Leaderboards, My content and Profile, the brand hub
+> editor, and the app becoming installable on a phone.
+>
+> **For the current picture, read `docs/NEW_MACHINE.md` section 6.** It lists
+> what shipped, what was verified by actually looking at it, what was NOT
+> verified, and what is next. This file should be rewritten from that section;
+> doing so is itself one of the open items.
+
 ## NEXT ACTION
 
 **Updated 2026-09-29, after the product groups shipped.**
@@ -16,17 +27,17 @@ the data the brief lists — that is where these usually go wrong. **One decisio
 is open: the Prism kit is light-only and `check:contrast` demands dark/light
 parity.**
 
-**ONE QUESTION IS OPEN AND HE RAISED IT HIMSELF — SIGNATURES.** Rashid: *"for
+**ONE QUESTION IS OPEN AND HE RAISED IT HIMSELF — SIGNATURES.** Rashid: _"for
 usman signature i am not sure how asad's is being generated but i can get the
 signature as image or what is the best fit u need to tell me that later first
-build ui"*. The UI is built and the existing mechanism is untouched: the Brand
+build ui"_. The UI is built and the existing mechanism is untouched: the Brand
 Representative line is auto-signed by drawing `fields.signerName` (default
 "Aris") in a script face on a canvas. The options to put to him are in
 DECISIONS, "How a signature should get onto the contract".
 
 **Still owed to him, not forgotten:** he has **more changes to the TikTok-first
-signup** and said he would describe them himself — *"few more changes but will
-let u know"*. He tested that round trip on his own phone on 2026-09-29 and it
+signup** and said he would describe them himself — _"few more changes but will
+let u know"_. He tested that round trip on his own phone on 2026-09-29 and it
 worked. Do NOT start step 4 or 5 of the signup plan unprompted; step 4 needs a
 TikTok scope he has not applied for yet.
 
@@ -35,7 +46,7 @@ Everything below is context, not instructions.
 ## Standing reminders for Rashid
 
 **Updated 2026-09-29. REMIND HIM OF THESE FIRST THING.** He asked to be
-reminded: *"i will do it later remind me please"*. (This used to be a second
+reminded: _"i will do it later remind me please"_. (This used to be a second
 block called NEXT ACTION AFTER COMPACTION; there is only one of those now, at
 the very top, and it is the thing to do next rather than the list to nag.)
 
@@ -76,6 +87,7 @@ Answer "what's pending?" from `docs/PARKED.md`.
 ### The public website, and one icon everywhere (2026-09-22)
 
 Built for TikTok's second rejection, live on dev at `65e9872`.
+
 - **Six new pages** beside the home page and the legal ones: For creators, For
   brands, How it works, About, FAQ, Contact. A header menu and a three-column
   footer carry the whole site on every public page, and each page has its own
@@ -94,9 +106,9 @@ Built for TikTok's second rejection, live on dev at `65e9872`.
 
 ### The brand nobody else could see (2026-10-09)
 
-Rashid: *"Asad added a new brand Honeysticks and other users like me or admin is
+Rashid: _"Asad added a new brand Honeysticks and other users like me or admin is
 unable to see this ... asad is able to see the brand on his laptop but even he
-can't see on my laptop with his own account."* Reported more than once before as
+can't see on my laptop with his own account."_ Reported more than once before as
 a "syncing issue".
 
 **IT WAS NEVER A SYNCING OR A PERMISSIONS PROBLEM.** HoneySticks was in the
@@ -116,11 +128,11 @@ signing in on Rashid's laptop inherited Rashid's September.
 Proved before anything was changed — one account, one machine, one build, only
 the saved month different:
 
-| Browser last used in | HoneySticks |
-|---|---|
-| September | missing |
-| October | visible |
-| fresh browser (defaults to today) | visible |
+| Browser last used in              | HoneySticks |
+| --------------------------------- | ----------- |
+| September                         | missing     |
+| October                           | visible     |
+| fresh browser (defaults to today) | visible     |
 
 **Both halves of the fix:**
 
@@ -130,8 +142,8 @@ the saved month different:
    — but a browser can no longer show September in November.
 2. **The screen now says where a missing brand is.** Looking at an earlier
    month, a notice names the brands set up in a later one and offers a
-   one-click switch: *"2 brands are set up in a later month, not in Sep 2026:
-   HoneySticks, JOYMODE. [Show Oct 2026]"*. **This is the half that fixes the
+   one-click switch: _"2 brands are set up in a later month, not in Sep 2026:
+   HoneySticks, JOYMODE. [Show Oct 2026]"_. **This is the half that fixes the
    class** — the screen previously could not distinguish "no such brand" from
    "not in this month", and the team concluded the former twice.
 
@@ -147,8 +159,8 @@ it. It now takes `onPickMonth`, which is already this file's convention.
 
 ### The Euka 503 (2026-10-09)
 
-Rashid, same message: *"when adding creator for honeysticks, fetching product
-from euka shows 503 error"*.
+Rashid, same message: _"when adding creator for honeysticks, fetching product
+from euka shows 503 error"_.
 
 **The 503 is EUKA'S, and it is persistent and brand-specific.** Measured: three
 attempts, HoneySticks 503 every time while Penetrex returned ten products in the
@@ -158,9 +170,9 @@ to fix in our data.
 What was wrong was the message. `collab-products` already handled the failure
 correctly (200, empty list, a note) and the note said `Euka answered 503`, which
 the picker prints verbatim. The note is now a sentence that names the brand and
-says what to do: *"EUKA's catalogue is not answering for HoneySticks right now
+says what to do: _"EUKA's catalogue is not answering for HoneySticks right now
 (their error 503). Type the product name and press Enter — you can carry on
-without it."* A 5xx is also retried once, so a real blip does not send somebody
+without it."_ A 5xx is also retried once, so a real blip does not send somebody
 to the typing fallback.
 
 **Suite:** `pnpm verify:brand-visibility`, 24 checks. It seeds
@@ -175,8 +187,8 @@ date reason as the three suites fixed on 2026-10-02 — it now uses
 ### The contract, redrawn — and thumbnails everywhere (2026-10-02)
 
 **1. THE CONTRACT LOOKS LIKE SOMETHING WURX SENDS.** Rashid, with a mockup:
-*"all i want is to update the ui of the contract it's very boring and also add
-some extra stuff in it ... i want exactly that UI"*.
+_"all i want is to update the ui of the contract it's very boring and also add
+some extra stuff in it ... i want exactly that UI"_.
 
 Cream paper, a black spine with a gold rule, the wordmark stamped in a black
 block, a ghost of the mascot top right, numbered sections with gold numerals,
@@ -187,8 +199,8 @@ and there are now THREE of them: Brand, Creator and **Agency**, which is the
 
 **It is a redraw, not a rewrite.** Every word still comes from
 `CONTRACT_SECTIONS` and from whatever the editor has changed. Rashid asked for
-the page flow to stay as it was — *"the second page should be vertical below the
-first one like we currently have"* — because his mockup shows two pages SIDE BY
+the page flow to stay as it was — _"the second page should be vertical below the
+first one like we currently have"_ — because his mockup shows two pages SIDE BY
 SIDE as a design preview. It is still letter portrait, pages one after another.
 
 **Where it lives:** `src/routes/admin/contract-paper.js`, OURS. The vendored
@@ -201,13 +213,12 @@ produced "September 30, 2026 ." — three times on the payment page. The
 tokeniser now carries whether a space was really there, and it is exported so
 `verify:contract-pdf` can test it as a pure function.
 
-**2. THUMBNAILS, EVERYWHERE.** Rashid: *"yes please fix as u just said"*. The
+**2. THUMBNAILS, EVERYWHERE.** Rashid: _"yes please fix as u just said"_. The
 Irwin fix lives in `reacher-sync`; everywhere else the videos arrive through the
 browser and no server job owns them, so it is a re-runnable script:
 `node scripts/backfill-video-thumbs.mjs` (dry run; `--write` to apply). It only
 ever ADDS a picture to an entry that has none. **1,397 blanks asked about, 1,100
-filled (79%)** across 18 brands — Penetrex 526, Pure Daily Care 203, Aqua Sonic
-177. The 297 left are genuinely not in the store and are re-asked on a later
+filled (79%)** across 18 brands — Penetrex 526, Pure Daily Care 203, Aqua Sonic 177. The 297 left are genuinely not in the store and are re-asked on a later
 run.
 
 **3. THREE SUITES WERE QUIETLY DATE-DEPENDENT, and 1 October proved it.**
@@ -233,10 +244,10 @@ guard so the condition is never vacuous.
 
 ### Two Irwin Naturals fixes (2026-09-29)
 
-Rashid: *"for irwin naturals the top videos row does not show thumbnail please
+Rashid: _"for irwin naturals the top videos row does not show thumbnail please
 check that and for irwin when a deal is completed such as a creator has made 5/5
 videos why does not it automatically move towards payment pending, asad did it
-manually"*. Both were real and both had the same root: **`reacher-sync` writes
+manually"_. Both were real and both had the same root: **`reacher-sync` writes
 `video_codes` and nothing else**, while every browser path that writes videos
 does more.
 
@@ -291,10 +302,10 @@ Ad spend and ROI.
 
 ### A brand's creators, grouped by product (2026-09-29)
 
-Rashid, with a mockup: *"we are showing creators of the brand when we open a
+Rashid, with a mockup: _"we are showing creators of the brand when we open a
 particular brand ... we also have products and we can see. Now what i want is to
 organize and show product wise creators and for the ui i exactly want the ui as
-u can see in ss2"*.
+u can see in ss2"_.
 
 Open a brand and the creator table now splits into a band per product: the
 product's picture, its name, a "N creators" pill, a collapse chevron and a menu
@@ -566,6 +577,7 @@ it is repeated.
 ### Followers on the Creators tab, and a second source for them (2026-09-18)
 
 Live on dev at `813841b` (CLI deploy, live asset checked against the build).
+
 - **A Followers column** after TikTok, and **a Followers filter** in the
   existing Filter panel, with a "No count yet" bucket.
 - **Counts come from Euka's shop data first**, and for everyone it does not
@@ -645,6 +657,7 @@ the admin screen for making links, which he has not approved yet.
 Rashid's boss wanted three stacked cards beside the ten top videos on a brand
 page, instead of the single GMV total: views (blue), GMV (green) and ad spend
 (red), for the chosen month, or for all time under All Time.
+
 - **Each video is counted once.** 84 Penetrex videos sit under two deals, and
   adding the columns would put all-time views at 10.0M instead of 7.9M. The
   hover text says how many videos were counted once.
@@ -671,6 +684,7 @@ page, instead of the single GMV total: views (blue), GMV (green) and ad spend
 Rashid asked for two things. First, a small circle beside each creator showing
 how many deals we have had with them. Second, a better colour scheme for the
 L1–L7 tags, like Euka's.
+
 - **Deals badge:** a small circle on the corner of the creator's face, on the
   brand page and the Creators tab, counting that person's deals **in the month
   on screen, across every brand**. Under All Time it counts their whole
@@ -689,7 +703,8 @@ L1–L7 tags, like Euka's.
 
 ### Paid Collabs ad spend, ROI and spark codes from EUKA (2026-09-15, backfilling)
 
-Rashid: *"let's move with euka for now"*. What was built:
+Rashid: _"let's move with euka for now"_. What was built:
+
 - The `euka-ads-sync` Edge Function, with the migration
   `20260915150000_euka_ad_figures.sql`. The migration adds tables, readers,
   the claim queue, and a pg_cron job that runs every 5 minutes.
@@ -702,6 +717,7 @@ entry asset, `index-Io5Hejlp.js`, is the same file the on-screen check passed
 against.
 
 **State when recorded:**
+
 - Connected in Euka: Penetrex, Dr Tobias, Longevity Box, Swisse Wellness,
   Aurelia, NutraHarmony, and **Apothecary since 2026-09-17** (Rashid linked
   its account; it needed a discovery run to appear — see OPERATIONS, "when a
@@ -713,6 +729,7 @@ against.
 - The backfill of June to August will take a few hours.
 
 **Proven:**
+
 - `verify:euka-ads` 21/21.
 - `verify:euka-accounts` 9/9, after the shared-module move.
 - `verify:euka-ads-ui` 5/5. Every Penetrex September creator row (34, 26 of
@@ -738,6 +755,7 @@ Vercel → Account Settings → Authentication → connect GitHub `RashidNazeer`
 as a preview of the dev project (`dpl_ECGFqPUZMpGXwxK1U97yHbbX1DFH`), and
 `wurxmediahubdev.vercel.app` was aliased to it. Steps are in OPERATIONS
 under Vercel. Verified on the live URL:
+
 - the entry asset `index-AUz50jHL.js` is the same file as the tested local build
 - `verify:video-days` 30/30 against the live site
 - `verify:ads-manager-ui` 18/18 as Subhan against the live site
@@ -758,8 +776,8 @@ Rollback: alias the domain back to the 09-10 deployment
 
 ### Ads Manager is full staff (2026-09-15)
 
-Rashid: *"ads manager will have the same edit access as asad and rashid has
-which means they can edit anything"*, for the ROLE, not one person.
+Rashid: _"ads manager will have the same edit access as asad and rashid has
+which means they can edit anything"_, for the ROLE, not one person.
 **Subhan (`subhan@wurxmedia.com`) is the only Ads Manager, on dev.** The two
 old test Ads Manager accounts were deleted first, as agreed.
 
@@ -830,12 +848,11 @@ one before, so every earlier run had nothing to measure.
 
 **The TikTok app came back REJECTED, and it was our wording.** Their App
 Review Guidelines say "Apps must not be for private or personal use", and the
-word *private* opened both our scope explanation and /terms — the page the
+word _private_ opened both our scope explanation and /terms — the page the
 form sends the reviewer to. The product never matched the rejection: creators
 own their own accounts. Fixed in production as copy only, plus a new public
 `/tiktok` page, because TikTok also require a developed site rather than a
-landing page. Full diagnosis and the drafted resubmission copy are in PARKED
-27.
+landing page. Full diagnosis and the drafted resubmission copy are in PARKED 27.
 
 **Three new roles: Affiliate Team Lead, Operations Lead, Ads Manager.** Their
 own logins, Paid Collabs only, read only. Built WITHOUT touching
@@ -849,9 +866,9 @@ fault as the payment gates, missed then because that sweep searched the
 negative form. And the creator picker was switched off while editing although
 the code behind it already handled editing.
 
-**Reacher was explored and dropped.** He said: *"this is not to be built in
+**Reacher was explored and dropped.** He said: _"this is not to be built in
 this app reacher is diff forget that now i just wanted to see what's
-available"*. Findings are in PARKED 43 in case it returns. His API key is in
+available"_. Findings are in PARKED 43 in case it returns. His API key is in
 `cli-secrets.env` as `REACHER_API`.
 
 ### Suites, all green on dev
@@ -859,8 +876,6 @@ available"*. Findings are in PARKED 43 in case it returns. His API key is in
 collabs-viewer-rls 34/34 · collabs-viewer 42/42 · collab-controls 45/45 ·
 collab-canvas 86/86 · collab-contrast 14/14 · RLS suite all green · perms 5/5
 · build and lint clean.
-
-
 
 **`dev` is at `191ffaf`, pushed, and DEPLOYED to wurxmediahubdev.vercel.app**
 (verified READY, and verified in a browser against the live site, not just the
@@ -1057,18 +1072,18 @@ for the Monday checklist, then PARKED. Ask for the eight addresses and wait.
 
 ### 1. The eight email addresses — the only thing blocking Monday
 
-Ask: *"Which email will each of these people use to log into our hub?"*
+Ask: _"Which email will each of these people use to log into our hub?"_
 
-| Person | What they can do today |
-| --- | --- |
-| Asad | full access |
-| Usman | manager |
-| Farkhan Saleem | editor |
-| khushi | editor |
-| masifa | editor |
-| Shumyle Asim | editor |
-| Fahad | **view only** |
-| Lead | **view only** |
+| Person         | What they can do today |
+| -------------- | ---------------------- |
+| Asad           | full access            |
+| Usman          | manager                |
+| Farkhan Saleem | editor                 |
+| khushi         | editor                 |
+| masifa         | editor                 |
+| Shumyle Asim   | editor                 |
+| Fahad          | **view only**          |
+| Lead           | **view only**          |
 
 **Why it matters, in his terms:** without it, Fahad and Lead walk in with full
 edit rights over deals and money. With it, everyone keeps exactly the access
@@ -1094,7 +1109,7 @@ already, never answered. Yes means one migration dropping the column.
 
 30 possible dark/light issues were never verified — the agents checking them
 died when his usage limit hit, and he stopped the re-run to save budget with
-*"i will tell you when to run it"*. They are listed in **PARKED 35** as leads,
+_"i will tell you when to run it"_. They are listed in **PARKED 35** as leads,
 NOT as findings. Re-running resumes from cache; only the unfinished ones cost
 anything.
 
@@ -1139,9 +1154,9 @@ for the Monday checklist, then PARKED. Ask the three questions above and wait.
 
 ## The offers grid (2026-08-21)
 
-Rashid: *"Look at the offers ui how boring it is ... horizontal cards rather
+Rashid: _"Look at the offers ui how boring it is ... horizontal cards rather
 than having one row it's wasting the time ... i am expecting something perfect
-polish the ui please."*
+polish the ui please."_
 
 `/admin/offers` was one full-width row per offer with four labelled columns. It
 is a grid now: 1 / 2 / 3 / 4 columns at 375 / 640 / 1280 / 1536, `rounded-md`
@@ -1172,7 +1187,7 @@ without asking.
 
 ## The contest editor, in five tabs (2026-08-22)
 
-Rashid: *"admin has to sroll on one page to see who accepted what's going on"*.
+Rashid: _"admin has to sroll on one page to see who accepted what's going on"_.
 `/admin/brands/:id/contests/:contestId` is now Details · Rewards · Visibility ·
 Settings · Summary, with the tab in the URL and Summary carrying the entry and
 progress queues.
@@ -1223,7 +1238,7 @@ Details in FEATURE_MAP under "Offer kinds"; the four things left are PARKED 21.
 
 ## The requests queue, as cards (2026-08-21)
 
-*"i like it do something with this as well do the same"*, so `/admin/offers/requests`
+_"i like it do something with this as well do the same"_, so `/admin/offers/requests`
 now matches: same radius, same three sections, same money treatment, same
 open-across-the-row panel.
 
@@ -1261,9 +1276,9 @@ Chromiums, not a broken path.
 
 ## What else the TikTok API will give us (2026-08-21)
 
-A question, not a build. Rashid: *"which other apis are availale can we somehow
+A question, not a build. Rashid: _"which other apis are availale can we somehow
 fetch shop gmv the shop ilnked with ad account? Also note that we can apply for
-a certin api if required."*
+a certin api if required."_
 
 Answered against the live Penetrex account with a new tool, `pnpm probe:tiktok`,
 which walks every candidate endpoint and prints TikTok's own verdict. Full
@@ -1292,11 +1307,11 @@ engagement metrics at all, confirmed one metric at a time.
 
 ## Money that is right when there is more than one brand (2026-08-20)
 
-Rashid, before onboarding brands with their own ad accounts: *"there should be
+Rashid, before onboarding brands with their own ad accounts: _"there should be
 proper matching of the brands with ad account ... their gmv should always be the
 sum of every brand every offer/contest they are in ... the creator should never
 be able to see the breakdown of other creators. This is production base scalable
-saas and money sensitive please be careful here."*
+saas and money sensitive please be careful here."_
 
 He was right to stop the work and ask. A five-agent audit with a refuter per
 finding turned up three CRITICALs and six HIGHs. **Twelve other claims were
@@ -1341,7 +1356,6 @@ suspended creator and staff, plus the one-video-one-creator rules ·
 `check-performance` 36 · `check-contests` 141 · `check-content` 33 ·
 `check-rls` 22 · build, lint, contrast. All 845 money rows carry their brand
 and store after the re-key, with the same totals as before it.
-
 
 ## The pipeline joins up, and the board goes live (2026-08-20)
 
@@ -1396,13 +1410,12 @@ his own sheets that were never loaded, so they are genuinely distinct from the
 85 — but those particular videos barely ran ads: \$0.84 of spend and \$0.00
 GMV across the six approved. The tab works; the figures are nearly zero.
 
-
 ## Contest videos become real (2026-08-20)
 
 Step B. Rashid, asked which number decides a contest reward, answered with a
-better option than any of the three offered: *"money is only owed when all
+better option than any of the three offered: _"money is only owed when all
 videos are up for both contest and offer it's like they will submit the video
-when admin see one by one and all are approved only then money is owed."* It
+when admin see one by one and all are approved only then money is owed."_ It
 removes the problem all three had — money is never owed early, so in the
 ordinary case there is nothing to claw back — and it makes contests say the same
 sentence offers started saying the day before.
@@ -1443,12 +1456,11 @@ creator is told in their own timeline, re-approving owes it again, a PAID award
 survives all of it, and a creator cannot call the review function. Build and
 lint clean.
 
-
 ## Only the sheet data, nothing else (2026-08-19, later still)
 
-Rashid: *"please make sure that all the data before adding penetrex from the
+Rashid: _"please make sure that all the data before adding penetrex from the
 sheet was dummy and useless ... now i wanna see only the data we fetched from
-the sheet is there any extra data??"*
+the sheet is there any extra data??"_
 
 There was, from three separate causes, and he chose to remove all of it.
 
@@ -1485,13 +1497,12 @@ deleting the other would bring it straight back on the next refresh.
 `audit_log` and `tiktok_sync_runs` were kept, asked directly: a history that
 can be erased by whoever is tidying up is not a history.
 
-
 ## The whole flow, reconciled (2026-08-19, late)
 
-Rashid: *"I need to basically discuss the final flow of our platfrom regrding to
-whatever we have build untill now, so that we both are on same page."* Then the
-flow in full, and: *"If everything is already built around what i discussed then
-perfect otherwise let me know what's currently there what's not."*
+Rashid: _"I need to basically discuss the final flow of our platfrom regrding to
+whatever we have build untill now, so that we both are on same page."_ Then the
+flow in full, and: _"If everything is already built around what i discussed then
+perfect otherwise let me know what's currently there what's not."_
 
 **Sixteen agents audited it, every claimed gap adversarially re-checked.** That
 mattered: one "gap" was wrong. Contest video links and ad codes ARE the progress
@@ -1548,11 +1559,10 @@ including the browser section · `check-rls` 22/22. The sync's video set is
 unchanged (all 85 dev videos are approved), so no day's fingerprint was
 invalidated and the gate cost nothing in API calls.
 
-
 ## Creator faces, on our own end (2026-08-19)
 
-Rashid, after asking where WurxBase gets its pictures: *"can we do it on our
-admin end only? whereever possible?"* He chose fetch-once-and-keep over pointing
+Rashid, after asking where WurxBase gets its pictures: _"can we do it on our
+admin end only? whereever possible?"_ He chose fetch-once-and-keep over pointing
 at the third party, and every admin screen over just one.
 
 **WurxBase asks unavatar.io from the browser, per row, on every page view.**
@@ -1586,12 +1596,11 @@ admin entrant roster, which would be the ranked-people shape contests were built
 to refuse; contest exclusions, where the row may name somebody who never signed
 up; and anything creator-facing at all.
 
-
 ## Real money, for 22 API calls (2026-08-19, later)
 
-Rashid, on the content sheets: *"trust the sheet only for video links not for
+Rashid, on the content sheets: _"trust the sheet only for video links not for
 gmv stats we need api calls for that please make sure to make minimum api
-calls"*. And he confirmed Jen Honest's six unlabelled videos as August, pasting
+calls"_. And he confirmed Jen Honest's six unlabelled videos as August, pasting
 the links himself.
 
 **85 videos now, and all 85 carry real figures.** $447.41 spent, $716.49 GMV,
@@ -1614,7 +1623,6 @@ mapped to a brand, which would have meant the sync could do nothing. It was a
 query naming `store_name` when the column is `name`, with the error unread:
 exactly the trap the repo already documents. The mapping was there all along.
 
-
 ## August's videos, and real money on a creator's screen (2026-08-19)
 
 Rashid pointed at the per-creator content sheets linked from the Collabs tab.
@@ -1629,8 +1637,8 @@ three August rows on @lowbacklab. Then the month turned out to sit on the
 block's HEADER row rather than beside the first video, and parsing the header
 before skipping it turned 38 apparently unlabelled videos into 6.
 
-**Label, not posting date, on Rashid's instruction:** *"july 30 and aug 1 these
-dates can be a bit off because of timezone issues, so trust the sheet data"*.
+**Label, not posting date, on Rashid's instruction:** _"july 30 and aug 1 these
+dates can be a bit off because of timezone issues, so trust the sheet data"_.
 Both readings were put to him first, because they disagree a lot: the label
 marks the batch a video was commissioned in, and Brooke Jackson's entire
 51-video sheet is one block labelled "April" spanning April to August.
@@ -1647,7 +1655,6 @@ spend, 0.51x ROI, 6 videos with 4 ads running and 2 finished, a daily chart from
 any of it; the figures were already in the database with nothing pointing at
 them. The other 73 videos show the designed empty state until a sync fetches
 theirs.
-
 
 ## Penetrex's real retainer, on dev (2026-08-19)
 
@@ -1693,11 +1700,10 @@ result against the sheet.
 admin offers, requests, creators and brand-hub screens all show the seeded data;
 zero console errors on either side.
 
-
 ## Clean slate: 41 real creators on dev (2026-08-19)
 
-Rashid: *"delete every creator and all it's videos and everything remove all
-offers we will add fresh"*, then create the 41 from the backend.
+Rashid: _"delete every creator and all it's videos and everything remove all
+offers we will add fresh"_, then create the 41 from the backend.
 
 **Gone:** 19 creator and applicant accounts, 3 offers, 1 contest, 82 video
 submissions, 17 applications. **Kept, deliberately:** 5 brands and their
@@ -1748,7 +1754,6 @@ state, no celebration, zero console errors.
 and `reconcile-budgets.mjs` — which rewrites every brand's committed figure —
 had no guard at all.
 
-
 ## "It says signed out while I am signed in", finished (2026-08-19)
 
 Rashid: we fixed this from the admin end, do the creator side as well.
@@ -1785,12 +1790,11 @@ a second throwaway account, signs in as it in another tab, and asserts the words
 the banner uses, not merely that a banner appeared. All green, zero console
 errors.
 
-
 ## The Paid Collabs header, and the theme it was stealing (2026-08-19)
 
-Rashid: *"fix the header it's boring make it beautiful and also make sure dark
+Rashid: _"fix the header it's boring make it beautiful and also make sure dark
 mode should work fine it seems it will break at some places such as payment
-pending tag is not clear"*.
+pending tag is not clear"_.
 
 **The header is now ours.** It was the last region of the screen still wearing
 WurxBase coffee-brown, because the reskin codemod rewrote their STYLESHEETS and
@@ -1835,7 +1839,6 @@ shoots both themes at 1440/1024/768/390, seeds their session as a **viewer** so
 a run cannot write to their database, and measures page overflow. Zero
 horizontal scroll at all eight combinations.
 
-
 ## Paid Collabs: WurxBase runs inside our admin (2026-08-18, later)
 
 The whole WurxBase dashboard is vendored into `/admin/collabs`, sidebar item
@@ -1875,18 +1878,19 @@ including config validation. **And a deployment is not done until `vercel ls`
 says READY.** Both in OPERATIONS.
 
 ---
+
 ## Where we are: Rashid is testing the creator numbers (2026-08-18)
 
 **The product's central promise is live on dev.** A creator signs in and sees
 the real spend, GMV, orders and ROI behind their own videos, pulled from TikTok.
 
-| | |
-| --- | --- |
-| TikTok app | approved, connected on **dev only**; prod has no secrets and stays frozen |
+|             |                                                                                    |
+| ----------- | ---------------------------------------------------------------------------------- |
+| TikTok app  | approved, connected on **dev only**; prod has no secrets and stays frozen          |
 | Ad accounts | Biomax-PX and Infirst Healthcare; **Penetrex store matched to the Penetrex brand** |
-| Data | 46 real videos, ~2,800 real video-days, back to 18 April |
-| Nightly job | `pg_cron` **07:00 UTC**, one call per store per day |
-| Suites | 15, all green. `verify:tiktok` (37) and `verify:performance` are the new two |
+| Data        | 46 real videos, ~2,800 real video-days, back to 18 April                           |
+| Nightly job | `pg_cron` **07:00 UTC**, one call per store per day                                |
+| Suites      | 15, all green. `verify:tiktok` (37) and `verify:performance` are the new two       |
 
 **Sign in as a seeded creator** with `WurxPenetrex2026!`:
 `babblingbrookej@wurxseed.test` is the interesting one, **2.75x ROI on real
@@ -1919,16 +1923,16 @@ admin side only and after that we can move to creators side." See
 He gave one long instruction and it is now the standing spec in CLAUDE.md and in
 `FEATURE_MAP.md` "Admin screen layout". What changed:
 
-| | before | after |
-| --- | --- | --- |
-| rail width | 280px, with a painted scrollbar | **225px**, no scrollbar, still scrolls |
-| clicking the last menu item | snapped the list to the top | stays where you left it |
-| collapse control | an arrow in the top bar | **the Wurx mark itself** |
-| above the work | title row + description row, ~120px | **nothing**; the bar names the section |
-| the page's `<h1>` | one per screen, repeating the menu | **one, in the bar**, underlined |
-| row one | filters, laid out differently on every screen | one shared `<FilterBar>` |
-| content width | capped at `max-w-7xl` | **full width** |
-| type | 846 hardcoded `px` sizes | **`rem`**, on a scale the user can change |
+|                             | before                                        | after                                     |
+| --------------------------- | --------------------------------------------- | ----------------------------------------- |
+| rail width                  | 280px, with a painted scrollbar               | **225px**, no scrollbar, still scrolls    |
+| clicking the last menu item | snapped the list to the top                   | stays where you left it                   |
+| collapse control            | an arrow in the top bar                       | **the Wurx mark itself**                  |
+| above the work              | title row + description row, ~120px           | **nothing**; the bar names the section    |
+| the page's `<h1>`           | one per screen, repeating the menu            | **one, in the bar**, underlined           |
+| row one                     | filters, laid out differently on every screen | one shared `<FilterBar>`                  |
+| content width               | capped at `max-w-7xl`                         | **full width**                            |
+| type                        | 846 hardcoded `px` sizes                      | **`rem`**, on a scale the user can change |
 
 **The section name is read from the sidebar's own labels** (`sectionTitleFor` in
 `src/lib/nav.ts`), so the bar and the lit menu row cannot disagree, and
@@ -1950,10 +1954,10 @@ found himself, and every one of them leaves a page that lays out perfectly, so
 The one thing Rashid said at the very start he could not tolerate, fixed and
 measured rather than asserted.
 
-| | before | after |
-| --- | --- | --- |
+|                           | before                 | after   |
+| ------------------------- | ---------------------- | ------- |
 | click to URL change, cold | **291ms**, up to 457ms | **5ms** |
-| click to URL change, warm | 11ms | 9ms |
+| click to URL change, warm | 11ms                   | 9ms     |
 
 **The cause was the order, not the speed.** React Router's route level `lazy`
 waits for a screen's code before it commits the navigation, so for a third of a
