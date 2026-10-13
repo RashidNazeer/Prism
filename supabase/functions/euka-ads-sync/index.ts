@@ -64,9 +64,18 @@ const Body = z.object({
 const BACKFILL_FROM = '2026-06-01';
 /* Euka serves spark codes for the most recent 60 days only. Stay inside it. */
 const SPARK_DAYS = 58;
+/*
+ * How far back day-grain figures are kept. Rashid chose 90 on 2026-10-13, so
+ * "last 7 days", "last 30 days" and the current quarter all answer exactly.
+ * Anything older still answers from the month table, which is where all the
+ * history lives — wide rather than wrong, and exactly what the page does today.
+ */
+const AD_DAYS = 90;
 /* Euka answers, or gives up with a 504, by about 50s. Never start a call with less left. */
 const CALL_MS = 58_000;
 const UNIT_WORKERS = 4;
+/* Two, against the months' four. See the note where the pool is started. */
+const DAY_WORKERS = 2;
 const SPARK_WORKERS = 2;
 const DISCOVER_EVERY_MS = 6 * 60 * 60 * 1000;
 /* "Done, unless something asks again." A closed month does not move. */
@@ -155,6 +164,30 @@ function dueAfterSuccess(month: string): string {
   return NEVER;
 }
 
+/*
+ * A DAY IS FINISHED THE MOMENT EUKA STOPS REWRITING IT.
+ *
+ * THREE DAYS, AND THE NUMBER IS THE WHOLE POINT. An earlier version of this
+ * used eight, to match the month path's restate window, with a comment
+ * claiming day grain would cost fewer calls than months. That was wrong, and
+ * badly: a month unit is ONE call kept warm, while eight open days are eight.
+ * Worked through against dev's 471 month units (~94 campaigns):
+ *
+ *   months            ~94 campaigns x 1 open month, every 20h   ~110 calls/day
+ *   days, 8-day window ~94 x 8, every 20h                       ~900 calls/day
+ *   days, 3-day window ~94 x 3, every 20h                       ~340 calls/day
+ *
+ * Three is Euka's own documented rewrite window — it restates the last 3 days
+ * of its sync and nothing earlier — so holding days open past that buys
+ * nothing but calls. It is still ~3x the month path, which is the honest price
+ * of being able to answer "last 7 days" at all, and it is bounded: a day older
+ * than three is fetched once and never asked again.
+ */
+function dueAfterDaySuccess(day: string): string {
+  if (daysAgo(day) < 3) return new Date(Date.now() + 20 * 3600_000).toISOString();
+  return NEVER;
+}
+
 /* 10 minutes, then 20, 40 … capped at 12 hours. */
 const retryAfter = (attempts: number) =>
   new Date(Date.now() + Math.min(10 * 60_000 * 2 ** Math.max(0, attempts - 1), 12 * 3600_000)).toISOString();
@@ -163,8 +196,10 @@ const retryAfter = (attempts: number) =>
 async function discover(db: Db, index: StoreIndex) {
   const months = monthsFrom(BACKFILL_FROM, monthOf(todayUtc()));
   const sparkDays = lastDays(SPARK_DAYS);
+  const adDays = lastDays(AD_DAYS);
   let connected = 0;
   let unitsSeen = 0;
+  let dayUnitsSeen = 0;
   const problems: string[] = [];
 
   await Promise.all(index.stores.map(async (s) => {
@@ -196,6 +231,7 @@ async function discover(db: Db, index: StoreIndex) {
     let listed = 0;
     let missing = 0;
     const units: Record<string, unknown>[] = [];
+    const dayUnits: Record<string, unknown>[] = [];
 
     for (const a of advertisers) {
       const advertiserId = String(a?.advertiserId ?? '');
@@ -242,6 +278,21 @@ async function discover(db: Db, index: StoreIndex) {
             campaign_name: String(c.campaignName ?? ''),
           });
         }
+        /* The same campaign, as DAYS, for the recent window. `created` is a
+           month boundary, so compare on the day's own month rather than
+           dropping every day of the month a campaign started in. */
+        for (const d of adDays) {
+          if (monthOf(d) < created) continue;
+          dayUnits.push({
+            advertiser_id: advertiserId,
+            campaign_id: String(c.campaignId),
+            day: d,
+            store_id: s.id,
+            store_name: s.name,
+            advertiser_name: String(a.advertiserName ?? ''),
+            campaign_name: String(c.campaignName ?? ''),
+          });
+        }
       }
     }
 
@@ -252,6 +303,16 @@ async function discover(db: Db, index: StoreIndex) {
       if (error) problems.push(`${s.name} units: ${error.message}`);
     }
     unitsSeen += units.length;
+
+    for (let i = 0; i < dayUnits.length; i += 500) {
+      /* Same `ignoreDuplicates`: a day already fetched keeps its status, so
+         rediscovery every six hours never re-opens finished days and the
+         backfill cannot restart itself. */
+      const { error } = await db.from('euka_ad_sync_days')
+        .upsert(dayUnits.slice(i, i + 500), { onConflict: 'advertiser_id,campaign_id,day', ignoreDuplicates: true });
+      if (error) problems.push(`${s.name} day units: ${error.message}`);
+    }
+    dayUnitsSeen += dayUnits.length;
 
     const { error: dayErr } = await db.from('euka_spark_sync_days')
       .upsert(sparkDays.map((day) => ({ store_id: s.id, day })), { onConflict: 'store_id,day', ignoreDuplicates: true });
@@ -271,7 +332,103 @@ async function discover(db: Db, index: StoreIndex) {
     });
   }));
 
-  return { stores: index.stores.length, connected, units: unitsSeen, problems: problems.slice(0, 10) };
+  return { stores: index.stores.length, connected, units: unitsSeen, dayUnits: dayUnitsSeen, problems: problems.slice(0, 10) };
+}
+
+/* ═══ 2a · ONE CAMPAIGN'S DAY ════════════════════════════════════════════ */
+/*
+ * The same call as `processUnit`, for a single day, and simpler in one way that
+ * matters: a one-day window is already the narrowest thing Euka can be asked
+ * for, so there is no week-splitting fallback. If a single day times out
+ * repeatedly there is nothing left to narrow, and it simply retries on the
+ * usual backoff.
+ */
+async function processDayUnit(db: Db, index: StoreIndex, u: any, deadline: number): Promise<boolean> {
+  const where = (q: any) =>
+    q.eq('advertiser_id', u.advertiser_id).eq('campaign_id', u.campaign_id).eq('day', u.day);
+
+  const fail = async (message: string, transient = false) => {
+    const attempts = Number(u.attempts ?? 0) + 1;
+    const due = transient && attempts <= 20
+      ? new Date(Date.now() + 4 * 60_000).toISOString()
+      : retryAfter(attempts);
+    await where(db.from('euka_ad_sync_days').update({
+      status: 'failed', attempts, last_error: message.slice(0, 300),
+      due_at: due, updated_at: nowIso(),
+    }));
+    return false;
+  };
+
+  const auth = index.ownerOf.get(u.store_id);
+  if (!auth) return fail('no Euka key we hold owns this store any more');
+
+  const day = String(u.day);
+  /* A day that has not happened yet is not a failure; it is simply not due. */
+  if (day > todayUtc()) {
+    await where(db.from('euka_ad_sync_days').update({ due_at: `${day}T01:00:00Z`, updated_at: nowIso() }));
+    return true;
+  }
+
+  const q = new URLSearchParams({
+    storeId: u.store_id, advertiserId: u.advertiser_id, campaignId: u.campaign_id,
+    startDate: day, endDate: day,
+  });
+  const url = `${EUKA_V1}/gmv-max/reports/item?${q}`;
+  const before = deadline - Date.now();
+  if (before < 12_000) return fail('time ran out before the call could be made', true);
+
+  let r = await getJson(url, auth, Math.min(CALL_MS, Math.max(10_000, before - 2_000)));
+  /* Same warm-retry rule as the month path: Euka keeps working after it gives
+     up on us and keeps the answer, so one immediate retry is worth it when a
+     slow second answer still fits inside this run. */
+  const left = deadline - Date.now();
+  if (r.status >= 500 && left > 50_000) r = await getJson(url, auth, Math.min(CALL_MS, left - 2_000));
+  if (r.status !== 200) return fail(`item report (${day}): ${errText(r)}`, r.status >= 500);
+  if (r.body?.truncated) {
+    return fail(`item report (${day}): Euka marked the rows truncated, so they are not the whole day; nothing was stored`);
+  }
+
+  const rowsIn: any[] = Array.isArray(r.body?.rows) ? r.body.rows : [];
+  const byItem = new Map<string, { item_id: string; cost: number; orders: number; gross_revenue: number; currency: string | null }>();
+  for (const row of rowsIn) {
+    const id = String(row?.itemId ?? '');
+    if (!/^[0-9]{6,32}$/.test(id)) continue;
+    const cost = Number(row.cost) || 0;
+    const orders = Number(row.orders) || 0;
+    const revenue = Number(row.grossRevenue) || 0;
+    /* Only rows where something moved, so an untouched day stores nothing and
+       the table stays about spend rather than about campaigns. */
+    if (!cost && !orders && !revenue) continue;
+    const cur = byItem.get(id) ?? { item_id: id, cost: 0, orders: 0, gross_revenue: 0, currency: row.currency ?? null };
+    if (row.currency && cur.currency && row.currency !== cur.currency) {
+      return fail(`item report (${day}): video ${id} came back in two currencies (${cur.currency}, ${row.currency})`);
+    }
+    cur.cost += cost;
+    cur.orders += orders;
+    cur.gross_revenue += revenue;
+    byItem.set(id, cur);
+  }
+  const rows = [...byItem.values()].map((x) => ({
+    ...x,
+    cost: Math.round(x.cost * 100) / 100,
+    gross_revenue: Math.round(x.gross_revenue * 100) / 100,
+  }));
+
+  const { error } = await db.rpc('euka_ad_replace_day', {
+    p_advertiser_id: u.advertiser_id,
+    p_campaign_id: u.campaign_id,
+    p_day: day,
+    p_store_id: u.store_id,
+    p_rows: rows,
+  });
+  if (error) return fail(`store rows: ${error.message}`);
+
+  await where(db.from('euka_ad_sync_days').update({
+    status: 'ok', attempts: 0, row_count: rows.length,
+    cost: Math.round(rows.reduce((t, x) => t + x.cost, 0) * 100) / 100,
+    last_error: null, synced_at: nowIso(), due_at: dueAfterDaySuccess(day), updated_at: nowIso(),
+  }));
+  return true;
 }
 
 /* ═══ 2 · ONE CAMPAIGN'S MONTH ═══════════════════════════════════════════ */
@@ -559,11 +716,11 @@ Deno.serve(async (req) => {
        and a run past 150s is cut off by the gateway mid-unit, leaving its claims
        leased. So a run that discovered stops here; the next one does the work. */
     if (discovered) {
-      return json({ ranMs: Date.now() - started, trigger: isCron ? 'schedule' : 'staff', discovered, units: null, sparks: null }, 200, req);
+      return json({ ranMs: Date.now() - started, trigger: isCron ? 'schedule' : 'staff', discovered, units: null, dayUnits: null, sparks: null }, 200, req);
     }
 
     const brandIds = new Map<string, Promise<string>>();
-    const [units, sparks] = await Promise.all([
+    const [units, dayUnits, sparks] = await Promise.all([
       pool<any>(UNIT_WORKERS, deadline,
         async (n) => {
           const { data, error } = await db.rpc('euka_ad_claim_units', { p_limit: n });
@@ -571,6 +728,22 @@ Deno.serve(async (req) => {
           return data ?? [];
         },
         (u) => processUnit(db, index, u, deadline)),
+      /*
+       * THE DAY BACKFILL RUNS BESIDE THE MONTHS, NOT INSTEAD OF THEM.
+       *
+       * Fewer workers on purpose. The months are what every screen reads today
+       * and they must not get slower while ninety days of history fills in
+       * behind them; the days are a backfill that only has to finish
+       * eventually, and once it has, a day older than the restate window never
+       * becomes due again. Steady state is a couple of days per campaign.
+       */
+      pool<any>(DAY_WORKERS, deadline,
+        async (n) => {
+          const { data, error } = await db.rpc('euka_ad_claim_days', { p_limit: n });
+          if (error) throw new Error(`claim day units: ${error.message}`);
+          return data ?? [];
+        },
+        (u) => processDayUnit(db, index, u, deadline)),
       parsed.data.sparks === false
         ? Promise.resolve(null)
         : pool<any>(SPARK_WORKERS, deadline,
@@ -612,14 +785,22 @@ Deno.serve(async (req) => {
       .select('*', { count: 'exact', head: true }).lte('due_at', now);
     const { count: sparkDaysDue } = await db.from('euka_spark_sync_days')
       .select('*', { count: 'exact', head: true }).lte('due_at', now);
+    const { count: adDaysDue } = await db.from('euka_ad_sync_days')
+      .select('*', { count: 'exact', head: true }).lte('due_at', now);
+    /* How far back the day grain actually reaches. This is what decides whether
+       a range picker answers exactly or falls back to whole months, so it is
+       worth having in the run log rather than only in the database. */
+    const { data: dayCoverage } = await db.rpc('euka_ad_day_coverage').maybeSingle();
 
     return json({
       ranMs: Date.now() - started,
       trigger: isCron ? 'schedule' : 'staff',
       discovered,
       units,
+      dayUnits,
       sparks,
-      stillDue: { units: unitsDue ?? null, sparkDays: sparkDaysDue ?? null },
+      dayCoverage: dayCoverage ?? null,
+      stillDue: { units: unitsDue ?? null, sparkDays: sparkDaysDue ?? null, adDays: adDaysDue ?? null },
       tierCache,
       followers,
       eukaAccountsUnavailable: index.unavailable,
