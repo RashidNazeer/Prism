@@ -19,6 +19,7 @@ import {
   money as wxMoney,
   roiText as wxRoi,
 } from '@/routes/admin/collab-ad-figures';
+import { CollabPeriodPicker as WxPeriodPicker } from '@/components/admin/CollabPeriodPicker';
 /* WURX-END */
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { can } from './access';
@@ -1570,6 +1571,15 @@ export default function WurxUI({
      `rememberedMonth`. WURX-END */
   const [month, setMonth] = useState(rememberedMonth(__initialState) || currentMonthKey()); // default = current month
   const [allTime, setAllTime] = useState(__initialState.allTime === true);
+  /* WURX-ADDED · the date range, which is '' unless one is chosen.
+     Kept beside `month` rather than inside it: `month` is read in 252 places
+     here and several of them mean the contract cycle rather than a window, so a
+     range is an addition and never a substitution. `wxPeriodKey` is what the
+     picker shows and what the ad figures are fetched for. Rashid chose the
+     current month as the default, so an untouched page behaves as it always
+     has. WURX-END */
+  const [wxRange, setWxRange] = useState('');
+  const wxPeriodKey = wxRange || month || '';
   useEffect(() => { patchUIState({ tab }); }, [tab]);
   /* God Mode writes to localStorage from a different component tree, so
      it announces itself and the nav re-reads on the next render. */
@@ -1906,8 +1916,32 @@ export default function WurxUI({
                     paints every input a field colour, and on this one that put a
                     band behind "September 2026" — the box-inside-a-box again.
                     Named so the rule can leave it alone. */}
-                <input type="month" className="pc-chrome-input" value={month} onChange={e => { if (e.target.value) setMonth(e.target.value); }}
-                  style={{ border: 0, background: 'transparent', outline: 'none', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: 'var(--pc-text)', cursor: 'pointer', minWidth: 100 }}
+                {/* WURX-REPLACED · this was `<input type="month">`.
+                    Rashid, 2026-10-13: the calendar "should allow clients to
+                    select date range as well like it is on the creator login".
+                    A native month input cannot do that — and the popover it
+                    opened was the BROWSER'S, which is why it looked nothing
+                    like the rest of the product and could not be themed.
+                    `wxPeriod` is `YYYY-MM` for a month, exactly as before, or
+                    `YYYY-MM-DD..YYYY-MM-DD` for a range. A month still drives
+                    the whole page, because here a month is the CONTRACT CYCLE
+                    and not merely a filter; a range scopes the Euka ad figures,
+                    which are the figures stored per day. The picker says so on
+                    itself while a range is active. WURX-END */}
+                <WxPeriodPicker
+                  period={wxPeriodKey}
+                  onChange={(next) => {
+                    if (!next) return;
+                    if (next.includes('..')) {
+                      /* A range leaves `month` alone: 252 places read it, and
+                         several of them mean the contract cycle rather than a
+                         window. Only the ad figures follow the range. */
+                      setWxRange(next);
+                    } else {
+                      setWxRange('');
+                      setMonth(next);
+                    }
+                  }}
                 />
               </label>
               <button aria-label="Next month" onClick={() => setMonth(m => addMonth(m, 1))}
@@ -2286,6 +2320,8 @@ function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allT
     return <BrandDrilldown
       brand={drillBrand}
       currentUser={currentUser}
+      /* WURX-ADDED · the chosen period: a month, or a day range. WURX-END */
+      periodKey={wxPeriodKey}
       creators={creators.filter(c => (c.brand || '').trim() === drillBrand.brand)}
       brandCreators={(allCreators || creators).filter(c => (c.brand || '').trim() === drillBrand.brand)}
       allCreators={allCreators || creators}
@@ -2897,7 +2933,7 @@ function BrandFace({ brand }) {
   return <span className="pc-ava" style={{ background: gradFor(brand) }}>{initial(brand)}</span>;
 }
 
-function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, refetchBudgets, month, allTime, eukaL30, currentUser, onBack, onSelectCreator, canEdit, canAdd, canDeleteBrand, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator }) {
+function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, refetchBudgets, month, allTime, periodKey, eukaL30, currentUser, onBack, onSelectCreator, canEdit, canAdd, canDeleteBrand, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator }) {
   /* WURX-ADDED · tell our ad figures which month is on screen.
 
      THIS IS THE WHOLE REASON THE COLUMNS MATCH THE ROW THEY SIT IN. Everything
@@ -2911,9 +2947,23 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
      without a prop being threaded through them. */
   const wxSetMonth = wxAdsHook().setMonth;
   const wxAdsB = wxAdsHook(); /* WURX-ADDED · for the Top videos ad spend total */
+  /*
+   * `periodKey` is the one place a date range enters this screen. It comes from
+   * the picker in the filter bar above and is either `YYYY-MM`, exactly what
+   * `month` has always been, or `YYYY-MM-DD..YYYY-MM-DD`.
+   *
+   * It is a PROP rather than state here, and deliberately separate from
+   * `month`: on this screen a month is the CONTRACT CYCLE — a creator is
+   * onboarded into one, a contract carries one, and budget, allocated and paid
+   * all mean "this month's". Narrowing those to seven days would not filter
+   * them, it would make them meaningless. So a range moves the ad figures,
+   * which are stored per day, and leaves the cycle alone.
+   *
+   * All Time still wins over both: it means no bounds at all.
+   */
   useEffect(() => {
-    wxSetMonth(allTime ? '' : (month || ''));
-  }, [wxSetMonth, allTime, month]);
+    wxSetMonth(allTime ? '' : (periodKey || month || ''));
+  }, [wxSetMonth, allTime, periodKey, month]);
   /* WURX-END */
   /* ── EUKA posted-videos sync · pulls this brand's creator_videos export,
      matches handles to onboarded creators, merges NEW links into each
