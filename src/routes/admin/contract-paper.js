@@ -46,12 +46,25 @@
  * line, so re-applying our work after a pull is re-adding that line.
  */
 import { jsPDF } from 'jspdf';
-import { PRISM_MARK_PNG } from './prism-mark.js';
-
-/* The rasterised wordmark's own pixel size, previously imported alongside the
-   old mark. PRISM's is 456x128, a 2x render of the kit SVG. */
-const PRISM_MARK_W = 456;
-const PRISM_MARK_H = 128;
+/*
+ * THE CONTRACT CARRIES THE WURX MARK, NOT PRISM'S.
+ *
+ * Rashid, 2026-10-14: "when a creator signs in a contract is sent to the
+ * creator and it must have the wurx logo not the prism logo revert the
+ * contract to original."
+ *
+ * The rebrand swapped this to the PRISM wordmark along with the rest of the
+ * shell, and that was wrong for this one document. PRISM is the name of the
+ * PLATFORM creators log into; the contract is an agreement with Wurx Media,
+ * the company — `fields.agency` has said "Wurx Media" throughout, and the
+ * footer has always read wurxmedia.com. A creator signing it is contracting
+ * with Wurx, so Wurx is whose mark belongs at the top of it.
+ *
+ * `wurx-mark.js` is restored verbatim from 153f374, the commit before the
+ * rebrand, rather than re-rasterised, so the logo is byte-for-byte the one
+ * that was on every contract signed until now.
+ */
+import { WURX_MARK_PNG, WURX_MARK_W, WURX_MARK_H } from './wurx-mark.js';
 
 /* â”€â”€ the brand's three colours, from src/styles/tokens.css â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const INK = [16, 14, 12]; /* near-black #100e0c â€” body and headings    */
@@ -189,13 +202,13 @@ function ghostMark(d) {
 function markBlock(d, y) {
   const h = 42,
     pad = 9;
-  const w = h * (PRISM_MARK_W / PRISM_MARK_H) * 0.78 + pad * 2;
+  const w = h * (WURX_MARK_W / WURX_MARK_H) * 0.78 + pad * 2;
   setFill(d, BLACK);
   d.roundedRect(ML, y, w, h, 3, 3, 'F');
   const iw = w - pad * 2,
-    ih = iw * (PRISM_MARK_H / PRISM_MARK_W);
+    ih = iw * (WURX_MARK_H / WURX_MARK_W);
   try {
-    d.addImage(PRISM_MARK_PNG, 'PNG', ML + pad, y + (h - ih) / 2, iw, ih);
+    d.addImage(WURX_MARK_PNG, 'PNG', ML + pad, y + (h - ih) / 2, iw, ih);
   } catch {
     /* No image support is not a reason to produce a contract with a hole in
        the header: fall back to the name, set the way the mark sets it. */

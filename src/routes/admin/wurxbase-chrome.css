@@ -499,7 +499,24 @@
   .wurxbase-root.wurxbase-root .pc-filterbar {
     float: right;
     width: auto;
-    margin: 0 0 0.5rem 1rem;
+    /*
+     * THE TOP MARGIN IS NOT COSMETIC: it is what stops this sliding under the
+     * top bar. Rashid: "this hides behind the navbar", with the date control
+     * clipped by the header's lower edge.
+     *
+     * The shell mounts with `-my-4`, pulling the vendored page up by 1rem so
+     * its padding does not double ours. Everything else there is in normal flow
+     * and simply starts 1rem higher. This bar is FLOATED, so it is lifted to
+     * the top of its container — a container that now begins underneath the
+     * sticky header, which is `z-40`, while a float creates no stacking context
+     * at all. The control ends up painted behind the bar it sits beside.
+     *
+     * The 1rem is given back here, to the one element that negative margin
+     * actually hurts. Deliberately NOT `position: relative; z-index: 41`: that
+     * would lift it OVER the header and leave it hovering there during scroll,
+     * trading a clipped control for one that covers the navigation.
+     */
+    margin: 1rem 0 0.5rem 1rem;
   }
 
   /* The screen's own first control shares the line rather than clearing it. */
