@@ -1598,9 +1598,47 @@ export default function WurxUI({
    */
   const [wxPreset, setWxPreset] = useState('thisMonth');
   const [wxRangeObj, setWxRangeObj] = useState(null);
+  /*
+   * THE WINDOW OF DAYS THAT EXIST, which every preset is resolved against.
+   *
+   * This is not optional, and passing `undefined` is the bug that made the
+   * control say "All time" and filter nothing: `presetToRange` calls
+   * `floorOf(w)` first and returns NULL when there is no floor, because on the
+   * creator side an absent window means "still loading" and firing a query for
+   * a range nobody chose would be worse than waiting. Here the data is already
+   * in hand, so the window has to be built from it.
+   *
+   * The floor is the brand's earliest evidence — the first video posted, or the
+   * first creator onboarded if no video is dated yet. The ceiling is today:
+   * unlike the creator side, these figures are EUKA's live totals rather than a
+   * nightly table, so there is no day-late rule to respect.
+   */
+  const wxWindow = useMemo(() => {
+    const day = (v) => {
+      const s = String(v ?? '').slice(0, 10);
+      return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : '';
+    };
+    let earliest = '';
+    (creators || []).forEach((c) => {
+      const hire = day(c && c.hiring_date);
+      if (hire && (!earliest || hire < earliest)) earliest = hire;
+      (Array.isArray(c && c.video_codes) ? c.video_codes : []).forEach((r) => {
+        const d = day(r && r.date);
+        if (d && (!earliest || d < earliest)) earliest = d;
+      });
+    });
+    const today = new Date().toISOString().slice(0, 10);
+    /* A brand with nothing dated at all still needs a usable calendar, so fall
+       back to a year back rather than leaving every preset returning null. */
+    return {
+      earliest: earliest || `${Number(today.slice(0, 4)) - 1}-01-01`,
+      latest: today,
+      videos: 0,
+    };
+  }, [creators]);
   const wxRangeDates = useMemo(
-    () => (wxPreset === 'custom' ? wxRangeObj : wxPresetToRange(wxPreset, undefined)),
-    [wxPreset, wxRangeObj],
+    () => (wxPreset === 'custom' ? wxRangeObj : wxPresetToRange(wxPreset, wxWindow)),
+    [wxPreset, wxRangeObj, wxWindow],
   );
   /* The ad figures take a period key: '' is no bounds, otherwise the range. */
   const wxPeriodKey = wxRangeDates ? `${wxRangeDates.from}..${wxRangeDates.to}` : '';
@@ -1926,21 +1964,16 @@ export default function WurxUI({
           {/* Right-side filter cluster: month nav + All Time */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, opacity: allTime ? 0.45 : 1, pointerEvents: allTime ? 'none' : 'auto', transition: 'opacity 0.2s ease' }}>
-              <button aria-label="Previous month" onClick={() => setMonth(m => addMonth(m, -1))}
-                style={{ width: 34, height: 34, borderRadius: 999, border: '1px solid var(--pc-divider)', background: 'var(--pc-card)', color: 'var(--pc-text)', fontSize: 17, lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >‹</button>
-              <label title="Pick a month" style={{
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-                height: 34, padding: '0 12px', borderRadius: 999,
-                background: 'var(--pc-card)', border: '1px solid var(--pc-divider)', cursor: 'pointer',
-              }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-                {/* WURX-ADDED class · this input is flush inside the pill above,
-                    which already draws the surface and the edge. Our field rule
-                    paints every input a field colour, and on this one that put a
-                    band behind "September 2026" — the box-inside-a-box again.
-                    Named so the rule can leave it alone. */}
-                {/* WURX-REPLACED · this was `<input type="month">`.
+                {/* WURX-REPLACED · this was `<input type="month">` inside a pill,
+                    flanked by ‹ › month arrows.
+                    All of that chrome is gone with it. The pill drew its own
+                    calendar icon and the picker draws one too, which is why
+                    Rashid's screenshot showed TWO calendars side by side inside
+                    one lozenge; the arrows stepped `month` while the label
+                    showed a range, so the two could disagree with no way to
+                    tell. The picker carries its own trigger and its own month
+                    navigation, so it replaces the lot rather than sitting
+                    inside it.
                     Rashid, 2026-10-13: the calendar "should allow clients to
                     select date range as well like it is on the creator login" —
                     and then, of my first attempt at one: "the date selector is
@@ -1957,8 +1990,8 @@ export default function WurxUI({
                     late, so today is never offered. WURX-END */}
                 <WxDateRangePicker
                   preset={wxPreset}
-                  range={wxRangeObj}
-                  window={undefined}
+                  range={wxRangeDates}
+                  window={wxWindow}
                   onChange={(nextPreset, nextRange) => {
                     setWxPreset(nextPreset);
                     setWxRangeObj(nextRange);
@@ -1972,14 +2005,10 @@ export default function WurxUI({
                        than the heading would be its own kind of wrong. A range
                        that straddles months leaves it alone, because then there
                        is no single honest answer. */
-                    const r = nextPreset === 'custom' ? nextRange : wxPresetToRange(nextPreset, undefined);
+                    const r = nextPreset === 'custom' ? nextRange : wxPresetToRange(nextPreset, wxWindow);
                     if (r && r.from.slice(0, 7) === r.to.slice(0, 7)) setMonth(r.from.slice(0, 7));
                   }}
                 />
-              </label>
-              <button aria-label="Next month" onClick={() => setMonth(m => addMonth(m, 1))}
-                style={{ width: 34, height: 34, borderRadius: 999, border: '1px solid var(--pc-divider)', background: 'var(--pc-card)', color: 'var(--pc-text)', fontSize: 17, lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >›</button>
             </div>
             <button onClick={() => setAllTime(v => !v)}
               title={allTime ? 'Showing all-time data · click to filter by month' : 'Show data across all months'}
