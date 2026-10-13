@@ -82,6 +82,10 @@ every verification script fails with a confusing launch error:
 pnpm exec playwright install chromium
 ```
 
+**`docs/DEPENDENCIES.md` is the companion to this file**: every package, what
+each one is for, which of them reach the creator's phone, and what is
+deliberately absent and why.
+
 ### Clone both remotes
 
 The project lives in two GitHub repositories, kept byte-identical:
