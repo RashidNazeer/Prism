@@ -1966,7 +1966,7 @@ export default function WurxUI({
         </div>
 
         {tab === 'brands' && (
-          <BrandsTab creators={filtered} allCreators={creators} budgets={budgets} refetchBudgets={refetchBudgets} month={allTime ? '' : month} allTime={allTime} isSuper={isSuper} perms={perms} eukaL30={eukaL30} currentUser={currentUser} onSelectCreator={onSelectCreator} onAddCreator={openAddCreator} onEditCreator={openEditCreator} onDeleteBrand={onDeleteBrand} onSetCreatorStatus={onSetCreatorStatus} onUpdateCreator={onUpdateCreator}
+          <BrandsTab creators={filtered} allCreators={creators} budgets={budgets} refetchBudgets={refetchBudgets} month={allTime ? '' : month} allTime={allTime} periodKey={allTime ? '' : wxPeriodKey} isSuper={isSuper} perms={perms} eukaL30={eukaL30} currentUser={currentUser} onSelectCreator={onSelectCreator} onAddCreator={openAddCreator} onEditCreator={openEditCreator} onDeleteBrand={onDeleteBrand} onSetCreatorStatus={onSetCreatorStatus} onUpdateCreator={onUpdateCreator}
             /* WURX-ADDED · the "brand is in another month" notice needs to be
                able to take you there. The month lives up here, so the setter
                has to come down — without it the button rendered, looked
@@ -2079,7 +2079,7 @@ export default function WurxUI({
 }
 
 /* ════════ BRANDS TAB ════════ */
-function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allTime, isSuper, perms, eukaL30, currentUser, onSelectCreator, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator, onPickMonth }) {
+function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allTime, periodKey, isSuper, perms, eukaL30, currentUser, onSelectCreator, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator, onPickMonth }) {
   const [search, setSearch] = useState('');
   // Track only brand name (string), so re-renders pick up live data from brandRows automatically
   const [drillBrandName, setDrillBrandName] = useState(() => loadUIState().brandsDrill || null);
@@ -2320,8 +2320,12 @@ function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allT
     return <BrandDrilldown
       brand={drillBrand}
       currentUser={currentUser}
-      /* WURX-ADDED · the chosen period: a month, or a day range. WURX-END */
-      periodKey={wxPeriodKey}
+      /* WURX-ADDED · the chosen period: a month, or a day range. It is a PROP
+         here, not a local: this is BrandsTab, and the period is owned by
+         ChromeSlot above it, which is where the picker lives. Reading it as a
+         bare identifier crashed the whole screen with a ReferenceError.
+         WURX-END */
+      periodKey={periodKey}
       creators={creators.filter(c => (c.brand || '').trim() === drillBrand.brand)}
       brandCreators={(allCreators || creators).filter(c => (c.brand || '').trim() === drillBrand.brand)}
       allCreators={allCreators || creators}
