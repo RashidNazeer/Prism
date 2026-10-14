@@ -216,6 +216,20 @@ by `check-glass-contrast.mjs` against rendered pixels, not tokens.
 A glass surface that cannot meet its floor does not become glass. It becomes
 opaque. There is no third option.
 
+**A second reference, and what it is good for.** Rashid also sent the css.glass
+recipe: `rgba(255,255,255,0.17)`, `blur(8.9px)`, `radius 16px`,
+`0 4px 30px rgba(0,0,0,0.1)`, `1px solid rgba(255,255,255,0.1)`. It is a much
+lighter touch than the mock's `blur(22px)` with a `0.88` white edge, and that is
+worth having: **8.9px blur composites far cheaper than 22px**, which is the
+budget §4.3 is trying to protect on phones. It is adopted as the **phone and
+low-power value**, with the heavier blur reserved for desktop chrome.
+
+Its fill cannot be adopted. At **17% white over an aurora, nothing guarantees
+text contrast** — that is precisely the case §4.1 exists for, and a 10% white
+border is below the 3:1 a control boundary needs under WCAG 1.4.11. So the
+recipe contributes its blur and its shadow, and the fill and the edge come from
+the floor.
+
 ### 4.2 The tokens
 
 Keeping the `--wx-*` **names** is non-negotiable: `check-contrast.mjs`
@@ -359,6 +373,66 @@ to avoid. **Phase 7, and it is a real piece of work, not a tidy-up.**
 | 11 | **The admin brand pages have never been opened in a browser** — Briefs, Products and the brand leaderboard are the newest code in the project. They typecheck. Nobody has looked at them | 5, and needs the admin login |
 | 12 | **`check-brands.mjs` was edited but never run** — its edits are reasoned from markup, not proven | 5 |
 | 13 | **TikTok OAuth from the installed PWA** returns through the system browser and may land in a different context, on a product explicitly engineered against random logouts | 7, needs a real phone |
+
+---
+
+## 5.8 What the inventory found, 2026-10-14 — corrections to this plan
+
+A full read-only scan of the tree ran after §5 was written. It corrects the plan
+in one load-bearing way and several smaller ones.
+
+**THE NAME COLLISION, AND IT BLOCKS §4.2.** `--wx-glass-blur`, `--wx-glass-fill`,
+`--wx-glass-panel`, `--wx-glass-line`, `--wx-glass-rim` and `--wx-glass-glow`
+**already exist** in `tokens.css` with different meanings (`--wx-glass-blur` is
+`24px`). §4.2 proposed adding `--wx-glass-blur: 22px`, `--wx-glass-tint` and
+`--wx-glass-edge` as if the namespace were free. It is not, and
+`check-contrast.mjs` is name-sensitive, so a careless add silently redefines a
+token six components already read. **Phase 2 starts by deleting the dead
+material, not by adding to it** — see the next point.
+
+**Three complete card materials are already built and DEAD.** `wx-card`,
+`wx-card-lift` and `wx-card-hero` (~60 lines of CSS and 14 tokens) have **zero**
+uses. `wx-glass` and `wx-glass-panel` — the only real `backdrop-filter`
+utilities in the codebase — have zero uses; two components carry comments
+explaining why they chose *not* to use them. `wx-glass-hover` has exactly one
+consumer. So "one concept, one component" is partly a **deletion** job, and this
+is already one failed attempt at it sitting in the tree.
+
+**The surface sprawl is bigger than assumed.** Nine live patterns draw a card
+today, across 454 class occurrences, plus **202 bespoke `rounded-* + bg-*`
+surfaces in 60 files** that no token or utility change can reach — each must be
+visited by hand. There is **no `Surface` or `Card` component at all**; every
+card in the product is a div and a class string.
+
+**Raw `<button>` outnumbers the shared one: 103 against 90.** The entire shell —
+`AppSidebar`, `MobileNav`, `FilterBar`, `TextSizeMenu`, `ThemeToggle` — is 100%
+hand-rolled, and that is exactly the chrome §4.4 wants carrying the glass.
+
+**Radius is worse than three values.** 795 occurrences across **20 distinct
+values**, and `--radius-2xl` / `--radius-3xl` are **not mapped** to the token
+scale, so 62 uses — including every `DataState` card and five `TiltCard` sites —
+already sit outside the system.
+
+**The z-index point in §4.4 was understated.** `z-index: 500` and `600` are each
+already used ×4 by the vendored CSS, which also runs `2147483000`. Non-vendor
+TSX has `z-[60]` ×2 and `z-[100]` ×1 escaping the stated scale.
+
+**§5.5 was wrong about `DataState`.** It holds for the creator app (7 of 8
+screens) and **not** for admin: of 19 admin screens only one adopted it, and ~24
+still hand-roll. `MyNumbers` and `Dashboard` — the two screens Phase 3 cares
+most about — have **zero** `DataState` usage. Loading also has **three** parallel
+implementations (`wx-skeleton` ×100, `NeoSkeleton`, the two route fallbacks) and
+`DataState` does not cover loading at all, so "extended, never rebuilt" means
+adding a concept it does not have.
+
+**Two scope leaks.** `ShareCollab.tsx` is Phase 4 but imports `paidcollabs.css`
+and opens a `.wurxbase-root`, so Phase 4 touches vendored CSS that §6 assigns to
+Phase 6. And `src/routes/studio/StudioHome.tsx` is a **17-line stub** routed at
+`/studio` that appears in no phase — it is either dead or an undesigned screen.
+
+**One thing the inventory got wrong**, recorded so it is not repeated:
+`scripts/check-backdrop-ancestry.mjs` is not pre-existing. It was written by
+another engineer on this same session, minutes earlier.
 
 ---
 
