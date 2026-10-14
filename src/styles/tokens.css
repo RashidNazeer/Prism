@@ -330,6 +330,7 @@
   --wx-brand-sky: #cadefc;
   --wx-brand-peri: #c3bef0;
   --wx-accent-fill: #c3bef0;
+  --wx-accent-fill-edge: rgba(255, 255, 255, 0.18);
   /* Hover and active are the same hue stepped down, NOT a `brightness()`
      filter: a filter on a control is one more element creating a containing
      block, and it is not in the transition property list so it would jump
@@ -661,6 +662,19 @@
   --wx-brand-sky: #cadefc;
   --wx-brand-peri: #c3bef0;
   --wx-accent-fill: #c3bef0;
+  /*
+   * THE EDGE THAT MAKES A PASTEL BUTTON A BUTTON.
+   *
+   * WCAG 1.4.11 wants 3:1 between a control and its background. #C3BEF0 on the
+   * light page measures 1.31:1 — the fill is his colour and it is not going to
+   * change, so the BOUNDARY has to do the work instead. A hairline in the
+   * accent ink gives the pill a defined shape without touching the fill.
+   *
+   * Dark needs none of this: the same pastel on #202024 is already 9.23:1, so
+   * there the edge stays the faint white the rest of the glass uses and the
+   * contrast comes from the fill itself.
+   */
+  --wx-accent-fill-edge: #5b4dd5;
   /* Hover and active are the same hue stepped down, NOT a `brightness()`
      filter: a filter on a control is one more element creating a containing
      block, and it is not in the transition property list so it would jump

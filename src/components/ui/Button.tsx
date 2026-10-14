@@ -177,6 +177,21 @@ const button = cva(
           // which is the only way a pastel carries text: the colour itself is
           // 1.76:1 on white, ink on it is 10.1:1.
           '[background:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]',
+          /*
+           * THE BOUNDARY, AND IT IS AN ACCESSIBILITY FIX, NOT A FLOURISH.
+           *
+           * WCAG 1.4.11 wants 3:1 between a control and its background. This
+           * fill is Rashid's #C3BEF0 and it measures 1.31:1 against the light
+           * page — a pastel pill on pale paper has almost no shape, and the
+           * glass hairline is white at 85%, which against that page adds
+           * nothing. The fill is not negotiable, so the EDGE carries it: a
+           * hairline in the accent ink, overriding the shared glass one.
+           *
+           * Dark overrides nothing of substance — the same pastel on #202024
+           * is already 9.23:1 — so its token stays a faint white and the
+           * contrast keeps coming from the fill.
+           */
+          '[border:0.0625rem_solid_var(--wx-accent-fill-edge)]',
           'hover:[background:var(--wx-accent-fill-hover)] active:[background:var(--wx-accent-fill-active)]',
           '[box-shadow:var(--wx-solid-inner),var(--wx-glass-lift),0_0.25rem_1rem_var(--wx-accent-ring)]',
           'hover:[box-shadow:var(--wx-solid-inner),var(--wx-glass-lift-hover),0_0.5rem_1.5rem_var(--wx-accent-ring)]',
