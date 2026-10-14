@@ -434,3 +434,31 @@ whose active state is not white-on-accent breaks every suite that calls it; and
 3. **The aurora on the landing page.** It is currently scroll-driven and was
    expensive once already. Glass plus scroll-driven aurora on a phone is the
    worst case in the product.
+
+---
+
+## 10. What I will need from Rashid, and the exact moment to ask
+
+He has these and will hand them over when asked — 2026-10-14: _"that is on my
+end just remind me when needed."_ So **he does not have to remember; this file
+does.** Each item names the trigger that should raise it, the same way
+`PARKED.md` works. Fold these into `PARKED.md` when this branch merges.
+
+| # | What | Trigger — raise it the moment this is true | Blocks |
+| --- | --- | --- | --- |
+| A | **A working creator login on dev.** Two exist per `NEW_MACHINE.md` §1.3: `babblingbrookej@wurxmedia.com` (nearly empty — tests the states most of the design work is about) and `rudely@wurxmedia.com` (real GMV, orders, eight days of history) | Phase 2's gate passes and Phase 3 is the next step | Phase 3 |
+| B | **The dev admin login**, `rashid@wurxmedia.com`. Its password was never stored anywhere; if he does not have it, it resets from the Supabase dashboard | Phase 4's gate passes and Phase 5 is the next step | Phase 5, and issues 11 and 12 |
+| C | **A real mid-range Android**, in his hands or anyone's | Phase 6 is done and hardening starts | Phase 7, and the blur budget |
+| D | **The ROI threshold** — below what ad spend is the figure too small to judge, rather than printing `0.00x` | the moment My numbers is opened in Phase 3 | issue 1 only, not the phase |
+
+**Nothing above blocks the start of this work, and that is the point of the
+phase order.** Phases 1, 1b, 2 and 4 — the token layer, the type, every glass
+primitive with its gallery, and the whole public site — need no login at all.
+That is the foundation and roughly half the visible surface. The asks only
+arrive once the signed-in screens do.
+
+Two of these are old debts, not new ones. There has been no usable creator login
+on dev for the entire PRISM rebrand, which is why about a hundred files were
+changed and never looked at, why the brand dropdown shipped invisible, and why
+issue 11 exists at all. Getting A and B before Phase 3 is what stops this
+redesign repeating that.
