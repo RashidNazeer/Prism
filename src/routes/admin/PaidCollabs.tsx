@@ -6,6 +6,7 @@ import { useProfile } from '@/lib/auth/useProfile';
 import { wurxbaseSession } from '@/lib/wurxbase-identity';
 import { useWurxbaseIdentity } from '@/lib/useWurxbaseIdentity';
 import { useTheme } from '@/components/theme/theme-context';
+import { useSuspendSmoothScroll } from '@/lib/motion';
 // Both win on specificity rather than on order. See the header of each file:
 // the vendored CSS ships in a lazily loaded chunk, so "loaded after theirs" is
 // not something an import position in here can promise.
@@ -48,6 +49,24 @@ const WurxBaseApp = lazy(() => import('@/vendor/wurxbase/App'));
 export function PaidCollabs() {
   const { resolved } = useTheme();
   const fence = useRef<HTMLDivElement>(null);
+
+  /*
+   * NO SMOOTH SCROLL ON THIS SCREEN, EVER.
+   *
+   * Lenis takes the wheel gesture away from the browser and writes `scrollTop`
+   * itself. WurxBase scrolls itself inside this fence, positions its own
+   * overlays, and is 24,000 lines nobody here is going to re-test; a second
+   * authority over the page's scrolling above it is not a trade worth making
+   * for a glide. `GLASS_PLAN` §1.2 is about `filter` rather than scroll, but it
+   * is the same lesson three rewrites long: nothing above this fence gets to
+   * change how the fence behaves.
+   *
+   * Said here as well as in `SMOOTH_SCROLL_DENY_PREFIXES`, so moving or
+   * renaming the route cannot quietly turn it back on. Suspension is reference
+   * counted, so both firing is correct rather than a conflict. A no-op while
+   * the flag is off, which is the default.
+   */
+  useSuspendSmoothScroll('paid-collabs');
 
   /*
    * Their CSS reads `data-theme` off the element its rules are anchored to.

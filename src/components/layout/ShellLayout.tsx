@@ -3,6 +3,7 @@ import { Outlet } from 'react-router';
 import { AppShell } from '@/components/layout/AppShell';
 import { ScreenFallback } from '@/components/layout/ScreenFallback';
 import { applyUiScale, clearUiScale, storedUiScale } from '@/lib/ui-scale';
+import { useSmoothScrollRouteGuard } from '@/lib/motion';
 
 /**
  * THE FRAME EVERY SIGNED-IN SCREEN SLOTS INTO, and the reason navigation is
@@ -33,6 +34,20 @@ import { applyUiScale, clearUiScale, storedUiScale } from '@/lib/ui-scale';
  * extra steps.
  */
 export function ShellLayout() {
+  /*
+   * SMOOTH SCROLL IS NOT ALLOWED ON EVERY ROUTE. One call, here, covers every
+   * signed-in screen, because every one of them nests under this layout.
+   *
+   * The list it checks is `SMOOTH_SCROLL_DENY_PREFIXES` in
+   * `src/lib/motion/flags.ts`, and today it holds one entry: `/admin/collabs`,
+   * Paid Collabs, which scrolls itself inside the vendored WurxBase fence.
+   * `PaidCollabs` also suspends smooth scroll on its own, so this is the second
+   * of two independent guards rather than the only one.
+   *
+   * A no-op while the flag is off, which is the default.
+   */
+  useSmoothScrollRouteGuard();
+
   /*
    * The text-size setting is the app's, not the whole site's. It goes on when
    * the shell mounts and comes off when it unmounts, so the public landing page

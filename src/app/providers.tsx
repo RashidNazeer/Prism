@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { queryClient } from '@/lib/query-client';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { AuthProvider } from '@/lib/auth/AuthProvider';
+import { ScrollProvider } from '@/lib/motion';
 
 /**
  * Application-wide providers.
@@ -25,15 +26,27 @@ import { AuthProvider } from '@/lib/auth/AuthProvider';
  * LazyMotion + domAnimation ships only the animation and gesture features we
  * use. `strict` makes the full `motion.div` throw, so nothing can quietly pull
  * the heavy build back in: use `m.div` instead.
+ *
+ * ScrollProvider is Lenis, and it is INERT UNTIL SOMEBODY TURNS IT ON. With the
+ * flag off it renders a context full of no-ops, imports nothing, and changes no
+ * behaviour whatsoever — `lenis` is not even in the bundle. See
+ * `src/lib/motion/flags.ts` for the switch and `docs/MOTION.md` for the rules.
+ *
+ * It sits INSIDE `LazyMotion` because it drives Lenis from Motion's animation
+ * frame loop, so there is one `requestAnimationFrame` for the page rather than
+ * one per library. That is the whole mitigation for the risk DECISIONS.md
+ * records on 2026-10-14; the header of `ScrollProvider.tsx` has the reasoning.
  */
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider>
       <MotionConfig reducedMotion="user">
         <LazyMotion features={domAnimation} strict>
-          <QueryClientProvider client={queryClient}>
-            <AuthProvider>{children}</AuthProvider>
-          </QueryClientProvider>
+          <ScrollProvider>
+            <QueryClientProvider client={queryClient}>
+              <AuthProvider>{children}</AuthProvider>
+            </QueryClientProvider>
+          </ScrollProvider>
         </LazyMotion>
       </MotionConfig>
     </ThemeProvider>

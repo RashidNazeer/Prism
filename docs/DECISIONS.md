@@ -2696,3 +2696,64 @@ used, not a regression today.
 
 **Proved:** `pnpm build` exits 0 with all three installed, 63 tokens at parity,
 all WCAG pairs passing, 1200 random brand themes passing, isolation ok.
+
+## The motion layer: Lenis reads nothing, Motion reads Lenis (2026-10-14)
+
+**Decision:** `src/lib/motion/` is the only legal way into Lenis and GSAP, and
+smooth scroll ships **off**, behind `VITE_SMOOTH_SCROLL`. Full rules in
+`docs/MOTION.md`.
+
+**The tension the entry above flagged, resolved rather than deferred.** There is
+**one scroll authority and one animation frame loop**. Lenis is the authority: it
+swallows the gesture and writes `document.documentElement.scrollTop` itself.
+Motion's `useScroll` is a reader — it measures that same real document scroll on
+the browser's own scroll event, so the twelve existing `useScroll` call sites
+were not touched and there is no second scroll position in the app. And Lenis
+owns no `requestAnimationFrame`: `autoRaf: false`, ticked from Motion's loop via
+`frame.update(tick, true)`. The judder this app paid for was twelve beams each
+animating on the main thread; three libraries each scheduling a frame is the same
+fault, so there is one loop.
+
+**Native-scrollbar mode, no transform wrapper.** That is what keeps
+`position: sticky` (the rail and the top bar), browser back/forward scroll
+restoration, and focus-scroll-into-view working. All three were verified in real
+Chromium rather than reasoned about.
+
+**Reduced motion: Lenis is never constructed.** Not slowed, not
+`respectReducedMotion`-ed to a 1:1 lerp — absent, so those people scroll on the
+compositor with no JavaScript in the path. GSAP timelines are built and then
+jumped to `progress(1)` and paused, callbacks suppressed.
+
+**Never on `/admin/collabs`,** twice over: the path is in
+`SMOOTH_SCROLL_DENY_PREFIXES` and `PaidCollabs` also calls
+`useSuspendSmoothScroll`, so renaming the route cannot quietly re-enable it.
+
+**GSAP is fenced by its type signature.** `useGsapTimeline` accepts transform
+components and opacity and nothing else, so `filter`, `backdrop-filter`,
+`box-shadow`, `width` and `height` are type errors where they are written — and
+in dev it refuses any target that CONTAINS a `.wurxbase-root`, because a
+`transform` on an ancestor is the same containing-block fault as a `filter` on
+one. `ScrollTrigger`, `ScrollSmoother`, `ScrollToPlugin` and `Observer` are
+banned by name: each would make GSAP a second scroll authority.
+
+**Rejected:** driving GSAP's ticker from Motion's loop as well. Creating a tween
+wakes GSAP's ticker, so `ticker.sleep()` is not a stable state. GSAP keeps its
+own self-idling ticker and is restricted instead to short, user-triggered
+sequences — never scroll-driven, never ambient.
+
+**Also rejected:** fixing the four dialogs that lock scroll with
+`body.style.overflow`. The provider watches `body`'s inline style and stops Lenis
+on the transition, so nothing was edited and the next dialog written that way is
+already handled.
+
+**Proved:** `pnpm build` exits 0. In real Chromium, flag off: landing page has
+zero console errors and `lenis` is never fetched. Flag on: Lenis mounts, the page
+scrolls, `PageProgress` still tracks it, `html` `scroll-behavior` is forced to
+`auto`, document height is unchanged, the sticky rail holds at 0px after
+scrolling 477px on the signed-in shell, `body { overflow: hidden }` stops and
+resumes Lenis, an anchor link reaches `#apply-form`, and zero console errors
+throughout. Flag on under `prefers-reduced-motion`: Lenis does not mount at all.
+
+**Not proved:** cost on a real phone (every browser suite runs `--disable-gpu`),
+and the Paid Collabs suspension on screen, which needs staff credentials this
+machine does not have.
