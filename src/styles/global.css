@@ -827,17 +827,47 @@ body::after {
  *
  * Plain rules rather than `@utility`, so the media query can wrap them.
  */
-@media (min-width: 768px) {
-  .wx-neo-raised,
-  .wx-neo-raised-sm {
-    /* His card value, 22px, and his `saturate(1.08)` — which belongs HERE and
-       not on chrome. Measured: `.feature-card` is `blur(22px) saturate(1.08)`
-       and `.nav` is a bare `blur(28px)`. We had the two the wrong way round.
-       22px only ever paints from `md` up, so the phone never pays for it. */
-    backdrop-filter: blur(var(--wx-glass-blur)) saturate(var(--wx-glass-saturate));
-    -webkit-backdrop-filter: blur(var(--wx-glass-blur)) saturate(var(--wx-glass-saturate));
-  }
-}
+/*
+ * ONLY FULL-SIZE SURFACES BLUR. `wx-neo-raised-sm` is deliberately NOT here.
+ *
+ * Rashid reported scrolling lagging. Measured on the landing page at 1440:
+ * TWENTY-SEVEN elements carrying `backdrop-filter`, against a budget of three.
+ * Almost all of them were `-sm` — it is the chip, button, icon-well and pill
+ * variant, so blurring it blurs every small control on the page, and each one
+ * re-samples and re-blurs its backdrop on every scroll frame.
+ *
+ * A chip is 2rem tall. Nobody can see 10px of blur through it; it was paying
+ * the full cost for an effect at a size too small to read. The small variant
+ * keeps the tint, the rim and the lift, and drops only the blur.
+ *
+ * THE GUARD DID NOT CATCH THIS, and that is worth recording:
+ * `check-blur-budget.mjs` measures at 375px, where this media query does not
+ * apply at all, so it counted zero blurred layers and passed while the desktop
+ * page ran at nine times the budget. It needs a second width.
+ */
+/*
+ * CARDS DO NOT BLUR. Only CHROME and OVERLAYS do.
+ *
+ * This is the fix for the scroll lag, and it costs almost nothing to look at.
+ * A `backdrop-filter` re-samples and re-blurs everything behind its element on
+ * every frame the page moves, so N blurred cards is N full-size blurs per
+ * scroll frame. Measured on the landing page at 1440: 27 blurred elements
+ * against a budget of 3, then 15 after the small variant was excluded — still
+ * five times over, and all of them cards.
+ *
+ * WHY IT IS NEARLY FREE VISUALLY: blurring is a low-pass filter, and what sits
+ * behind these cards is already low-frequency — the shader's soft folds and a
+ * photograph of smooth white waves. Blurring something that has no high
+ * frequencies in it is close to an identity operation. The glass read comes
+ * from the translucent fill, the lit rim and the lift, none of which cost
+ * anything per frame. The one place blur genuinely earns its cost is where
+ * sharp content passes directly beneath a surface — the chrome a page scrolls
+ * under, and an overlay floating over a table — and both of those keep it.
+ *
+ * `--wx-glass-blur` is still the card token and is still consumed by
+ * `wx-glass` / `wx-glass-panel`, which are opt-in for the rare surface that
+ * really does sit over busy content.
+ */
 
 /*
  * THE OPAQUE FALLBACK, and the transparency change is what makes it
