@@ -231,7 +231,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         reads as a panel that slipped down rather than a card.
       */}
       <aside className="sticky top-0 hidden h-dvh p-3 lg:block">
-        <div className="wx-neo-raised flex h-[calc(100dvh-1.5rem)] flex-col overflow-hidden rounded-2xl">
+        <div className="wx-glass-chrome flex h-[calc(100dvh-1.5rem)] flex-col overflow-hidden rounded-2xl">
           {sidebar('rail')}
         </div>
       </aside>
@@ -271,7 +271,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           card is actually looked at. Once you scroll, the card meets the top
           edge and there is no window left to leak through.
         */}
-        <header className="wx-neo-raised sticky top-0 z-40 mx-3 mt-3 flex h-14 shrink-0 items-center justify-between gap-3 rounded-2xl px-4 sm:px-5">
+        <header className="wx-glass-chrome sticky top-0 z-40 mx-3 mt-3 flex h-14 shrink-0 items-center justify-between gap-3 rounded-2xl px-4 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
             {/* The mark stays on a phone, where there is no rail to carry it.
                 On desktop the rail has it, and it is the collapse control. */}

@@ -1,249 +1,200 @@
-import { useMemo } from 'react';
-/* No `motion` import any more: the beams moved to a CSS keyframe so they run
-   on the compositor instead of the main thread. See `Beam` below. */
-import { useTheme } from '@/components/theme/theme-context';
+import { m, useReducedMotion } from 'motion/react';
 
 /**
- * THE BACKDROP. The ground the whole product stands on.
+ * THE BACKGROUND, from Rashid's `prism-glass-background.html` (2026-10-14).
  *
- * A warped perspective grid on all four sides of the viewport, with beams
- * running up it in the PRISM spectrum. Same effect in both themes; only the
- * grid's own colour changes, which is what the page ground is doing anyway.
+ * It is his composition, not an interpretation of it: the ground ramp and its
+ * two tints live in `--wx-ground`, and the optical-loop scene below is his SVG.
+ * What this file adds is the plumbing that makes it safe in an app rather than
+ * in a standalone page.
  *
- * ── WHY THIS, AFTER TWO WEBGL ATTEMPTS ───────────────────────────────────────
+ * THREE RULES, each of which has cost this project real time before:
  *
- * VANTA.HALO could not work in light mode, and that was a property of the
- * effect rather than a tuning problem: its ring is ADDITIVE LIGHT, so on a
- * near-white ground every channel is already near 255 and it clips to white.
- * Measured on the same clip of the same page, dark came back at 0.308
- * saturation across 593 distinct colours and light at 0.015 across ONE.
+ *  1. NO `filter` AND NO `backdrop-filter`, anywhere in this subtree. This
+ *     mounts at `AppShell`, which is an ancestor of `.wurxbase-root`, and
+ *     either property there becomes the containing block for every fixed
+ *     overlay in the vendored admin app — the fault that put its modals
+ *     3,413px down the page, three times. The blur in the scene is baked into
+ *     the SVG's own `feGaussianBlur`, which filters the SVG's contents and
+ *     never the host element. `scripts/check-backdrop-ancestry.mjs` asserts it.
  *
- * This paints instead of adding, so white is no harder than Ink. It also costs
- * nothing like as much: `three` and `vanta` are gone, the 757KB
- * `threejs-components` build that briefly replaced them is gone, and what is
- * left is CSS transforms and `motion`, which the app already ships. No WebGL
- * context, no canvas, and it runs on a phone — where the tubes version could
- * not, because tubes follow a cursor and a phone has none.
+ *  2. `m.div`, NEVER `motion.div`. `LazyMotion` runs with `strict`, so the
+ *     bare namespace THROWS at runtime, and one throw here takes out every
+ *     screen in the product, signed in or not.
  *
- * ── WHAT CHANGED FROM THE PUBLISHED SNIPPET ──────────────────────────────────
- *
- * It could not be pasted in as written:
- *
- *  - it used `motion.div`. This app wraps everything in `LazyMotion` with
- *    `strict`, where `motion.*` THROWS at runtime and only `m.*` is allowed.
- *    That alone would have taken out every screen that renders this;
- *  - every beam picked `Math.floor(Math.random() * 360)` as an HSL hue, so the
- *    background was random colour on every render. Every colour in this product
- *    is a `--wx-*` token, and these are the kit's four spectrum colours in the
- *    kit's own order;
- *  - that `Math.random()` ran DURING RENDER, so React could not keep a beam's
- *    colour stable across re-renders and the whole field reshuffled whenever
- *    anything above it changed state;
- *  - `gridColor` defaulted to `hsl(var(--border))`, a shadcn token that does
- *    not exist here;
- *  - it was a WRAPPER with `border p-20` around its children. This is a
- *    backdrop: it fills its container and draws nothing in front.
- *
- * And it animates forever, so it is switched off entirely under
- * `prefers-reduced-motion`, where the still grid is left standing.
+ *  3. `transform` and `opacity` only. Never `background`, never `filter`:
+ *     both re-rasterise the full-bleed layer every frame. §4.3.
  */
-
-/** The kit's spectrum, in the kit's order. Beams cycle through it. */
-const SPECTRUM = ['#ff2e8c', '#9b5cff', '#2e8bff', '#17e0d4'] as const;
-
-/** Grid cell size, as a percentage of the face. */
-const BEAM_SIZE = 5;
 
 /**
- * Beam width, SEPARATE from the cell size. The original tied the two together
- * at 5%, which on a 1440px face is a 72px slab: it read as pink paint thrown
- * across the page rather than as light travelling up a grid. A beam is now
- * about a third of a cell.
+ * The scene's own geometry is a fixed 1600x1100 viewBox sliced to fill, so the
+ * composition holds from 375px to an ultrawide with no media query and no
+ * horizontal overflow — `preserveAspectRatio="xMidYMid slice"` crops rather
+ * than stretches, and the wrapper clips.
  */
-const BEAM_WIDTH = 1.6;
+const SCENE_VIEWBOX = '0 0 1600 1100';
 
-/** Light, not pigment. At full strength these compete with the content. */
-const BEAM_OPACITY = 0.5;
-
-const BEAMS_PER_SIDE = 3;
-const BEAM_DURATION = 3;
-
-/**
- * The four faces, each a plane rotated flat and pushed away from one edge of
- * the viewport, so together they read as a box opening towards the viewer.
- * `100cqmax`/`100cqi`/`100cqh` are container units, which is what lets each
- * face size itself from the viewport rather than from a hardcoded length.
- */
-const FACES = [
-  { key: 'top', pos: '', origin: '50% 0%', rot: 'rotateX(-90deg)', w: '100cqi' },
-  { key: 'bottom', pos: 'top-full', origin: '50% 0%', rot: 'rotateX(-90deg)', w: '100cqi' },
-  {
-    key: 'left',
-    pos: 'left-0 top-0',
-    origin: '0% 0%',
-    rot: 'rotate(90deg) rotateX(-90deg)',
-    w: '100cqh',
-  },
-  {
-    key: 'right',
-    pos: 'right-0 top-0',
-    origin: '100% 0%',
-    rot: 'rotate(-90deg) rotateX(-90deg)',
-    w: '100cqh',
-  },
+/** The five loops, as ellipses: centre, radii and rotation. His numbers. */
+const LOOPS = [
+  { cx: 175, cy: 480, rx: 74, ry: 40, rimRx: 85, rimRy: 52, rot: -32 },
+  { cx: 165, cy: 678, rx: 90, ry: 46, rimRx: 102, rimRy: 59, rot: -35 },
+  { cx: 180, cy: 920, rx: 109, ry: 58, rimRx: 122, rimRy: 70, rot: -37 },
+  { cx: 1260, cy: 285, rx: 185, ry: 80, rimRx: 198, rimRy: 94, rot: -33 },
+  { cx: 1140, cy: 940, rx: 240, ry: 95, rimRx: 253, rimRy: 109, rot: -35 },
 ] as const;
 
-type BeamSpec = { x: number; delay: number; colour: string; ratio: number };
-
-function Beam({ spec, quiet }: { spec: BeamSpec; quiet: boolean }) {
-  const style = {
-    left: `${spec.x}%`,
-    width: `${BEAM_WIDTH}%`,
-    aspectRatio: `1 / ${spec.ratio}`,
-    background: `linear-gradient(${spec.colour}, transparent)`,
-    opacity: BEAM_OPACITY,
-  } as const;
-
-  /* Under reduced motion the beam is not animated and not drawn: a static
-     streak hanging in the grid looks like a rendering fault rather than a
-     paused animation. The grid itself stays. */
-  if (quiet) return null;
-
-  /*
-   * A PLAIN DIV ON A CSS ANIMATION, NOT A MOTION COMPONENT.
-   *
-   * This was an `m.div` with `repeat: Infinity`. Motion gives an animation to
-   * the compositor when it can, and it cannot here, because the travel is in
-   * CONTAINER UNITS (`100cqmax`) and the Web Animations API will not accept
-   * them. So twelve beams were being recomputed and written on the MAIN THREAD
-   * every frame, for as long as the page was open — competing with scrolling,
-   * which is the one thing the main thread must not be late for.
-   *
-   * The identical keyframe in CSS runs on the compositor and costs the main
-   * thread nothing after the first frame. See `wx-beam` in global.css.
-   */
-  return (
-    <div
-      aria-hidden
-      className="wx-beam absolute top-0"
-      style={
-        {
-          ...style,
-          '--wx-beam-dur': `${BEAM_DURATION}s`,
-          '--wx-beam-delay': `${spec.delay}s`,
-        } as React.CSSProperties
-      }
-    />
-  );
-}
+/**
+ * How much of the scene survives to the page.
+ *
+ * `subtle` is what `AppShell` asks for behind every signed-in screen, where
+ * there are live numbers to read and the ground must not compete with them.
+ * `full` is the auth pages, the hero and `/apply`, where the background IS the
+ * design. It scales his own opacity rather than stacking a scrim, which would
+ * be one more layer to composite and one more theme branch to get wrong.
+ */
+const STRENGTH = { full: 1, subtle: 0.55 } as const;
 
 export function HaloBackdrop({
   className,
   intensity = 'full',
 }: {
   className?: string;
-  /** `full` behind the auth pages, `subtle` behind the signed-in app. */
+  /** `full` behind the auth pages, hero and `/apply`; `subtle` behind the app. */
   intensity?: 'full' | 'subtle';
 }) {
-  const { resolved } = useTheme();
-  const onLight = resolved === 'light';
-
-  /* Asked once. `matchMedia` rather than a CSS query because this decides
-     whether the beams exist at all, not merely how they look. */
-  const quiet =
-    typeof window !== 'undefined' &&
-    !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
   /*
-   * BEAMS ARE BUILT ONCE AND KEPT. Everything that was random in the original
-   * is derived from the beam's index instead, so a beam keeps its colour, its
-   * lane and its phase for the life of the component. The offsets are
-   * irrational-ish multiples purely to stop the four sides pulsing in unison.
+   * Motion's own hook rather than a bare `matchMedia`: it re-reads when the OS
+   * setting changes while the tab is open. Reduced motion renders this
+   * COMPLETELY STATIC — the scene is still painted, because the background is
+   * the design and a blank ground is not the accessible version of it. Only the
+   * drift goes.
    */
-  const beams = useMemo(() => {
-    const cells = Math.floor(100 / BEAM_SIZE);
-    const step = cells / BEAMS_PER_SIDE;
-    return FACES.map((_face, f) =>
-      Array.from({ length: BEAMS_PER_SIDE }, (_, i) => {
-        const n = f * BEAMS_PER_SIDE + i;
-        return {
-          x: Math.floor(i * step) * BEAM_SIZE,
-          delay: (n * 0.77) % BEAM_DURATION,
-          /* `?? SPECTRUM[0]` only to satisfy `noUncheckedIndexedAccess`; the
-             modulo cannot leave the tuple. */
-          colour: SPECTRUM[n % SPECTRUM.length] ?? SPECTRUM[0],
-          ratio: 4 + ((n * 3) % 7),
-        } satisfies BeamSpec;
-      })
-    );
-  }, []);
-
-  const gridColour = onLight ? 'var(--wx-border)' : 'var(--wx-surface-2)';
-
-  /* One cell of the grid, as two hairline gradients crossed. */
-  const gridFace = `linear-gradient(var(--grid-color) 0 1px, transparent 1px var(--beam-size)) 50% -0.5px / var(--beam-size) var(--beam-size), linear-gradient(90deg, var(--grid-color) 0 1px, transparent 1px var(--beam-size)) 50% 50% / var(--beam-size) var(--beam-size)`;
+  const still = useReducedMotion();
+  const strength = STRENGTH[intensity];
 
   return (
     <div aria-hidden className={className}>
-      {/* THE GROUND. Painted first, so the page is complete and coloured even
-          before a single beam moves, and for anyone who never sees one. */}
+      {/*
+        THE GROUND. Painted on its own and first, so the page is a finished
+        colour before the scene renders and for anyone whose gradients never
+        arrive. `background-attachment: fixed` is his, and it is what stops the
+        ramp sliding under a scrolling page.
+      */}
       <div
-        className="absolute inset-0 transition-[background] duration-500"
-        style={{
-          background: onLight
-            ? /* MORE COLOUR IN DAYLIGHT, at Rashid's request. These were
-                 0.34/0.28/0.26 across three lobes and read as a pale wash on a
-                 near-white page. Stronger now, and a fourth and fifth lobe
-                 carry the cyan and a second magenta into the lower half, so a
-                 long screen is not plain Mist once the top three fall off.
-                 Still washes rather than fills — the kit forbids the spectrum
-                 as a full-bleed background — and every figure sits on an opaque
-                 card, so this layer never carries text. */
-              'radial-gradient(ellipse 85% 60% at 22% 6%, rgba(155, 92, 255, 0.50), transparent 66%), radial-gradient(ellipse 80% 55% at 70% 2%, rgba(255, 46, 140, 0.42), transparent 64%), radial-gradient(ellipse 75% 60% at 96% 30%, rgba(46, 139, 255, 0.40), transparent 66%), radial-gradient(ellipse 70% 55% at 52% 98%, rgba(23, 224, 212, 0.36), transparent 66%), radial-gradient(ellipse 60% 48% at 4% 74%, rgba(255, 46, 140, 0.24), transparent 64%), var(--wx-bg)'
-            : 'radial-gradient(ellipse 60% 50% at 82% 28%, rgba(155, 92, 255, 0.22), transparent 64%), radial-gradient(ellipse 50% 44% at 70% 76%, rgba(23, 224, 212, 0.16), transparent 62%), var(--wx-bg)',
-        }}
+        className="pointer-events-none absolute inset-0"
+        style={{ background: 'var(--wx-ground)', backgroundAttachment: 'fixed' }}
       />
 
-      {/* THE BOX. `container-type: size` is what makes `cq*` units resolve
-          against this element, and `clip-path: inset(0)` stops the rotated
-          faces painting outside it — without it they reach past the viewport
-          and open a horizontal scrollbar at every width. */}
-      <div
-        className="[container-type:size] pointer-events-none absolute inset-0 overflow-hidden [clip-path:inset(0)] [perspective:100px] [transform-style:preserve-3d]"
-        style={
-          {
-            '--grid-color': gridColour,
-            '--beam-size': `${BEAM_SIZE}%`,
-          } as React.CSSProperties
-        }
-      >
-        {FACES.map((face, f) => (
-          <div
-            key={face.key}
-            className={`absolute ${face.pos} [container-type:inline-size] [height:100cqmax] [transform-style:preserve-3d]`}
-            style={{
-              width: face.w,
-              transformOrigin: face.origin,
-              transform: face.rot,
-              background: gridFace,
-              backgroundSize: `${BEAM_SIZE}% ${BEAM_SIZE}%`,
-            }}
+      {/*
+        THE OPTICAL LOOPS. `overflow-hidden` is load-bearing: the scene is
+        sliced to cover, so it overhangs every edge, and without the clip that
+        is a horizontal scrollbar at 375px on every screen in the product.
+
+        Note what is NOT here — no `filter`, no `backdrop-filter`, no
+        `transform`, no `will-change` on the frame. `overflow` alone does not
+        establish a containing block for `position: fixed`, so nothing in this
+        subtree can move a fixed overlay. Rule 1 above.
+      */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <m.svg
+          viewBox={SCENE_VIEWBOX}
+          preserveAspectRatio="xMidYMid slice"
+          xmlns="http://www.w3.org/2000/svg"
+          className="absolute inset-0 h-full w-full min-w-[1000px] object-cover"
+          style={{ opacity: `calc(var(--wx-scene-opacity) * ${strength})` }}
+          /*
+           * A single very slow drift on the whole scene, transform only. One
+           * animated node instead of five: the loops keep their relationship to
+           * each other, and the compositor gets one layer to move rather than a
+           * handful to recalculate.
+           */
+          animate={still ? undefined : { x: ['0%', '1.6%', '0%'], y: ['0%', '-1.2%', '0%'] }}
+          transition={
+            still
+              ? undefined
+              : { duration: 47, repeat: Infinity, ease: 'easeInOut', times: [0, 0.5, 1] }
+          }
+        >
+          <defs>
+            {/*
+              The loop body: a wide stroke carrying a gradient that runs from a
+              white highlight through a dark trough to a cool return, which is
+              what reads as light bending through a glass ring rather than as a
+              coloured outline.
+            */}
+            <linearGradient id="wx-optical-loop" x1="0" y1="0" x2="1" y2="1">
+              <stop stopColor="#ffffff" stopOpacity=".6" />
+              <stop offset=".16" stopColor="#d3c1ed" stopOpacity=".05" />
+              <stop offset=".43" stopColor="#101118" stopOpacity=".36" />
+              <stop offset=".6" stopColor="#dae6f5" stopOpacity=".38" />
+              <stop offset=".78" stopColor="#8b719f" stopOpacity=".1" />
+              <stop offset="1" stopColor="#e0e6f3" stopOpacity=".48" />
+            </linearGradient>
+            {/* The hairline rim just outside each loop: the lit edge. */}
+            <linearGradient id="wx-optical-rim" x1="0" y1="0" x2="1" y2="1">
+              <stop stopColor="#ffffff" stopOpacity=".65" />
+              <stop offset=".2" stopColor="#ffffff" stopOpacity=".02" />
+              <stop offset=".5" stopColor="#cbc4db" stopOpacity=".4" />
+              <stop offset=".8" stopColor="#ffffff" stopOpacity=".04" />
+              <stop offset="1" stopColor="#ffffff" stopOpacity=".6" />
+            </linearGradient>
+            {/*
+              The softening. This is an SVG filter on the SVG's OWN contents, so
+              it never touches the host element and never creates a containing
+              block in the document — which is the only reason a blur is allowed
+              anywhere in this file at all.
+            */}
+            <filter id="wx-optical-soft">
+              <feGaussianBlur stdDeviation="2" />
+            </filter>
+            <radialGradient id="wx-optical-light">
+              <stop stopColor="#e6daf4" stopOpacity=".24" />
+              <stop offset="1" stopColor="#b7d1ee" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+
+          {/* The ambient pool the left-hand loops sit in. */}
+          <ellipse
+            cx="230"
+            cy="620"
+            rx="450"
+            ry="510"
+            fill="url(#wx-optical-light)"
+            style={{ opacity: 'var(--wx-scene-light-opacity)' }}
+          />
+
+          <g
+            fill="none"
+            stroke="url(#wx-optical-loop)"
+            strokeWidth="26"
+            filter="url(#wx-optical-soft)"
           >
-            {(beams[f] ?? []).map((spec, i) => (
-              <Beam key={i} spec={spec} quiet={quiet} />
+            {LOOPS.map((l) => (
+              <ellipse
+                key={`body-${l.cx}-${l.cy}`}
+                cx={l.cx}
+                cy={l.cy}
+                rx={l.rx}
+                ry={l.ry}
+                transform={`rotate(${l.rot} ${l.cx} ${l.cy})`}
+              />
             ))}
-          </div>
-        ))}
-      </div>
+          </g>
 
-      {/* THE SCRIM, where there is work to read on top of all this. */}
-      <div
-        className="bg-bg absolute inset-0 transition-opacity duration-500"
-        /* Light's scrim drops to 0.08: the aurora is a soft wash to begin with,
-           and 0.2 of Mist over it was taking back most of the colour just added.
-           Dark keeps more, because its field is genuinely bright. */
-        style={{ opacity: intensity === 'subtle' ? (onLight ? 0.08 : 0.45) : 0 }}
-      />
+          <g fill="none" stroke="url(#wx-optical-rim)" strokeWidth="1.2">
+            {LOOPS.map((l) => (
+              <ellipse
+                key={`rim-${l.cx}-${l.cy}`}
+                cx={l.cx}
+                cy={l.cy}
+                rx={l.rimRx}
+                ry={l.rimRy}
+                transform={`rotate(${l.rot} ${l.cx} ${l.cy})`}
+              />
+            ))}
+          </g>
+        </m.svg>
+      </div>
     </div>
   );
 }

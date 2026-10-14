@@ -34,33 +34,33 @@
    * and drops most of the red that was making it read as purple: hue moves from
    * about 255 degrees to about 240, and both steps sit closer to the page.
    */
-  --wx-bg: #14141C; /* page background */
-  --wx-surface-1: #1C1D2A; /* cards, panels */
-  --wx-surface-2: #242636; /* hover, nested cards */
-  --wx-surface-3: #101018; /* wells, inputs */
-  --wx-field: #101018; /* what you type into · a well on dark */
+  --wx-bg: #202024; /* page background */
+  --wx-surface-1: #292930; /* cards, panels */
+  --wx-surface-2: #32323A; /* hover, nested cards */
+  --wx-surface-3: #1A1A1E; /* wells, inputs */
+  --wx-field: #1A1A1E; /* what you type into · a well on dark */
 
   /* Text, all verified >= 4.5:1 on EVERY surface, --wx-bg to --wx-surface-3 */
   --wx-text: #F4F4FA; /* 16.97:1 */
-  --wx-text-muted: #9d9daf; /*  6.38:1 */
-  --wx-text-faint: #9292a5; /*  5.73:1 */
-  --wx-text-inverse: #14141C;
+  --wx-text-muted: #ababbb; /*  6.38:1 */
+  --wx-text-faint: #9e9eb0; /*  5.73:1 */
+  --wx-text-inverse: #202024;
 
   /* Borders, subtle is decorative only; interactive is for inputs/buttons */
   --wx-border: #2E3042;
   --wx-border-strong: #3E4157;
-  --wx-border-interactive: #666682; /* >= 3:1 on bg, for focusable controls */
+  --wx-border-interactive: #70708e; /* >= 3:1 on bg, for focusable controls */
 
   /* Accent 2, violet: the kit's PRIMARY INTERACTIVE colour, and the only thing violet is for. */
-  --wx-accent: #af73de; /* 6.87:1 on bg */
-  --wx-accent-hover: #b983e6; /* 8.35:1 */
-  --wx-accent-active: #c89ceb;
-  --wx-accent-soft: rgba(175, 115, 222, 0.12);
-  --wx-accent-ring: rgba(175, 115, 222, 0.45);
+  --wx-accent: #9a91e5; /* 6.87:1 on bg */
+  --wx-accent-hover: #a29aea; /* 8.35:1 */
+  --wx-accent-active: #b8b2ef;
+  --wx-accent-soft: rgba(154, 145, 229, 0.12);
+  --wx-accent-ring: rgba(154, 145, 229, 0.45);
   /* What a FILLED accent button casts. Tinted with the accent, not ink, so a
      violet button reads as lit rather than as grubby. See wx-neo-accent. */
   --wx-accent-shadow: rgba(168, 120, 255, 0.28);
-  --wx-on-accent: #14141C; /* 6.87:1 sitting on the violet fill */
+  --wx-on-accent: #202024; /* 6.87:1 sitting on the violet fill */
 
   /*
    * A SCRIM IS THE PAGE DIMMED, so it is dark in BOTH themes.
@@ -96,12 +96,12 @@
    * the money bar looked like one block. This ramp also says something true.
    * Green is in your account, amber is about to be, indigo is still moving.
    */
-  --wx-stage-live: #4e8eed;
-  --wx-stage-live-soft: rgba(78, 142, 237, 0.14);
-  --wx-stage-due: #be810f;
-  --wx-stage-due-soft: rgba(190, 129, 15, 0.14);
-  --wx-stage-paid: #129f91;
-  --wx-stage-paid-soft: rgba(18, 159, 145, 0.14);
+  --wx-stage-live: #629bef;
+  --wx-stage-live-soft: rgba(98, 155, 239, 0.14);
+  --wx-stage-due: #cf8d11;
+  --wx-stage-due-soft: rgba(207, 141, 17, 0.14);
+  --wx-stage-paid: #13ae9e;
+  --wx-stage-paid-soft: rgba(19, 174, 158, 0.14);
 
   /*
    * THE SPECTRUM, FOR MARKS ON A CHART ONLY.
@@ -122,41 +122,41 @@
    * apart: that takes two clearly different hues and a direct label, which is
    * what `PerformanceChart` does.
    */
-  --wx-chart-1: #af73de;
-  --wx-chart-2: #5592ee;
-  --wx-chart-3: #12a496;
-  --wx-chart-4: #8c82e2;
+  --wx-chart-1: #9a91e5;
+  --wx-chart-2: #6ba1f0;
+  --wx-chart-3: #14b3a3;
+  --wx-chart-4: #9999af;
   /* Volume bars sit UNDER the line and must never compete with it. */
   --wx-chart-bar: rgba(168, 120, 255, 0.36);
   --wx-chart-bar-peak: rgba(23, 224, 212, 0.85);
   --wx-chart-grid: rgba(255, 255, 255, 0.08);
 
   /* Semantic, all >= 4.5:1 on bg */
-  --wx-success: #12a496;
-  --wx-success-soft: rgba(18, 164, 150, 0.12);
-  --wx-danger: #eb685e;
-  --wx-danger-soft: rgba(235, 104, 94, 0.12);
-  --wx-warning: #be810f;
+  --wx-success: #14b3a3;
+  --wx-success-soft: rgba(20, 179, 163, 0.12);
+  --wx-danger: #ee8078;
+  --wx-danger-soft: rgba(238, 128, 120, 0.12);
+  --wx-warning: #cf8d11;
   /* Was a gold `rgba(240,180,41,.14)` — the last live Wurx gold in the dark
      palette, and it sat UNDER a magenta `--wx-warning`, so every warning was a
      pink word on a yellow wash. Now the tint of its own ink. */
-  --wx-warning-soft: rgba(190, 129, 15, 0.12);
-  --wx-info: #5592ee;
-  --wx-info-soft: rgba(85, 146, 238, 0.12);
+  --wx-warning-soft: rgba(207, 141, 17, 0.12);
+  --wx-info: #6ba1f0;
+  --wx-info-soft: rgba(107, 161, 240, 0.12);
 
   /* EUKA creator tiers, L0 to L7. The hue per tier is Euka's own (blue, violet,
      teal, green, lime, amber, orange), because the team reads these tiers in
      Euka all day. Each ink is proven against ITS OWN chip, a 12% tint on a
      card, by check-contrast: a colour that passes on the page can fail on a
      tint. Rashid, 2026-09-16. */
-  --wx-tier-0: #9292a5;
-  --wx-tier-1: #2ba296;
-  --wx-tier-2: #6895d7;
-  --wx-tier-3: #7c8fdc;
-  --wx-tier-4: #9189e0;
-  --wx-tier-5: #a182de;
-  --wx-tier-6: #b17cdc;
-  --wx-tier-7: #c670d9;
+  --wx-tier-0: #9f9fb1;
+  --wx-tier-1: #2fb2a5;
+  --wx-tier-2: #33aec1;
+  --wx-tier-3: #7da3dd;
+  --wx-tier-4: #8f9de1;
+  --wx-tier-5: #959be3;
+  --wx-tier-6: #9f97e3;
+  --wx-tier-7: #b092e2;
 
   /* The performance sheet.
      A grid of a hundred creators by ten months is read by scanning, so its
@@ -269,19 +269,51 @@
      wash over paper does nothing at all, so light mode washes DOWNWARD in ink.
      Getting that backwards is how a glass design turns into a flat one the
      moment somebody switches theme. */
-  --wx-glass-fill: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.055) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  --wx-glass-panel: rgba(255, 255, 255, 0.035);
+  /*
+   * THE GLASS MATERIAL. Dark face.
+   *
+   * THE FILL TINTS TOWARD THE SURFACE, NOT TOWARD WHITE, and that is a
+   * computed decision rather than taste. A white wash is the obvious way to
+   * make dark glass, and it breaks text: white at 6% over the brightest aurora
+   * stop (#353444) composites to about #41404F, which drops `--wx-text-muted`
+   * to 3.86:1 against a required 4.5. Tinting toward surface-1 at 72% instead
+   * composites to about #232431 and holds muted at 5.7:1. The glass reads as
+   * glass because of the rim lights and the blur, not because of a white wash.
+   * This is the floor in GLASS_PLAN.md §4.1, applied.
+   */
+  --wx-glass-fill: rgba(28, 29, 42, 0.62);
+  --wx-glass-fill-hover: rgba(36, 38, 54, 0.78);
+  --wx-glass-well: rgba(16, 16, 24, 0.66);
+  --wx-glass-panel: rgba(28, 29, 42, 0.62);
   --wx-glass-line: rgba(255, 255, 255, 0.1);
-  /* The top-left rim light. One inset stroke reads as a light source above. */
+  --wx-glass-edge: rgba(255, 255, 255, 0.14);
+  /* The two lit edges: a light source above and to the left. Same direction the
+     neomorphic layer used, so the whole system agrees where the light is. */
+  --wx-glass-rim-top: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.34), transparent);
+  --wx-glass-rim-left: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.3),
+    transparent 60%,
+    rgba(255, 255, 255, 0.1)
+  );
+  /* The inner glow, from Rashid's corrected reference: a soft white halo just
+     inside the edge. His first copy declared it at alpha 1.6, which is invalid
+     and clamps to opaque white — it flooded 40px of every edge. At a legal
+     alpha it is the thing that makes the pane read as thick rather than as a
+     tinted rectangle. Dark takes a quarter of light's: white glow on near-black
+     reads as haze long before it reads as glass. */
+  --wx-glass-inner:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 0 10px 5px rgba(255, 255, 255, 0.045);
+  --wx-glass-lift: 0 0.5rem 2rem rgba(0, 0, 0, 0.45);
+  --wx-glass-lift-hover: 0 0.875rem 2.75rem rgba(0, 0, 0, 0.55);
   --wx-glass-rim: inset 1px 1px 0 0 rgba(255, 255, 255, 0.1);
-  /* Under-lighting on hover. Was the Wurx gold `rgba(200,146,75,.18)`, which is
-     #c8924b exactly. Now the accent violet. */
-  --wx-glass-glow: 0 0 40px rgba(185, 140, 255, 0.18);
-  --wx-glass-blur: 24px;
+  --wx-glass-glow: 0 0 40px rgba(175, 115, 222, 0.18);
+  /* Nudged up on Rashid's note, 2026-10-14: 10 to 13. Surfaces blur from `md`
+     phone keeps the tint and spends nothing. See the media query in global.css
+     and the reasoning in §4.3. */
+  --wx-glass-blur: 9px;
+  --wx-glass-blur-chrome: 17px;
 
   /* The gradient on the primary action: violet into cyan, along the spectrum.
      The HOVER was still `#d8a15b → #f0bb72`, a gold-to-amber ramp — not a stale
@@ -307,36 +339,63 @@
    * instead of a hope. Widen the band and text on glass stops being provably
    * legible. See docs/GLASS_PLAN.md section 4.1.
    */
-  --wx-aurora-mint: #30343b;
-  --wx-aurora-sky: #313440;
-  --wx-aurora-peri: #353444;
-  --wx-aurora-orchid: #393245;
+  /*
+   * THE GRAIN. Glass only reads as glass when there is something behind it with
+   * structure: a blur over a perfectly smooth gradient is close to an identity
+   * operation, which is why the panes looked like flat tint before this.
+   *
+   * It is an inline SVG `feTurbulence`, not a bitmap — a few hundred bytes, no
+   * request, and it tiles at any density. The alpha is deliberately tiny: it
+   * must survive being blurred by a 9px backdrop-filter without shifting the
+   * luminance band the aurora stops are clamped to, or it would quietly undo
+   * the contrast arithmetic in §4.1. Dark carries slightly more, because grain
+   * on near-black is far less visible than grain on paper.
+   */
+  --wx-texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  --wx-texture-opacity: 0.09;
+
+  /*
+   * THE GROUND, copied verbatim from Rashid's `prism-glass-background.html`.
+   * Two soft tints over a 125deg ramp. It is a token so the component that
+   * paints it carries no hex of its own, and so the two themes differ by a
+   * value rather than by a branch.
+   */
+  --wx-ground:
+    radial-gradient(ellipse at 4% 52%, #715a9120, transparent 35%),
+    radial-gradient(ellipse at 94% 75%, #58789b18, transparent 40%),
+    linear-gradient(125deg, #202024, #202022 65%, #22232a);
+  --wx-scene-opacity: 0.46;
+  --wx-scene-light-opacity: 0.24;
+
+  --wx-aurora-mint: #373a3e;
+  --wx-aurora-sky: #383b42;
+  --wx-aurora-peri: #3a3945;
 }
 
 [data-theme='light'] {
   color-scheme: light;
 
-  --wx-bg: #EDEFF7;
-  --wx-surface-1: #F7F8FC;
-  --wx-surface-2: #FFFFFF;
-  --wx-surface-3: #E2E6F2;
-  --wx-field: #E2E6F2; /* what you type into · defined by its edge, not a fill */
+  --wx-bg: #DCDEE9;
+  --wx-surface-1: #EDEEF5;
+  --wx-surface-2: #F7F8FC;
+  --wx-surface-3: #CFD3E0;
+  --wx-field: #CFD3E0; /* what you type into · defined by its edge, not a fill */
 
   --wx-text: #1A1B26; /* 16.53:1 */
-  --wx-text-muted: #5c5c70; /*  4.83:1 */
-  --wx-text-faint: #606076;
+  --wx-text-muted: #535365; /*  4.83:1 */
+  --wx-text-faint: #555568;
   --wx-text-inverse: #F7F8FC;
 
   --wx-border: #D9DDEC;
   --wx-border-strong: #C3C9DE;
-  --wx-border-interactive: #8888a2; /* >= 3:1 on bg */
+  --wx-border-interactive: #7c7c98; /* >= 3:1 on bg */
 
   /* Accent 2, violet, darkened so it survives a light background */
-  --wx-accent: #9445d3; /* 5.13:1 on bg */
-  --wx-accent-hover: #7a27bc; /* 7.05:1 */
-  --wx-accent-active: #64209b;
-  --wx-accent-soft: rgba(148, 69, 211, 0.12);
-  --wx-accent-ring: rgba(148, 69, 211, 0.45);
+  --wx-accent: #5b4dd5; /* 5.13:1 on bg */
+  --wx-accent-hover: #3b2acf; /* 7.05:1 */
+  --wx-accent-active: #2f22a5;
+  --wx-accent-soft: rgba(91, 77, 213, 0.12);
+  --wx-accent-ring: rgba(91, 77, 213, 0.45);
   /* See the dark block. Heavier here: a tinted shadow has to carry against a
      near-white page, where a faint one simply disappears. */
   --wx-accent-shadow: rgba(106, 47, 224, 0.36);
@@ -358,12 +417,12 @@
      just enough to clear WCAG AA on a nested card, which is the tightest
      surface any of them sits on. Amber is the one that needed it most: the
      brighter #b46e00 is only 3.48:1 there and nobody could read the label. */
-  --wx-stage-live: #1667e1; /* Accent 3 blue, matching its own soft tint. */
-  --wx-stage-live-soft: rgba(22, 103, 225, 0.14);
-  --wx-stage-due: #92630c;
-  --wx-stage-due-soft: rgba(146, 99, 12, 0.14);
-  --wx-stage-paid: #0e7a6f;
-  --wx-stage-paid-soft: rgba(14, 122, 111, 0.14);
+  --wx-stage-live: #145dca; /* Accent 3 blue, matching its own soft tint. */
+  --wx-stage-live-soft: rgba(20, 93, 202, 0.14);
+  --wx-stage-due: #845a0b;
+  --wx-stage-due-soft: rgba(132, 90, 11, 0.14);
+  --wx-stage-paid: #0c6e64;
+  --wx-stage-paid-soft: rgba(12, 110, 100, 0.14);
 
   /*
    * THE SPECTRUM, light. Same four kit accents, taken to their dark inks so a
@@ -372,37 +431,37 @@
    * the kit publishes a dark ink per accent. See the note in the dark block for
    * what these are and are not for.
    */
-  --wx-chart-1: #9445d3;
-  --wx-chart-2: #1562d5;
-  --wx-chart-3: #0d7369;
-  --wx-chart-4: #665ad8;
+  --wx-chart-1: #5b4dd5;
+  --wx-chart-2: #145cc8;
+  --wx-chart-3: #0c6c62;
+  --wx-chart-4: #60607b;
   --wx-chart-bar: rgba(155, 92, 255, 0.26);
   --wx-chart-bar-peak: rgba(11, 111, 105, 0.72);
   --wx-chart-grid: rgba(20, 20, 28, 0.08);
 
-  --wx-success: #0d7369;
-  --wx-success-soft: rgba(13, 115, 105, 0.12);
-  --wx-danger: #c82519;
-  --wx-danger-soft: rgba(200, 37, 25, 0.12); /* magenta, matching --wx-danger */
-  --wx-warning: #92630c;
+  --wx-success: #0c6c62;
+  --wx-success-soft: rgba(12, 108, 98, 0.12);
+  --wx-danger: #bc2317;
+  --wx-danger-soft: rgba(188, 35, 23, 0.12); /* magenta, matching --wx-danger */
+  --wx-warning: #845a0b;
   /* Was a brown-gold `rgba(138,90,0,.10)`, under a magenta `--wx-warning`. */
-  --wx-warning-soft: rgba(146, 99, 12, 0.12);
-  --wx-info: #1562d5; /* Accent 3 blue. Was #5a1fd0, a VIOLET under a blue tint. */
-  --wx-info-soft: rgba(21, 98, 213, 0.12);
+  --wx-warning-soft: rgba(132, 90, 11, 0.12);
+  --wx-info: #145cc8; /* Accent 3 blue. Was #5a1fd0, a VIOLET under a blue tint. */
+  --wx-info-soft: rgba(20, 92, 200, 0.12);
 
   /* EUKA creator tiers, L0 to L7. The hue per tier is Euka's own (blue, violet,
      teal, green, lime, amber, orange), because the team reads these tiers in
      Euka all day. Each ink is proven against ITS OWN chip, a 12% tint on a
      card, by check-contrast: a colour that passes on the page can fail on a
      tint. Rashid, 2026-09-16. */
-  --wx-tier-0: #65657b;
-  --wx-tier-1: #1f736a;
-  --wx-tier-2: #3065b5;
-  --wx-tier-3: #425dcd;
-  --wx-tier-4: #6054d1;
-  --wx-tier-5: #764acf;
-  --wx-tier-6: #8c3ecc;
-  --wx-tier-7: #a131b9;
+  --wx-tier-0: #606076;
+  --wx-tier-1: #1d6d65;
+  --wx-tier-2: #1f6975;
+  --wx-tier-3: #2e60ab;
+  --wx-tier-4: #3e55cc;
+  --wx-tier-5: #4851ce;
+  --wx-tier-6: #594ccf;
+  --wx-tier-7: #7340cc;
 
   /* The performance sheet · see the dark block for what these are for. */
   --wx-sheet-band: rgba(20, 20, 28, 0.035);
@@ -504,18 +563,39 @@
 
      The alphas are lower than the dark ones on purpose: ink over paper reads
      far stronger than white over black at the same opacity. */
-  --wx-glass-fill: linear-gradient(
-    135deg,
-    rgba(20, 20, 28, 0.035) 0%,
-    rgba(20, 20, 28, 0) 100%
+  /*
+   * THE GLASS MATERIAL. Light face.
+   *
+   * Here the fill DOES tint toward white, because on paper that raises the
+   * backdrop's luminance and can only help the ink: white at 58% over the
+   * darkest aurora stop composites to about #F5F5FA, where muted text sits at
+   * 6.1:1. The dark face had to do the opposite for the same reason — see the
+   * note in the dark block. Getting these two backwards is how a glass design
+   * turns unreadable the moment somebody switches theme.
+   */
+  --wx-glass-fill: rgba(255, 255, 255, 0.44);
+  --wx-glass-fill-hover: rgba(255, 255, 255, 0.7);
+  --wx-glass-well: rgba(226, 230, 242, 0.7);
+  --wx-glass-panel: rgba(255, 255, 255, 0.52);
+  --wx-glass-line: rgba(20, 20, 28, 0.06);
+  --wx-glass-edge: rgba(255, 255, 255, 0.85);
+  --wx-glass-rim-top: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), transparent);
+  --wx-glass-rim-left: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.9),
+    transparent 60%,
+    rgba(255, 255, 255, 0.35)
   );
-  --wx-glass-panel: rgba(20, 20, 28, 0.022);
-  --wx-glass-line: rgba(20, 20, 28, 0.1);
+  /* See the dark block. Light carries the glow at its reference strength. */
+  --wx-glass-inner:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75), inset 0 -1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 0 10px 5px rgba(255, 255, 255, 0.5);
+  --wx-glass-lift: 0 0.5rem 2rem rgba(60, 70, 106, 0.1);
+  --wx-glass-lift-hover: 0 0.875rem 2.75rem rgba(60, 70, 106, 0.16);
   --wx-glass-rim: inset 1px 1px 0 0 rgba(255, 255, 255, 0.7);
-  /* Was the light-mode gold `rgba(138,95,31,.16)`, which is #8a5f1f. The violet
-     is darkened the same way, or the glow is invisible on paper. */
-  --wx-glass-glow: 0 0 40px rgba(106, 47, 224, 0.16);
-  --wx-glass-blur: 24px;
+  --wx-glass-glow: 0 0 40px rgba(148, 69, 211, 0.16);
+  --wx-glass-blur: 9px;
+  --wx-glass-blur-chrome: 17px;
 
   --wx-accent-gradient: linear-gradient(135deg, #9445d3 0%, #1562d5 100%);
   /*
@@ -533,10 +613,21 @@
 
   /* The aurora's light face. Same band logic as the dark block above, at 0.055
      — paper tolerates a wider swing before the ground reads as dirty. */
-  --wx-aurora-mint: #e4f7f8;
-  --wx-aurora-sky: #e0e9f9;
-  --wx-aurora-peri: #e7e8f6;
-  --wx-aurora-orchid: #e9e7f5;
+  /* See the dark block. Paper shows grain more readily, so it carries less. */
+  --wx-texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  --wx-texture-opacity: 0.055;
+
+  /* See the dark block. His light ramp, unchanged. */
+  --wx-ground:
+    radial-gradient(ellipse at 5% 40%, #b29dd52b, transparent 40%),
+    radial-gradient(ellipse at 92% 60%, #a7c2df30, transparent 42%),
+    linear-gradient(125deg, #e1dfe9, #d7dfe9);
+  --wx-scene-opacity: 0.5;
+  --wx-scene-light-opacity: 0.7;
+
+  --wx-aurora-mint: #dde7ee;
+  --wx-aurora-sky: #d1def4;
+  --wx-aurora-peri: #d6d6eb;
 }
 
 /* ---------------------------------------------------------------------------

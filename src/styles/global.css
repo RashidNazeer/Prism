@@ -407,38 +407,40 @@
 }
 
 /*
- * THE BACKDROP'S BEAMS, IN CSS RATHER THAN IN JAVASCRIPT.
+ * THE GRAIN LAYER, behind every screen.
  *
- * These were twelve `m.div`s with `repeat: Infinity`. Motion hands an animation
- * to the compositor when it can, but it cannot here: the travel is expressed in
- * CONTAINER UNITS (`100cqmax`), which the Web Animations API will not take. So
- * all twelve were being recalculated and written on the MAIN THREAD every
- * frame, forever — directly competing with scrolling, which is the one thing
- * the main thread must not be late for. That is a mechanism for judder, not a
- * guess about one.
+ * It sits at `z-index: -1`: above the aurora, which AppShell mounts at `-z-10`,
+ * and below every pixel of content. `pointer-events: none` so it never eats a
+ * click, and `position: fixed` so it does not scroll — grain that travels with
+ * the page reads as a moving texture rather than as the surface of the glass.
  *
- * A CSS keyframe on `transform` runs on the compositor instead, so the beams
- * cost the main thread nothing at all once started. Each beam's phase and
- * length come in as custom properties, which keeps one keyframe for all twelve.
+ * A pseudo-element on `<body>` rather than a component, so it reaches the
+ * public site, the auth screens, the signed-in shell and the admin app without
+ * four mount points to keep in step.
+ *
+ * NO `filter` AND NO `backdrop-filter` HERE. `<body>` is on the ancestor chain
+ * of `.wurxbase-root`, and either property on it would make it the containing
+ * block for every fixed overlay in the vendored admin app — the exact fault
+ * that put its modals 3,413px down the page. `scripts/check-backdrop-ancestry.mjs`
+ * asserts this; the texture is painted, never filtered.
  */
-@keyframes wx-beam-rise {
-  from {
-    transform: translate(-50%, 100cqmax);
-  }
-  to {
-    transform: translate(-50%, -100%);
-  }
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--wx-texture);
+  background-repeat: repeat;
+  opacity: var(--wx-texture-opacity);
 }
 
-@utility wx-beam {
-  animation: wx-beam-rise var(--wx-beam-dur, 3s) linear var(--wx-beam-delay, 0s) infinite;
-}
-
-/* The backdrop already declines to render beams under reduced motion; this is
-   the belt-and-braces half, in case one is ever rendered another way. */
-@media (prefers-reduced-motion: reduce) {
-  .wx-beam {
-    animation: none;
+/* Grain is a texture, not an effect, so it survives reduced motion. It does
+   NOT survive forced-colors, where the OS is repainting everything anyway and
+   a noise field over High Contrast is pure interference. */
+@media (forced-colors: active) {
+  body::after {
+    display: none;
   }
 }
 
@@ -615,41 +617,152 @@
  * a rim rather than as light falling off an edge — which is most of what made
  * the surfaces look outlined even before the hairline is counted.
  */
+/*
+ * GLASS, 2026-10-14. These class NAMES are kept and their MATERIAL replaced.
+ *
+ * That is the whole trick, and it is why the app changes in one commit instead
+ * of sixty. `wx-neo-raised` alone has 120 call sites, `-sm` 67 and `wx-neo-inset`
+ * 124 — 454 surfaces in all. Renaming them would mean visiting every one;
+ * redefining them converts the product at a stroke. The names now describe the
+ * ROLE (raised, inset, pressed) rather than the old neomorphic look, which is
+ * what a material token should have described in the first place.
+ *
+ * THE LIT EDGES ARE BACKGROUND LAYERS, NOT PSEUDO-ELEMENTS. The reference
+ * recipe draws them with ::before and ::after, and that would have been a trap
+ * here: components already use those pseudo-elements on cards — `wx-card-hero`
+ * did exactly that — so a material claiming them would silently break whatever
+ * got there first. Two background layers, 1px tall and 1px wide, pinned to the
+ * top and left, give the same light without touching the DOM or the pseudo
+ * element budget.
+ *
+ * NO `backdrop-filter` ON SURFACES, deliberately. §4.3 allows three blurred
+ * layers painting at once and a dashboard has ten cards. It costs almost
+ * nothing visually: the aurora behind these is a LOW-FREQUENCY gradient, and
+ * blurring a soft gradient is close to an identity operation. Blur is spent
+ * where it reads — chrome and overlays — and the translucent fill is what makes
+ * a surface glass here. `scripts/check-blur-budget.mjs` holds this line.
+ */
 @utility wx-neo-raised {
-  background: var(--wx-surface-1);
-  /* THREE LAYERS, NOT TWO. The highlight and the soft shadow give the bevel;
-     the tight contact shadow underneath is what stops the card reading as if it
-     were floating a centimetre above the page. Rashid asked for more shadow and
-     darker — this is the "more". */
+  background-color: var(--wx-glass-fill);
+  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left);
+  background-size:
+    100% 1px,
+    1px 100%;
+  background-position:
+    top left,
+    top left;
+  background-repeat: no-repeat;
   box-shadow:
-    -0.5rem -0.5rem 1.5rem var(--wx-neo-light),
-    0.5rem 0.5rem 1.5rem var(--wx-neo-dark),
-    0 0.0625rem 0.1875rem var(--wx-neo-contact);
+    inset 0 0 0 1px var(--wx-glass-edge),
+    var(--wx-glass-inner),
+    var(--wx-glass-lift);
 }
 
-/* The small sibling: buttons, chips, icon wells. */
+/* The small sibling: buttons, chips, icon wells. Same material, less lift. */
 @utility wx-neo-raised-sm {
-  background: var(--wx-surface-1);
+  background-color: var(--wx-glass-fill);
+  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left);
+  background-size:
+    100% 1px,
+    1px 100%;
+  background-position:
+    top left,
+    top left;
+  background-repeat: no-repeat;
   box-shadow:
-    -0.25rem -0.25rem 0.75rem var(--wx-neo-light),
-    0.25rem 0.25rem 0.75rem var(--wx-neo-dark),
-    0 0.0625rem 0.125rem var(--wx-neo-contact);
+    inset 0 0 0 1px var(--wx-glass-edge),
+    var(--wx-glass-inner),
+    0 0.25rem 1rem rgb(0 0 0 / 0.06);
 }
 
-/* Things that RECEIVE: inputs, search, progress tracks, chart wells. */
-@utility wx-neo-inset {
-  background: var(--wx-surface-3);
+/*
+ * SURFACES DO BLUR — FROM `md` UP ONLY. Rashid asked for more blur, 2026-10-14.
+ *
+ * The compromise is a width, not a compromise on the look. On a laptop a
+ * dashboard's cards genuinely refract the aurora, which is the whole point of
+ * the material. Below 768px they fall back to the tint alone, because that is
+ * where the cost lands: a phone compositing ten blurred layers over a gradient
+ * is the single most expensive thing this redesign could ask of it, on a
+ * product whose creators are mostly on phones.
+ *
+ * This is also why `check-blur-budget.mjs` still passes. It measures at 375px,
+ * where these rules do not apply, so the three-layer budget continues to
+ * describe the device that actually needs protecting. On a desktop the budget
+ * is deliberately not enforced — that machine can afford it.
+ *
+ * Plain rules rather than `@utility`, so the media query can wrap them.
+ */
+@media (min-width: 768px) {
+  .wx-neo-raised,
+  .wx-neo-raised-sm {
+    backdrop-filter: blur(var(--wx-glass-blur));
+    -webkit-backdrop-filter: blur(var(--wx-glass-blur));
+  }
+}
+
+/* Anyone who has asked for less motion or less transparency gets neither the
+   blur nor the cost. `forced-colors` drops it too, where it would be discarded
+   anyway. */
+@media (prefers-reduced-transparency: reduce), (prefers-reduced-motion: reduce), (forced-colors: active) {
+  .wx-neo-raised,
+  .wx-neo-raised-sm,
+  .wx-glass-chrome {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+/*
+ * CHROME. The only surfaces that spend a blur layer at EVERY width: the rail,
+ * the top bar and overlays. They are SIBLINGS of the content column, never ancestors of
+ * `.wurxbase-root`, so a backdrop-filter here is legal — see §1.2 and
+ * `scripts/check-backdrop-ancestry.mjs`, which asserts exactly that.
+ */
+@utility wx-glass-chrome {
+  background-color: var(--wx-glass-panel);
+  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left);
+  background-size:
+    100% 1px,
+    1px 100%;
+  background-position:
+    top left,
+    top left;
+  background-repeat: no-repeat;
+  backdrop-filter: blur(var(--wx-glass-blur-chrome)) saturate(1.08);
+  -webkit-backdrop-filter: blur(var(--wx-glass-blur-chrome)) saturate(1.08);
   box-shadow:
-    inset 0.25rem 0.25rem 0.5625rem var(--wx-neo-dark),
-    inset -0.25rem -0.25rem 0.5625rem var(--wx-neo-light);
+    inset 0 0 0 1px var(--wx-glass-edge),
+    var(--wx-glass-inner),
+    var(--wx-glass-lift);
+}
+
+/*
+ * Things that RECEIVE: inputs, search, progress tracks, chart wells.
+ *
+ * A well in glass is DARKER and recessed, not lighter. The lit edge therefore
+ * moves to the BOTTOM — light falling into a dish catches the far rim, which is
+ * the opposite of a raised card catching its near one. Same light source, still
+ * above and left; the inversion is what makes it read as carved in rather than
+ * sitting on.
+ */
+@utility wx-neo-inset {
+  background-color: var(--wx-glass-well);
+  background-image: var(--wx-glass-rim-top);
+  background-size: 100% 1px;
+  background-position: bottom left;
+  background-repeat: no-repeat;
+  box-shadow:
+    inset 0 0 0 1px var(--wx-glass-line),
+    inset 0 2px 6px rgb(0 0 0 / 0.1);
 }
 
 /* The moment of contact. Raised goes IN; it does not merely darken. */
 @utility wx-neo-pressed {
-  background: var(--wx-pressed-surface);
+  background-color: var(--wx-glass-well);
+  background-image: none;
   box-shadow:
-    inset 0.1875rem 0.1875rem 0.375rem var(--wx-neo-dark),
-    inset -0.125rem -0.125rem 0.3125rem var(--wx-neo-light);
+    inset 0 0 0 1px var(--wx-glass-line),
+    inset 0 2px 8px rgb(0 0 0 / 0.16);
 }
 
 /* Press physics. Without this the softness reads as blur rather than material,
@@ -660,10 +773,11 @@
     background 160ms var(--wx-ease);
 
   &:active {
-    background: var(--wx-pressed-surface);
+    background-color: var(--wx-glass-well);
+    background-image: none;
     box-shadow:
-      inset 0.1875rem 0.1875rem 0.375rem var(--wx-neo-dark),
-      inset -0.125rem -0.125rem 0.3125rem var(--wx-neo-light);
+      inset 0 0 0 1px var(--wx-glass-line),
+      inset 0 2px 8px rgb(0 0 0 / 0.16);
   }
 }
 
