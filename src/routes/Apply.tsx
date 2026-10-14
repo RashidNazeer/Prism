@@ -39,7 +39,7 @@ export function Apply() {
           </ButtonLink>
         </div>
 
-        <h1 className="font-brand mt-10 text-[clamp(1.875rem,5vw,2.5rem)] font-normal">
+        <h1 className="font-brand mt-10 text-[clamp(1.875rem,5vw,2.5rem)]">
           Join the Prism creator roster
         </h1>
         <p className="text-muted mt-4 leading-relaxed text-pretty">

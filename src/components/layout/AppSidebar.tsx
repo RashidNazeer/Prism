@@ -220,7 +220,29 @@ export function AppSidebar({
             onClick={onNavigate}
             title={collapsed ? create.label : undefined}
             className={cn(
-              'wx-gradient text-on-accent ease-brand flex min-h-[44px] items-center justify-center gap-2',
+              /*
+               * "ADD A VIDEO" — THE BUTTON RASHID POINTS AT FIRST.
+               *
+               * It was `wx-gradient`, which is `--wx-accent-gradient` in
+               * global.css: violet #AF73DE to blue #5592EE, neither of which is
+               * one of his three. Rebuilt here rather than in the token because
+               * tokens.css and global.css belong to the lead this session.
+               *
+               * TWO OF THE THREE, sky into periwinkle, and it ENDS on #C3BEF0
+               * so this CTA and a solid `Button variant="primary"` beside it
+               * agree about what the primary colour is. Hover steps the whole
+               * ramp one notch deeper (peri into `--wx-accent-fill-hover`)
+               * instead of brightening, because there is nothing above a pastel
+               * to brighten into.
+               *
+               * The label is `--wx-on-accent-fill`, NOT `text-on-accent`. In
+               * the light theme `--wx-on-accent` is #F7F8FC — white — and white
+               * on #CADEFC is 1.4:1. Ink on this ramp is above 9:1 at both ends.
+               */
+              'ease-brand flex min-h-[44px] items-center justify-center gap-2',
+              '[background-image:linear-gradient(135deg,var(--wx-brand-sky)_0%,var(--wx-brand-peri)_100%)]',
+              'hover:[background-image:linear-gradient(135deg,var(--wx-brand-peri)_0%,var(--wx-accent-fill-hover)_100%)]',
+              '[color:var(--wx-on-accent-fill)]',
               'rounded-xl text-[0.8125rem] font-semibold shadow-md transition-[transform,opacity,background-color,border-color,color] duration-300',
               'hover:shadow-lg active:translate-y-px',
               collapsed ? 'w-full px-0' : 'w-full px-4'
@@ -320,7 +342,8 @@ export function AppSidebar({
           <div className="grid justify-items-center gap-2">
             <p
               title={`${name || 'Signed in'}${email ? ` (${email})` : ''}`}
-              className="bg-accent-soft text-accent grid size-11 place-items-center rounded-full font-mono text-[0.8125rem] font-bold uppercase"
+              /* Avatar = FILL. His colour, ink initial. See CreatorFace. */
+              className="grid size-11 place-items-center rounded-full [background-color:var(--wx-accent-fill)] font-mono text-[0.8125rem] font-bold [color:var(--wx-on-accent-fill)] uppercase"
             >
               {initial}
             </p>
@@ -341,7 +364,8 @@ export function AppSidebar({
           <div className="wx-neo-inset flex items-center gap-2.5 rounded-xl py-2 pr-1.5 pl-2.5">
             <span
               aria-hidden
-              className="bg-accent-soft text-accent grid size-9 shrink-0 place-items-center rounded-full font-mono text-[0.8125rem] font-bold uppercase"
+              /* Avatar = FILL. His colour, ink initial. See CreatorFace. */
+              className="grid size-9 shrink-0 place-items-center rounded-full [background-color:var(--wx-accent-fill)] font-mono text-[0.8125rem] font-bold [color:var(--wx-on-accent-fill)] uppercase"
             >
               {initial}
             </span>

@@ -168,7 +168,12 @@ export function PipelineBoard({
                 aria-hidden
                 className={cn(
                   'relative z-10 grid size-6 shrink-0 place-items-center rounded-full',
-                  reached ? 'bg-accent text-on-accent' : 'wx-neo-inset text-muted',
+                  /* The stage dot is a FILL — his colour, ink glyph. The
+                     connector above stays on the accent INK: a 2px rule is a
+                     hairline, and a hairline in a 1.5:1 pastel is not there. */
+                  reached
+                    ? '[background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]'
+                    : 'wx-neo-inset text-muted',
                   i === furthest && 'ring-accent/40 ring-4',
                   justMoved && 'wx-pop'
                 )}

@@ -104,11 +104,19 @@ export function ApprovedMoment({
               disabled={busy}
               whileHover={{ scale: 1.015 }}
               whileTap={{ scale: 0.985 }}
-              className="wx-neo-raised-sm wx-neo-press group text-accent ease-brand hover:text-on-accent relative flex h-13 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl text-[0.9375rem] font-semibold transition-colors duration-300 disabled:opacity-60"
+              /*
+                THE WIPE IS A FILL, THE RESTING LABEL IS TEXT, and they take
+                different tokens for that reason. At rest the label sits on
+                glass, so it is `text-accent` — the darkened ink. Once the wipe
+                has crossed, the label is sitting on #C3BEF0, where white would
+                be 1.76:1 and ink is 10.1:1, so the hover colour is
+                `--wx-on-accent-fill`, NOT `--wx-on-accent`.
+              */
+              className="wx-neo-raised-sm wx-neo-press group text-accent ease-brand relative flex h-13 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl text-[0.9375rem] font-semibold transition-colors duration-300 hover:[color:var(--wx-on-accent-fill)] disabled:opacity-60"
             >
               <span
                 aria-hidden
-                className="bg-accent ease-brand absolute inset-0 origin-left scale-x-0 transition-transform duration-500 group-hover:scale-x-100"
+                className="ease-brand absolute inset-0 origin-left scale-x-0 [background-color:var(--wx-accent-fill)] transition-transform duration-500 group-hover:scale-x-100"
               />
               <span className="relative">{busy ? 'One moment...' : 'See my hub'}</span>
               <ArrowRight

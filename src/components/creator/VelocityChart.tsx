@@ -26,11 +26,23 @@ import type { DailyPerformance } from '@/lib/creator/usePerformance';
  * reader has no way to know. Orders have their own tab; nothing is lost and the
  * second axis is gone.
  *
- * THE RAMP IS TIME. Oldest bar magenta, newest bar cyan, stepping through the
- * four kit accents in the order the brand guidelines fix them: magenta, violet,
- * blue, cyan, "use them in this order whenever they appear together". Cyan is
- * the kit's growth colour, so the newest day landing on it is the right way
- * round and not an arbitrary choice.
+ * THE RAMP IS TIME, AND IT IS NOW HIS THREE COLOURS. Oldest bar mint #DEFCF9,
+ * then sky #CADEFC, then periwinkle #C3BEF0, and the fourth stop stays
+ * `--wx-chart-4`, the neutral ink the tokens already carry. That is a FIXED
+ * order, lightest to deepest to neutral — it is NEVER cycled and never
+ * re-ordered per chart, because the position of a day on the ramp is the thing
+ * that encodes its recency.
+ *
+ * It replaces the old four-accent spectrum, which ran violet to blue to teal to
+ * green: four hues, none of them one of Rashid's three. Lightness does the work
+ * the old saturation did, and it does it better here, because a ramp read as a
+ * sequence wants a monotone lightness order rather than a hue tour.
+ *
+ * BARS ARE FILLS, WHICH IS WHY PASTELS ARE LEGAL ON THEM. Nothing is printed on
+ * a bar. Everything that IS text in this chart — the tick labels down the left,
+ * the dates along the bottom, the tooltip figure — stays on the ink tokens, and
+ * so do the gridlines (`--wx-chart-grid`) and the hover dot's border
+ * (`border-accent`). A 1px pastel gridline on a pale page is not a gridline.
  *
  * This is REDUNDANT encoding, which is what makes it safe. The x-axis already
  * says which bar is older; the colour repeats it. Nobody has to tell two hues
@@ -64,7 +76,7 @@ const VB_H = 240;
  * marks is worse than no legend.
  */
 const RAMP =
-  'linear-gradient(90deg, var(--wx-chart-1) 0%, var(--wx-chart-2) 38%, var(--wx-chart-3) 70%, var(--wx-chart-4) 100%)';
+  'linear-gradient(90deg, var(--wx-brand-mint) 0%, var(--wx-brand-sky) 38%, var(--wx-brand-peri) 70%, var(--wx-chart-4) 100%)';
 
 /** A rate is a line; an amount is a bar. The only rule in here. */
 export const shapeFor = (m: VelocityMetric): 'line' | 'bars' => (m === 'roi' ? 'line' : 'bars');
@@ -308,14 +320,20 @@ export function VelocityChart({
             >
               <defs>
                 <linearGradient id={`${uid}-ramp`} x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="var(--wx-chart-1)" />
-                  <stop offset="38%" stopColor="var(--wx-chart-2)" />
-                  <stop offset="70%" stopColor="var(--wx-chart-3)" />
+                  {/* The same four stops as `RAMP`, in the same fixed order.
+                      If one of these drifts from the other the legend stops
+                      describing the marks. */}
+                  <stop offset="0%" stopColor="var(--wx-brand-mint)" />
+                  <stop offset="38%" stopColor="var(--wx-brand-sky)" />
+                  <stop offset="70%" stopColor="var(--wx-brand-peri)" />
                   <stop offset="100%" stopColor="var(--wx-chart-4)" />
                 </linearGradient>
+                {/* The area under the ROI line is a FILL, so it is periwinkle:
+                    series 3 of the fixed order, and the deepest of the three,
+                    which is what a wash needs to be to register at 28%. */}
                 <linearGradient id={`${uid}-fill`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--wx-chart-3)" stopOpacity="0.28" />
-                  <stop offset="100%" stopColor="var(--wx-chart-3)" stopOpacity="0" />
+                  <stop offset="0%" stopColor="var(--wx-brand-peri)" stopOpacity="0.28" />
+                  <stop offset="100%" stopColor="var(--wx-brand-peri)" stopOpacity="0" />
                 </linearGradient>
               </defs>
 
@@ -391,7 +409,10 @@ export function VelocityChart({
                      its own tick instead of sliding it off to the left. */
                   const centrePct = (model.x(i) / VB_W) * 100;
                   /* One bar has no older and no newer, so a ramp would be
-                     meaningless on it. It takes the primary accent flat. */
+                     meaningless on it. It takes the primary accent flat —
+                     `--wx-accent-fill`, which is #C3BEF0, the same fill the
+                     primary button wears, so a lone bar and a lone button
+                     agree about what the brand colour is. */
                   const ramp =
                     n > 1
                       ? {
@@ -399,7 +420,7 @@ export function VelocityChart({
                           backgroundSize: `${n * 100}% 100%`,
                           backgroundPositionX: `${(rank / (n - 1)) * 100}%`,
                         }
-                      : { backgroundColor: 'var(--wx-chart-2)' };
+                      : { backgroundColor: 'var(--wx-accent-fill)' };
                   return (
                     <span
                       key={rows[i]?.stat_date ?? i}

@@ -125,7 +125,7 @@ export function About() {
           {COMPANY_FACTS.map((f, i) => (
             <Reveal key={f.label} delay={i * 0.06}>
               <div className="wx-neo-raised rounded-2xl p-7">
-                <dt className="font-brand wx-numeric text-3xl font-normal tracking-[-0.02em]">
+                <dt className="font-brand wx-numeric text-3xl tracking-[-0.02em]">
                   {f.value}
                 </dt>
                 <dd className="text-muted mt-2 text-sm leading-relaxed">{f.label}</dd>

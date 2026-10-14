@@ -281,12 +281,80 @@
    * glass because of the rim lights and the blur, not because of a white wash.
    * This is the floor in GLASS_PLAN.md §4.1, applied.
    */
-  --wx-glass-fill: rgba(43, 43, 46, 0.66);
-  --wx-glass-fill-hover: rgba(52, 52, 56, 0.72);
-  --wx-glass-well: rgba(26, 26, 28, 0.66);
-  --wx-glass-panel: rgba(43, 43, 46, 0.58);
+  /*
+   * THE FLOOR, RECOMPUTED FROM RENDERED PIXELS, 2026-10-15.
+   *
+   * The ground was screenshot with `#root` hidden, in both themes, and its
+   * luminance extremes read off the bitmap rather than off a hex value — the
+   * ground is a photograph under two radials, so no token states it. Dark's
+   * BRIGHTEST ground pixel is `rgb(54, 56, 60)`, and `--wx-text-faint` on that
+   * bare ground is already only 4.56:1. Six hundredths of headroom.
+   *
+   * That is why these came DOWN from 0.66/0.58 but not to Rashid's values. His
+   * panes carry 4.7%–6% white at the waist; the solver says the MAXIMUM white
+   * any stop of a dark pane may carry, over a 0.58 base, is 0.040. His card
+   * waist rendered on our dark ground puts faint text at 3.95:1 and his chrome
+   * top lip at 1.05:1. So dark keeps a surface-tinted base — it is the thing
+   * that buys the white rim its budget — and the base is as thin as the floor
+   * allows rather than as thin as he drew it.
+   */
+  --wx-glass-fill: rgba(43, 43, 46, 0.58);
+  --wx-glass-fill-hover: rgba(52, 52, 56, 0.64);
+  --wx-glass-well: rgba(26, 26, 28, 0.58);
+  --wx-glass-panel: rgba(43, 43, 46, 0.5);
   --wx-glass-line: rgba(255, 255, 255, 0.1);
   --wx-glass-edge: rgba(255, 255, 255, 0.14);
+  /*
+   * HIS SMALL-CONTROL EDGE. Measured: his panes carry `#ffffffe0` (0.88) and
+   * his pills, badges and icon wells a lighter `#ffffff9c` (0.61) — two edge
+   * tiers, not one. The RATIO is 0.69, and that is what transfers: dark's pane
+   * edge is 0.14, so its small edge is 0.1. A 0.61 white hairline on a
+   * near-black pill is a drawn outline, not an edge catching light.
+   */
+  --wx-glass-edge-sm: rgba(255, 255, 255, 0.1);
+  /*
+   * THE FACE, which is the shape of his glass.
+   *
+   * Measured off `.feature-card`, `.nav` and `.summary-tile`: every pane is a
+   * five- or four-stop VERTICAL ramp — a bright lip at the top, a near-nothing
+   * waist, a second lip at the bottom — and not a flat wash. The stop
+   * POSITIONS and the RELATIVE weights below are his exactly. Only the
+   * amplitude is ours: his top lip is 0.471/0.549/0.659 white, and 0.040 is
+   * the whole dark budget, so the ladder is scaled by 0.074 and the
+   * brightness it loses is paid back by the 1px rim in `--wx-glass-inner`,
+   * where no text ever sits and the white is therefore free.
+   *
+   * his optical-face  .471 : .157 : .047 : .098 : .290   (1 : .33 : .10 : .21 : .62)
+   * his smoke-face    .549 : .094 : .060 : .267          (1 : .17 : .11 : .49)
+   * his deep-face     .659 : .165 : .102 : .420          (1 : .25 : .16 : .64)
+   */
+  --wx-glass-face: linear-gradient(
+    180deg,
+    #ffffff09 0%,
+    #ffffff03 14%,
+    #ffffff01 46%,
+    #ffffff02 82%,
+    #ffffff06 100%
+  );
+  --wx-glass-face-chrome: linear-gradient(
+    180deg,
+    #ffffff09 0%,
+    #ffffff02 20%,
+    #ffffff01 77%,
+    #ffffff04 100%
+  );
+  --wx-glass-face-deep: linear-gradient(
+    180deg,
+    #ffffff09 0%,
+    #ffffff02 22%,
+    #ffffff01 78%,
+    #ffffff06 100%
+  );
+  /* His modal card is the one surface he does NOT make transparent: measured
+     `#e6e8ef` at 0.89, under a 32px blur. The densest text on the screen gets
+     the densest pane, which is the floor arriving at the same answer he did.
+     Dark's twin is surface-1 at the same 0.89. */
+  --wx-glass-modal: rgba(43, 43, 46, 0.89);
   /* The two lit edges: a light source above and to the left. Same direction the
      neomorphic layer used, so the whole system agrees where the light is. */
   --wx-glass-rim-top: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.34), transparent);
@@ -340,18 +408,67 @@
   --wx-on-accent-fill: #1a1b26;
   --wx-solid-inner:
     inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+  /*
+   * THE DEPTH STACK, which is his `--optical-shadow`, measured whole:
+   *
+   *   inset 0  1px 0        #ffffffbc   (0.737)  top lip
+   *   inset 0 -1px 0        #ffffff42   (0.259)  bottom lip
+   *   inset 0  0   24px     #ffffff18   (0.094)  inner halo, 24px, NO spread
+   *         0  16px 32px    #3c466a15   (0.082)  the lift
+   *
+   * Three things transfer intact and one does not. The two 1px lips are free
+   * in both themes because a 1px line never has text over it, so dark keeps
+   * his TOP:BOTTOM ratio of 1 : 0.35 at its own amplitude. The 24px halo
+   * replaces our `inset 0 0 10px 5px` — his has no spread at all, which is the
+   * §4.5 flood trap avoided by construction — but it IS a broad band, so in
+   * dark it is held at 0.035, inside the 0.040 ceiling once the face gradient
+   * has taken its 0.0035 at the waist.
+   *
+   * The lift is the one that cannot cross: his is blue-grey ink, and
+   * `rgb(60, 70, 106)` at 8% on near-black is invisible. Dark keeps real black
+   * and takes his GEOMETRY instead — 16px down, 32px of blur, which is deeper
+   * and tighter than the 8px/32px it had.
+   */
   --wx-glass-inner:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(255, 255, 255, 0.04),
-    inset 0 0 10px 5px rgba(255, 255, 255, 0.045);
-  --wx-glass-lift: 0 0.5rem 2rem rgba(0, 0, 0, 0.45);
-  --wx-glass-lift-hover: 0 0.875rem 2.75rem rgba(0, 0, 0, 0.55);
+    inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(255, 255, 255, 0.035),
+    inset 0 0 24px rgba(255, 255, 255, 0.035);
+  --wx-glass-lift: 0 1rem 2rem rgba(0, 0, 0, 0.45);
+  --wx-glass-lift-hover: 0 1.5rem 3rem rgba(0, 0, 0, 0.55);
+  /* His modal adds a second, far deeper drop under the optical one:
+     `0 30px 80px rgba(0, 0, 0, 0.21)`. That is what separates a modal from a
+     card — not a different material, one more shadow. Dark needs it heavier,
+     because black on near-black reads as nothing at 0.21. */
+  --wx-glass-lift-modal: 0 1.875rem 5rem rgba(0, 0, 0, 0.55);
   --wx-glass-rim: inset 1px 1px 0 0 rgba(255, 255, 255, 0.1);
   --wx-glass-glow: 0 0 40px rgba(175, 115, 222, 0.18);
-  /* Nudged up on Rashid's note, 2026-10-14: 10 to 13. Surfaces blur from `md`
-     phone keeps the tint and spends nothing. See the media query in global.css
-     and the reasoning in §4.3. */
-  --wx-glass-blur: 9px;
-  --wx-glass-blur-chrome: 17px;
+  /*
+   * THE BLUR LADDER, HIS, MEASURED PER TIER, 2026-10-15.
+   *
+   *   rail 12px · card 22px + saturate(1.08) · nav and top bar 28px ·
+   *   modal card 32px · modal scrim 12px · drawer scrim 6px
+   *
+   * The ratios are kept exactly. Only the phone value is ours: `--wx-glass-blur`
+   * is applied from `md` up, so his 22px never paints on a phone at all, but
+   * CHROME blurs at every width (§4.3: "below md, chrome keeps its blur"), and
+   * a 28px backdrop under a scrolling list is the single most expensive thing
+   * this redesign could ask of a mid-range Android. So below `md` chrome drops
+   * to `--wx-glass-blur-phone`, which is §4.1's adopted css.glass value rounded
+   * to 9px. Same look where it is seen, no cost where it is scrolled past.
+   *
+   * `saturate` MOVED. His cards carry `blur(22px) saturate(1.08)` and his nav
+   * carries a bare `blur(28px)`. Ours had it exactly the other way round.
+   */
+  --wx-glass-blur: 22px;
+  --wx-glass-blur-chrome: 28px;
+  --wx-glass-blur-rail: 12px;
+  --wx-glass-blur-scrim: 12px;
+  --wx-glass-blur-phone: 9px;
+  --wx-glass-saturate: 1.08;
+  /* HIS MODAL CARD'S 32px IS DELIBERATELY NOT A TOKEN. It is nested inside his
+     12px scrim, and nested `backdrop-filter` is banned — see `wx-glass-modal`
+     in global.css for the whole reasoning. A token nothing may legally consume
+     is the dead material §5.8 asked us to stop adding. */
+  --wx-glass-scrim: rgba(10, 10, 14, 0.58);
 
   /* The gradient on the primary action: violet into cyan, along the spectrum.
      The HOVER was still `#d8a15b → #f0bb72`, a gold-to-amber ramp — not a stale
@@ -629,12 +746,79 @@
    * note in the dark block. Getting these two backwards is how a glass design
    * turns unreadable the moment somebody switches theme.
    */
-  --wx-glass-fill: rgba(255, 255, 255, 0.44);
-  --wx-glass-fill-hover: rgba(255, 255, 255, 0.7);
-  --wx-glass-well: rgba(226, 230, 242, 0.7);
-  --wx-glass-panel: rgba(255, 255, 255, 0.52);
-  --wx-glass-line: rgba(20, 20, 28, 0.06);
-  --wx-glass-edge: rgba(255, 255, 255, 0.85);
+  /*
+   * LIGHT TAKES HIS TRANSPARENCY, AND IT IS NOT A JUDGEMENT CALL.
+   *
+   * The ground was screenshot with `#root` hidden and its darkest rendered
+   * pixel read off the bitmap: `rgb(210, 205, 225)`. `--wx-text-muted` on that
+   * bare ground — a pane of zero opacity — is 4.85:1 and `--wx-text-faint` is
+   * 4.70:1. Both clear the floor with NO fill at all. White only raises the
+   * backdrop's luminance under dark ink, so on paper every one of his stops is
+   * legal: his card waist at 4.7% white measures 4.80:1, his chrome waist at
+   * 6% measures 4.83:1, and the worst stop in any of his three faces is 4.80.
+   *
+   * So the fills came down from 0.44 and 0.52 to a tenth, and the only reason
+   * they are not zero — which is what he actually drew, his cards have no
+   * background-color at all — is that our ground is a PHOTOGRAPH where his is
+   * a smooth 125° ramp. A pane at literally zero reads as a crop of the
+   * picture rather than as glass over it. 0.14 is the least that still holds
+   * the pane together over `glass-waves.webp`, and it is 3× more transparent
+   * than what it replaces.
+   */
+  --wx-glass-fill: rgba(255, 255, 255, 0.14);
+  --wx-glass-fill-hover: rgba(255, 255, 255, 0.26);
+  /* His well washes DOWNWARD in ink — `rgba(0, 0, 0, 0.03)` on `.segmented`
+     and `.role-tabs` — where the pane around it washes upward in white. The
+     direction is his and ours already agreed; the alpha comes down toward him
+     but stops well short of 3%, because a well has to hold a placeholder and
+     `--wx-text-faint` on paper has only 0.20 of headroom to spend. */
+  --wx-glass-well: rgba(226, 230, 242, 0.5);
+  /* Chrome is denser than a card in his file too: smoke waist 0.060 against
+     optical waist 0.047, a ratio of 1.28. Kept. */
+  --wx-glass-panel: rgba(255, 255, 255, 0.18);
+  /* His hairline, measured off `.segmented`: `rgba(73, 85, 104, 0.17)`. Ours
+     was `rgba(20, 20, 28, 0.06)` — a third of the weight and a neutral rather
+     than a blue-grey. His is both more his and a better control boundary. */
+  --wx-glass-line: rgba(73, 85, 104, 0.17);
+  /* His `#ffffffe0`, exactly. This is the edge that makes a pane at 14% read
+     as a solid object: almost all of the "glass" is the rim, not the fill. */
+  --wx-glass-edge: rgba(255, 255, 255, 0.88);
+  /* His second edge tier, `#ffffff9c`, for pills, badges and icon wells. */
+  --wx-glass-edge-sm: rgba(255, 255, 255, 0.61);
+  /*
+   * HIS THREE FACES, VERBATIM. `--optical-face`, `--smoke-face` and
+   * `--deep-face` as Chromium resolved them with `data-design="glass"` set:
+   * the stop positions, the stop alphas and the 180° direction are his, not
+   * scaled, not reinterpreted. Light has the headroom to carry all of it.
+   *
+   * (His token layer also declares `--glass: linear-gradient(145deg, …)`, and
+   * that one is NOT what paints. Nothing computed to it. The applied card face
+   * is the five-stop `--optical-face` below.)
+   */
+  --wx-glass-face: linear-gradient(
+    180deg,
+    #ffffff78 0%,
+    #ffffff28 14%,
+    #ffffff0c 46%,
+    #ffffff19 82%,
+    #ffffff4a 100%
+  );
+  --wx-glass-face-chrome: linear-gradient(
+    180deg,
+    #ffffff8c 0%,
+    #ffffff18 20%,
+    #ffffff0f 77%,
+    #ffffff44 100%
+  );
+  --wx-glass-face-deep: linear-gradient(
+    180deg,
+    #ffffffa8 0%,
+    #ffffff2a 22%,
+    #ffffff1a 78%,
+    #ffffff6b 100%
+  );
+  /* His `--glass-solid` `#e6e8ef` at the 0.89 his modal card computes to. */
+  --wx-glass-modal: rgba(230, 232, 239, 0.89);
   --wx-glass-rim-top: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), transparent);
   --wx-glass-rim-left: linear-gradient(
     180deg,
@@ -684,15 +868,44 @@
   --wx-on-accent-fill: #1a1b26;
   --wx-solid-inner:
     inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(0, 0, 0, 0.16);
+  /*
+   * HIS `--optical-shadow`, VERBATIM, in rem where it is a size.
+   *
+   *   inset 0  1px  0    #ffffffbc  ->  rgba(255, 255, 255, 0.737)
+   *   inset 0 -1px  0    #ffffff42  ->  rgba(255, 255, 255, 0.259)
+   *   inset 0  0    24px #ffffff18  ->  rgba(255, 255, 255, 0.094)
+   *         0  16px 32px #3c466a15  ->  rgba(60, 70, 106, 0.082)
+   *
+   * The inner halo is the big correction and it moves TOWARD him: ours was
+   * `inset 0 0 10px 5px rgba(255, 255, 255, 0.5)` — five times his alpha, with
+   * a 5px SPREAD he does not have. That is the §4.5 flood in a milder form,
+   * and it is why light panes read as domes rather than as glass. His is a
+   * wide, faint 24px halo with no spread at all.
+   *
+   * The lift was already his colour by luck — `rgb(60, 70, 106)` — and now has
+   * his offset and his alpha too: 16px down, not 8px, at 0.082, not 0.10.
+   */
   --wx-glass-inner:
-    inset 0 1px 0 rgba(255, 255, 255, 0.75), inset 0 -1px 0 rgba(255, 255, 255, 0.3),
-    inset 0 0 10px 5px rgba(255, 255, 255, 0.5);
-  --wx-glass-lift: 0 0.5rem 2rem rgba(60, 70, 106, 0.1);
-  --wx-glass-lift-hover: 0 0.875rem 2.75rem rgba(60, 70, 106, 0.16);
+    inset 0 1px 0 rgba(255, 255, 255, 0.737), inset 0 -1px 0 rgba(255, 255, 255, 0.259),
+    inset 0 0 24px rgba(255, 255, 255, 0.094);
+  --wx-glass-lift: 0 1rem 2rem rgba(60, 70, 106, 0.082);
+  --wx-glass-lift-hover: 0 1.5rem 3rem rgba(60, 70, 106, 0.14);
+  /* His modal's second drop, `0 30px 80px rgba(0, 0, 0, 0.21)`, exactly. */
+  --wx-glass-lift-modal: 0 1.875rem 5rem rgba(0, 0, 0, 0.21);
   --wx-glass-rim: inset 1px 1px 0 0 rgba(255, 255, 255, 0.7);
   --wx-glass-glow: 0 0 40px rgba(148, 69, 211, 0.16);
-  --wx-glass-blur: 9px;
-  --wx-glass-blur-chrome: 17px;
+  /* His ladder. See the dark block for why the phone value is not his, and for
+     why his 32px modal blur is not here at all. */
+  --wx-glass-blur: 22px;
+  --wx-glass-blur-chrome: 28px;
+  --wx-glass-blur-rail: 12px;
+  --wx-glass-blur-scrim: 12px;
+  --wx-glass-blur-phone: 9px;
+  --wx-glass-saturate: 1.08;
+  /* His `div#app-modal`, exactly: `rgba(16, 19, 28, 0.396)`. A scrim darkens
+     in both themes — it is the page being pushed back, not a surface — so the
+     dark twin is the same idea at more weight, not an inversion. */
+  --wx-glass-scrim: rgba(16, 19, 28, 0.396);
 
   --wx-accent-gradient: linear-gradient(135deg, #9445d3 0%, #1562d5 100%);
   /*
@@ -755,10 +968,29 @@
     ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', SFMono-Regular, 'SF Mono', Menlo, Consolas,
     monospace;
 
-  --wx-radius-sm: 6px;
-  --wx-radius-md: 10px;
-  --wx-radius-lg: 16px;
-  --wx-radius-xl: 24px;
+  /*
+   * HIS RADIUS LADDER, MEASURED PER ROLE, 2026-10-15.
+   *
+   *   7px  `.offer-pill`, `.tiny-badge`      12px `.clay-icon`
+   *   14px `.summary-tile`, `.step-count`    15px `.button.accent`
+   *   22px `.feature-card`, `.nav`, `.app-topbar`, `.workspace-sidebar`
+   *   28px `.app-modal-card`                 999px `.segmented`, `.role-tabs`
+   *
+   * The plan recorded "13px small controls" from the first pass. That 13px is
+   * real but it is the radius of `aside#design-dock` — the style SWITCHER that
+   * sits over his page, which is part of the browser, not part of the
+   * Glassmorphism design. His actual small controls run 7 / 12 / 14 / 15.
+   *
+   * `--wx-radius-modal` is a NEW name on purpose. Mapping 28px onto
+   * `--radius-2xl` would have hijacked Tailwind's own 1rem default for the 62
+   * `rounded-2xl` / `rounded-3xl` uses §5.8 found sitting outside the token
+   * scale, which is a migration, not a token change.
+   */
+  --wx-radius-sm: 7px;
+  --wx-radius-md: 12px;
+  --wx-radius-lg: 15px;
+  --wx-radius-xl: 22px;
+  --wx-radius-modal: 28px;
   --wx-radius-pill: 999px;
 
   --wx-container: 1280px;

@@ -129,7 +129,11 @@ export function FilterTab({
       onClick={onClick}
       className={cn(
         'ease-brand flex min-h-8 shrink-0 items-center gap-1.5 rounded-sm px-2.5 text-[0.8125rem] font-medium transition-colors duration-200',
-        active ? 'bg-accent text-on-accent' : 'text-muted hover:text-accent'
+        /* The selected tab is a filled pill, so it takes his colour with ink
+           on it. The unselected ones are TEXT and keep the accent ink. */
+        active
+          ? '[background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]'
+          : 'text-muted hover:text-accent'
       )}
     >
       {children}
@@ -139,7 +143,14 @@ export function FilterTab({
             'wx-numeric text-[0.6875rem] font-semibold',
             // `text-muted`, never `text-faint`: faint on surface-2 is 4.31:1 in
             // light mode, under AA. Registered in scripts/check-contrast.mjs.
-            active ? 'text-on-accent/80' : 'text-muted'
+            //
+            // THE ACTIVE COUNT IS THE EASY ONE TO MISS. It used to be
+            // `text-on-accent/80` — white at 80% — which was right over the old
+            // saturated accent and is unreadable over #C3BEF0. It is ink at 80%
+            // now, which is ~7:1 on the fill rather than 1.6:1.
+            active
+              ? '[color:color-mix(in_oklab,var(--wx-on-accent-fill)_80%,transparent)]'
+              : 'text-muted'
           )}
         >
           {count}

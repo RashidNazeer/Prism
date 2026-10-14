@@ -48,7 +48,15 @@ export function BudgetBar({
           style={{ width: `${width}%` }}
           className={cn(
             'ease-brand h-full rounded-full transition-[width] duration-500',
-            over ? 'bg-danger' : (percent ?? 0) > 80 ? 'bg-warning' : 'bg-accent'
+            /* A PROGRESS FILL IS A FILL, so the healthy state is his colour
+               itself (#C3BEF0) rather than the darkened accent ink. Danger and
+               warning stay as they are: they are reserved signals, deliberately
+               NOT brand colours, so a budget going over still shouts. */
+            over
+              ? 'bg-danger'
+              : (percent ?? 0) > 80
+                ? 'bg-warning'
+                : '[background-color:var(--wx-accent-fill)]'
           )}
         />
       </div>

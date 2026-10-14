@@ -64,7 +64,7 @@ export function Contact() {
         <Reveal>
           <div className="mt-12 grid gap-10 lg:grid-cols-2">
             <div>
-              <h2 className="font-brand text-2xl font-normal tracking-[-0.02em]">
+              <h2 className="font-brand text-2xl tracking-[-0.02em]">
                 Who answers what
               </h2>
               <dl className="text-muted mt-6 grid gap-5 leading-relaxed">
@@ -102,7 +102,7 @@ export function Contact() {
             </div>
 
             <div>
-              <h2 className="font-brand text-2xl font-normal tracking-[-0.02em]">
+              <h2 className="font-brand text-2xl tracking-[-0.02em]">
                 What to expect
               </h2>
               <p className="text-muted mt-6 leading-relaxed">

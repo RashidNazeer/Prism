@@ -430,7 +430,11 @@ export function PageProgress() {
   return (
     <m.div
       aria-hidden
-      className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[3px] origin-left bg-[image:var(--wx-accent-gradient)]"
+      /* Sky into periwinkle, the one ramp. It is `aria-hidden` decoration and
+         conveys nothing a reader needs, which is what lets a 3px pastel bar be
+         the right answer here: it reads strongly on the dark page and softly on
+         the light one, and nothing is lost either way. */
+      className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[3px] origin-left [background-image:linear-gradient(90deg,var(--wx-brand-sky)_0%,var(--wx-brand-peri)_100%)]"
       style={{ scaleX: scrollYProgress }}
     />
   );

@@ -24,7 +24,8 @@ export function HowItWorksPage() {
             <Reveal key={step.n} delay={i * 0.06}>
               <li className="wx-neo-raised ease-brand h-full rounded-2xl p-7 transition-colors duration-300">
                 <span
-                  className="wx-numeric bg-accent font-display text-on-accent grid size-[44px] place-items-center rounded-xl text-sm font-bold"
+                  /* Same numbered tile as the landing page: FILL + ink. */
+                  className="wx-numeric font-display grid size-[44px] place-items-center rounded-xl [background-color:var(--wx-accent-fill)] text-sm font-bold [color:var(--wx-on-accent-fill)]"
                   aria-hidden
                 >
                   {step.n}
@@ -40,7 +41,7 @@ export function HowItWorksPage() {
       <Section className="border-line border-t">
         <Reveal>
           <Eyebrow>Where the figures come from</Eyebrow>
-          <h2 className="font-brand mt-5 max-w-3xl text-[clamp(1.5rem,3.5vw,2.25rem)] font-normal tracking-[-0.02em]">
+          <h2 className="font-brand mt-5 max-w-3xl text-[clamp(1.5rem,3.5vw,2.25rem)] tracking-[-0.02em]">
             The same numbers we work from
           </h2>
           <div className="text-muted mt-6 grid max-w-4xl gap-4 leading-relaxed">

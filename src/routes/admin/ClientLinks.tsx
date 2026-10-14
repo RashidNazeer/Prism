@@ -673,7 +673,10 @@ function Chip({
       aria-pressed={on}
       className={cn(
         'rounded-md px-3 py-1.5 text-[0.8125rem] font-semibold transition-colors',
-        on ? 'bg-accent text-on-accent' : 'wx-neo-raised-sm wx-neo-press'
+        /* A pressed toggle is a FILL: his colour, ink label. */
+        on
+          ? '[background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]'
+          : 'wx-neo-raised-sm wx-neo-press'
       )}
     >
       {children}

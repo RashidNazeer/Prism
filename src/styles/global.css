@@ -933,6 +933,66 @@ body::after {
 }
 
 /*
+ * THE OVERLAY TIER, and the one place his design cannot ship as drawn.
+ *
+ * Measured: `div#app-modal` is a scrim at `blur(12px)` over
+ * `rgba(16, 19, 28, 0.396)`, and `div.app-modal-card` sits INSIDE it at
+ * `blur(32px)` over `#e6e8ef` at 0.89. That is a `backdrop-filter` nested
+ * inside a `backdrop-filter`, which `check-blur-budget.mjs` bans outright —
+ * §4.3: "A glass card inside a glass panel is one of them, not two."
+ *
+ * It is also paying for nothing. The inner card is 89% OPAQUE, so almost none
+ * of the 32px blur beneath it is ever visible; the browser re-samples and
+ * re-blurs a backdrop that has already been blurred, to produce 11% of a
+ * result. So the scrim keeps his blur and his darkening, and the card keeps
+ * his near-opaque fill, his 28px radius and his doubled shadow — the whole
+ * look, at one blurred layer instead of two.
+ *
+ * Budget at 375px: chrome (1) + scrim (2) + card (0) = 2, under the cap of 3.
+ */
+@utility wx-glass-scrim {
+  background-color: var(--wx-glass-scrim);
+  backdrop-filter: blur(var(--wx-glass-blur-scrim));
+  -webkit-backdrop-filter: blur(var(--wx-glass-blur-scrim));
+}
+
+@utility wx-glass-modal {
+  background-color: var(--wx-glass-modal);
+  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left), var(--wx-glass-face);
+  background-size:
+    100% 1px,
+    1px 100%,
+    100% 100%;
+  background-position:
+    top left,
+    top left,
+    top left;
+  background-repeat: no-repeat;
+  border-radius: var(--wx-radius-modal);
+  /* His modal is the only surface carrying TWO drops: the optical lift every
+     pane has, plus `0 30px 80px rgba(0, 0, 0, 0.21)` under it. That second
+     shadow is the whole difference between a card and a modal in his file —
+     not a different material, one more layer of separation. */
+  box-shadow:
+    inset 0 0 0 1px var(--wx-glass-edge),
+    var(--wx-glass-inner),
+    var(--wx-glass-lift),
+    var(--wx-glass-lift-modal);
+}
+
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  .wx-glass-scrim {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .wx-glass-modal {
+    background-color: var(--wx-surface-1) !important;
+    background-image: none !important;
+  }
+}
+
+/*
  * Things that RECEIVE: inputs, search, progress tracks, chart wells.
  *
  * A well in glass is DARKER and recessed, not lighter. The lit edge therefore

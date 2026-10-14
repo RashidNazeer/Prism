@@ -298,7 +298,9 @@ export function ShareCollab() {
               onClick={() => setBrandIdx(i)}
               aria-pressed={i === brandIdx}
               className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
-                i === brandIdx ? 'bg-accent text-on-accent' : 'wx-neo-raised-sm wx-neo-press'
+                i === brandIdx
+                  ? '[background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]'
+                  : 'wx-neo-raised-sm wx-neo-press'
               }`}
             >
               {b.brand}
@@ -317,7 +319,7 @@ export function ShareCollab() {
               aria-pressed={m === payload.month}
               className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
                 m === payload.month
-                  ? 'bg-accent text-on-accent'
+                  ? '[background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]'
                   : 'wx-neo-raised-sm wx-neo-press'
               }`}
             >

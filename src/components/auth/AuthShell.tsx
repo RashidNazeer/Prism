@@ -69,7 +69,7 @@ export function AuthShell({
               both themes; now the halo follows the theme, so the ordinary ink
               is correct again and light mode is a light page. */}
           <div className="flex flex-col gap-2">
-            <h1 className="text-text font-brand text-[clamp(1.75rem,4vw,2.25rem)] leading-[1.15] font-normal">
+            <h1 className="text-text font-brand text-[clamp(1.75rem,4vw,2.25rem)] leading-[1.15]">
               {title}
             </h1>
             {subtitle ? (

@@ -296,8 +296,17 @@ export function OrdersChart({ rows }: { rows: DailyPerformance[] }) {
             >
               <div
                 className={cn(
-                  'bg-accent absolute right-0 bottom-0 left-0 rounded-t-[4px]',
-                  Number(r.orders) === 0 && 'bg-line'
+                  /* A BAR IS A FILL, so it is #C3BEF0 itself. One series, so it
+                     takes the primary of the three rather than a position on
+                     the ramp — `VelocityChart` owns the ordered ramp, this
+                     chart owns a single quantity. Nothing is printed on the
+                     bars; the count is in the `title`. */
+                  'absolute right-0 bottom-0 left-0 rounded-t-[4px] [background-color:var(--wx-accent-fill)]',
+                  /* Written as the same arbitrary property, not `bg-line`, so
+                     tailwind-merge can see the two as one conflict and drop the
+                     fill. Mixing the forms leaves both in the class list and
+                     lets emit order decide which wins. */
+                  Number(r.orders) === 0 && '[background-color:var(--wx-border)]'
                 )}
                 style={{ height: `${Math.max(h, Number(r.orders) > 0 ? 4 : 2)}%` }}
               />

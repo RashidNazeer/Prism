@@ -47,7 +47,10 @@ function ProgressThread({ target }: { target: React.RefObject<HTMLElement | null
     <div className="relative mt-14 hidden md:block" aria-hidden>
       <div className="wx-neo-inset h-2 overflow-hidden rounded-full">
         <m.div
-          className="h-full origin-left rounded-full bg-[image:var(--wx-accent-gradient)]"
+          /* A PROGRESS FILL, so it is his colours at full strength: sky into
+             periwinkle. The nodes riding on top stay on the accent INK
+             (`ThreadNode`) — a peri dot on a peri track is not a dot. */
+          className="h-full origin-left rounded-full [background-image:linear-gradient(90deg,var(--wx-brand-sky)_0%,var(--wx-brand-peri)_100%)]"
           style={quiet ? undefined : { scaleX }}
         />
       </div>
@@ -81,7 +84,7 @@ export function HowItWorks() {
         <Reveal className="relative">
           <Eyebrow>How it works</Eyebrow>
         </Reveal>
-        <h2 className="font-brand relative mt-5 max-w-3xl text-[clamp(2rem,4.5vw,3.25rem)] font-normal">
+        <h2 className="font-brand relative mt-5 max-w-3xl text-[clamp(2rem,4.5vw,3.25rem)]">
           <ScrollWords text="Three steps from application to earning creator" />
         </h2>
 
@@ -109,7 +112,9 @@ export function HowItWorks() {
                 <TiltCard className="wx-neo-raised group ease-brand h-full rounded-2xl p-7 transition-colors duration-300">
                   <TiltLift depth={26}>
                     <span
-                      className="wx-numeric bg-accent font-display text-on-accent grid size-[44px] place-items-center rounded-xl text-sm font-bold"
+                      /* A 44px numbered tile is a FILL carrying a glyph: his
+                         colour, ink numeral. */
+                      className="wx-numeric font-display grid size-[44px] place-items-center rounded-xl [background-color:var(--wx-accent-fill)] text-sm font-bold [color:var(--wx-on-accent-fill)]"
                       aria-hidden
                     >
                       {step.n}

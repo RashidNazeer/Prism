@@ -653,7 +653,12 @@ function WhatTheySell({
                   )}
                   {/* The number they came for. Omitted, never "0%", when unset. */}
                   {percent(product.commission_rate) ? (
-                    <span className="wx-neo-raised-sm bg-accent! text-on-accent rounded-full px-3 py-1">
+                    /* THE COMMISSION CHIP IS A FILL. `!` for the same reason
+                       `bg-accent!` carried one: `wx-neo-raised-sm` sets its own
+                       `background-color`, and the rim `background-image` on top
+                       of it is left alone deliberately. Ink numeral, because
+                       `--wx-on-accent` is white in the light theme. */
+                    <span className="wx-neo-raised-sm rounded-full [background-color:var(--wx-accent-fill)]! px-3 py-1 [color:var(--wx-on-accent-fill)]">
                       <span className="font-display text-[0.9375rem] leading-none font-bold">
                         {percent(product.commission_rate)}
                       </span>

@@ -114,7 +114,13 @@ export function OfferCard({
         <span
           aria-hidden
           className="absolute inset-x-0 top-0 h-[3px]"
-          style={{ background: 'var(--wx-accent-gradient)' }}
+          /* The agreed-deal stripe. Was the violet-to-blue accent gradient;
+             it is sky into periwinkle now, the same ramp as the gradient CTAs.
+             Nothing sits on it, so there is no text to re-colour. */
+          style={{
+            background:
+              'linear-gradient(135deg, var(--wx-brand-sky) 0%, var(--wx-brand-peri) 100%)',
+          }}
         />
       ) : null}
       {showBrand && offer.brand ? (

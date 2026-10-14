@@ -361,8 +361,11 @@ function Podium({ rows, faces }: { rows: LeaderboardRow[]; faces: Record<string,
             <span
               className={cn(
                 'absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full px-2.5 py-0.5 font-mono text-[0.6875rem] font-bold',
+                /* The #1 rank badge is a FILL — his colour, ink numeral.
+                   `!` beats `wx-neo-raised-sm`'s own background-color, as
+                   `bg-accent!` did before it. */
                 isFirst
-                  ? 'wx-neo-raised-sm bg-accent! text-on-accent'
+                  ? 'wx-neo-raised-sm [background-color:var(--wx-accent-fill)]! [color:var(--wx-on-accent-fill)]'
                   : 'wx-neo-raised-sm text-muted'
               )}
             >

@@ -707,7 +707,11 @@ function InReview({
             <span
               className={`relative grid size-8 place-items-center rounded-full text-[0.6875rem] ${
                 s.state === 'done'
-                  ? 'bg-accent text-on-accent'
+                  ? /* A completed step is a FILL: his colour, ink tick. The
+                       `now` step stays on the soft wash with accent INK, and so
+                       does the pulsing dot inside it — a peri dot on a peri
+                       wash would be nothing at all. */
+                    '[background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]'
                   : s.state === 'now'
                     ? 'bg-accent-soft text-accent'
                     : 'wx-neo-raised-sm text-faint'
@@ -1194,7 +1198,11 @@ function Journey({
                 aria-hidden
                 className={cn(
                   'relative z-10 grid size-6 shrink-0 place-items-center rounded-full',
-                  reached ? 'bg-accent text-on-accent' : 'wx-neo-inset',
+                  /* Stage dot: FILL + ink glyph. The connector above it is a
+                     2px rule and keeps the accent ink. */
+                  reached
+                    ? '[background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]'
+                    : 'wx-neo-inset',
                   here && 'ring-accent/40 ring-4'
                 )}
               >

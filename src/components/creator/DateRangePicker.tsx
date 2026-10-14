@@ -334,7 +334,11 @@ function Month({
                 /* The middle of a range is a wash, the ends are solid: the shape
                    of the selection has to read at a glance without counting. */
                 inRange && !isEnd && 'bg-accent/15 text-text',
-                isEnd && 'bg-accent text-on-accent font-semibold'
+                /* The solid end is a FILL, so it takes #C3BEF0 itself with ink
+                   on top: the pastel is 1.76:1 on white and could never carry
+                   white type, but ink on it is 10.1:1. */
+                isEnd &&
+                  '[background-color:var(--wx-accent-fill)] font-semibold [color:var(--wx-on-accent-fill)]'
               )}
             >
               {Number(day.slice(-2))}

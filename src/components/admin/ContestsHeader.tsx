@@ -85,7 +85,10 @@ export function ContestsHeader({ subtitle }: { subtitle?: string }) {
         <button
           type="button"
           onClick={() => setPicking(true)}
-          className="wx-gradient text-on-accent ease-brand ml-auto inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md px-4 text-[0.8125rem] font-semibold shadow-sm transition-[transform,opacity,background-color,border-color,color] duration-200 hover:shadow-md active:translate-y-px"
+          /* Same ramp as the "Add a video" CTA in AppSidebar — sky into
+             periwinkle, ink label. See the long note there for why the
+             gradient is rebuilt at the call site and not in the token. */
+          className="ease-brand ml-auto inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md [background-image:linear-gradient(135deg,var(--wx-brand-sky)_0%,var(--wx-brand-peri)_100%)] px-4 text-[0.8125rem] font-semibold [color:var(--wx-on-accent-fill)] shadow-sm transition-[transform,opacity,background-color,border-color,color] duration-200 hover:[background-image:linear-gradient(135deg,var(--wx-brand-peri)_0%,var(--wx-accent-fill-hover)_100%)] hover:shadow-md active:translate-y-px"
         >
           <Plus size={16} aria-hidden />
           New contest

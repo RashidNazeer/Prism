@@ -64,8 +64,17 @@ export function CreatorFace({
       style={{ width: size, height: size, fontSize: Math.round(size * 0.4), ...style }}
       className={cn(
         'ring-line relative grid shrink-0 place-items-center overflow-hidden rounded-full ring-1 select-none',
-        // The base state, and the thing you see first, every time.
-        'bg-accent-soft text-accent font-mono font-bold uppercase',
+        /*
+         * The base state, and the thing you see first, every time.
+         *
+         * AN AVATAR IS A FILL, so the disc is #C3BEF0 itself rather than the
+         * 12% accent wash it used to be, and the initial on it is ink. It was
+         * `bg-accent-soft text-accent`: legal, because that is a pale wash
+         * under the darkened ink, but a wash is not his colour — it is 12% of
+         * a derivative of it. Ink on the real fill measures 10.1:1, better than
+         * the pair it replaces.
+         */
+        '[background-color:var(--wx-accent-fill)] font-mono font-bold [color:var(--wx-on-accent-fill)] uppercase',
         className
       )}
     >

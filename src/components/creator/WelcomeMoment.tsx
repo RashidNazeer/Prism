@@ -111,11 +111,14 @@ export function WelcomeMoment({
             disabled={busy}
             whileHover={{ scale: 1.015 }}
             whileTap={{ scale: 0.985 }}
-            className="wx-neo-raised-sm wx-neo-press group text-accent ease-brand hover:text-on-accent relative flex h-13 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl text-[0.9375rem] font-semibold transition-colors duration-300 disabled:opacity-60"
+            /* Same pair as `ApprovedMoment`: the wipe is a FILL so it is
+               #C3BEF0 itself, and the label it passes under swaps to ink
+               (`--wx-on-accent-fill`) rather than to white. */
+            className="wx-neo-raised-sm wx-neo-press group text-accent ease-brand relative flex h-13 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl text-[0.9375rem] font-semibold transition-colors duration-300 hover:[color:var(--wx-on-accent-fill)] disabled:opacity-60"
           >
             <span
               aria-hidden
-              className="bg-accent ease-brand absolute inset-0 origin-left scale-x-0 transition-transform duration-500 group-hover:scale-x-100"
+              className="ease-brand absolute inset-0 origin-left scale-x-0 [background-color:var(--wx-accent-fill)] transition-transform duration-500 group-hover:scale-x-100"
             />
             <span className="relative">{busy ? 'One moment...' : "Let's go"}</span>
             <ArrowRight

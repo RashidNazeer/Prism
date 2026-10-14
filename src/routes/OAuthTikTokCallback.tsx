@@ -101,7 +101,9 @@ export function OAuthTikTokCallback() {
             ) : null}
             <Link
               to="/admin/tiktok"
-              className="wx-gradient text-on-accent ease-brand mt-6 inline-flex min-h-[44px] items-center rounded-md px-5 text-[0.875rem] font-semibold transition-[transform,opacity,background-color,border-color,color] duration-200"
+              /* Sky into periwinkle with an ink label, the same ramp as every
+                 other gradient CTA. See AppSidebar for the reasoning. */
+              className="ease-brand mt-6 inline-flex min-h-[44px] items-center rounded-md [background-image:linear-gradient(135deg,var(--wx-brand-sky)_0%,var(--wx-brand-peri)_100%)] px-5 text-[0.875rem] font-semibold [color:var(--wx-on-accent-fill)] transition-[transform,opacity,background-color,border-color,color] duration-200 hover:[background-image:linear-gradient(135deg,var(--wx-brand-peri)_0%,var(--wx-accent-fill-hover)_100%)]"
             >
               Map the accounts to brands
             </Link>

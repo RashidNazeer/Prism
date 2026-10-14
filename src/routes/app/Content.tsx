@@ -573,7 +573,11 @@ function Cover({
         aria-hidden
         className="absolute inset-0 grid place-items-center bg-black/0 opacity-80 transition-opacity group-hover:opacity-100 pointer-coarse:opacity-100"
       >
-        <span className="bg-accent text-on-accent grid size-11 place-items-center rounded-full shadow-lg">
+        {/* The play button over a thumbnail: a 44px filled disc, so it takes
+            his colour with an ink glyph. It sits over `bg-black/0` darkening
+            and the video still, not over the page, which is exactly the case
+            the pastel-plus-ink pairing is for. */}
+        <span className="grid size-11 place-items-center rounded-full [background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)] shadow-lg">
           <Play size={18} fill="currentColor" aria-hidden />
         </span>
       </span>
