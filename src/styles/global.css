@@ -1702,3 +1702,37 @@ body::after {
     vertical-align: top;
   }
 }
+
+/*
+ * THE BLENDED HEADING. `background-clip: text` paints the gradient through the
+ * glyphs, so the element must have a transparent foreground for it to show.
+ *
+ * TWO FALLBACKS, because transparent text is a real risk if anything goes
+ * wrong. `color` is set to a solid token FIRST, so a browser that does not
+ * support `background-clip: text` renders a perfectly legible solid heading
+ * rather than nothing at all. And under `forced-colors` the whole treatment is
+ * dropped: Windows High Contrast replaces colours with its own, and a
+ * clipped-to-transparent foreground there is an invisible headline.
+ *
+ * The text itself is untouched — real characters, selectable, and read exactly
+ * as before by a screen reader.
+ */
+@utility text-brand-blend {
+  color: var(--wx-accent);
+  background-image: var(--wx-heading-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  /* A gradient painted through glyphs needs its own box to span; without this
+     each line box would restart the ramp. */
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+@media (forced-colors: active) {
+  .text-brand-blend {
+    background-image: none;
+    -webkit-text-fill-color: currentColor;
+    color: CanvasText;
+  }
+}

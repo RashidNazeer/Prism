@@ -75,34 +75,16 @@ export function Hero() {
         bottom of the hero. One ground, no handover.
       */}
 
-      {/* A MIDDLE PLANE of spectrum light, accents only. Soft radial discs rather
-          than blurred shapes: a gradient is painted once and then only moved,
-          where a `filter: blur` layer is expensive to keep composited on the
-          mid-range Android most of this audience holds. They rise at three
-          different rates, so they pass the copy and each other. */}
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <ParallaxLayer
-          progress={progress}
-          from={0}
-          to={-240}
-          rotateTo={40}
-          className="absolute -top-10 -left-24 size-[26rem] bg-[radial-gradient(closest-side,var(--wx-danger-soft),transparent)]"
-        />
-        <ParallaxLayer
-          progress={progress}
-          from={0}
-          to={-420}
-          scaleTo={1.5}
-          className="absolute top-1/3 left-[38%] size-[20rem] bg-[radial-gradient(closest-side,var(--wx-info-soft),transparent)]"
-        />
-        <ParallaxLayer
-          progress={progress}
-          from={0}
-          to={-110}
-          scaleTo={0.8}
-          className="absolute right-[-8rem] bottom-0 size-[24rem] bg-[radial-gradient(closest-side,var(--wx-success-soft),transparent)]"
-        />
-      </div>
+      {/* THE SPECTRUM DISCS ARE GONE, 2026-10-15. Three soft radial washes --
+          danger top-left, info mid, success bottom-right -- sat over the
+          background at 12-14% alpha. Rashid circled all three: "hardly visible
+          colours ... pinkish bluish etc I want them removed."
+
+          He is right that they had stopped earning their place. They were
+          designed to be the only light on a flat page; there is now a
+          photograph AND a WebGL field under them, both carrying their own, and
+          a 12% disc on top of that reads as a stain rather than as light.
+          Removing them also returns three animated layers to the compositor. */}
 
       <Container className="relative">
         {/* pt-24 clears the 64px fixed header with a little breathing room and
@@ -137,7 +119,7 @@ export function Hero() {
                 <br />
                 <LoadWords
                   text="Finally yours."
-                  className="text-accent"
+                  className="text-brand-blend"
                   quiet={quiet ?? false}
                 />
               </m.h1>

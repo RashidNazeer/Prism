@@ -77,7 +77,7 @@ export function HowItWorks() {
             to={-200}
             scaleTo={1.35}
             rotateTo={60}
-            className="absolute -top-24 -right-20 size-[28rem] bg-[radial-gradient(closest-side,var(--wx-accent-soft),transparent)]"
+            className="absolute -top-24 -right-20 size-[28rem] "
           />
         </div>
 

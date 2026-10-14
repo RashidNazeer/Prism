@@ -88,6 +88,9 @@ import { GlassFold } from '@/components/ui/GlassFold';
  */
 const DAMP = { light: 0.88, dark: 0.2 } as const;
 
+/** See the `vignette` prop below. 1 = no falloff at all. */
+const VIGNETTE = { light: 0.88, dark: 0.55 } as const;
+
 /**
  * How much of the field survives to the page.
  *
@@ -144,9 +147,26 @@ export function HaloBackdrop({
         `fixed inset-0`, which is exactly the viewport and cannot overflow it.
       */}
       <GlassFold
-        color1="--wx-surface-1"
+        /*
+          The field's OWN colours, not the surface ramp. Driving it from
+          `--wx-surface-1/2` tied the backdrop to the colours of the cards that
+          sit ON it, which is how dark ended up with three tones inside 0.02
+          luminance of each other and no visible folds. These two exist to give
+          the shader a range; see the note on them in tokens.css.
+        */
+        color1="--wx-field-body"
         color2="--wx-bg"
-        color3="--wx-surface-2"
+        color3="--wx-field-edge"
+        /*
+          THE EDGE FALLOFF, per theme. His shader hardcodes 0.45 — the ground
+          darkened to 45% at the corners. That is invisible on his near-black
+          demo and it is a heavy grey vignette on our light page, which is the
+          "dark spots on the sides" and "too much darker shadows" Rashid
+          reported. Light keeps a trace of it so the field still has a centre;
+          dark keeps most of it, because on a dark page the falloff is what
+          stops the field reading as a flat rectangle.
+        */
+        vignette={VIGNETTE}
         speed={SPEED}
         scale={SCALE}
         noise={NOISE}

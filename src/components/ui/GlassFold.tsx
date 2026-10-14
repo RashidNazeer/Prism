@@ -147,6 +147,7 @@ const FRAGMENT_SHADER = `
   uniform float u_scale;
   uniform float u_noise;
   uniform float u_damp;
+  uniform float u_vignette;
   uniform vec2 u_resolution;
   varying vec2 vUv;
 
@@ -175,7 +176,7 @@ const FRAGMENT_SHADER = `
     float t = time * 0.6;
     float pixel = 2.0 * u_scale / max(u_resolution.y, 1.0);
 
-    vec3 color = mix(u_color2, u_color2 * 0.45, clamp(length(centered(uv)) * 1.3, 0.0, 1.0));
+    vec3 color = mix(u_color2, u_color2 * u_vignette, clamp(length(centered(uv)) * 1.3, 0.0, 1.0));
 
     for (int i = 0; i < ${PANES}; i++) {
       float fi = float(i);
@@ -311,6 +312,14 @@ export type GlassFoldProps = {
    * routing that through React state would race the colour read on the frame
    * the theme flips.
    */
+  /*
+   * THE EDGE FALLOFF. His shader hardcodes `u_color2 * 0.45` — the ground at
+   * 45% toward black at the corners. On his near-black demo that is invisible;
+   * on our LIGHT page it is a heavy grey vignette, which is the "too much
+   * darker shadows" and the "dark spots on the sides" Rashid reported. It is a
+   * uniform now so each theme can set its own, exactly like `damp`.
+   */
+  vignette?: number | { light: number; dark: number };
   damp?: number | { light: number; dark: number };
   className?: string;
 };
@@ -323,6 +332,7 @@ export function GlassFold({
   scale = 1.15,
   noise = 0.025,
   damp = 1,
+  vignette = 0.45,
   className,
 }: GlassFoldProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -332,8 +342,8 @@ export function GlassFold({
    * never tears down and re-creates the GL context. The effect itself depends
    * on nothing and runs exactly once per mount.
    */
-  const propsRef = useRef({ color1, color2, color3, speed, scale, noise, damp });
-  propsRef.current = { color1, color2, color3, speed, scale, noise, damp };
+  const propsRef = useRef({ color1, color2, color3, speed, scale, noise, damp, vignette });
+  propsRef.current = { color1, color2, color3, speed, scale, noise, damp, vignette };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -379,6 +389,7 @@ export function GlassFold({
         scale: WebGLUniformLocation | null;
         noise: WebGLUniformLocation | null;
         damp: WebGLUniformLocation | null;
+        vignette: WebGLUniformLocation | null;
       };
     };
 
@@ -454,6 +465,7 @@ export function GlassFold({
           scale: gl.getUniformLocation(program, 'u_scale'),
           noise: gl.getUniformLocation(program, 'u_noise'),
           damp: gl.getUniformLocation(program, 'u_damp'),
+          vignette: gl.getUniformLocation(program, 'u_vignette'),
         },
       };
     };
@@ -482,6 +494,7 @@ export function GlassFold({
     let c3: [number, number, number] = [0.5, 0.5, 0.5];
 
     let dampValue = 1;
+    let vignetteValue = 0.45;
 
     const readColors = () => {
       const p = propsRef.current;
@@ -491,6 +504,8 @@ export function GlassFold({
       /* `:root` is the dark theme in `tokens.css`; light is the opt-in. */
       const light = document.documentElement.getAttribute('data-theme') === 'light';
       dampValue = typeof p.damp === 'number' ? p.damp : p.damp[light ? 'light' : 'dark'];
+      vignetteValue =
+        typeof p.vignette === 'number' ? p.vignette : p.vignette[light ? 'light' : 'dark'];
     };
 
     let width = 0;
@@ -536,6 +551,7 @@ export function GlassFold({
       gl.uniform1f(u.scale, p.scale);
       gl.uniform1f(u.noise, p.noise);
       gl.uniform1f(u.damp, dampValue);
+      gl.uniform1f(u.vignette, vignetteValue);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     };
 

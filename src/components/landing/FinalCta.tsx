@@ -34,21 +34,21 @@ export function FinalCta() {
                 from={-160}
                 to={120}
                 rotateTo={45}
-                className="absolute -top-24 -left-16 size-[22rem] bg-[radial-gradient(closest-side,var(--wx-accent-soft),transparent)]"
+                className="absolute -top-24 -left-16 size-[22rem] "
               />
               <ParallaxLayer
                 progress={progress}
                 from={160}
                 to={-120}
                 rotateTo={-45}
-                className="absolute -right-16 -bottom-24 size-[22rem] bg-[radial-gradient(closest-side,var(--wx-success-soft),transparent)]"
+                className="absolute -right-16 -bottom-24 size-[22rem] "
               />
               <ParallaxLayer
                 progress={progress}
                 from={100}
                 to={-200}
                 scaleTo={1.4}
-                className="absolute top-1/2 right-1/4 size-[14rem] bg-[radial-gradient(closest-side,var(--wx-danger-soft),transparent)]"
+                className="absolute top-1/2 right-1/4 size-[14rem] "
               />
             </div>
             <div className="relative">

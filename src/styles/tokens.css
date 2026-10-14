@@ -432,8 +432,8 @@
   --wx-glass-inner:
     inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(255, 255, 255, 0.035),
     inset 0 0 24px rgba(255, 255, 255, 0.035);
-  --wx-glass-lift: 0 1rem 2rem rgba(0, 0, 0, 0.45);
-  --wx-glass-lift-hover: 0 1.5rem 3rem rgba(0, 0, 0, 0.55);
+  --wx-glass-lift: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.3);
+  --wx-glass-lift-hover: 0 0.75rem 1.75rem rgba(0, 0, 0, 0.38);
   /* His modal adds a second, far deeper drop under the optical one:
      `0 30px 80px rgba(0, 0, 0, 0.21)`. That is what separates a modal from a
      card — not a different material, one more shadow. Dark needs it heavier,
@@ -458,12 +458,25 @@
    * `saturate` MOVED. His cards carry `blur(22px) saturate(1.08)` and his nav
    * carries a bare `blur(28px)`. Ours had it exactly the other way round.
    */
-  --wx-glass-blur: 22px;
-  --wx-glass-blur-chrome: 28px;
+  --wx-glass-blur: 10px;
+  --wx-glass-blur-chrome: 16px;
   --wx-glass-blur-rail: 12px;
   --wx-glass-blur-scrim: 12px;
   --wx-glass-blur-phone: 9px;
   --wx-glass-saturate: 1.08;
+
+  /*
+   * THE HEADING BLEND. Rashid asked for the coloured headline to be a mix of
+   * his three rather than one flat colour.
+   *
+   * DARK TAKES HIS HEXES UNCHANGED, and this is the one place in the product
+   * where that is not only legal but ideal: the pastels are LIGHT, so on a
+   * #202024 page they run 16.7:1 (mint) to 9.2:1 (periwinkle), far above the
+   * floor. Everywhere else they had to be fills because they were being asked
+   * to sit on PAPER; here the ground is dark and the same colours are
+   * excellent ink.
+   */
+  --wx-heading-gradient: linear-gradient(100deg, #defcf9 0%, #cadefc 48%, #c3bef0 100%);
   /* HIS MODAL CARD'S 32px IS DELIBERATELY NOT A TOKEN. It is nested inside his
      12px scrim, and nested `backdrop-filter` is banned — see `wx-glass-modal`
      in global.css for the whole reasoning. A token nothing may legally consume
@@ -538,6 +551,27 @@
     linear-gradient(0deg, #202024f2, #202024f2),
     url('/brand/glass-waves.webp');
   --wx-scene-opacity: 0.46;
+
+  /*
+   * THE BACKDROP FIELD'S OWN COLOURS. Dark mode read murky and flat, and the
+   * reason was range, not brightness: it drove the shader with `--wx-surface-1`
+   * and `--wx-surface-2`, which on this theme are #2B2B2E and #343437 against a
+   * #202024 page. Three colours within 0.02 of each other in luminance cannot
+   * describe a fold, so the panes had nothing to be visible WITH.
+   *
+   * THE DAMP MIX IS WHY A WIDER RANGE IS FREE. The shader ends with
+   * `mix(u_color2, field, u_damp)`, so what reaches the screen is
+   * `bg + damp * (field - bg)` — every value is compressed toward the page by
+   * the same factor. At damp 0.20 a source edge of #9A9AB0 lands at about
+   * #38383F, luminance 0.0385, still under the 0.0407 ceiling that
+   * `--wx-text-faint` needs. So the field can start three times wider and
+   * arrive in the same budget, with far more structure inside it.
+   *
+   * Light is unchanged and still reads as its own surfaces — it was already
+   * right, and white on paper has no ceiling to spend.
+   */
+  --wx-field-body: #15151b;
+  --wx-field-edge: #9a9ab0;
   --wx-scene-light-opacity: 0.24;
 
   --wx-aurora-mint: #373a3e;
@@ -888,19 +922,30 @@
   --wx-glass-inner:
     inset 0 1px 0 rgba(255, 255, 255, 0.737), inset 0 -1px 0 rgba(255, 255, 255, 0.259),
     inset 0 0 24px rgba(255, 255, 255, 0.094);
-  --wx-glass-lift: 0 1rem 2rem rgba(60, 70, 106, 0.082);
-  --wx-glass-lift-hover: 0 1.5rem 3rem rgba(60, 70, 106, 0.14);
+  --wx-glass-lift: 0 0.5rem 1.25rem rgba(60, 70, 106, 0.055);
+  --wx-glass-lift-hover: 0 0.75rem 1.75rem rgba(60, 70, 106, 0.095);
   /* His modal's second drop, `0 30px 80px rgba(0, 0, 0, 0.21)`, exactly. */
   --wx-glass-lift-modal: 0 1.875rem 5rem rgba(0, 0, 0, 0.21);
   --wx-glass-rim: inset 1px 1px 0 0 rgba(255, 255, 255, 0.7);
   --wx-glass-glow: 0 0 40px rgba(148, 69, 211, 0.16);
   /* His ladder. See the dark block for why the phone value is not his, and for
      why his 32px modal blur is not here at all. */
-  --wx-glass-blur: 22px;
-  --wx-glass-blur-chrome: 28px;
+  --wx-glass-blur: 10px;
+  --wx-glass-blur-chrome: 16px;
   --wx-glass-blur-rail: 12px;
   --wx-glass-blur-scrim: 12px;
   --wx-glass-blur-phone: 9px;
+
+  /* Light cannot use the pastels as text — 1.08:1 to 1.76:1 on paper — so it
+     blends their INKS instead: the same three hues at a lightness text can be
+     read at, each already guard-checked above 4.5:1. Same blend, same order,
+     legible on both grounds. */
+  --wx-heading-gradient: linear-gradient(
+    100deg,
+    var(--wx-success) 0%,
+    var(--wx-info) 48%,
+    var(--wx-accent) 100%
+  );
   --wx-glass-saturate: 1.08;
   /* His `div#app-modal`, exactly: `rgba(16, 19, 28, 0.396)`. A scrim darkens
      in both themes — it is the page being pushed back, not a surface — so the
@@ -933,12 +978,29 @@
    * veil — the picture is already white, so paper needs it held down rather
    * than darkened. See the dark block for why the alpha is a contrast budget.
    */
+  /*
+   * THE TWO COLOURED TINTS ARE GONE, 2026-10-15. Rashid circled them: a pink
+   * wash top-left and a blue one on the right, faint enough to read as a
+   * printing fault rather than a decision.
+   *
+   * They were `#b29dd52b` at 5% 40% and `#a7c2df30` at 92% 60%, carried over
+   * from his design-collection file. They made sense there, over a flat 125deg
+   * ramp and nothing else. Here they sit under a photograph AND a WebGL field
+   * that both already carry their own light, so a third tinting layer could
+   * only muddy the two above it — and at 17% and 19% alpha it was never going
+   * to read as colour, only as a stain.
+   *
+   * The ground is now exactly what it should be: the photograph, held down by a
+   * NEUTRAL veil. Any colour on the page comes from the shader or from content.
+   */
   --wx-ground:
-    radial-gradient(ellipse at 5% 40%, #b29dd52b, transparent 40%),
-    radial-gradient(ellipse at 92% 60%, #a7c2df30, transparent 42%),
     linear-gradient(0deg, #dcdee9a6, #dcdee9a6),
     url('/brand/glass-waves.webp');
   --wx-scene-opacity: 0.5;
+
+  /* See the dark block. These are the surfaces light was already using. */
+  --wx-field-body: #edeef5;
+  --wx-field-edge: #f7f8fc;
   --wx-scene-light-opacity: 0.7;
 
   --wx-aurora-mint: #dde7ee;

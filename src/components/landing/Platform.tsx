@@ -42,14 +42,14 @@ export function Platform() {
             to={-260}
             scaleTo={1.3}
             rotateTo={-50}
-            className="absolute -top-20 -left-32 size-[30rem] bg-[radial-gradient(closest-side,var(--wx-info-soft),transparent)]"
+            className="absolute -top-20 -left-32 size-[30rem] "
           />
           <ParallaxLayer
             progress={progress}
             from={-140}
             to={300}
             rotateTo={70}
-            className="absolute right-[-10rem] bottom-0 size-[26rem] bg-[radial-gradient(closest-side,var(--wx-danger-soft),transparent)]"
+            className="absolute right-[-10rem] bottom-0 size-[26rem] "
           />
         </div>
 
