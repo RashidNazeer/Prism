@@ -115,68 +115,108 @@ void main() {
  * a light page only ever HELPS dark text, while on `#202024` there is only
  * about 3x of luminance headroom before faint text fails.
  */
+/*
+ * RASHID'S SHADER, VERBATIM. This is the GradFlow `glass-fold` fragment exactly
+ * as he supplied it, and it REPLACED a reimplementation.
+ *
+ * What was here before was written from a prose description of this shader,
+ * because the file it was meant to be copied from had not been saved when the
+ * engineer went looking for it. It was a reasonable rewrite and it was the
+ * wrong picture: it built panes as rotated infinite half-planes, where this one
+ * builds them as CREASES — a per-pane `crease` curve in x that each pane's
+ * surface falls away from, with a `pixel`-wide smoothstep so the fold edge is
+ * one pixel at any resolution. Those are different geometries, and that is why
+ * it did not look like his file.
+ *
+ * ONE LINE IS ADDED AND NOTHING IS REMOVED: `u_damp`, applied in `main` after
+ * `shade` and before the grain. The screen blend here is unbounded — each pane
+ * does `color += light * (1.0 - color)`, so six panes drive the field toward
+ * white — and on our dark ground that walks straight through the contrast floor
+ * in GLASS_PLAN §4.1. `u_damp` mixes the finished field back toward `u_color2`,
+ * which lowers the field's CONTRAST without touching its shape, so his folds
+ * survive intact at whatever amplitude the text budget allows. See `DAMP` in
+ * HaloBackdrop.tsx for the two numbers and why they differ per theme.
+ */
 const FRAGMENT_SHADER = `
-precision mediump float;
+  precision highp float;
 
-uniform vec2  u_resolution;
-uniform float u_time;
-uniform vec3  u_color1;
-uniform vec3  u_color2;
-uniform vec3  u_color3;
-uniform float u_scale;
-uniform float u_noise;
-uniform float u_damp;
+  uniform float u_time;
+  uniform vec3 u_color1;
+  uniform vec3 u_color2;
+  uniform vec3 u_color3;
+  uniform float u_scale;
+  uniform float u_noise;
+  uniform float u_damp;
+  uniform vec2 u_resolution;
+  varying vec2 vUv;
 
-varying vec2 vUv;
-
-float grain(vec2 p) {
-  return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
-}
-
-vec3 screenBlend(vec3 a, vec3 b) {
-  return 1.0 - (1.0 - a) * (1.0 - b);
-}
-
-vec3 shade(vec2 uv, float t) {
-  float aspect = u_resolution.x / max(u_resolution.y, 1.0);
-  vec2 p = (uv - 0.5) * vec2(aspect, 1.0) / max(u_scale, 0.001);
-
-  vec3 col = u_color2;
-
-  for (int i = 0; i < ${PANES}; i++) {
-    float fi = float(i);
-
-    float ang = 0.62 + fi * 1.07 + 0.09 * sin(t * 0.37 + fi * 1.7);
-    vec2  dir = vec2(cos(ang), sin(ang));
-    float off = -0.46 + fi * 0.18 + 0.06 * sin(t * 0.23 + fi * 2.3);
-
-    float d  = dot(p, dir) - off;
-    float dp = max(d, 0.0);
-    float da = abs(d);
-
-    float face    = smoothstep(-0.010, 0.010, d);
-    float body    = face * exp(-dp * 2.2);
-    float inner   = face * exp(-dp * 8.0);
-    float fresnel = exp(-da * 30.0);
-    float rim     = exp(-da * 110.0);
-    float bloom   = exp(-da * 4.2);
-
-    vec3 pane = u_color1 * (body * 0.34 + inner * 0.20)
-              + u_color3 * (fresnel * 0.30 + rim * 0.22 + bloom * 0.07);
-
-    col = screenBlend(col, pane);
+  float grain(vec2 st) {
+    return fract(sin(dot(st, vec2(12.9898, 78.233))) * 43758.5453);
   }
 
-  return mix(u_color2, col, u_damp);
-}
-
-void main() {
-  vec3 col = shade(vUv, u_time);
-  if (u_noise > 0.0) {
-    col += (grain(vUv * u_resolution) - 0.5) * u_noise;
+  // centered coordinates, y in [-0.5, 0.5], x stretched by the aspect ratio
+  vec2 centered(vec2 uv) {
+    vec2 p = uv - 0.5;
+    p.x *= u_resolution.x / max(u_resolution.y, 1.0);
+    return p;
   }
-  gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
-}
+
+  mat2 rot(float a) {
+    float s = sin(a);
+    float c = cos(a);
+    return mat2(c, -s, s, c);
+  }
+
+  // panes of glass folded over each other. Each pane has one creased edge
+  // that catches the light and thins out to nothing behind it; panes screen
+  // over one another, so overlaps get brighter instead of darker.
+  vec3 shade(vec2 uv, float time) {
+    vec2 q = rot(0.6) * centered(uv) * 2.0 * u_scale;
+    float t = time * 0.6;
+    float pixel = 2.0 * u_scale / max(u_resolution.y, 1.0);
+
+    vec3 color = mix(u_color2, u_color2 * 0.45, clamp(length(centered(uv)) * 1.3, 0.0, 1.0));
+
+    for (int i = 0; i < ${PANES}; i++) {
+      float fi = float(i);
+      float bend = mod(fi, 2.0) * 2.0 - 1.0;
+
+      float crease = (fi - 2.5) * 0.4
+                   + 0.26 * sin(q.x * (1.05 + 0.12 * fi) + fi * 1.9 + t * (0.25 + 0.05 * fi))
+                   + 0.1 * bend * q.x * q.x;
+      float s = q.y - crease;
+      float pane = smoothstep(-pixel, pixel, s);
+      float back = max(s, 0.0);
+
+      // thick near the crease, clear further in
+      float body = exp(-back * 1.7);
+      float fresnel = exp(-back * 8.0);
+      // the lit edge, and a fainter line just inside it for the glass's thickness
+      float rim = exp(-back * 80.0);
+      float inner = exp(-pow((back - 0.045) / 0.014, 2.0));
+      float bloom = exp(-abs(s) * 20.0);
+
+      vec3 tint = mix(u_color1, u_color3, clamp(fresnel * 0.6 + 0.08 + 0.14 * sin(fi * 2.1 + q.x * 0.8 + t * 0.2), 0.0, 1.0));
+      vec3 light = tint * pane * (body * 0.42 + fresnel * 0.4)
+                 + u_color3 * (pane * (rim * 0.6 + inner * 0.12) + bloom * 0.1);
+
+      // screen blend
+      color += light * (1.0 - color);
+    }
+
+    return clamp(color, 0.0, 1.0);
+  }
+
+  void main() {
+    vec3 color = shade(vUv, u_time);
+    // THE ONLY ADDITION to his shader. See the note above.
+    color = mix(u_color2, color, u_damp);
+    if (u_noise > 0.001) {
+      float g = grain(vUv * 200.0 + u_time * 0.1);
+      color *= 1.0 - u_noise * 0.4 + u_noise * g * 0.4;
+    }
+    gl_FragColor = vec4(color, 1.0);
+  }
 `;
 
 /* ============================================================================

@@ -64,7 +64,29 @@ import { GlassFold } from '@/components/ui/GlassFold';
    0.20, which measured 4.67:1: a pass, but not enough margin to spend on a
    token nudge later.
    ============================================================================ */
-const DAMP = { light: 0.52, dark: 0.17 } as const;
+/*
+ * TURNED UP, 2026-10-15. Rashid could not tell the new background from the old
+ * one — and he was right that it was indistinguishable, not wrong about what he
+ * was looking at. The canvas was live the whole time; at 0.52 / 0.17 the field
+ * was damped so far toward `--wx-bg` that it read as the same flat ground.
+ *
+ * THE TWO NUMBERS ARE NOT FREE IN THE SAME WAY, which is why they moved by very
+ * different amounts:
+ *
+ *   LIGHT went 0.52 -> 0.88, and the only thing that was ever limiting it was
+ *   taste. The field brightens a light page, and brightening a light page can
+ *   only RAISE the contrast of dark ink on it. There was no safety argument for
+ *   0.52 at all.
+ *
+ *   DARK went 0.17 -> 0.20, and that is the measured ceiling rather than a
+ *   choice. `--wx-bg` is luminance 0.0137 and `--wx-text-faint` needs the
+ *   backdrop under 0.0407 to hold 4.5:1 — about 3x of luminance for the entire
+ *   field. 0.20 was measured at 4.67:1 before being pulled back to 0.17 for
+ *   margin; this puts it back at the number that was actually measured to pass,
+ *   and re-measures it. Going further means lightening `--wx-text-faint` first,
+ *   which is a palette decision and not this file's to make.
+ */
+const DAMP = { light: 0.88, dark: 0.2 } as const;
 
 /**
  * How much of the field survives to the page.
