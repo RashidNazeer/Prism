@@ -8,8 +8,11 @@
    party (the brand kit's own `@import` of Google Fonts is deliberately NOT
    copied):
 
-     Caprasimo  display. One weight (400). Wordmark, headlines, big numbers,
-                and ONLY at 24px (1.5rem) and up. Utility: `font-brand`.
+     Archivo    display. One variable file covering 400 to 900, used at 700 to
+                900. Wordmark, headlines, big numbers, and ONLY at 24px
+                (1.5rem) and up. Utility: `font-brand`. Replaced Caprasimo
+                (GLASS_PLAN §3): the mock's headlines are a heavy, tightly
+                tracked grotesque, which a display serif cannot be.
      Figtree    interface. One variable file covering 400 to 600 (the kit's
                 three weights): 20 KB latin against about 60 KB for three
                 statics. Utilities: `font-sans`, and `font-display` (which
@@ -20,22 +23,28 @@
    files unfetched for English text. They apply site-wide (see `:root` below),
    public pages included.
    ============================================================================ */
+/* Archivo carries a WIDTH axis as well as a weight one, so `font-stretch` is
+   declared rather than left to default. Without it the face is still drawn at
+   100%, but nothing in the stylesheet says so, and any later `font-stretch` on
+   a heading would silently pick an unintended width. */
 @font-face {
-  font-family: 'Caprasimo';
+  font-family: 'Archivo';
   font-style: normal;
-  font-weight: 400;
+  font-weight: 400 900;
+  font-stretch: 100%;
   font-display: swap;
-  src: url('/fonts/caprasimo-latin.woff2') format('woff2');
+  src: url('/fonts/archivo-latin.woff2') format('woff2');
   unicode-range:
     U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
     U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
-  font-family: 'Caprasimo';
+  font-family: 'Archivo';
   font-style: normal;
-  font-weight: 400;
+  font-weight: 400 900;
+  font-stretch: 100%;
   font-display: swap;
-  src: url('/fonts/caprasimo-latin-ext.woff2') format('woff2');
+  src: url('/fonts/archivo-latin-ext.woff2') format('woff2');
   unicode-range:
     U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
     U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113,
@@ -114,7 +123,12 @@
    Utilities: text-caption, text-body, text-lead, text-h3, text-h2, text-h1,
    text-display. */
 :root {
-  --wx-font-brand: 'Caprasimo', Georgia, 'Times New Roman', serif;
+  /* The fallbacks are a GROTESQUE stack now, not a serif one. The face that
+     paints during the swap has to be the same genre as the one that replaces
+     it, or the headline visibly changes shape rather than just weight. */
+  --wx-font-brand:
+    'Archivo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
   --wx-tracking-brand: -0.015em;
   --wx-lh-body: 1.55;
 }
@@ -129,8 +143,8 @@
     'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
   /* "Display" in the existing utilities (font-display) is used at every size
-     from 0.6875rem up, and the kit allows Caprasimo only from 1.5rem. So the
-     old utility now resolves to Figtree; Caprasimo is the explicit `font-brand`
+     from 0.6875rem up, and the display face is allowed only from 1.5rem. So
+     the old utility resolves to Figtree; Archivo is the explicit `font-brand`
      utility, applied where the size is 1.5rem or more. */
   --wx-font-display: var(--wx-font-sans);
 }
@@ -289,11 +303,19 @@
     text-wrap: balance;
   }
 
-  /* Caprasimo, the PRISM display face. One weight, -0.015em tracking, and only
-     for type of 1.5rem (24px) and up. Below that, use the interface face. The
-     tracking-* and text-* utilities still win over these defaults. */
+  /* Archivo, the PRISM display face. Only for type of 1.5rem (24px) and up;
+     below that, use the interface face. The tracking-* , text-* and font-*
+     utilities still win over these defaults.
+
+     800 RATHER THAN 400, and that is the point of the face. Caprasimo had one
+     weight, so the utility set it to 400 and nothing more was possible.
+     Archivo is variable 400-900 and is what the mock's `Segoe UI Black`
+     headline was reaching for — asked for at 400 it renders as an ordinary
+     grotesque, which is Figtree's job, not this one's. 800 is the middle of
+     the 700-900 band GLASS_PLAN §3 specifies; a heading that wants the
+     extreme can still say `font-black`. */
   .font-brand {
-    font-weight: 400;
+    font-weight: 800;
     letter-spacing: var(--wx-tracking-brand);
   }
 
