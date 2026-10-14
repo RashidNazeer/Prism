@@ -8,52 +8,27 @@
    party (the brand kit's own `@import` of Google Fonts is deliberately NOT
    copied):
 
-     Archivo    display. One variable file covering 400 to 900, used at 700 to
-                900. Wordmark, headlines, big numbers, and ONLY at 24px
-                (1.5rem) and up. Utility: `font-brand`. Replaced Caprasimo
-                (GLASS_PLAN §3): the mock's headlines are a heavy, tightly
-                tracked grotesque, which a display serif cannot be.
-     Figtree    interface. One variable file covering 400 to 600 (the kit's
-                three weights): 20 KB latin against about 60 KB for three
-                statics. Utilities: `font-sans`, and `font-display` (which
-                now means "the interface face at heading weight").
+     Figtree    ONE FACE FOR EVERYTHING, 2026-10-14. A single variable file,
+                300 to 900, carrying the interface AND the display weight.
+                Rashid asked for "this exact font everywhere", pointing at a
+                headline that is `Segoe UI Black` — a Windows system font that
+                cannot ship to creators on iOS and Android. Figtree was chosen
+                by RENDERING the same string in Segoe UI Black, Archivo 800,
+                Archivo 900 and Figtree 900 side by side: Figtree matches its
+                rounded terminals and generous width, Archivo is visibly
+                narrower and squarer. Archivo is deleted.
+                Utilities: `font-sans`, `font-display`, and `font-brand`
+                (weight 900, for 1.5rem and up).
 
    Declaring a face costs nothing. A browser downloads it the first time
    something on screen is set in it, and `unicode-range` keeps the latin-ext
    files unfetched for English text. They apply site-wide (see `:root` below),
    public pages included.
    ============================================================================ */
-/* Archivo carries a WIDTH axis as well as a weight one, so `font-stretch` is
-   declared rather than left to default. Without it the face is still drawn at
-   100%, but nothing in the stylesheet says so, and any later `font-stretch` on
-   a heading would silently pick an unintended width. */
-@font-face {
-  font-family: 'Archivo';
-  font-style: normal;
-  font-weight: 400 900;
-  font-stretch: 100%;
-  font-display: swap;
-  src: url('/fonts/archivo-latin.woff2') format('woff2');
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
-    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Archivo';
-  font-style: normal;
-  font-weight: 400 900;
-  font-stretch: 100%;
-  font-display: swap;
-  src: url('/fonts/archivo-latin-ext.woff2') format('woff2');
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
-    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113,
-    U+2C60-2C7F, U+A720-A7FF;
-}
 @font-face {
   font-family: 'Figtree';
   font-style: normal;
-  font-weight: 400 600;
+  font-weight: 300 900;
   font-display: swap;
   src: url('/fonts/figtree-latin.woff2') format('woff2');
   unicode-range:
@@ -63,7 +38,7 @@
 @font-face {
   font-family: 'Figtree';
   font-style: normal;
-  font-weight: 400 600;
+  font-weight: 300 900;
   font-display: swap;
   src: url('/fonts/figtree-latin-ext.woff2') format('woff2');
   unicode-range:
@@ -95,7 +70,7 @@
 @font-face {
   font-family: 'Inter';
   font-style: normal;
-  font-weight: 400 600;
+  font-weight: 300 900;
   font-display: swap;
   src: url('/fonts/figtree-latin.woff2') format('woff2');
   unicode-range:
@@ -105,7 +80,7 @@
 @font-face {
   font-family: 'Inter';
   font-style: normal;
-  font-weight: 400 600;
+  font-weight: 300 900;
   font-display: swap;
   src: url('/fonts/figtree-latin-ext.woff2') format('woff2');
   unicode-range:
@@ -114,21 +89,38 @@
     U+2C60-2C7F, U+A720-A7FF;
 }
 
-/* The kit's type scale, converted to rem against the browser's 16px (the
-   unit the kit's px were drawn at): caption 13px = 0.8125rem, body 15px =
-   0.9375rem, lead 18px = 1.125rem, h3 24px = 1.5rem, h2 30px = 1.875rem,
-   h1 48px = 3rem, display 96px = 6rem. Because they are rem they follow the
-   root size `ui-scale.ts` sets, so the person using the app can still resize
-   them. Defined here, not in tokens.css (another process owns that file).
+/* The type scale is Rashid's, measured in a browser and converted to rem
+   against 16px — the full table, with his weights and tracking, is on the
+   `--text-*` block below. Because they are rem they follow the root size
+   `ui-scale.ts` sets, so the person using the app can still resize them.
+   Defined here, not in tokens.css (another process owns that file).
    Utilities: text-caption, text-body, text-lead, text-h3, text-h2, text-h1,
    text-display. */
 :root {
   /* The fallbacks are a GROTESQUE stack now, not a serif one. The face that
      paints during the swap has to be the same genre as the one that replaces
      it, or the headline visibly changes shape rather than just weight. */
-  --wx-font-brand:
-    'Archivo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+  /*
+   * ONE FACE, EVERYWHERE. Rashid: "use this exact font everywhere", pointing at
+   * the headline in his design collection.
+   *
+   * THAT HEADLINE IS `Segoe UI Black`, and it cannot ship. His file declares
+   * Inter, never embeds it, and falls through to the Windows system font —
+   * Chromium confirms it. His creators are on iOS and Android, where Segoe does
+   * not exist, so shipping it would mean every phone rendering something else.
+   *
+   * SO THE JOB WAS TO MATCH IT, AND IT WAS MEASURED RATHER THAN GUESSED. The
+   * same string was rendered in Segoe UI Black, Archivo 800, Archivo 900 and
+   * Figtree 900 side by side: Figtree is the match — rounded terminals, the
+   * same generous width — and Archivo is visibly narrower and squarer, which is
+   * why the headlines had not felt right.
+   *
+   * Figtree also happens to be the cheapest possible answer: it is already
+   * self-hosted, and it is already the target of the `Inter` alias the vendored
+   * Paid Collabs app depends on. One face for the display, the interface and
+   * the vendored app, with no new bytes at all.
+   */
+  --wx-font-brand: var(--wx-font-sans);
   --wx-tracking-brand: -0.015em;
   --wx-lh-body: 1.55;
 }
@@ -216,15 +208,64 @@
   --font-brand: var(--wx-font-brand);
   --font-mono: var(--wx-font-mono);
 
-  /* PRISM scale, see the conversion note above `.wx-app`. */
-  --text-caption: 0.8125rem;
+  /*
+   * RASHID'S TYPE SCALE, MEASURED AND CONVERTED, 2026-10-15.
+   *
+   * Read off `prism-design-collection.html` with `data-design="glass"` live,
+   * by `getComputedStyle` on the real headings, not out of the source. Each
+   * tier carries his SIZE, his WEIGHT, his TRACKING and his LEADING, because a
+   * scale that is only sizes is not his scale — his h1 is 850 weight at
+   * −3.4px, and at 600/−0.025em it is a different typeface's job.
+   *
+   *   tier     his px   weight   tracking    leading        -> rem / em / ratio
+   *   h1        66      850      -3.4px      69.96px   4.125rem  -0.0515em  1.06
+   *   h2        41      700      -2px        47.15px   2.5625rem -0.0488em  1.15
+   *   h3        22      750      -0.7px      25.96px   1.375rem  -0.0318em  1.18
+   *   lead      18      650      -0.6px      29.7px    1.125rem  -0.0333em  1.65
+   *   body (p)  15      400      normal      27.75px   0.9375rem            1.85
+   *   caption   12      400      normal      19.8px    0.75rem              1.65
+   *
+   * SIZES IN REM, TRACKING IN EM, LEADING UNITLESS. A px here would opt the
+   * whole tier out of `src/lib/ui-scale.ts`, which is the control that lets a
+   * person resize the app; `em` tracking keeps the −3.4px proportional instead
+   * of freezing it at one size. Converted against the browser's 16px, which is
+   * the root his px were drawn at.
+   *
+   * NOT HIS: the FACE. His file declares Inter, never embeds it, and renders
+   * `Segoe UI Black`, which does not exist on the iOS and Android his creators
+   * are on. Figtree is settled — see `--wx-font-sans` above. Sizes, weights
+   * and tracking are his; `--wx-font-*` and every `@font-face` are untouched.
+   *
+   * `--text-display` keeps its 6rem: he has NO tier above 66px, so a size
+   * there would be invented. It takes his h1 weight and tracking so it sits on
+   * the same ramp, and that is all that can honestly be claimed for it.
+   */
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1.65;
   --text-body: 0.9375rem;
   --text-body--line-height: var(--wx-lh-body);
   --text-lead: 1.125rem;
-  --text-h3: 1.5rem;
-  --text-h2: 1.875rem;
-  --text-h1: 3rem;
+  --text-lead--line-height: 1.65;
+  --text-lead--font-weight: 650;
+  --text-lead--letter-spacing: -0.0333em;
+  --text-h3: 1.375rem;
+  --text-h3--line-height: 1.18;
+  --text-h3--font-weight: 750;
+  --text-h3--letter-spacing: -0.0318em;
+  --text-h2: 2.5625rem;
+  --text-h2--line-height: 1.15;
+  --text-h2--font-weight: 700;
+  --text-h2--letter-spacing: -0.0488em;
+  --text-h1: 4.125rem;
+  --text-h1--line-height: 1.06;
+  --text-h1--font-weight: 850;
+  --text-h1--letter-spacing: -0.0515em;
   --text-display: 6rem;
+  --text-display--line-height: 1.04;
+  --text-display--font-weight: 850;
+  --text-display--letter-spacing: -0.0515em;
+
+  --radius-modal: var(--wx-radius-modal);
 
   --radius-sm: var(--wx-radius-sm);
   --radius-md: var(--wx-radius-md);
@@ -306,6 +347,21 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /*
+     * 450, NOT 400. Body copy read thin alongside the heavier headings.
+     *
+     * This is a real weight, not a nudge: Figtree is variable across 300-900,
+     * so 450 is interpolated by the font rather than faked by the browser. It
+     * is deliberately a half-step — 500 starts to read as emphasis, and at that
+     * point every genuinely emphasised run in the product has to move up too.
+     *
+     * It also buys back what `antialiased` above costs. That line drops
+     * subpixel rendering, which thins strokes, and the effect is strongest on
+     * the dark theme where light text on a dark ground already erodes
+     * optically. Raising the weight is the controllable fix; removing the
+     * smoothing would thicken dark and muddy light in the same change.
+     */
+    font-weight: 450;
     /* Colour swap on theme toggle should feel deliberate, not jarring. */
     transition:
       background-color var(--wx-dur-base) var(--wx-ease),
@@ -315,30 +371,45 @@
   /* Headings, once, everywhere. Tight tracking and tight leading are what stop
      large type reading like a default template, set here so no component has
      to remember. */
+  /*
+   * 800, NOT 600. Rashid: the headings are too thin.
+   *
+   * 600 was the ceiling the old `@font-face` declared, so it was the heaviest
+   * weight that could actually render — ask for more and the browser returned a
+   * SYNTHETIC bold, which at heading sizes looks smeared rather than heavy.
+   * With the axis opened to `300 900` the real masters are available and the
+   * display weight can be what the reference actually is.
+   *
+   * Two things make dark mode read thinner than light at the SAME weight, and
+   * both are in play here: light text on a dark ground optically erodes, and
+   * `-webkit-font-smoothing: antialiased` on `body` drops subpixel rendering,
+   * which thins strokes further. 800 is chosen against the dark theme for that
+   * reason; it is the heavier of the two readings, not the lighter.
+   */
   h1,
   h2,
   h3,
   h4 {
     font-family: var(--wx-font-display);
-    font-weight: 600;
+    font-weight: 800;
     letter-spacing: -0.025em;
     line-height: 1.08;
     text-wrap: balance;
   }
 
-  /* Archivo, the PRISM display face. Only for type of 1.5rem (24px) and up;
-     below that, use the interface face. The tracking-* , text-* and font-*
-     utilities still win over these defaults.
+  /* The display treatment. Not a different FACE any more — Figtree does both
+     jobs — but a different WEIGHT of it, for type of 1.5rem (24px) and up. The
+     tracking-*, text-* and font-* utilities still win over these defaults.
 
-     800 RATHER THAN 400, and that is the point of the face. Caprasimo had one
-     weight, so the utility set it to 400 and nothing more was possible.
-     Archivo is variable 400-900 and is what the mock's `Segoe UI Black`
-     headline was reaching for — asked for at 400 it renders as an ordinary
-     grotesque, which is Figtree's job, not this one's. 800 is the middle of
-     the 700-900 band GLASS_PLAN §3 specifies; a heading that wants the
-     extreme can still say `font-black`. */
+     900, NOT 800. The reference headline is `Segoe UI Black`, and black is the
+     weight that matches it; at 800 Figtree reads a shade lighter than the mock
+     beside it. This is only safe because the `@font-face` range was opened from
+     `400 600` to `300 900` in the same pass — the file always carried the full
+     axis, but the DECLARATION capped it at 600, so anything asking for 800 or
+     900 was getting SYNTHETIC bold. That is a browser smearing the 600 master,
+     and at 4rem it looks like exactly that. */
   .font-brand {
-    font-weight: 800;
+    font-weight: 900;
     letter-spacing: var(--wx-tracking-brand);
   }
 
@@ -522,20 +593,40 @@ body::after {
    token and dropped entirely for anybody who asks for reduced motion, where a
    blurred layer under a scrolling list is the most expensive thing on screen. */
 @utility wx-glass {
-  background-image: var(--wx-glass-fill);
+  background-color: var(--wx-glass-fill);
+  background-image: var(--wx-glass-face);
   /* Borderless, like the rest of the material. The glass fill and the rim
      highlight carry the edge now. */
   box-shadow: var(--wx-glass-rim);
-  backdrop-filter: blur(var(--wx-glass-blur));
-  -webkit-backdrop-filter: blur(var(--wx-glass-blur));
+  /* These two blur at EVERY width, unlike `.wx-neo-raised`, so they take the
+     phone value as their base and his 22px only from `md` up. Without this the
+     blur ladder would have put a 22px backdrop on a phone through the back
+     door — `check-blur-budget.mjs` counts layers, not pixels, so it would not
+     have caught it. */
+  backdrop-filter: blur(var(--wx-glass-blur-phone));
+  -webkit-backdrop-filter: blur(var(--wx-glass-blur-phone));
 }
 
-/* The flatter sibling: filter bars and rails, no inner rim. */
+/* The flatter sibling: filter bars and rails, no inner rim. His side rail is
+   the shallowest blur in the file — 12px against the card's 22px. */
 @utility wx-glass-panel {
   background-color: var(--wx-glass-panel);
+  background-image: var(--wx-glass-face-chrome);
   /* Borderless; see wx-glass. */
-  backdrop-filter: blur(var(--wx-glass-blur));
-  -webkit-backdrop-filter: blur(var(--wx-glass-blur));
+  backdrop-filter: blur(var(--wx-glass-blur-phone));
+  -webkit-backdrop-filter: blur(var(--wx-glass-blur-phone));
+}
+
+@media (min-width: 768px) {
+  .wx-glass {
+    backdrop-filter: blur(var(--wx-glass-blur)) saturate(var(--wx-glass-saturate));
+    -webkit-backdrop-filter: blur(var(--wx-glass-blur)) saturate(var(--wx-glass-saturate));
+  }
+
+  .wx-glass-panel {
+    backdrop-filter: blur(var(--wx-glass-blur-rail));
+    -webkit-backdrop-filter: blur(var(--wx-glass-blur-rail));
+  }
 }
 
 /*
@@ -665,13 +756,29 @@ body::after {
  * where it reads — chrome and overlays — and the translucent fill is what makes
  * a surface glass here. `scripts/check-blur-budget.mjs` holds this line.
  */
+/*
+ * THE FACE IS A THIRD BACKGROUND LAYER, 2026-10-15.
+ *
+ * Rashid's panes are not a flat wash. Measured off `.feature-card` with
+ * `data-design="glass"` live, every one of them is a vertical ramp: a bright
+ * lip at the top, a near-nothing waist, a second lip at the bottom. That ramp
+ * is what makes a 14% pane read as a thick piece of glass instead of a tint,
+ * and it is carried here in `--wx-glass-face`.
+ *
+ * It goes LAST in the `background-image` list, which is the bottom layer, so
+ * the two 1px rim lines keep painting over it. Background layers rather than
+ * `::before`/`::after` for the reason the note above gives: components already
+ * own those pseudo-elements.
+ */
 @utility wx-neo-raised {
   background-color: var(--wx-glass-fill);
-  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left);
+  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left), var(--wx-glass-face);
   background-size:
     100% 1px,
-    1px 100%;
+    1px 100%,
+    100% 100%;
   background-position:
+    top left,
     top left,
     top left;
   background-repeat: no-repeat;
@@ -681,19 +788,24 @@ body::after {
     var(--wx-glass-lift);
 }
 
-/* The small sibling: buttons, chips, icon wells. Same material, less lift. */
+/* The small sibling: buttons, chips, icon wells. Same material, less lift, and
+   his lighter SECOND edge tier — `#ffffff9c` against the pane's `#ffffffe0`.
+   He draws two, and treating every edge as a pane edge is what makes a row of
+   chips read as a row of cards. */
 @utility wx-neo-raised-sm {
   background-color: var(--wx-glass-fill);
-  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left);
+  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left), var(--wx-glass-face-deep);
   background-size:
     100% 1px,
-    1px 100%;
+    1px 100%,
+    100% 100%;
   background-position:
+    top left,
     top left,
     top left;
   background-repeat: no-repeat;
   box-shadow:
-    inset 0 0 0 1px var(--wx-glass-edge),
+    inset 0 0 0 1px var(--wx-glass-edge-sm),
     var(--wx-glass-inner),
     0 0.25rem 1rem rgb(0 0 0 / 0.06);
 }
@@ -718,20 +830,61 @@ body::after {
 @media (min-width: 768px) {
   .wx-neo-raised,
   .wx-neo-raised-sm {
-    backdrop-filter: blur(var(--wx-glass-blur));
-    -webkit-backdrop-filter: blur(var(--wx-glass-blur));
+    /* His card value, 22px, and his `saturate(1.08)` — which belongs HERE and
+       not on chrome. Measured: `.feature-card` is `blur(22px) saturate(1.08)`
+       and `.nav` is a bare `blur(28px)`. We had the two the wrong way round.
+       22px only ever paints from `md` up, so the phone never pays for it. */
+    backdrop-filter: blur(var(--wx-glass-blur)) saturate(var(--wx-glass-saturate));
+    -webkit-backdrop-filter: blur(var(--wx-glass-blur)) saturate(var(--wx-glass-saturate));
   }
 }
 
-/* Anyone who has asked for less motion or less transparency gets neither the
-   blur nor the cost. `forced-colors` drops it too, where it would be discarded
-   anyway. */
+/*
+ * THE OPAQUE FALLBACK, and the transparency change is what makes it
+ * load-bearing. §4.3: `prefers-reduced-transparency` and `forced-colors` drop
+ * to opaque surfaces WITH A REAL BORDER. Dropping only the blur was survivable
+ * while a light pane was 44% white; at 14% it is not, because without the blur
+ * there is nothing between the text and the photograph. A surface that cannot
+ * meet its floor does not become glass — §4.1 — it becomes opaque, and these
+ * two media queries are the two places where that is forced on us.
+ *
+ * Under `forced-colors` the edge must be a BORDER, not a shadow: the OS
+ * discards shadows entirely, so a shadow-only control loses its shape.
+ */
 @media (prefers-reduced-transparency: reduce), (prefers-reduced-motion: reduce), (forced-colors: active) {
   .wx-neo-raised,
   .wx-neo-raised-sm,
   .wx-glass-chrome {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  .wx-neo-raised,
+  .wx-neo-raised-sm,
+  .wx-glass-chrome,
+  .wx-glass-panel {
+    background-color: var(--wx-surface-1) !important;
+    background-image: none !important;
+  }
+
+  .wx-neo-inset,
+  .wx-neo-pressed {
+    background-color: var(--wx-surface-3) !important;
+    background-image: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .wx-neo-raised,
+  .wx-neo-raised-sm,
+  .wx-glass-chrome,
+  .wx-glass-panel,
+  .wx-neo-inset,
+  .wx-neo-pressed {
+    border: 1px solid CanvasText;
+    box-shadow: none !important;
   }
 }
 
@@ -743,20 +896,40 @@ body::after {
  */
 @utility wx-glass-chrome {
   background-color: var(--wx-glass-panel);
-  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left);
+  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left), var(--wx-glass-face-chrome);
   background-size:
     100% 1px,
-    1px 100%;
+    1px 100%,
+    100% 100%;
   background-position:
+    top left,
     top left,
     top left;
   background-repeat: no-repeat;
-  backdrop-filter: blur(var(--wx-glass-blur-chrome)) saturate(1.08);
-  -webkit-backdrop-filter: blur(var(--wx-glass-blur-chrome)) saturate(1.08);
+  /*
+   * THE PHONE VALUE, NOT HIS. Chrome is the only surface that blurs at every
+   * width, so it is the only one a phone actually pays for, and his nav is
+   * 28px. `--wx-glass-blur-phone` is §4.1's adopted css.glass value: the rail
+   * and the top bar stay blurred below `md` — §4.3 requires that — but at 9px
+   * rather than 28px. The `md` rule below restores his number on a machine
+   * that can afford it.
+   *
+   * No `saturate` here, deliberately: his `.nav`, `.app-topbar` and
+   * `.workspace-sidebar` all compute to a bare blur. Only his cards saturate.
+   */
+  backdrop-filter: blur(var(--wx-glass-blur-phone));
+  -webkit-backdrop-filter: blur(var(--wx-glass-blur-phone));
   box-shadow:
     inset 0 0 0 1px var(--wx-glass-edge),
     var(--wx-glass-inner),
     var(--wx-glass-lift);
+}
+
+@media (min-width: 768px) {
+  .wx-glass-chrome {
+    backdrop-filter: blur(var(--wx-glass-blur-chrome));
+    -webkit-backdrop-filter: blur(var(--wx-glass-blur-chrome));
+  }
 }
 
 /*
@@ -1389,7 +1562,7 @@ body::after {
     color: var(--wx-text);
     font-family: var(--wx-font-display), sans-serif;
     font-size: 1.25rem;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: -0.01em;
     line-height: 1.3;
     margin-top: 2.75rem;
@@ -1403,7 +1576,7 @@ body::after {
   & h3 {
     color: var(--wx-text);
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: 700;
     margin-top: 1.75rem;
     margin-bottom: 0.5rem;
   }
@@ -1425,7 +1598,7 @@ body::after {
 
   & strong {
     color: var(--wx-text);
-    font-weight: 600;
+    font-weight: 700;
   }
 
   & a {
@@ -1456,7 +1629,7 @@ body::after {
     border-bottom: 1px solid var(--wx-border);
     color: var(--wx-text);
     font-size: 0.6875rem;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.12em;
     padding: 0 0.75rem 0.5rem 0;
     text-align: left;

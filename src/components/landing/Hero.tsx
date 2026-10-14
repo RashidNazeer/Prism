@@ -5,9 +5,7 @@ import {
   ParallaxLayer,
   useSectionScroll,
 } from '@/components/layout/Section';
-import { HaloBackdrop } from '@/components/auth/HaloBackdrop';
 import { ButtonLink } from '@/components/ui/Button';
-import { ApplyForm } from './ApplyForm';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -52,29 +50,30 @@ export function Hero() {
 
   return (
     <div id="top" ref={ref as never} className="relative overflow-hidden">
-      {/* The product's own backdrop, not the old Wurx grid-and-glow pair that
-          was here. The landing page is the first thing anyone sees, and it was
-          the last place still drawing the previous identity.
+      {/*
+        THE BACKDROP IS NOT MOUNTED HERE ANY MORE. It is on the page root, in
+        `src/routes/Landing.tsx`, and this is the bug that moved it.
 
-          BEHIND THE HERO, NOT THE WHOLE PAGE. The sections below it paint their
-          own opaque grounds, so a full-page backdrop would be bought and then
-          covered; this is the screenful that is actually open. The fade at the
-          bottom hands over to them without a seam.
+        It was inside a `ParallaxLayer`, which carries a `transform`. A
+        transformed ancestor is the containing block for every `position: fixed`
+        descendant, so "fixed" stopped meaning the viewport and started meaning
+        that layer — and this Hero is `relative overflow-hidden`, which then
+        CLIPPED the backdrop to the hero's own box. The result was a hard
+        horizontal seam partway down the landing page: background above it, bare
+        `--wx-bg` below. Rashid: "you see this layer creating difference? It must
+        not exist."
 
-          THE FARTHEST PLANE. It travels down at a fraction of the scroll, so it
-          lags the page: the slowest layer, which is what reads as far away. */}
-      <ParallaxLayer progress={progress} from={0} to={260} className="absolute inset-0">
-        <div aria-hidden className="pointer-events-none absolute inset-0">
-          {/* FIXED, not absolute. Mounted `absolute inset-0` this ended at the fold
-            and the rest of the landing page fell back to flat colour. Fixed and
-            at -z-10 it spans the whole document, which is what the design is. */}
-          <HaloBackdrop className="pointer-events-none fixed inset-0 -z-10" />
-        </div>
-      </ParallaxLayer>
-      <div
-        aria-hidden
-        className="from-bg pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t to-transparent"
-      />
+        It is the same family as the fence law in `docs/GLASS_PLAN.md` §1.2 — a
+        `transform`, a `filter` or a `backdrop-filter` all do this — and the fix
+        is the same shape: put the full-bleed layer somewhere with nothing above
+        it, not inside the section it happens to start in.
+
+        THE HANDOVER FADE WENT WITH IT. A `from-bg` gradient across the hero's
+        last 48 was there to hand over to sections that "paint their own opaque
+        grounds". They do not — every one of them is transparent — so with one
+        continuous background that fade was simply a pale band washing the
+        bottom of the hero. One ground, no handover.
+      */}
 
       {/* A MIDDLE PLANE of spectrum light, accents only. Soft radial discs rather
           than blurred shapes: a gradient is painted once and then only moved,
@@ -132,7 +131,7 @@ export function Hero() {
                   container above. */}
               <m.h1
                 variants={headline}
-                className="font-brand mt-6 text-left text-[clamp(2.75rem,6vw,4.5rem)] font-normal"
+                className="font-brand mt-6 text-left text-[clamp(2.75rem,6vw,4.5rem)]"
               >
                 <LoadWords text="Your numbers." quiet={quiet ?? false} />
                 <br />
@@ -185,15 +184,20 @@ export function Hero() {
             </m.div>
           </ParallaxLayer>
 
-          <m.div
-            id="apply"
-            className="scroll-mt-24"
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.75, delay: 0.2, ease: EASE }}
-          >
-            <ApplyForm />
-          </m.div>
+          {/*
+            THE MEDIA SLOT — empty on purpose, 2026-10-14.
+            Rashid is supplying an animated video, one cut per theme, to sit
+            here. The column is kept so dropping it in is a one-component
+            change rather than a layout one.
+
+            THE APPLY FORM USED TO LIVE HERE and has been removed, not moved:
+            `/apply` already renders the same `ApplyForm`, and every call to
+            action in the product — the dashboard, Contact, Creators, FAQ, How
+            it works — already links to that ROUTE. Checked before deleting:
+            nothing anywhere links to the old `#apply` anchor, so no navigation
+            breaks. The form component itself is untouched and still used by
+            the route.
+          */}
         </div>
       </Container>
     </div>

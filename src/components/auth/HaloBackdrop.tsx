@@ -1,59 +1,102 @@
-// The scene is static, matching Rashid's file exactly, so neither Motion nor
-// the reduced-motion hook is needed here any more.
-
 /**
- * THE BACKGROUND, from Rashid's `prism-glass-background.html` (2026-10-14).
+ * THE BACKGROUND.
  *
- * It is his composition, not an interpretation of it: the ground ramp and its
- * two tints live in `--wx-ground`, and the optical-loop scene below is his SVG.
- * What this file adds is the plumbing that makes it safe in an app rather than
- * in a standalone page.
+ * It is Rashid's `glass-fold` WebGL field now (2026-10-14), replacing the
+ * optical-loop SVG scene that stood here. The shader itself lives in
+ * `src/components/ui/GlassFold.tsx`, which is where every cost control and the
+ * whole adaptation note lives; this file is the app-specific wiring and the
+ * four numbers below.
  *
- * THREE RULES, each of which has cost this project real time before:
+ * WHY THE NAME AND THE PROP SURVIVE. There are FOUR mount points —
+ * `AuthShell.tsx:49`, `Hero.tsx` (fixed, `-z-10`), `AppShell.tsx:215`
+ * (`intensity="subtle"`, behind every signed-in screen) and `Apply.tsx:27`.
+ * Keeping `HaloBackdrop` and `intensity` means the background changed in one
+ * file instead of five, and no route can be missed.
+ *
+ * TWO RULES, both of which have cost this project real time:
  *
  *  1. NO `filter` AND NO `backdrop-filter`, anywhere in this subtree. This
- *     mounts at `AppShell`, which is an ancestor of `.wurxbase-root`, and
- *     either property there becomes the containing block for every fixed
+ *     mounts at `AppShell`, an ancestor of `.wurxbase-root`, and either
+ *     property here becomes the containing block for every `position: fixed`
  *     overlay in the vendored admin app — the fault that put its modals
- *     3,413px down the page, three times. The blur in the scene is baked into
- *     the SVG's own `feGaussianBlur`, which filters the SVG's contents and
- *     never the host element. `scripts/check-backdrop-ancestry.mjs` asserts it.
+ *     3,413px down the page. `scripts/check-backdrop-ancestry.mjs` asserts it.
+ *     Note what that forbids: the field's contrast is damped IN THE SHADER
+ *     (see `damp`), never by a filter over the canvas.
  *
- *  2. `m.div`, NEVER `motion.div`. `LazyMotion` runs with `strict`, so the
- *     bare namespace THROWS at runtime, and one throw here takes out every
- *     screen in the product, signed in or not.
- *
- *  3. `transform` and `opacity` only. Never `background`, never `filter`:
- *     both re-rasterise the full-bleed layer every frame. §4.3.
+ *  2. IT DOES NOT SCROLL. The canvas positions itself `fixed inset-0`, so all
+ *     four mount points get the viewport whether they wrap it in `absolute` or
+ *     `fixed`. `body` keeps painting `--wx-ground` underneath as the no-GL
+ *     fallback, and `body::after` keeps the grain above it.
  */
 
-/**
- * The scene's own geometry is a fixed 1600x1100 viewBox sliced to fill, so the
- * composition holds from 375px to an ultrawide with no media query and no
- * horizontal overflow — `preserveAspectRatio="xMidYMid slice"` crops rather
- * than stretches, and the wrapper clips.
- */
-const SCENE_VIEWBOX = '0 0 1600 1100';
+import { GlassFold } from '@/components/ui/GlassFold';
 
-/** The five loops, as ellipses: centre, radii and rotation. His numbers. */
-const LOOPS = [
-  { cx: 175, cy: 480, rx: 74, ry: 40, rimRx: 85, rimRy: 52, rot: -32 },
-  { cx: 165, cy: 678, rx: 90, ry: 46, rimRx: 102, rimRy: 59, rot: -35 },
-  { cx: 180, cy: 920, rx: 109, ry: 58, rimRx: 122, rimRy: 70, rot: -37 },
-  { cx: 1260, cy: 285, rx: 185, ry: 80, rimRx: 198, rimRy: 94, rot: -33 },
-  { cx: 1140, cy: 940, rx: 240, ry: 95, rimRx: 253, rimRy: 109, rot: -35 },
-] as const;
+/* ============================================================================
+   THE CONTRAST BUDGET, and it is arithmetic rather than taste.
+
+   `docs/GLASS_PLAN.md` §4.1: the field is the worst-case backdrop behind every
+   glass panel, so its luminance range has to stay inside the band that leaves
+   `--wx-text-muted` and `--wx-text-faint` at 4.5:1 where they sit on the bare
+   page. `damp` is the shader's linear mix back toward `--wx-bg`, so it IS that
+   range, and the two themes are nowhere near each other:
+
+   LIGHT is the easy direction. The page is `#DCDEE9` and every ink on it is
+   dark, so the screen-blend — which can only ever brighten — pushes contrast
+   UP. Nothing here can fail 4.5:1; the only limit is taste, and past about
+   0.6 the panes blow out to flat white and stop reading as glass at all.
+
+   DARK is the tight one. `#202024` has luminance 0.0137, and
+   `--wx-text-faint` (`#a0a0b1`, 0.358) needs the backdrop under 0.0407 to hold
+   4.5:1 — about 3x of headroom, which is roughly `#202024` to `#38383D`. The
+   undamped field screens past that on the first crease, so dark gets a fifth
+   of light's budget. Raise this number and faint text on a bare page stops
+   being legible. That trade is the whole of §4.1.
+
+   MEASURED, NOT ESTIMATED. On rendered pixels at 1440 (SwiftShader, because
+   `browser.mjs` runs `--disable-gpu` and cannot run a shader at all), these two
+   numbers put the field at:
+
+     light   luminance 0.749 … 0.882   (`#dfe0ea` … `#f0f1f7`)
+     dark    luminance 0.015 … 0.034   (`#202024` … `#343439`)
+
+   and leave `--wx-text-faint` — the tightest of the two inks — at 5.5:1 in
+   light and 4.8:1 in dark at the field's brightest point. `dark` started at
+   0.20, which measured 4.67:1: a pass, but not enough margin to spend on a
+   token nudge later.
+   ============================================================================ */
+const DAMP = { light: 0.52, dark: 0.17 } as const;
 
 /**
- * How much of the scene survives to the page.
+ * How much of the field survives to the page.
  *
  * `subtle` is what `AppShell` asks for behind every signed-in screen, where
- * there are live numbers to read and the ground must not compete with them.
- * `full` is the auth pages, the hero and `/apply`, where the background IS the
- * design. It scales his own opacity rather than stacking a scrim, which would
- * be one more layer to composite and one more theme branch to get wrong.
+ * there are live numbers to read and the background must not compete with
+ * them. `full` is the auth pages, the hero and `/apply`, where the background
+ * IS the design. It scales the shader's own damping rather than stacking a
+ * scrim, which would be one more layer to composite — and `full` is the case
+ * the contrast measurement has to pass, because it is the brighter of the two.
  */
-const STRENGTH = { full: 1, subtle: 0.55 } as const;
+const STRENGTH = { full: 1, subtle: 0.6 } as const;
+
+/**
+ * SPEED, AND WHY IT IS NOT THE DEMO'S.
+ *
+ * The source ships `0.5`. That is a showpiece on its own page; here it is
+ * behind live GMV figures, and a background that visibly moves while somebody
+ * reads a number is the background's fault. `0.04` is one full drift cycle in
+ * roughly seven minutes — present if you watch for it, invisible if you are
+ * working. Under `prefers-reduced-motion` the shader paints one still frame
+ * instead, reactively.
+ *
+ * `scale` is up from the demo's framing so the panes read as large sheets
+ * crossing the viewport rather than as a pattern, which is what keeps it a
+ * background. `noise` is a whisper: the field is six smooth exponential
+ * falloffs, and a little grain is what stops the gradients banding on an
+ * 8-bit display — the same reason `body::after` carries a grain layer.
+ */
+const SPEED = 0.04;
+const SCALE = 1.3;
+const NOISE = 0.02;
 
 export function HaloBackdrop({
   className,
@@ -63,137 +106,30 @@ export function HaloBackdrop({
   /** `full` behind the auth pages, hero and `/apply`; `subtle` behind the app. */
   intensity?: 'full' | 'subtle';
 }) {
-  /*
-   * Motion's own hook rather than a bare `matchMedia`: it re-reads when the OS
-   * setting changes while the tab is open. Reduced motion renders this
-   * COMPLETELY STATIC — the scene is still painted, because the background is
-   * the design and a blank ground is not the accessible version of it. Only the
-   * drift goes.
-   */
   const strength = STRENGTH[intensity];
 
   return (
     <div aria-hidden className={className}>
       {/*
-        NO GROUND LAYER HERE ANY MORE. `body` paints `--wx-ground` for the whole
-        document (see global.css), which is what fixed the landing page: this
-        component was mounted `absolute inset-0` inside the hero, so the ramp
-        ended at the fold and the rest of the page fell back to flat colour.
-        Painting it on `body` means no page can be missed, and this component is
-        now only the optical loops.
+        NO GROUND LAYER HERE. `body` paints `--wx-ground` for the whole
+        document (see `global.css`), which is both the design's floor and the
+        fallback for a machine where `getContext('webgl')` returns null — there,
+        the canvas hides itself and the page is still finished.
+
+        Note what is NOT on this element: no `filter`, no `backdrop-filter`, no
+        `transform`, no `will-change`. Rule 1 above. There is no
+        `overflow-hidden` either, and it is not needed: the canvas is
+        `fixed inset-0`, which is exactly the viewport and cannot overflow it.
       */}
-
-      {/*
-        THE OPTICAL LOOPS. `overflow-hidden` is load-bearing: the scene is
-        sliced to cover, so it overhangs every edge, and without the clip that
-        is a horizontal scrollbar at 375px on every screen in the product.
-
-        Note what is NOT here — no `filter`, no `backdrop-filter`, no
-        `transform`, no `will-change` on the frame. `overflow` alone does not
-        establish a containing block for `position: fixed`, so nothing in this
-        subtree can move a fixed overlay. Rule 1 above.
-      */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/*
-          STATIC, AND EXACTLY HIS GEOMETRY.
-          `viewBox="0 0 1600 1100"`, `slice`, `min-width:1000px`, `object-cover`
-          — the four values that decide the composition — are copied from
-          `prism-glass-background.html` unchanged.
-
-          Two of my additions were removed after Rashid called the result
-          distorted, and both deserved it: a widened viewBox meant to "zoom out"
-          re-cropped the slice so the loops no longer sat where he drew them,
-          and a slow drift animated a background his file paints still. The
-          lesson is narrow — when the ask is "this exact background", the
-          geometry is not mine to improve.
-        */}
-        <svg
-          viewBox={SCENE_VIEWBOX}
-          preserveAspectRatio="xMidYMid slice"
-          xmlns="http://www.w3.org/2000/svg"
-          className="absolute inset-0 h-full w-full min-w-[1000px] object-cover"
-          style={{ opacity: `calc(var(--wx-scene-opacity) * ${strength})` }}
-        >
-          <defs>
-            {/*
-              The loop body: a wide stroke carrying a gradient that runs from a
-              white highlight through a dark trough to a cool return, which is
-              what reads as light bending through a glass ring rather than as a
-              coloured outline.
-            */}
-            <linearGradient id="wx-optical-loop" x1="0" y1="0" x2="1" y2="1">
-              <stop stopColor="#ffffff" stopOpacity=".6" />
-              <stop offset=".16" stopColor="#d3c1ed" stopOpacity=".05" />
-              <stop offset=".43" stopColor="#101118" stopOpacity=".36" />
-              <stop offset=".6" stopColor="#dae6f5" stopOpacity=".38" />
-              <stop offset=".78" stopColor="#8b719f" stopOpacity=".1" />
-              <stop offset="1" stopColor="#e0e6f3" stopOpacity=".48" />
-            </linearGradient>
-            {/* The hairline rim just outside each loop: the lit edge. */}
-            <linearGradient id="wx-optical-rim" x1="0" y1="0" x2="1" y2="1">
-              <stop stopColor="#ffffff" stopOpacity=".65" />
-              <stop offset=".2" stopColor="#ffffff" stopOpacity=".02" />
-              <stop offset=".5" stopColor="#cbc4db" stopOpacity=".4" />
-              <stop offset=".8" stopColor="#ffffff" stopOpacity=".04" />
-              <stop offset="1" stopColor="#ffffff" stopOpacity=".6" />
-            </linearGradient>
-            {/*
-              The softening. This is an SVG filter on the SVG's OWN contents, so
-              it never touches the host element and never creates a containing
-              block in the document — which is the only reason a blur is allowed
-              anywhere in this file at all.
-            */}
-            <filter id="wx-optical-soft">
-              <feGaussianBlur stdDeviation="2" />
-            </filter>
-            <radialGradient id="wx-optical-light">
-              <stop stopColor="#e6daf4" stopOpacity=".24" />
-              <stop offset="1" stopColor="#b7d1ee" stopOpacity="0" />
-            </radialGradient>
-          </defs>
-
-          {/* The ambient pool the left-hand loops sit in. */}
-          <ellipse
-            cx="230"
-            cy="620"
-            rx="450"
-            ry="510"
-            fill="url(#wx-optical-light)"
-            style={{ opacity: 'var(--wx-scene-light-opacity)' }}
-          />
-
-          <g
-            fill="none"
-            stroke="url(#wx-optical-loop)"
-            strokeWidth="26"
-            filter="url(#wx-optical-soft)"
-          >
-            {LOOPS.map((l) => (
-              <ellipse
-                key={`body-${l.cx}-${l.cy}`}
-                cx={l.cx}
-                cy={l.cy}
-                rx={l.rx}
-                ry={l.ry}
-                transform={`rotate(${l.rot} ${l.cx} ${l.cy})`}
-              />
-            ))}
-          </g>
-
-          <g fill="none" stroke="url(#wx-optical-rim)" strokeWidth="1.2">
-            {LOOPS.map((l) => (
-              <ellipse
-                key={`rim-${l.cx}-${l.cy}`}
-                cx={l.cx}
-                cy={l.cy}
-                rx={l.rimRx}
-                ry={l.rimRy}
-                transform={`rotate(${l.rot} ${l.cx} ${l.cy})`}
-              />
-            ))}
-          </g>
-        </svg>
-      </div>
+      <GlassFold
+        color1="--wx-surface-1"
+        color2="--wx-bg"
+        color3="--wx-surface-2"
+        speed={SPEED}
+        scale={SCALE}
+        noise={NOISE}
+        damp={{ light: DAMP.light * strength, dark: DAMP.dark * strength }}
+      />
     </div>
   );
 }

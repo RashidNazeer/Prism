@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Navigate } from 'react-router';
+import { HaloBackdrop } from '@/components/auth/HaloBackdrop';
 import { SiteNav } from '@/components/landing/SiteNav';
 import { Hero } from '@/components/landing/Hero';
 import { TrustedBy } from '@/components/landing/TrustedBy';
@@ -58,6 +59,28 @@ export function Landing() {
        optical loops, so the background stopped at the hero. body paints the
        ground; this just needs height. */
     className="min-h-dvh">
+      {/*
+        THE BACKGROUND, MOUNTED ONCE AT THE PAGE ROOT.
+
+        It used to live inside `Hero`, wrapped in a `ParallaxLayer`. That layer
+        carries a `transform`, a transformed ancestor becomes the containing
+        block for `position: fixed`, and Hero is `relative overflow-hidden` — so
+        the backdrop was clipped to the hero's own box and the landing page had a
+        hard horizontal seam partway down it, background above and bare
+        `--wx-bg` below. Rashid: "you see this layer creating difference? It must
+        not exist."
+
+        THIS DIV IS THE RIGHT HOST BECAUSE IT IS PLAIN. No `transform`, no
+        `filter`, no `contain`, no clip — nothing between it and the viewport.
+        Keep it that way: the same property that would clip this backdrop is the
+        one the fence law in `docs/GLASS_PLAN.md` §1.2 forbids above
+        `.wurxbase-root`, for the same underlying reason.
+
+        Note it is OUTSIDE `<main class="overflow-x-clip">` as well. `clip` on
+        that element would do to a fixed child exactly what the hero's
+        `overflow-hidden` did.
+      */}
+      <HaloBackdrop className="pointer-events-none fixed inset-0 -z-10" />
       <PageProgress />
       <SiteNav />
       {/* `overflow-x-clip` (not `hidden`, which would make <main> a scroll
