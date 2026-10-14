@@ -132,7 +132,7 @@ export function SiteNav() {
                stay readable. Deliberately NO `backdrop-blur`: a backdrop filter
                re-blurs everything behind it every frame, and what is behind
                this one never stops moving. */
-            'wx-neo-raised bg-surface-1/80 ease-brand grid grid-cols-[1fr_auto] items-center gap-4 rounded-[2rem] px-5 transition-[border-radius] duration-300 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]',
+            'wx-neo-raised ease-brand grid grid-cols-[1fr_auto] items-center gap-4 rounded-[2rem] px-5 transition-[border-radius] duration-300 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]',
             /* The one thing scroll still changes. The card tightens slightly
                once you are into the page, which reads as it settling rather
                than as a second style of header. */

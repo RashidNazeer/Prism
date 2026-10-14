@@ -196,7 +196,7 @@ export function DateRangePicker({
                 left: pos.left,
                 width: `min(${PANEL_W}rem, calc(100vw - 1rem))`,
               }}
-              className="wx-neo-raised fixed z-50 rounded-xl p-3"
+              className="wx-glass-overlay fixed z-50 rounded-xl p-3"
             >
               {/* The two months. One below 48rem, because two will not fit a
                   phone without the page scrolling sideways, which is the rule

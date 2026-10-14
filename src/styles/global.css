@@ -1736,3 +1736,38 @@ body::after {
     color: CanvasText;
   }
 }
+
+/*
+ * FLOATING OVERLAYS: popovers, dropdowns, the date calendar, menus.
+ *
+ * THESE MUST NOT USE THE CARD MATERIAL, and the calendar on a phone is what
+ * proved it — at the card's 8% white fill it was effectively invisible, a
+ * transparent sheet of dates over live content.
+ *
+ * The reason is structural rather than a tuning mistake. §4.1's floor is
+ * computable for a card because a card's backdrop is the page, which we own
+ * and bound. A popover floats over ARBITRARY content — a table, a chart, a
+ * photograph — so there is no worst case to solve against, and the only safe
+ * answer is a surface dense enough that whatever is behind it stops mattering.
+ *
+ * So an overlay borrows the MODAL fill, which is already near-opaque at 0.89
+ * and already measured, keeps the card's radius rather than the modal's larger
+ * one (a dropdown is not a dialog), and keeps the modal's second drop shadow,
+ * which is what separates something floating from something laid on the page.
+ */
+@utility wx-glass-overlay {
+  background-color: var(--wx-glass-modal);
+  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left);
+  background-size:
+    100% 1px,
+    1px 100%;
+  background-position:
+    top left,
+    top left;
+  background-repeat: no-repeat;
+  box-shadow:
+    inset 0 0 0 1px var(--wx-glass-edge),
+    var(--wx-glass-inner),
+    var(--wx-glass-lift),
+    var(--wx-glass-lift-modal);
+}

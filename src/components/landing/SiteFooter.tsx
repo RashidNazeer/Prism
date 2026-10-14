@@ -3,9 +3,24 @@ import { PrismMark } from '@/components/brand/PrismMark';
 import { Container } from '@/components/layout/Section';
 import { focusApplyForm } from '@/lib/focus-apply';
 
+/*
+ * THE FOOTER IS A GLASS PANEL NOW, not a hairline rule on bare ground.
+ *
+ * It was `border-t` and nothing else, which was right when the page was a flat
+ * colour: a line was the only way to mark the end of it. With a photograph and
+ * a WebGL field running the full height, that line separated nothing — the
+ * footer sat directly on the background and read as content that had fallen off
+ * the page.
+ *
+ * Same material as every other surface, so it ends the page the way a card ends
+ * a section: `wx-neo-raised` for the fill, rim and lift, the card radius on the
+ * TOP corners only (it runs to the bottom edge of the viewport, and rounding a
+ * corner with no gap below it draws a notch), and the shell's gutter so it
+ * lines up with the content above.
+ */
 export function SiteFooter() {
   return (
-    <footer className="border-line border-t py-12">
+    <footer className="wx-neo-raised mx-3 mt-16 rounded-t-2xl py-12">
       <Container>
         <div className="flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-xs">
@@ -135,7 +150,7 @@ export function SiteFooter() {
           </nav>
         </div>
 
-        <div className="border-line text-faint mt-12 flex flex-col gap-2 border-t pt-7 text-xs sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-faint mt-12 flex flex-col gap-2 pt-7 text-xs sm:flex-row sm:items-center sm:justify-between [border-top:1px_solid_var(--wx-glass-line)]">
           <p>&copy; {new Date().getFullYear()} Wurx Media. All rights reserved.</p>
           <p className="font-mono tracking-wider">WURXMEDIAHUB</p>
         </div>

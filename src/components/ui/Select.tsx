@@ -409,7 +409,7 @@ export function ListboxSelect({
               // Keep focus on the trigger when the list is pressed.
               onMouseDown={(e) => e.preventDefault()}
               // Placed by `place()` before first paint; `invisible` until then.
-              className="wx-neo-raised invisible fixed top-0 left-0 z-50 overflow-x-hidden overflow-y-auto overscroll-contain rounded-xl p-1"
+              className="wx-glass-overlay invisible fixed top-0 left-0 z-50 overflow-x-hidden overflow-y-auto overscroll-contain rounded-xl p-1"
             >
               {items.map((it, i) => {
                 const heading =

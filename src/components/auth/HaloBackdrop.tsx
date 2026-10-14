@@ -89,7 +89,7 @@ import { GlassFold } from '@/components/ui/GlassFold';
 const DAMP = { light: 0.88, dark: 0.2 } as const;
 
 /** See the `vignette` prop below. 1 = no falloff at all. */
-const VIGNETTE = { light: 0.88, dark: 0.55 } as const;
+const VIGNETTE = { light: 0.80, dark: 0.52 } as const;
 
 /**
  * How much of the field survives to the page.

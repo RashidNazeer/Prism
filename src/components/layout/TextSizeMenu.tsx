@@ -72,7 +72,7 @@ export function TextSizeMenu({ className }: { className?: string }) {
           aria-label="Text size"
           /* A raised card like every other popover, not a bordered box with a
              drop shadow under it. */
-          className="wx-neo-raised absolute top-full right-0 z-50 mt-2 w-44 rounded-xl p-1"
+          className="wx-glass-overlay absolute top-full right-0 z-50 mt-2 w-44 rounded-xl p-1"
         >
           {UI_SCALES.map((s) => {
             const active = s.value === scale;

@@ -76,7 +76,7 @@ const VB_H = 240;
  * marks is worse than no legend.
  */
 const RAMP =
-  'linear-gradient(90deg, var(--wx-brand-mint) 0%, var(--wx-brand-sky) 38%, var(--wx-brand-peri) 70%, var(--wx-chart-4) 100%)';
+  'linear-gradient(90deg, var(--wx-chart-fill-1) 0%, var(--wx-chart-fill-2) 38%, var(--wx-chart-fill-3) 70%, var(--wx-chart-4) 100%)';
 
 /** A rate is a line; an amount is a bar. The only rule in here. */
 export const shapeFor = (m: VelocityMetric): 'line' | 'bars' => (m === 'roi' ? 'line' : 'bars');
@@ -323,17 +323,17 @@ export function VelocityChart({
                   {/* The same four stops as `RAMP`, in the same fixed order.
                       If one of these drifts from the other the legend stops
                       describing the marks. */}
-                  <stop offset="0%" stopColor="var(--wx-brand-mint)" />
-                  <stop offset="38%" stopColor="var(--wx-brand-sky)" />
-                  <stop offset="70%" stopColor="var(--wx-brand-peri)" />
+                  <stop offset="0%" stopColor="var(--wx-chart-fill-1)" />
+                  <stop offset="38%" stopColor="var(--wx-chart-fill-2)" />
+                  <stop offset="70%" stopColor="var(--wx-chart-fill-3)" />
                   <stop offset="100%" stopColor="var(--wx-chart-4)" />
                 </linearGradient>
                 {/* The area under the ROI line is a FILL, so it is periwinkle:
                     series 3 of the fixed order, and the deepest of the three,
                     which is what a wash needs to be to register at 28%. */}
                 <linearGradient id={`${uid}-fill`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--wx-brand-peri)" stopOpacity="0.28" />
-                  <stop offset="100%" stopColor="var(--wx-brand-peri)" stopOpacity="0" />
+                  <stop offset="0%" stopColor="var(--wx-chart-fill-3)" stopOpacity="0.28" />
+                  <stop offset="100%" stopColor="var(--wx-chart-fill-3)" stopOpacity="0" />
                 </linearGradient>
               </defs>
 
@@ -490,7 +490,7 @@ export function VelocityChart({
             {active ? (
               <div
                 className={cn(
-                  'wx-neo-raised pointer-events-none absolute top-1 z-10 flex flex-col gap-0.5 rounded-lg px-2.5 py-1.5 whitespace-nowrap',
+                  'wx-glass-overlay pointer-events-none absolute top-1 z-10 flex flex-col gap-0.5 rounded-lg px-2.5 py-1.5 whitespace-nowrap',
                   pct(activeIndex ?? 0) > 60 && '-translate-x-full'
                 )}
                 style={{ left: `${pct(activeIndex ?? 0)}%` }}

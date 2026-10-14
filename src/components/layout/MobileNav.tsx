@@ -117,7 +117,7 @@ export function MobileNav({ items, className }: { items: NavItem[]; className?: 
            sits at `-top-px` and its cone overhangs; against the old square
            edges that was invisible, and against a 1.75rem radius it would hang
            outside the corner. */
-        'wx-neo-raised fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 overflow-hidden rounded-[1.75rem] lg:hidden',
+        'wx-glass-overlay fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 overflow-hidden rounded-[1.75rem] lg:hidden',
         className
       )}
     >

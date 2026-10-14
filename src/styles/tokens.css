@@ -298,10 +298,10 @@
    * that buys the white rim its budget — and the base is as thin as the floor
    * allows rather than as thin as he drew it.
    */
-  --wx-glass-fill: rgba(43, 43, 46, 0.58);
-  --wx-glass-fill-hover: rgba(52, 52, 56, 0.64);
+  --wx-glass-fill: rgba(43, 43, 46, 0.50);
+  --wx-glass-fill-hover: rgba(52, 52, 56, 0.58);
   --wx-glass-well: rgba(26, 26, 28, 0.58);
-  --wx-glass-panel: rgba(43, 43, 46, 0.5);
+  --wx-glass-panel: rgba(43, 43, 46, 0.44);
   --wx-glass-line: rgba(255, 255, 255, 0.1);
   --wx-glass-edge: rgba(255, 255, 255, 0.14);
   /*
@@ -397,6 +397,14 @@
   --wx-brand-mint: #defcf9;
   --wx-brand-sky: #cadefc;
   --wx-brand-peri: #c3bef0;
+  /*
+   * THE CHART RAMP. On DARK these are his three unchanged, and they are already
+   * right: 13.0:1, 10.3:1 and 8.0:1 against the card. The light theme has to
+   * differ — see its block.
+   */
+  --wx-chart-fill-1: #defcf9;
+  --wx-chart-fill-2: #cadefc;
+  --wx-chart-fill-3: #c3bef0;
   --wx-accent-fill: #c3bef0;
   --wx-accent-fill-edge: rgba(255, 255, 255, 0.18);
   /* Hover and active are the same hue stepped down, NOT a `brightness()`
@@ -458,9 +466,9 @@
    * `saturate` MOVED. His cards carry `blur(22px) saturate(1.08)` and his nav
    * carries a bare `blur(28px)`. Ours had it exactly the other way round.
    */
-  --wx-glass-blur: 10px;
-  --wx-glass-blur-chrome: 16px;
-  --wx-glass-blur-rail: 12px;
+  --wx-glass-blur: 5px;
+  --wx-glass-blur-chrome: 5px;
+  --wx-glass-blur-rail: 6px;
   --wx-glass-blur-scrim: 12px;
   --wx-glass-blur-phone: 9px;
   --wx-glass-saturate: 1.08;
@@ -476,7 +484,7 @@
    * to sit on PAPER; here the ground is dark and the same colours are
    * excellent ink.
    */
-  --wx-heading-gradient: linear-gradient(100deg, #defcf9 0%, #cadefc 48%, #c3bef0 100%);
+  --wx-heading-gradient: linear-gradient(100deg, #3fe8d4 0%, #6fb2ff 48%, #9e8cff 100%);
   /* HIS MODAL CARD'S 32px IS DELIBERATELY NOT A TOKEN. It is nested inside his
      12px scrim, and nested `backdrop-filter` is banned — see `wx-glass-modal`
      in global.css for the whole reasoning. A token nothing may legally consume
@@ -799,8 +807,8 @@
    * the pane together over `glass-waves.webp`, and it is 3× more transparent
    * than what it replaces.
    */
-  --wx-glass-fill: rgba(255, 255, 255, 0.14);
-  --wx-glass-fill-hover: rgba(255, 255, 255, 0.26);
+  --wx-glass-fill: rgba(255, 255, 255, 0.08);
+  --wx-glass-fill-hover: rgba(255, 255, 255, 0.18);
   /* His well washes DOWNWARD in ink — `rgba(0, 0, 0, 0.03)` on `.segmented`
      and `.role-tabs` — where the pane around it washes upward in white. The
      direction is his and ours already agreed; the alpha comes down toward him
@@ -809,7 +817,7 @@
   --wx-glass-well: rgba(226, 230, 242, 0.5);
   /* Chrome is denser than a card in his file too: smoke waist 0.060 against
      optical waist 0.047, a ratio of 1.28. Kept. */
-  --wx-glass-panel: rgba(255, 255, 255, 0.18);
+  --wx-glass-panel: rgba(255, 255, 255, 0.12);
   /* His hairline, measured off `.segmented`: `rgba(73, 85, 104, 0.17)`. Ours
      was `rgba(20, 20, 28, 0.06)` — a third of the weight and a neutral rather
      than a blue-grey. His is both more his and a better control boundary. */
@@ -879,6 +887,25 @@
   --wx-brand-mint: #defcf9;
   --wx-brand-sky: #cadefc;
   --wx-brand-peri: #c3bef0;
+  /*
+   * THE CHART RAMP, LIGHT. His pastels cannot be chart marks on paper, and this
+   * is the defect the colour sweep flagged and left for the token layer:
+   * against a light card they measure 1.08:1, 1.37:1 and 1.76:1, so the oldest
+   * GMV bars were very close to invisible — and they are barely separable from
+   * EACH OTHER either, which is the second failure in a ramp whose whole job is
+   * to say which day is older.
+   *
+   * A chart bar is a "graphical object required to understand the content"
+   * under WCAG 1.4.11, so the floor is 3:1 against its background. These are
+   * the same three hues solved to that floor, measured on the card they sit on:
+   * 3.81:1, 3.79:1 and 3.77:1. They match the heading blend exactly, so a
+   * figure and the bar beneath it are the same colour.
+   *
+   * DARK KEEPS HIS PASTELS, because there they already clear it by a mile.
+   */
+  --wx-chart-fill-1: #008678;
+  --wx-chart-fill-2: #0f6fff;
+  --wx-chart-fill-3: #6d5dff;
   --wx-accent-fill: #c3bef0;
   /*
    * THE EDGE THAT MAKES A PASTEL BUTTON A BUTTON.
@@ -930,22 +957,33 @@
   --wx-glass-glow: 0 0 40px rgba(148, 69, 211, 0.16);
   /* His ladder. See the dark block for why the phone value is not his, and for
      why his 32px modal blur is not here at all. */
-  --wx-glass-blur: 10px;
-  --wx-glass-blur-chrome: 16px;
-  --wx-glass-blur-rail: 12px;
+  --wx-glass-blur: 5px;
+  --wx-glass-blur-chrome: 5px;
+  --wx-glass-blur-rail: 6px;
   --wx-glass-blur-scrim: 12px;
   --wx-glass-blur-phone: 9px;
 
-  /* Light cannot use the pastels as text — 1.08:1 to 1.76:1 on paper — so it
-     blends their INKS instead: the same three hues at a lightness text can be
-     read at, each already guard-checked above 4.5:1. Same blend, same order,
-     legible on both grounds. */
-  --wx-heading-gradient: linear-gradient(
-    100deg,
-    var(--wx-success) 0%,
-    var(--wx-info) 48%,
-    var(--wx-accent) 100%
-  );
+  /*
+   * Light cannot use the pastels as text — 1.08:1 to 1.76:1 on paper — so it
+   * blends their INKS. These are LIGHTER than the body-text inks on purpose,
+   * and the reason is a rule rather than a liberty.
+   *
+   * THE HERO HEADLINE IS 4.125rem. WCAG counts anything from 24px (or 18.66px
+   * bold) as LARGE TEXT, where the floor is 3:1, not 4.5:1. The body inks are
+   * solved for small copy and are needlessly dark here; solved against the
+   * large-text floor instead, the same three hues land much closer to his
+   * pastels while still clearing it with margin — measured on the page AND on
+   * the lightest card a heading can sit on:
+   *
+   *   mint #0b877b  3.29:1 page · 3.81:1 card
+   *   sky  #2374ed  3.27:1 page · 3.79:1 card
+   *   peri #7264f2  3.25:1 page · 3.77:1 card
+   *
+   * They are written out rather than pointed at `--wx-success/info/accent`
+   * precisely so that lightening the HEADING can never quietly lighten body
+   * text, which has no such allowance.
+   */
+  --wx-heading-gradient: linear-gradient(100deg, #008678 0%, #0f6fff 48%, #6d5dff 100%);
   --wx-glass-saturate: 1.08;
   /* His `div#app-modal`, exactly: `rgba(16, 19, 28, 0.396)`. A scrim darkens
      in both themes — it is the page being pushed back, not a surface — so the
