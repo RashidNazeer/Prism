@@ -18,7 +18,7 @@ money.
 | Node.js               | `v24.20.0`           | any v24 LTS is fine                                |
 | pnpm                  | `11.17.0`            | pinned by `packageManager` in package.json         |
 | Git                   | `2.55.0`             |                                                    |
-| Supabase CLI          | `2.119.0`            | migrations, Edge Function deploys, type generation |
+| Supabase CLI          | `2.120.0`            | migrations, Edge Function deploys, type generation. Not in winget; install from the GitHub release zip |
 | Chromium (Playwright) | installed separately | see below                                          |
 
 ```powershell
@@ -32,14 +32,28 @@ pnpm exec playwright install chromium
 library but not the browser binary. Skip it and every verification script fails
 with a launch error that does not say "you forgot to install a browser".
 
-The lockfile is `pnpm-lock.yaml`, lockfileVersion 9.0. The 29 packages declared
-below resolve to **128** in total, counted from `node_modules/.pnpm` rather than
-by reading the lockfile, which is easy to miscount. Install with
-`--frozen-lockfile` in CI and on Vercel, which `vercel.json` already does.
+The lockfile is `pnpm-lock.yaml`, lockfileVersion 9.0. The 32 packages declared
+below resolve to **138** in total, counted from `node_modules/.pnpm` rather than
+by reading the lockfile, which is easy to miscount. Expect that figure to move by
+a few either way between machines, because some packages resolve per-platform.
+Install with `--frozen-lockfile` in CI and on Vercel, which `vercel.json`
+already does.
+
+**Two of the commands above did not behave as written on the 2026-10-14 laptop**
+(recorded here rather than left to be rediscovered):
+
+- `corepack enable` fails with `EPERM` writing its shims into
+  `C:\Program Files\nodejs` without an elevated shell. `corepack prepare
+  pnpm@11.17.0 --activate` still works, and `npm install -g pnpm@11.17.0` also
+  gives the pinned version.
+- a copied `node_modules` is worse than none. pnpm's layout is symlinks, and
+  copying a project folder between machines flattens them into empty
+  directories, so `react/` exists and contains nothing. Delete the folder and
+  install from the lockfile.
 
 ---
 
-## 2. Runtime dependencies (15)
+## 2. Runtime dependencies (17)
 
 These ship to the browser.
 
@@ -68,6 +82,24 @@ These ship to the browser.
 | `class-variance-authority` | `^0.7.1`   | typed component variants, used by `Button` and friends                                                                                                   |
 | `clsx`                     | `^2.1.1`   | conditional class names                                                                                                                                  |
 | `tailwind-merge`           | `^3.6.0`   | resolves conflicting Tailwind classes. Both are wrapped by `cn()` in `src/lib/utils.ts`; call that rather than either directly.                          |
+| `gsap`                     | `^3.15.0`  | added 2026-10-14 on Rashid's ask. **Not used by anything yet**, and it overlaps `motion`. See the DECISIONS entry before reaching for it.                |
+| `lenis`                    | `^1.3.26`  | smooth scroll, added 2026-10-14 on Rashid's ask. **Not used by anything yet.** It is a second scroll authority on top of `useScroll`; read the warning below. |
+
+**On `gsap` and `lenis`, because installing them was the easy part.** Both
+arrived on 2026-10-14 at Rashid's request, which is the approval this file's
+header requires. Neither is wired into a single component, and that is the state
+to keep until there is a reason to change it:
+
+- `motion` is still the animation library. Two of them on one page is double the
+  bundle, on a product whose `App-*.js` is already over 1 MB for other reasons
+  listed below.
+- Lenis drives scrolling, and this app has already paid for scroll behaviour
+  twice: the judder that turned out to be twelve beams animating on the main
+  thread, and the scroll-driven depth on the landing page. Adding a second thing
+  that owns the scroll position is how both come back.
+
+`docs/DECISIONS.md`, "GSAP, Lenis and React Bits join the stack", has the
+reasoning and the conversions any copied-in component needs.
 
 ### Document generation — and these four are a problem
 
@@ -89,7 +121,7 @@ loaded.
 
 ---
 
-## 3. Development dependencies (14)
+## 3. Development dependencies (15)
 
 | Package                          | Version    | What it is for                                                                                      |
 | -------------------------------- | ---------- | --------------------------------------------------------------------------------------------------- |
@@ -107,6 +139,7 @@ loaded.
 | `@types/node`                    | `^24.13.2` |                                                                                                     |
 | `@types/react`                   | `^19.2.17` |                                                                                                     |
 | `@types/react-dom`               | `^19.2.3`  |                                                                                                     |
+| `jsrepo`                         | `^3.8.1`   | fetches one React Bits component's source into the repo. A fetcher, not a library; nothing ships from it. |
 
 ---
 
@@ -164,7 +197,7 @@ decision rather than an oversight.
 | **A charting library**                        | Every chart is inline SVG. A dependency for two charts is a poor trade, and this way the marks obey the same `--wx-*` tokens and the same user text-size setting as everything else. See `VelocityChart.tsx`. |
 | **An image library** (`sharp`, `jimp`)        | The app icons are rendered by Chromium through Playwright, which is already installed. The source is an SVG, so a real renderer was the right tool anyway.                                                    |
 | **A PWA plugin** (`vite-plugin-pwa`, Workbox) | The manifest is 40 lines and the service worker is deliberately almost inert. A plugin would have precached the 1 MB admin bundle by default, which is the exact opposite of what this app needs.             |
-| **A component library beyond shadcn/ui**      | shadcn is copied in and themed, not installed.                                                                                                                                                                |
+| **A component library beyond shadcn/ui**      | shadcn is copied in and themed, not installed. React Bits is the same shape: `jsrepo` copies one component's source in and there is no React Bits package in the bundle. Running `shadcn init` here is a separate matter and is ruled out — see `Redesign UI/IMPLEMENTATION_PLAN.md` 1.2. |
 | **A test runner**                             | There is no unit test suite. Verification is done by the 125 scripts in `scripts/`, which drive a real browser and a real database. That is a real gap, not a claim that tests are unnecessary.               |
 
 ---

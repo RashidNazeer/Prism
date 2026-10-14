@@ -2658,3 +2658,41 @@ than weakened.
 
 **Rejected:** keeping the world and only adding a "back to app" link, which fixes
 neither the look nor the remount.
+## GSAP, Lenis and React Bits join the stack, on Rashid's instruction (2026-10-14)
+
+**Decision:** `gsap` 3.15.0 and `lenis` 1.3.26 are dependencies, and `jsrepo`
+3.8.1 is a devDependency. Rashid asked for all three plus React Bits while
+setting up the new laptop, which is the approval CLAUDE.md requires for a
+locked-stack change. **Motion stays**, and is still what the app animates with
+today; nothing was migrated.
+
+React Bits is **not** a package. It ships as copy-in source through the `jsrepo`
+and shadcn CLIs, so what is installed is the tool that fetches a component, not
+the library. Nothing has been pulled in yet.
+
+**Why `jsrepo` rather than `shadcn`.** `Redesign UI/IMPLEMENTATION_PLAN.md` 1.2
+says do not run `shadcn init` in this repo: it rewrites `global.css` and
+`tokens.css` with its own `--background` / `--primary` variables, which clash
+with the `--wx-*` bridge and the parity guard. `jsrepo` fetches a file and
+nothing else.
+
+**What any React Bits component must be converted to before it ships**, the same
+three conversions the plan already lists for the 21st.dev components:
+
+- `motion.div` to `m.div`. `LazyMotion` runs with `strict`, so `motion.div`
+  throws at runtime.
+- every hardcoded hex to a `--wx-*` token, with a light twin, or
+  `check-contrast.mjs` fails the build on parity.
+- `react-icons` to `lucide-react`, which is decision 6 in PRISM_PROGRESS.
+
+**The unresolved tension, flagged rather than settled.** Lenis is smooth scroll,
+and this app has already paid for scroll behaviour twice: the judder that was
+"twelve beams animating on the main thread", and the scroll-driven depth on the
+landing page. A second scroll authority on top of `useScroll` is how those come
+back. GSAP likewise overlaps Motion, and two animation libraries on one page is
+double the bundle on a product whose `App-*.js` is already 1,058 kB. **Neither
+is wired into anything yet**, so this is a cost to weigh when the first one is
+used, not a regression today.
+
+**Proved:** `pnpm build` exits 0 with all three installed, 63 tokens at parity,
+all WCAG pairs passing, 1200 random brand themes passing, isolation ok.
