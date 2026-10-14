@@ -6,6 +6,7 @@ import {
   useSectionScroll,
 } from '@/components/layout/Section';
 import { ButtonLink } from '@/components/ui/Button';
+import { HeroVisual } from '@/components/landing/HeroVisual';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -89,7 +90,29 @@ export function Hero() {
       <Container className="relative">
         {/* pt-24 clears the 64px fixed header with a little breathing room and
             no more, the previous pt-36 left a dead band under the nav. */}
-        <div className="grid items-start gap-12 pt-24 pb-20 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:pt-28 lg:pb-24">
+        {/*
+          THE MEDIA COLUMN IS THE WIDER ONE NOW, 2026-10-15. Rashid marked an
+          area on the hero and said the video window had to be it.
+
+          The video was already filling its track exactly — measured at 1920,
+          518.41px of element in a 518.41px column, nothing to centre. The
+          track was simply the NARROW one: `1.1fr_0.9fr` gave the copy 634px
+          and the animation 518px. Reversing the weighting and closing the
+          gutter from 4rem to 2.5rem spends both on the square: 1216px of
+          container, less a 40px gutter, splits 547 / 629. The animation grows
+          about 21% and the copy column is still wider than its own text
+          measure, so nothing in it rewraps badly.
+
+          IT MATTERS MORE HERE THAN THE NUMBER SUGGESTS, because the artwork is
+          a TALL PHONE CENTRED IN A SQUARE FRAME — about 44% of the frame's
+          width is empty margin baked into the file. Every pixel of column
+          width is therefore only worth 0.44 of a pixel of phone, which is why
+          518px of video read as a small phone. Cropping that margin away with
+          `object-fit: cover` would enlarge it far more and is deliberately NOT
+          done: the frame's outer edge carries the dotted arcs and the card
+          corners, and cover would cut them.
+        */}
+        <div className="grid items-start gap-12 pt-24 pb-20 lg:grid-cols-[1fr_1.15fr] lg:gap-10 lg:pt-28 lg:pb-24">
           <ParallaxLayer progress={progress} from={0} to={-96} className="lg:pt-6">
             <m.div variants={container} initial="hidden" animate="show">
               <m.div variants={item}>
@@ -167,10 +190,14 @@ export function Hero() {
           </ParallaxLayer>
 
           {/*
-            THE MEDIA SLOT — empty on purpose, 2026-10-14.
-            Rashid is supplying an animated video, one cut per theme, to sit
-            here. The column is kept so dropping it in is a one-component
-            change rather than a layout one.
+            THE MEDIA SLOT — filled, 2026-10-15. Rashid's 22-second looping
+            animation, one cut per theme. It was kept empty from 2026-10-14 so
+            that dropping it in would be a one-component change rather than a
+            layout one, and it was: this line is the whole integration.
+
+            `HeroVisual` renders NOTHING below `lg`, where this grid is a single
+            column — see the long note in that file for why a 1:1 decorative
+            video is the wrong thing to hand a phone.
 
             THE APPLY FORM USED TO LIVE HERE and has been removed, not moved:
             `/apply` already renders the same `ApplyForm`, and every call to
@@ -180,6 +207,7 @@ export function Hero() {
             breaks. The form component itself is untouched and still used by
             the route.
           */}
+          <HeroVisual />
         </div>
       </Container>
     </div>

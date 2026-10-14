@@ -1,0 +1,92 @@
+/*
+ * THE HERO VISUAL. The 22-second looping product animation that sits in the
+ * hero's right-hand column. Component CSS rather than a `wx-*` utility in
+ * `global.css`, because exactly one element in the product needs it and
+ * `global.css` belongs to another engineer this week.
+ *
+ * NO `filter` AND NO `backdrop-filter`, ANYWHERE IN HERE. `GLASS_PLAN.md` §1.2:
+ * either one makes the element the containing block for every `position: fixed`
+ * descendant, and `check-backdrop-ancestry.mjs` is in the build to keep that
+ * from coming back. The painted MP4's soft edge is therefore a `mask-image`,
+ * which is a compositing operation on this element's own pixels and creates no
+ * containing block. A `filter: blur()` on the wrapper would have been the
+ * obvious way to feather it and it is the one thing that cannot ship.
+ *
+ * NOTHING TRANSITIONS OR ANIMATES IN HERE EITHER (§4.3). The poster and the
+ * video's first frame are the same picture, so the browser's own swap from one
+ * to the other is already invisible and a crossfade would be paying for
+ * nothing.
+ */
+.wx-hero-visual {
+  /*
+   * THE FULL WIDTH OF THE GRID TRACK, AND NO CAP. The bundle shipped
+   * `max-width: 680px` here, written for a standalone test page where this was
+   * the only thing on screen. In a grid cell a cap is a way for the element to
+   * end up narrower than its own column, which is exactly the failure Rashid
+   * asked to rule out — so there is no cap at all: the track decides, and
+   * `Container`'s `max-w-7xl` already stops the track growing without limit.
+   * Measured at 1440 and 1280: 518.41px element in a 518.41px track, 0px
+   * either side.
+   */
+  width: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+/*
+ * IT SITS LOWER THAN THE TOP OF ITS COLUMN, 2026-10-15. The grid is
+ * `items-start`, so the slot pinned to the row's top and came out level with
+ * the "CREATOR APPLICATIONS OPEN" pill — Rashid: it "looks like it is floating
+ * above the copy rather than sitting beside it".
+ *
+ * A MARGIN HERE, NOT `self-center` ON THE GRID ITEM AND NOT A WRAPPER. The
+ * square is about 32rem at 1440 and the copy block beside it is about the same
+ * height, so `align-self: center` had almost nothing to centre and moved it
+ * perhaps a few pixels. And a wrapper element is worse than useless: this
+ * component renders NOTHING below `lg`, so an empty wrapper would still be a
+ * grid item and the hero's `gap-12` would open a dead 3rem band under the copy
+ * on every phone. The offset belongs on the element that only exists at `lg`.
+ *
+ * `items-start` on the grid is untouched — the left column's alignment is
+ * correct and other things lean on it.
+ */
+@media (min-width: 64rem) {
+  .wx-hero-visual {
+    /* 3rem, not 5: Rashid, 2026-10-15, "move video window a little up". The
+       square grew 21% when the media column widened, so its base already
+       reached the chip row from higher up. */
+    margin-block-start: 3rem;
+  }
+}
+
+.wx-hero-visual > img,
+.wx-hero-visual > video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* `contain`, not `cover`: the animation is composed as a square and cropping
+     it would cut the cards at the edges of the frame. */
+  object-fit: contain;
+}
+
+/*
+ * THE PAINTED CUT ONLY (Safari, iPhone, iPad). Those browsers cannot play a
+ * transparent video, so they get the MP4 with the page colour baked in — and a
+ * baked-in colour can never line up with the ground's rings and glows, so a
+ * hard rectangle would show against them. Fading the outer 7% of each edge to
+ * nothing hides the seam.
+ *
+ * THE COLOUR STOP IS A TOKEN BECAUSE EVERY COLOUR IN THIS PROJECT IS A TOKEN,
+ * but a mask reads only the ALPHA of this gradient — `--wx-text` is opaque in
+ * both themes, so what it resolves to never reaches a pixel. It is here so no
+ * raw hex lives in a component, not to paint anything.
+ */
+.wx-hero-visual > .is-painted {
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, var(--wx-text) 7%, var(--wx-text) 93%, transparent),
+    linear-gradient(to bottom, transparent, var(--wx-text) 7%, var(--wx-text) 93%, transparent);
+  mask-image:
+    linear-gradient(to right, transparent, var(--wx-text) 7%, var(--wx-text) 93%, transparent),
+    linear-gradient(to bottom, transparent, var(--wx-text) 7%, var(--wx-text) 93%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}

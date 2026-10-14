@@ -467,7 +467,7 @@
    * carries a bare `blur(28px)`. Ours had it exactly the other way round.
    */
   --wx-glass-blur: 5px;
-  --wx-glass-blur-chrome: 5px;
+  --wx-glass-blur-chrome: 14px;
   --wx-glass-blur-rail: 6px;
   --wx-glass-blur-scrim: 12px;
   --wx-glass-blur-phone: 9px;
@@ -958,7 +958,7 @@
   /* His ladder. See the dark block for why the phone value is not his, and for
      why his 32px modal blur is not here at all. */
   --wx-glass-blur: 5px;
-  --wx-glass-blur-chrome: 5px;
+  --wx-glass-blur-chrome: 14px;
   --wx-glass-blur-rail: 6px;
   --wx-glass-blur-scrim: 12px;
   --wx-glass-blur-phone: 9px;

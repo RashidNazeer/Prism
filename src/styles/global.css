@@ -884,6 +884,7 @@ body::after {
 @media (prefers-reduced-transparency: reduce), (prefers-reduced-motion: reduce), (forced-colors: active) {
   .wx-neo-raised,
   .wx-neo-raised-sm,
+  .wx-nav-blur,
   .wx-glass-chrome {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
@@ -957,6 +958,46 @@ body::after {
 
 @media (min-width: 768px) {
   .wx-glass-chrome {
+    backdrop-filter: blur(var(--wx-glass-blur-chrome));
+    -webkit-backdrop-filter: blur(var(--wx-glass-blur-chrome));
+  }
+}
+
+/*
+ * NAVIGATION BLURS; CARDS DO NOT. Rashid, 2026-10-15: "increase navbar's blur
+ * only".
+ *
+ * The landing nav wears `wx-neo-raised` because he asked for its fill and its
+ * transparency to match the cards EXACTLY, and that is still true. But it was
+ * borrowing the card material's blur too — so when the cards stopped blurring
+ * (27 backdrop-filters on one page was the scroll lag), the nav lost its blur
+ * with them. This brings it back as its own one-line opt-in, worn by the nav
+ * and by nothing else: fill from the card, blur from here. The two can now
+ * move independently, which is what "only" requires.
+ *
+ * IT EARNS ITS COST HERE AND NOT ON A CARD. The page scrolls UNDERNEATH this
+ * bar, so sharp content — body copy, a logo, a chart — passes directly beneath
+ * it and is what the blur is for. A card sits ON the background, and the
+ * background is already low-frequency, which is why blurring it was close to
+ * an identity operation.
+ *
+ * ONE LAYER. Legal under §1.2 because the nav is a SIBLING of the content
+ * column and never an ancestor of `.wurxbase-root`;
+ * `check-backdrop-ancestry.mjs` asserts that and `check-blur-budget.mjs`
+ * keeps the count honest.
+ */
+@utility wx-nav-blur {
+  /*
+   * The phone value below `md`, the same ladder `wx-glass-chrome` climbs.
+   * This is the one blur a phone pays at every width and it is deliberately
+   * NOT raised: the increase is for the machine that can afford it.
+   */
+  backdrop-filter: blur(var(--wx-glass-blur-phone));
+  -webkit-backdrop-filter: blur(var(--wx-glass-blur-phone));
+}
+
+@media (min-width: 768px) {
+  .wx-nav-blur {
     backdrop-filter: blur(var(--wx-glass-blur-chrome));
     -webkit-backdrop-filter: blur(var(--wx-glass-blur-chrome));
   }

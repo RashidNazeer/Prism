@@ -1,7 +1,7 @@
 import { Container, CountUp, Reveal } from '@/components/layout/Section';
 import { TiltCard, TiltLift } from '@/components/ui/TiltCard';
-import { STATS } from '@/content/site';
-import { BrandMarquee } from './BrandMarquee';
+import { TiltedGridHero } from '@/components/ui/TiltedGridHero';
+import { BRANDS, STATS } from '@/content/site';
 
 /*
  * HIS THREE, AS INK. THESE ARE ALREADY THE PALETTE.
@@ -33,18 +33,31 @@ import { BrandMarquee } from './BrandMarquee';
  */
 const BARS = ['bg-accent', 'bg-info', 'bg-success'] as const;
 
+/**
+ * The brand roster, as the curved band wants it. `h` carries straight
+ * through: it is the per-logo optical weighting the flat marquee used, and
+ * the band still honours the ratio between the values.
+ */
+const BRAND_MARKS = BRANDS.map((brand) => ({
+  src: brand.logo,
+  alt: brand.name,
+  h: brand.h,
+}));
+
 /** Social proof band: the brands we run, then the headline numbers. */
 export function TrustedBy() {
   return (
     <section id="brands" className="scroll-mt-20">
-      {/* Full-bleed: the marquee runs edge to edge, not inside the container. */}
+      {/* Full-bleed: the band runs edge to edge, not inside the container. */}
       <div className="py-9">
         <Container className="pb-7">
           <p className="text-faint text-center font-mono text-[0.6875rem] tracking-[0.18em] uppercase">
             Trusted by creators &amp; brands worldwide
           </p>
         </Container>
-        <BrandMarquee />
+        {/* The band is a size container, so its height has to be stated
+            rather than left to the content. */}
+        <TiltedGridHero images={BRAND_MARKS} className="h-52 w-full sm:h-60 lg:h-64" />
       </div>
 
       <Container className="pt-4 pb-16 sm:pb-20">
