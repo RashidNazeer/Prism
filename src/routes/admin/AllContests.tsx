@@ -382,7 +382,7 @@ function ContestRow({
         </span>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           {!row.brandIsActive ? (
-            <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+            <span className="wx-neo-raised text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
               Brand retired
             </span>
           ) : null}
@@ -471,7 +471,7 @@ function Panel({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="bg-surface-1 flex flex-col items-start gap-3 rounded-xl p-6 shadow-md sm:p-8">
+    <div className="wx-neo-raised flex flex-col items-start gap-3 rounded-xl p-6 shadow-md sm:p-8">
       <div className="wx-neo-inset grid size-[44px] place-items-center rounded-lg">
         <Trophy size={19} className="text-muted" aria-hidden />
       </div>

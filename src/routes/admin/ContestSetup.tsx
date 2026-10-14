@@ -625,7 +625,7 @@ export function ContestSetup() {
         </div>
 
         {contestFailed && !isNew ? (
-          <div className="bg-surface-1 flex flex-col items-start gap-3 rounded-xl p-8 shadow-md">
+          <div className="wx-neo-raised flex flex-col items-start gap-3 rounded-xl p-8 shadow-md">
             <h2 className="font-display text-text text-[1.3125rem] leading-tight font-bold">
               That contest could not be opened
             </h2>
@@ -648,7 +648,7 @@ export function ContestSetup() {
         ) : showSkeleton ? (
           <div className="wx-skeleton h-[420px] rounded-xl" />
         ) : showGone ? (
-          <div className="bg-surface-1 flex flex-col items-start gap-3 rounded-xl p-8 shadow-md">
+          <div className="wx-neo-raised flex flex-col items-start gap-3 rounded-xl p-8 shadow-md">
             <h2 className="font-display text-text text-[1.3125rem] leading-tight font-bold">
               There is no contest here any more
             </h2>
@@ -1414,7 +1414,7 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="bg-surface-1 flex flex-col gap-4 rounded-xl p-5 shadow-md">
+    <section className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5 shadow-md">
       <div>
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           {step ? <span className="text-accent">{step}. </span> : null}

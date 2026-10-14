@@ -351,14 +351,14 @@ export function AllOffers() {
             ))}
           </ul>
         ) : isError ? (
-          <div className="bg-surface-1 rounded-md px-6 py-14 text-center shadow-md">
+          <div className="wx-neo-raised rounded-md px-6 py-14 text-center shadow-md">
             <p className="font-semibold">That list would not load</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
-          <div className="bg-surface-1 rounded-md px-6 py-16 text-center shadow-md">
+          <div className="wx-neo-raised rounded-md px-6 py-16 text-center shadow-md">
             <Tag size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">No offers match that</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -526,12 +526,12 @@ function OfferCard({
               </span>
             ) : null}
             {offer.status === 'inactive' ? (
-              <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+              <span className="wx-neo-raised text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
                 Off
               </span>
             ) : null}
             {offer.brand && !offer.brand.is_active ? (
-              <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+              <span className="wx-neo-raised text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
                 Retired
               </span>
             ) : null}

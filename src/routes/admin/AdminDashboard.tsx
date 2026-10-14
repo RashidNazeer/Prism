@@ -121,7 +121,7 @@ export function AdminDashboard() {
       </ul>
 
       {/* ---------------------------------------------- waiting on them --- */}
-      <section className="bg-surface-1 mt-4 rounded-xl p-5 shadow-md">
+      <section className="wx-neo-raised mt-4 rounded-xl p-5 shadow-md">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Waiting on creators
@@ -191,7 +191,7 @@ export function AdminDashboard() {
 
       {/* ---------------------------------------------------------- at risk -- */}
       {risk && (risk.brands.length > 0 || risk.emptyOffers > 0 || risk.blocked > 0) ? (
-        <section className="bg-surface-1 mt-4 rounded-xl p-5 shadow-md">
+        <section className="wx-neo-raised mt-4 rounded-xl p-5 shadow-md">
           <h2 className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             <AlertTriangle size={14} aria-hidden className="text-faint" />
             Worth a look
@@ -297,7 +297,7 @@ export function AdminDashboard() {
       </section>
 
       {inbox && inbox.total === 0 ? (
-        <div className="bg-surface-1 mt-4 rounded-xl p-5 shadow-md">
+        <div className="wx-neo-raised mt-4 rounded-xl p-5 shadow-md">
           <p className="font-semibold">Nothing needs you right now.</p>
           <p className="text-muted mt-1.5 max-w-xl text-[0.875rem] leading-relaxed">
             A good moment to look at what is running: which brands are near their budget, and
@@ -334,7 +334,7 @@ function MoneyRow({ m, showCurrency }: { m: OpsMoney; showCurrency: boolean }) {
   if (m.total === 0) return null;
 
   return (
-    <section className="bg-surface-1 mt-4 rounded-xl p-5 shadow-md">
+    <section className="wx-neo-raised mt-4 rounded-xl p-5 shadow-md">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Committed across every brand{showCurrency ? ` (${m.currency})` : ''}

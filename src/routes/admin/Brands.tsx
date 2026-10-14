@@ -175,14 +175,14 @@ export function Brands() {
             ))}
           </ul>
         ) : isError ? (
-          <div className="bg-surface-1 rounded-xl px-6 py-14 text-center shadow-md">
+          <div className="wx-neo-raised rounded-xl px-6 py-14 text-center shadow-md">
             <p className="font-semibold">That list would not load</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
-          <div className="bg-surface-1 rounded-xl px-6 py-16 text-center shadow-md">
+          <div className="wx-neo-raised rounded-xl px-6 py-16 text-center shadow-md">
             <Store size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">
               {filters.search || filters.active !== 'active' || filters.budget !== 'any'
@@ -209,7 +209,7 @@ export function Brands() {
                 <li key={brand.id}>
                   <Link
                     to={`/admin/brands/${brand.id}`}
-                    className="bg-surface-1 flex h-full flex-col rounded-xl p-5 shadow-md transition-colors duration-200"
+                    className="wx-neo-raised flex h-full flex-col rounded-xl p-5 shadow-md transition-colors duration-200"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <span className="min-w-0">
@@ -219,7 +219,7 @@ export function Brands() {
                         </span>
                       </span>
                       {!brand.is_active ? (
-                        <span className="bg-surface-2 text-muted shrink-0 rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+                        <span className="wx-neo-raised text-muted shrink-0 rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
                           Retired
                         </span>
                       ) : null}
@@ -241,7 +241,7 @@ export function Brands() {
                             {money(brand.budget_allocated, brand.currency)}
                           </span>
                         </span>
-                        <span className="bg-surface-2 text-muted inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.75rem]">
+                        <span className="wx-neo-raised text-muted inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.75rem]">
                           <Tag size={12} aria-hidden />
                           <span className="wx-numeric">{c ? c.active : 0}</span> live
                           {c && c.total > c.active ? (

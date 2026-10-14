@@ -260,14 +260,14 @@ export function OfferRequests() {
             ))}
           </ul>
         ) : isError ? (
-          <div className="bg-surface-1 rounded-md px-6 py-14 text-center shadow-md">
+          <div className="wx-neo-raised rounded-md px-6 py-14 text-center shadow-md">
             <p className="font-semibold">That queue would not load</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
-          <div className="bg-surface-1 rounded-md px-6 py-16 text-center shadow-md">
+          <div className="wx-neo-raised rounded-md px-6 py-16 text-center shadow-md">
             <Handshake size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">
               {filters.status === 'pending' && !filters.search && !filters.brandId

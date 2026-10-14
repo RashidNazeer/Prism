@@ -140,7 +140,7 @@ export function ContestProducts({ contestId, brandId, selected, loading }: Props
   }
 
   return (
-    <section className="bg-surface-1 flex flex-col gap-4 rounded-xl p-5 shadow-md">
+    <section className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5 shadow-md">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
@@ -342,11 +342,11 @@ function StrayRow({
   onRemove: () => void;
 }) {
   return (
-    <div className="border-line bg-surface-1 flex min-h-[44px] flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border border-dashed p-4">
+    <div className="wx-neo-raised flex min-h-[44px] flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border-dashed p-4">
       <span className="min-w-0 flex-1 basis-40 text-[0.875rem] font-semibold break-words">
         {name}
       </span>
-      <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+      <span className="wx-neo-raised text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
         Hidden on the brand
       </span>
       <Button

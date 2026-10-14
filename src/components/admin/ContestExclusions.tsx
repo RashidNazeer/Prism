@@ -116,7 +116,7 @@ export function ContestExclusions({ contestId, rows, loading }: Props) {
   }
 
   return (
-    <section className="bg-surface-1 flex flex-col gap-4 rounded-xl p-5 shadow-md">
+    <section className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5 shadow-md">
       <div>
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Barred from this contest

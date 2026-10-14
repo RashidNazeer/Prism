@@ -220,7 +220,7 @@ function ContestRow({ contest, now }: { contest: Contest; now: number }) {
   return (
     <Link
       to={`/admin/brands/${contest.brandId}/contests/${contest.id}`}
-      className="ease-brand bg-surface-1 block rounded-xl p-5 shadow-md transition-colors"
+      className="ease-brand wx-neo-raised block rounded-xl p-5 shadow-md transition-colors"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
@@ -269,7 +269,7 @@ function Empty({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="bg-surface-1 flex flex-col items-start gap-3 rounded-xl p-8 shadow-md">
+    <div className="wx-neo-raised flex flex-col items-start gap-3 rounded-xl p-8 shadow-md">
       <div className="wx-neo-inset grid size-[44px] place-items-center rounded-lg">
         <Trophy size={19} className="text-muted" aria-hidden />
       </div>

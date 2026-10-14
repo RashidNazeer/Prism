@@ -290,7 +290,7 @@ export function ContestDeliverables({ contestId, currency, rows, loading }: Prop
   }
 
   return (
-    <section className="bg-surface-1 flex flex-col gap-4 rounded-xl p-5 shadow-md">
+    <section className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5 shadow-md">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
         <div>
           <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
@@ -427,7 +427,7 @@ function DeliverableCard({
               {askOf(row.type, row.targetValue, currency)}
             </span>
             {!row.isActive ? (
-              <span className="bg-surface-2 text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+              <span className="wx-neo-raised text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
                 Retired
               </span>
             ) : null}

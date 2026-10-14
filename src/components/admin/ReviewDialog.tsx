@@ -158,7 +158,7 @@ export function ReviewDialog({
             {targets.map((t) => (
               <li
                 key={t.id}
-                className="bg-surface-2 text-muted rounded-full px-2.5 py-1 text-[0.75rem]"
+                className="wx-neo-raised text-muted rounded-full px-2.5 py-1 text-[0.75rem]"
               >
                 @{t.handle}
               </li>

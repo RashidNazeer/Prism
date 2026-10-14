@@ -482,7 +482,7 @@ export function ContestRewardsQueue({
       </div>
 
       {/* ------------------------------------------------------ the list -- */}
-      <div className="bg-surface-1 flex flex-col gap-4 rounded-xl p-4 shadow-md sm:p-5">
+      <div className="wx-neo-raised flex flex-col gap-4 rounded-xl p-4 shadow-md sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
           <div>
             <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
@@ -631,7 +631,7 @@ export function ContestRewardsQueue({
 
       {/* ----------------------------------------------------- the action -- */}
       {view === 'owed' && chosen.length > 0 ? (
-        <div className="bg-surface-2 sticky bottom-3 z-10 flex flex-col gap-3 rounded-xl p-4 shadow-md sm:p-5">
+        <div className="wx-neo-raised sticky bottom-3 z-10 flex flex-col gap-3 rounded-xl p-4 shadow-md sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <p className="text-text text-[0.875rem] font-semibold">
               {chosen.length} reward{chosen.length === 1 ? '' : 's'},{' '}
@@ -757,7 +757,7 @@ function MoneyCard({
   hint: string;
 }) {
   return (
-    <div className="bg-surface-1 rounded-xl p-5 shadow-md">
+    <div className="wx-neo-raised rounded-xl p-5 shadow-md">
       <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         {label}
       </span>

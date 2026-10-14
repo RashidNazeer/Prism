@@ -101,7 +101,7 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
         <div
           role="tablist"
           aria-label="Filter creators"
-          className="bg-surface-2 flex min-w-max gap-1 rounded-xl p-[3px]"
+          className="wx-neo-raised flex min-w-max gap-1 rounded-xl p-[3px]"
         >
           {TABS.map((t) => (
             <button
@@ -183,7 +183,7 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
           onRetry={() => refetch()}
         />
       ) : rows.length === 0 ? (
-        <div className="bg-surface-1 mt-4 rounded-xl px-6 py-16 text-center shadow-md">
+        <div className="wx-neo-raised mt-4 rounded-xl px-6 py-16 text-center shadow-md">
           <Users size={26} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">
             {filtered ? 'Nobody matches that' : 'Nobody has asked yet'}
@@ -262,7 +262,7 @@ function RosterCard({ row, face }: { row: RosterRow; face: string | undefined })
   ];
 
   return (
-    <div className="bg-surface-1 rounded-xl p-4 shadow-md sm:p-5">
+    <div className="wx-neo-raised rounded-xl p-4 shadow-md sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-x-5 gap-y-3">
         <CreatorFace
           src={face}

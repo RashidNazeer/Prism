@@ -53,7 +53,7 @@ export function BrandBriefs({ brandId, brandName }: { brandId: string; brandName
           onRetry={() => refetch()}
         />
       ) : rows.length === 0 ? (
-        <div className="bg-surface-1 mt-4 rounded-xl px-6 py-12 text-center shadow-md">
+        <div className="wx-neo-raised mt-4 rounded-xl px-6 py-12 text-center shadow-md">
           <ClipboardList size={24} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">No brief yet</p>
           <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -130,7 +130,7 @@ function BriefCard({ brief, onEdit }: { brief: BrandBrief; onEdit: () => void })
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="min-w-0 text-lg font-bold break-words">{brief.title}</h3>
         {!brief.is_active ? (
-          <span className="bg-surface-2 text-muted rounded-full px-2.5 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+          <span className="wx-neo-raised text-muted rounded-full px-2.5 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
             Hidden from creators
           </span>
         ) : null}

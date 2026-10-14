@@ -165,7 +165,7 @@ export function BrandHub() {
 
   if (!brand) {
     return (
-      <div className="bg-surface-1 rounded-xl p-8 text-center shadow-md">
+      <div className="wx-neo-raised rounded-xl p-8 text-center shadow-md">
         <p className="font-semibold">No such brand</p>
         <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
           It may have been removed. Nothing else is affected.
@@ -209,7 +209,7 @@ export function BrandHub() {
         </h2>
 
         {!brand.is_active ? (
-          <span className="bg-surface-2 text-muted rounded-full px-2.5 py-1 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+          <span className="wx-neo-raised text-muted rounded-full px-2.5 py-1 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
             Retired
           </span>
         ) : null}
@@ -335,7 +335,7 @@ function Overview({ brand, onEdit }: { brand: Brand; onEdit: () => void }) {
 
       {/* Budget first, because it is the only fact here that changes on its own
           and the only one with a consequence. Everything below is reference. */}
-      <div className="bg-surface-1 rounded-xl px-5 py-4 shadow-md">
+      <div className="wx-neo-raised rounded-xl px-5 py-4 shadow-md">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Budget committed to creators
@@ -451,7 +451,7 @@ function MoneyByStage({ m, showCurrency }: { m: BrandMoney; showCurrency: boolea
   ];
 
   return (
-    <section className="bg-surface-1 rounded-xl p-5 shadow-md">
+    <section className="wx-neo-raised rounded-xl p-5 shadow-md">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Where the committed money has got to
@@ -523,7 +523,7 @@ function ContentLanded({ content }: { content: BrandContent | undefined }) {
   ];
 
   return (
-    <section className="bg-surface-1 rounded-xl p-5 shadow-md">
+    <section className="wx-neo-raised rounded-xl p-5 shadow-md">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           What has been filmed for this brand
@@ -690,7 +690,7 @@ function Offers({
           onRetry={onRetry}
         />
       ) : offers.length === 0 ? (
-        <div className="bg-surface-1 mt-4 rounded-xl px-6 py-14 text-center shadow-md">
+        <div className="wx-neo-raised mt-4 rounded-xl px-6 py-14 text-center shadow-md">
           <Ticket size={26} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">
             {filtered ? 'Nothing matches that' : 'No offers yet'}
@@ -778,7 +778,7 @@ function OfferCard({ offer, onEdit }: { offer: Offer; onEdit: () => void }) {
           </span>
         ) : null}
         {offer.status === 'inactive' ? (
-          <span className="bg-surface-2 text-muted rounded-full px-2.5 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+          <span className="wx-neo-raised text-muted rounded-full px-2.5 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
             Inactive
           </span>
         ) : null}

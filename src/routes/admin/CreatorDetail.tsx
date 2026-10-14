@@ -91,7 +91,7 @@ export function CreatorDetail() {
   if (isError || !creator) {
     return (
       <>
-        <div className="bg-surface-1 max-w-lg rounded-xl p-8 text-center shadow-md">
+        <div className="wx-neo-raised max-w-lg rounded-xl p-8 text-center shadow-md">
           <p className="font-semibold">No such creator</p>
           <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
             The account may have been closed. Nothing else is affected.
@@ -142,7 +142,7 @@ export function CreatorDetail() {
           </span>
         ) : null}
         {!creator.is_active ? (
-          <span className="bg-surface-2 text-muted rounded-full px-2.5 py-1 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+          <span className="wx-neo-raised text-muted rounded-full px-2.5 py-1 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
             Suspended
           </span>
         ) : null}
@@ -155,7 +155,7 @@ export function CreatorDetail() {
           { label: 'Awaiting payment', value: mine?.due ?? 0, text: 'text-stage-due' },
           { label: 'Paid', value: mine?.paid ?? 0, text: 'text-stage-paid' },
         ].map((c) => (
-          <div key={c.label} className="bg-surface-1 rounded-xl px-5 py-4 shadow-md">
+          <div key={c.label} className="wx-neo-raised rounded-xl px-5 py-4 shadow-md">
             <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
               {c.label}
             </dt>
@@ -212,7 +212,7 @@ function WorkTab({ jobs, loading }: { jobs: CreatorJob[]; loading: boolean }) {
 
   if (jobs.length === 0) {
     return (
-      <div className="bg-surface-1 mt-5 rounded-xl px-6 py-16 text-center shadow-md">
+      <div className="wx-neo-raised mt-5 rounded-xl px-6 py-16 text-center shadow-md">
         <Video size={26} aria-hidden className="text-faint mx-auto" />
         <p className="mt-4 font-semibold">Nothing taken yet</p>
         <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -231,7 +231,7 @@ function WorkTab({ jobs, loading }: { jobs: CreatorJob[]; loading: boolean }) {
         const standing = standingFor(job.stage_updated_at);
 
         return (
-          <li key={job.id} className="bg-surface-1 rounded-xl p-4 shadow-md sm:p-5">
+          <li key={job.id} className="wx-neo-raised rounded-xl p-4 shadow-md sm:p-5">
             <div className="flex flex-wrap items-start justify-between gap-x-5 gap-y-2">
               <div className="min-w-0 flex-1 basis-52">
                 <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
@@ -316,7 +316,7 @@ function HistoryTab({ creatorId }: { creatorId: string }) {
   return (
     <div className="mt-5">
       {(rows ?? []).length === 0 ? (
-        <div className="bg-surface-1 rounded-xl px-6 py-14 text-center shadow-md">
+        <div className="wx-neo-raised rounded-xl px-6 py-14 text-center shadow-md">
           <History size={26} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">Nothing recorded yet</p>
         </div>

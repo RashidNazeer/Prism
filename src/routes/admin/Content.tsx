@@ -223,14 +223,14 @@ export function AdminContent() {
                 ))}
               </ul>
             ) : isError ? (
-              <div className="bg-surface-1 rounded-xl px-6 py-14 text-center shadow-md">
+              <div className="wx-neo-raised rounded-xl px-6 py-14 text-center shadow-md">
                 <p className="font-semibold">That would not load</p>
                 <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
                   {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
                 </p>
               </div>
             ) : rows.length === 0 ? (
-              <div className="bg-surface-1 rounded-xl px-6 py-16 text-center shadow-md">
+              <div className="wx-neo-raised rounded-xl px-6 py-16 text-center shadow-md">
                 <Video size={26} aria-hidden className="text-faint mx-auto" />
                 <p className="mt-4 font-semibold">Nothing here</p>
                 <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -344,7 +344,7 @@ function ByBrand({
   const most = Math.max(...rows.map((r) => r.all), 1);
 
   return (
-    <section className="bg-surface-1 flex flex-col gap-[14px] rounded-xl p-5 shadow-md">
+    <section className="wx-neo-raised flex flex-col gap-[14px] rounded-xl p-5 shadow-md">
       <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         Where it is coming from
       </h2>
@@ -417,7 +417,7 @@ function Board({ counts }: { counts: ContentTotals }) {
   ];
 
   return (
-    <section className="bg-surface-1 flex flex-col gap-5 rounded-xl p-[clamp(18px,2.4vw,26px)] shadow-md">
+    <section className="wx-neo-raised flex flex-col gap-5 rounded-xl p-[clamp(18px,2.4vw,26px)] shadow-md">
       <div className="flex flex-col gap-1">
         <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Videos posted
