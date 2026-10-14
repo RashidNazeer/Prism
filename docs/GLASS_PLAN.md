@@ -293,6 +293,38 @@ not a preference:**
 The 75px height clears the 44px tap floor comfortably; that part is already
 right.
 
+### 4.5 The card: lit edges, and one trap worth keeping
+
+A third reference (2026-10-14) supplies the **card** material, and its good idea
+is the one to carry forward: a 1px `::before` across the top fading in and out,
+and a 1px `::after` down the left fading out — **a light source at top-left
+catching two edges**. That is the same direction the neomorphic layer already
+used and the same logic as the button's opposing inset highlights, so the whole
+system agrees about where the light comes from. Adopted, as `Surface`'s rim.
+
+Adopted with it: `blur(10px)` — in the same cheap band as the css.glass 8.9px
+and far below the mock's 22px — and `radius: 20px`, which rounds to the card
+value in §0.
+
+**NOT adopted, and one of them is a bug.** `inset 0 0 32px 16px
+rgba(255,255,255,1.6)` — **alpha above 1 is invalid and clamps**. Chromium
+resolves it to `rgb(255, 255, 255)`: a fully opaque white inner glow, 32px blur,
+**16px spread**. Rendered side by side against the same ground, it floods about
+40px of every edge, swamps the very `::before`/`::after` rim the recipe exists to
+draw, and turns the card into a frosted white blob. Corrected to `0.16` it is
+clean glass. Anyone copying this snippet gets the flood and will blame the
+backdrop-filter.
+
+Also dropped: the fixed `240px × 360px`, which is not responsive, and the
+`rgba(255,255,255,0.11)` fill, which the floor in §4.1 governs.
+
+**A correction to §4.4 while this is in view.** WCAG 1.4.11's 3:1 applies to
+user-interface components and meaningful graphics — **not to a decorative card
+edge**. So a `rgba(255,255,255,0.3)` rim is perfectly legal on a `Surface`, and
+the 3:1 requirement binds on `Button`, inputs, and anything focusable. Treating
+every edge as a control boundary would make the whole material heavier than it
+needs to be, for no accessibility gain.
+
 **One primitive, used everywhere.** This becomes `Button` and `Surface` in
 `src/components/ui/`, built once, and is the only legal way to draw a button or
 a card anywhere in the product — creator, admin, public. It is not reimplemented
