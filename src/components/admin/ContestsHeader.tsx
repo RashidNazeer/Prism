@@ -85,7 +85,7 @@ export function ContestsHeader({ subtitle }: { subtitle?: string }) {
         <button
           type="button"
           onClick={() => setPicking(true)}
-          className="wx-gradient text-on-accent ease-brand ml-auto inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md px-4 text-[0.8125rem] font-semibold shadow-sm transition-all duration-200 hover:shadow-md active:translate-y-px"
+          className="wx-gradient text-on-accent ease-brand ml-auto inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md px-4 text-[0.8125rem] font-semibold shadow-sm transition-[transform,opacity,background-color,border-color,color] duration-200 hover:shadow-md active:translate-y-px"
         >
           <Plus size={16} aria-hidden />
           New contest

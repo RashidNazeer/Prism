@@ -427,7 +427,7 @@ export function PostContentDialog({
                 >
                   <span
                     className={cn(
-                      'absolute top-0.5 size-5 rounded-full bg-white shadow-sm transition-all duration-200',
+                      'absolute top-0.5 size-5 rounded-full bg-white shadow-sm transition-[transform,opacity,background-color,border-color,color] duration-200',
                       authorized ? 'left-[1.375rem]' : 'left-0.5'
                     )}
                   />

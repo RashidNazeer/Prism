@@ -10,7 +10,16 @@ import { cn } from '@/lib/utils';
 const button = cva(
   [
     'inline-flex items-center justify-center gap-2 whitespace-nowrap',
-    'font-medium transition-all duration-200 ease-brand',
+    /*
+     * NOT `transition-all`. Tailwind's `all` expands to every animatable
+     * property, which silently includes `filter`, `backdrop-filter` and
+     * `box-shadow` — the three things GLASS_PLAN.md §4.3 forbids animating,
+     * because each one re-rasterises the element every frame rather than
+     * riding the compositor. On a glass button that is the difference between
+     * a hover and a stutter. The list is explicit so adding a shadow or a blur
+     * to this component later cannot quietly opt it back in.
+     */
+    'font-medium transition-[transform,opacity,background-color,border-color,color] duration-200 ease-brand',
     'disabled:pointer-events-none disabled:opacity-50',
     // Keyboard focus needs its own indicator: the neo shadows are the only
     // other "edge", and they say nothing about which control has focus. An

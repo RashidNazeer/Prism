@@ -109,7 +109,9 @@
     "verify:deal-complete": "node scripts/check-deal-complete.mjs",
     "verify:video-thumbs": "node scripts/check-video-thumbs.mjs",
     "verify:contract-pdf": "node scripts/check-contract-pdf.mjs",
-    "verify:brand-visibility": "node scripts/check-brand-visibility.mjs"
+    "verify:brand-visibility": "node scripts/check-brand-visibility.mjs",
+    "verify:backdrop-ancestry": "node scripts/check-backdrop-ancestry.mjs",
+    "verify:blur-budget": "node scripts/check-blur-budget.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",

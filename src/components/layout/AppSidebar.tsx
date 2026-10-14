@@ -221,7 +221,7 @@ export function AppSidebar({
             title={collapsed ? create.label : undefined}
             className={cn(
               'wx-gradient text-on-accent ease-brand flex min-h-[44px] items-center justify-center gap-2',
-              'rounded-xl text-[0.8125rem] font-semibold shadow-md transition-all duration-300',
+              'rounded-xl text-[0.8125rem] font-semibold shadow-md transition-[transform,opacity,background-color,border-color,color] duration-300',
               'hover:shadow-lg active:translate-y-px',
               collapsed ? 'w-full px-0' : 'w-full px-4'
             )}
@@ -396,7 +396,7 @@ function NavRow({
   const base = cn(
     'ease-brand relative flex min-h-[44px] items-center gap-2.5 rounded-lg py-2 text-[0.8125rem]',
     'sm:min-h-[34px] sm:py-1.5',
-    'transition-all duration-200',
+    'transition-[transform,opacity,background-color,border-color,color] duration-200',
     collapsed ? 'justify-center px-0' : 'px-3'
   );
 

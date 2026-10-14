@@ -101,7 +101,7 @@ export function OAuthTikTokCallback() {
             ) : null}
             <Link
               to="/admin/tiktok"
-              className="wx-gradient text-on-accent ease-brand mt-6 inline-flex min-h-[44px] items-center rounded-md px-5 text-[0.875rem] font-semibold transition-all duration-200"
+              className="wx-gradient text-on-accent ease-brand mt-6 inline-flex min-h-[44px] items-center rounded-md px-5 text-[0.875rem] font-semibold transition-[transform,opacity,background-color,border-color,color] duration-200"
             >
               Map the accounts to brands
             </Link>
