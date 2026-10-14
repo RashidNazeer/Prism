@@ -35,28 +35,28 @@
    * about 255 degrees to about 240, and both steps sit closer to the page.
    */
   --wx-bg: #202024; /* page background */
-  --wx-surface-1: #292930; /* cards, panels */
-  --wx-surface-2: #32323A; /* hover, nested cards */
-  --wx-surface-3: #1A1A1E; /* wells, inputs */
-  --wx-field: #1A1A1E; /* what you type into · a well on dark */
+  --wx-surface-1: #2B2B2E; /* cards, panels */
+  --wx-surface-2: #343437; /* hover, nested cards */
+  --wx-surface-3: #1C1C1E; /* wells, inputs */
+  --wx-field: #1C1C1E; /* what you type into · a well on dark */
 
   /* Text, all verified >= 4.5:1 on EVERY surface, --wx-bg to --wx-surface-3 */
   --wx-text: #F4F4FA; /* 16.97:1 */
-  --wx-text-muted: #ababbb; /*  6.38:1 */
-  --wx-text-faint: #9e9eb0; /*  5.73:1 */
+  --wx-text-muted: #adadbc; /*  6.38:1 */
+  --wx-text-faint: #a0a0b1; /*  5.73:1 */
   --wx-text-inverse: #202024;
 
   /* Borders, subtle is decorative only; interactive is for inputs/buttons */
   --wx-border: #2E3042;
   --wx-border-strong: #3E4157;
-  --wx-border-interactive: #70708e; /* >= 3:1 on bg, for focusable controls */
+  --wx-border-interactive: #727290; /* >= 3:1 on bg, for focusable controls */
 
   /* Accent 2, violet: the kit's PRIMARY INTERACTIVE colour, and the only thing violet is for. */
-  --wx-accent: #9a91e5; /* 6.87:1 on bg */
+  --wx-accent: #9b93e6; /* 6.87:1 on bg */
   --wx-accent-hover: #a29aea; /* 8.35:1 */
   --wx-accent-active: #b8b2ef;
-  --wx-accent-soft: rgba(154, 145, 229, 0.12);
-  --wx-accent-ring: rgba(154, 145, 229, 0.45);
+  --wx-accent-soft: rgba(155, 147, 230, 0.12);
+  --wx-accent-ring: rgba(155, 147, 230, 0.45);
   /* What a FILLED accent button casts. Tinted with the accent, not ink, so a
      violet button reads as lit rather than as grubby. See wx-neo-accent. */
   --wx-accent-shadow: rgba(168, 120, 255, 0.28);
@@ -96,12 +96,12 @@
    * the money bar looked like one block. This ramp also says something true.
    * Green is in your account, amber is about to be, indigo is still moving.
    */
-  --wx-stage-live: #629bef;
-  --wx-stage-live-soft: rgba(98, 155, 239, 0.14);
-  --wx-stage-due: #cf8d11;
-  --wx-stage-due-soft: rgba(207, 141, 17, 0.14);
-  --wx-stage-paid: #13ae9e;
-  --wx-stage-paid-soft: rgba(19, 174, 158, 0.14);
+  --wx-stage-live: #669df0;
+  --wx-stage-live-soft: rgba(102, 157, 240, 0.14);
+  --wx-stage-due: #d28f11;
+  --wx-stage-due-soft: rgba(210, 143, 17, 0.14);
+  --wx-stage-paid: #13afa0;
+  --wx-stage-paid-soft: rgba(19, 175, 160, 0.14);
 
   /*
    * THE SPECTRUM, FOR MARKS ON A CHART ONLY.
@@ -122,41 +122,41 @@
    * apart: that takes two clearly different hues and a direct label, which is
    * what `PerformanceChart` does.
    */
-  --wx-chart-1: #9a91e5;
-  --wx-chart-2: #6ba1f0;
-  --wx-chart-3: #14b3a3;
-  --wx-chart-4: #9999af;
+  --wx-chart-1: #9b93e6;
+  --wx-chart-2: #6fa3f1;
+  --wx-chart-3: #14b5a5;
+  --wx-chart-4: #9a9ab0;
   /* Volume bars sit UNDER the line and must never compete with it. */
   --wx-chart-bar: rgba(168, 120, 255, 0.36);
   --wx-chart-bar-peak: rgba(23, 224, 212, 0.85);
   --wx-chart-grid: rgba(255, 255, 255, 0.08);
 
   /* Semantic, all >= 4.5:1 on bg */
-  --wx-success: #14b3a3;
-  --wx-success-soft: rgba(20, 179, 163, 0.12);
-  --wx-danger: #ee8078;
-  --wx-danger-soft: rgba(238, 128, 120, 0.12);
-  --wx-warning: #cf8d11;
+  --wx-success: #14b5a5;
+  --wx-success-soft: rgba(20, 181, 165, 0.12);
+  --wx-danger: #ef827a;
+  --wx-danger-soft: rgba(239, 130, 122, 0.12);
+  --wx-warning: #d28f11;
   /* Was a gold `rgba(240,180,41,.14)` — the last live Wurx gold in the dark
      palette, and it sat UNDER a magenta `--wx-warning`, so every warning was a
      pink word on a yellow wash. Now the tint of its own ink. */
-  --wx-warning-soft: rgba(207, 141, 17, 0.12);
-  --wx-info: #6ba1f0;
-  --wx-info-soft: rgba(107, 161, 240, 0.12);
+  --wx-warning-soft: rgba(210, 143, 17, 0.12);
+  --wx-info: #6fa3f1;
+  --wx-info-soft: rgba(111, 163, 241, 0.12);
 
   /* EUKA creator tiers, L0 to L7. The hue per tier is Euka's own (blue, violet,
      teal, green, lime, amber, orange), because the team reads these tiers in
      Euka all day. Each ink is proven against ITS OWN chip, a 12% tint on a
      card, by check-contrast: a colour that passes on the page can fail on a
      tint. Rashid, 2026-09-16. */
-  --wx-tier-0: #9f9fb1;
-  --wx-tier-1: #2fb2a5;
-  --wx-tier-2: #33aec1;
-  --wx-tier-3: #7da3dd;
-  --wx-tier-4: #8f9de1;
-  --wx-tier-5: #959be3;
-  --wx-tier-6: #9f97e3;
-  --wx-tier-7: #b092e2;
+  --wx-tier-0: #a1a1b2;
+  --wx-tier-1: #30b4a7;
+  --wx-tier-2: #34b1c4;
+  --wx-tier-3: #7fa5dd;
+  --wx-tier-4: #92a0e2;
+  --wx-tier-5: #999ee4;
+  --wx-tier-6: #a29ae4;
+  --wx-tier-7: #b295e3;
 
   /* The performance sheet.
      A grid of a hundred creators by ten months is read by scanning, so its
@@ -281,10 +281,10 @@
    * glass because of the rim lights and the blur, not because of a white wash.
    * This is the floor in GLASS_PLAN.md §4.1, applied.
    */
-  --wx-glass-fill: rgba(28, 29, 42, 0.62);
-  --wx-glass-fill-hover: rgba(36, 38, 54, 0.78);
-  --wx-glass-well: rgba(16, 16, 24, 0.66);
-  --wx-glass-panel: rgba(28, 29, 42, 0.62);
+  --wx-glass-fill: rgba(43, 43, 46, 0.66);
+  --wx-glass-fill-hover: rgba(52, 52, 56, 0.72);
+  --wx-glass-well: rgba(26, 26, 28, 0.66);
+  --wx-glass-panel: rgba(43, 43, 46, 0.58);
   --wx-glass-line: rgba(255, 255, 255, 0.1);
   --wx-glass-edge: rgba(255, 255, 255, 0.14);
   /* The two lit edges: a light source above and to the left. Same direction the
@@ -302,6 +302,43 @@
      alpha it is the thing that makes the pane read as thick rather than as a
      tinted rectangle. Dark takes a quarter of light's: white glow on near-black
      reads as haze long before it reads as glass. */
+  /*
+   * SOLID CONTROLS GET A MOULD, NOT THE GLASS GLOW.
+   *
+   * `--wx-glass-inner` carries a broad white inner halo, which is what gives a
+   * translucent pane its thickness. On a SATURATED FILL the same halo washes
+   * the edges and the button reads as blurred — Rashid: "the buttons feel funny
+   * in light mode." A solid surface is not glass; it is a dome. So it gets one
+   * crisp highlight along the top edge where the light falls and one shade
+   * along the bottom where it does not, and no glow at all.
+   */
+  /*
+   * THE BRAND COLOURS AS FILLS, EXACTLY AS GIVEN. Rashid: "the ones I gave you
+   * must only be the colours to be used."
+   *
+   * These three are his hexes, unmodified, and they are what every solid
+   * control is painted in. The label on them is INK, because that is the only
+   * way a pastel can carry text: #C3BEF0 reaches 1.53:1 against the page and
+   * 1.76:1 against white, where the floor is 4.5. Ink on the pastel is 10.1:1.
+   *
+   * So the rule across the app is: his three colours are FILLS, and text on
+   * them is ink. Where a colour has to BE text — a link, a small label — it is
+   * his hue darkened until it is legible, because a 1.76:1 link is not a style
+   * choice, it is an unreadable one.
+   */
+  --wx-brand-mint: #defcf9;
+  --wx-brand-sky: #cadefc;
+  --wx-brand-peri: #c3bef0;
+  --wx-accent-fill: #c3bef0;
+  /* Hover and active are the same hue stepped down, NOT a `brightness()`
+     filter: a filter on a control is one more element creating a containing
+     block, and it is not in the transition property list so it would jump
+     rather than ease. */
+  --wx-accent-fill-hover: #b3ace9;
+  --wx-accent-fill-active: #a399e1;
+  --wx-on-accent-fill: #1a1b26;
+  --wx-solid-inner:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 rgba(0, 0, 0, 0.3);
   --wx-glass-inner:
     inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(255, 255, 255, 0.04),
     inset 0 0 10px 5px rgba(255, 255, 255, 0.045);
@@ -360,10 +397,28 @@
    * paints it carries no hex of its own, and so the two themes differ by a
    * value rather than by a branch.
    */
+  /*
+   * THE PHOTOGRAPH, EDITED FOR DARK BY A VEIL RATHER THAN A FILTER.
+   *
+   * The source is a 4447x6670 JPEG of white architectural waves; it ships as a
+   * 1600x2400 webp at 32 KB, re-encoded through the Chromium that Playwright
+   * already installs so no image library joined the dependency list for one
+   * asset.
+   *
+   * A near-opaque flat veil over it is what makes it dark, NOT `filter:
+   * brightness()`. A filter on `body` would make it the containing block for
+   * every fixed overlay in the vendored admin app — the 3,413px bug — and
+   * §4.3 forbids it anyway. A veil costs one composite and breaks nothing.
+   *
+   * THE VEIL'S ALPHA IS THE CONTRAST BUDGET, not a taste setting. At 0.95 the
+   * white photo composites to about #2B2B2D, luminance 0.025, just under the
+   * 0.0264 ceiling that `--wx-text-faint` needs to clear 4.5:1 on the page.
+   * Lower it and the waves get prettier and the faint text on a bare page
+   * stops being legible. That trade is the whole of §4.1.
+   */
   --wx-ground:
-    radial-gradient(ellipse at 4% 52%, #715a9120, transparent 35%),
-    radial-gradient(ellipse at 94% 75%, #58789b18, transparent 40%),
-    linear-gradient(125deg, #202024, #202022 65%, #22232a);
+    linear-gradient(0deg, #202024f2, #202024f2),
+    url('/brand/glass-waves.webp');
   --wx-scene-opacity: 0.46;
   --wx-scene-light-opacity: 0.24;
 
@@ -587,6 +642,34 @@
     rgba(255, 255, 255, 0.35)
   );
   /* See the dark block. Light carries the glow at its reference strength. */
+  /* See the dark block. Paper takes a stronger highlight and a softer shade. */
+  /*
+   * THE BRAND COLOURS AS FILLS, EXACTLY AS GIVEN. Rashid: "the ones I gave you
+   * must only be the colours to be used."
+   *
+   * These three are his hexes, unmodified, and they are what every solid
+   * control is painted in. The label on them is INK, because that is the only
+   * way a pastel can carry text: #C3BEF0 reaches 1.53:1 against the page and
+   * 1.76:1 against white, where the floor is 4.5. Ink on the pastel is 10.1:1.
+   *
+   * So the rule across the app is: his three colours are FILLS, and text on
+   * them is ink. Where a colour has to BE text — a link, a small label — it is
+   * his hue darkened until it is legible, because a 1.76:1 link is not a style
+   * choice, it is an unreadable one.
+   */
+  --wx-brand-mint: #defcf9;
+  --wx-brand-sky: #cadefc;
+  --wx-brand-peri: #c3bef0;
+  --wx-accent-fill: #c3bef0;
+  /* Hover and active are the same hue stepped down, NOT a `brightness()`
+     filter: a filter on a control is one more element creating a containing
+     block, and it is not in the transition property list so it would jump
+     rather than ease. */
+  --wx-accent-fill-hover: #b3ace9;
+  --wx-accent-fill-active: #a399e1;
+  --wx-on-accent-fill: #1a1b26;
+  --wx-solid-inner:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(0, 0, 0, 0.16);
   --wx-glass-inner:
     inset 0 1px 0 rgba(255, 255, 255, 0.75), inset 0 -1px 0 rgba(255, 255, 255, 0.3),
     inset 0 0 10px 5px rgba(255, 255, 255, 0.5);
@@ -618,10 +701,16 @@
   --wx-texture-opacity: 0.055;
 
   /* See the dark block. His light ramp, unchanged. */
+  /*
+   * Light keeps his two tints over the same photograph, with a much lighter
+   * veil — the picture is already white, so paper needs it held down rather
+   * than darkened. See the dark block for why the alpha is a contrast budget.
+   */
   --wx-ground:
     radial-gradient(ellipse at 5% 40%, #b29dd52b, transparent 40%),
     radial-gradient(ellipse at 92% 60%, #a7c2df30, transparent 42%),
-    linear-gradient(125deg, #e1dfe9, #d7dfe9);
+    linear-gradient(0deg, #dcdee9a6, #dcdee9a6),
+    url('/brand/glass-waves.webp');
   --wx-scene-opacity: 0.5;
   --wx-scene-light-opacity: 0.7;
 

@@ -65,7 +65,10 @@ export function Hero() {
           lags the page: the slowest layer, which is what reads as far away. */}
       <ParallaxLayer progress={progress} from={0} to={260} className="absolute inset-0">
         <div aria-hidden className="pointer-events-none absolute inset-0">
-          <HaloBackdrop className="absolute inset-0" />
+          {/* FIXED, not absolute. Mounted `absolute inset-0` this ended at the fold
+            and the rest of the landing page fell back to flat colour. Fixed and
+            at -z-10 it spans the whole document, which is what the design is. */}
+          <HaloBackdrop className="pointer-events-none fixed inset-0 -z-10" />
         </div>
       </ParallaxLayer>
       <div

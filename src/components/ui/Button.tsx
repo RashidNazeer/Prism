@@ -14,8 +14,11 @@ import { cn } from '@/lib/utils';
  *                surface-1, light mode toward white; they are inverses, not
  *                tints of each other.
  *   the HAIRLINE a 0.0625rem border in `--wx-glass-edge`, the one real edge.
- *   the HIGHLIGHT `--wx-glass-inner`: an inset line along the top and a fainter
- *                one along the bottom, so the face has a direction.
+ *   the HIGHLIGHT an inset line along the top and a fainter one along the
+ *                bottom, so the face has a direction. `--wx-glass-inner` on the
+ *                translucent variant; `--wx-solid-inner` on `primary`, because
+ *                the accent fill is a dome rather than a pane and the glass
+ *                token's inner glow would frost a 2.25rem pill edge to edge.
  *   the SEAT     `inset 0 0 0.125rem` of the same edge colour, which is what
  *                stops the fill reading as a flat swatch dropped on the page.
  *   the LIFT     `--wx-glass-lift` beneath it, `--wx-glass-lift-hover` on hover.
@@ -81,8 +84,12 @@ const EDGE = [
    * with the button; the padding does not. At `1rem` the catch dies 16px along
    * the diagonal and the nearest glyph starts at 24px on the tightest size
    * (`sm`), so the label always sits on undiluted fill and §4.1's floor holds
-   * for the text as well as the face. Re-measured off rendered pixels at all
-   * four sizes, narrow and full-width: 5.60–5.71:1 light, 5.84:1 dark.
+   * for the text as well as the face. Verified off rendered pixels at all four
+   * sizes, narrow and full-width, in both themes: every pixel under the label
+   * is the fill itself, so the label's contrast is the token pair's and nothing
+   * this component draws can erode it. A ratio is not quoted here on purpose —
+   * the accent is also written at runtime by `brand-theme.ts`, so the number
+   * belongs to the palette, not to the material.
    *
    * `pointer-events-none` because it covers the whole control.
    */
@@ -121,8 +128,17 @@ const button = cva(
      * riding the compositor. On a glass button that is the difference between
      * a hover and a stutter. The list is explicit so adding a shadow or a blur
      * to this component later cannot quietly opt it back in.
+     *
+     * `translate` AND `scale` ARE IN THE LIST BECAUSE TAILWIND 4 STOPPED
+     * WRITING `transform`. `-translate-y-*` and `scale-*` now compile to the
+     * individual `translate` and `scale` properties, which
+     * `transition-property: transform` does not cover — measured here as a lift
+     * that snapped instead of easing. They are the same thing to the
+     * compositor, so this is still "transform and opacity only" (§4.3), spelled
+     * the way the generated CSS spells it. `transform` stays for call sites
+     * that pass one of their own.
      */
-    'font-medium transition-[transform,opacity,background-color,border-color,color] duration-200 ease-brand',
+    'font-medium transition-[transform,translate,scale,opacity,background-color,border-color,color] duration-200 ease-brand',
     'disabled:pointer-events-none disabled:opacity-50',
     /*
      * FOCUS, AND WHY IT IS HEAVIER THAN IT LOOKS. Glass carries its shape in
@@ -157,9 +173,13 @@ const button = cva(
          */
         primary: [
           ...EDGE,
-          'bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-active',
-          '[box-shadow:var(--wx-glass-inner),inset_0_0_0.125rem_var(--wx-glass-edge),var(--wx-glass-lift),0_0.25rem_1rem_var(--wx-accent-ring)]',
-          'hover:[box-shadow:var(--wx-glass-inner),inset_0_0_0.125rem_var(--wx-glass-edge),var(--wx-glass-lift-hover),0_0.5rem_1.5rem_var(--wx-accent-ring)]',
+          // HIS COLOUR, LITERALLY. The fill is #C3BEF0 as given and the label is ink,
+          // which is the only way a pastel carries text: the colour itself is
+          // 1.76:1 on white, ink on it is 10.1:1.
+          '[background:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]',
+          'hover:[background:var(--wx-accent-fill-hover)] active:[background:var(--wx-accent-fill-active)]',
+          '[box-shadow:var(--wx-solid-inner),var(--wx-glass-lift),0_0.25rem_1rem_var(--wx-accent-ring)]',
+          'hover:[box-shadow:var(--wx-solid-inner),var(--wx-glass-lift-hover),0_0.5rem_1.5rem_var(--wx-accent-ring)]',
         ],
         /*
          * THE GLASS ITSELF. The fill is the floor from §4.1 — 72% toward

@@ -9,7 +9,7 @@ const BARS = ['bg-accent', 'bg-info', 'bg-success'] as const;
 /** Social proof band: the brands we run, then the headline numbers. */
 export function TrustedBy() {
   return (
-    <section id="brands" className="bg-bg scroll-mt-20">
+    <section id="brands" className="scroll-mt-20">
       {/* Full-bleed: the marquee runs edge to edge, not inside the container. */}
       <div className="py-9">
         <Container className="pb-7">

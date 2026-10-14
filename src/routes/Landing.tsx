@@ -54,7 +54,10 @@ export function Landing() {
   }
 
   return (
-    <div className="bg-bg min-h-dvh">
+    <div /* NO `bg-bg` HERE. An opaque wrapper painted over the ground and the
+       optical loops, so the background stopped at the hero. body paints the
+       ground; this just needs height. */
+    className="min-h-dvh">
       <PageProgress />
       <SiteNav />
       {/* `overflow-x-clip` (not `hidden`, which would make <main> a scroll

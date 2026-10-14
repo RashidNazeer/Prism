@@ -276,7 +276,30 @@
   }
 
   body {
+    /*
+     * THE GROUND IS PAINTED HERE, ON BODY, so it reaches EVERY page without a
+     * mount point to forget. It was previously drawn inside `HaloBackdrop`,
+     * which the landing page mounted `absolute inset-0` inside the hero — so
+     * the ramp stopped dead at the fold and the rest of the page fell back to
+     * flat `--wx-bg`. Rashid caught it.
+     *
+     * `background-attachment: fixed` is his, and it is what stops the ramp
+     * sliding as the page scrolls: the ground stays put and the content moves
+     * over it, which is what makes a long page feel like one sheet of glass
+     * rather than a scrolling gradient.
+     *
+     * `background-color` stays as the fallback underneath, so a page is a
+     * finished colour before the gradients resolve.
+     */
     background-color: var(--wx-bg);
+    background-image: var(--wx-ground);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    /* `cover` applies to every layer, which is what keeps the photograph and
+       the veil over it in register at any viewport. The source is portrait and
+       most screens are not, so it is cropped rather than letterboxed. */
+    background-size: cover;
+    background-position: center;
     color: var(--wx-text);
     font-family: var(--wx-font-sans);
     font-synthesis-weight: none;

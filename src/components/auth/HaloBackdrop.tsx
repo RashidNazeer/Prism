@@ -1,4 +1,5 @@
-import { m, useReducedMotion } from 'motion/react';
+// The scene is static, matching Rashid's file exactly, so neither Motion nor
+// the reduced-motion hook is needed here any more.
 
 /**
  * THE BACKGROUND, from Rashid's `prism-glass-background.html` (2026-10-14).
@@ -69,21 +70,18 @@ export function HaloBackdrop({
    * the design and a blank ground is not the accessible version of it. Only the
    * drift goes.
    */
-  const still = useReducedMotion();
   const strength = STRENGTH[intensity];
 
   return (
     <div aria-hidden className={className}>
       {/*
-        THE GROUND. Painted on its own and first, so the page is a finished
-        colour before the scene renders and for anyone whose gradients never
-        arrive. `background-attachment: fixed` is his, and it is what stops the
-        ramp sliding under a scrolling page.
+        NO GROUND LAYER HERE ANY MORE. `body` paints `--wx-ground` for the whole
+        document (see global.css), which is what fixed the landing page: this
+        component was mounted `absolute inset-0` inside the hero, so the ramp
+        ended at the fold and the rest of the page fell back to flat colour.
+        Painting it on `body` means no page can be missed, and this component is
+        now only the optical loops.
       */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{ background: 'var(--wx-ground)', backgroundAttachment: 'fixed' }}
-      />
 
       {/*
         THE OPTICAL LOOPS. `overflow-hidden` is load-bearing: the scene is
@@ -96,24 +94,25 @@ export function HaloBackdrop({
         subtree can move a fixed overlay. Rule 1 above.
       */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <m.svg
+        {/*
+          STATIC, AND EXACTLY HIS GEOMETRY.
+          `viewBox="0 0 1600 1100"`, `slice`, `min-width:1000px`, `object-cover`
+          — the four values that decide the composition — are copied from
+          `prism-glass-background.html` unchanged.
+
+          Two of my additions were removed after Rashid called the result
+          distorted, and both deserved it: a widened viewBox meant to "zoom out"
+          re-cropped the slice so the loops no longer sat where he drew them,
+          and a slow drift animated a background his file paints still. The
+          lesson is narrow — when the ask is "this exact background", the
+          geometry is not mine to improve.
+        */}
+        <svg
           viewBox={SCENE_VIEWBOX}
           preserveAspectRatio="xMidYMid slice"
           xmlns="http://www.w3.org/2000/svg"
           className="absolute inset-0 h-full w-full min-w-[1000px] object-cover"
           style={{ opacity: `calc(var(--wx-scene-opacity) * ${strength})` }}
-          /*
-           * A single very slow drift on the whole scene, transform only. One
-           * animated node instead of five: the loops keep their relationship to
-           * each other, and the compositor gets one layer to move rather than a
-           * handful to recalculate.
-           */
-          animate={still ? undefined : { x: ['0%', '1.6%', '0%'], y: ['0%', '-1.2%', '0%'] }}
-          transition={
-            still
-              ? undefined
-              : { duration: 47, repeat: Infinity, ease: 'easeInOut', times: [0, 0.5, 1] }
-          }
         >
           <defs>
             {/*
@@ -193,7 +192,7 @@ export function HaloBackdrop({
               />
             ))}
           </g>
-        </m.svg>
+        </svg>
       </div>
     </div>
   );
