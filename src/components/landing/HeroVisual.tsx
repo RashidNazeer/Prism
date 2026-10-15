@@ -139,10 +139,22 @@ export function HeroVisual() {
    * transparent POSTER instead of an opaque video. A still with a correct
    * background beats a moving rectangle with a wrong one.
    *
-   * The MP4s are left in place, unreferenced: the moment a HEVC-alpha cut
-   * lands, this clause is what comes back out.
+   * REVERSED SAME DAY, on his instruction: "the video stopped playing on mobile
+   * devices fix it." Everything above is still true — the MP4 is a painted
+   * rectangle and there is no transparent cut for Safari — so this is a choice
+   * between two wrong things, and he chose motion. The painted cut is back, and
+   * `hero-visual.css` now hides its field far harder than the bundle did: a 26%
+   * feather on each axis plus a radial mask on the corners, against the
+   * original 7%.
+   *
+   * THE REAL FIX IS AN ASSET, NOT CODE. Safari plays transparent video only as
+   * HEVC WITH AN ALPHA CHANNEL, which needs Apple's encoder on a Mac. ffmpeg
+   * here cannot even read the existing WebM's alpha plane to convert it
+   * ("Requested planes not available"), and the source bundle contains no
+   * alpha-bearing master — only these same WebMs, the painted MP4s and two
+   * still posters. Given that export, `!env.alpha` stops being a branch at all.
    */
-  const still = quiet || env.thrifty || broken || !env.alpha;
+  const still = quiet || env.thrifty || broken;
 
   const stem = `${BASE}prism-hero${dark ? '-dark' : ''}${large ? '' : '-720'}`;
   const src =
@@ -320,15 +332,16 @@ export function HeroVisual() {
     /* Decorative, so it is hidden from the accessibility tree and nothing in it
        can be focused or announced. The headline beside it is the content. */
     <div ref={box} className="wx-hero-visual" aria-hidden="true">
-      {/* No `is-painted` on either branch any more. That class feathered the
-          outer 7% to hide the painted MP4's hard edge; with the MP4 path gone
-          both the poster and the video carry real alpha, and fading their
-          edges would only dim artwork that already ends in nothing. */}
+      {/* `is-painted` is back on the VIDEO only, and only where the cut is the
+          painted MP4. The poster never needs it: that one carries real alpha in
+          both themes, so feathering it would just dim artwork which already
+          ends in nothing. */}
       {still ? (
         <img src={poster} alt="" draggable={false} />
       ) : (
         <video
           ref={video}
+          className={env.alpha ? undefined : 'is-painted'}
           poster={poster}
           src={src}
           preload="none"

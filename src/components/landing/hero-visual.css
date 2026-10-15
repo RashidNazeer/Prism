@@ -102,13 +102,37 @@
  * both themes, so what it resolves to never reaches a pixel. It is here so no
  * raw hex lives in a component, not to paint anything.
  */
+/*
+ * THE FEATHER IS 7% -> 26%, AND A RADIAL ONE IS ADDED, 2026-10-16.
+ *
+ * Rashid saw the painted cut as "not completely transparent", and he is right:
+ * it is not transparent at all, it is a rectangle of baked page colour. The
+ * bundle's own README says so — "Safari can't play transparent video". With
+ * ffmpeg here unable to read the WebM's alpha plane ("Requested planes not
+ * available") no transparent cut can be derived either, so on iOS the choice is
+ * motion with a painted field or a still with a correct one. He asked for
+ * motion.
+ *
+ * So the field is hidden as far as compositing allows. The bundle's 7% feather
+ * left 86% of each edge at full opacity, which is a hard box. At 26% the fade
+ * covers roughly half the frame in each axis, and the extra RADIAL mask pulls
+ * the corners — where a rectangle reads most obviously against a round-ish
+ * ground — down before the edges do. The phone artwork sits well inside the
+ * middle third, measured, so none of it is touched.
+ *
+ * THE COLOUR STOP IS A TOKEN BECAUSE EVERY COLOUR IN THIS PROJECT IS A TOKEN,
+ * but a mask reads only the ALPHA of this gradient — `--wx-text` is opaque in
+ * both themes, so what it resolves to never reaches a pixel.
+ */
 .wx-hero-visual > .is-painted {
   -webkit-mask-image:
-    linear-gradient(to right, transparent, var(--wx-text) 7%, var(--wx-text) 93%, transparent),
-    linear-gradient(to bottom, transparent, var(--wx-text) 7%, var(--wx-text) 93%, transparent);
+    radial-gradient(circle at 50% 50%, var(--wx-text) 38%, transparent 76%),
+    linear-gradient(to right, transparent, var(--wx-text) 26%, var(--wx-text) 74%, transparent),
+    linear-gradient(to bottom, transparent, var(--wx-text) 26%, var(--wx-text) 74%, transparent);
   mask-image:
-    linear-gradient(to right, transparent, var(--wx-text) 7%, var(--wx-text) 93%, transparent),
-    linear-gradient(to bottom, transparent, var(--wx-text) 7%, var(--wx-text) 93%, transparent);
-  -webkit-mask-composite: source-in;
-  mask-composite: intersect;
+    radial-gradient(circle at 50% 50%, var(--wx-text) 38%, transparent 76%),
+    linear-gradient(to right, transparent, var(--wx-text) 26%, var(--wx-text) 74%, transparent),
+    linear-gradient(to bottom, transparent, var(--wx-text) 26%, var(--wx-text) 74%, transparent);
+  -webkit-mask-composite: source-in, source-in;
+  mask-composite: intersect, intersect;
 }
