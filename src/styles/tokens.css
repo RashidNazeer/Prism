@@ -34,7 +34,7 @@
    * and drops most of the red that was making it read as purple: hue moves from
    * about 255 degrees to about 240, and both steps sit closer to the page.
    */
-  --wx-bg: #202024; /* page background */
+  --wx-bg: #07070a; /* page background */
   --wx-surface-1: #2B2B2E; /* cards, panels */
   --wx-surface-2: #343437; /* hover, nested cards */
   --wx-surface-3: #1C1C1E; /* wells, inputs */
@@ -307,9 +307,9 @@
      deliberately stops matching the cards. */
   --wx-glass-fill-nav: rgba(255, 255, 255, 0.1);
   --wx-glass-fill-hover: rgba(52, 52, 56, 0.58);
-  --wx-glass-well: rgba(26, 26, 28, 0.58);
+  --wx-glass-well: rgba(255, 255, 255, 0.05);
   --wx-glass-panel: rgba(255, 255, 255, 0.1);
-  --wx-glass-line: rgba(255, 255, 255, 0.1);
+  --wx-glass-line: rgba(255, 255, 255, 0.3);
   --wx-glass-edge: rgba(255, 255, 255, 0.3);
   /*
    * HIS SMALL-CONTROL EDGE. Measured: his panes carry `#ffffffe0` (0.88) and
@@ -591,7 +591,7 @@
    * stops being legible. That trade is the whole of §4.1.
    */
   --wx-ground:
-    linear-gradient(0deg, #202024f2, #202024f2),
+    linear-gradient(0deg, #07070ad4, #07070ad4),
     url('/brand/glass-waves.webp');
   --wx-scene-opacity: 0.46;
 
@@ -613,8 +613,8 @@
    * Light is unchanged and still reads as its own surfaces — it was already
    * right, and white on paper has no ceiling to spend.
    */
-  --wx-field-body: #15151b;
-  --wx-field-edge: #9a9ab0;
+  --wx-field-body: #0b0b10;
+  --wx-field-edge: #c8c8dc;
   --wx-scene-light-opacity: 0.24;
 
   --wx-aurora-mint: #373a3e;
@@ -850,7 +850,7 @@
      direction is his and ours already agreed; the alpha comes down toward him
      but stops well short of 3%, because a well has to hold a placeholder and
      `--wx-text-faint` on paper has only 0.20 of headroom to spend. */
-  --wx-glass-well: rgba(226, 230, 242, 0.5);
+  --wx-glass-well: rgba(0, 0, 0, 0.05);
   /* Chrome is denser than a card in his file too: smoke waist 0.060 against
      optical waist 0.047, a ratio of 1.28. Kept. */
   --wx-glass-panel: rgba(255, 255, 255, 0.1);
