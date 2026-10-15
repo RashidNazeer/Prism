@@ -992,6 +992,21 @@ body::after {
  */
 @utility wx-nav-blur {
   /*
+   * A DENSER FROST THAN THE CARDS, 2026-10-15, and it overrides the
+   * `wx-neo-raised` fill the nav also wears. That works because this utility
+   * is defined AFTER `wx-neo-raised` in this file and the two selectors have
+   * equal specificity, so emission order decides — measured after the change
+   * rather than assumed.
+   *
+   * Why it is needed at all: blur is a low-pass filter, and at the top of the
+   * landing page the only thing behind this bar is the shader and a photograph
+   * of smooth white waves. There are no high frequencies there to remove, so
+   * 28px of blur is invisible — provably so: scroll the headline under the bar
+   * and it smears heavily. The frost is what makes the bar read as glass while
+   * the backdrop is smooth.
+   */
+  background-color: var(--wx-glass-fill-nav);
+  /*
    * The phone value below `md`, the same ladder `wx-glass-chrome` climbs.
    * This is the one blur a phone pays at every width and it is deliberately
    * NOT raised: the increase is for the machine that can afford it.

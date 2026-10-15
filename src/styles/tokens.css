@@ -299,6 +299,13 @@
    * allows rather than as thin as he drew it.
    */
   --wx-glass-fill: rgba(43, 43, 46, 0.50);
+  /* THE LANDING NAV IS ITS OWN, DENSER MATERIAL from 2026-10-15. It used the
+     card fill, which is 50% here and 8% in light — and a bar that transparent
+     over a smooth background cannot read as glass however hard it blurs, which
+     is what "this bar has no blur on laptop" actually was. The blur is real;
+     the frost is what makes it visible at rest. This is the one place the nav
+     deliberately stops matching the cards. */
+  --wx-glass-fill-nav: rgba(43, 43, 46, 0.72);
   --wx-glass-fill-hover: rgba(52, 52, 56, 0.58);
   --wx-glass-well: rgba(26, 26, 28, 0.58);
   --wx-glass-panel: rgba(43, 43, 46, 0.44);
@@ -827,6 +834,7 @@
    * than what it replaces.
    */
   --wx-glass-fill: rgba(255, 255, 255, 0.08);
+  --wx-glass-fill-nav: rgba(255, 255, 255, 0.22);
   --wx-glass-fill-hover: rgba(255, 255, 255, 0.18);
   /* His well washes DOWNWARD in ink — `rgba(0, 0, 0, 0.03)` on `.segmented`
      and `.role-tabs` — where the pane around it washes upward in white. The
