@@ -126,6 +126,47 @@ export function monthBounds(monthKey: string): { from: string | null; to: string
   return { from: iso(first), to: iso(last) };
 }
 
+/**
+ * A PERIOD IS EITHER A MONTH OR A RANGE, and this is the one place that knows.
+ *
+ * Rashid asked for the brand page to take a date range the way the creator side
+ * does. Rather than give the provider a second concept to track, a period is
+ * still a single string and simply has two shapes:
+ *
+ *   `2026-09`                  a whole calendar month, exactly as before
+ *   `2026-09-01..2026-09-07`   an explicit range, inclusive at both ends
+ *   `''`                       no bounds at all, which is All Time
+ *
+ * Keeping it to one string matters because the period is part of every cache
+ * key. Two separate pieces of state would have to be combined into a key
+ * anyway, and the moment they could disagree, one of them would end up labelling
+ * the other's numbers — which is the exact bug the month key was introduced to
+ * prevent.
+ *
+ * The bounds themselves are what reach `euka_ad_totals_for_videos`, which since
+ * 2026-10-13 answers a fully covered range from day-grain rows and falls back
+ * to whole months otherwise. So a range here is honoured exactly when the data
+ * behind it can honour it, and is never silently widened.
+ */
+export function periodBounds(periodKey: string): { from: string | null; to: string | null } {
+  const key = (periodKey ?? '').trim();
+  const range = /^(\d{4}-\d{2}-\d{2})\.\.(\d{4}-\d{2}-\d{2})$/.exec(key);
+  if (range) {
+    const from = range[1]!;
+    const to = range[2]!;
+    /* Backwards is a caller's mistake, and the RPC would raise on it. Swapping
+       quietly is kinder than an error on a dashboard and loses nothing: the
+       only thing a reversed range can mean is the same span. */
+    return from <= to ? { from, to } : { from: to, to: from };
+  }
+  return monthBounds(key);
+}
+
+/** True when the period is an explicit day range rather than a whole month. */
+export function isRangePeriod(periodKey: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}\.\.\d{4}-\d{2}-\d{2}$/.test((periodKey ?? '').trim());
+}
+
 const AdFiguresContext = createContext<Ctx | null>(null);
 
 /** At most this many ids per RPC call; both functions refuse more than 2000. */
@@ -212,7 +253,8 @@ export function CollabAdFiguresProvider({ children }: { children: ReactNode }) {
     for (const k of batch) asked.current.add(k);
     const forMonth = batch[0]?.slice(0, batch[0].indexOf('|')) ?? '';
     const ids = batch.map((k) => k.slice(k.indexOf('|') + 1));
-    const { from, to } = monthBounds(forMonth);
+    /* `periodBounds`, not `monthBounds`: the key may now be a day range. */
+    const { from, to } = periodBounds(forMonth);
     const sparkIds = ids.filter((id) => !sparkAsked.current.has(id));
     for (const id of sparkIds) sparkAsked.current.add(id);
 

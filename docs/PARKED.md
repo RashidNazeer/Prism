@@ -17,6 +17,68 @@ Rules:
 
 ---
 
+## 0a. The brand page date range: the ad spend half is DONE, the video half is not
+
+**Status:** PAUSED — half built, and the half that is built is live on dev
+**Owner:** Claude
+**Raise it again:** as soon as Rashid wants the date range control itself, which
+is what he asked for on 2026-10-13
+
+Rashid, 2026-10-13, about the Paid Collabs brand page: the calendar "should
+allow clients to select date range as well like it is on the creator login", the
+figures should be visible "using a date range or last 7 days", and we should
+keep fetching from Euka on a schedule "so that we donot waste the request
+limit".
+
+**What is done** (branch `feature/brand-date-range`, on both remotes, applied
+and deployed to dev):
+
+- `euka_ad_video_day` + `euka_ad_sync_days`, filled by `euka-ads-sync` at
+  campaign-DAY grain, 90 days back. RLS on both, `service_role` granted.
+- `euka_ad_totals_for_videos` answers from days when the window is COMPLETELY
+  covered and falls back to months otherwise. It used to count a month whenever
+  it OVERLAPPED the window, so "last 7 days" returned the whole month. Nothing
+  asks for a sub-month window today, so no number on screen was ever wrong — but
+  a range picker on top of that would have put one there.
+- Verified against dev, 8 checks, including a window with one unfetched day
+  falling back rather than understating.
+- Cost, measured rather than guessed: about **3x** the month path's Euka calls
+  (~340/day against ~110), plus a one-off ~8,500-call backfill. An earlier draft
+  of those comments claimed it would be CHEAPER. That was wrong.
+
+**Why the control itself was not built.** The performance block on that page is
+not range-scoped data. `tops`, views and GMV come from `creators` →
+`video_codes`, the brand's creator roster FOR THAT MONTH CYCLE, and only ad
+spend goes through the range-aware reader. A range control today would re-scope
+one card out of four and leave the rest on the month, which is worse than no
+control. `month` is also the contract cycle in that file rather than merely a
+filter, and it has 252 references.
+
+**UPDATE, same day: the picker IS now built**, and it scopes exactly what it
+honestly can. `CollabPeriodPicker` replaces the native `<input type="month">`
+with presets (Last 7 / 30 / 90 days, This month, Last month), a month grid and a
+custom From/To range. A month still drives the whole page as before; a range
+moves only the Euka ad figures, and the control SAYS SO on itself while a range
+is active rather than leaving it to be discovered by someone reconciling totals.
+Not yet opened in a browser by Claude — there is no staff login for dev — so
+Rashid is testing it.
+
+**One trap left behind, on purpose rather than by accident.** The picker adds
+new `WURX-ADDED` blocks to `src/vendor/wurxbase/WurxUI.jsx` (the import, the
+`wxRange` state beside `month`, the control itself) plus a `periodKey` prop on
+`BrandDrilldown`. These are NOT registered in `scripts/wurxbase-patches.mjs`, so
+the next WurxBase release would drop them when `vendor:wurxbase` re-copies the
+file. Register them before pulling a new upstream version — and update the
+existing "BrandDrilldown month effect" entry too, because its body is the old
+two-line effect this work replaced.
+
+**What still needs doing.** The same pattern one level up: a `euka_video_day`
+cache fed from Euka's `creator_videos` export, which already accepts a from/to
+window (`supabase/functions/euka/index.ts`, `type: 'videos'`). With per-day video
+rows, views and GMV become range-able too and the range can scope the whole
+block rather than one card. Expect it to be the heavier of the two — that export
+takes tens of seconds and runs per store rather than per campaign.
+
 ## 0. Contests: what is left, as of 2026-08-14 (evening)
 
 **Status:** PAUSED where noted

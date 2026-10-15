@@ -1842,3 +1842,181 @@ body::after {
     var(--wx-glass-lift),
     var(--wx-glass-lift-modal);
 }
+
+/*
+ * THE PERIOD PICKER ON THE PAID COLLABS BRAND PAGE.
+ *
+ * It replaces `<input type="month">`, whose popover was the BROWSER'S — the
+ * blue highlight and the "Clear / This month" links in Rashid's screenshot are
+ * Chrome's own, and cannot be themed, configured, or taught about ranges.
+ *
+ * Styled in `--pc-*` rather than `--wx-*` on purpose: those are the tokens the
+ * controls either side of it already use, and the vendored stylesheet derives
+ * them from ours (`--pc-card: var(--wx-surface-1)` and so on), so this follows
+ * the theme while sitting flush with its neighbours. Sizes are `rem`, so the
+ * top bar's text-size control scales it like everything else.
+ */
+.wx-period {
+  position: relative;
+  display: inline-flex;
+}
+
+.wx-period-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 2.125rem;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--pc-divider);
+  background: var(--pc-card);
+  color: var(--pc-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.wx-period-trigger:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.wx-period-label {
+  min-width: 6.5rem;
+  text-align: left;
+}
+
+.wx-period-pop {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  /* Anchored RIGHT. This sits in a right-aligned cluster, and a left-anchored
+     popover runs off the viewport at the narrower desktop widths. */
+  right: 0;
+  z-index: 60;
+  width: 19rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.75rem;
+  border-radius: var(--pc-radius-sm);
+  border: 1px solid var(--pc-divider);
+  background: var(--pc-card);
+  box-shadow: var(--pc-shadow-lg);
+}
+
+.wx-period-presets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.375rem;
+}
+.wx-period-preset,
+.wx-period-month {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--pc-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.5rem;
+  border-radius: var(--pc-radius-xs);
+  cursor: pointer;
+  min-height: 2rem;
+}
+.wx-period-preset:hover,
+.wx-period-month:hover {
+  background: var(--pc-accent-light);
+}
+.wx-period-preset.is-on,
+.wx-period-month.is-on {
+  background: var(--pc-accent);
+  color: var(--wx-on-accent);
+}
+
+.wx-period-sep {
+  height: 1px;
+  background: var(--pc-divider);
+  margin: 0.625rem 0;
+}
+
+.wx-period-yearrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.375rem;
+}
+.wx-period-year {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--pc-text);
+}
+.wx-period-arrow {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--pc-divider);
+  background: var(--pc-card);
+  color: var(--pc-text);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.wx-period-arrow:hover {
+  background: var(--pc-accent-light);
+}
+
+.wx-period-months {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.25rem;
+}
+
+.wx-period-custom {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.wx-period-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--pc-text-2);
+}
+.wx-period-field input {
+  height: 2rem;
+  padding: 0 0.5rem;
+  border-radius: var(--pc-radius-xs);
+  border: 1px solid var(--pc-divider);
+  background: var(--pc-bg);
+  color: var(--pc-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.wx-period-apply {
+  grid-column: 1 / -1;
+  height: 2rem;
+  border-radius: 999px;
+  border: 0;
+  background: var(--pc-accent);
+  color: var(--wx-on-accent);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.wx-period-apply:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.wx-period-note {
+  margin: 0.625rem 0 0;
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  color: var(--pc-text-2);
+}

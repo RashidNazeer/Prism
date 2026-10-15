@@ -19,6 +19,9 @@ import {
   money as wxMoney,
   roiText as wxRoi,
 } from '@/routes/admin/collab-ad-figures';
+import { DateRangePicker as WxDateRangePicker } from '@/components/creator/DateRangePicker';
+import { presetToRange as wxPresetToRange } from '@/lib/creator/date-range';
+import { clipCreatorsToRange as wxClipToRange, rangeHeading as wxRangeHeading } from '@/lib/admin/collab-period';
 /* WURX-END */
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { can } from './access';
@@ -1570,6 +1573,75 @@ export default function WurxUI({
      `rememberedMonth`. WURX-END */
   const [month, setMonth] = useState(rememberedMonth(__initialState) || currentMonthKey()); // default = current month
   const [allTime, setAllTime] = useState(__initialState.allTime === true);
+  /*
+   * WURX-ADDED · THE DATE RANGE, which is what every EUKA figure on this screen
+   * now follows.
+   *
+   * Rashid, having tested the first attempt: "only the ad spend is changing
+   * according to the date range whereas in this whole page everything we are
+   * getting from the EUKA must change according to date range".
+   *
+   * `wxPreset` and `wxRangeObj` are the creator picker's own two pieces of
+   * state, kept in that shape so the component can be reused verbatim.
+   * `wxRangeDates` is the resolved {from,to}, or null for All time — a preset
+   * like "Last 30 days" has to be turned into dates before anything can filter
+   * on it.
+   *
+   * It starts on "This month", which is the month the page has always opened
+   * on, so nothing moves until someone chooses otherwise.
+   *
+   * `month` is left alone deliberately: it is the CONTRACT CYCLE here, not a
+   * filter — a creator is onboarded into a month, a contract carries one, and
+   * budget, allocated and paid all mean "this month's". Those are our own
+   * figures, not EUKA's, and Rashid's instruction was about EUKA's.
+   * WURX-END
+   */
+  const [wxPreset, setWxPreset] = useState('thisMonth');
+  const [wxRangeObj, setWxRangeObj] = useState(null);
+  /*
+   * THE WINDOW OF DAYS THAT EXIST, which every preset is resolved against.
+   *
+   * This is not optional, and passing `undefined` is the bug that made the
+   * control say "All time" and filter nothing: `presetToRange` calls
+   * `floorOf(w)` first and returns NULL when there is no floor, because on the
+   * creator side an absent window means "still loading" and firing a query for
+   * a range nobody chose would be worse than waiting. Here the data is already
+   * in hand, so the window has to be built from it.
+   *
+   * The floor is the brand's earliest evidence — the first video posted, or the
+   * first creator onboarded if no video is dated yet. The ceiling is today:
+   * unlike the creator side, these figures are EUKA's live totals rather than a
+   * nightly table, so there is no day-late rule to respect.
+   */
+  const wxWindow = useMemo(() => {
+    const day = (v) => {
+      const s = String(v ?? '').slice(0, 10);
+      return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : '';
+    };
+    let earliest = '';
+    (creators || []).forEach((c) => {
+      const hire = day(c && c.hiring_date);
+      if (hire && (!earliest || hire < earliest)) earliest = hire;
+      (Array.isArray(c && c.video_codes) ? c.video_codes : []).forEach((r) => {
+        const d = day(r && r.date);
+        if (d && (!earliest || d < earliest)) earliest = d;
+      });
+    });
+    const today = new Date().toISOString().slice(0, 10);
+    /* A brand with nothing dated at all still needs a usable calendar, so fall
+       back to a year back rather than leaving every preset returning null. */
+    return {
+      earliest: earliest || `${Number(today.slice(0, 4)) - 1}-01-01`,
+      latest: today,
+      videos: 0,
+    };
+  }, [creators]);
+  const wxRangeDates = useMemo(
+    () => (wxPreset === 'custom' ? wxRangeObj : wxPresetToRange(wxPreset, wxWindow)),
+    [wxPreset, wxRangeObj, wxWindow],
+  );
+  /* The ad figures take a period key: '' is no bounds, otherwise the range. */
+  const wxPeriodKey = wxRangeDates ? `${wxRangeDates.from}..${wxRangeDates.to}` : '';
   useEffect(() => { patchUIState({ tab }); }, [tab]);
   /* God Mode writes to localStorage from a different component tree, so
      it announces itself and the nav re-reads on the next render. */
@@ -1892,27 +1964,51 @@ export default function WurxUI({
           {/* Right-side filter cluster: month nav + All Time */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, opacity: allTime ? 0.45 : 1, pointerEvents: allTime ? 'none' : 'auto', transition: 'opacity 0.2s ease' }}>
-              <button aria-label="Previous month" onClick={() => setMonth(m => addMonth(m, -1))}
-                style={{ width: 34, height: 34, borderRadius: 999, border: '1px solid var(--pc-divider)', background: 'var(--pc-card)', color: 'var(--pc-text)', fontSize: 17, lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >‹</button>
-              <label title="Pick a month" style={{
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-                height: 34, padding: '0 12px', borderRadius: 999,
-                background: 'var(--pc-card)', border: '1px solid var(--pc-divider)', cursor: 'pointer',
-              }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-                {/* WURX-ADDED class · this input is flush inside the pill above,
-                    which already draws the surface and the edge. Our field rule
-                    paints every input a field colour, and on this one that put a
-                    band behind "September 2026" — the box-inside-a-box again.
-                    Named so the rule can leave it alone. */}
-                <input type="month" className="pc-chrome-input" value={month} onChange={e => { if (e.target.value) setMonth(e.target.value); }}
-                  style={{ border: 0, background: 'transparent', outline: 'none', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: 'var(--pc-text)', cursor: 'pointer', minWidth: 100 }}
+                {/* WURX-REPLACED · this was `<input type="month">` inside a pill,
+                    flanked by ‹ › month arrows.
+                    All of that chrome is gone with it. The pill drew its own
+                    calendar icon and the picker draws one too, which is why
+                    Rashid's screenshot showed TWO calendars side by side inside
+                    one lozenge; the arrows stepped `month` while the label
+                    showed a range, so the two could disagree with no way to
+                    tell. The picker carries its own trigger and its own month
+                    navigation, so it replaces the lot rather than sitting
+                    inside it.
+                    Rashid, 2026-10-13: the calendar "should allow clients to
+                    select date range as well like it is on the creator login" —
+                    and then, of my first attempt at one: "the date selector is
+                    built poorly by you", with a picture of the creator-side
+                    control. He was right twice. The native month input could
+                    not do ranges at all and opened the BROWSER'S popover, and
+                    the replacement I hand-rolled was a worse version of a
+                    control this codebase already had.
+                    So this is THE SAME COMPONENT the creator app uses: two
+                    months side by side, click-drag range selection, and the
+                    nine presets. Reusing it means the two sides of the product
+                    cannot drift apart, and it already knows the things that
+                    took a while to get right there — that figures land a day
+                    late, so today is never offered. WURX-END */}
+                <WxDateRangePicker
+                  preset={wxPreset}
+                  range={wxRangeDates}
+                  window={wxWindow}
+                  onChange={(nextPreset, nextRange) => {
+                    setWxPreset(nextPreset);
+                    setWxRangeObj(nextRange);
+                    /* KEEP THE CONTRACT CYCLE IN STEP WHERE THAT IS MEANINGFUL.
+                       `month` drives budget, allocated, paid and the contract —
+                       our own figures, not EUKA's — so the range cannot simply
+                       replace it. But when the chosen range sits inside ONE
+                       calendar month, which covers This month, Last month and
+                       most hand-picked ranges, the month it belongs to is not
+                       in doubt, and leaving the budget on a different month
+                       than the heading would be its own kind of wrong. A range
+                       that straddles months leaves it alone, because then there
+                       is no single honest answer. */
+                    const r = nextPreset === 'custom' ? nextRange : wxPresetToRange(nextPreset, wxWindow);
+                    if (r && r.from.slice(0, 7) === r.to.slice(0, 7)) setMonth(r.from.slice(0, 7));
+                  }}
                 />
-              </label>
-              <button aria-label="Next month" onClick={() => setMonth(m => addMonth(m, 1))}
-                style={{ width: 34, height: 34, borderRadius: 999, border: '1px solid var(--pc-divider)', background: 'var(--pc-card)', color: 'var(--pc-text)', fontSize: 17, lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >›</button>
             </div>
             <button onClick={() => setAllTime(v => !v)}
               title={allTime ? 'Showing all-time data · click to filter by month' : 'Show data across all months'}
@@ -1932,7 +2028,7 @@ export default function WurxUI({
         </div>
 
         {tab === 'brands' && (
-          <BrandsTab creators={filtered} allCreators={creators} budgets={budgets} refetchBudgets={refetchBudgets} month={allTime ? '' : month} allTime={allTime} isSuper={isSuper} perms={perms} eukaL30={eukaL30} currentUser={currentUser} onSelectCreator={onSelectCreator} onAddCreator={openAddCreator} onEditCreator={openEditCreator} onDeleteBrand={onDeleteBrand} onSetCreatorStatus={onSetCreatorStatus} onUpdateCreator={onUpdateCreator}
+          <BrandsTab creators={filtered} allCreators={creators} budgets={budgets} refetchBudgets={refetchBudgets} month={allTime ? '' : month} allTime={allTime} periodKey={allTime ? '' : wxPeriodKey} periodRange={allTime ? null : wxRangeDates} isSuper={isSuper} perms={perms} eukaL30={eukaL30} currentUser={currentUser} onSelectCreator={onSelectCreator} onAddCreator={openAddCreator} onEditCreator={openEditCreator} onDeleteBrand={onDeleteBrand} onSetCreatorStatus={onSetCreatorStatus} onUpdateCreator={onUpdateCreator}
             /* WURX-ADDED · the "brand is in another month" notice needs to be
                able to take you there. The month lives up here, so the setter
                has to come down — without it the button rendered, looked
@@ -2045,7 +2141,7 @@ export default function WurxUI({
 }
 
 /* ════════ BRANDS TAB ════════ */
-function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allTime, isSuper, perms, eukaL30, currentUser, onSelectCreator, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator, onPickMonth }) {
+function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allTime, periodKey, periodRange, isSuper, perms, eukaL30, currentUser, onSelectCreator, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator, onPickMonth }) {
   const [search, setSearch] = useState('');
   // Track only brand name (string), so re-renders pick up live data from brandRows automatically
   const [drillBrandName, setDrillBrandName] = useState(() => loadUIState().brandsDrill || null);
@@ -2286,7 +2382,20 @@ function BrandsTab({ creators, allCreators, budgets, refetchBudgets, month, allT
     return <BrandDrilldown
       brand={drillBrand}
       currentUser={currentUser}
-      creators={creators.filter(c => (c.brand || '').trim() === drillBrand.brand)}
+      /* WURX-ADDED · the chosen period: a month, or a day range. It is a PROP
+         here, not a local: this is BrandsTab, and the period is owned by
+         ChromeSlot above it, which is where the picker lives. Reading it as a
+         bare identifier crashed the whole screen with a ReferenceError.
+         WURX-END */
+      periodKey={periodKey}
+      periodRange={periodRange}
+      /* WURX-ADJUSTED · every EUKA figure on the drilldown is read off
+         `video_codes`, so narrowing that array HERE scopes the whole screen at
+         once: top videos, views, GMV, items, the video counts and product
+         performance. Rashid: "everything we are getting from the EUKA must
+         change according to date range". See lib/admin/collab-period.ts for
+         why a range can only mean the videos POSTED inside it. WURX-END */
+      creators={wxClipToRange(creators.filter(c => (c.brand || '').trim() === drillBrand.brand), periodRange)}
       brandCreators={(allCreators || creators).filter(c => (c.brand || '').trim() === drillBrand.brand)}
       allCreators={allCreators || creators}
       budgets={budgets}
@@ -2897,7 +3006,7 @@ function BrandFace({ brand }) {
   return <span className="pc-ava" style={{ background: gradFor(brand) }}>{initial(brand)}</span>;
 }
 
-function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, refetchBudgets, month, allTime, eukaL30, currentUser, onBack, onSelectCreator, canEdit, canAdd, canDeleteBrand, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator }) {
+function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, refetchBudgets, month, allTime, periodKey, periodRange, eukaL30, currentUser, onBack, onSelectCreator, canEdit, canAdd, canDeleteBrand, onAddCreator, onEditCreator, onDeleteBrand, onSetCreatorStatus, onUpdateCreator, onDeleteCreator }) {
   /* WURX-ADDED · tell our ad figures which month is on screen.
 
      THIS IS THE WHOLE REASON THE COLUMNS MATCH THE ROW THEY SIT IN. Everything
@@ -2911,9 +3020,23 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
      without a prop being threaded through them. */
   const wxSetMonth = wxAdsHook().setMonth;
   const wxAdsB = wxAdsHook(); /* WURX-ADDED · for the Top videos ad spend total */
+  /*
+   * `periodKey` is the one place a date range enters this screen. It comes from
+   * the picker in the filter bar above and is either `YYYY-MM`, exactly what
+   * `month` has always been, or `YYYY-MM-DD..YYYY-MM-DD`.
+   *
+   * It is a PROP rather than state here, and deliberately separate from
+   * `month`: on this screen a month is the CONTRACT CYCLE — a creator is
+   * onboarded into one, a contract carries one, and budget, allocated and paid
+   * all mean "this month's". Narrowing those to seven days would not filter
+   * them, it would make them meaningless. So a range moves the ad figures,
+   * which are stored per day, and leaves the cycle alone.
+   *
+   * All Time still wins over both: it means no bounds at all.
+   */
   useEffect(() => {
-    wxSetMonth(allTime ? '' : (month || ''));
-  }, [wxSetMonth, allTime, month]);
+    wxSetMonth(allTime ? '' : (periodKey || month || ''));
+  }, [wxSetMonth, allTime, periodKey, month]);
   /* WURX-END */
   /* ── EUKA posted-videos sync · pulls this brand's creator_videos export,
      matches handles to onboarded creators, merges NEW links into each
@@ -3287,7 +3410,10 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
         <BrandFace brand={brand.brand} />
         <div className="pc-dd-info">
           <h2 className="pc-dd-title">{brand.brand}</h2>
-          <div className="pc-dd-sub">{allTime ? 'All time' : monthLabel(month)}</div>
+          {/* WURX-ADJUSTED · name the period actually on screen. It said the
+              month even when a range was chosen, which is the one thing a
+              heading must never do. WURX-END */}
+          <div className="pc-dd-sub">{allTime ? 'All time' : (periodRange ? wxRangeHeading(periodRange) : monthLabel(month))}</div>
         </div>
         <div className="pc-dd-links">
           {brand.contentGuideUrl
@@ -3447,7 +3573,7 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
         const wxIdsAll = wxAll.map((v) => v.id).filter(Boolean);
         wxAdsB.ensure(wxIdsAll);
         const wxSpend = wxTotals(wxAdsB.get, wxIdsAll);
-        const wxPeriod = allTime ? 'all time' : monthLabel(month);
+        const wxPeriod = allTime ? 'all time' : (periodRange ? wxRangeHeading(periodRange) : monthLabel(month));
         const wxOnce = wxDupes ? ` · ${wxDupes} video${wxDupes === 1 ? '' : 's'} listed under two deals, counted once` : '';
         const wxVidsIn = `${wxAll.length} video${wxAll.length === 1 ? '' : 's'} in the table below · ${wxPeriod}${wxOnce}`;
         const wxSpendState = wxSpend.withData
@@ -3465,7 +3591,7 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
         return (
           <div className="pc-topvids">
             <div className="pc-topvids-head">
-              Top videos by GMV · {allTime ? 'All time' : monthLabel(month)}
+              Top videos by GMV · {allTime ? 'All time' : (periodRange ? wxRangeHeading(periodRange) : monthLabel(month))}
               {/* WURX-ADJUSTED · name the platform this brand really sells on. */}
               <span className="pc-topvids-sub">{wxSource === 'reacher' ? 'live from Reacher' : 'live from EUKA'}</span>
             </div>
