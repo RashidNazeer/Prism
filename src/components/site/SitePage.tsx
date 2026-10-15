@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { HaloBackdrop } from '@/components/auth/HaloBackdrop';
 import { SiteNav } from '@/components/landing/SiteNav';
 import { SiteFooter } from '@/components/landing/SiteFooter';
 import { Container } from '@/components/layout/Section';
@@ -48,7 +49,25 @@ export function SitePage({
   useEffect(() => allowIndexing(), []);
 
   return (
-    <div className="bg-bg min-h-dvh">
+    /*
+     * THE GROUND SHOWS ON THESE SIX PAGES NOW, 2026-10-16.
+     * Rashid listed /creators, /brands, /how-it-works, /about, /faq and
+     * /contact: "these pages do not have the background".
+     *
+     * Two separate causes, both here, which is why all six were wrong at once
+     * and the home page was not:
+     *   1. `bg-bg` painted an OPAQUE page colour over everything, so even the
+     *      waves on `body` were covered.
+     *   2. `HaloBackdrop` was never mounted — only `Landing`, `Apply` and
+     *      `AppShell` had it, so the shader simply did not exist on this
+     *      shell.
+     *
+     * Fixing one without the other would have changed nothing visible, which
+     * is probably why it survived: a transparent page over no backdrop is
+     * still a flat page.
+     */
+    <div className="min-h-dvh bg-transparent">
+      <HaloBackdrop className="pointer-events-none fixed inset-0 -z-10" />
       <SiteNav />
       {/* Clears the fixed header, which is 4rem tall. */}
       <main className="pt-16">
