@@ -3763,3 +3763,37 @@
   --amber-soft: var(--wx-accent) !important;
 }
 
+
+/*
+ * THE REPORTING TAB'S SEGMENTED CONTROL, 2026-10-15.
+ * Rashid, of /admin/collabs/reporting: "this page's cards and buttons do not
+ * have the glass effect".
+ *
+ * THE CARDS ON THAT TAB ALREADY DID. `.rp-card`, `.rep-stat` and `.rb-tile`
+ * are all in the glass list above, and the compiled stylesheet shipped them
+ * with `!important` — verified in `dist` rather than assumed. Of every class
+ * the tab actually renders (read out of App.jsx, not guessed from the CSS),
+ * exactly ONE still painted an opaque fill: this one.
+ *
+ * `.rp-seg` is the group, so it takes the material; `.rp-seg-b` is each button
+ * inside it and is already `transparent`, which is what lets the active
+ * `.rp-seg-ink` pill slide behind them. Painting the buttons too would hide
+ * that ink.
+ */
+.wurxbase-root.wurxbase-root .rp-seg {
+  background-color: var(--wx-glass-fill) !important;
+  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left), var(--wx-glass-face) !important;
+  background-size:
+    100% 1px,
+    1px 100%,
+    100% 100% !important;
+  background-position:
+    top left,
+    top left,
+    top left !important;
+  background-repeat: no-repeat !important;
+  box-shadow:
+    inset 0 0 0 1px var(--wx-glass-edge),
+    var(--wx-glass-inner),
+    var(--wx-glass-lift) !important;
+}
