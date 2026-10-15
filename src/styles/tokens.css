@@ -475,13 +475,21 @@
   --wx-glass-blur-app: 20px;
   /* The LANDING nav only (`wx-nav-blur`), +20% on 2026-10-15. Its own pair so
      the shared `wx-glass` / `wx-glass-panel` opt-ins, which also read
-     `--wx-glass-blur-phone`, are not dragged along. */
-  --wx-glass-blur-nav: 20px;
+     `--wx-glass-blur-phone`, are not dragged along.
+
+     28px, NOT the 20px that a literal 1.2x gives. 17 -> 20 was applied and
+     measured and he still could not see it, which is correct rather than
+     surprising: the bar sits over the shader and a photograph of smooth white
+     waves, so there are no high frequencies there for a low-pass filter to
+     remove, and 3px more of nothing is still nothing. The difference only
+     reads once sharp content scrolls underneath. This is the value that is
+     actually visible; it is one number to dial back. */
+  --wx-glass-blur-nav: 28px;
   --wx-glass-blur-rail: 7px;
   --wx-glass-blur-scrim: 14px;
   --wx-glass-blur-phone: 11px;
   --wx-glass-blur-app-phone: 13px;
-  --wx-glass-blur-nav-phone: 13px;
+  --wx-glass-blur-nav-phone: 18px;
   --wx-glass-saturate: 1.08;
 
   /*
@@ -977,13 +985,21 @@
   --wx-glass-blur-app: 20px;
   /* The LANDING nav only (`wx-nav-blur`), +20% on 2026-10-15. Its own pair so
      the shared `wx-glass` / `wx-glass-panel` opt-ins, which also read
-     `--wx-glass-blur-phone`, are not dragged along. */
-  --wx-glass-blur-nav: 20px;
+     `--wx-glass-blur-phone`, are not dragged along.
+
+     28px, NOT the 20px that a literal 1.2x gives. 17 -> 20 was applied and
+     measured and he still could not see it, which is correct rather than
+     surprising: the bar sits over the shader and a photograph of smooth white
+     waves, so there are no high frequencies there for a low-pass filter to
+     remove, and 3px more of nothing is still nothing. The difference only
+     reads once sharp content scrolls underneath. This is the value that is
+     actually visible; it is one number to dial back. */
+  --wx-glass-blur-nav: 28px;
   --wx-glass-blur-rail: 7px;
   --wx-glass-blur-scrim: 14px;
   --wx-glass-blur-phone: 11px;
   --wx-glass-blur-app-phone: 13px;
-  --wx-glass-blur-nav-phone: 13px;
+  --wx-glass-blur-nav-phone: 18px;
 
   /*
    * Light cannot use the pastels as text — 1.08:1 to 1.76:1 on paper — so it

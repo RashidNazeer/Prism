@@ -140,11 +140,32 @@ export function Hero() {
               >
                 <LoadWords text="Your numbers." quiet={quiet ?? false} />
                 <br />
-                <LoadWords
-                  text="Finally yours."
-                  className="text-brand-blend"
-                  quiet={quiet ?? false}
-                />
+                {/*
+                  `quiet` IS FORCED ON THIS LINE, and it is the fix for
+                  Rashid's "Finally yours. this text is still invisible on
+                  phone" — reported twice, because my first fix was aimed at
+                  the wrong cause.
+
+                  `LoadWords` normally splits the text into one `m.span` PER
+                  WORD, each `inline-block` with its own animated transform.
+                  That is fine for plain text and fatal for this line: the
+                  gradient is painted on the wrapper and clipped to its text
+                  with `background-clip: text`, but a transformed descendant
+                  is painted into its own layer in WebKit, so the wrapper's
+                  clipped background never reaches those glyphs — while
+                  `-webkit-text-fill-color: transparent` IS inherited by them.
+                  Transparent letters with no background behind them. Chromium
+                  paints it anyway, which is why it looked correct on every
+                  machine here and wrong on his phone.
+
+                  `quiet` makes LoadWords render the text directly inside the
+                  clipped span, with no per-word children to break the clip.
+                  The cost is the per-word stagger on this one line; the line
+                  still arrives with the headline's own animation. A heading
+                  that is visible everywhere beats one that animates nicely on
+                  half the devices.
+                */}
+                <LoadWords text="Finally yours." className="text-brand-blend" quiet />
               </m.h1>
 
               <m.p

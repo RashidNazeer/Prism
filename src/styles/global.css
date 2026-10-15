@@ -1797,6 +1797,16 @@ body::after {
   background-image: var(--wx-heading-gradient);
   -webkit-background-clip: text;
   background-clip: text;
+  /*
+   * `inline-block`, not the default `inline`. An inline box FRAGMENTS across
+   * line boxes, and the background box a text clip is measured against is then
+   * the union of those fragments — which WebKit resolves differently from
+   * Chromium, and is the other half of why this line came out invisible on a
+   * phone. An inline-block has exactly one box, so `background-size: 100% 100%`
+   * means one unambiguous thing. It still wraps internally, so a narrow phone
+   * breaks the phrase as before.
+   */
+  display: inline-block;
   /* A gradient painted through glyphs needs its own box to span; without this
      each line box would restart the ramp. */
   background-size: 100% 100%;
