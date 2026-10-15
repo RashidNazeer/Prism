@@ -3222,3 +3222,25 @@
   left: 0;
   max-width: min(21rem, calc(100vw - 2rem));
 }
+
+
+/*
+ * THE ADMIN SHELL STOPS PAINTING OVER THE GROUND, 2026-10-15.
+ * Rashid: "you see another solid background blocking our new background".
+ *
+ * The vendored stylesheet gives `.pc-app` `background: var(--pc-bg)` and
+ * `min-height: 100vh` -- and `--pc-bg` resolves to `--wx-surface-1`, which is
+ * OPAQUE. So the Paid Collabs screens laid a full-viewport sheet of flat
+ * surface colour over the shader and the waves, and the only ground still
+ * visible was the strip either side of it. That was correct when the app's
+ * background WAS a flat colour; it is wrong now that there is something behind
+ * it worth seeing.
+ *
+ * Transparent, not a translucent fill: every surface INSIDE it -- the KPI
+ * cards, the tables, the rails -- already carries its own background, so the
+ * sheet was pure occlusion and nothing depends on it for contrast. The cards
+ * keep their own opaque fills, so no text moves onto the photograph.
+ */
+.wurxbase-root .pc-app {
+  background: transparent !important;
+}

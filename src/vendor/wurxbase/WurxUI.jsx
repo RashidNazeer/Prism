@@ -1963,7 +1963,7 @@ export default function WurxUI({
 
           {/* Right-side filter cluster: month nav + All Time */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, opacity: allTime ? 0.45 : 1, pointerEvents: allTime ? 'none' : 'auto', transition: 'opacity 0.2s ease' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, opacity: allTime ? 0.6 : 1, pointerEvents: allTime ? 'none' : 'auto', transition: 'opacity 0.2s ease' }}>
                 {/* WURX-REPLACED · this was `<input type="month">` inside a pill,
                     flanked by ‹ › month arrows.
                     All of that chrome is gone with it. The pill drew its own

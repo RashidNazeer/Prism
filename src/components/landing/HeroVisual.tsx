@@ -124,7 +124,18 @@ export function HeroVisual() {
   const stem = `${BASE}prism-hero${dark ? '-dark' : ''}${large ? '' : '-720'}`;
   const src =
     still || large === null ? undefined : env.alpha ? `${stem}-alpha.webm` : `${stem}.mp4`;
-  const poster = `${BASE}prism-hero${dark ? '-dark' : ''}-poster.${env.alpha ? 'png' : 'jpg'}`;
+  /*
+   * WEBP, NOT PNG, ON THE ALPHA PATH. The poster is the one thing this
+   * component adds to FIRST PAINT -- it is fetched before any video and it is
+   * what the visitor looks at while the video arrives -- and it was a 203 KB
+   * PNG. Re-encoded at q82 it is 42.6 KB light and 29.0 KB dark, 79% and 84%
+   * smaller, with the alpha intact (ffprobe reports yuva420p; a flattened
+   * poster would have painted a hard square over the ground).
+   *
+   * The MP4 path keeps its JPG: that cut has the page colour baked in and has
+   * no transparency to preserve.
+   */
+  const poster = `${BASE}prism-hero${dark ? '-dark' : ''}-poster.${env.alpha ? 'webp' : 'jpg'}`;
 
   /* The column itself comes and goes with the breakpoint. */
   useEffect(() => {
@@ -147,23 +158,44 @@ export function HeroVisual() {
     };
     let idle = 0;
     let timer = 0;
+    let cap = 0;
     const soon = () => {
       /* `typeof`, not `'requestIdleCallback' in window`: the lib declares it,
          so `in` narrows the else branch to `never` and the fallback stops
          compiling, while Safari still does not actually ship it. */
       if (typeof window.requestIdleCallback === 'function') {
-        idle = window.requestIdleCallback(go, { timeout: 2000 });
+        idle = window.requestIdleCallback(go, { timeout: 300 });
       } else {
-        timer = window.setTimeout(go, 300);
+        timer = window.setTimeout(go, 150);
       }
     };
     if (document.readyState === 'complete') soon();
     else window.addEventListener('load', soon, { once: true });
+    /*
+     * A HARD CEILING ON THE WAIT, 2026-10-15. Rashid: "it took very long to
+     * load".
+     *
+     * Deferring to `load` is right in principle and far too patient in
+     * practice: `load` does not fire until EVERY other subresource on the
+     * page has finished -- the shader, the background photograph, the brand
+     * band's eight logos, every chunk of JS -- and only then did this wait up
+     * to another 2 s of idle before it so much as attached a `src`. On a cold
+     * visit that is seconds of an empty square before the download even
+     * starts.
+     *
+     * So `load` and the idle slot become an OPPORTUNITY, not a precondition:
+     * whichever comes first, the video is armed by 1.2 s. The ordering it was
+     * protecting is still protected, because `preload="none"` means arming
+     * costs nothing by itself and the real fetch is still gated on the
+     * observer.
+     */
+    cap = window.setTimeout(go, 1200);
     return () => {
       done = true;
       window.removeEventListener('load', soon);
       if (idle) window.cancelIdleCallback(idle);
       if (timer) window.clearTimeout(timer);
+      if (cap) window.clearTimeout(cap);
     };
   }, []);
 

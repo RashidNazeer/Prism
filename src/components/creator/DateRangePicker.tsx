@@ -177,7 +177,24 @@ export function DateRangePicker({
         aria-haspopup="dialog"
         aria-expanded={open}
         className={cn(
-          'wx-neo-raised-sm wx-neo-press text-muted hover:text-accent inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md px-2.5 text-[0.8125rem] font-medium sm:min-h-8',
+          /*
+           * A PILL, AND BIG ENOUGH TO HIT. Rashid, 2026-10-15, of this
+           * control on the Paid Collabs brand page: "very small and
+           * impractical seems broken".
+           *
+           * It sits immediately beside an "All Time" button that is a 34px
+           * pill at weight 700, while this was a 32px ROUNDED RECTANGLE at
+           * weight 500. Two controls doing the same job, one segmented pair,
+           * in two different shapes and two different weights -- which is
+           * what read as broken rather than merely small.
+           *
+           * `sm:min-h-9` is 36px, matching its neighbour and clearing the
+           * 32px it had sunk to; `min-h-11` still holds the 44px tap floor
+           * below `sm`. This is the creator app's component, so the creator
+           * side gets the same correction -- it was under the floor there
+           * too.
+           */
+          'wx-neo-raised-sm wx-neo-press text-muted hover:text-accent inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3.5 text-[0.8125rem] font-semibold sm:min-h-9',
           open && 'text-accent'
         )}
       >
