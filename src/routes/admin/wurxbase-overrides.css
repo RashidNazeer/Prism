@@ -3797,3 +3797,61 @@
     var(--wx-glass-inner),
     var(--wx-glass-lift) !important;
 }
+
+/*
+ * THE SECOND PASS OF ADMIN PANELS, 2026-10-16.
+ * Rashid: "check the admin logon as well most of the cards are solid."
+ *
+ * The first sweep (fadba10) took a curated 32. Re-run with the same
+ * shape test — a vendored `.wurxbase-root .foo` with an opaque `--wx-surface-*`
+ * fill, padding, and a radius between 12 and 40px — 22 more qualified. These
+ * are the 17 that are genuinely panels.
+ *
+ * FIVE ARE DELIBERATELY LEFT OPAQUE, and naming them matters more than the
+ * list that moved:
+ *   .ndm             a dialog. A floating surface over arbitrary content has
+ *                    no computable contrast floor — the transparent-calendar
+ *                    bug, fixed once already.
+ *   .ndm-del         a destructive button, not a panel.
+ *   .bsm-cancel      a button.
+ *   .vm-phone-frame  a device mockup at r=38; it is meant to read as hardware.
+ *   .ai-msg-text     a chat bubble carrying body text at small size; 10% white
+ *                    over an arbitrary thread background is where the dark
+ *                    muted-text floor is already thinnest.
+ *
+ * NOT VERIFIED IN A BROWSER. There is still no staff login on this machine, so
+ * this is shape analysis of the stylesheet, not a look at the screens.
+ */
+.wurxbase-root.wurxbase-root .ac-roleband,
+.wurxbase-root.wurxbase-root .bx,
+.wurxbase-root.wurxbase-root .ca-angle,
+.wurxbase-root.wurxbase-root .ca-compare,
+.wurxbase-root.wurxbase-root .ca-pool,
+.wurxbase-root.wurxbase-root .cx-note,
+.wurxbase-root.wurxbase-root .cx-pk-target,
+.wurxbase-root.wurxbase-root .gm-item,
+.wurxbase-root.wurxbase-root .logs-entry,
+.wurxbase-root.wurxbase-root .ndm-vids-sect,
+.wurxbase-root.wurxbase-root .notif-item,
+.wurxbase-root.wurxbase-root .sp-activity-row,
+.wurxbase-root.wurxbase-root .sp-me,
+.wurxbase-root.wurxbase-root .sp-profile-hero,
+.wurxbase-root.wurxbase-root .sp-team-add-in,
+.wurxbase-root.wurxbase-root .sp-team-row,
+.wurxbase-root.wurxbase-root .vm-row {
+  background-color: var(--wx-glass-fill) !important;
+  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left), var(--wx-glass-face) !important;
+  background-size:
+    100% 1px,
+    1px 100%,
+    100% 100% !important;
+  background-position:
+    top left,
+    top left,
+    top left !important;
+  background-repeat: no-repeat !important;
+  box-shadow:
+    inset 0 0 0 1px var(--wx-glass-edge),
+    var(--wx-glass-inner),
+    var(--wx-glass-lift) !important;
+}
