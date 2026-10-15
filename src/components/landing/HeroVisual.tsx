@@ -118,8 +118,31 @@ export function HeroVisual() {
   const [large, setLarge] = useState<boolean | null>(null);
   const [broken, setBroken] = useState(false);
 
-  /** Poster only, no video fetched at all. */
-  const still = quiet || env.thrifty || broken;
+  /*
+   * Poster only, no video fetched at all.
+   *
+   * `!env.alpha` JOINS THIS LIST, 2026-10-16. Rashid: "on mobile devices the
+   * background of video is not completely transparent".
+   *
+   * That path served the PAINTED MP4, which has the page colour baked into
+   * every frame — on an iPhone it is a filled rectangle sitting on the glass
+   * ground, which is exactly what he is seeing. Measured out of the files:
+   * the light cut's corner is rgb(229,231,239) and its CENTRE, the phone
+   * artwork itself, is rgb(224,219,248). Ten levels apart. No blend mode can
+   * separate a backdrop from its content at that distance — `screen` or
+   * `multiply` would eat the phone along with the field behind it, so the
+   * usual white-on-black trick is not available here.
+   *
+   * The only format Safari will play with real transparency is HEVC WITH AN
+   * ALPHA CHANNEL, which needs Apple's own encoder on a Mac; ffmpeg here
+   * cannot produce it. So until such an export exists, those browsers get the
+   * transparent POSTER instead of an opaque video. A still with a correct
+   * background beats a moving rectangle with a wrong one.
+   *
+   * The MP4s are left in place, unreferenced: the moment a HEVC-alpha cut
+   * lands, this clause is what comes back out.
+   */
+  const still = quiet || env.thrifty || broken || !env.alpha;
 
   const stem = `${BASE}prism-hero${dark ? '-dark' : ''}${large ? '' : '-720'}`;
   const src =
@@ -132,10 +155,12 @@ export function HeroVisual() {
    * smaller, with the alpha intact (ffprobe reports yuva420p; a flattened
    * poster would have painted a hard square over the ground).
    *
-   * The MP4 path keeps its JPG: that cut has the page colour baked in and has
-   * no transparency to preserve.
+   * ALWAYS THE WEBP NOW, 2026-10-16. The JPG was for the MP4 path, which is
+   * gone: a JPG cannot carry transparency, so serving it to Safari was the
+   * second half of the opaque-rectangle bug. Safari has supported WebP with
+   * alpha since 14, which is well below this product's floor.
    */
-  const poster = `${BASE}prism-hero${dark ? '-dark' : ''}-poster.${env.alpha ? 'webp' : 'jpg'}`;
+  const poster = `${BASE}prism-hero${dark ? '-dark' : ''}-poster.webp`;
 
   /* The column itself comes and goes with the breakpoint. */
   useEffect(() => {
@@ -295,17 +320,15 @@ export function HeroVisual() {
     /* Decorative, so it is hidden from the accessibility tree and nothing in it
        can be focused or announced. The headline beside it is the content. */
     <div ref={box} className="wx-hero-visual" aria-hidden="true">
+      {/* No `is-painted` on either branch any more. That class feathered the
+          outer 7% to hide the painted MP4's hard edge; with the MP4 path gone
+          both the poster and the video carry real alpha, and fading their
+          edges would only dim artwork that already ends in nothing. */}
       {still ? (
-        <img
-          src={poster}
-          alt=""
-          className={env.alpha ? undefined : 'is-painted'}
-          draggable={false}
-        />
+        <img src={poster} alt="" draggable={false} />
       ) : (
         <video
           ref={video}
-          className={env.alpha ? undefined : 'is-painted'}
           poster={poster}
           src={src}
           preload="none"
