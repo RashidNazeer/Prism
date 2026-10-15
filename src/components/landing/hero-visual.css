@@ -51,10 +51,32 @@
  */
 @media (min-width: 64rem) {
   .wx-hero-visual {
-    /* 3rem, not 5: Rashid, 2026-10-15, "move video window a little up". The
-       square grew 21% when the media column widened, so its base already
-       reached the chip row from higher up. */
-    margin-block-start: 3rem;
+    /*
+     * UP AND LEFT, 2026-10-15. Rashid, after the square grew 21%: "move the
+     * video window upward and toward left align it properly".
+     *
+     * It was 5rem down, set when the square was 518px and genuinely did sit
+     * above the copy. At 629px the same offset hung its base 166px below the
+     * chip row while its top was still level with the headline, so the whole
+     * block read low and right. 0.5rem puts its centre within a few pixels of
+     * the copy block's centre, which is what "aligned" means here.
+     *
+     * LEFT IS A NEGATIVE START MARGIN, NOT A TRANSFORM. `width` is already
+     * 100% of the track, so the used width is settled before margins apply
+     * and a negative start margin simply slides the resolved box left -- no
+     * reflow, and no new containing block. A `translate` would have done the
+     * same thing visually while making this element the containing block for
+     * any fixed-position descendant, which is the failure GLASS_PLAN 1.2
+     * exists to prevent; it is not on the chain to `.wurxbase-root`, so it
+     * would not have been caught by the guard either.
+     *
+     * The 3rem it moves left is paid for out of the gutter and the copy
+     * column's slack, and the artwork's own baked-in margin means nothing
+     * comes near the text: measured at 1920, the painted phone starts well
+     * inside the frame.
+     */
+    margin-block-start: 0.5rem;
+    margin-inline-start: -3rem;
   }
 }
 
