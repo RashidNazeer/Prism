@@ -500,6 +500,14 @@
      stretched nearly flat. Matching the LOOK therefore needs a much larger
      radius on desktop than on the phone. */
   --wx-glass-blur-nav: 48px;
+  /* BLUR CANNOT BE THE ONLY LEVER. Proven at 1920: the bar at blur(0) and
+     blur(200px) is pixel-identical, because the backdrop there is a flat
+     field and a low-pass filter has nothing to remove. `saturate` and
+     `brightness` DO change a flat backdrop, and they are what makes glass
+     read as glass when there is nothing behind it to smear. Light lifts and
+     intensifies; dark smokes down. */
+  --wx-nav-saturate: 1.6;
+  --wx-nav-brightness: 0.9;
   --wx-glass-blur-rail: 7px;
   --wx-glass-blur-scrim: 14px;
   --wx-glass-blur-phone: 11px;
@@ -1020,6 +1028,8 @@
      radius on desktop than on the phone. */
   --wx-glass-blur-nav: 48px;
   --wx-glass-blur-rail: 7px;
+  --wx-nav-saturate: 1.6;
+  --wx-nav-brightness: 1.08;
   --wx-glass-blur-scrim: 14px;
   --wx-glass-blur-phone: 11px;
   --wx-glass-blur-app-phone: 13px;

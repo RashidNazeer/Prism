@@ -1011,14 +1011,14 @@ body::after {
    * This is the one blur a phone pays at every width and it is deliberately
    * NOT raised: the increase is for the machine that can afford it.
    */
-  backdrop-filter: blur(var(--wx-glass-blur-nav-phone));
-  -webkit-backdrop-filter: blur(var(--wx-glass-blur-nav-phone));
+  backdrop-filter: blur(var(--wx-glass-blur-nav-phone)) saturate(var(--wx-nav-saturate)) brightness(var(--wx-nav-brightness));
+  -webkit-backdrop-filter: blur(var(--wx-glass-blur-nav-phone)) saturate(var(--wx-nav-saturate)) brightness(var(--wx-nav-brightness));
 }
 
 @media (min-width: 768px) {
   .wx-nav-blur {
-    backdrop-filter: blur(var(--wx-glass-blur-nav));
-    -webkit-backdrop-filter: blur(var(--wx-glass-blur-nav));
+    backdrop-filter: blur(var(--wx-glass-blur-nav)) saturate(var(--wx-nav-saturate)) brightness(var(--wx-nav-brightness));
+    -webkit-backdrop-filter: blur(var(--wx-glass-blur-nav)) saturate(var(--wx-nav-saturate)) brightness(var(--wx-nav-brightness));
   }
 }
 
