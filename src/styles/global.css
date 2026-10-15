@@ -771,6 +771,28 @@ body::after {
  * own those pseudo-elements.
  */
 @utility wx-neo-raised {
+  /*
+   * CARDS BLUR AGAIN, 2026-10-15, at Rashid's instruction ("increase the blur
+   * of all the cards as well around 30%" — 6px was the card token, so 8px).
+   *
+   * THIS REVERSES 663b0a8, AND HE SHOULD KNOW IT. That commit took blur OFF
+   * the cards because 27 backdrop-filters on one page was the scroll lag he
+   * reported, and this puts roughly 14 of them back on the landing page. If
+   * scrolling goes heavy again, this one declaration is the cause and
+   * deleting it is the fix.
+   *
+   * It is NOT the invisible kind of blur, which is why it is worth paying for
+   * here and was not on the nav: tested at 1920 with blur(200px) on a stat
+   * card, the sharp diagonal wave edge crossing the card smooths away. Cards
+   * sit over the ground's EDGES, where there is real detail to remove, unlike
+   * the flat strip the top bar sits on.
+   *
+   * `wx-neo-raised-sm` deliberately does NOT get this. It dresses chips,
+   * pills and icon wells — a 2rem chip cannot show 8px of blur, and that
+   * variant is what took the count from 15 to 27 last time.
+   */
+  backdrop-filter: blur(var(--wx-glass-blur));
+  -webkit-backdrop-filter: blur(var(--wx-glass-blur));
   background-color: var(--wx-glass-fill);
   background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left), var(--wx-glass-face);
   background-size:

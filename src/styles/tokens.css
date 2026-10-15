@@ -305,7 +305,7 @@
      is what "this bar has no blur on laptop" actually was. The blur is real;
      the frost is what makes it visible at rest. This is the one place the nav
      deliberately stops matching the cards. */
-  --wx-glass-fill-nav: rgba(43, 43, 46, 0.72);
+  --wx-glass-fill-nav: rgba(43, 43, 46, 0.82);
   --wx-glass-fill-hover: rgba(52, 52, 56, 0.58);
   --wx-glass-well: rgba(26, 26, 28, 0.58);
   --wx-glass-panel: rgba(43, 43, 46, 0.44);
@@ -473,7 +473,7 @@
    * `saturate` MOVED. His cards carry `blur(22px) saturate(1.08)` and his nav
    * carries a bare `blur(28px)`. Ours had it exactly the other way round.
    */
-  --wx-glass-blur: 6px;
+  --wx-glass-blur: 8px;
   --wx-glass-blur-chrome: 17px;
   /* The IN-APP rail and top bar only (`wx-glass-chrome`), raised a further 1.2x
      on 2026-10-15: "Admin navbars need blur increase 0.2 times". Separate from
@@ -506,8 +506,8 @@
      `brightness` DO change a flat backdrop, and they are what makes glass
      read as glass when there is nothing behind it to smear. Light lifts and
      intensifies; dark smokes down. */
-  --wx-nav-saturate: 1.6;
-  --wx-nav-brightness: 0.9;
+  --wx-nav-saturate: 1.9;
+  --wx-nav-brightness: 0.78;
   --wx-glass-blur-rail: 7px;
   --wx-glass-blur-scrim: 14px;
   --wx-glass-blur-phone: 11px;
@@ -850,7 +850,7 @@
    * than what it replaces.
    */
   --wx-glass-fill: rgba(255, 255, 255, 0.08);
-  --wx-glass-fill-nav: rgba(255, 255, 255, 0.22);
+  --wx-glass-fill-nav: rgba(255, 255, 255, 0.34);
   --wx-glass-fill-hover: rgba(255, 255, 255, 0.18);
   /* His well washes DOWNWARD in ink — `rgba(0, 0, 0, 0.03)` on `.segmented`
      and `.role-tabs` — where the pane around it washes upward in white. The
@@ -1000,7 +1000,7 @@
   --wx-glass-glow: 0 0 40px rgba(148, 69, 211, 0.16);
   /* His ladder. See the dark block for why the phone value is not his, and for
      why his 32px modal blur is not here at all. */
-  --wx-glass-blur: 6px;
+  --wx-glass-blur: 8px;
   --wx-glass-blur-chrome: 17px;
   /* The IN-APP rail and top bar only (`wx-glass-chrome`), raised a further 1.2x
      on 2026-10-15: "Admin navbars need blur increase 0.2 times". Separate from
@@ -1028,8 +1028,8 @@
      radius on desktop than on the phone. */
   --wx-glass-blur-nav: 48px;
   --wx-glass-blur-rail: 7px;
-  --wx-nav-saturate: 1.6;
-  --wx-nav-brightness: 1.08;
+  --wx-nav-saturate: 1.9;
+  --wx-nav-brightness: 1.20;
   --wx-glass-blur-scrim: 14px;
   --wx-glass-blur-phone: 11px;
   --wx-glass-blur-app-phone: 13px;
