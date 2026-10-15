@@ -36,7 +36,19 @@ export function Section({
 }) {
   return (
     // scroll-mt clears the fixed header so anchor jumps don't hide the heading.
-    <section id={id} className={cn('scroll-mt-20 py-20 sm:py-28', className)}>
+    /*
+     * HALVED, 2026-10-16. Rashid, pointing at the band between the Platform
+     * cards and the closing call to action: "decrease these type of extra
+     * spacings as well in the landing page to around 50%".
+     *
+     * It was `py-20 sm:py-28` — 112px top AND bottom at desktop, 80px on a
+     * phone. Three sections carry it, so every boundary between them stacked
+     * 224px of nothing at 1440 and 160px at 375. Measured, which is why this
+     * is a halving of the PADDING rather than a guess at the gap: 56px a side
+     * leaves 112px between sections, still a clear break without the dead
+     * band.
+     */
+    <section id={id} className={cn('scroll-mt-20 py-10 sm:py-14', className)}>
       <Container>{children}</Container>
     </section>
   );
