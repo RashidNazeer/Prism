@@ -457,15 +457,54 @@ export function TiltedGridHero({
                     // Every strip starts at the tile's centre and is turned
                     // round the axis to its own place on the arc.
                     left: u((aspectRatio - share) / 2),
-                    // A pixel wider than its share, so neighbouring facets
-                    // overlap and no hairline opens between them. The last
-                    // has no neighbour to cover.
-                    width: k === SLICES - 1 ? u(share) : `calc(${u(share)} + 1px)`,
+                    /*
+                     * NO OVERLAP NOW THAT THE FILL IS TRANSLUCENT.
+                     *
+                     * This used to be `share + 1px` so neighbouring facets
+                     * overlapped and no hairline opened between them — free
+                     * when the plaque was an OPAQUE well, because painting the
+                     * same opaque colour twice looks identical. At
+                     * rgba(255,255,255,0.1) it does not: two strips over each
+                     * other composite to about 0.19, and every seam showed as
+                     * a vertical stripe down the plaque. Visible in dark on
+                     * the first build of this change.
+                     *
+                     * Each strip is now exactly its share. The facets meet
+                     * instead of overlapping, so the fill stays one even
+                     * value across the whole plaque.
+                     */
+                    width: u(share),
                     height: u(1),
-                    // The plaque itself: the design system's well, which is
-                    // a dark pane on dark and a pale one on light, so the
-                    // mark below can simply be the page's own ink.
-                    background: 'var(--wx-glass-well)',
+                    /*
+                     * THE CARD MATERIAL, REBUILT ACROSS THE SLICES.
+                     * Rashid: "give this scrolling bar's cards the same
+                     * effect."
+                     *
+                     * A plaque is not one box — it is SLICES strips, each
+                     * turned its own few degrees round the cylinder. Putting
+                     * the card's whole material on each strip would draw ten
+                     * sets of edges down the middle of every plaque, so it is
+                     * reassembled instead:
+                     *   · the fill is per strip and reads continuous;
+                     *   · the top and bottom highlights are HORIZONTAL, so
+                     *     they run straight through the seams and look like
+                     *     one unbroken line;
+                     *   · the vertical edge is drawn only on the strip that
+                     *     actually has one — first on the left, last on the
+                     *     right.
+                     * No drop shadow: these sit on a curved row with no
+                     * ground beneath them, and a flat rectangular drop would
+                     * fight the arc.
+                     */
+                    background: 'var(--wx-glass-fill)',
+                    boxShadow: [
+                      'inset 0 1px 0 rgba(255, 255, 255, 0.5)',
+                      'inset 0 -1px 0 rgba(255, 255, 255, 0.1)',
+                      k === 0 ? 'inset 1px 0 0 var(--wx-glass-edge)' : null,
+                      k === SLICES - 1 ? 'inset -1px 0 0 var(--wx-glass-edge)' : null,
+                    ]
+                      .filter(Boolean)
+                      .join(', '),
                     transform: turn((aspectRatio / 2 - (k + 0.5) * share) * unit),
                   }}
                 >
