@@ -298,19 +298,19 @@
    * that buys the white rim its budget — and the base is as thin as the floor
    * allows rather than as thin as he drew it.
    */
-  --wx-glass-fill: rgba(43, 43, 46, 0.50);
+  --wx-glass-fill: rgba(255, 255, 255, 0.1);
   /* THE LANDING NAV IS ITS OWN, DENSER MATERIAL from 2026-10-15. It used the
      card fill, which is 50% here and 8% in light — and a bar that transparent
      over a smooth background cannot read as glass however hard it blurs, which
      is what "this bar has no blur on laptop" actually was. The blur is real;
      the frost is what makes it visible at rest. This is the one place the nav
      deliberately stops matching the cards. */
-  --wx-glass-fill-nav: rgba(43, 43, 46, 0.82);
+  --wx-glass-fill-nav: rgba(255, 255, 255, 0.1);
   --wx-glass-fill-hover: rgba(52, 52, 56, 0.58);
   --wx-glass-well: rgba(26, 26, 28, 0.58);
-  --wx-glass-panel: rgba(43, 43, 46, 0.44);
+  --wx-glass-panel: rgba(255, 255, 255, 0.1);
   --wx-glass-line: rgba(255, 255, 255, 0.1);
-  --wx-glass-edge: rgba(255, 255, 255, 0.14);
+  --wx-glass-edge: rgba(255, 255, 255, 0.3);
   /*
    * HIS SMALL-CONTROL EDGE. Measured: his panes carry `#ffffffe0` (0.88) and
    * his pills, badges and icon wells a lighter `#ffffff9c` (0.61) — two edge
@@ -364,13 +364,8 @@
   --wx-glass-modal: rgba(43, 43, 46, 0.89);
   /* The two lit edges: a light source above and to the left. Same direction the
      neomorphic layer used, so the whole system agrees where the light is. */
-  --wx-glass-rim-top: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.34), transparent);
-  --wx-glass-rim-left: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.3),
-    transparent 60%,
-    rgba(255, 255, 255, 0.1)
-  );
+  --wx-glass-rim-top: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+  --wx-glass-rim-left: linear-gradient(180deg, rgba(255, 255, 255, 0.8), transparent, rgba(255, 255, 255, 0.3));
   /* The inner glow, from Rashid's corrected reference: a soft white halo just
      inside the edge. His first copy declared it at alpha 1.6, which is invalid
      and clamps to opaque white — it flooded 40px of every edge. At a legal
@@ -444,10 +439,8 @@
    * and takes his GEOMETRY instead — 16px down, 32px of blur, which is deeper
    * and tighter than the 8px/32px it had.
    */
-  --wx-glass-inner:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(255, 255, 255, 0.035),
-    inset 0 0 24px rgba(255, 255, 255, 0.035);
-  --wx-glass-lift: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.3);
+  --wx-glass-inner: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.1), inset 0 0 4px 2px rgba(255, 255, 255, 0.2);
+  --wx-glass-lift: 0 8px 32px rgba(0, 0, 0, 0.1);
   --wx-glass-lift-hover: 0 0.75rem 1.75rem rgba(0, 0, 0, 0.38);
   /* His modal adds a second, far deeper drop under the optical one:
      `0 30px 80px rgba(0, 0, 0, 0.21)`. That is what separates a modal from a
@@ -479,7 +472,7 @@
      on 2026-10-15: "Admin navbars need blur increase 0.2 times". Separate from
      `-chrome` because that token is also worn by the LANDING nav
      (`wx-nav-blur`), which he did not ask to change. */
-  --wx-glass-blur-app: 20px;
+  --wx-glass-blur-app: 8px;
   /* The LANDING nav only (`wx-nav-blur`), +20% on 2026-10-15. Its own pair so
      the shared `wx-glass` / `wx-glass-panel` opt-ins, which also read
      `--wx-glass-blur-phone`, are not dragged along.
@@ -499,20 +492,20 @@
      CSS pixel for a low-pass filter to remove. At 1440 the same image is
      stretched nearly flat. Matching the LOOK therefore needs a much larger
      radius on desktop than on the phone. */
-  --wx-glass-blur-nav: 48px;
+  --wx-glass-blur-nav: 8px;
   /* BLUR CANNOT BE THE ONLY LEVER. Proven at 1920: the bar at blur(0) and
      blur(200px) is pixel-identical, because the backdrop there is a flat
      field and a low-pass filter has nothing to remove. `saturate` and
      `brightness` DO change a flat backdrop, and they are what makes glass
      read as glass when there is nothing behind it to smear. Light lifts and
      intensifies; dark smokes down. */
-  --wx-nav-saturate: 1.9;
-  --wx-nav-brightness: 0.78;
+  --wx-nav-saturate: 1;
+  --wx-nav-brightness: 1;
   --wx-glass-blur-rail: 7px;
   --wx-glass-blur-scrim: 14px;
   --wx-glass-blur-phone: 11px;
-  --wx-glass-blur-app-phone: 13px;
-  --wx-glass-blur-nav-phone: 18px;
+  --wx-glass-blur-app-phone: 8px;
+  --wx-glass-blur-nav-phone: 8px;
   --wx-glass-saturate: 1.08;
 
   /*
@@ -849,8 +842,8 @@
    * the pane together over `glass-waves.webp`, and it is 3× more transparent
    * than what it replaces.
    */
-  --wx-glass-fill: rgba(255, 255, 255, 0.08);
-  --wx-glass-fill-nav: rgba(255, 255, 255, 0.34);
+  --wx-glass-fill: rgba(255, 255, 255, 0.1);
+  --wx-glass-fill-nav: rgba(255, 255, 255, 0.1);
   --wx-glass-fill-hover: rgba(255, 255, 255, 0.18);
   /* His well washes DOWNWARD in ink — `rgba(0, 0, 0, 0.03)` on `.segmented`
      and `.role-tabs` — where the pane around it washes upward in white. The
@@ -860,14 +853,14 @@
   --wx-glass-well: rgba(226, 230, 242, 0.5);
   /* Chrome is denser than a card in his file too: smoke waist 0.060 against
      optical waist 0.047, a ratio of 1.28. Kept. */
-  --wx-glass-panel: rgba(255, 255, 255, 0.12);
+  --wx-glass-panel: rgba(255, 255, 255, 0.1);
   /* His hairline, measured off `.segmented`: `rgba(73, 85, 104, 0.17)`. Ours
      was `rgba(20, 20, 28, 0.06)` — a third of the weight and a neutral rather
      than a blue-grey. His is both more his and a better control boundary. */
   --wx-glass-line: rgba(73, 85, 104, 0.17);
   /* His `#ffffffe0`, exactly. This is the edge that makes a pane at 14% read
      as a solid object: almost all of the "glass" is the rim, not the fill. */
-  --wx-glass-edge: rgba(255, 255, 255, 0.88);
+  --wx-glass-edge: rgba(255, 255, 255, 0.3);
   /* His second edge tier, `#ffffff9c`, for pills, badges and icon wells. */
   --wx-glass-edge-sm: rgba(255, 255, 255, 0.61);
   /*
@@ -904,13 +897,8 @@
   );
   /* His `--glass-solid` `#e6e8ef` at the 0.89 his modal card computes to. */
   --wx-glass-modal: rgba(230, 232, 239, 0.89);
-  --wx-glass-rim-top: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), transparent);
-  --wx-glass-rim-left: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.9),
-    transparent 60%,
-    rgba(255, 255, 255, 0.35)
-  );
+  --wx-glass-rim-top: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+  --wx-glass-rim-left: linear-gradient(180deg, rgba(255, 255, 255, 0.8), transparent, rgba(255, 255, 255, 0.3));
   /* See the dark block. Light carries the glow at its reference strength. */
   /* See the dark block. Paper takes a stronger highlight and a softer shade. */
   /*
@@ -989,10 +977,8 @@
    * The lift was already his colour by luck — `rgb(60, 70, 106)` — and now has
    * his offset and his alpha too: 16px down, not 8px, at 0.082, not 0.10.
    */
-  --wx-glass-inner:
-    inset 0 1px 0 rgba(255, 255, 255, 0.737), inset 0 -1px 0 rgba(255, 255, 255, 0.259),
-    inset 0 0 24px rgba(255, 255, 255, 0.094);
-  --wx-glass-lift: 0 0.5rem 1.25rem rgba(60, 70, 106, 0.055);
+  --wx-glass-inner: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.1), inset 0 0 4px 2px rgba(255, 255, 255, 0.2);
+  --wx-glass-lift: 0 8px 32px rgba(0, 0, 0, 0.1);
   --wx-glass-lift-hover: 0 0.75rem 1.75rem rgba(60, 70, 106, 0.095);
   /* His modal's second drop, `0 30px 80px rgba(0, 0, 0, 0.21)`, exactly. */
   --wx-glass-lift-modal: 0 1.875rem 5rem rgba(0, 0, 0, 0.21);
@@ -1006,7 +992,7 @@
      on 2026-10-15: "Admin navbars need blur increase 0.2 times". Separate from
      `-chrome` because that token is also worn by the LANDING nav
      (`wx-nav-blur`), which he did not ask to change. */
-  --wx-glass-blur-app: 20px;
+  --wx-glass-blur-app: 8px;
   /* The LANDING nav only (`wx-nav-blur`), +20% on 2026-10-15. Its own pair so
      the shared `wx-glass` / `wx-glass-panel` opt-ins, which also read
      `--wx-glass-blur-phone`, are not dragged along.
@@ -1026,14 +1012,14 @@
      CSS pixel for a low-pass filter to remove. At 1440 the same image is
      stretched nearly flat. Matching the LOOK therefore needs a much larger
      radius on desktop than on the phone. */
-  --wx-glass-blur-nav: 48px;
+  --wx-glass-blur-nav: 8px;
   --wx-glass-blur-rail: 7px;
-  --wx-nav-saturate: 1.9;
-  --wx-nav-brightness: 1.20;
+  --wx-nav-saturate: 1;
+  --wx-nav-brightness: 1;
   --wx-glass-blur-scrim: 14px;
   --wx-glass-blur-phone: 11px;
-  --wx-glass-blur-app-phone: 13px;
-  --wx-glass-blur-nav-phone: 18px;
+  --wx-glass-blur-app-phone: 8px;
+  --wx-glass-blur-nav-phone: 8px;
 
   /*
    * Light cannot use the pastels as text — 1.08:1 to 1.76:1 on paper — so it

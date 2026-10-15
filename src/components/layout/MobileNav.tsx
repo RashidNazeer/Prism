@@ -160,7 +160,21 @@ export function MobileNav({ items, className }: { items: NavItem[]; className?: 
         /* `--wx-vv-bottom` is the browser toolbar's height, maintained by the
            effect above; it falls back to 0 wherever `visualViewport` is
            missing, which is the behaviour this had before. */
-        'wx-glass-overlay fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom)+var(--wx-vv-bottom,0px))] z-40 overflow-hidden rounded-[1.75rem] lg:hidden',
+        /*
+         * `wx-nav-blur` added 2026-10-16: Rashid asked for the target glass on
+         * "every nav bar either on top or in the bottom", and this one had no
+         * `backdrop-filter` at all — measured `none`. It now blurs at the same
+         * 8px as the top bars.
+         *
+         * IT KEEPS THE OVERLAY'S DENSER FILL, and that is deliberate rather
+         * than incidental: `wx-glass-overlay` is defined later in global.css,
+         * so its near-opaque `--wx-glass-modal` wins over the nav fill on
+         * equal specificity. A bar that floats over arbitrary scrolling
+         * content cannot have a computable contrast floor — that is the
+         * transparent-calendar bug, fixed once already — so 10% white here
+         * would be a regression even though the top bars can carry it.
+         */
+        'wx-glass-overlay wx-nav-blur fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom)+var(--wx-vv-bottom,0px))] z-40 overflow-hidden rounded-[1.75rem] lg:hidden',
         className
       )}
     >
