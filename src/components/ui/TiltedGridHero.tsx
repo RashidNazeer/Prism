@@ -455,6 +455,29 @@ export function TiltedGridHero({
                  */
                 backdropFilter: 'blur(var(--wx-glass-blur))',
                 WebkitBackdropFilter: 'blur(var(--wx-glass-blur))',
+                /*
+                 * THE FILL IS ON THE TILE TOO, 2026-10-16, and that is what
+                 * finally kills the seams. Rashid: "you see these mild lines
+                 * in dark mode on slideshow cards I want them gone."
+                 *
+                 * They were the slice boundaries, and they survived two
+                 * attempts from opposite directions: with the facets
+                 * overlapping by 1px the doubled translucent fill read as
+                 * LIGHT stripes; with the overlap removed, sub-pixel gaps
+                 * between rotated facets let the ground through as DARK ones.
+                 * Any per-slice fill has this problem, because ten boxes that
+                 * meet at an angle cannot tile a plane cleanly at fractional
+                 * device pixels.
+                 *
+                 * One box cannot have a seam. The tile carries the fill, the
+                 * edge and the radius; the slices now carry only the mark and
+                 * their own clipping, which is what the curve actually needs
+                 * them for.
+                 */
+                backgroundColor: 'var(--wx-glass-fill)',
+                borderRadius: '0.75rem',
+                boxShadow:
+                  'inset 0 0 0 1px var(--wx-glass-edge), inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.1)',
                 // Tile t starts t tiles along the loop.
                 animation: `${orbit} ${duration}s linear ${-t * speed}s infinite`,
               }}
@@ -518,15 +541,9 @@ export function TiltedGridHero({
                      * ground beneath them, and a flat rectangular drop would
                      * fight the arc.
                      */
-                    background: 'var(--wx-glass-fill)',
-                    boxShadow: [
-                      'inset 0 1px 0 rgba(255, 255, 255, 0.5)',
-                      'inset 0 -1px 0 rgba(255, 255, 255, 0.1)',
-                      k === 0 ? 'inset 1px 0 0 var(--wx-glass-edge)' : null,
-                      k === SLICES - 1 ? 'inset -1px 0 0 var(--wx-glass-edge)' : null,
-                    ]
-                      .filter(Boolean)
-                      .join(', '),
+                    /* No paint on a slice any more — see the tile above. A
+                       slice is now purely a window onto its share of the
+                       mark, turned to its own place on the arc. */
                     transform: turn((aspectRatio / 2 - (k + 0.5) * share) * unit),
                   }}
                 >
