@@ -850,7 +850,7 @@
      direction is his and ours already agreed; the alpha comes down toward him
      but stops well short of 3%, because a well has to hold a placeholder and
      `--wx-text-faint` on paper has only 0.20 of headroom to spend. */
-  --wx-glass-well: rgba(0, 0, 0, 0.05);
+  --wx-glass-well: rgba(226, 230, 242, 0.5);
   /* Chrome is denser than a card in his file too: smoke waist 0.060 against
      optical waist 0.047, a ratio of 1.28. Kept. */
   --wx-glass-panel: rgba(255, 255, 255, 0.1);
