@@ -996,14 +996,14 @@ body::after {
    * This is the one blur a phone pays at every width and it is deliberately
    * NOT raised: the increase is for the machine that can afford it.
    */
-  backdrop-filter: blur(var(--wx-glass-blur-phone));
-  -webkit-backdrop-filter: blur(var(--wx-glass-blur-phone));
+  backdrop-filter: blur(var(--wx-glass-blur-nav-phone));
+  -webkit-backdrop-filter: blur(var(--wx-glass-blur-nav-phone));
 }
 
 @media (min-width: 768px) {
   .wx-nav-blur {
-    backdrop-filter: blur(var(--wx-glass-blur-chrome));
-    -webkit-backdrop-filter: blur(var(--wx-glass-blur-chrome));
+    backdrop-filter: blur(var(--wx-glass-blur-nav));
+    -webkit-backdrop-filter: blur(var(--wx-glass-blur-nav));
   }
 }
 
@@ -1797,11 +1797,38 @@ body::after {
   background-image: var(--wx-heading-gradient);
   -webkit-background-clip: text;
   background-clip: text;
-  -webkit-text-fill-color: transparent;
   /* A gradient painted through glyphs needs its own box to span; without this
      each line box would restart the ramp. */
   background-size: 100% 100%;
   background-repeat: no-repeat;
+}
+
+/*
+ * THE GLYPHS ONLY GO TRANSPARENT WHERE THE CLIP ACTUALLY WORKS.
+ * Rashid, 2026-10-15: "the Finally yours coloured text is also not visible on
+ * phone".
+ *
+ * `-webkit-text-fill-color: transparent` used to sit in the utility above,
+ * applied unconditionally. That is a one-way bet: the fill-color property is
+ * supported far more widely than `background-clip: text` behaves correctly,
+ * so on any browser where the clip does not take, the paint is already gone
+ * and what is left is a heading rendered in nothing at all. There is no
+ * degraded state in between -- the text is simply invisible, which is exactly
+ * what he is seeing.
+ *
+ * Behind `@supports`, the transparency is only ever applied where the clip is
+ * claimed, and everywhere else the `color: var(--wx-accent)` set above stays
+ * visible as a solid heading. A solid accent heading is a fine outcome; an
+ * invisible one is not.
+ *
+ * This is NOT reproducible in headless Chromium -- it renders the gradient
+ * correctly at 375px -- so the fix is a structural one against a class of
+ * failure, not a patch against a repro.
+ */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .text-brand-blend {
+    -webkit-text-fill-color: transparent;
+  }
 }
 
 @media (forced-colors: active) {

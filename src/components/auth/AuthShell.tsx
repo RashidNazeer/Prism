@@ -41,7 +41,21 @@ export function AuthShell({
   eyebrow?: ReactNode;
 }) {
   return (
-    <div className="relative grid min-h-dvh place-items-center overflow-hidden px-5 py-10 sm:px-8">
+    /*
+     * THE CARD CLEARS THE THEME TOGGLE ON A PHONE, 2026-10-15.
+     * Rashid: "fix this night mode switcher on mobile devices as well".
+     *
+     * The toggle is absolutely positioned at the top right while the card is
+     * CENTRED in the viewport, so on a short screen the two met: measured at
+     * 375x667 the toggle ran y 24..68 and the card began at y 43. It looked
+     * like a broken control half-buried under the panel.
+     *
+     * The top padding is what the toggle occupies plus the notch — 5rem clears
+     * its 68px bottom edge — and it applies only below `sm`, because from
+     * there the viewport is tall and wide enough that the two never met. The
+     * card stays centred in what is left.
+     */
+    <div className="relative grid min-h-dvh place-items-center overflow-hidden px-5 pt-[calc(5rem+env(safe-area-inset-top))] pb-10 sm:px-8 sm:pt-10">
       <div aria-hidden className="pointer-events-none absolute inset-0">
         {/* The halo replaces the old grid and glow. Both drew the Wurx
             language, and two decorative layers under a WebGL field is one
@@ -49,7 +63,9 @@ export function AuthShell({
         <HaloBackdrop className="absolute inset-0" />
       </div>
 
-      <div className="absolute top-6 right-5 sm:right-8">
+      {/* The notch, where there is one. `viewport-fit=cover` is set in
+          index.html, without which this inset resolves to 0. */}
+      <div className="absolute top-[calc(1.5rem+env(safe-area-inset-top))] right-5 sm:right-8">
         <ThemeToggle />
       </div>
 

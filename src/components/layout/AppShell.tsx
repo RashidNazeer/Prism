@@ -397,7 +397,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* The bar is about 3.5rem tall and now floats 0.75rem above the
               safe area, so the clearance is the bar plus both gutters. It was
               4.5rem, from when the bar sat flush against the window edge. */}
-          <div className="w-full px-3 py-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:py-5 lg:pb-5">
+          {/* `--wx-vv-bottom` tracks the phone browser's own toolbar (see
+              MobileNav). The bar lifts by it, so the clearance under the
+              content has to grow by it too, or the last card ends up behind
+              the bar at exactly the moment the toolbar appears. */}
+          <div className="w-full px-3 py-4 pb-[calc(5.5rem+env(safe-area-inset-bottom)+var(--wx-vv-bottom,0px))] sm:py-5 lg:pb-5">
             {children}
           </div>
         </main>

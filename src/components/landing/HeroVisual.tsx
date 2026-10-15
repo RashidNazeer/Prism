@@ -230,9 +230,14 @@ export function HeroVisual() {
    * will actually fill rather than against a breakpoint.
    */
   useEffect(() => {
-    if (!wide || still || !painted || !seen || large !== null) return;
+    if (still || !painted || !seen || large !== null) return;
     const width = box.current?.clientWidth ?? 0;
-    setLarge(env.fast && width * (window.devicePixelRatio || 1) > SMALL_CUT);
+    /* THE 1080 CUT IS DESKTOP-ONLY, deliberately. Below `lg` a retina phone
+       measures well past SMALL_CUT -- 375 CSS px at DPR 3 is 1125 -- and would
+       pull the 5.2 MB file over exactly the connection least able to afford
+       it. `wide` no longer decides WHETHER the video renders, only whether the
+       large cut is eligible. */
+    setLarge(wide && env.fast && width * (window.devicePixelRatio || 1) > SMALL_CUT);
   }, [wide, still, painted, seen, large, env.fast]);
 
   /*
@@ -269,8 +274,23 @@ export function HeroVisual() {
     else el.pause();
   }, [onScreen, src]);
 
-  if (!wide) return null;
-
+  /*
+   * IT RENDERS ON A PHONE NOW. Rashid, 2026-10-15: "Video is not visible on
+   * phone".
+   *
+   * This used to `return null` below `lg`, on the reasoning that a decorative
+   * 1:1 video is a poor thing to hand a phone. He has overruled that, and the
+   * cost is still bounded by everything else in this component rather than by
+   * the breakpoint: `preload="none"` means the element costs nothing until the
+   * observer says it is on screen, the 1080 cut is now desktop-only (above),
+   * and reduced-motion, Save-Data and a 2g/3g `effectiveType` still get the
+   * poster and fetch no video at all.
+   *
+   * The dead-gap worry that justified `null` over `display: none` does not
+   * apply any more either: the grid item has real content at every width, so
+   * the hero's `gap-12` is now separating two things instead of opening a
+   * 3rem band under the copy.
+   */
   return (
     /* Decorative, so it is hidden from the accessibility tree and nothing in it
        can be focused or announced. The headline beside it is the content. */

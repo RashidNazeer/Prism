@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router';
 import type { NavItem } from '@/lib/nav';
 import { cn } from '@/lib/utils';
@@ -98,6 +98,46 @@ export function MobileNav({ items, className }: { items: NavItem[]; className?: 
 
   if (items.length === 0) return null;
 
+  /*
+   * THE BAR TRACKS THE BROWSER'S OWN TOOLBAR, 2026-10-15.
+   * Rashid: "when I scroll up bar is visible but the nav bar cuts off".
+   *
+   * `position: fixed` anchors to the LAYOUT viewport, and on a phone browser
+   * the layout viewport does not shrink when the address/tool bar slides back
+   * in on an upward scroll. So the chrome slides in over the top of this card
+   * and takes a bite out of it. `env(safe-area-inset-bottom)` cannot help:
+   * that describes the hardware's home indicator, not the browser's UI.
+   *
+   * `visualViewport` is the only thing that knows. The gap between
+   * `innerHeight` and the visible area is exactly what is covering the bottom
+   * of the page, and the bar lifts by that much.
+   *
+   * CAPPED AT 180px ON PURPOSE. The same measurement goes large when the
+   * KEYBOARD opens — 250px and up — and a navigation bar riding the top of the
+   * keyboard while someone types is its own bug. A browser toolbar is roughly
+   * 44–90px, so anything past 180 is treated as a keyboard and the bar simply
+   * stays put and lets itself be covered, which is the right behaviour while a
+   * field has focus.
+   */
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const root = document.documentElement;
+    const sync = () => {
+      const hidden = window.innerHeight - (vv.height + vv.offsetTop);
+      const toolbar = hidden > 0 && hidden < 180 ? Math.round(hidden) : 0;
+      root.style.setProperty('--wx-vv-bottom', `${toolbar}px`);
+    };
+    sync();
+    vv.addEventListener('resize', sync);
+    vv.addEventListener('scroll', sync);
+    return () => {
+      vv.removeEventListener('resize', sync);
+      vv.removeEventListener('scroll', sync);
+      root.style.removeProperty('--wx-vv-bottom');
+    };
+  }, []);
+
   return (
     <nav
       aria-label="Sections"
@@ -117,7 +157,10 @@ export function MobileNav({ items, className }: { items: NavItem[]; className?: 
            sits at `-top-px` and its cone overhangs; against the old square
            edges that was invisible, and against a 1.75rem radius it would hang
            outside the corner. */
-        'wx-glass-overlay fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 overflow-hidden rounded-[1.75rem] lg:hidden',
+        /* `--wx-vv-bottom` is the browser toolbar's height, maintained by the
+           effect above; it falls back to 0 wherever `visualViewport` is
+           missing, which is the behaviour this had before. */
+        'wx-glass-overlay fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom)+var(--wx-vv-bottom,0px))] z-40 overflow-hidden rounded-[1.75rem] lg:hidden',
         className
       )}
     >

@@ -2,7 +2,17 @@
 <html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      `viewport-fit=cover` added 2026-10-15. Without it `env(safe-area-inset-*)`
+      resolves to ZERO on every notched phone — which quietly made the existing
+      allowances no-ops: AppShell's `pb-[calc(5.5rem+env(safe-area-inset-bottom))]`
+      bottom-bar clearance was reserving 5.5rem and nothing more, and the auth
+      screen's theme toggle had no inset to clear the status bar with.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <!--
       ONE MARK, THE PRISM APP-ICON TILE.
 

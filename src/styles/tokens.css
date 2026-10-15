@@ -473,10 +473,15 @@
      `-chrome` because that token is also worn by the LANDING nav
      (`wx-nav-blur`), which he did not ask to change. */
   --wx-glass-blur-app: 20px;
+  /* The LANDING nav only (`wx-nav-blur`), +20% on 2026-10-15. Its own pair so
+     the shared `wx-glass` / `wx-glass-panel` opt-ins, which also read
+     `--wx-glass-blur-phone`, are not dragged along. */
+  --wx-glass-blur-nav: 20px;
   --wx-glass-blur-rail: 7px;
   --wx-glass-blur-scrim: 14px;
   --wx-glass-blur-phone: 11px;
   --wx-glass-blur-app-phone: 13px;
+  --wx-glass-blur-nav-phone: 13px;
   --wx-glass-saturate: 1.08;
 
   /*
@@ -970,10 +975,15 @@
      `-chrome` because that token is also worn by the LANDING nav
      (`wx-nav-blur`), which he did not ask to change. */
   --wx-glass-blur-app: 20px;
+  /* The LANDING nav only (`wx-nav-blur`), +20% on 2026-10-15. Its own pair so
+     the shared `wx-glass` / `wx-glass-panel` opt-ins, which also read
+     `--wx-glass-blur-phone`, are not dragged along. */
+  --wx-glass-blur-nav: 20px;
   --wx-glass-blur-rail: 7px;
   --wx-glass-blur-scrim: 14px;
   --wx-glass-blur-phone: 11px;
   --wx-glass-blur-app-phone: 13px;
+  --wx-glass-blur-nav-phone: 13px;
 
   /*
    * Light cannot use the pastels as text — 1.08:1 to 1.76:1 on paper — so it
