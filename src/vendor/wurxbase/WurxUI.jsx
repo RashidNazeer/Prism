@@ -1642,6 +1642,60 @@ export default function WurxUI({
   );
   /* The ad figures take a period key: '' is no bounds, otherwise the range. */
   const wxPeriodKey = wxRangeDates ? `${wxRangeDates.from}..${wxRangeDates.to}` : '';
+
+  /* WURX-ADDED · MONTH ARROWS, 2026-10-15. Rashid: "add < > type of buttons to
+     directly switch months without opening the whole calendar".
+
+     THESE EXISTED ONCE AND WERE REMOVED ON PURPOSE. They flanked the old
+     `<input type="month">` and stepped `month`, while the label beside them
+     showed a RANGE — so the arrows and the label could disagree and nothing on
+     screen said which one the figures were using.
+
+     They are safe to bring back only because they no longer have their own
+     state. Every one of these steps goes through the SAME two setters the
+     picker's `onChange` calls, so the range is still the single source of
+     truth and `month` is still derived from it, exactly as it is down there.
+
+     The future is not offered, for the same reason the picker does not offer
+     today: EUKA's figures land a day late. `wxWindow.latest` is today, and
+     stepping is clamped to the month that contains it and to the month that
+     contains the earliest dated thing this brand has. */
+  const wxMonthCursor = ((wxRangeDates && wxRangeDates.from) || `${month}-01`).slice(0, 7);
+  const wxFirstMonth = wxWindow.earliest.slice(0, 7);
+  const wxLastMonth = wxWindow.latest.slice(0, 7);
+  const wxShiftMonth = (ym, delta) =>
+    new Date(Date.UTC(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)) - 1 + delta, 1))
+      .toISOString()
+      .slice(0, 7);
+  const wxCanStep = (delta) => {
+    const t = wxShiftMonth(wxMonthCursor, delta);
+    return t >= wxFirstMonth && t <= wxLastMonth;
+  };
+  const wxStepMonth = (delta) => {
+    if (!wxCanStep(delta)) return;
+    const target = wxShiftMonth(wxMonthCursor, delta);
+    /* Landing back on the current month restores the PRESET rather than an
+       equivalent custom range, so the trigger reads "This month" again
+       instead of a date span that happens to mean the same thing. */
+    if (target === wxLastMonth) {
+      setWxPreset('thisMonth');
+      setWxRangeObj(null);
+    } else {
+      const lastDay = new Date(Date.UTC(Number(target.slice(0, 4)), Number(target.slice(5, 7)), 0))
+        .toISOString()
+        .slice(0, 10);
+      setWxPreset('custom');
+      setWxRangeObj({
+        from: `${target}-01`,
+        to: lastDay > wxWindow.latest ? wxWindow.latest : lastDay,
+      });
+    }
+    /* A whole calendar month is never ambiguous, so the contract cycle follows
+       it — the same rule the picker's onChange applies for a single-month
+       range. */
+    setMonth(target);
+  };
+  /* WURX-END */
   useEffect(() => { patchUIState({ tab }); }, [tab]);
   /* God Mode writes to localStorage from a different component tree, so
      it announces itself and the nav re-reads on the next render. */
@@ -1964,6 +2018,29 @@ export default function WurxUI({
           {/* Right-side filter cluster: month nav + All Time */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, opacity: allTime ? 0.6 : 1, pointerEvents: allTime ? 'none' : 'auto', transition: 'opacity 0.2s ease' }}>
+                {/* WURX-ADDED · step a month without opening the calendar.
+                    Styled inline, like the All Time button beside it, and NOT
+                    with utility classes: `App.css:7` carries
+                    `.wurxbase-root * { padding: 0 }` at a utility's own
+                    specificity, so `px-*` is silently cancelled everywhere in
+                    this tree. Inline wins outright and cannot be undone by a
+                    reset that is not ours. 36px tall to match the trigger. */}
+                <button
+                  type="button"
+                  onClick={() => wxStepMonth(-1)}
+                  disabled={!wxCanStep(-1)}
+                  title="Previous month"
+                  aria-label="Previous month"
+                  style={{
+                    width: 34, height: 36, display: 'inline-flex', alignItems: 'center',
+                    justifyContent: 'center', borderRadius: 999,
+                    border: '1px solid var(--pc-divider)', background: 'var(--pc-card)',
+                    color: 'var(--pc-text)', fontSize: 16, fontWeight: 700, lineHeight: 1,
+                    cursor: wxCanStep(-1) ? 'pointer' : 'default',
+                    opacity: wxCanStep(-1) ? 1 : 0.35,
+                  }}
+                >&lsaquo;</button>
+                {/* WURX-END */}
                 {/* WURX-REPLACED · this was `<input type="month">` inside a pill,
                     flanked by ‹ › month arrows.
                     All of that chrome is gone with it. The pill drew its own
@@ -2009,6 +2086,25 @@ export default function WurxUI({
                     if (r && r.from.slice(0, 7) === r.to.slice(0, 7)) setMonth(r.from.slice(0, 7));
                   }}
                 />
+                {/* WURX-ADDED · forward is disabled on the current month, not
+                    hidden: EUKA's figures land a day late, so there is nothing
+                    to show past today and a vanishing control would just make
+                    the row jump. WURX-END */}
+                <button
+                  type="button"
+                  onClick={() => wxStepMonth(1)}
+                  disabled={!wxCanStep(1)}
+                  title="Next month"
+                  aria-label="Next month"
+                  style={{
+                    width: 34, height: 36, display: 'inline-flex', alignItems: 'center',
+                    justifyContent: 'center', borderRadius: 999,
+                    border: '1px solid var(--pc-divider)', background: 'var(--pc-card)',
+                    color: 'var(--pc-text)', fontSize: 16, fontWeight: 700, lineHeight: 1,
+                    cursor: wxCanStep(1) ? 'pointer' : 'default',
+                    opacity: wxCanStep(1) ? 1 : 0.35,
+                  }}
+                >&rsaquo;</button>
             </div>
             <button onClick={() => setAllTime(v => !v)}
               title={allTime ? 'Showing all-time data · click to filter by month' : 'Show data across all months'}
