@@ -267,7 +267,19 @@ export function MyNumbers({ brandId }: { brandId?: string } = {}) {
       */}
       <FilterBar
         action={
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          /*
+           * ON A PHONE THE FILTERS FILL THE ROW, 2026-10-16. Rashid, of this
+           * screen at phone width: "this looks bad... add some symmetry."
+           *
+           * `justify-end` is right for the desktop bar, where the filters are
+           * the action slot on the far side of the tabs. Once FilterBar wraps
+           * them onto their own line it is wrong: two controls huddle against
+           * the right edge with a wide dead gap to their left, which is
+           * exactly what he screenshotted. On their own line they should own
+           * it, so below `sm` they stretch to the full width and sit at the
+           * two ends; from `sm` the desktop behaviour is unchanged.
+           */
+          <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
             {brandId ? null : (
               <BrandFilter
                 brands={brandOptions}
@@ -424,18 +436,31 @@ function Dashboard({
   return (
     <div className="flex flex-col gap-5">
       {/* On-page navigation: every section below is one tap away. */}
-      <nav aria-label="Sections on this page" className="flex flex-wrap items-center gap-2">
+      {/*
+        A GRID ON A PHONE, A WRAPPED ROW ABOVE IT. Same report: the chips were
+        one `flex-wrap` row with the label inline, so four chips of different
+        widths broke wherever they happened to run out of space and left the
+        last one — "By brand" — alone on a line of its own. A 2-up grid gives
+        four chips two even rows, and the label sits above rather than eating
+        the first slot. From `sm` there is room for the original single row.
+      */}
+      <nav
+        aria-label="Sections on this page"
+        className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
+      >
         <span className={SECTION_LABEL}>Jump to</span>
-        {sections.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => jumpTo(s.id)}
-            className="wx-neo-raised-sm text-muted hover:text-text focus-visible:outline-line-interactive text-caption min-h-[44px] rounded-full px-4 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            {s.label}
-          </button>
-        ))}
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+          {sections.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => jumpTo(s.id)}
+              className="wx-neo-raised-sm text-muted hover:text-text focus-visible:outline-line-interactive text-caption min-h-[44px] rounded-full px-4 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
       </nav>
 
       {/* ------------------------------- 1. GMV and its line | what it cost -- */}

@@ -440,12 +440,32 @@ export function AppShell({ children }: { children: ReactNode }) {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-              /* `bg-bg` lives here now that `AppSidebar` paints nothing of its
-                 own. The drawer slides over live content, so unlike the rail it
-                 has to be fully opaque. */
+              /*
+               * GLASS, NOT `bg-bg`, 2026-10-16. Rashid: "give it the glass
+               * effect like other cards."
+               *
+               * The old note here said the drawer "slides over live content,
+               * so unlike the rail it has to be fully opaque" — and that was
+               * the right call for a panel over an arbitrary page, the same
+               * reasoning that keeps popovers dense. It does not apply any
+               * more: the SCRIM above is `bg-black/60 backdrop-blur-sm`, it
+               * is a SIBLING painted directly beneath this element, and it
+               * both dims and blurs everything behind. The drawer's backdrop
+               * is therefore bounded and dark by construction, which is
+               * exactly the condition §4.1 asks for before a surface may be
+               * translucent.
+               *
+               * `wx-glass-chrome` rather than the card material, because on a
+               * wider screen this same navigation IS the chrome rail, and the
+               * two should not be different materials for the same job.
+               *
+               * Two blurred layers while it is open — scrim and drawer —
+               * against a budget of three, and they are siblings, so no
+               * nesting.
+               */
               /* rem, not px, so the drawer widens with the text-size setting
                  instead of clipping bigger labels at a fixed 300px. */
-              className="bg-bg fixed inset-y-0 left-0 z-50 w-[min(18.75rem,86vw)] shadow-lg lg:hidden"
+              className="wx-glass-chrome fixed inset-y-0 left-0 z-50 w-[min(18.75rem,86vw)] shadow-lg lg:hidden"
             >
               {sidebar('drawer')}
             </m.aside>
