@@ -4,6 +4,14 @@
   "version": "0.1.0",
   "type": "module",
   "packageManager": "pnpm@11.17.0",
+  "//browserslist": "WITHOUT THIS, NOTHING BLURRED IN PRODUCTION. Tailwind v4 optimises the stylesheet with Lightning CSS, and with no targets declared it prefixed against a default set that excludes Chrome - so every glass rule shipped as `-webkit-backdrop-filter` ALONE, with the standard property dropped. Chrome 151 does not support that alias (CSS.supports('-webkit-backdrop-filter','blur(2px)') === false), so on the built site the nav and all 14 cards measured `backdrop-filter: none` while the dev server measured blur(48px) and blur(8px). Every blur value tuned on 2026-10-15/16 was invisible on the deployment for this reason. Safari only gained the UNPREFIXED property in 18, so the correct output is BOTH: naming Chrome and Safari 16.4 here makes Lightning CSS emit the prefixed form for Safari 16-17 and the standard form for everything else. Do not remove without re-checking `backdrop-filter` in dist.",
+  "browserslist": [
+    "chrome >= 111",
+    "edge >= 111",
+    "firefox >= 128",
+    "safari >= 16.4",
+    "ios_saf >= 16.4"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "node scripts/check-contrast.mjs && node scripts/check-brand-theme.mjs && node scripts/check-isolation.mjs && tsc -b && vite build",

@@ -2098,3 +2098,105 @@ body::after {
   line-height: 1.45;
   color: var(--pc-text-2);
 }
+
+/* ===================================================== the prefix rescue == */
+/*
+ * WITHOUT THIS BLOCK, NOTHING BLURS IN THE PRODUCTION BUILD.
+ *
+ * Tailwind v4 optimises the stylesheet with Lightning CSS, and it rewrites
+ * every `backdrop-filter: blur(...)` above into `-webkit-backdrop-filter`
+ * ALONE — the standard property is dropped, not duplicated. Chrome 151 does
+ * not support that alias (`CSS.supports('-webkit-backdrop-filter','blur(2px)')`
+ * is false), so on the built site the landing nav and all fourteen cards
+ * measured `backdrop-filter: none` while the dev server measured blur(48px)
+ * and blur(8px) for the very same selectors. Every blur value tuned on
+ * 2026-10-15 and 16 was real in dev and absent in production, which is exactly
+ * why Rashid kept reporting the nav and the cards as unchanged.
+ *
+ * It is NOT a browserslist problem — adding one changed the output not one
+ * byte, cache cleared. What the optimiser will not touch is a declaration
+ * inside `@supports`: the probe compiled to
+ * `@supports ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px)))`
+ * with BOTH properties intact. So the standard property is restated here, in
+ * that shape, for every selector that blurs.
+ *
+ * The `-webkit-` declarations above are left exactly as they are: Safari only
+ * gained the unprefixed property in 18, so 16 and 17 still need them.
+ *
+ * THE OPT-OUTS ARE REPEATED TOO, and that is not optional. Now that the
+ * standard property actually applies in Chrome, a reader who has asked for
+ * reduced transparency must be able to switch it off through the same
+ * property; otherwise this block would quietly override their preference.
+ *
+ * Regenerated from the declarations above by enumerating them with a
+ * brace-and-condition-aware walk, not copied by hand. If a blur is added
+ * above, add it here too — or it will work in dev and silently not ship.
+ */
+@supports (backdrop-filter: blur(1px)) {
+  .wx-glass {
+    backdrop-filter: blur(var(--wx-glass-blur-phone));
+  }
+
+  .wx-glass-panel {
+    backdrop-filter: blur(var(--wx-glass-blur-phone));
+  }
+
+  .wx-neo-raised {
+    backdrop-filter: blur(var(--wx-glass-blur));
+  }
+
+  .wx-glass-chrome {
+    backdrop-filter: blur(var(--wx-glass-blur-app-phone));
+  }
+
+  .wx-nav-blur {
+    backdrop-filter: blur(var(--wx-glass-blur-nav-phone)) saturate(var(--wx-nav-saturate))
+      brightness(var(--wx-nav-brightness));
+  }
+
+  .wx-glass-scrim {
+    backdrop-filter: blur(var(--wx-glass-blur-scrim));
+  }
+
+  @media (min-width: 768px) {
+    .wx-glass {
+      backdrop-filter: blur(var(--wx-glass-blur)) saturate(var(--wx-glass-saturate));
+    }
+
+    .wx-glass-panel {
+      backdrop-filter: blur(var(--wx-glass-blur-rail));
+    }
+
+    .wx-glass-chrome {
+      backdrop-filter: blur(var(--wx-glass-blur-app));
+    }
+
+    .wx-nav-blur {
+      backdrop-filter: blur(var(--wx-glass-blur-nav)) saturate(var(--wx-nav-saturate))
+        brightness(var(--wx-nav-brightness));
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce), (prefers-reduced-motion: reduce),
+    (forced-colors: active) {
+    .wx-neo-raised,
+    .wx-neo-raised-sm,
+    .wx-nav-blur,
+    .wx-glass-chrome {
+      backdrop-filter: none !important;
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+    .wx-glass-scrim {
+      backdrop-filter: none !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wx-glass,
+    .wx-glass-panel {
+      backdrop-filter: none;
+    }
+  }
+}
