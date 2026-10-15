@@ -888,9 +888,31 @@
  * `.wurxbase-shell` is `calc(100dvh - 3.5rem)` by design and is itself painted.
  * The seam has exactly one cause and it is the colour.
  */
+/*
+ * TRANSPARENT, NOT `--wx-bg`, FROM 2026-10-15. Rashid, three times: "another
+ * solid background blocking our new background", "the blocking background is
+ * still there", "this background layer is still there".
+ *
+ * Everything above still holds -- this rule still exists to beat the four
+ * vendored tints, and it still has to name `.app-root` -- but it was written
+ * when the app's ground WAS a flat colour, so defeating a tint and painting
+ * `--wx-bg` were the same act. They are not the same act any more. There is a
+ * shader and a photograph behind this now, and painting `--wx-bg` over them is
+ * the same occlusion as the tint was, in a better colour.
+ *
+ * Transparent defeats the tints just as completely and lets the ground through.
+ * It also cannot bring the seam back: the seam was a COLOUR mismatch between
+ * this element and `.wurxbase-shell`, and two transparent elements cannot
+ * mismatch.
+ *
+ * I got here twice by guessing. `.pc-app` was the wrong element, then the
+ * vendored `App.css:4966` was the wrong element; what actually won the cascade
+ * was this rule, in this file, at (0,3,0) with `!important`. Measured with a
+ * probe page against the real compiled CSS rather than read off the source.
+ */
 .wurxbase-root.wurxbase-root.wurxbase-root,
 .wurxbase-root.wurxbase-root.wurxbase-root .app-root {
-  background: var(--wx-bg) !important;
+  background: transparent !important;
 }
 
 /*
@@ -3241,6 +3263,117 @@
  * sheet was pure occlusion and nothing depends on it for contrast. The cards
  * keep their own opaque fills, so no text moves onto the photograph.
  */
+/*
+ * CORRECTION, same day: `.pc-app` WAS THE WRONG ELEMENT. Taking it off the
+ * paint changed nothing, because it is not what paints. `App.css` sets a
+ * background on `.wurxbase-root` ITSELF, five separate times, and the last of
+ * them wins the cascade:
+ *
+ *   App.css:4966  .wurxbase-root { background: var(--wx-surface-1) !important }
+ *
+ * That is the opaque sheet. It is also why the empty Brands screen was flat
+ * grey edge to edge with no content on it at all.
+ *
+ * SPECIFICITY, NOT IMPORT ORDER. The vendored rule is `!important` at (0,1,0),
+ * and counting on this file being imported after it is counting on Vite's
+ * chunking. `.wurxbase-root.wurxbase-shell` is (0,2,0) and matches the very
+ * same element, so it wins outright however the chunks fall. `.app-root` is
+ * listed because those same rules paint it too.
+ *
+ * `.pc-app` stays in the list: it is a SECOND opaque sheet, and both have to
+ * go for the ground to show.
+ */
+.wurxbase-root.wurxbase-shell,
+.wurxbase-root.wurxbase-shell .app-root,
 .wurxbase-root .pc-app {
   background: transparent !important;
+}
+
+/* ------------------------------------------------- admin glass surfaces -- */
+/*
+ * THE ADMIN PANELS WEAR THE SAME GLASS AS THE CREATOR CARDS.
+ * Rashid, 2026-10-15: "few of the admin tables and cards have the same solid
+ * effect instead of glass", then "same for the brands page".
+ *
+ * These are the DECLARATIONS OF `wx-neo-raised`, the material every creator
+ * card already wears, copied rather than referenced: the vendored rules paint
+ * `background` (the shorthand) at a specificity this has to beat, and a
+ * `@utility` cannot be applied to a class this file does not own.
+ *
+ * WHICH SURFACES, AND WHY NOT ALL OF THEM. 61 vendored surfaces have a radius,
+ * padding and an opaque fill. Most are not cards: a `border-radius: 999px` is
+ * a pill, and `.cs-drop`, `.cx-bm-pop`, `.um-dialog`, `.ndm` and `.login-card`
+ * are popovers and dialogs. A popover must stay near-opaque -- it floats over
+ * arbitrary content, so §4.1's floor is not computable for it, which is the
+ * transparent-calendar bug. This list is panels only.
+ *
+ * NOT VERIFIED AGAINST RENDERED PIXELS. `check-contrast.mjs` skips translucent
+ * tokens by design, and I have no staff login, so the glass floor is carried
+ * over from the creator cards rather than re-measured on these screens.
+ */
+.wurxbase-root.wurxbase-root .pc-kpi,
+.wurxbase-root.wurxbase-root .table-outer,
+.wurxbase-root.wurxbase-root .bstat-card,
+.wurxbase-root.wurxbase-root .pc-topvids,
+.wurxbase-root.wurxbase-root .pc-matrix-wrap,
+.wurxbase-root.wurxbase-root .pc-pfhero,
+.wurxbase-root.wurxbase-root .pc-vxp-card,
+.wurxbase-root.wurxbase-root .pc-lb-pod,
+.wurxbase-root.wurxbase-root .pc-cf-paper,
+.wurxbase-root.wurxbase-root .cx-head,
+.wurxbase-root.wurxbase-root .cx-sum,
+.wurxbase-root.wurxbase-root .cx-cf,
+.wurxbase-root.wurxbase-root .cx-blank,
+.wurxbase-root.wurxbase-root .brand-tabs-outer,
+.wurxbase-root.wurxbase-root .bx-row,
+.wurxbase-root.wurxbase-root .bc-sec,
+.wurxbase-root.wurxbase-root .kb-card,
+.wurxbase-root.wurxbase-root .lb-card,
+.wurxbase-root.wurxbase-root .lb-pod,
+.wurxbase-root.wurxbase-root .lb-summary,
+.wurxbase-root.wurxbase-root .lb-tools,
+.wurxbase-root.wurxbase-root .rb-tile,
+.wurxbase-root.wurxbase-root .rep-stat,
+.wurxbase-root.wurxbase-root .rp-card,
+.wurxbase-root.wurxbase-root .ai-report-card,
+.wurxbase-root.wurxbase-root .gm-sec,
+.wurxbase-root.wurxbase-root .lme-card,
+.wurxbase-root.wurxbase-root .um-add-panel,
+.wurxbase-root.wurxbase-root .um-req-card,
+.wurxbase-root.wurxbase-root .ndm-sect,
+.wurxbase-root.wurxbase-root .ndm-stat,
+.wurxbase-root.wurxbase-root .ca-root {
+  background-color: var(--wx-glass-fill) !important;
+  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left), var(--wx-glass-face) !important;
+  background-size:
+    100% 1px,
+    1px 100%,
+    100% 100% !important;
+  background-position:
+    top left,
+    top left,
+    top left !important;
+  background-repeat: no-repeat !important;
+  box-shadow:
+    inset 0 0 0 1px var(--wx-glass-edge),
+    var(--wx-glass-inner),
+    var(--wx-glass-lift) !important;
+}
+
+/*
+ * THE DATE TRIGGER GETS ITS PADDING BACK, and the cause is worth recording
+ * because it is not local to this control. `App.css:7` carries
+ * `.wurxbase-root * { margin: 0; padding: 0 }` -- a blanket reset at (0,1,0),
+ * exactly the specificity of a Tailwind utility, so ORDER decides and the
+ * reset wins. Measured: the trigger computed to `padding: 0px`, and its 87px
+ * width was label 65 + icon 14 + gap 8 with nothing left over. That is why the
+ * text sat flush against the pill's edge and read as broken, and it is why
+ * `px-3.5` on the component did nothing.
+ *
+ * EVERY Tailwind padding inside `.wurxbase-root` is suppressed this way. This
+ * fixes the one control Rashid pointed at rather than lifting the reset, which
+ * would reflow all eighteen admin screens at once.
+ */
+.wurxbase-root.wurxbase-root .wx-date-trigger {
+  padding-inline: 0.875rem !important;
 }

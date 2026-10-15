@@ -466,11 +466,11 @@
    * `saturate` MOVED. His cards carry `blur(22px) saturate(1.08)` and his nav
    * carries a bare `blur(28px)`. Ours had it exactly the other way round.
    */
-  --wx-glass-blur: 5px;
-  --wx-glass-blur-chrome: 14px;
-  --wx-glass-blur-rail: 6px;
-  --wx-glass-blur-scrim: 12px;
-  --wx-glass-blur-phone: 9px;
+  --wx-glass-blur: 6px;
+  --wx-glass-blur-chrome: 17px;
+  --wx-glass-blur-rail: 7px;
+  --wx-glass-blur-scrim: 14px;
+  --wx-glass-blur-phone: 11px;
   --wx-glass-saturate: 1.08;
 
   /*
@@ -957,11 +957,11 @@
   --wx-glass-glow: 0 0 40px rgba(148, 69, 211, 0.16);
   /* His ladder. See the dark block for why the phone value is not his, and for
      why his 32px modal blur is not here at all. */
-  --wx-glass-blur: 5px;
-  --wx-glass-blur-chrome: 14px;
-  --wx-glass-blur-rail: 6px;
-  --wx-glass-blur-scrim: 12px;
-  --wx-glass-blur-phone: 9px;
+  --wx-glass-blur: 6px;
+  --wx-glass-blur-chrome: 17px;
+  --wx-glass-blur-rail: 7px;
+  --wx-glass-blur-scrim: 14px;
+  --wx-glass-blur-phone: 11px;
 
   /*
    * Light cannot use the pastels as text — 1.08:1 to 1.76:1 on paper — so it

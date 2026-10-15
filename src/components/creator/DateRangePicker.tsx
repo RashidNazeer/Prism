@@ -194,7 +194,12 @@ export function DateRangePicker({
            * side gets the same correction -- it was under the floor there
            * too.
            */
-          'wx-neo-raised-sm wx-neo-press text-muted hover:text-accent inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3.5 text-[0.8125rem] font-semibold sm:min-h-9',
+          /* `wx-date-trigger` is a HOOK, not a style. Inside `.wurxbase-root`
+             the vendored `* { padding: 0 }` reset cancels `px-3.5` at equal
+             specificity, so the admin stylesheet restores the padding through
+             this class. It carries nothing on the creator side, where the
+             utility works as written. */
+          'wx-date-trigger wx-neo-raised-sm wx-neo-press text-muted hover:text-accent inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3.5 text-[0.8125rem] font-semibold sm:min-h-9',
           open && 'text-accent'
         )}
       >
