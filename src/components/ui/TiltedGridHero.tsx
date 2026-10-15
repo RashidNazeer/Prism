@@ -433,6 +433,28 @@ export function TiltedGridHero({
                 width: u(aspectRatio),
                 height: u(1),
                 transformStyle: 'preserve-3d',
+                /*
+                 * THE BLUR LIVES ON THE TILE, NOT ON THE SLICES.
+                 * Rashid: "on desktop increase their blur a little just like
+                 * the cards", and "specially in the dark modes".
+                 *
+                 * A plaque is ten slices. Blurring each one costs TEN backdrop
+                 * filters per plaque -- measured: 70 painting at once at 1440
+                 * and 30 at 375, against a budget of 3 -- which is the same
+                 * cost that caused the scroll lag once already. On the tile it
+                 * is ONE per plaque: 7 and 3.
+                 *
+                 * Checked rather than assumed: a backdrop-filter here does NOT
+                 * flatten the 3D. The slices keep their `matrix3d` and the
+                 * curve is intact, while the ground behind each plaque is
+                 * visibly softened and stays sharp just outside it.
+                 *
+                 * Inline, so Lightning CSS never sees it -- which is why both
+                 * the standard and the -webkit- property can be set here
+                 * safely, unlike in the stylesheet.
+                 */
+                backdropFilter: 'blur(var(--wx-glass-blur))',
+                WebkitBackdropFilter: 'blur(var(--wx-glass-blur))',
                 // Tile t starts t tiles along the loop.
                 animation: `${orbit} ${duration}s linear ${-t * speed}s infinite`,
               }}
