@@ -468,9 +468,15 @@
    */
   --wx-glass-blur: 6px;
   --wx-glass-blur-chrome: 17px;
+  /* The IN-APP rail and top bar only (`wx-glass-chrome`), raised a further 1.2x
+     on 2026-10-15: "Admin navbars need blur increase 0.2 times". Separate from
+     `-chrome` because that token is also worn by the LANDING nav
+     (`wx-nav-blur`), which he did not ask to change. */
+  --wx-glass-blur-app: 20px;
   --wx-glass-blur-rail: 7px;
   --wx-glass-blur-scrim: 14px;
   --wx-glass-blur-phone: 11px;
+  --wx-glass-blur-app-phone: 13px;
   --wx-glass-saturate: 1.08;
 
   /*
@@ -959,9 +965,15 @@
      why his 32px modal blur is not here at all. */
   --wx-glass-blur: 6px;
   --wx-glass-blur-chrome: 17px;
+  /* The IN-APP rail and top bar only (`wx-glass-chrome`), raised a further 1.2x
+     on 2026-10-15: "Admin navbars need blur increase 0.2 times". Separate from
+     `-chrome` because that token is also worn by the LANDING nav
+     (`wx-nav-blur`), which he did not ask to change. */
+  --wx-glass-blur-app: 20px;
   --wx-glass-blur-rail: 7px;
   --wx-glass-blur-scrim: 14px;
   --wx-glass-blur-phone: 11px;
+  --wx-glass-blur-app-phone: 13px;
 
   /*
    * Light cannot use the pastels as text — 1.08:1 to 1.76:1 on paper — so it

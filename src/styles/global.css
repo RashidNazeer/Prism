@@ -948,8 +948,12 @@ body::after {
    * No `saturate` here, deliberately: his `.nav`, `.app-topbar` and
    * `.workspace-sidebar` all compute to a bare blur. Only his cards saturate.
    */
-  backdrop-filter: blur(var(--wx-glass-blur-phone));
-  -webkit-backdrop-filter: blur(var(--wx-glass-blur-phone));
+  /* `-app-phone`, not `-phone`: this utility is worn ONLY by the in-app rail
+     and top bar, and Rashid raised those a further 1.2x on 2026-10-15 without
+     asking for the landing nav to move. The landing nav keeps `-phone` /
+     `-chrome`; these two bars are the only thing on this ladder. */
+  backdrop-filter: blur(var(--wx-glass-blur-app-phone));
+  -webkit-backdrop-filter: blur(var(--wx-glass-blur-app-phone));
   box-shadow:
     inset 0 0 0 1px var(--wx-glass-edge),
     var(--wx-glass-inner),
@@ -958,8 +962,8 @@ body::after {
 
 @media (min-width: 768px) {
   .wx-glass-chrome {
-    backdrop-filter: blur(var(--wx-glass-blur-chrome));
-    -webkit-backdrop-filter: blur(var(--wx-glass-blur-chrome));
+    backdrop-filter: blur(var(--wx-glass-blur-app));
+    -webkit-backdrop-filter: blur(var(--wx-glass-blur-app));
   }
 }
 
