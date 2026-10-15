@@ -266,20 +266,21 @@ export function MyNumbers({ brandId }: { brandId?: string } = {}) {
         44px tap floor.
       */}
       <FilterBar
+        oneLine
         action={
           /*
-           * ON A PHONE THE FILTERS FILL THE ROW, 2026-10-16. Rashid, of this
-           * screen at phone width: "this looks bad... add some symmetry."
+           * ONE LINE, 2026-10-16. Rashid: "on phone move all these in one
+           * line."
            *
-           * `justify-end` is right for the desktop bar, where the filters are
-           * the action slot on the far side of the tabs. Once FilterBar wraps
-           * them onto their own line it is wrong: two controls huddle against
-           * the right edge with a wide dead gap to their left, which is
-           * exactly what he screenshotted. On their own line they should own
-           * it, so below `sm` they stretch to the full width and sit at the
-           * two ends; from `sm` the desktop behaviour is unchanged.
+           * The previous attempt made this row full-width on phone so the two
+           * filters sat at its two ends — which fixed the dead gap he reported
+           * but kept them on a SECOND line. With `oneLine` on the bar they
+           * share the row with the tabs instead, so this goes back to being a
+           * compact, non-shrinking cluster: the squeeze is absorbed by the tab
+           * group beside it, never by a filter, because a filter pushed off
+           * the edge is the bug FilterBar's own note warns about.
            */
-          <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
+          <div className="flex shrink-0 items-center gap-2">
             {brandId ? null : (
               <BrandFilter
                 brands={brandOptions}
@@ -299,7 +300,19 @@ export function MyNumbers({ brandId }: { brandId?: string } = {}) {
           </div>
         }
       >
-        <FilterTabs label="What to look at">
+        {/*
+          THE TAB GROUP IS WHERE THE SQUEEZE LANDS. On one line at 375 the two
+          tabs plus both filters are close to the full width, so something has
+          to give. `min-w-0` lets this group shrink below its content and
+          `flex-nowrap` + `overflow-x-auto` lets it scroll INSIDE itself if it
+          ever has to — with only two tabs it will not, but a third would
+          scroll here rather than pushing a filter off the screen edge, which
+          is the failure FilterBar's own comment records.
+        */}
+        <FilterTabs
+          label="What to look at"
+          className="min-w-0 flex-nowrap overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           {TABS.map((t) => (
             <FilterTab
               key={t.key}

@@ -28,11 +28,23 @@ import { cn } from '@/lib/utils';
  */
 export function FilterBar({
   action,
+  oneLine,
   className,
   children,
 }: {
   /** Optional primary action, pinned right. */
   action?: ReactNode;
+  /**
+   * Keep the row on ONE line at every width instead of wrapping.
+   *
+   * Opt-in, and the default stays wrapping on purpose — see the note above:
+   * a bar that wraps can never push a filter off the screen, and that was a
+   * real bug once. Use this only where the row is short enough to hold, and
+   * give the widest child `min-w-0` plus its own scroller so the squeeze lands
+   * somewhere harmless. Rashid asked for it on the creator numbers screen,
+   * 2026-10-16: "on phone move all these in one line."
+   */
+  oneLine?: boolean;
   className?: string;
   children: ReactNode;
 }) {
@@ -41,7 +53,8 @@ export function FilterBar({
       className={cn(
         // `wx-tap-row` keeps every control in here thumb-sized on a phone and
         // lets it be dense above `sm`. See global.css for why it is px.
-        'wx-neo-raised wx-tap-row flex flex-wrap items-center gap-2 rounded-lg p-2',
+        'wx-neo-raised wx-tap-row flex items-center gap-2 rounded-lg p-2',
+        oneLine ? 'flex-nowrap' : 'flex-wrap',
         className
       )}
     >
