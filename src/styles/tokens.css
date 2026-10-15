@@ -490,8 +490,16 @@
      waves, so there are no high frequencies there for a low-pass filter to
      remove, and 3px more of nothing is still nothing. The difference only
      reads once sharp content scrolls underneath. This is the value that is
-     actually visible; it is one number to dial back. */
-  --wx-glass-blur-nav: 28px;
+     actually visible; it is one number to dial back.
+
+     48px from 2026-10-15: "blur works but needs to be increased more like it
+     is on phone". The phone is on a SMALLER radius (18px) and still looked
+     more blurred, which is not a contradiction — at 375px the waves image is
+     squeezed into a quarter of the width and so carries far more detail per
+     CSS pixel for a low-pass filter to remove. At 1440 the same image is
+     stretched nearly flat. Matching the LOOK therefore needs a much larger
+     radius on desktop than on the phone. */
+  --wx-glass-blur-nav: 48px;
   --wx-glass-blur-rail: 7px;
   --wx-glass-blur-scrim: 14px;
   --wx-glass-blur-phone: 11px;
@@ -1001,8 +1009,16 @@
      waves, so there are no high frequencies there for a low-pass filter to
      remove, and 3px more of nothing is still nothing. The difference only
      reads once sharp content scrolls underneath. This is the value that is
-     actually visible; it is one number to dial back. */
-  --wx-glass-blur-nav: 28px;
+     actually visible; it is one number to dial back.
+
+     48px from 2026-10-15: "blur works but needs to be increased more like it
+     is on phone". The phone is on a SMALLER radius (18px) and still looked
+     more blurred, which is not a contradiction — at 375px the waves image is
+     squeezed into a quarter of the width and so carries far more detail per
+     CSS pixel for a low-pass filter to remove. At 1440 the same image is
+     stretched nearly flat. Matching the LOOK therefore needs a much larger
+     radius on desktop than on the phone. */
+  --wx-glass-blur-nav: 48px;
   --wx-glass-blur-rail: 7px;
   --wx-glass-blur-scrim: 14px;
   --wx-glass-blur-phone: 11px;
