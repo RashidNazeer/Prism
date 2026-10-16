@@ -614,12 +614,12 @@
   --wx-aurora-veil: repeating-linear-gradient(
     100deg,
     #07070a 0%,
-    #07070a 5%,
-    transparent 9%,
-    transparent 21%,
-    #07070a 26%
+    #07070a 6%,
+    transparent 10%,
+    transparent 18%,
+    #07070a 24%
   );
-  --wx-aurora-opacity: 0.85;
+  --wx-aurora-opacity: 0.68;
   --wx-aurora-saturate: 1.15;
   --wx-scene-opacity: 0.46;
 
