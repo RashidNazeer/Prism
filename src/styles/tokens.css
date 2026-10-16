@@ -305,7 +305,7 @@
      is what "this bar has no blur on laptop" actually was. The blur is real;
      the frost is what makes it visible at rest. This is the one place the nav
      deliberately stops matching the cards. */
-  --wx-glass-fill-nav: rgba(255, 255, 255, 0.1);
+  --wx-glass-fill-nav: rgba(7, 7, 10, 0.52);
   --wx-glass-fill-hover: rgba(52, 52, 56, 0.58);
   --wx-glass-well: rgba(255, 255, 255, 0.05);
   --wx-glass-panel: rgba(255, 255, 255, 0.1);
@@ -500,7 +500,7 @@
      read as glass when there is nothing behind it to smear. Light lifts and
      intensifies; dark smokes down. */
   --wx-nav-saturate: 1;
-  --wx-nav-brightness: 1;
+  --wx-nav-brightness: 0.72;
   --wx-glass-blur-rail: 7px;
   --wx-glass-blur-scrim: 14px;
   --wx-glass-blur-phone: 11px;
@@ -590,9 +590,37 @@
    * Lower it and the waves get prettier and the faint text on a bare page
    * stops being legible. That trade is the whole of §4.1.
    */
-  --wx-ground:
-    linear-gradient(0deg, #07070ad4, #07070ad4),
-    url('/brand/glass-waves.webp');
+  /*
+   * THE WAVES ARE GONE, 2026-10-16. The photograph and its veil were the
+   * ground; the aurora field is now, so `body` carries only its base colour
+   * and the field supplies every bit of pattern and movement on top of it.
+   */
+  --wx-ground: none;
+
+  /* THE AURORA, in his three. Mint, sky and periwinkle at the stops the
+     reference used for blues and indigos, so the shape of the light is the
+     demo's and the colour is his. */
+  --wx-aurora: repeating-linear-gradient(
+    100deg,
+    var(--wx-brand-sky) 10%,
+    var(--wx-brand-peri) 15%,
+    var(--wx-brand-sky) 20%,
+    var(--wx-brand-mint) 25%,
+    var(--wx-brand-peri) 30%
+  );
+  /* The reference's `--dark-gradient`: stripes of the PAGE colour cut through
+     the aurora, which is what breaks it into bands of light instead of one
+     wash. Near-black here, so the field reads as glow on a black ground. */
+  --wx-aurora-veil: repeating-linear-gradient(
+    100deg,
+    #07070a 0%,
+    #07070a 5%,
+    transparent 9%,
+    transparent 21%,
+    #07070a 26%
+  );
+  --wx-aurora-opacity: 0.85;
+  --wx-aurora-saturate: 1.15;
   --wx-scene-opacity: 0.46;
 
   /*
@@ -843,7 +871,7 @@
    * than what it replaces.
    */
   --wx-glass-fill: rgba(255, 255, 255, 0.1);
-  --wx-glass-fill-nav: rgba(255, 255, 255, 0.1);
+  --wx-glass-fill-nav: rgba(255, 255, 255, 0.58);
   --wx-glass-fill-hover: rgba(255, 255, 255, 0.18);
   /* His well washes DOWNWARD in ink — `rgba(0, 0, 0, 0.03)` on `.segmented`
      and `.role-tabs` — where the pane around it washes upward in white. The
@@ -1015,7 +1043,7 @@
   --wx-glass-blur-nav: 8px;
   --wx-glass-blur-rail: 7px;
   --wx-nav-saturate: 1;
-  --wx-nav-brightness: 1;
+  --wx-nav-brightness: 1.18;
   --wx-glass-blur-scrim: 14px;
   --wx-glass-blur-phone: 11px;
   --wx-glass-blur-app-phone: 8px;
@@ -1089,9 +1117,30 @@
    * The ground is now exactly what it should be: the photograph, held down by a
    * NEUTRAL veil. Any colour on the page comes from the shader or from content.
    */
-  --wx-ground:
-    linear-gradient(0deg, #dcdee9a6, #dcdee9a6),
-    url('/brand/glass-waves.webp');
+  --wx-ground: none;
+
+  --wx-aurora: repeating-linear-gradient(
+    100deg,
+    color-mix(in oklab, var(--wx-brand-sky) 68%, var(--wx-info)) 10%,
+    color-mix(in oklab, var(--wx-brand-peri) 68%, var(--wx-accent)) 15%,
+    color-mix(in oklab, var(--wx-brand-sky) 68%, var(--wx-info)) 20%,
+    color-mix(in oklab, var(--wx-brand-mint) 68%, var(--wx-success)) 25%,
+    color-mix(in oklab, var(--wx-brand-peri) 68%, var(--wx-accent)) 30%
+  );
+  /* The reference's `--white-gradient`, in the light page colour. It does the
+     same job the near-black one does in dark: cuts the wash into bands. */
+  --wx-aurora-veil: repeating-linear-gradient(
+    100deg,
+    #dcdee9 0%,
+    #dcdee9 5%,
+    transparent 9%,
+    transparent 21%,
+    #dcdee9 26%
+  );
+  /* Pastels on a pale page need more of themselves to register, and no extra
+     saturation or they turn to poster paint. */
+  --wx-aurora-opacity: 0.95;
+  --wx-aurora-saturate: 1.5;
   --wx-scene-opacity: 0.5;
 
   /* See the dark block. These are the surfaces light was already using. */

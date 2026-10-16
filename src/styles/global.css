@@ -2200,3 +2200,70 @@ body::after {
     }
   }
 }
+
+/* ========================================================== the aurora == */
+/*
+ * The app's ground. See `src/components/ui/AuroraBackground.tsx` for why this
+ * is a sibling layer rather than a wrapper, and why it drifts on `transform`
+ * instead of `background-position`.
+ *
+ * The movement is a translate on a field twice the viewport's width, so the
+ * repeating gradients run past without the element ever repainting. 42px of
+ * blur hides the point where the loop restarts; at that radius there is no
+ * edge left to notice.
+ */
+@keyframes wx-aurora-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.wx-aurora-field {
+  position: absolute;
+  inset: -30% -100% -30% 0;
+  width: 200%;
+  background-image: var(--wx-aurora-veil), var(--wx-aurora);
+  background-size:
+    220% 180%,
+    160% 140%;
+  background-position:
+    50% 50%,
+    50% 50%;
+  background-repeat: repeat;
+  /*
+   * `filter` is legal HERE and nowhere near the content tree: this element has
+   * no descendants and is never an ancestor of `.wurxbase-root`. See §1.2.
+   */
+  filter: blur(34px) saturate(var(--wx-aurora-saturate));
+  opacity: var(--wx-aurora-opacity);
+  will-change: transform;
+  animation: wx-aurora-drift 60s linear infinite;
+  /* The original's `showRadialGradient`: the field fades out away from the
+     corner it pours in from, so it reads as light entering rather than as a
+     texture tiled over the whole page. */
+  /* Wider than the reference's. Its ellipse is sized for a hero section; this
+     field is the ground under a whole scrolling app, and at 12%/72% from the
+     corner it faded out before it reached the content. */
+  -webkit-mask-image: radial-gradient(ellipse 130% 100% at 88% 0%, #000 28%, transparent 88%);
+  mask-image: radial-gradient(ellipse 130% 100% at 88% 0%, #000 28%, transparent 88%);
+}
+
+/* Behind a signed-in screen the field is quieter: there is real work on top of
+   it, and the ground is not the thing being looked at. */
+.wx-aurora-field[data-intensity='subtle'] {
+  opacity: calc(var(--wx-aurora-opacity) * 0.55);
+}
+
+/*
+ * A 60s drift is exactly the kind of ambient motion `prefers-reduced-motion`
+ * exists to stop. The field stays — it is colour, not animation — it simply
+ * holds still.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .wx-aurora-field {
+    animation: none;
+  }
+}
