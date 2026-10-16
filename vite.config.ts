@@ -36,6 +36,38 @@ export default defineConfig({
           if (/[\\/]node_modules[\\/]@tanstack[\\/]/.test(id)) {
             return 'query-vendor';
           }
+          /*
+           * MOTION, IN ONE PIECE AND UNDER ITS OWN NAME.
+           *
+           * `motion/react` is on the critical path — `app/providers.tsx`
+           * mounts `LazyMotion` and `MotionConfig` for the whole tree — but it
+           * was arriving as three separate chunks, one of which the splitter
+           * had named `react-*.js` after an internal directory. So the build
+           * log showed a 36 KB "react" chunk that is not React, next to the
+           * real `react-vendor`, which is a good way to misread every future
+           * measurement. One chunk, three fewer requests, honest name.
+           *
+           * It is kept OUT of `react-vendor` deliberately: Motion ships far
+           * more often than React does, and sharing the chunk would throw away
+           * the React cache entry on every Motion bump.
+           */
+          if (/[\\/]node_modules[\\/]motion(-dom|-utils)?[\\/]/.test(id)) {
+            return 'motion-vendor';
+          }
+          /*
+           * THREE.JS AND VANTA, PINNED AWAY FROM EVERYTHING ELSE.
+           *
+           * 607 KB raw / 153 KB gzipped between them, measured 2026-10-16 —
+           * larger than the rest of the application put together. `WavesField`
+           * reaches them through a dynamic `import()` and they must stay
+           * behind it, so naming the chunk here is a tripwire as much as a
+           * grouping: if either package ever acquires a static importer, it
+           * lands in the entry chunk and this name makes that obvious in the
+           * build log instead of invisible inside a 160 KB `index`.
+           */
+          if (/[\\/]node_modules[\\/](three|vanta)[\\/]/.test(id)) {
+            return 'webgl-vendor';
+          }
           return;
         },
       },

@@ -1,956 +1,395 @@
-import { useId, useMemo, useState, type ReactNode } from 'react';
-import { ChevronDown, ExternalLink, Radio, TrendingUp } from 'lucide-react';
-import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
-import { VelocityPanel, useVelocityData } from '@/components/creator/VelocityCard';
+import { useEffect, useRef } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import {
-  useDailyPerformance,
-  usePerformanceWindow,
-  useVideoPerformance,
-  useBrandPerformance,
-  adStateOf,
-  type AdState,
-  type DailyPerformance,
-  type VideoPerformance,
-  type BrandPerformance,
-} from '@/lib/creator/usePerformance';
-import {
-  ceilingOf,
-  clamp,
-  presetToRange,
-  type DateRange,
-  type PresetKey,
-} from '@/lib/creator/date-range';
-import { DateRangePicker } from '@/components/creator/DateRangePicker';
-import { BrandFilter } from '@/components/creator/BrandFilter';
-import { NeoCardSkeleton } from '@/components/brand/NeoSkeleton';
+  BrandBars,
+  compact,
+  compactMoney,
+  DeltaChip,
+  exactMoney,
+  NOT_REPORTED,
+  TrendLine,
+  type ChartPoint,
+} from '@/components/charts';
+import { PeriodChips } from '@/components/creator/home/PeriodChips';
+import { CombinedChart } from '@/components/creator/home/CombinedChart';
+import { BrandChip } from '@/components/creator/home/BrandChip';
+import { HomeSkeleton } from '@/components/creator/home/HomeSkeleton';
+import { useHomeData, COMMISSION_IS_MEASURED } from '@/lib/creator/useHomeData';
 import { cn } from '@/lib/utils';
 
 /**
- * My numbers: what the ads behind a creator's videos actually did.
+ * MY NUMBERS: THE DEEP VIEW BEHIND THE HOME TILES.
  *
  * THIS IS THE MOMENT THE PRODUCT EXISTS FOR. A creator logs in and sees their
- * real GMV, not a promise about it. So every number here is the one TikTok
- * reports, denominated in the currency TikTok reports it in, and nothing is
- * rounded into looking better than it is.
+ * real GMV, not a promise about it. Every number here is the one TikTok
+ * reports, in the currency TikTok reports it in, and nothing is rounded into
+ * looking better than it is — compact figures TRUNCATE, so 12,489 is 12.4K.
  *
  * NO API CALL HAPPENS ON THIS SCREEN. A nightly job pulls each complete day
  * once and writes it to our own table; this reads that table. Which is why the
  * date filter is free and instant, and why a creator has no way to run up a
- * bill or reach TikTok at all.
+ * bill or reach TikTok at all. That property is carried over from the screen
+ * this replaces and must survive anything added here.
  *
- * TWO TABS, and the default is Dashboard because the first question is "how am
- * I doing", not "list my videos".
+ * NO TABS, as of the 2026-10 redesign. The old screen had two — Dashboard and
+ * My content — and the second was a list of videos living inside a screen
+ * about money. That list has its own screen now, so this is one long, calm
+ * page reached by tapping a tile on Home.
  *
- * THE CHANNEL FILTER IS GONE, 2026-10-08. It was added on 2026-08-20 at
- * Rashid's request — "a tab like offer videos or contest videos and all videos
- * so that they can differentiate" — and he removed it himself, pointing at it:
- * "the circled this I want you to remove it and keep it all time by default."
- *
- * IT COULD BE LEFT SWITCHED ON, which is the part worth remembering. The tabs
- * held their state while everything else on the screen answered a narrower
- * question than the heading implied, so a creator who had once pressed Contest
- * videos came back to a dashboard reading $0.00 with nothing on screen saying
- * why. A filter that can be left on and is easy to miss costs more than the
- * slice it offers.
- *
- * The RPCs keep their `p_source` parameter and `My content` still labels each
- * card's channel, so the question can be asked again without a migration.
+ * IT SHARES HOME'S STATE, through the URL. §6 asks for exactly that: the
+ * period and brand live in search params, so a Home tile links straight here
+ * with the same window selected, and a link she sends to somebody opens what
+ * she was looking at. It also means these are the SAME queries with the same
+ * cache keys, so arriving from Home refetches nothing.
  */
 
-const TABS = [
-  { key: 'dashboard', label: 'Dashboard' },
-  { key: 'content', label: 'My content' },
+const SECTIONS = [
+  { id: 'gmv', label: 'GMV' },
+  { id: 'commission', label: 'Commission' },
+  { id: 'spend', label: 'Ad spend' },
+  { id: 'orders', label: 'Orders' },
 ] as const;
-type TabKey = (typeof TABS)[number]['key'];
 
-/*
- * A NULL CURRENCY MEANS THE SUM SPANS MORE THAN ONE, and it must not be given a
- * symbol. The read functions return null rather than picking one off the set
- * (20260820230000), so this renders the figure bare: visibly odd, which is what
- * it is, instead of confidently wrong. The product is USD only by decision, so
- * this should never fire — it exists so the day that changes is a question
- * somebody asks rather than money quietly adding up wrong.
- */
-const money = (n: number, currency: string | null) =>
-  currency
-    ? new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency,
-        maximumFractionDigits: 2,
-      }).format(n)
-    : new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(n);
-
-/**
- * ONE SCREEN, TWO PLACES IT LIVES.
- *
- * `/app/numbers` renders it with no brand, and it answers for every brand the
- * creator works with, exactly as it always has. A Brand Hub renders the same
- * component with that hub's `brandId`, and every figure on it narrows to that
- * brand.
- *
- * THE NARROWING HAPPENS IN THE DATABASE, NEVER HERE. Each hook passes
- * `p_brand_id` down to the RPC, which filters the money rows and the video set
- * together. Filtering the returned array in the browser would look identical
- * and be wrong: a card's `brand_id` is the brand that spent MOST on that video
- * over its lifetime, while its cost and GMV are sums across every advertiser,
- * so `videos.filter(v => v.brand_id === brandId)` would hand this brand another
- * brand's spend and compute ROI against a denominator that was never theirs.
- */
-export function MyNumbers({ brandId }: { brandId?: string } = {}) {
-  const [tab, setTab] = useState<TabKey>('dashboard');
-  /* Every video, always. See the note at the top of the file. */
-  const source = null;
+export function MyNumbers() {
+  const home = useHomeData();
+  const { hash } = useLocation();
+  const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
 
   /*
-   * WHICH BRAND, when this is the standalone screen.
+   * ONE CHART, OR ONE PER METRIC. Rashid asked for the graphs merged "and give
+   * an option to creator for separate view", so the choice is hers and it
+   * lives in the URL beside the period and brand — a link opens the view it
+   * was sent from, and a reload does not quietly change it back.
    *
-   * Rashid, 2026-10-07: "In the numbers tab I want a drop down to select
-   * different brands for whom I want to see the numbers."
-   *
-   * INSIDE A BRAND HUB THE PROP WINS and the dropdown is never drawn: that
-   * screen IS one brand, and a control offering to leave it would be a second
-   * answer to a question the route has already settled.
+   * COMBINED IS THE DEFAULT because it answers the question the page exists
+   * for: did the ad spend move the sales? Three stacked charts made that a
+   * question about memory.
    */
-  const [pickedBrand, setPickedBrand] = useState<string | null>(null);
-  const effectiveBrandId = brandId ?? pickedBrand ?? undefined;
+  const charts = params.get('charts') === 'separate' ? 'separate' : 'combined';
+  const setCharts = (next: 'combined' | 'separate') => {
+    const p = new URLSearchParams(params);
+    if (next === 'separate') p.set('charts', 'separate');
+    else p.delete('charts');
+    setParams(p, { replace: true });
+  };
+  const { period, totals, previous, currency } = home;
+  const scrolledTo = useRef<string | null>(null);
 
-  /*
-   * TWO WINDOWS, and only one of them usually costs a request.
-   *
-   * `baseWindow` is the creator's whole history at this route's scope — every
-   * brand on `/app/numbers`, this brand inside a hub. It feeds the brand list,
-   * which must NOT shrink when a brand is chosen, or picking one would empty the
-   * dropdown that picked it.
-   *
-   * `scopedWindow` follows the dropdown and feeds the ranges and the empty
-   * state, so "All time" means all time FOR THIS BRAND. With nothing picked the
-   * two have identical query keys, so React Query serves one request.
-   */
-  const baseWindowQ = usePerformanceWindow(brandId);
-  const windowQ = usePerformanceWindow(effectiveBrandId);
+  /* A TILE ON HOME LINKS TO `#spend`, so arriving here should land on it.
+     Guarded by a ref because the data lands in two passes and scrolling again
+     on the second would pull the page out from under her thumb. */
+  useEffect(() => {
+    const id = hash.replace('#', '');
+    if (!id || home.loading || scrolledTo.current === id) return;
+    scrolledTo.current = id;
+    document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }, [hash, home.loading]);
 
-  /*
-   * ANY DATE RANGE, since 2026-10-07. The four fixed tabs became a calendar
-   * with shortcuts; see `src/lib/creator/date-range.ts` for why none of it
-   * needed a migration.
-   */
-  const [preset, setPreset] = useState<PresetKey>('all');
-  const [custom, setCustom] = useState<DateRange | null>(null);
-
-  const active = useMemo<DateRange | null>(
-    () =>
-      preset === 'custom'
-        ? clamp(custom ?? { from: '', to: '' }, windowQ.data)
-        : presetToRange(preset, windowQ.data),
-    [preset, custom, windowQ.data]
-  );
-  const from = active?.from ?? null;
-  const to = active?.to ?? null;
-
-  /*
-   * THE BRANDS THIS CREATOR ACTUALLY HAS VIDEOS WITH, over their whole history.
-   *
-   * Taken from the videos rather than from `creator_brand_performance`, which
-   * only knows brands with MONEY rows: a creator whose first two videos have
-   * earned nothing yet would get an empty dropdown from that source, which is
-   * exactly the creator most likely to go looking for one. Taken over the base
-   * window rather than the chosen range for the same reason the window is split
-   * above. With the default "All time" range this is the same query key as the
-   * main video fetch, so it is free until somebody narrows the dates.
-   */
-  const baseFrom = baseWindowQ.data?.earliest ?? null;
-  const baseTo = baseWindowQ.data ? ceilingOf(baseWindowQ.data) : null;
-  const brandSourceQ = useVideoPerformance(
-    brandId ? null : baseFrom,
-    brandId ? null : baseTo,
-    null
-  );
-  const brandOptions = useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const v of brandSourceQ.data ?? []) {
-      if (v.brand_id && v.brand_name && !seen.has(v.brand_id))
-        seen.set(v.brand_id, v.brand_name);
-    }
-    return [...seen.entries()]
-      .map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [brandSourceQ.data]);
-
-  const videosQ = useVideoPerformance(from, to, source, effectiveBrandId);
-  /*
-   * "Where your money came from" is a split BY brand, so inside a single
-   * brand's hub it is one row restating the tile above it. Not fetched there
-   * at all rather than fetched and hidden, because the round trip is the cost.
-   * The same now applies once the dropdown has narrowed to one brand.
-   */
-  const splitOff = Boolean(effectiveBrandId);
-  const brandsQ = useBrandPerformance(splitOff ? null : from, splitOff ? null : to);
-  const dailyQ = useDailyPerformance(from, to, source, effectiveBrandId);
-
-  /*
-   * THE SAME FIGURES HOME SHOWS, from the same hook.
-   *
-   * Its current-window query has the same key as `dailyQ` above, so React
-   * Query serves one request for both; the only extra round trip is the
-   * previous window, which is what makes the comparisons possible.
-   */
-  const velocity = useVelocityData({
-    range: active,
-    floor: windowQ.data?.earliest ?? null,
-    source,
-    brandId: effectiveBrandId,
-  });
-
-  const videos = videosQ.data ?? [];
-  const daily = dailyQ.data ?? [];
-
-  const currency =
-    videos.find((v) => v.currency)?.currency ?? daily.find((d) => d.currency)?.currency ?? null;
-
-  const totals = useMemo(() => {
-    const cost = videos.reduce((s, v) => s + Number(v.cost), 0);
-    const revenue = videos.reduce((s, v) => s + Number(v.gross_revenue), 0);
-    const orders = videos.reduce((s, v) => s + Number(v.orders), 0);
-    return {
-      cost,
-      revenue,
-      orders,
-      // Computed here rather than averaged from the rows: a ratio of sums is
-      // the only version that is right at every zoom level.
-      roi: cost > 0 ? revenue / cost : null,
-    };
-  }, [videos]);
-
-  /*
-   * HOW MANY VIDEOS ARE ACTUALLY CARRYING ADS, which Rashid asked for by name:
-   * "in dashboard total no off videos they posted and no of videos ads are
-   * running on and no of videos ads not running on".
-   *
-   * It matters because a card with no numbers is otherwise ambiguous, and the
-   * wrong reading, "the product has lost my data", is the one that costs trust.
-   * On his real roster it is 44 of 46, so two creators would have been staring
-   * at two blank cards with no explanation.
-   *
-   * Counted from a list already in memory, so this is not a second round trip.
-   */
-  const latestDataDate = useMemo(
-    () => (daily.length > 0 ? daily[daily.length - 1]!.stat_date : null),
-    [daily]
-  );
-
-  const adCounts = useMemo(() => {
-    let running = 0;
-    let ran = 0;
-    let none = 0;
-    for (const v of videos) {
-      const state = adStateOf(v, latestDataDate);
-      if (state === 'running') running++;
-      else if (state === 'ran') ran++;
-      else none++;
-    }
-    return { running, ran, none, total: videos.length, withAds: running + ran };
-  }, [videos, latestDataDate]);
-
-  const loading = windowQ.isPending || videosQ.isPending || dailyQ.isPending;
-  const hasAnyData = videos.some((v) => v.days_with_data > 0);
+  if (home.loading) return <HomeSkeleton />;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="space-y-6">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <BrandChip period={period} brands={home.brands} />
+          <PeriodChips period={period} window={home.window} />
+        </div>
+        {/* NO DATE RANGE HERE. Rashid: "the date needs to be removed creator
+            knows the range dont worry." She chose it one control to the left
+            and the chart says "Last 30 days" over the plot; a third statement
+            of the same window was the only thing on that line.
+
+            THE VIEW TOGGLE SITS ON THIS ROW, not on one of its own. Alone on a
+            second line, right-aligned under a left-aligned row of filters, it
+            read as a stray — "give it some symmetry". One row: what you are
+            looking at on the left, how you are looking at it on the right. */}
+        <button
+          type="button"
+          onClick={() => setCharts(charts === 'combined' ? 'separate' : 'combined')}
+          className="wx-neo-raised-sm text-muted hover:text-text inline-flex min-h-11 items-center rounded-full px-3.5 text-xs font-medium transition-colors sm:min-h-9"
+        >
+          {charts === 'combined' ? 'Show each metric separately' : 'Show one combined chart'}
+        </button>
+      </header>
+
       {/*
-        TABS LEFT, FILTERS RIGHT. Rashid asked for the new controls to keep the
-        row "practical and symmetrical", and the row already had three groups of
-        tabs fighting for the same edge. What you are LOOKING AT stays on the
-        left; what you are NARROWING IT BY is pinned right in the action slot,
-        so the bar reads as two halves rather than five things in a queue. Below
-        40rem FilterBar wraps them, and `wx-tap-row` keeps every control at the
-        44px tap floor.
+        THE JUMP ROW ONLY EXISTS IN THE SEPARATE VIEW.
+
+        Rashid: "the tabs that are loaded with buttons and toggles or sub tabs
+        make them simpler to use and ditch the buttons where you can". This one
+        had stopped meaning anything: the merged view is ONE chart, so four
+        pills offering to scroll to four sections were four buttons that went
+        nowhere in particular. A control that does not change what you see does
+        not belong on screen.
       */}
-      <FilterBar
-        oneLine
-        action={
-          /*
-           * ONE LINE, 2026-10-16. Rashid: "on phone move all these in one
-           * line."
-           *
-           * The previous attempt made this row full-width on phone so the two
-           * filters sat at its two ends — which fixed the dead gap he reported
-           * but kept them on a SECOND line. With `oneLine` on the bar they
-           * share the row with the tabs instead, so this goes back to being a
-           * compact, non-shrinking cluster: the squeeze is absorbed by the tab
-           * group beside it, never by a filter, because a filter pushed off
-           * the edge is the bug FilterBar's own note warns about.
-           */
-          <div className="flex shrink-0 items-center gap-2">
-            {brandId ? null : (
-              <BrandFilter
-                brands={brandOptions}
-                value={pickedBrand}
-                onChange={setPickedBrand}
-              />
+      {charts === 'separate' && (
+        <nav
+          aria-label="Jump to a metric"
+          className="wx-glass-chrome sticky top-16 z-20 grid grid-cols-4 gap-1.5 rounded-full p-1.5"
+        >
+          {SECTIONS.map((s) => {
+            const active = hash === `#${s.id}`;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => {
+                  navigate({ hash: s.id, search: window.location.search }, { replace: true });
+                  document
+                    .getElementById(s.id)
+                    ?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                }}
+                aria-current={active ? 'true' : undefined}
+                className={cn(
+                  'wx-neo-raised-sm min-h-11 rounded-full px-2 text-center text-xs transition-colors sm:min-h-9',
+                  active ? 'text-text font-bold' : 'text-muted hover:text-text font-medium'
+                )}
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
+      {home.emptyPeriodButHasHistory && (
+        <p className="text-muted text-sm">Nothing measured in this period.</p>
+      )}
+
+      {charts === 'combined' ? (
+        <section id="gmv" className="wx-neo-raised scroll-mt-32 rounded-xl p-4">
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-text text-sm font-semibold">Day by day</h2>
+            <span className="text-faint text-[0.6875rem]">Last {period.days} days</span>
+          </div>
+          <CombinedChart
+            gmv={home.gmvSeries}
+            spend={home.spendSeries}
+            currency={currency}
+            days={period.days}
+          />
+          <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Stat label="GMV" value={compactMoney(totals.gmv, currency)} sub={exactMoney(totals.gmv, currency)} />
+            <Stat label="Commission" value={NOT_REPORTED} sub="not measured yet" />
+            <Stat label="Ad spend" value={compactMoney(totals.spend, currency)} sub={exactMoney(totals.spend, currency)} />
+            <Stat label="Orders" value={compact(totals.orders)} sub={`${totals.orders.toLocaleString()} exactly`} />
+          </dl>
+        </section>
+      ) : (
+        <>
+      <Section
+        id="gmv"
+        title="GMV"
+        value={compactMoney(totals.gmv, currency)}
+        exact={exactMoney(totals.gmv, currency)}
+        now={totals.gmv}
+        before={previous?.gmv ?? null}
+        series={home.gmvSeries}
+        currency={currency}
+        token="--chart-1"
+      />
+
+      {/*
+        COMMISSION HAS NO MEASURED FIGURE. Rather than drop the section — which
+        would leave its jump pill pointing at nothing — it says plainly what is
+        missing and why. See COMMISSION_IS_MEASURED in useHomeData.
+      */}
+      {/*
+        COMPACT, AND ACROSS THE WIDTH. This said the same thing stacked down
+        the left edge of a full-width panel, leaving two-thirds of the row
+        empty and standing as tall as the real metric sections above it —
+        Rashid, of the same fault on "Up next": "this should be smaller". An
+        absence should take less room than a figure, not more. The jump pill
+        still has somewhere to land, which is why the section is shortened
+        rather than removed.
+      */}
+      <section
+        id="commission"
+        className="wx-neo-raised scroll-mt-32 rounded-xl p-4 sm:flex sm:items-baseline sm:gap-6"
+      >
+        <div className="sm:w-48 sm:shrink-0">
+          <h2 className="text-text text-sm font-semibold">Commission</h2>
+          {!COMMISSION_IS_MEASURED && (
+            <p className="text-muted mt-0.5 font-semibold">{NOT_REPORTED}</p>
+          )}
+        </div>
+        {!COMMISSION_IS_MEASURED && (
+          <p className="text-muted mt-2 max-w-prose text-xs sm:mt-0">
+            We hold the commission <em>rate</em> offered on each product, but not the commission
+            you earned &mdash; nothing links a day&rsquo;s sales back to the product that
+            produced them. Rather than multiply your GMV by an average and call the result
+            money, this stays empty until it can be measured.
+          </p>
+        )}
+      </section>
+
+      <Section
+        id="spend"
+        title="Ad spend"
+        value={compactMoney(totals.spend, currency)}
+        exact={exactMoney(totals.spend, currency)}
+        now={totals.spend}
+        before={previous?.spend ?? null}
+        series={home.spendSeries}
+        currency={currency}
+        token="--chart-3"
+        extra={
+          <div className="mt-4">
+            <h3 className="text-muted mb-2 text-[0.6875rem] font-semibold tracking-wide uppercase">
+              Videos with ads behind them
+            </h3>
+            {(home.topVideos ?? []).filter((v) => Number(v.cost) > 0).length === 0 ? (
+              <p className="text-muted text-sm">No ads ran on your videos in this period.</p>
+            ) : (
+              <ul className="space-y-1">
+                {(home.topVideos ?? [])
+                  .filter((v) => Number(v.cost) > 0)
+                  .map((v) => (
+                    <li
+                      key={v.item_id}
+                      className="flex min-h-11 flex-wrap items-center justify-between gap-2 px-1 text-xs"
+                    >
+                      <span className="text-text min-w-0 flex-1 truncate">
+                        {v.video_title ?? 'Untitled video'}
+                      </span>
+                      <span className="text-muted shrink-0 tabular-nums">
+                        {exactMoney(Number(v.cost), v.currency)} spent &middot;{' '}
+                        <span className="text-text font-medium">
+                          {exactMoney(Number(v.gross_revenue), v.currency)} GMV
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+              </ul>
             )}
-            <DateRangePicker
-              preset={preset}
-              range={active}
-              window={windowQ.data}
-              onChange={(p, r) => {
-                setPreset(p);
-                setCustom(p === 'custom' ? r : null);
-              }}
-            />
           </div>
         }
-      >
-        {/*
-          THE TAB GROUP IS WHERE THE SQUEEZE LANDS. On one line at 375 the two
-          tabs plus both filters are close to the full width, so something has
-          to give. `min-w-0` lets this group shrink below its content and
-          `flex-nowrap` + `overflow-x-auto` lets it scroll INSIDE itself if it
-          ever has to — with only two tabs it will not, but a third would
-          scroll here rather than pushing a filter off the screen edge, which
-          is the failure FilterBar's own comment records.
-        */}
-        <FilterTabs
-          label="What to look at"
-          className="min-w-0 flex-nowrap overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {TABS.map((t) => (
-            <FilterTab
-              key={t.key}
-              active={tab === t.key}
-              count={t.key === 'content' ? videos.length : undefined}
-              onClick={() => setTab(t.key)}
-            >
-              {t.label}
-            </FilterTab>
-          ))}
-        </FilterTabs>
-      </FilterBar>
+      />
 
-      {loading ? (
-        <div className="flex flex-col gap-3">
-          <NeoCardSkeleton className="h-24" />
-          <NeoCardSkeleton className="h-64" />
-        </div>
-      ) : windowQ.data && windowQ.data.videos === 0 ? (
-        /*
-         * "No videos yet" used to be true here, because this screen counted
-         * every video a creator had posted. Since 2026-08-19 it counts only
-         * APPROVED ones, so somebody with three videos waiting to be checked
-         * would have read a flat contradiction of their own Content page.
-         */
-        <Empty
-          title="No approved videos yet"
-          body="A video shows up here once the team has watched it and approved it. Then, when we start running ads behind it, the spend, GMV and orders it makes appear on this screen. Anything still being checked is on your Content page."
-        />
-      ) : /*
-       * The "narrowed to nothing" empty state went with the channel tabs on
-       * 2026-10-08. It existed because the filter could be left on and leave
-       * a creator staring at zeros; with no filter to leave on, there is
-       * nothing to explain away.
-       */
-      !hasAnyData ? (
-        <Empty
-          title="Nothing to report yet"
-          body="Your videos are in. Numbers appear the day after we start running ads behind them, and they update every night."
-        />
-      ) : tab === 'dashboard' ? (
-        <Dashboard
-          velocity={velocity}
-          videoCount={windowQ.data?.videos ?? 0}
-          totals={totals}
-          daily={daily}
-          videos={videos}
-          currency={currency}
-          adCounts={adCounts}
-          brands={brandsQ.data ?? []}
-          inBrandHub={Boolean(brandId)}
-          latestDataDate={latestDataDate}
-        />
-      ) : (
-        <Content videos={videos} currency={currency} latestDataDate={latestDataDate} />
+      <Section
+        id="orders"
+        title="Orders"
+        value={compact(totals.orders)}
+        exact={totals.orders.toLocaleString()}
+        now={totals.orders}
+        before={previous?.orders ?? null}
+        series={home.ordersSeries}
+        currency={currency}
+        token="--chart-4"
+        money={false}
+      />
+        </>
       )}
+
+      <section className="wx-neo-raised rounded-xl p-4">
+        <h2 className="text-text mb-3 text-sm font-semibold">By brand</h2>
+        <BrandBars
+          brands={home.brands}
+          currency={currency}
+          onPick={(b) => b.id && period.setBrand(b.id)}
+        />
+      </section>
     </div>
   );
 }
 
-/* ------------------------------------------------------------- dashboard -- */
-
-/*
- * HOW MUCH DATA BEHIND A RATIO IS ENOUGH TO LEAN ON.
- *
- * This never hides or changes a figure. It only decides whether the screen adds
- * a plain-English "early read" caveat beside a ratio. Seven days and five orders
- * are a judgement call, not a statistical threshold; they are named here so the
- * day somebody disagrees there is one place to change.
- */
-const THIN_DAYS = 7;
-const THIN_ORDERS = 5;
-
-const SECTION_LABEL = 'text-muted text-[0.75rem] font-semibold tracking-[0.12em] uppercase';
-
-function jumpTo(id: string) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const quiet = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  el.scrollIntoView({ behavior: quiet ? 'auto' : 'smooth', block: 'start' });
-}
-
 /**
- * THE ONE QUESTION THIS SCREEN ANSWERS: "what did my videos make, and is it moving?"
+ * One metric: the full chart, then the three facts worth stating about it.
  *
- * So the wide column of the golden split holds the headline GMV and the day-by-day
- * line it came from, in one card, and that card is the only thing on the screen
- * that tilts. Everything else is the SUPPORT for that number: what it cost (narrow
- * column, beside it), whether ads are behind the videos at all, and the best day
- * and top video.
- *
- * NOTHING HERE IS HIDDEN, only ordered. Every figure is on the page and exact.
- * What moved behind a disclosure is secondary DETAIL (orders by day, the long
- * explanation of why a young ROI can swing), never the figure itself.
+ * THE AVERAGE DIVIDES BY THE DAYS WE ACTUALLY MEASURED, not by the length of
+ * the window. Dividing by 30 when eleven of those days were never reported
+ * produces a figure that is too low and labels it an average — the same class
+ * of mistake as drawing a missing day at zero. "Days measured" is printed
+ * beside it so the denominator is never a secret.
  */
-function Dashboard({
-  velocity,
-  videoCount,
-  totals,
-  daily,
-  videos,
+function Section({
+  id,
+  title,
+  value,
+  exact,
+  now,
+  before,
+  series,
   currency,
-  adCounts,
-  brands,
-  inBrandHub,
-  latestDataDate,
+  token,
+  money = true,
+  extra,
 }: {
-  velocity: ReturnType<typeof useVelocityData>;
-  videoCount: number;
-  totals: { cost: number; revenue: number; orders: number; roi: number | null };
-  daily: DailyPerformance[];
-  videos: VideoPerformance[];
+  id: string;
+  title: string;
+  value: string;
+  exact: string;
+  now: number | null;
+  before: number | null;
+  series: ChartPoint[];
   currency: string | null;
-  adCounts: { running: number; ran: number; none: number; total: number; withAds: number };
-  brands: BrandPerformance[];
-  /** Inside one brand's hub, so a per-brand split would be one row of itself. */
-  inBrandHub: boolean;
-  latestDataDate: string | null;
+  token: string;
+  money?: boolean;
+  extra?: React.ReactNode;
 }) {
-  const rows = daily;
-  const best = [...rows].sort((a, b) => Number(b.gross_revenue) - Number(a.gross_revenue))[0];
-  const topVideo = videos[0];
-  const showBrands = !inBrandHub && brands.length > 1;
+  const measured = series.filter((p) => p.value !== null);
+  const best = measured.reduce<ChartPoint | null>(
+    (top, p) => (top === null || (p.value ?? 0) > (top.value ?? 0) ? p : top),
+    null
+  );
+  const average =
+    measured.length > 0
+      ? measured.reduce((t, p) => t + (p.value ?? 0), 0) / measured.length
+      : null;
 
-  const thin = rows.length < THIN_DAYS || totals.orders < THIN_ORDERS;
-
-  const sections = [
-    { id: 'mn-money', label: 'Money' },
-    { id: 'mn-trend', label: 'Day by day' },
-    { id: 'mn-videos', label: 'Videos & ads' },
-    ...(showBrands ? [{ id: 'mn-brands', label: 'By brand' }] : []),
-  ];
+  const fmt = (n: number) => (money ? exactMoney(n, currency) : Math.trunc(n).toLocaleString());
 
   return (
-    <div className="flex flex-col gap-5">
-      {/* On-page navigation: every section below is one tap away. */}
-      {/*
-        A GRID ON A PHONE, A WRAPPED ROW ABOVE IT. Same report: the chips were
-        one `flex-wrap` row with the label inline, so four chips of different
-        widths broke wherever they happened to run out of space and left the
-        last one — "By brand" — alone on a line of its own. A 2-up grid gives
-        four chips two even rows, and the label sits above rather than eating
-        the first slot. From `sm` there is room for the original single row.
-      */}
-      <nav
-        aria-label="Sections on this page"
-        className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
-      >
-        <span className={SECTION_LABEL}>Jump to</span>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
-          {sections.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => jumpTo(s.id)}
-              className="wx-neo-raised-sm text-muted hover:text-text focus-visible:outline-line-interactive text-caption min-h-[44px] rounded-full px-4 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-      </nav>
+    <section id={id} className="wx-neo-raised scroll-mt-32 rounded-xl p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-text text-sm font-semibold">{title}</h2>
+        <DeltaChip now={now} before={before} suffix="vs previous period" />
+      </div>
+      <p className="text-text mt-1 text-2xl font-bold tabular-nums">{value}</p>
+      <p className="text-faint text-[0.6875rem]">{exact} exactly</p>
 
-      {/* ------------------------------- 1. GMV and its line | what it cost -- */}
-      <section id="mn-money" aria-labelledby="mn-money-h" className="scroll-mt-24">
-        <h2 id="mn-money-h" className="sr-only">
-          The money
-        </h2>
-
-        {/*
-          THE SAME PANEL AS HOME, and deliberately the same arithmetic.
-          Rashid, 2026-10-10: "Fix my numbers tab in same way". This screen used
-          to draw its own GMV card, its own spend/orders/ROI stack and its own
-          two charts, which meant two screens computing the same four figures in
-          two places. They now come from one hook, so Home and My numbers can
-          never disagree about what a creator earned.
-
-          No controls are passed: the range picker and the brand dropdown
-          already live in this screen's filter bar, and a second set inside the
-          card would be two answers to one question.
-        */}
-        <VelocityPanel videos={videoCount} latest={latestDataDate} {...velocity} />
-
-        {/* The one thing the panel does not say, kept because it is the figure
-            creators most often misread. */}
-        {totals.roi !== null && thin ? (
-          <div className="mt-3">
-            <Disclosure label="Why your ROI can swing this early">
-              <p className="text-faint text-caption pb-1 leading-relaxed">
-                This rests on only {money(totals.cost, currency)} of spend, {totals.orders}{' '}
-                {totals.orders === 1 ? 'order' : 'orders'} and {rows.length}{' '}
-                {rows.length === 1 ? 'day' : 'days'}, so it can swing a lot. Sales often land
-                days after the spend, which makes a low early ratio common. It becomes a useful
-                guide as more spend and orders build up.
-              </p>
-            </Disclosure>
-          </div>
-        ) : null}
-
-        <p className="text-faint text-caption mt-2 leading-relaxed">
-          {latestDataDate ? `Complete days up to ${formatDay(latestDataDate)}. ` : ''}
-          {rows.length} {rows.length === 1 ? 'day' : 'days'} of data in this view.
-        </p>
-      </section>
-
-      {/* ------------------------- 2. videos & ads | best day and top video -- */}
-      <section id="mn-videos" aria-labelledby="mn-videos-h" className="scroll-mt-24">
-        <SectionHead
-          id="mn-videos-h"
-          title="Videos and ads"
-          body="Which of your videos have ads behind them. This is what explains most empty cards."
+      <div className="mt-3">
+        <TrendLine
+          data={series}
+          currency={currency}
+          token={token}
+          money={money}
+          ariaLabel={`${title} each day for this period`}
         />
-        <div className="wx-golden mt-3 items-start">
-          <AdsBand counts={adCounts} />
+      </div>
 
-          <div className="wx-neo-raised divide-line flex flex-col divide-y rounded-xl p-5">
-            <div className="pb-4">
-              <p className={SECTION_LABEL}>Best day</p>
-              {best && Number(best.gross_revenue) > 0 ? (
-                <p className="mt-1">
-                  <span className="font-display wx-numeric text-lead font-bold">
-                    {money(Number(best.gross_revenue), currency)}
-                  </span>
-                  <span className="text-muted text-caption ml-2">
-                    on {formatDay(best.stat_date)}
-                  </span>
-                </p>
-              ) : (
-                <p className="text-muted text-caption mt-1">
-                  No day has made GMV yet. Your best day appears here when one does.
-                </p>
-              )}
-            </div>
-
-            <div className="pt-4">
-              <p className={SECTION_LABEL}>Top performer</p>
-              {topVideo && Number(topVideo.gross_revenue) > 0 ? (
-                <>
-                  <p className="text-body mt-1 truncate font-semibold">
-                    {topVideo.video_title || 'Your video'}
-                  </p>
-                  <p className="text-muted wx-numeric text-caption mt-0.5">
-                    {money(Number(topVideo.gross_revenue), currency)} from{' '}
-                    {money(Number(topVideo.cost), currency)} spend
-                  </p>
-                </>
-              ) : (
-                <p className="text-muted text-caption mt-1">
-                  No video has made GMV yet. Open My content to see each one.
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* -------------------------------------------------- 3. by brand -- */}
-      {/*
-        WHICH BRAND PAID YOU WHAT. Rashid asked for it by name. Only when there is
-        more than one: a single brand would just restate the total above.
-      */}
-      {showBrands ? (
-        <section id="mn-brands" aria-labelledby="mn-brands-h" className="scroll-mt-24">
-          <ByBrand brands={brands} />
-        </section>
-      ) : null}
-
-      <Footnote />
-    </div>
-  );
-}
-
-function SectionHead({ id, title, body }: { id: string; title: string; body: string }) {
-  return (
-    <div>
-      <h2 id={id} className="font-display text-lead font-bold">
-        {title}
-      </h2>
-      <p className="text-muted text-caption mt-0.5 leading-relaxed">{body}</p>
-    </div>
-  );
-}
-
-const formatDay = (iso: string) =>
-  new Date(`${iso}T00:00:00Z`).toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'long',
-    timeZone: 'UTC',
-  });
-
-/**
- * PROGRESSIVE DISCLOSURE, not removal. The content stays in the DOM (hidden, not
- * unmounted) and is exact; this only decides whether it is shouted. A real button
- * with `aria-expanded` and `aria-controls`, at the 44px tap floor.
- */
-function Disclosure({ label, children }: { label: string; children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const id = useId();
-  return (
-    <div>
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls={id}
-        onClick={() => setOpen((o) => !o)}
-        className="text-muted hover:text-text focus-visible:outline-line-interactive text-caption inline-flex min-h-[44px] items-center gap-1.5 rounded-md font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
-      >
-        {label}
-        <ChevronDown
-          size={14}
-          aria-hidden
-          className={cn(
-            'transition-transform motion-reduce:transition-none',
-            open && 'rotate-180'
-          )}
+      <dl className="mt-3 grid grid-cols-3 gap-2">
+        <Stat
+          label="Best day"
+          value={best?.value != null ? fmt(best.value) : NOT_REPORTED}
+          sub={best?.label}
         />
-      </button>
-      <div id={id} role="region" aria-label={label} hidden={!open}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-/**
- * Four counts, one picture. Every count is always shown, zero included: a "0"
- * under No ads is an answer, and a missing tile is a question.
- */
-function AdsBand({
-  counts,
-}: {
-  counts: { running: number; ran: number; none: number; total: number; withAds: number };
-}) {
-  const share = (n: number) => (counts.total > 0 ? (n / counts.total) * 100 : 0);
-  const parts = [
-    {
-      key: 'running',
-      label: 'Ads running',
-      n: counts.running,
-      bar: 'bg-success',
-      ink: 'text-success',
-    },
-    { key: 'ran', label: 'Ads finished', n: counts.ran, bar: 'bg-info', ink: 'text-info' },
-    { key: 'none', label: 'No ads', n: counts.none, bar: 'bg-line-strong', ink: 'text-faint' },
-  ];
-
-  return (
-    <div className="wx-neo-raised rounded-xl p-5">
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-        <div>
-          <p className={SECTION_LABEL}>Videos posted</p>
-          <p className="font-display wx-numeric text-h3 mt-1 leading-none font-bold">
-            {counts.total}
-          </p>
-        </div>
-        <p className="text-faint text-caption max-w-sm leading-relaxed">
-          We don&rsquo;t run GMV Max behind every video. The ones without ads still count
-          towards your offer.
-        </p>
-      </div>
-
-      <div
-        className="wx-neo-inset mt-4 flex h-3 overflow-hidden rounded-full"
-        role="img"
-        aria-label={`${counts.running} running, ${counts.ran} finished, ${counts.none} without ads, out of ${counts.total} videos`}
-      >
-        {parts.map((p) =>
-          p.n > 0 ? (
-            <div key={p.key} className={p.bar} style={{ width: `${share(p.n)}%` }} />
-          ) : null
-        )}
-      </div>
-
-      <dl className="mt-4 grid grid-cols-3 gap-3">
-        {parts.map((p) => (
-          <div key={p.key}>
-            <dt className="text-muted text-caption flex items-center gap-1.5 font-semibold">
-              <span className={cn('inline-block h-2 w-2 rounded-full', p.bar)} aria-hidden />
-              {p.key === 'running' ? (
-                <Radio size={12} aria-hidden className="text-success" />
-              ) : null}
-              {p.label}
-            </dt>
-            <dd className={cn('font-display wx-numeric text-lead mt-1 font-bold', p.ink)}>
-              {p.n}
-            </dd>
-          </div>
-        ))}
+        <Stat
+          label="Daily average"
+          value={average !== null ? fmt(average) : NOT_REPORTED}
+          sub={measured.length > 0 ? `over ${measured.length} measured days` : undefined}
+        />
+        <Stat
+          label="Days measured"
+          value={`${measured.length} of ${series.length}`}
+          sub={measured.length < series.length ? 'the rest were not reported' : undefined}
+        />
       </dl>
-    </div>
+
+      {extra}
+    </section>
   );
 }
 
-/* --------------------------------------------------------------- content -- */
-
-function Content({
-  videos,
-  currency,
-  latestDataDate,
-}: {
-  videos: VideoPerformance[];
-  currency: string | null;
-  latestDataDate: string | null;
-}) {
+function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {videos.map((v) => {
-          const roi = v.roi === null ? null : Number(v.roi);
-          const adState = adStateOf(v, latestDataDate);
-          return (
-            <article
-              key={v.item_id}
-              className="wx-neo-raised flex flex-col overflow-hidden rounded-xl"
-            >
-              <div className="flex gap-3 p-4">
-                {v.thumbnail_url ? (
-                  <img
-                    src={v.thumbnail_url}
-                    alt=""
-                    loading="lazy"
-                    className="h-16 w-12 shrink-0 rounded-md object-cover"
-                  />
-                ) : (
-                  <div className="wx-neo-inset h-16 w-12 shrink-0 rounded-md" />
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[0.875rem] font-semibold">
-                    {v.video_title || 'Your video'}
-                  </p>
-                  <p className="text-muted mt-0.5 flex flex-wrap items-center gap-x-1.5 truncate text-[0.75rem]">
-                    {v.brand_name ? <span className="truncate">{v.brand_name}</span> : null}
-                    {/*
-                      Which channel this one came through, so the All view is
-                      readable without switching filters to work it out. Only
-                      the word, in the muted ink: a coloured pill here would
-                      compete with the ad-status chip, which is the thing on
-                      this card that actually changes.
-                    */}
-                    {v.brand_name ? <span aria-hidden>·</span> : null}
-                    <span>
-                      {v.source === 'both'
-                        ? 'Offer and contest'
-                        : v.source === 'contest'
-                          ? 'Contest'
-                          : 'Offer'}
-                    </span>
-                  </p>
-                  <a
-                    href={v.video_url}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="text-accent mt-1 inline-flex items-center gap-1 text-[0.75rem] hover:underline"
-                  >
-                    Watch <ExternalLink size={11} aria-hidden />
-                  </a>
-                </div>
-
-                {/*
-                  The badge answers "are you running ads on this one" before the
-                  creator has to work it out from an empty card. Never colour
-                  alone: each state carries its own word.
-                */}
-                <AdBadge state={adState} />
-              </div>
-
-              {adState === 'none' ? (
-                <p className="text-muted border-line border-t px-4 py-3 text-[0.8125rem] leading-relaxed">
-                  We haven&rsquo;t run ads behind this one, so there is nothing to report. It
-                  still counts towards your offer.
-                </p>
-              ) : v.days_with_data === 0 ? (
-                <p className="text-muted border-line border-t px-4 py-3 text-[0.8125rem] leading-relaxed">
-                  Ads ran on this one, but not in the period you picked.
-                  {Number(v.lifetime_revenue) > 0
-                    ? ` All time it made ${money(Number(v.lifetime_revenue), currency)}.`
-                    : ''}
-                </p>
-              ) : (
-                /* GMV leads, large; spend, orders and ROI sit under it as one
-                   quiet row. Same four figures, one obvious one. */
-                <dl className="border-line flex flex-col gap-3 border-t px-4 py-3">
-                  <Figure label="GMV" value={money(Number(v.gross_revenue), currency)} lead />
-                  <div className="grid grid-cols-3 gap-x-3">
-                    <Figure label="Spend" value={money(Number(v.cost), currency)} />
-                    <Figure label="Orders" value={String(v.orders)} />
-                    <Figure label="ROI" value={roi === null ? '—' : `${roi.toFixed(2)}x`} />
-                  </div>
-                </dl>
-              )}
-            </article>
-          );
-        })}
-      </div>
-      <Footnote />
-    </div>
-  );
-}
-
-/**
- * Running, finished, or never. Colour is never the only carrier: each state
- * says its own word, so it reads the same to somebody who cannot tell the green
- * from the grey.
- */
-function AdBadge({ state }: { state: AdState }) {
-  if (state === 'running') {
-    return (
-      <span className="bg-success-soft text-success inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold">
-        <Radio size={10} aria-hidden />
-        Ads on
-      </span>
-    );
-  }
-  if (state === 'ran') {
-    return (
-      <span className="wx-neo-raised-sm text-muted inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold">
-        Ads finished
-      </span>
-    );
-  }
-  return (
-    <span className="wx-neo-raised-sm text-faint inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold">
-      No ads
-    </span>
-  );
-}
-
-function Figure({ label, value, lead }: { label: string; value: string; lead?: boolean }) {
-  return (
-    <div className="min-w-0">
-      <dt className="text-faint text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
+    <div className="wx-neo-raised-sm rounded-lg p-2">
+      <dt className="text-muted text-[0.625rem] font-semibold tracking-wide uppercase">
         {label}
       </dt>
-      <dd
-        className={cn(
-          'wx-numeric mt-0.5 truncate font-semibold',
-          lead ? 'text-accent font-display text-h3 leading-tight' : 'text-body'
-        )}
-      >
-        {value}
-      </dd>
-    </div>
-  );
-}
-
-/**
- * The honest small print, and it earns its place.
- *
- * Today is missing on purpose and a creator WILL notice, so it is said out loud
- * rather than left as a mystery gap at the end of every chart. And the day
- * boundary is the ad account's, not theirs, which is why a figure can look like
- * it landed on the wrong date if you are counting in your own timezone.
- */
-function Footnote() {
-  return (
-    <p className="text-faint flex items-start gap-2 text-[0.75rem] leading-relaxed">
-      <TrendingUp size={13} aria-hidden className="mt-0.5 shrink-0" />
-      <span>
-        Numbers come straight from TikTok and cover complete days only, up to yesterday. Today
-        is still being counted, so it appears tomorrow. Days follow the ad account&rsquo;s own
-        timezone.
-      </span>
-    </p>
-  );
-}
-
-function Empty({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="wx-neo-raised rounded-xl p-10 text-center">
-      <h2 className="font-display text-[1.0625rem] font-bold">{title}</h2>
-      <p className="text-muted mx-auto mt-2 max-w-prose text-[0.875rem] leading-relaxed">
-        {body}
-      </p>
-    </div>
-  );
-}
-
-/* ---------------------------------------------------------- which brand -- */
-
-/**
- * A creator's own money, split by the brand whose ad account paid for it.
- *
- * IT IS THE MONEY ROW'S BRAND, NOT THE OFFER'S. A submission says which brand a
- * video was filed against; the money row says which brand's ad account actually
- * spent on it. Those agree for an ordinary video and diverge for one that two
- * brands both promoted, and only the money row can split that honestly.
- *
- * THE BAR IS PROPORTIONAL TO THE BEST BRAND, not to the total, so the shape of
- * "where does my money come from" is readable without reading a number. Rows
- * are already ordered by GMV in the database.
- *
- * NOTHING HERE IS ABOUT THE BRAND. Its name, and this creator's own figures
- * against it. No budget, no other creators, no campaign detail — those are
- * staff facts and this is a creator screen.
- */
-function ByBrand({ brands }: { brands: BrandPerformance[] }) {
-  const best = Math.max(...brands.map((b) => Number(b.gmv) || 0), 0);
-
-  return (
-    <div className="wx-neo-raised rounded-xl p-4 sm:p-5">
-      <h2 id="mn-brands-h" className="font-display text-lead font-bold">
-        Where your money came from
-      </h2>
-      <p className="text-muted text-caption mt-0.5">
-        Split by the brand whose ads ran behind each video.
-      </p>
-
-      <ul className="mt-3 flex flex-col gap-2">
-        {brands.map((b) => (
-          <li
-            key={b.brand_id ?? 'unmatched'}
-            className="wx-neo-inset relative overflow-hidden rounded-xl px-3.5 py-3"
-          >
-            <div
-              aria-hidden
-              className="bg-accent/10 pointer-events-none absolute inset-y-0 left-0"
-              style={{ width: `${best > 0 ? Math.max(2, (Number(b.gmv) / best) * 100) : 0}%` }}
-            />
-            <div className="relative flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-              <div className="min-w-0">
-                <p className="truncate text-[0.875rem] font-semibold">
-                  {/* A row with no brand is money whose store mapping changed.
-                      Say so plainly rather than printing "null". */}
-                  {b.brand_name ?? 'Not matched to a brand'}
-                </p>
-                <p className="text-faint text-[0.75rem]">
-                  {b.videos} {b.videos === 1 ? 'video' : 'videos'} ·{' '}
-                  {money(Number(b.spend), b.currency)} spent ·{' '}
-                  {b.roi === null ? 'no spend' : `${Number(b.roi).toFixed(2)}x`}
-                </p>
-              </div>
-              <p className="wx-numeric text-accent font-mono text-[1.125rem] font-extrabold">
-                {money(Number(b.gmv), b.currency)}
-              </p>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <dd className="text-text mt-0.5 text-sm font-semibold tabular-nums">{value}</dd>
+      {sub && <dd className="text-faint text-[0.625rem]">{sub}</dd>}
     </div>
   );
 }

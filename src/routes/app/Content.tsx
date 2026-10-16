@@ -1,29 +1,31 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { Eye, Heart, MessageCircle, Play, Plus, Search, Video } from 'lucide-react';
+import { m, useReducedMotion } from 'motion/react';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { DataError, EmptyState, Freshness } from '@/components/ui/DataState';
+import { DataError, EmptyState } from '@/components/ui/DataState';
 import { Select } from '@/components/ui/Field';
-import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
 import { PostContentDialog } from '@/components/creator/PostContentDialog';
 import { VideoPlayer } from '@/components/content/VideoPlayer';
+import { VideoCard } from '@/components/creator/content/VideoCard';
+import { CreatorSearch } from '@/components/creator/SearchField';
+import { VideoSheet } from '@/components/creator/content/VideoSheet';
+import {
+  joinVideo,
+  type JoinedVideo,
+  type SourceState,
+  type Sources,
+} from '@/components/creator/content/joined';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
-import {
-  CONTENT_STATUS,
-  videoIdFrom,
-  type ContentRow,
-  type ContentStatus,
-} from '@/lib/content';
+import { CONTENT_STATUS, type ContentRow, type ContentStatus } from '@/lib/content';
 import { useMyContent } from '@/lib/creator/useMyContent';
 import { useMyWork } from '@/lib/creator/useMyWork';
 import {
-  adStateOf,
   usePerformanceWindow,
   useVideoPerformance,
-  type AdState,
   type VideoPerformance,
 } from '@/lib/creator/usePerformance';
 import {
@@ -34,34 +36,61 @@ import {
 import { useMyJobProgress, type JobProgress } from '@/lib/work/job-progress';
 
 /**
- * My Content: every video the creator filed, and how each one is doing.
+ * CONTENT: every video she filed, and how each one is doing.
  *
  * THREE SOURCES, JOINED IN THE BROWSER, because no single hook has all of it:
  * the filed video and its review status (`useMyContent`), the ad story and the
  * GMV behind it (`useVideoPerformance`, by submission id), and views, likes and
- * comments (`useTikTokVideos`, by the post id in the link). Each is optional.
- * A video with no match in a source simply shows nothing from it.
+ * comments (`useTikTokVideos`, by the post id in the link). EACH IS OPTIONAL,
+ * and `joined.ts` holds both the join and the four different reasons a figure
+ * can be absent. NO NEW TIKTOK CALL: the join is exactly the one this page has
+ * always done, and every figure comes from our own tables.
  *
- * NULL IS NOT ZERO. A figure TikTok withheld, or an account that is not
- * connected, leaves that figure OUT. It is never drawn as 0.
+ * NULL IS NOT ZERO, and on this page that rule does more work than anywhere
+ * else in the product, because the usual state of a card is "two of the three
+ * sources have nothing for me". A missing figure says `Not reported` in muted
+ * italics with an info dot that gives the reason; a measured zero prints `0` in
+ * the bold mono the rest of the figures use. See `figures.tsx`.
  *
- * NO BORDERS. The neomorphic shadows carry every edge.
+ * GLASS: ONE BLURRED LAYER FOR THE WHOLE PAGE. The section below is a single
+ * `wx-neo-raised` panel and every card inside it is `wx-neo-raised-sm` — the
+ * same material with the blur dropped. Twenty blurred cards on a phone is the
+ * most expensive thing this redesign could have asked for, and the look is
+ * indistinguishable: the aurora behind them is a low-frequency gradient.
+ *
+ * At 375px the shell already spends two layers (the top bar and the bottom
+ * nav), so the panel is the third and an overlay would be a fourth. That is why
+ * the panel DROPS ITS BLUR while a sheet, a player or a dialog is open: behind
+ * a 70% black scrim nobody can see the difference, and the budget holds at
+ * three with the overlay counted.
+ *
+ * LONG LISTS: paged, 24 at a time, so 300 videos never put 300 cards in the
+ * document. See `PAGE` below.
  */
 
-const TONE = {
-  live: { text: 'text-stage-live', soft: 'bg-stage-live-soft' },
-  due: { text: 'text-stage-due', soft: 'bg-stage-due-soft' },
-  paid: { text: 'text-stage-paid', soft: 'bg-stage-paid-soft' },
-} as const;
+/** How many cards are in the document at once. See the note on `shown`. */
+const PAGE = 24;
 
 type Tab = 'all' | ContentStatus;
 
-const TABS: { value: Tab; label: string }[] = [
-  { value: 'all', label: 'Everything' },
-  { value: 'submitted', label: 'With the team' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'needs_another_take', label: 'Another take' },
-];
+/*
+ * THE VOCABULARY IS `CONTENT_STATUS`, NOT THIS PAGE'S OWN.
+ *
+ * §9 names the three counters "Live, In review, Needs changes". The words used
+ * here are the ones in `src/lib/content.ts`, which is the single definition
+ * both sides of the product read: an admin marking a video and a creator
+ * reading the result must be looking at the same word. Renaming them for one
+ * screen is how two vocabularies start. If the new wording is wanted, it is a
+ * one-line change in that file and it moves everywhere at once.
+ */
+const STATUSES: ContentStatus[] = ['approved', 'submitted', 'needs_another_take'];
+
+const SORTS = [
+  { key: 'new', label: 'Newest' },
+  { key: 'gmv', label: 'Most GMV' },
+  { key: 'views', label: 'Most views' },
+] as const;
+type Sort = (typeof SORTS)[number]['key'];
 
 const VIEWS = [
   { key: 'submissions', label: 'Videos' },
@@ -69,31 +98,25 @@ const VIEWS = [
 ] as const;
 type View = (typeof VIEWS)[number]['key'];
 
-const AD_LABEL: Record<AdState, { label: string; tone: keyof typeof TONE | 'none' }> = {
-  running: { label: 'Ads running', tone: 'live' },
-  ran: { label: 'Ads finished', tone: 'paid' },
-  none: { label: 'No ads', tone: 'none' },
-};
-
-const compact = (n: number) =>
-  new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(n);
-
-const money = (n: number, currency: string | null) =>
-  currency
-    ? new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency,
-        maximumFractionDigits: 0,
-      }).format(n)
-    : new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(n);
-
 const todayIso = () => new Date().toISOString().slice(0, 10);
+
+/**
+ * Sorting by a figure some videos do not have.
+ *
+ * A MISSING FIGURE SORTS LAST, NEVER AS A ZERO. Treating it as zero would bury
+ * a video that may well be her best under the ones measured at nothing, and it
+ * would state a figure we do not have. Last, in a group, with a line above the
+ * grid saying so.
+ */
+const byFigureDesc = (a: number | null, b: number | null) =>
+  a === null && b === null ? 0 : a === null ? 1 : b === null ? -1 : b - a;
 
 export function Content() {
   const { claims } = useAuth();
   const { data: profile } = useProfile();
   const role = profile?.role ?? claims?.role;
   const approved = role === 'creator' || role === 'ops' || role === 'admin';
+  const quiet = useReducedMotion();
 
   const {
     data: work,
@@ -105,7 +128,7 @@ export function Content() {
   const { data: progress } = useMyJobProgress();
 
   // Ad story and GMV per video, all time. A failure here must not hide the
-  // videos themselves, so it is tracked separately.
+  // videos themselves, so it is tracked separately and reported in place.
   const to = useMemo(todayIso, []);
   const perf = useVideoPerformance('2000-01-01', to);
   const window = usePerformanceWindow();
@@ -126,10 +149,13 @@ export function Content() {
 
   const [tab, setTab] = useState<Tab>('all');
   const [brandId, setBrandId] = useState('');
+  const [sort, setSort] = useState<Sort>('new');
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [posting, setPosting] = useState<{ applicationId?: string } | null>(null);
   const [editing, setEditing] = useState<ContentRow | null>(null);
   const [playing, setPlaying] = useState<ContentRow | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
 
   /*
    * `?job=<id>` opens the dialog straight onto that job. The parameter is
@@ -147,8 +173,43 @@ export function Content() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job]);
 
+  /* A new filter is a new list, so the paging starts again. */
+  useEffect(() => {
+    setPage(1);
+  }, [tab, brandId, sort, search, view]);
+
   const jobs = useMemo(() => (work ?? []).filter((r) => r.status === 'approved'), [work]);
   const rows = useMemo(() => content.data ?? [], [content.data]);
+
+  /*
+   * WHICH OF THE FOUR ABSENCES EACH SOURCE IS IN, worked out once, here, and
+   * passed down. "Not connected", "not answered yet", "broke" and "answered,
+   * and this video is not in it" are four different facts and a creator does
+   * something different about each one.
+   */
+  const sources: Sources = useMemo(() => {
+    const ads: SourceState = perf.isError ? 'failed' : perf.isPending ? 'loading' : 'ok';
+    const tiktok: SourceState = account.isError
+      ? 'failed'
+      : account.isPending
+        ? 'loading'
+        : !connected
+          ? 'off'
+          : ttVideos.isError
+            ? 'failed'
+            : ttVideos.isPending
+              ? 'loading'
+              : 'ok';
+    return { ads, tiktok };
+  }, [
+    perf.isError,
+    perf.isPending,
+    account.isError,
+    account.isPending,
+    connected,
+    ttVideos.isError,
+    ttVideos.isPending,
+  ]);
 
   const perfBySubmission = useMemo(() => {
     const m = new Map<string, VideoPerformance>();
@@ -161,6 +222,11 @@ export function Content() {
     for (const v of ttVideos.data ?? []) m.set(v.video_id, v);
     return m;
   }, [ttVideos.data]);
+
+  const joined = useMemo(
+    () => rows.map((row) => joinVideo(row, perfBySubmission, tiktokById, sources, latest)),
+    [rows, perfBySubmission, tiktokById, sources, latest]
+  );
 
   const counts = useMemo(() => {
     const c: Record<Tab, number> = {
@@ -188,9 +254,9 @@ export function Content() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [rows]);
 
-  const shown = useMemo(() => {
+  const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();
-    return rows.filter((r) => {
+    return joined.filter(({ row: r }) => {
       if (tab !== 'all' && r.status !== tab) return false;
       if (brandId && r.brand_id !== brandId) return false;
       if (!needle) return true;
@@ -201,36 +267,46 @@ export function Content() {
         (r.offer?.title ?? '').toLowerCase().includes(needle)
       );
     });
-  }, [rows, tab, brandId, search]);
+  }, [joined, tab, brandId, search]);
 
-  // The ad story across every filed video, for the strip at the top.
-  const ads = useMemo(() => {
-    let running = 0;
-    let finished = 0;
-    let revenue = 0;
-    const currencies = new Set<string | null>();
-    for (const p of perf.data ?? []) {
-      if (!rows.some((r) => r.id === p.submission_id)) continue;
-      const s = adStateOf(p, latest);
-      if (s === 'running') running += 1;
-      if (s === 'ran') finished += 1;
-      if (s !== 'none') {
-        revenue += p.lifetime_revenue;
-        currencies.add(p.currency);
-      }
-    }
-    return {
-      running,
-      finished,
-      any: running + finished > 0,
-      revenue,
-      // Several currencies, or one that is itself null: no symbol, never a guess.
-      currency: currencies.size === 1 ? ([...currencies][0] ?? null) : null,
-    };
-  }, [perf.data, rows, latest]);
+  const sorted = useMemo(() => {
+    if (sort === 'new') return filtered; // the query already returns newest first
+    const list = [...filtered];
+    list.sort((a, b) =>
+      sort === 'gmv' ? byFigureDesc(a.gmv, b.gmv) : byFigureDesc(a.views, b.views)
+    );
+    return list;
+  }, [filtered, sort]);
+
+  /*
+   * ONLY ONE PAGE OF CARDS IS IN THE DOCUMENT.
+   *
+   * `useMyContent` fetches up to 500 rows, and a thumbnail plus seven figures
+   * per card is far too much to put on a mid-range phone five hundred times:
+   * the layout alone would janky the first paint, and every card holds an image
+   * decode. Paging in twenty-fours keeps the document small without a
+   * virtualiser — which would have meant a dependency, a fixed row height and a
+   * scroll container that fights the page's own smooth scrolling. A "Load more"
+   * button also keeps the back button and Ctrl-F working, which an infinite
+   * windowed list does not.
+   */
+  const shown = useMemo(() => sorted.slice(0, page * PAGE), [sorted, page]);
+  const more = sorted.length - shown.length;
+
+  const openVideo: JoinedVideo | null = useMemo(
+    () => (open === null ? null : (joined.find((v) => v.row.id === open) ?? null)),
+    [open, joined]
+  );
+
+  /* Any overlay at all: the panel gives up its blur while one is up, so the
+     three-layer budget holds. See the note at the top of this file. */
+  const overlay = Boolean(openVideo || playing || posting || editing);
 
   const loading = content.isLoading || workLoading;
   const failed = content.isError || workError;
+
+  const missingSortFigure =
+    sort !== 'new' && shown.some((v) => (sort === 'gmv' ? v.gmv === null : v.views === null));
 
   return (
     <>
@@ -254,158 +330,246 @@ export function Content() {
           />
         ) : (
           <>
-            <FilterBar
-              action={
-                jobs.length > 0 ? (
-                  <Button onClick={() => setPosting({})}>
-                    <Plus size={16} aria-hidden />
-                    Add a video
-                  </Button>
-                ) : null
-              }
-            >
-              <FilterTabs label="How to read your content">
-                {VIEWS.map((v) => (
-                  <FilterTab key={v.key} active={view === v.key} onClick={() => setView(v.key)}>
-                    {v.label}
-                  </FilterTab>
-                ))}
-              </FilterTabs>
+            {/* ------------------------------------------------ header -- */}
+            <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+              <div className="flex min-w-0 flex-col gap-2">
+                <div className="flex items-baseline gap-2">
+                  <p className="wx-numeric font-mono text-[2rem] leading-none font-extrabold">
+                    {counts.all}
+                  </p>
+                  <p className="text-muted text-[0.8125rem]">
+                    {counts.all === 1 ? 'video filed' : 'videos filed'}
+                  </p>
+                </div>
 
-              {view === 'submissions' ? (
-                <>
-                  <FilterTabs label="Filter content">
-                    {TABS.map((t) => (
-                      <FilterTab
-                        key={t.value}
-                        active={tab === t.value}
-                        count={counts[t.value] > 0 ? counts[t.value] : undefined}
-                        onClick={() => setTab(t.value)}
-                      >
-                        {t.label}
-                      </FilterTab>
-                    ))}
-                  </FilterTabs>
+                {/*
+                  THE COUNTERS ARE THE STATUS FILTER.
 
-                  <div className="relative min-w-0 flex-1 basis-48">
-                    <Search
-                      size={15}
-                      aria-hidden
-                      className="text-faint pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
-                    />
-                    <input
-                      type="search"
-                      name="search"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search by ad code, brand or offer"
-                      aria-label="Search your content"
-                      className="wx-neo-inset placeholder:text-faint focus-visible:ring-accent/50 h-10 w-full rounded-md pr-3 pl-9 text-[0.8125rem] focus:outline-none focus-visible:ring-2 pointer-coarse:min-h-11"
-                    />
-                  </div>
-                  <label className="sr-only" htmlFor="content-brand">
-                    Filter by brand
-                  </label>
-                  <Select
-                    id="content-brand"
-                    name="brand"
-                    value={brandId}
-                    onChange={(e) => setBrandId(e.target.value)}
-                    className="h-10 basis-40 text-[0.8125rem] pointer-coarse:min-h-11"
-                  >
-                    <option value="">All brands</option>
-                    {brands.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </Select>
-                </>
+                  §9 asks for three counter pills in the header and a status
+                  chip row in the filters, and built literally that is the same
+                  three words twice, stacked, on a 375px screen where the
+                  filters already take four rows. A counter that does nothing
+                  next to a chip that does the obvious thing is a worse screen
+                  than one pill that does both — so these count AND filter, and
+                  the big figure beside them is the "all" they reset to.
+
+                  "Still to film" is not a status a video can be in, so it is
+                  a plain pill with nothing to press.
+                */}
+                <ul className="wx-tap-row flex flex-wrap items-center gap-1.5">
+                  {STATUSES.map((key) => (
+                    <li key={key} className="flex">
+                      <StatusPill
+                        label={CONTENT_STATUS[key].label}
+                        count={counts[key]}
+                        tone={CONTENT_STATUS[key].tone}
+                        active={tab === key}
+                        onClick={() => setTab(tab === key ? 'all' : key)}
+                      />
+                    </li>
+                  ))}
+                  {outstanding > 0 ? (
+                    <li className="flex">
+                      <StatusPill label="Still to film" count={outstanding} tone="due" />
+                    </li>
+                  ) : null}
+                </ul>
+              </div>
+
+              {jobs.length > 0 ? (
+                <Button onClick={() => setPosting({})}>
+                  <Plus className="size-4" aria-hidden />
+                  Add a video
+                </Button>
               ) : null}
-            </FilterBar>
+            </header>
 
-            {view === 'dashboard' ? (
-              <Jobs
-                jobs={jobs}
-                progress={progress}
-                onAdd={(applicationId) => setPosting({ applicationId })}
-              />
-            ) : (
-              <section className="flex flex-col gap-4">
-                <Strip
-                  counts={counts}
-                  outstanding={outstanding}
-                  ads={ads}
-                  perfLoading={perf.isPending}
-                  perfFailed={perf.isError}
-                  onRetry={() => perf.refetch()}
-                  latest={latest}
-                  hasApproved={counts.approved > 0}
-                />
+            {/* ------------------------- the one blurred panel per page -- */}
+            <section
+              className={cn(
+                'flex flex-col gap-4 rounded-xl p-3 sm:p-4',
+                overlay ? 'wx-neo-raised-sm' : 'wx-neo-raised'
+              )}
+            >
+              {/* ----------------------------------------- filter row -- */}
+              <div className="wx-tap-row flex flex-wrap items-center gap-2">
+                <ChipRow label="How to read your content">
+                  {VIEWS.map((v) => (
+                    <Chip key={v.key} active={view === v.key} onClick={() => setView(v.key)}>
+                      {v.label}
+                    </Chip>
+                  ))}
+                </ChipRow>
 
-                {account.isSuccess && !connected ? (
-                  <EmptyState
-                    title="Connect your TikTok to see views, likes and comments"
-                    body="Each video shows its views, likes and comments once your account is connected. Until then you still see your ads and GMV."
-                    action={
-                      <Link
-                        to="/app/profile"
-                        className="wx-neo-raised-sm wx-neo-press text-accent inline-flex h-9 items-center rounded-full px-4 text-[0.8125rem] font-semibold pointer-coarse:min-h-11"
-                      >
-                        Connect TikTok
-                      </Link>
-                    }
-                    className="w-full"
-                  />
+                {view === 'submissions' ? (
+                  <>
+                    <ChipRow label="Sort videos">
+                      {SORTS.map((s) => (
+                        <Chip
+                          key={s.key}
+                          active={sort === s.key}
+                          onClick={() => setSort(s.key)}
+                        >
+                          {s.label}
+                        </Chip>
+                      ))}
+                    </ChipRow>
+
+                    {/* Chips while a creator has a handful of brands, a select
+                        once she has enough that chips would be a wall. Either
+                        way the whole list is reachable without a sideways
+                        scroller, which hides a filter behind an edge. */}
+                    {brands.length === 0 ? null : brands.length <= 4 ? (
+                      <ChipRow label="Filter by brand">
+                        <Chip active={brandId === ''} onClick={() => setBrandId('')}>
+                          All brands
+                        </Chip>
+                        {brands.map((b) => (
+                          <Chip
+                            key={b.id}
+                            active={brandId === b.id}
+                            onClick={() => setBrandId(b.id)}
+                          >
+                            {b.name}
+                          </Chip>
+                        ))}
+                      </ChipRow>
+                    ) : (
+                      <>
+                        <label className="sr-only" htmlFor="content-brand">
+                          Filter by brand
+                        </label>
+                        <Select
+                          id="content-brand"
+                          name="brand"
+                          value={brandId}
+                          onChange={(e) => setBrandId(e.target.value)}
+                          className="h-9 basis-40 text-[0.8125rem]"
+                        >
+                          <option value="">All brands</option>
+                          {brands.map((b) => (
+                            <option key={b.id} value={b.id}>
+                              {b.name}
+                            </option>
+                          ))}
+                        </Select>
+                      </>
+                    )}
+
+                    {/*
+                      THE HOUSE SEARCH FIELD, not a copy of it. This was a
+                      hand-rolled `<input>` 2.25rem tall with `rounded-md` and
+                      a focus RING — and a ring is a `box-shadow`, so focusing
+                      it replaced the inset that makes `wx-neo-inset` read as a
+                      well and the box went flat under the cursor. It was also
+                      under the 2.75rem tap floor on a phone and only cleared
+                      it by borrowing `wx-tap-row` from the row around it.
+                      Offers, Contests and Leaderboards all draw the same
+                      control, so there is one of it now; see
+                      `components/creator/SearchField.tsx`.
+                    */}
+                    <CreatorSearch
+                      value={search}
+                      onChange={setSearch}
+                      placeholder="Search ad code, brand or offer"
+                      label="Search your content"
+                    />
+                  </>
                 ) : null}
+              </div>
 
-                {shown.length === 0 ? (
-                  rows.length === 0 ? (
-                    <EmptyState
-                      title="No videos yet"
-                      body="Film your first video, paste the link and its ad code, and it lands here with its cover and, once ads run behind it, its GMV."
-                      action={
-                        jobs.length > 0 ? (
-                          <Button onClick={() => setPosting({})}>
-                            <Plus size={16} aria-hidden />
-                            Add a video
-                          </Button>
-                        ) : null
-                      }
-                      className="w-full"
-                    />
-                  ) : (
-                    <EmptyState
-                      title="Nothing matches that"
-                      body="Try a different search, brand or tab."
-                      className="w-full"
-                    />
-                  )
-                ) : (
-                  <ul className="grid grid-cols-[repeat(auto-fit,minmax(15rem,1fr))] gap-3">
-                    {shown.map((row) => (
-                      <li key={row.id} className="flex">
+              {/* ------------------------------------ what each source -- */}
+              {view === 'submissions' ? (
+                <SourceNotes
+                  sources={sources}
+                  onRetryAds={() => perf.refetch()}
+                  onRetryTikTok={() => ttVideos.refetch()}
+                />
+              ) : null}
+
+              {view === 'dashboard' ? (
+                <Jobs
+                  jobs={jobs}
+                  progress={progress}
+                  onAdd={(applicationId) => setPosting({ applicationId })}
+                />
+              ) : shown.length === 0 ? (
+                <Note>
+                  {rows.length === 0
+                    ? 'No videos yet. Film your first one, paste the link and its ad code, and it lands here with its cover and, once ads run behind it, its GMV.'
+                    : 'Nothing matches that. Try a different search, brand or status.'}
+                </Note>
+              ) : (
+                <>
+                  {missingSortFigure ? (
+                    <p className="text-muted text-[0.75rem] leading-[1.4]">
+                      Videos with no figure for this sort sit at the end. They are not zero —
+                      nobody has reported them.
+                    </p>
+                  ) : null}
+
+                  <ul className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-2.5 sm:gap-3">
+                    {shown.map((video, i) => (
+                      <m.li
+                        key={video.row.id}
+                        className="flex"
+                        initial={quiet ? undefined : { opacity: 0, y: 12 }}
+                        animate={quiet ? undefined : { opacity: 1, y: 0 }}
+                        transition={{
+                          duration: 0.28,
+                          /* ~40ms apart, capped: a stagger that keeps counting
+                             past a dozen cards becomes a wait. */
+                          delay: Math.min(i % PAGE, 11) * 0.04,
+                          ease: [0.22, 1, 0.36, 1],
+                        }}
+                      >
                         <VideoCard
-                          row={row}
-                          perf={perfBySubmission.get(row.id) ?? null}
-                          perfPending={perf.isPending}
-                          perfFailed={perf.isError}
-                          latest={latest}
-                          tiktok={
-                            connected ? (tiktokById.get(videoIdFrom(row) ?? '') ?? null) : null
-                          }
-                          onPlay={() => setPlaying(row)}
-                          onEdit={row.status === 'approved' ? undefined : () => setEditing(row)}
+                          video={video}
+                          sources={sources}
+                          onOpen={() => setOpen(video.row.id)}
                         />
-                      </li>
+                      </m.li>
                     ))}
                   </ul>
-                )}
-              </section>
-            )}
+
+                  {more > 0 ? (
+                    <div className="flex flex-col items-center gap-1.5">
+                      <Button variant="secondary" onClick={() => setPage((p) => p + 1)}>
+                        Load {Math.min(more, PAGE)} more
+                      </Button>
+                      <p className="text-faint text-[0.6875rem]">
+                        Showing {shown.length} of {sorted.length}
+                      </p>
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </section>
           </>
         )}
       </div>
+
+      {openVideo ? (
+        <VideoSheet
+          video={openVideo}
+          sources={sources}
+          onClose={() => setOpen(null)}
+          /* The player REPLACES the sheet rather than stacking on it: two
+             overlays at once is two more blurred layers. */
+          onWatch={() => {
+            setPlaying(openVideo.row);
+            setOpen(null);
+          }}
+          onEdit={
+            openVideo.row.status === 'approved'
+              ? undefined
+              : () => {
+                  setEditing(openVideo.row);
+                  setOpen(null);
+                }
+          }
+        />
+      ) : null}
 
       {posting ? (
         <PostContentDialog
@@ -424,316 +588,185 @@ export function Content() {
   );
 }
 
-/* --------------------------------------------------------------- strip --- */
+/* --------------------------------------------------------------- pieces --- */
 
 /**
- * The state of the whole library in one raised panel.
- *
- * Zero tiles are left out rather than printed, and the GMV tile only exists
- * once ads have actually run. When videos are filed but no ads have, the strip
- * says so in words and says when numbers will appear, instead of showing empty
- * figures.
+ * A count in a pill, which is also the status filter (see the note where these
+ * are rendered). The tone rides a DOT as well as the text, so the three never
+ * depend on colour to be told apart, and the selected one is a filled pill
+ * rather than a tinted one — a shape change, not a hue change.
  */
-function Strip({
-  counts,
-  outstanding,
-  ads,
-  perfLoading,
-  perfFailed,
-  onRetry,
-  latest,
-  hasApproved,
+function StatusPill({
+  label,
+  count,
+  tone,
+  active,
+  onClick,
 }: {
-  counts: Record<Tab, number>;
-  outstanding: number;
-  ads: {
-    running: number;
-    finished: number;
-    any: boolean;
-    revenue: number;
-    currency: string | null;
-  };
-  perfLoading: boolean;
-  perfFailed: boolean;
-  onRetry: () => Promise<unknown>;
-  latest: string | null;
-  hasApproved: boolean;
+  label: string;
+  count: number;
+  tone: 'live' | 'due' | 'paid';
+  active?: boolean;
+  onClick?: () => void;
 }) {
-  const tiles: { label: string; value: string; tone?: keyof typeof TONE; wide?: boolean }[] = [
-    { label: 'Videos filed', value: String(counts.all) },
-  ];
-  if (counts.approved > 0)
-    tiles.push({ label: 'Approved', value: String(counts.approved), tone: 'paid' });
-  if (counts.submitted > 0)
-    tiles.push({ label: 'With the team', value: String(counts.submitted), tone: 'live' });
-  if (counts.needs_another_take > 0) {
-    tiles.push({
-      label: 'Another take',
-      value: String(counts.needs_another_take),
-      tone: 'due',
-    });
-  }
-  if (outstanding > 0)
-    tiles.push({ label: 'Still to film', value: String(outstanding), tone: 'due' });
-  if (ads.running > 0)
-    tiles.push({ label: 'Ads running', value: String(ads.running), tone: 'live' });
-  if (ads.finished > 0)
-    tiles.push({ label: 'Ads finished', value: String(ads.finished), tone: 'paid' });
-  if (ads.any && ads.revenue > 0) {
-    tiles.push({ label: 'GMV from your videos', value: money(ads.revenue, ads.currency) });
-  }
-
-  return (
-    <div className="flex flex-col gap-3">
-      <dl className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">
-        {tiles.map((t) => (
-          <div
-            key={t.label}
-            className={cn(
-              'wx-neo-raised flex flex-col gap-1.5 rounded-xl p-4',
-              t.tone && TONE[t.tone].soft
-            )}
-          >
-            <dt
-              className={cn(
-                'text-[0.75rem] font-semibold',
-                t.tone ? TONE[t.tone].text : 'text-muted'
-              )}
-            >
-              {t.label}
-            </dt>
-            <dd className="wx-numeric font-mono text-[1.5rem] font-extrabold">{t.value}</dd>
-          </div>
-        ))}
-      </dl>
-
-      {perfFailed ? (
-        <DataError
-          title="We could not load your ad figures"
-          body="Your videos are all here. Only the ads and GMV on them are missing for now."
-          onRetry={onRetry}
-          className="w-full"
-        />
-      ) : perfLoading ? (
-        <div className="wx-skeleton h-14 rounded-xl" />
-      ) : (
-        <div className="wx-neo-inset flex flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-xl px-4 py-3">
-          <p className="text-muted max-w-prose text-[0.8125rem] leading-[1.45]">
-            {ads.any
-              ? "We don't run ads behind every video. The ones without ads still count toward your offer."
-              : hasApproved
-                ? "No ads are running behind your videos yet. Numbers appear here once they are, and they run up to the end of yesterday. We don't run ads behind every video, and the ones without ads still count toward your offer."
-                : "Your videos are filed and waiting for the team. Ads can only run behind an approved video, so numbers appear once one is approved and ads start. We don't run ads behind every video, and the ones without ads still count toward your offer."}
-          </p>
-          {ads.any ? <Freshness to={latest} /> : null}
-        </div>
+  const dot = (
+    <span
+      aria-hidden
+      className={cn(
+        'size-1.5 shrink-0 rounded-full',
+        tone === 'live' ? 'bg-stage-live' : tone === 'due' ? 'bg-stage-due' : 'bg-stage-paid'
       )}
-    </div>
+    />
   );
-}
+  const body = (
+    <>
+      {dot}
+      {label}
+      <span
+        className={cn(
+          'wx-numeric font-mono font-bold',
+          active ? '[color:var(--wx-on-accent-fill)]' : 'text-text'
+        )}
+      >
+        {count}
+      </span>
+    </>
+  );
+  const shape =
+    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.75rem] whitespace-nowrap';
 
-/* ---------------------------------------------------------------- card --- */
-
-/** The cover, with a quiet fallback chain: our copy, then TikTok's, then a plate. */
-function Cover({
-  row,
-  fallback,
-  onPlay,
-}: {
-  row: ContentRow;
-  fallback: string | null;
-  onPlay: () => void;
-}) {
-  const [step, setStep] = useState(0);
-  const sources = [row.thumbnail_url, fallback].filter((s): s is string => Boolean(s));
-  const src = sources[step];
+  if (!onClick) {
+    return <span className={cn('wx-neo-raised-sm text-muted', shape)}>{body}</span>;
+  }
 
   return (
     <button
       type="button"
-      onClick={onPlay}
-      aria-label={`Play ${row.video_title ?? 'this video'}`}
-      className="group bg-surface-2 wx-neo-inset relative block aspect-[4/5] w-full cursor-pointer overflow-hidden rounded-lg"
-    >
-      {src ? (
-        <img
-          src={src}
-          alt=""
-          loading="lazy"
-          referrerPolicy="no-referrer"
-          onError={() => setStep((s) => s + 1)}
-          className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-        />
-      ) : (
-        <span className="text-muted grid size-full place-items-center">
-          <Video size={26} aria-hidden />
-        </span>
+      aria-pressed={active}
+      onClick={onClick}
+      title={active ? 'Show every video again' : `Show only: ${label}`}
+      className={cn(
+        'ease-brand cursor-pointer transition-colors duration-200',
+        shape,
+        active
+          ? '[background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]'
+          : 'wx-neo-raised-sm wx-neo-press text-muted hover:text-accent'
       )}
-      <span
-        aria-hidden
-        className="absolute inset-0 grid place-items-center bg-black/0 opacity-80 transition-opacity group-hover:opacity-100 pointer-coarse:opacity-100"
-      >
-        {/* The play button over a thumbnail: a 44px filled disc, so it takes
-            his colour with an ink glyph. It sits over `bg-black/0` darkening
-            and the video still, not over the page, which is exactly the case
-            the pastel-plus-ink pairing is for. */}
-        <span className="grid size-11 place-items-center rounded-full [background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)] shadow-lg">
-          <Play size={18} fill="currentColor" aria-hidden />
-        </span>
-      </span>
+    >
+      {body}
     </button>
   );
 }
 
-function VideoCard({
-  row,
-  perf,
-  perfPending,
-  perfFailed,
-  latest,
-  tiktok,
-  onPlay,
-  onEdit,
-}: {
-  row: ContentRow;
-  perf: VideoPerformance | null;
-  perfPending: boolean;
-  perfFailed: boolean;
-  latest: string | null;
-  tiktok: TikTokVideo | null;
-  onPlay: () => void;
-  onEdit?: (() => void) | undefined;
-}) {
-  const meta = CONTENT_STATUS[row.status];
-  const tone = TONE[meta.tone];
-
-  // Ads are only meaningful once a video is approved. A video that is still
-  // with the team says nothing about ads rather than "No ads".
-  const adState: AdState | null = perf
-    ? adStateOf(perf, latest)
-    : row.status === 'approved' && !perfPending && !perfFailed
-      ? 'none'
-      : null;
-
-  // Engagement: every figure is nullable and a null is left out, never a 0.
-  const stats = tiktok
-    ? [
-        { key: 'views', Icon: Eye, label: 'views', value: tiktok.view_count },
-        { key: 'likes', Icon: Heart, label: 'likes', value: tiktok.like_count },
-        {
-          key: 'comments',
-          Icon: MessageCircle,
-          label: 'comments',
-          value: tiktok.comment_count,
-        },
-      ].filter((s): s is typeof s & { value: number } => s.value !== null)
-    : [];
-
+function ChipRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <article className="wx-neo-raised ease-brand flex w-full flex-col gap-3 rounded-xl p-3 transition-transform duration-300 hover:-translate-y-0.5">
-      <Cover row={row} fallback={tiktok?.cover_image_url ?? null} onPlay={onPlay} />
-
-      <div className="flex min-w-0 flex-1 flex-col gap-2 px-1 pb-1">
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-muted min-w-0 truncate text-[0.6875rem] font-semibold tracking-[0.08em] uppercase">
-            {row.brand?.name ?? 'A brand'}
-          </p>
-          <span
-            className={cn(
-              'shrink-0 rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold',
-              tone.soft,
-              tone.text
-            )}
-          >
-            {meta.creatorLabel}
-          </span>
-        </div>
-
-        <p className="text-[0.875rem] leading-[1.3] font-semibold break-words">
-          {row.offer?.title ?? 'An offer'}
-        </p>
-
-        {stats.length > 0 ? (
-          <ul className="flex flex-wrap gap-x-3.5 gap-y-1">
-            {stats.map(({ key, Icon, label, value }) => (
-              <li key={key} className="text-muted flex items-center gap-1 text-[0.75rem]">
-                <Icon size={13} aria-hidden />
-                <span className="wx-numeric text-text font-mono font-bold">
-                  {compact(value)}
-                </span>
-                <span className="sr-only">{label}</span>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-
-        {perfPending && row.status === 'approved' ? (
-          <div className="wx-skeleton h-14 rounded-md" />
-        ) : adState ? (
-          <AdBlock state={adState} perf={perf} />
-        ) : null}
-
-        <p className="text-muted font-mono text-[0.71875rem] break-all">{row.ad_code}</p>
-
-        {row.ad_authorized ? null : (
-          <p className="text-stage-due text-[0.75rem] font-medium">Not marked authorised</p>
-        )}
-
-        {row.decision_note ? (
-          <p className="wx-neo-inset text-muted rounded-md px-3 py-2 text-[0.78125rem] leading-relaxed">
-            {row.decision_note}
-          </p>
-        ) : null}
-
-        <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-          <time dateTime={row.created_at} className="text-muted text-[0.71875rem]">
-            {new Date(row.created_at).toLocaleDateString(undefined, {
-              day: 'numeric',
-              month: 'short',
-            })}
-          </time>
-          {onEdit ? (
-            <Button variant="ghost" size="sm" onClick={onEdit}>
-              Edit
-            </Button>
-          ) : null}
-        </div>
-      </div>
-    </article>
+    <div
+      role="group"
+      aria-label={label}
+      className="wx-neo-inset flex max-w-full flex-wrap items-center gap-0.5 rounded-md p-1"
+    >
+      {children}
+    </div>
   );
 }
 
-/** Which of the three ad stories this video is in, in words, with its GMV. */
-function AdBlock({ state, perf }: { state: AdState; perf: VideoPerformance | null }) {
-  const meta = AD_LABEL[state];
-  const hasSales = perf && state !== 'none' && perf.lifetime_revenue > 0;
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        'ease-brand flex min-h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-sm px-2.5 text-[0.8125rem] font-medium transition-colors duration-200',
+        /* The selected chip is a filled pill, so it takes his accent with ink on
+           it. The rest are text and keep the accent ink on hover. */
+        active
+          ? '[background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]'
+          : 'text-muted hover:text-accent'
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** A quiet line inside the panel. Never `EmptyState`: that is a blurred card. */
+function Note({ children }: { children: ReactNode }) {
+  return (
+    <p className="wx-neo-inset text-muted max-w-prose rounded-md px-3 py-3 text-[0.8125rem] leading-[1.45]">
+      {children}
+    </p>
+  );
+}
+
+/**
+ * WHAT THE PAGE CANNOT TELL HER, SAID ONCE AT THE TOP.
+ *
+ * Without this, a TikTok that is not connected is explained twenty times over
+ * in twenty info dots. The dots stay — they answer the question where it is
+ * asked — but the thing she can actually DO about it belongs here, once, with
+ * the button.
+ */
+function SourceNotes({
+  sources,
+  onRetryAds,
+  onRetryTikTok,
+}: {
+  sources: Sources;
+  onRetryAds: () => Promise<unknown> | void;
+  onRetryTikTok: () => Promise<unknown> | void;
+}) {
+  if (sources.ads !== 'failed' && sources.tiktok !== 'failed' && sources.tiktok !== 'off') {
+    return null;
+  }
 
   return (
-    <div className="wx-neo-inset flex flex-col gap-1 rounded-md px-3 py-2.5">
-      <span
-        className={cn(
-          'w-fit rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold',
-          meta.tone === 'none'
-            ? 'bg-surface-2 text-muted'
-            : [TONE[meta.tone].soft, TONE[meta.tone].text]
-        )}
-      >
-        {meta.label}
-      </span>
-      {state === 'none' ? (
-        <p className="text-muted text-[0.75rem] leading-[1.4]">
-          No ads on this one. It still counts toward your offer.
-        </p>
-      ) : hasSales ? (
-        <p className="text-muted text-[0.75rem]">
-          <span className="wx-numeric text-text font-mono text-[1.0625rem] font-extrabold">
-            {money(perf.lifetime_revenue, perf.currency)}
-          </span>{' '}
-          GMV
-        </p>
-      ) : (
-        <p className="text-muted text-[0.75rem] leading-[1.4]">No sales on it yet.</p>
-      )}
+    <div className="flex flex-col gap-2">
+      {sources.ads === 'failed' ? (
+        <div className="wx-neo-inset flex flex-wrap items-center justify-between gap-2 rounded-md px-3 py-2.5">
+          <p className="text-muted max-w-prose text-[0.8125rem] leading-[1.45]">
+            Your ad figures did not load, so GMV says &ldquo;Not reported&rdquo; rather than
+            zero. Every video you filed is still here.
+          </p>
+          <Button variant="secondary" size="sm" onClick={() => void onRetryAds()}>
+            Try again
+          </Button>
+        </div>
+      ) : null}
+
+      {sources.tiktok === 'failed' ? (
+        <div className="wx-neo-inset flex flex-wrap items-center justify-between gap-2 rounded-md px-3 py-2.5">
+          <p className="text-muted max-w-prose text-[0.8125rem] leading-[1.45]">
+            Your views, likes and comments did not load. Your ads and GMV are unaffected.
+          </p>
+          <Button variant="secondary" size="sm" onClick={() => void onRetryTikTok()}>
+            Try again
+          </Button>
+        </div>
+      ) : null}
+
+      {sources.tiktok === 'off' ? (
+        <div className="wx-neo-inset flex flex-wrap items-center justify-between gap-2 rounded-md px-3 py-2.5">
+          <p className="text-muted max-w-prose text-[0.8125rem] leading-[1.45]">
+            Connect your TikTok to see views, likes and comments on each video. Until then you
+            still see your ads and GMV.
+          </p>
+          <Link
+            to="/app/profile"
+            className="wx-neo-raised-sm wx-neo-press text-accent inline-flex h-9 items-center rounded-full px-4 text-[0.8125rem] font-semibold pointer-coarse:min-h-11"
+          >
+            Connect TikTok
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -755,16 +788,15 @@ function Jobs({
 }) {
   if (jobs.length === 0) {
     return (
-      <EmptyState
-        title="No active jobs"
-        body="Take an offer and its job appears here with the number of videos it asks for."
-        className="w-full"
-      />
+      <Note>
+        No active jobs. Take an offer and its job appears here with the number of videos it asks
+        for.
+      </Note>
     );
   }
 
   return (
-    <ul className="grid grid-cols-[repeat(auto-fit,minmax(17rem,1fr))] gap-3">
+    <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {jobs.map((job) => {
         const p = progress?.get(job.id);
         if (!p) return null;
@@ -772,7 +804,7 @@ function Jobs({
           <li
             key={job.id}
             className={cn(
-              'wx-neo-raised flex flex-col gap-3 rounded-xl p-4',
+              'wx-neo-raised-sm flex flex-col gap-3 rounded-lg p-3',
               p.done && 'bg-stage-paid-soft!'
             )}
           >
@@ -817,7 +849,7 @@ function Jobs({
                     : `${p.remaining} still to film`}
               </span>
               <Button variant="ghost" size="sm" onClick={() => onAdd(job.id)}>
-                <Plus size={14} aria-hidden />
+                <Plus className="size-3.5" aria-hidden />
                 Add
               </Button>
             </div>
@@ -830,16 +862,22 @@ function Jobs({
 
 /* ------------------------------------------------------------ skeleton --- */
 
+/** The page's own shape, held while it loads. Never a spinner. */
 function Skeleton() {
   return (
     <div className="flex flex-col gap-4">
-      <div className="wx-skeleton h-14 rounded-lg" />
-      <div className="wx-skeleton h-24 rounded-xl" />
-      <ul className="grid grid-cols-[repeat(auto-fit,minmax(15rem,1fr))] gap-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <li key={i} className="wx-skeleton h-[22rem] rounded-xl" />
-        ))}
-      </ul>
+      <div className="flex flex-col gap-2">
+        <div className="wx-skeleton h-8 w-32 rounded-md" />
+        <div className="wx-skeleton h-6 w-64 rounded-full" />
+      </div>
+      <div className="wx-neo-raised flex flex-col gap-4 rounded-xl p-3 sm:p-4">
+        <div className="wx-skeleton h-10 rounded-md" />
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-2.5 sm:gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <li key={i} className="wx-skeleton h-[17rem] rounded-lg" />
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

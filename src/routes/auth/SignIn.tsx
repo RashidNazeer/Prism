@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { ArrowRight } from 'lucide-react';
 import { AuthShell, FormError } from '@/components/auth/AuthShell';
 import { friendlyAuthError } from '@/lib/auth/auth-errors';
-import { Field, Input } from '@/components/ui/Field';
+import { Field, Input, PasswordInput } from '@/components/ui/Field';
 import { Button } from '@/components/ui/Button';
 import { getSupabase } from '@/lib/supabase';
 import { collectErrors, signInSchema, type SignInInput } from '@/lib/schemas/auth';
@@ -84,12 +84,15 @@ export function SignIn() {
             )}
           </Field>
 
+          {/* The same show/hide toggle the signup form has. No meter and no
+              rule list here: those belong where a password is being CHOSEN, and
+              scoring one somebody already owns would be lecturing them at the
+              door. */}
           <Field label="Password" error={errors.password}>
             {({ id, describedBy, invalid }) => (
-              <Input
+              <PasswordInput
                 id={id}
                 name="password"
-                type="password"
                 autoComplete="current-password"
                 placeholder="Your password"
                 value={values.password}

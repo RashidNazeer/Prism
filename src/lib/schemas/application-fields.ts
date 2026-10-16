@@ -33,8 +33,14 @@ export type WorkedWithWurx = (typeof WORKED_WITH_WURX)[number]['value'];
  * Must match `password_min_length` on the Supabase projects. If one changes,
  * change the other, or people pass the form and get rejected by the server,
  * which is a maddening bug to report.
+ *
+ * RE-EXPORTED, NOT RE-DECLARED, since 2026-10-16. The same number was written
+ * out in three files — here, `auth.ts` and now the strength rules — and three
+ * copies of a number that must equal a server setting is two copies too many.
+ * `password-rules.ts` is the one that owns it and it is Zod-free, so importing
+ * it costs this module nothing.
  */
-export const PASSWORD_MIN = 10;
+export { PASSWORD_MAX, PASSWORD_MIN } from './password-rules';
 
 /** Raw form state. Empty strings are the "nothing picked yet" case. */
 export interface ApplicationInput {
@@ -46,6 +52,17 @@ export interface ApplicationInput {
   videoLinks: string;
   /** Applying creates the account, so the password is collected here. */
   password: string;
+  /**
+   * TYPED TWICE, since 2026-10-16.
+   *
+   * The show/hide toggle used to be the argument against a second box, and it
+   * is a good argument for a typo you can SEE. It does nothing for the typo you
+   * cannot: this password is the only way back into an account whose email is
+   * not verified yet, and a reset email is the only recovery there is. Two
+   * reviewers asked for the field; the toggle stays as well, because together
+   * they catch different mistakes.
+   */
+  confirmPassword: string;
 }
 
 export const emptyApplication: ApplicationInput = {
@@ -56,6 +73,7 @@ export const emptyApplication: ApplicationInput = {
   workedWithWurx: '',
   videoLinks: '',
   password: '',
+  confirmPassword: '',
 };
 
 export type ApplicationErrors = Partial<Record<keyof ApplicationInput, string>>;

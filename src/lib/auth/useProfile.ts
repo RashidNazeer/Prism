@@ -1,6 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
-import { getSupabase } from '@/lib/supabase';
 import { useAuth, type AppRole, type CreatorTier } from './auth-context';
+
+/*
+ * `@/lib/supabase` IS IMPORTED DYNAMICALLY, AND THAT IS ABOUT THE ENTRY CHUNK.
+ *
+ * `AuthProvider` already takes this care (see the note at the top of that
+ * file), but it was being undone from here. This hook is reached statically
+ * from `router.tsx` — router -> ShellLayout -> AppShell -> AppSidebar ->
+ * useWurxbaseIdentity -> useProfile -> `@/lib/supabase` — so a top-level
+ * import put `@supabase/supabase-js` (52.5 KB gzipped) back into the entry
+ * chunk that every visitor downloads before first paint, landing page
+ * included. Measured on 2026-10-16.
+ *
+ * It costs nothing to load it here instead: `queryFn` is already async, and it
+ * only ever runs for a signed-in user, by which point the client is in memory
+ * anyway because `AuthProvider` fetched it to read the session. `getSupabase`
+ * returns the one shared client, so there is still exactly one.
+ */
+const supabaseClient = () => import('@/lib/supabase').then((m) => m.getSupabase());
 
 export interface Profile {
   id: string;
@@ -37,7 +54,8 @@ export function useProfile() {
     // quietly rather than blocking a screen on it.
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<Profile> => {
-      const { data, error } = await getSupabase()
+      const supabase = await supabaseClient();
+      const { data, error } = await supabase
         .from('profiles')
         .select(
           'id, email, display_name, role, tier, is_active, created_at, welcomed_at, approval_celebrated_at'

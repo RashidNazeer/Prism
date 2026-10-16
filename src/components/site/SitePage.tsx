@@ -104,7 +104,7 @@ export function SiteCard({
 }) {
   return (
     <div
-      className={`wx-neo-raised ease-brand h-full rounded-2xl p-7 transition-colors duration-300 ${className ?? ''}`}
+      className={`wx-neo-raised-sm ease-brand h-full rounded-2xl p-7 transition-colors duration-300 ${className ?? ''}`}
     >
       <h3 className="text-lg font-bold">{title}</h3>
       <div className="text-muted mt-3 leading-relaxed">{children}</div>

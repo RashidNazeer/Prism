@@ -1,11 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { AuthShell, FormError } from '@/components/auth/AuthShell';
+import { PasswordMeter } from '@/components/auth/PasswordMeter';
 import { friendlyAuthError } from '@/lib/auth/auth-errors';
-import { Field, Input } from '@/components/ui/Field';
+import { Field, PasswordInput } from '@/components/ui/Field';
 import { Button } from '@/components/ui/Button';
 import { getSupabase } from '@/lib/supabase';
-import { collectErrors, resetPasswordSchema, PASSWORD_MIN } from '@/lib/schemas/auth';
+import { collectErrors, resetPasswordSchema } from '@/lib/schemas/auth';
 
 /**
  * Landing page for the link in a password reset email.
@@ -79,17 +80,21 @@ export function ResetPassword() {
     <AuthShell title="Choose a new password" subtitle="Then we will sign you straight in.">
       <form onSubmit={onSubmit} noValidate>
         <FormError>{formError}</FormError>
+        {/* BOTH BOXES NOW HAVE THE SHOW/HIDE TOGGLE, and the same meter and
+            rule list as the signup form. They were plain `Input type="password"`
+            — so this was the one screen in the product where you could not see
+            what you had typed, on the one screen where getting it wrong means
+            asking for another email. */}
         <div className="space-y-5">
           <Field
             label="New password"
             error={errors.password}
-            hint={`At least ${PASSWORD_MIN} characters.`}
+            hint="Longer beats complicated. Three unrelated words is a good one."
           >
             {({ id, describedBy, invalid }) => (
-              <Input
+              <PasswordInput
                 id={id}
                 name="password"
-                type="password"
                 autoComplete="new-password"
                 value={values.password}
                 onChange={(e) => setValues((v) => ({ ...v, password: e.target.value }))}
@@ -100,10 +105,9 @@ export function ResetPassword() {
           </Field>
           <Field label="Confirm new password" error={errors.confirmPassword}>
             {({ id, describedBy, invalid }) => (
-              <Input
+              <PasswordInput
                 id={id}
                 name="confirmPassword"
-                type="password"
                 autoComplete="new-password"
                 value={values.confirmPassword}
                 onChange={(e) => setValues((v) => ({ ...v, confirmPassword: e.target.value }))}
@@ -113,6 +117,7 @@ export function ResetPassword() {
             )}
           </Field>
         </div>
+        <PasswordMeter value={values.password} confirm={values.confirmPassword} />
         <Button type="submit" size="lg" disabled={pending} className="mt-6 w-full">
           {pending ? 'Saving...' : 'Save new password'}
         </Button>

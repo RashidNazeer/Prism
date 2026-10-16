@@ -29,7 +29,20 @@ export function Apply() {
       <div className="relative mx-auto w-full max-w-lg">
         <div className="flex items-center justify-between gap-4">
           <PrismMark />
-          <ButtonLink to="/" variant="ghost" size="sm" className="group max-lg:h-11">
+          {/*
+            `secondary`, NOT `ghost`. A reviewer: "the Home button is barely
+            visible." This is the one in the product with that label, and on
+            `ghost` it was `--wx-text-muted` on an aurora with no fill, no
+            border and no lift — a word floating over moving light. It is also
+            the ONLY way off this page other than the browser's own back
+            button, which makes it load-bearing rather than decorative.
+
+            `secondary` is the glass material: the §4.1 fill, the hairline and
+            the lift, so it reads as a control at a glance without competing
+            with `Apply` further down the page, which stays the only `primary`
+            here.
+          */}
+          <ButtonLink to="/" variant="secondary" size="sm" className="group max-lg:h-11">
             <ArrowLeft
               size={15}
               className="ease-brand transition-transform duration-200 group-hover:-translate-x-0.5"

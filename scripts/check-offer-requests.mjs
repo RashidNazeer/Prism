@@ -1051,12 +1051,73 @@ try {
     'and what it paid'
   );
 
-  await page.getByRole('tab', { name: /you are in/i }).click();
-  await page.waitForTimeout(1200);
-  const inOnly = await page.evaluate(() => document.body.innerText);
+  /*
+   * THERE IS NO "you are in" TAB ANY MORE. THERE ARE NO TABS AT ALL.
+   *
+   * This line used to click a chip named "you are in". The Earn redesign of
+   * 2026-10-16 renamed the chips to §8.2's four names, so it had been failing
+   * on a locator rather than on a behaviour; the simplification pass later the
+   * same day deleted the chip row outright, on Rashid's instruction to "ditch
+   * the buttons where you can". The list is GROUPED by status instead, each
+   * group headed and counted, so what this section tested — that an approved
+   * offer is filed under the right status and a different offer is not — is
+   * now true with nothing tapped at all.
+   *
+   * "You are in" is still asserted further up, where it belongs: it is the
+   * sentence on an approved CARD, and sections [6] and [6c] wait on it.
+   */
+  check(
+    (await page.getByRole('tab', { name: /you are in|not applied|^accepted/i }).count()) === 0,
+    'the offers screen asks her to pick a status before showing her anything: it does not'
+  );
+  check(
+    (await page.getByRole('heading', { name: /^accepted$/i }).count()) > 0,
+    'an approved offer is filed under a heading she did not have to tap for'
+  );
+
+  /*
+   * AND IT IS FILED UNDER THE RIGHT ONE.
+   *
+   * Read out of the DOM rather than off the whole page: every group is on
+   * screen at once now, so `body.innerText` would contain every offer whatever
+   * the grouping did. The section around the "Accepted" heading is the claim
+   * being made.
+   */
+  const inOnly = await page.evaluate(() => {
+    const heading = [...document.querySelectorAll('h2')].find((el) =>
+      el.textContent?.trim().toLowerCase().startsWith('accepted')
+    );
+    return heading?.closest('section')?.innerText ?? '';
+  });
   check(
     inOnly.includes('Fixed terms deal') && !inOnly.includes('Name your price'),
-    'and the "you are in" tab shows only those'
+    'and the Accepted group holds only those'
+  );
+
+  /*
+   * A DECLINED APPLICATION IS STILL ON SCREEN, UNDER ITS OWN HEADING.
+   *
+   * Two reviewers reported that applying makes an offer vanish and that a
+   * rejection is never shown. The first was never true of the data — row level
+   * security keeps an offer readable forever once a request exists on it
+   * (`offers_select_own_requests`) — but a declined row used to be filed under
+   * "Not applied", the one name that contradicts it, while its own card said
+   * "Not this time". Both now say Declined.
+   *
+   * This creator has nothing declined at this point in the run (section [8]
+   * rejects `rivalPage`'s request, not hers), so what is asserted is the only
+   * thing that must be true either way: an EMPTY status draws no heading, and
+   * an approved offer is never filed under Declined.
+   */
+  const declinedOnly = await page.evaluate(() => {
+    const heading = [...document.querySelectorAll('h2')].find((el) =>
+      el.textContent?.trim().toLowerCase().startsWith('declined')
+    );
+    return heading?.closest('section')?.innerText ?? '';
+  });
+  check(
+    !declinedOnly.includes('Fixed terms deal'),
+    'and an approved offer is never filed under Declined'
   );
 
 

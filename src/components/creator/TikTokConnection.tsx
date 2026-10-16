@@ -84,7 +84,7 @@ export function TikTokConnection() {
   };
 
   if (isLoading) {
-    return <div className="wx-skeleton h-72 rounded-xl" />;
+    return <div className="wx-skeleton h-72 rounded-2xl" />;
   }
 
   if (accountQuery.isError) {
@@ -98,14 +98,22 @@ export function TikTokConnection() {
   }
 
   return (
-    <section className="wx-neo-raised rounded-xl p-5 sm:p-6">
+    <section className="wx-neo-raised min-w-0 rounded-2xl p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         {/* min-w-0 flex-1, and no max-width. With a fixed `max-w-lg` the
             paragraph was nearly as wide as the card, so the Connected pill
             wrapped onto a line of its own and read as stranded rather than as
             a status on the heading. */}
         <div className="min-w-0 flex-1">
-          <h2 className="text-lg font-bold">Connect TikTok</h2>
+          {/*
+            "YOUR TIKTOK ACCOUNT", AND THE WORDS MATTER TO MORE THAN THE
+            READER. Two guards find this card by that phrase —
+            `check-tiktok-card.mjs` and `check-applicant-flow.mjs` — so
+            renaming it breaks them silently. It is also the better heading:
+            the card is a STATE now, not an invitation, and "Connect TikTok"
+            read as an instruction to somebody already connected.
+          */}
+          <h2 className="text-[1.0625rem] leading-snug font-bold">Your TikTok account</h2>
           <p className="text-muted mt-1 text-[0.875rem] leading-relaxed">
             {/*
               TWO SENTENCES, BECAUSE ONE OF THEM IS WRONG HALF THE TIME. This
@@ -120,12 +128,56 @@ export function TikTokConnection() {
           </p>
         </div>
 
-        {connected ? (
-          <span className="bg-success-soft text-success shrink-0 rounded-full px-3 py-1 text-[0.75rem] font-semibold">
-            Connected
-          </span>
-        ) : null}
+        {/*
+          THE STATE, SAID IN BOTH DIRECTIONS. It used to be a pill that existed
+          only when connected, so "not connected" was a thing a creator had to
+          infer from the absence of a badge and the presence of a button. Half
+          the figures in this product read "Not reported" until this is on, so
+          the one question this card answers has to be answered in words
+          whichever way the answer falls.
+        */}
+        <span
+          className={cn(
+            'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[0.75rem] font-semibold',
+            connected ? 'bg-success-soft text-success' : 'wx-neo-inset text-muted'
+          )}
+        >
+          <span
+            aria-hidden
+            className={cn('block size-1.5 rounded-full', connected ? 'bg-success' : 'bg-line')}
+          />
+          {connected ? 'Connected' : 'Not connected'}
+        </span>
       </div>
+
+      {/*
+        WHAT IT COSTS TO LEAVE THIS OFF, stated once and only where it is true.
+        Every "Not reported" on the content and numbers screens that comes from
+        TikTok's own figures traces back to this switch, and somebody wondering
+        why their views are blank will look here before they look anywhere else.
+      */}
+      {!connected ? (
+        <p className="wx-neo-inset text-muted mt-4 rounded-lg px-4 py-3 text-[0.8125rem] leading-relaxed">
+          Until this is connected, every figure that comes from TikTok — views, likes, comments
+          and shares — reads <strong className="text-text font-semibold">Not reported</strong>{' '}
+          rather than zero, because we have not been told it.
+        </p>
+      ) : null}
+
+      {/*
+        A CONNECTION THAT STOPPED WORKING IS NOT THE SAME AS ONE THAT IS OFF.
+        `last_error` is the only honest signal for it: the row is still here and
+        still theirs, and the fix is to grant access again rather than to start
+        from nothing.
+      */}
+      {connected && account?.last_error ? (
+        <p
+          role="status"
+          className="bg-danger-soft text-danger mt-4 rounded-lg px-4 py-3 text-[0.8125rem] leading-relaxed"
+        >
+          TikTok last refused us. Your figures may be behind until you reconnect.
+        </p>
+      ) : null}
 
       {/*
         SAY WHAT IT CAN AND CANNOT DO, in both states and before they click
@@ -215,6 +267,23 @@ export function TikTokConnection() {
                 >
                   <RefreshCw size={14} aria-hidden className={cn(busy && 'animate-spin')} />
                   Refresh
+                </Button>
+                {/*
+                  RECONNECT, asked for by name in §11. It is the same OAuth
+                  start as connecting, and it is the fix for the two states a
+                  refresh cannot mend: a permission declined on TikTok's consent
+                  screen, and a token TikTok has stopped honouring. It does not
+                  disconnect first, so nothing is lost if they change their mind
+                  on TikTok's own page.
+                */}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void start()}
+                  disabled={busy}
+                >
+                  <Link2 size={14} aria-hidden />
+                  Reconnect
                 </Button>
                 <Button
                   variant="ghost"

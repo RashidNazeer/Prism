@@ -1,4 +1,5 @@
-import { Container, CountUp, Reveal } from '@/components/layout/Section';
+import { Container, CountUp } from '@/components/layout/Section';
+import { SettleIn } from '@/components/landing/Settle';
 import { TiltCard, TiltLift } from '@/components/ui/TiltCard';
 import { TiltedGridHero } from '@/components/ui/TiltedGridHero';
 import { BRANDS, STATS } from '@/content/site';
@@ -48,9 +49,25 @@ const BRAND_MARKS = BRANDS.map((brand) => ({
 export function TrustedBy() {
   return (
     <section id="brands" className="scroll-mt-20">
+      {/*
+        THE PADDING IS HALVED HERE TOO, 2026-10-17 — same report as the hero
+        above it, "extra gaps still need fixing".
+
+        Measured at 1920 before the change, from the hero's chip row to the top
+        of the first plaque: 214px of empty ground, made of the hero's 96px
+        `pb-24`, this `py-9` (36), the label, this `pb-7` (28) and 22px of
+        slack inside the band's own `h-64` (the plaques are centred on the
+        band's axis and do not fill it). Only the last of those is structural —
+        shrinking `h-64` would shrink the plaques, since `tileHeight` is a
+        percentage of the band's height.
+
+        So the three that are not structural come down: 36 -> 12 and 28 -> 16
+        here, 96 -> 48 in the hero. The band now follows the hero instead of
+        floating a screen's worth of nothing below it.
+      */}
       {/* Full-bleed: the band runs edge to edge, not inside the container. */}
-      <div className="py-9">
-        <Container className="pb-7">
+      <div className="py-3">
+        <Container className="pb-4">
           <p className="text-faint text-center font-mono text-[0.6875rem] tracking-[0.18em] uppercase">
             Trusted by creators &amp; brands worldwide
           </p>
@@ -60,24 +77,55 @@ export function TrustedBy() {
         <TiltedGridHero images={BRAND_MARKS} className="h-52 w-full sm:h-60 lg:h-64" />
       </div>
 
-      <Container className="pt-4 pb-16 sm:pb-20">
+      {/* And the same halving under the stat cards: `pb-16 sm:pb-20` was 80px
+          at desktop, and the next section's `Section` adds its own 56px on top
+          of it, so the boundary carried 136px. */}
+      <Container className="pt-2 pb-8 sm:pb-10">
         {/* Three raised cards that rise out of the page one after another, each
             at its own distance, rather than one strip fading in. The figure
-            floats above its own card on `TiltLift`, as on the step cards. */}
+            floats above its own card on `TiltLift`, as on the step cards.
+            `SettleIn`, not `Reveal depth` — the depth is the same, it just no
+            longer un-happens when the page scrolls back past it. */}
         <ul className="grid gap-5 sm:grid-cols-3">
           {STATS.map((stat, i) => (
             <li key={stat.label}>
-              <Reveal
-                depth={{
-                  rise: 90 + i * 50,
-                  tilt: 24,
-                  from: 0.84,
-                  roll: (i - 1) * 5,
-                  settle: 0.7,
-                }}
+              <SettleIn
+                rise={5.625 + i * 3.125}
+                tilt={24}
+                from={0.84}
+                roll={(i - 1) * 5}
+                delay={i * 0.09}
                 className="h-full"
               >
-                <TiltCard className="wx-neo-raised h-full rounded-2xl px-6 py-9 text-center">
+                {/*
+                  `wx-neo-raised-sm`, NOT `wx-neo-raised`, and every card on
+                  the landing page and the six website pages changed with it.
+
+                  Rashid: "optimise the home page ... take really long to load
+                  and gitters." The cause is counted rather than guessed.
+                  `global.css` says it in its own words on the `wx-neo-raised`
+                  utility: "this puts roughly 14 of them back on the landing
+                  page. If scrolling goes heavy again, this one declaration is
+                  the cause and deleting it is the fix."
+
+                  Scrolling went heavy again. Measured at 390x844: EIGHT
+                  blurred layers painting at once, and THIRTEEN at 1440 — the
+                  budget in GLASS_PLAN.md §4.3 is three, and the guard that
+                  enforces it only ever samples the first viewport, which is
+                  why it has been passing. The law the brief states is the same
+                  one: a section is ONE blurred panel and the things inside it
+                  use `-sm`. A grid of three stat cards is things inside.
+
+                  So the blurred panels on this page are now the nav, the
+                  closing call-to-action card and the footer. The cards keep
+                  the fill, the rim, the edge and the lift — everything that
+                  reads as the material — and give up only a blur that was
+                  sitting behind an opaque-enough face.
+
+                  The numbers are in `TiltedGridHero.tsx`, beside the other
+                  half of the same fix.
+                */}
+                <TiltCard className="wx-neo-raised-sm h-full rounded-2xl px-6 py-9 text-center">
                   <span
                     className={`${BARS[i] ?? 'bg-accent'} mx-auto mb-6 block h-1 w-10 rounded-full`}
                     aria-hidden
@@ -95,7 +143,7 @@ export function TrustedBy() {
                     {stat.label}
                   </span>
                 </TiltCard>
-              </Reveal>
+              </SettleIn>
             </li>
           ))}
         </ul>

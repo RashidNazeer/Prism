@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FocusEvent,
+  type FormEvent,
+} from 'react';
 import {
   claimTikTokSignup,
   forgetIdentity,
@@ -14,6 +21,7 @@ import { Field, Input, PasswordInput, Select, Textarea } from '@/components/ui/F
 import { Button } from '@/components/ui/Button';
 import { TiltCard } from '@/components/ui/TiltCard';
 import { FormError } from '@/components/auth/AuthShell';
+import { PasswordMeter } from '@/components/auth/PasswordMeter';
 import { friendlyAuthError } from '@/lib/auth/auth-errors';
 import { useAuth } from '@/lib/auth/auth-context';
 import {
@@ -94,6 +102,48 @@ export function ApplyForm() {
     setValues(next);
     // Only nag once they have tried to submit.
     if (submitted && validator.current) setErrors(validator.current(next));
+    /* ...except a mismatch that is ALREADY on screen, which disappears the
+       moment the two agree. An error that outlives the mistake teaches people
+       to ignore errors. */
+    else if (errors.confirmPassword && (key === 'password' || key === 'confirmPassword')) {
+      matchCheck(next);
+    }
+  };
+
+  /**
+   * THE CONFIRM BOX IS CHECKED ON BLUR, before anybody presses anything.
+   *
+   * It is the one field on this form whose problem is invisible while you are
+   * looking at it — the characters are dots, and the mistake is in the OTHER
+   * box. So leaving the field is the right moment to say so, and it says so
+   * about that field only: running the whole validator here would light up the
+   * niche and the video links of somebody who has simply not reached them yet.
+   *
+   * The tick list under the two boxes is the passive half of this and updates
+   * on every keystroke. This is the half that speaks up.
+   */
+  const onPasswordBlur = (e: FocusEvent<HTMLInputElement>) => {
+    /* CLICKING THE EYE IS NOT LEAVING THE FIELD. The show/hide button lives
+       inside the same wrapper as the input, so tapping it blurs the input — and
+       without this guard, reaching for "show me what I typed" halfway through
+       the second box answers with "both passwords need to match". */
+    const field = e.currentTarget.parentElement;
+    if (field && e.relatedTarget instanceof Node && field.contains(e.relatedTarget)) return;
+    matchCheck();
+  };
+
+  const matchCheck = (v: ApplicationInput = values) => {
+    const mismatch =
+      v.password.length > 0 && v.confirmPassword.length > 0 && v.password !== v.confirmPassword;
+    setErrors((prev) => {
+      if (mismatch) {
+        if (prev.confirmPassword) return prev;
+        return { ...prev, confirmPassword: 'Both passwords need to match' };
+      }
+      if (!prev.confirmPassword) return prev;
+      const { confirmPassword: _fixed, ...rest } = prev;
+      return rest;
+    });
   };
 
   /*
@@ -137,10 +187,14 @@ export function ApplyForm() {
     setPending(true);
 
     const validate = await warm();
-    // A signed-in user is only filling in the application half, so the password
-    // rule does not apply to them.
+    /* A signed-in user is only filling in the application half, so the password
+       rules do not apply to them. The stand-in has to satisfy the real schema,
+       which now means long enough, not an obvious pattern, and matching itself
+       — `'x'.repeat(10)` alone would fail the new pattern rule and lock an
+       existing applicant out of finishing their own application. */
+    const standIn = `finish-application-${PASSWORD_MIN}`;
     const toCheck = alreadySignedIn
-      ? { ...values, password: 'x'.repeat(PASSWORD_MIN) }
+      ? { ...values, password: standIn, confirmPassword: standIn }
       : values;
     const next = validate(toCheck);
     setErrors(next);
@@ -277,6 +331,15 @@ export function ApplyForm() {
             We only read your handle and your public video stats — never your password, and we
             can never post anything.
           </p>
+          {/* WHAT THE RULE ACTUALLY IS, said out loud. A reviewer read the
+              optional button as a missing requirement. It is optional on
+              purpose (TikTok goes down, in-app browsers lose the tab), so the
+              honest fix is to say what each path costs rather than to invent a
+              gate nobody decided on. */}
+          <p className="text-faint mt-2 text-center text-[0.75rem] leading-relaxed">
+            Optional, and it is the quicker route: TikTok confirms your handle for us, so there
+            is nothing for a reviewer to check by hand.
+          </p>
           {tiktokError ? (
             <p role="alert" className="text-danger mt-2 text-center text-[0.75rem]">
               {tiktokError}
@@ -348,24 +411,51 @@ export function ApplyForm() {
               )}
             </Field>
 
-            <Field
-              label="Create a password"
-              error={errors.password}
-              hint={`At least ${PASSWORD_MIN} characters. Longer beats complicated.`}
-            >
-              {({ id, describedBy, invalid }) => (
-                <PasswordInput
-                  id={id}
-                  name="password"
-                  autoComplete="new-password"
-                  placeholder="Something you will remember"
-                  value={values.password}
-                  onChange={(e) => set('password', e.target.value)}
-                  aria-describedby={describedBy}
-                  invalid={invalid}
-                />
-              )}
-            </Field>
+            {/* ── THE PASSWORD, WITH THE RULES IN THE OPEN ──────────────────
+                One block, not two loose fields: the meter and the tick list
+                belong to BOTH boxes, and the "both entries match" rule can
+                only be true of the pair. */}
+            <div>
+              <Field
+                label="Create a password"
+                error={errors.password}
+                hint="Longer beats complicated. Three unrelated words is a good one."
+              >
+                {({ id, describedBy, invalid }) => (
+                  <PasswordInput
+                    id={id}
+                    name="password"
+                    autoComplete="new-password"
+                    placeholder="Something you will remember"
+                    value={values.password}
+                    onChange={(e) => set('password', e.target.value)}
+                    onBlur={onPasswordBlur}
+                    aria-describedby={describedBy}
+                    invalid={invalid}
+                  />
+                )}
+              </Field>
+
+              <div className="mt-5">
+                <Field label="Confirm password" error={errors.confirmPassword}>
+                  {({ id, describedBy, invalid }) => (
+                    <PasswordInput
+                      id={id}
+                      name="confirmPassword"
+                      autoComplete="new-password"
+                      placeholder="Type it once more"
+                      value={values.confirmPassword}
+                      onChange={(e) => set('confirmPassword', e.target.value)}
+                      onBlur={onPasswordBlur}
+                      aria-describedby={describedBy}
+                      invalid={invalid}
+                    />
+                  )}
+                </Field>
+              </div>
+
+              <PasswordMeter value={values.password} confirm={values.confirmPassword} />
+            </div>
           </>
         )}
 
@@ -462,7 +552,20 @@ export function ApplyForm() {
         </Field>
       </div>
 
-      <Button type="submit" size="lg" disabled={pending} className="group mt-7 w-full">
+      {/* ── WHAT HAPPENS NEXT, AND WHAT DOES NOT ─────────────────────────────
+          The second reviewer wrote that "users can enter Prism without
+          connecting TikTok or completing verification". Applying does create an
+          account and it does sign you in — that is how a status screen can show
+          you your own application — but it buys an applicant exactly one page.
+          Nothing in the product changed here; the screen just stops implying
+          otherwise by saying nothing. */}
+      <p className="text-faint mt-6 text-[0.8125rem] leading-relaxed">
+        Applying creates your Prism account, so you can sign back in and watch for a decision. A
+        real person reads every application — brand hubs, offers, contests and your numbers open
+        when they say yes.
+      </p>
+
+      <Button type="submit" size="lg" disabled={pending} className="group mt-5 w-full">
         {pending ? (
           'Sending your application...'
         ) : (

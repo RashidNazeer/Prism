@@ -1,9 +1,29 @@
 import { useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getSupabase } from '@/lib/supabase';
-import { joinChannel } from '@/lib/realtime';
 import { useAuth } from '@/lib/auth/auth-context';
 import { STAGE_META, type OfferApplicationStatus, type OfferStage } from '@/lib/offer-stages';
+
+/*
+ * BOTH OF THESE ARE DYNAMIC IMPORTS, AND IT IS THE ENTRY CHUNK THAT DECIDES IT.
+ *
+ * `AppShell` renders `NotificationBell`, which calls `useCreatorNotifications`,
+ * which calls this file — and `router.tsx` imports `AppShell` at the top level,
+ * so this module is in the graph the browser must download and EVALUATE before
+ * it can paint anything, on the public landing page as much as on a dashboard.
+ *
+ * A top-level `getSupabase` here therefore put `@supabase/supabase-js` — 204 KB
+ * raw, 52.5 KB gzipped — into that startup path, parsed and executed by every
+ * visitor. `@/lib/realtime` is in here too because it is the other static edge
+ * to the same client: leaving it would have kept the whole thing in place.
+ * Measured 2026-10-16 against `dist-perf`.
+ *
+ * Nothing about the behaviour changes. Every use below is already inside an
+ * async `queryFn` or an effect, both of which only run for a signed-in creator,
+ * and by then `AuthProvider` has the one shared client in memory so these
+ * resolve straight out of the module cache.
+ */
+const supabaseClient = () => import('@/lib/supabase').then((m) => m.getSupabase());
+const realtime = () => import('@/lib/realtime');
 
 /**
  * Everything this creator has asked for, and where each one has got to.
@@ -74,7 +94,8 @@ export function useMyWork() {
     queryKey: ['creator', 'my-work'],
     staleTime: 15_000,
     queryFn: async (): Promise<MyWorkRow[]> => {
-      const { data, error } = await getSupabase()
+      const supabase = await supabaseClient();
+      const { data, error } = await supabase
         .from('offer_applications')
         .select(COLUMNS)
         .order('created_at', { ascending: false })
@@ -101,20 +122,44 @@ export function useMyWork() {
    * key, because a stage event also moves the timeline and an application
    * change does not.
    */
+  /*
+   * `joinChannel` ARRIVES ASYNCHRONOUSLY, SO THE TEARDOWN IS TRACKED BY HAND.
+   *
+   * React wants a cleanup function back from the effect body, synchronously,
+   * and the module that provides `joinChannel` is now a dynamic import (see the
+   * note at the top of this file). So the effect returns its own cleanup
+   * immediately and that cleanup covers both orders it can run in: after the
+   * channel was joined, when it calls `leave`; and before, when `cancelled`
+   * stops the join from ever happening. Without the flag, an effect that was
+   * cleaned up during the import would subscribe a channel nobody unsubscribes
+   * — the leak `realtime.ts` exists to prevent.
+   */
   useEffect(() => {
-    if (!user?.id) return;
+    const userId = user?.id;
+    if (!userId) return;
 
-    return joinChannel(
-      `my-work:${user.id}`,
-      [
-        { table: 'offer_applications', filter: `creator_id=eq.${user.id}` },
-        { table: 'offer_stage_events', event: 'INSERT', filter: `creator_id=eq.${user.id}` },
-      ],
-      () => {
-        void queryClient.invalidateQueries({ queryKey: ['creator', 'my-work'] });
-        void queryClient.invalidateQueries({ queryKey: ['creator', 'my-stage-events'] });
-      }
-    );
+    let cancelled = false;
+    let leave: (() => void) | undefined;
+
+    void realtime().then(({ joinChannel }) => {
+      if (cancelled) return;
+      leave = joinChannel(
+        `my-work:${userId}`,
+        [
+          { table: 'offer_applications', filter: `creator_id=eq.${userId}` },
+          { table: 'offer_stage_events', event: 'INSERT', filter: `creator_id=eq.${userId}` },
+        ],
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ['creator', 'my-work'] });
+          void queryClient.invalidateQueries({ queryKey: ['creator', 'my-stage-events'] });
+        }
+      );
+    });
+
+    return () => {
+      cancelled = true;
+      leave?.();
+    };
   }, [user?.id, queryClient]);
 
   return query;
@@ -126,7 +171,8 @@ export function useMyStageEvents(limit = 40) {
     queryKey: ['creator', 'my-stage-events', limit],
     staleTime: 15_000,
     queryFn: async (): Promise<StageEvent[]> => {
-      const { data, error } = await getSupabase()
+      const supabase = await supabaseClient();
+      const { data, error } = await supabase
         .from('offer_stage_events')
         .select('id, application_id, from_stage, to_stage, note, created_at')
         .order('created_at', { ascending: false })

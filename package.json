@@ -14,7 +14,9 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/check-contrast.mjs && node scripts/check-brand-theme.mjs && node scripts/check-isolation.mjs && tsc -b && vite build",
+    "//build": "`entry-graph` is the newest of these and the only one about SPEED rather than looks: it fails the build if a heavy package (Supabase, Zod, three, Vanta, xlsx, jsPDF, pptxgenjs) can be reached from `src/main.tsx` without crossing a dynamic `import()`. On 2026-10-16 the entry chunk was carrying the Supabase client and Zod — 70 KB gzipped on the public landing page — because of one top-level import in a leaf file six hops from the router, and the only trace in the build log was that `index-*.js` had grown. It is first in the chain because it reads sixteen files and answers in milliseconds, so it should fail before anything slow runs. See the header of scripts/entry-graph.mjs.",
+    "build": "node scripts/entry-graph.mjs && node scripts/check-contrast.mjs && node scripts/check-brand-theme.mjs && node scripts/check-isolation.mjs && tsc -b && vite build",
+    "verify:entry-graph": "node scripts/entry-graph.mjs",
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "lint": "oxlint",
@@ -138,6 +140,8 @@
     "react-dom": "^19.2.7",
     "react-router": "^8.3.0",
     "tailwind-merge": "^3.6.0",
+    "three": "0.134.0",
+    "vanta": "0.5.24",
     "xlsx": "^0.18.5",
     "zod": "^4.4.3"
   },

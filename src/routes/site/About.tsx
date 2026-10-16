@@ -63,7 +63,7 @@ export function About() {
           </Reveal>
 
           <Reveal delay={0.08}>
-            <div className="wx-neo-raised rounded-2xl p-7">
+            <div className="wx-neo-raised-sm rounded-2xl p-7">
               <h2 className="font-mono text-[0.6875rem] tracking-[0.16em] uppercase">
                 Company details
               </h2>
@@ -124,7 +124,7 @@ export function About() {
         <dl className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {COMPANY_FACTS.map((f, i) => (
             <Reveal key={f.label} delay={i * 0.06}>
-              <div className="wx-neo-raised rounded-2xl p-7">
+              <div className="wx-neo-raised-sm rounded-2xl p-7">
                 <dt className="font-brand wx-numeric text-3xl tracking-[-0.02em]">
                   {f.value}
                 </dt>

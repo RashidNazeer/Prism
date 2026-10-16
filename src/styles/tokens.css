@@ -42,7 +42,9 @@
 
   /* Text, all verified >= 4.5:1 on EVERY surface, --wx-bg to --wx-surface-3 */
   --wx-text: #F4F4FA; /* 16.97:1 */
-  --wx-text-muted: #adadbc; /*  6.38:1 */
+  --wx-text-muted: #dcdce6; /* raised 2026-10-16: on the BRIGHTEST glass card
+     the old #adadbc measured 3.78:1, under AA. check-contrast cannot see this
+     because it skips translucent tokens; measured off rendered pixels. */
   --wx-text-faint: #a0a0b1; /*  5.73:1 */
   --wx-text-inverse: #202024;
 
@@ -305,7 +307,18 @@
      is what "this bar has no blur on laptop" actually was. The blur is real;
      the frost is what makes it visible at rest. This is the one place the nav
      deliberately stops matching the cards. */
-  --wx-glass-fill-nav: rgba(7, 7, 10, 0.52);
+  /* NO TINT OF ITS OWN, 2026-10-16. Rashid: "remove the tints from the nav
+     bar in both dark and light modes", and "give navbars the same blur as the
+     rest of the cards" (the blur already matched at 8px).
+
+     The bar used to carry a fill unlike any card's -- 52% near-black in dark,
+     58% white in light -- plus a `brightness()` of 0.72/1.18 inside its
+     backdrop-filter. Between them those are the tint: they darkened or lifted
+     whatever was behind the bar, so the ground visibly changed tone where the
+     bar crossed it. That reads as a smear across the page rather than as a
+     pane of the same glass. It is the SAME material as a card now: same fill,
+     same blur, brightness left alone. */
+  --wx-glass-fill-nav: var(--wx-glass-fill);
   --wx-glass-fill-hover: rgba(52, 52, 56, 0.58);
   --wx-glass-well: rgba(255, 255, 255, 0.05);
   --wx-glass-panel: rgba(255, 255, 255, 0.1);
@@ -500,7 +513,7 @@
      read as glass when there is nothing behind it to smear. Light lifts and
      intensifies; dark smokes down. */
   --wx-nav-saturate: 1;
-  --wx-nav-brightness: 0.72;
+  --wx-nav-brightness: 1;
   --wx-glass-blur-rail: 7px;
   --wx-glass-blur-scrim: 14px;
   --wx-glass-blur-phone: 11px;
@@ -597,30 +610,111 @@
    */
   --wx-ground: none;
 
-  /* THE AURORA, in his three. Mint, sky and periwinkle at the stops the
-     reference used for blues and indigos, so the shape of the light is the
-     demo's and the colour is his. */
-  --wx-aurora: repeating-linear-gradient(
-    100deg,
-    var(--wx-brand-sky) 10%,
-    var(--wx-brand-peri) 15%,
-    var(--wx-brand-sky) 20%,
-    var(--wx-brand-mint) 25%,
-    var(--wx-brand-peri) 30%
+  /*
+   * THE COLOURED AURORA IS RETIRED, 2026-10-16. Rashid, on seeing the Vanta
+   * field live: the background "should be black shaded in dark mode and white
+   * shaded in light mode in such a way that all the patterns are visible",
+   * and of the bloom in the top-right corner — "this is the coloured glare
+   * and I think it is from the previous background, remove it".
+   *
+   * He is right about where it came from. The glare was not the waves and not
+   * an uncovered edge: it was this layer's own radial mask,
+   * `radial-gradient(130% 100% at 88% 0%, …)`, pouring mint/sky/periwinkle in
+   * from one corner and falling off across the page. The mask is gone with it;
+   * see `.wx-aurora-field` in `global.css`.
+   *
+   * WHAT REPLACES IT IS NEUTRAL AND HAS NO HOTSPOT. One soft top-to-bottom
+   * shade, no hue, so the ground is a shaded near-black and the WAVE pattern
+   * is the only thing on it with a shape. The page is still not flat — there
+   * is a gentle lift toward the top — it simply is not the subject any more.
+   *
+   * The name is kept so the one class that reads it, the two handoff docs that
+   * name it and this file's history all still line up. It is a ground shade
+   * now, not an aurora.
+   */
+  --wx-aurora: linear-gradient(
+    180deg,
+    #191920 0%,
+    #101016 42%,
+    #0a0a0e 78%,
+    #07070a 100%
   );
-  /* The reference's `--dark-gradient`: stripes of the PAGE colour cut through
-     the aurora, which is what breaks it into bands of light instead of one
-     wash. Near-black here, so the field reads as glow on a black ground. */
-  --wx-aurora-veil: repeating-linear-gradient(
-    100deg,
-    #07070a 0%,
-    #07070a 6%,
-    transparent 10%,
-    transparent 18%,
-    #07070a 24%
-  );
-  --wx-aurora-opacity: 0.68;
-  --wx-aurora-saturate: 1.15;
+  --wx-aurora-opacity: 0.9;
+
+  /*
+   * VANTA WAVES, over the neutral ground. `WavesField.tsx` reads the colour
+   * with `getComputedStyle` and re-reads it on every `data-theme` change, so
+   * this is the only place the field's colour is decided.
+   *
+   * THIS IS THE DARK BLOCK (`:root, [data-theme='dark']`).
+   *
+   * NO LONGER HIS `0x5588`, AND THAT IS THE POINT OF THIS PASS. He asked for
+   * a ground that is "black shaded in dark mode ... in such a way that all the
+   * patterns are visible". A navy mesh gives a BLUE page with waves in it; a
+   * neutral mesh gives a BLACK page with waves in it, which is what he asked
+   * for. The pattern survives the change intact because Vanta does not get its
+   * shape from the hue — it gets it from the lighting.
+   *
+   * WHY A NEUTRAL STILL HAS A PATTERN AT ALL. Vanta lights a flat-shaded
+   * `MeshPhongMaterial` with a 0.9 white ambient and a 0.9 white point light,
+   * so each facet lands at roughly `colour x (0.9 + 0.9 x cos0)` plus a
+   * specular at `shininess: 30`. That is a multiplier between about 0.9 and
+   * 1.8 — nearly a 2:1 range — applied to whatever base colour it is given.
+   * Feed it grey and the facets come out as grey shading from `#20212a` up to
+   * about `#3e4154`, which on a `#07070a` page is exactly the faceted relief
+   * he is after and carries no hue to glare with.
+   */
+  --wx-waves-color: #23242e;
+  /*
+   * How much of the field reaches the page — and it is HIGH now, where the
+   * blue one had to be held down to 0.22.
+   *
+   * The constraint has changed, not been ignored. A navy mesh lit to `#1b7fc4`
+   * is a large luminance LIFT on a `#07070a` page, so every point of opacity
+   * came straight out of the text budget. A neutral mesh whose facets sit
+   * between `#20212a` and `#3e4154` is barely a lift at all, so the pattern
+   * can be shown far harder than the blue one could and the page still
+   * measures as near-black. That is the whole reason the colour and the
+   * opacity moved together.
+   *
+   * SWEPT ON `/login` AT 960x600, reading every bare-ground pixel outside the
+   * card. `dL*` is the 5th-to-95th percentile spread of the ground in CIE
+   * lightness — "are the patterns visible", as a number. L* and not raw
+   * luminance on purpose: the same visible step is a far smaller Y difference
+   * down at the black end, so luminance would have flattered dark and
+   * punished light.
+   *
+   *     alpha   dL*     muted   faint
+   *     0.00    5.45    13.11    6.93     <- the shade alone, no waves
+   *     0.60   11.61     7.92    4.19     <- shipped
+   *     0.80   12.20     6.94    3.67
+   *     0.95   13.80     5.86    3.10
+   *
+   * 0.60 IS WHERE THE CURVE BENDS. It more than doubles the visible pattern
+   * over the bare shade (5.45 -> 11.61 L* points) and everything past it buys
+   * very little: 0.95 is another 19% of spread for a third of the faint-text
+   * headroom. `--wx-text-faint` is the binding constraint on this theme;
+   * `--wx-text-muted` never goes near the floor.
+   *
+   * FOR CONTEXT, THE BACKGROUND THIS REPLACES MEASURED 4.36 MUTED AND 2.30
+   * FAINT on the same test. The coloured aurora WAS the contrast hole flagged
+   * in the previous pass; neutralising it moved the bare ground to 13.11 and
+   * 6.93, and that headroom is what pays for showing the pattern this hard.
+   */
+  --wx-waves-opacity: 0.6;
+
+  /* ---- charts. Four hues in a FIXED ORDER that never cycles: a ninth series
+     folds into Other, it is never a generated hue. Snapped to each mode's
+     OKLCH band and checked by the dataviz validator -- lightness band, chroma
+     floor, CVD separation, normal-vision floor and contrast vs the composited
+     card, all PASS in both themes. The slot-4 slate these replaced FAILED: at
+     chroma 0.055 it read gray and sat 8.8 DeltaE from the sky beside it. ---- */
+  --chart-1: #9a7de3; /* GMV */
+  --chart-2: #00ab89; /* commission */
+  --chart-3: #4495ea; /* ad spend */
+  --chart-4: #c68206; /* the fourth metric */
+  --chart-grid: rgba(255, 255, 255, 0.1);
+  --chart-muted: #dcdce6; /* tracks --wx-text-muted */
   --wx-scene-opacity: 0.46;
 
   /*
@@ -871,7 +965,7 @@
    * than what it replaces.
    */
   --wx-glass-fill: rgba(255, 255, 255, 0.1);
-  --wx-glass-fill-nav: rgba(255, 255, 255, 0.58);
+  --wx-glass-fill-nav: var(--wx-glass-fill);
   --wx-glass-fill-hover: rgba(255, 255, 255, 0.18);
   /* His well washes DOWNWARD in ink — `rgba(0, 0, 0, 0.03)` on `.segmented`
      and `.role-tabs` — where the pane around it washes upward in white. The
@@ -888,7 +982,11 @@
   --wx-glass-line: rgba(73, 85, 104, 0.17);
   /* His `#ffffffe0`, exactly. This is the edge that makes a pane at 14% read
      as a solid object: almost all of the "glass" is the rim, not the fill. */
-  --wx-glass-edge: rgba(255, 255, 255, 0.3);
+  /* INK, NOT WHITE, IN LIGHT. An edge is only visible if it differs from the
+     surface it borders, and on a pale card that means darker. White tops out
+     around 1.58:1 even at full opacity, and the real 1px line measured
+     1.03:1. */
+  --wx-glass-edge: rgba(52, 61, 96, 0.40);
   /* His second edge tier, `#ffffff9c`, for pills, badges and icon wells. */
   --wx-glass-edge-sm: rgba(255, 255, 255, 0.61);
   /*
@@ -1043,7 +1141,7 @@
   --wx-glass-blur-nav: 8px;
   --wx-glass-blur-rail: 7px;
   --wx-nav-saturate: 1;
-  --wx-nav-brightness: 1.18;
+  --wx-nav-brightness: 1;
   --wx-glass-blur-scrim: 14px;
   --wx-glass-blur-phone: 11px;
   --wx-glass-blur-app-phone: 8px;
@@ -1119,28 +1217,88 @@
    */
   --wx-ground: none;
 
-  --wx-aurora: repeating-linear-gradient(
-    100deg,
-    color-mix(in oklab, var(--wx-brand-sky) 68%, var(--wx-info)) 10%,
-    color-mix(in oklab, var(--wx-brand-peri) 68%, var(--wx-accent)) 15%,
-    color-mix(in oklab, var(--wx-brand-sky) 68%, var(--wx-info)) 20%,
-    color-mix(in oklab, var(--wx-brand-mint) 68%, var(--wx-success)) 25%,
-    color-mix(in oklab, var(--wx-brand-peri) 68%, var(--wx-accent)) 30%
+  /*
+   * THE COLOURED AURORA IS RETIRED HERE TOO. See the dark block for Rashid's
+   * words and for where the top-right "coloured glare" actually came from.
+   *
+   * This is the same shape as dark's, inverted: a soft top-to-bottom shade
+   * with no hue and no hotspot, so the ground is a shaded near-white and the
+   * wave pattern is the only thing on it with a shape. The old `color-mix`
+   * stack — sky into info, peri into accent, mint into success — is what was
+   * putting green and violet into a page that is meant to read as paper.
+   */
+  --wx-aurora: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #f2f3f8 40%,
+    #e4e6ef 76%,
+    #dcdee9 100%
   );
-  /* The reference's `--white-gradient`, in the light page colour. It does the
-     same job the near-black one does in dark: cuts the wash into bands. */
-  --wx-aurora-veil: repeating-linear-gradient(
-    100deg,
-    #dcdee9 0%,
-    #dcdee9 5%,
-    transparent 9%,
-    transparent 21%,
-    #dcdee9 26%
-  );
-  /* Pastels on a pale page need more of themselves to register, and no extra
-     saturation or they turn to poster paint. */
-  --wx-aurora-opacity: 0.95;
-  --wx-aurora-saturate: 1.5;
+  --wx-aurora-opacity: 0.9;
+
+  /*
+   * VANTA WAVES — THIS IS THE LIGHT BLOCK (`[data-theme='light']`). See the
+   * dark block for what reads these.
+   *
+   * NEUTRAL, like dark's, and for the same reason — "white shaded in light
+   * mode in such a way that all the patterns are visible". The blue `#86aed8`
+   * this replaces made the page read as water; grey makes it read as paper
+   * with relief on it.
+   *
+   * WHY IT IS A MID GREY AND NOT A NEAR-WHITE, which is the one genuinely
+   * counter-intuitive number in this file. Vanta's lighting MULTIPLIES, up to
+   * about 1.8x (see the dark block). Feed it the near-white the page is made
+   * of and every lit facet multiplies straight past 255, clips to flat white,
+   * and the pattern vanishes in exactly the areas that are supposed to show
+   * it — a white page with faint dirty edges. The base has to sit low enough
+   * that 1.8x still lands inside the range: `#9aa0ad` x 1.8 is about `#f0f5ff`,
+   * so the crests arrive just under white and the troughs hold a soft grey.
+   * The shading is then laid over the page at the opacity below, which is what
+   * turns it back into paper.
+   */
+  --wx-waves-color: #9aa0ad;
+  /*
+   * LOWER THAN DARK'S 0.95, and this is the mirror of the old problem.
+   *
+   * Dark's neutral mesh is darker than nothing and sits on a near-black page,
+   * so it costs almost no luminance and can run at nearly full strength.
+   * Light's mesh has to be a mid grey to avoid clipping (above), which makes
+   * it a real DARKENING over `#DCDEE9` paper — and dark text on paper is
+   * ruined by darkening the paper. So the pattern is shown at a third, which
+   * is enough to read as relief without turning the page grey.
+   *
+   * Same sweep as the dark block, scored against the DARKEST bare ground,
+   * which is the worst case when the text on it is dark:
+   *
+   *     alpha   dL*     muted   faint
+   *     0.00    8.33     5.77    5.58     <- the shade alone, no waves
+   *     0.34   11.85     4.99    4.83
+   *     0.42   ~13.3    ~4.6    ~4.45     <- shipped
+   *     0.45   13.80     4.54    4.39
+   *     0.55   15.35     4.31    4.17
+   *
+   * HIGHER THAN YOU WOULD EXPECT, because this is the theme Rashid actually
+   * complained about — "in light mode background is hardly visible fix its
+   * shadows". Around 0.3 is roughly where "hardly visible" lives. 0.42 runs
+   * the pattern as hard as the 4.5 floor allows: muted and faint both still
+   * clear it, 0.45 puts faint under, and there is about 0.15 of run-to-run
+   * noise in these figures because the waves are still moving while they are
+   * sampled. The margin at 0.42 is for that noise, not timidity.
+   */
+  --wx-waves-opacity: 0.42;
+
+  /* ---- charts. Four hues in a FIXED ORDER that never cycles: a ninth series
+     folds into Other, it is never a generated hue. Snapped to each mode's
+     OKLCH band and checked by the dataviz validator -- lightness band, chroma
+     floor, CVD separation, normal-vision floor and contrast vs the composited
+     card, all PASS in both themes. The slot-4 slate these replaced FAILED: at
+     chroma 0.055 it read gray and sat 8.8 DeltaE from the sky beside it. ---- */
+  --chart-1: #734ac3; /* GMV */
+  --chart-2: #008060; /* commission */
+  --chart-3: #0069c6; /* ad spend */
+  --chart-4: #995700; /* the fourth metric */
+  --chart-grid: rgba(52, 61, 96, 0.16);
+  --chart-muted: #535365; /* tracks --wx-text-muted */
   --wx-scene-opacity: 0.5;
 
   /* See the dark block. These are the surfaces light was already using. */

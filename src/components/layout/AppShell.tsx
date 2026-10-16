@@ -7,6 +7,7 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { TextSizeMenu } from '@/components/layout/TextSizeMenu';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { MobileNav } from '@/components/layout/MobileNav';
+import { NotificationBell } from '@/components/creator/notifications/NotificationBell';
 import { HaloBackdrop } from '@/components/auth/HaloBackdrop';
 import { IdentitySwapBanner } from '@/components/auth/IdentitySwapBanner';
 import { cn } from '@/lib/utils';
@@ -145,6 +146,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const section = sectionTitleFor(role, pathname);
   const description = sectionDescriptionFor(role, pathname);
 
+
   return (
     <div
       className={cn(
@@ -271,7 +273,19 @@ export function AppShell({ children }: { children: ReactNode }) {
           card is actually looked at. Once you scroll, the card meets the top
           edge and there is no window left to leak through.
         */}
-        <header className="wx-glass-chrome sticky top-0 z-40 mx-3 mt-3 flex h-14 shrink-0 items-center justify-between gap-3 rounded-2xl px-4 sm:px-5">
+        {/*
+          `px-3 sm:px-5` AND `gap-2 sm:gap-3`, down from `px-4` and a flat
+          `gap-3`, 2026-10-17. Measured at 320px before changing it: the bar is
+          297.5px wide inside its gutters, the four controls on the right take
+          187.5 of them and the padding and gaps take another 41, which left
+          the section name 68.75px — so "Leaderboard" rendered as "Leader…" on
+          the one screen size where the name in the bar is the ONLY thing
+          telling you where you are (the description beside it is hidden below
+          `md`). Reclaiming the padding and one gap below `sm` gives the name
+          93px, which fits it whole, and costs nothing above 640px where the
+          old spacing is kept.
+        */}
+        <header className="wx-glass-chrome sticky top-0 z-40 mx-3 mt-3 flex h-14 shrink-0 items-center justify-between gap-2 rounded-2xl px-3 sm:gap-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
             {/* The mark stays on a phone, where there is no rail to carry it.
                 On desktop the rail has it, and it is the collapse control. */}
@@ -342,7 +356,39 @@ export function AppShell({ children }: { children: ReactNode }) {
           */}
           <div id="wurxbase-topbar-slot" className="contents" />
 
-          <div className="flex items-center gap-2">
+          {/* `gap-1.5` below `sm`: four 2.75rem circles plus three 0.5rem gaps
+              is 187.5px of a 297.5px bar at 320px, and the gap is the only
+              part of that which can give. They stay separate targets with
+              0.375rem between them, and nothing is dropped from the row. */}
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            {/*
+              TEXT SIZE AND THEME LIVE IN THE BAR, for everybody.
+
+              §12 asked for them to move into an avatar menu, and they did,
+              creator-side only. Rashid saw it on the live page and asked for
+              it back: "get rid of this dropdown and move text size and theme
+              button in nav bar". He is right on the merits as well — both are
+              one-tap controls, and a menu turned each of them into two taps
+              and a thing to discover. The admin side never changed, so this
+              puts the two sides back in agreement.
+            */}
+            {/*
+              THE BELL, CREATOR SIDE ONLY, AND THIS BAR IS SHARED WITH ADMIN.
+
+              Both external reviewers asked for notifications. The feed is
+              derived in the browser from a creator's own rows — stage moves,
+              decided requests, reviewed videos, contest rewards — so it reads
+              creator hooks and means nothing to staff, whose queues already
+              are their inbox. Hence the role check rather than an
+              unconditional control: the admin top bar is unchanged, byte for
+              byte, and nothing creator-side is fetched for them.
+
+              The role is the one resolved above, profile row over JWT claim,
+              so somebody approved a minute ago gets the bell now rather than
+              on their next token refresh. See `useCreatorNotifications` for
+              what the feed can and cannot do.
+            */}
+            {role === 'creator' || role === 'applicant' ? <NotificationBell /> : null}
             <TextSizeMenu />
             <ThemeToggle />
             <button

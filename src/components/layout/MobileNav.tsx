@@ -73,10 +73,6 @@ export function MobileNav({ items, className }: { items: NavItem[]; className?: 
       const el = list.querySelector<HTMLElement>(`[data-nav-item="${activeIndex}"]`);
       if (!el) return setLamp(null);
       setLamp({ left: el.offsetLeft + el.offsetWidth / 2, width: el.offsetWidth });
-      /* When the bar scrolls, the tab you are on must be on screen. Without
-         this, landing on the last item shows a bar that looks like it is
-         pointing nowhere because the lit item is off to the right. */
-      el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     };
 
     measure();
@@ -96,7 +92,34 @@ export function MobileNav({ items, className }: { items: NavItem[]; className?: 
     };
   }, [activeIndex, items.length]);
 
-  if (items.length === 0) return null;
+  /*
+   * BRINGING THE LIT TAB INTO VIEW, AND ONLY WHEN IT CHANGES. 2026-10-17.
+   *
+   * The reveal used to live inside `measure` above, which is also the
+   * `ResizeObserver` callback, the `resize` handler and the `fonts.ready`
+   * continuation. So anything that changed the bar's size — rotating the
+   * phone, the browser toolbar sliding in, the text-size control, the web font
+   * landing — scrolled the bar back to the active item. With nine destinations
+   * the bar is 641px of items inside a 298px window at 320px, so a creator who
+   * had scrolled across to Uploads was snapped back to Home by a resize they
+   * did not cause. That is the bar behaving oddly on its own.
+   *
+   * It also used `scrollIntoView`, which is allowed to scroll EVERY scrollable
+   * ancestor, the document included, to reveal a descendant. For a child of a
+   * `position: fixed` bar that is never what is wanted. Setting `scrollLeft`
+   * on the list touches the list and nothing else, and it is a no-op when the
+   * item is already in view, so it cannot fight a gesture in progress.
+   */
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list || activeIndex < 0) return;
+    const el = list.querySelector<HTMLElement>(`[data-nav-item="${activeIndex}"]`);
+    if (!el) return;
+    const left = el.offsetLeft;
+    const right = left + el.offsetWidth;
+    if (left < list.scrollLeft) list.scrollLeft = left;
+    else if (right > list.scrollLeft + list.clientWidth) list.scrollLeft = right - list.clientWidth;
+  }, [activeIndex, items.length]);
 
   /*
    * THE BAR TRACKS THE BROWSER'S OWN TOOLBAR, 2026-10-15.
@@ -137,6 +160,26 @@ export function MobileNav({ items, className }: { items: NavItem[]; className?: 
       root.style.removeProperty('--wx-vv-bottom');
     };
   }, []);
+
+  /*
+   * THE EARLY RETURN SITS BELOW BOTH EFFECTS, AND IT HAS TO.
+   *
+   * It used to sit between them, which made the `visualViewport` effect
+   * CONDITIONAL: on a render with no items React saw two hooks, on a render
+   * with items it saw three. React matches hooks by call order, so the moment
+   * `items` went from empty to populated — or back — every hook after the
+   * guard was handed the previous one's slot. In this component that means the
+   * effect reading `useState`'s setter for the lamp, and the symptom is not a
+   * clean crash but a stale lamp and a `--wx-vv-bottom` that stops updating.
+   * `oxlint` flags it as `react-hooks(rules-of-hooks)`.
+   *
+   * Moving the guard down is the whole fix and costs nothing: neither effect
+   * touches `items`. The first bails on `!list`, and when there are no items
+   * the nav does not render, so there is no list to measure; the second only
+   * ever reads `window.visualViewport`. Both were already safe to run on an
+   * empty nav — they simply were not allowed to be skipped.
+   */
+  if (items.length === 0) return null;
 
   return (
     <nav

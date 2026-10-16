@@ -99,7 +99,17 @@ export function ContestDashboard({ contests }: { contests: CreatorContest[] }) {
   }
 
   return (
-    <div className="mt-6 flex flex-col gap-4">
+    /*
+     * ONE BLURRED PANEL, like the list view beside it.
+     *
+     * Every figure tile and every contest section in here used to wear
+     * `wx-neo-raised`, which carries a `backdrop-filter` at every width: four
+     * figures plus one section per contest is nine blurred layers against a
+     * budget of three, each re-blurring its backdrop on every scroll frame.
+     * They are `wx-neo-raised-sm` now — the same material, same lit rims, no
+     * blur — and the blur is spent once, here. See `earn/EarnPanel.tsx`.
+     */
+    <div className="wx-neo-raised mt-4 flex flex-col gap-4 rounded-xl p-3 sm:p-4">
       {/* Four figures, not four charts. A single number is not improved by being drawn. */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Figure
@@ -148,7 +158,7 @@ function Figure({
   tone?: 'paid' | 'due';
 }) {
   return (
-    <div className="wx-neo-raised rounded-xl p-4">
+    <div className="wx-neo-raised-sm rounded-xl p-4">
       <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         {label}
       </p>
@@ -186,7 +196,7 @@ function ContestCard({ contest }: { contest: CreatorContest }) {
         )) ?? null;
 
   return (
-    <section className="wx-neo-raised rounded-xl p-5">
+    <section className="wx-neo-raised-sm rounded-xl p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">

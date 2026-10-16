@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { m } from 'motion/react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -11,6 +11,8 @@ import {
   type OfferApplicationInput,
 } from '@/lib/schemas/offer-application';
 import { money } from '@/lib/money';
+import { OfferDetails } from '@/components/creator/earn/OfferDetails';
+import { formatAmount, perVideoOf } from '@/components/creator/earn/offer-money';
 import { useApplyForOffer } from '@/lib/creator/useOfferApplications';
 import type { CreatorOffer } from '@/lib/creator/useCreatorBrands';
 
@@ -24,6 +26,19 @@ import type { CreatorOffer } from '@/lib/creator/useCreatorBrands';
  * The confirmation step earns its keep even with nothing to fill in: this is a
  * commitment about money, and a single unguarded click is how somebody ends up
  * on a deal they were only reading about.
+ *
+ * WHAT CHANGED, 2026-10-16. Two reviewers: "creators should have access to
+ * complete campaign details before applying". This dialog IS before applying,
+ * and it carried one sentence of terms and the offer's description. It now
+ * carries everything we actually hold — the payment path, the brand's brief,
+ * its hooks and do's and don'ts, and its products — through
+ * `earn/OfferDetails`, which also documents the fields the schema does not
+ * have and therefore does not draw.
+ *
+ * ITS OWN TERMS LINE STAYS, and the detail panel below is told not to repeat
+ * the fee (`showMoney={false}`). What she is agreeing to belongs in one
+ * sentence directly above the button; the same figure again further down is
+ * how somebody starts counting it twice.
  */
 export function ApplyDialog({
   offer,
@@ -44,7 +59,34 @@ export function ApplyDialog({
   const apply = useApplyForOffer();
   const busy = apply.isPending;
 
+  /*
+   * ESCAPE CLOSES IT, AND THAT IS WHY THERE IS NO LONGER A "Cancel" BUTTON.
+   *
+   * Rashid, 2026-10-16: "ditch the buttons where you can for easier
+   * usability". This footer carried two buttons where only one of them was a
+   * decision — Send request. Cancel was the third way out of a dialog that
+   * already closes on the X in the corner and on a tap outside it, and on a
+   * phone it sat directly beside the submit button, which is how somebody
+   * cancels the thing they meant to send.
+   *
+   * It could only go once Escape worked, because the X is a 2.75rem target in
+   * a corner and a scrim tap is a mouse gesture: a keyboard user was relying
+   * on Cancel. `useFocusTrap` handles Tab only, deliberately, so the key goes
+   * here where the thing being closed is.
+   *
+   * NOT WHILE THE REQUEST IS IN FLIGHT. Escape during a submit would close the
+   * dialog over a mutation she cannot then see the result of.
+   */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !busy) onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [busy, onClose]);
+
   const hasTerms = offer.video_count !== null && offer.reward_amount !== null;
+  const perVideo = perVideoOf(offer.reward_amount, offer.video_count);
 
   const set = (note: string) => {
     const next = { note };
@@ -106,7 +148,14 @@ export function ApplyDialog({
         <form onSubmit={submit} noValidate className="mt-6">
           <FormError>{apply.error ? (apply.error as Error).message : ''}</FormError>
 
-          {/* Exactly what they are agreeing to, restated. */}
+          {/*
+            EXACTLY WHAT THEY ARE AGREEING TO, RESTATED.
+
+            The two sentences in here are fixed points:
+            `scripts/check-offer-requests.mjs` waits on "5 videos for $300" and
+            on "confirm what this one involves". Changing either means changing
+            that guard in the same commit.
+          */}
           <div className="wx-neo-inset rounded-xl px-4 py-3.5">
             {hasTerms ? (
               <>
@@ -119,24 +168,43 @@ export function ApplyDialog({
                     {money(offer.reward_amount, offer.currency)}
                   </span>
                 </span>
+                {/* THE RATE SHE IS REALLY COMPARING. The admin queue has
+                    printed "$60 each" since August; the creator side made her
+                    do the division in her head on the one screen where the
+                    number decides whether she says yes. */}
+                {perVideo !== null ? (
+                  <span className="text-muted wx-numeric mt-0.5 block text-[0.75rem]">
+                    {formatAmount(perVideo, offer.currency)} per video, paid as one fee for the
+                    set
+                  </span>
+                ) : null}
               </>
             ) : (
               <span className="text-muted text-[0.875rem] leading-relaxed">
                 The team will confirm what this one involves with you directly.
               </span>
             )}
-            {offer.description ? (
-              <span className="border-line text-muted mt-3 block border-t pt-3 text-[0.8125rem] leading-relaxed">
-                {offer.description}
-              </span>
-            ) : null}
+          </div>
+
+          {/*
+            EVERYTHING ELSE WE HOLD, open, not behind a second disclosure. She
+            is deciding right now, so the brief, the guidelines and the payment
+            path are on screen rather than one tap away. The dialog already
+            scrolls (`overflow-y-auto` on the panel above) and is a bottom
+            sheet on a phone.
+          */}
+          <div className="mt-4">
+            <OfferDetails offer={offer} brandName={brandName} loadBrand showMoney={false} />
           </div>
 
           <div className="mt-5">
             <Field
               label="Anything to add"
               error={errors.note}
-              hint="Optional. The team reads this with your request."
+              /* Says that a pasted link works, because it now does: anything
+                 starting http:// or https:// comes back as a live link on your
+                 own card. See `earn/Linkify.tsx`. */
+              hint="Optional. The team reads this with your request, and any link you paste stays clickable."
             >
               {({ id, describedBy, invalid }) => (
                 <Textarea
@@ -155,12 +223,15 @@ export function ApplyDialog({
             </Field>
           </div>
 
-          <div className="mt-7 flex flex-wrap gap-2.5">
-            <Button type="submit" disabled={busy}>
+          {/*
+            ONE BUTTON. The only decision on this screen is whether to ask, so
+            that is the only button on it. Getting out is the X above, a tap
+            outside, or Escape — three ways, none of them sitting a thumb's
+            width from Send.
+          */}
+          <div className="mt-7">
+            <Button type="submit" disabled={busy} className="w-full sm:w-auto">
               {busy ? 'Sending...' : 'Send request'}
-            </Button>
-            <Button type="button" variant="ghost" disabled={busy} onClick={onClose}>
-              Cancel
             </Button>
           </div>
         </form>

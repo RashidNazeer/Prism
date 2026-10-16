@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { getSupabase } from '@/lib/supabase';
 
 /**
@@ -134,6 +134,21 @@ export function useVideoPerformance(
   return useQuery({
     queryKey: ['creator', 'performance', 'videos', from, to, source ?? 'all', brandId ?? 'all'],
     enabled: Boolean(from && to),
+        /*
+     * KEEP THE OLD FIGURES ON SCREEN WHILE THE NEW ONES LOAD.
+     *
+     * Two reviewers independently reported the dashboard "blinking". This is
+     * why: the range and brand are part of the query KEY, so tapping 30D after
+     * 7D is a brand-new query with no data, every chart on the page empties at
+     * once, the skeleton takes over and the whole screen flashes. The figures
+     * had not changed — only which ones we were asking for.
+     *
+     * `keepPreviousData` holds the previous answer in place until the next one
+     * lands, so a period change updates the numbers instead of demolishing the
+     * page. The admin side already does this on three screens for the same
+     * reason.
+     */
+    placeholderData: keepPreviousData,
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<VideoPerformance[]> => {
       const { data, error } = await getSupabase().rpc('creator_video_performance', {
@@ -157,6 +172,21 @@ export function useDailyPerformance(
   return useQuery({
     queryKey: ['creator', 'performance', 'daily', from, to, source ?? 'all', brandId ?? 'all'],
     enabled: Boolean(from && to),
+        /*
+     * KEEP THE OLD FIGURES ON SCREEN WHILE THE NEW ONES LOAD.
+     *
+     * Two reviewers independently reported the dashboard "blinking". This is
+     * why: the range and brand are part of the query KEY, so tapping 30D after
+     * 7D is a brand-new query with no data, every chart on the page empties at
+     * once, the skeleton takes over and the whole screen flashes. The figures
+     * had not changed — only which ones we were asking for.
+     *
+     * `keepPreviousData` holds the previous answer in place until the next one
+     * lands, so a period change updates the numbers instead of demolishing the
+     * page. The admin side already does this on three screens for the same
+     * reason.
+     */
+    placeholderData: keepPreviousData,
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<DailyPerformance[]> => {
       const { data, error } = await getSupabase().rpc('creator_daily_performance', {
@@ -295,6 +325,21 @@ export function useBrandPerformance(from: string | null, to: string | null) {
   return useQuery({
     queryKey: ['creator', 'performance', 'brands', from, to],
     enabled: Boolean(from && to),
+        /*
+     * KEEP THE OLD FIGURES ON SCREEN WHILE THE NEW ONES LOAD.
+     *
+     * Two reviewers independently reported the dashboard "blinking". This is
+     * why: the range and brand are part of the query KEY, so tapping 30D after
+     * 7D is a brand-new query with no data, every chart on the page empties at
+     * once, the skeleton takes over and the whole screen flashes. The figures
+     * had not changed — only which ones we were asking for.
+     *
+     * `keepPreviousData` holds the previous answer in place until the next one
+     * lands, so a period change updates the numbers instead of demolishing the
+     * page. The admin side already does this on three screens for the same
+     * reason.
+     */
+    placeholderData: keepPreviousData,
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<BrandPerformance[]> => {
       const { data, error } = await getSupabase().rpc('creator_brand_performance', {

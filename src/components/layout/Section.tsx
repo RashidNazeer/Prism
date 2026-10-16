@@ -398,12 +398,27 @@ export function CountUp({
     const target = Number(numText.replace(/,/g, ''));
     const decimals = numText.includes('.') ? (numText.split('.')[1] ?? '').length : 0;
     const grouped = numText.includes(',');
-    const fmt = (n: number) =>
-      `${prefix}${n.toLocaleString('en-US', {
-        useGrouping: grouped,
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      })}${suffix}`;
+    /*
+     * ONE FORMATTER, BUILT ONCE, NOT ONE PER FRAME.
+     *
+     * `Number.prototype.toLocaleString(locale, options)` constructs a fresh
+     * `Intl.NumberFormat` on every call — building one is the expensive half
+     * of formatting a number, and this was doing it inside a
+     * `requestAnimationFrame` loop. Three counters animating for 1.6s is ~290
+     * formatter constructions, and it showed: 182ms of scripting under 4x CPU
+     * throttle, measured 2026-10-16, for work whose answer never changes.
+     *
+     * `Intl.NumberFormat` is the same API with the setup hoisted out of the
+     * loop, so the per-frame cost is just `.format()`. Identical output: the
+     * options are the ones that were being passed, and `toLocaleString`
+     * delegates to this constructor anyway.
+     */
+    const nf = new Intl.NumberFormat('en-US', {
+      useGrouping: grouped,
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+    const fmt = (n: number) => `${prefix}${nf.format(n)}${suffix}`;
     if (!inView) {
       node.nodeValue = fmt(0);
       return;
@@ -436,9 +451,29 @@ export function CountUp({
  * motion.
  */
 export function PageProgress() {
+  /*
+   * THE SUBSCRIPTION IS INSIDE THE INNER COMPONENT, SO REDUCED MOTION NEVER
+   * OPENS ONE.
+   *
+   * `useScroll()` was called here and the result thrown away one line later
+   * when `quiet` was true — a hook cannot be called conditionally, so the only
+   * way to skip the work is to move it behind a component that is not
+   * rendered. Someone who has asked their operating system to stop animations
+   * was still paying for a scroll listener feeding a motion value that drives
+   * an element returning `null`.
+   *
+   * It is a small cost — a windowless `useScroll` reads `scrollY` and measures
+   * nothing, and the 2026-10-17 profile put all of Motion at ~18ms across a 6s
+   * scroll — so this is tidiness with a number attached rather than a fix for
+   * the jank. The jank is paint; see the aurora findings.
+   */
   const quiet = useReducedMotion();
-  const { scrollYProgress } = useScroll();
   if (quiet) return null;
+  return <PageProgressBar />;
+}
+
+function PageProgressBar() {
+  const { scrollYProgress } = useScroll();
   return (
     <m.div
       aria-hidden

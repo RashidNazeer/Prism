@@ -1,13 +1,7 @@
 import { m, useReducedMotion, useScroll, useTransform, type MotionValue } from 'motion/react';
 import { useRef } from 'react';
-import {
-  Section,
-  Eyebrow,
-  ParallaxLayer,
-  Reveal,
-  ScrollWords,
-  useSectionScroll,
-} from '@/components/layout/Section';
+import { Section, Eyebrow, Reveal } from '@/components/layout/Section';
+import { SettleIn, SettleWords } from '@/components/landing/Settle';
 import { TiltCard, TiltLift } from '@/components/ui/TiltCard';
 import { STEPS } from '@/content/site';
 
@@ -62,30 +56,37 @@ function ProgressThread({ target }: { target: React.RefObject<HTMLElement | null
 }
 
 export function HowItWorks() {
-  const { ref, progress } = useSectionScroll(['start end', 'end start']);
   const listRef = useRef<HTMLOListElement>(null);
 
   return (
     <Section id="how" className="overflow-x-clip">
-      <div ref={ref as never} className="relative">
-        {/* A far plane behind the heading: one soft violet disc, drifting up
-            slower than the page. Accent only, never a surface. */}
-        <div aria-hidden className="pointer-events-none absolute inset-0">
-          <ParallaxLayer
-            progress={progress}
-            from={200}
-            to={-200}
-            scaleTo={1.35}
-            rotateTo={60}
-            className="absolute -top-24 -right-20 size-[28rem] "
-          />
-        </div>
+      <div className="relative">
+        {/*
+          THE FAR PLANE IS GONE, 2026-10-16, and it had already stopped
+          existing — this only deletes the box it left behind.
 
+          It was "one soft violet disc, drifting up slower than the page". The
+          spectrum discs were removed on 2026-10-15 ("hardly visible colours
+          ... I want them removed"), which took the disc's background class
+          with it and left an EMPTY `size-[28rem]` div behind, still animating.
+          Read off the rendered page at 1440: background-color
+          `rgba(0,0,0,0)`, background-image `none`, no shadow, no border, no
+          children, no text — 480x480 of nothing, on a transform that ran on
+          every scroll frame, with a `useScroll` subscription measuring the
+          section to feed it.
+
+          Six of these were left across this section, `Platform` and
+          `FinalCta`. Rashid: "take really long to load and gitters."
+
+          The `useSectionScroll` hook went with it, because this layer was its
+          only reader. `ProgressThread` below keeps its own, which drives
+          something you can actually see.
+        */}
         <Reveal className="relative">
           <Eyebrow>How it works</Eyebrow>
         </Reveal>
         <h2 className="font-brand relative mt-5 max-w-3xl text-[clamp(2rem,4.5vw,3.25rem)]">
-          <ScrollWords text="Three steps from application to earning creator" />
+          <SettleWords text="Three steps from application to earning creator" />
         </h2>
 
         <ProgressThread target={listRef} />
@@ -95,21 +96,19 @@ export function HowItWorks() {
             <li key={step.n} className="h-full">
               {/* Each card arrives from a different distance, so the row builds
                   left to right instead of landing as one slab. */}
-              <Reveal
-                depth={{
-                  rise: 90 + i * 60,
-                  tilt: 26,
-                  from: 0.84,
-                  roll: (i - 1) * 5,
-                  settle: 0.65,
-                }}
+              <SettleIn
+                rise={5.625 + i * 3.75}
+                tilt={26}
+                from={0.84}
+                roll={(i - 1) * 5}
+                delay={i * 0.09}
                 className="h-full"
               >
                 {/* The step number lifts off its own card; the heading and body
                     do not. Long copy on a raised plane is harder to read, and
                     lifting everything would defeat the parallax, which only
                     works because the layers move at different rates. */}
-                <TiltCard className="wx-neo-raised group ease-brand h-full rounded-2xl p-7 transition-colors duration-300">
+                <TiltCard className="wx-neo-raised-sm group ease-brand h-full rounded-2xl p-7 transition-colors duration-300">
                   <TiltLift depth={26}>
                     <span
                       /* A 44px numbered tile is a FILL carrying a glyph: his
@@ -123,7 +122,7 @@ export function HowItWorks() {
                   <h3 className="mt-6 text-xl font-bold">{step.title}</h3>
                   <p className="text-muted mt-3 leading-relaxed">{step.body}</p>
                 </TiltCard>
-              </Reveal>
+              </SettleIn>
             </li>
           ))}
         </ol>

@@ -10,6 +10,7 @@ import {
   History,
   Inbox,
   LayoutDashboard,
+  LifeBuoy,
   Link2,
   Megaphone,
   Store,
@@ -247,22 +248,39 @@ const ADMIN: NavGroup[] = [
 // Same two rules as ADMIN: no heading over one item, and none over the landing
 // screen. "Overview" sat above Home and "Account" above My profile, which is
 // two headings for two links.
+/*
+ * REGROUPED 2026-10-16, AND NOTHING WAS REMOVED.
+ *
+ * The redesign brief argued that eight flat items of visibly unequal
+ * importance should become four plus a menu. Rashid's answer was explicit —
+ * first "donot drop the brands hub tab keep it and edit it accordingly", then
+ * "keep all the current tabs please" — so all eight keep their own
+ * destination and their own route.
+ *
+ * What changes is the ARRANGEMENT, which is the half of that argument worth
+ * keeping: eight items under one heading called "Your work" told a creator
+ * nothing about which of them to open. They are now grouped by the question
+ * being asked, under the two rules already written at the top of this file:
+ *
+ *   - Home and My numbers sit first and unlabelled. Between them they are
+ *     most of why she opened the app, and "My numbers" describes itself as
+ *     "the moment the product exists for".
+ *   - "Earn" holds the three screens that answer "what can I do to make more":
+ *     Offers, Contests, and the board she is competing on.
+ *   - "Your work" is now only the two screens about work already done.
+ *   - My profile stays last and unlabelled.
+ */
 const CREATOR: NavGroup[] = [
   {
     label: '',
-    items: [{ label: 'Home', icon: LayoutDashboard, to: '/app' }],
+    items: [
+      { label: 'Home', icon: LayoutDashboard, to: '/app' },
+      { label: 'My numbers', icon: TrendingUp, to: '/app/numbers' },
+    ],
   },
   {
-    label: 'Your work',
+    label: 'Earn',
     items: [
-      { label: 'My numbers', icon: TrendingUp, to: '/app/numbers' },
-      {
-        label: 'Brand hubs',
-        icon: Store,
-        to: '/app/brands',
-        activePrefixes: ['/app/brands'],
-      },
-      { label: 'Leaderboards', icon: Trophy, to: '/app/leaderboards' },
       {
         label: 'Offers',
         icon: Gift,
@@ -275,11 +293,23 @@ const CREATOR: NavGroup[] = [
         to: '/app/contests',
         description: 'Everything running right now, from every brand you work with.',
       },
+      { label: 'Leaderboards', icon: Trophy, to: '/app/leaderboards' },
+    ],
+  },
+  {
+    label: 'Your work',
+    items: [
       {
         label: 'My content',
         icon: Video,
         to: '/app/content',
         description: 'Every video you have filmed for us, and what is still to come.',
+      },
+      {
+        label: 'Brand hubs',
+        icon: Store,
+        to: '/app/brands',
+        activePrefixes: ['/app/brands'],
       },
     ],
   },
@@ -291,6 +321,31 @@ const CREATOR: NavGroup[] = [
         icon: UserRound,
         to: '/app/profile',
         description: 'Only your name is yours to change; the rest is set by the Wurx team.',
+      },
+      /*
+       * SUPPORT, ADDED 2026-10-16, AND IT IS AN ADDITION.
+       *
+       * Both external reviewers asked for a help section and the app had
+       * none: a creator with a question about where a figure comes from had
+       * to leave the product. It sits here, beside My profile and under no
+       * heading, because it is the same kind of row — about her and her
+       * account rather than about earning — and because the rule at the top
+       * of this file says a heading has to earn its row, which "Help" over
+       * one link would not.
+       *
+       * NOTHING WAS REMOVED, RENAMED OR REORDERED to make room for it.
+       * Rashid, twice: "keep all the current tabs please". Eight rows became
+       * nine.
+       *
+       * Applicants get it too, by falling through `APPLICANT` below without
+       * being in `LOCKED_UNTIL_APPROVED` — deliberately, since somebody still
+       * in review is the person most likely to have a question.
+       */
+      {
+        label: 'Support',
+        icon: LifeBuoy,
+        to: '/app/support',
+        description: 'Where the numbers come from, and how to reach a person.',
       },
     ],
   },

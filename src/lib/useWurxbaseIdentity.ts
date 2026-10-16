@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { getSupabase } from '@/lib/supabase';
 import { useAuth, isCollabsOnlyRole, isStaffRole } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import {
@@ -9,6 +8,23 @@ import {
   type WurxBaseRole,
 } from '@/lib/wurxbase-identity';
 import { defaultFor } from '@/vendor/wurxbase/access';
+
+/*
+ * `@/lib/supabase` IS IMPORTED DYNAMICALLY, AND THAT IS ABOUT THE ENTRY CHUNK.
+ *
+ * `AppSidebar` imports this hook at the top level, and `router.tsx` imports
+ * `ShellLayout` -> `AppShell` -> `AppSidebar` at the top level too. So a
+ * top-level `getSupabase` here was the single edge that pulled
+ * `@supabase/supabase-js` (52.5 KB gzipped) — and, through `lib/env.ts`,
+ * Zod — into the chunk every visitor downloads before first paint, on the
+ * public landing page as much as on the dashboard. Measured 2026-10-16: it was
+ * 71 KB gzipped of the landing page's payload for code that page never calls.
+ *
+ * Nothing is lost by loading it here. `queryFn` is already async, it only runs
+ * for signed-in STAFF (see `enabled` below), and by then `AuthProvider` has
+ * the one shared client in memory, so this resolves from the module cache.
+ */
+const supabaseClient = () => import('@/lib/supabase').then((m) => m.getSupabase());
 
 /**
  * WHO THIS PERSON IS INSIDE PAID COLLABS — asked, not assumed.
@@ -82,7 +98,8 @@ export function useWurxbaseIdentity(): WurxbaseIdentity {
     enabled,
     staleTime: 10 * 60_000,
     queryFn: async () => {
-      const { data, error } = await getSupabase()
+      const supabase = await supabaseClient();
+      const { data, error } = await supabase
         .schema('wurxbase')
         .from('app_users')
         .select('id,display,role,custom_perms,hub_email')

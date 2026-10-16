@@ -1,12 +1,17 @@
 ﻿import { useMemo, useState } from 'react';
-import { m } from 'motion/react';
-import { Search } from 'lucide-react';
 import { ApplyDialog } from '@/components/creator/ApplyDialog';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
 import { OfferCard } from '@/components/creator/OfferCard';
+import {
+  EarnGrid,
+  EarnGroup,
+  EarnPanel,
+  EarnTileSkeleton,
+} from '@/components/creator/earn/EarnPanel';
+import { EarnFilters } from '@/components/creator/earn/EarnFilters';
+import { CreatorSearch } from '@/components/creator/SearchField';
+import { TileIn } from '@/components/creator/earn/TileIn';
 import { DataError, EmptyState } from '@/components/ui/DataState';
-import { Select } from '@/components/ui/Field';
-import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import {
@@ -28,28 +33,99 @@ import { useMyJobProgress } from '@/lib/work/job-progress';
  * app with. Before this, seeing everything meant remembering every brand and
  * visiting each hub in turn.
  *
- * Filtering happens in the browser rather than the database, and that is a
- * deliberate exception to the project's usual rule. The filters that matter
- * here are "am I in", "am I waiting", "have I not asked", and those live in a
- * different table from the offers themselves. Fetching the offers and their own
- * requests once, then sorting them out here, is one round trip instead of a
- * join a creator would feel on every tab.
+ * FILTERING HAPPENS IN THE BROWSER RATHER THAN THE DATABASE, AND THAT IS A
+ * DELIBERATE EXCEPTION TO THE PROJECT'S USUAL RULE. The grouping that matters
+ * here is "am I in", "am I waiting", "have I not asked", and those live in a
+ * different table from the offers themselves. Fetching the offers and her own
+ * requests once, then sorting them out here, is ONE ROUND TRIP instead of a
+ * join she would feel on every tap. §8.2 keeps this as it is.
+ *
+ * WHAT CHANGED, 2026-10-16, SECOND PASS — THE CONTROLS WENT AWAY.
+ *
+ * Rashid: "the tabs that are loaded with buttons and toggles or sub tabs make
+ * them simpler to use and ditch the buttons where you can for easier
+ * usability." This screen met a creator with five status chips, a brand select
+ * and a search box before a single offer. Three of those answered the same
+ * question — which offers do I care about — and two of them made her answer it
+ * before she could see anything.
+ *
+ *   THE CHIP ROW IS GONE, AND THE LIST IS GROUPED BY STATUS INSTEAD. The five
+ *   states are now five headed groups she scrolls past, each with the count the
+ *   chip used to carry. The information survives; the interaction does not. A
+ *   filter whose job is to hide four fifths of a short list is a question the
+ *   screen can answer for her, and a chip row cannot show her that she has one
+ *   offer waiting AND two open at the same time, which is the actual state of
+ *   her week.
+ *
+ *   THE BRAND SELECT IS GONE. It duplicated the search box exactly — the
+ *   search already matches a brand's name, and it always has (see `shown`
+ *   below). Two controls for one question, one of them a dropdown that had to
+ *   be opened to find out what was in it. Filtering to one brand is still
+ *   reachable two ways: type its name, or tap the brand chip on any card and
+ *   land in its hub, which is a place rather than a toggle.
+ *
+ *   WHAT IS LEFT IS ONE CONTROL: the search box. It earns it — it is the only
+ *   thing on the screen that can answer "where was that offer about the
+ *   serum", which neither a group nor a chip can.
+ *
+ * THIS IS NOT `/app/earn`. §8 asked for Offers and Contests to be merged behind
+ * a segmented control; Rashid overruled it — "keep all the current tabs please"
+ * — so the two routes and the two nav labels stay exactly as they are.
  */
-type Tab = 'all' | 'in' | 'waiting' | 'open';
 
-const TABS: { value: Tab; label: string }[] = [
-  { value: 'all', label: 'Everything' },
-  { value: 'in', label: 'You are in' },
-  { value: 'waiting', label: 'Waiting' },
-  { value: 'open', label: 'Not asked yet' },
+/**
+ * The five states, in the order a creator cares about them, as headed groups.
+ *
+ * ORDER IS BY WHAT SHE CAN DO ABOUT IT, not by how many there are.
+ *
+ *   accepted  money and work already in flight. Hers, and it has a deadline.
+ *   waiting   she has asked and is owed an answer. Nothing to do but worth
+ *             seeing, because "did I ask for that one?" is a real question.
+ *   yours     needs no application at all, so it is hers the moment she wants
+ *             it. Above the ones she has to ask for, because it is a shorter
+ *             path to the same thing.
+ *   open      the browse list. Usually the longest, which is exactly why it is
+ *             not first: a creator with work in flight should not scroll past
+ *             forty opportunities to find it.
+ *   declined  history. Last, never hidden. A rejection that appears nowhere is
+ *             the complaint both reviewers filed.
+ *
+ * `note` is one short line, and only where the group's name does not already
+ * say everything. A paragraph under every heading is the wall of text the
+ * grouping was meant to replace.
+ */
+const GROUPS: {
+  key: string;
+  title: string;
+  note?: string;
+  matches: (s: CreatorOfferState) => boolean;
+}[] = [
+  {
+    key: 'accepted',
+    title: 'Accepted',
+    note: 'Agreed with you. Where each one has got to, and what it pays.',
+    matches: (s) => s === 'in',
+  },
+  {
+    key: 'waiting',
+    title: 'Waiting on the team',
+    note: 'Asked for. The answer lands here on its own, no refresh needed.',
+    matches: (s) => s === 'waiting',
+  },
+  {
+    key: 'yours',
+    title: 'Yours already',
+    note: 'Nothing to apply for on these.',
+    matches: (s) => s === 'open',
+  },
+  { key: 'open', title: 'Open to apply for', matches: (s) => s === 'canApply' },
+  {
+    key: 'declined',
+    title: 'Declined',
+    note: 'Not taken forward this time. You can ask again on any of them.',
+    matches: (s) => s === 'declined',
+  },
 ];
-
-const MATCHES: Record<Tab, (s: CreatorOfferState) => boolean> = {
-  all: () => true,
-  in: (s) => s === 'in' || s === 'open',
-  waiting: (s) => s === 'waiting',
-  open: (s) => s === 'canApply' || s === 'declined',
-};
 
 export function Offers() {
   const { claims } = useAuth();
@@ -57,8 +133,6 @@ export function Offers() {
   const role = profile?.role ?? claims?.role;
   const approved = role === 'creator' || role === 'ops' || role === 'admin';
 
-  const [tab, setTab] = useState<Tab>('all');
-  const [brandId, setBrandId] = useState('');
   const [search, setSearch] = useState('');
   const [applyingTo, setApplyingTo] = useState<CreatorOfferRow | null>(null);
 
@@ -79,132 +153,71 @@ export function Offers() {
     return map;
   }, [requests]);
 
-  const brands = useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const o of offers ?? []) if (o.brand) seen.set(o.brand.id, o.brand.name);
-    return [...seen.entries()]
-      .map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [offers]);
-
-  const counts = useMemo(() => {
-    const c: Record<Tab, number> = { all: 0, in: 0, waiting: 0, open: 0 };
-    for (const o of offers ?? []) {
-      const s = stateFor(o, latest.get(o.id));
-      c.all += 1;
-      (Object.keys(MATCHES) as Tab[]).forEach((t) => {
-        if (t !== 'all' && MATCHES[t](s)) c[t] += 1;
-      });
-    }
-    return c;
-  }, [offers, latest]);
-
+  /**
+   * The search, and nothing else. It matches the brand's name as well as the
+   * offer's, which is why the brand dropdown above it was deleted rather than
+   * rebuilt.
+   */
   const shown = useMemo(() => {
     const needle = search.trim().toLowerCase();
-    return (offers ?? []).filter((o) => {
-      if (brandId && o.brand_id !== brandId) return false;
-      if (!MATCHES[tab](stateFor(o, latest.get(o.id)))) return false;
-      if (!needle) return true;
-      return (
+    if (!needle) return offers ?? [];
+    return (offers ?? []).filter(
+      (o) =>
         o.title.toLowerCase().includes(needle) ||
         (o.brand?.name ?? '').toLowerCase().includes(needle) ||
         (o.description ?? '').toLowerCase().includes(needle)
-      );
-    });
-  }, [offers, latest, tab, brandId, search]);
+    );
+  }, [offers, search]);
+
+  /*
+   * THE GROUPS, AND THEIR COUNTS, FROM THE LIST ON SCREEN.
+   *
+   * Counted after the search rather than before it, which is the opposite of
+   * what the chips did. A chip's count had to describe the whole list, because
+   * a count that changed when she changed chip would be counting what she could
+   * already see. A HEADING is different: it labels the rows directly beneath
+   * it, so "Open to apply for 3" under a search for "serum" has to mean three
+   * matching offers or it is simply wrong.
+   */
+  const groups = useMemo(() => {
+    const byKey = new Map<string, CreatorOfferRow[]>(GROUPS.map((g) => [g.key, []]));
+    for (const offer of shown) {
+      const state = stateFor(offer, latest.get(offer.id));
+      const group = GROUPS.find((g) => g.matches(state));
+      if (group) byKey.get(group.key)!.push(offer);
+    }
+    return GROUPS.map((g) => ({ ...g, offers: byKey.get(g.key)! })).filter(
+      (g) => g.offers.length > 0
+    );
+  }, [shown, latest]);
 
   return (
     <>
       {!approved ? (
         <LockedUntilApproved className="mt-6" />
       ) : (
-        <>
-          {/* ------------------------------------------------------- tabs -- */}
-          {/* Bleeds to the PAGE GUTTER, which is `px-3`. It was `-mx-4 px-4`,
-              4px wider than the gutter on each side, so the strip hung past the
-              viewport and took the whole page sideways with it: measured as 4px
-              of horizontal page scroll at 375, which the house rule forbids at
-              any width. The scroller clips its own contents; it just must not
-              be wider than the column it sits in. */}
-          <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">
-            <div
-              role="tablist"
-              aria-label="Filter offers"
-              className="bg-surface-2 flex min-w-max gap-1 rounded-xl p-[3px]"
-            >
-              {TABS.map((t) => (
-                <button
-                  key={t.value}
-                  role="tab"
-                  type="button"
-                  aria-selected={tab === t.value}
-                  onClick={() => setTab(t.value)}
-                  className={cn(
-                    'shrink-0 rounded-[9px] px-3.5 py-1.5 text-[0.8125rem] font-medium transition-colors duration-200',
-                    tab === t.value ? 'bg-text text-inverse' : 'text-muted hover:text-text'
-                  )}
-                >
-                  {t.label}
-                  {counts[t.value] > 0 ? (
-                    <span
-                      className={cn(
-                        'ml-1.5 text-[0.75rem]',
-                        tab === t.value ? 'text-inverse/70' : 'text-muted'
-                      )}
-                    >
-                      {counts[t.value]}
-                    </span>
-                  ) : null}
-                </button>
-              ))}
-            </div>
-          </div>
+        /*
+          ONE BLURRED PANEL FOR THE WHOLE SCREEN: the search and every group
+          live inside it, and every card in it is `wx-neo-raised-sm`. That is
+          Layer B of the three-layer blur budget — the top bar is A, a dialog is
+          C. See `src/components/creator/earn/EarnPanel.tsx`.
+        */
+        <EarnPanel>
+          <EarnFilters>
+            <CreatorSearch
+              value={search}
+              onChange={setSearch}
+              placeholder="Search offers or brands"
+              label="Search offers or brands"
+            />
+          </EarnFilters>
 
-          {/* ---------------------------------------------------- filters -- */}
-          <div className="mt-3 flex flex-wrap items-center gap-2.5 sm:gap-3">
-            <div className="relative min-w-0 flex-1 basis-52">
-              <Search
-                size={15}
-                aria-hidden
-                className="text-faint pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
-              />
-              <input
-                type="search"
-                name="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search offers or brands"
-                aria-label="Search offers or brands"
-                className="wx-neo-inset placeholder:text-faint focus-visible:ring-accent/50 h-11 w-full rounded-xl pr-3 pl-9 text-[0.8125rem] focus:outline-none focus-visible:ring-2 sm:h-9"
-              />
-            </div>
-
-            <label className="sr-only" htmlFor="brand-filter">
-              Filter by brand
-            </label>
-            <Select
-              id="brand-filter"
-              name="brand"
-              value={brandId}
-              onChange={(e) => setBrandId(e.target.value)}
-              className="h-11 basis-44 text-[0.8125rem] sm:h-9"
-            >
-              <option value="">All brands</option>
-              {brands.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </Select>
-          </div>
-
-          {/* ------------------------------------------------------- list -- */}
           {isLoading ? (
-            <ul className="mt-4 grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-3">
+            <EarnGrid min="20rem">
               {Array.from({ length: 6 }).map((_, i) => (
-                <li key={i} className="wx-skeleton h-52 rounded-xl" />
+                <EarnTileSkeleton key={i} className="h-[14rem]" />
               ))}
-            </ul>
+            </EarnGrid>
           ) : isError ? (
             <DataError
               className="mt-4"
@@ -212,7 +225,7 @@ export function Offers() {
               body="That is on our side, not yours. Nothing is lost, and trying again usually works."
               onRetry={() => refetch()}
             />
-          ) : shown.length === 0 ? (
+          ) : groups.length === 0 ? (
             <EmptyState
               className="mt-4"
               title={
@@ -223,32 +236,38 @@ export function Offers() {
               body={
                 (offers ?? []).length === 0
                   ? 'New offers land here.'
-                  : 'Try a different search, brand or tab.'
+                  : 'Try a different search. Offers, brands and the text of an offer are all searched.'
               }
             />
           ) : (
-            <ul className="mt-4 grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-3">
-              {shown.map((offer, i) => (
-                <m.li
-                  key={offer.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: Math.min(i, 6) * 0.04 }}
-                >
-                  <OfferCard
-                    offer={offer}
-                    request={latest.get(offer.id)}
-                    progress={progress?.get(latest.get(offer.id)?.id ?? '')}
-                    showBrand
-                    onApply={() => setApplyingTo(offer)}
-                  />
-                </m.li>
-              ))}
-            </ul>
+            groups.map((group) => (
+              <EarnGroup
+                key={group.key}
+                title={group.title}
+                count={group.offers.length}
+                note={group.note}
+              >
+                <EarnGrid min="20rem">
+                  {group.offers.map((offer, i) => (
+                    <TileIn key={offer.id} index={i}>
+                      <OfferCard
+                        offer={offer}
+                        request={latest.get(offer.id)}
+                        progress={progress?.get(latest.get(offer.id)?.id ?? '')}
+                        showBrand
+                        onApply={() => setApplyingTo(offer)}
+                      />
+                    </TileIn>
+                  ))}
+                </EarnGrid>
+              </EarnGroup>
+            ))
           )}
-        </>
+        </EarnPanel>
       )}
 
+      {/* Layer C, and only while it is open: a bottom sheet on a phone and a
+          centred dialog above `sm`, exactly as it was. */}
       {applyingTo ? (
         <ApplyDialog
           offer={applyingTo}

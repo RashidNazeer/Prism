@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PASSWORD_MAX, PASSWORD_MIN, isObviousPassword } from './password-rules';
 
 /**
  * Auth form contracts.
@@ -11,12 +12,18 @@ import { z } from 'zod';
  * one changes, change the other, or people will pass the form and be rejected
  * by the server, which is a maddening bug to report.
  */
-export const PASSWORD_MIN = 10;
+export { PASSWORD_MAX, PASSWORD_MIN } from './password-rules';
 
 const password = z
   .string()
   .min(PASSWORD_MIN, `Use at least ${PASSWORD_MIN} characters`)
-  .max(72, 'Passwords are limited to 72 characters');
+  .max(PASSWORD_MAX, `Passwords are limited to ${PASSWORD_MAX} characters`)
+  /* The same tightening the apply form got on 2026-10-16: a run, a repeat or a
+     name off the short list in `password-rules.ts` is refused. Nothing that
+     passed before stops passing unless it is one of those. */
+  .refine((v) => !isObviousPassword(v), {
+    message: 'That is too easy to guess. Three unrelated words work well.',
+  });
 
 const email = z
   .string()

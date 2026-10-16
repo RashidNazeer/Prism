@@ -77,6 +77,10 @@ try {
   await page.fill('input[name="tiktokHandle"]', `@${HANDLE}`);
   await page.fill('input[name="email"]', EMAIL);
   await page.fill('input[name="password"]', PASSWORD);
+  /* The apply form gained a confirm-password field on 2026-10-16. Without
+     this the form refuses to submit and every check below it fails on a
+     locator rather than on the behaviour it is meant to test. */
+  await page.fill('input[name="confirmPassword"]', PASSWORD);
   await page.selectOption('select[name="niche"]', 'Fitness & recovery');
   await page.selectOption('select[name="workedWithWurx"]', 'yes');
   await page.fill('textarea[name="videoLinks"]', VIDEOS);

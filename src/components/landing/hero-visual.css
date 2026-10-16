@@ -19,16 +19,29 @@
  */
 .wx-hero-visual {
   /*
-   * THE FULL WIDTH OF THE GRID TRACK, AND NO CAP. The bundle shipped
-   * `max-width: 680px` here, written for a standalone test page where this was
-   * the only thing on screen. In a grid cell a cap is a way for the element to
-   * end up narrower than its own column, which is exactly the failure Rashid
-   * asked to rule out — so there is no cap at all: the track decides, and
-   * `Container`'s `max-w-7xl` already stops the track growing without limit.
-   * Measured at 1440 and 1280: 518.41px element in a 518.41px track, 0px
-   * either side.
+   * THE TRACK DECIDES THE WIDTH FROM `lg`, WHERE THERE IS A TRACK TO SPEAK OF.
+   * The bundle shipped `max-width: 680px` here, written for a standalone test
+   * page where this was the only thing on screen; in a two-column grid cell a
+   * cap like that is a way for the element to end up narrower than its own
+   * column, which Rashid asked to rule out. So above `lg` there is still no
+   * cap and the track is the only thing deciding — see the note below the
+   * breakpoint, and the grid weighting in `Hero.tsx`.
+   *
+   * BELOW `lg` THERE IS NO TRACK, ONLY THE PAGE. The grid collapses to one
+   * column, so `width: 100%` is the whole content width — and on a tablet that
+   * is a 704px square of a frame that is 44% empty margin, measured at 768.
+   * The copy block above it is 463px tall there, so the decoration came out
+   * half again as tall as everything it is decorating.
+   *
+   * 26rem caps it at 416px, which is reached at about 700px of viewport and
+   * never exceeded. A phone is unaffected: at 390 the content width is 350px,
+   * well under the cap, so `width: 100%` still wins and the square is as big
+   * as it has always been there. `margin-inline: auto` centres it once the cap
+   * bites, which is the only sane place for a lone square in a single column.
    */
   width: 100%;
+  max-width: 26rem;
+  margin-inline: auto;
   aspect-ratio: 1 / 1;
 }
 
@@ -52,31 +65,40 @@
 @media (min-width: 64rem) {
   .wx-hero-visual {
     /*
-     * UP AND LEFT, 2026-10-15. Rashid, after the square grew 21%: "move the
-     * video window upward and toward left align it properly".
+     * IT SHARES A TOP EDGE WITH THE EYEBROW, 2026-10-16. Rashid: "align it
+     * with the text on left side of it."
      *
-     * It was 5rem down, set when the square was 518px and genuinely did sit
-     * above the copy. At 629px the same offset hung its base 166px below the
-     * chip row while its top was still level with the headline, so the whole
-     * block read low and right. 0.5rem puts its centre within a few pixels of
-     * the copy block's centre, which is what "aligned" means here.
+     * The grid is `items-start`, so the slot pins to the row's top at y=112
+     * while the copy column's own `lg:pt-6` starts its content at y=136.
+     * `1.5rem` is that same 24px, so the square's top edge and the "CREATOR
+     * APPLICATIONS OPEN" pill now begin on one line. Measured, not matched by
+     * eye — and it is the same number as the copy's padding rather than a
+     * tuned offset, so it cannot drift away from it.
      *
-     * LEFT IS A NEGATIVE START MARGIN, NOT A TRANSFORM. `width` is already
-     * 100% of the track, so the used width is settled before margins apply
-     * and a negative start margin simply slides the resolved box left -- no
-     * reflow, and no new containing block. A `translate` would have done the
-     * same thing visually while making this element the containing block for
-     * any fixed-position descendant, which is the failure GLASS_PLAN 1.2
-     * exists to prevent; it is not on the chain to `.wurxbase-root`, so it
-     * would not have been caught by the guard either.
+     * TOP EDGE RATHER THAN CENTRE LINE, and that is a decision about which
+     * one survives a resize. The copy block's height moves a long way with
+     * width — 519px of content at 1440, 576px at 1024, because the headline
+     * and the chip row rewrap — while the square's height is just its track.
+     * A shared centre line therefore means a different offset at every width
+     * and a visible drift between them; a shared top edge is one number that
+     * is right everywhere. With the square now 535px against 519px of copy at
+     * 1440, the two blocks end within 16px of each other anyway.
      *
-     * The 3rem it moves left is paid for out of the gutter and the copy
-     * column's slack, and the artwork's own baked-in margin means nothing
-     * comes near the text: measured at 1920, the painted phone starts well
-     * inside the frame.
+     * THE -3rem IS GONE. It was pulling the square left into the gutter to
+     * make it feel attached to the copy, and measured at 1440 it had gone past
+     * that: the square's left edge sat at x=651 while the copy column ended at
+     * x=659, so the decoration overlapped the text column by 8px. With the
+     * grid re-weighted in `Hero.tsx` the square is narrower than the copy
+     * column and needs no stealing; `gap-10` is the gutter, and it is now
+     * actually a gutter.
+     *
+     * The cap and the auto margins from the base rule are both dropped here:
+     * above `lg` the track is the cap, which is the rule this file has always
+     * followed in two columns.
      */
-    margin-block-start: 0.5rem;
-    margin-inline-start: -3rem;
+    max-width: none;
+    margin-inline: 0;
+    margin-block-start: 1.5rem;
   }
 }
 

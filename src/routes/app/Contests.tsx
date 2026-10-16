@@ -1,49 +1,32 @@
-﻿import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
-import { m } from 'motion/react';
+﻿import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  Check,
-  Clock,
-  ExternalLink,
-  Gauge,
-  Search,
-  Store,
-  Target,
-  Trophy,
-  X,
-  Ticket,
-  UserRound,
-} from 'lucide-react';
 import { ContestDashboard } from '@/components/creator/ContestDashboard';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
+import { ContestEntryDialog } from '@/components/creator/ContestEntryDialog';
+import { ContestProgressDialog } from '@/components/creator/ContestProgressDialog';
+import { Confetti } from '@/components/creator/Confetti';
 import {
-  ContestEntryDialog,
-  DeliverableRows,
-  type DeliverableLike,
-} from '@/components/creator/ContestEntryDialog';
-import {
-  ContestProgressDialog,
-  ContestProgressSummary,
-} from '@/components/creator/ContestProgressDialog';
-import { Button } from '@/components/ui/Button';
+  EarnGrid,
+  EarnGroup,
+  EarnPanel,
+  EarnTileSkeleton,
+} from '@/components/creator/earn/EarnPanel';
+import { EarnFilters } from '@/components/creator/earn/EarnFilters';
+import { CreatorSearch } from '@/components/creator/SearchField';
+import { ContestTile } from '@/components/creator/earn/ContestTile';
+import { TileIn } from '@/components/creator/earn/TileIn';
+import { ViewSwitch } from '@/components/creator/earn/ViewSwitch';
+import { useNow } from '@/components/creator/earn/use-now';
+import { useContestWin } from '@/components/creator/earn/useContestWin';
 import { DataError, EmptyState } from '@/components/ui/DataState';
-import { Input, Select } from '@/components/ui/Field';
-import { ContestStateChip } from '@/components/work/ContestStateChip';
-import { cn } from '@/lib/utils';
-import { NeoCardSkeleton } from '@/components/brand/NeoSkeleton';
-import { money } from '@/lib/money';
-import { formatDeadline } from '@/lib/contest-time';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import {
-  canEnter,
   doorOf,
   entryStateOf,
   isLiveForThem,
   useCreatorContests,
-  useEnterContest,
-  type ContestDoor,
   type CreatorContest,
 } from '@/lib/creator/useCreatorContests';
 
@@ -51,127 +34,91 @@ import {
  * Every contest open to this creator, across every brand.
  *
  * The brand hub answers "what is this brand running". This answers "what is on
- * anywhere", which is the question somebody opens the app with, and until today
- * a creator could not see a contest at all.
+ * anywhere", which is the question somebody opens the app with.
  *
- * ORDERED BY WHICH DEADLINE RUNS OUT FIRST, in the database, because that is
- * the only ordering that matches why somebody opened the screen.
+ * ORDERED BY WHICH DEADLINE RUNS OUT FIRST, IN THE DATABASE, because that is
+ * the only ordering that matches why somebody opened the screen. Nothing here
+ * re-sorts the list; the groups below preserve the order inside each one.
  *
- * TWO RULES DECIDE EVERYTHING BELOW.
+ * TWO RULES DECIDE EVERYTHING BELOW, AND NEITHER CHANGED IN THE REDESIGN.
  *
  * 1. A contest that is switched off or past its deadline closes the DOOR, never
  *    the WORK. Anybody already in still sees it, still delivers and still gets
  *    paid, so a contest somebody holds an entry in is NEVER dropped from this
- *    screen and never greyed out. Contests that are closed and that they are
+ *    screen and never greyed out. It is pinned to the TOP group, "Your
+ *    entries", whatever its door says. Contests that are closed and that she is
  *    not in are grouped separately at the bottom, so a shut door cannot sit in
- *    the middle of the ones they can still act on.
+ *    the middle of the ones she can still act on.
  *
  * 2. Nothing here says anything about another entrant: no handle, no name, no
- *    figure. Decision D7. There is no such column to read and the client must
- *    not reconstruct one.
+ *    figure. Decision D7. Her standing is anonymous — "You are #4 of 11" — and
+ *    `AnonymousStanding` is the only thing that draws it. This differs on
+ *    purpose from `/app/leaderboards`, which shows names.
  *
- * THERE ARE NO PLACINGS ANY MORE. A contest is a list of deliverables, and
- * anybody who reaches a target earns its reward, so nothing on this screen has
- * to imply that somebody has been ranked. "How it is judged" is gone with them.
+ * WHAT CHANGED, 2026-10-16 (redesign step 8). The screen was 1,356 lines in one
+ * file, and each contest was a 15-to-20rem photographic hero plus three tabs
+ * plus a facts band plus the action — about three screens per contest. It is
+ * now a thin orchestrator over `src/components/creator/earn/`: one blurred
+ * panel holding two groups of dense tiles, each tile carrying the brand, the
+ * name, the prize, a countdown ring, her bar and her standing, with everything
+ * else one tap down. Same data, same queries, same two rules.
  *
- * WHAT AN ENTERED CREATOR GETS HERE, and it is the point of the redesign: their
- * own claimed figures drawn against the target, what is still waiting to be
- * confirmed, and Update progress. The two bands are deliberately different
- * colours because an unconfirmed figure is a claim about money, and money is
- * only ever owed against a confirmed one.
- */
-
-type Tab = 'all' | 'in' | 'waiting' | 'open';
-
-const TABS: { value: Tab; label: string }[] = [
-  { value: 'all', label: 'Everything' },
-  { value: 'in', label: 'You are in' },
-  { value: 'waiting', label: 'Waiting' },
-  { value: 'open', label: 'Not entered yet' },
-];
-
-/*
- * The door chip is `src/components/work/ContestStateChip.tsx`, the same one the
- * two admin screens draw, so a creator and an admin looking at the same contest
- * read the same word for it. Rule C1 lives there: no stage token on a
- * lifecycle state, because open is not paid and a passed deadline is not money
- * owed to anybody.
- */
-
-/**
- * The ticking clock rule L5 asks for.
+ * WHAT CHANGED LATER THE SAME DAY — THE CONTROLS WENT AWAY.
  *
- * A deadline passing writes no row, so it fires no realtime event and
- * invalidates nothing. Without this, a creator who leaves the tab open across a
- * deadline keeps reading "Closes in 2 hours" and an Enter button on a contest
- * the database would refuse. `now` is passed into the helpers rather than read
- * inside them, which is also what makes them testable.
+ * Rashid: "the tabs that are loaded with buttons and toggles or sub tabs make
+ * them simpler to use and ditch the buttons where you can for easier
+ * usability." This was the worst screen in the app for it. Before a creator
+ * reached a single contest she met a view switch, a four-chip status filter, a
+ * brand dropdown and a search box — and THREE GROUPED HEADINGS underneath that
+ * already sorted the same contests by the same states the chips filtered by.
+ * The chips were a control asking her to do, by hand, the thing the screen was
+ * doing for her anyway.
+ *
+ *   THE CHIP ROW IS GONE. The groups were already here and already carried
+ *   their counts, so nothing had to be built to replace it: the four states are
+ *   four headed groups she scrolls. "You are in" and "Waiting" were two
+ *   separate chips over one group, and that distinction has always been on the
+ *   TILE as its status pill, which is where it belongs — a pill sits next to
+ *   the contest it describes, a chip makes you hide eleven others to find out.
+ *   The count of how many are still waiting rides on the group's own note.
+ *
+ *   THE BRAND DROPDOWN IS GONE. It duplicated the search box exactly: the
+ *   search has always matched a brand's name as well as a contest's. Browsing
+ *   one brand is still two taps — type its name, or tap the brand chip on any
+ *   tile and land in its hub, which is a place rather than a toggle.
+ *
+ *   THE VIEW SWITCH STAYS, as the one obvious control. "My progress" is a
+ *   genuinely different screen (`ContestDashboard`) over the same data, it is
+ *   the only route to it, and it keeps its state in the URL so it can be
+ *   linked and shared. Rashid's own rule twice over: the default is the JOB,
+ *   not the figures.
+ *
+ *   WHAT IS LEFT IS TWO CONTROLS: that switch, and the search box. The search
+ *   earns it — it is the only thing on the screen that can answer "where was
+ *   that contest with the serum", which no grouping can.
+ *
+ * THE ORDER IS STILL THE DATABASE'S. Deadline-first, `expires_at` ascending,
+ * decided in `useCreatorContests`. Every group below is a `filter` over that
+ * one array, and `filter` preserves order, so the contest closing soonest is
+ * still the first tile in whichever group it belongs to. NOTHING HERE SORTS.
+ *
+ * THIS IS NOT `/app/earn`. §8 asked for Contests and Offers to be merged behind
+ * a segmented control; Rashid overruled it — "keep all the current tabs please"
+ * — so the two routes, the two nav labels and the two screens stay as they are.
  */
-function useNow(everyMs = 30_000): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), everyMs);
-    return () => clearInterval(t);
-  }, [everyMs]);
-  return now;
-}
-
-/** Two views, one URL. The list is the job; the dashboard is the summary. */
-function ViewSwitch({
-  view,
-  onChange,
-}: {
-  view: 'contests' | 'progress';
-  onChange: (next: 'contests' | 'progress') => void;
-}) {
-  const options = [
-    { key: 'contests' as const, label: 'Contests' },
-    { key: 'progress' as const, label: 'My progress' },
-  ];
-  return (
-    <div
-      role="tablist"
-      aria-label="Contests view"
-      className="wx-neo-inset mt-5 flex w-fit gap-1 rounded-xl p-1"
-    >
-      {options.map((o) => {
-        const active = view === o.key;
-        return (
-          <button
-            key={o.key}
-            type="button"
-            role="tab"
-            aria-selected={active}
-            onClick={() => onChange(o.key)}
-            className={cn(
-              'ease-brand min-h-[44px] rounded-lg px-4 text-[0.8125rem] font-semibold transition-colors',
-              active ? 'wx-neo-raised-sm text-text' : 'text-muted hover:text-text'
-            )}
-          >
-            {o.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 /**
  * `hubBrandId` renders this same screen inside a Brand Hub, showing only that
  * brand's contests.
  *
- * NOT THE SAME THING AS THE `brandId` STATE BELOW, which is the creator's own
- * "Brand" dropdown on the standalone screen. One is where the screen is, the
- * other is what the person filtered it to. Inside a hub the dropdown is
- * removed: the hub is already one brand, and a brand filter on a page that is
- * a brand invites picking a second one.
+ * It is WHERE THE SCREEN IS, and it is now the only brand narrowing there is:
+ * the creator's own brand dropdown is deleted, so there is no longer a second,
+ * conflicting answer to "which brand am I looking at" on a page that is a
+ * brand.
  *
- * NEITHER PLACE DRAWS A TITLE ANY MORE. The standalone screen used to open
- * with an `<h1>` saying "Contests" and a line under it, a few pixels below a
- * lit menu row already saying Contests. Rashid: "write this everything. line in
- * header and remove Contests ... as we did in admin side to reduce the space".
- * The line now lives on the nav item and is drawn by the top bar, so it costs
- * no vertical space at all. Inside a hub the rail names the section instead.
+ * NEITHER PLACE DRAWS A TITLE. The section name lives on the nav item and is
+ * drawn by the top bar, so it costs no vertical space here; inside a hub the
+ * rail names the section instead.
  */
 export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
   const { claims } = useAuth();
@@ -184,20 +131,11 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
    * find out. `is_approved_creator()` admits ops and admin so staff can BROWSE
    * a contest, while `apply_for_contest` asserts `creator` exactly (rule E6).
    * Without this a staff member reading their own product gets a primary Enter
-   * button whose only possible outcome is a refusal, which is the same bug as
-   * offering Withdraw once work has been filed.
+   * button whose only possible outcome is a refusal.
    */
   const isCreator = role === 'creator';
 
-  /*
-   * Two views, and the choice lives in the URL, which is the house pattern the
-   * creator home and both content screens already use.
-   *
-   * THE DEFAULT IS THE LIST, not the dashboard. Rashid has asked for this twice
-   * now: the default section is the JOB, not the summary. Somebody opening
-   * Contests is looking for something to enter or something to file, and a wall
-   * of their own figures would push that below the fold.
-   */
+  /* Two views, and the choice lives in the URL, which is the house pattern. */
   const [params, setParams] = useSearchParams();
   const view = params.get('view') === 'progress' ? 'progress' : 'contests';
   const setView = (next: 'contests' | 'progress') =>
@@ -211,8 +149,6 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
       { replace: true }
     );
 
-  const [tab, setTab] = useState<Tab>('all');
-  const [brandId, setBrandId] = useState('');
   const [search, setSearch] = useState('');
   const [entering, setEntering] = useState<CreatorContest | null>(null);
   /*
@@ -224,9 +160,9 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
 
   const now = useNow();
   /*
-   * Their claimed and confirmed figures ride along with their entries, in the
-   * same query, because they are the same question: what is true about my own
-   * entries right now. So a card that has an entry to draw always has the
+   * Her claimed and confirmed figures ride along with her entries, in the same
+   * query, because they are the same question: what is true about my own
+   * entries right now. So a tile that has an entry to draw always has the
    * figures to draw on it, and there is no third loading state on this screen.
    */
   const { contests, isLoading, isError } = useCreatorContests(hubBrandId);
@@ -238,63 +174,56 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
       queryClient.invalidateQueries({ queryKey: ['creator', 'contest-entries'] }),
     ]);
 
-  const brands = useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const c of contests) if (c.brand) seen.set(c.brand.id, c.brand.name);
-    return [...seen.entries()]
-      .map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [contests]);
-
-  /*
-   * Annotated as a Record so every arm has ONE signature. Without it the index
-   * access `matches[tab]` is a union that includes `() => boolean`, and TypeScript
-   * intersects the parameters of a union of call signatures, so passing a
-   * contest to it stops compiling. The offers screen carries the same
-   * annotation for the same reason.
+  /**
+   * THE SEARCH, AND NOTHING ELSE.
+   *
+   * It matches the brand's name as well as the contest's, which is why the
+   * brand dropdown above it was deleted rather than rebuilt — it answered a
+   * question this box was already answering.
+   *
+   * ORDER IS UNTOUCHED. `filter` preserves it, and it is the database's
+   * deadline-first order.
    */
-  const matches = useMemo<Record<Tab, (c: CreatorContest) => boolean>>(
-    () => ({
-      all: () => true,
-      in: (c) => entryStateOf(c) === 'in',
-      waiting: (c) => entryStateOf(c) === 'waiting',
-      open: (c) => canEnter(c, now),
-    }),
-    [now]
-  );
-
-  const counts = useMemo(() => {
-    const c: Record<Tab, number> = { all: 0, in: 0, waiting: 0, open: 0 };
-    for (const contest of contests) {
-      c.all += 1;
-      if (matches.in(contest)) c.in += 1;
-      if (matches.waiting(contest)) c.waiting += 1;
-      if (matches.open(contest)) c.open += 1;
-    }
-    return c;
-  }, [contests, matches]);
-
   const shown = useMemo(() => {
     const needle = search.trim().toLowerCase();
-    return contests.filter((c) => {
-      if (brandId && c.brandId !== brandId) return false;
-      if (!matches[tab](c)) return false;
-      if (!needle) return true;
-      return (
+    if (!needle) return contests;
+    return contests.filter(
+      (c) =>
         c.name.toLowerCase().includes(needle) ||
         (c.brand?.name ?? '').toLowerCase().includes(needle) ||
         (c.description ?? '').toLowerCase().includes(needle)
-      );
-    });
-  }, [contests, brandId, tab, search, matches]);
+    );
+  }, [contests, search]);
 
   /*
-   * The split, and the one line that carries rule 1 above: a contest is only
-   * moved out of the live list when the door is shut AND they are not in it.
-   * Their own live work never leaves the top of the screen.
+   * THE FOUR GROUPS, and the lines that carry rule 1 above.
+   *
+   * `isLiveForThem` is 'in' or 'waiting', so HER OWN WORK IS PINNED TO THE TOP
+   * GROUP WHATEVER THE DOOR SAYS, and a contest is only moved down to the shut
+   * list when the door is closed AND she is not in it. A contest she holds an
+   * entry in is never dropped, never greyed and never reordered out of reach:
+   * that is the rule the whole screen exists to keep.
+   *
+   * COUNTED AFTER THE SEARCH, which is the opposite of what the chips did. A
+   * chip's count had to describe the whole list, because a count that moved
+   * when she changed chip would be counting what she could already see. A
+   * HEADING is different: it labels the rows directly beneath it, so "Open to
+   * join 3" under a search for "serum" has to mean three matching contests or
+   * it is simply wrong.
+   *
+   * `declined` IS ITS OWN GROUP, 2026-10-16, for the same reason the offers
+   * screen grew one: a rejected entry used to sit inside "Open to join" while
+   * its own tile said "Not this time", so the two disagreed about the one state
+   * a creator most needs told plainly. It stays above the shut list, because a
+   * declined entry on an open contest is something she can still act on — the
+   * tile offers "Ask again".
    */
-  const live = shown.filter((c) => doorOf(c, now) === 'open' || isLiveForThem(c));
-  const shut = shown.filter((c) => doorOf(c, now) !== 'open' && !isLiveForThem(c));
+  const entries = shown.filter((c) => isLiveForThem(c));
+  const waiting = entries.filter((c) => entryStateOf(c) === 'waiting').length;
+  const open = shown.filter((c) => !isLiveForThem(c) && doorOf(c, now) === 'open');
+  const openToJoin = open.filter((c) => entryStateOf(c) !== 'declined');
+  const declined = open.filter((c) => entryStateOf(c) === 'declined');
+  const shut = shown.filter((c) => !isLiveForThem(c) && doorOf(c, now) !== 'open');
 
   /*
    * The open panel reads the CURRENT row rather than the copy that was captured
@@ -307,6 +236,25 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
     ? (contests.find((c) => c.id === updating.id) ?? updating)
     : null;
 
+  /*
+   * A REAL WIN, AND ONLY A REAL WIN. Fires when a `contest_awards` row appears
+   * while she is on this screen — money a person has confirmed — never on an
+   * entry, never on a claim, and never on first paint. See `useContestWin`.
+   */
+  const celebrating = useContestWin(contests);
+
+  const tile = (contest: CreatorContest, i: number) => (
+    <TileIn key={contest.id} index={i}>
+      <ContestTile
+        contest={contest}
+        now={now}
+        canEnterAtAll={isCreator}
+        onEnter={() => setEntering(contest)}
+        onUpdateProgress={() => setUpdating(contest)}
+      />
+    </TileIn>
+  );
+
   return (
     <>
       {!approved ? (
@@ -315,14 +263,16 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
         <>
           <ViewSwitch view={view} onChange={setView} />
           {isLoading ? (
-            <ul className="mt-6 grid gap-4">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <NeoCardSkeleton key={i} as="li" className="h-64" />
-              ))}
-            </ul>
+            <EarnPanel>
+              <EarnGrid min="30rem">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <EarnTileSkeleton key={i} className="h-64" />
+                ))}
+              </EarnGrid>
+            </EarnPanel>
           ) : isError ? (
             <DataError
-              className="mt-6"
+              className="mt-4"
               title="We could not load your progress"
               body="That is on our side, not yours. Your figures are safe with the team."
               onRetry={retry}
@@ -335,185 +285,132 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
         <>
           <ViewSwitch view={view} onChange={setView} />
 
-          {/* ------------------------------------------------------- tabs -- */}
-          {/* `-mx-3 px-3`, matching the page gutter. See the same fix in
-              Offers.tsx: bleeding by 4 against a 3 gutter put 4px of
-              horizontal scroll on the page at 375. */}
-          <div className="-mx-3 mt-5 overflow-x-auto px-3 sm:mx-0 sm:px-0">
-            <div
-              role="tablist"
-              aria-label="Filter contests"
-              className="wx-neo-inset flex min-w-max gap-1 rounded-xl p-1"
-            >
-              {TABS.map((t) => (
-                <button
-                  key={t.value}
-                  role="tab"
-                  type="button"
-                  aria-selected={tab === t.value}
-                  onClick={() => setTab(t.value)}
-                  className={cn(
-                    'ease-brand inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-lg px-3.5 text-[0.8125rem] font-medium transition-colors',
-                    tab === t.value
-                      ? 'wx-neo-raised-sm text-text'
-                      : 'text-muted hover:text-text'
-                  )}
-                >
-                  {t.label}
-                  {counts[t.value] > 0 ? (
-                    <span
-                      className={cn(
-                        'ml-1.5 font-mono text-[0.75rem]',
-                        tab === t.value ? 'text-accent' : 'text-muted'
-                      )}
-                    >
-                      {counts[t.value]}
-                    </span>
-                  ) : null}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* ---------------------------------------------------- filters -- */}
-          <div className="mt-3 flex flex-wrap items-center gap-2.5 sm:gap-3">
-            <div className="relative min-w-0 flex-1 basis-52">
-              <Search
-                size={15}
-                aria-hidden
-                className="text-faint pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
-              />
-              <Input
-                type="search"
-                name="search"
+          {/*
+            ONE BLURRED PANEL FOR THE WHOLE SCREEN. The controls and all three
+            groups live inside it, and every tile in it is `wx-neo-raised-sm`:
+            the same material with no blur. See `EarnPanel` for why.
+          */}
+          <EarnPanel>
+            {/* ONE CONTROL IN HERE NOW. The chips and the brand dropdown are
+                gone; the groups below do their work without being asked. */}
+            <EarnFilters>
+              <CreatorSearch
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={setSearch}
                 placeholder="Search contests or brands"
-                aria-label="Search contests or brands"
-                className="h-[44px] pl-9 text-[0.8125rem]"
+                label="Search contests or brands"
               />
-            </div>
+            </EarnFilters>
 
-            {/*
-              No brand dropdown inside a Brand Hub. The page IS a brand, so the
-              only thing this control could do there is take the creator to a
-              different one from inside this one's tabs.
-            */}
-            {hubBrandId ? null : (
+            {isLoading ? (
+              <EarnGrid>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <EarnTileSkeleton key={i} className="h-[18rem]" />
+                ))}
+              </EarnGrid>
+            ) : isError ? (
+              <DataError
+                className="mt-4"
+                title="We could not load the contests"
+                body="That is on our side, not yours. Nothing you have entered or earned is lost."
+                onRetry={retry}
+              />
+            ) : shown.length === 0 ? (
+              contests.length === 0 ? (
+                <EmptyState
+                  className="mt-4"
+                  title="No contests open right now"
+                  body="A contest has a deadline and rewards for hitting targets. When a brand you work with runs one, it lands here."
+                />
+              ) : (
+                <EmptyState
+                  className="mt-4"
+                  title="Nothing matches that"
+                  body="Try a different search. A contest's name, its brand and its description are all searched."
+                />
+              )
+            ) : (
               <>
-                <label className="sr-only" htmlFor="contest-brand-filter">
-                  Filter by brand
-                </label>
-                <Select
-                  id="contest-brand-filter"
-                  name="brand"
-                  value={brandId}
-                  onChange={(e) => setBrandId(e.target.value)}
-                  className="h-[44px] basis-44 text-[0.8125rem]"
-                >
-                  <option value="">All brands</option>
-                  {brands.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </Select>
+                {/*
+                  YOUR ENTRIES FIRST. §8.1, and rule 1: her own work never
+                  leaves the top of the screen, whatever the door says.
+
+                  ONE GROUP, NOT TWO. "You are in" and "Waiting" were separate
+                  chips, and splitting them into separate groups would have
+                  moved a contest she is waiting on BELOW one she is already in
+                  — which is the same work at the same deadline, filed under a
+                  decision the team has not made yet. The distinction is on
+                  each tile's own status pill, and the count of how many are
+                  still waiting is on this note, so nothing the chips said is
+                  no longer said.
+                */}
+                {entries.length > 0 ? (
+                  <EarnGroup
+                    title="Your entries"
+                    count={entries.length}
+                    note={
+                      waiting === 0
+                        ? undefined
+                        : waiting === entries.length
+                          ? 'Waiting on the team to let you in. The answer lands here on its own, no refresh needed.'
+                          : `${waiting} of these ${waiting === 1 ? 'is' : 'are'} still waiting on the team.`
+                    }
+                  >
+                    <EarnGrid>{entries.map(tile)}</EarnGrid>
+                  </EarnGroup>
+                ) : null}
+
+                {openToJoin.length > 0 ? (
+                  <EarnGroup title="Open to join" count={openToJoin.length}>
+                    <EarnGrid>{openToJoin.map(tile)}</EarnGrid>
+                  </EarnGroup>
+                ) : null}
+
+                {/* Still open, and she was turned down for it. Her tile offers
+                    "Ask again", so this is above the shut list, not in it. */}
+                {declined.length > 0 ? (
+                  <EarnGroup
+                    title="Declined"
+                    count={declined.length}
+                    note="Not taken forward this time. These are still open, so you can ask again on any of them."
+                  >
+                    <EarnGrid>{declined.map(tile)}</EarnGrid>
+                  </EarnGroup>
+                ) : null}
+
+                {/*
+                  Deliberately does NOT promise these are kept. Once a contest
+                  shuts, row security only keeps returning it to somebody who
+                  holds an entry row on it, so what lands here is the ones she
+                  asked about and was not in, plus anything that ran out while
+                  this tab was open.
+                */}
+                {shut.length > 0 ? (
+                  <EarnGroup
+                    title="Closed, and you were not in these"
+                    count={shut.length}
+                    note="Their door has shut and you are not in them, so there is nothing to do here."
+                  >
+                    <EarnGrid>{shut.map(tile)}</EarnGrid>
+                  </EarnGroup>
+                ) : null}
               </>
             )}
-          </div>
-
-          {/* ------------------------------------------------------- list -- */}
-          {isLoading ? (
-            <ul className="mt-4 grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,28rem),1fr))] gap-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <NeoCardSkeleton key={i} as="li" className="h-[32rem]" />
-              ))}
-            </ul>
-          ) : isError ? (
-            <DataError
-              className="mt-4"
-              title="We could not load the contests"
-              body="That is on our side, not yours. Nothing you have entered or earned is lost."
-              onRetry={retry}
-            />
-          ) : shown.length === 0 ? (
-            contests.length === 0 ? (
-              <EmptyState
-                className="mt-4"
-                title="No contests open right now"
-                body="A contest has a deadline and rewards for hitting targets. When a brand you work with runs one, it lands here."
-              />
-            ) : (
-              <EmptyState
-                className="mt-4"
-                title="Nothing matches that"
-                body="Try a different search, another brand, or a different tab."
-              />
-            )
-          ) : (
-            <>
-              {live.length > 0 ? (
-                <ul className="mt-4 grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,28rem),1fr))] gap-4">
-                  {live.map((contest, i) => (
-                    <m.li
-                      key={contest.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: Math.min(i, 6) * 0.04 }}
-                    >
-                      <ContestCard
-                        contest={contest}
-                        now={now}
-                        canEnterAtAll={isCreator}
-                        onEnter={() => setEntering(contest)}
-                        onUpdateProgress={() => setUpdating(contest)}
-                      />
-                    </m.li>
-                  ))}
-                </ul>
-              ) : null}
-
-              {shut.length > 0 ? (
-                <section className="mt-8">
-                  <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
-                    Closed, and you were not in these
-                  </h2>
-                  {/*
-                    Deliberately does NOT promise these are kept. Once a contest
-                    shuts, row security only keeps returning it to somebody who
-                    holds an entry row on it, so what lands here is the ones a
-                    creator asked about and was not in, plus anything that ran
-                    out while this tab was open.
-                  */}
-                  <p className="text-faint mt-1.5 max-w-prose text-[0.8125rem] leading-relaxed">
-                    Their door has shut and you are not in them, so there is nothing to do here.
-                  </p>
-                  <ul className="mt-3 grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,28rem),1fr))] gap-4">
-                    {shut.map((contest) => (
-                      <li key={contest.id}>
-                        <ContestCard
-                          contest={contest}
-                          now={now}
-                          canEnterAtAll={isCreator}
-                          onEnter={() => setEntering(contest)}
-                          onUpdateProgress={() => setUpdating(contest)}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ) : null}
-            </>
-          )}
+          </EarnPanel>
         </>
       )}
 
+      {/*
+        Layer C of the blur budget, and only while it is open. Both of these are
+        a bottom sheet on a phone and a centred dialog on a desktop already, and
+        that behaviour is kept exactly as it was.
+      */}
       {entering ? (
         <ContestEntryDialog contest={entering} onClose={() => setEntering(null)} />
       ) : null}
 
       {/*
-        Only ever opened from a card whose entry is approved, so the entry is
+        Only ever opened from a tile whose entry is approved, so the entry is
         there. `submit_contest_progress` matches the entry on creator_id as well
         as on its id besides, so an entry id that arrived any other way is
         refused as "that is not one of your contests".
@@ -521,836 +418,8 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
       {updatingNow?.entry ? (
         <ContestProgressDialog contest={updatingNow} onClose={() => setUpdating(null)} />
       ) : null}
+
+      {celebrating ? <Confetti /> : null}
     </>
-  );
-}
-
-/* ------------------------------------------------------------- one card -- */
-
-/**
- * One contest, as a creator sees it.
- *
- * REBUILT 2026-08-22 from Rashid's design, and from what he said about the old
- * one: *"contest is not a normal thing dude it must represent a brand with
- * images emojis taglines"*. It was a plain bordered box with a heading and some
- * labelled rows — the same card an offer got, holding a different noun.
- *
- * FOUR BANDS, top to bottom: the HERO, what you can EARN, the FACTS about it,
- * and WHY JOIN. The action sits under all of it, unchanged, because where a
- * creator stands is decided by their own entry and not by how the card looks.
- *
- * IT HAS TO BE RIGHT WITH NO ARTWORK AT ALL, and that is not a nicety: every
- * contest on this platform had a null `banner_url` until an admin uploaded one,
- * because the column existed for nine days with no control to fill it. So the
- * hero falls back to an accent-on-dark gradient built from tokens, the side
- * panel drops its picture and keeps its ticks, and nothing shifts position.
- *
- * THE SCRIM IS NOT DECORATION. The name, the description and the countdown are
- * white text sitting ON a photograph an admin chose, and no rule can stop
- * somebody uploading a bright one. A left-to-right gradient from near-opaque to
- * transparent keeps the text readable whatever arrives, which is what lets the
- * artwork be picked on whether it looks good.
- */
-function ContestCard({
-  contest,
-  now,
-  canEnterAtAll,
-  onEnter,
-  onUpdateProgress,
-}: {
-  contest: CreatorContest;
-  now: number;
-  /** False for staff, who may read a contest but may never enter one. Rule E6. */
-  canEnterAtAll: boolean;
-  onEnter: () => void;
-  onUpdateProgress: () => void;
-}) {
-  const door = doorOf(contest, now);
-  const state = entryStateOf(contest);
-  const inIt = state === 'in';
-
-  /*
-   * ONCE THEY ARE IN, THE CARD QUOTES WHAT THEY WERE PROMISED.
-   *
-   * `contest_entry_terms` is copied at approval and never read live from the
-   * contest again, so an admin adding, retiring or re-pricing a deliverable
-   * afterwards legitimately differs from what this entrant holds. Printing
-   * today's rows above a bar counting against a frozen target is one card
-   * saying two things at once, which is the exact bug the offers card had to be
-   * fixed for.
-   */
-  const promised = inIt && contest.terms.length > 0;
-  const rows: DeliverableLike[] = promised ? contest.terms : contest.deliverables;
-
-  // One reason per line, as typed, capped at four. The cap is here rather than
-  // on the column so a long list is trimmed on screen instead of being refused
-  // at save time.
-  const perks = (contest.perks ?? '')
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .slice(0, 4);
-
-  /*
-   * THE BODY IS TABS NOW, NOT A STACK.
-   *
-   * Rashid: "how boring ... user needs to scroll a lot and all is messy please
-   * organize". Every block was printed one under the other, so a single contest
-   * ran to about three screens: rewards, then three facts, then why join, then
-   * the products and the brief, then the button. A creator scrolled past two of
-   * those to reach the one they wanted, on every contest in the list.
-   *
-   * They are now three panels in the same box. The card keeps ONE height, the
-   * action stays pinned under it, and nothing is hidden that was not already
-   * below the fold.
-   *
-   * ONLY THE TABS THAT HAVE SOMETHING BEHIND THEM. A contest with no perks
-   * should not grow an empty "Why join" tab: an empty tab is worse than a
-   * missing one, because it costs a click to find out it was nothing.
-   */
-  const tabs = [
-    rows.length > 0 && { key: 'earn', label: promised ? 'Promised' : 'Rewards' },
-    { key: 'details', label: 'Details' },
-    perks.length > 0 && { key: 'why', label: 'Why join' },
-  ].filter(Boolean) as { key: string; label: string }[];
-
-  const [panel, setPanel] = useState(tabs[0]?.key ?? 'details');
-  const shown = tabs.some((t) => t.key === panel) ? panel : (tabs[0]?.key ?? 'details');
-
-  return (
-    <div className="wx-neo-raised flex h-full flex-col overflow-hidden rounded-xl">
-      {/* ------------------------------------------------------------ hero -- */}
-      <div className="relative isolate min-h-[15rem] overflow-hidden sm:min-h-[17rem] lg:min-h-[20rem]">
-        {contest.bannerUrl ? (
-          <img
-            src={contest.bannerUrl}
-            alt=""
-            className="absolute inset-0 -z-10 h-full w-full object-cover [object-position:22%_58%] sm:[object-position:center_58%]"
-            loading="lazy"
-            decoding="async"
-          />
-        ) : (
-          <div
-            aria-hidden
-            className="from-accent/25 via-surface-2 to-surface-1 absolute inset-0 -z-10 bg-gradient-to-br"
-          />
-        )}
-
-        {/*
-          Two scrims, not one. The horizontal one keeps the left column dark
-          enough for white text however bright the photograph is; the vertical
-          one stops the countdown along the bottom edge floating on a highlight.
-        */}
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/70 to-black/55 sm:bg-gradient-to-r sm:from-black/60 sm:via-black/10 sm:via-45% sm:to-transparent sm:to-62%"
-        />
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10 bg-gradient-to-t from-black/50 via-transparent to-transparent"
-        />
-
-        <div
-          className="flex h-full flex-col gap-3 p-5 sm:p-6 lg:max-w-[85%]"
-          style={{ textShadow: '0 1px 12px rgba(0,0,0,0.65), 0 1px 2px rgba(0,0,0,0.5)' }}
-        >
-          {/* The brand, on its own mark. A contest belongs to a brand before it
-              belongs to us, which is the whole of what Rashid was asking for. */}
-          {contest.brand ? (
-            <Link
-              to={`/app/brands/${contest.brand.slug}`}
-              className="inline-flex w-fit items-center gap-2 rounded-full bg-white/12 px-2.5 py-1.5 text-white/90 backdrop-blur-sm transition-colors hover:bg-white/20"
-            >
-              <span className="grid size-5 shrink-0 place-items-center overflow-hidden rounded-full bg-white/20">
-                {contest.brand.logoUrl ? (
-                  <img src={contest.brand.logoUrl} alt="" className="size-full object-cover" />
-                ) : (
-                  <Store size={11} aria-hidden />
-                )}
-              </span>
-              <span className="truncate font-mono text-[0.625rem] font-semibold tracking-[0.12em] uppercase">
-                {contest.brand.name}
-              </span>
-            </Link>
-          ) : null}
-
-          <div className="flex flex-wrap items-center gap-2">
-            <ContestStateChip state={door} />
-            {door === 'open' ? (
-              <span className="font-mono text-[0.625rem] font-semibold tracking-[0.12em] text-white/70 uppercase">
-                {contest.needsAdminApproval ? 'Wurx approves entries' : 'Anyone can enter'}
-              </span>
-            ) : null}
-          </div>
-
-          <h3 className="font-brand max-w-2xl text-[1.5rem] leading-tight font-bold text-white sm:text-[1.75rem]">
-            {contest.name}
-          </h3>
-
-          {contest.description ? (
-            <p className="line-clamp-3 max-w-2xl text-[0.875rem] leading-relaxed text-white/75">
-              {contest.description}
-            </p>
-          ) : null}
-
-          {/* -------------------------------------------------- countdown -- */}
-          {door === 'open' ? (
-            <div className="mt-auto border-t border-white/15 pt-4">
-              <span className="font-mono text-[0.625rem] font-semibold tracking-[0.14em] text-white/60 uppercase">
-                Closes in
-              </span>
-              <div className="mt-2 flex flex-wrap items-end gap-5">
-                <Countdown to={contest.expiresAt} now={now} />
-                {/* The exact moment, in the zone the admin set it in. Rule L6:
-                    a deadline that renders in the reader's zone closes at three
-                    different times for three people. */}
-                <span className="text-[0.75rem] text-white/60">
-                  {formatDeadline(contest.expiresAt, contest.expiresAtTimezone)}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-auto border-t border-white/15 pt-4">
-              <span className="text-[0.8125rem] text-white/70">
-                {formatDeadline(contest.expiresAt, contest.expiresAtTimezone)}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ------------------------------------------------------------ tabs -- */}
-      {/*
-        TRANSPARENT TABS, which Rashid asked for by name. No filled pills and no
-        box around the row: the underline carries which one is open, so the row
-        reads as part of the card rather than as a control panel bolted onto it.
-        It scrolls sideways inside itself on a narrow screen rather than
-        wrapping to two lines or pushing the card wide.
-      */}
-      <div className="border-line -mb-px overflow-x-auto border-t px-5 sm:px-6">
-        <div role="tablist" aria-label="Contest detail" className="flex min-w-max gap-1">
-          {tabs.map((t) => {
-            const active = t.key === shown;
-            return (
-              <button
-                key={t.key}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => setPanel(t.key)}
-                className={cn(
-                  'relative min-h-[44px] shrink-0 px-3 text-[0.8125rem] font-semibold transition-colors',
-                  active ? 'text-text' : 'text-muted hover:text-text'
-                )}
-              >
-                {t.label}
-                {active ? (
-                  <span
-                    aria-hidden
-                    className="bg-accent absolute inset-x-2 -bottom-px h-[2px] rounded-full"
-                  />
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/*
-        ONE MINIMUM HEIGHT ACROSS THE PANELS. Without it the whole card jumps
-        as somebody moves between a three-row reward list and a one-line perk,
-        and in a grid of cards that drags every neighbour with it.
-      */}
-      <div className="border-line min-h-[11rem] border-t p-5 sm:p-6">
-        {shown === 'earn' && rows.length > 0 ? (
-          <DeliverableRows rows={rows} currency={contest.currency} />
-        ) : null}
-
-        {shown === 'details' ? (
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Fact icon={<Store size={15} aria-hidden />} label="Brand">
-              {contest.brand?.name ?? 'Unknown brand'}
-            </Fact>
-            <Fact icon={<Ticket size={15} aria-hidden />} label="Entries accepted">
-              {door === 'open'
-                ? 'Open to enter'
-                : door === 'off'
-                  ? 'Not running'
-                  : door === 'settled'
-                    ? 'Settled'
-                    : door === 'cancelled'
-                      ? 'Cancelled'
-                      : 'Closed'}
-            </Fact>
-            <Fact icon={<UserRound size={15} aria-hidden />} label="Approved by">
-              {contest.needsAdminApproval ? 'The Wurx team' : 'Nobody, it is automatic'}
-            </Fact>
-          </div>
-        ) : null}
-
-        {shown === 'why' && perks.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-6">
-            <div className="min-w-[14rem] flex-1">
-              <ul className="flex flex-col gap-2">
-                {perks.map((line) => (
-                  <li key={line} className="flex items-start gap-2.5">
-                    <Check size={15} aria-hidden className="text-accent mt-0.5 shrink-0" />
-                    <span className="text-muted text-[0.875rem] leading-relaxed">{line}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            {contest.cardImageUrl ? (
-              <img
-                src={contest.cardImageUrl}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                className="h-32 w-32 shrink-0 rounded-xl object-cover sm:h-40 sm:w-40"
-              />
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-
-      {/* --------------------------------------------------- everything else -- */}
-      <div className="border-line flex flex-col gap-3 border-t p-5 sm:p-6">
-        {contest.products.length > 0 ? (
-          <p className="text-muted text-[0.8125rem] leading-relaxed">
-            <span className="text-text font-semibold">Products: </span>
-            {contest.products.map((p) => p.productName).join(', ')}
-          </p>
-        ) : null}
-
-        {contest.briefUrl ? (
-          <a
-            href={contest.briefUrl}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="text-accent inline-flex min-h-[44px] items-center gap-1.5 self-start text-[0.8125rem] font-semibold hover:underline"
-          >
-            Read the full brief
-            <ExternalLink size={13} aria-hidden />
-          </a>
-        ) : null}
-
-        <div className="mt-auto">
-          <ContestAction
-            contest={contest}
-            door={door}
-            canEnterAtAll={canEnterAtAll}
-            onEnter={onEnter}
-            onUpdateProgress={onUpdateProgress}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * The countdown, in four boxes.
- *
- * It ticks from `now`, which the page already recomputes on an interval for the
- * "time left" copy, so this adds no timer of its own. `everyMs` on that hook is
- * 30 seconds, which is why the seconds box is deliberately not drawn: a seconds
- * figure that only moves twice a minute reads as a frozen clock, which is worse
- * than not showing one.
- */
-function Countdown({ to, now }: { to: string; now: number }) {
-  const ms = Math.max(0, new Date(to).getTime() - now);
-  const days = Math.floor(ms / 86_400_000);
-  const hours = Math.floor((ms % 86_400_000) / 3_600_000);
-  const mins = Math.floor((ms % 3_600_000) / 60_000);
-
-  const boxes = [
-    { value: days, label: days === 1 ? 'Day' : 'Days' },
-    { value: hours, label: hours === 1 ? 'Hour' : 'Hours' },
-    { value: mins, label: mins === 1 ? 'Min' : 'Mins' },
-  ];
-
-  return (
-    <span className="flex items-end gap-4">
-      {boxes.map((b) => (
-        <span key={b.label} className="flex flex-col">
-          <span className="font-brand wx-numeric text-[1.75rem] leading-none font-bold text-white">
-            {b.value}
-          </span>
-          <span className="mt-1 font-mono text-[0.625rem] tracking-[0.12em] text-white/60 uppercase">
-            {b.label}
-          </span>
-        </span>
-      ))}
-    </span>
-  );
-}
-
-/** One labelled fact in the band under the hero. */
-function Fact({
-  icon,
-  label,
-  children,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start gap-2.5">
-      <span className="wx-neo-inset text-accent mt-0.5 grid size-7 shrink-0 place-items-center rounded-full">
-        {icon}
-      </span>
-      <span className="min-w-0">
-        <span className="text-faint block font-mono text-[0.625rem] font-semibold tracking-[0.12em] uppercase">
-          {label}
-        </span>
-        <span className="text-text mt-0.5 block truncate text-[0.875rem] font-medium">
-          {children}
-        </span>
-      </span>
-    </div>
-  );
-}
-
-/* ----------------------------------------------------- the bottom of it -- */
-
-/**
- * Where they stand, and the only part of the card that differs between them.
- *
- * The door is decided LAST, after their own entry, and that order is load
- * bearing. The offers card shipped the other way round once: it asked what the
- * offer said about itself before asking what the creator had already been
- * approved for, and an admin flipping one switch hid the stage, the tracker and
- * the money of somebody already filming. Live work wins here for the same
- * reason.
- */
-function ContestAction({
-  contest,
-  door,
-  canEnterAtAll,
-  onEnter,
-  onUpdateProgress,
-}: {
-  contest: CreatorContest;
-  door: ContestDoor;
-  canEnterAtAll: boolean;
-  onEnter: () => void;
-  onUpdateProgress: () => void;
-}) {
-  const state = entryStateOf(contest);
-  const act = useEnterContest();
-  const busy = act.isPending;
-
-  const refusal = act.error ? (act.error as Error).message : '';
-
-  if (state === 'in') {
-    /*
-     * How many of their VIDEOS have been watched, which is a different question
-     * from how far along their figures are. Contest videos are reviewed one by
-     * one, so "1 to redo" has to survive on this card even when the deliverable
-     * bars above it are full.
-     */
-    const filmed = contest.progress;
-    /*
-     * WHAT IS ON OFFER, NEVER WHAT IS OWED, and the redesign made saying so
-     * necessary rather than tidy. `committed_amount` used to be the fixed
-     * rewards only; with placings gone it is the sum of EVERY reward on the
-     * contest, so it is now a figure for reaching every target rather than one
-     * for turning up. It is labelled, and it is deliberately NOT drawn in the
-     * stage-paid token: that token means the team has checked it and it pays,
-     * which is exactly what this figure is not. Money is owed against a
-     * CONFIRMED progress figure and nothing else.
-     */
-    const amount = contest.entry?.committedAmount ?? null;
-
-    /*
-     * WITHDRAWING IS OFFERED ONLY WHILE THERE IS NOTHING TO LOSE. The database
-     * refuses once anything has been filed or awarded, with a sentence saying
-     * so, and this hides the control in the same case rather than offering a
-     * button whose only outcome is a refusal.
-     */
-    const canWithdraw =
-      (filmed?.posted ?? 0) === 0 && !contest.settledAt && !contest.cancelledAt;
-
-    return (
-      <div>
-        <div className="bg-stage-paid-soft rounded-xl px-3.5 py-3">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <span className="text-stage-paid text-[0.875rem] font-semibold">You are in</span>
-            {amount !== null ? (
-              <span className="text-muted text-[0.75rem]">
-                <span className="wx-numeric font-display text-text text-[0.9375rem] font-semibold">
-                  {money(amount, contest.entry?.currency ?? contest.currency)}
-                </span>{' '}
-                on offer here
-              </span>
-            ) : null}
-          </div>
-          <p className="text-muted mt-1 text-[0.8125rem] leading-relaxed">
-            {door === 'cancelled'
-              ? 'This contest was called off. Nothing you were promised is taken away.'
-              : door === 'settled'
-                ? 'This one has been settled. Your outcome is on your entry.'
-                : door === 'open'
-                  ? 'Your place is held. Film what it asks for before the deadline.'
-                  : 'Closed to new entries. Your work still pays exactly what you were promised.'}
-          </p>
-          {contest.cancelMessage ? (
-            <p className="text-muted mt-2 text-[0.8125rem] leading-relaxed">
-              {contest.cancelMessage}
-            </p>
-          ) : null}
-        </div>
-
-        {/*
-          THEIR FIGURES AGAINST THE TARGET, which is the whole of what an
-          entered creator comes back to this screen for. No loading state: the
-          entry, its terms, its claims and its confirmed totals all arrive in
-          the same query, so a card with an entry to draw always has these.
-        */}
-        <ContestProgressSummary contest={contest} className="border-line mt-4 border-t pt-4" />
-
-        {/*
-          UPDATE PROGRESS. Offered while the contest can still take one: the
-          database refuses a claim on a settled or cancelled contest, and a
-          button whose only outcome is a refusal is the same bug as offering
-          Withdraw once work has been filed.
-
-          IT SAYS SO WHEN SOMETHING IS ALREADY WAITING. Only one claim can be
-          with the team at a time, so the panel behind it has nothing to fill in
-          in that case, and a button that promised a form would be a dead end.
-        */}
-        {!contest.settledAt && !contest.cancelledAt ? (
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className="mt-3 min-h-[44px] w-full sm:w-auto"
-            onClick={onUpdateProgress}
-          >
-            <Gauge size={15} aria-hidden />
-            {contest.pendingClaim ? 'See what is with the team' : 'Update progress'}
-          </Button>
-        ) : null}
-
-        {filmed ? <VideosFiled progress={filmed} /> : null}
-
-        {contest.entry?.decisionNote ? (
-          <p className="text-muted mt-2 text-[0.8125rem]">{contest.entry.decisionNote}</p>
-        ) : null}
-
-        {!contest.settledAt && !contest.cancelledAt && contest.entry ? (
-          <TargetControl entryId={contest.entry.id} target={contest.target} />
-        ) : null}
-
-        {canWithdraw ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mt-2 min-h-[44px]"
-            disabled={busy}
-            onClick={() =>
-              act.mutate({ action: 'contest.withdraw', entryId: contest.entry!.id })
-            }
-          >
-            {busy ? 'Pulling out...' : 'Pull out of this one'}
-          </Button>
-        ) : null}
-
-        {refusal ? (
-          <p role="alert" className="text-danger mt-2 text-[0.75rem]">
-            {refusal}
-          </p>
-        ) : null}
-      </div>
-    );
-  }
-
-  if (state === 'waiting') {
-    return (
-      <div>
-        <Note tone="pending" icon={<Clock size={15} aria-hidden />}>
-          <span className="font-semibold">With the team</span>
-          <span className="text-muted block text-[0.8125rem]">
-            Somebody is reading your entry. The answer appears here, no refresh needed.
-          </span>
-        </Note>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mt-2 min-h-[44px]"
-          disabled={busy}
-          onClick={() => act.mutate({ action: 'contest.withdraw', entryId: contest.entry!.id })}
-        >
-          {busy ? 'Withdrawing...' : 'Withdraw'}
-        </Button>
-        {refusal ? (
-          <p role="alert" className="text-danger mt-2 text-[0.75rem]">
-            {refusal}
-          </p>
-        ) : null}
-      </div>
-    );
-  }
-
-  if (state === 'declined') {
-    return (
-      <div>
-        <Note tone="danger" icon={<X size={15} aria-hidden />}>
-          <span className="font-semibold">Not this time</span>
-          {contest.entry?.decisionNote ? (
-            <span className="text-muted mt-0.5 block text-[0.8125rem]">
-              {contest.entry.decisionNote}
-            </span>
-          ) : null}
-        </Note>
-        {door === 'open' && canEnterAtAll ? (
-          <Button variant="secondary" size="sm" className="mt-2 min-h-[44px]" onClick={onEnter}>
-            Ask again
-          </Button>
-        ) : null}
-      </div>
-    );
-  }
-
-  if (state === 'withdrawn') {
-    return (
-      <div>
-        <Note tone="neutral" icon={<Check size={15} aria-hidden />}>
-          <span className="font-semibold">You pulled out of this one</span>
-        </Note>
-        {door === 'open' && canEnterAtAll ? (
-          <Button variant="secondary" size="sm" className="mt-2 min-h-[44px]" onClick={onEnter}>
-            Enter after all
-          </Button>
-        ) : null}
-      </div>
-    );
-  }
-
-  if (door !== 'open') {
-    return (
-      <p className="text-muted wx-neo-inset rounded-xl px-3.5 py-3 text-[0.8125rem] leading-relaxed">
-        {door === 'cancelled'
-          ? 'This contest was called off.'
-          : door === 'settled'
-            ? 'This one is over and has been settled.'
-            : 'Entries are closed on this one.'}
-      </p>
-    );
-  }
-
-  /*
-   * Staff, reading the product as a creator sees it. The database would refuse
-   * them at `assert_active_creator`, so this says why instead of handing them a
-   * button that can only fail.
-   */
-  if (!canEnterAtAll) {
-    return (
-      <p className="text-muted wx-neo-inset rounded-xl px-3.5 py-3 text-[0.8125rem] leading-relaxed">
-        This is the creator view. Entering a contest is something only a creator account does.
-      </p>
-    );
-  }
-
-  return (
-    <Button className="w-full sm:w-auto" onClick={onEnter}>
-      <Trophy size={16} aria-hidden />
-      {contest.needsAdminApproval ? 'Ask to enter' : 'Enter this contest'}
-    </Button>
-  );
-}
-
-/* --------------------------------------------------------- how far along -- */
-
-/**
- * What has happened to their videos, in one line.
- *
- * NO SECOND BAR. The deliverable bars above already draw a video count against
- * a target, and this counts the same videos through a different lens: how many
- * have been WATCHED. Two bars an inch apart, showing two different numbers for
- * what looks like one question, is the card saying two things at once, which is
- * exactly the bug the offers card had to be fixed for. So this is a sentence.
- *
- * Every number here is about ONE person's entry, which is the property that
- * makes `contest_entry_progress` safe to read at all: a count over one
- * creator's own rows is complete rather than silently narrowed. Nothing here
- * knows another entrant exists.
- */
-function VideosFiled({ progress }: { progress: NonNullable<CreatorContest['progress']> }) {
-  const { approved, waiting, needsAnotherTake, posted } = progress;
-
-  // Nothing filed is nothing to report, and a row of zeros would read as a
-  // problem rather than as a beginning.
-  if (posted === 0) return null;
-
-  const parts: string[] = [];
-  if (approved > 0) parts.push(`${approved} counted`);
-  if (waiting > 0) parts.push(`${waiting} with the team`);
-  if (needsAnotherTake > 0) parts.push(`${needsAnotherTake} to redo`);
-
-  return (
-    <p className="text-muted mt-3 text-[0.8125rem]">
-      <span className="text-text font-semibold">
-        Your {posted === 1 ? 'video' : 'videos'}:{' '}
-      </span>
-      {parts.length > 0 ? parts.join(', ') : `${posted} sent`}
-    </p>
-  );
-}
-
-/* ------------------------------------------------------ their own number -- */
-
-/**
- * The private target, and the one number in this feature that STAFF CANNOT
- * READ.
- *
- * It exists because every fact about other entrants is off this screen by
- * decision D7, so this is what is left to compete against. It lives in its own
- * table with one policy on it, the creator's own, and no staff policy of any
- * kind. `set_contest_entry_target` writes no audit row and no history row for
- * the same reason: both of those tables are staff readable, and a private
- * number with a trail somebody else can read is not private.
- *
- * The sentence under the box is therefore literally true, and it has to stay
- * that way. If this ever becomes visible to staff, the sentence is a lie told
- * by us, on our own screen, to the person whose transparency is the product.
- */
-function TargetControl({ entryId, target }: { entryId: string; target: number | null }) {
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(target === null ? '' : String(target));
-  const [error, setError] = useState('');
-  const act = useEnterContest();
-  const busy = act.isPending;
-
-  async function save(next: number | null) {
-    setError('');
-    try {
-      await act.mutateAsync({ action: 'contest.target', entryId, target: next });
-      setOpen(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'That did not save');
-    }
-  }
-
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => {
-          setValue(target === null ? '' : String(target));
-          setOpen(true);
-        }}
-        className="text-muted hover:text-accent ease-brand mt-3 flex min-h-[44px] w-full items-center gap-2 text-left text-[0.8125rem] transition-colors"
-      >
-        <Target size={14} aria-hidden className="shrink-0" />
-        {target === null ? (
-          <span>Set yourself a target</span>
-        ) : (
-          <span>
-            Your own target: <span className="text-text font-mono font-semibold">{target}</span>{' '}
-            approved {target === 1 ? 'video' : 'videos'}
-          </span>
-        )}
-      </button>
-    );
-  }
-
-  return (
-    <div className="wx-neo-inset mt-3 rounded-xl px-3.5 py-3">
-      <label
-        htmlFor={`target-${entryId}`}
-        className="text-muted block text-[0.8125rem] font-semibold"
-      >
-        Your own target
-      </label>
-      <p className="text-faint mt-1 text-[0.75rem] leading-relaxed">
-        How many approved videos you are going for. Nobody else sees this, not even the team,
-        and you can change it any time.
-      </p>
-      <div className="mt-2.5 flex flex-wrap items-center gap-2">
-        <Input
-          id={`target-${entryId}`}
-          inputMode="numeric"
-          value={value}
-          disabled={busy}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="e.g. 6"
-          className="h-[44px] w-24 text-[0.875rem]"
-        />
-        <Button
-          type="button"
-          size="sm"
-          className="min-h-[44px]"
-          disabled={busy}
-          onClick={() => {
-            const n = Number(value.trim());
-            if (!Number.isInteger(n) || n < 1 || n > 1000) {
-              setError('Give a whole number between 1 and 1000');
-              return;
-            }
-            void save(n);
-          }}
-        >
-          {busy ? 'Saving...' : 'Save'}
-        </Button>
-        {target !== null ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="min-h-[44px]"
-            disabled={busy}
-            onClick={() => void save(null)}
-          >
-            Clear it
-          </Button>
-        ) : null}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="min-h-[44px]"
-          disabled={busy}
-          onClick={() => {
-            setOpen(false);
-            setError('');
-          }}
-        >
-          Cancel
-        </Button>
-      </div>
-      {error ? (
-        <p role="alert" className="text-danger mt-2 text-[0.75rem]">
-          {error}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------- fixtures -- */
-
-function Note({
-  tone,
-  icon,
-  children,
-}: {
-  tone: 'pending' | 'danger' | 'neutral';
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <p
-      className={cn(
-        'flex items-start gap-2.5 rounded-xl px-3.5 py-3 text-[0.875rem]',
-        tone === 'pending' && 'bg-stage-due-soft text-stage-due',
-        tone === 'danger' && 'bg-danger-soft text-danger',
-        tone === 'neutral' && 'wx-neo-inset text-text'
-      )}
-    >
-      <span className="mt-0.5 shrink-0">{icon}</span>
-      <span className="min-w-0">{children}</span>
-    </p>
   );
 }

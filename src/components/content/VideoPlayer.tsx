@@ -33,7 +33,13 @@ export function VideoPlayer({ row, onClose }: { row: ContentRow; onClose: () => 
         aria-hidden
         tabIndex={-1}
         onClick={onClose}
-        className="fixed inset-0 cursor-default bg-black/70 backdrop-blur-sm"
+        /* THE SANCTIONED SCRIM. `bg-black/70 backdrop-blur-sm` blurred here
+           AND `wx-neo-raised` blurred on the panel below, which is two layers
+           from one overlay — three with the top bar and four with the phone
+           bottom bar, against a cap of three. The pair below is the project's
+           own answer: the scrim blurs, the panel does not. global.css: "chrome
+           (1) + scrim (2) + card (0) = 2". */
+        className="wx-glass-scrim fixed inset-0 cursor-default"
       />
 
       <m.div
@@ -41,7 +47,7 @@ export function VideoPlayer({ row, onClose }: { row: ContentRow; onClose: () => 
         initial={{ opacity: 0, y: 16, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-        className="wx-neo-raised relative flex max-h-[100dvh] w-full max-w-[420px] flex-col overflow-y-auto rounded-t-[20px] p-4 sm:max-h-[calc(100dvh-3rem)] sm:rounded-xl"
+        className="wx-glass-modal relative flex max-h-[100dvh] w-full max-w-[420px] flex-col overflow-y-auto rounded-t-[20px] p-4 sm:max-h-[calc(100dvh-3rem)] sm:rounded-xl"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">

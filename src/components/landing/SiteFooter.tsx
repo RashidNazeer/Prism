@@ -1,7 +1,6 @@
 import { Link } from 'react-router';
 import { PrismMark } from '@/components/brand/PrismMark';
 import { Container } from '@/components/layout/Section';
-import { focusApplyForm } from '@/lib/focus-apply';
 
 /*
  * THE FOOTER IS A GLASS PANEL NOW, not a hairline rule on bare ground.
@@ -93,13 +92,28 @@ export function SiteFooter() {
                   </a>
                 </li>
                 <li>
-                  <button
-                    type="button"
-                    onClick={() => focusApplyForm() || window.location.assign('/apply')}
+                  {/*
+                    A LINK, LIKE EVERY OTHER ITEM IN THIS COLUMN.
+
+                    It was a `<button>` running
+                    `focusApplyForm() || window.location.assign('/apply')`.
+                    Two faults in one line: the form is only mounted on
+                    `/apply` now, so the first half never succeeds from the
+                    footer; and `window.location.assign` is a FULL PAGE RELOAD
+                    out of a single-page app, which threw away the router, the
+                    auth session cache and a second of the visitor's time, in a
+                    list where every neighbour is an instant client-side
+                    navigation.
+
+                    Rashid: "ditch the buttons where you can." A destination is
+                    a link.
+                  */}
+                  <Link
+                    to="/apply"
                     className="text-muted hover:text-accent focus-visible:text-accent inline-flex items-center transition-colors max-lg:min-h-11 pointer-coarse:min-h-11"
                   >
                     Apply
-                  </button>
+                  </Link>
                 </li>
                 <li>
                   <Link

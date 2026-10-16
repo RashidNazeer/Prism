@@ -22,7 +22,7 @@ export function HowItWorksPage() {
         <ol className="grid gap-5 lg:grid-cols-2">
           {CREATOR_JOURNEY.map((step, i) => (
             <Reveal key={step.n} delay={i * 0.06}>
-              <li className="wx-neo-raised ease-brand h-full rounded-2xl p-7 transition-colors duration-300">
+              <li className="wx-neo-raised-sm ease-brand h-full rounded-2xl p-7 transition-colors duration-300">
                 <span
                   /* Same numbered tile as the landing page: FILL + ink. */
                   className="wx-numeric font-display grid size-[44px] place-items-center rounded-xl [background-color:var(--wx-accent-fill)] text-sm font-bold [color:var(--wx-on-accent-fill)]"

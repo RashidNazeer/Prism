@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { Link, Navigate, useParams, useSearchParams } from 'react-router';
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
 import { ArrowRight, Flag, Package, Ticket, Trophy } from 'lucide-react';
 import { DataError, EmptyState } from '@/components/ui/DataState';
@@ -7,7 +7,7 @@ import { useMyStanding } from '@/lib/creator/useLeaderboard';
 import { ApplyDialog } from '@/components/creator/ApplyDialog';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
 import { OfferCard } from '@/components/creator/OfferCard';
-import { ButtonLink } from '@/components/ui/Button';
+import { Button, ButtonLink } from '@/components/ui/Button';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import {
@@ -28,8 +28,8 @@ import { useMyJobProgress } from '@/lib/work/job-progress';
 import { cn } from '@/lib/utils';
 import { NeoCardSkeleton } from '@/components/brand/NeoSkeleton';
 import { useTheme } from '@/components/theme/theme-context';
-import { BrandChip, BrandWorldHero } from '@/components/brand/BrandWorldHero';
-import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar';
+import { BrandChip } from '@/components/brand/BrandWorldHero';
+import { FilterTab, FilterTabs } from '@/components/layout/FilterBar';
 import {
   DEFAULT_BRAND_COLOR,
   deriveBrandTheme,
@@ -37,13 +37,15 @@ import {
   readBrandThemeConfig,
 } from '@/lib/brand-theme';
 import { useCreatorBrands } from '@/lib/creator/useCreatorBrands';
+import { BrandHeader } from '@/components/creator/brand/BrandHeader';
+import { useBrandMiniStats } from '@/components/creator/brand/useBrandMiniStats';
 
 /*
  * THE THREE REAL SECTIONS ARE THE SAME SCREENS THE SIDEBAR ALREADY OPENS, each
  * handed this hub's brand id. Not a copy: one screen, two places it lives, so a
  * fix to the numbers can never land in one and miss the other.
  *
- * Lazily, and this matters. My numbers pulls in the chart, and Leaderboards
+ * Lazily, and this matters. My numbers pulls in the charts, and Leaderboards
  * pulls in avatars and signed storage URLs. Importing them at the top would
  * fold all three into the Brand Hub chunk, so a creator browsing a brand's
  * offers would download the whole numbers screen to look at a product list.
@@ -104,7 +106,7 @@ function WarmJobProgress() {
 /** Skeletons, never a bare spinner. Roughly the shape of what is arriving. */
 function SectionLoading() {
   return (
-    <div className="mt-6 flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
           <NeoCardSkeleton key={i} className="h-24" />
@@ -118,15 +120,27 @@ function SectionLoading() {
 /**
  * A Brand Hub, as a creator sees it.
  *
- * Two sections are real: what the brand is and what it sells, and the offers on
- * the table. The rest are listed and plainly marked, the same honesty the
- * sidebar uses, because a creator should be able to see the shape of what is
- * coming without being able to click into an empty room.
+ * REDESIGNED 2026-10-16 (§10 of the redesign brief). The half-screen brand
+ * hero is gone and a BRAND HEADER takes its place: logo, name, and three mini
+ * stats for HER on this brand, each with its own sparkline. The sections are a
+ * SEGMENTED CONTROL at the foot of that header rather than a filter row of
+ * their own, which is one fewer blurred surface and one fewer row of chrome
+ * between a creator and the thing she came to read.
  *
- * It opens on Overview rather than Offers, which is the opposite of the admin
- * hub. An admin arrives at a brand to do a job. A creator arrives to decide
- * whether they want to work with it at all, and that decision is made on the
- * brand and its products.
+ * It still opens on Overview rather than Offers, which is the opposite of the
+ * admin hub. An admin arrives at a brand to do a job. A creator arrives to
+ * decide whether they want to work with it at all, and that decision is made
+ * on the brand and its products.
+ *
+ * EVERY SECTION THAT EXISTED STILL EXISTS. The brief's §10 describes three
+ * sections; the code has five real ones, and the code is right about what is
+ * here today — Overview and Offers carry the products and the offers, which
+ * live nowhere else in the creator app. Nothing a creator could reach before
+ * this redesign is unreachable after it.
+ *
+ * WHAT IT NEVER READS: the client behind a brand, or the budget allocated to
+ * it. Both live in `brand_commercials` behind a staff-only policy, and no hook
+ * this file touches selects either column.
  */
 const SECTIONS = [
   { key: 'overview', label: 'Overview' },
@@ -167,6 +181,7 @@ export function BrandHub() {
     refetch: refetchBrands,
   } = useCreatorBrands();
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
   const requested = params.get('section') ?? 'overview';
   const section = BUILT.has(requested) ? requested : 'overview';
 
@@ -189,11 +204,63 @@ export function BrandHub() {
   } = useCreatorProducts(brand?.id);
   const { data: mine } = useMyOfferApplications(brand?.id);
 
+  /*
+   * SWITCHING SECTION KEEPS THE PERIOD AND LOCKS THE BRAND.
+   *
+   * The period (`?period`, `?from`, `?to`) is carried across, because somebody
+   * who chose 7 days to read their numbers has not changed their mind about the
+   * window by tapping Contests and back.
+   *
+   * `?brand` is this hub's brand, and it is set rather than carried: My numbers
+   * no longer takes a `brandId` prop — §6 moved its period and brand into the
+   * URL so Home and that screen share one state — so the URL IS how the brand
+   * filter is locked now. See the effect below, which holds the lock.
+   */
   const go = (key: string) => {
     const p = new URLSearchParams();
+    for (const carry of ['period', 'from', 'to']) {
+      const value = params.get(carry);
+      if (value) p.set(carry, value);
+    }
     if (key !== 'overview') p.set('section', key);
+    if (key === 'numbers' && brand) p.set('brand', brand.id);
     setParams(p, { replace: true });
   };
+
+  /*
+   * THE BRAND FILTER STAYS LOCKED TO THE HUB YOU ARE STANDING IN.
+   *
+   * My numbers carries its own brand chip, and inside a hub that chip would
+   * otherwise leave the header saying one brand while the figures under it
+   * describe another. Two answers, depending on which half of the screen you
+   * read.
+   *
+   * So: a brand that is not this one snaps back — unless it is a brand she has
+   * a hub for, in which case the chip is honoured by MOVING to that hub, which
+   * is the one reading where both halves end up telling the truth.
+   */
+  useEffect(() => {
+    if (section !== 'numbers' || !brand) return;
+    const picked = params.get('brand');
+    if (picked === brand.id) return;
+
+    /* A LINK CAN ARRIVE BEFORE THE HUB LIST DOES. Snapping back while the list
+       is still in flight would throw away a brand she deliberately linked to,
+       so a pick we cannot place yet waits for the list rather than losing. */
+    if (picked && !brands) return;
+
+    const other = picked ? brands?.find((b) => b.id === picked) : undefined;
+    if (other) {
+      navigate(`/app/brands/${other.slug}?section=numbers&brand=${other.id}`, {
+        replace: true,
+      });
+      return;
+    }
+
+    const p = new URLSearchParams(params);
+    p.set('brand', brand.id);
+    setParams(p, { replace: true });
+  }, [section, brand, brands, params, setParams, navigate]);
 
   /*
    * NO SLUG MEANS "TAKE ME INTO A BRAND", not "show me a list of brands".
@@ -265,38 +332,16 @@ export function BrandHub() {
     );
   }
 
-  /*
-   * THE SECTIONS ARE A TAB ROW IN THE CONTENT NOW, in the shell's own
-   * `FilterBar`, because the shell's rail is the app's and belongs to the app.
-   * Row one is the work: the sections, and the brand switcher pinned right when
-   * a creator has more than one. Choosing a brand and choosing a section are
-   * still two gestures in one place.
-   */
   return (
     <AccentScope brand={brand}>
       {section === 'offers' ? <WarmJobProgress /> : null}
-      <HubNav
+
+      <HubHead
         brand={brand}
         brands={brands?.length ? brands : [brand]}
         section={section}
         onSection={go}
       />
-
-      {/*
-        The hero only leads the OVERVIEW. On a working section a creator came
-        to do something, and a half screen of brand poetry above their numbers
-        is the "content starts high" rule broken in a nicer font. Elsewhere the
-        brand's name stays in the document as an h2, as on any record screen.
-      */}
-      {section === 'overview' ? (
-        <BrandWorldHero
-          brand={brand}
-          offerCount={offers?.length ?? 0}
-          onExplore={() => go('offers')}
-        />
-      ) : (
-        <h2 className="sr-only">{brand.name}</h2>
-      )}
 
       <div className="min-w-0 flex-1">
         {section === 'offers' ? (
@@ -307,8 +352,14 @@ export function BrandHub() {
             brandName={brand.name}
           />
         ) : section === 'numbers' ? (
+          /*
+            NO `brandId` PROP ANY MORE, and that is not an omission. §6 moved
+            this screen's period and brand into the URL so Home and My numbers
+            share one state, so the prop is gone upstream; `?brand=` above is
+            what narrows it to this hub.
+          */
           <Suspense fallback={<SectionLoading />}>
-            <HubNumbers brandId={brand.id} />
+            <HubNumbers />
           </Suspense>
         ) : section === 'contests' ? (
           <Suspense fallback={<SectionLoading />}>
@@ -337,7 +388,7 @@ export function BrandHub() {
 /**
  * THE BRAND, AS AN ACCENT. This is the whole of what a hub repaints.
  *
- * It sets the accent-family tokens and the hero's colours on THIS element, so
+ * It sets the accent-family tokens and the header's colours on THIS element, so
  * they reach only the hub's subtree and leaving the route is enough to undo
  * them. The page ground, the rail, the top bar and every surface, text and
  * border token are PRISM's and are never touched here.
@@ -373,8 +424,15 @@ function AccentScope({ brand, children }: { brand: CreatorBrand; children: React
   );
 }
 
-/** Row one of a hub: its sections as tabs, and the other brands pinned right. */
-function HubNav({
+/**
+ * The header, with her figures in it and the section control at its foot.
+ *
+ * A COMPONENT OF ITS OWN SO THE READS ONLY HAPPEN WHEN THERE IS A BRAND. The
+ * three performance reads hang off `brand.id`, and calling them from `BrandHub`
+ * would mean an applicant, or anybody on the loading path, firing an all-brands
+ * window read for a screen they are never shown.
+ */
+function HubHead({
   brand,
   brands,
   section,
@@ -385,40 +443,42 @@ function HubNav({
   section: string;
   onSection: (key: string) => void;
 }) {
+  const stats = useBrandMiniStats(brand.id);
+
   return (
-    <FilterBar
+    <BrandHeader
+      brand={brand}
+      stats={stats}
       action={
         brands.length > 1 ? (
-          <nav aria-label="Your brands" className="max-w-full overflow-x-auto">
-            <ul className="flex items-center gap-1">
-              {brands.map((b) => {
-                const active = b.slug === brand.slug;
-                const to =
-                  section === 'overview'
-                    ? `/app/brands/${b.slug}`
-                    : `/app/brands/${b.slug}?section=${section}`;
-                return (
-                  <li key={b.id} className="shrink-0">
-                    <Link
-                      to={to}
-                      aria-current={active ? 'page' : undefined}
-                      className={cn(
-                        'flex min-h-8 items-center gap-2 rounded-md px-2 text-[0.8125rem] font-medium transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2',
-                        active ? 'wx-neo-inset text-text' : 'text-muted hover:text-accent'
-                      )}
-                    >
-                      <BrandChip brand={b} size={20} />
-                      <span className="whitespace-nowrap">{b.name}</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
+          <BrandSwitcher brand={brand} brands={brands} section={section} />
         ) : undefined
       }
     >
-      <FilterTabs label={`${brand.name} sections`}>
+      <SectionControl brand={brand} section={section} onSection={onSection} />
+    </BrandHeader>
+  );
+}
+
+/**
+ * The sections, as a segmented control.
+ *
+ * `wx-tap-row` rather than hand-written heights: it is the house utility that
+ * gives every control in a row a 44px floor below `sm` and lets it be dense
+ * above, so the thumb rule is kept in one place instead of in forty.
+ */
+function SectionControl({
+  brand,
+  section,
+  onSection,
+}: {
+  brand: CreatorBrand;
+  section: string;
+  onSection: (key: string) => void;
+}) {
+  return (
+    <div className="wx-tap-row -mx-0.5 overflow-x-auto px-0.5">
+      <FilterTabs label={`${brand.name} sections`} className="min-w-max flex-nowrap">
         {SECTIONS.map((s) =>
           'soon' in s ? (
             <button
@@ -440,7 +500,51 @@ function HubNav({
           )
         )}
       </FilterTabs>
-    </FilterBar>
+    </div>
+  );
+}
+
+/** The other hubs, pinned to the top right of the header. */
+function BrandSwitcher({
+  brand,
+  brands,
+  section,
+}: {
+  brand: CreatorBrand;
+  brands: CreatorBrand[];
+  section: string;
+}) {
+  return (
+    <nav aria-label="Your brands" className="wx-tap-row max-w-full overflow-x-auto">
+      <ul className="flex items-center gap-1">
+        {brands.map((b) => {
+          const active = b.slug === brand.slug;
+          /* The section travels with you, and so does the brand lock when the
+             section is the one that needs it. */
+          const to =
+            section === 'overview'
+              ? `/app/brands/${b.slug}`
+              : section === 'numbers'
+                ? `/app/brands/${b.slug}?section=numbers&brand=${b.id}`
+                : `/app/brands/${b.slug}?section=${section}`;
+          return (
+            <li key={b.id} className="shrink-0">
+              <Link
+                to={to}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  'flex min-h-8 items-center gap-2 rounded-full px-2.5 text-[0.8125rem] font-medium transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2',
+                  active ? 'wx-neo-inset text-text' : 'text-muted hover:text-accent'
+                )}
+              >
+                <BrandChip brand={b} size={20} />
+                <span className="whitespace-nowrap">{b.name}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
 
@@ -448,63 +552,51 @@ function HubNav({
 function HubSkeleton() {
   return (
     <div className="flex flex-col gap-4">
-      <NeoCardSkeleton className="h-14" />
-      <div className="wx-skeleton h-48 rounded-xl" />
-      <div className="wx-skeleton h-8 w-64 rounded-md" />
+      <div className="wx-skeleton h-56 rounded-2xl" />
+      <div className="wx-skeleton h-64 rounded-2xl" />
     </div>
   );
 }
 
-/* ------------------------------------------------------------- overview -- */
+/* --------------------------------------------------------- in-panel parts -- */
 
 /**
- * The brand's room. Every hub has the same five sections in the same order, so a
- * creator always knows where to look, whatever the brand has filled in:
+ * A quiet note INSIDE a glass panel.
  *
- *   1 Meet the brand   2 What they sell   3 What to make
- *   4 Offers and contests   5 Where you rank
- *
- * Wide screens split it in two (the brand's story on the left, the things to act
- * on on the right); on a phone it is one column in that same order.
- *
- * A SECTION WITH NOTHING BEHIND IT SAYS SO. It never collapses and never
- * leaves a gap, because a hub that looks different brand to brand teaches a
- * creator nothing about where things are.
+ * `EmptyState` and `DataError` cannot be used in here: both wear
+ * `wx-neo-raised`, which carries a `backdrop-filter`, and nesting one inside
+ * the panel's own blur is the exact thing §2 forbids. Same words, same shape,
+ * an inset well instead of a second sheet of glass.
  */
-function Overview({
-  brand,
-  products,
-  loading,
-  failed,
-  onRetry,
-  offerCount,
-  onSection,
+function HubNote({
+  title,
+  body,
+  action,
+  tone = 'quiet',
 }: {
-  brand: CreatorBrand;
-  products: CreatorProduct[];
-  loading: boolean;
-  failed: boolean;
-  onRetry: () => Promise<unknown>;
-  offerCount: number;
-  onSection: (key: string) => void;
+  title: string;
+  body: string;
+  action?: React.ReactNode;
+  tone?: 'quiet' | 'wrong';
 }) {
   return (
-    <div className="mt-2 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start">
-      <div className="flex min-w-0 flex-col gap-6">
-        <MeetTheBrand brand={brand} />
-        <WhatTheySell
-          brand={brand}
-          products={products}
-          loading={loading}
-          failed={failed}
-          onRetry={onRetry}
-        />
-        <WhatToMake brand={brand} />
-      </div>
-      <div className="flex min-w-0 flex-col gap-6">
-        <OffersAndContests offerCount={offerCount} onSection={onSection} />
-        <HubStanding brand={brand} onSection={onSection} />
-      </div>
+    <div
+      role={tone === 'wrong' ? 'alert' : undefined}
+      className={cn(
+        'wx-neo-inset min-w-0 rounded-xl px-4 py-4',
+        tone === 'wrong' && 'bg-danger-soft'
+      )}
+    >
+      <p
+        className={cn(
+          'text-[0.9375rem] leading-snug font-semibold',
+          tone === 'wrong' && 'text-danger'
+        )}
+      >
+        {title}
+      </p>
+      <p className="text-muted mt-1.5 max-w-prose text-[0.8125rem] leading-relaxed">{body}</p>
+      {action ? <div className="mt-3">{action}</div> : null}
     </div>
   );
 }
@@ -541,6 +633,69 @@ function HubSection({
   );
 }
 
+/* ------------------------------------------------------------- overview -- */
+
+/**
+ * The brand's room, in ONE glass panel.
+ *
+ * Every hub has the same five sections in the same order, so a creator always
+ * knows where to look, whatever the brand has filled in:
+ *
+ *   1 Meet the brand   2 What they sell   3 What to make
+ *   4 Offers and contests   5 Where you rank
+ *
+ * Wide screens split it in two (the brand's story on the left, the things to act
+ * on on the right); on a phone it is one column in that same order.
+ *
+ * ONE PANEL, MANY WIDGETS. Each card in here used to be `wx-neo-raised` — a
+ * products grid alone put six backdrop-filters on the page, against a budget of
+ * three. The panel is the only blurred surface now; everything inside it is the
+ * same material with the blur left off.
+ *
+ * A SECTION WITH NOTHING BEHIND IT SAYS SO. It never collapses and never
+ * leaves a gap, because a hub that looks different brand to brand teaches a
+ * creator nothing about where things are.
+ */
+function Overview({
+  brand,
+  products,
+  loading,
+  failed,
+  onRetry,
+  offerCount,
+  onSection,
+}: {
+  brand: CreatorBrand;
+  products: CreatorProduct[];
+  loading: boolean;
+  failed: boolean;
+  onRetry: () => Promise<unknown>;
+  offerCount: number;
+  onSection: (key: string) => void;
+}) {
+  return (
+    <div className="wx-neo-raised min-w-0 rounded-2xl p-4 sm:p-5">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start">
+        <div className="flex min-w-0 flex-col gap-6">
+          <MeetTheBrand brand={brand} />
+          <WhatTheySell
+            brand={brand}
+            products={products}
+            loading={loading}
+            failed={failed}
+            onRetry={onRetry}
+          />
+          <WhatToMake brand={brand} />
+        </div>
+        <div className="flex min-w-0 flex-col gap-6">
+          <OffersAndContests offerCount={offerCount} onSection={onSection} />
+          <HubStanding brand={brand} onSection={onSection} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * 1. Meet the brand.
  *
@@ -552,7 +707,7 @@ function HubSection({
 function MeetTheBrand({ brand }: { brand: CreatorBrand }) {
   return (
     <HubSection n={1} title="Meet the brand">
-      <div className="wx-neo-raised rounded-xl p-5">
+      <div className="wx-neo-raised-sm rounded-xl p-4">
         {brand.description ? (
           <p className="max-w-prose text-[0.9375rem] leading-relaxed break-words">
             {brand.description}
@@ -570,7 +725,7 @@ function MeetTheBrand({ brand }: { brand: CreatorBrand }) {
   );
 }
 
-/** 2. What they sell, each product with the commission the creator earns. */
+/** 2. What they sell, each product with the commission rate the creator earns. */
 function WhatTheySell({
   brand,
   products,
@@ -587,24 +742,29 @@ function WhatTheySell({
   return (
     <HubSection n={2} title="What they sell">
       {loading ? (
-        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <NeoCardSkeleton key={i} as="li" rounded="rounded-2xl" className="h-[19rem]" />
+            <li key={i} className="wx-skeleton h-[17rem] rounded-xl" />
           ))}
         </ul>
       ) : failed ? (
-        <DataError
+        <HubNote
+          tone="wrong"
           title="The products would not load"
           body={`We could not reach ${brand.name}'s products. This is not the same as them having none.`}
-          onRetry={onRetry}
+          action={
+            <Button variant="secondary" size="sm" onClick={() => void onRetry()}>
+              Try again
+            </Button>
+          }
         />
       ) : products.length === 0 ? (
-        <EmptyState
+        <HubNote
           title="Products are on their way"
-          body="They appear here with the commission you earn on each one."
+          body="They appear here with the commission rate you earn on each one."
         />
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {products.map((product, i) => (
             <m.li
               key={product.id}
@@ -613,10 +773,10 @@ function WhatTheySell({
                * long list waits most of a second for its turn, which stops
                * reading as polish and starts reading as a slow page.
                */
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.32, ease: 'easeOut', delay: Math.min(i, 6) * 0.05 }}
-              className="group wx-neo-raised relative flex flex-col overflow-hidden rounded-2xl transition-transform duration-300 hover:-translate-y-1"
+              transition={{ duration: 0.32, ease: 'easeOut', delay: Math.min(i, 6) * 0.04 }}
+              className="group wx-neo-raised-sm relative flex flex-col overflow-hidden rounded-xl"
             >
               {/* The picture leads: a product a creator has never held is a photograph first. */}
               <div className="wx-neo-inset relative aspect-square overflow-hidden">
@@ -626,11 +786,11 @@ function WhatTheySell({
                     alt=""
                     loading="lazy"
                     decoding="async"
-                    className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
+                    className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                   />
                 ) : (
                   <span className="grid size-full place-items-center">
-                    <Package size={26} aria-hidden className="text-faint" />
+                    <Package size={24} aria-hidden className="text-faint" />
                   </span>
                 )}
 
@@ -641,8 +801,10 @@ function WhatTheySell({
                 ) : null}
               </div>
 
-              <div className="flex flex-1 flex-col gap-2 p-4">
-                <p className="leading-snug font-semibold break-words">{product.name}</p>
+              <div className="flex flex-1 flex-col gap-2 p-3.5">
+                <p className="text-[0.9375rem] leading-snug font-semibold break-words">
+                  {product.name}
+                </p>
                 <div className="mt-auto flex flex-wrap items-center justify-between gap-2">
                   {product.price !== null ? (
                     <p className="font-display text-muted text-[0.875rem]">
@@ -651,13 +813,16 @@ function WhatTheySell({
                   ) : (
                     <span />
                   )}
-                  {/* The number they came for. Omitted, never "0%", when unset. */}
+                  {/*
+                    THE RATE, NOT AN AMOUNT. `commission_rate` is the TERM on
+                    this product — the percentage it pays — and it is the only
+                    commission figure that exists anywhere in the creator data.
+                    It is shown as a rate, never multiplied into an amount: no
+                    table links a video to a product, so an amount would be a
+                    guess wearing a figure's clothes. Omitted, never "0%", when
+                    unset.
+                  */}
                   {percent(product.commission_rate) ? (
-                    /* THE COMMISSION CHIP IS A FILL. `!` for the same reason
-                       `bg-accent!` carried one: `wx-neo-raised-sm` sets its own
-                       `background-color`, and the rim `background-image` on top
-                       of it is left alone deliberately. Ink numeral, because
-                       `--wx-on-accent` is white in the light theme. */
                     <span className="wx-neo-raised-sm rounded-full [background-color:var(--wx-accent-fill)]! px-3 py-1 [color:var(--wx-on-accent-fill)]">
                       <span className="font-display text-[0.9375rem] leading-none font-bold">
                         {percent(product.commission_rate)}
@@ -687,7 +852,7 @@ function WhatTheySell({
 function WhatToMake({ brand }: { brand: CreatorBrand }) {
   return (
     <HubSection n={3} title="What to make">
-      <EmptyState
+      <HubNote
         title="Briefs are on their way"
         body={`${brand.name} has not shared its briefs yet. When it does, you will find the angles that convert, the hooks to open with, and what to do and what to avoid.`}
       />
@@ -695,7 +860,7 @@ function WhatToMake({ brand }: { brand: CreatorBrand }) {
   );
 }
 
-/** A link card into one of the existing, brand-filtered tabs. Not a rebuilt card. */
+/** A link row into one of the existing, brand-filtered sections. */
 function HubLink({
   icon,
   title,
@@ -711,7 +876,7 @@ function HubLink({
     <button
       type="button"
       onClick={onClick}
-      className="wx-neo-raised wx-neo-press group flex min-h-11 w-full items-center gap-3 rounded-xl p-4 text-left"
+      className="wx-neo-raised-sm wx-neo-press group flex min-h-11 w-full items-center gap-3 rounded-xl p-3.5 text-left"
     >
       <span
         aria-hidden
@@ -735,7 +900,7 @@ function HubLink({
 
 /**
  * 4. Their offers and contests. Links into this hub's own Offers and Contests
- * tabs, which are the app's Offers and Contests screens already filtered to
+ * sections, which are the app's Offers and Contests screens already filtered to
  * this brand. The cards themselves are not rebuilt here.
  *
  * The contest count is not fetched on purpose: it would be a second read for a
@@ -778,8 +943,8 @@ const ALL_TIME_FROM = '2000-01-01';
 /**
  * 5. This brand's leaderboard: where the creator ranks among its creators.
  *
- * Reads the same `my_leaderboard_standing` the Leaderboards tab uses, scoped to
- * this brand. A creator with no figures here is not on the board, which is a
+ * Reads the same `my_leaderboard_standing` the Leaderboards section uses, scoped
+ * to this brand. A creator with no figures here is not on the board, which is a
  * different fact from a failed read, and they are told each in its own words.
  */
 function HubStanding({
@@ -795,15 +960,20 @@ function HubStanding({
   return (
     <HubSection n={5} title="Where you rank">
       {isLoading ? (
-        <NeoCardSkeleton rounded="rounded-xl" className="h-32" />
+        <div className="wx-skeleton h-32 rounded-xl" />
       ) : isError ? (
-        <DataError
+        <HubNote
+          tone="wrong"
           title="Your ranking would not load"
           body="We could not reach this brand's leaderboard. It is not that you are unranked."
-          onRetry={() => refetch()}
+          action={
+            <Button variant="secondary" size="sm" onClick={() => void refetch()}>
+              Try again
+            </Button>
+          }
         />
       ) : data ? (
-        <div className="wx-neo-raised rounded-xl p-5">
+        <div className="wx-neo-raised-sm rounded-xl p-4">
           <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Your place at {brand.name}
           </p>
@@ -821,14 +991,14 @@ function HubStanding({
           <button
             type="button"
             onClick={() => onSection('leaderboards')}
-            className="text-accent mt-4 inline-flex min-h-11 items-center gap-1.5 text-[0.8125rem] font-semibold"
+            className="text-accent mt-3 inline-flex min-h-11 items-center gap-1.5 text-[0.8125rem] font-semibold"
           >
             See the full board
             <ArrowRight size={14} aria-hidden />
           </button>
         </div>
       ) : (
-        <EmptyState
+        <HubNote
           title="You are not on this board yet"
           body={`Creators appear once their videos have sold something for ${brand.name}. Yours will show up here when they do.`}
           action={
@@ -888,9 +1058,13 @@ const BUCKETS = [
  * never touched.
  *
  * WORK COMES FIRST is the organising idea. Three figures answer the two
- * questions anybody opens this tab with, the tabs cut the list down when there
- * is genuinely more than one kind of thing here, and inside every view an offer
- * somebody is actually ON sorts above one they have not started.
+ * questions anybody opens this section with, the tabs cut the list down when
+ * there is genuinely more than one kind of thing here, and inside every view an
+ * offer somebody is actually ON sorts above one they have not started.
+ *
+ * THE CARD GRID IS NOT WRAPPED IN A PANEL, deliberately. `OfferCard` brings its
+ * own glass, and a panel around it would nest one blurred surface inside
+ * another. The summary strip above is the small variant for the same reason.
  */
 function Offers({
   offers,
@@ -944,11 +1118,11 @@ function Offers({
 
   if (loading) {
     return (
-      <div className="mt-2">
-        <NeoCardSkeleton rounded="rounded-2xl" className="h-[5.5rem]" />
+      <div>
+        <div className="wx-skeleton h-[5.5rem] rounded-2xl" />
         <ul className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <NeoCardSkeleton key={i} as="li" className="h-64" />
+            <li key={i} className="wx-skeleton h-64 rounded-2xl" />
           ))}
         </ul>
       </div>
@@ -957,7 +1131,7 @@ function Offers({
 
   if (offers.length === 0) {
     return (
-      <div className="wx-neo-raised mt-2 max-w-2xl rounded-2xl px-6 py-14 text-center">
+      <div className="wx-neo-raised max-w-2xl rounded-2xl px-6 py-14 text-center">
         <Ticket size={26} aria-hidden className="text-faint mx-auto" />
         <p className="mt-4 font-semibold">No offers open right now</p>
         <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -969,7 +1143,7 @@ function Offers({
   }
 
   return (
-    <div className="mt-2">
+    <div>
       <OfferSummary rows={rows} counts={counts} />
 
       {showTabs ? (
@@ -980,7 +1154,7 @@ function Offers({
           pills and no box: the underline carries which one is open, and the row
           scrolls sideways inside itself on a phone rather than wrapping.
         */
-        <div className="mt-6 overflow-x-auto">
+        <div className="mt-5 overflow-x-auto">
           <div role="tablist" aria-label="Which offers" className="flex min-w-max gap-1">
             {BUCKETS.map((b) => {
               const n = counts[b.key];
@@ -1019,7 +1193,7 @@ function Offers({
                     */
                     <span
                       aria-hidden
-                      className="bg-accent absolute inset-x-2 -bottom-px h-[2px] rounded-full"
+                      className="bg-accent absolute inset-x-2 -bottom-px h-[0.125rem] rounded-full"
                     />
                   ) : null}
                 </button>
@@ -1066,8 +1240,8 @@ function Offers({
 /**
  * Three figures, before any card.
  *
- * WHY IT IS WORTH THE ROOM. A creator opening this tab is answering one of two
- * questions: what could I take on, and what have I been promised. Both were
+ * WHY IT IS WORTH THE ROOM. A creator opening this section is answering one of
+ * two questions: what could I take on, and what have I been promised. Both were
  * previously answerable only by reading every card and adding up in your head,
  * which on a brand with thirty offers is not answerable at all.
  *
@@ -1119,16 +1293,19 @@ function OfferSummary({
 
   return (
     <div
-      className="wx-neo-raised flex flex-wrap items-center gap-x-7 gap-y-4 rounded-2xl px-5 py-4"
+      className="wx-neo-raised-sm flex flex-wrap items-center gap-x-7 gap-y-4 rounded-2xl px-5 py-4"
       /*
         THE BRAND'S OWN COLOUR, at a whisper. Held at 9% over the card surface
         because a creator reads figures off this: a saturated panel behind
         numbers is a poster rather than a dashboard. It is a `color-mix` on the
         accent rather than the accent gradient, because a gradient behind a row
         of numbers changes the contrast under each one.
+
+        `wx-neo-raised-sm`, not `wx-neo-raised`: this strip sits above a grid of
+        glass cards and must not be a second blurred layer of its own.
       */
       style={{
-        background: 'color-mix(in srgb, var(--wx-accent) 9%, var(--wx-surface-1))',
+        backgroundColor: 'color-mix(in srgb, var(--wx-accent) 9%, var(--wx-surface-1))',
       }}
     >
       {figures.map((f, i) => (

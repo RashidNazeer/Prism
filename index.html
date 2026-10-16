@@ -179,16 +179,86 @@
       type="font/woff2"
       crossorigin
     />
-    <link
-      rel="preload"
-      href="/fonts/figtree-latin.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin
-    />
+    <!--
+      ONE PRELOAD, NOT TWO. This tag was duplicated verbatim, which is what
+      "the two PRISM faces" above referred to — but both copies named the SAME
+      file. There is one woff2 per unicode range, not one per face: Figtree is
+      a VARIABLE font with the axis declared `300 900` in global.css, so every
+      weight the app uses comes out of this single file. The second tag asked
+      for a byte-identical URL, so Chrome served it from the preload cache and
+      logged a duplicate-preload warning rather than fetching twice. Harmless,
+      and still wrong about what is being loaded.
+
+      `figtree-latin-ext.woff2` is deliberately NOT preloaded. Its `@font-face`
+      carries a `unicode-range` that none of this product's own copy falls in,
+      so preloading it would reserve bandwidth, on the first paint of every
+      page, for a file almost nobody needs a glyph from. `unicode-range` makes
+      the browser fetch it on demand, which is exactly right.
+    -->
   </head>
   <body>
-    <div id="root"></div>
+    <!--
+      SOMETHING ON SCREEN BEFORE REACT BOOTS.
+
+      Rashid, from a real handset: "app stucks blank on mobiles when opened
+      first time". Reproduced on a cold context at 1.6Mbps with the CPU
+      throttled 4x: at 1000ms the document held ONE node and no text, at
+      2500ms eight nodes, and it was not populated until 5000ms. The HTML and
+      the stylesheet had arrived — the ground colour was painted — but `#root`
+      was empty, so for the first seconds of a cold open there was a correctly
+      coloured page with nothing whatsoever on it.
+
+      This is the only thing in the product that can paint in that window: it
+      needs no JavaScript and no stylesheet, because the rules are inline.
+      React's `createRoot().render()` clears the container on its first
+      commit, so there is nothing to tear down and no flash of two states.
+
+      Deliberately almost nothing: a mark fading in and out. A progress bar
+      would be a lie about progress we cannot measure, and a spinner that
+      outlives its welcome reads as a hang. `prefers-reduced-motion` holds it
+      still rather than removing it.
+    -->
+    <div id="root">
+      <div
+        aria-hidden="true"
+        style="
+          position: fixed;
+          inset: 0;
+          display: grid;
+          place-items: center;
+          pointer-events: none;
+        "
+      >
+        <div
+          style="
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: 9999px;
+            background: currentColor;
+            opacity: 0.18;
+            animation: wx-boot 1.4s ease-in-out infinite;
+          "
+        ></div>
+      </div>
+    </div>
+    <style>
+      /* Opacity only: it composites, so even this costs nothing while the
+         main thread is busy parsing the app. */
+      @keyframes wx-boot {
+        0%,
+        100% {
+          opacity: 0.1;
+        }
+        50% {
+          opacity: 0.26;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #root [aria-hidden='true'] > div {
+          animation: none !important;
+        }
+      }
+    </style>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

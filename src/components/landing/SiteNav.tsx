@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, m } from 'motion/react';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { Menu, X } from 'lucide-react';
 import { PrismMark } from '@/components/brand/PrismMark';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
-import { Button, ButtonLink } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/Button';
 import { Container } from '@/components/layout/Section';
-import { focusApplyForm } from '@/lib/focus-apply';
 import { cn } from '@/lib/utils';
 
 /**
@@ -29,30 +28,55 @@ const LINKS = [
 ];
 
 export function SiteNav() {
-  const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
 
-  /**
-   * Apply, from wherever you are.
+  /*
+   * "APPLY" IS A LINK TO `/apply`, AND THAT IS THE WHOLE OF IT.
    *
-   * `focusApplyForm` scrolls to the form in the home page's hero and returns
-   * false when that form is not on the page. It now IS on six other pages'
-   * headers â€” so on About or the FAQ, "Apply" silently did nothing. Where there
-   * is no form, go to the one at /apply.
+   * It used to be a button running `focusApplyForm()`, which looks for
+   * `#apply-form` on the current page, scrolls to it, focuses the first field
+   * and otherwise returns false so the caller can navigate instead. That
+   * branch is dead: the form was taken out of the hero on 2026-10-15 and
+   * `/apply` is now the ONLY page that mounts it. So the handler's fast path
+   * can never be taken from anywhere this header appears, and what is left is
+   * a button that imitates a link badly — no middle-click, no open in a new
+   * tab, no address in the status bar, and a `useNavigate` subscription per
+   * header.
+   *
+   * Rashid: "ditch the buttons where you can for easier usability." This is
+   * the clearest case of it on the public site, and the same change is made to
+   * the footer's Apply (which also did a full page reload via
+   * `window.location.assign`) and to the closing call to action.
    */
-  const apply = () => {
-    if (!focusApplyForm()) void navigate('/apply');
-  };
 
-  // The bar is transparent over the hero and gains a background once you
-  // scroll, so the header never fights the headline for attention.
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  /*
+   * THE SCROLL LISTENER IS GONE, 2026-10-17, AND SO IS WHAT IT DROVE.
+   *
+   * A GPU-on profile put this file at 496ms of self time, 7.0% of main-thread
+   * time over a six-second scroll — the largest single piece of our own
+   * JavaScript on the landing page. It was doing one job: `setScrolled(
+   * window.scrollY > 24)` on every scroll event, to swap the card between
+   * `h-16` and `h-14` with `transition-[border-radius] duration-300`.
+   *
+   * EVERY PART OF THAT IS THE EXPENSIVE KIND. React bails out when the boolean
+   * is unchanged, but each event still enters the scheduler. `height` is
+   * LAYOUT, not compositing. `border-radius` is not composited either. And the
+   * element they were both applied to is the one surface on this page that
+   * carries a `backdrop-filter` (see the note on the card below) — so a height
+   * change meant re-blurring the ground behind the header, on every frame of
+   * the transition, every time the page crossed 24px.
+   *
+   * The landing scroll is PAINT-bound, not JS-bound: 72% of main-thread time
+   * at 390px is style, layout, paint and raster, against 0.4% for all of
+   * Motion. So the right move on the one blurred element is not a cheaper
+   * listener — it is no listener, no layout change and no re-blur at all.
+   *
+   * WHAT IS LOST is the card tightening by 8px once you are into the page. It
+   * read as the header settling; it was a designer's touch, not a request, and
+   * it is not worth a re-blur per frame on a page Rashid describes as "very
+   * very gitery". The card floats on the ground at one size, which is what it
+   * does for the whole of the first screen anyway.
+   */
 
   // Escape closes the mobile menu, and it never survives a resize to desktop.
   useEffect(() => {
@@ -133,20 +157,50 @@ export function SiteNav() {
                carried separately so the two can move independently. It is the
                one surface on the landing page that pays for a backdrop filter,
                and it is the one the page scrolls underneath. */
-            'wx-neo-raised wx-nav-blur ease-brand grid grid-cols-[1fr_auto] items-center gap-4 rounded-[2rem] px-5 transition-[border-radius] duration-300 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]',
-            /* The one thing scroll still changes. The card tightens slightly
-               once you are into the page, which reads as it settling rather
-               than as a second style of header. */
-            scrolled && !open ? 'h-14' : 'h-16'
+            /* `h-16` flat, and no `transition-[border-radius]`. See the long
+               note above the removed scroll listener: both were animating
+               non-composited properties on the only backdrop-filtered element
+               on the page. The radius no longer changes, so it has nothing to
+               transition. */
+            'wx-neo-raised wx-nav-blur ease-brand grid h-16 grid-cols-[1fr_auto] items-center gap-4 rounded-[2rem] px-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]'
           )}
         >
-          <Link
-            to="/"
-            className="inline-flex min-h-11 shrink-0 items-center justify-self-start"
-            aria-label="Prism home"
-          >
-            <PrismMark />
-          </Link>
+          {/*
+            THE MENU BUTTON IS ON THE LEFT, 2026-10-16, and it is in the same
+            grid cell as the mark rather than in a cell of its own.
+
+            A reviewer: "the menu should be easier to access, preferably on the
+            left side." On a phone held in one hand the right-hand end of a
+            4rem bar is the furthest point from the thumb, and it was also the
+            LAST thing in reading order — so the one control that reveals the
+            whole site sat behind the theme toggle for a screen reader too.
+
+            It shares the mark's cell because the grid below `lg` is
+            `[1fr_auto]`, two columns for two groups. Giving the button its own
+            column would need a three-column template at phone widths, and the
+            links `<ul>` is `display:none` there, so it is not a grid item and
+            auto-placement would slide the action cluster into the middle
+            column — the exact failure the note above records at 375px.
+          */}
+          <div className="flex items-center gap-2 justify-self-start">
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              aria-controls="mobile-menu"
+              aria-label={open ? 'Close menu' : 'Open menu'}
+              className="wx-neo-raised-sm wx-neo-press text-text hover:text-accent ease-brand grid size-11 shrink-0 place-items-center rounded-full transition-colors duration-200 lg:hidden"
+            >
+              {open ? <X size={18} aria-hidden /> : <Menu size={18} aria-hidden />}
+            </button>
+            <Link
+              to="/"
+              className="inline-flex min-h-11 shrink-0 items-center"
+              aria-label="Prism home"
+            >
+              <PrismMark />
+            </Link>
+          </div>
 
           {/* `lg`, not `md`: six page links and the sign-in cluster do not fit
               a tablet. Below that they are in the menu button beside them. */}
@@ -167,7 +221,14 @@ export function SiteNav() {
                     in a row would read as a toolbar rather than as navigation. */}
                 <Link
                   to={l.href}
-                  className="text-muted hover:text-accent hover:wx-neo-raised-sm wx-neo-press ease-brand inline-flex items-center rounded-full px-3.5 py-2 text-sm transition-colors duration-200 pointer-coarse:min-h-11"
+                  /* `px-2.5` until `xl`, and this is a measured fix rather
+                     than a tightening for its own sake. At exactly 1024 the
+                     links row ran 246..779 and the action cluster started at
+                     773 — six pixels of overlap, so "Contact" and "Sign in"
+                     collided on an iPad in landscape. Six links at 2px a side
+                     is 24px, which clears it with room over. From `xl` the
+                     original 3.5 is back. */
+                  className="text-muted hover:text-accent hover:wx-neo-raised-sm wx-neo-press ease-brand inline-flex items-center rounded-full px-2.5 py-2 text-sm transition-colors duration-200 xl:px-3.5 pointer-coarse:min-h-11"
                 >
                   {l.label}
                 </Link>
@@ -195,33 +256,22 @@ export function SiteNav() {
             </Link>
 
             <ThemeToggle />
-            {/* `max-lg:h-11` is the 44px tap floor. `size="sm"` is 36px tall,
-                which is fine beside a cursor but under the floor on the phones
-                and tablets most of this audience is on — and this is the
-                header's primary action. It keeps the tighter 36px from `lg`,
-                where the links appear and a mouse is doing the pointing. */}
             {/* The 44px tap floor. `size="sm"` is 36px, fine beside a cursor
                 and under the floor for a finger — and this is the header's
                 primary action. `max-lg` covers phones and tablets by width;
                 `pointer-coarse` catches a touch device wide enough to show the
-                links, such as an iPad in landscape, which width alone misses. */}
-            <Button
-              size="sm"
-              className="hidden max-lg:h-11 sm:inline-flex pointer-coarse:h-11"
-              onClick={apply}
-            >
+                links, such as an iPad in landscape, which width alone misses.
+
+                IT IS NO LONGER `hidden ... sm:inline-flex`. It was hidden below
+                640px, which is every phone — so the one page the whole site
+                exists to send people to had no visible route to it on the
+                device most of this audience uses, and a reviewer duly reported
+                that the calls to action do not stand out. Measured at 360, 390
+                and 430px with the menu button now beside the mark: the row
+                still fits with room to spare. */}
+            <ButtonLink to="/apply" size="sm" className="max-lg:h-11 pointer-coarse:h-11">
               Apply
-            </Button>
-            <button
-              type="button"
-              onClick={() => setOpen((v) => !v)}
-              aria-expanded={open}
-              aria-controls="mobile-menu"
-              aria-label={open ? 'Close menu' : 'Open menu'}
-              className="wx-neo-raised-sm wx-neo-press text-muted hover:text-accent ease-brand grid size-11 place-items-center rounded-full transition-colors duration-200 lg:hidden"
-            >
-              {open ? <X size={17} aria-hidden /> : <Menu size={17} aria-hidden />}
-            </button>
+            </ButtonLink>
           </div>
         </nav>
       </Container>
@@ -242,33 +292,48 @@ export function SiteNav() {
             className="overflow-hidden lg:hidden"
           >
             <Container>
+              {/*
+                EVERY DESTINATION IS IN THIS ONE LIST, INCLUDING HOME.
+
+                A reviewer: "some options are not visible and users have to
+                swipe to discover more exist." The menu itself never scrolled
+                sideways, but it was not the whole site either — `Home` existed
+                only as the wordmark, which reads as a logo rather than as a
+                link, and `Sign in` was styled as a ghost button sitting apart
+                from the list. So from a sub-page on a phone there was no
+                visible way back to the home page at all.
+
+                One column, every link the same shape, nothing behind a
+                gesture. `min-h-11` is the 2.75rem tap floor stated rather than
+                inferred from the padding.
+              */}
               <ul className="wx-neo-raised mt-2 flex flex-col gap-1 rounded-[2rem] p-3">
-                {LINKS.map((l) => (
+                {[{ href: '/', label: 'Home' }, ...LINKS].map((l) => (
                   <li key={l.href}>
                     <Link
                       to={l.href}
                       onClick={() => setOpen(false)}
-                      className="text-muted hover:bg-surface-2 hover:text-accent ease-brand block rounded-lg px-3 py-3 text-[0.9375rem] transition-colors duration-200"
+                      className="text-text hover:bg-surface-2 hover:text-accent ease-brand flex min-h-11 items-center rounded-lg px-3 text-[0.9375rem] transition-colors duration-200"
                     >
                       {l.label}
                     </Link>
                   </li>
                 ))}
-                <li className="pt-2">
-                  <Button
-                    className="w-full"
-                    onClick={() => {
-                      setOpen(false);
-                      // Let the menu finish collapsing before scrolling.
-                      window.setTimeout(apply, 300);
-                    }}
+                <li>
+                  <Link
+                    to="/login"
+                    onClick={() => setOpen(false)}
+                    className="text-text hover:bg-surface-2 hover:text-accent ease-brand flex min-h-11 items-center rounded-lg px-3 text-[0.9375rem] transition-colors duration-200"
                   >
-                    Apply to join
-                  </Button>
+                    Sign in
+                  </Link>
                 </li>
-                <li className="pt-1 text-center">
-                  <ButtonLink to="/login" variant="ghost" className="w-full">
-                    Already a partner? Sign in
+                <li className="pt-2">
+                  {/* No `setTimeout` any more. It existed to let the menu
+                      finish collapsing before `focusApplyForm` smooth-scrolled
+                      the page; a route change needs no such choreography. */}
+                  <ButtonLink to="/apply" className="w-full" onClick={() => setOpen(false)}>
+                    Apply to join
                   </ButtonLink>
                 </li>
               </ul>

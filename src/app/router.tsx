@@ -1,12 +1,26 @@
 import { lazy } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
 import { RouteFallback } from '@/components/layout/RouteFallback';
-import { ShellLayout } from '@/components/layout/ShellLayout';
 import { RequireAuth, RedirectIfSignedIn } from '@/components/auth/RequireAuth';
 import { COLLABS_ONLY_ROLES, STAFF_ROLES } from '@/lib/auth/auth-context';
 
 /**
  * Route table.
+ *
+ * THE SIGNED-IN SHELL IS LAZY, 2026-10-16, and this is worth more than it
+ * looks. `ShellLayout` was imported STATICALLY here, which put the whole
+ * dashboard chrome — `AppShell`, `AppSidebar`, `MobileNav`, the notification
+ * bell, `nav.ts`, gsap — into the ENTRY chunk, so every visitor to the
+ * marketing page downloaded and evaluated about 30KB gzipped of signed-in UI
+ * they could not see. Worse, it was the only reason the Supabase client and
+ * Zod were on the critical path at all: the chain ran router -> ShellLayout
+ * -> AppSidebar -> useWurxbaseIdentity -> supabase. Measured: 241KB of eager
+ * JS before, 164KB after that chain was cut, and this line was its root.
+ *
+ * It uses route-level `lazy` rather than `React.lazy`, deliberately: React
+ * Router awaits the module before it commits the route, so no Suspense
+ * boundary is needed above a LAYOUT route, which is exactly where a missing
+ * one would be hardest to see.
  *
  * Every screen is lazy so it ships as its own chunk: a creator opening the
  * landing page should never download the admin dashboard. `HydrateFallback`
@@ -172,6 +186,7 @@ const CreatorContests = screen(() => import('@/routes/app/Contests'), 'Contests'
 const CreatorContent = screen(() => import('@/routes/app/Content'), 'Content');
 const CreatorNumbers = screen(() => import('@/routes/app/MyNumbers'), 'MyNumbers');
 const CreatorBoard = screen(() => import('@/routes/app/Leaderboards'), 'Leaderboards');
+const CreatorSupport = screen(() => import('@/routes/app/Support'), 'Support');
 
 const AdminHome = screen(() => import('@/routes/admin/AdminDashboard'), 'AdminDashboard');
 const AdminApplications = screen(() => import('@/routes/admin/Applications'), 'Applications');
@@ -236,6 +251,7 @@ const PREFETCH: Record<string, () => Promise<unknown>> = {
   '/app/content': () => import('@/routes/app/Content'),
   '/app/numbers': () => import('@/routes/app/MyNumbers'),
   '/app/leaderboards': () => import('@/routes/app/Leaderboards'),
+  '/app/support': () => import('@/routes/app/Support'),
   '/admin': () => import('@/routes/admin/AdminDashboard'),
   '/admin/applications': () => import('@/routes/admin/Applications'),
   '/admin/activity': () => import('@/routes/admin/Activity'),
@@ -457,7 +473,15 @@ export const router = createBrowserRouter([
     Component: () => <RequireAuth allow={['applicant', 'creator']} />,
     children: [
       {
-        Component: ShellLayout,
+        /* A FALLBACK, OR THE FIRST LOAD IS A BLANK SCREEN.
+           `lazyRoute` BLOCKS until the module resolves, and React Router
+           renders nothing in the meantime unless the route says what to
+           show. Every other lazy route in this file carries one; these
+           five did not when the shell was made lazy, so a cold first
+           open on a phone — where the chunk takes real time — sat blank
+           until it arrived. Reported from a real handset. */
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/components/layout/ShellLayout'), 'ShellLayout'),
         children: [
           {
             path: '/app',
@@ -498,6 +522,13 @@ export const router = createBrowserRouter([
           {
             path: '/app/leaderboards',
             element: <CreatorBoard />,
+          },
+          /* Help and how to reach a person. Open to applicants as well as
+             creators — somebody still in review is the likeliest to have a
+             question — so it carries no extra guard. */
+          {
+            path: '/app/support',
+            element: <CreatorSupport />,
           },
           /*
            * THE BRAND HUB IS A SCREEN OF THIS APP, so it nests here with the rest.
@@ -548,7 +579,15 @@ export const router = createBrowserRouter([
     Component: () => <RequireAuth allow={[...STAFF_ROLES, ...COLLABS_ONLY_ROLES]} />,
     children: [
       {
-        Component: ShellLayout,
+        /* A FALLBACK, OR THE FIRST LOAD IS A BLANK SCREEN.
+           `lazyRoute` BLOCKS until the module resolves, and React Router
+           renders nothing in the meantime unless the route says what to
+           show. Every other lazy route in this file carries one; these
+           five did not when the shell was made lazy, so a cold first
+           open on a phone — where the chunk takes real time — sat blank
+           until it arrived. Reported from a real handset. */
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/components/layout/ShellLayout'), 'ShellLayout'),
         children: [
           {
             path: '/admin/collabs',
@@ -577,7 +616,15 @@ export const router = createBrowserRouter([
     Component: () => <RequireAuth allow={['admin', 'ops']} />,
     children: [
       {
-        Component: ShellLayout,
+        /* A FALLBACK, OR THE FIRST LOAD IS A BLANK SCREEN.
+           `lazyRoute` BLOCKS until the module resolves, and React Router
+           renders nothing in the meantime unless the route says what to
+           show. Every other lazy route in this file carries one; these
+           five did not when the shell was made lazy, so a cold first
+           open on a phone — where the chunk takes real time — sat blank
+           until it arrived. Reported from a real handset. */
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/components/layout/ShellLayout'), 'ShellLayout'),
         children: [{ path: '/admin/client-links', element: <AdminClientLinks /> }],
       },
     ],
@@ -587,7 +634,15 @@ export const router = createBrowserRouter([
     Component: () => <RequireAuth allow={STAFF_ROLES} />,
     children: [
       {
-        Component: ShellLayout,
+        /* A FALLBACK, OR THE FIRST LOAD IS A BLANK SCREEN.
+           `lazyRoute` BLOCKS until the module resolves, and React Router
+           renders nothing in the meantime unless the route says what to
+           show. Every other lazy route in this file carries one; these
+           five did not when the shell was made lazy, so a cold first
+           open on a phone — where the chunk takes real time — sat blank
+           until it arrived. Reported from a real handset. */
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/components/layout/ShellLayout'), 'ShellLayout'),
         children: [
           {
             path: '/admin',
@@ -682,7 +737,15 @@ export const router = createBrowserRouter([
     Component: () => <RequireAuth allow={['creative_strategist']} />,
     children: [
       {
-        Component: ShellLayout,
+        /* A FALLBACK, OR THE FIRST LOAD IS A BLANK SCREEN.
+           `lazyRoute` BLOCKS until the module resolves, and React Router
+           renders nothing in the meantime unless the route says what to
+           show. Every other lazy route in this file carries one; these
+           five did not when the shell was made lazy, so a cold first
+           open on a phone — where the chunk takes real time — sat blank
+           until it arrived. Reported from a real handset. */
+        HydrateFallback: RouteFallback,
+        lazy: lazyRoute(() => import('@/components/layout/ShellLayout'), 'ShellLayout'),
         children: [
           {
             path: '/studio',
@@ -702,6 +765,49 @@ export const router = createBrowserRouter([
       },
     ],
   },
+
+  /*
+   * THE CHART GALLERY, DEV ONLY.
+   *
+   * Every chart in the family, both themes, with real, gapped, zero, lone and
+   * all-null data. It is the only place the "null is not zero" rule can be
+   * checked at a glance, because real data never contains the awkward cases on
+   * the day you need them.
+   *
+   * `import.meta.env.DEV` is a compile-time constant, so in a production build
+   * this spreads an empty array and the page is not in the bundle at all —
+   * hidden by absence rather than by an unlinked URL. Open it with `pnpm dev`
+   * at /dev/charts.
+   */
+  ...(import.meta.env.DEV
+    ? [
+        {
+          path: '/dev/charts',
+          HydrateFallback: RouteFallback,
+          lazy: lazyRoute(() => import('@/routes/dev/ChartGallery'), 'ChartGallery'),
+        },
+        {
+          /* The notification rows, which only exist signed in. */
+          path: '/dev/notifications',
+          HydrateFallback: RouteFallback,
+          lazy: lazyRoute(() => import('@/routes/dev/NotificationsPreview'), 'NotificationsPreview'),
+        },
+        {
+          /* The content grid at 1, 2, 3 and many videos — the counts where a
+             stretched column shows up and a full page never does. */
+          path: '/dev/content',
+          HydrateFallback: RouteFallback,
+          lazy: lazyRoute(() => import('@/routes/dev/ContentPreview'), 'ContentPreview'),
+        },
+        {
+          /* Home against made-up figures, both themes, because there is no
+             creator login on this machine to open the real one with. */
+          path: '/dev/home',
+          HydrateFallback: RouteFallback,
+          lazy: lazyRoute(() => import('@/routes/dev/HomePreview'), 'HomePreview'),
+        },
+      ]
+    : []),
 
   /* --------------------------------------------------------------- 404 --- */
   {

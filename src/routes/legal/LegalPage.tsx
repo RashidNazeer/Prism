@@ -65,9 +65,17 @@ export function LegalPage({
               <PrismMark className="h-6 w-auto" />
             </Link>
             <div className="flex items-center gap-2">
+              {/* THE SAME "BARELY VISIBLE" HOME AS `/apply`, in the same
+                  words from the same reviewer. It was bare `--wx-text-muted`
+                  text beside a theme toggle that DOES carry the material, so
+                  the only navigation on a legal page read as a caption and the
+                  decoration read as the control. `wx-neo-raised-sm` is the
+                  material without a blur, which is what the toggle beside it
+                  uses, and `--wx-text` is the ordinary ink. `min-h-11` is the
+                  2.75rem tap floor, unchanged. */}
               <Link
                 to="/"
-                className="text-muted hover:text-accent inline-flex min-h-11 items-center rounded-md px-2 py-1 text-[0.875rem] font-medium transition-colors"
+                className="wx-neo-raised-sm wx-neo-press text-text hover:text-accent ease-brand inline-flex min-h-11 items-center rounded-full px-4 text-[0.875rem] font-medium transition-colors duration-200"
               >
                 Home
               </Link>

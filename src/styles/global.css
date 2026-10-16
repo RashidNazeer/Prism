@@ -810,13 +810,56 @@ body::after {
     var(--wx-glass-lift);
 }
 
-/* The small sibling: buttons, chips, icon wells. Same material, less lift, and
-   his lighter SECOND edge tier — `#ffffff9c` against the pane's `#ffffffe0`.
-   He draws two, and treating every edge as a pane edge is what makes a row of
-   chips read as a row of cards. */
+/*
+ * THE SMALL SIBLING — IDENTICAL TO `wx-neo-raised` IN EVERY RESPECT BUT THE
+ * BLUR, 2026-10-17.
+ *
+ * Rashid: "In all tabs the blur is different than the nav bars please fix it
+ * as well in creators login."
+ *
+ * WHAT HE IS ACTUALLY SEEING. `--wx-glass-blur` and `--wx-glass-blur-nav` are
+ * both 8px and have been all along, so the blur NUMBERS already agreed. What
+ * differed was everything else, and in light mode it differed badly enough to
+ * read as two unrelated materials sitting next to each other:
+ *
+ *     edge    pane `rgba(52, 61, 96, 0.40)`, a DARK slate outline
+ *             -sm  `rgba(255, 255, 255, 0.61)`, a WHITE outline
+ *     face    pane tops out at `#ffffff78`, -sm at `#ffffffa8` — a brighter
+ *             lip, so the small variant also read as a lighter pane
+ *     lift    pane `0 8px 32px rgba(0,0,0,0.1)`, -sm `0 4px 16px` at 0.06
+ *
+ * An inverted edge colour is not a subtle difference. On the creator pages
+ * most page sections are `-sm`, so he had white-outlined sections under a
+ * slate-outlined nav. That is the bug, and it was never really about blur.
+ *
+ * SO THE MATERIAL IS NOW ONE MATERIAL: same fill, same rim lines, same face,
+ * same edge, same inner, same lift. The ONLY remaining difference is the
+ * `backdrop-filter`, and that is still deliberate — see below.
+ *
+ * WHY NOT JUST GIVE IT THE BLUR TOO, which is what he literally asked for.
+ * Because `-sm` is the chip, pill, button and icon-well variant with 67 call
+ * sites, and blurring it is what took the landing page to 27 backdrop-filters
+ * against a budget of 3 the last time it was tried. Measured again this pass:
+ * with each creator Home section blurred it paints FOUR blurred layers at once
+ * at scrollY 800 on a 390px viewport, before the top bar and the phone's own
+ * bottom bar — over the §4.3 cap of three.
+ *
+ * AND THE BLUR IS NOW GENUINELY INVISIBLE HERE, which is what makes matching
+ * the rest of the material a real fix rather than a dodge. The ground stopped
+ * being a blurred, coloured, high-frequency aurora this same day and became a
+ * single smooth vertical gradient (`.wx-aurora-field`). Blurring a smooth
+ * gradient returns that same gradient — an 8px low-pass over something with no
+ * high frequencies in it is arithmetically close to an identity operation. So
+ * over the ground these two now composite to the same pixels.
+ *
+ * WHERE IT WOULD STILL SHOW is a surface sitting over SHARP content rather
+ * than over the ground — a panel over a chart. That case is handled by giving
+ * that panel the full `wx-neo-raised`, which is what the notification panel
+ * now wears.
+ */
 @utility wx-neo-raised-sm {
   background-color: var(--wx-glass-fill);
-  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left), var(--wx-glass-face-deep);
+  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left), var(--wx-glass-face);
   background-size:
     100% 1px,
     1px 100%,
@@ -827,9 +870,9 @@ body::after {
     top left;
   background-repeat: no-repeat;
   box-shadow:
-    inset 0 0 0 1px var(--wx-glass-edge-sm),
+    inset 0 0 0 1px var(--wx-glass-edge),
     var(--wx-glass-inner),
-    0 0.25rem 1rem rgb(0 0 0 / 0.06);
+    var(--wx-glass-lift);
 }
 
 /*
@@ -1674,12 +1717,29 @@ body::after {
   }
 }
 
+/*
+ * THE SKELETON PULSES, IT NO LONGER SWEEPS. 2026-10-16.
+ *
+ * This animated `background-position` across a 300%-wide gradient, which is a
+ * REPAINT of the element on every frame — and `wx-skeleton` is worn by around
+ * twenty admin and creator components at once, so a loading dashboard
+ * repainted continuously. Two reviewers independently described the dashboard
+ * as "blinking"; this is one of the mechanisms behind that.
+ *
+ * It also broke the rule the whole codebase is held to — only `transform` and
+ * `opacity` may animate. `check-blur-budget.mjs` asserts exactly that and did
+ * not catch it, because it only visits /apply and /login and neither of those
+ * ever shows a skeleton. Worth pointing that guard at a page that does.
+ *
+ * Opacity composites, so the pulse costs nothing per frame.
+ */
 @keyframes wx-shimmer {
-  from {
-    background-position: 100% 0;
+  0%,
+  100% {
+    opacity: 1;
   }
-  to {
-    background-position: -100% 0;
+  50% {
+    opacity: 0.55;
   }
 }
 
@@ -1709,7 +1769,9 @@ body::after {
     var(--wx-surface-2) 80%
   );
   background-size: 300% 100%;
-  animation: wx-shimmer 1.4s linear infinite;
+  /* `ease-in-out`, not `linear`: a linear opacity ramp reads as a flicker,
+     which is the thing being fixed. Stopped entirely under reduced motion. */
+  animation: wx-shimmer 1.6s ease-in-out infinite;
   border-radius: var(--wx-radius-md);
 }
 
@@ -2212,43 +2274,93 @@ body::after {
  * blur hides the point where the loop restarts; at that radius there is no
  * edge left to notice.
  */
-@keyframes wx-aurora-drift {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(-50%, 0, 0);
-  }
-}
+/*
+ * `@keyframes wx-aurora-drift` WAS HERE and is deliberately deleted, not left
+ * unused: the ground is a still vertical shade now and a horizontal translate
+ * cannot change it. See `.wx-aurora-field` below for the other three things
+ * that went with it. Nothing references this name any more.
+ */
 
+/*
+ * THE CHEAPEST PIXELS ARE THE ONES NOT DRAWN, 2026-10-16.
+ *
+ * Two agents measured this field independently and reached the same place: it
+ * is the dominant cost on the landing page. An interleaved A/B over eight runs
+ * had scrolling at 21-23fps with it and 56-57fps with it hidden, and a
+ * separate variant sweep found that stopping its animation (75% frames
+ * dropped) or removing its blur (67%) barely helped, while hiding it entirely
+ * (24%) did. In other words the cost is the AREA being blurred, not the
+ * motion and not the radius alone.
+ *
+ * It was 200% x 160% of the viewport -- 3.2 viewports of pixels -- under a
+ * 34px blur, repainted behind every page in the product.
+ *
+ * The overscan is what the drift needs: the element slides -50% of its own
+ * width over 60s, so at 200% wide it travels a full viewport and the right
+ * edge must start a full viewport out. Halving BOTH keeps that relationship
+ * exactly: at 140% wide a -50% slide travels 70% of the viewport, and the
+ * element still covers the frame at every point in the loop. The vertical
+ * overscan drops from 30% to 12%, which is still far more than a 20px blur
+ * can reach past the edge.
+ *
+ * Area: 3.2 -> 1.74 viewports. Radius: 34px -> 20px. Blur is separable, so
+ * cost falls with both -- together roughly a third of the work. The look
+ * survives because the source is a REPEATING LINEAR GRADIENT: it is already
+ * low-frequency, and blurring a soft gradient is close to an identity
+ * operation, which is the same argument global.css makes a few hundred lines
+ * up about why cards can skip their blur.
+ */
+/*
+ * THE NEUTRAL GROUND SHADE. Was the coloured aurora until 2026-10-16.
+ *
+ * Rashid, on the Vanta field live: the background "should be black shaded in
+ * dark mode and white shaded in light mode in such a way that all the patterns
+ * are visible", and of the bloom in the top right — "this is the coloured
+ * glare and I think it is from the previous background, remove it".
+ *
+ * THE GLARE WAS THIS ELEMENT'S MASK. Not the waves, and not an uncovered edge:
+ * the layer reached well past the viewport on every side, so nothing was
+ * exposed. It was `radial-gradient(ellipse 130% 100% at 88% 0%, …)` pouring
+ * mint, sky and periwinkle in from one corner and falling off across the page.
+ * Mask gone, colour gone with it — see `--wx-aurora` in `tokens.css`.
+ *
+ * FOUR THINGS WENT AT THE SAME TIME, AND ONLY ONE OF THEM WAS FOR LOOKS.
+ *
+ *   1. THE BLUR. `blur(20px)` (34px before another agent halved it) existed
+ *      solely to smear a `repeating-linear-gradient` into something that read
+ *      as aurora. The replacement is one smooth `linear-gradient` — already
+ *      continuous, nothing to smear — so the blur buys literally nothing. Both
+ *      the landing agent and the performance agent independently measured THIS
+ *      ELEMENT as the dominant frame cost behind Rashid's "takes really long
+ *      to load and gitters" (`docs/REDESIGN_HANDOFF.md`), and the blur was the
+ *      expensive half of it. A full-screen blurred layer is the single most
+ *      expensive thing a browser composites; a plain gradient is close to free.
+ *   2. THE DRIFT. `animation: wx-aurora-drift 60s` slid the layer sideways so
+ *      the repeating bands moved past. A vertical shade is unchanged by a
+ *      horizontal translate, so the animation would now be a composited layer
+ *      repainting forever to produce an identical picture. The field holds
+ *      still; the waves are what moves.
+ *   3. `will-change: transform`, which existed only for that animation. It
+ *      promotes a viewport-sized layer and, on an ancestor, would create a
+ *      containing block — this is a leaf so it never could, but there is no
+ *      reason to keep paying for the layer.
+ *   4. THE OVERSCAN. `inset: -12% -40% -12% 0; width: 140%` was sized so the
+ *      drift never showed an edge. With no drift, the layer only has to cover
+ *      the box, so it is a plain `inset: 0` and the compositor has a viewport
+ *      of pixels to fill instead of 140% of one.
+ *
+ * NO `filter` AND NO `backdrop-filter` REMAIN ON THIS ELEMENT. It was always
+ * legal here — a leaf with no descendants, never an ancestor of
+ * `.wurxbase-root`, §1.2 — but it is simply gone now, which is better than
+ * legal. Nothing in this rule animates, so §4.3 has nothing to check either.
+ */
 .wx-aurora-field {
   position: absolute;
-  inset: -30% -100% -30% 0;
-  width: 200%;
-  background-image: var(--wx-aurora-veil), var(--wx-aurora);
-  background-size:
-    220% 180%,
-    160% 140%;
-  background-position:
-    50% 50%,
-    50% 50%;
-  background-repeat: repeat;
-  /*
-   * `filter` is legal HERE and nowhere near the content tree: this element has
-   * no descendants and is never an ancestor of `.wurxbase-root`. See §1.2.
-   */
-  filter: blur(34px) saturate(var(--wx-aurora-saturate));
+  inset: 0;
+  background-image: var(--wx-aurora);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
   opacity: var(--wx-aurora-opacity);
-  will-change: transform;
-  animation: wx-aurora-drift 60s linear infinite;
-  /* The original's `showRadialGradient`: the field fades out away from the
-     corner it pours in from, so it reads as light entering rather than as a
-     texture tiled over the whole page. */
-  /* Wider than the reference's. Its ellipse is sized for a hero section; this
-     field is the ground under a whole scrolling app, and at 12%/72% from the
-     corner it faded out before it reached the content. */
-  -webkit-mask-image: radial-gradient(ellipse 130% 100% at 88% 0%, #000 28%, transparent 88%);
-  mask-image: radial-gradient(ellipse 130% 100% at 88% 0%, #000 28%, transparent 88%);
 }
 
 /* Behind a signed-in screen the field is quieter: there is real work on top of
@@ -2258,12 +2370,13 @@ body::after {
 }
 
 /*
- * A 60s drift is exactly the kind of ambient motion `prefers-reduced-motion`
- * exists to stop. The field stays — it is colour, not animation — it simply
- * holds still.
+ * THERE IS NO `prefers-reduced-motion` RULE FOR THIS LAYER ANY MORE, and that
+ * is because there is nothing left to stop: the ground no longer animates at
+ * all, for anybody. The old rule held the 60s drift still for people who had
+ * asked for less motion; the drift is gone, so the rule would be switching off
+ * something that does not run.
+ *
+ * Reduced motion still decides whether the WAVES run, and that is handled
+ * where it belongs — `WavesField.tsx` reads the query reactively and unmounts
+ * the GL field entirely, leaving exactly this shade behind.
  */
-@media (prefers-reduced-motion: reduce) {
-  .wx-aurora-field {
-    animation: none;
-  }
-}

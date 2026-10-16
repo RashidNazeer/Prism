@@ -67,7 +67,7 @@ export function Brands() {
         <dl className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {RESULTS.map((r, i) => (
             <Reveal key={r.label} delay={i * 0.05}>
-              <div className="wx-neo-raised h-full rounded-2xl p-7">
+              <div className="wx-neo-raised-sm h-full rounded-2xl p-7">
                 <dt className="font-brand wx-numeric text-3xl tracking-[-0.02em]">
                   {r.value}
                 </dt>
@@ -95,7 +95,7 @@ export function Brands() {
         <dl className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {COMPANY_FACTS.map((f, i) => (
             <Reveal key={f.label} delay={i * 0.06}>
-              <div className="wx-neo-raised rounded-2xl p-7">
+              <div className="wx-neo-raised-sm rounded-2xl p-7">
                 <dt className="font-brand wx-numeric text-3xl tracking-[-0.02em]">
                   {f.value}
                 </dt>

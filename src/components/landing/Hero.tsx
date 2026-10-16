@@ -91,28 +91,56 @@ export function Hero() {
         {/* pt-24 clears the 64px fixed header with a little breathing room and
             no more, the previous pt-36 left a dead band under the nav. */}
         {/*
-          THE MEDIA COLUMN IS THE WIDER ONE NOW, 2026-10-15. Rashid marked an
-          area on the hero and said the video window had to be it.
+          THE COPY COLUMN IS THE WIDER ONE AGAIN, 2026-10-16.
 
-          The video was already filling its track exactly — measured at 1920,
-          518.41px of element in a 518.41px column, nothing to centre. The
-          track was simply the NARROW one: `1.1fr_0.9fr` gave the copy 634px
-          and the animation 518px. Reversing the weighting and closing the
-          gutter from 4rem to 2.5rem spends both on the square: 1216px of
-          container, less a 40px gutter, splits 547 / 629. The animation grows
-          about 21% and the copy column is still wider than its own text
-          measure, so nothing in it rewraps badly.
+          Rashid: "the video window size is too large please align it with the
+          text on left side of it."
 
-          IT MATTERS MORE HERE THAN THE NUMBER SUGGESTS, because the artwork is
-          a TALL PHONE CENTRED IN A SQUARE FRAME — about 44% of the frame's
-          width is empty margin baked into the file. Every pixel of column
-          width is therefore only worth 0.44 of a pixel of phone, which is why
-          518px of video read as a small phone. Cropping that margin away with
-          `object-fit: cover` would enlarge it far more and is deliberately NOT
-          done: the frame's outer edge carries the dotted arcs and the card
-          corners, and cover would cut them.
+          HE IS RIGHT, AND THE PREVIOUS NOTE HERE EXPLAINS HOW IT HAPPENED. On
+          2026-10-15 the weighting was reversed to `1fr_1.15fr` to make the
+          video bigger, because the artwork is a tall phone centred in a square
+          frame with about 44% of the frame's width as baked-in empty margin —
+          so growing the track was the only lever on the apparent size of the
+          phone. It worked, and it overshot. Measured at 1440 and at 1900 (the
+          container caps at `max-w-7xl`, so the two are identical):
+
+            copy column   547 wide, content 519 tall (eyebrow top to chips bottom)
+            video square  629 wide, 629 tall — 15% wider than the copy column,
+                          21% taller than the whole copy block, ending 94px
+                          below the chips
+            left edges    the square started at x=651 while the copy column
+                          ended at x=659, so they OVERLAPPED by 8px: the
+                          `margin-inline-start: -3rem` in `hero-visual.css` had
+                          eaten the gutter and then some.
+
+          A square that is taller than the text beside it, wider than the
+          column beside it, and overlapping it, is the main event. The H1 is
+          supposed to be.
+
+          `1.2fr_1fr` splits the same 1176px (1216 less the 40px gutter) into
+          641 / 535. The square comes down 15%, the copy column gains 94px of
+          slack, and the square is now narrower than the copy column rather
+          than wider — which is the whole of "align it with the text". The
+          paragraph is `max-w-lg`, so the extra width is slack rather than a
+          longer measure, and the H1 clamp is unchanged.
+
+          THE VERTICAL ALIGNMENT IS IN `hero-visual.css`, not here: the square
+          only exists as a side-by-side thing from `lg`, and `items-start` on
+          this grid is load-bearing for the left column.
+
+          `object-fit: contain` stays. Cropping the baked-in margin away with
+          `cover` would enlarge the phone far more for free, and is still the
+          wrong trade: the frame's outer edge carries the dotted arcs and the
+          card corners, and cover would cut them.
         */}
-        <div className="grid items-start gap-12 pt-24 pb-20 lg:grid-cols-[1fr_1.15fr] lg:gap-10 lg:pt-28 lg:pb-24">
+        {/* `pb-10 lg:pb-12`, halved from `pb-20 lg:pb-24` on 2026-10-17. Rashid:
+            "extra gaps still need fixing", pointing at the band of nothing
+            between the hero and the logo row. `Section`'s own padding was
+            halved on 2026-10-16 for the same complaint; the hero rolls its
+            own and was missed. Measured at 1920 before: 214px of empty ground
+            between the chip row and the first plaque, of which 96px was this
+            one declaration. */}
+        <div className="grid items-start gap-12 pt-24 pb-10 lg:grid-cols-[1.2fr_1fr] lg:gap-10 lg:pt-28 lg:pb-12">
           <ParallaxLayer progress={progress} from={0} to={-96} className="lg:pt-6">
             <m.div variants={container} initial="hidden" animate="show">
               <m.div variants={item}>
@@ -181,8 +209,36 @@ export function Hero() {
                 videos. No screenshots, no guessing, no waiting on a reply in the group chat.
               </m.p>
 
-              <m.div variants={item} className="mt-8">
-                <ButtonLink to="#how" variant="secondary" size="xl">
+              {/*
+                THE HERO HAD NO PRIMARY ACTION. A reviewer: "main call-to-action
+                buttons on the home page need to stand out more." They were
+                right in the strongest possible way — above the fold there was
+                exactly one control, `See how it works`, on the SECONDARY glass
+                variant, and the header's `Apply` is `hidden` below `sm`. So on
+                a phone the first screen of the marketing site offered no way to
+                apply and nothing that read as a call to action at all.
+
+                `Apply to join` on `primary` is the accent fill with ink on it
+                (`--wx-accent-fill` / `--wx-on-accent-fill`, contrast-checked in
+                tokens.css), and it goes FIRST so the eye meets the action
+                before the explanation. `See how it works` stays as the quiet
+                second option, which is what `secondary` is for.
+
+                `max-sm:w-full` stacks them full width on a phone rather than
+                leaving two half-width pills on one line: at 390px the pair
+                wraps anyway, and a wrapped pill that stops two thirds of the
+                way across reads as a mistake.
+              */}
+              <m.div variants={item} className="mt-8 flex flex-wrap items-center gap-3">
+                <ButtonLink to="/apply" size="xl" className="max-sm:w-full">
+                  Apply to join
+                </ButtonLink>
+                <ButtonLink
+                  to="#how"
+                  variant="secondary"
+                  size="xl"
+                  className="max-sm:w-full"
+                >
                   See how it works
                 </ButtonLink>
               </m.div>

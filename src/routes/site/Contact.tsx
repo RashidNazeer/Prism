@@ -23,7 +23,7 @@ export function Contact() {
       <Section>
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           <Reveal>
-            <div className="wx-neo-raised h-full rounded-2xl p-7">
+            <div className="wx-neo-raised-sm h-full rounded-2xl p-7">
               <h2 className="text-lg font-bold">Email</h2>
               <p className="text-muted mt-3 leading-relaxed">
                 The fastest way to reach us, for creators and brands alike.
@@ -38,7 +38,7 @@ export function Contact() {
           </Reveal>
 
           <Reveal delay={0.06}>
-            <div className="wx-neo-raised h-full rounded-2xl p-7">
+            <div className="wx-neo-raised-sm h-full rounded-2xl p-7">
               <h2 className="text-lg font-bold">Phone</h2>
               <p className="text-muted mt-3 leading-relaxed">
                 Office hours, United States Mountain Time.
@@ -53,7 +53,7 @@ export function Contact() {
           </Reveal>
 
           <Reveal delay={0.12}>
-            <div className="wx-neo-raised h-full rounded-2xl p-7">
+            <div className="wx-neo-raised-sm h-full rounded-2xl p-7">
               <h2 className="text-lg font-bold">Post</h2>
               <p className="text-muted mt-3 leading-relaxed">{COMPANY.legalName}</p>
               <p className="text-muted mt-1 leading-relaxed">{COMPANY.address}</p>
@@ -120,7 +120,7 @@ export function Contact() {
         </Reveal>
 
         <Reveal>
-          <div className="wx-neo-raised mt-12 rounded-2xl p-7">
+          <div className="wx-neo-raised-sm mt-12 rounded-2xl p-7">
             <h2 className="text-lg font-bold">Want to create for our brands?</h2>
             <p className="text-muted mt-3 max-w-2xl leading-relaxed">
               Apply rather than email, and your application reaches the people hiring this

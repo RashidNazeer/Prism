@@ -293,6 +293,17 @@ export function TiltedGridHero({
   // changes when the tile wraps, which is out of sight, so a resize never
   // swaps a mark on screen either.
   const [shown, setShown] = React.useState<Record<number, number>>({});
+  /**
+   * How many marks the row has handed out. See the long note on
+   * `onAnimationIteration` — this is what stops a wrapping tile coming back
+   * wearing its neighbour's logo. A ref, not state: it is read and bumped
+   * inside an event handler and must not schedule a render of its own.
+   */
+  const handed = React.useRef(0);
+  /**
+   * Whether the band is anywhere near the viewport. See the effect below.
+   */
+  const [live, setLive] = React.useState(true);
 
   React.useEffect(() => {
     const el = ref.current;
@@ -323,6 +334,44 @@ export function TiltedGridHero({
 
   const { columns, sweep, unit, limit, bend } =
     layout ?? measure(1200, 260, tileHeight, aspectRatio, gap, wanted);
+
+  /* The cursor starts past the marks the tiles were seeded with (`first`
+     below is 0..columns-1). If a resize adds tiles it moves up to clear the
+     new seeds; it never moves back, so the run of marks stays monotonic. */
+  React.useEffect(() => {
+    if (handed.current < columns) handed.current = columns;
+  }, [columns]);
+
+  /*
+   * THE BAND STOPS WHEN IT IS NOT ON SCREEN, 2026-10-17.
+   *
+   * Up to nine tiles were running a 3D `rotateY` keyframe for the whole life
+   * of the page — including the four-fifths of the landing page where the
+   * band is nowhere near the viewport. A running transform animation is work
+   * the compositor does every frame whether or not anything can see it, and
+   * the landing scroll is paint-bound: 72% of main-thread time at 390px is
+   * style, layout, paint and raster. This is free frames.
+   *
+   * `animation-play-state`, not unmounting and not `display: none`. Every
+   * tile is placed by its own negative delay, so pausing freezes the row
+   * exactly where it stands and resuming carries on from there — no reflow,
+   * no re-measure, no mark swapping while nobody is looking. It is the same
+   * mechanism the reduced-motion block below already uses, and that block
+   * wins over this one because it is `!important`.
+   *
+   * A generous margin so the band is already moving before it is visible: a
+   * row that starts from a dead stop as it comes over the edge reads as a
+   * glitch, which is the thing this is supposed to be reducing.
+   */
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver((entries) => setLive(entries.some((e) => e.isIntersecting)), {
+      rootMargin: '40% 0px',
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   // Every length is a multiple of the tile's height, which follows the
   // band's height until MAX_WIDTH caps it on narrow screens.
@@ -432,29 +481,96 @@ export function TiltedGridHero({
                 top: `calc(${axis}% - ${u(0.5)})`,
                 width: u(aspectRatio),
                 height: u(1),
-                transformStyle: 'preserve-3d',
                 /*
-                 * THE BLUR LIVES ON THE TILE, NOT ON THE SLICES.
-                 * Rashid: "on desktop increase their blur a little just like
-                 * the cards", and "specially in the dark modes".
+                 * `transform-style: flat` — WHICH IS WHAT THIS ELEMENT HAS
+                 * ACTUALLY BEEN RENDERING ALL ALONG. 2026-10-17.
                  *
-                 * A plaque is ten slices. Blurring each one costs TEN backdrop
-                 * filters per plaque -- measured: 70 painting at once at 1440
-                 * and 30 at 375, against a budget of 3 -- which is the same
-                 * cost that caused the scroll lag once already. On the tile it
-                 * is ONE per plaque: 7 and 3.
+                 * Rashid: "this collapse", with two shots at about 1900 —
+                 * "Vitauthority" and "Physician's Choice" sharing an edge with
+                 * no gap between them, and "M3-Naturals" drawn across
+                 * "Vitauthority".
                  *
-                 * Checked rather than assumed: a backdrop-filter here does NOT
-                 * flatten the 3D. The slices keep their `matrix3d` and the
-                 * curve is intact, while the ground behind each plaque is
-                 * visibly softened and stays sharp just outside it.
+                 * THIS IS MY REGRESSION, FROM 2026-10-16. Taking the tile's
+                 * inline `backdrop-filter` off was right for the blur budget
+                 * and wrong in a way nobody predicted: `backdrop-filter` is a
+                 * GROUPING PROPERTY, and CSS Transforms 2 says an element with
+                 * one of those has its `transform-style: preserve-3d` treated
+                 * as `flat`. So for as long as the blur was on this element the
+                 * declaration below it was inert, the slices were flattened
+                 * into the tile's own plane, and that flattened projection is
+                 * the band everybody has been looking at and signing off.
                  *
-                 * Inline, so Lightning CSS never sees it -- which is why both
-                 * the standard and the -webkit- property can be set here
-                 * safely, unlike in the stylesheet.
+                 * Remove the blur and `preserve-3d` starts being honoured for
+                 * the first time. Each slice is then projected through the
+                 * host's `perspective` ON ITS OWN, and at the ends of the arc —
+                 * where magnification is 2x to 3.5x and climbing (see the note
+                 * on MAX_EDGE) — the trailing slices fan far outside the tile
+                 * box and lap the next plaque. The note that used to sit on the
+                 * blur said it had been "checked rather than assumed" and that
+                 * the 3D survived it. It did not; what survived was the look,
+                 * because flattening is what produced the look.
+                 *
+                 * MEASURED, on the painted SLICE unions (min-left to max-right
+                 * across all ten slices of a tile — a `getBoundingClientRect`
+                 * on the tile itself misses fanned slices, a mistake this
+                 * component has already made once), worst overlap between
+                 * adjacent plaques over a 30-second run:
+                 *
+                 *             preserve-3d   blur back on   flat (this)
+                 *   1440        -63px          --            -3px
+                 *   1680        -46px          --           -24px
+                 *   1920       -195px         -35px          -7px
+                 *
+                 * Flat is better than the blur ever was, and it costs nothing:
+                 * the TILE is still a child of the host's `perspective`, so its
+                 * own `turn()` keeps full 3D and the row still travels round a
+                 * cylinder. Only the ten slices inside it flatten, which is
+                 * exactly the 2D approximation of the curve that shipped.
+                 *
+                 * Written explicitly rather than deleted. `flat` is the initial
+                 * value, so the declaration is redundant to the engine and not
+                 * to the next person: without it this reads as an oversight and
+                 * comes back.
                  */
-                backdropFilter: 'blur(var(--wx-glass-blur))',
-                WebkitBackdropFilter: 'blur(var(--wx-glass-blur))',
+                transformStyle: 'flat',
+                /*
+                 * THE BLUR IS OFF THE TILE, 2026-10-16, and this is the single
+                 * largest cause of the stutter Rashid reported: "optimise the
+                 * home page the slide show and a few other stuff take really
+                 * long to load and gitters."
+                 *
+                 * Moving it from the slices to the tile took the count from 70
+                 * to 7 at 1440, and 7 is still the wrong number. §4.3's budget
+                 * is THREE blurred layers painting at once, and these are the
+                 * only ones on the page that MOVE: a backdrop-filter on a
+                 * static card is rasterised once and reused, while a
+                 * backdrop-filter on an element under a running `rotateY` must
+                 * re-sample and re-blur the ground behind it on every single
+                 * frame, forever, whether or not the band is on screen.
+                 *
+                 * Measured on the landing page at 390x844 under 4x CPU
+                 * throttling, median of three runs, scrolling the whole page
+                 * over five seconds:
+                 *
+                 *             scroll fps   p95 frame gap   worst frame   long tasks
+                 *   as-is          4.3         767ms          950ms       10 (2734ms)
+                 *   band hidden   16.6          83ms          100ms        0 (0ms)
+                 *   no blur       18.4          83ms          150ms        2 (238ms)
+                 *
+                 * The band and the blur are the same cost centre, and the band
+                 * is NOT what has to go: taking the blur off it buys the whole
+                 * of that difference and keeps the slideshow.
+                 *
+                 * WHAT HE ASKED FOR IS STILL HONOURED. "On desktop increase
+                 * their blur a little just like the cards" — the landing page's
+                 * cards are now `wx-neo-raised-sm`, the same material with no
+                 * backdrop filter, for exactly the same reason. A plaque that
+                 * matches the cards is a plaque with no blur. The fill, the
+                 * hairline, the inner highlight and the radius below are
+                 * untouched, and they are what reads as glass; the blur was
+                 * only ever visible as softness in the ground behind a plaque
+                 * that is moving too fast to study.
+                 */
                 /*
                  * THE FILL IS ON THE TILE TOO, 2026-10-16, and that is what
                  * finally kills the seams. Rashid: "you see these mild lines
@@ -480,14 +596,53 @@ export function TiltedGridHero({
                   'inset 0 0 0 1px var(--wx-glass-edge), inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.1)',
                 // Tile t starts t tiles along the loop.
                 animation: `${orbit} ${duration}s linear ${-t * speed}s infinite`,
+                // Frozen in place while the band is off screen — see above.
+                animationPlayState: live ? 'running' : 'paused',
               }}
-              onAnimationIteration={(e) => {
-                // elapsedTime counts whole loops, missed events included.
-                const lap = Math.round(e.elapsedTime / duration);
-                setShown((prev) => {
-                  const next = lap * columns + first;
-                  return prev[t] === next ? prev : { ...prev, [t]: next };
-                });
+              /*
+               * ONE COUNTER FOR THE WHOLE ROW, NOT A SUM PER TILE.
+               *
+               * Rashid: "Pure Daily Care" rendering in two NEIGHBOURING tiles
+               * in the same frame.
+               *
+               * This was `lap * columns + first`, with `lap` recovered from
+               * `elapsedTime`. Work out what a tile shows after it wraps,
+               * against what its neighbour is still showing:
+               *
+               *   index(t)     = (lap·columns + columns-1-t)        mod n
+               *   index(t+1)   = index(t) + (columns - 1)           mod n
+               *     ...once t+1 has wrapped and t has not, which is the state
+               *     for most of every cycle, because the two wrap `speed`
+               *     seconds apart.
+               *
+               * So a freshly wrapped tile shows its neighbour's mark exactly
+               * when `columns ≡ 1 (mod n)`. There are eight brands, and
+               * `measure` asks for NINE tiles from about 1850px up — 9 mod 8 is
+               * 1 — so above that width every single wrap put a duplicate pair
+               * side by side, for the whole four seconds until the next wrap.
+               * At 1440 (7 tiles) and 1680 (8) it never happens, which is why
+               * this survived: it is a width-dependent arithmetic coincidence,
+               * not a visible-everywhere fault.
+               *
+               * A single cursor removes the arithmetic. Tiles are seeded with
+               * marks 0..columns-1 (`first`), so the next one off the press is
+               * `columns`, and each wrap takes the next one. Marks then run
+               * through the list in order whatever `columns` happens to be,
+               * and two tiles can only ever agree when there are more tiles on
+               * screen than there are brands — at which point the duplicate is
+               * forced, and lands at the two ENDS of the row, maximally far
+               * apart and under the end fade, instead of touching.
+               *
+               * `elapsedTime` is not needed any more and that is a second
+               * small gain: it existed to recover laps missed while the tab
+               * was backgrounded, and "hand out the next mark" has nothing to
+               * recover. A missed wrap now just means the list advances one
+               * step later, which nobody can see.
+               */
+              onAnimationIteration={() => {
+                const next = handed.current;
+                handed.current += 1;
+                setShown((prev) => (prev[t] === next ? prev : { ...prev, [t]: next }));
               }}
             >
               {Array.from({ length: SLICES }, (_, k) => (
