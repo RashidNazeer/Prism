@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { Fragment, lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
 import { ArrowRight, Check, ChevronDown, Flag, Package, Ticket, Trophy } from 'lucide-react';
@@ -121,45 +121,85 @@ function SectionLoading() {
  * A Brand Hub, as a creator sees it.
  *
  * REDESIGNED 2026-10-16 (§10 of the redesign brief). The half-screen brand
- * hero is gone and a BRAND HEADER takes its place: logo, name, and three mini
- * stats for HER on this brand, each with its own sparkline. The sections are a
- * SEGMENTED CONTROL at the foot of that header rather than a filter row of
- * their own, which is one fewer blurred surface and one fewer row of chrome
- * between a creator and the thing she came to read.
+ * hero is gone and a BRAND HEADER takes its place: logo, name and her measured
+ * figures on this brand. The sections are a SEGMENTED CONTROL at the foot of
+ * that header rather than a filter row of their own, which is one fewer
+ * blurred surface and one fewer row of chrome between a creator and the thing
+ * she came to read.
+ *
+ * REWORKED AGAIN 2026-10-17, after Rashid used it: *"brands hub is really
+ * difficult for creators to operate work on the UX"*. Three changes, each with
+ * its own note below, and ONE RULE BEHIND ALL OF THEM: an absent thing takes
+ * less room than a present one.
+ *
+ *   - `Overview` leads with what she can act on and says what a brand has not
+ *     filled in once, in one line, instead of in three full-height cards.
+ *   - `HubSection` no longer numbers the regions 1–5, because they are not
+ *     steps and numbering them promised a process she was failing at.
+ *   - `SECTIONS` is five grouped tabs that wrap, not six that scroll sideways
+ *     with a dead one among them.
  *
  * It still opens on Overview rather than Offers, which is the opposite of the
  * admin hub. An admin arrives at a brand to do a job. A creator arrives to
- * decide whether they want to work with it at all, and that decision is made
- * on the brand and its products.
+ * decide whether they want to work with it at all — but that decision starts
+ * with what is on the table, so the FIRST THING INSIDE Overview is now their
+ * offers and contests rather than the brand's introduction.
  *
- * EVERY SECTION THAT EXISTED STILL EXISTS. The brief's §10 describes three
- * sections; the code has five real ones, and the code is right about what is
- * here today — Overview and Offers carry the products and the offers, which
- * live nowhere else in the creator app. Nothing a creator could reach before
- * this redesign is unreachable after it.
+ * EVERY SECTION THAT EXISTED STILL EXISTS, and every URL still resolves:
+ * `/app/brands`, `/app/brands/:slug`, and `?section=overview|offers|numbers|`
+ * `contests|leaderboards`. Nothing a creator could reach before either
+ * redesign is unreachable after this one.
  *
  * WHAT IT NEVER READS: the client behind a brand, or the budget allocated to
  * it. Both live in `brand_commercials` behind a staff-only policy, and no hook
  * this file touches selects either column.
  */
+/*
+ * FIVE DESTINATIONS, GROUPED, AND THE SIXTH IS NOT A TAB ANY MORE.
+ *
+ * Rashid, 2026-10-17: "brands hub is really difficult for creators to operate",
+ * and: "Six sections for one brand, one of them permanently disabled, is a lot
+ * of navigation for a screen reached by tapping a brand."
+ *
+ * He is right, and the row had three separate problems:
+ *
+ *   1. A DISABLED TAB IS FURNITURE. "Creators Library NEXT" could never be
+ *      tapped, yet it took a slot in the control and a share of the width. It
+ *      is still named — he asked for it by name on 2026-10-07 and a creator
+ *      should see the shape of what is coming — but as a quiet line UNDER the
+ *      control rather than as a thing that looks tappable and is not.
+ *   2. THE ROW SCROLLED SIDEWAYS. It was `flex-nowrap` inside an
+ *      `overflow-x-auto`, which put "Leaderboards" off the edge of a 375px
+ *      phone. `FilterBar`'s own note says why that is wrong: "a row that
+ *      scrolls sideways hides a filter behind an edge, and on a phone nobody
+ *      finds it." `FilterTabs` already wraps; the hub was overriding it.
+ *   3. FIVE PEERS, THREE OF WHICH ARE HERS NOT THE BRAND'S. `this brand`,
+ *      `Offers` and `Contests` are about the brand and are what she came for.
+ *      `My numbers` and `Leaderboards` are her own screens, narrowed to this
+ *      brand, and already in the sidebar. They are grouped second, after a
+ *      hairline, so the row reads as "the brand, then you" instead of five
+ *      equal choices.
+ *
+ * `overview` is still first and still the default, so every existing link,
+ * every `?section=` in `scripts/`, and the no-slug redirect are unchanged. It
+ * is labelled "This brand" because "Overview" names a shape rather than a
+ * subject, and its CONTENT now leads with what she can act on — see `Overview`.
+ */
 const SECTIONS = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'offers', label: 'Offers' },
-  { key: 'numbers', label: 'My numbers' },
-  { key: 'contests', label: 'Contests' },
-  { key: 'leaderboards', label: 'Leaderboards' },
-  /*
-   * ONE SECTION WHERE THERE WERE TWO. Rashid, 2026-10-07, circling "Campaigns &
-   * briefs" and "Creative studio": "I want the circled elements removed and
-   * instead there should be only one element named Creators Library".
-   *
-   * It keeps the marked-but-unclickable treatment the two it replaces had,
-   * because nothing is behind it yet either, and the rule below is the point of
-   * this list: a creator should see the shape of what is coming without being
-   * able to click into an empty room.
-   */
-  { key: 'library', label: 'Creators Library', soon: 'Next' },
+  { key: 'overview', label: 'This brand', group: 'brand' },
+  { key: 'offers', label: 'Offers', group: 'brand' },
+  { key: 'contests', label: 'Contests', group: 'brand' },
+  { key: 'numbers', label: 'My numbers', group: 'mine' },
+  { key: 'leaderboards', label: 'Leaderboards', group: 'mine' },
 ] as const;
+
+/**
+ * NAMED, NOT NAVIGABLE. Nothing is behind the Creators Library yet — no table,
+ * no rows, no screen in this repo — so it is a sentence rather than a control
+ * that cannot be used. Rashid asked for the name to be visible; he did not ask
+ * for a dead button.
+ */
+const NEXT_UP = { label: 'Creators Library', when: 'Next' } as const;
 
 /*
  * WHAT IS ACTUALLY BEHIND A TAB, and the honesty is the point.
@@ -340,6 +380,9 @@ export function BrandHub() {
         brand={brand}
         brands={brands?.length ? brands : [brand]}
         section={section}
+        /* Undefined while the offers read is in flight, so the tab shows no
+           count rather than a zero that is really "we do not know yet". */
+        offerCount={offersLoading ? undefined : offers?.length}
         onSection={go}
       />
 
@@ -376,7 +419,9 @@ export function BrandHub() {
             loading={productsLoading}
             failed={productsError}
             onRetry={() => refetchProducts()}
-            offerCount={offers?.length ?? 0}
+            offers={offers ?? []}
+            mine={mine ?? []}
+            offersLoading={offersLoading}
             onSection={go}
           />
         )}
@@ -385,6 +430,21 @@ export function BrandHub() {
   );
 }
 
+/*
+ * THREE NAMED EXPORTS FOR `/dev/brand-hub`, AND NOTHING ELSE USES THEM.
+ *
+ * `AccentScope`, `SectionControl` and `Overview` are exported so the dev-only
+ * preview at `src/routes/dev/BrandHubPreview.tsx` can render THE REAL
+ * COMPONENTS against made-up data. Nobody on this machine has a creator login
+ * and Supabase is unreachable from it, so without that page every claim about
+ * this screen's spacing, its dark face and its empty states would be a claim
+ * about code that had never been rendered. A copy in the preview would be
+ * worse than no preview: it would drift, and then agree with itself.
+ *
+ * They are not part of any public surface. The preview route is behind
+ * `import.meta.env.DEV` and is absent from a production build, so these are
+ * reachable only from a module that does not ship.
+ */
 /**
  * THE BRAND, AS AN ACCENT. This is the whole of what a hub repaints.
  *
@@ -403,7 +463,13 @@ export function BrandHub() {
  * because the derivation is a few hundred contrast measurements and would
  * otherwise run on every render of the hub, including each keystroke inside it.
  */
-function AccentScope({ brand, children }: { brand: CreatorBrand; children: React.ReactNode }) {
+export function AccentScope({
+  brand,
+  children,
+}: {
+  brand: CreatorBrand;
+  children: React.ReactNode;
+}) {
   const { resolved } = useTheme();
   const vars = useMemo(() => {
     const theme = deriveBrandTheme(
@@ -436,11 +502,13 @@ function HubHead({
   brand,
   brands,
   section,
+  offerCount,
   onSection,
 }: {
   brand: CreatorBrand;
   brands: CreatorBrand[];
   section: string;
+  offerCount: number | undefined;
   onSection: (key: string) => void;
 }) {
   const stats = useBrandMiniStats(brand.id);
@@ -455,51 +523,69 @@ function HubHead({
         ) : undefined
       }
     >
-      <SectionControl brand={brand} section={section} onSection={onSection} />
+      <SectionControl
+        brand={brand}
+        section={section}
+        offerCount={offerCount}
+        onSection={onSection}
+      />
     </BrandHeader>
   );
 }
 
 /**
- * The sections, as a segmented control.
+ * The sections, as a segmented control that WRAPS rather than scrolls.
  *
  * `wx-tap-row` rather than hand-written heights: it is the house utility that
  * gives every control in a row a 44px floor below `sm` and lets it be dense
  * above, so the thumb rule is kept in one place instead of in forty.
+ *
+ * The hairline before "My numbers" is the only thing marking the two groups
+ * described on `SECTIONS`. It is `aria-hidden` and the tablist is still one
+ * tablist with five tabs, because the grouping is a reading aid and not a
+ * second navigation: a screen reader should hear five choices, not two lists.
+ *
+ * THE OFFER COUNT IS ON THE TAB because it is the one number that changes
+ * whether she taps it, and it is already in hand from the hub's own read. A
+ * zero is not shown: "Offers 0" invites a tap that finds nothing.
  */
-function SectionControl({
+export function SectionControl({
   brand,
   section,
+  offerCount,
   onSection,
 }: {
   brand: CreatorBrand;
   section: string;
+  offerCount: number | undefined;
   onSection: (key: string) => void;
 }) {
   return (
-    <div className="wx-tap-row -mx-0.5 overflow-x-auto px-0.5">
-      <FilterTabs label={`${brand.name} sections`} className="min-w-max flex-nowrap">
-        {SECTIONS.map((s) =>
-          'soon' in s ? (
-            <button
-              key={s.key}
-              type="button"
-              role="tab"
-              aria-selected={false}
-              disabled
-              title={`${s.label} arrives with ${s.soon}`}
-              className="text-muted flex min-h-8 shrink-0 cursor-default items-center gap-1.5 rounded-sm px-2.5 text-[0.8125rem] font-medium opacity-60"
+    <div className="wx-tap-row">
+      <FilterTabs label={`${brand.name} sections`}>
+        {SECTIONS.map((s, i) => (
+          <Fragment key={s.key}>
+            {s.group === 'mine' && SECTIONS[i - 1]?.group !== 'mine' ? (
+              <span aria-hidden className="bg-line mx-1 hidden h-5 w-px shrink-0 sm:block" />
+            ) : null}
+            <FilterTab
+              active={s.key === section}
+              count={s.key === 'offers' && offerCount ? offerCount : undefined}
+              onClick={() => onSection(s.key)}
             >
               {s.label}
-              <span className="text-[0.5625rem] tracking-wider uppercase">{s.soon}</span>
-            </button>
-          ) : (
-            <FilterTab key={s.key} active={s.key === section} onClick={() => onSection(s.key)}>
-              {s.label}
             </FilterTab>
-          )
-        )}
+          </Fragment>
+        ))}
       </FilterTabs>
+
+      <p className="text-muted mt-2 text-[0.6875rem] leading-snug">
+        <span className="font-semibold tracking-[0.1em] uppercase">{NEXT_UP.when}</span>
+        <span className="mx-1.5" aria-hidden>
+          ·
+        </span>
+        {NEXT_UP.label} opens here when it is ready.
+      </p>
     </div>
   );
 }
@@ -662,32 +748,42 @@ function HubNote({
   );
 }
 
-/** A numbered, labelled section. The number is the skeleton a creator learns. */
+/**
+ * A labelled region of the overview.
+ *
+ * THE NUMBERS ARE GONE — 2026-10-17. Each heading used to carry a counted
+ * accent chip: "1 MEET THE BRAND", "2 WHAT THEY SELL", "3 WHAT TO MAKE", "4
+ * OFFERS AND CONTESTS", "5 WHERE YOU RANK". Rashid: "The numbering implies a
+ * sequence that is not one — they are not steps she takes." Exactly so. Nobody
+ * reads the brand's introduction and then does step two; a creator jumps to the
+ * one she wants. Worse, numbering five regions of which three were usually
+ * empty made the screen read as a five-step process she was failing at.
+ *
+ * `title` is also the anchor, so these regions keep their headings in the
+ * accessibility tree and a screen reader can still jump between them.
+ */
 function HubSection({
-  n,
+  id,
   title,
+  aside,
   children,
 }: {
-  n: number;
+  id: string;
   title: string;
+  /** An optional quiet thing on the right of the heading, e.g. a count. */
+  aside?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <section aria-labelledby={`hub-s${n}`} className="min-w-0">
-      <div className="flex items-center gap-2.5">
-        <span
-          aria-hidden
-          className="text-accent font-display grid size-6 shrink-0 place-items-center rounded-md text-[0.75rem] font-semibold"
-          style={{ background: 'var(--wx-accent-soft)' }}
-        >
-          {n}
-        </span>
+    <section aria-labelledby={`hub-${id}`} className="min-w-0">
+      <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2
-          id={`hub-s${n}`}
+          id={`hub-${id}`}
           className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase"
         >
           {title}
         </h2>
+        {aside}
       </div>
       <div className="mt-3">{children}</div>
     </section>
@@ -697,33 +793,52 @@ function HubSection({
 /* ------------------------------------------------------------- overview -- */
 
 /**
- * The brand's room, in ONE glass panel.
+ * THE BRAND'S ROOM, REBUILT 2026-10-17 AROUND WHAT A CREATOR CAME FOR.
  *
- * Every hub has the same five sections in the same order, so a creator always
- * knows where to look, whatever the brand has filled in:
+ * Rashid, after using it: *"brands hub is really difficult for creators to
+ * operate work on the UX"*. The diagnosis, in order of how much room each
+ * problem wasted:
  *
- *   1 Meet the brand   2 What they sell   3 What to make
- *   4 Offers and contests   5 Where you rank
+ *  A. IT LED WITH THE LEAST ACTIONABLE THING AND BURIED THE MOST. The first
+ *     screen was "1 MEET THE BRAND" - a paragraph the brand has usually not
+ *     written - and the two things she can actually act on, their offers and
+ *     their contests, were two link rows in a right-hand column, which on a
+ *     phone is BELOW the brand introduction, the product grid and the briefs
+ *     placeholder. On Swisse that is a screen and a half of scrolling to reach
+ *     the only taps worth making.
  *
- * Wide screens split it in two (the brand's story on the left, the things to act
- * on on the right); on a phone it is one column in that same order.
+ *  B. AN ABSENT THING COST MORE ROOM THAN A PRESENT ONE. "Swisse has not
+ *     written its introduction yet", "Products are on their way", "Briefs are
+ *     on their way" - three full-height cards, each a heading plus a paragraph
+ *     plus padding, which between them said nothing. `WhatToMake` had no data
+ *     source anywhere in the database, so that one was empty on every brand,
+ *     forever. A creator scrolled a screen and a half to learn there was
+ *     nothing to learn.
  *
- * ONE PANEL, MANY WIDGETS. Each card in here used to be `wx-neo-raised` — a
- * products grid alone put six backdrop-filters on the page, against a budget of
- * three. The panel is the only blurred surface now; everything inside it is the
- * same material with the blur left off.
+ *  C. THE NUMBERS PROMISED A PROCESS. See `HubSection`.
  *
- * A SECTION WITH NOTHING BEHIND IT SAYS SO. It never collapses and never
- * leaves a gap, because a hub that looks different brand to brand teaches a
- * creator nothing about where things are.
+ * SO: the first thing in the panel is now what she can do with this brand
+ * right now, beside where she ranks on it. Products come next, because a photo
+ * of a thing with "your cut" on it is worth more than prose. The brand's own
+ * words come after that, and ONLY if it wrote any. Everything the brand has
+ * not filled in is ONE LINE at the foot - not a card each, and not a card at
+ * all. And when a brand has filled in nothing whatsoever, the panel says so
+ * once, in one note, and points at what she can still do.
+ *
+ * ONE PANEL, MANY WIDGETS, unchanged and still load-bearing. Each card in here
+ * used to be `wx-neo-raised` - a products grid alone put six backdrop-filters
+ * on the page, against a budget of three. The panel is the only blurred
+ * surface; everything inside it is the same material with the blur left off.
  */
-function Overview({
+export function Overview({
   brand,
   products,
   loading,
   failed,
   onRetry,
-  offerCount,
+  offers,
+  mine,
+  offersLoading,
   onSection,
 }: {
   brand: CreatorBrand;
@@ -731,14 +846,89 @@ function Overview({
   loading: boolean;
   failed: boolean;
   onRetry: () => Promise<unknown>;
-  offerCount: number;
+  offers: CreatorOffer[];
+  mine: MyOfferApplication[];
+  offersLoading: boolean;
   onSection: (key: string) => void;
 }) {
+  /*
+   * THE SAME `bucketFor` THE OFFERS SECTION USES, deliberately. The count on
+   * this summary and the count on the tab a creator lands on after tapping it
+   * MUST agree, and working the answer out twice is how "3 open to you" comes
+   * to show two cards.
+   */
+  const openCount = offers.filter(
+    (offer) => bucketFor(mine.find((a) => a.offer_id === offer.id)) === 'open'
+  ).length;
+  const onItCount = offers.length - openCount;
+
+  const hasProducts = products.length > 0;
+  const showProducts = loading || failed || hasProducts;
+
+  /*
+   * WHAT THIS BRAND HAS NOT FILLED IN, as a list of nouns for one sentence.
+   *
+   * Products are only counted as missing once we KNOW they are missing: a read
+   * in flight, or a read that failed, is not an absence, and `WhatTheySell`
+   * says each of those in its own words instead.
+   *
+   * Briefs are always on the list. Nothing in the database holds creative
+   * direction for a brand - no column, no table - so there is nothing to
+   * render and nothing to invent. The constant stays so that the day a briefs
+   * source exists, this line stops mentioning them in one edit.
+   */
+  const briefsMissing = true;
+  const missing: string[] = [];
+  if (!brand.description) missing.push('an introduction');
+  if (!loading && !failed && !hasProducts) missing.push('products');
+  if (briefsMissing) missing.push('briefs');
+
+  /*
+   * NOTHING AT ALL IS ONE STATE WITH ONE ANSWER, not four empty cards. When a
+   * brand has no introduction, no products and no offers, every region above
+   * would be an apology, so the panel says it once and points at the two
+   * things that still work: its contests, and her own figures for it.
+   */
+  const bare =
+    !brand.description &&
+    !loading &&
+    !failed &&
+    !hasProducts &&
+    !offersLoading &&
+    offers.length === 0;
+
   return (
     <div className="wx-neo-raised min-w-0 rounded-2xl p-4 sm:p-5">
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start">
-        <div className="flex min-w-0 flex-col gap-6">
-          <MeetTheBrand brand={brand} />
+      <div className="flex min-w-0 flex-col gap-6">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start">
+          {bare ? (
+            <HubNote
+              title={`${brand.name} has not filled in its hub yet`}
+              body={`No introduction, no products and no offers so far. Nothing is broken and nothing is waiting on you — they appear here the moment ${brand.name} adds them.`}
+              action={
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="secondary" size="sm" onClick={() => onSection('contests')}>
+                    Their contests
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={() => onSection('numbers')}>
+                    Your numbers
+                  </Button>
+                </div>
+              }
+            />
+          ) : (
+            <ActOnThis
+              openCount={openCount}
+              onItCount={onItCount}
+              loading={offersLoading}
+              onSection={onSection}
+            />
+          )}
+
+          <HubStanding brand={brand} onSection={onSection} />
+        </div>
+
+        {showProducts ? (
           <WhatTheySell
             brand={brand}
             products={products}
@@ -746,47 +936,124 @@ function Overview({
             failed={failed}
             onRetry={onRetry}
           />
-          <WhatToMake brand={brand} />
-        </div>
-        <div className="flex min-w-0 flex-col gap-6">
-          <OffersAndContests offerCount={offerCount} onSection={onSection} />
-          <HubStanding brand={brand} onSection={onSection} />
-        </div>
+        ) : null}
+
+        {brand.description ? <AboutBrand brand={brand} /> : null}
+
+        {/*
+          EVERYTHING ABSENT, IN ONE LINE. This replaces up to three
+          full-height cards that each said a version of "on its way". It is
+          last, because what a brand has NOT done is the least important thing
+          on a screen about what she can do. It is `text-muted` rather than
+          `text-faint` even so: it carries what three cards used to carry, and
+          `text-faint` measures 4.31:1 on surface-2 in light mode, which is
+          under AA — see the note in `FilterBar`.
+        */}
+        {!bare && missing.length > 0 ? (
+          <p className="text-muted max-w-prose text-[0.8125rem] leading-relaxed">
+            Not from {brand.name} yet: {listOut(missing)}. You will find them here when they
+            land
+            {briefsMissing
+              ? ' — briefs are the angles that convert, the hooks to open with, and what to avoid.'
+              : '.'}
+          </p>
+        ) : null}
       </div>
     </div>
   );
 }
 
+/** "a, b and c" - so the one-line summary of what is missing reads as English. */
+function listOut(items: string[]) {
+  if (items.length <= 1) return items[0] ?? '';
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
 /**
- * 1. Meet the brand.
+ * WHAT SHE CAN DO WITH THIS BRAND RIGHT NOW. The first thing in the panel.
  *
- * The brand's own words (`brands.description`) are the intro. There is NO founder
- * field anywhere in the database, so the founder line is an honest placeholder
- * rather than an invented name. When the brand-facing editor adds one, it slots
- * in where the placeholder is.
+ * Two rows, each a real destination, each carrying the one number that decides
+ * whether it is worth a tap. It replaces the old "4 OFFERS AND CONTESTS"
+ * block, which held the same two links in the last column of a five-region
+ * grid - so on a phone they arrived after everything the brand had not written.
+ *
+ * THE OFFER COUNT IS SPLIT INTO "OPEN TO YOU" AND "YOU ARE ON", because those
+ * are two different questions and a single total answers neither. A brand with
+ * four offers she is already on and nothing new is not a brand with four
+ * offers waiting.
+ *
+ * THE CONTEST COUNT IS STILL NOT FETCHED, and that is the same decision as
+ * before: it would be a second read for a number that is one tap away, and the
+ * contest catalogue is the heaviest module in the creator app. The row is
+ * honest about being a destination rather than a count.
  */
-function MeetTheBrand({ brand }: { brand: CreatorBrand }) {
+function ActOnThis({
+  openCount,
+  onItCount,
+  loading,
+  onSection,
+}: {
+  openCount: number;
+  onItCount: number;
+  loading: boolean;
+  onSection: (key: string) => void;
+}) {
+  /* A READ IN FLIGHT IS NOT A ZERO. "Nothing open right now" while the offers
+     are still arriving is a lie that lasts half a second and sends her away. */
+  const offerNote = loading
+    ? 'Checking what is open'
+    : openCount > 0
+      ? `${openCount} open to you${onItCount > 0 ? `, ${onItCount} you are on` : ''}`
+      : onItCount > 0
+        ? `${onItCount} you are on. Nothing new open just now`
+        : 'Nothing open right now. New ones land here';
+
   return (
-    <HubSection n={1} title="Meet the brand">
+    <HubSection id="now" title="What you can do now">
+      <div className="flex flex-col gap-3">
+        <HubLink
+          icon={<Ticket size={17} />}
+          title="Their offers"
+          note={offerNote}
+          onClick={() => onSection('offers')}
+        />
+        <HubLink
+          icon={<Flag size={17} />}
+          title="Their contests"
+          note="Live and past, for this brand only"
+          onClick={() => onSection('contests')}
+        />
+      </div>
+    </HubSection>
+  );
+}
+
+/**
+ * THE BRAND'S OWN WORDS, and only when there are some.
+ *
+ * `brands.description` is the whole of it. The founder line that used to sit
+ * under it - "A word from the founder is on its way" - is gone: there is no
+ * founder field anywhere in the database, so it was a promise this screen had
+ * no way to keep, printed on every brand, under an introduction that was
+ * itself usually absent. When a founder column exists it goes here.
+ *
+ * It is below the products on purpose. A photograph of a thing with "your cut"
+ * on it tells a creator more about whether to work with a brand than a
+ * paragraph does.
+ */
+function AboutBrand({ brand }: { brand: CreatorBrand }) {
+  return (
+    <HubSection id="about" title={`About ${brand.name}`}>
       <div className="wx-neo-raised-sm rounded-xl p-4">
-        {brand.description ? (
-          <p className="max-w-prose text-[0.9375rem] leading-relaxed break-words">
-            {brand.description}
-          </p>
-        ) : (
-          <p className="text-muted max-w-prose text-[0.875rem] leading-relaxed">
-            {brand.name} has not written its introduction yet. It appears here when they do.
-          </p>
-        )}
-        <p className="text-subtle mt-4 text-[0.8125rem] leading-relaxed">
-          A word from the founder is on its way.
+        <p className="max-w-prose text-[0.9375rem] leading-relaxed break-words">
+          {brand.description}
         </p>
       </div>
     </HubSection>
   );
 }
 
-/** 2. What they sell, each product with the commission rate the creator earns. */
+/** What they sell, each product with the commission rate the creator earns. */
 function WhatTheySell({
   brand,
   products,
@@ -801,7 +1068,21 @@ function WhatTheySell({
   onRetry: () => Promise<unknown>;
 }) {
   return (
-    <HubSection n={2} title="What they sell">
+    <HubSection
+      id="sell"
+      title="What they sell"
+      /* The count on the heading, so a long grid says how long it is before
+         she starts scrolling it. Omitted at zero and while the read is in
+         flight: a count of nothing is not a count. */
+      aside={
+        products.length > 0 ? (
+          <span className="text-faint text-[0.75rem]">
+            <span className="wx-numeric">{products.length}</span>{' '}
+            {products.length === 1 ? 'product' : 'products'}
+          </span>
+        ) : null
+      }
+    >
       {loading ? (
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -820,10 +1101,16 @@ function WhatTheySell({
           }
         />
       ) : products.length === 0 ? (
-        <HubNote
-          title="Products are on their way"
-          body="They appear here with the commission rate you earn on each one."
-        />
+        /*
+          A LINE, NOT A CARD. `Overview` does not even render this region when
+          a brand has no products — the foot of the panel names them in its
+          one-line list of what is missing instead. This branch is the backstop
+          for any other caller, and it costs a line rather than the
+          full-height "Products are on their way" card it replaced.
+        */
+        <p className="text-muted text-[0.8125rem] leading-relaxed">
+          No products listed yet. Each one arrives with the rate you earn on it.
+        </p>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {products.map((product, i) => (
@@ -903,23 +1190,18 @@ function WhatTheySell({
   );
 }
 
-/**
- * 3. What to make: briefs, hooks, do's and don'ts.
+/*
+ * `WhatToMake` IS GONE, 2026-10-17, and its absence is the point.
  *
- * NO DATA SOURCE YET. Nothing in the database holds creative direction for a
- * brand, so this is the honest empty state until the brand-facing editor adds
- * fields for it. Nothing here is invented.
+ * It was "3 WHAT TO MAKE", a full-height card reading "Briefs are on their
+ * way", and it had NO DATA SOURCE: nothing in the database holds creative
+ * direction for a brand, so it rendered that same card on every brand, on
+ * every visit, for every creator, and always would until a briefs table
+ * exists. A region that can only ever be empty is not a region; it is a
+ * sentence. It is one clause of the one-line list at the foot of `Overview`
+ * now, and when a briefs source does exist this becomes a real section with
+ * real content rather than a placeholder that was already occupying the room.
  */
-function WhatToMake({ brand }: { brand: CreatorBrand }) {
-  return (
-    <HubSection n={3} title="What to make">
-      <HubNote
-        title="Briefs are on their way"
-        body={`${brand.name} has not shared its briefs yet. When it does, you will find the angles that convert, the hooks to open with, and what to do and what to avoid.`}
-      />
-    </HubSection>
-  );
-}
 
 /** A link row into one of the existing, brand-filtered sections. */
 function HubLink({
@@ -959,54 +1241,23 @@ function HubLink({
   );
 }
 
-/**
- * 4. Their offers and contests. Links into this hub's own Offers and Contests
- * sections, which are the app's Offers and Contests screens already filtered to
- * this brand. The cards themselves are not rebuilt here.
- *
- * The contest count is not fetched on purpose: it would be a second read for a
- * number that is one tap away. The offer count is already in hand.
- */
-function OffersAndContests({
-  offerCount,
-  onSection,
-}: {
-  offerCount: number;
-  onSection: (key: string) => void;
-}) {
-  return (
-    <HubSection n={4} title="Offers and contests">
-      <div className="flex flex-col gap-3">
-        <HubLink
-          icon={<Ticket size={17} />}
-          title="Their offers"
-          note={
-            offerCount > 0
-              ? `${offerCount} ${offerCount === 1 ? 'offer' : 'offers'} you can look at`
-              : 'Nothing open right now. New ones land here.'
-          }
-          onClick={() => onSection('offers')}
-        />
-        <HubLink
-          icon={<Flag size={17} />}
-          title="Their contests"
-          note="Live and past, for this brand only"
-          onClick={() => onSection('contests')}
-        />
-      </div>
-    </HubSection>
-  );
-}
-
 /** Stable across renders, so the standing read is cached rather than refired. */
 const ALL_TIME_FROM = '2000-01-01';
 
 /**
- * 5. This brand's leaderboard: where the creator ranks among its creators.
+ * WHERE SHE RANKS ON THIS BRAND.
  *
- * Reads the same `my_leaderboard_standing` the Leaderboards section uses, scoped
- * to this brand. A creator with no figures here is not on the board, which is a
- * different fact from a failed read, and they are told each in its own words.
+ * Reads the same `my_leaderboard_standing` the Leaderboards section uses,
+ * scoped to this brand. A creator with no figures here is not on the board,
+ * which is a different fact from a failed read, and each is said in its own
+ * words.
+ *
+ * BEING UNRANKED COSTS A LINE NOW, not a card. The unranked state is the
+ * common one — most creators are not on most boards — and it used to be a
+ * titled `HubNote` with a paragraph and a button, the same weight as a real
+ * standing. An absent figure should take less room than a present one, so it
+ * is one sentence with the link inside it. Only the FAILED read keeps a card,
+ * because a failed read is a problem and a problem is worth a box.
  */
 function HubStanding({
   brand,
@@ -1019,9 +1270,9 @@ function HubStanding({
   const { data, isLoading, isError, refetch } = useMyStanding(ALL_TIME_FROM, to, brand.id);
 
   return (
-    <HubSection n={5} title="Where you rank">
+    <HubSection id="rank" title="Where you rank">
       {isLoading ? (
-        <div className="wx-skeleton h-32 rounded-xl" />
+        <div className="wx-skeleton h-24 rounded-xl" />
       ) : isError ? (
         <HubNote
           tone="wrong"
@@ -1035,44 +1286,39 @@ function HubStanding({
         />
       ) : data ? (
         <div className="wx-neo-raised-sm rounded-xl p-4">
-          <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
-            Your place at {brand.name}
-          </p>
           <p
-            className="font-display mt-2 text-[2rem] leading-none font-semibold"
+            className="font-display text-[2rem] leading-none font-semibold"
             style={{ color: 'var(--wx-brand-accent-ink, var(--wx-accent))' }}
           >
             #{data.rank}
           </p>
-          {data.total_creators > 0 ? (
-            <p className="text-muted mt-2 text-[0.8125rem]">
-              of {data.total_creators.toLocaleString()} creators on this board
-            </p>
-          ) : null}
+          <p className="text-muted mt-2 text-[0.8125rem]">
+            {data.total_creators > 0
+              ? `of ${data.total_creators.toLocaleString()} creators at ${brand.name}`
+              : `your place at ${brand.name}`}
+          </p>
           <button
             type="button"
             onClick={() => onSection('leaderboards')}
-            className="text-accent mt-3 inline-flex min-h-11 items-center gap-1.5 text-[0.8125rem] font-semibold"
+            className="text-accent mt-2 inline-flex min-h-11 items-center gap-1.5 text-[0.8125rem] font-semibold"
           >
             See the full board
             <ArrowRight size={14} aria-hidden />
           </button>
         </div>
       ) : (
-        <HubNote
-          title="You are not on this board yet"
-          body={`Creators appear once their videos have sold something for ${brand.name}. Yours will show up here when they do.`}
-          action={
-            <button
-              type="button"
-              onClick={() => onSection('leaderboards')}
-              className="text-accent inline-flex min-h-11 items-center gap-1.5 text-[0.8125rem] font-semibold"
-            >
-              <Trophy size={14} aria-hidden />
-              See who is on it
-            </button>
-          }
-        />
+        <p className="text-muted max-w-prose text-[0.8125rem] leading-relaxed">
+          Not on this board yet — creators appear once their videos have sold something for{' '}
+          {brand.name}.{' '}
+          <button
+            type="button"
+            onClick={() => onSection('leaderboards')}
+            className="text-accent inline-flex min-h-11 items-center gap-1.5 align-middle text-[0.8125rem] font-semibold"
+          >
+            <Trophy size={14} aria-hidden />
+            See who is on it
+          </button>
+        </p>
       )}
     </HubSection>
   );

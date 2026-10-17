@@ -16,6 +16,10 @@ import type { BrandMiniStats } from './useBrandMiniStats';
 /**
  * THE HEAD OF A BRAND HUB: who the brand is, and how SHE is doing on it.
  *
+ * TWO FIGURES AND A LINE, not three figures. See the note beside the
+ * commission line below: the third tile could never hold a number, so it is a
+ * sentence now and the two measured figures get the room.
+ *
  * ONE BLURRED LAYER, and it is this element. `wx-neo-raised` carries the only
  * `backdrop-filter` on the page body; everything inside it — the stat tiles,
  * the chips, the segmented control — is the same glass material with the blur
@@ -133,7 +137,8 @@ export function BrandMark({ brand, className }: { brand: CreatorBrand; className
 /**
  * THE BRAND HEADER.
  *
- * Logo, name, three mini stats for HER on this brand, and whatever the hub
+ * Logo, name, her two measured figures on this brand (and one line for the
+ * figure nobody measures), and whatever the hub
  * pins to the foot of it (the section control) or to its top right (the brand
  * switcher). One panel, so the section below it starts high.
  */
@@ -174,14 +179,43 @@ export function BrandHeader({
         {action ? <div className="max-w-full shrink-0">{action}</div> : null}
       </div>
 
+      {/*
+        NOTHING MEASURED IS A SENTENCE, NOT TWO EMPTY TILES — 2026-10-17.
+
+        On a brand with no day of figures yet — which is every brand a creator
+        has just joined, and the one Rashid screenshotted — both tiles read
+        "Not reported" over an empty sparkline track, with a "Not reported"
+        delta chip beside one of them. That is 17rem of glass, three separate
+        apologies deep, above a panel that was itself three empty cards. The
+        same rule as everywhere else on this screen: an absent thing takes less
+        room than a present one.
+
+        IT STILL SAYS `NOT_REPORTED`, and still never a zero. The mechanism is
+        unchanged; only the room it occupies is.
+
+        A FAILED READ IS NOT AN ABSENCE, and used to be told as one: `measured`
+        is false either way, so a leaderboard outage read as "you have no
+        figures". It gets its own sentence now.
+      */}
       {stats.loading ? (
-        <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3" aria-busy="true">
-          {[0, 1, 2].map((i) => (
+        <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2" aria-busy="true">
+          {[0, 1].map((i) => (
             <li key={i} className="wx-skeleton h-[7.5rem] rounded-xl" />
           ))}
         </ul>
+      ) : stats.isError ? (
+        <p className="text-muted mt-4 max-w-prose text-[0.8125rem] leading-relaxed">
+          Your figures for {brand.name} would not load. That is not the same as having none —
+          nothing is lost, and they appear here when the read succeeds.
+        </p>
+      ) : !stats.measured ? (
+        <p className="text-muted mt-4 max-w-prose text-[0.8125rem] leading-relaxed">
+          Your GMV and your videos on {brand.name}: {NOT_REPORTED}
+          <Info size={11} aria-hidden className="mx-1 inline-block align-[-0.1em]" />— no day of
+          figures has arrived for this brand yet. They appear here as soon as one does.
+        </p>
       ) : (
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <MiniStat
             index={0}
             title="Your GMV"
@@ -211,38 +245,8 @@ export function BrandHeader({
             }
           />
 
-          {/*
-            COMMISSION HAS NO MEASURED FIGURE ANYWHERE IN THE CREATOR DATA, and
-            this tile says so rather than computing a guess.
-            `brand_products.commission_rate` is an OFFER TERM — the percentage a
-            product pays — and there is no per-video product link to apply it
-            to, so any amount here would be this screen inventing one. The
-            null-is-not-zero mechanism is the honest answer, and the day a
-            measured commission column exists this is the one tile to change.
-
-            THE WHOLE APP AGREES ABOUT THIS, which is worth knowing before
-            anybody "fixes" it: `COMMISSION_IS_MEASURED` in
-            `src/lib/creator/useHomeData.ts` is `false` for the same reason, so
-            Home, My numbers and this tile all state the same gap. Giving any of
-            them a figure needs a new RPC, and that is a question for Rashid
-            rather than a change to make here.
-          */}
           <MiniStat
             index={1}
-            title="Your commission"
-            figure={
-              <NotReported why="No commission amount is measured anywhere. Rates are per product, on each offer." />
-            }
-            note="Not measured yet. Each product's rate is on its card."
-            chart={
-              <div className="relative h-[2.75rem] w-full">
-                <EmptyTrack />
-              </div>
-            }
-          />
-
-          <MiniStat
-            index={2}
             title="Your videos"
             figure={
               stats.videos === null ? (
@@ -269,6 +273,33 @@ export function BrandHeader({
             }
           />
         </div>
+      )}
+
+      {/*
+        COMMISSION IS A LINE, NOT A TILE — 2026-10-17.
+        Rashid, after using the hub: "brands hub is really difficult for
+        creators to operate". One cause was that a THIRD of the most prominent
+        area on the screen was permanently an apology. This tile could never
+        hold a figure: `brand_products.commission_rate` is an OFFER TERM (the
+        percentage a product pays), nothing links a video to a product, and
+        `COMMISSION_IS_MEASURED` in `src/lib/creator/useHomeData.ts` is `false`
+        for the same reason. So it rendered `Not reported`, a why-tooltip, a
+        caption and an EMPTY SPARKLINE TRACK, in 7.5rem of glass, on every
+        brand, forever.
+
+        It still says exactly the same thing — `NOT_REPORTED`, never a computed
+        guess, and the rate is still on each product card. It just costs one
+        line instead of a third of the header, which is the rule the rest of
+        this redesign follows: an absent thing takes less room than a present
+        one. The day a measured commission column exists, this line becomes a
+        third `MiniStat` again and nothing else here changes.
+      */}
+      {stats.loading ? null : (
+        <p className="text-muted mt-2.5 max-w-prose text-[0.75rem] leading-snug">
+          <span className="font-semibold">Your commission: {NOT_REPORTED}</span>
+          <Info size={11} aria-hidden className="mx-1 inline-block align-[-0.1em]" />— we do not
+          measure commission anywhere. Each product shows the rate you earn on it.
+        </p>
       )}
 
       {children ? <div className="mt-4">{children}</div> : null}

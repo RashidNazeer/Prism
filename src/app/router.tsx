@@ -806,6 +806,14 @@ export const router = createBrowserRouter([
           HydrateFallback: RouteFallback,
           lazy: lazyRoute(() => import('@/routes/dev/HomePreview'), 'HomePreview'),
         },
+        {
+          /* The Brand Hub overview, for the same reason, at the two counts
+             that decide whether the 2026-10-17 rework worked: a brand with
+             NOTHING filled in, and one with everything. */
+          path: '/dev/brand-hub',
+          HydrateFallback: RouteFallback,
+          lazy: lazyRoute(() => import('@/routes/dev/BrandHubPreview'), 'BrandHubPreview'),
+        },
       ]
     : []),
 
