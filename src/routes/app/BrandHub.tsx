@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import { m } from 'motion/react';
-import { ArrowRight, Flag, Package, Ticket, Trophy } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Flag, Package, Ticket, Trophy } from 'lucide-react';
 import { DataError, EmptyState } from '@/components/ui/DataState';
 import { useMyStanding } from '@/lib/creator/useLeaderboard';
 import { ApplyDialog } from '@/components/creator/ApplyDialog';
@@ -505,6 +505,23 @@ function SectionControl({
 }
 
 /** The other hubs, pinned to the top right of the header. */
+/**
+ * ONE CONTROL, NOT A ROW OF EVERY BRAND SHE HAS.
+ *
+ * Rashid, of the old version: "the brands list is not practical". It was a
+ * horizontally scrolling `<ul>` of every hub she can open, pinned to the top
+ * right of the header. At four brands it already crowded the brand's own name
+ * and collided with the sticky top bar when the page scrolled; at ten it is a
+ * sideways scroll nobody discovers, in the corner furthest from a thumb.
+ *
+ * It is a dropdown now: the brand you are on, and a list when you want
+ * another. The same shape as the brand filter on Home and My numbers, so the
+ * control that changes which brand you are looking at is one control
+ * everywhere in the product.
+ *
+ * It renders nothing at all for a creator with a single hub — a switcher
+ * offering one choice is furniture.
+ */
 function BrandSwitcher({
   brand,
   brands,
@@ -514,37 +531,81 @@ function BrandSwitcher({
   brands: CreatorBrand[];
   section: string;
 }) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: Event) => {
+      if (e.target instanceof Element && e.target.closest('[data-brand-switcher]')) return;
+      setOpen(false);
+    };
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('pointerdown', away);
+    document.addEventListener('keydown', key);
+    return () => {
+      document.removeEventListener('pointerdown', away);
+      document.removeEventListener('keydown', key);
+    };
+  }, [open]);
+
+  if (brands.length < 2) return null;
+
+  /* The section travels with you, and so does the brand lock when the section
+     is the one that needs it. */
+  const hrefFor = (b: CreatorBrand) =>
+    section === 'overview'
+      ? `/app/brands/${b.slug}`
+      : section === 'numbers'
+        ? `/app/brands/${b.slug}?section=numbers&brand=${b.id}`
+        : `/app/brands/${b.slug}?section=${section}`;
+
   return (
-    <nav aria-label="Your brands" className="wx-tap-row max-w-full overflow-x-auto">
-      <ul className="flex items-center gap-1">
-        {brands.map((b) => {
-          const active = b.slug === brand.slug;
-          /* The section travels with you, and so does the brand lock when the
-             section is the one that needs it. */
-          const to =
-            section === 'overview'
-              ? `/app/brands/${b.slug}`
-              : section === 'numbers'
-                ? `/app/brands/${b.slug}?section=numbers&brand=${b.id}`
-                : `/app/brands/${b.slug}?section=${section}`;
-          return (
-            <li key={b.id} className="shrink-0">
-              <Link
-                to={to}
-                aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'flex min-h-8 items-center gap-2 rounded-full px-2.5 text-[0.8125rem] font-medium transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2',
-                  active ? 'wx-neo-inset text-text' : 'text-muted hover:text-accent'
-                )}
-              >
-                <BrandChip brand={b} size={20} />
-                <span className="whitespace-nowrap">{b.name}</span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+    <div data-brand-switcher className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        aria-label={`Brand: ${brand.name}. Switch brand`}
+        className="wx-neo-raised-sm text-text flex min-h-11 items-center gap-2 rounded-full px-3 text-[0.8125rem] font-medium sm:min-h-9"
+      >
+        <BrandChip brand={brand} size={20} />
+        <span className="max-w-[9rem] truncate">{brand.name}</span>
+        <ChevronDown aria-hidden className="text-muted size-3.5 shrink-0" />
+      </button>
+
+      {open && (
+        <ul
+          role="listbox"
+          aria-label="Your brands"
+          className="wx-neo-raised absolute end-0 z-40 mt-1 max-h-80 w-60 overflow-auto rounded-xl p-1"
+        >
+          {brands.map((b) => {
+            const active = b.slug === brand.slug;
+            return (
+              <li key={b.id}>
+                <Link
+                  to={hrefFor(b)}
+                  role="option"
+                  aria-selected={active}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    'hover:bg-surface-2 flex min-h-11 items-center gap-2 rounded-md px-2 text-[0.8125rem]',
+                    active ? 'text-text font-semibold' : 'text-muted'
+                  )}
+                >
+                  <BrandChip brand={b} size={20} />
+                  <span className="min-w-0 flex-1 truncate">{b.name}</span>
+                  {active && <Check aria-hidden className="size-3.5 shrink-0" />}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
 
