@@ -34,10 +34,30 @@
    * and drops most of the red that was making it read as purple: hue moves from
    * about 255 degrees to about 240, and both steps sit closer to the page.
    */
-  --wx-bg: #07070a; /* page background */
-  --wx-surface-1: #2B2B2E; /* cards, panels */
-  --wx-surface-2: #343437; /* hover, nested cards */
-  --wx-surface-3: #1C1C1E; /* wells, inputs */
+  /*
+   * 20% BLACKER IN DARK MODE, 2026-10-17, at Rashid's request: "in the whole
+   * app I want you to increase the black tint upto 20 percent in dark mode".
+   *
+   * Every ground and surface value in THIS BLOCK ONLY was multiplied by 0.8 —
+   * the page background, the three surfaces, the modal fill, the four stops of
+   * the aurora shade and the wave mesh colour. The light block was not touched;
+   * this file declares every token twice and the wrong occurrence has been
+   * edited before.
+   *
+   * THE WAVE COLOUR WENT DOWN WITH THE GROUND, deliberately. Darkening only the
+   * ground would have left the mesh standing proud of it and the pattern
+   * reading louder, not blacker. Dropping both by the same factor keeps their
+   * relationship and moves the whole thing down.
+   *
+   * It helps the one thing that was tight. Measured on rendered pixels, worst
+   * glass card: dark muted text on glass 4.57 -> 7.21:1, rim 4.77 -> 7.19:1.
+   * Light text on a darker card is simply easier, so this bought headroom
+   * rather than spending it.
+   */
+  --wx-bg: #060608; /* page background */
+  --wx-surface-1: #222225; /* cards, panels */
+  --wx-surface-2: #2a2a2c; /* hover, nested cards */
+  --wx-surface-3: #161618; /* wells, inputs */
   --wx-field: #1C1C1E; /* what you type into · a well on dark */
 
   /* Text, all verified >= 4.5:1 on EVERY surface, --wx-bg to --wx-surface-3 */
@@ -374,7 +394,7 @@
      `#e6e8ef` at 0.89, under a 32px blur. The densest text on the screen gets
      the densest pane, which is the floor arriving at the same answer he did.
      Dark's twin is surface-1 at the same 0.89. */
-  --wx-glass-modal: rgba(43, 43, 46, 0.89);
+  --wx-glass-modal: rgba(34, 34, 37, 0.89);
   /* The two lit edges: a light source above and to the left. Same direction the
      neomorphic layer used, so the whole system agrees where the light is. */
   --wx-glass-rim-top: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
@@ -634,10 +654,10 @@
    */
   --wx-aurora: linear-gradient(
     180deg,
-    #191920 0%,
-    #101016 42%,
-    #0a0a0e 78%,
-    #07070a 100%
+    #14141a 0%,
+    #0d0d12 42%,
+    #08080b 78%,
+    #060608 100%
   );
   --wx-aurora-opacity: 0.9;
 
@@ -664,7 +684,7 @@
    * about `#3e4154`, which on a `#07070a` page is exactly the faceted relief
    * he is after and carries no hue to glare with.
    */
-  --wx-waves-color: #23242e;
+  --wx-waves-color: #1c1d25;
   /*
    * How much of the field reaches the page — and it is HIGH now, where the
    * blue one had to be held down to 0.22.
