@@ -320,7 +320,29 @@
    * that buys the white rim its budget — and the base is as thin as the floor
    * allows rather than as thin as he drew it.
    */
-  --wx-glass-fill: rgba(255, 255, 255, 0.1);
+  /*
+   * A BLACK TINT IN DARK MODE, 2026-10-17. Rashid: "I want darker effect in
+   * glass in dark mode that is why i wanted to add black tint".
+   *
+   * This was `rgba(255, 255, 255, 0.1)` — WHITE — in both themes, which is why
+   * making the ground 20% blacker did nothing to the cards: a card is its fill
+   * composited over the ground, and a white fill LIFTS whatever is behind it.
+   * The ground went to near-black and the cards sat at rgb(67, 67, 74),
+   * further above it than before.
+   *
+   * 20% black is the figure he asked for, applied where he meant it. The card
+   * now sinks into the ground rather than floating over it, which is the
+   * "darker glass" effect; the lit rim and the inner highlight still draw its
+   * shape, so it does not read as a hole.
+   *
+   * LIGHT IS UNCHANGED and must stay that way — a black fill there would make
+   * every card a grey slab. The light block keeps the white fill.
+   *
+   * `--wx-glass-fill-nav` is `var(--wx-glass-fill)`, so the bar follows this
+   * automatically and stays the same material as a card, which is what he
+   * asked for when the nav tint came off.
+   */
+  --wx-glass-fill: rgba(0, 0, 0, 0.2);
   /* THE LANDING NAV IS ITS OWN, DENSER MATERIAL from 2026-10-15. It used the
      card fill, which is 50% here and 8% in light — and a bar that transparent
      over a smooth background cannot read as glass however hard it blurs, which
