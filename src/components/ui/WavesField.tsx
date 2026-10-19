@@ -206,7 +206,8 @@ function eligible(): boolean {
   const forced = override();
   if (forced) return forced === 'on';
 
-  if (lowEnd()) return false;
+  /* A weak machine no longer loses the background: it gets a STILL picture
+     (a few frames, then the loop stops) instead of nothing. See `still` below. */
 
   /*
    * THE PHONE RULE IS GONE, 2026-10-17, AND RASHID CHOSE IT WITH THE NUMBER
@@ -393,9 +394,16 @@ export function WavesField({ intensity = 'full' }: { intensity?: 'full' | 'subtl
       const inner = instance.animationLoop.bind(instance);
       let paused = false;
       let last = 0;
+      /* Weak devices draw the pattern, let it settle for a few frames, then stop. */
+      const still = lowEnd();
+      let drawn = 0;
 
       const loop = () => {
         if (paused) {
+          instance.req = 0;
+          return;
+        }
+        if (still && drawn >= 4) {
           instance.req = 0;
           return;
         }
@@ -405,6 +413,7 @@ export function WavesField({ intensity = 'full' }: { intensity?: 'full' | 'subtl
           return;
         }
         last = now;
+        drawn += 1;
         inner();
       };
       instance.animationLoop = loop;
