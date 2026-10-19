@@ -194,17 +194,23 @@ function BrandCard({
 }) {
   const [small, setSmall] = useState(false);
   const line = brand.tagline ?? brand.description;
+  /* `--brand-base` is unset for a brand with no colour; the card then uses a
+     dark slate in dark mode and a mid slate in light mode (see the fallbacks). */
   const base = brand.brand_color
     ? `color-mix(in srgb, ${brand.brand_color} 62%, black)`
-    : '#2b2e3a';
+    : undefined;
   const letter = brand.name.trim().charAt(0).toUpperCase() || '?';
 
   return (
     <Link
       to={`/app/brands/${brand.slug}`}
+      style={{ '--brand-base': base } as React.CSSProperties}
       className="wx-neo-raised-sm wx-neo-press group relative isolate block aspect-[3/4] overflow-hidden sm:aspect-[3/4] rounded-xl sm:aspect-[4/5] text-white"
     >
-      <span aria-hidden className="absolute inset-0 -z-20" style={{ backgroundColor: base }} />
+      <span
+        aria-hidden
+        className="absolute inset-0 -z-20 bg-[var(--brand-base,#2b2e3a)] [[data-theme='light']_&]:bg-[var(--brand-base,#646a80)]"
+      />
 
       {brand.logo_url ? (
         <img
@@ -230,11 +236,7 @@ function BrandCard({
 
       <span
         aria-hidden
-        className="absolute inset-0 -z-[5]"
-        style={{
-          backgroundImage:
-            'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0.85) 50%, rgba(0,0,0,0.93) 100%)',
-        }}
+        className="absolute inset-0 -z-[5] bg-[linear-gradient(to_bottom,rgba(0,0,0,0)_0%,rgba(0,0,0,0)_20%,rgba(0,0,0,0.85)_50%,rgba(0,0,0,0.93)_100%)] [[data-theme='light']_&]:bg-[linear-gradient(to_bottom,transparent_0%,transparent_22%,color-mix(in_srgb,var(--brand-base,#646a80)_50%,black)_100%)]"
       />
 
       <span className="absolute inset-0 flex flex-col justify-between p-3 sm:p-4">
