@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
-import { money } from '@/lib/money';
+import { exactMoney } from '@/components/charts';
 import { describeAction, linkForSubject, useAuditLog } from '@/lib/admin/useAuditLog';
 import {
   useAtRisk,
@@ -98,16 +98,16 @@ export function AdminDashboard() {
               <Link
                 to={q.to}
                 className={cn(
-                  'bg-surface-1 flex h-full flex-col rounded-xl p-5 shadow-md transition-colors'
+                  'wx-neo-raised-sm flex h-full flex-col rounded-lg p-4 transition-colors'
                 )}
               >
-                <span className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
+                <span className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-wide uppercase">
                   <q.icon size={14} aria-hidden className="text-faint" />
                   {q.label}
                 </span>
                 <span
                   className={cn(
-                    'font-brand mt-3 text-[1.875rem] leading-none font-semibold',
+                    'mt-3 text-[1.75rem] leading-none font-bold tabular-nums',
                     inboxFailed ? 'text-faint' : n && n > 0 ? 'text-stage-due' : 'text-muted'
                   )}
                 >
@@ -121,9 +121,9 @@ export function AdminDashboard() {
       </ul>
 
       {/* ---------------------------------------------- waiting on them --- */}
-      <section className="wx-neo-raised mt-4 rounded-xl p-5 shadow-md">
+      <section className="wx-neo-raised mt-4 rounded-xl p-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
+          <h2 className="text-muted text-[0.6875rem] font-semibold tracking-wide uppercase">
             Waiting on creators
           </h2>
           {creators && creators.live > 0 ? (
@@ -160,13 +160,13 @@ export function AdminDashboard() {
             <Link
               key={c.label}
               to={c.to}
-              className="wx-neo-inset rounded-lg px-4 py-3 transition-colors"
+              className="wx-neo-raised-sm rounded-lg p-4 transition-colors"
             >
-              <dt className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
+              <dt className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-wide uppercase">
                 <c.icon size={13} aria-hidden className="text-faint" />
                 {c.label}
               </dt>
-              <dd className="font-display mt-1 text-[1.1875rem] font-semibold">
+              <dd className="mt-1 text-[1.25rem] font-bold tabular-nums">
                 {c.value ?? '...'}
               </dd>
             </Link>
@@ -191,8 +191,8 @@ export function AdminDashboard() {
 
       {/* ---------------------------------------------------------- at risk -- */}
       {risk && (risk.brands.length > 0 || risk.emptyOffers > 0 || risk.blocked > 0) ? (
-        <section className="wx-neo-raised mt-4 rounded-xl p-5 shadow-md">
-          <h2 className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
+        <section className="wx-neo-raised mt-4 rounded-xl p-4">
+          <h2 className="text-muted flex items-center gap-2 text-[0.6875rem] font-semibold tracking-wide uppercase">
             <AlertTriangle size={14} aria-hidden className="text-faint" />
             Worth a look
           </h2>
@@ -237,9 +237,9 @@ export function AdminDashboard() {
       ) : null}
 
       {/* --------------------------------------------------------- activity -- */}
-      <section className="bg-surface-1 mt-4 rounded-xl shadow-md">
-        <div className="border-line flex items-center justify-between gap-3 border-b px-5 py-3.5">
-          <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
+      <section className="wx-neo-raised mt-4 rounded-xl">
+        <div className="border-line flex items-center justify-between gap-3 border-b px-4 py-3">
+          <h2 className="text-muted text-[0.6875rem] font-semibold tracking-wide uppercase">
             Latest activity
           </h2>
           <Link
@@ -252,17 +252,17 @@ export function AdminDashboard() {
         </div>
 
         {activityFailed ? (
-          <p className="text-muted px-5 py-6 text-[0.875rem]">
+          <p className="text-muted px-4 py-6 text-[0.875rem]">
             The activity log would not load.
           </p>
         ) : (activity ?? []).length === 0 ? (
-          <p className="text-muted px-5 py-6 text-[0.875rem]">Nothing has happened yet.</p>
+          <p className="text-muted px-4 py-6 text-[0.875rem]">Nothing has happened yet.</p>
         ) : (
           <ul className="divide-line divide-y">
             {(activity ?? []).map((entry) => {
               const to = linkForSubject(entry.subject_type, entry.subject_id);
               const body = (
-                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 px-5 py-3">
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 px-4 py-3">
                   <span className="text-[0.84375rem] font-medium break-all">
                     {entry.actor_email ?? 'Somebody'}
                   </span>
@@ -283,7 +283,7 @@ export function AdminDashboard() {
               return (
                 <li key={entry.id}>
                   {to ? (
-                    <Link to={to} className="hover:bg-surface-2 block transition-colors">
+                    <Link to={to} className="hover:bg-accent-soft block transition-colors">
                       {body}
                     </Link>
                   ) : (
@@ -297,14 +297,14 @@ export function AdminDashboard() {
       </section>
 
       {inbox && inbox.total === 0 ? (
-        <div className="wx-neo-raised mt-4 rounded-xl p-5 shadow-md">
+        <div className="wx-neo-raised mt-4 rounded-xl p-4">
           <p className="font-semibold">Nothing needs you right now.</p>
           <p className="text-muted mt-1.5 max-w-xl text-[0.875rem] leading-relaxed">
             A good moment to look at what is running: which brands are near their budget, and
             which offers nobody has taken.
           </p>
           <ButtonLink to="/admin/brands" variant="secondary" size="sm" className="mt-4">
-            Brand hubs
+            Brands Hub
             <ArrowRight size={15} aria-hidden />
           </ButtonLink>
         </div>
@@ -322,7 +322,7 @@ export function AdminDashboard() {
  * that adds dollars to pounds because it felt like a summary.
  */
 function MoneyRow({ m, showCurrency }: { m: OpsMoney; showCurrency: boolean }) {
-  const fmt = (n: number) => money(Math.round(n * 100) / 100, m.currency);
+  const fmt = (n: number) => exactMoney(Math.round(n * 100) / 100, m.currency);
   const share = (n: number) => (m.total > 0 ? (n / m.total) * 100 : 0);
 
   const cells = [
@@ -334,12 +334,12 @@ function MoneyRow({ m, showCurrency }: { m: OpsMoney; showCurrency: boolean }) {
   if (m.total === 0) return null;
 
   return (
-    <section className="wx-neo-raised mt-4 rounded-xl p-5 shadow-md">
+    <section className="wx-neo-raised mt-4 rounded-xl p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
+        <h2 className="text-muted text-[0.6875rem] font-semibold tracking-wide uppercase">
           Committed across every brand{showCurrency ? ` (${m.currency})` : ''}
         </h2>
-        <p className="font-display text-[0.9375rem] font-semibold">{fmt(m.total)}</p>
+        <p className="text-[1rem] font-bold tabular-nums">{fmt(m.total)}</p>
       </div>
 
       <div
@@ -360,11 +360,11 @@ function MoneyRow({ m, showCurrency }: { m: OpsMoney; showCurrency: boolean }) {
 
       <dl className="mt-4 grid gap-3 sm:grid-cols-3">
         {cells.map((c) => (
-          <div key={c.label} className="wx-neo-inset rounded-lg px-4 py-3">
-            <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
+          <div key={c.label} className="wx-neo-raised-sm rounded-lg p-4">
+            <dt className="text-muted text-[0.6875rem] font-semibold tracking-wide uppercase">
               {c.label}
             </dt>
-            <dd className={cn('font-display mt-1 text-[1.0625rem] font-semibold', c.text)}>
+            <dd className={cn('mt-1 text-[1.25rem] font-bold tabular-nums', c.text)}>
               {fmt(c.value)}
             </dd>
           </div>

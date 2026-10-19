@@ -179,7 +179,7 @@ try {
     { path: '/admin/offers/requests', name: 'Requests' },
     { path: '/admin/contests', name: 'Contests' },
     { path: '/admin/contests/claims', name: 'Contests' },
-    { path: '/admin/brands', name: 'Brand hubs' },
+    { path: '/admin/brands', name: 'Brands Hub' },
     { path: '/admin/creators', name: 'Creators' },
     { path: '/admin/activity', name: 'Activity' },
     { path: '/admin/content', name: 'Content' },

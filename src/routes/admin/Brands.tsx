@@ -7,6 +7,7 @@ import { FilterBar, FilterTab, FilterTabs } from '@/components/layout/FilterBar'
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
+import { brandLogo } from '@/lib/brand-logos';
 import {
   BRAND_PAGE_SIZE,
   BUDGET_BANDS,
@@ -175,14 +176,14 @@ export function Brands() {
             ))}
           </ul>
         ) : isError ? (
-          <div className="wx-neo-raised rounded-xl px-6 py-14 text-center shadow-md">
+          <div className="wx-neo-raised rounded-xl px-6 py-14 text-center">
             <p className="font-semibold">That list would not load</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
-          <div className="wx-neo-raised rounded-xl px-6 py-16 text-center shadow-md">
+          <div className="wx-neo-raised rounded-xl px-6 py-16 text-center">
             <Store size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">
               {filters.search || filters.active !== 'active' || filters.budget !== 'any'
@@ -209,31 +210,30 @@ export function Brands() {
                 <li key={brand.id}>
                   <Link
                     to={`/admin/brands/${brand.id}`}
-                    className="wx-neo-raised flex h-full flex-col rounded-xl p-5 shadow-md transition-colors duration-200"
+                    className="wx-neo-raised-sm wx-neo-press flex h-full flex-col rounded-xl p-4 shadow-[0_14px_32px_-14px_rgba(0,0,0,0.6)] transition-colors duration-200 sm:p-5"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="min-w-0">
+                    <div className="flex min-h-12 items-start justify-between gap-3">
+                      <BrandMark brand={brand} />
+                      <span className="min-w-0 flex-1">
                         <span className="block truncate text-lg font-bold">{brand.name}</span>
-                        <span className="text-faint mt-0.5 block truncate font-mono text-[0.6875rem]">
+                        <span className="text-faint mt-0.5 block truncate text-[0.6875rem]">
                           {brand.store_id}
                         </span>
                       </span>
                       {!brand.is_active ? (
-                        <span className="wx-neo-raised text-muted shrink-0 rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+                        <span className="wx-neo-raised-sm text-muted shrink-0 rounded-full px-2 py-0.5 text-[0.625rem] tracking-[0.12em] uppercase">
                           Retired
                         </span>
                       ) : null}
                     </div>
 
-                    {brand.client_name ? (
-                      <p className="text-muted mt-3 truncate text-[0.8125rem]">
-                        {brand.client_name}
-                      </p>
-                    ) : null}
+                    <p className="text-muted mt-3 min-h-[1.25rem] truncate text-[0.8125rem]">
+                      {brand.client_name}
+                    </p>
 
                     <div className="mt-auto pt-5">
                       <div className="flex flex-wrap items-end justify-between gap-3">
-                        <span>
+                        <span className="min-h-[2.75rem]">
                           <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
                             Budget
                           </span>
@@ -241,7 +241,7 @@ export function Brands() {
                             {money(brand.budget_allocated, brand.currency)}
                           </span>
                         </span>
-                        <span className="wx-neo-raised text-muted inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.75rem]">
+                        <span className="wx-neo-raised-sm text-muted inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.75rem]">
                           <Tag size={12} aria-hidden />
                           <span className="wx-numeric">{c ? c.active : 0}</span> live
                           {c && c.total > c.active ? (
@@ -263,13 +263,15 @@ export function Brands() {
                         Footer only, no new vertical stack, so the card does not
                         grow taller on a phone.
                       */}
+                      <div className="mt-3 min-h-[1.25rem]">
                       {waiting?.[brand.id] ? (
-                        <p className="text-stage-due mt-3 text-[0.78125rem] font-medium">
+                        <p className="text-stage-due text-[0.78125rem] leading-5 font-medium">
                           {waiting[brand.id]}{' '}
                           {waiting[brand.id] === 1 ? 'creator is' : 'creators are'} waiting on
                           you
                         </p>
                       ) : null}
+                      </div>
                     </div>
                   </Link>
                 </li>
@@ -296,7 +298,7 @@ export function Brands() {
               <ChevronLeft size={15} aria-hidden />
               Previous
             </Button>
-            <span className="wx-numeric text-muted px-1 font-mono text-[0.75rem]">
+            <span className="wx-numeric text-muted px-1 text-[0.75rem]">
               {filters.page} / {pages}
             </span>
             <Button
@@ -314,5 +316,27 @@ export function Brands() {
 
       {creating ? <BrandDialog onClose={() => setCreating(false)} /> : null}
     </>
+  );
+}
+
+/**
+ * The brand's own mark, shown whole in a well, with the creator marketplace's
+ * soft drop shadow. A brand with no logo gets its first letter, as there.
+ */
+function BrandMark({ brand }: { brand: { name: string; slug: string; logo_url: string | null } }) {
+  const logo = brandLogo(brand.slug, brand.logo_url);
+  return (
+    <span
+      aria-hidden
+      className="wx-neo-inset grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl shadow-[0_8px_18px_-10px_rgba(0,0,0,0.65)]"
+    >
+      {logo ? (
+        <img src={logo} alt="" loading="lazy" decoding="async" className="size-full object-contain" />
+      ) : (
+        <span className="text-muted text-lg font-bold">
+          {brand.name.trim().charAt(0).toUpperCase() || '?'}
+        </span>
+      )}
+    </span>
   );
 }

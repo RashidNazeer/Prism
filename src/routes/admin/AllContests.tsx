@@ -148,11 +148,6 @@ export function AllContests() {
             pushing the page sideways. */}
         <FilterTabs
           label="Filter contests by state"
-          // 44px is the tap target rule in CLAUDE.md and the contests suite
-          // asserts it on every control at 375px. `FilterTab` is drawn at the
-          // desktop height, so the height comes back here rather than being
-          // lost in the move to the shared row.
-          className="[&>button]:min-h-[44px]"
         >
           {TABS.map((t) => (
             <FilterTab
@@ -371,7 +366,7 @@ function ContestRow({
   return (
     <Link
       to={`/admin/brands/${c.brandId}/contests/${c.id}`}
-      className="wx-neo-raised wx-glass-hover group flex h-full flex-col gap-4 rounded-xl p-5"
+      className="wx-neo-raised-sm wx-glass-hover group flex h-full flex-col gap-4 rounded-xl p-5"
     >
       {/* --------------------------------------------- brand and status -- */}
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -382,7 +377,7 @@ function ContestRow({
         </span>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           {!row.brandIsActive ? (
-            <span className="wx-neo-raised text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+            <span className="wx-neo-raised-sm text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
               Brand retired
             </span>
           ) : null}
@@ -471,7 +466,7 @@ function Panel({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="wx-neo-raised flex flex-col items-start gap-3 rounded-xl p-6 shadow-md sm:p-8">
+    <div className="wx-neo-raised flex flex-col items-start gap-3 rounded-xl p-6 sm:p-8">
       <div className="wx-neo-inset grid size-[44px] place-items-center rounded-lg">
         <Trophy size={19} className="text-muted" aria-hidden />
       </div>

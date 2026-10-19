@@ -113,7 +113,7 @@ export function TikTokSettings() {
                 variant="secondary"
                 onClick={() => recheck.mutate()}
                 disabled={busy}
-                className="h-10 shrink-0 rounded-md text-[0.875rem]"
+                className="h-10 shrink-0 text-[0.875rem]"
               >
                 <RefreshCw
                   size={15}
@@ -126,7 +126,7 @@ export function TikTokSettings() {
             <Button
               onClick={() => connect.mutate()}
               disabled={busy}
-              className="h-10 shrink-0 rounded-md text-[0.875rem]"
+              className="h-10 shrink-0 text-[0.875rem]"
             >
               <Plug size={15} aria-hidden />
               {connect.isPending
@@ -659,7 +659,7 @@ function IdentitiesTab({
             </label>
             <input
               id={`reason-${r.id}`}
-              className="wx-neo-inset min-w-0 flex-1 rounded-md px-3 py-2 text-[0.875rem]"
+              className="wx-neo-inset focus-visible:outline-accent min-h-11 min-w-0 flex-1 rounded-lg px-3 py-2 text-[0.875rem] focus:outline-none focus-visible:outline-2 sm:min-h-10"
               placeholder="Why? e.g. rejected in August, invited back for Q4"
               value={reason}
               onChange={(e) => setReason(e.target.value)}

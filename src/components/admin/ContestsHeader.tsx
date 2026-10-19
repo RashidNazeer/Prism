@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/Button';
 import { getSupabase } from '@/lib/supabase';
 import { useFocusTrap } from '@/lib/use-focus-trap';
 
@@ -48,8 +49,11 @@ export function ContestsHeader({ subtitle }: { subtitle?: string }) {
         now, underlined, along with every other section in the product. Repeating
         it here was the same word twice, 40px apart.
       */}
-      <div className="border-glass wx-tap-row flex flex-wrap items-center gap-x-4 gap-y-3 border-b pb-2.5">
-        <nav aria-label="Contest sections" className="flex min-w-0 items-center gap-1">
+      <div className="wx-tap-row flex flex-wrap items-center gap-x-4 gap-y-3">
+        <nav
+          aria-label="Contest sections"
+          className="wx-neo-inset flex min-w-0 items-center gap-0.5 rounded-md p-1"
+        >
           {SECTIONS.map((s) => {
             // Exact match on All, or /admin/contests would light up on every
             // one of its own children.
@@ -60,21 +64,13 @@ export function ContestsHeader({ subtitle }: { subtitle?: string }) {
                 to={s.to}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'ease-brand relative flex min-h-10 items-center rounded-md px-3 text-[0.875rem] transition-colors duration-200',
+                  'ease-brand flex min-h-8 shrink-0 items-center rounded-sm px-2.5 text-[0.8125rem] font-medium transition-colors duration-200',
                   active
-                    ? 'text-accent font-semibold'
-                    : 'text-muted hover:bg-surface-2 hover:text-text'
+                    ? '[background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]'
+                    : 'text-muted hover:text-accent'
                 )}
               >
                 {s.label}
-                {/* The underline the design puts on its active section. Inside
-                    the link so it cannot drift out of alignment. */}
-                {active ? (
-                  <span
-                    aria-hidden
-                    className="bg-accent absolute inset-x-3 -bottom-2.5 h-[2px] rounded-full"
-                  />
-                ) : null}
               </Link>
             );
           })}
@@ -82,17 +78,15 @@ export function ContestsHeader({ subtitle }: { subtitle?: string }) {
 
         {/* Extreme right, from his note. `ml-auto` rather than a spacer, so it
             still lands sensibly when the row wraps on a phone. */}
-        <button
+        <Button
           type="button"
+          size="sm"
           onClick={() => setPicking(true)}
-          /* Same ramp as the "Add a video" CTA in AppSidebar — sky into
-             periwinkle, ink label. See the long note there for why the
-             gradient is rebuilt at the call site and not in the token. */
-          className="ease-brand ml-auto inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md [background-image:linear-gradient(135deg,var(--wx-brand-sky)_0%,var(--wx-brand-peri)_100%)] px-4 text-[0.8125rem] font-semibold [color:var(--wx-on-accent-fill)] shadow-sm transition-[transform,opacity,background-color,border-color,color] duration-200 hover:[background-image:linear-gradient(135deg,var(--wx-brand-peri)_0%,var(--wx-accent-fill-hover)_100%)] hover:shadow-md active:translate-y-px"
+          className="ml-auto h-10 shrink-0"
         >
           <Plus size={16} aria-hidden />
           New contest
-        </button>
+        </Button>
       </div>
 
       {subtitle ? (

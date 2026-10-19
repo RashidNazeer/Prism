@@ -3855,3 +3855,394 @@
     var(--wx-glass-inner),
     var(--wx-glass-lift) !important;
 }
+
+/* ============================================================================
+   ADMIN UI CONSISTENCY SWEEP (agent E, 2026-10-20) -- PAID COLLABS.
+   UI ONLY: nothing below changes what a control does, its text or its data.
+   Appended last so it wins on order; selectors are doubled and several rules
+   carry !important because the vendored sheet is injected afterwards and
+   already uses !important on `thead th`, borders and fills.
+
+   ONE LANGUAGE:
+     panels / table shells  -> glass (surface list above), --radius-xl
+     tiles, cards, pods     -> glass,                      --radius-lg
+     inputs / search wells  -> wx-neo-inset look, --radius-lg (as shared Input)
+     tab faces              -> glass tile face
+   No coloured top bars, no heavy outlines, no hard row dividers, one family.
+   ============================================================================ */
+
+/* One family. Their stylesheet names Inter and a system monospace. */
+.wurxbase-root.wurxbase-root {
+  --font-sans: var(--wx-font-sans);
+  --font-serif: var(--wx-font-sans);
+  --font-mono: var(--wx-font-sans);
+}
+
+/* ---- shapes: panels one radius, tiles another ---------------------------- */
+.wurxbase-root.wurxbase-root .table-outer,
+.wurxbase-root.wurxbase-root .pc-topvids,
+.wurxbase-root.wurxbase-root .pc-matrix-wrap,
+.wurxbase-root.wurxbase-root .pc-pfhero,
+.wurxbase-root.wurxbase-root .pc-lb-card,
+.wurxbase-root.wurxbase-root .lb-tools,
+.wurxbase-root.wurxbase-root .lb-summary,
+.wurxbase-root.wurxbase-root .bc-sec,
+.wurxbase-root.wurxbase-root .brand-tabs-outer,
+.wurxbase-root.wurxbase-root .rp-board,
+.wurxbase-root.wurxbase-root .cx-head,
+.wurxbase-root.wurxbase-root .gm-sec {
+  border-radius: var(--radius-xl) !important;
+}
+
+.wurxbase-root.wurxbase-root .pc-kpi,
+.wurxbase-root.wurxbase-root .bstat-card,
+.wurxbase-root.wurxbase-root .pc-vxp-card,
+.wurxbase-root.wurxbase-root .pc-lb-pod,
+.wurxbase-root.wurxbase-root .lb-pod,
+.wurxbase-root.wurxbase-root .lb-card,
+.wurxbase-root.wurxbase-root .rb-tile,
+.wurxbase-root.wurxbase-root .rep-stat,
+.wurxbase-root.wurxbase-root .rp-card,
+.wurxbase-root.wurxbase-root .pf-kpi,
+.wurxbase-root.wurxbase-root .pc-pf-stat,
+.wurxbase-root.wurxbase-root .pc-mxh-tile,
+.wurxbase-root.wurxbase-root .ndm-stat,
+.wurxbase-root.wurxbase-root .kb-card,
+.wurxbase-root.wurxbase-root .bx-row {
+  border-radius: var(--radius-lg) !important;
+}
+
+/* ---- the same glass on the shells the first pass missed ------------------- */
+.wurxbase-root.wurxbase-root .pc-lb-card,
+.wurxbase-root.wurxbase-root .pf-kpi,
+.wurxbase-root.wurxbase-root .pc-pf-stat,
+.wurxbase-root.wurxbase-root .pc-mxh-tile,
+.wurxbase-root.wurxbase-root .pc-mxh-tile-total,
+.wurxbase-root.wurxbase-root .pc-card,
+.wurxbase-root.wurxbase-root .pc-dd-head,
+.wurxbase-root.wurxbase-root .pc-dd-chip:not(.pc-dd-chip-dark) {
+  background-color: var(--wx-glass-fill) !important;
+  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left), var(--wx-glass-face) !important;
+  background-size:
+    100% 1px,
+    1px 100%,
+    100% 100% !important;
+  background-position:
+    top left,
+    top left,
+    top left !important;
+  background-repeat: no-repeat !important;
+  box-shadow:
+    inset 0 0 0 1px var(--wx-glass-edge),
+    var(--wx-glass-inner),
+    var(--wx-glass-lift) !important;
+}
+
+/* ---- no outlines: the glass draws its own edge ----------------------------- */
+.wurxbase-root.wurxbase-root .pc-kpi,
+.wurxbase-root.wurxbase-root .pc-kpi:hover,
+.wurxbase-root.wurxbase-root .table-outer,
+.wurxbase-root.wurxbase-root .bstat-card,
+.wurxbase-root.wurxbase-root .pc-topvids,
+.wurxbase-root.wurxbase-root .pc-matrix-wrap,
+.wurxbase-root.wurxbase-root .pc-pfhero,
+.wurxbase-root.wurxbase-root .pc-vxp-card,
+.wurxbase-root.wurxbase-root .pc-lb-card,
+.wurxbase-root.wurxbase-root .pc-lb-pod,
+.wurxbase-root.wurxbase-root .lb-pod,
+.wurxbase-root.wurxbase-root .lb-card,
+.wurxbase-root.wurxbase-root .lb-tools,
+.wurxbase-root.wurxbase-root .lb-summary,
+.wurxbase-root.wurxbase-root .rb-tile,
+.wurxbase-root.wurxbase-root .rep-stat,
+.wurxbase-root.wurxbase-root .rp-card,
+.wurxbase-root.wurxbase-root .rp-board,
+.wurxbase-root.wurxbase-root .pf-kpi,
+.wurxbase-root.wurxbase-root .pc-pf-stat,
+.wurxbase-root.wurxbase-root .pc-pf-stat:hover,
+.wurxbase-root.wurxbase-root .pc-mxh-tile,
+.wurxbase-root.wurxbase-root .pc-mxh-tile:hover,
+.wurxbase-root.wurxbase-root .pc-mxh-tile-total,
+.wurxbase-root.wurxbase-root .pc-card,
+.wurxbase-root.wurxbase-root .pc-dd-head,
+.wurxbase-root.wurxbase-root .pc-dd-chip,
+.wurxbase-root.wurxbase-root .bc-sec,
+.wurxbase-root.wurxbase-root .kb-card,
+.wurxbase-root.wurxbase-root .bx-row {
+  border-color: transparent !important;
+}
+
+/* Their hover lifts a tile and adds a second shadow; the creator cards press,
+   they do not float. */
+.wurxbase-root.wurxbase-root .pc-kpi:hover,
+.wurxbase-root.wurxbase-root .lb-pod:hover,
+.wurxbase-root.wurxbase-root .pc-lb-pod:hover {
+  transform: none;
+}
+
+/* ---- coloured top bars and tints on tiles --------------------------------- */
+.wurxbase-root.wurxbase-root .pc-kpi::before,
+.wurxbase-root.wurxbase-root .pf-kpi::before,
+.wurxbase-root.wurxbase-root .rep-stat::before,
+.wurxbase-root.wurxbase-root .pc-lb-pod::before,
+.wurxbase-root.wurxbase-root .lb-pod::before,
+.wurxbase-root.wurxbase-root .lb-pod.gold::before,
+.wurxbase-root.wurxbase-root .lb-pod.bronze::before,
+.wurxbase-root.wurxbase-root .pc-lb-pod-1::before,
+.wurxbase-root.wurxbase-root .pc-lb-pod-3::before {
+  background: none !important;
+  display: none !important;
+}
+
+/* ---- table heads: the page's glass, not their own tinted fill -------------- */
+.wurxbase-root.wurxbase-root .pc-bt-head,
+.wurxbase-root.wurxbase-root .pc-ct-head,
+.wurxbase-root.wurxbase-root .pc-pf-head,
+.wurxbase-root.wurxbase-root .pc-cv-head,
+.wurxbase-root.wurxbase-root .pc-vxp-head,
+.wurxbase-root.wurxbase-root .pc-lb-head,
+.wurxbase-root.wurxbase-root .pc-topvids-head,
+.wurxbase-root.wurxbase-root .pc-cf-head {
+  background: transparent !important;
+  border-bottom: 1px solid var(--wx-glass-line) !important;
+}
+
+.wurxbase-root.wurxbase-root thead th,
+.wurxbase-root.wurxbase-root thead th:hover,
+.wurxbase-root.wurxbase-root .creators-table thead th,
+.wurxbase-root.wurxbase-root .creators-table thead th:hover,
+.wurxbase-root.wurxbase-root .creators-table > thead > tr > th {
+  background: var(--wx-glass-well) !important;
+  border-bottom: 1px solid var(--wx-glass-line) !important;
+}
+
+/* Micro-labels: uppercase and tracked as in the creator app, 0.6875rem. */
+.wurxbase-root.wurxbase-root .pc-bt-head > div,
+.wurxbase-root.wurxbase-root .pc-ct-head > div,
+.wurxbase-root.wurxbase-root .pc-pf-head > div,
+.wurxbase-root.wurxbase-root .pc-vxp-head > div,
+.wurxbase-root.wurxbase-root .pc-lb-head > div,
+.wurxbase-root.wurxbase-root .pc-lb-head,
+.wurxbase-root.wurxbase-root .pc-kpi-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--wx-text-muted);
+}
+
+/* ---- rows: hairlines from the glass, never a coloured or hard divider ------- */
+.wurxbase-root.wurxbase-root .pc-bt-row,
+.wurxbase-root.wurxbase-root .pc-ct-row,
+.wurxbase-root.wurxbase-root .pc-pf-row,
+.wurxbase-root.wurxbase-root .pc-cv-row,
+.wurxbase-root.wurxbase-root .pc-lb-row,
+.wurxbase-root.wurxbase-root .lb-row,
+.wurxbase-root.wurxbase-root .pc-topvids-row,
+.wurxbase-root.wurxbase-root .pc-vxp-row {
+  border-bottom-color: var(--wx-glass-line) !important;
+}
+.wurxbase-root.wurxbase-root .pc-bt-row:last-child,
+.wurxbase-root.wurxbase-root .pc-pf-row:last-child,
+.wurxbase-root.wurxbase-root .lb-row:last-child {
+  border-bottom: 0 !important;
+}
+.wurxbase-root.wurxbase-root .pc-bt-row:hover,
+.wurxbase-root.wurxbase-root .pc-ct-row:hover,
+.wurxbase-root.wurxbase-root .pc-pf-row:hover,
+.wurxbase-root.wurxbase-root .pc-lb-row:hover,
+.wurxbase-root.wurxbase-root .lb-row:hover {
+  background: var(--wx-glass-well) !important;
+}
+/* The green-to-red hover stripe on a brand row. */
+.wurxbase-root.wurxbase-root .pc-bt-row:hover::before {
+  display: none !important;
+}
+.wurxbase-root.wurxbase-root .pc-bt-row.is-total {
+  border-top: 1px solid var(--wx-glass-line) !important;
+}
+.wurxbase-root.wurxbase-root .lb-row.top-1 {
+  background: transparent !important;
+}
+.wurxbase-root.wurxbase-root .creators-table tbody td {
+  border-color: var(--wx-glass-line) !important;
+}
+
+/* ---- search fields and tabs ---------------------------------------------- */
+.wurxbase-root.wurxbase-root .pc-search,
+.wurxbase-root.wurxbase-root .pc-uc-search {
+  background-color: var(--wx-glass-well) !important;
+  background-image: var(--wx-glass-rim-top) !important;
+  background-size: 100% 1px !important;
+  background-position: bottom left !important;
+  background-repeat: no-repeat !important;
+  border: 0 !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow:
+    inset 0 0 0 1px var(--wx-glass-line),
+    inset 0 2px 6px rgb(0 0 0 / 0.1) !important;
+}
+
+.wurxbase-root.wurxbase-root .pc-tab:not(.active) {
+  background-color: var(--wx-glass-fill) !important;
+  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left), var(--wx-glass-face) !important;
+  background-size:
+    100% 1px,
+    1px 100%,
+    100% 100% !important;
+  background-position:
+    top left,
+    top left,
+    top left !important;
+  background-repeat: no-repeat !important;
+  border-color: transparent !important;
+  box-shadow:
+    inset 0 0 0 1px var(--wx-glass-edge),
+    var(--wx-glass-inner),
+    var(--wx-glass-lift) !important;
+}
+
+/* ---- figures: Figtree, no tracking games ----------------------------------- */
+.wurxbase-root.wurxbase-root .pc-kpi-value,
+.wurxbase-root.wurxbase-root .pc-stat-value,
+.wurxbase-root.wurxbase-root .pf-kpi-v,
+.wurxbase-root.wurxbase-root .pc-pfhero-v,
+.wurxbase-root.wurxbase-root .rep-stat-v {
+  font-family: var(--wx-font-sans) !important;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0 !important;
+}
+.wurxbase-root.wurxbase-root .pc-bt-row,
+.wurxbase-root.wurxbase-root .pc-ct-row,
+.wurxbase-root.wurxbase-root .pc-pf-row,
+.wurxbase-root.wurxbase-root .pc-lb-row,
+.wurxbase-root.wurxbase-root .lb-row,
+.wurxbase-root.wurxbase-root .pc-vxp-row {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================================
+   ROUND 2 (agent E): symmetry and the image fallbacks. UI only.
+   ============================================================================ */
+
+/* Brand mark / logo: a rounded square, shown whole, with the soft drop shadow.
+   The letter tile sits under the photo until the photo has drawn (see
+   BrandFace), so a slow or failed picture is never an empty square. */
+.wurxbase-root.wurxbase-root .pc-ava.pc-ava-photo {
+  position: relative;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background-color: var(--wx-glass-well);
+  box-shadow: 0 8px 18px -10px rgba(0, 0, 0, 0.65);
+  overflow: hidden;
+}
+.wurxbase-root.wurxbase-root .pc-ava.pc-ava-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: inherit;
+}
+.wurxbase-root.wurxbase-root .pc-ava.pc-ava-photo .wx-ava-initial {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.wurxbase-root.wurxbase-root .pc-ava:not(.pc-ava-photo) {
+  box-shadow: 0 8px 18px -10px rgba(0, 0, 0, 0.65);
+}
+
+/* Creator faces: always a coloured circle underneath, so nothing is ever empty. */
+.wurxbase-root.wurxbase-root img.pc-face {
+  background-color: var(--wx-accent-soft);
+  object-fit: cover;
+}
+
+/* ---- KPI rows: equal tiles, equal height, figures on one baseline --------- */
+.wurxbase-root.wurxbase-root .pc-kpis {
+  align-items: stretch;
+}
+.wurxbase-root.wurxbase-root .pc-kpis > .pc-kpi {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+  height: 100%;
+}
+.wurxbase-root.wurxbase-root .pc-kpis > .pc-kpi .pc-kpi-row {
+  align-items: flex-start;
+}
+.wurxbase-root.wurxbase-root .pc-kpis-5.wx-kpis-6 {
+  grid-auto-rows: 1fr;
+  gap: 0.75rem !important;
+}
+.wurxbase-root.wurxbase-root .pc-kpis:not(.wx-kpis-6) {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem !important;
+}
+
+/* ---- Reporting: the page is the full width, not a column beside the date
+   controls (a block that makes its own formatting context is laid out beside
+   a float for its whole height). The brand breakdown scrolls inside its own
+   panel instead of clipping. */
+@media (width >= 64rem) {
+  .wurxbase-root.wurxbase-root .report-print-root {
+    clear: both;
+  }
+}
+.wurxbase-root.wurxbase-root .report-print-root .report-brand-table,
+.wurxbase-root.wurxbase-root .report-print-root .bx {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* ---- Leaderboard: one list, one fill, one hover, hairlines ----------------- */
+.wurxbase-root.wurxbase-root .lb-list {
+  background-color: var(--wx-glass-fill) !important;
+  background-image: var(--wx-glass-rim-top), var(--wx-glass-rim-left), var(--wx-glass-face) !important;
+  background-size:
+    100% 1px,
+    1px 100%,
+    100% 100% !important;
+  background-position:
+    top left,
+    top left,
+    top left !important;
+  background-repeat: no-repeat !important;
+  box-shadow:
+    inset 0 0 0 1px var(--wx-glass-edge),
+    var(--wx-glass-inner),
+    var(--wx-glass-lift) !important;
+  border: 0 !important;
+  border-radius: var(--radius-xl) !important;
+  overflow: hidden;
+}
+.wurxbase-root.wurxbase-root .lb-listhead {
+  background: var(--wx-glass-well) !important;
+  border-bottom: 1px solid var(--wx-glass-line) !important;
+  color: var(--wx-text-muted) !important;
+}
+.wurxbase-root.wurxbase-root .lb-listhead * {
+  color: var(--wx-text-muted) !important;
+}
+.wurxbase-root.wurxbase-root .lb-row,
+.wurxbase-root.wurxbase-root .lb-row.top-1,
+.wurxbase-root.wurxbase-root .lb-row:nth-child(odd),
+.wurxbase-root.wurxbase-root .lb-row:nth-child(even) {
+  background: transparent !important;
+  border-bottom: 1px solid var(--wx-glass-line) !important;
+}
+.wurxbase-root.wurxbase-root .lb-row:last-child {
+  border-bottom: 0 !important;
+}
+.wurxbase-root.wurxbase-root .lb-row:hover {
+  background: var(--wx-glass-well) !important;
+}
+/* The proportional bar behind each row was the uneven band. */
+.wurxbase-root.wurxbase-root .lb-fill {
+  display: none !important;
+}

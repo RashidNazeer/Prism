@@ -260,14 +260,14 @@ export function OfferRequests() {
             ))}
           </ul>
         ) : isError ? (
-          <div className="wx-neo-raised rounded-md px-6 py-14 text-center shadow-md">
+          <div className="wx-neo-raised rounded-xl px-6 py-14 text-center">
             <p className="font-semibold">That queue would not load</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
-          <div className="wx-neo-raised rounded-md px-6 py-16 text-center shadow-md">
+          <div className="wx-neo-raised rounded-xl px-6 py-16 text-center">
             <Handshake size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">
               {filters.status === 'pending' && !filters.search && !filters.brandId
@@ -358,7 +358,7 @@ const STATUS_CHIP: Record<OfferApplicationStatus, { label: string; className: st
   pending: { label: 'Waiting', className: 'bg-warning-soft text-warning' },
   approved: { label: 'Approved', className: 'bg-success-soft text-success' },
   rejected: { label: 'Rejected', className: 'bg-danger-soft text-danger' },
-  withdrawn: { label: 'Withdrawn', className: 'bg-surface-2 text-muted' },
+  withdrawn: { label: 'Withdrawn', className: 'wx-neo-raised-sm text-muted' },
 };
 
 /**
@@ -450,10 +450,9 @@ function RequestCard({
   return (
     <div
       className={cn(
-        'wx-neo-raised flex overflow-hidden rounded-md transition-[border-color,box-shadow,transform] duration-300',
+        'wx-neo-raised-sm flex overflow-hidden rounded-xl transition-transform duration-300',
         open ? 'flex-col lg:flex-row lg:items-stretch' : 'flex-col',
-        !open && 'hover:-translate-y-0.5 hover:shadow-[var(--wx-glass-glow)]',
-        open && 'shadow-[var(--wx-glass-glow)]'
+        !open && 'hover:-translate-y-0.5'
       )}
     >
       <div className={cn('flex min-w-0 flex-col', open && 'lg:w-[23rem] lg:shrink-0')}>
@@ -596,7 +595,7 @@ function RequestCard({
           invalid HTML that browsers resolve by guessing.
         */}
         {row.status === 'pending' ? (
-          <div className="border-line bg-surface-2/40 flex gap-2 border-t px-4 py-2.5">
+          <div className="border-line flex gap-2 border-t px-4 py-2.5">
             <Button size="sm" className="flex-1" onClick={() => onDecide('approved')}>
               <Check size={15} aria-hidden />
               Approve
@@ -612,7 +611,7 @@ function RequestCard({
             </Button>
           </div>
         ) : row.stage ? (
-          <div className="border-line bg-surface-2/40 border-t px-4 py-2.5">
+          <div className="border-line border-t px-4 py-2.5">
             <StageControl row={row} />
           </div>
         ) : null}

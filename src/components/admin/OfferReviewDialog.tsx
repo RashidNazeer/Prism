@@ -78,7 +78,7 @@ export function OfferReviewDialog({
         aria-hidden
         tabIndex={-1}
         onClick={() => !busy && onClose()}
-        className="fixed inset-0 cursor-default bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 cursor-default bg-black/60"
       />
 
       {/* The PANEL scrolls, not the wrapper. Block-start overflow is not part
@@ -121,7 +121,7 @@ export function OfferReviewDialog({
           <p className="text-[0.875rem] font-semibold">{row.offer?.title ?? 'That offer'}</p>
           <p className="text-muted mt-0.5 text-[0.8125rem]">{row.brand?.name}</p>
           <p className="border-line mt-3 border-t pt-3 text-[0.875rem]">
-            <span className="text-faint font-mono text-[0.625rem] tracking-[0.14em] uppercase">
+            <span className="text-faint text-[0.625rem] tracking-[0.14em] uppercase">
               They are asking for
             </span>
             {hasTerms ? (
@@ -268,7 +268,7 @@ function BudgetImpact({ row }: { row: OfferQueueRow }) {
 
   return (
     <div className={cn('mt-4 rounded-xl px-4 py-3', over ? 'bg-danger-soft' : 'wx-neo-inset')}>
-      <p className="text-faint font-mono text-[0.625rem] tracking-[0.14em] uppercase">
+      <p className="text-faint text-[0.625rem] tracking-[0.14em] uppercase">
         {row.brand?.name} budget
       </p>
       <p className="wx-numeric mt-1 text-[0.875rem]">

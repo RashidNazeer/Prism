@@ -140,7 +140,7 @@ export function ContestProducts({ contestId, brandId, selected, loading }: Props
   }
 
   return (
-    <section className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5 shadow-md">
+    <section className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
@@ -194,7 +194,7 @@ export function ContestProducts({ contestId, brandId, selected, loading }: Props
           <div className="wx-skeleton h-[76px] rounded-xl" />
         </div>
       ) : isError ? (
-        <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
+        <div className="wx-neo-inset flex flex-col items-start gap-3 rounded-xl p-6">
           <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
             The products did not load
           </h3>
@@ -206,7 +206,7 @@ export function ContestProducts({ contestId, brandId, selected, loading }: Props
           </Button>
         </div>
       ) : live.length === 0 && strays.length === 0 ? (
-        <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
+        <div className="wx-neo-inset flex flex-col items-start gap-3 rounded-xl p-6">
           <div className="wx-neo-inset grid size-[44px] place-items-center rounded-lg">
             <Package size={19} className="text-muted" aria-hidden />
           </div>
@@ -342,11 +342,11 @@ function StrayRow({
   onRemove: () => void;
 }) {
   return (
-    <div className="wx-neo-raised flex min-h-[44px] flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border-dashed p-4">
+    <div className="wx-neo-raised flex min-h-[44px] flex-wrap items-center gap-x-4 gap-y-3 rounded-xl p-4">
       <span className="min-w-0 flex-1 basis-40 text-[0.875rem] font-semibold break-words">
         {name}
       </span>
-      <span className="wx-neo-raised text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+      <span className="wx-neo-raised-sm text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
         Hidden on the brand
       </span>
       <Button

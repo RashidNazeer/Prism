@@ -18,9 +18,10 @@ export const money = (value: string | number | null, currency = 'USD'): string =
   const n = typeof value === 'number' ? value : Number(value);
   if (!Number.isFinite(n)) return 'Not set';
   try {
-    return new Intl.NumberFormat(undefined, {
+    return new Intl.NumberFormat(currency === 'USD' ? 'en-US' : undefined, {
       style: 'currency',
       currency,
+      currencyDisplay: 'narrowSymbol',
       maximumFractionDigits: n % 1 === 0 ? 0 : 2,
     }).format(n);
   } catch {

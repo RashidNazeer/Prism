@@ -89,7 +89,7 @@ export function BrandAbout({ brand }: { brand: Brand }) {
     );
   };
 
-  const card = 'bg-surface-1 grid content-start gap-5 rounded-xl p-5 shadow-md';
+  const card = 'wx-neo-raised grid content-start gap-5 rounded-xl p-5';
   const heading = 'text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase';
 
   return (

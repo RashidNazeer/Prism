@@ -49,7 +49,7 @@ export function ContentCard({
   const tone = TONE[meta.tone];
 
   return (
-    <article className="wx-neo-raised ease-brand flex h-full flex-col gap-3 rounded-xl p-3 transition-transform duration-300 hover:-translate-y-0.5">
+    <article className="wx-neo-raised-sm ease-brand flex h-full flex-col gap-3 rounded-xl p-3 shadow-[0_14px_32px_-14px_rgba(0,0,0,0.6)]">
       <VideoThumb row={row} onPlay={onPlay} />
 
       <div className="flex min-w-0 flex-1 flex-col gap-2 px-1 pb-1">
@@ -74,7 +74,7 @@ export function ContentCard({
 
         {aboutTheJob}
 
-        <p className="text-muted font-mono text-[0.71875rem] break-all">{row.ad_code}</p>
+        <p className="text-muted text-[0.71875rem] break-all">{row.ad_code}</p>
 
         {row.ad_authorized ? null : (
           <p className="text-stage-due text-[0.75rem] font-medium">Not marked authorised</p>

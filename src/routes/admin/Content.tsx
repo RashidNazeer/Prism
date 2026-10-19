@@ -110,7 +110,7 @@ export function AdminContent() {
 
   return (
     <>
-      <div className="flex flex-col gap-[14px]">
+      <div className="flex flex-col gap-4">
         {/*
           NO TITLE ROW AND NO DESCRIPTION ROW. The shell's top bar carries the
           section name as the page's h1 now, and Rashid asked on 2026-08-16 for
@@ -223,14 +223,14 @@ export function AdminContent() {
                 ))}
               </ul>
             ) : isError ? (
-              <div className="wx-neo-raised rounded-xl px-6 py-14 text-center shadow-md">
+              <div className="wx-neo-raised rounded-xl px-6 py-14 text-center">
                 <p className="font-semibold">That would not load</p>
                 <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
                   {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
                 </p>
               </div>
             ) : rows.length === 0 ? (
-              <div className="wx-neo-raised rounded-xl px-6 py-16 text-center shadow-md">
+              <div className="wx-neo-raised rounded-xl px-6 py-16 text-center">
                 <Video size={26} aria-hidden className="text-faint mx-auto" />
                 <p className="mt-4 font-semibold">Nothing here</p>
                 <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -344,7 +344,7 @@ function ByBrand({
   const most = Math.max(...rows.map((r) => r.all), 1);
 
   return (
-    <section className="wx-neo-raised flex flex-col gap-[14px] rounded-xl p-5 shadow-md">
+    <section className="wx-neo-raised flex flex-col gap-4 rounded-xl p-4">
       <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         Where it is coming from
       </h2>
@@ -355,7 +355,7 @@ function ByBrand({
             <button
               type="button"
               onClick={() => onPick(brand.id)}
-              className="wx-neo-raised-sm wx-neo-press flex w-full flex-col gap-2.5 rounded-[16px] p-3.5 text-left transition-colors duration-200"
+              className="wx-neo-raised-sm wx-neo-press flex w-full flex-col gap-2.5 rounded-lg p-3.5 text-left transition-colors duration-200"
             >
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <span className="text-[0.90625rem] font-semibold">{brand.name}</span>
@@ -365,7 +365,7 @@ function ByBrand({
               </div>
 
               {/* One bar, three parts, in the same colours as everywhere else. */}
-              <div className="bg-surface-1 flex h-2 gap-0.5 overflow-hidden rounded-full">
+              <div className="wx-neo-inset flex h-2 gap-0.5 overflow-hidden rounded-full">
                 {(
                   [
                     ['approved', 'bg-stage-paid'],
@@ -417,12 +417,12 @@ function Board({ counts }: { counts: ContentTotals }) {
   ];
 
   return (
-    <section className="wx-neo-raised flex flex-col gap-5 rounded-xl p-[clamp(18px,2.4vw,26px)] shadow-md">
+    <section className="wx-neo-raised flex flex-col gap-5 rounded-xl p-4">
       <div className="flex flex-col gap-1">
         <p className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Videos posted
         </p>
-        <p className="flex flex-wrap items-baseline gap-2.5">
+        <p className="flex flex-wrap items-baseline gap-3">
           <span className="font-brand text-[clamp(2.375rem,7vw,3.625rem)] leading-none font-semibold tracking-[-0.03em]">
             {counts.all}
           </span>
@@ -430,11 +430,11 @@ function Board({ counts }: { counts: ContentTotals }) {
         </p>
       </div>
 
-      <dl className="grid [grid-template-columns:repeat(auto-fit,minmax(170px,1fr))] gap-2.5">
+      <dl className="grid [grid-template-columns:repeat(auto-fit,minmax(170px,1fr))] gap-3">
         {cells.map((cell) => (
           <div
             key={cell.label}
-            className={cn('flex flex-col gap-1.5 rounded-lg p-3.5', cell.tone.soft)}
+            className="wx-neo-raised-sm flex flex-col gap-1.5 rounded-lg p-3.5"
           >
             <dt className={cn('text-[0.75rem] font-semibold', cell.tone.text)}>{cell.label}</dt>
             <dd className="font-display text-[1.4375rem] font-semibold">{cell.value}</dd>

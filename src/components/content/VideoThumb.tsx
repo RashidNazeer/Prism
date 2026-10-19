@@ -120,7 +120,7 @@ export function VideoThumb({
   );
 
   const shell = cn(
-    'group border-line bg-surface-2 relative block aspect-[4/5] w-full overflow-hidden rounded-lg border',
+    'group wx-neo-inset relative block aspect-square w-full overflow-hidden rounded-md shadow-[0_8px_18px_-10px_rgba(0,0,0,0.65)]',
     className
   );
 

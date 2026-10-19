@@ -169,6 +169,7 @@ export function ClientLinks() {
         action={
           <Button
             size="sm"
+            className="h-10 pointer-coarse:h-11"
             onClick={() => {
               setOpen((v) => !v);
               setProblem('');
@@ -184,7 +185,7 @@ export function ClientLinks() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by client or brand"
-          className="w-full sm:w-64"
+          className="h-10 w-full pointer-coarse:h-11 sm:w-64"
         />
       </FilterBar>
 
@@ -471,7 +472,7 @@ function LinkRow({
 
   return (
     <>
-      <div className="flex flex-wrap items-start justify-between gap-3 p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-5">
         <button
           type="button"
           onClick={onToggle}
@@ -542,7 +543,7 @@ function LinkRow({
       </div>
 
       {open && (
-        <div className="border-line bg-surface-2 border-t p-5">
+        <div className="border-line border-t p-5">
           {/* the address */}
           {url ? (
             <>
@@ -636,7 +637,7 @@ function Opens({ id }: { id: string }) {
                 className="flex items-center justify-between gap-3 px-3 py-2 text-[0.8125rem]"
               >
                 <span>{new Date(r.viewed_at).toLocaleString()}</span>
-                <span className="text-faint font-mono text-[0.75rem]">{r.visitor || '—'}</span>
+                <span className="text-faint text-[0.75rem]">{r.visitor || '—'}</span>
               </li>
             ))}
           </ul>
@@ -672,7 +673,7 @@ function Chip({
       onClick={onClick}
       aria-pressed={on}
       className={cn(
-        'rounded-md px-3 py-1.5 text-[0.8125rem] font-semibold transition-colors',
+        'min-h-9 rounded-full px-3.5 py-1.5 text-[0.8125rem] font-semibold transition-colors',
         /* A pressed toggle is a FILL: his colour, ink label. */
         on
           ? '[background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]'

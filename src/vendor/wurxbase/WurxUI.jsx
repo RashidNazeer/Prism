@@ -22,6 +22,7 @@ import {
 import { DateRangePicker as WxDateRangePicker } from '@/components/creator/DateRangePicker';
 import { presetToRange as wxPresetToRange } from '@/lib/creator/date-range';
 import { clipCreatorsToRange as wxClipToRange, rangeHeading as wxRangeHeading } from '@/lib/admin/collab-period';
+import { brandLogo } from '@/lib/brand-logos';
 /* WURX-END */
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { can } from './access';
@@ -3085,7 +3086,7 @@ function CreatorFace({ handle, name, size = 34, noRemote }) {
       src={src}
       alt=""
       loading="lazy"
-      style={{ width: size, height: size }}
+      style={{ width: size, height: size, background: gradFor(name || h || '?') }}
       onError={() => setStage(s => (s === 0 && euka ? 1 : 2))}
     />
   );
@@ -3131,6 +3132,7 @@ const _brandPhotoPromise = new Map();
 function BrandFace({ brand }) {
   const [photo, setPhoto] = useState('');
   const [err, setErr] = useState(false);
+  const [wxLoaded, setWxLoaded] = useState(false);
   /* WURX-ADDED · a face for a brand EUKA has no store for.
      Rashid, 2026-09-23: "can we have a photo (dp) of the brand as well like we
      have of other brands", about Irwin Naturals, which sells through Reacher.
@@ -3161,11 +3163,15 @@ function BrandFace({ brand }) {
   }, [brand]);
   /* WURX-ADDED · ours only when Euka has nothing, or when Euka's own image
      fails to load — a broken URL and no URL are the same thing to a reader. */
-  const wxSrc = (photo && !err) ? photo : wxOurPhoto;
+  const wxShipped = brandLogo(String(brand || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), null) || '';
+  const wxSrc = (photo && !err) ? photo : (wxOurPhoto || wxShipped);
   if (wxSrc) {
+    /* The letter tile sits under the photo until the photo has actually drawn,
+       so a slow or failed picture never leaves an empty square. */
     return (
-      <span className="pc-ava pc-ava-photo">
-        <img src={wxSrc} alt="" loading="lazy" onError={() => setErr(true)} data-wx-photo={wxSrc === wxOurPhoto ? 'ours' : 'euka'} />
+      <span className="pc-ava pc-ava-photo" style={wxLoaded ? undefined : { background: gradFor(brand), color: 'var(--wx-on-accent)' }}>
+        {!wxLoaded && <span className="wx-ava-initial">{initial(brand)}</span>}
+        <img src={wxSrc} alt="" loading="lazy" onLoad={() => setWxLoaded(true)} onError={() => { setWxLoaded(false); if (wxSrc === photo) setErr(true); }} data-wx-photo={wxSrc === wxOurPhoto ? 'ours' : 'euka'} />
       </span>
     );
   }

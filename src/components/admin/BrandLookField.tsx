@@ -144,7 +144,6 @@ export function BrandLookField({
               placeholder={DEFAULT_BRAND_COLOR}
               spellCheck={false}
               onChange={(e) => onChange(e.target.value)}
-              className="font-mono"
             />
           </div>
 
@@ -299,7 +298,7 @@ function AreaEditor({
           <div className="flex flex-wrap items-end gap-2">
             {stops.map((stop, i) => (
               <span key={i} className="grid gap-1">
-                <span className="text-muted font-mono text-[0.625rem] tracking-wider uppercase">
+                <span className="text-muted text-[0.625rem] tracking-wider uppercase">
                   {i === 0 ? 'From' : i === stops.length - 1 ? 'To' : `Stop ${i + 1}`}
                 </span>
                 <span className="flex items-center gap-1">

@@ -154,7 +154,7 @@ const ADMIN: NavGroup[] = [
         activePrefixes: ['/admin/contests'],
       },
       {
-        label: 'Brand hubs',
+        label: 'Brands Hub',
         icon: Store,
         to: '/admin/brands',
         activePrefixes: ['/admin/brands'],

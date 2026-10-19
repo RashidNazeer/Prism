@@ -15,7 +15,7 @@ export function ReviewPanel({ application }: { application: ApplicationDetail })
   const [decision, setDecision] = useState<'approved' | 'rejected' | null>(null);
 
   return (
-    <section className="wx-neo-raised min-w-0 rounded-xl p-6 shadow-md">
+    <section className="wx-neo-raised min-w-0 rounded-xl p-6">
       <h2 className="text-lg font-bold">Decision</h2>
       <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
         Approving makes @{application.tiktok_handle} a creator straight away and assigns their

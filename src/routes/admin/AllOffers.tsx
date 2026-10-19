@@ -106,7 +106,7 @@ const KIND_META: Record<
   volume: {
     label: 'Volume offer',
     short: 'Volume',
-    className: 'bg-surface-3 text-muted',
+    className: 'wx-neo-raised-sm text-muted',
   },
   high_commission: {
     label: 'High commission',
@@ -347,18 +347,18 @@ export function AllOffers() {
         {isLoading ? (
           <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <li key={i} className="wx-skeleton h-[13.5rem] rounded-md" />
+              <li key={i} className="wx-skeleton h-[13.5rem] rounded-xl" />
             ))}
           </ul>
         ) : isError ? (
-          <div className="wx-neo-raised rounded-md px-6 py-14 text-center shadow-md">
+          <div className="wx-neo-raised rounded-xl px-6 py-14 text-center">
             <p className="font-semibold">That list would not load</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
-          <div className="wx-neo-raised rounded-md px-6 py-16 text-center shadow-md">
+          <div className="wx-neo-raised rounded-xl px-6 py-16 text-center">
             <Tag size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">No offers match that</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -477,14 +477,13 @@ function OfferCard({
   return (
     <div
       className={cn(
-        'wx-neo-raised flex overflow-hidden rounded-md transition-[border-color,box-shadow,transform] duration-300',
+        'wx-neo-raised-sm flex overflow-hidden rounded-xl transition-transform duration-300',
         // Stacked normally. Open and wide, the details sit BESIDE the card, so
         // the thing that was clicked stays the size and shape it was clicked at.
         open ? 'flex-col lg:flex-row lg:items-stretch' : 'flex-col',
         // Lifted only while it is closed. A panel that rises as it opens reads
         // as the page moving rather than as a drawer.
-        !open && 'hover:-translate-y-0.5 hover:shadow-[var(--wx-glass-glow)]',
-        open && 'shadow-[var(--wx-glass-glow)]',
+        !open && 'hover:-translate-y-0.5',
         offer.status === 'inactive' && 'opacity-75'
       )}
     >
@@ -526,12 +525,12 @@ function OfferCard({
               </span>
             ) : null}
             {offer.status === 'inactive' ? (
-              <span className="wx-neo-raised text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+              <span className="wx-neo-raised-sm text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
                 Off
               </span>
             ) : null}
             {offer.brand && !offer.brand.is_active ? (
-              <span className="wx-neo-raised text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+              <span className="wx-neo-raised-sm text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
                 Retired
               </span>
             ) : null}
@@ -594,7 +593,7 @@ function OfferCard({
         </div>
 
         {/* ------------------------------------------- 3. who is on it, and open -- */}
-        <div className="border-line bg-surface-2/40 flex items-center gap-3 border-t px-4 py-2.5">
+        <div className="border-line flex items-center gap-3 border-t px-4 py-2.5">
           {on > 0 ? (
             <>
               <CreatorStack faces={faces} total={on} avatars={avatars} size={26} />

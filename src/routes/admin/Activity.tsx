@@ -42,7 +42,7 @@ export function Activity() {
     <>
       <div
         className={cn(
-          'bg-surface-1 overflow-hidden rounded-xl shadow-md transition-opacity duration-200',
+          'wx-neo-raised overflow-hidden rounded-xl transition-opacity duration-200',
           isPlaceholderData && 'opacity-60'
         )}
       >
@@ -97,7 +97,7 @@ export function Activity() {
               <ChevronLeft size={15} aria-hidden />
               Previous
             </Button>
-            <span className="wx-numeric text-muted px-1 font-mono text-[0.75rem]">
+            <span className="wx-numeric text-muted px-1 text-[0.75rem]">
               {page} / {pages}
             </span>
             <Button
@@ -170,7 +170,7 @@ function Row({ entry }: { entry: AuditEntry }) {
   if (!to) return body;
 
   return (
-    <Link to={to} className="hover:bg-surface-2 block transition-colors duration-200">
+    <Link to={to} className="hover:bg-surface-2/60 block transition-colors duration-200">
       {body}
     </Link>
   );

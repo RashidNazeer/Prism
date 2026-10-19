@@ -78,7 +78,7 @@ export function ContestVideoQueue() {
       </p>
 
       {/* Row one is the work, per the screen chrome rules. */}
-      <div className="mt-3 flex flex-wrap gap-1.5">
+      <div className="wx-neo-inset mt-3 flex w-fit max-w-full flex-wrap gap-0.5 rounded-md p-1">
         {FILTERS.map((f) => (
           <button
             key={f.key}
@@ -86,10 +86,10 @@ export function ContestVideoQueue() {
             onClick={() => pick(f.key)}
             aria-pressed={filter === f.key}
             className={cn(
-              'rounded-md px-3 py-1.5 text-[0.8125rem] font-semibold transition-colors',
+              'ease-brand min-h-8 shrink-0 rounded-sm px-2.5 text-[0.8125rem] font-medium transition-colors duration-200',
               filter === f.key
-                ? 'bg-accent-soft text-accent'
-                : 'text-muted hover:text-text hover:bg-surface-2'
+                ? '[background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]'
+                : 'text-muted hover:text-accent'
             )}
           >
             {f.label}

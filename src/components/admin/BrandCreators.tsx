@@ -101,7 +101,7 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
         <div
           role="tablist"
           aria-label="Filter creators"
-          className="wx-neo-raised flex min-w-max gap-1 rounded-xl p-[3px]"
+          className="wx-neo-inset flex min-w-max gap-0.5 rounded-md p-1"
         >
           {TABS.map((t) => (
             <button
@@ -111,8 +111,8 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
               aria-selected={filters.tab === t.value}
               onClick={() => set({ tab: t.value === 'all' ? '' : t.value })}
               className={cn(
-                'shrink-0 rounded-[9px] px-3.5 py-1.5 text-[0.8125rem] font-medium transition-colors duration-200',
-                filters.tab === t.value ? 'bg-text text-inverse' : 'text-muted hover:text-text'
+                'flex min-h-11 shrink-0 items-center rounded-sm px-2.5 text-[0.8125rem] font-medium transition-colors duration-200 sm:min-h-8',
+                filters.tab === t.value ? '[background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]' : 'text-muted hover:text-accent'
               )}
             >
               {t.label}
@@ -120,7 +120,7 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
                 <span
                   className={cn(
                     'ml-1.5 text-[0.75rem]',
-                    filters.tab === t.value ? 'text-inverse/70' : 'text-muted'
+                    filters.tab === t.value ? '[color:color-mix(in_oklab,var(--wx-on-accent-fill)_80%,transparent)]' : 'text-muted'
                   )}
                 >
                   {counts[t.value]}
@@ -183,7 +183,7 @@ export function BrandCreators({ brandId, brandName }: { brandId: string; brandNa
           onRetry={() => refetch()}
         />
       ) : rows.length === 0 ? (
-        <div className="wx-neo-raised mt-4 rounded-xl px-6 py-16 text-center shadow-md">
+        <div className="wx-neo-raised mt-4 rounded-xl px-6 py-16 text-center">
           <Users size={26} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">
             {filtered ? 'Nobody matches that' : 'Nobody has asked yet'}
@@ -262,7 +262,7 @@ function RosterCard({ row, face }: { row: RosterRow; face: string | undefined })
   ];
 
   return (
-    <div className="wx-neo-raised rounded-xl p-4 shadow-md sm:p-5">
+    <div className="wx-neo-raised-sm rounded-xl p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-x-5 gap-y-3">
         <CreatorFace
           src={face}

@@ -575,10 +575,10 @@ export function ContestSetup() {
                     existing.contest.cancelledAt
                       ? 'bg-danger-soft text-danger'
                       : existing.contest.settledAt
-                        ? 'bg-surface-2 text-muted'
+                        ? 'wx-neo-raised-sm text-muted'
                         : existing.contest.status === 'active'
                           ? 'bg-success-soft text-success'
-                          : 'bg-surface-2 text-muted'
+                          : 'wx-neo-raised-sm text-muted'
                   )}
                 >
                   {existing.contest.cancelledAt
@@ -625,7 +625,7 @@ export function ContestSetup() {
         </div>
 
         {contestFailed && !isNew ? (
-          <div className="wx-neo-raised flex flex-col items-start gap-3 rounded-xl p-8 shadow-md">
+          <div className="wx-neo-raised flex flex-col items-start gap-3 rounded-xl p-8">
             <h2 className="font-display text-text text-[1.3125rem] leading-tight font-bold">
               That contest could not be opened
             </h2>
@@ -648,7 +648,7 @@ export function ContestSetup() {
         ) : showSkeleton ? (
           <div className="wx-skeleton h-[420px] rounded-xl" />
         ) : showGone ? (
-          <div className="wx-neo-raised flex flex-col items-start gap-3 rounded-xl p-8 shadow-md">
+          <div className="wx-neo-raised flex flex-col items-start gap-3 rounded-xl p-8">
             <h2 className="font-display text-text text-[1.3125rem] leading-tight font-bold">
               There is no contest here any more
             </h2>
@@ -674,7 +674,7 @@ export function ContestSetup() {
             <div
               role="tablist"
               aria-label="Contest sections"
-              className="border-line flex flex-wrap items-center gap-1 border-b pb-px"
+              className="wx-neo-inset flex w-fit max-w-full flex-wrap items-center gap-0.5 rounded-md p-1"
             >
               {TABS.map((t) => {
                 const locked = isNew && t.value !== 'details';
@@ -689,22 +689,16 @@ export function ContestSetup() {
                     title={locked ? 'Create the contest first' : undefined}
                     onClick={() => goTab(t.value)}
                     className={cn(
-                      'ease-brand relative inline-flex min-h-[40px] items-center gap-2 rounded-t-md px-3 text-[0.8125rem] font-medium transition-colors duration-200',
+                      'ease-brand inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-sm px-2.5 text-[0.8125rem] font-medium transition-colors duration-200',
                       locked
                         ? 'text-faint cursor-not-allowed'
                         : active
-                          ? 'text-accent'
-                          : 'text-muted hover:text-text'
+                          ? '[background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]'
+                          : 'text-muted hover:text-accent'
                     )}
                   >
                     <t.icon size={15} aria-hidden />
                     {t.label}
-                    {active ? (
-                      <span
-                        aria-hidden
-                        className="bg-accent absolute inset-x-2 -bottom-px h-[2px] rounded-full"
-                      />
-                    ) : null}
                   </button>
                 );
               })}
@@ -1414,7 +1408,7 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5 shadow-md">
+    <section className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5">
       <div>
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           {step ? <span className="text-accent">{step}. </span> : null}

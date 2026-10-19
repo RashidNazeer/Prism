@@ -203,7 +203,7 @@ export function ContestEntryQueue({
 
   return (
     <section
-      className={cn('bg-surface-1 flex flex-col gap-4 rounded-xl p-5 shadow-md', className)}
+      className={cn('wx-neo-raised flex flex-col gap-4 rounded-xl p-5', className)}
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div>
@@ -229,7 +229,7 @@ export function ContestEntryQueue({
           <div className="wx-skeleton h-[120px] rounded-2xl" />
         </div>
       ) : isError ? (
-        <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
+        <div className="wx-neo-inset flex flex-col items-start gap-3 rounded-xl p-6">
           <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
             That queue would not load
           </h3>
@@ -241,7 +241,7 @@ export function ContestEntryQueue({
           </Button>
         </div>
       ) : rows.length === 0 ? (
-        <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
+        <div className="wx-neo-inset flex flex-col items-start gap-3 rounded-xl p-6">
           <div className="wx-neo-inset grid size-[44px] place-items-center rounded-lg">
             <DoorOpen size={19} className="text-muted" aria-hidden />
           </div>
@@ -373,7 +373,7 @@ function EntryCard({
       </div>
 
       {row.note ? (
-        <p className="wx-neo-raised text-muted mt-3 rounded-xl px-3.5 py-2.5 text-[0.8125rem] leading-relaxed">
+        <p className="wx-neo-raised-sm text-muted mt-3 rounded-xl px-3.5 py-2.5 text-[0.8125rem] leading-relaxed">
           {row.note}
         </p>
       ) : null}

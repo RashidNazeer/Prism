@@ -92,7 +92,7 @@ export function BrandLeaderboard({
 
   if (rows.length === 0) {
     return (
-      <div className="wx-neo-raised mt-4 rounded-xl px-6 py-14 text-center shadow-md">
+      <div className="wx-neo-raised mt-4 rounded-xl px-6 py-14 text-center">
         <Trophy size={26} aria-hidden className="text-faint mx-auto" />
         <p className="mt-4 font-semibold">Nobody is ranked yet</p>
         <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -109,7 +109,7 @@ export function BrandLeaderboard({
         {rows.map((row) => (
           <li
             key={row.creator_id}
-            className="wx-neo-raised flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl px-4 py-3 shadow-md"
+            className="wx-neo-raised-sm flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl px-4 py-3"
           >
             <span
               className={cn(

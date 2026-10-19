@@ -80,7 +80,7 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
       {/* ------------------------------------------------------- controls -- */}
       <div className="flex flex-wrap items-center gap-3">
         <div
-          className="wx-neo-raised-sm flex rounded-full p-1"
+          className="wx-neo-inset flex max-w-full flex-wrap items-center gap-0.5 rounded-md p-1"
           role="tablist"
           aria-label="Filter contests"
         >
@@ -95,16 +95,16 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
                 aria-selected={active}
                 onClick={() => setFilters((f) => ({ ...f, status: t.key, page: 1 }))}
                 className={cn(
-                  'ease-brand min-h-[44px] rounded-full px-4 text-[0.8125rem] font-semibold transition-colors',
-                  active ? 'bg-surface-3 text-text' : 'text-muted hover:text-text'
+                  'ease-brand flex min-h-11 shrink-0 items-center rounded-sm px-2.5 text-[0.8125rem] font-medium transition-colors duration-200 sm:min-h-8',
+                  active ? '[background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]' : 'text-muted hover:text-accent'
                 )}
               >
                 {t.label}
                 {typeof n === 'number' ? (
                   <span
                     className={cn(
-                      'ml-2 font-mono text-[0.6875rem]',
-                      active ? 'text-muted' : 'text-faint'
+                      'ml-2 text-[0.6875rem]',
+                      active ? '[color:color-mix(in_oklab,var(--wx-on-accent-fill)_80%,transparent)]' : 'text-faint'
                     )}
                   >
                     {n}
@@ -193,7 +193,7 @@ export function BrandContests({ brandId, brandName }: { brandId: string; brandNa
               <ChevronLeft size={15} aria-hidden />
               Back
             </Button>
-            <span className="text-muted font-mono text-[0.75rem]">
+            <span className="text-muted text-[0.75rem]">
               {filters.page} of {pages}
             </span>
             <Button
@@ -220,7 +220,7 @@ function ContestRow({ contest, now }: { contest: Contest; now: number }) {
   return (
     <Link
       to={`/admin/brands/${contest.brandId}/contests/${contest.id}`}
-      className="ease-brand wx-neo-raised block rounded-xl p-5 shadow-md transition-colors"
+      className="ease-brand wx-neo-raised-sm block rounded-xl p-5 transition-colors"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
@@ -252,7 +252,7 @@ function ContestRow({ contest, now }: { contest: Contest; now: number }) {
           <p className="text-text text-[0.8125rem] font-semibold">
             {formatDeadline(contest.expiresAt, contest.expiresAtTimezone)}
           </p>
-          <p className="text-muted mt-0.5 font-mono text-[0.75rem]">{left}</p>
+          <p className="text-muted mt-0.5 text-[0.75rem]">{left}</p>
         </div>
       </div>
     </Link>
@@ -269,7 +269,7 @@ function Empty({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="wx-neo-raised flex flex-col items-start gap-3 rounded-xl p-8 shadow-md">
+    <div className="wx-neo-raised flex flex-col items-start gap-3 rounded-xl p-8">
       <div className="wx-neo-inset grid size-[44px] place-items-center rounded-lg">
         <Trophy size={19} className="text-muted" aria-hidden />
       </div>

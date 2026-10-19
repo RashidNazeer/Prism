@@ -39,7 +39,7 @@ export function ApplicationDetail() {
       */}
       <Link
         to="/admin/applications"
-        className="text-muted hover:text-accent inline-flex items-center gap-1.5 font-mono text-[0.6875rem] tracking-[0.14em] uppercase transition-colors"
+        className="text-muted hover:text-accent inline-flex items-center gap-1.5 text-[0.6875rem] font-semibold tracking-wide uppercase transition-colors"
       >
         <ArrowLeft size={14} aria-hidden />
         Back to queue
@@ -94,7 +94,7 @@ function Loaded({
         "Decision" heading from another file, and a half-demoted page reads worse
         to a screen reader than a flat one.
       */}
-      <div className="mt-5 flex flex-wrap items-center gap-3">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         {/* Sized to the heading. This is the screen where somebody decides
             whether to let a stranger in, so the face earns its place here more
             than anywhere else in the admin. */}
@@ -110,14 +110,14 @@ function Loaded({
         </h2>
         <StatusBadge status={application.status} />
         {application.worked_with_wurx ? (
-          <span className="bg-accent-soft text-accent inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+          <span className="bg-accent-soft text-accent inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.625rem] font-semibold tracking-wide uppercase">
             <Star size={11} aria-hidden />
             Worked with Wurx
           </span>
         ) : null}
       </div>
 
-      <div className="mt-8 grid max-w-5xl min-w-0 gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
+      <div className="mt-4 grid max-w-5xl min-w-0 gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
         {/* ------------------------------------------------- what they sent */}
         {/*
           `min-w-0` is load bearing, not tidiness.
@@ -129,10 +129,10 @@ function Loaded({
           /admin/applications/:id had never been in the responsive suite. It is
           now, which is how this was found.
         */}
-        <div className="grid min-w-0 gap-6">
-          <section className="wx-neo-raised min-w-0 rounded-xl p-6 shadow-md">
+        <div className="grid min-w-0 gap-4">
+          <section className="wx-neo-raised min-w-0 rounded-xl p-4">
             <h2 className="text-lg font-bold">Application</h2>
-            <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
+            <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
               <Row label="Niche" value={niche} />
               <Row
                 label="Worked with Wurx before"
@@ -143,7 +143,7 @@ function Loaded({
             </dl>
 
             <div className="border-line mt-6 border-t pt-5">
-              <p className="text-faint font-mono text-[0.6875rem] tracking-[0.14em] uppercase">
+              <p className="text-faint text-[0.6875rem] font-semibold tracking-wide uppercase">
                 Videos
               </p>
               {links.length > 0 ? (
@@ -184,10 +184,10 @@ function Loaded({
             </div>
           </section>
 
-          <section className="wx-neo-raised min-w-0 rounded-xl p-6 shadow-md">
+          <section className="wx-neo-raised min-w-0 rounded-xl p-4">
             <h2 className="text-lg font-bold">Account</h2>
             {application.applicant ? (
-              <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
+              <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
                 <Row label="Email" value={application.applicant.email} breakAll />
                 <Row label="Name" value={application.applicant.display_name || 'Not set'} />
                 <Row
@@ -225,16 +225,16 @@ function Loaded({
           /admin/applications/:id had never been in the responsive suite. It is
           now, which is how this was found.
         */}
-        <div className="grid min-w-0 gap-6">
+        <div className="grid min-w-0 gap-4">
           {application.status === 'pending' ? (
             <ReviewPanel application={application} />
           ) : (
-            <section className="wx-neo-raised min-w-0 rounded-xl p-6 shadow-md">
+            <section className="wx-neo-raised min-w-0 rounded-xl p-4">
               <h2 className="text-lg font-bold">Decision</h2>
               <div className="mt-4">
                 <StatusBadge status={application.status} />
               </div>
-              <dl className="mt-5 grid gap-4 text-sm">
+              <dl className="mt-4 grid gap-4 text-sm">
                 <Row
                   label="Reviewed by"
                   value={application.reviewer?.email ?? 'A removed account'}
@@ -250,7 +250,7 @@ function Loaded({
                 />
               </dl>
               {application.review_note ? (
-                <p className="wx-neo-inset text-muted mt-5 rounded-xl px-4 py-3 text-[0.875rem] leading-relaxed">
+                <p className="wx-neo-inset text-muted mt-5 rounded-lg px-4 py-3 text-[0.875rem] leading-relaxed">
                   {application.review_note}
                 </p>
               ) : null}
@@ -262,7 +262,7 @@ function Loaded({
           )}
 
           {/* --------------------------------------------------- audit trail */}
-          <section className="wx-neo-raised min-w-0 rounded-xl p-6 shadow-md">
+          <section className="wx-neo-raised min-w-0 rounded-xl p-4">
             <h2 className="text-sm font-semibold">History</h2>
             {history && history.length > 0 ? (
               <ul className="mt-4 grid gap-3 text-[0.8125rem]">
@@ -332,7 +332,7 @@ function Row({
 
 function Empty({ title, body }: { title: string; body: string }) {
   return (
-    <div className="wx-neo-raised mt-8 max-w-lg rounded-xl p-8 text-center shadow-md">
+    <div className="wx-neo-raised mt-8 max-w-lg rounded-xl p-8 text-center">
       <p className="font-semibold">{title}</p>
       <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">{body}</p>
       <ButtonLink to="/admin/applications" variant="secondary" size="sm" className="mt-5">

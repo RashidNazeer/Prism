@@ -24,6 +24,7 @@ import { DataError } from '@/components/ui/DataState';
 import { Input, Select } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
 import { useManageBrand } from '@/lib/admin/useManageBrand';
+import { brandLogo } from '@/lib/brand-logos';
 import { BudgetBar } from '@/components/admin/BudgetBar';
 import {
   BRAND_OFFERS_PAGE_SIZE,
@@ -165,7 +166,7 @@ export function BrandHub() {
 
   if (!brand) {
     return (
-      <div className="wx-neo-raised rounded-xl p-8 text-center shadow-md">
+      <div className="wx-neo-raised rounded-xl p-8 text-center">
         <p className="font-semibold">No such brand</p>
         <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
           It may have been removed. Nothing else is affected.
@@ -196,11 +197,11 @@ export function BrandHub() {
           <ArrowLeft size={15} aria-hidden />
         </Link>
 
-        {brand.logo_url ? (
+        {brandLogo(brand.slug, brand.logo_url) ? (
           <img
-            src={brand.logo_url}
+            src={brandLogo(brand.slug, brand.logo_url)!}
             alt=""
-            className="size-8 shrink-0 rounded-full object-cover shadow-md"
+            className="size-10 shrink-0 rounded-xl object-contain shadow-[0_8px_18px_-10px_rgba(0,0,0,0.65)]"
           />
         ) : null}
 
@@ -209,7 +210,7 @@ export function BrandHub() {
         </h2>
 
         {!brand.is_active ? (
-          <span className="wx-neo-raised text-muted rounded-full px-2.5 py-1 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+          <span className="wx-neo-raised-sm text-muted rounded-full px-2.5 py-1 text-[0.625rem] tracking-[0.12em] uppercase">
             Retired
           </span>
         ) : null}
@@ -335,7 +336,7 @@ function Overview({ brand, onEdit }: { brand: Brand; onEdit: () => void }) {
 
       {/* Budget first, because it is the only fact here that changes on its own
           and the only one with a consequence. Everything below is reference. */}
-      <div className="wx-neo-raised rounded-xl px-5 py-4 shadow-md">
+      <div className="wx-neo-raised-sm rounded-xl px-5 py-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Budget committed to creators
@@ -451,7 +452,7 @@ function MoneyByStage({ m, showCurrency }: { m: BrandMoney; showCurrency: boolea
   ];
 
   return (
-    <section className="wx-neo-raised rounded-xl p-5 shadow-md">
+    <section className="wx-neo-raised rounded-xl p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Where the committed money has got to
@@ -523,7 +524,7 @@ function ContentLanded({ content }: { content: BrandContent | undefined }) {
   ];
 
   return (
-    <section className="wx-neo-raised rounded-xl p-5 shadow-md">
+    <section className="wx-neo-raised rounded-xl p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           What has been filmed for this brand
@@ -570,7 +571,7 @@ function Fact({
   accent?: boolean;
 }) {
   return (
-    <div className="wx-neo-raised rounded-xl px-5 py-4">
+    <div className="wx-neo-raised-sm rounded-xl px-5 py-4">
       <dt className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         {label}
       </dt>
@@ -690,7 +691,7 @@ function Offers({
           onRetry={onRetry}
         />
       ) : offers.length === 0 ? (
-        <div className="wx-neo-raised mt-4 rounded-xl px-6 py-14 text-center shadow-md">
+        <div className="wx-neo-raised mt-4 rounded-xl px-6 py-14 text-center">
           <Ticket size={26} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">
             {filtered ? 'Nothing matches that' : 'No offers yet'}
@@ -768,23 +769,23 @@ function OfferCard({ offer, onEdit }: { offer: Offer; onEdit: () => void }) {
     <div
       className={cn(
         'flex h-full flex-col rounded-xl p-5',
-        offer.status === 'active' ? 'wx-neo-raised' : 'bg-surface-1 shadow-md'
+        'wx-neo-raised-sm'
       )}
     >
       <div className="flex flex-wrap items-center gap-2">
         {offer.badge_title ? (
-          <span className="bg-accent-soft text-accent rounded-full px-2.5 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+          <span className="bg-accent-soft text-accent rounded-full px-2.5 py-0.5 text-[0.625rem] tracking-[0.12em] uppercase">
             {offer.badge_title}
           </span>
         ) : null}
         {offer.status === 'inactive' ? (
-          <span className="wx-neo-raised text-muted rounded-full px-2.5 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+          <span className="wx-neo-raised-sm text-muted rounded-full px-2.5 py-0.5 text-[0.625rem] tracking-[0.12em] uppercase">
             Inactive
           </span>
         ) : null}
         <span
           className={cn(
-            'rounded-full px-2.5 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase',
+            'rounded-full px-2.5 py-0.5 text-[0.625rem] tracking-[0.12em] uppercase',
             offer.needs_application
               ? 'bg-warning-soft text-warning'
               : 'bg-success-soft text-success'

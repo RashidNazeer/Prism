@@ -58,7 +58,7 @@ const TYPE_LABEL: Record<DeliverableType, string> = {
  * creator's work and money have got to. A deliverable TYPE is neither: a GMV row
  * is not "due" and a video row is not "paid".
  */
-const TYPE_CHIP = 'bg-surface-2 text-muted';
+const TYPE_CHIP = 'wx-neo-raised-sm text-muted';
 
 /** A whole number of videos, grouped. Never money. */
 const count = (value: number | null): string =>
@@ -290,7 +290,7 @@ export function ContestDeliverables({ contestId, currency, rows, loading }: Prop
   }
 
   return (
-    <section className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5 shadow-md">
+    <section className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
         <div>
           <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
@@ -323,7 +323,7 @@ export function ContestDeliverables({ contestId, currency, rows, loading }: Prop
           <div className="wx-skeleton h-[92px] rounded-xl" />
         </div>
       ) : ordered.length === 0 ? (
-        <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
+        <div className="wx-neo-inset flex flex-col items-start gap-3 rounded-xl p-6">
           <div className="wx-neo-inset grid size-[44px] place-items-center rounded-lg">
             <Target size={19} className="text-muted" aria-hidden />
           </div>
@@ -409,7 +409,7 @@ function DeliverableCard({
         'rounded-xl p-4',
         row.isActive
           ? 'wx-neo-raised'
-          : 'bg-surface-1 border-line border border-dashed opacity-70'
+          : 'wx-neo-inset opacity-70'
       )}
     >
       <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
@@ -427,7 +427,7 @@ function DeliverableCard({
               {askOf(row.type, row.targetValue, currency)}
             </span>
             {!row.isActive ? (
-              <span className="wx-neo-raised text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+              <span className="wx-neo-raised-sm text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
                 Retired
               </span>
             ) : null}
@@ -802,7 +802,7 @@ function DeliverableDialog({
               aria-live="polite"
               className={cn(
                 'rounded-xl px-4 py-3 text-[0.8125rem] leading-relaxed',
-                summary ? 'bg-surface-2 text-text font-medium' : 'text-faint'
+                summary ? 'wx-neo-inset text-text font-medium' : 'text-faint'
               )}
             >
               {summary ?? 'Fill in the target and the reward, and the deal reads here.'}

@@ -63,7 +63,7 @@ const HOPS = [
   { labels: ['Applications'], path: '/admin/applications', marker: 'Applications' },
   { labels: ['Contests', 'All contests'], path: '/admin/contests', marker: 'Contests' },
   { labels: ['Content'], path: '/admin/content', marker: 'Content' },
-  { labels: ['Brand hubs'], path: '/admin/brands', marker: 'Brand' },
+  { labels: ['Brands Hub'], path: '/admin/brands', marker: 'Brand' },
   { labels: ['Creators'], path: '/admin/creators', marker: 'Creators' },
 ];
 

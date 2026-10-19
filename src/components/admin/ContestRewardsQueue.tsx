@@ -430,7 +430,7 @@ export function ContestRewardsQueue({
             <div className="wx-skeleton h-[104px] rounded-xl" />
           </>
         ) : (totals.data ?? []).length === 0 ? (
-          <div className="border-line text-muted rounded-xl border border-dashed p-5 text-[0.8125rem] leading-relaxed sm:col-span-2">
+          <div className="wx-neo-inset text-muted rounded-xl p-5 text-[0.8125rem] leading-relaxed sm:col-span-2">
             No contest reward has been earned yet. A reward appears here the moment somebody on
             this team confirms the figures that earn it.
           </div>
@@ -462,7 +462,7 @@ export function ContestRewardsQueue({
       <div
         role="tablist"
         aria-label="Which rewards to show"
-        className="wx-neo-inset flex w-full max-w-[380px] gap-1 rounded-xl p-1"
+        className="wx-neo-inset flex w-full max-w-[23.75rem] gap-0.5 rounded-md p-1"
       >
         {(['owed', 'paid'] as const).map((tab) => (
           <button
@@ -472,8 +472,10 @@ export function ContestRewardsQueue({
             aria-selected={view === tab}
             onClick={() => switchView(tab)}
             className={cn(
-              'min-h-[44px] flex-1 rounded-lg px-3 text-[0.8125rem] font-semibold transition-colors duration-200',
-              view === tab ? 'bg-surface-1 text-text shadow-sm' : 'text-muted hover:text-accent'
+              'ease-brand min-h-8 flex-1 rounded-sm px-2.5 text-[0.8125rem] font-medium transition-colors duration-200',
+              view === tab
+                ? '[background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]'
+                : 'text-muted hover:text-accent'
             )}
           >
             {tab === 'owed' ? 'Owed' : 'Paid'}
@@ -482,7 +484,7 @@ export function ContestRewardsQueue({
       </div>
 
       {/* ------------------------------------------------------ the list -- */}
-      <div className="wx-neo-raised flex flex-col gap-4 rounded-xl p-4 shadow-md sm:p-5">
+      <div className="wx-neo-raised flex flex-col gap-4 rounded-xl p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
           <div>
             <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
@@ -516,7 +518,7 @@ export function ContestRewardsQueue({
             <div className="wx-skeleton h-[92px] rounded-2xl" />
           </div>
         ) : isError ? (
-          <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
+          <div className="wx-neo-inset flex flex-col items-start gap-3 rounded-xl p-6">
             <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
               That would not load
             </h3>
@@ -529,7 +531,7 @@ export function ContestRewardsQueue({
             </Button>
           </div>
         ) : rows.length === 0 && total > 0 ? (
-          <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
+          <div className="wx-neo-inset flex flex-col items-start gap-3 rounded-xl p-6">
             <h3 className="font-display text-text text-[1.1875rem] leading-tight font-bold">
               This page is empty now
             </h3>
@@ -631,7 +633,7 @@ export function ContestRewardsQueue({
 
       {/* ----------------------------------------------------- the action -- */}
       {view === 'owed' && chosen.length > 0 ? (
-        <div className="wx-neo-raised sticky bottom-3 z-10 flex flex-col gap-3 rounded-xl p-4 shadow-md sm:p-5">
+        <div className="wx-neo-raised sticky bottom-3 z-10 flex flex-col gap-3 rounded-xl p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <p className="text-text text-[0.875rem] font-semibold">
               {chosen.length} reward{chosen.length === 1 ? '' : 's'},{' '}
@@ -757,7 +759,7 @@ function MoneyCard({
   hint: string;
 }) {
   return (
-    <div className="wx-neo-raised rounded-xl p-5 shadow-md">
+    <div className="wx-neo-raised rounded-xl p-5">
       <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
         {label}
       </span>
@@ -828,7 +830,7 @@ function RewardCard({
             </span>
           ) : null}
           {row.contestClosed ? (
-            <span className="bg-surface-3 text-muted rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold">
+            <span className="wx-neo-raised-sm text-muted rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold">
               Contest closed
             </span>
           ) : null}
@@ -920,7 +922,7 @@ function RewardCard({
 
 function EmptyState({ view, scoped }: { view: RewardsView; scoped: boolean }) {
   return (
-    <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
+    <div className="wx-neo-inset flex flex-col items-start gap-3 rounded-xl p-6">
       <div className="wx-neo-inset grid size-[44px] place-items-center rounded-lg">
         <Trophy size={19} className="text-muted" aria-hidden />
       </div>

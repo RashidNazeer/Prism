@@ -53,7 +53,7 @@ export function BrandProducts({ brandId, brandName }: { brandId: string; brandNa
           onRetry={() => refetch()}
         />
       ) : rows.length === 0 ? (
-        <div className="wx-neo-raised mt-4 rounded-xl px-6 py-12 text-center shadow-md">
+        <div className="wx-neo-raised mt-4 rounded-xl px-6 py-12 text-center">
           <Package size={24} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">No products yet</p>
           <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
@@ -98,7 +98,7 @@ function ProductRow({ product, onEdit }: { product: BrandProduct; onEdit: () => 
       className={cn(
         'rounded-xl p-4',
         // A hidden product is quieter, not outlined: the pill says why.
-        product.is_active ? 'wx-neo-raised' : 'bg-surface-1 shadow-md'
+        'wx-neo-raised-sm'
       )}
     >
       {/* Wraps on a phone and sits in one row from small up. Nothing here is
@@ -116,12 +116,12 @@ function ProductRow({ product, onEdit }: { product: BrandProduct; onEdit: () => 
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-semibold break-words">{product.name}</p>
             {product.badge_title ? (
-              <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+              <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 text-[0.625rem] tracking-[0.12em] uppercase">
                 {product.badge_title}
               </span>
             ) : null}
             {!product.is_active ? (
-              <span className="wx-neo-raised text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+              <span className="wx-neo-raised-sm text-muted rounded-full px-2 py-0.5 text-[0.625rem] tracking-[0.12em] uppercase">
                 Hidden from creators
               </span>
             ) : null}

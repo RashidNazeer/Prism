@@ -207,7 +207,7 @@ export function Applications() {
 
       {/* --------------------------------------------------------- bulk bar */}
       {selected.size > 0 ? (
-        <div className="bg-accent-soft mt-4 flex flex-wrap items-center gap-2.5 rounded-md px-4 py-3">
+        <div className="bg-accent-soft mt-4 flex flex-wrap items-center gap-2.5 rounded-xl px-4 py-3">
           <p className="text-[0.875rem] font-medium">
             <span className="wx-numeric">{selected.size}</span> selected
           </p>
@@ -244,18 +244,18 @@ export function Applications() {
         {isLoading ? (
           <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <li key={i} className="wx-skeleton h-[12.5rem] rounded-md" />
+              <li key={i} className="wx-skeleton h-[12.5rem] rounded-lg" />
             ))}
           </ul>
         ) : isError ? (
-          <div className="wx-neo-raised rounded-md px-6 py-14 text-center shadow-md">
+          <div className="wx-neo-raised rounded-xl px-6 py-14 text-center">
             <p className="font-semibold">That list would not load</p>
             <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
               {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
             </p>
           </div>
         ) : rows.length === 0 ? (
-          <div className="wx-neo-raised rounded-md px-6 py-16 text-center shadow-md">
+          <div className="wx-neo-raised rounded-xl px-6 py-16 text-center">
             <Inbox size={26} aria-hidden className="text-faint mx-auto" />
             <p className="mt-4 font-semibold">
               {filtered ? 'Nothing matches those filters' : 'No applications waiting'}
@@ -328,7 +328,7 @@ export function Applications() {
               <ChevronLeft size={15} aria-hidden />
               Previous
             </Button>
-            <span className="wx-numeric text-muted px-1 font-mono text-[0.75rem]">
+            <span className="wx-numeric text-muted px-1 text-[0.75rem]">
               {filters.page} / {pages}
             </span>
             <Button
@@ -403,7 +403,7 @@ function ApplicationCard({
   return (
     <li
       className={cn(
-        'wx-neo-raised relative flex flex-col overflow-hidden rounded-md transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-[var(--wx-glass-glow)]',
+        'wx-neo-raised-sm relative flex flex-col overflow-hidden rounded-lg transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-[var(--wx-glass-glow)]',
         checked && 'shadow-[var(--wx-glass-glow)]'
       )}
     >
@@ -449,7 +449,7 @@ function ApplicationCard({
         </span>
 
         {row.worked_with_wurx ? (
-          <span className="bg-accent-soft text-accent inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+          <span className="bg-accent-soft text-accent inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[0.625rem] font-semibold tracking-wide uppercase">
             <Star size={10} aria-hidden />
             Known
           </span>
@@ -458,7 +458,7 @@ function ApplicationCard({
 
       {/* ------------------------------------- 2. what they make, and when -- */}
       <div className="border-line pointer-events-none relative flex flex-1 flex-col gap-2 border-t px-4 pt-3.5 pb-4">
-        <span className="text-faint block text-[0.625rem] font-semibold tracking-[0.14em] uppercase">
+        <span className="text-faint block text-[0.625rem] font-semibold tracking-wide uppercase">
           Niche
         </span>
         {/* One line, floored at one, so every closed card in a row is the same
@@ -472,7 +472,7 @@ function ApplicationCard({
       </div>
 
       {/* ----------------------------------------------- 3. the decision -- */}
-      <div className="border-line bg-surface-2/40 pointer-events-none relative flex items-center gap-2 border-t px-4 py-2.5">
+      <div className="border-line pointer-events-none relative flex items-center gap-2 border-t px-4 py-2.5">
         {pending ? (
           <>
             <Button size="sm" className="pointer-events-auto flex-1" onClick={onApprove}>

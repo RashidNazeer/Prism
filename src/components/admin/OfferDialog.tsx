@@ -169,7 +169,7 @@ export function OfferDialog({
         aria-hidden
         tabIndex={-1}
         onClick={() => !busy && onClose()}
-        className="fixed inset-0 cursor-default bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 cursor-default bg-black/60"
       />
 
       <m.div
@@ -424,7 +424,7 @@ export function OfferDialog({
               >
                 Saved. These {unmatched.length === 1 ? 'line matched' : 'lines matched'} nobody
                 on the platform and {unmatched.length === 1 ? 'was' : 'were'} left off:{' '}
-                <span className="font-mono">{unmatched.join(', ')}</span>
+                <span className="">{unmatched.join(', ')}</span>
               </p>
             ) : null}
 

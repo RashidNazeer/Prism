@@ -103,7 +103,7 @@ export function ProductDialog({
         aria-hidden
         tabIndex={-1}
         onClick={() => !busy && onClose()}
-        className="fixed inset-0 cursor-default bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 cursor-default bg-black/60"
       />
 
       <m.div

@@ -156,14 +156,14 @@ export function Creators() {
           ))}
         </ul>
       ) : isError ? (
-        <div className="wx-neo-raised mt-4 rounded-xl px-6 py-14 text-center shadow-md">
+        <div className="wx-neo-raised mt-4 rounded-xl px-6 py-14 text-center">
           <p className="font-semibold">That list would not load</p>
           <p className="text-muted mx-auto mt-2 max-w-sm text-[0.875rem] leading-relaxed">
             {(error as Error)?.message ?? 'Something went wrong reaching the database.'}
           </p>
         </div>
       ) : rows.length === 0 ? (
-        <div className="wx-neo-raised mt-4 rounded-xl px-6 py-16 text-center shadow-md">
+        <div className="wx-neo-raised mt-4 rounded-xl px-6 py-16 text-center">
           <Users size={26} aria-hidden className="text-faint mx-auto" />
           <p className="mt-4 font-semibold">
             {filtered ? 'Nobody matches that' : 'No creators yet'}
@@ -234,21 +234,21 @@ function CreatorCard({
   return (
     <Link
       to={`/admin/creators/${row.id}`}
-      className="wx-neo-raised flex h-full flex-col rounded-xl p-4 shadow-md transition-colors sm:p-5"
+      className="wx-neo-raised-sm flex h-full flex-col rounded-xl p-4 transition-colors sm:p-5"
     >
-      <div className="flex items-start gap-3">
+      <div className="mb-3 flex min-h-12 items-start gap-3">
         <CreatorFace src={face} name={row.display_name} handle={row.tiktok_handle} size={40} />
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-semibold break-all">{who}</p>
             {row.tier ? (
-              <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+              <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 text-[0.625rem] tracking-[0.12em] uppercase">
                 {TIER_LABEL[row.tier]}
               </span>
             ) : null}
             {!row.is_active ? (
-              <span className="wx-neo-raised text-muted rounded-full px-2 py-0.5 font-mono text-[0.625rem] tracking-[0.12em] uppercase">
+              <span className="wx-neo-raised-sm text-muted rounded-full px-2 py-0.5 text-[0.625rem] tracking-[0.12em] uppercase">
                 Suspended
               </span>
             ) : null}
@@ -260,7 +260,7 @@ function CreatorCard({
         </div>
       </div>
 
-      <div className="border-line mt-3 flex flex-wrap items-end gap-x-5 gap-y-2 border-t pt-3">
+      <div className="border-line mt-auto flex flex-wrap items-end gap-x-5 gap-y-2 border-t pt-3">
         <span>
           <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
             Agreed
@@ -291,7 +291,7 @@ function CreatorCard({
         </span>
       </div>
 
-      <p className="text-faint mt-2 text-[0.78125rem]">
+      <p className="text-faint mt-2 min-h-[2.5rem] text-[0.78125rem]">
         {work
           ? `${work.approved} ${work.approved === 1 ? 'job' : 'jobs'} across ${work.brands} ${work.brands === 1 ? 'brand' : 'brands'}`
           : 'Loading their work'}

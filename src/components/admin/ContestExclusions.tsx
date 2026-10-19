@@ -116,7 +116,7 @@ export function ContestExclusions({ contestId, rows, loading }: Props) {
   }
 
   return (
-    <section className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5 shadow-md">
+    <section className="wx-neo-raised flex flex-col gap-4 rounded-xl p-5">
       <div>
         <h2 className="text-muted text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           Barred from this contest
@@ -223,7 +223,7 @@ export function ContestExclusions({ contestId, rows, loading }: Props) {
           <div className="wx-skeleton h-[84px] rounded-xl" />
         </div>
       ) : rows.length === 0 ? (
-        <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
+        <div className="wx-neo-inset flex flex-col items-start gap-3 rounded-xl p-6">
           <div className="wx-neo-inset grid size-[44px] place-items-center rounded-lg">
             <UserX size={19} className="text-muted" aria-hidden />
           </div>
