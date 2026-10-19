@@ -288,6 +288,22 @@ export async function brandSource(brand) {
   }
 }
 
+/* WURX-ADDED · the Reacher videos that are on no roster row (public table,
+   so the root client, not the wurxbase-scoped one). Never throws: a screen that
+   cannot read it simply shows nothing extra. */
+export async function fetchReacherUnrostered() {
+  try {
+    const { data, error } = await selectAll(() =>
+      getSupabase().from('reacher_unrostered_videos')
+        .select('handle, video_url, posted_date, views, gmv, units, product')
+        .order('gmv', { ascending: false }));
+    if (error) return [];
+    return data || [];
+  } catch {
+    return [];
+  }
+}
+
 /* WURX-ADDED · run the Reacher sync for Irwin Naturals from the screen, the way
    the EUKA videos button runs Euka's. Staff only, checked inside the function. */
 export async function runReacherSync() {

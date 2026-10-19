@@ -26,7 +26,7 @@ import { clipCreatorsToRange as wxClipToRange, rangeHeading as wxRangeHeading } 
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { can } from './access';
 import { createPortal } from 'react-dom';
-import { supabase, selectAll, eukaJson, lastEukaFailure, collabProducts, brandSource, runReacherSync } from './supabaseClient';
+import { supabase, selectAll, eukaJson, lastEukaFailure, collabProducts, brandSource, runReacherSync, fetchReacherUnrostered } from './supabaseClient';
 import { godGet, godMoney, godDateParts, colTemplate, colStyle,
   visibleCols } from './godSettings';
 import { generateContractPdf, defaultContractFields, CONTRACT_SECTIONS, renderContractPdf } from './contractPdf';
@@ -844,6 +844,61 @@ function WxGroupMenu({ onExpandAll, onCollapseAll }) {
    check:contrast section 5 already proves the green GMV ink against. Putting it
    on the tinted `--pc-card-2` would have been a new, unproven ground for an ink
    calibrated elsewhere, which is a bug this project has shipped before. */
+/* WURX-ADDED · REACHER VIDEOS THAT ARE ON NO ROSTER ROW.
+   Reacher holds every video any affiliate posted for the shop; the roster holds
+   only the creators the team added. The sync files the first group onto their
+   rows and used to drop the rest, so the brand page showed a fraction of what
+   Reacher's own dashboard does. They are kept in `reacher_unrostered_videos`
+   and listed here, by creator, never added to the table, the creator count or
+   any deal total. Shown only for a brand whose source is Reacher, and only when
+   there is something to show. */
+function ReacherUnrostered() {
+  const [rows, setRows] = useState(null);
+  const [all, setAll] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    fetchReacherUnrostered().then((r) => { if (alive) setRows(r); });
+    return () => { alive = false; };
+  }, []);
+  const people = useMemo(() => {
+    const m = new Map();
+    for (const r of rows || []) {
+      const p = m.get(r.handle) || { handle: r.handle, videos: 0, gmv: 0, views: 0, top: r.video_url };
+      p.videos += 1; p.gmv += Number(r.gmv) || 0; p.views += Number(r.views) || 0;
+      m.set(r.handle, p);
+    }
+    return [...m.values()].sort((a, b) => b.gmv - a.gmv || b.videos - a.videos);
+  }, [rows]);
+  if (!rows || !rows.length) return null;
+  const totalGmv = people.reduce((s, p) => s + p.gmv, 0);
+  const shown = all ? people : people.slice(0, 10);
+  return (
+    <div className="pc-topvids" style={{ marginTop: 14 }}>
+      <div className="pc-topvids-head">
+        Reacher videos not on the roster
+        <span className="pc-topvids-sub">{rows.length.toLocaleString()} videos · {people.length.toLocaleString()} creators · {fmt$Exact(Math.round(totalGmv))}</span>
+      </div>
+      <div style={{ padding: '4px 16px 14px' }}>
+        {shown.map((p) => (
+          <a key={p.handle} href={p.top} target="_blank" rel="noreferrer"
+            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--pc-divider)', color: 'inherit', textDecoration: 'none', fontSize: 13 }}>
+            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 700 }}>@{p.handle}</span>
+            <span style={{ color: 'var(--pc-text-2)' }}>{p.videos} video{p.videos === 1 ? '' : 's'}</span>
+            <span style={{ color: 'var(--pc-text-2)', minWidth: 56, textAlign: 'right' }}>{kNum(p.views)} views</span>
+            <span style={{ fontWeight: 800, minWidth: 64, textAlign: 'right' }}>{fmt$Exact(Math.round(p.gmv))}</span>
+          </a>
+        ))}
+        {people.length > 10 && (
+          <button type="button" onClick={() => setAll((a) => !a)}
+            style={{ marginTop: 10, background: 'none', border: 0, color: 'var(--pc-accent)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', padding: 0 }}>
+            {all ? 'Show fewer' : `Show all ${people.length.toLocaleString()} creators`}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ProductBand({ creators, brand, period }) {
   const rows = useMemo(() => wxProductTotals(creators), [creators]);
   /* The pictures come from the shared per-brand cache, because the groups in
@@ -3752,6 +3807,7 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
           video once with the same rule as the GMV card above — so the pills add
           up to that card instead of quietly exceeding it. */}
       <ProductBand creators={sortedCreators} brand={brand.brand} period={allTime ? 'All time' : monthLabel(month)} />
+      {wxSource === 'reacher' && <ReacherUnrostered />}
 
       {/* WURX-ADDED · search and filter for this brand's creators. Their own
           toolbar shape, the one the Brands screen and the Creators tab already

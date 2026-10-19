@@ -199,6 +199,8 @@ Deno.serve(async (req: Request) => {
     thumbsFilled: 0, thumbsMissing: 0, thumbsTruncated: false,
     markedDone: [] as string[],
     unmatchedHandles: [] as string[],
+    /* The whole of what the roster does not cover, not just a sample. */
+    unrosteredVideos: 0, unrosteredCreators: 0, unrosteredGmv: 0, unrosteredWritten: 0,
     campaigns: 0, spendRows: 0, spendWritten: 0,
     note: '' as string,
   };
@@ -284,6 +286,36 @@ Deno.serve(async (req: Request) => {
       list.push(toVideoCode(v));
       toFile.set(row.id, list);
     }
+    /* Every Reacher video whose handle is on no roster row, once per video and
+       with the best figures seen. Kept so they are visible; never filed onto a
+       creator. */
+    const unrostered: Record<string, unknown>[] = [];
+    const unrosteredHandles = new Set<string>();
+    let unrosteredGmv = 0;
+    for (const [key, v] of latest) {
+      const h = handleOf(v.creator_handle);
+      const url = String(v.video_url || v.tiktok_url || '').trim();
+      if (!h || !url || rowFor.has(h)) continue;
+      unrosteredHandles.add(h);
+      unrosteredGmv += Number(v.video_gmv) || 0;
+      unrostered.push({
+        video_key: key,
+        shop_id: shop.shop_id,
+        handle: h,
+        video_url: url,
+        posted_date: /^d{4}-d{2}-d{2}/.test(String(v.posted_date ?? '')) ? String(v.posted_date).slice(0, 10) : null,
+        views: Math.round(Number(v.views) || 0),
+        gmv: Math.round((Number(v.video_gmv) || 0) * 100) / 100,
+        units: Math.round(Number(v.units_sold) || 0),
+        likes: Math.round(Number(v.like_count) || 0),
+        comments: Math.round(Number(v.comment_count) || 0),
+        product: String(v.product_name || '') || null,
+        synced_at: new Date().toISOString(),
+      });
+    }
+    summary.unrosteredVideos = unrostered.length;
+    summary.unrosteredCreators = unrosteredHandles.size;
+    summary.unrosteredGmv = Math.round(unrosteredGmv * 100) / 100;
     summary.creatorsMatched = toFile.size;
     summary.videosFiled = [...toFile.values()].reduce((s, l) => s + l.length, 0);
     summary.unmatchedHandles = [...unmatched].slice(0, 20);
@@ -438,6 +470,23 @@ Deno.serve(async (req: Request) => {
           .eq('id', id)
           .eq('brand', BRAND);            /* belt and braces: Irwin rows only */
         if (error) throw new Error(`filing videos on row ${id}: ${error.message}`);
+      }
+    }
+
+    /* ── 2b. the videos nobody on the roster owns ──────────────────────── */
+    if (!dryRun) {
+      for (let i = 0; i < unrostered.length; i += 500) {
+        const { error } = await db.from('reacher_unrostered_videos')
+          .upsert(unrostered.slice(i, i + 500), { onConflict: 'video_key' });
+        if (error) throw new Error(`keeping unrostered videos: ${error.message}`);
+      }
+      summary.unrosteredWritten = unrostered.length;
+      /* A handle that has since joined the roster has its videos filed above;
+         take them off this list so nothing is shown twice. */
+      const rostered = [...rowFor.keys()];
+      for (let i = 0; i < rostered.length; i += 200) {
+        await db.from('reacher_unrostered_videos').delete()
+          .eq('shop_id', shop.shop_id).in('handle', rostered.slice(i, i + 200));
       }
     }
 
