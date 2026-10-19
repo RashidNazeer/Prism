@@ -370,6 +370,14 @@ export function WavesField({ intensity = 'full' }: { intensity?: 'full' | 'subtl
       }
       effect = instance;
 
+      /* The live field is drawing: let go of the still picture underneath (see
+         `--wx-static-bg` in global.css), two frames on so there is no blank. */
+      window.requestAnimationFrame(() =>
+        window.requestAnimationFrame(() => {
+          if (!cancelled) document.documentElement.classList.add('wx-waves-live');
+        })
+      );
+
       /*
        * THE `scroll` LISTENER GOES, AND NOTHING IS LOST BY IT.
        *
@@ -509,6 +517,7 @@ export function WavesField({ intensity = 'full' }: { intensity?: 'full' | 'subtl
 
     return () => {
       cancelled = true;
+      document.documentElement.classList.remove('wx-waves-live');
       if (teardown) teardown();
       else effect?.destroy();
       effect = null;

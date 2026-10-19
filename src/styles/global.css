@@ -125,6 +125,17 @@
   --wx-lh-body: 1.55;
 }
 
+/* The still frame of the waves, per theme. See the body rule. */
+:root {
+  --wx-static-bg: url('/bg-dark.jpg');
+}
+[data-theme='light'] {
+  --wx-static-bg: url('/bg-light.jpg');
+}
+html.wx-waves-live {
+  --wx-static-bg: var(--wx-ground);
+}
+
 /* The brand type, for the whole site: public pages AND the signed-in shell.
    Overridden HERE rather than in tokens.css (another process owns that file).
    It used to be scoped to `.wx-app` so the landing page loaded no web fonts;
@@ -338,7 +349,13 @@
      * finished colour before the gradients resolve.
      */
     background-color: var(--wx-bg);
-    background-image: var(--wx-ground);
+    /* A STILL PICTURE OF THE WAVES until the live field is drawing. The WebGL
+       field loads after the page and, on a weak laptop or a slow connection,
+       takes seconds, so the background looked missing. This is a ~20KB frame of
+       the same pattern (public/bg-*.jpg); WavesField adds `wx-waves-live` to
+       <html> once it is on screen and the live field takes over. Where the field
+       never runs (reduced motion, data saver) the still simply stays. */
+    background-image: var(--wx-static-bg, var(--wx-ground));
     background-attachment: fixed;
     background-repeat: no-repeat;
     /* `cover` applies to every layer, which is what keeps the photograph and
