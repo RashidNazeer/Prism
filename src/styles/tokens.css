@@ -54,7 +54,7 @@
    * Light text on a darker card is simply easier, so this bought headroom
    * rather than spending it.
    */
-  --wx-bg: #07070a; /* page background */
+  --wx-bg: #050507; /* page background */
   --wx-surface-1: #222225; /* cards, panels */
   --wx-surface-2: #2a2a2c; /* hover, nested cards */
   --wx-surface-3: #161618; /* wells, inputs */
@@ -710,10 +710,10 @@
    */
   --wx-aurora: linear-gradient(
     180deg,
-    #191920 0%,
-    #101016 42%,
-    #0a0a0e 78%,
-    #07070a 100%
+    #101015 0%,
+    #0a0a0e 42%,
+    #070709 78%,
+    #050507 100%
   );
   --wx-aurora-opacity: 0.9;
 
@@ -740,7 +740,7 @@
    * about `#3e4154`, which on a `#07070a` page is exactly the faceted relief
    * he is after and carries no hue to glare with.
    */
-  --wx-waves-color: #23242e;
+  --wx-waves-color: #16171d;
   /*
    * How much of the field reaches the page — and it is HIGH now, where the
    * blue one had to be held down to 0.22.
