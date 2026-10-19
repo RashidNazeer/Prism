@@ -192,6 +192,8 @@ function BrandCard({
 }) {
   const [wordmark, setWordmark] = useState(false);
   const poster = isPosterLogo(brand.slug, brand.logo_url);
+  /* A poster picture is light, so its type is dark and it needs no black fade. */
+  const sub = poster ? 'text-[#14151a]/70' : 'text-white/85';
   const line = brand.tagline ?? brand.description;
   /* `--brand-base` is unset for a brand with no colour; the card then uses a
      dark slate in dark mode and a mid slate in light mode (see the fallbacks). */
@@ -205,7 +207,10 @@ function BrandCard({
     <Link
       to={`/app/brands/${brand.slug}`}
       style={{ '--brand-base': base } as React.CSSProperties}
-      className="wx-neo-raised-sm wx-neo-press group relative isolate block aspect-[3/4] overflow-hidden sm:aspect-[3/4] rounded-xl sm:aspect-[4/5] text-white"
+      className={cn(
+        "wx-neo-raised-sm wx-neo-press group relative isolate block aspect-[3/4] overflow-hidden rounded-xl sm:aspect-[4/5]",
+        poster ? "text-[#14151a]" : "text-white"
+      )}
     >
       <span
         aria-hidden
@@ -253,6 +258,7 @@ function BrandCard({
         </span>
       )}
 
+      {poster ? null : (
       <span
         aria-hidden
         className={cn(
@@ -262,6 +268,7 @@ function BrandCard({
             : "bg-[linear-gradient(to_bottom,rgba(0,0,0,0)_0%,rgba(0,0,0,0)_20%,rgba(0,0,0,0.85)_50%,rgba(0,0,0,0.93)_100%)] [[data-theme='light']_&]:bg-[linear-gradient(to_bottom,transparent_0%,transparent_22%,color-mix(in_srgb,var(--brand-base,#646a80)_50%,black)_100%)]"
         )}
       />
+      )}
 
       <span className="absolute inset-0 flex flex-col justify-between p-3 sm:p-4">
         <span className="flex min-h-6 justify-start">
@@ -283,7 +290,7 @@ function BrandCard({
             {line ? (
               <span
                 data-t
-                className="mt-1 line-clamp-1 text-[0.8125rem] leading-snug text-white/85 sm:line-clamp-2"
+                className={cn("mt-1 line-clamp-1 text-[0.8125rem] leading-snug sm:line-clamp-2", sub)}
               >
                 {line}
               </span>
@@ -296,7 +303,7 @@ function BrandCard({
                 <>
                   <span
                     data-t
-                    className="block text-[0.6875rem] font-semibold tracking-[0.1em] text-white/85 uppercase"
+                    className={cn("block text-[0.6875rem] font-semibold tracking-[0.1em] uppercase", sub)}
                   >
                     Up to
                   </span>
@@ -318,7 +325,7 @@ function BrandCard({
               {open > 0 ? (
                 <span
                   data-t
-                  className={`mt-1 text-[0.75rem] text-white/85 ${rate !== undefined ? "hidden sm:block" : "block"}`}
+                  className={cn("mt-1 text-[0.75rem]", sub, rate !== undefined ? "hidden sm:block" : "block")}
                 >
                   {rate !== undefined ? `${open} ` : ''}
                   {open === 1 ? 'open offer' : 'open offers'}
