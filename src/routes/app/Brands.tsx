@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { brandLogo, isPosterLogo } from '@/lib/brand-logos';
+import { brandLogo } from '@/lib/brand-logos';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { m } from 'motion/react';
@@ -191,9 +191,7 @@ function BrandCard({
   isIn: boolean;
 }) {
   const [wordmark, setWordmark] = useState(false);
-  const poster = isPosterLogo(brand.slug, brand.logo_url);
-  /* A poster picture is light, so its type is dark and it needs no black fade. */
-  const sub = poster ? 'text-[#14151a]/70' : 'text-white/85';
+  const sub = 'text-white/85';
   const line = brand.tagline ?? brand.description;
   /* `--brand-base` is unset for a brand with no colour; the card then uses a
      dark slate in dark mode and a mid slate in light mode (see the fallbacks). */
@@ -209,8 +207,7 @@ function BrandCard({
       style={{ '--brand-base': base } as React.CSSProperties}
       className={cn(
         "wx-neo-raised-sm wx-neo-press group relative isolate block aspect-[3/4] overflow-hidden rounded-xl sm:aspect-[4/5]",
-        "shadow-[0_14px_32px_-14px_rgba(0,0,0,0.6)]",
-        poster ? "text-[#14151a]" : "text-white"
+        "text-white shadow-[0_14px_32px_-14px_rgba(0,0,0,0.6)]"
       )}
     >
       <span
@@ -232,7 +229,7 @@ function BrandCard({
             decoding="async"
             onLoad={(e) => {
               const ratio = e.currentTarget.naturalWidth / Math.max(e.currentTarget.naturalHeight, 1);
-              setWordmark(!poster && (ratio > 1.3 || ratio < 0.75));
+              setWordmark(ratio > 1.3 || ratio < 0.75);
             }}
             className={
               wordmark
@@ -259,24 +256,13 @@ function BrandCard({
         </span>
       )}
 
-      {poster ? (
-        /* A soft shade, not a black band: enough depth under the type that the
-           lower third reads as a surface, light enough to keep the picture. */
-        <span
-          aria-hidden
-          className="absolute inset-0 -z-[5] bg-[linear-gradient(to_bottom,rgba(20,21,26,0)_0%,rgba(20,21,26,0)_50%,rgba(20,21,26,0.45)_100%)]"
-        />
-      ) : (
+      {/* ONE FADE FOR EVERY CARD, whatever the picture: clear over the logo, then a
+          smooth black shade under the type. Same stops, same strength, so every
+          brand reads as the same material. */}
       <span
         aria-hidden
-        className={cn(
-          'absolute inset-0 -z-[5]',
-          poster
-            ? 'bg-[linear-gradient(to_bottom,rgba(0,0,0,0)_0%,rgba(0,0,0,0)_62%,rgba(0,0,0,0.88)_82%,rgba(0,0,0,0.94)_100%)]'
-            : "bg-[linear-gradient(to_bottom,rgba(0,0,0,0)_0%,rgba(0,0,0,0)_20%,rgba(0,0,0,0.85)_50%,rgba(0,0,0,0.93)_100%)] [[data-theme='light']_&]:bg-[linear-gradient(to_bottom,transparent_0%,transparent_22%,color-mix(in_srgb,var(--brand-base,#646a80)_50%,black)_100%)]"
-        )}
+        className="absolute inset-0 -z-[5] bg-[linear-gradient(to_bottom,rgba(0,0,0,0)_0%,rgba(0,0,0,0)_52%,rgba(0,0,0,0.82)_80%,rgba(0,0,0,0.92)_100%)]"
       />
-      )}
 
       <span className="absolute inset-0 flex flex-col justify-between p-3 sm:p-4">
         <span className="flex min-h-6 justify-start">
