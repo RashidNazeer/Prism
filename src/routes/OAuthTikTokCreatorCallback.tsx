@@ -1,7 +1,9 @@
 ﻿import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
-import { PrismMark } from '@/components/brand/PrismMark';
+import { AuthShell } from '@/components/auth/AuthShell';
+import { ButtonLink } from '@/components/ui/Button';
+import { getSupabase } from '@/lib/supabase';
 import { useTikTokFinish } from '@/lib/creator/useTikTokAccount';
 import { finishTikTokSignup, signupInFlight } from '@/lib/signup/tiktokSignup';
 
@@ -105,45 +107,51 @@ export function OAuthTikTokCreatorCallback() {
         // Straight back to where they started, once they have read it.
         setTimeout(() => navigate('/app', { replace: true }), 1600);
       })
-      .catch((e: Error) => {
+      .catch(async (e: Error) => {
+        /* Nobody signed in AND no sign-up marker in this browser: the return
+           belongs to a sign-up begun in another window, browser or address
+           (sessionStorage is per address). The creator flow's "link used or
+           expired" is true but useless there. */
+        const { data } = await getSupabase().auth.getSession();
         setPhase('failed');
-        setMessage(e.message);
+        setMessage(
+          data.session
+            ? e.message
+            : 'This connection was started in a different browser or window. Open the sign-up page again here and press Continue with TikTok.'
+        );
       });
     // Once. See the guard above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const failed = phase === 'failed';
   return (
-    <div className="bg-bg text-text flex min-h-dvh items-center justify-center p-6">
-      <div className="bg-surface-1 w-full max-w-md rounded-xl p-8 text-center shadow-md">
-        <PrismMark className="mx-auto h-6 w-auto" />
-
+    <AuthShell
+      title={
+        phase === 'working'
+          ? 'Linking your TikTok account'
+          : phase === 'done'
+            ? handle
+              ? `Connected as ${handle}`
+              : 'TikTok connected'
+            : 'That did not work'
+      }
+      subtitle={failed ? message : undefined}
+    >
+      <div className="flex flex-col items-center gap-4">
         {phase === 'working' ? (
-          <>
-            <Loader2 size={26} aria-hidden className="text-accent mx-auto mt-6 animate-spin" />
-            <p className="mt-4 font-semibold">Linking your TikTok account</p>
-          </>
+          <Loader2 size={28} aria-hidden className="text-accent animate-spin" />
         ) : phase === 'done' ? (
-          <>
-            <CheckCircle2 size={26} aria-hidden className="text-success mx-auto mt-6" />
-            <p className="mt-4 font-semibold">
-              {handle ? `Connected as ${handle}` : 'TikTok connected'}
-            </p>
-          </>
+          <CheckCircle2 size={28} aria-hidden className="text-success" />
         ) : (
           <>
-            <XCircle size={26} aria-hidden className="text-danger mx-auto mt-6" />
-            <p className="mt-4 font-semibold">That did not work</p>
-            <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">{message}</p>
-            <Link
-              to="/app"
-              className="wx-neo-raised-sm wx-neo-press hover:text-accent mt-6 inline-flex rounded-md px-4 py-2 text-[0.875rem] font-semibold transition-colors"
-            >
+            <XCircle size={28} aria-hidden className="text-danger" />
+            <ButtonLink to={signupInFlight() ? '/signup' : '/app'} size="lg" className="w-full">
               Back to Prism
-            </Link>
+            </ButtonLink>
           </>
         )}
       </div>
-    </div>
+    </AuthShell>
   );
 }
