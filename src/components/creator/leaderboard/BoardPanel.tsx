@@ -152,7 +152,7 @@ export function BoardPanel(p: BoardPanelProps) {
             </FilterTab>
           ))}
         </FilterTabs>
-        {showBrands ? <BrandFilter brands={p.brands} value={p.brand} onChange={p.onBrand!} /> : null}
+        {showBrands ? <BrandFilter brands={p.brands} value={p.brand} onChange={p.onBrand!} allowAll={false} /> : null}
       </div>
 
       {p.onSearch ? (

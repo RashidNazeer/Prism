@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   BOARD_PAGE,
   useBoardFaces,
   useLeaderboard,
   useMyStanding,
 } from '@/lib/creator/useLeaderboard';
-import { useBrandPerformance } from '@/lib/creator/usePerformance';
+import { useCreatorBrands } from '@/lib/creator/useCreatorBrands';
+import { useMyWork } from '@/lib/creator/useMyWork';
 import { previousWindow } from '@/lib/creator/daily-totals';
 import { BoardPanel } from '@/components/creator/leaderboard/BoardPanel';
 import {
-  ALL_TIME_FROM,
   buildItems,
   placesMoved,
   rangeWindow,
@@ -37,17 +37,71 @@ import {
 /** A search box only earns its place once the board needs paging. */
 const SEARCH_ABOVE = BOARD_PAGE;
 
+/**
+ * A BOARD EXISTS ONLY FOR A BRAND SHE WORKS WITH.
+ *
+ * Rashid, 2026-10-19, on the reviewers' note that leaderboards should be limited
+ * to the creators involved: there is no all-brands board. She sees the boards of
+ * brands she has an approved offer with, defaulting to the first, and ranks
+ * among that brand's creators. A creator with no brand yet sees one line.
+ *
+ * This is the screen's rule, not a security boundary: the ranking function
+ * still answers for any brand id it is handed. Enforcing it there is a database
+ * change and is tracked separately.
+ */
 export function Leaderboards({ brandId }: { brandId?: string } = {}) {
+  const brands = useCreatorBrands();
+  const work = useMyWork();
+  const [pickedBrand, setPickedBrand] = useState<string | null>(null);
+
+  const options = useMemo(() => {
+    const working = new Set<string>();
+    for (const r of work.data ?? []) if (r.status === 'approved') working.add(r.brand_id);
+    return (brands.data ?? [])
+      .filter((b) => working.has(b.id))
+      .map((b) => ({ id: b.id, name: b.name }))
+      .sort((x, y) => x.name.localeCompare(y.name));
+  }, [brands.data, work.data]);
+
+  const scope =
+    brandId ??
+    (options.some((o) => o.id === pickedBrand) ? pickedBrand : null) ??
+    options[0]?.id ??
+    null;
+
+  if (!brandId && (brands.isPending || work.isPending)) {
+    return <div aria-busy="true" className="wx-skeleton mx-auto mt-6 h-72 max-w-[26rem] rounded-xl" />;
+  }
+  if (!scope) {
+    return (
+      <p className="text-muted px-1 py-16 text-center text-[0.9375rem] font-semibold">
+        Work with a brand to see its leaderboard
+      </p>
+    );
+  }
+  return (
+    <BrandBoard
+      brandId={scope}
+      options={options}
+      onPick={brandId ? null : setPickedBrand}
+    />
+  );
+}
+
+function BrandBoard({
+  brandId,
+  options,
+  onPick,
+}: {
+  brandId: string;
+  options: { id: string; name: string }[];
+  onPick: ((id: string | null) => void) | null;
+}) {
   const [range, setRange] = useState<RangeKey>('all');
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState('');
-  const [pickedBrand, setPickedBrand] = useState<string | null>(null);
 
-  useEffect(() => {
-    setPage(0);
-  }, [brandId]);
-
-  const scope = brandId ?? pickedBrand ?? undefined;
+  const scope = brandId;
   const win = useMemo(() => rangeWindow(range), [range]);
   /* "All time" has no window before it; asking for the same one is the same
      query key, so not a second request. */
@@ -56,20 +110,7 @@ export function Leaderboards({ brandId }: { brandId?: string } = {}) {
   const board = useLeaderboard(win.from, win.to, page, search, scope);
   const mine = useMyStanding(win.from, win.to, scope);
   const minePrev = useMyStanding(previous.from, previous.to, scope);
-  const brandSource = useBrandPerformance(
-    brandId ? null : ALL_TIME_FROM,
-    brandId ? null : win.to
-  );
-
-  const brandOptions = useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const b of brandSource.data ?? []) {
-      if (b.brand_id && b.brand_name && !seen.has(b.brand_id)) seen.set(b.brand_id, b.brand_name);
-    }
-    return [...seen.entries()]
-      .map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [brandSource.data]);
+  const brandOptions = options;
 
   const rows = useMemo(() => board.data ?? [], [board.data]);
   const standing = mine.data ?? null;
@@ -122,14 +163,14 @@ export function Leaderboards({ brandId }: { brandId?: string } = {}) {
         setPage(0);
       }}
       brands={brandOptions}
-      brand={pickedBrand}
+      brand={scope}
       onBrand={
-        brandId
-          ? null
-          : (id) => {
-              setPickedBrand(id);
+        onPick
+          ? (id) => {
+              onPick(id);
               setPage(0);
             }
+          : null
       }
       search={search}
       onSearch={

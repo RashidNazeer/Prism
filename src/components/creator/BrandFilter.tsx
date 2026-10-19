@@ -23,10 +23,13 @@ export function BrandFilter({
   brands,
   value,
   onChange,
+  allowAll = true,
 }: {
   brands: { id: string; name: string }[];
   value: string | null;
   onChange: (id: string | null) => void;
+  /** False where a brand must always be chosen (the leaderboard). */
+  allowAll?: boolean;
 }) {
   /*
    * SHOWN AS SOON AS THERE IS A BRAND AT ALL, and the first rule here was
@@ -53,7 +56,7 @@ export function BrandFilter({
         value && 'text-accent'
       )}
     >
-      <option value="">All brands</option>
+      {allowAll ? <option value="">All brands</option> : null}
       {brands.map((b) => (
         <option key={b.id} value={b.id}>
           {b.name}

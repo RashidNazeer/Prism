@@ -139,6 +139,11 @@
      the old utility resolves to Figtree; Archivo is the explicit `font-brand`
      utility, applied where the size is 1.5rem or more. */
   --wx-font-display: var(--wx-font-sans);
+  /* ONE FAMILY, 2026-10-19. The reviewers' notes: different font styles make the
+     platform feel less unified. Headings were already Figtree; the micro-labels
+     (EMAIL, ACCEPTED, WORKING WITH) and some figures were still monospace. They
+     now use the same face, so the whole site is Figtree. */
+  --wx-font-mono: var(--wx-font-sans);
 }
 
 .wx-app {
