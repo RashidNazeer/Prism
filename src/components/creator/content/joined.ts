@@ -97,23 +97,3 @@ export function joinVideo(
     shares: tiktok ? tiktok.share_count : null,
   };
 }
-
-/* ------------------------------------------------------------ why lines --- */
-
-/** One line saying why there is no money figure on this video. */
-export function whyNoMoney(row: ContentRow, sources: Sources): string {
-  if (sources.ads === 'failed') return 'Your ad figures did not load. Try again.';
-  if (sources.ads === 'loading') return 'Still loading your ad figures.';
-  if (row.status !== 'approved')
-    return 'Ads can only run behind an approved video, so there is nothing to report yet.';
-  return 'No ad figures on this one yet. They appear once ads run behind it.';
-}
-
-/** One line saying why there are no views, likes or comments. */
-export function whyNoEngagement(sources: Sources, hasFigure: boolean): string {
-  if (sources.tiktok === 'off') return 'Connect TikTok to see views.';
-  if (sources.tiktok === 'failed') return 'Your TikTok figures did not load. Try again.';
-  if (sources.tiktok === 'loading') return 'Still loading your TikTok figures.';
-  if (hasFigure) return 'TikTok did not share this figure for this video.';
-  return 'TikTok has not shared this video yet. It covers your most recent posts.';
-}

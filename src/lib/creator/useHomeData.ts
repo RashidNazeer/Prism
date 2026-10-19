@@ -108,7 +108,17 @@ function toSeries(
   if (!from || !to) return [];
   const byDate = new Map((rows ?? []).map((r) => [r.stat_date, r]));
   const out: ChartPoint[] = [];
-  const start = Date.parse(`${from}T00:00:00Z`);
+  /* THE AXIS STARTS AT HER FIRST MEASURED DAY, not at the window's floor. The
+     floor is the day her first video existed, which can be weeks before the
+     first figure landed, and drawing that stretch left most of the chart
+     empty. Days AFTER the first measured one with no row remain `null` gaps. */
+  let first: string | null = null;
+  for (const r of rows ?? []) {
+    if (r.stat_date >= from && r.stat_date <= to && (first === null || r.stat_date < first)) {
+      first = r.stat_date;
+    }
+  }
+  const start = Date.parse(`${first ?? from}T00:00:00Z`);
   const end = Date.parse(`${to}T00:00:00Z`);
   for (let t = start; t <= end; t += DAY) {
     const date = iso(new Date(t));

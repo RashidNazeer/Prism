@@ -70,6 +70,10 @@ export function CreatorHome({ name, tier }: { name: string; tier: CreatorTier | 
  * It is also simply the better shape: the queries live in one place and the
  * layout has no opinion about where its numbers came from.
  */
+/** "3 Oct", for a video TikTok sent no title for. */
+const filedOn = (iso: string) =>
+  new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+
 export function CreatorHomeView({
   name,
   tier,
@@ -85,18 +89,6 @@ export function CreatorHomeView({
   pipeline: WorkSummary | null;
 }) {
   const { period, totals, previous, currency } = home;
-  const numbersLink = (metric: string) => {
-    const p = new URLSearchParams();
-    p.set('period', period.key);
-    if (period.brandId) p.set('brand', period.brandId);
-    /* ASK FOR THE SEPARATE VIEW. Tapping the Ad spend tile means "show me ad
-       spend", and the deep view's default is now ONE merged chart in which
-       only `#gmv` exists as a target — so a link to `#spend` would land on a
-       section that is not there. The separate view has a section per metric,
-       which is exactly what the tap asked for. */
-    p.set('charts', 'separate');
-    return `/app/numbers?${p.toString()}#${metric}`;
-  };
 
   if (home.loading) return <HomeSkeleton />;
 
@@ -104,14 +96,12 @@ export function CreatorHomeView({
      first needs an explanation, the second needs a way out. */
   if (home.neverAnyData) {
     return (
-      <section className="wx-neo-raised rounded-xl p-6">
+      <section className="wx-neo-raised-sm rounded-xl p-6">
         <h2 className="text-text text-lg font-semibold">
           {name ? `Hi, ${name}` : 'Welcome'}
         </h2>
         <p className="text-muted mt-2 max-w-prose text-sm">
-          Nothing has been measured yet. Your numbers appear here the day after your first
-          video starts selling — we read them from a nightly import, so there is nothing for
-          you to connect or refresh.
+          No figures yet.
         </p>
         <Link
           to="/app/offers"
@@ -130,26 +120,35 @@ export function CreatorHomeView({
   return (
     <div className="space-y-6">
       {/* a) HEADER — not glass, just text over the aurora, as §5.1a asks. */}
-      <header className="flex flex-wrap items-end justify-between gap-4">
+      <header className="grid gap-4 md:grid-cols-[1fr_auto] md:items-start md:gap-x-8">
         <div className="min-w-0">
           <p className="text-muted text-sm">{name ? `Hi, ${name}` : 'Your numbers'}</p>
           <div className="mt-1 flex flex-wrap items-center gap-3">
             <h1 className="text-text text-[2.5rem] leading-none font-bold tabular-nums">
               {compactMoney(totals.gmv, currency)}
             </h1>
-            <DeltaChip
-              now={totals.gmv}
-              before={previous?.gmv ?? null}
-              suffix={`vs prev ${period.days}d`}
-            />
+            {/* Only when there is a period before to compare with: a lone
+                "Not reported" chip beside the headline read as a broken figure. */}
+            {previous && (
+              <DeltaChip
+                now={totals.gmv}
+                before={previous.gmv}
+                suffix={`vs prev ${period.days}d`}
+              />
+            )}
           </div>
           <p className="text-faint mt-1 text-[0.6875rem]">
-            TikTok Shop GMV, {exactMoney(totals.gmv, currency)} exactly
+            GMV {exactMoney(totals.gmv, currency)}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <BrandChip period={period} brands={home.brands} />
-          <PeriodChips period={period} window={home.window} />
+        {/* RIGHT COLUMN: the controls start level with the greeting, and
+            Up next sits straight under them on the same right edge. */}
+        <div className="flex min-w-0 flex-col gap-3 md:max-w-[28rem] md:items-end">
+          <div className="flex flex-wrap items-center gap-2 md:justify-end">
+            <BrandChip period={period} brands={home.brands} />
+            <PeriodChips period={period} window={home.window} />
+          </div>
+          <UpNext actions={actions} className="w-full" />
         </div>
       </header>
 
@@ -161,65 +160,16 @@ export function CreatorHomeView({
             onClick={() => period.setPeriod('90')}
             className="text-accent underline underline-offset-2"
           >
-            Try the last 90 days
+            Last 90 days
           </button>
-          .
         </p>
       )}
 
-      {/* b) THE FOUR TILES. No panel around them: the tiles ARE the cards,
-          which is how the reference design reads and one less surface to
-          paint. */}
+      {/* c) THREE TILES. GMV is the headline above, so it has no tile. */}
       <section>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <MetricTile
             index={0}
-            title="GMV"
-            value={compactMoney(totals.gmv, currency)}
-            footnote={`${exactMoney(totals.gmv, currency)} exactly`}
-            now={totals.gmv}
-            before={previous?.gmv ?? null}
-            to={numbersLink('gmv')}
-            chart={
-              <SparkArea
-                data={home.gmvSeries}
-                token="--chart-1"
-                currency={currency}
-                ariaLabel={`GMV over the last ${period.days} days`}
-              />
-            }
-          />
-
-          {/*
-            COMMISSION HAS NO FIGURE, and the tile says so rather than
-            guessing. See COMMISSION_IS_MEASURED in useHomeData for the search
-            that established it: `commission_rate` is a term on a product, not
-            money she earned, and nothing links a performance row to a product.
-          */}
-          <MetricTile
-            index={1}
-            title="Commission"
-            value={COMMISSION_IS_MEASURED ? compactMoney(0, currency) : null}
-            why="We do not measure commission yet — only the rate offered on a product, which is not the same thing."
-            now={null}
-            before={null}
-            to={numbersLink('commission')}
-            chart={
-              /* A DASHED RULE, NOT A DASHED RING. The ring printed "Not
-                 reported" a second time, four lines under the first, in type
-                 too small to read — two statements of one absence. The rule
-                 holds the chart's place so the four tiles stay the same
-                 shape, and says nothing the tile has not already said. */
-              <div
-                aria-hidden
-                className="h-0 w-full border-t border-dashed"
-                style={{ borderColor: 'var(--chart-grid)' }}
-              />
-            }
-          />
-
-          <MetricTile
-            index={2}
             title="Ad spend"
             value={compactMoney(totals.spend, currency)}
             footnote={
@@ -234,7 +184,6 @@ export function CreatorHomeView({
             }
             now={totals.spend}
             before={previous?.spend ?? null}
-            to={numbersLink('spend')}
             chart={
               <SparkBars
                 data={home.spendSeries}
@@ -245,13 +194,10 @@ export function CreatorHomeView({
             }
           />
 
-          {/*
-            ORDERS, NOT VIEWS. Views live only on the TikTok video table, which
-            is filled by a live call — and Home may not make one. See
-            FOURTH_METRIC in useHomeData.
-          */}
+          {/* ORDERS, NOT VIEWS: views need a live TikTok call and Home may
+              not make one. See FOURTH_METRIC in useHomeData. */}
           <MetricTile
-            index={3}
+            index={1}
             title="Orders"
             value={compact(totals.orders)}
             footnote={
@@ -261,7 +207,6 @@ export function CreatorHomeView({
             }
             now={totals.orders}
             before={previous?.orders ?? null}
-            to={numbersLink('orders')}
             chart={
               <SparkArea
                 data={home.ordersSeries}
@@ -271,16 +216,28 @@ export function CreatorHomeView({
               />
             }
           />
+
+          {/* COMMISSION: its title and "Not reported", through
+              COMMISSION_IS_MEASURED; never a computed figure. Full width on a
+              phone so the odd tile does not leave a gap. */}
+          <MetricTile
+            index={2}
+            className="col-span-2 sm:col-span-1"
+            title="Commission"
+            value={COMMISSION_IS_MEASURED ? compactMoney(0, currency) : null}
+            now={null}
+            before={null}
+            chart={null}
+          />
         </div>
       </section>
 
       {pipeline && <PipelineWidget summary={pipeline} />}
 
       {/* c) DAY BY DAY, and whether the ads moved anything. */}
-      <section className="wx-neo-raised rounded-xl p-4">
+      <section className="wx-neo-raised-sm rounded-xl p-4">
         <div className="mb-3 flex items-baseline justify-between gap-3">
           <h2 className="text-text text-sm font-semibold">Day by day</h2>
-          <span className="text-faint text-[0.6875rem]">Last {period.days} days</span>
         </div>
         <TrendLine
           data={home.gmvSeries}
@@ -307,7 +264,7 @@ export function CreatorHomeView({
 
       {/* d) BY BRAND, AND HER TIER. */}
       <section className="grid gap-4 md:grid-cols-2">
-        <div className="wx-neo-raised rounded-xl p-4">
+        <div className="wx-neo-raised-sm rounded-xl p-4">
           <h2 className="text-text mb-3 text-sm font-semibold">By brand</h2>
           <Donut
             slices={home.brands}
@@ -317,7 +274,7 @@ export function CreatorHomeView({
           />
         </div>
 
-        <div className="wx-neo-raised rounded-xl p-4">
+        <div className="wx-neo-raised-sm rounded-xl p-4">
           <h2 className="text-text mb-3 text-sm font-semibold">Tier progress</h2>
           <div className="flex items-center gap-4">
             <RingProgress
@@ -348,9 +305,7 @@ export function CreatorHomeView({
                    * counter; saying what is actually true costs one line.
                    */
                   <p className="text-muted mt-1">
-                    Past the {TIER_LABEL[target.next]} figure of{' '}
-                    {exactMoney(target.threshold, currency)}. Tiers are reviewed by the Wurx
-                    team rather than granted automatically.
+                    Past {exactMoney(target.threshold, currency)} for {TIER_LABEL[target.next]}
                   </p>
                 ) : (
                   <p className="text-muted mt-1">
@@ -360,25 +315,15 @@ export function CreatorHomeView({
                 )
               ) : tier === 'elite' ? (
                 <p className="text-muted mt-1">Top tier.</p>
-              ) : (
-                <p className="text-muted mt-1">
-                  Next-tier targets are set in US dollars, so there is nothing to compare
-                  your figures against here.
-                </p>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
       </section>
 
-      {/* e) UP NEXT. */}
-      <section className="wx-neo-raised rounded-xl p-4">
-        <h2 className="text-text mb-3 text-sm font-semibold">Up next</h2>
-        <UpNext actions={actions} />
-      </section>
 
       {/* f) TOP VIDEOS. */}
-      <section className="wx-neo-raised rounded-xl p-4">
+      <section className="wx-neo-raised-sm rounded-xl p-4">
         <div className="mb-3 flex items-baseline justify-between gap-3">
           <h2 className="text-text text-sm font-semibold">Top videos this period</h2>
           <Link to="/app/content" className="text-accent text-xs font-medium">
@@ -386,7 +331,7 @@ export function CreatorHomeView({
           </Link>
         </div>
         {(home.topVideos ?? []).length === 0 ? (
-          <p className="text-muted text-sm">No videos measured in this period.</p>
+          <p className="text-muted text-sm">No videos this period.</p>
         ) : (
           <ul className="grid gap-3 sm:grid-cols-3">
             {(home.topVideos ?? []).map((v, i) => (
@@ -398,22 +343,20 @@ export function CreatorHomeView({
                 className="wx-neo-raised-sm rounded-lg p-3"
               >
                 <div className="flex items-start gap-3">
-                  {v.thumbnail_url ? (
+                  {v.thumbnail_url && (
                     <img
                       src={v.thumbnail_url}
                       alt=""
                       loading="lazy"
                       className="size-12 shrink-0 rounded-md object-cover"
                     />
-                  ) : (
-                    <div className="bg-surface-2 size-12 shrink-0 rounded-md" />
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="text-muted truncate text-[0.6875rem]">
                       {v.brand_name ?? 'Unknown brand'}
                     </p>
                     <p className="text-text truncate text-xs font-medium">
-                      {v.video_title ?? 'Untitled video'}
+                      {v.video_title ?? `Filed ${filedOn(v.submitted_at)}`}
                     </p>
                     <p className="text-text mt-1 text-sm font-bold tabular-nums">
                       {compactMoney(Number(v.gross_revenue), v.currency)}

@@ -8,6 +8,7 @@ import { TextSizeMenu } from '@/components/layout/TextSizeMenu';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { NotificationBell } from '@/components/creator/notifications/NotificationBell';
+import { AccountMenu } from '@/components/creator/account/AccountMenu';
 import { HaloBackdrop } from '@/components/auth/HaloBackdrop';
 import { IdentitySwapBanner } from '@/components/auth/IdentitySwapBanner';
 import { cn } from '@/lib/utils';
@@ -114,6 +115,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     void signOut();
   };
 
+  /* Creators and applicants only, the same check as the notification bell. Staff
+     keep the chip they have always had. */
+  const hasAccountMenu = role === 'creator' || role === 'applicant';
+
   const sidebar = (mode: 'rail' | 'drawer') => (
     <AppSidebar
       role={role}
@@ -121,6 +126,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       email={profile?.email}
       signingOut={signingOut}
       onSignOut={handleSignOut}
+      accountMenu={hasAccountMenu}
       collapsed={mode === 'rail' && collapsed}
       {...(mode === 'rail' ? { onToggleCollapse: () => setCollapsed((v) => !v) } : {})}
       {...(mode === 'drawer'
@@ -463,6 +469,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         two renderers.
       */}
       {bottomNav.length > 0 ? <MobileNav items={bottomNav} /> : null}
+
+      {hasAccountMenu ? (
+        <AccountMenu signingOut={signingOut} onSignOut={handleSignOut} />
+      ) : null}
 
       <AnimatePresence>
         {drawerOpen && (

@@ -18,7 +18,7 @@ const POINTS = [
   },
   {
     icon: Store,
-    title: 'Brand hubs',
+    title: 'Brands Hub',
     body: 'Each brand you work with gets its own space, with briefs, products and what is expected.',
   },
   {

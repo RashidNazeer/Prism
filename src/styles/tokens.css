@@ -54,7 +54,7 @@
    * Light text on a darker card is simply easier, so this bought headroom
    * rather than spending it.
    */
-  --wx-bg: #060608; /* page background */
+  --wx-bg: #07070a; /* page background */
   --wx-surface-1: #222225; /* cards, panels */
   --wx-surface-2: #2a2a2c; /* hover, nested cards */
   --wx-surface-3: #161618; /* wells, inputs */
@@ -342,7 +342,7 @@
    * automatically and stays the same material as a card, which is what he
    * asked for when the nav tint came off.
    */
-  --wx-glass-fill: rgba(0, 0, 0, 0.3);
+  --wx-glass-fill: rgba(0, 0, 0, 0.5);
   /* THE LANDING NAV IS ITS OWN, DENSER MATERIAL from 2026-10-15. It used the
      card fill, which is 50% here and 8% in light — and a bar that transparent
      over a smooth background cannot read as glass however hard it blurs, which
@@ -381,7 +381,7 @@
    *
    * Light keeps white, as everywhere else.
    */
-  --wx-glass-panel: rgba(0, 0, 0, 0.3);
+  --wx-glass-panel: rgba(0, 0, 0, 0.5);
   --wx-glass-line: rgba(255, 255, 255, 0.3);
   /*
    * THE EDGES GO DOWN WITH THE GLASS, 2026-10-17. Rashid: "in dark mode border
@@ -710,10 +710,10 @@
    */
   --wx-aurora: linear-gradient(
     180deg,
-    #14141a 0%,
-    #0d0d12 42%,
-    #08080b 78%,
-    #060608 100%
+    #191920 0%,
+    #101016 42%,
+    #0a0a0e 78%,
+    #07070a 100%
   );
   --wx-aurora-opacity: 0.9;
 
@@ -740,7 +740,7 @@
    * about `#3e4154`, which on a `#07070a` page is exactly the faceted relief
    * he is after and carries no hue to glare with.
    */
-  --wx-waves-color: #1c1d25;
+  --wx-waves-color: #23242e;
   /*
    * How much of the field reaches the page — and it is HIGH now, where the
    * blue one had to be held down to 0.22.
@@ -1062,7 +1062,7 @@
      surface it borders, and on a pale card that means darker. White tops out
      around 1.58:1 even at full opacity, and the real 1px line measured
      1.03:1. */
-  --wx-glass-edge: rgba(52, 61, 96, 0.40);
+  --wx-glass-edge: rgba(52, 61, 96, 0.18);
   /* His second edge tier, `#ffffff9c`, for pills, badges and icon wells. */
   --wx-glass-edge-sm: rgba(255, 255, 255, 0.61);
   /*
@@ -1180,7 +1180,7 @@
    * his offset and his alpha too: 16px down, not 8px, at 0.082, not 0.10.
    */
   --wx-glass-inner: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.1), inset 0 0 4px 2px rgba(255, 255, 255, 0.2);
-  --wx-glass-lift: 0 8px 32px rgba(0, 0, 0, 0.1);
+  --wx-glass-lift: 0 8px 32px rgba(60, 70, 106, 0.07);
   --wx-glass-lift-hover: 0 0.75rem 1.75rem rgba(60, 70, 106, 0.095);
   /* His modal's second drop, `0 30px 80px rgba(0, 0, 0, 0.21)`, exactly. */
   --wx-glass-lift-modal: 0 1.875rem 5rem rgba(0, 0, 0, 0.21);

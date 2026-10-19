@@ -94,7 +94,15 @@ export function EarnGrid({
 }) {
   return (
     <ul
-      className={cn('mt-2.5 grid items-stretch gap-2.5 sm:gap-3', className)}
+      /* Equal heights at rest: cards in a row stretch to the tallest, so a card
+          with a button beside one without no longer reads as a size mismatch.
+          While any card has "Details" open the row drops to `items-start`, so
+          the open card grows and its neighbours do not become tall empty boxes
+          (Rashid: "I clicked on details of one card why all extended?"). */
+      className={cn(
+        'mt-2.5 grid items-stretch gap-2.5 has-[details[open]]:items-start sm:gap-3 [&>li]:flex [&>li>*]:w-full',
+        className
+      )}
       style={{ gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${min}), 1fr))` }}
     >
       {children}

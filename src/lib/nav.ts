@@ -14,11 +14,9 @@ import {
   Megaphone,
   Store,
   Tag,
-  TrendingUp,
   Trophy,
   Upload,
   Plug,
-  UserRound,
   Users,
   Video,
 } from 'lucide-react';
@@ -274,23 +272,29 @@ const CREATOR: NavGroup[] = [
     label: '',
     items: [
       { label: 'Home', icon: LayoutDashboard, to: '/app' },
-      { label: 'My numbers', icon: TrendingUp, to: '/app/numbers' },
-    ],
-  },
-  {
-    label: 'Earn',
-    items: [
+      /*
+       * "EARN" IS OFFERS AND CONTESTS TOGETHER, 2026-10-19. Rashid agreed to
+       * fold Contests into Offers ("Sure. But make sure pages are easy to
+       * operate themselves as well"), because both answer one question — what
+       * can I do to make more — and a creator does not think "I want a
+       * contest rather than an offer".
+       *
+       * THE PATH STAYS `/app/offers`. Renaming it to /app/earn would break the
+       * E2E guards and every link already sent, for a label nobody types. The
+       * old `/app/contests` redirects to `/app/offers#contests`.
+       *
+       * NO `description`. The top bar used to print a sentence beside every
+       * creator page title ("Everything on the table, from every brand you work
+       * with."). Each page already says what it is, so the sentence repeated
+       * the title a few pixels from itself and cost width on a phone. Rashid
+       * left the call to me and I removed them for the creator side only; the
+       * admin nav keeps its own.
+       */
       {
-        label: 'Offers',
+        label: 'Earn',
         icon: Gift,
         to: '/app/offers',
-        description: 'Everything on the table, from every brand you work with.',
-      },
-      {
-        label: 'Contests',
-        icon: Award,
-        to: '/app/contests',
-        description: 'Everything running right now, from every brand you work with.',
+        activePrefixes: ['/app/offers', '/app/contests'],
       },
       { label: 'Leaderboards', icon: Trophy, to: '/app/leaderboards' },
     ],
@@ -298,28 +302,12 @@ const CREATOR: NavGroup[] = [
   {
     label: 'Your work',
     items: [
+      { label: 'My content', icon: Video, to: '/app/content' },
       {
-        label: 'My content',
-        icon: Video,
-        to: '/app/content',
-        description: 'Every video you have filmed for us, and what is still to come.',
-      },
-      {
-        label: 'Brand hubs',
+        label: 'Brands Hub',
         icon: Store,
         to: '/app/brands',
         activePrefixes: ['/app/brands'],
-      },
-    ],
-  },
-  {
-    label: '',
-    items: [
-      {
-        label: 'My profile',
-        icon: UserRound,
-        to: '/app/profile',
-        description: 'Only your name is yours to change; the rest is set by the Wurx team.',
       },
     ],
   },
@@ -335,7 +323,6 @@ const CREATOR: NavGroup[] = [
 const LOCKED_UNTIL_APPROVED = [
   '/app/brands',
   '/app/offers',
-  '/app/contests',
   '/app/content',
 ];
 

@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Eye, Heart, MessageCircle, Video } from 'lucide-react';
+import { Eye, Heart, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CONTENT_STATUS } from '@/lib/content';
-import { Count, InfoDot, Money } from './figures';
-import { whyNoEngagement, whyNoMoney, type JoinedVideo, type Sources } from './joined';
+import { Count, Money } from './figures';
+import type { JoinedVideo, Sources } from './joined';
 
 /**
  * ONE VIDEO, AS A TILE IN THE GRID.
@@ -30,16 +30,29 @@ export function VideoCard({
   video,
   sources,
   onOpen,
+  adTag = null,
 }: {
   video: JoinedVideo;
   sources: Sources;
   onOpen: () => void;
+  /**
+   * AD BACKED MARKS THE EXCEPTION, NOT THE RULE. The page works out which way
+   * round it is: when most videos have ads behind them, the odd one out is
+   * tagged `unbacked`; when most do not, the odd one out is tagged `backed`.
+   * `null` means no tag at all (a clear majority does not exist).
+   */
+  adTag?: 'backed' | 'unbacked' | null;
 }) {
   const { row } = video;
   const meta = CONTENT_STATUS[row.status];
   const title = row.offer?.title ?? row.video_title ?? 'Your video';
 
-  const engagementWhy = whyNoEngagement(sources, Boolean(video.tiktok));
+  const [step, setStep] = useState(0);
+  const images = [row.thumbnail_url, video.tiktok?.cover_image_url ?? null].filter(
+    (s): s is string => Boolean(s)
+  );
+  const src = images[step];
+
   const stats = [
     { key: 'views', Icon: Eye, label: 'views', value: video.views },
     { key: 'likes', Icon: Heart, label: 'likes', value: video.likes },
@@ -48,12 +61,30 @@ export function VideoCard({
 
   return (
     <article className="wx-neo-raised-sm ease-brand relative flex h-full w-full flex-col gap-2 rounded-lg p-2 transition-transform duration-300 motion-safe:hover:-translate-y-0.5">
-      <Cover
-        row={row}
-        fallback={video.tiktok?.cover_image_url ?? null}
-        label={meta.creatorLabel}
-        tone={meta.tone}
-      />
+      {src ? (
+        <Cover
+          src={src}
+          label={meta.creatorLabel}
+          tone={meta.tone}
+          onError={() => setStep((s) => s + 1)}
+        />
+      ) : (
+        /* NO PICTURE, NO SQUARE. The status is a line of text, not a plate. */
+        <p className="text-muted flex items-center gap-1.5 px-1 pt-0.5 text-[0.6875rem] font-semibold">
+          <span
+            aria-hidden
+            className={cn(
+              'size-1.5 shrink-0 rounded-full',
+              meta.tone === 'live'
+                ? 'bg-stage-live'
+                : meta.tone === 'due'
+                  ? 'bg-stage-due'
+                  : 'bg-stage-paid'
+            )}
+          />
+          <span className="truncate">{meta.creatorLabel}</span>
+        </p>
+      )}
 
       {/* GMV, the figure this page is for, so it is the biggest thing on the tile. */}
       <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 px-1">
@@ -63,30 +94,39 @@ export function VideoCard({
           <Money
             value={video.gmv}
             currency={video.currency}
-            why={whyNoMoney(row, sources)}
             className="text-[1.0625rem] leading-none"
           />
         )}
         <span className="text-muted text-[0.625rem] font-semibold tracking-[0.08em] uppercase">
           GMV
         </span>
-        {video.adBacked ? (
-          <span className="bg-stage-live-soft text-stage-live ml-auto shrink-0 rounded-full px-2 py-0.5 text-[0.625rem] font-semibold">
-            Ad backed
+        {adTag ? (
+          <span
+            className={cn(
+              'ml-auto shrink-0 rounded-full px-2 py-0.5 text-[0.625rem] font-semibold',
+              adTag === 'backed'
+                ? 'bg-stage-live-soft text-stage-live'
+                : 'text-muted bg-surface-2'
+            )}
+          >
+            {adTag === 'backed' ? 'Ad backed' : 'No ads yet'}
           </span>
         ) : null}
       </div>
 
-      {/* Views, likes, comments: the third source, absent far more often than
-          it is present, so the missing case is the one that had to look right. */}
-      {sources.tiktok === 'loading' ? (
+      {/* Views, likes, comments. While TikTok is not connected (or its request
+          broke) the PAGE says so once, in its banner, and this row is simply
+          not here. Once connected, a video TikTok did not report is still
+          "Not reported", for that one figure: null is not zero. */}
+      {sources.tiktok === 'off' || sources.tiktok === 'failed' ? null : sources.tiktok ===
+        'loading' ? (
         <div className="wx-skeleton mx-1 h-4 rounded-sm" />
       ) : video.tiktok ? (
         <ul className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1">
           {stats.map(({ key, Icon, label, value }) => (
             <li key={key} className="text-muted flex min-w-0 items-center gap-1">
               <Icon className="size-3.5 shrink-0" aria-hidden />
-              <Count value={value} why={engagementWhy} small />
+              <Count value={value} small />
               <span className="sr-only">{label}</span>
             </li>
           ))}
@@ -95,7 +135,6 @@ export function VideoCard({
         <p className="text-muted flex items-center gap-1 px-1 text-[0.625rem]">
           <Eye className="size-3.5 shrink-0" aria-hidden />
           <span className="whitespace-nowrap italic">Views not reported</span>
-          <InfoDot why={engagementWhy} label="Why views are not reported" />
         </p>
       )}
 
@@ -119,6 +158,11 @@ export function VideoCard({
       />
     </article>
   );
+}
+
+/** True when this video has a picture to show, so the page can pick a grid. */
+export function hasPicture(video: JoinedVideo): boolean {
+  return Boolean(video.row.thumbnail_url || video.tiktok?.cover_image_url);
 }
 
 /**
@@ -150,38 +194,27 @@ export function VideoCard({
  * bites at phone width, where the column is about 9rem across.
  */
 function Cover({
-  row,
-  fallback,
+  src,
   label,
   tone,
+  onError,
 }: {
-  row: { thumbnail_url: string | null };
-  fallback: string | null;
+  src: string;
   label: string;
   tone: 'live' | 'due' | 'paid';
+  onError: () => void;
 }) {
-  const [step, setStep] = useState(0);
-  const sources = [row.thumbnail_url, fallback].filter((s): s is string => Boolean(s));
-  const src = sources[step];
-
   return (
     <div className="bg-surface-2 wx-neo-inset relative aspect-square w-full overflow-hidden rounded-md">
-      {src ? (
-        <img
-          src={src}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          onError={() => setStep((s) => s + 1)}
-          className="size-full object-cover"
-        />
-      ) : (
-        <span className="text-faint grid size-full place-items-center">
-          <Video className="size-6" aria-hidden />
-        </span>
-      )}
-
+      <img
+        src={src}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        onError={onError}
+        className="size-full object-cover"
+      />
       <span
         aria-hidden
         className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-black/55 to-transparent"

@@ -101,7 +101,6 @@ export function OfferDetails({
    * `CreatorOffer` carries only `brand_id`, so without this the brief would be
    * introduced as "written by the brand" on the one screen that can say who.
    */
-  brandName: brandNameProp,
   className,
 }: {
   offer: OfferDetailsOffer;
@@ -128,7 +127,6 @@ export function OfferDetails({
   const currency = live ? agreed!.currency : offer.currency;
   const perVideo = perVideoOf(amount, videoCount);
 
-  const brandName = brandNameProp ?? offer.brand?.name ?? 'the brand';
   const liveBriefs = briefs ?? [];
   const liveProducts = products ?? [];
 
@@ -162,17 +160,6 @@ export function OfferDetails({
             />
           </dl>
 
-          {amount === null || videoCount === null ? (
-            <p className="text-faint mt-2.5 text-[0.75rem] leading-relaxed">
-              Not every offer is a fixed number of videos for a fixed fee. This one does not
-              name both, so the team scopes it with you before anything is agreed.
-            </p>
-          ) : (
-            <p className="text-faint mt-2.5 text-[0.75rem] leading-relaxed">
-              One fee for the whole set, agreed up front. The per-video figure is that fee
-              divided by the videos, not a separate payment.
-            </p>
-          )}
 
           {/*
           A PER-OFFER COMMISSION RATE DOES NOT EXIST, so this panel never prints
@@ -208,11 +195,6 @@ export function OfferDetails({
           labelled "Payment method" with nothing in it would imply we have one
           on file.
         */}
-        <p className="text-faint mt-2.5 text-[0.75rem] leading-relaxed">
-          Those seven steps are the whole payment timeline we hold against an offer. We do not
-          keep a payout date or a payment method on one, so the team settles both with you
-          directly once your content is approved.
-        </p>
       </Block>
 
       {/* --------------------------------------------------- the brief -- */}
@@ -228,7 +210,6 @@ export function OfferDetails({
       {liveBriefs.length > 0 ? (
         <Block
           title={liveBriefs.length === 1 ? 'The brief' : 'The briefs'}
-          note={`Written by ${brandName} for their creators. A brief belongs to the brand, not to this one offer, so read it as how they like to be filmed rather than as this offer's terms.`}
         >
           <div className="flex flex-col gap-3">
             {liveBriefs.map((brief) => (
@@ -271,7 +252,6 @@ export function OfferDetails({
       {liveProducts.length > 0 ? (
         <Block
           title="What they sell"
-          note={`${brandName}'s catalogue. An offer does not name a product, so these are the brand's products rather than this offer's — and a commission rate below is the brand's rate on that product, never part of the fee above.`}
         >
           <ul className="flex flex-col gap-2">
             {liveProducts.map((p) => (

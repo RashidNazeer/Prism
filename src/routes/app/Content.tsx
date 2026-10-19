@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
 import { m, useReducedMotion } from 'motion/react';
-import { Plus } from 'lucide-react';
+import { Link2, Plus } from 'lucide-react';
+import { openAccountMenu } from '@/lib/account-menu';
 import { Button } from '@/components/ui/Button';
 import { DataError, EmptyState } from '@/components/ui/DataState';
 import { Select } from '@/components/ui/Field';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
 import { PostContentDialog } from '@/components/creator/PostContentDialog';
 import { VideoPlayer } from '@/components/content/VideoPlayer';
-import { VideoCard } from '@/components/creator/content/VideoCard';
+import { VideoCard, hasPicture } from '@/components/creator/content/VideoCard';
 import { CreatorSearch } from '@/components/creator/SearchField';
 import { VideoSheet } from '@/components/creator/content/VideoSheet';
 import {
@@ -22,7 +23,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import { CONTENT_STATUS, type ContentRow, type ContentStatus } from '@/lib/content';
 import { useMyContent } from '@/lib/creator/useMyContent';
-import { useMyWork } from '@/lib/creator/useMyWork';
+import { useMyWork, type MyWorkRow } from '@/lib/creator/useMyWork';
 import {
   usePerformanceWindow,
   useVideoPerformance,
@@ -92,11 +93,10 @@ const SORTS = [
 ] as const;
 type Sort = (typeof SORTS)[number]['key'];
 
-const VIEWS = [
-  { key: 'submissions', label: 'Videos' },
-  { key: 'dashboard', label: 'Jobs' },
-] as const;
-type View = (typeof VIEWS)[number]['key'];
+type View = 'submissions' | 'dashboard';
+
+/* Controls over a list appear only above this many items (PAGE_PLAN rule 3). */
+const CONTROLS_ABOVE = 8;
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
@@ -116,14 +116,8 @@ export function Content() {
   const { data: profile } = useProfile();
   const role = profile?.role ?? claims?.role;
   const approved = role === 'creator' || role === 'ops' || role === 'admin';
-  const quiet = useReducedMotion();
 
-  const {
-    data: work,
-    isLoading: workLoading,
-    isError: workError,
-    refetch: refetchWork,
-  } = useMyWork();
+  const work = useMyWork();
   const content = useMyContent();
   const { data: progress } = useMyJobProgress();
 
@@ -137,49 +131,6 @@ export function Content() {
   const account = useTikTokAccount();
   const connected = Boolean(account.data);
   const ttVideos = useTikTokVideos(connected);
-
-  const [params, setParams] = useSearchParams();
-  const view: View = params.get('view') === 'dashboard' ? 'dashboard' : 'submissions';
-  const setView = (next: View) => {
-    const p = new URLSearchParams(params);
-    if (next === 'dashboard') p.set('view', next);
-    else p.delete('view');
-    setParams(p, { replace: true });
-  };
-
-  const [tab, setTab] = useState<Tab>('all');
-  const [brandId, setBrandId] = useState('');
-  const [sort, setSort] = useState<Sort>('new');
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const [posting, setPosting] = useState<{ applicationId?: string } | null>(null);
-  const [editing, setEditing] = useState<ContentRow | null>(null);
-  const [playing, setPlaying] = useState<ContentRow | null>(null);
-  const [open, setOpen] = useState<string | null>(null);
-
-  /*
-   * `?job=<id>` opens the dialog straight onto that job. The parameter is
-   * consumed rather than kept: it describes an arrival, not a state of the
-   * screen, so leaving it would reopen the dialog on every back button.
-   */
-  const job = params.get('job');
-  useEffect(() => {
-    if (!job) return;
-    setPosting({ applicationId: job });
-    const p = new URLSearchParams(params);
-    p.delete('job');
-    setParams(p, { replace: true });
-    // `params` is a fresh object every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [job]);
-
-  /* A new filter is a new list, so the paging starts again. */
-  useEffect(() => {
-    setPage(1);
-  }, [tab, brandId, sort, search, view]);
-
-  const jobs = useMemo(() => (work ?? []).filter((r) => r.status === 'approved'), [work]);
-  const rows = useMemo(() => content.data ?? [], [content.data]);
 
   /*
    * WHICH OF THE FOUR ABSENCES EACH SOURCE IS IN, worked out once, here, and
@@ -211,17 +162,113 @@ export function Content() {
     ttVideos.isPending,
   ]);
 
+  return (
+    <ContentView
+      approved={approved}
+      loading={content.isLoading || work.isLoading}
+      failed={content.isError || work.isError}
+      onRetry={() => Promise.all([content.refetch(), work.refetch()])}
+      work={work.data}
+      rows={content.data}
+      progress={progress}
+      perfRows={perf.data}
+      tiktokRows={ttVideos.data}
+      sources={sources}
+      latest={latest}
+      onRetryAds={() => perf.refetch()}
+      onRetryTikTok={() => ttVideos.refetch()}
+    />
+  );
+}
+
+/**
+ * EVERYTHING AFTER THE HOOKS. Split from `Content` so the dev preview can feed
+ * it fixtures without a database: it takes plain data and holds only screen
+ * state (filter, search, paging, which sheet is open).
+ */
+export function ContentView({
+  approved,
+  loading,
+  failed,
+  onRetry,
+  work,
+  rows: rowsIn,
+  progress,
+  perfRows,
+  tiktokRows,
+  sources,
+  latest,
+  onRetryAds,
+  onRetryTikTok,
+}: {
+  approved: boolean;
+  loading: boolean;
+  failed: boolean;
+  onRetry: () => Promise<unknown> | void;
+  work: MyWorkRow[] | undefined;
+  rows: ContentRow[] | undefined;
+  progress: Map<string, JobProgress> | undefined;
+  perfRows: VideoPerformance[] | undefined;
+  tiktokRows: TikTokVideo[] | undefined;
+  sources: Sources;
+  latest: string | null;
+  onRetryAds: () => Promise<unknown> | void;
+  onRetryTikTok: () => Promise<unknown> | void;
+}) {
+  const quiet = useReducedMotion();
+  const [params, setParams] = useSearchParams();
+  const view: View = params.get('view') === 'dashboard' ? 'dashboard' : 'submissions';
+  const setView = (next: View) => {
+    const p = new URLSearchParams(params);
+    if (next === 'dashboard') p.set('view', next);
+    else p.delete('view');
+    setParams(p, { replace: true });
+  };
+
+  const [tab, setTab] = useState<Tab>('all');
+  const [sort, setSort] = useState<Sort>('new');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [posting, setPosting] = useState<{ applicationId?: string } | null>(null);
+  const [editing, setEditing] = useState<ContentRow | null>(null);
+  const [playing, setPlaying] = useState<ContentRow | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
+
+  /*
+   * `?job=<id>` opens the dialog straight onto that job. The parameter is
+   * consumed rather than kept: it describes an arrival, not a state of the
+   * screen, so leaving it would reopen the dialog on every back button.
+   */
+  const job = params.get('job');
+  useEffect(() => {
+    if (!job) return;
+    setPosting({ applicationId: job });
+    const p = new URLSearchParams(params);
+    p.delete('job');
+    setParams(p, { replace: true });
+    // `params` is a fresh object every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job]);
+
+  /* A new filter is a new list, so the paging starts again. */
+  useEffect(() => {
+    setPage(1);
+  }, [tab, sort, search, view]);
+
+  const jobs = useMemo(() => (work ?? []).filter((r) => r.status === 'approved'), [work]);
+  const rows = useMemo(() => rowsIn ?? [], [rowsIn]);
+
   const perfBySubmission = useMemo(() => {
     const m = new Map<string, VideoPerformance>();
-    for (const p of perf.data ?? []) m.set(p.submission_id, p);
+    for (const p of perfRows ?? []) m.set(p.submission_id, p);
     return m;
-  }, [perf.data]);
+  }, [perfRows]);
 
   const tiktokById = useMemo(() => {
     const m = new Map<string, TikTokVideo>();
-    for (const v of ttVideos.data ?? []) m.set(v.video_id, v);
+    for (const v of tiktokRows ?? []) m.set(v.video_id, v);
     return m;
-  }, [ttVideos.data]);
+  }, [tiktokRows]);
 
   const joined = useMemo(
     () => rows.map((row) => joinVideo(row, perfBySubmission, tiktokById, sources, latest)),
@@ -246,19 +293,10 @@ export function Content() {
     [jobs, progress]
   );
 
-  const brands = useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const r of rows) if (r.brand) seen.set(r.brand.id, r.brand.name);
-    return [...seen.entries()]
-      .map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [rows]);
-
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();
     return joined.filter(({ row: r }) => {
       if (tab !== 'all' && r.status !== tab) return false;
-      if (brandId && r.brand_id !== brandId) return false;
       if (!needle) return true;
       return (
         r.ad_code.toLowerCase().includes(needle) ||
@@ -267,7 +305,7 @@ export function Content() {
         (r.offer?.title ?? '').toLowerCase().includes(needle)
       );
     });
-  }, [joined, tab, brandId, search]);
+  }, [joined, tab, search]);
 
   const sorted = useMemo(() => {
     if (sort === 'new') return filtered; // the query already returns newest first
@@ -293,6 +331,28 @@ export function Content() {
   const shown = useMemo(() => sorted.slice(0, page * PAGE), [sorted, page]);
   const more = sorted.length - shown.length;
 
+  /*
+   * "AD BACKED" MARKS THE EXCEPTION. Among videos where ads are a fact
+   * (approved, or already ad backed), if most are backed the odd ones out are
+   * tagged "No ads yet" and the rest carry nothing; if most are not, the
+   * backed ones are tagged. A tie tags nothing.
+   */
+  const adTag: 'backed' | 'unbacked' | null = useMemo(() => {
+    if (sources.ads !== 'ok') return null;
+    const pool = joined.filter((v) => v.row.status === 'approved' || v.adBacked);
+    const backed = pool.filter((v) => v.adBacked).length;
+    if (pool.length < 2 || backed * 2 === pool.length) return null;
+    return backed * 2 > pool.length ? 'unbacked' : 'backed';
+  }, [joined, sources.ads]);
+  const adTagFor = (v: JoinedVideo): 'backed' | 'unbacked' | null => {
+    if (adTag === 'unbacked') return !v.adBacked && v.row.status === 'approved' ? 'unbacked' : null;
+    if (adTag === 'backed') return v.adBacked ? 'backed' : null;
+    return null;
+  };
+  const picture = shown.some(hasPicture);
+  const showControls = view === 'submissions' && rows.length > CONTROLS_ABOVE;
+  const tiktokTracked = sources.tiktok === 'ok';
+
   const openVideo: JoinedVideo | null = useMemo(
     () => (open === null ? null : (joined.find((v) => v.row.id === open) ?? null)),
     [open, joined]
@@ -301,12 +361,6 @@ export function Content() {
   /* Any overlay at all: the panel gives up its blur while one is up, so the
      three-layer budget holds. See the note at the top of this file. */
   const overlay = Boolean(openVideo || playing || posting || editing);
-
-  const loading = content.isLoading || workLoading;
-  const failed = content.isError || workError;
-
-  const missingSortFigure =
-    sort !== 'new' && shown.some((v) => (sort === 'gmv' ? v.gmv === null : v.views === null));
 
   return (
     <>
@@ -317,23 +371,22 @@ export function Content() {
           <Skeleton />
         ) : failed ? (
           <DataError
-            title="We could not load your videos"
-            body="Something went wrong on our side, not yours. Nothing you filed is lost."
-            onRetry={() => Promise.all([content.refetch(), refetchWork()])}
+            title="Could not load your videos"
+            body="Please try again."
+            onRetry={() => void onRetry()}
             className="w-full"
           />
         ) : jobs.length === 0 && rows.length === 0 ? (
           <EmptyState
             title="Nothing to film yet"
-            body="Take an offer and it appears here with the number of videos it asks for. Once you film and file them, this is where you see how each one is doing."
+            body="Take an offer and it appears here."
             className="w-full"
           />
         ) : (
           <>
             {/* ------------------------------------------------ header -- */}
-            <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
-              <div className="flex min-w-0 flex-col gap-2">
-                <div className="flex items-baseline gap-2">
+            <header className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2">
+                <div className="col-start-1 row-start-1 flex items-center gap-2">
                   <p className="wx-numeric font-mono text-[2rem] leading-none font-extrabold">
                     {counts.all}
                   </p>
@@ -341,6 +394,27 @@ export function Content() {
                     {counts.all === 1 ? 'video filed' : 'videos filed'}
                   </p>
                 </div>
+
+                {/*
+                  ONE BUTTON, CENTRED ON THE WHOLE HEADER. It used to ride the
+                  top line beside "16 videos filed" with `ml-auto`, so it hung
+                  off the corner of a two-row block and lined up with neither
+                  row — Rashid: "fix this symmetry as well please place the
+                  button properly". It is now the second column of a grid and
+                  centres against the count AND the status pills together; on a
+                  phone it falls back to the count row so it never wraps onto a
+                  line of its own. Only while TikTok is not connected; the
+                  label is the whole message.
+                */}
+                {sources.tiktok === 'off' ? (
+                  <Button
+                    className="col-start-2 row-start-1 sm:row-span-2 sm:self-center"
+                    onClick={() => openAccountMenu('tiktok')}
+                  >
+                    <Link2 className="size-4" aria-hidden />
+                    Connect TikTok
+                  </Button>
+                ) : null}
 
                 {/*
                   THE COUNTERS ARE THE STATUS FILTER.
@@ -356,7 +430,7 @@ export function Content() {
                   "Still to film" is not a status a video can be in, so it is
                   a plain pill with nothing to press.
                 */}
-                <ul className="wx-tap-row flex flex-wrap items-center gap-1.5">
+                <ul className="wx-tap-row col-span-2 row-start-2 flex flex-wrap items-center gap-1.5 sm:col-span-1">
                   {STATUSES.map((key) => (
                     <li key={key} className="flex">
                       <StatusPill
@@ -364,24 +438,27 @@ export function Content() {
                         count={counts[key]}
                         tone={CONTENT_STATUS[key].tone}
                         active={tab === key}
-                        onClick={() => setTab(tab === key ? 'all' : key)}
+                        onClick={() => {
+                          setTab(tab === key ? 'all' : key);
+                          if (view !== 'submissions') setView('submissions');
+                        }}
                       />
                     </li>
                   ))}
-                  {outstanding > 0 ? (
+                  {jobs.length > 0 ? (
                     <li className="flex">
-                      <StatusPill label="Still to film" count={outstanding} tone="due" />
+                      <StatusPill
+                        label="Still to film"
+                        count={outstanding}
+                        tone="due"
+                        active={view === 'dashboard'}
+                        onClick={() => setView(view === 'dashboard' ? 'submissions' : 'dashboard')}
+                      />
                     </li>
                   ) : null}
                 </ul>
-              </div>
 
-              {jobs.length > 0 ? (
-                <Button onClick={() => setPosting({})}>
-                  <Plus className="size-4" aria-hidden />
-                  Add a video
-                </Button>
-              ) : null}
+
             </header>
 
             {/* ------------------------- the one blurred panel per page -- */}
@@ -392,123 +469,70 @@ export function Content() {
               )}
             >
               {/* ----------------------------------------- filter row -- */}
-              <div className="wx-tap-row flex flex-wrap items-center gap-2">
-                <ChipRow label="How to read your content">
-                  {VIEWS.map((v) => (
-                    <Chip key={v.key} active={view === v.key} onClick={() => setView(v.key)}>
-                      {v.label}
-                    </Chip>
-                  ))}
-                </ChipRow>
-
-                {view === 'submissions' ? (
-                  <>
-                    <ChipRow label="Sort videos">
-                      {SORTS.map((s) => (
-                        <Chip
-                          key={s.key}
-                          active={sort === s.key}
-                          onClick={() => setSort(s.key)}
-                        >
-                          {s.label}
-                        </Chip>
-                      ))}
-                    </ChipRow>
-
-                    {/* Chips while a creator has a handful of brands, a select
-                        once she has enough that chips would be a wall. Either
-                        way the whole list is reachable without a sideways
-                        scroller, which hides a filter behind an edge. */}
-                    {brands.length === 0 ? null : brands.length <= 4 ? (
-                      <ChipRow label="Filter by brand">
-                        <Chip active={brandId === ''} onClick={() => setBrandId('')}>
-                          All brands
-                        </Chip>
-                        {brands.map((b) => (
-                          <Chip
-                            key={b.id}
-                            active={brandId === b.id}
-                            onClick={() => setBrandId(b.id)}
-                          >
-                            {b.name}
-                          </Chip>
-                        ))}
-                      </ChipRow>
-                    ) : (
-                      <>
-                        <label className="sr-only" htmlFor="content-brand">
-                          Filter by brand
-                        </label>
-                        <Select
-                          id="content-brand"
-                          name="brand"
-                          value={brandId}
-                          onChange={(e) => setBrandId(e.target.value)}
-                          className="h-9 basis-40 text-[0.8125rem]"
-                        >
-                          <option value="">All brands</option>
-                          {brands.map((b) => (
-                            <option key={b.id} value={b.id}>
-                              {b.name}
-                            </option>
-                          ))}
-                        </Select>
-                      </>
-                    )}
-
-                    {/*
-                      THE HOUSE SEARCH FIELD, not a copy of it. This was a
-                      hand-rolled `<input>` 2.25rem tall with `rounded-md` and
-                      a focus RING — and a ring is a `box-shadow`, so focusing
-                      it replaced the inset that makes `wx-neo-inset` read as a
-                      well and the box went flat under the cursor. It was also
-                      under the 2.75rem tap floor on a phone and only cleared
-                      it by borrowing `wx-tap-row` from the row around it.
-                      Offers, Contests and Leaderboards all draw the same
-                      control, so there is one of it now; see
-                      `components/creator/SearchField.tsx`.
-                    */}
-                    <CreatorSearch
-                      value={search}
-                      onChange={setSearch}
-                      placeholder="Search ad code, brand or offer"
-                      label="Search your content"
-                    />
-                  </>
-                ) : null}
-              </div>
+              {/* One group, and only above a long list: search, and one sort.
+                  The status counters above are the other group. Brand chips
+                  went: search already matches the brand's name. */}
+              {showControls ? (
+                <div className="wx-tap-row flex flex-wrap items-center gap-2">
+                  <CreatorSearch
+                    value={search}
+                    onChange={setSearch}
+                    placeholder="Search ad code, brand or offer"
+                    label="Search your content"
+                  />
+                  <label className="sr-only" htmlFor="content-sort">
+                    Sort videos
+                  </label>
+                  <Select
+                    id="content-sort"
+                    name="sort"
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value as Sort)}
+                    className="h-9 basis-40 text-[0.8125rem]"
+                  >
+                    {SORTS.filter((x) => x.key !== 'views' || tiktokTracked).map((x) => (
+                      <option key={x.key} value={x.key}>
+                        {x.label}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              ) : null}
 
               {/* ------------------------------------ what each source -- */}
               {view === 'submissions' ? (
                 <SourceNotes
                   sources={sources}
-                  onRetryAds={() => perf.refetch()}
-                  onRetryTikTok={() => ttVideos.refetch()}
+                  onRetryAds={onRetryAds}
+                  onRetryTikTok={onRetryTikTok}
                 />
               ) : null}
 
               {view === 'dashboard' ? (
-                <Jobs
+                <>
+                  <h2 className="text-[0.9375rem] font-semibold">What each job still needs</h2>
+                  <Jobs
                   jobs={jobs}
                   progress={progress}
                   onAdd={(applicationId) => setPosting({ applicationId })}
-                />
+                  />
+                </>
               ) : shown.length === 0 ? (
                 <Note>
                   {rows.length === 0
-                    ? 'No videos yet. Film your first one, paste the link and its ad code, and it lands here with its cover and, once ads run behind it, its GMV.'
-                    : 'Nothing matches that. Try a different search, brand or status.'}
+                    ? 'No videos yet.'
+                    : 'No matches.'}
                 </Note>
               ) : (
                 <>
-                  {missingSortFigure ? (
-                    <p className="text-muted text-[0.75rem] leading-[1.4]">
-                      Videos with no figure for this sort sit at the end. They are not zero —
-                      nobody has reported them.
-                    </p>
-                  ) : null}
-
-                  <ul className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-2.5 sm:gap-3">
+                  <ul
+                    className={cn(
+                      'grid gap-2.5 sm:gap-3',
+                      picture
+                        ? 'grid-cols-[repeat(auto-fill,minmax(9rem,1fr))]'
+                        : 'grid-cols-[repeat(auto-fill,minmax(10rem,1fr))]'
+                    )}
+                  >
                     {shown.map((video, i) => (
                       <m.li
                         key={video.row.id}
@@ -526,6 +550,7 @@ export function Content() {
                         <VideoCard
                           video={video}
                           sources={sources}
+                          adTag={adTagFor(video)}
                           onOpen={() => setOpen(video.row.id)}
                         />
                       </m.li>
@@ -644,7 +669,6 @@ function StatusPill({
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      title={active ? 'Show every video again' : `Show only: ${label}`}
       className={cn(
         'ease-brand cursor-pointer transition-colors duration-200',
         shape,
@@ -654,46 +678,6 @@ function StatusPill({
       )}
     >
       {body}
-    </button>
-  );
-}
-
-function ChipRow({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div
-      role="group"
-      aria-label={label}
-      className="wx-neo-inset flex max-w-full flex-wrap items-center gap-0.5 rounded-md p-1"
-    >
-      {children}
-    </div>
-  );
-}
-
-function Chip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={cn(
-        'ease-brand flex min-h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-sm px-2.5 text-[0.8125rem] font-medium transition-colors duration-200',
-        /* The selected chip is a filled pill, so it takes his accent with ink on
-           it. The rest are text and keep the accent ink on hover. */
-        active
-          ? '[background-color:var(--wx-accent-fill)] [color:var(--wx-on-accent-fill)]'
-          : 'text-muted hover:text-accent'
-      )}
-    >
-      {children}
     </button>
   );
 }
@@ -724,47 +708,25 @@ function SourceNotes({
   onRetryAds: () => Promise<unknown> | void;
   onRetryTikTok: () => Promise<unknown> | void;
 }) {
-  if (sources.ads !== 'failed' && sources.tiktok !== 'failed' && sources.tiktok !== 'off') {
-    return null;
-  }
+  if (sources.ads !== 'failed' && sources.tiktok !== 'failed') return null;
 
+  const row = 'wx-neo-inset flex flex-wrap items-center justify-between gap-2 rounded-md px-3 py-2';
   return (
     <div className="flex flex-col gap-2">
       {sources.ads === 'failed' ? (
-        <div className="wx-neo-inset flex flex-wrap items-center justify-between gap-2 rounded-md px-3 py-2.5">
-          <p className="text-muted max-w-prose text-[0.8125rem] leading-[1.45]">
-            Your ad figures did not load, so GMV says &ldquo;Not reported&rdquo; rather than
-            zero. Every video you filed is still here.
-          </p>
+        <div className={row}>
+          <p className="text-muted text-[0.8125rem]">Ad figures did not load.</p>
           <Button variant="secondary" size="sm" onClick={() => void onRetryAds()}>
             Try again
           </Button>
         </div>
       ) : null}
-
       {sources.tiktok === 'failed' ? (
-        <div className="wx-neo-inset flex flex-wrap items-center justify-between gap-2 rounded-md px-3 py-2.5">
-          <p className="text-muted max-w-prose text-[0.8125rem] leading-[1.45]">
-            Your views, likes and comments did not load. Your ads and GMV are unaffected.
-          </p>
+        <div className={row}>
+          <p className="text-muted text-[0.8125rem]">TikTok figures did not load.</p>
           <Button variant="secondary" size="sm" onClick={() => void onRetryTikTok()}>
             Try again
           </Button>
-        </div>
-      ) : null}
-
-      {sources.tiktok === 'off' ? (
-        <div className="wx-neo-inset flex flex-wrap items-center justify-between gap-2 rounded-md px-3 py-2.5">
-          <p className="text-muted max-w-prose text-[0.8125rem] leading-[1.45]">
-            Connect your TikTok to see views, likes and comments on each video. Until then you
-            still see your ads and GMV.
-          </p>
-          <Link
-            to="/app/profile"
-            className="wx-neo-raised-sm wx-neo-press text-accent inline-flex h-9 items-center rounded-full px-4 text-[0.8125rem] font-semibold pointer-coarse:min-h-11"
-          >
-            Connect TikTok
-          </Link>
         </div>
       ) : null}
     </div>
@@ -788,10 +750,7 @@ function Jobs({
 }) {
   if (jobs.length === 0) {
     return (
-      <Note>
-        No active jobs. Take an offer and its job appears here with the number of videos it asks
-        for.
-      </Note>
+      <Note>No active jobs.</Note>
     );
   }
 

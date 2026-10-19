@@ -44,7 +44,14 @@ const money = (n: number, currency: string | null) =>
         maximumFractionDigits: 0,
       }).format(n)
     : n.toLocaleString(undefined, { maximumFractionDigits: 0 });
-export function ContestDashboard({ contests }: { contests: CreatorContest[] }) {
+export function ContestDashboard({
+  contests,
+  flat = false,
+}: {
+  contests: CreatorContest[];
+  /** Inside another panel: drop the blur so glass is not nested in glass. */
+  flat?: boolean;
+}) {
   // Only the ones they are actually in. A contest they have not entered has no
   // progress to show, and padding this screen with them would bury the work.
   const mine = contests.filter((c) => c.entry?.status === 'approved');
@@ -54,7 +61,7 @@ export function ContestDashboard({ contests }: { contests: CreatorContest[] }) {
       <EmptyState
         className="mt-6"
         title="You are not in a contest yet"
-        body="Enter one and this becomes the screen that shows how close you are to each target, what the team has confirmed, and what you have only told us so far."
+        body="Enter a contest to track it here."
       />
     );
   }
@@ -109,25 +116,30 @@ export function ContestDashboard({ contests }: { contests: CreatorContest[] }) {
      * They are `wx-neo-raised-sm` now — the same material, same lit rims, no
      * blur — and the blur is spent once, here. See `earn/EarnPanel.tsx`.
      */
-    <div className="wx-neo-raised mt-4 flex flex-col gap-4 rounded-xl p-3 sm:p-4">
+    <div
+      className={cn(
+        'flex flex-col gap-4 rounded-xl p-3 sm:p-4',
+        flat ? 'wx-neo-inset mt-2' : 'wx-neo-raised mt-4'
+      )}
+    >
       {/* Four figures, not four charts. A single number is not improved by being drawn. */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Figure
           label="Owed to you"
           value={owed > 0 ? money(owed, currency) : 'Nothing yet'}
           tone={owed > 0 ? 'due' : undefined}
-          note="Earned and confirmed. Waiting to be paid."
+          note="Confirmed, not yet paid"
         />
         <Figure
           label="Paid to you"
           value={paid > 0 ? money(paid, currency) : 'Nothing yet'}
           tone="paid"
-          note="From contests, and already sent"
+          note="From contests"
         />
         <Figure
           label="Still to play for"
           value={reachable > 0 ? money(reachable, currency) : 'Nothing left'}
-          note="Across every target you have not reached yet"
+          note="Targets not yet reached"
         />
         <Figure
           label="Waiting on the team"
@@ -227,10 +239,6 @@ function ContestCard({ contest }: { contest: CreatorContest }) {
         <div className="wx-neo-inset mt-4 flex flex-wrap gap-x-6 gap-y-2 rounded-lg p-3.5">
           <Standing label="On GMV" place={standing.gmvPlace} of={standing.entrants} />
           <Standing label="On videos" place={standing.videoPlace} of={standing.entrants} />
-          <p className="text-faint basis-full text-[0.75rem] leading-snug">
-            Ranked on confirmed figures only, so it moves when the team confirms a claim rather
-            than when somebody posts. Nobody can see who anybody else is.
-          </p>
         </div>
       ) : null}
 
@@ -307,7 +315,7 @@ function ContestCard({ contest }: { contest: CreatorContest }) {
 
       {contest.pendingClaim ? (
         <p className="text-stage-due mt-4 text-[0.8125rem] font-medium">
-          Your figures are with the team. Nothing above counts until they confirm them.
+          Your figures are with the team.
         </p>
       ) : null}
 

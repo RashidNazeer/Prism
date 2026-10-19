@@ -452,15 +452,16 @@ try {
      * reads while deciding to trust us, and it silently became untrue the
      * moment two scopes were added.
      */
-    const card = readFileSync('src/components/creator/TikTokConnection.tsx', 'utf8');
+    const card = readFileSync('src/components/creator/account/AccountMenu.tsx', 'utf8');
     const privacy = readFileSync('src/routes/legal/Privacy.tsx', 'utf8');
     if (card.length < 1000 || privacy.length < 1000) {
       bad('the card or the privacy page could not be read — the promise check would be vacuous');
     } else {
-      if (/view, like, comment and share/i.test(card)) {
-        ok('the consent list on the card names what the video permission reads');
+      // The account menu no longer narrates; the consent wording lives on /privacy.
+      if (/view, like, comment and share/i.test(privacy)) {
+        ok('/privacy names what the video permission reads');
       } else {
-        bad('the card no longer tells a creator what the requested scopes read');
+        bad('/privacy no longer tells a creator what the requested scopes read');
       }
 
       /*

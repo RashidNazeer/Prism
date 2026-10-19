@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { openAccountMenu } from '@/lib/account-menu';
 import { m } from 'motion/react';
 import { ArrowRight, Check, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -25,9 +25,9 @@ import type { Application } from '@/lib/auth/useApplication';
  */
 
 const STEPS = [
-  { key: 'applied', label: 'Applied', detail: 'We have your application.' },
-  { key: 'review', label: 'In review', detail: 'A human is reading it.' },
-  { key: 'decision', label: 'Decision', detail: 'You will hear from us by email.' },
+  { key: 'applied', label: 'Applied' },
+  { key: 'review', label: 'In review' },
+  { key: 'decision', label: 'Decision' },
 ] as const;
 
 export function ApplicantHome({
@@ -54,7 +54,7 @@ export function ApplicantHome({
       </header>
 
       {/* THE STAGE TRACKER: horizontal on desktop, vertical on a phone. */}
-      <section className="wx-neo-raised rounded-xl p-4">
+      <section className="wx-neo-raised-sm rounded-xl p-4">
         <ol className="flex flex-col gap-4 sm:flex-row sm:gap-3">
           {STEPS.map((s, i) => {
             const done = i < at || (decided && i === 2);
@@ -105,7 +105,6 @@ export function ApplicantHome({
                       />
                     )}
                   </p>
-                  <p className="text-muted text-[0.6875rem]">{s.detail}</p>
                 </div>
               </li>
             );
@@ -121,23 +120,20 @@ export function ApplicantHome({
 
       {/* THE ONE CLEAR NEXT ACTION, when there is one. */}
       {!tiktokConnected && application?.status !== 'rejected' && (
-        <section className="wx-neo-raised rounded-xl p-4">
-          <h2 className="text-text text-sm font-semibold">One thing you can do now</h2>
-          <p className="text-muted mt-1 text-sm">
-            Connect TikTok so your videos and views can be read the moment you are approved.
-          </p>
-          <Link
-            to="/app/profile"
-            className="bg-accent text-on-accent mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-md px-4 text-sm font-semibold"
+        <section className="wx-neo-raised-sm rounded-xl p-4">
+          <button
+            type="button"
+            onClick={() => openAccountMenu('tiktok')}
+            className="bg-accent text-on-accent inline-flex min-h-11 items-center gap-1.5 rounded-md px-4 text-sm font-semibold"
           >
             Connect TikTok
             <ArrowRight aria-hidden className="size-4" />
-          </Link>
+          </button>
         </section>
       )}
 
       {/* WHAT APPROVAL BUYS: the real tiles, locked and empty. */}
-      <section className="wx-neo-raised relative rounded-xl p-3 sm:p-4">
+      <section className="wx-neo-raised-sm relative rounded-xl p-3 sm:p-4">
         <div aria-hidden className="grid grid-cols-2 gap-3 opacity-40 lg:grid-cols-4">
           {['Total GMV', 'Commission', 'Ad spend', 'Orders'].map((title) => (
             <div key={title} className="wx-neo-raised-sm min-h-[9rem] rounded-lg p-4">
@@ -158,11 +154,7 @@ export function ApplicantHome({
         */}
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl bg-[var(--wx-glass-fill)] p-4 text-center">
           <Lock aria-hidden className="text-muted size-5" />
-          <p className="text-text text-sm font-semibold">This opens when you are approved.</p>
-          <p className="text-muted max-w-xs text-xs">
-            Your GMV, the commission on it and the ad spend behind your videos — measured
-            nightly, with nothing for you to connect.
-          </p>
+          <p className="text-text text-sm font-semibold">Opens when you are approved</p>
         </div>
       </section>
     </div>

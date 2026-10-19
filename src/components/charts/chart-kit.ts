@@ -69,11 +69,14 @@ export interface ChartBox {
  * observer alone would miss it and the strokes would stop matching the type.
  */
 export function useChartBox<T extends HTMLElement = HTMLDivElement>() {
-  const ref = useRef<T | null>(null);
+  /* A callback ref into state, not a `useRef` read in an empty-deps effect: a
+     chart that renders nothing on its first pass (the donut with no data yet)
+     mounts its measured element later, and an effect that ran once on mount
+     never attached to it, so the ring never drew when data arrived. */
+  const [el, ref] = useState<T | null>(null);
   const [box, setBox] = useState<ChartBox>({ w: 0, h: 0, rem: 16 });
 
   useEffect(() => {
-    const el = ref.current;
     if (!el) return;
 
     const read = () => {
@@ -98,7 +101,7 @@ export function useChartBox<T extends HTMLElement = HTMLDivElement>() {
       ro.disconnect();
       mo.disconnect();
     };
-  }, []);
+  }, [el]);
 
   return [ref, box] as const;
 }

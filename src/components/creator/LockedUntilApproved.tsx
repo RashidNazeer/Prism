@@ -39,7 +39,7 @@ import { cn } from '@/lib/utils';
 export function LockedUntilApproved({
   className,
   title = 'This opens when you are approved',
-  body = 'Brand hubs, their products and their offers are for creators on the roster. A real person is reading your application, and this unlocks the moment they say yes.',
+  body = 'The Brands Hub, with its products and offers, is for creators on the roster. A real person is reading your application, and this unlocks the moment they say yes.',
 }: {
   className?: string;
   /** Override for a screen where the locked thing is not a brand hub. */

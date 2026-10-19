@@ -237,7 +237,9 @@ try {
   // proves the same thing about something a creator will genuinely be typing
   // into when their token happens to expire.
   const TYPED = 'half written name that must survive a token refresh';
-  await page2.goto(`${BASE}/app/profile`, { waitUntil: 'networkidle' });
+  // The display-name field now lives in the account menu on the sidebar chip.
+  await page2.goto(`${BASE}/app`, { waitUntil: 'networkidle' });
+  await page2.locator('[data-account-chip]:visible').first().click();
   await page2.waitForSelector('input[name="displayName"]', { timeout: 20000 });
   await page2.fill('input[name="displayName"]', TYPED);
 
@@ -275,7 +277,7 @@ try {
     'text typed before the refresh is still there afterwards'
   );
   check(
-    (await page2.getByRole('heading', { name: /my profile/i }).count()) > 0,
+    (await page2.locator('[data-account-chip]:visible').count()) > 0,
     'still signed in after the refresh'
   );
 

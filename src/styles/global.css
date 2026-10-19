@@ -946,6 +946,17 @@ body::after {
  * Under `forced-colors` the edge must be a BORDER, not a shadow: the OS
  * discards shadows entirely, so a shadow-only control loses its shape.
  */
+/*
+ * ONE MATERIAL ACROSS EVERY CREATOR TAB, 2026-10-19. Rashid: "the blur is not
+ * same through all tabs". Panels (wx-neo-raised) blurred while tiles and
+ * cards (wx-neo-raised-sm) did not. Inside the app shell no content surface
+ * blurs; only the rail and top bar (wx-glass-chrome) keep theirs.
+ */
+.wx-app .wx-neo-raised {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 @media (prefers-reduced-transparency: reduce), (prefers-reduced-motion: reduce), (forced-colors: active) {
   .wx-neo-raised,
   .wx-neo-raised-sm,

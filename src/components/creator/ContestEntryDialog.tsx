@@ -297,8 +297,8 @@ export function ContestEntryDialog({
           </p>
           <p className="text-muted mt-1 text-[0.8125rem] leading-relaxed">
             {instant
-              ? 'Nobody has to approve you. Tap once and the deliverables below are locked to your entry exactly as they read now.'
-              : 'You are asking to enter. Somebody at Wurx reads every entry, and the answer lands on this screen the moment they decide. Nothing to check by email.'}
+              ? 'No approval needed.'
+              : 'The team decides, and the answer lands here.'}
           </p>
         </div>
 
@@ -348,8 +348,7 @@ export function ContestEntryDialog({
               />
             ) : (
               <p className="text-muted mt-2 text-[0.8125rem] leading-relaxed">
-                Nothing has been set on this one yet. The team will confirm what it asks for and
-                what it pays with you directly.
+                Targets to be confirmed by the team.
               </p>
             )}
 
@@ -366,11 +365,6 @@ export function ContestEntryDialog({
               </p>
             ) : null}
 
-            <p className="text-faint mt-3 text-[0.75rem] leading-relaxed">
-              {instant
-                ? 'These are copied onto your entry as you tap, and they cannot be changed afterwards, by anybody.'
-                : 'These are copied onto your entry the moment somebody says yes, and they cannot be changed afterwards, by anybody.'}
-            </p>
 
             {contest.briefUrl ? (
               <a
@@ -391,8 +385,8 @@ export function ContestEntryDialog({
               error={noteError || undefined}
               hint={
                 instant
-                  ? 'Optional. The team reads this alongside your entry.'
-                  : 'Optional. The person deciding reads this with your entry.'
+                  ? 'Optional.'
+                  : 'Optional.'
               }
             >
               {({ id, describedBy, invalid }) => (

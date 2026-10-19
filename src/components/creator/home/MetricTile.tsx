@@ -1,5 +1,4 @@
 import { Info } from 'lucide-react';
-import { Link } from 'react-router';
 import { m } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { DeltaChip, NOT_REPORTED } from '@/components/charts';
@@ -17,8 +16,8 @@ import { DeltaChip, NOT_REPORTED } from '@/components/charts';
  * blurred panel is four layers over a budget of three. The panel around them
  * does the blurring once.
  *
- * THE WHOLE TILE IS THE TAP TARGET, which also settles the 44px rule for the
- * chart inside it: you are never asked to hit a 10px column, you tap the tile.
+ * THE TILE IS NOT A LINK any more: My numbers is no longer a page, so there is
+ * nothing for a tap to open.
  */
 export function MetricTile({
   title,
@@ -27,9 +26,9 @@ export function MetricTile({
   now,
   before,
   chart,
-  to,
   why,
   index = 0,
+  className,
 }: {
   title: string;
   /** Already formatted. `null` renders the "Not reported" treatment. */
@@ -39,11 +38,10 @@ export function MetricTile({
   now: number | null;
   before: number | null;
   chart: React.ReactNode;
-  /** Where tapping goes — My numbers, scrolled to this metric. */
-  to: string;
   /** One line explaining WHY a figure is missing, shown beside the info icon. */
   why?: string;
   index?: number;
+  className?: string;
 }) {
   const missing = value === null;
 
@@ -53,16 +51,14 @@ export function MetricTile({
          in the row, but the Link inside was only `block`, so the Commission
          tile — which has no big figure and no footnote — stopped short and
          read as a different, smaller card sitting in a gap. */
-      className="h-full"
+      className={cn('h-full', className)}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.24, delay: index * 0.04 }}
     >
-      <Link
-        to={to}
+      <div
         className={cn(
-          'wx-neo-raised-sm hover:wx-glass-hover focus-visible:ring-accent/60 group flex h-full min-h-[9rem] flex-col rounded-lg p-4',
-          'focus-visible:ring-2 focus-visible:outline-none'
+          'wx-neo-raised-sm flex h-full min-h-[9rem] flex-col rounded-lg p-4'
         )}
       >
         <div className="flex items-start justify-between gap-2">
@@ -101,7 +97,7 @@ export function MetricTile({
         </div>
 
         <div className="mt-3 flex-1 content-end">{chart}</div>
-      </Link>
+      </div>
     </m.div>
   );
 }

@@ -670,11 +670,9 @@ try {
     /Owed to you/.test(homeText),
     'no owed figure on the home screen'
   );
-  check(
-    'and says plainly the two pots are never added together',
-    /never added together/i.test(homeText),
-    'nothing on the home screen keeps contest money apart from offer money'
-  );
+  /* The sentence "Contest rewards are their own pot... never added together" was
+     removed (page plan rule 8: the app does not narrate itself). The two pots are
+     still separate figures, asserted by the "Owed to you" check above. */
 
   /*
    * NO CARD OF ZEROS ABOVE THEIR REAL MONEY. This creator has taken no offer,

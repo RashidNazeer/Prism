@@ -10,12 +10,12 @@ import type { AdState } from '@/lib/creator/usePerformance';
 import { Count, Money, NotReported, Stat } from './figures';
 import { SpendVsGmv } from './SpendVsGmv';
 import { toSeries, useVideoDaily } from './useVideoDaily';
-import { whyNoEngagement, whyNoMoney, type JoinedVideo, type Sources } from './joined';
+import type { JoinedVideo, Sources } from './joined';
 
 const AD_LINE: Record<AdState, string> = {
-  running: 'Ads are running behind this one.',
-  ran: 'Ads ran behind this one and have stopped.',
-  none: 'No ads on this one. It still counts toward your offer.',
+  running: 'Ads running',
+  ran: 'Ads stopped',
+  none: 'No ads',
 };
 
 /**
@@ -62,8 +62,6 @@ export function VideoSheet({
   const series = toSeries(daily.data ?? []);
   const currency = series.currency ?? video.currency;
 
-  const moneyWhy = whyNoMoney(row, sources);
-  const engagementWhy = whyNoEngagement(sources, Boolean(video.tiktok));
 
   return (
     <div
@@ -127,8 +125,7 @@ export function VideoSheet({
           ) : daily.isError ? (
             <div className="wx-neo-inset flex flex-col items-start gap-2 rounded-md px-3 py-3">
               <p className="text-muted text-[0.8125rem] leading-[1.45]">
-                We could not load this video&rsquo;s day-by-day figures. Everything else here is
-                still right.
+                Could not load.
               </p>
               <Button variant="secondary" size="sm" onClick={() => void daily.refetch()}>
                 Try again
@@ -151,14 +148,11 @@ export function VideoSheet({
             <h3 className="text-muted text-[0.6875rem] font-semibold tracking-[0.08em] uppercase">
               Ad spend against GMV
             </h3>
-            <span className="text-faint text-[0.625rem]">All time, one scale</span>
           </div>
           <SpendVsGmv spend={video.spend} gmv={video.gmv} currency={currency} />
           {video.adState ? (
             <p className="text-muted text-[0.75rem] leading-[1.4]">{AD_LINE[video.adState]}</p>
-          ) : (
-            <p className="text-muted text-[0.75rem] leading-[1.4]">{moneyWhy}</p>
-          )}
+          ) : null}
         </section>
 
         {/* ------------------------------------------------ engagement -- */}
@@ -169,27 +163,27 @@ export function VideoSheet({
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <Stat label="Views">
               <Eye className="text-muted mr-1.5 size-3.5 shrink-0" aria-hidden />
-              <Count value={video.views} why={engagementWhy} />
+              <Count value={video.views} />
             </Stat>
             <Stat label="Likes">
               <Heart className="text-muted mr-1.5 size-3.5 shrink-0" aria-hidden />
-              <Count value={video.likes} why={engagementWhy} />
+              <Count value={video.likes} />
             </Stat>
             <Stat label="Comments">
               <MessageCircle className="text-muted mr-1.5 size-3.5 shrink-0" aria-hidden />
-              <Count value={video.comments} why={engagementWhy} />
+              <Count value={video.comments} />
             </Stat>
             <Stat label="Shares">
               <Share2 className="text-muted mr-1.5 size-3.5 shrink-0" aria-hidden />
-              <Count value={video.shares} why={engagementWhy} />
+              <Count value={video.shares} />
             </Stat>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Stat label="Items sold">
-              <Count value={video.orders} why={moneyWhy} />
+              <Count value={video.orders} />
             </Stat>
             <Stat label="GMV">
-              <Money value={video.gmv} currency={currency} why={moneyWhy} />
+              <Money value={video.gmv} currency={currency} />
             </Stat>
           </div>
         </section>
@@ -222,7 +216,7 @@ export function VideoSheet({
             <div className="flex items-center justify-between gap-3">
               <dt className="text-muted">Ad figures</dt>
               <dd>
-                <NotReported why={moneyWhy} />
+                <NotReported />
               </dd>
             </div>
           ) : null}

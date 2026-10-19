@@ -1,6 +1,5 @@
 import { Link } from 'react-router';
-import { m } from 'motion/react';
-import { ArrowRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { STAGE_META, type OfferStage } from '@/lib/offer-stages';
 import type { MyWorkRow } from '@/lib/creator/useMyWork';
 
@@ -68,63 +67,47 @@ export function actionsFromWork(rows: MyWorkRow[] | undefined): UpNextAction[] {
     .slice(0, 3);
 }
 
-export function UpNext({ actions }: { actions: UpNextAction[] }) {
-  if (actions.length === 0) {
-    return (
-      <div className="flex min-h-[6rem] flex-col items-start justify-center gap-2">
-        <p className="text-muted text-sm">Nothing waiting on you. Nice.</p>
-        <Link
-          to="/app/offers"
-          className="text-accent inline-flex min-h-11 items-center gap-1 text-sm font-medium"
-        >
-          See what is on the table
-          <ArrowRight aria-hidden className="size-4" />
-        </Link>
-      </div>
-    );
-  }
+/**
+ * A SMALL WIDGET, NOT A SECTION. Rashid: "too huge make it a small widget."
+ * It is one nudge: a slim row per action inside a card sized to its content
+ * (never a full-width panel), a line of text and a normal-height button.
+ * Nothing waiting renders NOTHING: absence costs no room. The card is
+ * `wx-neo-raised-sm`, so it adds no blurred layer.
+ */
+export function UpNext({ actions, className }: { actions: UpNextAction[]; className?: string }) {
+  if (actions.length === 0) return null;
 
   return (
-    /*
-      A GRID, NOT A STACK. With one action the stacked list gave a single card
-      the full width of the dashboard and a "File your video" button a metre
-      wide — Rashid: "this should be smaller as well". There are at most three
-      of these, so three columns holds every case: one action occupies a third
-      of the row and three fill it evenly. On a phone it falls back to one
-      column, where full width is correct.
-    */
-    <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-      {actions.map((a, i) => (
-        <m.li
-          key={a.id}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.24, delay: i * 0.04 }}
-          className="wx-neo-raised-sm rounded-lg p-3"
-        >
-          <div className="flex items-start justify-between gap-2">
-            <span className="text-muted text-[0.6875rem] font-medium">{a.brand}</span>
-            {a.badge && (
-              <span
-                className={
-                  a.badge.tone === 'warning'
-                    ? 'text-warning text-[0.625rem] font-semibold'
-                    : 'text-muted text-[0.625rem]'
-                }
-              >
-                {a.badge.text}
-              </span>
-            )}
+    <ul
+      aria-label="Up next"
+      className={cn(
+        'wx-neo-raised-sm w-fit max-w-full divide-y divide-[var(--wx-glass-edge)] rounded-lg',
+        className
+      )}
+    >
+      {actions.map((a) => (
+        <li key={a.id} className="flex items-center gap-3 px-3 py-2">
+          <div className="min-w-0 flex-1 text-sm">
+            <p className="text-text truncate font-medium">
+              {a.brand} &middot; {a.title}
+            </p>
+            <p
+              className={
+                a.badge?.tone === 'warning'
+                  ? 'text-warning text-[0.6875rem] font-semibold'
+                  : 'text-muted text-[0.6875rem]'
+              }
+            >
+              {a.badge ? a.badge.text : a.detail}
+            </p>
           </div>
-          <p className="text-text mt-0.5 truncate text-sm font-semibold">{a.title}</p>
-          <p className="text-muted text-[0.6875rem]">{a.detail}</p>
           <Link
             to={a.to}
-            className="bg-accent text-on-accent mt-2 flex min-h-11 w-full items-center justify-center rounded-md px-3 text-sm font-semibold"
+            className="bg-accent text-on-accent inline-flex min-h-11 shrink-0 items-center rounded-md px-3 text-xs font-semibold sm:min-h-9"
           >
             {a.cta}
           </Link>
-        </m.li>
+        </li>
       ))}
     </ul>
   );

@@ -31,7 +31,7 @@ export function HomeSkeleton() {
         <Block className="h-11 w-56" />
       </header>
 
-      <section className="wx-neo-raised rounded-xl p-3 sm:p-4">
+      <section className="wx-neo-raised-sm rounded-xl p-3 sm:p-4">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="wx-neo-raised-sm min-h-[9rem] rounded-lg p-4">
@@ -43,17 +43,17 @@ export function HomeSkeleton() {
         </div>
       </section>
 
-      <section className="wx-neo-raised rounded-xl p-4">
+      <section className="wx-neo-raised-sm rounded-xl p-4">
         <Block className="h-4 w-24" />
         <Block className="mt-3 h-[13.75rem] w-full" />
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <div className="wx-neo-raised rounded-xl p-4">
+        <div className="wx-neo-raised-sm rounded-xl p-4">
           <Block className="h-4 w-20" />
           <Block className="mt-3 h-36 w-full" />
         </div>
-        <div className="wx-neo-raised rounded-xl p-4">
+        <div className="wx-neo-raised-sm rounded-xl p-4">
           <Block className="h-4 w-24" />
           <Block className="mt-3 h-28 w-full" />
         </div>

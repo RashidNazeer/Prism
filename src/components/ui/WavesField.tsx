@@ -544,10 +544,21 @@ export function WavesField({ intensity = 'full' }: { intensity?: 'full' | 'subtl
         position: 'fixed',
         inset: 0,
         pointerEvents: 'none',
-        opacity:
-          intensity === 'subtle'
-            ? 'calc(var(--wx-waves-opacity) * 0.55)'
-            : 'var(--wx-waves-opacity)',
+        /*
+         * THE SIGNED-IN SCREENS NO LONGER DIM THE PATTERN, 2026-10-19.
+         *
+         * This was `calc(var(--wx-waves-opacity) * 0.55)` for `subtle`, a
+         * weight chosen when the ground behind the app was a loud coloured
+         * aurora that needed quieting. The ground is neutral now, so the dim
+         * only removed the pattern: measured in the signed-in app the host sat
+         * at opacity 0.33 against 0.6 on the landing page, and with the glass
+         * panels over it Rashid's question was "where did the background go
+         * while we redesigned everything?". It is the same 0.6 the contrast
+         * sweep was done at, so no text contrast changes. `intensity` still
+         * drives `waveHeight` (a flatter mesh behind the app), which is the
+         * part of "subtle" that was ever about calm.
+         */
+        opacity: 'var(--wx-waves-opacity)',
       }}
     />
   );

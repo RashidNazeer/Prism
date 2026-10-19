@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import { createBrowserRouter, Navigate } from 'react-router';
+import { createBrowserRouter, Navigate, useLocation } from 'react-router';
 import { RouteFallback } from '@/components/layout/RouteFallback';
 import { RequireAuth, RedirectIfSignedIn } from '@/components/auth/RequireAuth';
 import { COLLABS_ONLY_ROLES, STAFF_ROLES } from '@/lib/auth/auth-context';
@@ -179,12 +179,9 @@ const lazyRoute = (load: () => Promise<Record<string, unknown>>, name: string) =
  * creator the staff version.
  */
 const CreatorDashboard = screen(() => import('@/routes/app/Dashboard'), 'Dashboard');
-const CreatorProfile = screen(() => import('@/routes/app/Profile'), 'Profile');
 const CreatorBrandHub = screen(() => import('@/routes/app/BrandHub'), 'BrandHub');
 const CreatorOffers = screen(() => import('@/routes/app/Offers'), 'Offers');
-const CreatorContests = screen(() => import('@/routes/app/Contests'), 'Contests');
 const CreatorContent = screen(() => import('@/routes/app/Content'), 'Content');
-const CreatorNumbers = screen(() => import('@/routes/app/MyNumbers'), 'MyNumbers');
 const CreatorBoard = screen(() => import('@/routes/app/Leaderboards'), 'Leaderboards');
 
 const AdminHome = screen(() => import('@/routes/admin/AdminDashboard'), 'AdminDashboard');
@@ -243,12 +240,9 @@ const StudioHome = screen(() => import('@/routes/studio/StudioHome'), 'StudioHom
  */
 const PREFETCH: Record<string, () => Promise<unknown>> = {
   '/app': () => import('@/routes/app/Dashboard'),
-  '/app/profile': () => import('@/routes/app/Profile'),
   '/app/brands': () => import('@/routes/app/Brands'),
   '/app/offers': () => import('@/routes/app/Offers'),
-  '/app/contests': () => import('@/routes/app/Contests'),
   '/app/content': () => import('@/routes/app/Content'),
-  '/app/numbers': () => import('@/routes/app/MyNumbers'),
   '/app/leaderboards': () => import('@/routes/app/Leaderboards'),
   '/admin': () => import('@/routes/admin/AdminDashboard'),
   '/admin/applications': () => import('@/routes/admin/Applications'),
@@ -270,6 +264,21 @@ const PREFETCH: Record<string, () => Promise<unknown>> = {
 export function prefetchRoute(to: string) {
   const load = PREFETCH[to];
   if (load) void load().catch(() => {});
+}
+
+/**
+ * A REDIRECT THAT KEEPS THE QUERY STRING.
+ *
+ * `/app/numbers` and `/app/contests` are gone as pages (Rashid, 2026-10-19:
+ * My numbers folds into Home; Contests folds into Earn). Old links still exist
+ * — in notifications, in a contest's "see your progress" link, in anything
+ * ever sent to a creator — and some of them carry state: `?period=` and
+ * `?brand=` for numbers, `?view=progress` for contests. A bare `<Navigate>`
+ * would drop it and land her somewhere that has forgotten what she asked for.
+ */
+function RedirectKeepingSearch({ to, hash }: { to: string; hash?: string }) {
+  const { search } = useLocation();
+  return <Navigate to={{ pathname: to, search, hash }} replace />;
 }
 
 export const router = createBrowserRouter([
@@ -486,8 +495,10 @@ export const router = createBrowserRouter([
             element: <CreatorDashboard />,
           },
           {
+            // The Profile page is gone; what it held lives in the account menu on the
+            // sidebar's user chip. Old links and bookmarks land on Home.
             path: '/app/profile',
-            element: <CreatorProfile />,
+            element: <Navigate to="/app" replace />,
           },
           // Applicants are allowed onto these routes on purpose, and are shown a
           // "this opens when you are approved" panel instead of the hub.
@@ -507,7 +518,7 @@ export const router = createBrowserRouter([
           // wrong shape and Rashid caught it.
           {
             path: '/app/contests',
-            element: <CreatorContests />,
+            element: <RedirectKeepingSearch to="/app/offers" hash="#contests" />,
           },
           {
             path: '/app/content',
@@ -515,7 +526,7 @@ export const router = createBrowserRouter([
           },
           {
             path: '/app/numbers',
-            element: <CreatorNumbers />,
+            element: <RedirectKeepingSearch to="/app" />,
           },
           {
             path: '/app/leaderboards',

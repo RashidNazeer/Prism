@@ -1,4 +1,12 @@
-﻿import { useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { ContestsView } from '@/routes/app/Contests';
+import {
+  isLiveForThem,
+  useCreatorContests,
+  type CreatorContest,
+} from '@/lib/creator/useCreatorContests';
 import { ApplyDialog } from '@/components/creator/ApplyDialog';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
 import { OfferCard } from '@/components/creator/OfferCard';
@@ -11,7 +19,7 @@ import {
 import { EarnFilters } from '@/components/creator/earn/EarnFilters';
 import { CreatorSearch } from '@/components/creator/SearchField';
 import { TileIn } from '@/components/creator/earn/TileIn';
-import { DataError, EmptyState } from '@/components/ui/DataState';
+import { DataError } from '@/components/ui/DataState';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useProfile } from '@/lib/auth/useProfile';
 import {
@@ -23,7 +31,7 @@ import {
 } from '@/lib/creator/useAllOffers';
 import type { MyOfferApplication } from '@/lib/creator/useOfferApplications';
 import { useCatalogueLive } from '@/lib/creator/useCatalogueLive';
-import { useMyJobProgress } from '@/lib/work/job-progress';
+import { needsFilming, useMyJobProgress, type JobProgress } from '@/lib/work/job-progress';
 
 /**
  * Every offer open to this creator, across every brand.
@@ -103,38 +111,60 @@ const GROUPS: {
   {
     key: 'accepted',
     title: 'Accepted',
-    note: 'Agreed with you. Where each one has got to, and what it pays.',
     matches: (s) => s === 'in',
   },
   {
     key: 'waiting',
     title: 'Waiting on the team',
-    note: 'Asked for. The answer lands here on its own, no refresh needed.',
     matches: (s) => s === 'waiting',
   },
   {
     key: 'yours',
     title: 'Yours already',
-    note: 'Nothing to apply for on these.',
     matches: (s) => s === 'open',
   },
   { key: 'open', title: 'Open to apply for', matches: (s) => s === 'canApply' },
   {
     key: 'declined',
     title: 'Declined',
-    note: 'Not taken forward this time. You can ask again on any of them.',
     matches: (s) => s === 'declined',
   },
 ];
 
+/** Items (offers plus contests) beyond which the one search box earns its place. */
+const SEARCH_AFTER = 8;
+
+/*
+ * THE EARN PAGE, 2026-10-19: OFFERS AND CONTESTS ARE ONE PAGE NOW.
+ *
+ * Rashid agreed to fold Contests into Offers, with the caveat "make sure pages
+ * are easy to operate themselves as well". So this is NOT a segmented switch
+ * (one more control, and a creator has to know which half holds her work). It
+ * is two SECTIONS on one scroll, each with its own counted group headings.
+ *
+ *   - An empty section costs ONE LINE, no panel and no control. She has no
+ *     contests today, so the Contests section is a sentence.
+ *   - The section she can act on leads: contests lead only when she holds a
+ *     contest entry and has no accepted offer waiting on her videos; otherwise
+ *     offers lead (and offers lead on a tie, so the page does not reorder
+ *     itself under her).
+ *   - ONE search box for the page, drawn only above eight items combined, and
+ *     it filters both sections.
+ *   - `#contests` scrolls to the contests section; `/app/contests` redirects
+ *     to `/app/offers#contests`.
+ *   - The Brand hub still embeds `Contests({ hubBrandId })` and `OfferCard`:
+ *     this page reuses `ContestsView` (embedded) and `OfferCard` rather than
+ *     copying either.
+ *
+ * Blur budget: top bar + the Offers panel + the Contests panel = 3. Anything
+ * inside a panel is `wx-neo-raised-sm` or `wx-neo-inset`.
+ */
 export function Offers() {
   const { claims } = useAuth();
   const { data: profile } = useProfile();
   const role = profile?.role ?? claims?.role;
   const approved = role === 'creator' || role === 'ops' || role === 'admin';
-
-  const [search, setSearch] = useState('');
-  const [applyingTo, setApplyingTo] = useState<CreatorOfferRow | null>(null);
+  const isCreator = role === 'creator';
 
   // Admin edits to brands, offers and products land here without a reload.
   useCatalogueLive();
@@ -144,6 +174,195 @@ export function Offers() {
   // How much of each job has been filmed. Keyed by REQUEST, not by offer: five
   // videos for three hundred is a promise made to one creator on one request.
   const { data: progress } = useMyJobProgress();
+  const { contests, isLoading: contestsLoading, isError: contestsError } = useCreatorContests();
+  const queryClient = useQueryClient();
+  const retryContests = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['creator', 'contests'] }),
+      queryClient.invalidateQueries({ queryKey: ['creator', 'contest-entries'] }),
+    ]);
+
+  return (
+    <EarnPage
+      approved={approved}
+      isCreator={isCreator}
+      offers={offers}
+      requests={requests}
+      progress={progress}
+      offersLoading={isLoading}
+      offersError={isError}
+      refetchOffers={() => void refetch()}
+      contests={contests}
+      contestsLoading={contestsLoading}
+      contestsError={contestsError}
+      retryContests={retryContests}
+    />
+  );
+}
+
+/** The page with its data handed in, so `/dev/offers` renders the real layout. */
+export function EarnPage({
+  approved,
+  isCreator,
+  offers,
+  requests,
+  progress,
+  offersLoading,
+  offersError,
+  refetchOffers,
+  contests,
+  contestsLoading,
+  contestsError,
+  retryContests,
+}: {
+  approved: boolean;
+  isCreator: boolean;
+  offers: CreatorOfferRow[] | undefined;
+  requests: MyOfferApplication[] | undefined;
+  progress: Map<string, JobProgress> | undefined;
+  offersLoading: boolean;
+  offersError: boolean;
+  refetchOffers: () => void;
+  contests: CreatorContest[];
+  contestsLoading: boolean;
+  contestsError: boolean;
+  retryContests: () => void | Promise<unknown>;
+}) {
+  const [searchText, setSearchText] = useState('');
+  const { hash, search } = useLocation();
+  const contestsRef = useRef<HTMLElement>(null);
+
+  const total = (offers ?? []).length + contests.length;
+  const searchable = total > SEARCH_AFTER;
+  // A search box that is not drawn must not filter on a stale word.
+  const query = searchable ? searchText : '';
+
+  const ready = !offersLoading && !contestsLoading;
+  useEffect(() => {
+    if ((hash === '#contests' || search.includes('view=progress')) && ready && contestsRef.current) {
+      contestsRef.current.scrollIntoView({ block: 'start' });
+    }
+  }, [hash, search, ready]);
+
+  /* Which section leads: the one with something she can act on. */
+  const offerNeedsHer = useMemo(() => {
+    for (const r of requests ?? []) {
+      if (r.status !== 'approved') continue;
+      const p = progress?.get(r.id);
+      if (p && needsFilming(p)) return true;
+    }
+    return false;
+  }, [requests, progress]);
+  const hasContestEntry = contests.some((c) => isLiveForThem(c));
+  const noOffers = ready && (offers ?? []).length === 0 && (requests ?? []).length === 0;
+  const contestsFirst = (hasContestEntry && !offerNeedsHer) || (noOffers && contests.length > 0);
+
+  if (!approved) return <LockedUntilApproved className="mt-6" />;
+
+  const offersSection = (
+    <section
+      key="offers"
+      id="offers"
+      aria-labelledby="earn-offers"
+      className="mt-6 scroll-mt-20 first:mt-4"
+    >
+      <h2 id="earn-offers" className="font-display px-1 text-[1.125rem] font-semibold">
+        Offers
+      </h2>
+      <OffersSection
+        offers={offers}
+        requests={requests}
+        progress={progress}
+        isLoading={offersLoading}
+        isError={offersError}
+        refetch={refetchOffers}
+        query={query}
+      />
+    </section>
+  );
+
+  const contestsSection = (
+    <section
+      key="contests"
+      id="contests"
+      ref={contestsRef}
+      aria-labelledby="earn-contests"
+      className="mt-6 scroll-mt-20 first:mt-4"
+    >
+      <h2 id="earn-contests" className="font-display px-1 text-[1.125rem] font-semibold">
+        Contests
+      </h2>
+      <div className="mt-1">
+        <ContestsView
+          approved
+          embedded
+          query={query}
+          isCreator={isCreator}
+          contests={contests}
+          isLoading={contestsLoading}
+          isError={contestsError}
+          retry={retryContests}
+        />
+      </div>
+    </section>
+  );
+
+  /* A long offers list pushes Contests below the fold, and on a phone she would
+     never learn they exist. Two jump pills with counts sit at the top whenever
+     is a Contests section to find (a zero count still says it exists). */
+  const jump = (id: string) =>
+    document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  const jumpPill =
+    'wx-neo-raised-sm text-text inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-[0.8125rem] font-semibold';
+
+  return (
+    <>
+      {ready ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {(contestsFirst ? ['contests', 'offers'] : ['offers', 'contests']).map((id) => (
+            <button key={id} type="button" onClick={() => jump(id)} className={jumpPill}>
+              {id === 'offers' ? 'Offers' : 'Contests'}
+              <span className="text-accent tabular-nums">
+                {id === 'offers' ? (offers ?? []).length : contests.length}
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {searchable ? (
+        <EarnFilters className="mt-4">
+          <CreatorSearch
+            value={searchText}
+            onChange={setSearchText}
+            placeholder="Search offers, contests or brands"
+            label="Search offers, contests or brands"
+          />
+        </EarnFilters>
+      ) : null}
+      {contestsFirst ? [contestsSection, offersSection] : [offersSection, contestsSection]}
+    </>
+  );
+}
+
+/** The offers half: groups inside one panel, or one line when there is nothing. */
+function OffersSection({
+  offers,
+  requests,
+  progress,
+  isLoading,
+  isError,
+  refetch,
+  query,
+}: {
+  offers: CreatorOfferRow[] | undefined;
+  requests: MyOfferApplication[] | undefined;
+  progress: Map<string, JobProgress> | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  refetch: () => void;
+  query: string;
+}) {
+  const [applyingTo, setApplyingTo] = useState<CreatorOfferRow | null>(null);
 
   /** The newest request per offer. A rejected creator can ask again, so an
    *  offer can carry several rows and only the newest describes today. */
@@ -153,13 +372,9 @@ export function Offers() {
     return map;
   }, [requests]);
 
-  /**
-   * The search, and nothing else. It matches the brand's name as well as the
-   * offer's, which is why the brand dropdown above it was deleted rather than
-   * rebuilt.
-   */
+  /** The search matches the brand's name as well as the offer's. */
   const shown = useMemo(() => {
-    const needle = search.trim().toLowerCase();
+    const needle = query.trim().toLowerCase();
     if (!needle) return offers ?? [];
     return (offers ?? []).filter(
       (o) =>
@@ -167,18 +382,9 @@ export function Offers() {
         (o.brand?.name ?? '').toLowerCase().includes(needle) ||
         (o.description ?? '').toLowerCase().includes(needle)
     );
-  }, [offers, search]);
+  }, [offers, query]);
 
-  /*
-   * THE GROUPS, AND THEIR COUNTS, FROM THE LIST ON SCREEN.
-   *
-   * Counted after the search rather than before it, which is the opposite of
-   * what the chips did. A chip's count had to describe the whole list, because
-   * a count that changed when she changed chip would be counting what she could
-   * already see. A HEADING is different: it labels the rows directly beneath
-   * it, so "Open to apply for 3" under a search for "serum" has to mean three
-   * matching offers or it is simply wrong.
-   */
+  /* Counted AFTER the search: a heading labels the rows beneath it. */
   const groups = useMemo(() => {
     const byKey = new Map<string, CreatorOfferRow[]>(GROUPS.map((g) => [g.key, []]));
     for (const offer of shown) {
@@ -191,83 +397,67 @@ export function Offers() {
     );
   }, [shown, latest]);
 
+  const line = (text: string) => (
+    <p className="text-muted max-w-prose px-1 text-[0.9375rem] leading-relaxed">{text}</p>
+  );
+
   return (
     <>
-      {!approved ? (
-        <LockedUntilApproved className="mt-6" />
+      {isLoading ? (
+        <EarnPanel className="mt-2">
+          <EarnGrid min="20rem">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <EarnTileSkeleton key={i} className="h-[14rem]" />
+            ))}
+          </EarnGrid>
+        </EarnPanel>
+      ) : isError ? (
+        <DataError
+          className="mt-2"
+          title="We could not load the offers"
+          body="Try again in a moment."
+          onRetry={refetch}
+        />
+      ) : groups.length === 0 ? (
+        line(
+          (offers ?? []).length === 0
+            ? 'No offers right now.'
+            : 'Nothing matches that.'
+        )
       ) : (
         /*
-          ONE BLURRED PANEL FOR THE WHOLE SCREEN: the search and every group
-          live inside it, and every card in it is `wx-neo-raised-sm`. That is
-          Layer B of the three-layer blur budget — the top bar is A, a dialog is
-          C. See `src/components/creator/earn/EarnPanel.tsx`.
+          ONE BLURRED PANEL FOR THE SECTION: every card in it is
+          `wx-neo-raised-sm`. Layer B of the blur budget (see EarnPanel).
         */
-        <EarnPanel>
-          <EarnFilters>
-            <CreatorSearch
-              value={search}
-              onChange={setSearch}
-              placeholder="Search offers or brands"
-              label="Search offers or brands"
-            />
-          </EarnFilters>
-
-          {isLoading ? (
-            <EarnGrid min="20rem">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <EarnTileSkeleton key={i} className="h-[14rem]" />
-              ))}
-            </EarnGrid>
-          ) : isError ? (
-            <DataError
-              className="mt-4"
-              title="We could not load the offers"
-              body="That is on our side, not yours. Nothing is lost, and trying again usually works."
-              onRetry={() => refetch()}
-            />
-          ) : groups.length === 0 ? (
-            <EmptyState
-              className="mt-4"
-              title={
-                (offers ?? []).length === 0
-                  ? 'Nothing to apply for right now'
-                  : 'Nothing matches that'
-              }
-              body={
-                (offers ?? []).length === 0
-                  ? 'New offers land here.'
-                  : 'Try a different search. Offers, brands and the text of an offer are all searched.'
-              }
-            />
-          ) : (
-            groups.map((group) => (
-              <EarnGroup
-                key={group.key}
-                title={group.title}
-                count={group.offers.length}
-                note={group.note}
-              >
-                <EarnGrid min="20rem">
-                  {group.offers.map((offer, i) => (
-                    <TileIn key={offer.id} index={i}>
-                      <OfferCard
-                        offer={offer}
-                        request={latest.get(offer.id)}
-                        progress={progress?.get(latest.get(offer.id)?.id ?? '')}
-                        showBrand
-                        onApply={() => setApplyingTo(offer)}
-                      />
-                    </TileIn>
-                  ))}
-                </EarnGrid>
-              </EarnGroup>
-            ))
-          )}
+        <EarnPanel className="mt-2">
+          {groups.map((group) => (
+            <EarnGroup
+              key={group.key}
+              title={group.title}
+              count={group.offers.length}
+              note={group.note}
+            >
+              <EarnGrid min="20rem">
+                {group.offers.map((offer, i) => (
+                  <TileIn key={offer.id} index={i}>
+                    <OfferCard
+                      offer={offer}
+                      request={latest.get(offer.id)}
+                      progress={progress?.get(latest.get(offer.id)?.id ?? '')}
+                      showBrand
+                      grouped
+                      onApply={() => setApplyingTo(offer)}
+                    />
+                  </TileIn>
+                ))}
+              </EarnGrid>
+            </EarnGroup>
+          ))}
         </EarnPanel>
       )}
 
       {/* Layer C, and only while it is open: a bottom sheet on a phone and a
-          centred dialog above `sm`, exactly as it was. */}
+          centred dialog above `sm`. */}
       {applyingTo ? (
         <ApplyDialog
           offer={applyingTo}

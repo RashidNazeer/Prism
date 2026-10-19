@@ -66,7 +66,7 @@ export function OAuthTikTokCreatorCallback() {
 
     if (!code || !state) {
       setPhase('failed');
-      setMessage('That link is missing something. Start again from your profile.');
+      setMessage('That link is incomplete.');
       return;
     }
 
@@ -103,7 +103,7 @@ export function OAuthTikTokCreatorCallback() {
         setHandle(r.displayName);
         setPhase('done');
         // Straight back to where they started, once they have read it.
-        setTimeout(() => navigate('/app/profile', { replace: true }), 1600);
+        setTimeout(() => navigate('/app', { replace: true }), 1600);
       })
       .catch((e: Error) => {
         setPhase('failed');
@@ -122,18 +122,12 @@ export function OAuthTikTokCreatorCallback() {
           <>
             <Loader2 size={26} aria-hidden className="text-accent mx-auto mt-6 animate-spin" />
             <p className="mt-4 font-semibold">Linking your TikTok account</p>
-            <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
-              One moment. Do not close this window.
-            </p>
           </>
         ) : phase === 'done' ? (
           <>
             <CheckCircle2 size={26} aria-hidden className="text-success mx-auto mt-6" />
             <p className="mt-4 font-semibold">
               {handle ? `Connected as ${handle}` : 'TikTok connected'}
-            </p>
-            <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">
-              Taking you back to your profile.
             </p>
           </>
         ) : (
@@ -142,10 +136,10 @@ export function OAuthTikTokCreatorCallback() {
             <p className="mt-4 font-semibold">That did not work</p>
             <p className="text-muted mt-2 text-[0.875rem] leading-relaxed">{message}</p>
             <Link
-              to="/app/profile"
+              to="/app"
               className="wx-neo-raised-sm wx-neo-press hover:text-accent mt-6 inline-flex rounded-md px-4 py-2 text-[0.875rem] font-semibold transition-colors"
             >
-              Back to your profile
+              Back to Prism
             </Link>
           </>
         )}

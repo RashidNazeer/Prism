@@ -56,7 +56,7 @@ export function PipelineWidget({ summary }: { summary: WorkSummary }) {
     );
 
   return (
-    <section className="wx-neo-raised rounded-xl p-4">
+    <section className="wx-neo-raised-sm rounded-xl p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-text text-sm font-semibold">
           Your pipeline

@@ -1,5 +1,7 @@
 ﻿import { useMemo, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { useSearchParams } from 'react-router';
+import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { ContestDashboard } from '@/components/creator/ContestDashboard';
 import { LockedUntilApproved } from '@/components/creator/LockedUntilApproved';
@@ -120,6 +122,9 @@ import {
  * drawn by the top bar, so it costs no vertical space here; inside a hub the
  * rail names the section instead.
  */
+/** Contests beyond which a search box earns its place. */
+const SEARCH_AFTER = 8;
+
 export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
   const { claims } = useAuth();
   const { data: profile } = useProfile();
@@ -135,30 +140,6 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
    */
   const isCreator = role === 'creator';
 
-  /* Two views, and the choice lives in the URL, which is the house pattern. */
-  const [params, setParams] = useSearchParams();
-  const view = params.get('view') === 'progress' ? 'progress' : 'contests';
-  const setView = (next: 'contests' | 'progress') =>
-    setParams(
-      (p) => {
-        const q = new URLSearchParams(p);
-        if (next === 'progress') q.set('view', 'progress');
-        else q.delete('view');
-        return q;
-      },
-      { replace: true }
-    );
-
-  const [search, setSearch] = useState('');
-  const [entering, setEntering] = useState<CreatorContest | null>(null);
-  /*
-   * The contest whose progress panel is open, held as the contest rather than
-   * as an id, so the panel can be titled and priced without reaching back into
-   * the list for a row that may have been refetched underneath it.
-   */
-  const [updating, setUpdating] = useState<CreatorContest | null>(null);
-
-  const now = useNow();
   /*
    * Her claimed and confirmed figures ride along with her entries, in the same
    * query, because they are the same question: what is true about my own
@@ -174,6 +155,78 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
       queryClient.invalidateQueries({ queryKey: ['creator', 'contest-entries'] }),
     ]);
 
+  return (
+    <ContestsView
+      approved={approved}
+      isCreator={isCreator}
+      contests={contests}
+      isLoading={isLoading}
+      isError={isError}
+      retry={retry}
+    />
+  );
+}
+
+/**
+ * THE SCREEN ITSELF, with its data handed in. `Contests` fetches; this draws.
+ * Split so `/dev/contests` can render the REAL layout against fixtures, which
+ * is the only way anybody without a login can look at it.
+ */
+export function ContestsView({
+  approved,
+  isCreator,
+  contests,
+  isLoading,
+  isError,
+  retry,
+  embedded = false,
+  query = '',
+}: {
+  approved: boolean;
+  isCreator: boolean;
+  contests: CreatorContest[];
+  isLoading: boolean;
+  isError: boolean;
+  retry: () => void | Promise<unknown>;
+  /**
+   * Drawn as a SECTION of the merged Earn page (`/app/offers`) rather than as
+   * a page. The page owns the heading, the one search box (`query`) and the
+   * approval gate, so here there is no view switch and no search field, an empty
+   * list is one line with no panel, and "My progress" is a disclosure under the
+   * list instead of a second view. The Brand hub passes nothing and gets the
+   * stand-alone screen exactly as before: ONE implementation.
+   */
+  embedded?: boolean;
+  query?: string;
+}) {
+  /* Two views, and the choice lives in the URL, which is the house pattern. */
+  const [params, setParams] = useSearchParams();
+  const wantsProgress = params.get('view') === 'progress';
+  const setView = (next: 'contests' | 'progress') =>
+    setParams(
+      (p) => {
+        const q = new URLSearchParams(p);
+        if (next === 'progress') q.set('view', 'progress');
+        else q.delete('view');
+        return q;
+      },
+      { replace: true }
+    );
+
+  const [search, setSearch] = useState('');
+  /* `?view=progress` (old links, notifications) opens her progress. */
+  const [progressOpen, setProgressOpen] = useState(() => params.get('view') === 'progress');
+  const [entering, setEntering] = useState<CreatorContest | null>(null);
+  /*
+   * The contest whose progress panel is open, held as the contest rather than
+   * as an id, so the panel can be titled and priced without reaching back into
+   * the list for a row that may have been refetched underneath it.
+   */
+  const [updating, setUpdating] = useState<CreatorContest | null>(null);
+
+  const now = useNow();
+  const searchable = contests.length > SEARCH_AFTER;
+
   /**
    * THE SEARCH, AND NOTHING ELSE.
    *
@@ -185,7 +238,7 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
    * deadline-first order.
    */
   const shown = useMemo(() => {
-    const needle = search.trim().toLowerCase();
+    const needle = embedded ? query.trim().toLowerCase() : searchable ? search.trim().toLowerCase() : '';
     if (!needle) return contests;
     return contests.filter(
       (c) =>
@@ -193,7 +246,7 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
         (c.brand?.name ?? '').toLowerCase().includes(needle) ||
         (c.description ?? '').toLowerCase().includes(needle)
     );
-  }, [contests, search]);
+  }, [contests, search, searchable, embedded, query]);
 
   /*
    * THE FOUR GROUPS, and the lines that carry rule 1 above.
@@ -219,7 +272,6 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
    * tile offers "Ask again".
    */
   const entries = shown.filter((c) => isLiveForThem(c));
-  const waiting = entries.filter((c) => entryStateOf(c) === 'waiting').length;
   const open = shown.filter((c) => !isLiveForThem(c) && doorOf(c, now) === 'open');
   const openToJoin = open.filter((c) => entryStateOf(c) !== 'declined');
   const declined = open.filter((c) => entryStateOf(c) === 'declined');
@@ -243,6 +295,25 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
    */
   const celebrating = useContestWin(contests);
 
+  /*
+   * LESS CONTROL WHEN THERE IS LESS TO CONTROL (page plan 2026-10-19).
+   *
+   *   - "My progress" exists only if she holds an entry. A switch between the
+   *     list and a summary of nothing is a button with nothing behind it, and
+   *     a stale `?view=progress` link falls back to the list rather than to an
+   *     empty dashboard. While loading we trust the URL so a reload does not
+   *     flash the wrong view.
+   *   - The search box exists only above eight contests.
+   *   - With no contests at all the page is ONE SENTENCE and no controls.
+   *
+   * The ORDER of the list is still the database's (deadline first); nothing in
+   * here sorts it.
+   */
+  const hasEntry = contests.some((c) => isLiveForThem(c));
+  const view: 'contests' | 'progress' =
+    !embedded && wantsProgress && (isLoading || hasEntry) ? 'progress' : 'contests';
+  const nothingAtAll = !isLoading && !isError && contests.length === 0;
+
   const tile = (contest: CreatorContest, i: number) => (
     <TileIn key={contest.id} index={i}>
       <ContestTile
@@ -259,6 +330,14 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
     <>
       {!approved ? (
         <LockedUntilApproved className="mt-6" />
+      ) : nothingAtAll ? (
+        <p className={cn('text-muted max-w-prose px-1 text-[0.9375rem] leading-relaxed', !embedded && 'mt-6')}>
+          No contests right now.
+        </p>
+      ) : embedded && !isLoading && !isError && shown.length === 0 ? (
+        <p className="text-muted max-w-prose px-1 text-[0.9375rem] leading-relaxed">
+          Nothing matches that.
+        </p>
       ) : view === 'progress' ? (
         <>
           <ViewSwitch view={view} onChange={setView} />
@@ -274,7 +353,7 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
             <DataError
               className="mt-4"
               title="We could not load your progress"
-              body="That is on our side, not yours. Your figures are safe with the team."
+              body="Try again in a moment."
               onRetry={retry}
             />
           ) : (
@@ -283,24 +362,26 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
         </>
       ) : (
         <>
-          <ViewSwitch view={view} onChange={setView} />
+          {hasEntry && !embedded ? <ViewSwitch view={view} onChange={setView} /> : null}
 
           {/*
             ONE BLURRED PANEL FOR THE WHOLE SCREEN. The controls and all three
             groups live inside it, and every tile in it is `wx-neo-raised-sm`:
             the same material with no blur. See `EarnPanel` for why.
           */}
-          <EarnPanel>
+          <EarnPanel className={embedded ? 'mt-2' : undefined}>
             {/* ONE CONTROL IN HERE NOW. The chips and the brand dropdown are
                 gone; the groups below do their work without being asked. */}
-            <EarnFilters>
-              <CreatorSearch
-                value={search}
-                onChange={setSearch}
-                placeholder="Search contests or brands"
-                label="Search contests or brands"
-              />
-            </EarnFilters>
+            {searchable && !embedded ? (
+              <EarnFilters>
+                <CreatorSearch
+                  value={search}
+                  onChange={setSearch}
+                  placeholder="Search contests or brands"
+                  label="Search contests or brands"
+                />
+              </EarnFilters>
+            ) : null}
 
             {isLoading ? (
               <EarnGrid>
@@ -312,21 +393,21 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
               <DataError
                 className="mt-4"
                 title="We could not load the contests"
-                body="That is on our side, not yours. Nothing you have entered or earned is lost."
+                body="Try again in a moment."
                 onRetry={retry}
               />
             ) : shown.length === 0 ? (
               contests.length === 0 ? (
                 <EmptyState
                   className="mt-4"
-                  title="No contests open right now"
-                  body="A contest has a deadline and rewards for hitting targets. When a brand you work with runs one, it lands here."
+                  title="No contests right now"
+                  body=""
                 />
               ) : (
                 <EmptyState
                   className="mt-4"
                   title="Nothing matches that"
-                  body="Try a different search. A contest's name, its brand and its description are all searched."
+                  body=""
                 />
               )
             ) : (
@@ -348,13 +429,6 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
                   <EarnGroup
                     title="Your entries"
                     count={entries.length}
-                    note={
-                      waiting === 0
-                        ? undefined
-                        : waiting === entries.length
-                          ? 'Waiting on the team to let you in. The answer lands here on its own, no refresh needed.'
-                          : `${waiting} of these ${waiting === 1 ? 'is' : 'are'} still waiting on the team.`
-                    }
                   >
                     <EarnGrid>{entries.map(tile)}</EarnGrid>
                   </EarnGroup>
@@ -372,7 +446,6 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
                   <EarnGroup
                     title="Declined"
                     count={declined.length}
-                    note="Not taken forward this time. These are still open, so you can ask again on any of them."
                   >
                     <EarnGrid>{declined.map(tile)}</EarnGrid>
                   </EarnGroup>
@@ -387,15 +460,37 @@ export function Contests({ hubBrandId }: { hubBrandId?: string } = {}) {
                 */}
                 {shut.length > 0 ? (
                   <EarnGroup
-                    title="Closed, and you were not in these"
+                    title="Closed"
                     count={shut.length}
-                    note="Their door has shut and you are not in them, so there is nothing to do here."
                   >
                     <EarnGrid>{shut.map(tile)}</EarnGrid>
                   </EarnGroup>
                 ) : null}
               </>
             )}
+
+            {/* MY PROGRESS, only if she holds an entry, one tap down. The
+                dashboard mounts only when opened, so a closed section costs
+                nothing, and it is drawn flat (no blur) inside this panel. */}
+            {embedded && hasEntry && !isLoading && !isError ? (
+              <details
+                className="group border-line mt-4 border-t pt-1"
+                open={progressOpen}
+                onToggle={(e) => setProgressOpen(e.currentTarget.open)}
+              >
+                <summary className="text-muted hover:text-text flex min-h-[2.75rem] cursor-pointer list-none items-center gap-1.5 px-1 text-[0.8125rem] font-semibold marker:content-none sm:min-h-[2.25rem] pointer-coarse:min-h-[2.75rem] [&::-webkit-details-marker]:hidden">
+                  <ChevronDown
+                    size={14}
+                    aria-hidden
+                    className="shrink-0 transition-transform duration-200 group-open:rotate-180"
+                  />
+                  My progress
+                </summary>
+                <div className="pb-1">
+                  <ContestDashboard contests={contests} flat />
+                </div>
+              </details>
+            ) : null}
           </EarnPanel>
         </>
       )}

@@ -53,15 +53,6 @@ export function AnonymousStanding({
           #{standing.videoPlace}
         </span>
       </p>
-      {/*
-        The promise, in words, for somebody reading rather than glancing. It is
-        literally true: there is no column here that names anybody, and
-        `set_contest_entry_target` writes no audit row for the same reason.
-      */}
-      <p className="text-faint basis-full text-[0.6875rem] leading-snug">
-        Ranked on confirmed figures only, so it moves when the team confirms a claim. Nobody can
-        see who anybody else is, and neither can you.
-      </p>
     </div>
   );
 }

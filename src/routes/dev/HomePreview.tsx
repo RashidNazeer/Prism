@@ -137,7 +137,8 @@ function mock(kind: 'full' | 'empty' | 'gaps'): HomeData {
           },
           {
             item_id: '3',
-            video_title: 'Evening skincare unboxing',
+            video_title: null,
+            submitted_at: '2026-10-03T10:00:00Z',
             brand_name: 'Rare Beauty',
             gross_revenue: 5300,
             cost: 180,

@@ -143,7 +143,6 @@ const SCREENS = [
     expect: /^application$/i,
   },
   { path: '/app', name: 'Creator home', expect: /joining|welcome to wurx|not this time/i, as: 'creator' },
-  { path: '/app/profile', name: 'Creator profile', expect: /my profile/i, as: 'creator' },
   { path: '/app/brands', name: 'Creator brand hubs', expect: /brand hubs/i, as: 'creator' },
   { path: '/app/offers', name: 'Creator offers', expect: /everything on the table/i, as: 'creator' },
   {

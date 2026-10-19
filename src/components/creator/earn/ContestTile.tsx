@@ -149,7 +149,7 @@ export function ContestTile({
         {door === 'open' ? (
           <p className="text-faint text-[0.75rem]">
             {timeLeft(contest.expiresAt, now)}
-            {contest.needsAdminApproval ? ' · the Wurx team approves entries' : ''}
+            {contest.needsAdminApproval ? ' · approval needed' : ''}
           </p>
         ) : null}
 
@@ -159,9 +159,7 @@ export function ContestTile({
             {filmed.label !== null ? (
               <MiniBar share={filmed.share} label={filmed.label} tone="paid" />
             ) : (
-              <p className="text-muted text-[0.75rem]">
-                No fixed number of videos was agreed, so there is no bar to draw.
-              </p>
+              null
             )}
             <AnonymousStanding contestId={contest.id} />
           </div>

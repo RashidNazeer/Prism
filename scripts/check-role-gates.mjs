@@ -151,8 +151,8 @@ for (const n of all) {
 check(lagging.length === 0, 'every Edge Function that admits ops admits every staff role',
   lagging.join(' · ') || 'all agree');
 
-/* ── and the card must never print a server string at a person ───────── */
-const card = readFileSync('src/components/creator/TikTokConnection.tsx', 'utf8');
+/* ── and the account menu (it replaced the Profile TikTok card) must never print a server string at a person ───────── */
+const card = readFileSync('src/components/creator/account/AccountMenu.tsx', 'utf8');
 check(!/\{\(act\.error as Error\)\.message\}/.test(card),
   'the TikTok card does not print a raw server error');
 check(/function humanError/.test(card),

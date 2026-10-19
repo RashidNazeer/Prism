@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { ArrowRight, Check, ChevronDown, Clock, Store, X } from 'lucide-react';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { StageTracker } from '@/components/creator/StageTracker';
@@ -6,11 +6,11 @@ import { JobProgressBar } from '@/components/work/JobProgress';
 import { BrandChip, Note, StatusPill, type PillTone } from '@/components/creator/earn/EarnBits';
 import { Linkify } from '@/components/creator/earn/Linkify';
 import { OfferDetails } from '@/components/creator/earn/OfferDetails';
-import { formatAmount, perVideoOf } from '@/components/creator/earn/offer-money';
+import { formatAmount, mentionsMoney, offerName } from '@/components/creator/earn/offer-money';
 import { cn } from '@/lib/utils';
 import { STAGE_META, stageTextTone } from '@/lib/offer-stages';
 import { useApplyForOffer, type MyOfferApplication } from '@/lib/creator/useOfferApplications';
-import { needsFilming, type JobProgress } from '@/lib/work/job-progress';
+import { needsFilming, progressSentence, type JobProgress } from '@/lib/work/job-progress';
 
 /**
  * One offer, as a creator sees it. ONE component, used by both screens.
@@ -122,6 +122,7 @@ export function OfferCard({
   request,
   progress,
   showBrand = false,
+  grouped = false,
   onApply,
 }: {
   offer: OfferCardOffer;
@@ -131,6 +132,12 @@ export function OfferCard({
   progress: JobProgress | undefined;
   /** The brand row, for the list. Inside a hub it is noise. */
   showBrand?: boolean;
+  /**
+   * The card sits under a heading that already names its state ("Accepted",
+   * "Declined"), so the pill would say it a second time. The hub's flat list
+   * passes nothing and keeps the pill.
+   */
+  grouped?: boolean;
   onApply: () => void;
 }) {
   /*
@@ -145,8 +152,6 @@ export function OfferCard({
   const videoCount = agreed ? request.committed_video_count : offer.video_count;
   const rewardAmount = agreed ? request.committed_amount : offer.reward_amount;
   const currency = agreed ? request.currency : offer.currency;
-
-  const perVideo = perVideoOf(rewardAmount, videoCount);
 
   const pill = pillFor(offer, request);
 
@@ -218,7 +223,7 @@ export function OfferCard({
             the one thing a creator would notice, so `pillFor` is driven by the
             same branch order as `stateFor`.
           */}
-          <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
+          {grouped ? null : <StatusPill tone={pill.tone}>{pill.label}</StatusPill>}
         </div>
 
         {/* ------------------------------------- image, title and rate -- */}
@@ -227,7 +232,7 @@ export function OfferCard({
 
           <div className="min-w-0 flex-1">
             <h3 className="font-display text-text text-[1rem] leading-snug font-semibold tracking-[-0.01em] break-words">
-              {offer.title}
+              {offerName(offer.title)}
             </h3>
 
             {/*
@@ -253,16 +258,11 @@ export function OfferCard({
                 </span>
               ) : null}
             </p>
-            {perVideo !== null ? (
-              <p className="text-faint mt-1 text-[0.6875rem]">
-                {formatAmount(perVideo, currency)} per video
-              </p>
-            ) : null}
           </div>
         </div>
 
         {/* ------------------------------------------ one line summary -- */}
-        {offer.description ? (
+        {offer.description && !agreed && !mentionsMoney(offer.description) ? (
           <p className="text-muted line-clamp-1 text-[0.8125rem] leading-relaxed">
             {offer.description}
           </p>
@@ -313,11 +313,12 @@ export function OfferCard({
             aria-hidden
             className="shrink-0 transition-transform duration-200 group-open:rotate-180"
           />
-          <span className="group-open:hidden">Full campaign details</span>
-          <span className="hidden group-open:inline">Hide the detail</span>
+          <span className="group-open:hidden">Details</span>
+          <span className="hidden group-open:inline">Hide details</span>
         </summary>
         {detailsOpen ? (
           <div className="border-line border-t p-3.5">
+            {agreed ? <AgreedProgress request={request} progress={progress} /> : null}
             <OfferDetails
               offer={offer}
               agreed={agreed ? request : null}
@@ -428,11 +429,14 @@ function YourRequest({ request }: { request: MyOfferApplication }) {
 }
 
 /**
- * Where an accepted job has got to: the stage, the tracker, and the bar.
+ * Where an accepted job has got to, on the card face: ONE line naming the stage
+ * and ONE quieter line under it. The fee is not here, because it is already the
+ * large figure above; printing it a second time beside "You are in" was the
+ * complaint. The seven-step tracker and the progress bar moved into the
+ * disclosure (`AgreedProgress`), where they are one tap away.
  *
- * SEPARATE FROM THE ACTION BELOW IT, because they answer different questions.
- * This is "what is happening"; the button is "what do I do". They used to be
- * one block, which is why the button was buried under three of these.
+ * "You are in" and "Paid out" are fixed points for
+ * `scripts/check-offer-requests.mjs`, so they stay as the first words.
  */
 function AgreedBody({
   request,
@@ -442,43 +446,46 @@ function AgreedBody({
   progress: JobProgress | undefined;
 }) {
   const stage = request.stage ?? 'pending_request';
+  const paid = stage === 'paid';
+  /* While work is being filmed the useful second line is how many are done; in
+     every other stage it is what happens next. Never both. */
+  const filming = stage === 'content_pending' || stage === 'content_completed';
+  const second =
+    filming && progress && progress.required !== null
+      ? progressSentence(progress)
+      : paid
+        ? 'Nothing left to do on this one.'
+        : STAGE_META[stage].creatorHint;
 
   return (
-    <div className="border-line flex flex-col gap-2.5 border-t pt-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <span
-          className={cn(
-            'text-[0.8125rem] font-semibold',
-            stage === 'paid' && 'text-stage-paid'
-          )}
-        >
-          {stage === 'paid' ? 'Paid out' : 'You are in'}
-        </span>
-        {request.committed_amount != null ? (
-          <span
-            className={cn(
-              'font-display wx-numeric text-[0.875rem] font-semibold',
-              stageTextTone(stage)
-            )}
-          >
-            {formatAmount(request.committed_amount, request.currency)}
-          </span>
-        ) : null}
-      </div>
-      <p className="text-muted text-[0.8125rem] leading-relaxed">
-        {STAGE_META[stage].creatorHint}
+    <div className="border-line flex flex-col gap-1 border-t pt-3">
+      <p className={cn('text-[0.8125rem] font-semibold', stageTextTone(stage))}>
+        {paid ? 'Paid out' : `You are in · ${STAGE_META[stage].label}`}
       </p>
-
-      <StageTracker stage={stage} />
-
-      {progress ? <JobProgressBar progress={progress} compact /> : null}
+      <p className="text-muted text-[0.8125rem] leading-relaxed">{second}</p>
 
       {/* What the team wrote back, with any link in it live. */}
       {request.decision_note ? (
-        <p className="text-muted text-[0.8125rem] leading-relaxed whitespace-pre-line">
+        <p className="text-muted mt-1 text-[0.8125rem] leading-relaxed whitespace-pre-line">
           <Linkify text={request.decision_note} />
         </p>
       ) : null}
+    </div>
+  );
+}
+
+/** The tracker and the bar, one tap down. Only mounts once the disclosure opens. */
+function AgreedProgress({
+  request,
+  progress,
+}: {
+  request: MyOfferApplication;
+  progress: JobProgress | undefined;
+}) {
+  return (
+    <div className="border-line mb-3.5 flex flex-col gap-3 border-b pb-3.5">
+      <StageTracker stage={request.stage ?? 'pending_request'} />
+      {progress ? <JobProgressBar progress={progress} compact /> : null}
     </div>
   );
 }
@@ -546,8 +553,7 @@ function OfferAction({
             those are exactly what was asked for, so there is nothing to repeat
             here. */}
         <Note tone="waiting" icon={<Clock size={15} />}>
-          <span className="font-semibold">With the team.</span> The answer appears here, no
-          refresh needed.
+          <span className="font-semibold">With the team.</span>
         </Note>
         <Button
           variant="ghost"
@@ -586,8 +592,7 @@ function OfferAction({
   if (!offer.needs_application) {
     return (
       <Note tone="live" icon={<Check size={15} />}>
-        <span className="font-semibold">You are already on this one.</span> It is yours to take.
-        Nothing to apply for.
+        <span className="font-semibold">You are already on this one.</span>
       </Note>
     );
   }
@@ -614,8 +619,7 @@ function OfferAction({
               team did not take it forward; `decision_note` below is the only
               place a reason can come from. "It went to somebody else" would be
               a guess about a row that does not say so. */}
-          <span className="font-semibold">Not this time.</span> The team did not take this one
-          forward. Nothing else you have asked for is affected, and you can ask again.
+          <span className="font-semibold">Not this time.</span>
           {request.decision_note ? (
             <span className="mt-1.5 block font-medium whitespace-pre-line">
               <Linkify text={request.decision_note} />

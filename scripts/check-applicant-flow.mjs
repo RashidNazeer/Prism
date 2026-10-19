@@ -50,14 +50,18 @@ try {
   await page.waitForURL((u) => !/login/.test(String(u)), { timeout: 40000 }).catch(() => {});
   console.log('landed on: ' + page.url());
 
-  await page.goto(`${BASE}/app/profile`, { waitUntil: 'domcontentloaded' });
+  // The TikTok connection lives in the account menu, opened from the sidebar's
+  // user chip (the Profile page is gone).
+  await page.goto(`${BASE}/app`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(9000);
+  await page.locator('[data-account-chip]:visible').first().click().catch(() => {});
+  await page.waitForTimeout(1500);
 
   const card = await page.evaluate(() => {
     const t = document.body.innerText;
     const btn = [...document.querySelectorAll('button')].find((b) => /connect tiktok/i.test(b.textContent || ''));
     return {
-      hasCard: /Your TikTok account/i.test(t),
+      hasCard: !!document.querySelector('[role=dialog][aria-label="Your account"] section[aria-label="TikTok"]'),
       hasButton: !!btn,
       rawNotAllowed: /Not allowed/i.test(t),
       alert: (document.querySelector('[role=alert]') || {}).textContent || null,

@@ -73,7 +73,7 @@ export function ContestTileAction({
         */}
         {open && door !== 'open' ? (
           <Note tone="quiet">
-            Closed to new entries. Your work still pays exactly what you were promised.
+            Closed to new entries. Your work still pays what you were promised.
           </Note>
         ) : null}
 
@@ -90,8 +90,8 @@ export function ContestTileAction({
         ) : (
           <Note tone="quiet">
             {door === 'cancelled'
-              ? 'This contest was called off. Nothing you were promised is taken away.'
-              : 'This one has been settled. Your outcome is on your entry.'}
+              ? 'Called off.'
+              : 'Settled.'}
           </Note>
         )}
         {contest.cancelMessage ? (
@@ -110,8 +110,7 @@ export function ContestTileAction({
     return (
       <div className="flex flex-col gap-2">
         <Note tone="waiting" icon={<Clock size={15} />}>
-          <span className="font-semibold">With the team.</span> Somebody is reading your entry.
-          The answer appears here, no refresh needed.
+          <span className="font-semibold">With the team.</span>
         </Note>
         <Button
           variant="ghost"
@@ -151,7 +150,7 @@ export function ContestTileAction({
     return (
       <div className="flex flex-col gap-2">
         <Note tone="quiet" icon={<Check size={15} />}>
-          You pulled out of this one.
+          You pulled out.
         </Note>
         {door === 'open' && canEnterAtAll ? (
           <Button variant="secondary" size="sm" className="self-start" onClick={onEnter}>
@@ -168,10 +167,10 @@ export function ContestTileAction({
     return (
       <Note tone="quiet">
         {door === 'cancelled'
-          ? 'This contest was called off.'
+          ? 'Called off.'
           : door === 'settled'
-            ? 'This one is over and has been settled.'
-            : 'Entries are closed on this one.'}
+            ? 'Settled.'
+            : 'Entries closed.'}
       </Note>
     );
   }
@@ -184,7 +183,7 @@ export function ContestTileAction({
   if (!canEnterAtAll) {
     return (
       <Note tone="quiet">
-        This is the creator view. Entering a contest is something only a creator account does.
+        Creator accounts only.
       </Note>
     );
   }
@@ -311,10 +310,6 @@ export function TargetControl({
       >
         Your own target
       </label>
-      <p className="text-faint mt-1 text-[0.75rem] leading-relaxed">
-        How many approved videos you are going for. Nobody else sees this, not even the team, and
-        you can change it any time.
-      </p>
       <div className="wx-tap-row mt-2.5 flex flex-wrap items-center gap-2">
         <Input
           id={`target-${entryId}`}

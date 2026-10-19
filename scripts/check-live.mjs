@@ -279,7 +279,7 @@ try {
     await hub.goto(`${BASE}/app/brands/${slug}`, { waitUntil: 'domcontentloaded' });
     await hub
       .locator('main')
-      .getByText('What they sell')
+      .getByText('Products')
       .first()
       .waitFor({ timeout: 20000 })
       .catch(() => {});

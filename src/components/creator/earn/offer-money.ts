@@ -1,4 +1,4 @@
-import { money } from '@/lib/money';
+import { exactMoney } from '@/components/charts';
 
 /**
  * The money on an offer, formatted the one way.
@@ -25,7 +25,30 @@ export function formatAmount(value: string | number | null, currency: string | n
       ? n.toLocaleString(undefined, { maximumFractionDigits: n % 1 === 0 ? 0 : 2 })
       : 'To confirm';
   }
-  return money(value, currency);
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 'To confirm';
+  // The ONE formatter. `money()` from lib/money renders "US$360" in an en-GB
+  // browser while the Content page, on exactMoney, says "$435" - a bug.
+  return exactMoney(n, currency);
+}
+
+/**
+ * The offer's name without the deal baked into it.
+ *
+ * Titles are written as "Swisse retainer, 8 videos, $360 at $45 a video", which
+ * prints the fee a second time beside the large figure. The tail is stripped
+ * only when it matches that exact shape; any other title is shown untouched.
+ */
+export function offerName(title: string): string {
+  const stripped = title
+    .replace(/,\s*\d+\s+videos?\s*,\s*\S+\s+at\s+\S+\s+(?:a|per)\s+video\s*$/i, '')
+    .trim();
+  return stripped.length > 0 ? stripped : title;
+}
+
+/** Whether a sentence quotes an amount, so the card face does not repeat it. */
+export function mentionsMoney(text: string): boolean {
+  return /[$£€¥₹]\s?\d/.test(text);
 }
 
 /**

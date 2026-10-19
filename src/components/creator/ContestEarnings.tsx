@@ -92,10 +92,6 @@ export function ContestEarnings() {
         this the two cards are just two cards, and the day one figure is quoted
         on a call as "what Wurx owes me" it will be the wrong one.
       */}
-      <p className="text-faint max-w-prose text-[0.75rem] leading-relaxed">
-        Contest rewards are their own pot. They are not part of the offer money above, and the
-        two are never added together.
-      </p>
     </section>
   );
 }

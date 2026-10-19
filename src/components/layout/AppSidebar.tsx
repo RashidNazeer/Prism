@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router';
 import { ChevronLeft, ChevronRight, LogOut, Plus, X } from 'lucide-react';
 import { PrismMark } from '@/components/brand/PrismMark';
 import { prefetchRoute } from '@/app/router';
+import { openAccountMenu } from '@/lib/account-menu';
 import { cn } from '@/lib/utils';
 import { isNavItemActive, navForRole, type NavItem } from '@/lib/nav';
 import { useWurxbaseIdentity } from '@/lib/useWurxbaseIdentity';
@@ -67,6 +68,7 @@ export function AppSidebar({
   onClose,
   onToggleCollapse,
   collapsed = false,
+  accountMenu = false,
 }: {
   role: AppRole | undefined;
   name: string | null;
@@ -79,6 +81,11 @@ export function AppSidebar({
   /** Present only on the desktop rail. Makes the mark collapse the rail. */
   onToggleCollapse?: () => void;
   collapsed?: boolean;
+  /**
+   * Creators and applicants only. Turns the user chip into the button that opens
+   * the account menu. Left false for staff, whose chip is exactly as it was.
+   */
+  accountMenu?: boolean;
 }) {
   const { pathname } = useLocation();
   /* Paid Collabs rows are drawn from the person's OWN WurxBase permissions
@@ -340,13 +347,30 @@ export function AppSidebar({
            * tap floor, so the column reads as one stack.
            */
           <div className="grid justify-items-center gap-2">
-            <p
-              title={`${name || 'Signed in'}${email ? ` (${email})` : ''}`}
-              /* Avatar = FILL. His colour, ink initial. See CreatorFace. */
-              className="grid size-11 place-items-center rounded-full [background-color:var(--wx-accent-fill)] font-mono text-[0.8125rem] font-bold [color:var(--wx-on-accent-fill)] uppercase"
-            >
-              {initial}
-            </p>
+            {accountMenu ? (
+              <button
+                type="button"
+                data-account-chip
+                aria-haspopup="dialog"
+                onClick={() => {
+                  onNavigate?.();
+                  openAccountMenu();
+                }}
+                title={`${name || 'Your account'}${email ? ` (${email})` : ''}`}
+                className="grid size-11 place-items-center rounded-full [background-color:var(--wx-accent-fill)] font-mono text-[0.8125rem] font-bold [color:var(--wx-on-accent-fill)] uppercase"
+              >
+                {initial}
+                <span className="sr-only">Your account</span>
+              </button>
+            ) : (
+              <p
+                title={`${name || 'Signed in'}${email ? ` (${email})` : ''}`}
+                /* Avatar = FILL. His colour, ink initial. See CreatorFace. */
+                className="grid size-11 place-items-center rounded-full [background-color:var(--wx-accent-fill)] font-mono text-[0.8125rem] font-bold [color:var(--wx-on-accent-fill)] uppercase"
+              >
+                {initial}
+              </p>
+            )}
             <button
               type="button"
               disabled={signingOut}
@@ -362,19 +386,50 @@ export function AppSidebar({
           /* `wx-neo-inset`, not `wx-glass-panel`: the glass utility still draws
              a 1px edge, and this is a well at the foot of the rail. */
           <div className="wx-neo-inset flex items-center gap-2.5 rounded-xl py-2 pr-1.5 pl-2.5">
-            <span
-              aria-hidden
-              /* Avatar = FILL. His colour, ink initial. See CreatorFace. */
-              className="grid size-9 shrink-0 place-items-center rounded-full [background-color:var(--wx-accent-fill)] font-mono text-[0.8125rem] font-bold [color:var(--wx-on-accent-fill)] uppercase"
-            >
-              {initial}
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[0.8125rem] font-semibold">
-                {name || 'Signed in'}
-              </span>
-              <span className="text-faint block truncate text-[0.6875rem]">{email}</span>
-            </span>
+            {accountMenu ? (
+              /* THE CHIP IS THE ACCOUNT MENU'S BUTTON for creators. On a phone
+                 this is the drawer, which closes first so its focus trap does
+                 not fight the menu; the menu then opens centred above the bar. */
+              <button
+                type="button"
+                data-account-chip
+                aria-haspopup="dialog"
+                onClick={() => {
+                  onNavigate?.();
+                  openAccountMenu();
+                }}
+                className="flex min-h-11 min-w-0 flex-1 items-center gap-2.5 rounded-lg text-left"
+              >
+                <span
+                  aria-hidden
+                  className="grid size-9 shrink-0 place-items-center rounded-full [background-color:var(--wx-accent-fill)] font-mono text-[0.8125rem] font-bold [color:var(--wx-on-accent-fill)] uppercase"
+                >
+                  {initial}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[0.8125rem] font-semibold">
+                    {name || 'Your account'}
+                  </span>
+                  <span className="text-faint block truncate text-[0.6875rem]">{email}</span>
+                </span>
+              </button>
+            ) : (
+              <>
+                <span
+                  aria-hidden
+                  /* Avatar = FILL. His colour, ink initial. See CreatorFace. */
+                  className="grid size-9 shrink-0 place-items-center rounded-full [background-color:var(--wx-accent-fill)] font-mono text-[0.8125rem] font-bold [color:var(--wx-on-accent-fill)] uppercase"
+                >
+                  {initial}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[0.8125rem] font-semibold">
+                    {name || 'Signed in'}
+                  </span>
+                  <span className="text-faint block truncate text-[0.6875rem]">{email}</span>
+                </span>
+              </>
+            )}
             <button
               type="button"
               disabled={signingOut}

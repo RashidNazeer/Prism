@@ -174,14 +174,13 @@ export function ApplyDialog({
                     number decides whether she says yes. */}
                 {perVideo !== null ? (
                   <span className="text-muted wx-numeric mt-0.5 block text-[0.75rem]">
-                    {formatAmount(perVideo, offer.currency)} per video, paid as one fee for the
-                    set
+                    {formatAmount(perVideo, offer.currency)} per video
                   </span>
                 ) : null}
               </>
             ) : (
               <span className="text-muted text-[0.875rem] leading-relaxed">
-                The team will confirm what this one involves with you directly.
+                Terms to be confirmed by the team.
               </span>
             )}
           </div>
@@ -204,7 +203,7 @@ export function ApplyDialog({
               /* Says that a pasted link works, because it now does: anything
                  starting http:// or https:// comes back as a live link on your
                  own card. See `earn/Linkify.tsx`. */
-              hint="Optional. The team reads this with your request, and any link you paste stays clickable."
+              hint="Optional."
             >
               {({ id, describedBy, invalid }) => (
                 <Textarea

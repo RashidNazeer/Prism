@@ -55,7 +55,6 @@
     "verify:prod-ready": "node scripts/check-prod-ready.mjs",
     "verify:signin": "node scripts/check-signin.mjs",
     "verify:creator-tiktok": "node scripts/check-creator-tiktok.mjs",
-    "verify:tiktok-card": "node scripts/check-tiktok-card.mjs",
     "verify:collab-ads": "node scripts/check-collab-ads.mjs",
     "verify:collab-ads-ui": "node scripts/check-collab-ads-ui.mjs",
     "verify:collab-contrast": "node scripts/check-collab-contrast.mjs",

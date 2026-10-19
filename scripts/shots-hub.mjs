@@ -46,7 +46,7 @@ const WIDTHS = [
   { w: 1024, h: 900, name: 'laptop' },
   { w: 1440, h: 950, name: 'desktop' },
 ];
-const SECTIONS = ['overview', 'offers', 'numbers', 'contests', 'leaderboards'];
+const SECTIONS = ['overview', 'offers'];
 
 const { data: brand } = await admin.from('brands').select('id, name, slug').limit(1).single();
 

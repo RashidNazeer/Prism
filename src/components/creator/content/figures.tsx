@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Info } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { NOT_REPORTED, compact, compactMoney, exactMoney } from '@/components/charts';
 
@@ -26,80 +25,13 @@ import { NOT_REPORTED, compact, compactMoney, exactMoney } from '@/components/ch
  * way to here; nothing in between coalesces it, which is the whole discipline.
  */
 
-/* ------------------------------------------------------------ the info dot -- */
-
-/**
- * The small "why" beside a missing figure. One line, on tap or on hover.
- *
- * ITS HIT AREA IS BIGGER THAN IT LOOKS. A 0.875rem glyph cannot be a 2.75rem
- * tap target without wrecking a dense card, so the target is grown with a
- * pseudo-element — `before:-inset-3` is 1.5rem of invisible padding on every
- * side, which puts the real touch box at about 3.5rem while the drawn dot stays
- * small. Nothing in the layout moves.
- *
- * It lives inside a card whose whole face is a button (see `VideoCard`), so it
- * stops propagation: tapping "why is this missing" must not also open the
- * sheet.
- */
-export function InfoDot({ why, label }: { why: string; label?: string }) {
-  const [open, setOpen] = useState(false);
-  const wrap = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const away = (e: Event) => {
-      if (wrap.current && e.target instanceof Node && wrap.current.contains(e.target)) return;
-      setOpen(false);
-    };
-    const key = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('pointerdown', away);
-    document.addEventListener('keydown', key);
-    return () => {
-      document.removeEventListener('pointerdown', away);
-      document.removeEventListener('keydown', key);
-    };
-  }, [open]);
-
-  return (
-    <span ref={wrap} className="relative z-20 inline-flex shrink-0 items-center">
-      <button
-        type="button"
-        title={why}
-        aria-label={label ?? `Why this says ${NOT_REPORTED.toLowerCase()}`}
-        aria-expanded={open}
-        onClick={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          setOpen((o) => !o);
-        }}
-        className="text-faint hover:text-accent focus-visible:ring-accent/50 relative inline-flex cursor-pointer items-center rounded-full transition-colors before:absolute before:-inset-4 before:content-[''] focus-visible:ring-2 focus-visible:outline-none"
-      >
-        <Info aria-hidden className="size-3.5" />
-      </button>
-
-      {open ? (
-        <span
-          role="note"
-          className="wx-neo-raised-sm text-muted absolute top-full left-0 z-30 mt-1 w-[11rem] rounded-md px-2 py-1.5 text-[0.6875rem] leading-[1.35]"
-        >
-          {why}
-        </span>
-      ) : null}
-    </span>
-  );
-}
-
 /* --------------------------------------------------------- not reported --- */
 
 export function NotReported({
-  why,
   /** Short form for the tightest cells: the words still, just smaller. */
   small,
   className,
 }: {
-  why: string;
   small?: boolean;
   className?: string;
 }) {
@@ -113,7 +45,6 @@ export function NotReported({
       >
         {NOT_REPORTED}
       </span>
-      <InfoDot why={why} />
     </span>
   );
 }
@@ -128,16 +59,14 @@ export function NotReported({
  */
 export function Count({
   value,
-  why,
   small,
   className,
 }: {
   value: number | null;
-  why: string;
   small?: boolean;
   className?: string;
 }) {
-  if (value === null) return <NotReported why={why} small={small} className={className} />;
+  if (value === null) return <NotReported small={small} className={className} />;
   return (
     <span
       title={value.toLocaleString()}
@@ -156,15 +85,13 @@ export function Count({
 export function Money({
   value,
   currency,
-  why,
   className,
 }: {
   value: number | null;
   currency: string | null;
-  why: string;
   className?: string;
 }) {
-  if (value === null) return <NotReported why={why} className={className} />;
+  if (value === null) return <NotReported className={className} />;
   return (
     <span
       title={exactMoney(value, currency)}
