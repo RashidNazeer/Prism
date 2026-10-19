@@ -209,7 +209,7 @@ function BrandCard({
       style={{ '--brand-base': base } as React.CSSProperties}
       className={cn(
         "wx-neo-raised-sm wx-neo-press group relative isolate block aspect-[3/4] overflow-hidden rounded-xl sm:aspect-[4/5]",
-        poster ? "text-[#14151a]" : "text-white"
+        poster ? "text-[#14151a] shadow-[0_14px_32px_-14px_rgba(0,0,0,0.55)]" : "text-white"
       )}
     >
       <span
@@ -258,7 +258,14 @@ function BrandCard({
         </span>
       )}
 
-      {poster ? null : (
+      {poster ? (
+        /* A soft shade, not a black band: enough depth under the type that the
+           lower third reads as a surface, light enough to keep the picture. */
+        <span
+          aria-hidden
+          className="absolute inset-0 -z-[5] bg-[linear-gradient(to_bottom,rgba(20,21,26,0)_0%,rgba(20,21,26,0)_58%,rgba(20,21,26,0.22)_100%)]"
+        />
+      ) : (
       <span
         aria-hidden
         className={cn(
