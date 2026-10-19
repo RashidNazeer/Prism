@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Eye, Heart, MessageCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Eye, Heart, MessageCircle, Play, Video } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CONTENT_STATUS } from '@/lib/content';
+import { useRefreshedThumb } from '@/components/content/VideoThumb';
 import { Count, Money } from './figures';
 import type { JoinedVideo, Sources } from './joined';
 
@@ -51,7 +52,15 @@ export function VideoCard({
   const images = [row.thumbnail_url, video.tiktok?.cover_image_url ?? null].filter(
     (s): s is string => Boolean(s)
   );
-  const src = images[step];
+  const { fresh, attempt } = useRefreshedThumb(row);
+  const src = fresh ?? images[step] ?? null;
+
+  /* No stored picture, or every stored one failed: ask for a fresh one once. */
+  useEffect(() => {
+    if (!src) attempt();
+    // `attempt` guards itself with a ref.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src]);
 
   const stats = [
     { key: 'views', Icon: Eye, label: 'views', value: video.views },
@@ -61,30 +70,12 @@ export function VideoCard({
 
   return (
     <article className="wx-neo-raised-sm ease-brand relative flex h-full w-full flex-col gap-2 rounded-lg p-2 transition-transform duration-300 motion-safe:hover:-translate-y-0.5">
-      {src ? (
-        <Cover
-          src={src}
-          label={meta.creatorLabel}
-          tone={meta.tone}
-          onError={() => setStep((s) => s + 1)}
-        />
-      ) : (
-        /* NO PICTURE, NO SQUARE. The status is a line of text, not a plate. */
-        <p className="text-muted flex items-center gap-1.5 px-1 pt-0.5 text-[0.6875rem] font-semibold">
-          <span
-            aria-hidden
-            className={cn(
-              'size-1.5 shrink-0 rounded-full',
-              meta.tone === 'live'
-                ? 'bg-stage-live'
-                : meta.tone === 'due'
-                  ? 'bg-stage-due'
-                  : 'bg-stage-paid'
-            )}
-          />
-          <span className="truncate">{meta.creatorLabel}</span>
-        </p>
-      )}
+      <Cover
+        src={src}
+        label={meta.creatorLabel}
+        tone={meta.tone}
+        onError={() => setStep((s) => s + 1)}
+      />
 
       {/* GMV, the figure this page is for, so it is the biggest thing on the tile. */}
       <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 px-1">
@@ -142,27 +133,34 @@ export function VideoCard({
         <p className="text-muted min-w-0 truncate text-[0.625rem] font-semibold tracking-[0.06em] uppercase">
           {row.brand?.name ?? 'A brand'}
         </p>
-        <time dateTime={row.created_at} className="text-faint shrink-0 text-[0.625rem]">
-          {new Date(row.created_at).toLocaleDateString(undefined, {
-            day: 'numeric',
-            month: 'short',
-          })}
-        </time>
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-label={`Figures for ${title}`}
+          className="text-muted hover:text-accent relative z-20 -my-3 min-h-11 shrink-0 px-1 text-[0.6875rem] font-semibold"
+        >
+          Details
+        </button>
       </div>
 
-      <button
-        type="button"
-        onClick={onOpen}
-        aria-label={`Open ${title}`}
+      {/* The card plays the video: it opens it on TikTok in a new tab. The
+          figures sheet is one small button away. */}
+      <a
+        href={row.video_url}
+        target="_blank"
+        rel="noreferrer noopener"
+        aria-label={`Play ${title} on TikTok`}
         className="focus-visible:ring-accent/50 absolute inset-0 z-10 cursor-pointer rounded-lg focus-visible:ring-2 focus-visible:outline-none"
       />
+
     </article>
   );
 }
 
 /** True when this video has a picture to show, so the page can pick a grid. */
 export function hasPicture(video: JoinedVideo): boolean {
-  return Boolean(video.row.thumbnail_url || video.tiktok?.cover_image_url);
+  void video;
+  return true;
 }
 
 /**
@@ -199,22 +197,34 @@ function Cover({
   tone,
   onError,
 }: {
-  src: string;
+  src: string | null;
   label: string;
   tone: 'live' | 'due' | 'paid';
   onError: () => void;
 }) {
   return (
     <div className="bg-surface-2 wx-neo-inset relative aspect-square w-full overflow-hidden rounded-md">
-      <img
-        src={src}
-        alt=""
-        loading="lazy"
-        decoding="async"
-        referrerPolicy="no-referrer"
-        onError={onError}
-        className="size-full object-cover"
-      />
+      {src ? (
+        <img
+          src={src}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={onError}
+          className="size-full object-cover"
+        />
+      ) : (
+        <span className="text-faint grid size-full place-items-center">
+          <Video size={26} aria-hidden />
+        </span>
+      )}
+      <span
+        aria-hidden
+        className="absolute right-1.5 bottom-1.5 grid size-8 place-items-center rounded-full bg-white/90 text-black shadow-md"
+      >
+        <Play size={14} fill="currentColor" aria-hidden />
+      </span>
       <span
         aria-hidden
         className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-black/55 to-transparent"

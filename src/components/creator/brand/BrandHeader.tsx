@@ -1,3 +1,4 @@
+import { brandLogo } from '@/lib/brand-logos';
 import type { CSSProperties } from 'react';
 import type { CreatorBrand } from '@/lib/creator/useCreatorBrands';
 import { cn } from '@/lib/utils';
@@ -11,7 +12,8 @@ import { cn } from '@/lib/utils';
  */
 export function BrandMark({ brand, className }: { brand: CreatorBrand; className?: string }) {
   const letter = brand.name.trim().charAt(0).toUpperCase() || '?';
-  const tinted = !brand.logo_url && Boolean(brand.brand_color);
+  const logo = brandLogo(brand.slug, brand.logo_url);
+  const tinted = !logo && Boolean(brand.brand_color);
   const style: CSSProperties | undefined = tinted
     ? { backgroundColor: `color-mix(in srgb, ${brand.brand_color} 68%, black)` }
     : undefined;
@@ -25,8 +27,8 @@ export function BrandMark({ brand, className }: { brand: CreatorBrand; className
       )}
       style={style}
     >
-      {brand.logo_url ? (
-        <img src={brand.logo_url} alt="" className="size-full object-cover" loading="lazy" />
+      {logo ? (
+        <img src={logo} alt="" className="size-full bg-white object-contain p-0.5" loading="lazy" />
       ) : (
         <span
           aria-hidden

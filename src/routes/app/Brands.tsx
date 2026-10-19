@@ -1,3 +1,4 @@
+import { brandLogo } from '@/lib/brand-logos';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { m } from 'motion/react';
@@ -164,22 +165,18 @@ export function BrandGrid({
   );
 }
 
-/** Below this many pixels across, a logo is a mark to place, not a picture to stretch. */
-const SHARP_ENOUGH = 240;
-
 /**
  * ONE BRAND, AS A POSTER. The logo is the card's background, and the name, the
  * lead figure and the cue sit on it.
  *
  * LEGIBILITY IS A GRADIENT, NOT A FILTER. A plain `linear-gradient` scrim runs
  * clear at the top to ~85% black from half way down, which is where all the
- * text lives, so white type holds 4.5:1 even over a white logo. No `filter`, no
- * `backdrop-filter`: a grid of image cards must not become a grid of blurs.
+ * text lives, so white type holds 4.5:1 even over a white logo. No `backdrop-filter`; the only
+ * `filter` is the static blur on each card's own background image.
  *
- * A LOGO IS STRETCHED ONLY IF IT CAN TAKE IT. Big enough, it covers the card.
- * Smaller than `SHARP_ENOUGH` once loaded, it is placed large and cropped off the
- * top-right corner on the brand colour instead of being pixel-stretched. No
- * logo: the brand colour with its first letter as a faint watermark.
+ * THE LOGO IS SHOWN WHOLE over an enlarged, blurred copy of itself, so no mark is
+ * cropped or hard-edged. No logo: the brand colour with its first letter as a
+ * faint watermark.
  */
 function BrandCard({
   brand,
@@ -192,13 +189,14 @@ function BrandCard({
   rate: number | undefined;
   isIn: boolean;
 }) {
-  const [small, setSmall] = useState(false);
+  const [wordmark, setWordmark] = useState(false);
   const line = brand.tagline ?? brand.description;
   /* `--brand-base` is unset for a brand with no colour; the card then uses a
      dark slate in dark mode and a mid slate in light mode (see the fallbacks). */
   const base = brand.brand_color
     ? `color-mix(in srgb, ${brand.brand_color} 62%, black)`
     : undefined;
+  const logo = brandLogo(brand.slug, brand.logo_url);
   const letter = brand.name.trim().charAt(0).toUpperCase() || '?';
 
   return (
@@ -212,19 +210,38 @@ function BrandCard({
         className="absolute inset-0 -z-20 bg-[var(--brand-base,#2b2e3a)] [[data-theme='light']_&]:bg-[var(--brand-base,#646a80)]"
       />
 
-      {brand.logo_url ? (
-        <img
-          src={brand.logo_url}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          onLoad={(e) => setSmall(e.currentTarget.naturalWidth < SHARP_ENOUGH)}
-          className={
-            small
-              ? 'absolute -top-[8%] -right-[12%] -z-10 size-[72%] rounded-3xl object-contain'
-              : 'absolute inset-0 -z-10 size-full object-cover object-[50%_30%]'
-          }
-        />
+      {logo ? (
+        <>
+          {/* A near-square mark fills the card, as Penetrex and Swisse do. A wide
+              wordmark cannot: cropped to a portrait it loses half its letters. It
+              is shown whole instead, with its edges dissolved into an enlarged,
+              blurred copy of itself so the card still reads as one picture. */}
+          <img
+            src={logo}
+            alt=""
+            aria-hidden={wordmark ? true : undefined}
+            loading="lazy"
+            decoding="async"
+            onLoad={(e) => {
+              const ratio = e.currentTarget.naturalWidth / Math.max(e.currentTarget.naturalHeight, 1);
+              setWordmark(ratio > 1.3 || ratio < 0.75);
+            }}
+            className={
+              wordmark
+                ? 'absolute inset-0 -z-10 size-full scale-150 object-cover blur-3xl'
+                : 'absolute inset-0 -z-10 size-full object-cover object-[50%_30%]'
+            }
+          />
+          {wordmark ? (
+            <img
+              src={logo}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-x-0 top-[6%] -z-10 h-[52%] w-full object-contain [mask-image:radial-gradient(ellipse_62%_62%_at_50%_50%,black_55%,transparent_100%)]"
+            />
+          ) : null}
+        </>
       ) : (
         <span
           aria-hidden

@@ -1,3 +1,4 @@
+import { brandLogo } from '@/lib/brand-logos';
 import { useState } from 'react';
 import { Check } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/Button';
@@ -117,8 +118,8 @@ export default function FirstDay() {
                   aria-hidden
                   className="font-display bg-stage-live-soft text-stage-live grid size-[38px] shrink-0 place-items-center overflow-hidden rounded-[10px] text-[0.875rem] font-bold"
                 >
-                  {offer.brand?.logo_url ? (
-                    <img src={offer.brand.logo_url} alt="" className="size-full object-cover" />
+                  {brandLogo(offer.brand?.slug, offer.brand?.logo_url) ? (
+                    <img src={brandLogo(offer.brand?.slug, offer.brand?.logo_url) ?? ''} alt="" className="size-full bg-white object-contain" />
                   ) : (
                     (offer.brand?.name ?? '?').charAt(0)
                   )}

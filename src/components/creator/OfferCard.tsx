@@ -1,3 +1,4 @@
+import { brandLogo } from '@/lib/brand-logos';
 import { useState } from 'react';
 import { ArrowRight, Check, ChevronDown, Clock, Store, X } from 'lucide-react';
 import { Button, ButtonLink } from '@/components/ui/Button';
@@ -355,13 +356,13 @@ function OfferImage({
       aria-hidden
       className="wx-neo-inset grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl"
     >
-      {brand?.logo_url ? (
+      {brandLogo(brand?.slug, brand?.logo_url) ? (
         <img
-          src={brand.logo_url}
+          src={brandLogo(brand?.slug, brand?.logo_url) ?? ''}
           alt=""
           loading="lazy"
           decoding="async"
-          className="size-full object-cover"
+          className="size-full bg-white object-contain p-0.5"
         />
       ) : (
         <span className="from-accent/25 to-surface-2 grid size-full place-items-center bg-gradient-to-br">

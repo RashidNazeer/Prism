@@ -26,7 +26,7 @@ import type { ContentRow } from '@/lib/content';
  * came from somewhere that is not TikTok.
  */
 
-function useRefreshedThumb(row: ContentRow) {
+export function useRefreshedThumb(row: ContentRow) {
   const queryClient = useQueryClient();
   const tried = useRef(false);
   const [fresh, setFresh] = useState<string | null>(null);
