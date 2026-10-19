@@ -322,7 +322,7 @@ Deno.serve(async (req: Request) => {
         shop_id: shop.shop_id,
         handle: h,
         video_url: url,
-        posted_date: /^d{4}-d{2}-d{2}/.test(String(v.posted_date ?? '')) ? String(v.posted_date).slice(0, 10) : null,
+        posted_date: /^\d{4}-\d{2}-\d{2}/.test(String(v.posted_date ?? '')) ? String(v.posted_date).slice(0, 10) : null,
         views: Math.round(Number(v.views) || 0),
         gmv: Math.round((Number(v.video_gmv) || 0) * 100) / 100,
         units: Math.round(Number(v.units_sold) || 0),
