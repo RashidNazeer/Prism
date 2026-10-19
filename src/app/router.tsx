@@ -186,7 +186,6 @@ const CreatorContests = screen(() => import('@/routes/app/Contests'), 'Contests'
 const CreatorContent = screen(() => import('@/routes/app/Content'), 'Content');
 const CreatorNumbers = screen(() => import('@/routes/app/MyNumbers'), 'MyNumbers');
 const CreatorBoard = screen(() => import('@/routes/app/Leaderboards'), 'Leaderboards');
-const CreatorSupport = screen(() => import('@/routes/app/Support'), 'Support');
 
 const AdminHome = screen(() => import('@/routes/admin/AdminDashboard'), 'AdminDashboard');
 const AdminApplications = screen(() => import('@/routes/admin/Applications'), 'Applications');
@@ -251,7 +250,6 @@ const PREFETCH: Record<string, () => Promise<unknown>> = {
   '/app/content': () => import('@/routes/app/Content'),
   '/app/numbers': () => import('@/routes/app/MyNumbers'),
   '/app/leaderboards': () => import('@/routes/app/Leaderboards'),
-  '/app/support': () => import('@/routes/app/Support'),
   '/admin': () => import('@/routes/admin/AdminDashboard'),
   '/admin/applications': () => import('@/routes/admin/Applications'),
   '/admin/activity': () => import('@/routes/admin/Activity'),
@@ -523,12 +521,13 @@ export const router = createBrowserRouter([
             path: '/app/leaderboards',
             element: <CreatorBoard />,
           },
-          /* Help and how to reach a person. Open to applicants as well as
-             creators — somebody still in review is the likeliest to have a
-             question — so it carries no extra guard. */
+          /* SUPPORT PAGE REMOVED, 2026-10-19, at Rashid's instruction ("delete the
+             profile and support page"). The URL redirects home rather than
+             404ing so a bookmark or a link in an old email still lands
+             somewhere. Help and contact remain on the public /contact page. */
           {
             path: '/app/support',
-            element: <CreatorSupport />,
+            element: <Navigate to="/app" replace />,
           },
           /*
            * THE BRAND HUB IS A SCREEN OF THIS APP, so it nests here with the rest.
@@ -781,6 +780,38 @@ export const router = createBrowserRouter([
    */
   ...(import.meta.env.DEV
     ? [
+        /* PRE-REGISTERED PREVIEW ROUTES, 2026-10-19 — one per page, each backed by a
+           stub its owner replaces, so no one edits this file to add their own. */
+        {
+          path: '/dev/numbers',
+          HydrateFallback: RouteFallback,
+          lazy: lazyRoute(() => import('@/routes/dev/NumbersPreview'), 'NumbersPreview'),
+        },
+        {
+          path: '/dev/offers',
+          HydrateFallback: RouteFallback,
+          lazy: lazyRoute(() => import('@/routes/dev/OffersPreview'), 'OffersPreview'),
+        },
+        {
+          path: '/dev/contests',
+          HydrateFallback: RouteFallback,
+          lazy: lazyRoute(() => import('@/routes/dev/ContestsPreview'), 'ContestsPreview'),
+        },
+        {
+          path: '/dev/leaderboards',
+          HydrateFallback: RouteFallback,
+          lazy: lazyRoute(() => import('@/routes/dev/LeaderboardsPreview'), 'LeaderboardsPreview'),
+        },
+        {
+          path: '/dev/content-page',
+          HydrateFallback: RouteFallback,
+          lazy: lazyRoute(() => import('@/routes/dev/ContentPagePreview'), 'ContentPagePreview'),
+        },
+        {
+          path: '/dev/account',
+          HydrateFallback: RouteFallback,
+          lazy: lazyRoute(() => import('@/routes/dev/AccountPreview'), 'AccountPreview'),
+        },
         {
           path: '/dev/charts',
           HydrateFallback: RouteFallback,

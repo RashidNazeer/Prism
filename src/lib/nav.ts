@@ -10,7 +10,6 @@ import {
   History,
   Inbox,
   LayoutDashboard,
-  LifeBuoy,
   Link2,
   Megaphone,
   Store,
@@ -321,31 +320,6 @@ const CREATOR: NavGroup[] = [
         icon: UserRound,
         to: '/app/profile',
         description: 'Only your name is yours to change; the rest is set by the Wurx team.',
-      },
-      /*
-       * SUPPORT, ADDED 2026-10-16, AND IT IS AN ADDITION.
-       *
-       * Both external reviewers asked for a help section and the app had
-       * none: a creator with a question about where a figure comes from had
-       * to leave the product. It sits here, beside My profile and under no
-       * heading, because it is the same kind of row — about her and her
-       * account rather than about earning — and because the rule at the top
-       * of this file says a heading has to earn its row, which "Help" over
-       * one link would not.
-       *
-       * NOTHING WAS REMOVED, RENAMED OR REORDERED to make room for it.
-       * Rashid, twice: "keep all the current tabs please". Eight rows became
-       * nine.
-       *
-       * Applicants get it too, by falling through `APPLICANT` below without
-       * being in `LOCKED_UNTIL_APPROVED` — deliberately, since somebody still
-       * in review is the person most likely to have a question.
-       */
-      {
-        label: 'Support',
-        icon: LifeBuoy,
-        to: '/app/support',
-        description: 'Where the numbers come from, and how to reach a person.',
       },
     ],
   },
