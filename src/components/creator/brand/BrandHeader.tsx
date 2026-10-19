@@ -21,7 +21,7 @@ export function BrandMark({ brand, className }: { brand: CreatorBrand; className
   return (
     <span
       className={cn(
-        'grid size-12 shrink-0 place-items-center overflow-hidden rounded-2xl',
+        'grid size-12 shrink-0 place-items-center overflow-hidden rounded-2xl shadow-[0_6px_14px_-8px_rgba(0,0,0,0.6)]',
         tinted ? '' : 'wx-neo-inset',
         className
       )}

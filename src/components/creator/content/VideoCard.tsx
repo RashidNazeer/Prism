@@ -203,7 +203,7 @@ function Cover({
   onError: () => void;
 }) {
   return (
-    <div className="bg-surface-2 wx-neo-inset relative aspect-square w-full overflow-hidden rounded-md">
+    <div className="bg-surface-2 wx-neo-inset relative aspect-square w-full overflow-hidden rounded-md shadow-[0_8px_18px_-10px_rgba(0,0,0,0.65)]">
       {src ? (
         <img
           src={src}

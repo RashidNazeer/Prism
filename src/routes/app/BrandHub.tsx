@@ -285,7 +285,7 @@ function ProductTile({ product }: { product: CreatorProduct }) {
   const rate = percent(product.commission_rate);
   return (
     <div className="wx-neo-raised-sm flex h-full flex-col overflow-hidden rounded-xl">
-      <div className="wx-neo-inset relative aspect-square overflow-hidden">
+      <div className="wx-neo-inset relative aspect-square overflow-hidden shadow-[0_8px_18px_-10px_rgba(0,0,0,0.65)]">
         {product.image_url ? (
           <img
             src={product.image_url}
