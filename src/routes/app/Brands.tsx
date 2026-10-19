@@ -1,4 +1,5 @@
-import { brandLogo } from '@/lib/brand-logos';
+import { cn } from '@/lib/utils';
+import { brandLogo, isPosterLogo } from '@/lib/brand-logos';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { m } from 'motion/react';
@@ -190,6 +191,7 @@ function BrandCard({
   isIn: boolean;
 }) {
   const [wordmark, setWordmark] = useState(false);
+  const poster = isPosterLogo(brand.slug, brand.logo_url);
   const line = brand.tagline ?? brand.description;
   /* `--brand-base` is unset for a brand with no colour; the card then uses a
      dark slate in dark mode and a mid slate in light mode (see the fallbacks). */
@@ -224,7 +226,7 @@ function BrandCard({
             decoding="async"
             onLoad={(e) => {
               const ratio = e.currentTarget.naturalWidth / Math.max(e.currentTarget.naturalHeight, 1);
-              setWordmark(ratio > 1.3 || ratio < 0.75);
+              setWordmark(!poster && (ratio > 1.3 || ratio < 0.75));
             }}
             className={
               wordmark
@@ -253,7 +255,12 @@ function BrandCard({
 
       <span
         aria-hidden
-        className="absolute inset-0 -z-[5] bg-[linear-gradient(to_bottom,rgba(0,0,0,0)_0%,rgba(0,0,0,0)_20%,rgba(0,0,0,0.85)_50%,rgba(0,0,0,0.93)_100%)] [[data-theme='light']_&]:bg-[linear-gradient(to_bottom,transparent_0%,transparent_22%,color-mix(in_srgb,var(--brand-base,#646a80)_50%,black)_100%)]"
+        className={cn(
+          'absolute inset-0 -z-[5]',
+          poster
+            ? 'bg-[linear-gradient(to_bottom,rgba(0,0,0,0)_0%,rgba(0,0,0,0)_62%,rgba(0,0,0,0.88)_82%,rgba(0,0,0,0.94)_100%)]'
+            : "bg-[linear-gradient(to_bottom,rgba(0,0,0,0)_0%,rgba(0,0,0,0)_20%,rgba(0,0,0,0.85)_50%,rgba(0,0,0,0.93)_100%)] [[data-theme='light']_&]:bg-[linear-gradient(to_bottom,transparent_0%,transparent_22%,color-mix(in_srgb,var(--brand-base,#646a80)_50%,black)_100%)]"
+        )}
       />
 
       <span className="absolute inset-0 flex flex-col justify-between p-3 sm:p-4">
