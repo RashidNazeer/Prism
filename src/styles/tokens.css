@@ -342,7 +342,7 @@
    * automatically and stays the same material as a card, which is what he
    * asked for when the nav tint came off.
    */
-  --wx-glass-fill: rgba(0, 0, 0, 0.5);
+  --wx-glass-fill: rgba(0, 0, 0, 0.6);
   /* THE LANDING NAV IS ITS OWN, DENSER MATERIAL from 2026-10-15. It used the
      card fill, which is 50% here and 8% in light — and a bar that transparent
      over a smooth background cannot read as glass however hard it blurs, which
@@ -381,7 +381,7 @@
    *
    * Light keeps white, as everywhere else.
    */
-  --wx-glass-panel: rgba(0, 0, 0, 0.5);
+  --wx-glass-panel: rgba(0, 0, 0, 0.6);
   --wx-glass-line: rgba(255, 255, 255, 0.3);
   /*
    * THE EDGES GO DOWN WITH THE GLASS, 2026-10-17. Rashid: "in dark mode border
