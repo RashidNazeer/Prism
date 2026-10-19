@@ -69,6 +69,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 const monthStart = (day: string) => `${String(day).slice(0, 7)}-01`;
 
 import { fillVideoThumbs } from '../_shared/video-thumbs.ts';
+import { pickRow, placeVideos } from './placement.ts';
 
 type VideoCode = Record<string, unknown>;
 
@@ -193,6 +194,8 @@ Deno.serve(async (req: Request) => {
        appeared with them. Reported because "nothing new" and "nothing changed"
        are different answers, and the second one hid $1,000 for five days. */
     videosRefreshed: 0, gmvAdded: 0,
+    /* Reacher videos moved onto the creator's row for the month they were posted. */
+    videosMoved: 0, gmvMoved: 0,
     /* Pictures found for videos that had none, and rows moved to Payment
        Pending because the deal is now complete. Both reported, because both
        used to be somebody's manual job. */
@@ -216,7 +219,7 @@ Deno.serve(async (req: Request) => {
 
     /* ── 2. our Irwin rows, and only ours ─────────────────────────────── */
     const rows: {
-      id: number; name: string | null;
+      id: number; name: string | null; hiring_date: string | null;
       tiktok_account: string | null; tiktok_account_2: string | null;
       video_codes: unknown;
       /* For the completion rule below. `deal` says how many videos were
@@ -225,7 +228,7 @@ Deno.serve(async (req: Request) => {
     }[] = [];
     for (let page = 0; ; page += 500) {
       const { data, error } = await db.schema('wurxbase').from('creators')
-        .select('id, name, tiktok_account, tiktok_account_2, video_codes, deal, videos, payment_status')
+        .select('id, name, hiring_date, tiktok_account, tiktok_account_2, video_codes, deal, videos, payment_status')
         .eq('brand', BRAND)
         .order('id')
         .range(page, page + 499);
@@ -234,11 +237,23 @@ Deno.serve(async (req: Request) => {
       if ((data ?? []).length < 500) break;
     }
 
+    /* A creator has a row per month. Put every Reacher video this function filed
+       earlier on the row for the month it was posted (see placement.ts), in memory
+       here and written below with the other changes. */
+    const placement = placeVideos(rows, handleOf, videoId);
+    summary.videosMoved = placement.moved;
+    summary.gmvMoved = placement.movedGmv;
+
     /* handle → the row that claims it. A creator with two handles claims both. */
     const rowFor = new Map<string, typeof rows[number]>();
+    const rowsFor = new Map<string, typeof rows>();
     for (const r of rows) {
       for (const h of [handleOf(r.tiktok_account), handleOf(r.tiktok_account_2)]) {
-        if (h && !rowFor.has(h)) rowFor.set(h, r);
+        if (!h) continue;
+        if (!rowFor.has(h)) rowFor.set(h, r);
+        const list = rowsFor.get(h) ?? [];
+        if (!list.includes(r)) list.push(r);
+        rowsFor.set(h, list);
       }
     }
 
@@ -274,9 +289,13 @@ Deno.serve(async (req: Request) => {
       const h = handleOf(v.creator_handle);
       const url = String(v.video_url || v.tiktok_url || '').trim();
       if (!h || !url) continue;
-      const row = rowFor.get(h);
-      if (!row) { unmatched.add(h); continue; }
-      const have = keysOn(row);
+      const candidates = rowsFor.get(h);
+      if (!candidates) { unmatched.add(h); continue; }
+      /* The row for the month this video was posted, not the creator's oldest. */
+      const row = pickRow(candidates, String(v.posted_date ?? ''))!;
+      /* Already filed on ANY of the creator's rows counts as filed. */
+      const have = new Set<string>();
+      for (const o of candidates) for (const k of keysOn(o)) have.add(k);
       const key = videoId(url) ?? url.toLowerCase().replace(/\/+$/, '');
       if (have.has(key)) continue;            /* already filed; refreshed below */
       const list = toFile.get(row.id) ?? [];
@@ -454,7 +473,7 @@ Deno.serve(async (req: Request) => {
       /* One write per row, carrying the new videos, the refreshed ones, any
          picture just found and the completion flag, so a creator with all four
          does not get written four times. */
-      const changedVideos = new Set([...toFile.keys(), ...refreshedFor.keys(), ...thumbRows]);
+      const changedVideos = new Set([...toFile.keys(), ...refreshedFor.keys(), ...thumbRows, ...placement.touched]);
       const ids = new Set([...changedVideos, ...flagFor.keys()]);
       for (const id of ids) {
         const patch: Record<string, unknown> = {};

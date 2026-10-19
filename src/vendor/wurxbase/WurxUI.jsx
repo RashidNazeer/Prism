@@ -852,14 +852,23 @@ function WxGroupMenu({ onExpandAll, onCollapseAll }) {
    and listed here, by creator, never added to the table, the creator count or
    any deal total. Shown only for a brand whose source is Reacher, and only when
    there is something to show. */
-function ReacherUnrostered() {
-  const [rows, setRows] = useState(null);
+function ReacherUnrostered({ creators, allTime, periodRange, periodLabel }) {
+  const [fetched, setFetched] = useState(null);
   const [all, setAll] = useState(false);
   useEffect(() => {
     let alive = true;
-    fetchReacherUnrostered().then((r) => { if (alive) setRows(r); });
+    fetchReacherUnrostered().then((r) => { if (alive) setFetched(r); });
     return () => { alive = false; };
   }, []);
+  /* The same window the table and the cards use: a video with no date is kept,
+     as everywhere else on this page. */
+  const rows = useMemo(() => {
+    if (!fetched) return null;
+    if (allTime || !periodRange || !periodRange.from || !periodRange.to) return fetched;
+    return fetched.filter((r) => !r.posted_date || (r.posted_date >= periodRange.from && r.posted_date <= periodRange.to));
+  }, [fetched, allTime, periodRange]);
+  /* What the roster already shows for this window, counted once per video. */
+  const roster = useMemo(() => wxVideoTotals(creators), [creators]);
   const people = useMemo(() => {
     const m = new Map();
     for (const r of rows || []) {
@@ -871,14 +880,21 @@ function ReacherUnrostered() {
   }, [rows]);
   if (!rows || !rows.length) return null;
   const totalGmv = people.reduce((s, p) => s + p.gmv, 0);
+  const everyVideo = roster.all.length + rows.length;
+  const everyGmv = roster.gmv + totalGmv;
   const shown = all ? people : people.slice(0, 10);
   return (
     <div className="pc-topvids" style={{ marginTop: 14 }}>
       <div className="pc-topvids-head">
-        Reacher videos not on the roster
+        Reacher videos not on the roster · {periodLabel}
         <span className="pc-topvids-sub">{rows.length.toLocaleString()} videos · {people.length.toLocaleString()} creators · {fmt$Exact(Math.round(totalGmv))}</span>
       </div>
       <div style={{ padding: '4px 16px 14px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 18px', padding: '8px 0 10px', fontSize: 12.5, color: 'var(--pc-text-2)' }}>
+          <span><b style={{ color: 'var(--pc-text)' }}>{everyVideo.toLocaleString()}</b> Reacher videos in all</span>
+          <span><b style={{ color: 'var(--pc-text)' }}>{fmt$Exact(Math.round(everyGmv))}</b> GMV in all</span>
+          <span>{roster.all.length.toLocaleString()} on the roster ({fmt$Exact(Math.round(roster.gmv))}) + {rows.length.toLocaleString()} not ({fmt$Exact(Math.round(totalGmv))})</span>
+        </div>
         {shown.map((p) => (
           <a key={p.handle} href={p.top} target="_blank" rel="noreferrer"
             style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--pc-divider)', color: 'inherit', textDecoration: 'none', fontSize: 13 }}>
@@ -3807,7 +3823,10 @@ function BrandDrilldown({ brand, creators, brandCreators, allCreators, budgets, 
           video once with the same rule as the GMV card above — so the pills add
           up to that card instead of quietly exceeding it. */}
       <ProductBand creators={sortedCreators} brand={brand.brand} period={allTime ? 'All time' : monthLabel(month)} />
-      {wxSource === 'reacher' && <ReacherUnrostered />}
+      {wxSource === 'reacher' && (
+        <ReacherUnrostered creators={sortedCreators} allTime={allTime} periodRange={periodRange}
+          periodLabel={allTime ? 'All time' : (periodRange ? wxRangeHeading(periodRange) : monthLabel(month))} />
+      )}
 
       {/* WURX-ADDED · search and filter for this brand's creators. Their own
           toolbar shape, the one the Brands screen and the Creators tab already
