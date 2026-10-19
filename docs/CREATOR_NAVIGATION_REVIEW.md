@@ -1,5 +1,11 @@
 # What a creator sees, and what she should see
 
+> **DECISION, 2026-10-19 (Rashid): the Brand hub stays, and it stays as its own floor.**
+> Every recommendation below that treats a brand as a *filter*, or proposes removing the
+> five-section hub, is **superseded** and is left in place only as the reasoning that was
+> weighed. What the decision changes is spelled out in the final section, "After the decision".
+
+
 A review of Prism's creator navigation against Cruva's, and a recommendation for cutting it
 down. Written 2026-10-17, read out of the code (`src/lib/nav.ts`, `src/routes/app/*`) rather
 than from memory, so the counts are what actually ships.
@@ -195,3 +201,35 @@ Support was added as a ninth. This document is the answer to a different questio
 what *should* be dropped to make the app simple. The two are not in conflict, but the
 recommendation above does reverse that earlier decision, and it should be taken deliberately
 rather than by drift.
+
+
+---
+
+## After the decision: the Brand hub stays a floor
+
+Rashid decided on 2026-10-19 that the Brand hub is worth keeping as a separate destination.
+That settles section 6, and it changes what "simple" has to mean here.
+
+**What is superseded.** The "fold in" row for Brand hubs, the "drop outright" bullet on the
+five-section hub, and recommendation 2 ("a brand is a filter, not a floor") no longer apply.
+
+**What it costs, stated plainly.** Offers, Contests, Leaderboards and My numbers will keep
+existing twice: once across all her brands, once inside each hub. That duplication was the
+strongest argument for the filter, and keeping the floor means accepting it.
+
+**What that makes the real design problem.** If a screen exists twice, the two copies have to be
+recognisably the *same screen narrowed to one brand*, not two screens that happen to share a
+name. Concretely:
+
+- One component per screen, with a brand argument, rather than two implementations that drift.
+  (The Offers screen is already close: the hub's Offers section reuses the same cards and the
+  same bucketing.)
+- The hub says what it is. A creator inside a hub should never wonder whether she is looking at
+  all her contests or this brand's.
+- The hub earns its floor by leading with what she can act on for *that brand* — the shape the
+  reworked Overview now has — rather than by repeating the global screens in miniature.
+
+**What is unaffected.** The other recommendations do not depend on the brand question and still
+stand for discussion: absences costing one line, one number per card, every control changing what
+she sees, and a reason to open the app when nothing is due. The rail count is a separate
+decision from this one and has not been made.
